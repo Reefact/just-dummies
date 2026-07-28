@@ -16,7 +16,7 @@ namespace JustDummies;
 ///     <para>
 ///         Every value is drawn from a pseudo-random source. By default that source is unseeded, so each run produces
 ///         fresh values — which surfaces a test that secretly depends on one. Wrap a value-sensitive test in
-///         <see cref="Reproducibly(Action, Action{String})" /> to make a failing run replayable: the source flows with
+///         <see cref="Reproducibly(Action, Action{string})" /> to make a failing run replayable: the source flows with
 ///         the current execution context, so it never leaks across tests running in parallel. For an explicit,
 ///         isolated deterministic context — for example outside a test body — use <see cref="WithSeed" />.
 ///     </para>
@@ -38,7 +38,7 @@ namespace JustDummies;
 ///     </example>
 /// </remarks>
 // This file carries the façade's documentation and no member: every entry point lives in a sibling partial named
-// after its family (Any.Primitive.cs, Any.Pattern.cs, Any.Uri.cs, Any.Choice.cs, Any.Collections.cs, Any.Combine.cs,
+// after its family (Any.Primitive.cs, Any.Pattern.cs, Any.Uri.cs, Any.Choice.cs, Any.Collection.cs, Any.Combine.cs,
 // Any.Reproducibility.cs). A family gets its own file as soon as its entry point returns a *narrowing builder* rather
 // than a constrained scalar, however few members that leaves here — the file's weight is the surface it opens, not
 // its line count. Adding a member to any of them means mirroring it on AnyContext; SurfaceParityTests enforces that.

@@ -63,40 +63,38 @@ internal sealed class UriSpec {
         return value.ToString(CultureInfo.InvariantCulture);
     }
 
+    internal static string SegmentsLabel(int count) {
+        return $"WithPathSegments({V(count)})";
+    }
+
     // Renders the PUBLIC call that pinned a component, so a conflict message names what the caller wrote rather
     // than the internal setter it reached. The method name is supplied because one spec setter backs several
-    // public spellings — a mailto's WithDomain and a web URI's WithHost both pin the host. What is left here once
-    // ConstraintCall owns the punctuation is the rendering a URI needs: a component is quoted, because an empty or
-    // space-bearing host is exactly the argument a caller has to see verbatim to recognize it.
-    internal static ConstraintCall Label(string method) {
+    // public spellings — a mailto's WithDomain and a web URI's WithHost both pin the host.
+    internal static string Label(string method) {
         if (method is null) { throw new ArgumentNullException(nameof(method)); }
 
-        return ConstraintCall.Of(method);
+        return $"{method}()";
     }
 
-    internal static ConstraintCall Label(string method, int value) {
+    internal static string Label(string method, int value) {
         if (method is null) { throw new ArgumentNullException(nameof(method)); }
 
-        return ConstraintCall.Of(method, V(value));
+        return $"{method}({V(value)})";
     }
 
-    internal static ConstraintCall Label(string method, string value) {
+    internal static string Label(string method, string value) {
         if (method is null) { throw new ArgumentNullException(nameof(method)); }
         if (value is null) { throw new ArgumentNullException(nameof(value)); }
 
-        return ConstraintCall.Of(method, Quoted(value));
+        return $"{method}(\"{value}\")";
     }
 
-    internal static ConstraintCall Label(string method, string first, string second) {
+    internal static string Label(string method, string first, string second) {
         if (method is null) { throw new ArgumentNullException(nameof(method)); }
         if (first is null) { throw new ArgumentNullException(nameof(first)); }
         if (second is null) { throw new ArgumentNullException(nameof(second)); }
 
-        return ConstraintCall.Of(method, Quoted(first), Quoted(second));
-    }
-
-    private static string Quoted(string value) {
-        return "\"" + value + "\"";
+        return $"{method}(\"{first}\", \"{second}\")";
     }
 
     #endregion
@@ -105,18 +103,18 @@ internal sealed class UriSpec {
 
     private readonly UriFamily?   _family;
     private readonly string?      _scheme;           // pinned concrete scheme within the family (e.g. "https")
-    private readonly ConstraintCall? _schemeConstraint; // the call that pinned it, for a conflict message
+    private readonly string?      _schemeConstraint; // the call that pinned it, for a conflict message
     private readonly string?      _host;             // pinned host / mailto domain
-    private readonly ConstraintCall? _hostConstraint;   // the call that pinned it, for a conflict message
-    private readonly ConstraintCall? _userInfoConstraint;
-    private readonly ConstraintCall? _portConstraint;
+    private readonly string?      _hostConstraint;   // the call that pinned it, for a conflict message
+    private readonly string?      _userInfoConstraint;
+    private readonly string?      _portConstraint;
     private readonly bool         _hasUserInfo;
     private readonly string?      _user;
     private readonly string?      _password;
     private readonly bool         _hasPort;
     private readonly int?         _port;
     private readonly UriPathMode  _pathMode;
-    private readonly ConstraintCall? _pathConstraint;
+    private readonly string?      _pathConstraint;
     private readonly int          _pathSegments;
     private readonly bool         _hasQuery;
     private readonly bool         _hasFragment;
@@ -129,13 +127,13 @@ internal sealed class UriSpec {
                                                          "This private constructor carries the engine's whole immutable state: the 'constrain once, draw many' design rebuilds the spec on " +
                                                          "every With* call, so every field has to be threaded through it. A parameter object would only rename the same list, and the " +
                                                          "constructor is private — no caller ever writes this argument list.")]
-    private UriSpec(UriFamily? family, string? scheme, ConstraintCall? schemeConstraint, string? host,
+    private UriSpec(UriFamily? family, string? scheme, string? schemeConstraint, string? host,
                     bool hasUserInfo, string? user, string? password,
                     bool hasPort, int? port,
                     UriPathMode pathMode, int pathSegments,
                     bool hasQuery, bool hasFragment, bool rooted,
-                    ConstraintCall? pathConstraint = null, ConstraintCall? hostConstraint = null,
-                    ConstraintCall? userInfoConstraint = null, ConstraintCall? portConstraint = null) {
+                    string? pathConstraint = null, string? hostConstraint = null,
+                    string? userInfoConstraint = null, string? portConstraint = null) {
         _family           = family;
         _scheme           = scheme;
         _schemeConstraint = schemeConstraint;
@@ -163,13 +161,13 @@ internal sealed class UriSpec {
                            _hasPort, _port, _pathMode, _pathSegments, _hasQuery, _hasFragment, _rooted, _pathConstraint, _hostConstraint, _userInfoConstraint, _portConstraint);
     }
 
-    internal UriSpec WithScheme(string scheme, ConstraintCall applying) {
+    internal UriSpec WithScheme(string scheme, string applying) {
         if (scheme is null) { throw new ArgumentNullException(nameof(scheme)); }
         if (applying is null) { throw new ArgumentNullException(nameof(applying)); }
         // Re-declaring the SAME constraint is not a contradiction, so it is a no-op rather than a
         // conflict: the second declaration asks for exactly what the first already guarantees.
-        if (_schemeConstraint == applying) { return this; }
-        if (_schemeConstraint is not null) { throw new ConflictingAnyConstraintException($"Cannot apply {applying} because {_schemeConstraint} is already defined."); }
+        if (string.Equals(_schemeConstraint, applying, StringComparison.Ordinal)) { return this; }
+        if (_schemeConstraint is not null) { throw ConflictingAnyConstraintException.AlreadyDefined(applying, _schemeConstraint); }
 
         return new UriSpec(_family, scheme, applying, _host, _hasUserInfo, _user, _password,
                            _hasPort, _port, _pathMode, _pathSegments, _hasQuery, _hasFragment, _rooted, _pathConstraint, _hostConstraint, _userInfoConstraint, _portConstraint);
@@ -183,40 +181,40 @@ internal sealed class UriSpec {
     // satisfied alongside the first. Each is therefore declared once, exactly like the scheme and the path:
     // silently keeping the last value would drop a constraint the caller wrote, which is the one outcome the
     // eager check exists to prevent. Repeating the SAME declaration stays a no-op.
-    internal UriSpec WithHost(string host, ConstraintCall applying) {
+    internal UriSpec WithHost(string host, string applying) {
         if (host is null) { throw new ArgumentNullException(nameof(host)); }
         if (applying is null) { throw new ArgumentNullException(nameof(applying)); }
-        if (_hostConstraint == applying) { return this; }
-        if (_hostConstraint is not null) { throw new ConflictingAnyConstraintException($"Cannot apply {applying} because {_hostConstraint} is already defined."); }
+        if (string.Equals(_hostConstraint, applying, StringComparison.Ordinal)) { return this; }
+        if (_hostConstraint is not null) { throw ConflictingAnyConstraintException.AlreadyDefined(applying, _hostConstraint); }
 
         return new UriSpec(_family, _scheme, _schemeConstraint, host, _hasUserInfo, _user, _password,
                            _hasPort, _port, _pathMode, _pathSegments, _hasQuery, _hasFragment, _rooted, _pathConstraint, applying, _userInfoConstraint, _portConstraint);
     }
 
-    internal UriSpec WithUserInfo(string? user, string? password, ConstraintCall applying) {
+    internal UriSpec WithUserInfo(string? user, string? password, string applying) {
         if (applying is null) { throw new ArgumentNullException(nameof(applying)); }
-        if (_userInfoConstraint == applying) { return this; }
-        if (_userInfoConstraint is not null) { throw new ConflictingAnyConstraintException($"Cannot apply {applying} because {_userInfoConstraint} is already defined."); }
+        if (string.Equals(_userInfoConstraint, applying, StringComparison.Ordinal)) { return this; }
+        if (_userInfoConstraint is not null) { throw ConflictingAnyConstraintException.AlreadyDefined(applying, _userInfoConstraint); }
 
         return new UriSpec(_family, _scheme, _schemeConstraint, _host, true, user, password,
                            _hasPort, _port, _pathMode, _pathSegments, _hasQuery, _hasFragment, _rooted, _pathConstraint, _hostConstraint, applying, _portConstraint);
     }
 
-    internal UriSpec WithPort(int? port, ConstraintCall applying) {
+    internal UriSpec WithPort(int? port, string applying) {
         if (applying is null) { throw new ArgumentNullException(nameof(applying)); }
-        if (_portConstraint == applying) { return this; }
-        if (_portConstraint is not null) { throw new ConflictingAnyConstraintException($"Cannot apply {applying} because {_portConstraint} is already defined."); }
+        if (string.Equals(_portConstraint, applying, StringComparison.Ordinal)) { return this; }
+        if (_portConstraint is not null) { throw ConflictingAnyConstraintException.AlreadyDefined(applying, _portConstraint); }
 
         return new UriSpec(_family, _scheme, _schemeConstraint, _host, _hasUserInfo, _user, _password,
                            true, port, _pathMode, _pathSegments, _hasQuery, _hasFragment, _rooted, _pathConstraint, _hostConstraint, _userInfoConstraint, applying);
     }
 
-    internal UriSpec WithPath(UriPathMode mode, int segments, ConstraintCall applying) {
+    internal UriSpec WithPath(UriPathMode mode, int segments, string applying) {
         if (applying is null) { throw new ArgumentNullException(nameof(applying)); }
         // Re-declaring the SAME constraint is not a contradiction, so it is a no-op rather than a
         // conflict: the second declaration asks for exactly what the first already guarantees.
-        if (_pathConstraint == applying) { return this; }
-        if (_pathConstraint is not null) { throw new ConflictingAnyConstraintException($"Cannot apply {applying} because {_pathConstraint} is already defined."); }
+        if (string.Equals(_pathConstraint, applying, StringComparison.Ordinal)) { return this; }
+        if (_pathConstraint is not null) { throw ConflictingAnyConstraintException.AlreadyDefined(applying, _pathConstraint); }
 
         return new UriSpec(_family, _scheme, _schemeConstraint, _host, _hasUserInfo, _user, _password,
                            _hasPort, _port, mode, segments, _hasQuery, _hasFragment, _rooted, applying, _hostConstraint, _userInfoConstraint, _portConstraint);
@@ -298,9 +296,7 @@ internal sealed class UriSpec {
         // library's other unsatisfiable specs.
         if (_pathMode == UriPathMode.Exact) {
             int seed = source.Current.Seed;
-            throw new AnyGenerationException(
-                "A relative URI with exactly 0 path segments and no query, fragment or root is empty, which is not a valid URI reference. Add a query, a fragment, Rooted(), or a positive segment count. " + source.ReplayGuidance(seed),
-                seed);
+            throw AnyGenerationException.EmptyRelativeReference(source.ReplayGuidance(seed), seed);
         }
 
         return Draw(random, LowerAlphaNum, 1, 8);

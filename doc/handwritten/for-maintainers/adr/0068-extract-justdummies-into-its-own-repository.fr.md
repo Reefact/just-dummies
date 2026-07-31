@@ -2,8 +2,9 @@
 
 🌍 🇫🇷 Français (ce fichier) · 🇬🇧 [English](0068-extract-justdummies-into-its-own-repository.md)
 
-**Statut :** Proposé
+**Statut :** Accepté
 **Proposé :** 2026-07-31
+**Accepté :** 2026-07-31
 **Décideurs :** Reefact
 **Supersède :** [ADR-0011](0011-host-dummies-as-a-standalone-package.fr.md) (uniquement son volet colocation — voir ci-dessous)
 

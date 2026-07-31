@@ -71,7 +71,7 @@ public sealed class AnyDateTimeOffsetOffsetTests {
 
     [Fact(DisplayName = "WithOffset filters the OneOf pool instead of being ignored, in either order.")]
     public void OneOfIsFilteredByTheDeclaredOffset() {
-        // ADR-0050 supersedes ADR-0037's accepted risk. A pooled value is still returned verbatim, offset included —
+        // ADR-0029 supersedes ADR-0016's accepted risk. A pooled value is still returned verbatim, offset included —
         // rebuilding it from the instant would normalize the offset to UTC — but the offset dimension now decides
         // WHICH pooled values may be drawn, rather than being silently dropped. The public contract of WithOffset says
         // every generated value carries exactly that offset; it now does.
@@ -104,7 +104,7 @@ public sealed class AnyDateTimeOffsetOffsetTests {
     [Fact(DisplayName = "Without an offset constraint, OneOf still returns every pooled value with its own offset.")]
     public void AnUnconstrainedOneOfKeepsEveryOffset() {
         // The filter must only fire when an offset is actually declared: an unconstrained pool is unchanged, and that
-        // half of ADR-0037 stands.
+        // half of ADR-0016 stands.
         DateTimeOffset utc      = new(2020, 1, 1, 0, 0, 0, TimeSpan.Zero);
         DateTimeOffset plusFive = new(2021, 1, 1, 0, 0, 0, TimeSpan.FromHours(5));
 

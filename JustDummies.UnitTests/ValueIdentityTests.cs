@@ -14,7 +14,7 @@ namespace JustDummies.UnitTests;
 ///     it is — the answer a reference type gives by default, and gives silently.
 /// </summary>
 /// <remarks>
-///     Example-suite material (ADR-0040): each case pins one named pair, and there is no argument to quantify over.
+///     Example-suite material (ADR-0019): each case pins one named pair, and there is no argument to quantify over.
 ///     <see cref="ConstraintCall" /> has its own equality cases in <see cref="ConstraintCallTests" />; this fixture
 ///     covers the two values built beside it.
 /// </remarks>

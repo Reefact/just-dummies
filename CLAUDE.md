@@ -28,11 +28,11 @@ errors should stay structured, documented, and close to the code.
   argument validation, structural conventions, dated regressions). The rule and how
   to apply it are in
   [`doc/handwritten/for-maintainers/WritingJustDummiesTests.en.md`](doc/handwritten/for-maintainers/WritingJustDummiesTests.en.md)
-  (decision: ADR-0040). Read it before adding a JustDummies test.
+  (decision: ADR-0019). Read it before adding a JustDummies test.
 * Mutation testing measures every pull request on the files it changed, for every
   project whose code ships or runs, through two independent checks — one for the
   JustDummies libraries and tooling, one for the JustDummies packages
-  (decisions: ADR-0043, and ADR-0046 which made the per-PR check **advisory** — it
+  (decisions: ADR-0022, and ADR-0025 which made the per-PR check **advisory** — it
   reports the diff's score but does not block the merge; the enforced bar is the
   weekly full sweep). A test that *executes* new code without *asserting* it will
   pass `dotnet test` and still be reported as a survivor. Reproduce it on a branch
@@ -89,13 +89,13 @@ delegated to `JustDummies.sln.DotSettings`, because that file is a
 ReSharper/Rider artifact: Rider reads it and nothing else can — no compiler, no CI
 job, and no agent. Pointing at it read like an instruction without being one, and
 the explicit-type rule below drifted to 203 violations under that arrangement
-(decision: ADR-0056). This list is the extensible home for such rules; each one
+(decision: ADR-0035). This list is the extensible home for such rules; each one
 states how it is checked, so none of them rests on attention alone.
 
 * **Write the type; never `var`.** The only exception is a declaration C# gives no
   other spelling, which in practice means an anonymous type (`new { ... }`). This
   is checked twice: `.claude/hooks/coding-rules.sh` reports it on the edit itself,
-  and the build reports it as `IDE0008`, which CI turns into an error (ADR-0055).
+  and the build reports it as `IDE0008`, which CI turns into an error (ADR-0034).
   A pull request carrying one does not merge.
 
 * **Do not reformat code you did not change.** The repository's layout — the

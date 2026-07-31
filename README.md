@@ -48,7 +48,7 @@ analyzer enforces this).
 
 Both target `netstandard2.0`; `JustDummies` additionally carries a `net8.0` asset with the modern generators
 (`DateOnly`, `TimeOnly`, `Int128`, `UInt128`, `Half`) that do not exist downlevel. The supported .NET
-Framework floor is **4.7.2**, and CI runs the suites on it ([ADR-0022](doc/handwritten/for-maintainers/adr/0022-floor-the-library-on-net-framework-4-7-2.md)).
+Framework floor is **4.7.2**, and CI runs the suites on it ([ADR-0007](doc/handwritten/for-maintainers/adr/0007-floor-the-library-on-net-framework-4-7-2.md)).
 
 > **Not published yet.** Neither package is on nuget.org. See
 > [the trusted-publishing setup](doc/handwritten/for-maintainers/migration/nuget-trusted-publishing.md) for
@@ -87,7 +87,7 @@ This repository was extracted from
 `JustDummies`. **Commit hashes therefore differ from the source repository, and issue/PR numbers in commit
 messages dated before the extraction refer to `Reefact/first-class-errors`.** The full record — including the
 commit map — is in [`doc/handwritten/for-maintainers/migration/`](doc/handwritten/for-maintainers/migration/);
-the decision is [ADR-0068](doc/handwritten/for-maintainers/adr/0068-extract-justdummies-into-its-own-repository.md).
+the decision is [ADR-0044](doc/handwritten/for-maintainers/adr/0044-extract-justdummies-into-its-own-repository.md).
 
 ## Licence
 

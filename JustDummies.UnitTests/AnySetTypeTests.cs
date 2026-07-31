@@ -114,7 +114,7 @@ public sealed class AnySetTypeTests {
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2263:Prefer generic overload when type is known",
                                                      Justification =
                                                          "Enum.IsDefined<TEnum>(TEnum) arrived in .NET 5 and this suite also runs on the .NET Framework 4.7.2 " +
-                                                         "support floor (ADR-0022, build/Net472TestFloor.props), where it does not exist. The non-generic overload " +
+                                                         "support floor (ADR-0007, build/Net472TestFloor.props), where it does not exist. The non-generic overload " +
                                                          "is the only spelling that compiles on both legs; the reason is restated at the call site so a reader meets " +
                                                          "it there too.")]
     public void EnumDrawsDeclaredMembers() {
@@ -123,7 +123,7 @@ public sealed class AnySetTypeTests {
             OrderStatus value = Any.Enum<OrderStatus>().Generate();
             seen.Add(value);
             // The non-generic overload on purpose: this suite also runs on the .NET Framework 4.7.2 support
-            // floor (ADR-0022, build/Net472TestFloor.props), where Enum.IsDefined<TEnum>(TEnum) does not exist.
+            // floor (ADR-0007, build/Net472TestFloor.props), where Enum.IsDefined<TEnum>(TEnum) does not exist.
             // CA2263 suggests the generic one and is right on net10.0 only, so it is answered here rather than
             // taken — the same downlevel trap as string.Contains(char) elsewhere in this repository.
             Check.That(System.Enum.IsDefined(typeof(OrderStatus), value)).IsTrue();

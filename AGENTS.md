@@ -13,7 +13,7 @@ Two roles are covered: **writing code** and **reviewing pull requests**.
   argument, `JustDummies.UnitTests` for specific named cases — message content,
   argument validation, structural conventions, dated regressions. Read
   [`doc/handwritten/for-maintainers/WritingJustDummiesTests.en.md`](doc/handwritten/for-maintainers/WritingJustDummiesTests.en.md)
-  first; the decision behind it is ADR-0040.
+  first; the decision behind it is ADR-0019.
 - Repository language is **English** (code, comments, commits, PRs, issues, and
   review comments). French lives only in `doc/handwritten/for-users/README.fr.md` and must stay in sync
   with the English README.

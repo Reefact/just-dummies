@@ -116,7 +116,7 @@ public sealed class AnyGenerationException : DummyException {
     ///     Private on purpose, like the factories above are internal on purpose: it names the grammar of the message,
     ///     not a failure, so every caller is a named case. And nothing here guards its arguments — building an
     ///     exception must never throw, or the failure being reported is replaced by a failure about reporting it
-    ///     (ADR-0045, which exempts exception types for exactly that reason).
+    ///     (ADR-0024, which exempts exception types for exactly that reason).
     /// </remarks>
     private static AnyGenerationException NearTheCandidate(string typeName, Replay replay, string diagnostic) {
         return new AnyGenerationException($"Generation failed: no {typeName} value near the drawn candidate satisfies the exclusions. {replay.Guidance}",

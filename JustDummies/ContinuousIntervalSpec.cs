@@ -235,7 +235,7 @@ internal sealed class ContinuousIntervalSpec {
 
         if (_min == _max) { return _min; }
 
-        // Draw from the ordinary window rather than the declared interval (ADR-0052): the window only ever clips,
+        // Draw from the ordinary window rather than the declared interval (ADR-0031): the window only ever clips,
         // and it steps aside entirely when it would leave the declared interval empty — a caller who asked for a
         // magnitude gets it, a caller who merely permitted one does not.
         double lower = Math.Max(_min, -OrdinaryMagnitude.AsDouble);

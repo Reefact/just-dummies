@@ -96,12 +96,12 @@ public sealed class AnyString : IAny<string>, IHasRandomSource, ICardinalityHint
 
     // A distinct collection may pin a null value — an unlikely but legal Containing(null) — and asking whether the
     // generator could produce it is a question, not a boundary violation: the answer is simply no, since a value set
-    // rejects a null element at declaration. The specification's own guard stays the internal boundary (ADR-0045);
+    // rejects a null element at declaration. The specification's own guard stays the internal boundary (ADR-0024);
     // this membership answer must not turn a pinned null into an exception the pool generator never raises.
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Major Code Smell", "S125:Sections of code should not be commented out",
                                                      Justification =
                                                          "False positive on prose. The lines above are the explanation of this member's null handling; the rule " +
-                                                         "reads the trailing \"(ADR-0045);\" of an English sentence as a statement. Nothing here is commented-out code.")]
+                                                         "reads the trailing \"(ADR-0024);\" of an English sentence as a statement. Nothing here is commented-out code.")]
     bool ICardinalityHint<string>.Contains(string value) => value is not null && _spec.Contains(value);
 
     /// <summary>Requires at least one character.</summary>

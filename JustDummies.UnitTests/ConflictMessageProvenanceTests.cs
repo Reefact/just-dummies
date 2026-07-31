@@ -16,7 +16,7 @@ namespace JustDummies.UnitTests;
 ///     (<c>"GreaterThanOrEqualTo(5) already pins the value to 5"</c>, which allows 5..MaxValue). Issue #312.
 /// </summary>
 /// <remarks>
-///     Message content is the example suite's job (ADR-0040): these pin the contract "name the excluding
+///     Message content is the example suite's job (ADR-0019): these pin the contract "name the excluding
 ///     constraint", not the exact prose. Each asserts that the offending exclusion appears in the message — the
 ///     information that was missing — which is red against the old engines and green once exclusions carry
 ///     provenance. The four interval engines (ordinal, wide, decimal, continuous) share one exhaustion path, so a

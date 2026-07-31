@@ -8,7 +8,7 @@
 **Périmètre :** la seule bibliothèque `JustDummies` — `JustDummies/`, `JustDummies.UnitTests/`, son outillage de
 garde (`tools/justdummies-check/`, `.github/workflows/justdummies.yml`), sa documentation, et les ADR qui la
 gouvernent.
-**Statut :** consultatif. Conformément à la convention du dépôt (ADR-0004), cet audit produit des
+**Statut :** consultatif. Conformément à la convention du dépôt (ADR-0002), cet audit produit des
 recommandations, jamais des bloqueurs ; toute modification d'ADR proposée est un brouillon que
 `@reefact` accepte ou rejette.
 
@@ -60,7 +60,7 @@ ailleurs bien conçue, et le combler compte davantage que n'importe quel correct
 Un fait de cadrage atténue considérablement tout cela : **JustDummies n'a jamais été publiée.** Il n'y a
 aucun tag `dum-v*` ; le changelog ne contient qu'une section *Unreleased* vide. Chaque défaut ci-dessus
 peut être corrigé, et chaque contrat décidé, à coût de compatibilité nul. La recommandation-phare de
-cet audit est de traiter la fenêtre pré-1.0 comme l'a fait l'ADR-0020 — le moment le moins cher pour
+cet audit est de traiter la fenêtre pré-1.0 comme l'a fait l'ADR-0006 — le moment le moins cher pour
 décider — et de solder les points des §11–§12 avant la première publication.
 
 Au-delà des défauts, les constats significatifs sont : la surface `Any`/`AnyContext` recopiée à la main
@@ -68,7 +68,7 @@ et les quatorze générateurs numériques clonés ne portent **aucun garde-fou d
 documentation a déjà commencé) ; le **contrat de déterminisme présente des lacunes de documentation**
 (des tirages concurrents dans un même scope à graine annulent silencieusement la rejouabilité ; la
 stabilité des graines entre versions n'est ni promise ni écartée ; l'ancrage ADR du contrat a été perdu
-lorsque l'ADR-0006 a été remplacée) ; la **cible netstandard2.0 n'est jamais exécutée par la propre
+lorsque l'ADR-0006 (first-class-errors) a été remplacée) ; la **cible netstandard2.0 n'est jamais exécutée par la propre
 suite de tests de JustDummies** (seulement transitivement, via le job de plancher de FirstClassErrors) ; et
 il n'existe **aucune référence utilisateur de la surface de contraintes** — le README du dépôt ne
 mentionne même pas le paquet. L'analyse des manques (§10) juge la couverture de types réellement
@@ -185,7 +185,7 @@ discipliné sur sa taxonomie de rejet à deux canaux : `ArgumentException` pour 
 non réguliers. La suite de tests valide les chaînes générées contre le **vrai moteur regex de .NET
 utilisé comme oracle** sur un corpus à graine fixe — exactement la bonne façon de tester un générateur.
 (Les défauts trouvés à ses bords sont catalogués aux §4.1 et §4.2 ; ils ne changent rien à l'évaluation
-selon laquelle l'approche de l'ADR-0025 était saine et honnêtement argumentée.)
+selon laquelle l'approche de l'ADR-0008 était saine et honnêtement argumentée.)
 
 ### 3.7 Empaquetage, frontière et processus
 
@@ -312,7 +312,7 @@ ordinaire : `Any.StringMatching(@"(?<a>y)?(?<-a>x)")` génère `"x"`, que le vra
 **pas** (vérifié : le langage du motif est exactement `{"yx"}`). Les noms de groupe invalides
 (`(?<a b>x)`) sont de même acceptés là où .NET les rejette. C'est le seul endroit trouvé par l'audit où
 la promesse signature de la bibliothèque — *« une erreur claire vaut mieux qu'une valeur qui ne
-correspond pas réellement »* (ADR-0025) — est rompue. Le correctif est local : valider le nom capturé
+correspond pas réellement »* (ADR-0008) — est rompue. Le correctif est local : valider le nom capturé
 (rejeter `-` en `Unsupported("a balancing group …")`, rejeter les caractères non-mot en
 `Malformed(...)`).
 
@@ -332,7 +332,7 @@ résout en ASCII imprimable (0x20–0x7E). Le code — correctement — émet ex
 motif exige : `\t`, `\a`, `\cA`, `\0` et les littéraux `\uHHHH` peuvent être non imprimables ou
 non-ASCII, et le propre test de la bibliothèque l'assertit (`AnyPatternTests` — `\a` → U+0007). La
 restriction ne s'applique vraiment que là où le motif laisse le caractère *libre* (raccourcis, le point,
-classes négatives). Comme l'ADR-0025 déclare explicitement l'univers de caractères comme un comportement
+classes négatives). Comme l'ADR-0008 déclare explicitement l'univers de caractères comme un comportement
 sur lequel les consommateurs peuvent s'appuyer, les trois emplacements de doc devraient le dire
 précisément (§11 point 6).
 
@@ -359,7 +359,7 @@ Deux structures miroir doivent s'accorder méthode par méthode, et rien ne cont
   temporels renomment la famille de bornes), et trois DisplayName de test affirment encore que les
   générateurs « convert implicitly to their value type »
   (`AnyContinuousTests.cs:108`, `AnySignedIntegerTests.cs:87`, `AnyUnsignedIntegerTests.cs:76`) — des
-  conversions que l'ADR-0020 a supprimées. Un commentaire périmé dans `SeedReproducibilityTests.cs:17-18`
+  conversions que l'ADR-0006 a supprimées. Un commentaire périmé dans `SeedReproducibilityTests.cs:17-18`
   explique du code par ces mêmes conversions supprimées.
 
 L'absence de gardes est le constat ; l'analyse d'atténuation et la recommandation (tests de parité par
@@ -376,7 +376,7 @@ réflexion, *pas* une classe de base générique) sont au §9.2.
   l'utilisateur apprend-il que `Except`/`OneOf`/`DifferentFrom` existent sur les numériques, que
   `WithLengthBetween` existe, que `ContainingAny` diffère de `Containing`, ou quel dialecte regex
   `StringMatching` supporte ? Aujourd'hui : seulement IntelliSense, un générateur à la fois. Le propre
-  suivi de l'ADR-0025 (« documenter le dialecte supporté ») est toujours ouvert.
+  suivi de l'ADR-0008 (« documenter le dialecte supporté ») est toujours ouvert.
 * La **surprise du vide-par-défaut** (une collection non contrainte peut avoir 0 élément, une chaîne non
   contrainte peut être vide) est bien documentée dans les remarques XML mais absente du README du paquet,
   là où un utilisateur qui survole en profiterait le plus — c'est un choix délibéré, porteur de
@@ -389,7 +389,7 @@ Détaillé au §7.3 : des tirages concurrents dans un même scope à graine annu
 rejouabilité (et exposent un `System.Random` non thread-safe à une course) — documenté nulle part ; les
 rapports de graine peuvent nommer une graine erronée ou inapplicable pour les compositions à contexte
 fixe et à sources mixtes ; la stabilité de la séquence de graines entre versions et entre TFM n'est ni
-promise ni écartée ; et le contrat entier a perdu son ancrage ADR lorsque l'ADR-0006 a été remplacée.
+promise ni écartée ; et le contrat entier a perdu son ancrage ADR lorsque l'ADR-0006 (first-class-errors) a été remplacée.
 
 ### 4.6 La cible netstandard2.0 n'est jamais exécutée par la propre suite de JustDummies
 
@@ -402,7 +402,7 @@ JustDummies se charge et génère bien sur le vrai CLR .NET Framework — mais s
 tourne jamais, et l'égalité même-graine-mêmes-valeurs entre les deux assets empaquetés n'est assertée
 nulle part. Le dépôt possède déjà exactement la machinerie nécessaire (`build/Net472TestFloor.props`,
 utilisée par `FirstClassErrors.UnitTests`) ; l'étendre à `JustDummies.UnitTests` (en conditionnant hors
-scope les tests net8-only) est mécanique. Voir la conformité à l'ADR-0022, §6.
+scope les tests net8-only) est mécanique. Voir la conformité à l'ADR-0007, §6.
 
 ### 4.7 Garde-fous d'ingénierie de release pas encore installés
 
@@ -424,7 +424,7 @@ l'outillage GenDoc/CLI, l'API Outcome, ou le processus du dépôt). Huit s'appli
 d'ADR est un modèle du genre. Les décisions portent des contraintes honnêtes, des alternatives
 réellement considérées, des inconvénients chiffrés, et des suivis qui ont effectivement été exécutés.
 
-### ADR-0006 — Fournir des valeurs de test arbitraires depuis une source unique semable *(Remplacée)*
+### ADR-0006 (first-class-errors) — Fournir des valeurs de test arbitraires depuis une source unique semable *(Remplacée)*
 
 **Qualité : exemplaire, historiquement.** Les contraintes étaient réelles (promesse zéro-dépendance,
 sûreté des tests parallèles netstandard2.0 sans `Random.Shared`), les quatre alternatives ont été
@@ -433,20 +433,20 @@ un adaptateur xUnit) ont été honorés ou consciemment différés. Son analyse 
 défaut non semé est exactement à la bonne profondeur. **Problème :** sa mise en remplacement a créé une
 lacune — voir « lacunes structurelles » plus bas.
 
-### ADR-0011 — Héberger JustDummies comme paquet autonome *(Acceptée)*
+### ADR-0003 — Héberger JustDummies comme paquet autonome *(Acceptée)*
 
 **Qualité : bonne.** Le raisonnement nom/identité/frontière est sain et la règle de non-référence est
 vérifiée par machine. Deux points de précision. Premièrement, l'invariant *appliqué* est plus fort que
 celui *consigné* : le test d'architecture interdit **toute** référence hors BCL
-(`ArchitectureTests.cs:27-37`), et l'ADR-0025 s'appuie sur une « identité zéro-dépendance … la frontière
-est vérifiée par machine (ADR-0011) » — mais le texte de décision de l'ADR-0011 n'interdit que de
+(`ArchitectureTests.cs:27-37`), et l'ADR-0008 s'appuie sur une « identité zéro-dépendance … la frontière
+est vérifiée par machine (ADR-0003) » — mais le texte de décision de l'ADR-0003 n'interdit que de
 référencer des *projets FirstClassErrors*. La règle du zéro-dépendance-*tierce*, porteuse pour tout
-l'argument de l'ADR-0025, n'est consignée nulle part comme décision. Deuxièmement, les alternatives ne
+l'argument de l'ADR-0008, n'est consignée nulle part comme décision. Deuxièmement, les alternatives ne
 pèsent jamais les risques de l'identifiant NuGet ultra-générique `JustDummies` (squattage/collision/
 recherchabilité) — une identité de paquet que l'ADR elle-même qualifie de coûteuse à renommer. Aucun de
 ces points ne change la décision ; les deux méritent une ligne au dossier.
 
-### ADR-0013 — Gater les collections distinctes par cardinalité, sinon par tirage borné *(Acceptée)*
+### ADR-0004 — Gater les collections distinctes par cardinalité, sinon par tirage borné *(Acceptée)*
 
 **Qualité : remarquable.** L'argument de solidité — ne compter que les éléments que le générateur doit
 fournir, créditer les valeurs `Containing` hors de son domaine, traiter les tirages opaques
@@ -454,29 +454,29 @@ fournir, créditer les valeurs `Containing` hors de son domaine, traiter les tir
 énoncé dans le document et reflété de façon prouvable dans le code
 (`CollectionState.Validate`/`CardinalityCap`/`FixedOutsideCount`). La section des risques anticipe même
 un mauvais réglage du budget et enjoint de « réviser sur preuves plutôt que de décrire l'échec comme
-impossible ». **Problème (partagé avec l'ADR-0015) :** elle diffère « l'interface exacte de l'indice,
+impossible ». **Problème (partagé avec l'ADR-0005) :** elle diffère « l'interface exacte de l'indice,
 l'état de collection, le budget de tirage, la charge utile d'exception et la propagation de graine » vers
 la référence d'implémentation — mais la section JustDummies de cette référence
 (`adr-implementation-reference.md:58-68`) ne consigne aucune de ces spécificités (pas de chiffres de
 budget, pas de charge utile d'exception, pas de règle de propagation de graine). Le renvoi promet plus
 que la destination ne contient ; soit enrichir la référence, soit adoucir le renvoi.
 
-### ADR-0015 — Plafonner Any.Combine à l'arité huit *(Acceptée)*
+### ADR-0005 — Plafonner Any.Combine à l'arité huit *(Acceptée)*
 
 **Qualité : bonne.** Honnête sur le caractère heuristique du plafond, avec une échappatoire définie
 (ajouter des arités de façon compatible via une nouvelle décision sur preuves). Les alternatives sont
-réelles. Le même point sur le renvoi à la référence d'implémentation que pour l'ADR-0013 s'applique.
+réelles. Le même point sur le renvoi à la référence d'implémentation que pour l'ADR-0004 s'applique.
 
-### ADR-0020 — Matérialiser les dummies uniquement via Generate() *(Acceptée)*
+### ADR-0006 — Matérialiser les dummies uniquement via Generate() *(Acceptée)*
 
 **Qualité : exemplaire — le meilleur document de la base.** Preuves concrètes (les formes syntaxiques où
 la conversion se comportait mal en silence, tirées de la suite elle-même), trois alternatives pesées
 équitablement dont la voie analyseur qu'elle décline délibérément, coûts honnêtes, et l'argument de
-timing pré-1.0 énoncé comme tel. Elle a de plus manifestement orienté des travaux ultérieurs (l'ADR-0026
+timing pré-1.0 énoncé comme tel. Elle a de plus manifestement orienté des travaux ultérieurs (l'ADR-0026 (first-class-errors)
 réutilise à la fois son patron de raisonnement et son cadrage de risque). Aucune modification
 recommandée.
 
-### ADR-0022 — Fixer le plancher de support .NET Framework à 4.7.2 *(Acceptée)*
+### ADR-0007 — Fixer le plancher de support .NET Framework à 4.7.2 *(Acceptée)*
 
 **Qualité : politique saine ; formulation de périmètre vieillie.** « Une promesse de compatibilité qui
 n'est pas exercée ne peut pas fournir une frontière de support fiable » est le bon principe. Mais l'ADR
@@ -486,7 +486,7 @@ JustDummies est dans son périmètre relève désormais de l'inférence, et le j
 couverts lèverait l'ambiguïté — ou la décision de plancher propre à JustDummies pourrait chevaucher la
 nouvelle ADR de déterminisme proposée ci-dessous.
 
-### ADR-0025 — Générer des chaînes correspondantes depuis un sous-ensemble régulier maison *(Proposée)*
+### ADR-0008 — Générer des chaînes correspondantes depuis un sous-ensemble régulier maison *(Proposée)*
 
 **Qualité : un dossier construire-ou-acheter d'une honnêteté inhabituelle.** Le rejet de Fare est
 argumenté sur des motifs d'identité et de contrat d'erreur (abandon silencieux des constructions non
@@ -494,7 +494,7 @@ régulières vs refus de première classe), pas sur du FUD ; le cadrage « les c
 sont impossibles pour *tout* générateur fini, donc le sous-ensemble n'est pas une coupe de confort » est
 exactement juste ; la décision de générateur terminal est bien argumentée. **Problèmes :** (1) Elle est
 toujours **Proposée** alors qu'elle est entièrement implémentée, livrée dans le README du paquet, et
-*porteuse pour l'ADR-0026 Acceptée* (dont `ErrorCodeFactory` est bâti sur `StringMatching`) — tant que
+*porteuse pour l'ADR-0026 (first-class-errors) Acceptée* (dont `ErrorCodeFactory` est bâti sur `StringMatching`) — tant que
 le statut n'a pas basculé, une décision acceptée repose formellement sur une décision indécise. Le rôle
 de l'audit est de le signaler ; seul `@reefact` bascule un statut. (2) La phrase de justification « les
 terminaux tirent de l'ASCII imprimable » est imprécise — `\s` inclut la tabulation (0x09) et les
@@ -504,7 +504,7 @@ pertinent pour la compatibilité. (3) Elle cite « un test par propriété » co
 existe est un test-oracle à graine fixe et corpus fixe dans le projet de tests unitaires — excellent,
 mais pas par propriété ; le texte devrait dire ce qu'est le filet de sécurité.
 
-### ADR-0026 — Rebaser les valeurs arbitraires du paquet de test sur JustDummies *(Acceptée)*
+### ADR-0026 (first-class-errors) — Rebaser les valeurs arbitraires du paquet de test sur JustDummies *(Acceptée)*
 
 **Qualité : un dossier de consolidation approfondi** — six vraies alternatives, la justification de
 l'histoire à graine unique, un risque d'empaquetage intermédiaire honnête. **Deux dérives de
@@ -522,13 +522,13 @@ les deux relèvent d'une courte note dans la référence d'implémentation.
 
 1. **Le contrat de déterminisme de JustDummies n'a pas d'ADR acceptée.** La source ambiante `AsyncLocal`,
    le `Reproducibly` optionnel, l'épinglage paresseux, le rapport de graine à l'échec — la garantie
-   joyau de la couronne — a été décidée dans l'ADR-0006, désormais Remplacée *et* cadrée sur
-   FirstClassErrors.Testing ; la décision de l'ADR-0026 porte sur le rebasage de Testing, pas sur le
+   joyau de la couronne — a été décidée dans l'ADR-0006 (first-class-errors), désormais Remplacée *et* cadrée sur
+   FirstClassErrors.Testing ; la décision de l'ADR-0026 (first-class-errors) porte sur le rebasage de Testing, pas sur le
    contrat propre de JustDummies. Un futur mainteneur qui demande « pourquoi `AsyncLocal` et pas un
    paramètre ? pourquoi un `System.Random` mis en course est-il acceptable ? » ne trouve le raisonnement
    que dans un dossier remplacé. **Recommandation : rédiger une ADR Proposée** (« JustDummies fournit des
    valeurs arbitraires depuis une source ambiante, semable, locale au contexte d'exécution, avec
-   reproductibilité optionnelle ») reprenant la justification de l'ADR-0006 et réglant, dans le même
+   reproductibilité optionnelle ») reprenant la justification de l'ADR-0006 (first-class-errors) et réglant, dans le même
    document, les bords ouverts que cet audit a fait remonter : la sémantique de concurrence à flux
    logique unique, le point de couture fermé `IHasRandomSource`, et la politique de stabilité de graine
    entre versions (§7.3).
@@ -594,7 +594,7 @@ et le trou de test reconnu (`AnyCollectionTests.cs:161-163` le commente).
 internes, si bien qu'un générateur étranger (a) ne peut pas tirer de la source semée ambiante — sous
 `Any.Reproducibly` ses valeurs ne rejouent pas, et (b) ne peut pas annoncer un domaine fini — une
 collection distincte au-dessus de lui emprunte toujours le chemin du tirage borné (sûr, et exactement ce
-que promet l'ADR-0013). La dégradation est gracieuse partout (vérifié : `OrNull` retombe sur la source
+que promet l'ADR-0004). La dégradation est gracieuse partout (vérifié : `OrNull` retombe sur la source
 ambiante pour le tirage à pile ou face du null ; `Combine` propage les sources `null` sans échouer). Ce
 qui manque est un paragraphe honnête sur la doc XML d'`IAny<T>` disant aux implémenteurs où ils se
 situent — aujourd'hui le contrat n'est découvrable qu'en lisant du code interne. Si le point de couture
@@ -642,7 +642,7 @@ distinctes plutôt que la première.
 **(c) La stabilité de graine entre versions et entre runtimes n'est ni promise ni écartée.** La
 description du paquet dit « any run is reproducible from a reported seed » sans réserve. Dans un même
 processus, cela tient. Entre *versions de la bibliothèque*, tout changement d'ordre ou de nombre de
-tirages change silencieusement chaque séquence — et l'ADR-0025 reconnaît déjà que les consommateurs
+tirages change silencieusement chaque séquence — et l'ADR-0008 reconnaît déjà que les consommateurs
 peuvent s'appuyer sur les formes générées. Entre *runtimes*, un `new Random(seed)` semé conserve
 l'algorithme historique sur .NET moderne précisément par compatibilité, de sorte que la surface commune
 devrait s'accorder entre les assets netstandard2.0 et net8.0 — mais rien ne le teste (§4.6), et la
@@ -661,7 +661,7 @@ frontière du scope.
 
 Des non-problèmes vérifiés qu'il vaut la peine de consigner pour ne pas les rejuger : la sémantique
 d'`ExecutionContext` de la surcharge asynchrone (correcte — voir §3.3) ;
-`NewSeed() = Guid.NewGuid().GetHashCode()` (usage tolérant aux collisions, analysé dans l'ADR-0006) ;
+`NewSeed() = Guid.NewGuid().GetHashCode()` (usage tolérant aux collisions, analysé dans l'ADR-0006 (first-class-errors)) ;
 l'étendue de graine sous xUnit (chaque invocation de test est son propre cadre asynchrone ; un
 constructeur de classe partagé participe au flux de son test, ce qui est le bon scope) ; la
 ré-énumération de `SequenceOf` (matérialisée une fois, ne re-tire jamais).
@@ -738,7 +738,7 @@ noms soit partagé, donc en pratique elles apparaissent), et `As` est le `Select
 un nom d'intention métier ; une ligne de doc faisant le pont depuis le vocabulaire LINQ (« `As` est le
 `Select` des générateurs — nommé pour son usage dominant : passer par la fabrique d'un objet-valeur »)
 aiderait les lecteurs familiers de LINQ. La cérémonie terminale `Generate()` est le compromis de
-l'ADR-0020, consciemment chiffré là-bas ; l'audit confirme que le coût est réel mais petit (un appel par
+l'ADR-0006, consciemment chiffré là-bas ; l'audit confirme que le coût est réel mais petit (un appel par
 matérialisation), que le bénéfice (aucune conversion cachée à effet de bord) est structurel, et que la
 décision doit tenir. `AnyContext` ne recopie que les scalaires — la composition hérite du contexte via
 les sources d'opérandes, ce qui est *plus* élégant que le recopiage et correctement documenté.
@@ -819,7 +819,7 @@ La racine plate de 54 fichiers est acceptable aujourd'hui parce que la disciplin
 de dossiers (`Any*` = générateurs, `*Spec` = moteurs, `Regex*` = sous-système de motifs) ; regrouper en
 dossiers est un polissage optionnel, à ne faire qu'à l'occasion d'un autre changement structurel. Points
 d'hygiène trouvés : le membre mort `RegexCharacters.Count` ; la garde-null morte dans
-`CollectionState.Exhausted` (ligne §6/ADR-0013) ; les commentaires et DisplayName périmés du §4.3 ;
+`CollectionState.Exhausted` (ligne §6/ADR-0004) ; les commentaires et DisplayName périmés du §4.3 ;
 l'en-tête périmé de `Directory.Build.props` (§4.7).
 
 ## 10. Analyse des manques fonctionnels
@@ -897,9 +897,9 @@ proposition 1.)
   horodatages ; constructif via le moteur ordinal (tirer dans l'espace des granules, multiplier).
   Referme aussi entretemps le trou de documentation (« les valeurs sont à précision de tick »).
 * **Terminal `GenerateMany(int)`** — sucre pour « N valeurs sans la cérémonie `ListOf` » ; une *méthode
-  nommée* renvoyant `IReadOnlyList<T>`, donc elle reste dans la lettre et l'esprit de l'ADR-0020.
+  nommée* renvoyant `IReadOnlyList<T>`, donc elle reste dans la lettre et l'esprit de l'ADR-0006.
 * **Un adaptateur de graine pour framework de test** (`[ReproducibleFact]`) — anticipé par les suivis de
-  l'ADR-0006, abandonné lors du rebasage, remplacé par rien. JustDummies zéro-dépendance ne peut pas
+  l'ADR-0006 (first-class-errors), abandonné lors du rebasage, remplacé par rien. JustDummies zéro-dépendance ne peut pas
   référencer xUnit, c'est donc une décision de *paquet compagnon* (`JustDummies.Xunit`) — méritant une ADR
   explicite oui/non plutôt que le silence, car chaque consommateur re-dérive aujourd'hui à la main
   l'habitude d'envelopper dans `Reproducibly`.
@@ -962,17 +962,17 @@ Par ordre de priorité ; les points 1–7 sont la porte pré-publication recomma
 5. **Exécuter JustDummies sur ses planchers** : importer `build/Net472TestFloor.props` dans
    `JustDummies.UnitTests` (tests net8-only conditionnés hors scope), l'ajouter à la boucle de plancher de
    ci.yml ; ajouter l'assertion de séquence de référence inter-TFM à `justdummies-check` ; énoncer le
-   plancher .NET Framework dans le README du paquet (suivi de l'ADR-0022).
+   plancher .NET Framework dans le README du paquet (suivi de l'ADR-0007).
 6. **Passe de documentation** : faire apparaître JustDummies dans le README du dépôt (table des paquets +
    sommaire) ; écrire le guide utilisateur JustDummies avec la référence de contraintes par générateur et le
-   dialecte `StringMatching` (refermant le suivi de l'ADR-0025) ; corriger les trois emplacements « ASCII
+   dialecte `StringMatching` (refermant le suivi de l'ADR-0008) ; corriger les trois emplacements « ASCII
    imprimable » (§4.2) ; annoncer le comportement vide-par-défaut dans le README du paquet ; corriger les
    commentaires/DisplayName périmés (§4.3) et l'en-tête de `Directory.Build.props`.
 7. **Gardes d'ingénierie de release** : référence d'API publique (`PublicApiAnalyzers`) et
    `EnablePackageValidation` ; décider `Bool()` vs `Boolean()` et le consigner ; demander à `@reefact`
-   de trancher le statut de l'ADR-0025 (après sa correction de formulation) ; consigner les deux
-   clarifications de l'ADR-0026 dans la référence d'implémentation ; enrichir ou adoucir les renvois à la
-   référence d'implémentation des ADR-0013/0015.
+   de trancher le statut de l'ADR-0008 (après sa correction de formulation) ; consigner les deux
+   clarifications de l'ADR-0026 (first-class-errors) dans la référence d'implémentation ; enrichir ou adoucir les renvois à la
+   référence d'implémentation des ADR-0004/0015.
 8. **Livrer les deux fonctionnalités Indispensables** (§10) : `Any.OneOf<T>`/`Any.ElementOf<T>`, et les
    exclusions de chaîne (`DifferentFrom`/`Except` sur `AnyString`).
 9. **`AnyDictionary`** : extraire la façade de compte partagée ; ajouter `ContainingKey`.
@@ -982,7 +982,7 @@ Par ordre de priorité ; les points 1–7 sont la porte pré-publication recomma
 ## 12. Feuille de route proposée
 
 **Phase 0 — avant la première release `dum-v*` (correction et contrat).** Points 1–7 ci-dessus. La
-justification est celle de l'ADR-0020 : chacun de ces points est bon marché maintenant et coûteux après
+justification est celle de l'ADR-0006 : chacun de ces points est bon marché maintenant et coûteux après
 adoption — le correctif décimal change chaque séquence semée (un non-événement aujourd'hui, un événement
 de compatibilité après la v1) ; la politique de déterminisme, le nommage `Bool`, la référence d'API et
 les statuts d'ADR sont tous des décisions d'une ligne ou d'un fichier qui deviennent des migrations plus
@@ -1045,5 +1045,5 @@ en cours) vit dans le tracker, pas ici — ne pas maintenir de statut dans ce do
 
 *Produit par un audit mené par agents (revue multi-agents avec vérification contradictoire ; tous les
 défauts rapportés reproduits indépendamment contre la bibliothèque compilée ; suite de tests complète
-exécutée). Consultatif au sens de l'ADR-0004 : recommandations et brouillons seulement — chaque décision
+exécutée). Consultatif au sens de l'ADR-0002 : recommandations et brouillons seulement — chaque décision
 demeure au mainteneur.*

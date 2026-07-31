@@ -13,7 +13,7 @@ name: sonar-gate
 # does not; adding the wait would deepen that coupling rather than remove it. Reading the verdict
 # from a SCHEDULED job separates the two questions: the verdict gets enforced, and an outage costs
 # a red nightly instead of a frozen repository. That combination — not blocking a merge, and
-# reading the gate — is the one ADR-0062 left open, and this is it.
+# reading the gate — is the one ADR-0039 left open, and this is it.
 #
 # Why this is not redundant with the build. build/sonar-profile.globalconfig enforces the C# rules
 # the SonarAnalyzer NuGet package implements, which is a strict SUBSET of what the gate measures:

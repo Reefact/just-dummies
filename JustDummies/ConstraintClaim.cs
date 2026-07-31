@@ -25,14 +25,14 @@ namespace JustDummies;
 ///     <para>
 ///         Two claims are equal when they blame the same subject for the same thing. Being a value with no identity
 ///         beyond what it holds, it says so rather than leaving the reference comparison a reader would get by
-///         default — the same reason <see cref="ConstraintCall" /> carries its own (ADR-0065). Nothing compares two
+///         default — the same reason <see cref="ConstraintCall" /> carries its own (ADR-0042). Nothing compares two
 ///         claims today; a value that answers the question wrongly the first time it is asked is worse than one that
 ///         answers it, so the answer is written now rather than when a caller needs it.
 ///     </para>
 ///     <para>
 ///         It carries no argument guard, and says so with <see cref="BuiltOnTheFailurePathAttribute" />: instances are
 ///         built at a throw site, as an argument to an exception factory, so a guard here would throw while a failure
-///         is being reported and lose it (ADR-0064). The contract is the compiler's — the members are non-nullable
+///         is being reported and lose it (ADR-0041). The contract is the compiler's — the members are non-nullable
 ///         where a value is required, so a caller that cannot prove one is <c>CS8604</c> at build time. Comparing and
 ///         hashing stay on that footing: neither composes anything, so neither can fail while a failure is reported.
 ///     </para>

@@ -113,7 +113,7 @@ internal static class Descriptors {
         messageFormat: "Call Generate() on the {0}: passed where an object is expected, the recipe itself is stored, compared or asserted on, never the value it would draw",
         category: DiagnosticCategories.Usage,
         defaultSeverity: DiagnosticSeverity.Warning,
-        // Opt-in, on the evidence ADR-0059's follow-up asked for rather than on intuition: dogfooded over this
+        // Opt-in, on the evidence ADR-0038's follow-up asked for rather than on intuition: dogfooded over this
         // repository's suites the rule found no true positive and two false ones, both in a convention test that
         // collects generators into a List<object> on purpose. That shape is indistinguishable from the theory-row
         // mistake this rule exists to catch, so it cannot be narrowed away. The rule earns its keep in a consumer
@@ -159,7 +159,7 @@ internal static class Descriptors {
         category: DiagnosticCategories.Constraints,
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true,
-        description: "The constraints contradict each other for the constants written at the call site, so the chain throws a ConflictingAnyConstraintException the moment the arrange line runs. This is the case ADR-0035 names as the one an analyzer should carry: Numeric().StartingWith(\"ORD-\") conflicts while Numeric().StartingWith(\"123\") does not, from identical call sites and identical static types — only the argument value tells them apart.",
+        description: "The constraints contradict each other for the constants written at the call site, so the chain throws a ConflictingAnyConstraintException the moment the arrange line runs. This is the case ADR-0014 names as the one an analyzer should carry: Numeric().StartingWith(\"ORD-\") conflicts while Numeric().StartingWith(\"123\") does not, from identical call sites and identical static types — only the argument value tells them apart.",
         helpLinkUri: HelpLinks.For(DiagnosticIds.StringConstraintsAdmitNoValue));
 
     public static readonly DiagnosticDescriptor CollectionConstraintsAdmitNoValue = new(
@@ -169,7 +169,7 @@ internal static class Descriptors {
         category: DiagnosticCategories.Constraints,
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true,
-        description: "The count constraints contradict each other for the constants written at the call site, or the chain asks for more distinct elements than its element generator can produce — the cardinality gate ADR-0013 records. Both throw at declaration time, so the value here is a build-time red rather than an arrange-time one: the chain usually sits in a helper several call frames away from the test that dies on it.",
+        description: "The count constraints contradict each other for the constants written at the call site, or the chain asks for more distinct elements than its element generator can produce — the cardinality gate ADR-0004 records. Both throw at declaration time, so the value here is a build-time red rather than an arrange-time one: the chain usually sits in a helper several call frames away from the test that dies on it.",
         helpLinkUri: HelpLinks.For(DiagnosticIds.CollectionConstraintsAdmitNoValue));
 
     public static readonly DiagnosticDescriptor EnumUniverseViolation = new(

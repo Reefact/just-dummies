@@ -78,7 +78,7 @@
     <PackageReference Include="JustDummies" Version="$(JustDummiesCheckVersion)" />
 
     <!-- Deliberately NOT wired for the JustDummies analyzers, unlike the repository's other JustDummies
-         consumers (ADR-0061). Wiring them would need a ProjectReference, which the comment above explains this
+         consumers (ADR-0061 (first-class-errors)). Wiring them would need a ProjectReference, which the comment above explains this
          project must never take: it consumes the PACKED package precisely so asset selection is exercised as a
          real consumer sees it. The one contract checked here is which asset NuGet resolves, and a diagnostic
          about how the library is called says nothing about that. -->

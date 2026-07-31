@@ -4,7 +4,7 @@ name: lint
 # tools/ and .claude/hooks/, and the workflow definitions themselves.
 #
 # Why this workflow exists. Every other analysis in this repository runs inside a build —
-# the Roslyn analyzers, the style rule ADR-0055 restated in .editorconfig, the warning
+# the Roslyn analyzers, the style rule ADR-0034 restated in .editorconfig, the warning
 # ratchet in Directory.Build.props — so a contributor meets it at the moment they write the
 # code. Shell and YAML had no such moment: the only thing reading them was the SonarQube
 # Cloud scan, which reports AFTER the merge and enforces nothing (its workflow is green as
@@ -47,7 +47,7 @@ jobs:
         #
         # Every script here is `#!/bin/sh`; shellcheck reads the shebang and applies the
         # POSIX dialect, which is what should be checked — `local`, arrays and `[[` are not
-        # available on the shells these run on (decision on the POSIX rules: ADR-0060).
+        # available on the shells these run on (decision on the POSIX rules: ADR-0060 (first-class-errors)).
         #
         # The bar is ZERO findings at every severity, `info` included. The tree is clean at
         # that bar today: the two SC1091 findings were fixed with `source=` directives, and

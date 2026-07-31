@@ -41,7 +41,7 @@ namespace JustDummies;
 ///         declaration.
 ///     </para>
 ///     <para>
-///         The default spread governs every draw, bounded or not (ADR-0050): a declared maximum composes with it
+///         The default spread governs every draw, bounded or not (ADR-0029): a declared maximum composes with it
 ///         rather than replacing it, so an upper bound only narrows the draw and never widens it. Only a minimum, an
 ///         exact length or required fragments enlarge a string.
 ///     </para>
@@ -380,7 +380,7 @@ internal sealed class StringSpec {
     private string BuildCandidate(SeededRandom random) {
         int required     = RequiredLength();
         int effectiveMin = Math.Max(_minLength, required);
-        // A declared maximum composes with the default spread instead of replacing it (ADR-0050): it may only narrow
+        // A declared maximum composes with the default spread instead of replacing it (ADR-0029): it may only narrow
         // the draw, never widen it, so a loose cap still yields the small unconstrained string. Long arithmetic: a
         // huge required length must saturate instead of overflowing past int.MaxValue.
         long spreadCeiling = (long)effectiveMin + DefaultLengthSpread;
@@ -605,8 +605,8 @@ internal sealed class StringSpec {
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2249:Consider using String.Contains instead of String.IndexOf",
                                                      Justification =
                                                          "string.Contains(string, StringComparison) does not exist on netstandard2.0, which this library targets " +
-                                                         "(ADR-0022). IndexOf with StringComparison.Ordinal is the same comparison and the only spelling that " +
-                                                         "compiles on the shipped asset. Same downlevel wall as CA1510 (ADR-0058).")]
+                                                         "(ADR-0007). IndexOf with StringComparison.Ordinal is the same comparison and the only spelling that " +
+                                                         "compiles on the shipped asset. Same downlevel wall as CA1510 (ADR-0037).")]
     private IEnumerable<(ConstraintCall Constraint, Func<string, bool> Admits)> Declarations() {
         if (_exactLength is int exact) { yield return (_exactConstraint!, value => value.Length == exact); }
         if (_minLength > 0) { yield return (_minConstraint!, value => value.Length >= _minLength); }

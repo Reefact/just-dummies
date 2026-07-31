@@ -10,7 +10,7 @@ namespace JustDummies.UnitTests;
 ///     The example-based half of the continuous generators' contract: conflict messages, the named domain
 ///     extremes, the exclusion families the property suite leaves alone, and the seeded regression for issue
 ///     #206. Containment, strictness, inclusiveness, sign handling and the rejection of non-finite arguments
-///     hold for <i>every</i> bound and are quantified in <c>JustDummies.PropertyTests</c> (ADR-0040); the #206
+///     hold for <i>every</i> bound and are quantified in <c>JustDummies.PropertyTests</c> (ADR-0019); the #206
 ///     regression stays here because it pins the interval where the defect actually occurred.
 /// </summary>
 public sealed class AnyContinuousTests {
@@ -19,7 +19,7 @@ public sealed class AnyContinuousTests {
 
     [Fact(DisplayName = "An unconstrained draw survives ordinary arithmetic, on every continuous type.")]
     public void UnconstrainedDrawsSurviveOrdinaryArithmetic() {
-        // Regression, ADR-0052. Measured before the ordinary-magnitude window existed: uniform sampling over a
+        // Regression, ADR-0031. Measured before the ordinary-magnitude window existed: uniform sampling over a
         // type's whole domain put 16.1 % of Positive() doubles where a single multiplication overflows to
         // Infinity, and 17.1 % of decimals where the same multiplication throws OverflowException. Neither was a
         // defect of the code under test — the dummy itself was breaking the Arrange.
@@ -41,7 +41,7 @@ public sealed class AnyContinuousTests {
 
     [Fact(DisplayName = "A scale constraint still constrains: an unconstrained decimal has room for its fraction.")]
     public void AScaleConstraintKeepsItsMeaning() {
-        // ADR-0052 restores what the old default emptied out. Near decimal.MaxValue a value has no fractional
+        // ADR-0031 restores what the old default emptied out. Near decimal.MaxValue a value has no fractional
         // digits left, so WithScale(2) was satisfied by every draw and constrained none of them: 5000/5000
         // "honoured", every one of them a 29-digit integer.
         bool anyFraction = false;

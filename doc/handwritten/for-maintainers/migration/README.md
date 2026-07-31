@@ -2,7 +2,7 @@
 
 This directory is the audit trail of the one-off extraction that created this repository. It exists so the
 rewritten history can be reconciled with the source repository later, by a maintainer who was not there.
-Decision: [ADR-0068](../adr/0068-extract-justdummies-into-its-own-repository.md).
+Decision: [ADR-0044](../adr/0044-extract-justdummies-into-its-own-repository.md).
 
 ## Facts
 
@@ -43,7 +43,7 @@ derived from the history itself:
 
 * **Renumbered ADRs.** Four decisions changed number in place — `0010→0011`, `0043→0044`, `0048→0049`,
   `0050→0051` — and one was a draft that was created and dropped
-  (`0023-prune-the-exotic-width-numeric-generators`, commit *"docs(dummies): drop ADR-0023 draft"*). The
+  (`0023-prune-the-exotic-width-numeric-generators`, commit *"docs(dummies): drop ADR-0023 (first-class-errors) draft"*). The
   specification lists **every path each decision ever occupied**, matched by slug rather than by number.
 
 * **Files with no "dummies" in their path.** The 56 analyzer documentation pages
@@ -59,12 +59,12 @@ itself does not simplify, so the listed paths are matched regardless.
 
 | Kept in `Reefact/first-class-errors` | Why |
 | --- | --- |
-| ADR-0026 *Rebase the testing package's arbitrary values on JustDummies* | its subject is `FirstClassErrors.Testing` |
-| ADR-0061 *Run the JustDummies analyzers on the repository's own code* | its subject is that repository's build |
-| ADR-0006 *Supply arbitrary test values from a single seedable source* | its subject is the `FirstClassErrors.Testing` companion package |
+| ADR-0026 (first-class-errors) *Rebase the testing package's arbitrary values on JustDummies* | its subject is `FirstClassErrors.Testing` |
+| ADR-0061 (first-class-errors) *Run the JustDummies analyzers on the repository's own code* | its subject is that repository's build |
+| ADR-0006 (first-class-errors) *Supply arbitrary test values from a single seedable source* | its subject is the `FirstClassErrors.Testing` companion package |
 | `icon.png` history | its only two commits are FirstClassErrors-motivated; the file was copied in the bootstrap commit instead, so an unrelated commit would not become this repository's root |
 
-ADR-0011 and ADR-0022 bind both products and therefore exist in **both** repositories.
+ADR-0003 and ADR-0007 bind both products and therefore exist in **both** repositories.
 
 ## Infrastructure that was rewritten, not extracted
 

@@ -317,7 +317,7 @@ release notes and changelog it lands in; see
 
 Because of that, **`commit-lint` requires a scope on the two version-driving
 types, `feat` and `fix`**, and rejects an unscoped one at the `commit-msg` hook
-and in CI ([ADR-0034](doc/handwritten/for-maintainers/adr/0034-require-a-scope-on-the-version-driving-commit-types.md)):
+and in CI ([ADR-0013](doc/handwritten/for-maintainers/adr/0034-require-a-scope-on-the-version-driving-commit-types.md)):
 it would match no train and be **silently dropped from every release note and
 changelog**, vanishing from the release record. Every other type keeps the scope
 optional — what genuinely belongs to no component stays unscoped (repository

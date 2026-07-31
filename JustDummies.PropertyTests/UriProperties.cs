@@ -249,13 +249,13 @@ public sealed class UriProperties {
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1870:Use a cached 'SearchValues' instance",
                                                      Justification =
                                                          "SearchValues<T> arrived in .NET 8 and this suite also runs on the .NET Framework 4.7.2 support floor " +
-                                                         "(ADR-0022, build/Net472TestFloor.props), where the type does not exist. The rule is right on net10.0 only; " +
+                                                         "(ADR-0007, build/Net472TestFloor.props), where the type does not exist. The rule is right on net10.0 only; " +
                                                          "IndexOfAny over a two-character array carries the same meaning on both legs. Same downlevel wall as " +
-                                                         "SYSLIB1045 and CA1510 (ADR-0058).")]
+                                                         "SYSLIB1045 and CA1510 (ADR-0037).")]
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1865:Use char overload",
                                                      Justification =
                                                          "string.StartsWith(char) is not on the .NET Framework 4.7.2 support floor this suite also runs on " +
-                                                         "(ADR-0022): measured, the net472 leg rejects it with CS1503, cannot convert from 'char' to 'string'. " +
+                                                         "(ADR-0007): measured, the net472 leg rejects it with CS1503, cannot convert from 'char' to 'string'. " +
                                                          "The explicit StringComparison.Ordinal overload compiles on both legs and states the comparison it uses.")]
     private static bool RelativeDrawCarries(Uri value, (int? Segments, bool Rooted, bool Query, bool Fragment) testCase) {
         string reference = value.OriginalString;

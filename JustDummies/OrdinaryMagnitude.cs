@@ -3,7 +3,7 @@ namespace JustDummies;
 /// <summary>
 ///     The magnitude an arbitrary number stays within unless a declared constraint leaves no room for it — the
 ///     numeric counterpart of the small default spread the string and collection generators use, and the reason a
-///     dummy number stays unremarkable (ADR-0052).
+///     dummy number stays unremarkable (ADR-0031).
 /// </summary>
 /// <remarks>
 ///     <para>
@@ -19,7 +19,7 @@ namespace JustDummies;
 ///         whose declared interval lies entirely outside it — <c>Between(1e300, 1e308)</c> — draws from that interval
 ///         as declared, because the caller asked for that magnitude explicitly. A generator whose declared interval
 ///         merely <i>permits</i> large values — <c>Between(0, double.MaxValue)</c> — keeps drawing ordinary ones,
-///         because permitting is not requesting. The same principle governs sizes under ADR-0050.
+///         because permitting is not requesting. The same principle governs sizes under ADR-0029.
 ///     </para>
 ///     <para>
 ///         Both constants carry the same magnitude in the two arithmetics the numeric engines use. A type whose whole

@@ -11,7 +11,7 @@ namespace JustDummies.UnitTests;
 /// <summary>
 ///     The size-guard convention, enforced by reflection over every generator the library exposes: a size a generator
 ///     must actually <b>produce</b> — an exact or minimum length or count — is refused above the ceiling, while a size
-///     that only <b>caps</b> a draw accepts any non-negative value (ADR-0050).
+///     that only <b>caps</b> a draw accepts any non-negative value (ADR-0029).
 /// </summary>
 /// <remarks>
 ///     <para>
@@ -20,7 +20,7 @@ namespace JustDummies.UnitTests;
 ///         takes a length or a count declares something the generator has to materialize.
 ///     </para>
 ///     <para>
-///         It is written as a convention rather than as one test per method for the reason ADR-0045 gives for the
+///         It is written as a convention rather than as one test per method for the reason ADR-0024 gives for the
 ///         null-argument guard: the defect it prevents is a <i>new</i> builder forgetting the rule, and only
 ///         reflection holds a member that does not exist yet. The overflow behind the original defect existed because
 ///         the same arithmetic had been made safe one line away and not at the second site — a rule applied by hand

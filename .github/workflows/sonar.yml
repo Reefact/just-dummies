@@ -73,7 +73,7 @@ jobs:
       # COVERAGE (not from analysis) keeps the new-code coverage gate about the library, while its code still
       # gets the SonarAnalyzer pass.
       #
-      # Two shell rules are declined for every *.sh in the repository (policy: ADR-0060). They are ignored HERE,
+      # Two shell rules are declined for every *.sh in the repository (policy: ADR-0060 (first-class-errors)). They are ignored HERE,
       # rather than in .editorconfig like the declined Roslyn rules, because they are SonarQube's own analysis
       # rather than compiler diagnostics the scanner republishes — nothing the build does can silence them.
       #   S7682 ("add an explicit return at the end of the function") — every function it flags ends with the

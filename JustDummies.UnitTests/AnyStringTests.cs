@@ -261,7 +261,7 @@ public sealed class AnyStringTests {
 
     [Fact(DisplayName = "A produced length is refused above the ceiling; the bound just below it is accepted.")]
     public void ProducedLengthsAreCeilinged() {
-        // ADR-0050. The two coordinates that matter are the ceiling itself and the first value past it: a guard
+        // ADR-0029. The two coordinates that matter are the ceiling itself and the first value past it: a guard
         // written with the wrong comparison passes every other length and fails exactly here.
         Check.ThatCode(() => Any.String().WithLength(1_000_001)).Throws<ArgumentOutOfRangeException>();
         Check.ThatCode(() => Any.String().WithMinLength(1_000_001)).Throws<ArgumentOutOfRangeException>();

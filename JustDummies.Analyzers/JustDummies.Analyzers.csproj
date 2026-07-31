@@ -33,4 +33,11 @@
     <AdditionalFiles Include="AnalyzerReleases.Unshipped.md" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Surface the floor in the assembly itself so RoslynFloorTests reads the SAME value the pin above
+         uses, rather than a copy of it. A test carrying its own literal would keep passing after the
+         property moved; reading it back from metadata makes the pin and its guard impossible to diverge. -->
+    <AssemblyMetadata Include="RoslynFloorVersion" Value="$(RoslynFloorVersion)" />
+  </ItemGroup>
+
 </Project>

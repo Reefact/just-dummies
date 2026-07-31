@@ -30,7 +30,7 @@ Les conditions qui justifiaient la colocation ont expiré :
   un train `dum-v*` dont le seul objet était d'éviter la collision avec `lib-v*` et `cli-v*`.
 * La colocation coûte désormais à l'hôte : `FirstClassErrors.Testing` ne peut pas exprimer sa dépendance par
   un `PackageReference` normal, et porte à la place un `ProjectReference` privé plus une cible de pack
-  écrite à la main qui embarque `JustDummies.dll` dans son propre `lib/` — un contournement que l'ADR-0026 (first-class-errors)
+  écrite à la main qui embarque `JustDummies.dll` dans son propre `lib/` — un contournement que l'[ADR-0026 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0026-rebase-testing-arbitrary-values-on-dummies.fr.md)
   n'acceptait que « jusqu'à ce que JustDummies soit publié ».
 * Les issues, les pull requests et les exécutions CI de deux produits sans rapport partagent une seule file.
 
@@ -78,11 +78,11 @@ dépendance à la version en cours d'empaquetage. Publier `xunit-v0.2.0` alors q
 Cette extraction n'a rien supprimé de `Reefact/first-class-errors`. Quatre de ses projets référencent
 JustDummies, et l'un d'eux — `FirstClassErrors.Testing` — le *livre*. Retirer la source là-bas exige un
 package `JustDummies` restaurable sur nuget.org, qui n'existe pas encore. La bascule est préparée, non
-exécutée ; la décision correspondante de ce côté-là supersède le contournement d'embarquement de l'ADR-0026 (first-class-errors).
+exécutée ; la décision correspondante de ce côté-là supersède le contournement d'embarquement de l'[ADR-0026 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0026-rebase-testing-arbitrary-values-on-dummies.fr.md).
 
 ### Deux décisions restent dans FirstClassErrors
 
-L'[ADR-0026 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0026-rebase-testing-arbitrary-values-on-dummies.fr.md) et l'ADR-0061 (first-class-errors) ont FirstClassErrors pour
+L'[ADR-0026 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0026-rebase-testing-arbitrary-values-on-dummies.fr.md) et l'[ADR-0061 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0061-run-the-justdummies-analyzers-on-the-repository-s-own-code.fr.md) ont FirstClassErrors pour
 sujet bien qu'ils concernent JustDummies : l'un acte pourquoi `FirstClassErrors.Testing` a rebasé ses valeurs
 arbitraires sur cette bibliothèque, l'autre pourquoi ce dépôt exécute ces analyseurs sur son propre code. Ils
 ne sont pas repris ici. L'[ADR-0003](0003-host-dummies-as-a-standalone-package.fr.md) et

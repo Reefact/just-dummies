@@ -33,8 +33,8 @@
   section *Unreleased* de changelog vide. Renommer une fabrique publique et un type builder
   public est un changement cassant dès que des consommateurs en dépendent, et ne coûte rien avant
   la première publication.
-* Le dépôt consigne les décisions de nommage de cette classe sous forme d'ADR — ADR-0005 (first-class-errors) réserve
-  le nom de fabrique nu à la variante retournant un `Outcome`, ADR-0007 (first-class-errors) nomme les terminaux du
+* Le dépôt consigne les décisions de nommage de cette classe sous forme d'ADR — [ADR-0005 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0005-reserve-the-plain-factory-name-for-the-outcome-returning-variant.fr.md) réserve
+  le nom de fabrique nu à la variante retournant un `Outcome`, [ADR-0007 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0007-name-the-binder-terminals-new-and-create.fr.md) nomme les terminaux du
   binder `New` et `Create`.
 
 ## Décision
@@ -132,9 +132,9 @@ sans coût.
 
 ## Références
 
-* ADR-0005 (first-class-errors) — réserver le nom de fabrique nu à la variante retournant un Outcome ; précédent de
+* [ADR-0005 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0005-reserve-the-plain-factory-name-for-the-outcome-returning-variant.fr.md) — réserver le nom de fabrique nu à la variante retournant un Outcome ; précédent de
   décision de nommage.
-* ADR-0007 (first-class-errors) — nommer les terminaux du binder New et Create ; précédent de décision de nommage.
+* [ADR-0007 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0007-name-the-binder-terminals-new-and-create.fr.md) — nommer les terminaux du binder New et Create ; précédent de décision de nommage.
 * ADR-0006 — matérialiser les dummies uniquement via Generate() ; partage le cadrage pré-1.0 du
   « moment le moins cher pour décider ».
 * Audit d'architecture et de conception de JustDummies du 2026-07-20, §8.2 et §8.4 — a mis en

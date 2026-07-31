@@ -43,7 +43,8 @@ derived from the history itself:
 
 * **Renumbered ADRs.** Four decisions changed number in place — `0010→0011`, `0043→0044`, `0048→0049`,
   `0050→0051` — and one was a draft that was created and dropped
-  (`0023-prune-the-exotic-width-numeric-generators`, commit *"docs(dummies): drop ADR-0023 (first-class-errors) draft"*). The
+  (`0023-prune-the-exotic-width-numeric-generators`, commit *"docs(dummies): drop ADR-0023 draft"* — 0023 was that draft's own number in the
+  shared base at the time, and has nothing to do with the ADR-0023 `Reefact/first-class-errors` carries today). The
   specification lists **every path each decision ever occupied**, matched by slug rather than by number.
 
 * **Files with no "dummies" in their path.** The 56 analyzer documentation pages
@@ -59,9 +60,9 @@ itself does not simplify, so the listed paths are matched regardless.
 
 | Kept in `Reefact/first-class-errors` | Why |
 | --- | --- |
-| ADR-0026 (first-class-errors) *Rebase the testing package's arbitrary values on JustDummies* | its subject is `FirstClassErrors.Testing` |
-| ADR-0061 (first-class-errors) *Run the JustDummies analyzers on the repository's own code* | its subject is that repository's build |
-| ADR-0006 (first-class-errors) *Supply arbitrary test values from a single seedable source* | its subject is the `FirstClassErrors.Testing` companion package |
+| [ADR-0026 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0026-rebase-testing-arbitrary-values-on-dummies.md) *Rebase the testing package's arbitrary values on JustDummies* | its subject is `FirstClassErrors.Testing` |
+| [ADR-0061 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0061-run-the-justdummies-analyzers-on-the-repository-s-own-code.md) *Run the JustDummies analyzers on the repository's own code* | its subject is that repository's build |
+| [ADR-0006 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0006-supply-arbitrary-test-values-from-a-seedable-source.md) *Supply arbitrary test values from a single seedable source* | its subject is the `FirstClassErrors.Testing` companion package |
 | `icon.png` history | its only two commits are FirstClassErrors-motivated; the file was copied in the bootstrap commit instead, so an unrelated commit would not become this repository's root |
 
 ADR-0003 and ADR-0007 bind both products and therefore exist in **both** repositories.

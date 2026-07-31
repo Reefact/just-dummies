@@ -11,7 +11,7 @@
 ## Context
 
 `JustDummies` supplies arbitrary yet valid values from a single seedable source, so any run is reproducible from a
-reported seed (ADR-0006 (first-class-errors)). A recurring need is a value whose domain is a **closed set the caller already holds** — one
+reported seed ([ADR-0006 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0006-supply-arbitrary-test-values-from-a-seedable-source.md)). A recurring need is a value whose domain is a **closed set the caller already holds** — one
 of the currencies a context is configured with, one of the orders already in a fixture, one of a handful of domain
 states the test does not assert on. The library generates structural shapes (a length, an interval, a pattern); it
 cannot synthesize such a real-world set, and the caller owns the values.
@@ -52,7 +52,7 @@ empty pool and any `null` element, and deduplicating, sizing and testing members
 
 * **It closes the reproducibility trap that is the library's reason to exist.** A seed-aware pool draw replaces the
   hand-rolled `Random`, so the choice replays under `Any.Reproducibly(...)` and `Any.WithSeed(...)` like every other
-  draw (ADR-0006 (first-class-errors)). The audit names this the single highest-leverage addition.
+  draw ([ADR-0006 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0006-supply-arbitrary-test-values-from-a-seedable-source.md)). The audit names this the single highest-leverage addition.
 * **Rejecting `null` keeps nullability orthogonal and the surface symmetric.** `OrNull()` is the one way to express an
   optional value, so a `null` pool member would reintroduce the "is `null` a value or an absence" ambiguity that
   decorator exists to remove. It also matches the shipped string generator (ADR-0009): the two value-set combinators
@@ -145,7 +145,7 @@ type-agnostic, top-level factory — so a static factory on `Any`/`AnyContext` i
 * ADR-0009 — Draw arbitrary strings from an explicit, terminal value set (the string sibling; the terminal-generator
   and `null`-rejection precedent).
 * ADR-0004 — Gate distinct collections by cardinality, otherwise by a bounded draw (the `ICardinalityHint` contract).
-* ADR-0006 (first-class-errors) — Supply arbitrary test values from a single seedable source (reproducibility).
+* [ADR-0006 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0006-supply-arbitrary-test-values-from-a-seedable-source.md) — Supply arbitrary test values from a single seedable source (reproducibility).
 * ADR-0010 — Name Any's scalar factories after their CLR type (why `OneOf`/`ElementOf`, as combinators, are exempt).
 * ADR-0006 — Materialize dummies only through `Generate()`.
 * Issue [#223](https://github.com/Reefact/first-class-errors/issues/223) and the 2026-07-20 JustDummies architecture &

@@ -35,7 +35,7 @@
 * `JustDummies` is pre-release: no `dum-v*` tag, no external consumers, an empty *Unreleased* changelog. The shape
   of its public generator surface can still be set at no migration cost.
 * The repository records decisions that shape the `Any` public surface as ADRs — ADR-0006 (materialize only
-  through `Generate()`), ADR-0010 (name factories after their CLR type), ADR-0006 (first-class-errors) (a single seeded source). A
+  through `Generate()`), ADR-0010 (name factories after their CLR type), [ADR-0006 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0006-supply-arbitrary-test-values-from-a-seedable-source.md) (a single seeded source). A
   new, cross-cutting rule for *how* the surface reports an illegal combination is a decision of that same class.
 
 ## Decision
@@ -142,7 +142,7 @@ cannot catch, not for a structural rule they can.
 * ADR-0006 — materialize dummies only through `Generate()`; shares the "shape of the `Any` surface" subject.
 * ADR-0010 — name Any's factories after their CLR type; precedent for "make the rule un-break-able rather than
   merely checked", and for recording `Any`-surface decisions as ADRs.
-* ADR-0006 (first-class-errors) — supply arbitrary values from a single seedable source; the seed carried by `AnyGenerationException`
+* [ADR-0006 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0006-supply-arbitrary-test-values-from-a-seedable-source.md) — supply arbitrary values from a single seedable source; the seed carried by `AnyGenerationException`
   on the run-time path.
 * PR #295 — add the `Any.Uri()` family, the first typed progression.
 * Issue #226 — the JustDummies Nice-to-Have backlog that prompted `Any.Uri()`.

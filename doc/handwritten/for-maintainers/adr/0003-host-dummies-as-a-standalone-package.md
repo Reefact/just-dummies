@@ -10,7 +10,7 @@
 
 ## Context
 
-The generic arbitrary-value engine anticipated by ADR-0006 (first-class-errors) serves domain-driven testing in general rather than error handling specifically.
+The generic arbitrary-value engine anticipated by [ADR-0006 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0006-supply-arbitrary-test-values-from-a-seedable-source.md) serves domain-driven testing in general rather than error handling specifically.
 
 A standalone library named `JustDummies` now provides typed, constraint-carrying generators without knowledge of FirstClassErrors. Its intended audience extends beyond consumers of this repository's main package.
 

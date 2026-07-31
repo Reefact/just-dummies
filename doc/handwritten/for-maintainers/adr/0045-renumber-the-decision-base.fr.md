@@ -77,12 +77,12 @@ ces citations hors Markdown qui auraient pourri en silence, puisque rien ne comp
 
 ### Deux décisions n'ont délibérément pas été adoptées
 
-`ADR-0002 (first-class-errors)` plafonne le runtime de l'outillage au plus ancien LTS supporté. Son sujet est
+[`ADR-0002 (first-class-errors)`](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0002-floor-the-tooling-runtime.fr.md) plafonne le runtime de l'outillage au plus ancien LTS supporté. Son sujet est
 l'outil `fce` et son worker de documentation ; ce dépôt n'a pas encore d'outil, et l'adopter reviendrait à
 décider d'un plancher pour un binaire qui n'existe pas. Sa place est ici le jour où le scaffolder `dum` sera
 construit.
 
-`ADR-0024 (first-class-errors)` autorise une migration éditoriale bornée des ADR acceptés. C'est une
+[`ADR-0024 (first-class-errors)`](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0024-allow-a-one-time-editorial-refactoring-of-accepted-adrs.fr.md) autorise une migration éditoriale bornée des ADR acceptés. C'est une
 autorisation historique et ponctuelle, accordée à ce dépôt-là pour une migration que celui-ci n'a jamais
 faite ; adopter la permission d'un acte non commis consignerait une décision jamais prise.
 

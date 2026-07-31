@@ -31,8 +31,8 @@
 * `JustDummies` is pre-release: no `dum-v*` tag, no external NuGet consumers, an empty *Unreleased*
   changelog. Renaming a public factory and a public builder type is a breaking change once
   consumers depend on it, and costs nothing before the first publication.
-* The repository records naming decisions of this class as ADRs — ADR-0005 (first-class-errors) reserves the plain
-  factory name for the `Outcome`-returning variant, ADR-0007 (first-class-errors) names the binder terminals `New`
+* The repository records naming decisions of this class as ADRs — [ADR-0005 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0005-reserve-the-plain-factory-name-for-the-outcome-returning-variant.md) reserves the plain
+  factory name for the `Outcome`-returning variant, [ADR-0007 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0007-name-the-binder-terminals-new-and-create.md) names the binder terminals `New`
   and `Create`.
 
 ## Decision
@@ -123,9 +123,9 @@ the pre-release window makes a single clean name available at no cost.
 
 ## References
 
-* ADR-0005 (first-class-errors) — reserve the plain factory name for the Outcome-returning variant; naming-decision
+* [ADR-0005 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0005-reserve-the-plain-factory-name-for-the-outcome-returning-variant.md) — reserve the plain factory name for the Outcome-returning variant; naming-decision
   precedent.
-* ADR-0007 (first-class-errors) — name the binder terminals New and Create; naming-decision precedent.
+* [ADR-0007 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0007-name-the-binder-terminals-new-and-create.md) — name the binder terminals New and Create; naming-decision precedent.
 * ADR-0006 — materialize dummies only through Generate(); shares the pre-1.0 "cheapest moment to
   decide" framing.
 * 2026-07-20 JustDummies architecture & design audit, §8.2 and §8.4 — surfaced the deviation.

@@ -10,3 +10,47 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 _No unreleased changes recorded yet. This section is drafted automatically from
 merged pull requests — see [`.github/workflows/changelog.yml`](../.github/workflows/changelog.yml)._
+
+## [0.1.0-preview.1] - 2026-07-31
+
+First published version. The library itself is not new — it was developed inside
+[`Reefact/first-class-errors`](https://github.com/Reefact/first-class-errors) and
+[extracted into this repository](../doc/handwritten/for-maintainers/adr/0044-extract-justdummies-into-its-own-repository.md)
+with its full history on 2026-07-31. This is the first time it reaches nuget.org.
+
+**A preview on purpose.** The public surface is large and has never been exercised by an outside
+consumer. It is declared in `PublicAPI/<tfm>/PublicAPI.Unshipped.txt` rather than
+`PublicAPI.Shipped.txt`, which is the honest state: nothing here is promised yet, and a stable
+release is what will freeze it.
+
+### Added
+
+- **The `Any` generator surface** — a fluent DSL producing arbitrary yet valid test values.
+  Constraints express the invariants a value must satisfy, never what the test asserts. Scalars,
+  strings, collections, dictionaries, sets, enums, GUIDs, temporal types and URIs, plus composition
+  through `As`, `Combine` and `OrNull`.
+- **Fail-fast conflict detection.** Contradictory constraints are refused at declaration with a
+  message naming both sides, rather than looping or silently drawing a value that satisfies neither.
+- **Reproducibility.** `Any.Reproducibly` pins a seed for the run and reports it when the body
+  throws, so a red test says how to replay itself; `Any.ReproduciblyAsync` covers `async` bodies,
+  and `Any.UseSeed` opens an explicit scope.
+- **28 first-party analyzers** (`JD001`–`JD028`), bundled in this package under
+  `analyzers/dotnet/cs`. They guard the recipe-versus-value boundary where the type system cannot
+  reach — a generator rendered as text, a discarded result, a draw outside the pinned scope,
+  constraints that admit no value.
+- **Two target frameworks.** `netstandard2.0` for the widest reach, and `net8.0` which additionally
+  carries the generators for types that do not exist downlevel: `DateOnly`, `TimeOnly`, `Int128`,
+  `UInt128` and `Half`. The supported .NET Framework floor is 4.7.2, and CI runs the suites on it.
+- **Package hardening**: embedded SPDX SBOM, SourceLink, symbol package, deterministic build, and a
+  build-provenance attestation on the release artifact.
+
+### Notes
+
+Commit messages older than 2026-07-31 cite issue and pull-request numbers of
+`Reefact/first-class-errors`, and ADR numbers this repository has since renumbered. The mapping is
+in [ADR-0045](../doc/handwritten/for-maintainers/adr/0045-renumber-the-decision-base.md); the full
+migration record is under
+[`doc/handwritten/for-maintainers/migration/`](../doc/handwritten/for-maintainers/migration/).
+
+[Unreleased]: https://github.com/Reefact/just-dummies/compare/lib-v0.1.0-preview.1...HEAD
+[0.1.0-preview.1]: https://github.com/Reefact/just-dummies/releases/tag/lib-v0.1.0-preview.1

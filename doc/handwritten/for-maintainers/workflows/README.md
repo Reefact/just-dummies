@@ -20,7 +20,7 @@ not change without understanding why.
 Read the page for a workflow before you touch it. When the page and the YAML
 disagree, the YAML wins — and the page should be corrected.
 
-**Only one workflow has a page so far**, and the table below says which. The rest
+**Five workflows have a page so far**, and the table below says which. The rest
 are listed anyway: an index that omits them would read as though they did not
 exist. Their YAML comments are, for now, all the documentation they have.
 
@@ -33,7 +33,7 @@ as they stand, not carried over on faith:
 - **Actions are pinned by commit SHA, not by tag.** A tag like `@v4` can be moved
   by its owner to point at new code; a 40-hex SHA cannot. Every `uses:` therefore
   pins a SHA with the human-readable tag in a trailing comment (`# v4`). When you
-  bump an action, change **both**. Counted: 42 SHA-pinned `uses:`, zero pinned by
+  bump an action, change **both**. Counted: 44 SHA-pinned `uses:`, zero pinned by
   tag.
 - **`permissions:` start read-only and widen per job.** The workflow-level block
   is the least privilege the workflow needs (usually `contents: read`); a job that
@@ -43,7 +43,7 @@ as they stand, not carried over on faith:
   it declares `permissions: {}` — the explicit empty mapping, since a bare
   `permissions:` is a null and not an empty map.
 - **Every job sets `timeout-minutes`.** The GitHub default is six hours; a hung
-  step would otherwise hold a runner for that long. Counted: 20 jobs, 20 with a
+  step would otherwise hold a runner for that long. Counted: 21 jobs, 21 with a
   cap. Each is set a few times the observed run time, noted in a comment beside
   it.
 - **`concurrency` cancels superseded runs.** Pushing twice to the same branch or
@@ -70,12 +70,13 @@ as they stand, not carried over on faith:
 | `ci` | Build and test the solution on Linux and Windows, with coverage, plus the .NET Framework 4.7.2 floor leg. The primary gate. |
 | `justdummies` | Prove the packaged `netstandard2.0` and `net8.0` assets behave on the runtimes that actually load them — the leg the net10 test project cannot exercise. |
 | [`justdummies-mutation`](justdummies-mutation.en.md) | Mutation testing of the three components with Stryker.NET — an advisory check on what a PR changed, plus the weekly full sweep that is the enforced bar. |
-| `sonar` | SonarQube Cloud analysis — quality gate and coverage reporting. |
-| `sonar-profile` | Weekly: fails when the committed Sonar C# rule list has drifted from the SonarCloud quality profile. Reports, never repairs. |
+| [`analyzers`](analyzers.en.md) | Load the bundled analyzers out of the packed artifact under the oldest supported compiler (Roslyn 4.8), the one thing an ordinary build never does. |
+| [`sonar`](sonar.en.md) | SonarQube Cloud analysis — quality gate and coverage reporting. |
+| [`sonar-profile`](sonar-profile.en.md) | Weekly: fails when the committed Sonar C# rule list has drifted from the SonarCloud quality profile. Reports, never repairs. |
 | `sonar-gate` | Nightly: reads the SonarCloud Quality Gate verdict and fails when it is red. |
 | `commit-lint` | Enforce the Conventional Commits convention on every PR commit, using the same script as the local hook. |
 | `lint` | shellcheck and actionlint over the files the C# compiler never sees — the POSIX scripts and the workflow definitions. |
-| `adr-check` | Advisory, manual dispatch: check a branch against the ADR base (new decision / supersede / conflict). Never blocks. |
+| [`adr-check`](adr-check.en.md) | Advisory, manual dispatch: check a branch against the ADR base (new decision / supersede / conflict). Never blocks. |
 
 ### Security & supply chain
 

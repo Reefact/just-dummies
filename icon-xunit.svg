@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+<stop offset="0" stop-color="#2DD4BF"/><stop offset="0.5" stop-color="#0D9488"/><stop offset="1" stop-color="#115E59"/></linearGradient></defs>
+<g transform="translate(0,-26)">
+<path d="M 512 218 C 590 218 634 286 634 370 C 634 454 588 522 512 522 C 436 522 390 454 390 370 C 390 286 434 218 512 218 Z" fill="url(#g)"/><path d="M 402 880 C 396 790 332 718 326 668 C 320 614 356 568 412 566 C 462 564 492 578 512 582 C 532 578 562 564 612 566 C 668 568 704 614 698 668 C 692 718 628 790 622 880 Z" fill="url(#g)"/>
+<path d="M 246 268 C 202 268 198 302 198 358 L 198 452 C 198 508 176 528 150 545 C 176 562 198 582 198 638 L 198 732 C 198 788 202 822 246 822" fill="none" stroke="url(#g)" stroke-width="52" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M 778 268 C 822 268 826 302 826 358 L 826 452 C 826 508 848 528 874 545 C 848 562 826 582 826 638 L 826 732 C 826 788 822 822 778 822" fill="none" stroke="url(#g)" stroke-width="52" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<path d="M 650.2 676.5 L 882.2 972.5 L 949.8 919.5 L 717.8 623.5 Z M 683.4 663.2 L 903.1 943.4 L 916.6 932.8 L 696.9 652.6 Z" fill="#000000" fill-rule="evenodd"/><path d="M 882.2 623.5 L 650.2 919.5 L 717.8 972.5 L 949.8 676.5 Z M 903.1 652.6 L 683.4 932.8 L 696.9 943.4 L 916.6 663.2 Z" fill="#000000" fill-rule="evenodd"/></svg>

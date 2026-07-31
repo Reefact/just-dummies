@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <!-- Packaged-asset compatibility consumer for the JustDummies NuGet package. Deliberately NOT part of
-       FirstClassErrors.sln: ci.yml would build it under the .NET 10 SDK against a single asset, which is
+       JustDummies.sln: ci.yml would build it under the .NET 10 SDK against a single asset, which is
        exactly what this project exists to AVOID. It is built and run solely by .github/workflows/justdummies.yml.
 
        WHY THIS EXISTS

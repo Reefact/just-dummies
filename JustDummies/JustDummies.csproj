@@ -24,7 +24,9 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
 
     <!-- Version. This is only a local/dev fallback: release.yml overrides it with -p:Version from the
-         Git tag of the dum release train (dum-v*, see tools/packaging/pack.sh). -->
+         Git tag of the lib release train (lib-v*, see tools/packaging/pack.sh). The train was called dum-v*
+         while this library shared the tag namespace of Reefact/first-class-errors; no dum-v* tag was ever
+         pushed, so moving to this repository's own lib-v* train discarded nothing. -->
     <Version>0.1.0-dev</Version>
 
     <!-- NuGet identity -->
@@ -44,7 +46,7 @@
 
     <!-- Links -->
     <PackageProjectUrl>https://justdummies.io</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/Reefact/first-class-errors.git</RepositoryUrl>
+    <RepositoryUrl>https://github.com/Reefact/just-dummies.git</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
 
     <Copyright>© Reefact 2026</Copyright>

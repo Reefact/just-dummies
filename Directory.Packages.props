@@ -1,0 +1,48 @@
+<Project>
+
+  <!-- Enable Central Package Management. Kept first, and as the ONLY place this property name appears in the
+       file, so a static analyzer (e.g. OpenSSF Scorecard's Pinned-Dependencies parser) reads the intended
+       "true" and never a value mentioned in prose below. -->
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+
+  <!--
+    Central Package Management (CPM). One source of truth for every NuGet version in the repository: projects
+    declare <PackageReference Include="..." /> WITHOUT a Version, and the version is resolved from the matching
+    <PackageVersion> below. This keeps versions consistent across the projects and makes the `dotnet restore`
+    steps in ci.yml / release.yml reproducible — which is also what OpenSSF Scorecard's Pinned-Dependencies
+    check rewards (an unpinned restore otherwise caps that check below 10, via "nugetCommand not pinned").
+
+    Two deliberate exceptions:
+      * JustDummies.Analyzers pins Microsoft.CodeAnalysis.CSharp to $(RoslynFloorVersion) via a
+        VersionOverride, so the load-contract floor stays property-driven and independent of the (newer)
+        central version the analyzer test project consumes.
+      * tools/justdummies-check/JustDummiesCheck.csproj opts OUT of CPM in its own project file: it consumes
+        the JustDummies package at a dynamic $(JustDummiesCheckVersion) and is built in isolation, outside
+        the solution.
+
+    The version list is the FirstClassErrors list narrowed to what JustDummies actually restores. AngleSharp,
+    BenchmarkDotNet, NSubstitute, Spectre.Console.Cli and Verify.XunitV3 were dropped: no project in this
+    repository references them.
+  -->
+
+  <ItemGroup>
+    <PackageVersion Include="coverlet.collector" Version="10.0.1" />
+    <PackageVersion Include="FsCheck" Version="3.3.4" />
+    <PackageVersion Include="JetBrains.Annotations" Version="2026.2.0" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.Analyzers" Version="5.6.0" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="5.6.0" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" Version="5.6.0" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.8.1" />
+    <PackageVersion Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" />
+    <PackageVersion Include="Microsoft.NETFramework.ReferenceAssemblies.net472" Version="1.0.3" />
+    <PackageVersion Include="Microsoft.Sbom.Targets" Version="4.1.5" />
+    <PackageVersion Include="NFluent" Version="3.1.0" />
+    <PackageVersion Include="SonarAnalyzer.CSharp" Version="10.31.0.145097" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
+    <PackageVersion Include="xunit.v3" Version="3.2.2" />
+    <PackageVersion Include="xunit.v3.extensibility.core" Version="3.2.2" />
+  </ItemGroup>
+
+</Project>

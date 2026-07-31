@@ -1,0 +1,119 @@
+name: ci
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+# Cancel superseded runs on the same branch / PR.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Least privilege: this workflow only checks out and builds/tests, so the token
+# needs nothing beyond read access to the repository contents.
+permissions:
+  contents: read
+
+env:
+  DOTNET_NOLOGO: 'true'
+  DOTNET_CLI_TELEMETRY_OPTOUT: 'true'
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 'true'
+
+jobs:
+  build-test:
+    name: Build & test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    # Fail a hung run fast instead of holding a runner to the 6-hour default; build+test finishes in ~1 min.
+    timeout-minutes: 15
+    strategy:
+      # Run both legs to completion so a platform-specific failure is always visible.
+      fail-fast: false
+      matrix:
+        # Both platforms: the generators reach into globalization (string alphabets, DateTime pools) and the
+        # regex engine, where a platform difference would be invisible on a single leg.
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore
+        run: dotnet restore JustDummies.sln
+
+      - name: Build
+        run: dotnet build JustDummies.sln -c Release --no-restore
+
+      - name: Test
+        # Collect OpenCover coverage via coverlet.collector (configured in coverage.runsettings).
+        # Reports land under artifacts/coverage/<guid>/coverage.opencover.xml, ready for a Sonar scan.
+        run: >-
+          dotnet test JustDummies.sln -c Release --no-build
+          --collect:"XPlat Code Coverage"
+          --settings coverage.runsettings
+          --results-directory artifacts/coverage
+          --logger "console;verbosity=normal"
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          # Per-OS name so the two matrix legs do not clash when uploading.
+          name: coverage-${{ matrix.os }}
+          path: artifacts/coverage/**/coverage.opencover.xml
+          if-no-files-found: error
+
+  # build-test above runs the suite on the LATEST .NET (10). This job proves the LIBRARY's OTHER supported
+  # runtime: that the netstandard2.0 assemblies (JustDummies, JustDummies.Xunit) actually load and pass their
+  # tests on .NET Framework 4.7.2 — the support floor recorded in
+  # doc/handwritten/for-maintainers/adr/0022-floor-the-library-on-net-framework-4-7-2.md.
+  # netstandard2.0 is only a COMPILE contract; running on the real .NET Framework CLR (NLS globalization, the
+  # netstandard.dll facade, its reflection stack) is what proves the library behaves there — the ordinary net10
+  # build cannot. .NET Framework tests run on Windows only (there is no Mono on the Linux legs), and the net472
+  # inner build is gated behind EnableNet472Floor (build/Net472TestFloor.props) so it never touches build-test.
+  framework-floor:
+    name: Library on the .NET Framework 4.7.2 floor
+    runs-on: windows-latest
+    # Restore + build + test of three small projects; cap a hung run like the other jobs.
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      # global.json pins the .NET 10 SDK; that SDK compiles the net472 target. The .NET Framework runtime that
+      # RUNS net472 assemblies ships on the windows-latest image, and the net472 targeting pack for COMPILATION
+      # is supplied hermetically by the Microsoft.NETFramework.ReferenceAssemblies package — so no extra install.
+      - name: Setup .NET (build SDK)
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: '10.0.x'
+
+      # Only these test projects carry the net472 leg (EnableNet472Floor adds it): the analyzer test project
+      # stays net10-only by design, since a Roslyn analyzer never runs on .NET Framework here. JustDummies is
+      # floored through its contract suite (JustDummies.UnitTests), running on the netstandard2.0 asset .NET
+      # Framework consumers load — its net8-only tests are conditioned out. JustDummies.Xunit is floored the
+      # same way: it ships netstandard2.0, so a .NET Framework consumer loads that asset, and its adapter suite
+      # must prove it works there and not only on net10. JustDummies.PropertyTests joins them so the generator
+      # INVARIANTS, not just the example-based contract, hold on the floor.
+      # A per-project loop (not a solution-wide -f net472, which would force the TFM onto the net10-only
+      # project and fail) keeps the net472 scope exactly these three.
+      - name: Test the netstandard2.0 libraries on .NET Framework 4.7.2
+        shell: bash
+        run: |
+          set -euo pipefail
+          for proj in \
+            JustDummies.UnitTests \
+            JustDummies.PropertyTests \
+            JustDummies.Xunit.UnitTests ; do
+            echo "::group::$proj (net472)"
+            dotnet test "$proj/$proj.csproj" -c Release -f net472 -p:EnableNet472Floor=true \
+              --logger "console;verbosity=normal"
+            echo "::endgroup::"
+          done

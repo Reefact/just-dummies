@@ -1,0 +1,36 @@
+version: 2
+
+updates:
+  - package-ecosystem: "nuget"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: "build"
+    ignore:
+      # The analyzer's Roslyn floor (RoslynFloorVersion in Directory.Build.props) is a product decision,
+      # not routine maintenance: bumping Microsoft.CodeAnalysis.* raises the minimum host compiler able to
+      # load the shipped analyzer and breaks it (CS8032) on older SDKs/IDEs. Real enforcement is
+      # RoslynFloorTests plus the floor CI job; this only stops Dependabot re-proposing the bump. A single
+      # nuget config cannot scope the rule to one project, so these also freeze in the analyzer test project.
+      - dependency-name: "Microsoft.CodeAnalysis.CSharp"
+      - dependency-name: "Microsoft.CodeAnalysis.Common"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: "ci"
+    # codeql-action ships init/analyze/upload-sarif as separate actions that MUST run the same version: the
+    # analyze step aborts on a database created by a different version ("Loaded a configuration file for
+    # version 'X', but running version 'Y'"), so a lone init or analyze bump leaves codeql.yml mismatched and
+    # fails the "CodeQL analyze (C#)" job. Group them into one pull request so every step moves in lockstep.
+    groups:
+      codeql-action:
+        patterns:
+          - "github/codeql-action*"

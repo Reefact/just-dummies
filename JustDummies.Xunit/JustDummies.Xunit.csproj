@@ -72,9 +72,11 @@
          itself (ADR-0003); it must not acquire a FirstClassErrors dependency either. -->
     <ProjectReference Include="..\JustDummies\JustDummies.csproj" />
 
-    <!-- Run the JustDummies analyzers on this project (ADR-0061 in first-class-errors): OutputItemType=Analyzer loads them at
-         build and in the IDE, ReferenceOutputAssembly=false keeps them off the runtime graph, and
-         PrivateAssets=all stops the reference from reaching a consumer of this project. -->
+    <!-- Run the JustDummies analyzers on this project: the rules this product ships are the rules its own
+         code is held to, so a rule that misfires or nags is met here before a consumer meets it.
+         OutputItemType=Analyzer loads them at build and in the IDE, ReferenceOutputAssembly=false keeps them
+         off the runtime graph, and PrivateAssets=all stops the reference from reaching a consumer of this
+         project. -->
     <ProjectReference Include="..\JustDummies.Analyzers\JustDummies.Analyzers.csproj"
                       OutputItemType="Analyzer"
                       ReferenceOutputAssembly="false"

@@ -6,7 +6,7 @@ namespace JustDummies.Analyzers;
 /// </summary>
 internal static class HelpLinks {
 
-    private const string Base = "https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-users/analyzers";
+    private const string Base = "https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/analyzers";
 
     public static string For(string diagnosticId) {
         return $"{Base}/{diagnosticId}.en.md";

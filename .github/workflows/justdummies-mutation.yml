@@ -5,7 +5,7 @@ name: justdummies-mutation
 # standalone, error-agnostic package — ADR-0011), and this file is written so that the move is a
 # FILE MOVE, not an edit: take this workflow, `build/stryker/justdummies*.json`,
 # `.config/dotnet-tools.json` and the reference page, then repoint the `solution` field in the two
-# configs at the new solution. Nothing here refers to a FirstClassErrors project.
+# configs at this repository's solution. Nothing here refers to a FirstClassErrors project.
 #
 # The mechanism is identical to `mutation.yml`; keep the two in step when you change one.
 
@@ -59,7 +59,7 @@ jobs:
       fail-fast: false
       matrix:
         # The JustDummies packages' xUnit v3 adapter (ADR-0039) and the analyzers packed inside the
-        # generator package (ADR-0044). The FirstClassErrors libraries live in `mutation.yml`.
+        # generator package (ADR-0044). This repository ships no other mutation-tested library.
         # See ADR-0043.
         #
         # The GENERATOR is deliberately absent (ADR-0049) — it is the only leg this matrix cannot

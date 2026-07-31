@@ -1,0 +1,64 @@
+<Project>
+
+  <!--
+    Shared MSBuild plumbing that lets a netstandard2.0-library test project ALSO run on the
+    .NET Framework 4.7.2 support floor (see doc/handwritten/for-maintainers/adr/0022-floor-the-library-on-net-framework-4-7-2.md).
+
+    A test project opts in with
+
+        <Import Project="..\build\Net472TestFloor.props" />
+
+    and drops its own <TargetFramework> — this file owns the target frameworks. Only projects that
+    exercise the netstandard2.0 libraries (JustDummies, JustDummies.Xunit) should import it; the analyzer
+    test project stays net10.0-only.
+
+    The net472 inner build is GATED behind EnableNet472Floor so it never touches the ordinary build.
+    A plain `dotnet build` / `dotnet test` — the ci `build-test` matrix and the local inner loop — sees
+    only net10.0. The dedicated Windows `framework-floor` job in .github/workflows/ci.yml passes
+    -p:EnableNet472Floor=true to add the net472 inner build and runs it with `-f net472`; .NET Framework
+    tests only run on Windows (there is no Mono on the Linux legs).
+  -->
+
+  <PropertyGroup Condition="'$(EnableNet472Floor)' != 'true'">
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(EnableNet472Floor)' == 'true'">
+    <TargetFrameworks>net10.0;net472</TargetFrameworks>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- net472 defaults C# to 7.3, which rejects <Nullable>enable</Nullable>. Pin the same latest compiler
+         the shipped netstandard2.0 projects use, so the floor bounds the BCL surface, not the C# syntax. -->
+    <LangVersion>latest</LangVersion>
+    <!-- xUnit.net v3 test projects must be executables on .NET Framework (the SDK does this implicitly for
+         modern TFMs; net472 does not). Scoped to net472 so the net10.0 inner build is unchanged. -->
+    <OutputType Condition="'$(TargetFramework)' == 'net472'">Exe</OutputType>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net472'">
+    <!-- S8969 (redundant null-forgiving operator) cannot hold on this leg, because the net472 reference
+         assemblies carry NO nullable annotations. Roslyn treats an unannotated - "oblivious" - expression as
+         not-null in flow analysis, so `X? x = list.FirstOrDefault(...)` leaves x already not-null here while
+         the annotated modern BCL leaves it maybe-null. The same `x!` is therefore REQUIRED on net10.0 and
+         redundant on net472, with no way to satisfy both legs with one spelling short of #if. The rule stays
+         enforced on every shipping target and stands down only here, which is the same concession as the
+         IsExternalInit polyfill below - a property of the floor, not of the code. Scoped to the TFM rather
+         than written in .editorconfig because .editorconfig cannot see a target framework.
+         Carried over from Reefact/first-class-errors, where it was measured against that repository's test
+         suites; re-measure against this repository's own net472 leg before removing it. -->
+    <NoWarn>$(NoWarn);S8969</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net472'">
+    <!-- Reference assemblies so net472 COMPILES on any box without the 4.7.2 targeting pack installed (the
+         Linux legs, a bare Windows runner). Build-time only (PrivateAssets=all): never a runtime or package
+         dependency. The version is pinned centrally in Directory.Packages.props. -->
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" PrivateAssets="all" />
+    <!-- `init` accessors and records (used by a few test models) need IsExternalInit, which the net472 BCL
+         does not ship. This private polyfill lets existing test code compile unchanged; it is internal, so
+         each net472 test assembly carries its own with no conflict. The SHIPPED libraries use neither `init`
+         nor records, so this is a test-only concession and never part of the product. -->
+    <Compile Include="$(MSBuildThisFileDirectory)Net472TestFloor.IsExternalInit.cs" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,79 @@
+#!/bin/sh
+# Single source of truth for the release trains.
+#
+# The published trains version independently and each owns a tag prefix, a set
+# of Conventional Commit scopes, a NuGet package label, and a changelog file. That
+# mapping used to be copied verbatim into tools/packaging/release-notes.sh and
+# tools/changelog/collect-prs.sh; it now lives here, once. The scripts and the
+# changelog workflow *source* this file, so the partition can never drift between
+# "what a release publishes" and "what the changelog documents".
+#
+# This file is meant to be SOURCED (`. tools/trains.sh`), not executed — it only
+# defines functions and mutates nothing.
+#
+# ── History ───────────────────────────────────────────────────────────────────
+# In Reefact/first-class-errors this product rode a single `dum` train (dum-v*)
+# that published JustDummies and JustDummies.Xunit together, because the adapter
+# versions with the library it adapts. No dum-v* tag was ever pushed before the
+# extraction, so renaming the trains here discarded no published version.
+#
+# The adapter now has its own train. That decoupling has a COST, and pack.sh
+# guards it: JustDummies.Xunit carries a ProjectReference on JustDummies, so
+# `dotnet pack` stamps <dependency id="JustDummies" version="$version" /> with the
+# version being packed. Publishing xunit-v0.2.0 while the library sits at
+# lib-v0.1.0 would ship an adapter demanding a JustDummies 0.2.0 that was never
+# published — NU1102 for the consumer, on an immutable artifact. The guard in
+# tools/packaging/pack.sh refuses that pack.
+#
+# ── Adding a train ────────────────────────────────────────────────────────────
+# Add one row to trains_rows() below, then make the static edits GitHub forces
+# (tag trigger, choice options, commit-lint scopes, packaging). The full checklist
+# is doc/handwritten/for-maintainers/AddingAReleaseTrain.en.md.
+#
+# Row format (pipe-separated, no spaces around the pipes except inside the label):
+#   <id>|<tag-prefix>|<scopes csv>|<changelog file>|<package label>
+# Keep the scopes a subset of the closed SCOPES list in
+# tools/commit-lint/lint-commit-message.sh.
+trains_rows() {
+  cat <<'ROWS'
+lib|lib-v|core,analyzers|JustDummies/CHANGELOG.md|JustDummies (the library, with its analyzers bundled in)
+xunit|xunit-v|xunit|JustDummies.Xunit/CHANGELOG.md|JustDummies.Xunit (the xUnit v3 adapter)
+cli|cli-v|cli|tools/dum/CHANGELOG.md|dum (the JustDummies scaffolder)
+ROWS
+}
+
+# _train_field <id> <field-name> — echo one field of a train's row, or nothing if
+# the id is unknown. Fields: prefix | scopes | changelog | package.
+_train_field() {
+  _tf_id="$1"; _tf_field="$2"
+  trains_rows | while IFS='|' read -r id prefix scopes changelog package; do
+    [ "$id" = "$_tf_id" ] || continue
+    case "$_tf_field" in
+      prefix)    printf '%s\n' "$prefix" ;;
+      scopes)    printf '%s\n' "$scopes" ;;
+      changelog) printf '%s\n' "$changelog" ;;
+      package)   printf '%s\n' "$package" ;;
+      # A caller asking for a field this row format does not carry is a bug in the caller, not a
+      # missing value: say so on stderr rather than returning the empty string an unknown TRAIN
+      # returns, which require_train reads as "no such train".
+      *)         printf 'trains.sh: unknown field "%s"\n' "$_tf_field" >&2 ;;
+    esac
+  done
+}
+
+train_ids()     { trains_rows | cut -d'|' -f1; }
+prefix_of()     { _train_field "$1" prefix; }
+scopes_of()     { _train_field "$1" scopes; }
+changelog_of()  { _train_field "$1" changelog; }
+package_of()    { _train_field "$1" package; }
+
+# require_train <id> — succeed if <id> is a known train, else print the known ids
+# to stderr and return 1. Callers decide the exit code.
+require_train() {
+  if [ -n "$(prefix_of "$1")" ]; then
+    return 0
+  fi
+  printf 'unknown train "%s" (known: %s)\n' \
+    "$1" "$(train_ids | tr '\n' ' ' | sed 's/ *$//')" >&2
+  return 1
+}

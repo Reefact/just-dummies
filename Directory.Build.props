@@ -1,0 +1,126 @@
+<Project>
+
+  <!--
+    Shared packaging hardening for the NuGet packages this repository ships
+    (JustDummies and JustDummies.Xunit).
+
+    These properties only take effect during `pack`, so they are inert for every other
+    project that also imports this file (the tests and the analyzers).
+  -->
+  <PropertyGroup>
+    <!-- SourceLink lets debuggers step into the exact commit's sources from the published symbols.
+         Since .NET 8 the SDK bundles Source Link and auto-detects the GitHub remote, so no
+         Microsoft.SourceLink.* PackageReference is needed; setting these properties is enough. -->
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+
+    <!-- Ship symbols as a separate .snupkg so the main package stays lean but stays debuggable. -->
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+
+    <!-- Deterministic, path-normalized builds on CI; a no-op for local builds. -->
+    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
+  </PropertyGroup>
+
+  <!--
+    Warning ratchet: the codebase currently builds with ZERO warnings, and CI locks that state in by
+    turning every warning into an error — a new warning can never merge, so the count can never creep
+    up. Scoped to CI (same GITHUB_ACTIONS signal as ContinuousIntegrationBuild above) so local builds
+    stay friendly to iteration: half-finished refactorings may warn without blocking the inner loop.
+  -->
+  <PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true'">
+    <!-- Two switches are needed for a TOTAL ratchet. TreatWarningsAsErrors is compiler-scoped (it only
+         promotes CS* diagnostics); MSBuildTreatWarningsAsErrors promotes warnings raised by MSBuild/SDK
+         tasks and pack targets (MSB*, NETSDK*, ...). With only the first, a task-emitted warning would
+         still merge unnoticed. -->
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <MSBuildTreatWarningsAsErrors>true</MSBuildTreatWarningsAsErrors>
+    <!-- Keep NuGet security-audit advisories (NU1901-NU1905) as warnings: a CVE published overnight
+         against a dependency would otherwise turn every PR red without any code change (NuGet honours
+         TreatWarningsAsErrors for its own restore warnings, so they ARE promoted by default). The
+         advisory still shows in logs; Dependabot and CodeQL are the channels that act on it. This
+         exclusion MUST live in WarningsNotAsErrors, not MSBuildWarningsNotAsErrors: NuGet reads the
+         compiler-scoped list — the MSBuild-scoped one does not suppress NU* audit errors (verified). -->
+    <WarningsNotAsErrors>$(WarningsNotAsErrors);NU1901;NU1902;NU1903;NU1904;NU1905</WarningsNotAsErrors>
+  </PropertyGroup>
+
+  <!--
+    Runs the Roslyn code-style analyzers (IDE*) as part of the build. Without this they exist only in the
+    IDE: the rules configured in .editorconfig are read, and then nothing reports them at build time —
+    measured, a solution build with the explicit-type rule configured emits ZERO diagnostics until this
+    property is set. It is the switch, .editorconfig is only the dial.
+
+    This is deliberately NOT scoped to CI, unlike the warning ratchet above. The point is to make the rule
+    visible to whoever writes the code — a human in an editor without ReSharper, or an agent that cannot
+    read JustDummies.sln.DotSettings at all — at the moment they build, not once the pull request is
+    already open. In CI the same diagnostics are promoted to errors by TreatWarningsAsErrors, so the rule
+    is advisory locally and blocking on the way in.
+
+    Only the rules .editorconfig gives an explicit severity are enforced; everything else keeps its default
+    (silent or suggestion) and cannot break a build.
+  -->
+  <PropertyGroup>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+  </PropertyGroup>
+
+  <!--
+    The Roslyn floor for the shipped analyzer. JustDummies.Analyzers is compiled against this version
+    of Microsoft.CodeAnalysis.*, which is the MINIMUM host compiler able to load it once it is packed into
+    JustDummies and delivered to consumers. A higher version makes the analyzer fail to load (CS8032)
+    on older SDKs/IDEs. Kept here as the single source of truth so the analyzer csproj (the pin) can never
+    drift from the central version. 4.8.0 == VS 2022 17.8 / .NET 8 SDK.
+  -->
+  <PropertyGroup>
+    <RoslynFloorVersion>4.8.0</RoslynFloorVersion>
+  </PropertyGroup>
+
+  <!--
+    Central Package Management is configured in Directory.Packages.props (ManagePackageVersionsCentrally plus
+    the <PackageVersion> list). The property is repeated here for a TOOLING reason, not an MSBuild one:
+    OpenSSF Scorecard's Pinned-Dependencies check inspects every Directory.*.props file and keeps only the
+    LAST one it reads when deciding whether CPM is enabled (it overwrites its config per file). This file is
+    read after Directory.Packages.props and carries no <PackageVersion>, so without the property here Scorecard
+    concludes "CPM disabled" and reports the solution's `dotnet restore` as an unpinned nugetCommand — capping
+    the check at 7. Declaring it here makes the winning file report CPM enabled; its empty version set trivially
+    satisfies Scorecard's "all versions are fixed" rule, so the restore counts as pinned. Redundant for MSBuild
+    (same value as Directory.Packages.props).
+  -->
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+
+  <!--
+    The Sonar C# rules, brought forward from the report to the build, so a contributor — human or agent —
+    meets them while writing the code rather than after the merge, in a report.
+
+    The analyzer is a build-time asset only: PrivateAssets="all" keeps it out of every published
+    package's dependency graph. The ItemGroup is conditioned on central package management so a
+    project that opts out of CPM does not hit a version-less PackageReference it cannot restore.
+
+    build/sonar-profile.globalconfig is GENERATED by tools/sonar-profile/sync-profile.sh from the
+    project's SonarCloud quality profile, and lists every rule that profile activates. The package
+    alone is NOT the profile — measured, its default set leaves S3776 and S1192 disabled although the
+    profile activates them — so reading the profile is the only way the build and the report can be
+    talking about the same rules.
+
+    The default is ENFORCE: the generated file puts every rule at `warning`, which the ratchet above
+    turns into an error in CI. `suggestion` was measured as the default and rejected — at that
+    severity a Sonar diagnostic prints nothing in `dotnet build` at any verbosity, so the list would
+    have been invisible to the reader it exists for.
+
+    The EXCEPTIONS are in .editorconfig, which wins over a global AnalyzerConfig: `suggestion` for a
+    rule whose existing violations are not cleared yet (with its count), `none` for one this
+    codebase refuses (with its reason). Membership is generated; every exception is written down.
+    Decision: ADR-0062 in Reefact/first-class-errors, the repository this one was extracted from.
+
+    NOTE (migration): the profile file carried here is the one generated for the FirstClassErrors
+    SonarCloud project. It stays byte-identical so the build keeps emitting the same rule set it did
+    before the extraction; regenerate it from this repository's own SonarCloud project once that
+    project exists. See doc/handwritten/for-maintainers/migration/.
+  -->
+  <ItemGroup Condition="'$(ManagePackageVersionsCentrally)' == 'true'">
+    <PackageReference Include="SonarAnalyzer.CSharp" PrivateAssets="all" />
+    <GlobalAnalyzerConfigFiles Include="$(MSBuildThisFileDirectory)build/sonar-profile.globalconfig" />
+  </ItemGroup>
+
+</Project>

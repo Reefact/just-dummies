@@ -50,7 +50,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="..\icon.png" Pack="true" PackagePath="/" />
+    <!-- The adapter carries its own mark: the same mannequin, at the same size as JustDummies',
+         with an X laid over it. PackagePath renames it on the way in, so both packages ship their
+         own drawing under the single icon.png path <PackageIcon> names — the same rename the
+         readme below already uses. -->
+    <None Include="..\icon-xunit.png" Pack="true" PackagePath="icon.png" />
     <None Include="README.nuget.md" Pack="true" PackagePath="readme.md" />
   </ItemGroup>
 

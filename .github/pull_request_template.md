@@ -37,17 +37,17 @@
 
 <!-- Check only the commands/tests that were actually run. Add details if something was not run. -->
 
-* [ ] `dotnet build FirstClassErrors.sln`
-* [ ] `dotnet test FirstClassErrors.sln`
-* [ ] Analyzer tests pass (`FirstClassErrors.Analyzers.UnitTests`)
+* [ ] `dotnet build JustDummies.sln`
+* [ ] `dotnet test JustDummies.sln`
+* [ ] Analyzer tests pass (`JustDummies.Analyzers.UnitTests`)
 
 ## Documentation
 
 <!-- State whether documentation was updated, or why no documentation change was needed. -->
 
-* [ ] Public API / error documentation updated
+* [ ] Public API / analyzer documentation updated
 * [ ] README / `doc/` updated
-* [ ] French translation (`doc/handwritten/for-users/README.fr.md`) updated if user-facing behavior changed
+* [ ] French translation updated alongside the English page it mirrors (`doc/handwritten/for-users/analyzers/JD0NN.fr.md`)
 * [ ] No documentation change required
 
 ## Architecture decisions

@@ -186,4 +186,4 @@ unguessable from `Any.*`; reach for
 
 Full documentation on GitHub:
 
-https://github.com/Reefact/first-class-errors
+https://github.com/Reefact/just-dummies

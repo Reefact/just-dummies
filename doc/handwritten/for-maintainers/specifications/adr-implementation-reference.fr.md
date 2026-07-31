@@ -12,16 +12,16 @@ Décision liée : [ADR-0001](../adr/0001-lock-the-analyzer-roslyn-floor.fr.md).
 
 L'analyseur est compilé contre le plancher Roslyn déclaré par `RoslynFloorVersion` dans `Directory.Build.props`. Le package conserve l'analyseur sous `analyzers/dotnet/cs/`.
 
-En amont, la réalisation reposait sur quatre protections complémentaires. **Deux ne sont pas venues avec l'extraction**, si bien que le plancher est aujourd'hui *déclaré et épinglé* mais pas *prouvé* :
+La réalisation repose sur quatre protections complémentaires. Deux sont arrivées avec l'extraction ; les deux autres manquaient et ont depuis été portées, si bien que le plancher est désormais à la fois *déclaré* et *prouvé* :
 
-* ✅ la référence de package de l'analyseur est épinglée sur le plancher déclaré (`VersionOverride="$(RoslynFloorVersion)"` dans `JustDummies.Analyzers.csproj`, actuellement 4.8.0) ;
-* ✅ Dependabot ignore les mises à jour automatiques des packages Roslyn qui définissent le plancher (`.github/dependabot.yml`) ;
-* ❌ `RoslynFloorTests`, qui inspectait les métadonnées d'assembly et refusait les références `Microsoft.CodeAnalysis*` plus récentes — aucun test de ce genre n'existe dans ce dépôt ;
-* ❌ le workflow de l'analyseur, qui construisait le vrai package NuGet puis compilait un exemple avec le SDK plancher, vérifiant à la fois le chargement et l'empaquetage — il n'y a pas d'`analyzers.yml` ici.
+* la référence de package de l'analyseur est épinglée sur le plancher déclaré (`VersionOverride="$(RoslynFloorVersion)"` dans `JustDummies.Analyzers.csproj`, actuellement 4.8.0) ;
+* Dependabot ignore les mises à jour automatiques des packages Roslyn qui définissent le plancher (`.github/dependabot.yml`) ;
+* [`RoslynFloorTests`](../../../../JustDummies.Analyzers.UnitTests/RoslynFloorTests.cs) réfléchit sur l'assembly d'analyseurs construite et refuse toute référence `Microsoft.CodeAnalysis*` plus récente que le plancher, en quelques millisecondes, dans l'exécution de tests ordinaire. Il lit le plancher depuis l'`AssemblyMetadata` de l'assembly, émise à partir du même `$(RoslynFloorVersion)` que l'épinglage, de sorte que l'épinglage et son garde-fou ne peuvent pas se désynchroniser ;
+* le workflow [`analyzers`](../workflows/analyzers.fr.md) package le vrai artefact NuGet sous le SDK de release puis compile un échantillon contre lui sous le SDK plancher, prouvant à la fois que les analyseurs se chargent sur le plus vieux compilateur supporté et qu'ils sont livrés là où les consommateurs les cherchent.
 
-La conséquence est concrète : une montée transitive au-delà du plancher compilerait, passerait les tests et se packagerait au vert, pour ne se manifester que par un analyseur qui refuse de se charger chez un consommateur sur un compilateur plus ancien. Porter les deux protections manquantes est un travail à faire, pas une décision revenue en arrière — l'ADR-0001 tient tel qu'il est écrit.
+Les deux sont complémentaires plutôt que redondants. Le test attrape la régression courante — une référence de package montée — avant la CI ; le workflow attrape ce que la réflexion ne peut pas voir : un chemin `analyzers/dotnet/cs` cassé, un analyseur qui lève à l'initialisation, une dépendance transitive qui n'échoue que sur le vieil hôte.
 
-Lors d'un changement de plancher, il faut mettre à jour la propriété centrale et l'exigence de compilateur documentée. Le changement architectural lui-même exige un nouvel ADR remplaçant l'ADR-0001.
+Lors d'un changement de plancher, il faut mettre à jour la propriété centrale, l'exigence de compilateur documentée, ainsi que le SDK plancher épinglé dans `tools/floor-check/global.json` et dans l'étape `setup-dotnet` du workflow. Le changement architectural lui-même exige un nouvel ADR remplaçant l'ADR-0001.
 
 ## Vérification ADR des pull requests
 

@@ -12,16 +12,16 @@ Related decisions: [ADR-0001](../adr/0001-lock-the-analyzer-roslyn-floor.md).
 
 The analyzer is compiled against the Roslyn floor declared by `RoslynFloorVersion` in `Directory.Build.props`. The package keeps the analyzer under `analyzers/dotnet/cs/`.
 
-Upstream, the realization used four complementary guards. **Two of them did not come over with the extraction**, so the floor is currently *declared and pinned* but not *proved*:
+The realization uses four complementary guards. Two arrived with the extraction; the other two were missing and have since been ported, so the floor is now both *declared* and *proved*:
 
-* ✅ the analyzer package reference is pinned to the declared floor (`VersionOverride="$(RoslynFloorVersion)"` in `JustDummies.Analyzers.csproj`, currently 4.8.0);
-* ✅ Dependabot ignores automated updates for the floor-defining Roslyn packages (`.github/dependabot.yml`);
-* ❌ `RoslynFloorTests`, which inspected assembly metadata and rejected newer `Microsoft.CodeAnalysis*` references — no such test exists in this repository;
-* ❌ the analyzer workflow, which packed the real NuGet artifact and built a sample with the floor SDK, proving both loading and packaging — there is no `analyzers.yml` here.
+* the analyzer package reference is pinned to the declared floor (`VersionOverride="$(RoslynFloorVersion)"` in `JustDummies.Analyzers.csproj`, currently 4.8.0);
+* Dependabot ignores automated updates for the floor-defining Roslyn packages (`.github/dependabot.yml`);
+* [`RoslynFloorTests`](../../../../JustDummies.Analyzers.UnitTests/RoslynFloorTests.cs) reflects over the built analyzer assembly and rejects any referenced `Microsoft.CodeAnalysis*` newer than the floor, in milliseconds, inside the ordinary test run. It reads the floor from the assembly's `AssemblyMetadata`, emitted from the same `$(RoslynFloorVersion)` the pin uses, so the pin and its guard cannot diverge;
+* the [`analyzers`](../workflows/analyzers.en.md) workflow packs the real NuGet artifact under the release SDK and builds a sample against it under the floor SDK, proving both that the analyzers load on the oldest supported compiler and that they ship where consumers look for them.
 
-The consequence is concrete: a transitive bump past the floor would compile, test and pack green, and only surface as an analyzer that fails to load in a consumer on an older compiler. Porting the two missing guards is outstanding work, not a decision that was reversed — ADR-0001 still stands as written.
+The two are complementary rather than redundant. The test catches the common regression — a bumped package reference — before CI; the workflow catches what reflection cannot see: a broken `analyzers/dotnet/cs` path, an analyzer that throws while loading, a transitive dependency that only fails on the old host.
 
-When the floor changes, update the central property and the documented compiler requirement. The architectural change itself requires a new ADR that supersedes ADR-0001.
+When the floor changes, update the central property and the documented compiler requirement, and the floor SDK pinned in `tools/floor-check/global.json` and in the workflow's `setup-dotnet` step. The architectural change itself requires a new ADR that supersedes ADR-0001.
 
 ## ADR pull-request check
 

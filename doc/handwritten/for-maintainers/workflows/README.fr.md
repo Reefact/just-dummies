@@ -20,7 +20,7 @@ s'exécute, et la poignée de choses à ne pas changer sans avoir compris pourqu
 Lisez la page d'un workflow avant d'y toucher. Quand la page et le YAML sont en
 désaccord, c'est le YAML qui gagne — et la page qu'il faut corriger.
 
-**Un seul workflow a une page pour l'instant**, et le tableau ci-dessous dit
+**Cinq workflows ont une page pour l'instant**, et le tableau ci-dessous dit
 lequel. Les autres y figurent quand même : un index qui les omettrait laisserait
 croire qu'ils n'existent pas. Leurs commentaires YAML sont, pour l'heure, toute
 la documentation qu'ils ont.
@@ -35,7 +35,7 @@ les workflows tels qu'ils sont, pas reprise sur parole :
   `@v4` peut être déplacé par son propriétaire vers du nouveau code ; un SHA de 40
   caractères, non. Chaque `uses:` épingle donc un SHA, avec le tag lisible en
   commentaire de fin de ligne (`# v4`). Quand vous montez une action, changez **les
-  deux**. Compté : 42 `uses:` épinglés par SHA, zéro par tag.
+  deux**. Compté : 44 `uses:` épinglés par SHA, zéro par tag.
 - **Les `permissions:` partent en lecture seule et s'élargissent par job.** Le
   bloc au niveau du workflow est le moindre privilège dont il a besoin
   (généralement `contents: read`) ; un job qui doit écrire quelque chose (téléverser
@@ -45,7 +45,7 @@ les workflows tels qu'ils sont, pas reprise sur parole :
   l'inverse : il déclare `permissions: {}` — le mapping vide explicite, puisqu'un
   `permissions:` nu est un null et non une map vide.
 - **Chaque job pose un `timeout-minutes`.** Le défaut GitHub est de six heures ;
-  une étape bloquée retiendrait un runner tout ce temps. Compté : 20 jobs, 20 avec
+  une étape bloquée retiendrait un runner tout ce temps. Compté : 21 jobs, 21 avec
   un plafond. Chacun est réglé à quelques fois la durée observée, avec un
   commentaire à côté.
 - **`concurrency` annule les runs supplantés.** Pousser deux fois sur la même
@@ -74,12 +74,13 @@ les workflows tels qu'ils sont, pas reprise sur parole :
 | `ci` | Build et tests de la solution sur Linux et Windows, avec couverture, plus la patte du plancher .NET Framework 4.7.2. Le barrage principal. |
 | `justdummies` | Prouve que les assets `netstandard2.0` et `net8.0` packagés se comportent bien sur les runtimes qui les chargent réellement — la patte que le projet de tests net10 ne peut pas exercer. |
 | [`justdummies-mutation`](justdummies-mutation.fr.md) | Tests de mutation des trois composants avec Stryker.NET — un check consultatif sur ce qu'une PR change, plus le balayage complet hebdomadaire qui est le niveau imposé. |
-| `sonar` | Analyse SonarQube Cloud — quality gate et remontée de couverture. |
-| `sonar-profile` | Hebdomadaire : échoue quand la liste de règles Sonar C# commitée a dérivé du quality profile SonarCloud. Rapporte, ne répare jamais. |
+| [`analyzers`](analyzers.fr.md) | Charge les analyseurs embarqués depuis l'artefact packagé sous le plus vieux compilateur supporté (Roslyn 4.8), ce qu'un build ordinaire ne fait jamais. |
+| [`sonar`](sonar.fr.md) | Analyse SonarQube Cloud — quality gate et remontée de couverture. |
+| [`sonar-profile`](sonar-profile.fr.md) | Hebdomadaire : échoue quand la liste de règles Sonar C# commitée a dérivé du quality profile SonarCloud. Rapporte, ne répare jamais. |
 | `sonar-gate` | Nocturne : lit le verdict du Quality Gate SonarCloud et échoue quand il est rouge. |
 | `commit-lint` | Impose la convention Conventional Commits sur chaque commit d'une PR, avec le script du hook local. |
 | `lint` | shellcheck et actionlint sur les fichiers que le compilateur C# ne voit jamais — les scripts POSIX et les définitions de workflow. |
-| `adr-check` | Consultatif, sur déclenchement manuel : confronte une branche à la base ADR (décision nouvelle / supersession / conflit). Ne bloque jamais. |
+| [`adr-check`](adr-check.fr.md) | Consultatif, sur déclenchement manuel : confronte une branche à la base ADR (décision nouvelle / supersession / conflit). Ne bloque jamais. |
 
 ### Sécurité & chaîne d'approvisionnement
 

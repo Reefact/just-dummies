@@ -110,7 +110,7 @@ jobs:
             esac
           fi
           case "$COMPONENT" in
-            lib|cli|dum) ;;
+            lib|xunit|cli) ;;
             *) echo "::error::Invalid component '$COMPONENT'; expected 'lib', 'xunit' or 'cli'."; exit 1 ;;
           esac
           # Build metadata (+...) is deliberately REJECTED even though SemVer allows it: NuGet strips it

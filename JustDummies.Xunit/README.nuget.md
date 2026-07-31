@@ -68,5 +68,5 @@ replays a particular seed.
 
 ## Links
 
-- [Repository](https://github.com/Reefact/first-class-errors)
+- [Repository](https://github.com/Reefact/just-dummies)
 - [JustDummies](https://www.nuget.org/packages/JustDummies)

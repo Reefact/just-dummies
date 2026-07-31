@@ -32,11 +32,17 @@
 #
 # Row format (pipe-separated, no spaces around the pipes except inside the label):
 #   <id>|<tag-prefix>|<scopes csv>|<changelog file>|<package label>
-# Keep the scopes a subset of the closed SCOPES list in
-# tools/commit-lint/lint-commit-message.sh.
+#
+# Scopes a train claims are normally a subset of the closed list in
+# tools/commit-lint/lint-commit-message.sh, with ONE deliberate exception: `lib` also
+# claims `dummies` and `justdummies`. Those are what this product's commits carried for
+# its whole life in Reefact/first-class-errors -- 207 of them -- and the partition has to
+# describe the history as it was written, not as it would be written today. Without them
+# the first release notes list four commits out of two hundred. New commits still cannot
+# use them: commit-lint is a separate file and rejects both.
 trains_rows() {
   cat <<'ROWS'
-lib|lib-v|core,analyzers|JustDummies/CHANGELOG.md|JustDummies (the library, with its analyzers bundled in)
+lib|lib-v|core,analyzers,dummies,justdummies|JustDummies/CHANGELOG.md|JustDummies (the library, with its analyzers bundled in)
 xunit|xunit-v|xunit|JustDummies.Xunit/CHANGELOG.md|JustDummies.Xunit (the xUnit v3 adapter)
 cli|cli-v|cli|tools/dum/CHANGELOG.md|dum (the JustDummies scaffolder)
 ROWS

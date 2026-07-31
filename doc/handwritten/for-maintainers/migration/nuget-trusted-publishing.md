@@ -39,21 +39,28 @@ decided; `tools/packaging/pack.sh` fails that train loudly until then.
 
 ## What to configure on GitHub
 
-One repository secret:
+One repository **variable** — *Settings → Secrets and variables → Actions → Variables*:
 
-| Secret | Value |
+| Variable | Value |
 | --- | --- |
 | `NUGET_USER` | the nuget.org account **username** (the profile name, not the email address) |
 
-`release.yml` reads it at `secrets.NUGET_USER` and passes it to `NuGet/login`. Nothing else in the release
-path needs a secret: the OIDC token is minted by GitHub, and `GITHUB_TOKEN` covers the GitHub Release.
+A variable rather than a secret, deliberately: the username is public on the nuget.org profile and is an
+identifier, not a credential. The only credential in this path is the short-lived key the OIDC exchange
+mints, and it never leaves the runner. Storing the username as a secret would mask it in the logs and make a
+failed login harder to diagnose, protecting nothing.
+
+`release.yml` reads it at `vars.NUGET_USER` and passes it to `NuGet/login`. Nothing else in the release path
+needs a secret: the OIDC token is minted by GitHub, and `GITHUB_TOKEN` covers the GitHub Release. Setting it
+as a *secret* instead leaves `vars.NUGET_USER` empty and the login fails with
+`Input required and not supplied: user`.
 
 No branch protection, environment or approval gate is required. If one is added later, its name must be
 declared both in `release.yml` (`environment:`) and in the nuget.org policy — the exchange matches on it.
 
 ## Verifying without publishing
 
-Once the policies and the secret exist:
+Once the policies and the variable exist:
 
 ```
 gh workflow run release.yml -f component=lib -f version=0.0.0-dry.1 -f dry_run=true

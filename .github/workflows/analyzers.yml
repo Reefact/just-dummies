@@ -1,0 +1,102 @@
+name: analyzers
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+# Cancel superseded runs on the same branch / PR.
+concurrency:
+  group: analyzers-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Least privilege: this workflow only checks out and builds, so the token
+# needs nothing beyond read access to the repository contents.
+permissions:
+  contents: read
+
+env:
+  DOTNET_NOLOGO: 'true'
+  DOTNET_CLI_TELEMETRY_OPTOUT: 'true'
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 'true'
+
+# One job, not the two this workflow carries in Reefact/first-class-errors.
+#
+# There, a separate "dogfood" job builds the Usage sample with the analyzers wired in. Here that coverage
+# already exists inside ci: JustDummies.Xunit references JustDummies.Analyzers with OutputItemType=Analyzer,
+# so every ordinary build runs the rules against this repository's own code and fails on an Error-severity
+# JD diagnostic. Duplicating it would add a job that can only ever agree with ci.
+#
+# What ci CANNOT do is the job below, and the difference is the whole point: ci builds from PROJECT
+# references under the modern SDK, so it never loads the analyzers the way a consumer does — out of the
+# package, under an old compiler.
+jobs:
+  floor:
+    name: Dogfood analyzers on the Roslyn floor
+    runs-on: ubuntu-latest
+    # Downloads the floor SDK then packs and builds (~2 min); cap a hung run.
+    timeout-minutes: 15
+    env:
+      # Single source of truth for the throwaway package version, passed to BOTH the pack (-p:Version) and
+      # the consume (-p:FloorCheckVersion) steps. The run-number.attempt suffix makes every run produce a
+      # version NuGet has never cached, so the consume step always restores the freshly packed .nupkg instead
+      # of a stale copy from ~/.nuget/packages; run_attempt (which changes on a re-run, unlike run_number)
+      # closes the door should a ~/.nuget cache ever be added to this job. Dot separators keep the numeric
+      # identifiers ordered numerically per SemVer. FloorCheck.csproj pins this EXACT version (not a float),
+      # so it can only resolve the local feed's package — never the JustDummies published on nuget.org.
+      FLOORCHECK_VERSION: 1.0.0-floorcheck.${{ github.run_number }}.${{ github.run_attempt }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Setup SDKs (release + floor)
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          # Two SDKs on purpose. 10.0.x is the SDK release.yml packs with, so the pack step below produces
+          # the exact artifact consumers receive. 8.0.100 (Roslyn 4.8.0 == VS 2022 17.8) is the oldest
+          # supported host, and it is exactly the RoslynFloorVersion pinned in Directory.Build.props; the
+          # consume step builds against that package under it. 8.0.x is avoided because a later feature band
+          # bundles a Roslyn newer than the floor, which would silently weaken this check. The nested
+          # global.json (rollForward: disable) pins the consume step to 8.0.100; the pack picks 10.0.x via
+          # the repo-root global.json.
+          dotnet-version: |
+            10.0.x
+            8.0.100
+
+      - name: Pack JustDummies (with bundled analyzers) under the RELEASE SDK
+        # Pack from the repo root so the root global.json selects the .NET 10 SDK — the one release.yml packs
+        # with — producing the exact artifact a consumer restores, analyzers bundled at analyzers/dotnet/cs by
+        # JustDummies.csproj's _AddAnalyzerToPackage target. Packing under the floor SDK instead would test an
+        # analyzer nobody ships and would pin the whole library to C# 12 (LangVersion latest under SDK 8).
+        # GenerateSBOM is off: the SBOM is a release-pipeline concern (release.yml), and this job needs only
+        # the analyzers/ and lib/ folders. The feed and the project-local package cache (RestorePackagesPath
+        # in FloorCheck.csproj) are wiped first so the consume step can only see this run's package — a no-op
+        # on a fresh CI runner, but it keeps a reused/local workspace idempotent.
+        run: |
+          rm -rf tools/floor-check/local-feed tools/floor-check/packages
+          dotnet pack JustDummies/JustDummies.csproj -c Release -p:Version="$FLOORCHECK_VERSION" -p:GenerateSBOM=false -o tools/floor-check/local-feed
+
+      - name: Consume the package on the floor SDK
+        # tools/floor-check/global.json selects the .NET 8 (Roslyn 4.8) SDK: SDK resolution is CWD-based, so
+        # running from this directory is what makes the CLI pick the nested pin. This is the real test — the
+        # shipped analyzers, loaded by the oldest supported compiler. -p:FloorCheckVersion pins the exact
+        # package this run packed. ReportAnalyzer AND detailed verbosity are both required for Roslyn's
+        # per-analyzer table to reach the log (silent at default verbosity); --no-incremental guarantees a
+        # real compilation so that table is always produced. The (verbose) log is echoed only on failure.
+        working-directory: tools/floor-check
+        run: dotnet build -c Release --no-incremental -p:FloorCheckVersion="$FLOORCHECK_VERSION" -p:ReportAnalyzer=true -v detailed > build.log 2>&1 || { cat build.log; exit 1; }
+
+      - name: Prove the analyzers actually loaded
+        # A never-loaded analyzer would otherwise leave the build green: CS8032 is emitted only when loading
+        # is attempted. The assembly name alone appears in ordinary build lines ("JustDummies.Analyzers ->
+        # ...dll" / paths), so match a fully-qualified analyzer *type* (`...<Name>Analyzer`): it appears only
+        # in the ReportAnalyzer table, i.e. only if the analyzers really loaded and ran. The pattern
+        # deliberately does not depend on the trailing diagnostic-id list, which is a Roslyn-version
+        # formatting detail, nor on how many analyzers the table lists, which changes whenever a rule is
+        # added.
+        working-directory: tools/floor-check
+        run: grep -qE 'JustDummies\.Analyzers\.[A-Za-z]+Analyzer' build.log

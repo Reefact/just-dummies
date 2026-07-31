@@ -287,6 +287,13 @@ __pycache__/
 *.btm.cs
 *.odx.cs
 *.xsd.cs
+# Roslyn floor check (tools/floor-check): CI-generated artifacts, never committed. local-feed holds the
+# packed .nupkg the floor job produces; packages/ is the project-local NuGet extraction folder
+# (RestorePackagesPath); build.log is the job's verbose build output.
+tools/floor-check/local-feed/
+tools/floor-check/packages/
+tools/floor-check/build.log
+
 # JustDummies packaged-asset compatibility check (tools/justdummies-check): CI-generated artifacts, never committed.
 # local-feed holds the packed .nupkg the justdummies job produces; packages/ is the project-local NuGet
 # extraction folder (RestorePackagesPath); *.log are the job's per-asset run outputs.

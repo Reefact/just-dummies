@@ -1,0 +1,101 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Floor-SDK dogfood consumer. Deliberately NOT part of JustDummies.sln: ci.yml would build it under the
+       .NET 10 SDK, which proves nothing and only causes confusion. It is built solely by the "floor" job in
+       .github/workflows/analyzers.yml.
+
+       That job splits the work across two SDKs on purpose:
+         * JustDummies is PACKED under the release SDK (.NET 10) — the .nupkg is what a consumer restores,
+           with the analyzers bundled at analyzers/dotnet/cs.
+         * THIS project then consumes that package under the floor SDK (.NET 8 / Roslyn 4.8, selected by the
+           nested tools/floor-check/global.json), i.e. the oldest supported host.
+
+       So one job proves two things about the actual shipped artifact, through two DIFFERENT guards:
+         (1) the analyzers still load on the floor — a newer Roslyn reference fails with CS8032, which the
+             WarningsAsErrors list below escalates, so the build itself goes red;
+         (2) they really ship where consumers expect them — a broken analyzers/dotnet/cs path raises nothing
+             at all (no load is attempted), so the workflow's "prove the analyzers loaded" grep is what
+             catches it.
+       Do not collapse the two: CS8032's message names the analyzer type it could not create, so the grep on
+       its own cannot tell a failed load from a successful one.
+
+       WHY A LOCAL SAMPLE (unlike Reefact/first-class-errors, where this project compiles the Usage sample)
+       That repository has a FirstClassErrors.Usage project to point at; this one has no sample project, and
+       inventing one for the whole solution to carry would be a larger change than the guard it serves.
+       Sample.cs next to this file is that sample, kept deliberately small: its job is to give the compiler
+       something real to analyze, not to demonstrate the library.
+
+       WHY THIS IS NOT tools/justdummies-check
+       They consume the same package and look alike, and they check different contracts. justdummies-check
+       asks which ASSET NuGet resolves (net8.0 vs netstandard2.0) and therefore builds under the modern SDK.
+       This project asks whether the bundled ANALYZERS load on the oldest supported compiler, and therefore
+       pins an old SDK. Neither subsumes the other. -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <!-- An analyzer that fails to load (CS8032) or throws while loading (AD0001) must break the build,
+         not merely warn. That failure is the entire signal this project exists to produce. -->
+    <WarningsAsErrors>$(WarningsAsErrors);CS8032;AD0001</WarningsAsErrors>
+    <!-- Opt out of the repo-wide CI warning ratchet (Directory.Build.props, imported from the repo root):
+         this project builds under the OLD floor SDK, whose toolchain may emit warnings the .NET 10 CI legs
+         never see. Elevating those would redden this job for reasons foreign to the one contract it checks
+         — analyzer loadability. Both ratchet switches are disabled; the targeted CS8032/AD0001 list above
+         stays the only escalation. -->
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <MSBuildTreatWarningsAsErrors>false</MSBuildTreatWarningsAsErrors>
+    <!-- Opt out of repo-wide Central Package Management (Directory.Packages.props, imported from the repo
+         root): this project consumes the JustDummies package at a dynamic $(FloorCheckVersion) and is built
+         in isolation, outside the solution, so it keeps its version inline (a PackageReference Version under
+         CPM would otherwise raise NU1008). -->
+    <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- The exact package version to consume. The floor job owns it and passes -p:FloorCheckVersion (the
+         same value it packs with). The default is only a local-dev fallback for building by hand. Note WHERE
+         each command runs: SDK resolution is CWD-based, so the pack must be launched from the REPOSITORY
+         ROOT (release SDK) and only the build from here (floor SDK). Packing from this directory would use
+         the floor SDK, which is the one thing this job must never do:
+           rm -rf tools/floor-check/packages tools/floor-check/local-feed tools/floor-check/bin tools/floor-check/obj
+           # from the repository root:
+           dotnet pack JustDummies/JustDummies.csproj -c Release -p:Version=1.0.0-floorcheck.dev -p:GenerateSBOM=false -o tools/floor-check/local-feed
+           # then, from tools/floor-check:
+           dotnet build -c Release
+         The wipe is MANDATORY on a re-pack: the default version is fixed, and NuGet treats a version as
+         immutable — without it the build silently reuses the previously extracted package (see below). -->
+    <FloorCheckVersion Condition="'$(FloorCheckVersion)' == ''">1.0.0-floorcheck.dev</FloorCheckVersion>
+    <!-- Extract restored packages into ./packages instead of the machine-global ~/.nuget/packages. The
+         global folder is keyed by (id, version) and never re-reads a feed for a version it already holds,
+         so with the fixed local-dev version a re-pack would silently serve the STALE previously-extracted
+         copy — the exact green-but-meaningless failure this job exists to prevent. A project-local folder
+         makes the reset above cheap and safe (rm -rf of two ignored directories) and keeps this throwaway
+         package out of the developer's real cache. -->
+    <RestorePackagesPath>$(MSBuildThisFileDirectory)packages</RestorePackagesPath>
+    <!-- packages/ now lives UNDER the project directory (RestorePackagesPath above), and the SDK's default
+         globs compile every **/*.cs beneath it (they exclude only bin/ and obj/). Today the restored
+         JustDummies package carries only DLLs, so nothing is swept in — but a dependency shipping sources
+         (contentFiles, PolySharp-style polyfills, source-only generators) would be silently compiled into
+         FloorCheck, producing cryptic errors in the one job whose whole purpose is a clean diagnostic.
+         Exclude the folder from the default item globs. -->
+    <DefaultItemExcludes>$(DefaultItemExcludes);packages/**</DefaultItemExcludes>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Consume the packed package, NOT a ProjectReference: this is exactly what a downstream consumer
+         restores, so the analyzers are wired in from the package's analyzers/dotnet/cs folder. Staleness is
+         defeated per path: in CI the floor job packs a FRESH, per-run version (never seen by any cache) and
+         passes the SAME value here via -p:FloorCheckVersion; locally the dev default is a FIXED version, so
+         the reset documented above is what guarantees freshness — RestorePackagesPath keeps it cheap.
+
+         The version is pinned EXACTLY, not floated. A floating '1.0.0-floorcheck-*' would, once a stable
+         JustDummies 1.0.0 is published to nuget.org, resolve to that stable release instead — NuGet ranks a
+         stable version above any prerelease sharing its root — and the job would dogfood a published package
+         rather than the artifact under test. An exact prerelease reference resolves the lowest matching
+         version; the packageSourceMapping in nuget.config additionally pins the id to the local feed, so
+         nuget.org can never serve it at all. -->
+    <PackageReference Include="JustDummies" Version="$(FloorCheckVersion)" />
+  </ItemGroup>
+
+</Project>

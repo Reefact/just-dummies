@@ -11,7 +11,7 @@
 ## Contexte
 
 `JustDummies` fournit des valeurs arbitraires mais valides depuis une source unique et seedable, de sorte que tout run est
-reproductible à partir d'un seed reporté (ADR-0006 (first-class-errors)). Un besoin récurrent est une valeur dont le domaine est un
+reproductible à partir d'un seed reporté ([ADR-0006 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0006-supply-arbitrary-test-values-from-a-seedable-source.fr.md)). Un besoin récurrent est une valeur dont le domaine est un
 **ensemble fermé que l'appelant détient déjà** — l'une des devises pour lesquelles un contexte est configuré, l'une des
 commandes déjà présentes dans une fixture, l'un d'une poignée d'états métier sur lesquels le test ne porte aucune
 assertion. La bibliothèque génère des formes structurelles (une longueur, un intervalle, un motif) ; elle ne peut pas
@@ -55,7 +55,7 @@ du pool sous `EqualityComparer<T>.Default`.
 
 * **Cela ferme le piège de reproductibilité qui est la raison d'être de la bibliothèque.** Un tirage de pool conscient
   du seed remplace le `Random` écrit à la main, si bien que le choix se rejoue sous `Any.Reproducibly(...)` et
-  `Any.WithSeed(...)` comme tout autre tirage (ADR-0006 (first-class-errors)). L'audit désigne cet ajout comme celui au plus fort levier.
+  `Any.WithSeed(...)` comme tout autre tirage ([ADR-0006 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0006-supply-arbitrary-test-values-from-a-seedable-source.fr.md)). L'audit désigne cet ajout comme celui au plus fort levier.
 * **Rejeter `null` garde la nullabilité orthogonale et la surface symétrique.** `OrNull()` est l'unique manière
   d'exprimer une valeur optionnelle, aussi un membre de pool `null` réintroduirait-il l'ambiguïté « `null` est-il une
   valeur ou une absence » que ce décorateur existe pour supprimer. Cela s'aligne aussi sur le générateur de chaînes
@@ -157,7 +157,7 @@ forme qui convienne.
   le précédent générateur terminal et rejet du `null`).
 * ADR-0004 — Garder les collections distinctes par cardinalité, sinon par un tirage borné (le contrat
   `ICardinalityHint`).
-* ADR-0006 (first-class-errors) — Fournir les valeurs de test arbitraires depuis une source unique et seedable (reproductibilité).
+* [ADR-0006 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0006-supply-arbitrary-test-values-from-a-seedable-source.fr.md) — Fournir les valeurs de test arbitraires depuis une source unique et seedable (reproductibilité).
 * ADR-0010 — Nommer les factories scalaires d'Any d'après leur type CLR (pourquoi `OneOf`/`ElementOf`, en tant que
   combinateurs, sont exemptés).
 * ADR-0006 — Ne matérialiser les dummies qu'à travers `Generate()`.

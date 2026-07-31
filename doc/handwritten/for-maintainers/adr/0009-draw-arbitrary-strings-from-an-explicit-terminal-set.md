@@ -28,7 +28,7 @@ Several existing facts frame the choice:
   family, letter casing and length, each already cross-validated against the others.
 * Distinct collections gate on an element generator's advertised cardinality at declaration time (ADR-0004), through
   the internal `ICardinalityHint<T>`; a generator that does not advertise one falls back to a bounded dedup draw.
-* The library draws from a single seedable source so any run is reproducible (ADR-0006 (first-class-errors)), builds values to satisfy
+* The library draws from a single seedable source so any run is reproducible ([ADR-0006 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0006-supply-arbitrary-test-values-from-a-seedable-source.md)), builds values to satisfy
   the constraints rather than generate-and-filter, and ships with **zero runtime dependencies and no datasets** —
   its README lists "no realistic fake data (names, emails, addresses)" as an explicit non-goal (ADR-0003).
 * The requested call shape is `Any.String().OneOf(...)` — chained off the string entry point.
@@ -59,7 +59,7 @@ as a composable constraint like the scalar generators' `OneOf`.
   generator implements `ICardinalityHint<string>`; a distinct collection over it gates eagerly (ADR-0004), exactly
   as it does over `AnyChar` or `AnyEnum`, instead of silently relying on the bounded dedup-draw fallback.
 * **Reproducibility is preserved.** The value is a uniform pick from the deduplicated set through the same seedable
-  source as every other generator, so a run replays under a seed (ADR-0006 (first-class-errors)); collapsing duplicates keeps a listed
+  source as every other generator, so a run replays under a seed ([ADR-0006 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0006-supply-arbitrary-test-values-from-a-seedable-source.md)); collapsing duplicates keeps a listed
   value from being implicitly weighted.
 
 ## Alternatives Considered
@@ -88,7 +88,7 @@ the consumer supplies the set and `OneOf` draws from it instead.
 
 Considered as a way to author the set without hand-writing it. Rejected because it would add a runtime dependency and
 a non-deterministic, non-hermetic first run to a library whose identity is zero-dependency, deterministic generation
-(ADR-0006 (first-class-errors), ADR-0003); authoring the set is a design-time concern that belongs outside the library.
+([ADR-0006 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0006-supply-arbitrary-test-values-from-a-seedable-source.md), ADR-0003); authoring the set is a design-time concern that belongs outside the library.
 
 ## Consequences
 
@@ -125,7 +125,7 @@ a non-deterministic, non-hermetic first run to a library whose identity is zero-
 
 * ADR-0008 — Generate matching strings from a home-grown regular subset (the terminal-generator precedent).
 * ADR-0004 — Gate distinct collections by cardinality, otherwise by a bounded draw (the `ICardinalityHint` contract).
-* ADR-0006 (first-class-errors) — Supply arbitrary test values from a single seedable source (reproducibility).
+* [ADR-0006 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0006-supply-arbitrary-test-values-from-a-seedable-source.md) — Supply arbitrary test values from a single seedable source (reproducibility).
 * ADR-0003 — Host JustDummies as a standalone package in this repository (the zero-dependency, no-dataset boundary).
 * The `AnyStringOneOf` type, the `AnyString.OneOf` method, and their tests in the `JustDummies` project and
   `JustDummies.UnitTests`.

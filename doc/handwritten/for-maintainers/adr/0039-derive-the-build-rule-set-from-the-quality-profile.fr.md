@@ -61,7 +61,7 @@ connecté émet un `SonarLint.xml`, mais committer ce fichier en `AdditionalFile
 
 Le dépôt a déjà consigné ce qu'il advient d'une règle qui vit là où les lecteurs du code ne la
 voient pas. L'ADR-0034 et l'ADR-0035 existent parce que la règle du type explicite, tenue seulement
-dans le DotSettings de ReSharper, a dérivé à 203 violations. L'ADR-0060 (first-class-errors) consigne la règle
+dans le DotSettings de ReSharper, a dérivé à 203 violations. L'[ADR-0060 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0060-let-stated-intent-outrank-generic-analyzer-advice.fr.md) consigne la règle
 complémentaire : un refus s'écrit à côté de ce qu'il refuse.
 
 ## Décision
@@ -84,7 +84,7 @@ qui échoue quand les deux ont divergé.
   que le serveur demande est un fait, change sans que personne décide, et pourrirait s'il était
   tenu à la main — exactement la dérive qui a motivé l'ADR-0034 et l'ADR-0035. Qu'une règle ne
   bloque *pas* est une décision, exige une raison, et doit être lisible à côté de la règle : c'est
-  la règle de l'ADR-0060 (first-class-errors).
+  la règle de l'[ADR-0060 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0060-let-stated-intent-outrank-generic-analyzer-advice.fr.md).
 * **Appliquer par défaut est le seul réglage qui livre quelque chose aujourd'hui.** Une liste
   générée en `suggestion` n'aurait rien affiché dans un build : une liste que personne ne lit,
   c'est-à-dire l'échec qu'on corrige, reproduit avec plus de fichiers. Appliquer par défaut
@@ -244,7 +244,7 @@ que la règle du type explicite a dérivé à 203 violations dans les mêmes con
 * ADR-0035 — énoncer les règles là où un agent peut s'en saisir ; pourquoi une règle
   DotSettings-seule a dérivé.
 * ADR-0037 — décliner une règle que le plancher de support rend insatisfiable.
-* ADR-0060 (first-class-errors) — un refus est consigné à côté de ce qu'il refuse.
+* [ADR-0060 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0060-let-stated-intent-outrank-generic-analyzer-advice.fr.md) — un refus est consigné à côté de ce qu'il refuse.
 * [Référence du workflow `sonar-profile`](../workflows/sonar-profile.fr.md) — comment le script, le
   fichier généré et le job planifié sont câblés.
 * [Référence du workflow `sonar`](../workflows/sonar.fr.md) — l'analyse avec laquelle on se

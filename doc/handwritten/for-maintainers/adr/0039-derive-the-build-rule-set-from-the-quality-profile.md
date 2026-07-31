@@ -60,7 +60,7 @@ item did **not** activate `S3776` — the file carries rule parameters, not acti
 
 The repository has already recorded what happens to a rule that lives where the code's
 readers cannot see it. ADR-0034 and ADR-0035 exist because the explicit-type rule, held
-only in the ReSharper DotSettings, drifted to 203 violations. ADR-0060 (first-class-errors) records the
+only in the ReSharper DotSettings, drifted to 203 violations. [ADR-0060 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0060-let-stated-intent-outrank-generic-analyzer-advice.md) records the
 complementary rule: a refusal is written next to what it refuses.
 
 ## Decision
@@ -85,7 +85,7 @@ job failing when the two have drifted apart.
   the server currently asks for is a fact, changes without anyone deciding, and would rot if
   hand-maintained — exactly the drift ADR-0034 and ADR-0035 were written about. Whether a
   rule *blocks* is a decision, needs a reason, and must be legible next to the rule, which
-  is ADR-0060 (first-class-errors)'s rule. Two files, two owners, and a reader asking "why does this block?"
+  is [ADR-0060 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0060-let-stated-intent-outrank-generic-analyzer-advice.md)'s rule. Two files, two owners, and a reader asking "why does this block?"
   never lands in generated output.
 * **Enforcing by default is the only setting that delivers anything today.** A generated list
   at `suggestion` would have printed nothing in a build, so it would have been a list nobody
@@ -243,7 +243,7 @@ written after the explicit-type rule drifted to 203 violations under the same co
   drifted.
 * ADR-0037 — declining a rule the support floor makes unsatisfiable, and the scoping
   principle.
-* ADR-0060 (first-class-errors) — a refusal is recorded beside what it refuses.
+* [ADR-0060 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0060-let-stated-intent-outrank-generic-analyzer-advice.md) — a refusal is recorded beside what it refuses.
 * [`sonar-profile` workflow reference](../workflows/sonar-profile.en.md) — how the script,
   the generated file and the scheduled job are wired.
 * [`sonar` workflow reference](../workflows/sonar.en.md) — the analysis this reconciles

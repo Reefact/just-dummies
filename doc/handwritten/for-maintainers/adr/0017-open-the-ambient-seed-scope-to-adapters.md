@@ -16,7 +16,7 @@ context, so it never leaks across tests running in parallel. Determinism over
 that ambient source is opt-in, and today only two public paths reach it:
 
 * `Any.Reproducibly(...)`, which pins a seed for the duration of a **delegate it
-  owns**, runs that delegate, and reports the seed if it throws. ADR-0026 (first-class-errors) made
+  owns**, runs that delegate, and reports the seed if it throws. [ADR-0026 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0026-rebase-testing-arbitrary-values-on-dummies.md) made
   this the repository's single seed story.
 * `Any.WithSeed(...)`, which creates an **isolated** context. The static `Any`
   entry points do not draw from it, so it pins nothing for code that uses them.
@@ -44,7 +44,7 @@ Two further facts bear on the shape of that opening.
   setting — not adding a call the test never had.
 
 The repository already has an established idiom for context-local overrides,
-recorded in ADR-0006 (first-class-errors) and used by the testing package's clock and instance-id
+recorded in [ADR-0006 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0006-supply-arbitrary-test-values-from-a-seedable-source.md) and used by the testing package's clock and instance-id
 seams: the override is opened by a `Use…` call and closed by disposing what it
 returns.
 
@@ -84,7 +84,7 @@ name.
   such call, exactly the misleading snippet the mechanism exists to prevent.
   Letting the opener name the snippet extends that design rather than
   working around it.
-* **The disposable-scope shape is already the house idiom.** ADR-0006 (first-class-errors) established
+* **The disposable-scope shape is already the house idiom.** [ADR-0006 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0006-supply-arbitrary-test-values-from-a-seedable-source.md) established
   it for the clock and instance-id overrides, so the addition is recognizable as
   the same thing rather than a second, unrelated mechanism.
 * **This is the cheapest moment.** The package is pre-1.0 and unpublished, so the
@@ -164,12 +164,12 @@ does not invoke it.
 
 ## References
 
-* ADR-0006 (first-class-errors) — Supply arbitrary test values from a single seedable source: the
+* [ADR-0006 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0006-supply-arbitrary-test-values-from-a-seedable-source.md) — Supply arbitrary test values from a single seedable source: the
   disposable-scope idiom this addition reuses, and the follow-up anticipating a
   test-framework adapter.
 * ADR-0003 — Host JustDummies as a standalone package: the zero-dependency identity
   and the pre-1.0 latitude this decision relies on.
-* ADR-0026 (first-class-errors) — Rebase the testing package's arbitrary values on JustDummies: the single
+* [ADR-0026 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0026-rebase-testing-arbitrary-values-on-dummies.md) — Rebase the testing package's arbitrary values on JustDummies: the single
   seed story this ambient source now carries.
 * ADR-0018 — Adapt JustDummies to xUnit v3 through a companion package: the first
   consumer of this handle.

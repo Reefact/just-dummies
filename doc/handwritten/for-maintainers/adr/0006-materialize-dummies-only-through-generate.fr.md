@@ -157,6 +157,6 @@ même la surprise de l'affectation à effet de bord sur les types qui les garden
   générateurs.
 * ADR-0003 — Héberger JustDummies comme package autonome (churn pré-1.0,
   auto-consommé).
-* ADR-0006 (first-class-errors) — Fournir des valeurs de test arbitraires depuis une source unique à
+* [ADR-0006 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0006-supply-arbitrary-test-values-from-a-seedable-source.fr.md) — Fournir des valeurs de test arbitraires depuis une source unique à
   graine.
 * `JustDummies/IAny.cs` — le contrat `Generate()` par lequel passent ces générateurs.

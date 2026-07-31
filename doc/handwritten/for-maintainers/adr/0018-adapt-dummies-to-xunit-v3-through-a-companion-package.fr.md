@@ -16,9 +16,9 @@ graine pour la durée d'un délégué et la rapporte lorsque ce délégué lève
 test sensible aux valeurs doit donc envelopper son corps dans ce délégué. La
 cérémonie est reconstituée à la main dans chaque consommateur.
 
-Un adaptateur qui la supprime a été anticipé puis perdu. Les suivis de l'ADR-0006 (first-class-errors)
+Un adaptateur qui la supprime a été anticipé puis perdu. Les suivis de l'[ADR-0006 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0006-supply-arbitrary-test-values-from-a-seedable-source.fr.md)
 appelaient un adaptateur optionnel de framework de test « pour que la graine soit
-exposée automatiquement, sans envelopper chaque corps » ; l'ADR-0026 (first-class-errors) a rebasé le
+exposée automatiquement, sans envelopper chaque corps » ; l'[ADR-0026 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0026-rebase-testing-arbitrary-values-on-dummies.fr.md) a rebasé le
 moteur de valeurs sur `JustDummies` sans reprendre ce suivi. La capacité est donc
 anticipée par une ADR acceptée et remplacée par rien. L'audit d'architecture et
 de conception de `JustDummies` du 2026-07-20 demande un oui ou un non explicite
@@ -117,7 +117,7 @@ graine pour les tests xUnit v3, et ne vise aucun autre framework de test.
 
 Considérée parce qu'elle ne coûte rien, fonctionne sur tous les frameworks et
 correspond déjà à ce que font les consommateurs. Rejetée parce que c'est ce que
-le silence a déjà produit une fois : le suivi consigné par l'ADR-0006 (first-class-errors) a été
+le silence a déjà produit une fois : le suivi consigné par l'[ADR-0006 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0006-supply-arbitrary-test-values-from-a-seedable-source.fr.md) a été
 abandonné lors du rebase et remplacé par rien, et l'audit demande que la question
 soit tranchée plutôt que laissée ouverte. La cérémonie ainsi préservée est
 reconstituée à la main dans chaque consommateur, ce qui est précisément le coût
@@ -137,7 +137,7 @@ aujourd'hui, avec l'exécuteur à délégué portable.
 ### Dériver des attributs de fait et de théorie du framework
 
 Considérée parce qu'elle produit un attribut unique et auto-descriptif par sorte
-de test, correspondant au nom qu'avait esquissé le suivi de l'ADR-0006 (first-class-errors). Rejetée
+de test, correspondant au nom qu'avait esquissé le suivi de l'[ADR-0006 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0006-supply-arbitrary-test-values-from-a-seedable-source.fr.md). Rejetée
 parce qu'elle coûte un type par sorte de test, ne se compose pas avec des
 attributs de fait tiers, ne peut être appliquée ni à une classe ni à un assembly,
 et achète une exposition aux internes de la découverte en échange d'aucune
@@ -203,11 +203,11 @@ communs.
 
 * ADR-0017 — Ouvrir la portée de graine ambiante aux adaptateurs de framework de
   test : la poignée publique dont ce package est le premier consommateur.
-* ADR-0006 (first-class-errors) — Fournir les valeurs de test arbitraires depuis une source unique
+* [ADR-0006 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0006-supply-arbitrary-test-values-from-a-seedable-source.fr.md) — Fournir les valeurs de test arbitraires depuis une source unique
   semable : le suivi qui a anticipé cet adaptateur.
 * ADR-0003 — Héberger JustDummies comme package autonome : la frontière
   zéro-dépendance qui impose un package compagnon.
-* ADR-0026 (first-class-errors) — Rebaser les valeurs arbitraires du package de test sur JustDummies : le
+* [ADR-0026 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0026-rebase-testing-arbitrary-values-on-dummies.fr.md) — Rebaser les valeurs arbitraires du package de test sur JustDummies : le
   rebase dans lequel le suivi anticipé a été abandonné.
 * `doc/handwritten/for-maintainers/audit/2026-07-20-dummies-architecture-and-design-audit.md`
   — l'audit demandant une décision explicite.

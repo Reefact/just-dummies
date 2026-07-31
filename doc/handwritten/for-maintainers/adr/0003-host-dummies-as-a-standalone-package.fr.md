@@ -10,7 +10,7 @@
 
 ## Contexte
 
-Le moteur générique de valeurs arbitraires anticipé par l'ADR-0006 (first-class-errors) sert les tests orientés domaine en général, pas spécifiquement la gestion des erreurs.
+Le moteur générique de valeurs arbitraires anticipé par l'[ADR-0006 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0006-supply-arbitrary-test-values-from-a-seedable-source.fr.md) sert les tests orientés domaine en général, pas spécifiquement la gestion des erreurs.
 
 Une bibliothèque autonome nommée `JustDummies` fournit désormais des générateurs typés portant leurs contraintes, sans connaissance de FirstClassErrors. Son public visé dépasse les consommateurs du package principal de ce dépôt.
 

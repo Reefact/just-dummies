@@ -62,7 +62,7 @@ Beyond the defects, the significant findings are: the hand-mirrored `Any`/`AnyCo
 the fourteen cloned numeric builders carry **no parity guard** (and documentation drift has already
 begun); the **determinism contract has documentation gaps** (concurrent draws inside one seeded scope
 silently void replayability; cross-version seed stability is neither promised nor disclaimed; the
-contract's ADR anchoring was lost when ADR-0006 (first-class-errors) was superseded); the **netstandard2.0 leg is never
+contract's ADR anchoring was lost when [ADR-0006 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0006-supply-arbitrary-test-values-from-a-seedable-source.md) was superseded); the **netstandard2.0 leg is never
 executed by JustDummies' own test suite** (only transitively, via FirstClassErrors' floor job); and there
 is **no user-facing reference of the constraint surface** — the repository README does not even
 mention the package. The feature-gap analysis (§10) finds the type coverage genuinely complete for
@@ -363,7 +363,7 @@ Detailed in §7.3: concurrent draws inside one seeded scope silently void replay
 non-thread-safe `System.Random`) — documented nowhere; seed reports can name a wrong or
 inapplicable seed for fixed-context and mixed-source compositions; cross-version and cross-TFM
 seed-sequence stability is neither promised nor disclaimed; and the whole contract lost its ADR
-anchor when ADR-0006 (first-class-errors) was superseded.
+anchor when [ADR-0006 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0006-supply-arbitrary-test-values-from-a-seedable-source.md) was superseded.
 
 ### 4.6 The netstandard2.0 leg is never executed by JustDummies' own suite
 
@@ -397,7 +397,7 @@ was reviewed individually. The overall standard is high enough to say plainly: t
 model of the form. Decisions carry honest constraints, genuinely-considered alternatives, priced
 negatives, and follow-ups that were actually executed.
 
-### ADR-0006 (first-class-errors) — Supply arbitrary test values from a single seedable source *(Superseded)*
+### [ADR-0006 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0006-supply-arbitrary-test-values-from-a-seedable-source.md) — Supply arbitrary test values from a single seedable source *(Superseded)*
 
 **Quality: exemplary, historically.** The constraints were real (zero-dependency promise,
 netstandard2.0 parallel-test safety without `Random.Shared`), the four alternatives were fairly
@@ -442,7 +442,7 @@ implementation-reference pointer nit as ADR-0004 applies.
 **Quality: exemplary — the best document in the base.** Concrete evidence (the syntactic shapes
 where the conversion silently misbehaved, drawn from the suite itself), three fairly-weighed
 alternatives including the analyzer route it deliberately declines, honest costs, and the pre-1.0
-timing argument stated as such. It also demonstrably steered later work (ADR-0026 (first-class-errors) reuses both its
+timing argument stated as such. It also demonstrably steered later work ([ADR-0026 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0026-rebase-testing-arbitrary-values-on-dummies.md) reuses both its
 reasoning pattern and its risk framing). No changes recommended.
 
 ### ADR-0007 — Floor the library's .NET Framework support at 4.7.2 *(Accepted)*
@@ -461,7 +461,7 @@ and error-contract grounds (silent dropping of non-regular constructs vs first-c
 on FUD; the "non-regular constructs are impossible for *any* finite generator, so the subset is not
 a convenience cut" framing is exactly right; the terminal-generator decision is well-argued.
 **Issues:** (1) It is still **Proposed** while fully implemented, shipped in the package README,
-and *load-bearing for the Accepted ADR-0026 (first-class-errors)* (whose `ErrorCodeFactory` is built on
+and *load-bearing for the Accepted [ADR-0026 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0026-rebase-testing-arbitrary-values-on-dummies.md)* (whose `ErrorCodeFactory` is built on
 `StringMatching`) — until the status flips, an accepted decision formally rests on an undecided
 one. The audit's role is to flag it; only `@reefact` flips a status. (2) The "terminals draw from
 printable ASCII" rationale sentence is imprecise — `\s` includes tab (0x09) and explicit escapes
@@ -471,7 +471,7 @@ property test" against the real engine; what exists is a fixed-seed, fixed-corpu
 the unit-test project — excellent, but not property-based; the text should say what the safety net
 is.
 
-### ADR-0026 (first-class-errors) — Rebase the testing package's arbitrary values on JustDummies *(Accepted)*
+### [ADR-0026 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0026-rebase-testing-arbitrary-values-on-dummies.md) — Rebase the testing package's arbitrary values on JustDummies *(Accepted)*
 
 **Quality: a thorough consolidation record** — six real alternatives, the one-seed-story rationale,
 honest interim-packaging risk. **Two precision drifts:** (1) the decision text says each factory
@@ -488,12 +488,12 @@ the implementation reference.
 
 1. **JustDummies' determinism contract has no accepted ADR.** The `AsyncLocal` ambient source, opt-in
    `Reproducibly`, lazy pinning, seed-on-failure reporting — the crown-jewel guarantee — was decided
-   in ADR-0006 (first-class-errors), which is now Superseded *and* was scoped to FirstClassErrors.Testing; ADR-0026 (first-class-errors)'s
+   in [ADR-0006 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0006-supply-arbitrary-test-values-from-a-seedable-source.md), which is now Superseded *and* was scoped to FirstClassErrors.Testing; [ADR-0026 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0026-rebase-testing-arbitrary-values-on-dummies.md)'s
    decision is about rebasing Testing, not about JustDummies' own contract. A future maintainer asking
    "why `AsyncLocal` and not a parameter? why is raced `System.Random` acceptable?" finds the
    reasoning only in a superseded record. **Recommend drafting one Proposed ADR** ("JustDummies supplies
    arbitrary values from an ambient, seedable, execution-context-local source with opt-in
-   reproducibility") carrying ADR-0006 (first-class-errors)'s rationale forward and settling, in the same document, the
+   reproducibility") carrying [ADR-0006 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0006-supply-arbitrary-test-values-from-a-seedable-source.md)'s rationale forward and settling, in the same document, the
    open edges this audit surfaced: single-logical-flow concurrency semantics, the closed
    `IHasRandomSource` seam, and the cross-version seed-stability policy (§7.3).
 2. **The ordinal-engine architecture has no ADR.** One shared 64-bit ordinal space with four
@@ -619,7 +619,7 @@ sentence saying replay fidelity starts at the scope boundary.
 
 Verified non-issues worth recording so they are not re-litigated: the async-overload
 `ExecutionContext` semantics (correct — see §3.3); `NewSeed() = Guid.NewGuid().GetHashCode()`
-(collision-tolerant use, analyzed in ADR-0006 (first-class-errors)); xUnit seed-spanning (each test invocation is its
+(collision-tolerant use, analyzed in [ADR-0006 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0006-supply-arbitrary-test-values-from-a-seedable-source.md)); xUnit seed-spanning (each test invocation is its
 own async frame; a shared class constructor participates in its test's flow, which is the correct
 scope); `SequenceOf` re-enumeration (materialized once, never re-draws).
 
@@ -841,7 +841,7 @@ free via proposal 1.)
   documentation gap ("values are tick-precision") in the meantime.
 * **`GenerateMany(int)` terminal** — sugar for "N values without `ListOf` ceremony"; a *named
   method* returning `IReadOnlyList<T>`, so it stays inside ADR-0006's letter and spirit.
-* **A test-framework seed adapter** (`[ReproducibleFact]`) — anticipated by ADR-0006 (first-class-errors)'s follow-ups,
+* **A test-framework seed adapter** (`[ReproducibleFact]`) — anticipated by [ADR-0006 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0006-supply-arbitrary-test-values-from-a-seedable-source.md)'s follow-ups,
   dropped in the rebase, replaced by nothing. Zero-dependency JustDummies cannot reference xUnit, so
   this is a *companion package* decision (`JustDummies.Xunit`) — worth an explicit yes/no ADR rather
   than silence, because every consumer currently re-derives the `Reproducibly`-wrapping habit
@@ -908,7 +908,7 @@ In priority order; items 1–7 are the recommended pre-release gate.
    comments/DisplayNames (§4.3) and the `Directory.Build.props` header.
 7. **Release-engineering guards**: public-API baseline (`PublicApiAnalyzers`) and
    `EnablePackageValidation`; decide `Bool()` vs `Boolean()` and record it; ask `@reefact` to
-   resolve ADR-0008's status (after its wording fix); record the two ADR-0026 (first-class-errors) clarifications in the
+   resolve ADR-0008's status (after its wording fix); record the two [ADR-0026 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0026-rebase-testing-arbitrary-values-on-dummies.md) clarifications in the
    implementation reference; enrich or soften the ADR-0004/0015 implementation-reference pointers.
 8. **Ship the two Must-Have features** (§10): `Any.OneOf<T>`/`Any.ElementOf<T>`, and string
    exclusions (`DifferentFrom`/`Except` on `AnyString`).

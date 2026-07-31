@@ -146,5 +146,5 @@ surprise on the types that keep it.
 * Issue #190 — Define and document the contract of implicit generator
   conversions.
 * ADR-0003 — Host JustDummies as a standalone package (pre-1.0 churn, self-consumed).
-* ADR-0006 (first-class-errors) — Supply arbitrary test values from a single seedable source.
+* [ADR-0006 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0006-supply-arbitrary-test-values-from-a-seedable-source.md) — Supply arbitrary test values from a single seedable source.
 * `JustDummies/IAny.cs` — the `Generate()` contract these generators flow through.

@@ -16,9 +16,9 @@ duration of a delegate and reports it when the delegate throws, so every
 value-sensitive test must wrap its body in that delegate. The ceremony is
 re-derived by hand in every consumer.
 
-An adapter that removes it was anticipated and then lost. ADR-0006 (first-class-errors)'s follow-ups
+An adapter that removes it was anticipated and then lost. [ADR-0006 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0006-supply-arbitrary-test-values-from-a-seedable-source.md)'s follow-ups
 called for an optional test-framework adapter "so the seed is surfaced
-automatically, without wrapping each body"; ADR-0026 (first-class-errors) rebased the value engine
+automatically, without wrapping each body"; [ADR-0026 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0026-rebase-testing-arbitrary-values-on-dummies.md) rebased the value engine
 onto `JustDummies` and did not carry that follow-up forward. The capability is
 therefore anticipated by one accepted ADR and replaced by nothing. The
 2026-07-20 `JustDummies` architecture and design audit asks for an explicit yes or no
@@ -109,7 +109,7 @@ for xUnit v3 tests, and targets no other test framework.
 
 Considered because it costs nothing, works on every framework, and is already
 what consumers do. Rejected because it is what silence has already produced once:
-the follow-up ADR-0006 (first-class-errors) recorded was dropped in the rebase and replaced by
+the follow-up [ADR-0006 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0006-supply-arbitrary-test-values-from-a-seedable-source.md) recorded was dropped in the rebase and replaced by
 nothing, and the audit asks for the question to be answered rather than left
 open. The ceremony it preserves is re-derived by hand in every consumer, which is
 the cost the adapter exists to remove.
@@ -127,7 +127,7 @@ with the portable delegate runner.
 ### Derive from the framework's fact and theory attributes
 
 Considered because it yields a single self-describing attribute per kind of test,
-matching the name ADR-0006 (first-class-errors)'s follow-up had sketched. Rejected because it costs one
+matching the name [ADR-0006 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0006-supply-arbitrary-test-values-from-a-seedable-source.md)'s follow-up had sketched. Rejected because it costs one
 type per kind of test, does not compose with third-party fact attributes, cannot
 be applied to a class or an assembly, and buys exposure to the discovery
 internals in exchange for no capability the before/after hook lacks.
@@ -186,11 +186,11 @@ those surfaces have neither a common shape nor a common vocabulary.
 
 * ADR-0017 — Open the ambient seed scope to test-framework adapters: the public
   handle this package is the first consumer of.
-* ADR-0006 (first-class-errors) — Supply arbitrary test values from a single seedable source: the
+* [ADR-0006 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0006-supply-arbitrary-test-values-from-a-seedable-source.md) — Supply arbitrary test values from a single seedable source: the
   follow-up that anticipated this adapter.
 * ADR-0003 — Host JustDummies as a standalone package: the zero-dependency boundary
   that forces a companion package.
-* ADR-0026 (first-class-errors) — Rebase the testing package's arbitrary values on JustDummies: the rebase
+* [ADR-0026 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0026-rebase-testing-arbitrary-values-on-dummies.md) — Rebase the testing package's arbitrary values on JustDummies: the rebase
   in which the anticipated follow-up was dropped.
 * `doc/handwritten/for-maintainers/audit/2026-07-20-dummies-architecture-and-design-audit.md`
   — the audit asking for an explicit decision.

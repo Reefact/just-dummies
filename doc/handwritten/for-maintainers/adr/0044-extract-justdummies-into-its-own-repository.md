@@ -30,7 +30,7 @@ The conditions that justified colocation have expired:
   whose only purpose was to avoid colliding with `lib-v*` and `cli-v*`.
 * The colocation now costs the host: `FirstClassErrors.Testing` cannot express its dependency as a normal
   `PackageReference`, and instead carries a private `ProjectReference` plus a hand-written pack target that
-  embeds `JustDummies.dll` inside its own `lib/` — a workaround ADR-0026 (first-class-errors) accepted only "until JustDummies
+  embeds `JustDummies.dll` inside its own `lib/` — a workaround [ADR-0026 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0026-rebase-testing-arbitrary-values-on-dummies.md) accepted only "until JustDummies
   is published."
 * Issues, pull requests and CI runs for two unrelated products share one queue.
 
@@ -75,11 +75,11 @@ requiring the stamped dependency version to match an existing `lib-v*` tag.
 Nothing was deleted from `Reefact/first-class-errors` by this extraction. Four of its projects reference
 JustDummies, and one of them — `FirstClassErrors.Testing` — *ships* it. Removing the source there requires a
 restorable `JustDummies` package on nuget.org, which does not exist yet. The cutover is prepared, not
-performed; the corresponding decision on that side supersedes ADR-0026 (first-class-errors)'s embedding workaround.
+performed; the corresponding decision on that side supersedes [ADR-0026 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0026-rebase-testing-arbitrary-values-on-dummies.md)'s embedding workaround.
 
 ### Two decisions stay in FirstClassErrors
 
-[ADR-0026 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0026-rebase-testing-arbitrary-values-on-dummies.md) and ADR-0061 (first-class-errors) have FirstClassErrors as their
+[ADR-0026 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0026-rebase-testing-arbitrary-values-on-dummies.md) and [ADR-0061 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0061-run-the-justdummies-analyzers-on-the-repository-s-own-code.md) have FirstClassErrors as their
 subject even though they concern JustDummies: one records why `FirstClassErrors.Testing` rebased its
 arbitrary values on this library, the other why that repository runs these analyzers on its own code. They
 are not carried here. [ADR-0003](0003-host-dummies-as-a-standalone-package.md) and

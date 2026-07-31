@@ -18,7 +18,7 @@ aujourd'hui seuls deux chemins publics y accèdent :
 
 * `Any.Reproducibly(...)`, qui fixe une graine pour la durée d'un **délégué dont
   il est propriétaire**, exécute ce délégué et rapporte la graine si celui-ci
-  lève. L'ADR-0026 (first-class-errors) en a fait le récit unique de graine du dépôt.
+  lève. L'[ADR-0026 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0026-rebase-testing-arbitrary-values-on-dummies.fr.md) en a fait le récit unique de graine du dépôt.
 * `Any.WithSeed(...)`, qui crée un contexte **isolé**. Les points d'entrée
   statiques `Any` n'y tirent pas, donc il ne fixe rien pour du code qui les
   utilise.
@@ -50,7 +50,7 @@ Deux faits supplémentaires pèsent sur la forme de cette ouverture.
   ajouter un appel que le test n'a jamais eu.
 
 Le dépôt dispose déjà d'un idiome établi pour les surcharges locales au contexte,
-consigné dans l'ADR-0006 (first-class-errors) et employé par les coutures d'horloge et d'identifiants
+consigné dans l'[ADR-0006 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0006-supply-arbitrary-test-values-from-a-seedable-source.fr.md) et employé par les coutures d'horloge et d'identifiants
 d'instance du package de test : la surcharge est ouverte par un appel `Use…` et
 fermée en disposant ce qu'il retourne.
 
@@ -94,7 +94,7 @@ diagnostics d'échec de génération nommeront.
   développeur dont le test ne contient aucun appel de ce genre, exactement
   l'extrait trompeur que le mécanisme existe pour empêcher. Laisser
   l'ouvreur nommer l'extrait prolonge ce design au lieu de le contourner.
-* **La forme « portée disposable » est déjà l'idiome maison.** L'ADR-0006 (first-class-errors) l'a
+* **La forme « portée disposable » est déjà l'idiome maison.** L'[ADR-0006 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0006-supply-arbitrary-test-values-from-a-seedable-source.fr.md) l'a
   établie pour les surcharges d'horloge et d'identifiants d'instance, si bien que
   l'ajout se reconnaît comme la même chose plutôt que comme un second mécanisme
   sans rapport.
@@ -181,12 +181,12 @@ passer : il observe le test, il ne l'invoque pas.
 
 ## Références
 
-* ADR-0006 (first-class-errors) — Fournir les valeurs de test arbitraires depuis une source unique
+* [ADR-0006 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0006-supply-arbitrary-test-values-from-a-seedable-source.fr.md) — Fournir les valeurs de test arbitraires depuis une source unique
   semable : l'idiome de portée disposable que cet ajout réutilise, et le suivi
   anticipant un adaptateur de framework de test.
 * ADR-0003 — Héberger JustDummies comme package autonome : l'identité zéro-dépendance
   et la latitude pré-1.0 sur lesquelles cette décision s'appuie.
-* ADR-0026 (first-class-errors) — Rebaser les valeurs arbitraires du package de test sur JustDummies : le
+* [ADR-0026 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0026-rebase-testing-arbitrary-values-on-dummies.fr.md) — Rebaser les valeurs arbitraires du package de test sur JustDummies : le
   récit unique de graine que cette source ambiante porte désormais.
 * ADR-0018 — Adapter JustDummies à xUnit v3 via un package compagnon : le premier
   consommateur de cette poignée.

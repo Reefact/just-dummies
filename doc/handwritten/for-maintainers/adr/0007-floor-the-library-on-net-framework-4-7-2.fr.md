@@ -16,7 +16,7 @@ Sur les versions antérieures à .NET Framework 4.7.2, la prise en charge de `ne
 
 Le dépôt annonçait auparavant une prise en charge de .NET Framework 4.6.1 sans exécuter les bibliothèques sur ce runtime. Une promesse de compatibilité qui n'est pas exercée ne peut pas constituer une frontière de support fiable.
 
-La pile de tests actuelle peut s'exécuter sur .NET Framework 4.7.2 mais pas sur les versions antérieures. L'outillage possède un plancher distinct défini par l'ADR-0002 (first-class-errors).
+La pile de tests actuelle peut s'exécuter sur .NET Framework 4.7.2 mais pas sur les versions antérieures. L'outillage possède un plancher distinct défini par l'[ADR-0002 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0002-floor-the-tooling-runtime.fr.md).
 
 ## Décision
 
@@ -30,7 +30,7 @@ C'est également la plus basse version que le dépôt peut exercer avec sa pile 
 
 La décision choisit volontairement la frontière pratique et testable plutôt que le minimum théorique de `netstandard2.0`. Les versions inférieures exigeraient une seconde pile de tests et des comportements de binding spécifiques à l'environnement pour une valeur utilisateur désormais limitée.
 
-Cet ADR raffine la mention incidente de .NET Framework 4.6.1 auparavant présente dans l'ADR-0002 (first-class-errors) ; il ne remplace pas l'ADR-0002 (first-class-errors), car cette décision concerne l'outillage exécutable et non les bibliothèques.
+Cet ADR raffine la mention incidente de .NET Framework 4.6.1 auparavant présente dans l'[ADR-0002 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0002-floor-the-tooling-runtime.fr.md) ; il ne remplace pas l'[ADR-0002 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0002-floor-the-tooling-runtime.fr.md), car cette décision concerne l'outillage exécutable et non les bibliothèques.
 
 Le job Windows exact, les cibles de tests conditionnées, les polyfills, les exclusions de projets et la couverture des previews sont documentés dans la [référence d'implémentation des ADR](../specifications/adr-implementation-reference.fr.md#plancher-dexécution-des-outils) et la référence du workflow CI.
 

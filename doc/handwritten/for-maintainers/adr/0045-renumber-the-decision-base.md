@@ -72,11 +72,11 @@ citations are the ones that would have rotted silently, since nothing compiles a
 
 ### Two decisions were deliberately not adopted
 
-`ADR-0002 (first-class-errors)` floors the tooling runtime at the oldest supported LTS. Its subject is the
+[`ADR-0002 (first-class-errors)`](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0002-floor-the-tooling-runtime.md) floors the tooling runtime at the oldest supported LTS. Its subject is the
 `fce` tool and its documentation worker; this repository has no tool yet, so adopting it would decide a floor
 for a binary that does not exist. It belongs here the day the `dum` scaffolder is built.
 
-`ADR-0024 (first-class-errors)` authorises one bounded editorial migration of accepted ADRs. It is a
+[`ADR-0024 (first-class-errors)`](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0024-allow-a-one-time-editorial-refactoring-of-accepted-adrs.md) authorises one bounded editorial migration of accepted ADRs. It is a
 historical, one-off authorisation granted to that repository for a migration this one never performed;
 adopting the permission for an act not committed would record a decision that was never taken.
 

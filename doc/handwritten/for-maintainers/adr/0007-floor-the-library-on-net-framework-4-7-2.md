@@ -16,7 +16,7 @@ On .NET Framework versions before 4.7.2, `netstandard2.0` support relies on retr
 
 The repository previously advertised .NET Framework 4.6.1 support without executing the libraries on that runtime. A compatibility promise that is not exercised cannot provide a trustworthy support boundary.
 
-The current test stack can execute on .NET Framework 4.7.2 but not on earlier framework versions. The tooling runtime has a separate floor defined by ADR-0002 (first-class-errors).
+The current test stack can execute on .NET Framework 4.7.2 but not on earlier framework versions. The tooling runtime has a separate floor defined by [ADR-0002 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0002-floor-the-tooling-runtime.md).
 
 ## Decision
 
@@ -30,7 +30,7 @@ It is also the lowest version the repository can exercise with its supported tes
 
 The decision intentionally chooses the practical and testable boundary rather than the theoretical `netstandard2.0` minimum. Lower versions would require a second test stack and environment-specific binding behavior for little continuing user value.
 
-This ADR refines the incidental .NET Framework 4.6.1 statement that previously appeared in ADR-0002 (first-class-errors); it does not supersede ADR-0002 (first-class-errors) because that decision concerns runnable tooling rather than the libraries.
+This ADR refines the incidental .NET Framework 4.6.1 statement that previously appeared in [ADR-0002 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0002-floor-the-tooling-runtime.md); it does not supersede [ADR-0002 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0002-floor-the-tooling-runtime.md) because that decision concerns runnable tooling rather than the libraries.
 
 The exact Windows job, conditioned test targets, polyfills, project exclusions, and preview coverage are documented in the [ADR implementation reference](../specifications/adr-implementation-reference.md#tooling-runtime-floor) and the CI workflow reference.
 

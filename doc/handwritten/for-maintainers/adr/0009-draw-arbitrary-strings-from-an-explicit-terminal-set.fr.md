@@ -29,7 +29,7 @@ Plusieurs faits établis cadrent le choix :
 * Les collections distinctes bornent à la déclaration selon la cardinalité annoncée par le générateur d'éléments
   (ADR-0004), via l'interface interne `ICardinalityHint<T>` ; un générateur qui n'en annonce pas retombe sur un
   tirage dédupliquant borné.
-* La bibliothèque puise dans une source unique seedable pour que tout run soit reproductible (ADR-0006 (first-class-errors)), construit
+* La bibliothèque puise dans une source unique seedable pour que tout run soit reproductible ([ADR-0006 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0006-supply-arbitrary-test-values-from-a-seedable-source.fr.md)), construit
   les valeurs pour satisfaire les contraintes plutôt que de générer-puis-filtrer, et est livrée **sans aucune
   dépendance runtime ni jeu de données** — son README liste « pas de fausses données réalistes (noms, e-mails,
   adresses) » comme non-objectif explicite (ADR-0003).
@@ -63,7 +63,7 @@ de chaîne — plutôt que comme une contrainte composable à la manière du `On
   déclaration (ADR-0004), exactement comme sur `AnyChar` ou `AnyEnum`, au lieu de compter silencieusement sur le repli
   par tirage dédupliquant borné.
 * **La reproductibilité est préservée.** La valeur est un tirage uniforme dans l'ensemble dédupliqué, via la même
-  source seedable que tout autre générateur : un run se rejoue sous une graine (ADR-0006 (first-class-errors)) ; dédupliquer empêche
+  source seedable que tout autre générateur : un run se rejoue sous une graine ([ADR-0006 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0006-supply-arbitrary-test-values-from-a-seedable-source.fr.md)) ; dédupliquer empêche
   qu'une valeur listée soit implicitement surpondérée.
 
 ## Alternatives considérées
@@ -93,7 +93,7 @@ la place.
 
 Considérée comme un moyen de composer l'ensemble sans l'écrire à la main. Rejetée parce qu'elle ajouterait une
 dépendance runtime et un premier run non déterministe et non hermétique à une bibliothèque dont l'identité est une
-génération déterministe sans dépendance (ADR-0006 (first-class-errors), ADR-0003) ; composer l'ensemble est une préoccupation de temps de
+génération déterministe sans dépendance ([ADR-0006 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0006-supply-arbitrary-test-values-from-a-seedable-source.fr.md), ADR-0003) ; composer l'ensemble est une préoccupation de temps de
 conception, qui a sa place hors de la bibliothèque.
 
 ## Conséquences
@@ -135,7 +135,7 @@ conception, qui a sa place hors de la bibliothèque.
   terminal).
 * ADR-0004 — Borner les collections distinctes par la cardinalité, sinon par un tirage borné (le contrat
   `ICardinalityHint`).
-* ADR-0006 (first-class-errors) — Fournir des valeurs de test arbitraires depuis une source unique seedable (la reproductibilité).
+* [ADR-0006 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0006-supply-arbitrary-test-values-from-a-seedable-source.fr.md) — Fournir des valeurs de test arbitraires depuis une source unique seedable (la reproductibilité).
 * ADR-0003 — Héberger JustDummies comme un paquet autonome dans ce dépôt (la frontière zéro-dépendance, sans jeu de
   données).
 * Le type `AnyStringOneOf`, la méthode `AnyString.OneOf` et leurs tests dans le projet `JustDummies` et

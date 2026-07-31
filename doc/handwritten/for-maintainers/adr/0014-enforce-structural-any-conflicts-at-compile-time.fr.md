@@ -38,7 +38,7 @@
 * `JustDummies` est en pré-publication : aucun tag `dum-v*`, aucun consommateur externe, une section *Unreleased* de
   changelog vide. La forme de sa surface de générateurs publique peut encore être fixée sans coût de migration.
 * Le dépôt consigne sous forme d'ADR les décisions qui façonnent la surface publique `Any` — ADR-0006
-  (matérialiser uniquement via `Generate()`), ADR-0010 (nommer les fabriques d'après leur type CLR), ADR-0006 (first-class-errors)
+  (matérialiser uniquement via `Generate()`), ADR-0010 (nommer les fabriques d'après leur type CLR), [ADR-0006 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0006-supply-arbitrary-test-values-from-a-seedable-source.fr.md)
   (une seule source graine). Une règle nouvelle et transverse sur la *manière* dont la surface signale une
   combinaison illicite est une décision de cette même classe.
 
@@ -152,7 +152,7 @@ structurelle qu'ils peuvent porter.
   `Any` ».
 * ADR-0010 — nommer les fabriques de Any d'après leur type CLR ; précédent du « rendre la règle impossible à
   enfreindre plutôt que seulement vérifiée », et de la consignation des décisions de surface `Any` comme ADR.
-* ADR-0006 (first-class-errors) — fournir les valeurs arbitraires depuis une seule source graine ; la graine portée par
+* [ADR-0006 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0006-supply-arbitrary-test-values-from-a-seedable-source.fr.md) — fournir les valeurs arbitraires depuis une seule source graine ; la graine portée par
   `AnyGenerationException` sur le chemin d'exécution.
 * PR #295 — ajouter la famille `Any.Uri()`, la première progression typée.
 * Issue #226 — le backlog Nice-to-Have de JustDummies qui a motivé `Any.Uri()`.

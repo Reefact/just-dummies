@@ -21,12 +21,25 @@
 
 set -eu
 
-if [ "$#" -ne 2 ] || [ -z "$1" ] || [ -z "$2" ]; then
-  echo "usage: tools/packaging/pack.sh <version> <scope:lib|xunit|cli>" >&2
+if [ "$#" -lt 2 ] || [ "$#" -gt 3 ] || [ -z "$1" ] || [ -z "$2" ]; then
+  echo "usage: tools/packaging/pack.sh <version> <scope:lib|xunit|cli> [--dry-run]" >&2
   exit 2
 fi
 version="$1"
 scope="$2"
+
+# --dry-run marks a rehearsal: the packages are built and every check still runs, but the checks that can only
+# be true of a REAL release report instead of failing. Today that is one check, the xunit train's intra-product
+# dependency guard; the reason it cannot hold on a rehearsal is documented where it is applied.
+dry_run="no"
+if [ "$#" -eq 3 ]; then
+  if [ "$3" = "--dry-run" ]; then
+    dry_run="yes"
+  else
+    echo "usage: tools/packaging/pack.sh <version> <scope:lib|xunit|cli> [--dry-run]" >&2
+    exit 2
+  fi
+fi
 
 # The projects that carry NuGet identity, selected by release train. GenerateSBOM embeds an SPDX SBOM
 # (_manifest/spdx_2.2/manifest.spdx.json) inside each package; it is passed here, not hardcoded in the
@@ -115,7 +128,12 @@ fi
 # Publishing xunit-v0.2.0 while the library sits at lib-v0.1.0 would therefore ship an adapter demanding a
 # JustDummies 0.2.0 that was never published: NU1102 for the consumer, on an immutable artifact. The library
 # versions this repository has actually published are exactly its lib-v* tags, so require the stamped
-# dependency to match one. Offline by construction -- no nuget.org round trip, and it works on a dry run.
+# dependency to match one. Offline by construction: no nuget.org round trip.
+#
+# On a DRY RUN the check reports instead of failing, and that is not a loophole. A dry run packs a version that
+# exists to be thrown away (0.0.0-dryrun), so demanding a lib-v0.0.0-dryrun tag asks for a tag nobody will ever
+# push -- the guard would fail every rehearsal for a reason no release can ever have. It still prints what a
+# real release would require, so the rehearsal shows the check running rather than hiding it.
 if [ "$scope" = "xunit" ]; then
   for package in artifacts/JustDummies.Xunit.*.nupkg; do
     nuspec="$(unzip -p "$package" '*.nuspec')" || { echo "error: cannot read the nuspec from $package" >&2; exit 1; }
@@ -129,6 +147,9 @@ if [ "$scope" = "xunit" ]; then
     fi
     if git rev-parse --verify --quiet "refs/tags/lib-v${dependency_version}" >/dev/null; then
       echo "ok: $package depends on JustDummies $dependency_version, published as lib-v${dependency_version}"
+    elif [ "$dry_run" = "yes" ]; then
+      echo "notice: dry run -- $package depends on JustDummies $dependency_version, which no lib-v tag matches."
+      echo "        A real xunit release checks this and refuses to pack when it does not hold."
     else
       echo "error: $package depends on JustDummies $dependency_version, but no lib-v${dependency_version} tag exists." >&2
       echo "       Publishing it would demand a library version that was never released (NU1102)." >&2

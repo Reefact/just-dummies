@@ -1,0 +1,28 @@
+The following commits used to be merge commits but due to filtering
+are now regular commits; they likely have suboptimal commit messages
+(e.g. "Merge branch next into master").  Original commit hash on the
+left, commit hash after filtering/rewriting on the right:
+  b'c9a54b7de43d08c3017bff5ea533789be768b586' None
+
+The following commits were filtered out, but referenced in another
+commit message.  The reference to the now-nonexistent commit hash
+(or a substring thereof) was left as-is in any commit messages:
+  b'00000001'
+  b'26b0ec14cb23fa6904739307f278c14f94c95bf1'
+  b'9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0'
+  b'00000002'
+  b'e4fba868fa4b1b91e1fdab776edc8cfbe6e9fb81'
+  b'0f481fcb613427c0f801b606911222b5b6f3083a'
+  b'1000000'
+  b'3bf89e3'
+  b'7188fc363630916deb702c7fdcf4e481b751f97a'
+  b'a98b56852c35b8e3190ac28c8c2271da59106c68'
+  b'7cf826a'
+  b'6947902d1c'
+  b'03ad4de0992f5dab5e18fcb136590ce7c4a0ac95'
+  b'4eaacf0543bb3f2c246792bd56e8cdeffafb205a'
+  b'2147483647'
+  b'3d3c42e5aac5ba805825da76410c181273ba90b1'
+  b'2d1146689b8cda280b9bc96326124645441f03bc'
+  b'99df26d4f13ea111d4ec1a7dddef6063f76b97e9'
+

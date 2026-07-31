@@ -1,0 +1,138 @@
+# git filter-repo path specification -- JustDummies extraction
+# Source : Reefact/first-class-errors @ fbf523b86acebdd34ba0bbfd437683864be3cb9c
+# Target : Reefact/just-dummies
+#
+# Every entry is classified "extract-with-history". Shared FirstClassErrors
+# infrastructure (Directory.*.props, global.json, .editorconfig, build/*.props,
+# coverage.runsettings, the solution, tools/packaging, tools/trains.sh, the generic
+# workflows) is deliberately ABSENT: it is recreated in a bootstrap commit.
+#
+# ADRs are listed by every path each decision ever occupied, because four were
+# renumbered in place (0010->0011, 0043->0044, 0048->0049, 0050->0051) and one was a
+# draft that was dropped. Matching by number alone would truncate their history.
+
+# --- current JustDummies-owned source ---
+JustDummies/
+JustDummies.Analyzers/
+JustDummies.Analyzers.UnitTests/
+JustDummies.PropertyTests/
+JustDummies.UnitTests/
+JustDummies.Xunit/
+JustDummies.Xunit.UnitTests/
+tools/justdummies-check/
+
+# --- historical source paths (pre-rename Dummies -> JustDummies) ---
+Dummies/
+Dummies.UnitTests/
+Dummies.Xunit/
+Dummies.Xunit.UnitTests/
+tools/dummies-check/
+
+# --- CI and mutation configuration owned by the product ---
+.github/workflows/justdummies.yml
+.github/workflows/justdummies-mutation.yml
+.github/workflows/dummies.yml
+build/stryker/justdummies.json
+build/stryker/justdummies-analyzers.json
+build/stryker/justdummies-xunit.json
+
+# --- icon.png is deliberately NOT extracted: its only two commits are
+# --- FirstClassErrors-motivated ("feat: introduces error context",
+# --- "build: replace the package icon"), so extracting it would make an
+# --- unrelated FCE commit the root of this repository. It is copied in the
+# --- bootstrap commit instead (classified recreate-standalone).
+
+# --- maintainer documentation whose subject is JustDummies ---
+doc/handwritten/for-maintainers/WritingJustDummiesTests.en.md
+doc/handwritten/for-maintainers/WritingJustDummiesTests.fr.md
+doc/handwritten/for-maintainers/workflows/justdummies-mutation.en.md
+doc/handwritten/for-maintainers/workflows/justdummies-mutation.fr.md
+doc/handwritten/for-maintainers/specifications/justdummies-tool.md
+doc/handwritten/for-maintainers/specifications/justdummies-tool.fr.md
+doc/handwritten/for-maintainers/specifications/dummies-generation.en.md
+doc/handwritten/for-maintainers/specifications/dummies-generation.fr.md
+doc/handwritten/for-maintainers/audit/2026-07-20-dummies-architecture-and-design-audit.md
+doc/handwritten/for-maintainers/audit/2026-07-20-dummies-architecture-and-design-audit.fr.md
+
+# --- ADRs whose subject is JustDummies (all historical numberings included) ---
+doc/handwritten/for-maintainers/adr/0010-host-dummies-as-a-standalone-package.fr.md
+doc/handwritten/for-maintainers/adr/0010-host-dummies-as-a-standalone-package.md
+doc/handwritten/for-maintainers/adr/0011-host-dummies-as-a-standalone-package.fr.md
+doc/handwritten/for-maintainers/adr/0011-host-dummies-as-a-standalone-package.md
+doc/handwritten/for-maintainers/adr/0013-gate-distinct-collections-by-cardinality-else-bounded-draw.fr.md
+doc/handwritten/for-maintainers/adr/0013-gate-distinct-collections-by-cardinality-else-bounded-draw.md
+doc/handwritten/for-maintainers/adr/0015-cap-any-combine-at-arity-eight.fr.md
+doc/handwritten/for-maintainers/adr/0015-cap-any-combine-at-arity-eight.md
+doc/handwritten/for-maintainers/adr/0020-materialize-dummies-only-through-generate.fr.md
+doc/handwritten/for-maintainers/adr/0020-materialize-dummies-only-through-generate.md
+doc/handwritten/for-maintainers/adr/0022-floor-the-library-on-net-framework-4-7-2.fr.md
+doc/handwritten/for-maintainers/adr/0022-floor-the-library-on-net-framework-4-7-2.md
+doc/handwritten/for-maintainers/adr/0025-generate-strings-from-a-home-grown-regular-subset.fr.md
+doc/handwritten/for-maintainers/adr/0025-generate-strings-from-a-home-grown-regular-subset.md
+doc/handwritten/for-maintainers/adr/0030-draw-arbitrary-strings-from-an-explicit-terminal-set.fr.md
+doc/handwritten/for-maintainers/adr/0030-draw-arbitrary-strings-from-an-explicit-terminal-set.md
+doc/handwritten/for-maintainers/adr/0031-name-any-factories-after-their-clr-type.fr.md
+doc/handwritten/for-maintainers/adr/0031-name-any-factories-after-their-clr-type.md
+doc/handwritten/for-maintainers/adr/0032-draw-arbitrary-values-from-an-explicit-top-level-pool.fr.md
+doc/handwritten/for-maintainers/adr/0032-draw-arbitrary-values-from-an-explicit-top-level-pool.md
+doc/handwritten/for-maintainers/adr/0033-meet-string-exclusions-with-a-bounded-redraw.fr.md
+doc/handwritten/for-maintainers/adr/0033-meet-string-exclusions-with-a-bounded-redraw.md
+doc/handwritten/for-maintainers/adr/0035-enforce-structural-any-conflicts-at-compile-time.fr.md
+doc/handwritten/for-maintainers/adr/0035-enforce-structural-any-conflicts-at-compile-time.md
+doc/handwritten/for-maintainers/adr/0036-draw-lattice-constrained-scalars-on-the-grid.fr.md
+doc/handwritten/for-maintainers/adr/0036-draw-lattice-constrained-scalars-on-the-grid.md
+doc/handwritten/for-maintainers/adr/0037-vary-the-datetimeoffset-offset-dimension.fr.md
+doc/handwritten/for-maintainers/adr/0037-vary-the-datetimeoffset-offset-dimension.md
+doc/handwritten/for-maintainers/adr/0038-open-the-ambient-seed-scope-to-adapters.fr.md
+doc/handwritten/for-maintainers/adr/0038-open-the-ambient-seed-scope-to-adapters.md
+doc/handwritten/for-maintainers/adr/0039-adapt-dummies-to-xunit-v3-through-a-companion-package.fr.md
+doc/handwritten/for-maintainers/adr/0039-adapt-dummies-to-xunit-v3-through-a-companion-package.md
+doc/handwritten/for-maintainers/adr/0040-split-the-justdummies-test-bed-between-example-and-property-suites.fr.md
+doc/handwritten/for-maintainers/adr/0040-split-the-justdummies-test-bed-between-example-and-property-suites.md
+doc/handwritten/for-maintainers/adr/0041-draw-flag-enum-combinations-behind-an-opt-in.fr.md
+doc/handwritten/for-maintainers/adr/0041-draw-flag-enum-combinations-behind-an-opt-in.md
+doc/handwritten/for-maintainers/adr/0042-serialize-draws-on-a-random-source.fr.md
+doc/handwritten/for-maintainers/adr/0042-serialize-draws-on-a-random-source.md
+doc/handwritten/for-maintainers/adr/0043-ship-justdummies-analyzers.fr.md
+doc/handwritten/for-maintainers/adr/0043-ship-justdummies-analyzers.md
+doc/handwritten/for-maintainers/adr/0044-ship-justdummies-analyzers.fr.md
+doc/handwritten/for-maintainers/adr/0044-ship-justdummies-analyzers.md
+doc/handwritten/for-maintainers/adr/0045-guard-public-and-internal-arguments-against-null.fr.md
+doc/handwritten/for-maintainers/adr/0045-guard-public-and-internal-arguments-against-null.md
+doc/handwritten/for-maintainers/adr/0047-measure-justdummies-mutation-against-the-unit-suite-only.fr.md
+doc/handwritten/for-maintainers/adr/0047-measure-justdummies-mutation-against-the-unit-suite-only.md
+doc/handwritten/for-maintainers/adr/0048-drop-the-justdummies-generator-from-the-per-pull-request-mutation-matrix.fr.md
+doc/handwritten/for-maintainers/adr/0048-drop-the-justdummies-generator-from-the-per-pull-request-mutation-matrix.md
+doc/handwritten/for-maintainers/adr/0048-guarantee-a-generated-regex-value-matches-by-bounded-redraw.fr.md
+doc/handwritten/for-maintainers/adr/0048-guarantee-a-generated-regex-value-matches-by-bounded-redraw.md
+doc/handwritten/for-maintainers/adr/0049-drop-the-justdummies-generator-from-the-per-pull-request-mutation-matrix.fr.md
+doc/handwritten/for-maintainers/adr/0049-drop-the-justdummies-generator-from-the-per-pull-request-mutation-matrix.md
+doc/handwritten/for-maintainers/adr/0050-filter-the-datetimeoffset-pool-by-the-declared-offset.fr.md
+doc/handwritten/for-maintainers/adr/0050-filter-the-datetimeoffset-pool-by-the-declared-offset.md
+doc/handwritten/for-maintainers/adr/0050-let-a-size-maximum-cap-without-steering-the-draw.fr.md
+doc/handwritten/for-maintainers/adr/0050-let-a-size-maximum-cap-without-steering-the-draw.md
+doc/handwritten/for-maintainers/adr/0051-filter-the-datetimeoffset-pool-by-the-declared-offset.fr.md
+doc/handwritten/for-maintainers/adr/0051-filter-the-datetimeoffset-pool-by-the-declared-offset.md
+doc/handwritten/for-maintainers/adr/0052-draw-arbitrary-numbers-within-an-ordinary-magnitude.fr.md
+doc/handwritten/for-maintainers/adr/0052-draw-arbitrary-numbers-within-an-ordinary-magnitude.md
+doc/handwritten/for-maintainers/adr/0053-unify-discrete-generation-in-one-ordinal-space.fr.md
+doc/handwritten/for-maintainers/adr/0053-unify-discrete-generation-in-one-ordinal-space.md
+doc/handwritten/for-maintainers/adr/0054-decide-a-constraint-surface-by-constructive-versus-rejective.fr.md
+doc/handwritten/for-maintainers/adr/0054-decide-a-constraint-surface-by-constructive-versus-rejective.md
+doc/handwritten/for-maintainers/adr/0058-suppress-ca1510-while-the-netstandard-floor-stands.fr.md
+doc/handwritten/for-maintainers/adr/0058-suppress-ca1510-while-the-netstandard-floor-stands.md
+doc/handwritten/for-maintainers/adr/0059-guard-the-recipe-versus-value-boundary-with-analyzers.fr.md
+doc/handwritten/for-maintainers/adr/0059-guard-the-recipe-versus-value-boundary-with-analyzers.md
+doc/handwritten/for-maintainers/adr/0063-throw-the-library-s-own-exceptions-through-named-factories.fr.md
+doc/handwritten/for-maintainers/adr/0063-throw-the-library-s-own-exceptions-through-named-factories.md
+doc/handwritten/for-maintainers/adr/0064-exempt-the-whole-failure-reporting-path-from-the-null-guard-convention.fr.md
+doc/handwritten/for-maintainers/adr/0064-exempt-the-whole-failure-reporting-path-from-the-null-guard-convention.md
+doc/handwritten/for-maintainers/adr/0065-carry-a-declared-constraint-as-a-value-object.fr.md
+doc/handwritten/for-maintainers/adr/0065-carry-a-declared-constraint-as-a-value-object.md
+doc/handwritten/for-maintainers/adr/0066-declare-a-value-object-and-enforce-its-identity.fr.md
+doc/handwritten/for-maintainers/adr/0066-declare-a-value-object-and-enforce-its-identity.md
+doc/handwritten/for-maintainers/adr/0023-prune-the-exotic-width-numeric-generators.md
+doc/handwritten/for-maintainers/adr/0023-prune-the-exotic-width-numeric-generators.fr.md
+
+# --- JustDummies analyzer user documentation (JD001..JD028, English + French) ---
+regex:^doc/handwritten/for-users/analyzers/JD[0-9]+\.(en|fr)\.md$

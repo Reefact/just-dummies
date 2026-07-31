@@ -1,6 +1,6 @@
 # GENERATED FILE - do not edit. Rewrite it with tools/sonar-profile/sync-profile.sh.
 #
-# Every rule the SonarCloud C# quality profile "Sonar way" activates for reefact_first-class-errors, at
+# Every rule the SonarCloud C# quality profile "Sonar way" activates for reefact_just-dummies, at
 # severity "warning" - which the CI ratchet in Directory.Build.props promotes to an error.
 # The default here is ENFORCE: a rule the profile activates blocks, unless something says
 # otherwise.

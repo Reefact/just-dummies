@@ -9,9 +9,9 @@
 
 ## 0. How to read this document
 
-This specification is **self-contained on purpose**. JustDummies is expected to move to its own
-repository before the tool is built, so nothing here may depend on being read inside
-`Reefact/first-class-errors`.
+This specification is **self-contained on purpose**. It was written while JustDummies still lived
+in `Reefact/first-class-errors`, so that nothing here would depend on being read there; the move has
+since happened, and the property still holds.
 
 * **§1–§9 are the product.** What the tool does, what it emits, and why. Read §2 first: eleven
   decisions carry everything else. §5 is the hard part and the only section with real design risk.
@@ -1100,12 +1100,14 @@ each would stand unchanged if the implementation were rewritten. **Ten records**
 and D6 share one. In the ordinary course they would be entered into a repository's ADR base as
 `Proposed`, numbered there, and accepted by the maintainer.
 
-**They are held inside this specification instead, because the repository that should hold them
-does not exist yet.** JustDummies is expected to move out of `Reefact/first-class-errors` before
-this tool is built, and these records describe a tool that will live in that new repository.
-Entering them into the current base would assign them numbers — the stable handles the whole base
-is built on — that would have to be abandoned or rewritten on migration, and would leave this
-repository's log carrying decisions about code it no longer holds.
+**They were held inside this specification because, when it was written, the repository that
+should hold them did not exist yet.** JustDummies was still inside `Reefact/first-class-errors`, and
+these records describe a tool that would live in the repository it was to move to. Entering them
+into that base would have assigned them numbers — the stable handles the whole base is built on —
+that migration would then have forced to be abandoned or rewritten.
+
+That repository now exists: it is this one. The decisions below are therefore ready to enter this
+repository's ADR base as `Proposed` whenever the tool is built, and until then they stay here.
 
 Keeping them here costs nothing and buys two things. The reasoning stays attached to the
 specification it justifies, so the decision history travels as a single artefact rather than as a

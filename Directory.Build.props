@@ -113,10 +113,11 @@
     codebase refuses (with its reason). Membership is generated; every exception is written down.
     Decision: ADR-0062 in Reefact/first-class-errors, the repository this one was extracted from.
 
-    NOTE (migration): the profile file carried here is the one generated for the FirstClassErrors
-    SonarCloud project. It stays byte-identical so the build keeps emitting the same rule set it did
-    before the extraction; regenerate it from this repository's own SonarCloud project once that
-    project exists. See doc/handwritten/for-maintainers/migration/.
+    The profile file arrived from the FirstClassErrors SonarCloud project at the extraction, and has
+    since been regenerated from this repository's own project (reefact_just-dummies). The rule set
+    did not move: only the provenance line at the top of the generated file changed, which is the
+    measured answer to whether the two projects score the same code differently.
+    See doc/handwritten/for-maintainers/migration/.
   -->
   <ItemGroup Condition="'$(ManagePackageVersionsCentrally)' == 'true'">
     <PackageReference Include="SonarAnalyzer.CSharp" PrivateAssets="all" />

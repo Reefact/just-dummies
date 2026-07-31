@@ -12,14 +12,16 @@ Related decisions: [ADR-0001](../adr/0001-lock-the-analyzer-roslyn-floor.md).
 
 The analyzer is compiled against the Roslyn floor declared by `RoslynFloorVersion` in `Directory.Build.props`. The package keeps the analyzer under `analyzers/dotnet/cs/`.
 
-The current realization uses complementary guards:
+Upstream, the realization used four complementary guards. **Two of them did not come over with the extraction**, so the floor is currently *declared and pinned* but not *proved*:
 
-* the analyzer package reference is pinned to the declared floor;
-* `RoslynFloorTests` inspects assembly metadata and rejects newer `Microsoft.CodeAnalysis*` references;
-* the analyzer workflow packs the real NuGet artifact and builds a sample with the floor SDK, proving both loading and packaging;
-* Dependabot ignores automated updates for the floor-defining Roslyn packages.
+* ✅ the analyzer package reference is pinned to the declared floor (`VersionOverride="$(RoslynFloorVersion)"` in `JustDummies.Analyzers.csproj`, currently 4.8.0);
+* ✅ Dependabot ignores automated updates for the floor-defining Roslyn packages (`.github/dependabot.yml`);
+* ❌ `RoslynFloorTests`, which inspected assembly metadata and rejected newer `Microsoft.CodeAnalysis*` references — no such test exists in this repository;
+* ❌ the analyzer workflow, which packed the real NuGet artifact and built a sample with the floor SDK, proving both loading and packaging — there is no `analyzers.yml` here.
 
-When the floor changes, update the central property, the floor SDK used by the workflow and floor-check project, and the documented compiler requirement. The architectural change itself requires a new ADR that supersedes ADR-0001.
+The consequence is concrete: a transitive bump past the floor would compile, test and pack green, and only surface as an analyzer that fails to load in a consumer on an older compiler. Porting the two missing guards is outstanding work, not a decision that was reversed — ADR-0001 still stands as written.
+
+When the floor changes, update the central property and the documented compiler requirement. The architectural change itself requires a new ADR that supersedes ADR-0001.
 
 ## ADR pull-request check
 

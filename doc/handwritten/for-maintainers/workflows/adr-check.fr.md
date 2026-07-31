@@ -31,7 +31,7 @@ restent le fait d'un humain ou d'un agent.
 - Sur **`workflow_dispatch`** uniquement — déclenché à la main depuis l'onglet
   Actions sur la branche à vérifier. Aucun déclencheur automatique par pull request :
   consigner une décision est un acte relu par un humain, exactement comme le
-  workflow frère [`changelog`](changelog.fr.md), et un appel de modèle autonome sur
+  workflow frère [`changelog`](../../../../.github/workflows/changelog.yml), et un appel de modèle autonome sur
   chaque pull request n'est ni voulu ni nécessaire.
 - Une entrée, **`base`** (défaut `main`) — la ref contre laquelle la branche est
   différenciée.
@@ -74,7 +74,7 @@ Le token de haut niveau est en lecture seule (`contents: read`). Le job n'ajoute
 pull request est ouverte — il n'écrit rien dans le dépôt.
 
 - **Secret :** `ANTHROPIC_API_KEY` (secret du dépôt), partagé avec le workflow
-  [`changelog`](changelog.fr.md). Comme le seul déclencheur est `workflow_dispatch` —
+  [`changelog`](../../../../.github/workflows/changelog.yml). Comme le seul déclencheur est `workflow_dispatch` —
   réservé aux comptes ayant l'accès en écriture, jamais à un fork — la clé n'est
   jamais exposée à un fork.
 - **Le diff et le texte des ADR non fiables sont traités comme des données.** Le
@@ -102,7 +102,7 @@ pull request est ouverte — il n'écrit rien dans le dépôt.
 - **Le contexte est plafonné en octets.** `DIFF_MAX_BYTES` et `ADR_MAX_BYTES` bornent
   le paquet ; une troncature est annoncée en ligne. Un très gros diff est jugé sur sa
   première tranche plus la liste des fichiers modifiés.
-- **Même machine que [`changelog`](changelog.fr.md).** Les deux sont des workflows LLM
+- **Même machine que [`changelog`](../../../../.github/workflows/changelog.yml).** Les deux sont des workflows LLM
   à dispatch manuel (API via payload construit avec `jq`, texte non fiable en données,
   humain dans la boucle) ; gardez-les cohérents quand l'un change.
 
@@ -113,5 +113,5 @@ pull request est ouverte — il n'écrit rien dans le dépôt.
   manuel pour les contributeurs sans Claude Code.
 - [Référence des ADR](../adr/README.md) — le format, les conventions et la note
   « quand écrit-on un ADR ? ».
-- [`changelog`](changelog.fr.md) — le workflow frère LLM-en-CI à dispatch manuel dont
+- [`changelog`](../../../../.github/workflows/changelog.yml) — le workflow frère LLM-en-CI à dispatch manuel dont
   celui-ci s'inspire.

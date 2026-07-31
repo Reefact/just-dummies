@@ -284,7 +284,7 @@ of them — snapshot suites and process-spawning tests included.
 
 ## References
 
-* [`mutation` workflow reference](../workflows/mutation.en.md) — how the decision
+* [`mutation` workflow reference](../workflows/justdummies-mutation.en.md) — how the decision
   is implemented, and the knobs it exposes.
 * [ADR-0001](0001-lock-the-analyzer-roslyn-floor.md) — the precedent for pinning
   a tool version that would otherwise move a measured result on its own.

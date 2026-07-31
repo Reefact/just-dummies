@@ -50,7 +50,7 @@ s'authentifie avec le secret `SONAR_TOKEN`.
   scanner a besoin que la compilation **aille au bout** pour collecter les
   diagnostics `SonarAnalyzer` et les uploader dans `end` ; un warning de règle
   Sonar promu en erreur ferait échouer le build avant que les résultats ne soient
-  remontés. Le cliquet reste imposé par [`ci`](ci.fr.md) sur les deux branches OS
+  remontés. Le cliquet reste imposé par [`ci`](../../../../.github/workflows/ci.yml) sur les deux branches OS
   — c'est ça le barrage, pas cette branche d'analyse.
 - **Le garde-fou fork est nécessaire, pas optionnel.** La condition
   `if: … head.repo.full_name == github.repository` saute l'analyse sur les PR de
@@ -62,6 +62,6 @@ s'authentifie avec le secret `SONAR_TOKEN`.
 
 ## En rapport
 
-- [`ci`](ci.fr.md) — produit la même forme de couverture OpenCover via le
+- [`ci`](../../../../.github/workflows/ci.yml) — produit la même forme de couverture OpenCover via le
   `coverage.runsettings` partagé, et c'est là que le cliquet de warnings est
   réellement imposé.

@@ -12,14 +12,16 @@ Décision liée : [ADR-0001](../adr/0001-lock-the-analyzer-roslyn-floor.fr.md).
 
 L'analyseur est compilé contre le plancher Roslyn déclaré par `RoslynFloorVersion` dans `Directory.Build.props`. Le package conserve l'analyseur sous `analyzers/dotnet/cs/`.
 
-La réalisation actuelle utilise plusieurs protections complémentaires :
+En amont, la réalisation reposait sur quatre protections complémentaires. **Deux ne sont pas venues avec l'extraction**, si bien que le plancher est aujourd'hui *déclaré et épinglé* mais pas *prouvé* :
 
-* la référence de package de l'analyseur est épinglée sur le plancher déclaré ;
-* `RoslynFloorTests` inspecte les métadonnées d'assembly et refuse les références `Microsoft.CodeAnalysis*` plus récentes ;
-* le workflow de l'analyseur construit le véritable package NuGet puis compile un exemple avec le SDK plancher, ce qui vérifie à la fois le chargement et l'empaquetage ;
-* Dependabot ignore les mises à jour automatiques des packages Roslyn qui définissent le plancher.
+* ✅ la référence de package de l'analyseur est épinglée sur le plancher déclaré (`VersionOverride="$(RoslynFloorVersion)"` dans `JustDummies.Analyzers.csproj`, actuellement 4.8.0) ;
+* ✅ Dependabot ignore les mises à jour automatiques des packages Roslyn qui définissent le plancher (`.github/dependabot.yml`) ;
+* ❌ `RoslynFloorTests`, qui inspectait les métadonnées d'assembly et refusait les références `Microsoft.CodeAnalysis*` plus récentes — aucun test de ce genre n'existe dans ce dépôt ;
+* ❌ le workflow de l'analyseur, qui construisait le vrai package NuGet puis compilait un exemple avec le SDK plancher, vérifiant à la fois le chargement et l'empaquetage — il n'y a pas d'`analyzers.yml` ici.
 
-Lors d'un changement de plancher, il faut mettre à jour la propriété centrale, le SDK plancher utilisé par le workflow et le projet de vérification, ainsi que l'exigence de compilateur documentée. Le changement architectural lui-même exige un nouvel ADR remplaçant l'ADR-0001.
+La conséquence est concrète : une montée transitive au-delà du plancher compilerait, passerait les tests et se packagerait au vert, pour ne se manifester que par un analyseur qui refuse de se charger chez un consommateur sur un compilateur plus ancien. Porter les deux protections manquantes est un travail à faire, pas une décision revenue en arrière — l'ADR-0001 tient tel qu'il est écrit.
+
+Lors d'un changement de plancher, il faut mettre à jour la propriété centrale et l'exigence de compilateur documentée. Le changement architectural lui-même exige un nouvel ADR remplaçant l'ADR-0001.
 
 ## Vérification ADR des pull requests
 

@@ -310,7 +310,7 @@ snapshots et tests lanceurs de processus compris.
 
 ## Références
 
-* [Référence du workflow `mutation`](../workflows/mutation.fr.md) — comment la
+* [Référence du workflow `mutation`](../workflows/justdummies-mutation.fr.md) — comment la
   décision est mise en œuvre, et les réglages qu'elle expose.
 * [ADR-0001](0001-lock-the-analyzer-roslyn-floor.fr.md) — le précédent en matière
   d'épinglage d'une version d'outil qui, sinon, déplacerait seule un résultat

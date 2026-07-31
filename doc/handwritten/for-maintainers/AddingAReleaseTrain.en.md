@@ -91,17 +91,17 @@ everything else about the train from `trains.sh`.)
   `commit-lint` workflow share it).
 - **Release notes:** run `tools/packaging/release-notes.sh <id> <prefix>0.0.0 HEAD`
   locally; it should list that train's commits and nothing from the other trains.
-- **Packing:** after the step-5 edit, the [`release-dryrun`](workflows/release-dryrun.en.md)
+- **Packing:** after the step-5 edit, the [`release-dryrun`](../../../.github/workflows/release-dryrun.yml)
   workflow packs and rehearses the new train's notes on every PR — check its log
   lists the new train. Or run `tools/packaging/pack.sh 0.0.0-dry.1 <id>` locally.
 - **Changelog:** once merged to the default branch, dispatch the
-  [`changelog`](workflows/changelog.en.md) workflow for the new component and review
+  [`changelog`](../../../.github/workflows/changelog.yml) workflow for the new component and review
   the drafted pull request.
 
 ## Related
 
 - [`tools/trains.sh`](../../../tools/trains.sh) — the single source of truth this runbook
   is built around.
-- [`changelog`](workflows/changelog.en.md) and [`release`](workflows/release.en.md)
+- [`changelog`](../../../.github/workflows/changelog.yml) and [`release`](../../../.github/workflows/release.yml)
   workflow pages.
 - [`CONTRIBUTING.md`](../../../CONTRIBUTING.md) — the Conventional Commit scopes.

@@ -99,17 +99,17 @@ workflow lit tout le reste du train depuis `trains.sh`.)
 - **Notes de release :** lancez `tools/packaging/release-notes.sh <id> <préfixe>0.0.0 HEAD`
   en local ; il doit lister les commits de ce train et rien des autres trains.
 - **Packaging :** après l'édit de l'étape 5, le workflow
-  [`release-dryrun`](workflows/release-dryrun.fr.md) packe et répète les notes du
+  [`release-dryrun`](../../../.github/workflows/release-dryrun.yml) packe et répète les notes du
   nouveau train sur chaque PR — vérifiez que son log liste le nouveau train. Ou
   lancez `tools/packaging/pack.sh 0.0.0-dry.1 <id>` en local.
 - **Changelog :** une fois mergé sur la branche par défaut, déclenchez le workflow
-  [`changelog`](workflows/changelog.fr.md) pour le nouveau composant et relisez la
+  [`changelog`](../../../.github/workflows/changelog.yml) pour le nouveau composant et relisez la
   pull request rédigée.
 
 ## En rapport
 
 - [`tools/trains.sh`](../../../tools/trains.sh) — la source unique de vérité autour de
   laquelle ce runbook est construit.
-- Les pages des workflows [`changelog`](workflows/changelog.fr.md) et
-  [`release`](workflows/release.fr.md).
+- Les pages des workflows [`changelog`](../../../.github/workflows/changelog.yml) et
+  [`release`](../../../.github/workflows/release.yml).
 - [`CONTRIBUTING.fr.md`](../for-users/CONTRIBUTING.fr.md) — les scopes Conventional Commit.

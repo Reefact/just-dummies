@@ -17,7 +17,7 @@
          project's MODERN leg while the same source must still compile on the pre-.NET-6 one — and it cannot be
          polyfilled: ThrowIfNull is a static method on an existing BCL type, and C# has no static extension
          methods, so supplying it would mean shadowing System.ArgumentNullException itself. Suppressed for as
-         long as this project targets below .NET 6; see ADR-0058. -->
+         long as this project targets below .NET 6; see ADR-0037. -->
     <NoWarn>$(NoWarn);CA1510</NoWarn>
 
     <!-- XML documentation -->
@@ -70,7 +70,7 @@
   <!-- Opens the internals to the contract suite so the null-argument guard convention (every public/internal member
        validates its non-nullable reference arguments) can be enforced by reflection over the whole surface, including
        the internal boundary (Create factories, internal constructors) the public API can never reach a null through.
-       This deliberately relaxes the previously black-box test posture; see ADR-0045. -->
+       This deliberately relaxes the previously black-box test posture; see ADR-0024. -->
   <ItemGroup>
     <InternalsVisibleTo Include="JustDummies.UnitTests" />
   </ItemGroup>

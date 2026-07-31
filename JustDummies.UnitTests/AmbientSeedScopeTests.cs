@@ -10,7 +10,7 @@ namespace JustDummies.UnitTests;
 
 /// <summary>
 ///     The scope form of reproducibility: a handle a caller opens and disposes itself, for a test-framework adapter
-///     that observes a test through before/after hooks and therefore has no delegate to wrap (ADR-0035). The seed
+///     that observes a test through before/after hooks and therefore has no delegate to wrap (ADR-0014). The seed
 ///     behaviour must match <c>Any.Reproducibly</c>; what the scope adds is the replay snippet a
 ///     generation-failure diagnostic names, so a run pinned from outside the test body never advertises a call the
 ///     test does not contain.

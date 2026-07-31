@@ -44,7 +44,7 @@ public sealed class UnsupportedRegexException : DummyException {
     /// <remarks>
     ///     Private on purpose: it names the grammar of the message, not a failure, so every caller is a named case
     ///     above. Nothing here guards its arguments — building an exception must never throw, or the failure being
-    ///     reported is replaced by a failure about reporting it (ADR-0045, which exempts exception types for exactly
+    ///     reported is replaced by a failure about reporting it (ADR-0024, which exempts exception types for exactly
     ///     that reason).
     /// </remarks>
     private static UnsupportedRegexException Sentence(string pattern, string construct, int position, string remedy) {

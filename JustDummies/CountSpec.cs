@@ -20,7 +20,7 @@ namespace JustDummies;
 ///     elements are themselves generated values, heavier than a string's characters, so a smaller default keeps a
 ///     dummy collection cheap while still exercising the multi-element path.
 ///     <para>
-///         That spread governs every draw, bounded or not (ADR-0050): a declared maximum composes with it rather than
+///         That spread governs every draw, bounded or not (ADR-0029): a declared maximum composes with it rather than
 ///         replacing it, so an upper bound only narrows the draw and never widens it. Only a minimum, an exact count
 ///         or required elements enlarge a collection.
 ///     </para>
@@ -110,7 +110,7 @@ internal sealed class CountSpec {
         if (_exact is int exact) { return exact; }
 
         int min = Math.Max(_min, requiredMin);
-        // A declared maximum composes with the default spread instead of replacing it (ADR-0050): it may only narrow
+        // A declared maximum composes with the default spread instead of replacing it (ADR-0029): it may only narrow
         // the draw, never widen it, so a loose cap still yields the small unconstrained collection. Long arithmetic: a
         // huge required minimum must saturate instead of overflowing past int.MaxValue.
         long spreadCeiling = (long)min + DefaultCountSpread;

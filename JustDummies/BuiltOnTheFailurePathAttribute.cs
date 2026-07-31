@@ -9,7 +9,7 @@ namespace JustDummies;
 ///     are: a guard on this path throws while a failure is being reported, replacing that failure with a failure about
 ///     reporting it and losing the original. The exemption is declared here rather than inferred, so it applies only
 ///     where someone has said it should — the marker is the decision, and
-///     <c>NullArgumentGuardConventionTests</c> reads it (ADR-0064, which widened ADR-0045's exemption from exception
+///     <c>NullArgumentGuardConventionTests</c> reads it (ADR-0041, which widened ADR-0024's exemption from exception
 ///     types to this path).
 ///     <para>
 ///         Nothing is given up by it: every argument on this path is non-nullable, so a caller that cannot prove a

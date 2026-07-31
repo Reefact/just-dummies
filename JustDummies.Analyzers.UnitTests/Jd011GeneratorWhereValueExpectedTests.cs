@@ -178,7 +178,7 @@ public class Jd011GeneratorWhereValueExpectedTests {
     [Fact]
     public async Task Is_disabled_by_default() {
         // The severity choice is the finding, not an incidental: dogfooding produced no true positive and two false
-        // ones, so the rule ships opt-in (ADR-0059's follow-up).
+        // ones, so the rule ships opt-in (ADR-0038's follow-up).
         DiagnosticDescriptor descriptor = new GeneratorWhereValueExpectedAnalyzer().SupportedDiagnostics[0];
 
         Check.That(descriptor.IsEnabledByDefault).IsFalse();

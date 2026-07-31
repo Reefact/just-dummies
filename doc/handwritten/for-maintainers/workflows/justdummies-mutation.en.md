@@ -10,11 +10,11 @@
 ## What it is for
 
 Mutation testing for the **three JustDummies components** — `JustDummies`, its
-xUnit v3 adapter `JustDummies.Xunit` ([ADR-0039](../adr/0039-adapt-dummies-to-xunit-v3-through-a-companion-package.md)),
-and the analyzers that ship inside the package ([ADR-0044](../adr/0044-ship-justdummies-analyzers.md)).
+xUnit v3 adapter `JustDummies.Xunit` ([ADR-0018](../adr/0018-adapt-dummies-to-xunit-v3-through-a-companion-package.md)),
+and the analyzers that ship inside the package ([ADR-0023](../adr/0023-ship-justdummies-analyzers.md)).
 On a pull request it mutates only the files the pull request changed, for the
 adapter and the analyzers; the generator is measured by the weekly sweep alone
-([ADR-0049](../adr/0049-drop-the-justdummies-generator-from-the-per-pull-request-mutation-matrix.md)).
+([ADR-0028](../adr/0028-drop-the-justdummies-generator-from-the-per-pull-request-mutation-matrix.md)).
 What mutation testing *is*, and why this repository gates on it, is explained once
 on the [`mutation`](mutation.en.md) page — this workflow is the same machine with
 a different matrix.
@@ -22,7 +22,7 @@ a different matrix.
 ## Why it is a separate workflow
 
 `JustDummies` is a standalone, error-agnostic package that deliberately holds no
-reference to `FirstClassErrors` ([ADR-0011](../adr/0011-host-dummies-as-a-standalone-package.md)),
+reference to `FirstClassErrors` ([ADR-0003](../adr/0003-host-dummies-as-a-standalone-package.md)),
 and it is headed for a repository of its own. Splitting the mutation gate along
 that future boundary now means the move is a **file move rather than an edit**:
 nothing in this workflow names a FirstClassErrors project, and nothing in
@@ -32,13 +32,13 @@ It also gives JustDummies its **own check**,
 **`JustDummies mutation gate`**, independent of the FirstClassErrors one. Two
 checks, two bars that move independently — which is what two libraries at different
 levels of test maturity need anyway. On pull requests both are **advisory**
-([ADR-0046](../adr/0046-make-the-per-pull-request-mutation-gate-advisory.md)); the
+([ADR-0025](../adr/0046-make-the-per-pull-request-mutation-gate-advisory.md)); the
 enforced bar for each is its weekly full sweep.
 
 ## When it runs
 
 - On every **pull request targeting `main`** — diff-scoped and **advisory**: it
-  reports the diff's score but never blocks the merge ([ADR-0046](../adr/0046-make-the-per-pull-request-mutation-gate-advisory.md)).
+  reports the diff's score but never blocks the merge ([ADR-0025](../adr/0046-make-the-per-pull-request-mutation-gate-advisory.md)).
 - **Weekly** on a schedule (Monday, 03:47 UTC) — the full sweep, the **enforced
   bar**. The slot is offset from `mutation`'s so the two sweeps do not contend for
   runners.
@@ -56,7 +56,7 @@ and [`build/stryker/justdummies-analyzers.json`](../../../../build/stryker/justd
 
 **The one place the two workflows differ: the per-PR matrix is two legs, not
 three.** The generator is swept weekly but is **not** mutated per pull request
-([ADR-0049](../adr/0049-drop-the-justdummies-generator-from-the-per-pull-request-mutation-matrix.md)).
+([ADR-0028](../adr/0028-drop-the-justdummies-generator-from-the-per-pull-request-mutation-matrix.md)).
 Because `--since` selects per changed **file** rather than per changed line, a
 hundred-line diff touching one of the generator's larger sources pulls in that
 whole file: measured at 844 mutants, still running after an hour, producing no
@@ -99,7 +99,7 @@ from a full sweep like the rest, and it gates normally.
 The analyzers leg also ships with `break` at **0**, for a different reason: its
 residual survivors are the analyzer-infrastructure and descriptor-string mutants
 the FirstClassErrors analyzers carry too, so it reports rather than blocks
-([ADR-0044](../adr/0044-ship-justdummies-analyzers.md)).
+([ADR-0023](../adr/0023-ship-justdummies-analyzers.md)).
 
 ## Permissions & security
 
@@ -159,6 +159,6 @@ Reports land in `StrykerOutput/` (git-ignored); open `reports/mutation-report.ht
 - [`justdummies`](../../../../.github/workflows/justdummies.yml) *(no reference
   page yet)* — the other JustDummies-scoped workflow: it proves the packaged
   `netstandard2.0` and `net8.0` assets behave on their own runtimes.
-- [ADR 0043 — Gate pull requests on the mutation score of what they
+- [ADR 0043 (first-class-errors) — Gate pull requests on the mutation score of what they
   changed](../adr/0043-gate-pull-requests-on-the-mutation-score-of-the-diff.md)
   — the decision both workflows implement.

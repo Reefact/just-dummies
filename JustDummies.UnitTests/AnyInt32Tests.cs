@@ -13,7 +13,7 @@ namespace JustDummies.UnitTests;
 ///     arguments are rejected outright, that the named domain extremes are generable, and that a bounded range
 ///     is actually reached. The invariants that hold for <i>every</i> bound — containment, strictness,
 ///     inclusiveness, exclusion, immutability — are quantified over generated bounds in
-///     <c>JustDummies.PropertyTests</c> instead, and are deliberately not restated here (ADR-0040).
+///     <c>JustDummies.PropertyTests</c> instead, and are deliberately not restated here (ADR-0019).
 /// </summary>
 [TestSubject(typeof(AnyInt32))]
 public sealed class AnyInt32Tests {

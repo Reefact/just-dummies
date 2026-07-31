@@ -73,7 +73,7 @@ jobs:
   # build-test above runs the suite on the LATEST .NET (10). This job proves the LIBRARY's OTHER supported
   # runtime: that the netstandard2.0 assemblies (JustDummies, JustDummies.Xunit) actually load and pass their
   # tests on .NET Framework 4.7.2 — the support floor recorded in
-  # doc/handwritten/for-maintainers/adr/0022-floor-the-library-on-net-framework-4-7-2.md.
+  # doc/handwritten/for-maintainers/adr/0007-floor-the-library-on-net-framework-4-7-2.md.
   # netstandard2.0 is only a COMPILE contract; running on the real .NET Framework CLR (NLS globalization, the
   # netstandard.dll facade, its reflection stack) is what proves the library behaves there — the ordinary net10
   # build cannot. .NET Framework tests run on Windows only (there is no Mono on the Linux legs), and the net472

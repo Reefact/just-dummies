@@ -253,7 +253,7 @@ internal sealed class DecimalIntervalSpec {
         // fraction in [0, 1], and no intermediate ever leaves the decimal range. The earlier midpoint form
         // (mid ± half) overflowed on the full domain — it is symmetric, so max/2 rounds up and half = max/2 - min/2
         // doubles to just past decimal.MaxValue, throwing on an unconstrained Any.Decimal().Generate().
-        // Draw from the ordinary window rather than the declared interval (ADR-0052): the window only ever clips,
+        // Draw from the ordinary window rather than the declared interval (ADR-0031): the window only ever clips,
         // and it steps aside entirely when it would leave the declared interval empty. Without it an unconstrained
         // decimal lands within a few decades of decimal.MaxValue, where a further multiplication throws
         // OverflowException and a scale constraint has no fractional digits left to constrain.

@@ -4,7 +4,7 @@
 
 > Où placer un nouveau test pour `JustDummies`, et comment l'écrire. La frontière
 > entre les deux suites est enregistrée dans
-> [l'ADR-0040](adr/0040-split-the-justdummies-test-bed-between-example-and-property-suites.fr.md) ;
+> [l'ADR-0019](adr/0019-split-the-justdummies-test-bed-between-example-and-property-suites.fr.md) ;
 > cette page explique comment l'appliquer.
 
 ## Les deux suites

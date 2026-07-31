@@ -73,5 +73,5 @@ exchange — while publishing nothing: the push and the GitHub Release are the o
 
 No package is published by this migration, and no version has been decided. Publishing the first
 `JustDummies` version is also the prerequisite for the FirstClassErrors cleanup: until a restorable package
-exists, `FirstClassErrors.Testing` must keep embedding `JustDummies.dll` (see ADR-0068 and, in
+exists, `FirstClassErrors.Testing` must keep embedding `JustDummies.dll` (see ADR-0044 and, in
 `Reefact/first-class-errors`, issue #229).

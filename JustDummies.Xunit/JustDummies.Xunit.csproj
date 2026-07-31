@@ -7,7 +7,7 @@
   <PropertyGroup>
     <!-- Build. netstandard2.0, the same floor JustDummies keeps: the adapter compiles against
          xunit.v3.extensibility.core, which is itself a netstandard2.0 library, so nothing forces this
-         package above the floor its own dependency and ADR-0022 already establish. -->
+         package above the floor its own dependency and ADR-0007 already establish. -->
     <TargetFramework>netstandard2.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
@@ -69,10 +69,10 @@
 
   <ItemGroup>
     <!-- JustDummies only. This package exists precisely because JustDummies cannot reference a test framework
-         itself (ADR-0011); it must not acquire a FirstClassErrors dependency either. -->
+         itself (ADR-0003); it must not acquire a FirstClassErrors dependency either. -->
     <ProjectReference Include="..\JustDummies\JustDummies.csproj" />
 
-    <!-- Run the JustDummies analyzers on this project (ADR-0061): OutputItemType=Analyzer loads them at
+    <!-- Run the JustDummies analyzers on this project (ADR-0061 in first-class-errors): OutputItemType=Analyzer loads them at
          build and in the IDE, ReferenceOutputAssembly=false keeps them off the runtime graph, and
          PrivateAssets=all stops the reference from reaching a consumer of this project. -->
     <ProjectReference Include="..\JustDummies.Analyzers\JustDummies.Analyzers.csproj"

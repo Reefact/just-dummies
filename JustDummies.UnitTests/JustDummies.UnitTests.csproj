@@ -3,7 +3,7 @@
   <!-- Adds the .NET Framework 4.7.2 support-floor leg (gated by EnableNet472Floor) and owns the target
        frameworks; exercised by the `framework-floor` job in .github/workflows/ci.yml. This carries JustDummies'
        OWN contract suite onto the floor, running it against the netstandard2.0 asset that .NET Framework
-       consumers load — until now that asset was only exercised transitively (ADR-0022; issue #215). -->
+       consumers load — until now that asset was only exercised transitively (ADR-0007; issue #215). -->
   <Import Project="..\build\Net472TestFloor.props" />
 
   <PropertyGroup>
@@ -16,7 +16,7 @@
          project's MODERN leg while the same source must still compile on the pre-.NET-6 one — and it cannot be
          polyfilled: ThrowIfNull is a static method on an existing BCL type, and C# has no static extension
          methods, so supplying it would mean shadowing System.ArgumentNullException itself. Suppressed for as
-         long as this project targets below .NET 6; see ADR-0058. -->
+         long as this project targets below .NET 6; see ADR-0037. -->
     <NoWarn>$(NoWarn);CA1510</NoWarn>
 
     <!-- SYSLIB1045 asks every `new Regex("...")` to become a partial method carrying [GeneratedRegex], so a
@@ -24,7 +24,7 @@
          leg is net472, where it does not exist — and the three suites it fires on (AnyPatternTests,
          XmlDocCrefConventionTests, ConcurrentDrawTests) are all compiled on that leg, none of them being in
          the net472 <Compile Remove> list below. Same wall as CA1510, same remedy and same expiry: suppressed
-         for as long as this project builds against the floor; see ADR-0058 and ADR-0022. -->
+         for as long as this project builds against the floor; see ADR-0037 and ADR-0007. -->
     <NoWarn>$(NoWarn);SYSLIB1045</NoWarn>
   </PropertyGroup>
 
@@ -48,7 +48,7 @@
          standalone boundary of the library under test stays visible in its own test bed. -->
     <ProjectReference Include="..\JustDummies\JustDummies.csproj" />
 
-    <!-- Run the JustDummies analyzers on this project (ADR-0061): OutputItemType=Analyzer loads them at
+    <!-- Run the JustDummies analyzers on this project (ADR-0061 in first-class-errors): OutputItemType=Analyzer loads them at
          build and in the IDE, ReferenceOutputAssembly=false keeps them off the runtime graph, and
          PrivateAssets=all stops the reference from reaching a consumer of this project. -->
     <ProjectReference Include="..\JustDummies.Analyzers\JustDummies.Analyzers.csproj"

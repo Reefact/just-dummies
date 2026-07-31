@@ -40,7 +40,7 @@ case "$scope" in
     projects='JustDummies/JustDummies.csproj'
     ;;
   xunit)
-    # The xUnit v3 adapter (ADR-0039). It rode the library's train while both lived in
+    # The xUnit v3 adapter (ADR-0018). It rode the library's train while both lived in
     # Reefact/first-class-errors; it now versions independently, which is exactly why the
     # intra-product dependency guard below exists.
     projects='JustDummies.Xunit/JustDummies.Xunit.csproj'
@@ -78,7 +78,7 @@ for package in artifacts/*.nupkg; do
 done
 
 # Standalone guard, on every train. JustDummies' whole identity is that it depends on nothing outside itself
-# (ADR-0011): architecture tests assert it at build time, and this asserts it on the shipped artifact -- a
+# (ADR-0003): architecture tests assert it at build time, and this asserts it on the shipped artifact -- a
 # FirstClassErrors dependency sneaking into the nuspec must fail the pack, not surface on nuget.org. The check
 # outlived the extraction on purpose: the coupling it guards against is what the extraction removed, and a
 # regression would be silent without it.
@@ -87,7 +87,7 @@ for package in artifacts/*.nupkg; do
   # then reject any FirstClassErrors dependency found in it.
   nuspec="$(unzip -p "$package" '*.nuspec')" || { echo "error: cannot read the nuspec from $package" >&2; exit 1; }
   if printf '%s\n' "$nuspec" | grep -q '<dependency [^>]*id="FirstClassErrors'; then
-    echo "error: $package declares a FirstClassErrors dependency; JustDummies is standalone (ADR-0011)" >&2
+    echo "error: $package declares a FirstClassErrors dependency; JustDummies is standalone (ADR-0003)" >&2
     exit 1
   fi
   echo "ok: $package is standalone (no FirstClassErrors dependency)"
@@ -95,7 +95,7 @@ done
 
 # Analyzer-bundling proof for the lib train. The rules reach consumers only because
 # _AddAnalyzerToPackage puts JustDummies.Analyzers.dll at analyzers/dotnet/cs inside the library package
-# (ADR-0044). That mechanism is easy to break silently: neither `dotnet build` nor `dotnet test` inspects the
+# (ADR-0023). That mechanism is easy to break silently: neither `dotnet build` nor `dotnet test` inspects the
 # .nupkg content, so losing the target would pass every local check and only surface as "the JD rules stopped
 # firing" in a consumer's IDE, with no error anywhere.
 if [ "$scope" = "lib" ]; then

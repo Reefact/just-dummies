@@ -2,7 +2,7 @@ name: justdummies-mutation
 
 # Mutation testing for the JustDummies libraries, kept in a workflow of their own rather than as two
 # more legs of `mutation.yml`. JustDummies is destined for a repository of its own (it is already a
-# standalone, error-agnostic package — ADR-0011), and this file is written so that the move is a
+# standalone, error-agnostic package — ADR-0003), and this file is written so that the move is a
 # FILE MOVE, not an edit: take this workflow, `build/stryker/justdummies*.json`,
 # `.config/dotnet-tools.json` and the reference page, then repoint the `solution` field in the two
 # configs at this repository's solution. Nothing here refers to a FirstClassErrors project.
@@ -40,7 +40,7 @@ jobs:
   # The gate. One leg per shipped library the diff-scoped run can afford, each mutating ONLY what the
   # pull request changed (Stryker's `--since`), so the cost follows the diff and not the size of the
   # library — which holds for these two, and is exactly what stopped holding for the generator
-  # (ADR-0049): `--since` selects per FILE, so on a large source the cost follows the file instead.
+  # (ADR-0028): `--since` selects per FILE, so on a large source the cost follows the file instead.
   #
   # `gate` below aggregates these legs into the single check to mark as required on `main`.
   changed:
@@ -51,18 +51,18 @@ jobs:
     permissions:
       contents: read
     # Both remaining legs finish in about ninety seconds, touched or untouched. The cap is a runaway
-    # guard, not a budget: the leg that needed one — the generator's — no longer runs here (ADR-0049).
+    # guard, not a budget: the leg that needed one — the generator's — no longer runs here (ADR-0028).
     timeout-minutes: 20
     strategy:
       # Run both legs to completion: a survivor in the adapter is worth seeing even when the
       # analyzers are red.
       fail-fast: false
       matrix:
-        # The JustDummies packages' xUnit v3 adapter (ADR-0039) and the analyzers packed inside the
-        # generator package (ADR-0044). This repository ships no other mutation-tested library.
-        # See ADR-0043.
+        # The JustDummies packages' xUnit v3 adapter (ADR-0018) and the analyzers packed inside the
+        # generator package (ADR-0023). This repository ships no other mutation-tested library.
+        # See ADR-0022.
         #
-        # The GENERATOR is deliberately absent (ADR-0049) — it is the only leg this matrix cannot
+        # The GENERATOR is deliberately absent (ADR-0028) — it is the only leg this matrix cannot
         # afford. Stryker selects per changed FILE, not per changed line, so a diff of ~100 lines
         # touching one of its bigger sources pulls in that whole file: measured at 844 mutants, still
         # running after an hour, no score. Every in-tool lever tops out around -36% against the -95%
@@ -168,7 +168,7 @@ jobs:
 
   # The single check that reports the per-PR mutation legs for the JustDummies packages. Kept as one
   # job (and one check name) so branch protection has a single entry to point at. ADVISORY on pull
-  # requests (ADR-0046): the enforced bar is the weekly `full` sweep, so this job summarises the diff
+  # requests (ADR-0025): the enforced bar is the weekly `full` sweep, so this job summarises the diff
   # legs without ever turning a pull request red — the per-PR score is a signal to read, not a gate,
   # and the whole-file cost of Stryker's per-file `--since` selection must not block a merge.
   gate:

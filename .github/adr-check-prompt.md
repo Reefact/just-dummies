@@ -40,7 +40,7 @@ false alarm on a routine change trains the team to ignore you.
 1. **New decision** — the branch makes a lasting decision that is not yet
    recorded. Name the decision to record (one short title) and why it qualifies.
 2. **Supersedes** — the branch changes a decision that an existing ADR already
-   records. Name that ADR (e.g. `ADR-0002`) and what changed.
+   records. Name that ADR (e.g. `ADR-0002 (first-class-errors)`) and what changed.
 3. **Conflicts** — the branch contradicts an **accepted** ADR without recording a
    supersession. Name that ADR and the precise contradiction.
 

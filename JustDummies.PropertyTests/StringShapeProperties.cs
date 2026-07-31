@@ -143,7 +143,7 @@ public sealed class StringShapeProperties {
 
     [Fact(DisplayName = "WithMaxLength only caps: it never widens the draw beyond the unconstrained spread.")]
     public void WithMaxLengthNeverWidensTheDraw() {
-        // ADR-0050: a maximum is a permission, not a size hint. It composes with the default spread instead of
+        // ADR-0029: a maximum is a permission, not a size hint. It composes with the default spread instead of
         // replacing it, so declaring a loose cap must keep yielding the small unconstrained string. The maxima
         // generated here straddle the spread on both sides — that is where the old "maximum becomes the target"
         // behaviour and this one disagree.
@@ -216,7 +216,7 @@ public sealed class StringShapeProperties {
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2249:Consider using String.Contains instead of String.IndexOf",
                                                      Justification =
                                                          "string.Contains(string, StringComparison) is not on the netstandard2.0 / net472 floor this suite runs " +
-                                                         "against (ADR-0022); IndexOf with the same StringComparison.Ordinal carries the identical comparison and " +
+                                                         "against (ADR-0007); IndexOf with the same StringComparison.Ordinal carries the identical comparison and " +
                                                          "compiles on every leg. The rule is right on net10.0 only.")]
     public void ContainingEmbedsTheValue() {
         Prop.ForAll(Affix(DefaultAlphabet, 8).ToArbitrary(),

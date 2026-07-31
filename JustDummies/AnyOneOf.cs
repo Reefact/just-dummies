@@ -41,7 +41,7 @@ public sealed class AnyOneOf<T> : IAny<T>, IHasRandomSource, ICardinalityHint<T>
     #region Statics members declarations
 
     // Validates and deduplicates the caller's pool, then builds the generator. As an internal boundary it guards its
-    // own arguments per the null-argument convention (ADR-0045); the public factories additionally reject a null
+    // own arguments per the null-argument convention (ADR-0024); the public factories additionally reject a null
     // array first, under the caller-facing parameter name, before delegating here. The factory names itself so a
     // later exclusion conflict can say which declaration it emptied.
     internal static AnyOneOf<T> FromPool(RandomSource source, IReadOnlyList<T> values, ConstraintCall declaring) {

@@ -11,7 +11,7 @@ namespace JustDummies.PropertyTests;
 
 /// <summary>
 ///     The one property in this suite that reads a conflict <b>message</b> rather than only its exception type. The
-///     rule "assert exception types, never message text" (ADR-0040) exists because message <i>wording</i> is unstable;
+///     rule "assert exception types, never message text" (ADR-0019) exists because message <i>wording</i> is unstable;
 ///     the invariant proven here is not the wording but its <i>truthfulness</i> — for every legal combination of
 ///     constraints that empties the domain, the emitted message must make only claims that are literally true, must
 ///     name no falsehood, and must not echo the applied constraint on both sides of "because". That correctness has a

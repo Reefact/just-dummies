@@ -7,7 +7,7 @@
 **Audited revision:** `3bf89e3` (tip of `main` at audit time)
 **Scope:** the `JustDummies` library only — `JustDummies/`, `JustDummies.UnitTests/`, its guard tooling
 (`tools/justdummies-check/`, `.github/workflows/justdummies.yml`), its documentation, and the ADRs that govern it.
-**Status:** advisory. Per the repository's own convention (ADR-0004), this audit produces
+**Status:** advisory. Per the repository's own convention (ADR-0002), this audit produces
 recommendations, never blockers; every proposed ADR change is a draft for `@reefact` to accept or reject.
 
 **Method.** The whole library source (~8,700 lines across 54 C# files) and test suite (~2,500 lines,
@@ -55,14 +55,14 @@ individual fix.
 One framing fact softens all of this considerably: **JustDummies has never been released.** There is no
 `dum-v*` tag; the changelog holds only an empty *Unreleased* section. Every defect above can be fixed,
 and every contract decided, with zero compatibility cost. This audit's headline recommendation is to
-treat the pre-1.0 window the way ADR-0020 did — as the cheapest moment to decide — and close the
+treat the pre-1.0 window the way ADR-0006 did — as the cheapest moment to decide — and close the
 items in §11–§12 before the first publication.
 
 Beyond the defects, the significant findings are: the hand-mirrored `Any`/`AnyContext` surface and
 the fourteen cloned numeric builders carry **no parity guard** (and documentation drift has already
 begun); the **determinism contract has documentation gaps** (concurrent draws inside one seeded scope
 silently void replayability; cross-version seed stability is neither promised nor disclaimed; the
-contract's ADR anchoring was lost when ADR-0006 was superseded); the **netstandard2.0 leg is never
+contract's ADR anchoring was lost when ADR-0006 (first-class-errors) was superseded); the **netstandard2.0 leg is never
 executed by JustDummies' own test suite** (only transitively, via FirstClassErrors' floor job); and there
 is **no user-facing reference of the constraint surface** — the repository README does not even
 mention the package. The feature-gap analysis (§10) finds the type coverage genuinely complete for
@@ -171,7 +171,7 @@ rejection taxonomy: `ArgumentException` for malformed patterns, `UnsupportedRege
 the construct and position for well-formed-but-non-regular ones. The test suite validates generated
 strings against the **real .NET regex engine as an oracle** over a fixed-seed corpus — exactly the
 right way to test a generator. (Defects found at its edges are cataloged in §4.1 and §4.2; they do
-not change the assessment that the ADR-0025 approach was sound and honestly argued.)
+not change the assessment that the ADR-0008 approach was sound and honestly argued.)
 
 ### 3.7 Packaging, boundary, and process
 
@@ -289,7 +289,7 @@ proudly rejects — is treated as an ordinary named group: `Any.StringMatching(@
 generates `"x"`, which the real engine does **not** match (verified: the pattern's language is
 exactly `{"yx"}`). Invalid group names (`(?<a b>x)`) are likewise accepted where .NET rejects them.
 This is the single place the audit found where the library's signature promise — *"a clear error
-beats a value which does not actually match"* (ADR-0025) — is broken. The fix is local: validate
+beats a value which does not actually match"* (ADR-0008) — is broken. The fix is local: validate
 the captured name (reject `-` as `Unsupported("a balancing group …")`, reject non-word characters
 as `Malformed(...)`).
 
@@ -309,7 +309,7 @@ printable ASCII (0x20–0x7E). The code — correctly — emits exactly the char
 demands: `\t`, `\a`, `\cA`, `\0`, and `\uHHHH` literals can be non-printable or non-ASCII, and the
 library's own test asserts it (`AnyPatternTests` — `\a` → U+0007). The restriction genuinely
 applies only where the pattern leaves the character *free* (shorthands, the dot, negated classes).
-Since ADR-0025 explicitly declares the character universe a behavior consumers may rely on, the
+Since ADR-0008 explicitly declares the character universe a behavior consumers may rely on, the
 three doc sites should say precisely that (§11 item 6).
 
 ### 4.3 Hand-mirrored surfaces with no parity guard, and drift has already begun
@@ -333,7 +333,7 @@ Two mirror structures must agree method-for-method, and nothing checks either:
   `Positive`/`Negative`; temporal types rename the bound family), and three test DisplayNames still
   claim generators "convert implicitly to their value type"
   (`AnyContinuousTests.cs:108`, `AnySignedIntegerTests.cs:87`, `AnyUnsignedIntegerTests.cs:76`) —
-  conversions ADR-0020 removed. A stale comment in `SeedReproducibilityTests.cs:17-18` explains
+  conversions ADR-0006 removed. A stale comment in `SeedReproducibilityTests.cs:17-18` explains
   code by those same removed conversions.
 
 The absence of guards is the finding; the mitigation analysis and recommendation (reflection-based
@@ -349,7 +349,7 @@ parity tests, *not* a generic base class) is in §9.2.
 * **No user-facing reference documents the per-builder constraint surface.** Where does a user
   learn that `Except`/`OneOf`/`DifferentFrom` exist on numerics, that `WithLengthBetween` exists,
   that `ContainingAny` differs from `Containing`, or which regex dialect `StringMatching` supports?
-  Today: only IntelliSense, one builder at a time. ADR-0025's own follow-up ("document the
+  Today: only IntelliSense, one builder at a time. ADR-0008's own follow-up ("document the
   supported dialect") is still open.
 * The **empty-by-default surprise** (an unconstrained collection can have 0 elements, an
   unconstrained string can be empty) is well-documented in XML remarks but absent from the package
@@ -363,7 +363,7 @@ Detailed in §7.3: concurrent draws inside one seeded scope silently void replay
 non-thread-safe `System.Random`) — documented nowhere; seed reports can name a wrong or
 inapplicable seed for fixed-context and mixed-source compositions; cross-version and cross-TFM
 seed-sequence stability is neither promised nor disclaimed; and the whole contract lost its ADR
-anchor when ADR-0006 was superseded.
+anchor when ADR-0006 (first-class-errors) was superseded.
 
 ### 4.6 The netstandard2.0 leg is never executed by JustDummies' own suite
 
@@ -375,7 +375,7 @@ via project reference and the Testing factories, so JustDummies does load and ge
 distinctness gating, seed reproducibility) never runs there, and same-seed-same-values across the
 two packaged assets is asserted nowhere. The repository already owns the exact machinery needed
 (`build/Net472TestFloor.props`, used by `FirstClassErrors.UnitTests`); extending it to
-`JustDummies.UnitTests` (with the net8-only tests conditioned out) is mechanical. See ADR-0022
+`JustDummies.UnitTests` (with the net8-only tests conditioned out) is mechanical. See ADR-0007
 compliance, §6.
 
 ### 4.7 Release-engineering guardrails not yet installed
@@ -397,7 +397,7 @@ was reviewed individually. The overall standard is high enough to say plainly: t
 model of the form. Decisions carry honest constraints, genuinely-considered alternatives, priced
 negatives, and follow-ups that were actually executed.
 
-### ADR-0006 — Supply arbitrary test values from a single seedable source *(Superseded)*
+### ADR-0006 (first-class-errors) — Supply arbitrary test values from a single seedable source *(Superseded)*
 
 **Quality: exemplary, historically.** The constraints were real (zero-dependency promise,
 netstandard2.0 parallel-test safety without `Random.Shared`), the four alternatives were fairly
@@ -405,47 +405,47 @@ weighed, and its follow-ups (extract the engine when a second consumer appears; 
 adapter) were honored or consciously deferred. Its collision-risk analysis of the unseeded default
 is exactly the right depth. **Issue:** its supersession created a gap — see "structural gaps" below.
 
-### ADR-0011 — Host JustDummies as a standalone package *(Accepted)*
+### ADR-0003 — Host JustDummies as a standalone package *(Accepted)*
 
 **Quality: good.** The name/identity/boundary reasoning is sound and the no-reference rule is
 machine-checked. Two precision nits. First, the *enforced* invariant is stronger than the *recorded*
 one: the architecture test forbids **any** non-BCL reference (`ArchitectureTests.cs:27-37`), and
-ADR-0025 leans on a "zero-dependency identity … the boundary is machine-checked (ADR-0011)" — but
-ADR-0011's decision text only forbids referencing *FirstClassErrors projects*. The
-zero-*third-party*-dependency rule, load-bearing for ADR-0025's whole argument, is written down
+ADR-0008 leans on a "zero-dependency identity … the boundary is machine-checked (ADR-0003)" — but
+ADR-0003's decision text only forbids referencing *FirstClassErrors projects*. The
+zero-*third-party*-dependency rule, load-bearing for ADR-0008's whole argument, is written down
 nowhere as a decision. Second, the alternatives never weigh the risks of the ultra-generic NuGet ID
 `JustDummies` (squat/collision/searchability) — a package identity the ADR itself calls costly to
 rename. Neither nit changes the decision; both deserve a line in the record.
 
-### ADR-0013 — Gate distinct collections by cardinality, else bounded draw *(Accepted)*
+### ADR-0004 — Gate distinct collections by cardinality, else bounded draw *(Accepted)*
 
 **Quality: outstanding.** The soundness argument — count only the elements the generator must
 supply, credit `Containing` values outside its domain, treat opaque `ContainingAny` draws
 conservatively, let the bounded draw be the final safety net — is stated in the document and
 provably mirrored in the code (`CollectionState.Validate`/`CardinalityCap`/`FixedOutsideCount`).
 The risks section even anticipates budget mistuning and instructs "revise based on evidence rather
-than describing failure as impossible." **Issue (shared with ADR-0015):** it defers "the exact hint
+than describing failure as impossible." **Issue (shared with ADR-0005):** it defers "the exact hint
 interface, collection state, draw budget, exception payload, and seed propagation" to the
 implementation reference — but the reference's JustDummies section
 (`adr-implementation-reference.md:58-68`) records none of those specifics (no budget numbers, no
 exception payload, no seed-propagation rule). The pointer promises more than the destination holds;
 either enrich the reference or soften the pointer.
 
-### ADR-0015 — Cap Any.Combine at arity eight *(Accepted)*
+### ADR-0005 — Cap Any.Combine at arity eight *(Accepted)*
 
 **Quality: good.** Honest about the ceiling being heuristic, with a defined escape hatch (add
 arities compatibly via a new decision on evidence). The alternatives are real. The same
-implementation-reference pointer nit as ADR-0013 applies.
+implementation-reference pointer nit as ADR-0004 applies.
 
-### ADR-0020 — Materialize dummies only through Generate() *(Accepted)*
+### ADR-0006 — Materialize dummies only through Generate() *(Accepted)*
 
 **Quality: exemplary — the best document in the base.** Concrete evidence (the syntactic shapes
 where the conversion silently misbehaved, drawn from the suite itself), three fairly-weighed
 alternatives including the analyzer route it deliberately declines, honest costs, and the pre-1.0
-timing argument stated as such. It also demonstrably steered later work (ADR-0026 reuses both its
+timing argument stated as such. It also demonstrably steered later work (ADR-0026 (first-class-errors) reuses both its
 reasoning pattern and its risk framing). No changes recommended.
 
-### ADR-0022 — Floor the library's .NET Framework support at 4.7.2 *(Accepted)*
+### ADR-0007 — Floor the library's .NET Framework support at 4.7.2 *(Accepted)*
 
 **Quality: sound policy; scope wording aged.** "A compatibility promise that is not exercised
 cannot provide a trustworthy support boundary" is the right principle. But the ADR predates JustDummies
@@ -454,14 +454,14 @@ inside its scope is now a matter of inference, and the floor job does not includ
 maintainer next touches this area, a one-line clarification of covered packages would close the
 ambiguity — or the JustDummies-specific floor decision can ride the new determinism ADR proposed below.
 
-### ADR-0025 — Generate matching strings from a home-grown regular subset *(Proposed)*
+### ADR-0008 — Generate matching strings from a home-grown regular subset *(Proposed)*
 
 **Quality: an unusually honest build-vs-buy record.** The rejection of Fare is argued on identity
 and error-contract grounds (silent dropping of non-regular constructs vs first-class refusal), not
 on FUD; the "non-regular constructs are impossible for *any* finite generator, so the subset is not
 a convenience cut" framing is exactly right; the terminal-generator decision is well-argued.
 **Issues:** (1) It is still **Proposed** while fully implemented, shipped in the package README,
-and *load-bearing for the Accepted ADR-0026* (whose `ErrorCodeFactory` is built on
+and *load-bearing for the Accepted ADR-0026 (first-class-errors)* (whose `ErrorCodeFactory` is built on
 `StringMatching`) — until the status flips, an accepted decision formally rests on an undecided
 one. The audit's role is to flag it; only `@reefact` flips a status. (2) The "terminals draw from
 printable ASCII" rationale sentence is imprecise — `\s` includes tab (0x09) and explicit escapes
@@ -471,7 +471,7 @@ property test" against the real engine; what exists is a fixed-seed, fixed-corpu
 the unit-test project — excellent, but not property-based; the text should say what the safety net
 is.
 
-### ADR-0026 — Rebase the testing package's arbitrary values on JustDummies *(Accepted)*
+### ADR-0026 (first-class-errors) — Rebase the testing package's arbitrary values on JustDummies *(Accepted)*
 
 **Quality: a thorough consolidation record** — six real alternatives, the one-seed-story rationale,
 honest interim-packaging risk. **Two precision drifts:** (1) the decision text says each factory
@@ -488,12 +488,12 @@ the implementation reference.
 
 1. **JustDummies' determinism contract has no accepted ADR.** The `AsyncLocal` ambient source, opt-in
    `Reproducibly`, lazy pinning, seed-on-failure reporting — the crown-jewel guarantee — was decided
-   in ADR-0006, which is now Superseded *and* was scoped to FirstClassErrors.Testing; ADR-0026's
+   in ADR-0006 (first-class-errors), which is now Superseded *and* was scoped to FirstClassErrors.Testing; ADR-0026 (first-class-errors)'s
    decision is about rebasing Testing, not about JustDummies' own contract. A future maintainer asking
    "why `AsyncLocal` and not a parameter? why is raced `System.Random` acceptable?" finds the
    reasoning only in a superseded record. **Recommend drafting one Proposed ADR** ("JustDummies supplies
    arbitrary values from an ambient, seedable, execution-context-local source with opt-in
-   reproducibility") carrying ADR-0006's rationale forward and settling, in the same document, the
+   reproducibility") carrying ADR-0006 (first-class-errors)'s rationale forward and settling, in the same document, the
    open edges this audit surfaced: single-logical-flow concurrency semantics, the closed
    `IHasRandomSource` seam, and the cross-version seed-stability policy (§7.3).
 2. **The ordinal-engine architecture has no ADR.** One shared 64-bit ordinal space with four
@@ -556,7 +556,7 @@ public, so anyone can implement a generator and compose it through `As`/`Combine
 `RandomSource`, `IHasRandomSource`, and `ICardinalityHint<T>` are all internal, so a foreign
 generator (a) cannot draw from the ambient seeded source — under `Any.Reproducibly` its values do
 not replay, and (b) cannot advertise a finite domain — a distinct collection over it always takes
-the bounded-draw path (safe, and exactly what ADR-0013 promises). The degradation is graceful
+the bounded-draw path (safe, and exactly what ADR-0004 promises). The degradation is graceful
 everywhere (verified: `OrNull` falls back to the ambient source for the null coin; `Combine`
 propagates `null` sources without failing). What is missing is one honest paragraph on `IAny<T>`'s
 XML doc telling implementers where they stand — today the contract is discoverable only by reading
@@ -601,7 +601,7 @@ have `Combine` collect distinct sources rather than the first.
 **(c) Cross-version and cross-runtime seed stability is neither promised nor disclaimed.** The
 package description says "any run is reproducible from a reported seed" without qualification.
 Within one process this holds. Across *library versions*, any change to draw order or count
-silently changes every sequence — and ADR-0025 already acknowledges consumers may rely on generated
+silently changes every sequence — and ADR-0008 already acknowledges consumers may rely on generated
 shapes. Across *runtimes*, seeded `new Random(seed)` retains the legacy algorithm on modern .NET
 precisely for compatibility, so the common surface should agree between the netstandard2.0 and
 net8.0 assets — but nothing tests it (§4.6), and `Random`'s documentation explicitly reserves the
@@ -619,7 +619,7 @@ sentence saying replay fidelity starts at the scope boundary.
 
 Verified non-issues worth recording so they are not re-litigated: the async-overload
 `ExecutionContext` semantics (correct — see §3.3); `NewSeed() = Guid.NewGuid().GetHashCode()`
-(collision-tolerant use, analyzed in ADR-0006); xUnit seed-spanning (each test invocation is its
+(collision-tolerant use, analyzed in ADR-0006 (first-class-errors)); xUnit seed-spanning (each test invocation is its
 own async frame; a shared class constructor participates in its test's flow, which is the correct
 scope); `SequenceOf` re-enumeration (materialized once, never re-draws).
 
@@ -692,7 +692,7 @@ seams are less discoverable: `As` and `OrNull` are extension methods in separate
 and `As` is the library's `Select` under a domain-intent name; one doc line bridging from LINQ
 vocabulary ("`As` is `Select` for generators — named for its dominant use: passing through a value
 object's factory") would help LINQ-native readers. The `Generate()` terminal ceremony is the
-ADR-0020 trade, consciously priced there; the audit confirms the cost is real but small (one call
+ADR-0006 trade, consciously priced there; the audit confirms the cost is real but small (one call
 per materialization), the benefit (no effectful hidden conversions) is structural, and the decision
 should stand. `AnyContext` mirrors scalars only — composition inherits the context through operand
 sources, which is *more* elegant than mirroring and correctly documented.
@@ -768,7 +768,7 @@ draws, which the packaged-asset guard currently never touches).
 The flat 54-file root is acceptable today because naming discipline does the foldering (`Any*` =
 builders, `*Spec` = engines, `Regex*` = pattern subsystem); grouping into folders is optional
 polish, worth doing only alongside another structural change. Hygiene nits found: dead member
-`RegexCharacters.Count`; the dead null-guard in `CollectionState.Exhausted` (§6/ADR-0013 row); the
+`RegexCharacters.Count`; the dead null-guard in `CollectionState.Exhausted` (§6/ADR-0004 row); the
 stale comments and DisplayNames of §4.3; the stale `Directory.Build.props` header (§4.7).
 
 ## 10. Feature Gap Analysis
@@ -840,8 +840,8 @@ free via proposal 1.)
   constructive via the ordinal engine (draw in the granule space, multiply). Also closes the
   documentation gap ("values are tick-precision") in the meantime.
 * **`GenerateMany(int)` terminal** — sugar for "N values without `ListOf` ceremony"; a *named
-  method* returning `IReadOnlyList<T>`, so it stays inside ADR-0020's letter and spirit.
-* **A test-framework seed adapter** (`[ReproducibleFact]`) — anticipated by ADR-0006's follow-ups,
+  method* returning `IReadOnlyList<T>`, so it stays inside ADR-0006's letter and spirit.
+* **A test-framework seed adapter** (`[ReproducibleFact]`) — anticipated by ADR-0006 (first-class-errors)'s follow-ups,
   dropped in the rebase, replaced by nothing. Zero-dependency JustDummies cannot reference xUnit, so
   this is a *companion package* decision (`JustDummies.Xunit`) — worth an explicit yes/no ADR rather
   than silence, because every consumer currently re-derives the `Reproducibly`-wrapping habit
@@ -900,16 +900,16 @@ In priority order; items 1–7 are the recommended pre-release gate.
 5. **Run JustDummies on its floors**: import `build/Net472TestFloor.props` into `JustDummies.UnitTests`
    (net8-only tests conditioned out), add it to the ci.yml floor loop; add the cross-TFM golden-
    sequence assertion to `justdummies-check`; state the .NET Framework floor in the package README
-   (ADR-0022 follow-up).
+   (ADR-0007 follow-up).
 6. **Documentation pass**: surface JustDummies in the repository README (packages table + TOC); write
    the JustDummies user guide with the per-builder constraint reference and the `StringMatching`
-   dialect (closing ADR-0025's follow-up); correct the three "printable ASCII" sites (§4.2);
+   dialect (closing ADR-0008's follow-up); correct the three "printable ASCII" sites (§4.2);
    advertise the empty-by-default behavior in the package README; fix the stale
    comments/DisplayNames (§4.3) and the `Directory.Build.props` header.
 7. **Release-engineering guards**: public-API baseline (`PublicApiAnalyzers`) and
    `EnablePackageValidation`; decide `Bool()` vs `Boolean()` and record it; ask `@reefact` to
-   resolve ADR-0025's status (after its wording fix); record the two ADR-0026 clarifications in the
-   implementation reference; enrich or soften the ADR-0013/0015 implementation-reference pointers.
+   resolve ADR-0008's status (after its wording fix); record the two ADR-0026 (first-class-errors) clarifications in the
+   implementation reference; enrich or soften the ADR-0004/0015 implementation-reference pointers.
 8. **Ship the two Must-Have features** (§10): `Any.OneOf<T>`/`Any.ElementOf<T>`, and string
    exclusions (`DifferentFrom`/`Except` on `AnyString`).
 9. **`AnyDictionary`**: extract the shared count facade; add `ContainingKey`.
@@ -919,7 +919,7 @@ In priority order; items 1–7 are the recommended pre-release gate.
 ## 12. Suggested Roadmap
 
 **Phase 0 — before the first `dum-v*` release (correctness and contract).** Items 1–7 above. The
-rationale is ADR-0020's own: every one of these is cheap now and expensive after adoption — the
+rationale is ADR-0006's own: every one of these is cheap now and expensive after adoption — the
 decimal fix changes every seeded sequence (a non-event today, a compatibility event after v1); the
 determinism policy, the `Bool` naming, the API baseline, and the ADR statuses are all
 one-line-or-one-file decisions that become migrations later. Exit criterion: the §4 weaknesses
@@ -978,4 +978,4 @@ progress) lives in the issue tracker, not here — do not maintain status in thi
 
 *Produced by an agent-run audit (multi-agent review with adversarial verification; all reported
 defects independently reproduced against the built library; full test suite executed). Advisory
-per ADR-0004: recommendations and drafts only — every decision remains with the maintainer.*
+per ADR-0002: recommendations and drafts only — every decision remains with the maintainer.*

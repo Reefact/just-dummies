@@ -13,7 +13,7 @@
 # AVAILABILITY to a third-party service: the sonar job is a required check, so a SonarCloud
 # outage would stop every merge while a red gate still would not. Reading the verdict from a
 # SCHEDULED job separates the two — the verdict is enforced, and an outage costs a red nightly
-# instead of a frozen repository (decision: ADR-0062, follow-up on the gate questions).
+# instead of a frozen repository (decision: ADR-0039, follow-up on the gate questions).
 #
 # What this catches that the build cannot. build/sonar-profile.globalconfig enforces the C# rules
 # the NuGet analyzer implements, and that is a strict subset of what the gate measures:

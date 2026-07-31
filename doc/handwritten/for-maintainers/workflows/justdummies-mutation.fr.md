@@ -11,13 +11,13 @@
 
 Les tests de mutation des **trois composants JustDummies** : `JustDummies`, son
 adaptateur xUnit v3 `JustDummies.Xunit`
-([ADR-0039](../adr/0039-adapt-dummies-to-xunit-v3-through-a-companion-package.fr.md)),
+([ADR-0018](../adr/0018-adapt-dummies-to-xunit-v3-through-a-companion-package.fr.md)),
 et les analyseurs livrés dans le package
-([ADR-0044](../adr/0044-ship-justdummies-analyzers.fr.md)).
+([ADR-0023](../adr/0023-ship-justdummies-analyzers.fr.md)).
 Sur une pull request, il ne mute que les fichiers modifiés par celle-ci, pour
 l'adaptateur et les analyseurs ; le générateur est mesuré par le seul balayage
 hebdomadaire
-([ADR-0049](../adr/0049-drop-the-justdummies-generator-from-the-per-pull-request-mutation-matrix.fr.md)).
+([ADR-0028](../adr/0028-drop-the-justdummies-generator-from-the-per-pull-request-mutation-matrix.fr.md)).
 Ce que *sont* les tests de mutation, et pourquoi ce dépôt
 en fait un barrage, est expliqué une seule fois sur la page
 [`mutation`](mutation.fr.md) — ce workflow est la même machine avec une matrice
@@ -27,7 +27,7 @@ différente.
 
 `JustDummies` est un package autonome et agnostique des erreurs, qui ne référence
 volontairement pas `FirstClassErrors`
-([ADR-0011](../adr/0011-host-dummies-as-a-standalone-package.fr.md)), et il est
+([ADR-0003](../adr/0003-host-dummies-as-a-standalone-package.fr.md)), et il est
 destiné à un dépôt à lui. Découper le barrage de mutation le long de cette
 frontière future dès maintenant fait de la migration **un déplacement de fichier
 plutôt qu'une réécriture** : rien dans ce workflow ne nomme un projet
@@ -39,14 +39,14 @@ Cela donne aussi à JustDummies **son propre check**,
 checks, deux barres qui évoluent séparément — ce dont deux bibliothèques de
 maturité de test différente ont de toute façon besoin. Sur les pull requests, les
 deux sont **consultatifs**
-([ADR-0046](../adr/0046-make-the-per-pull-request-mutation-gate-advisory.md)) ; le
+([ADR-0025](../adr/0046-make-the-per-pull-request-mutation-gate-advisory.md)) ; le
 niveau imposé de chacun est son balayage complet hebdomadaire.
 
 ## Quand il s'exécute
 
 - Sur chaque **pull request ciblant `main`** — cantonné au diff et **consultatif** :
   il rapporte le score du diff mais ne bloque jamais le merge
-  ([ADR-0046](../adr/0046-make-the-per-pull-request-mutation-gate-advisory.md)).
+  ([ADR-0025](../adr/0046-make-the-per-pull-request-mutation-gate-advisory.md)).
 - **Chaque semaine** sur planification (lundi, 03h47 UTC) — le balayage complet, le
   **niveau imposé**. Le créneau est décalé de celui de `mutation` pour que les deux
   balayages ne se disputent pas les runners.
@@ -65,7 +65,7 @@ et [`build/stryker/justdummies-analyzers.json`](../../../../build/stryker/justdu
 **Le seul point où les deux workflows diffèrent : la matrice par PR compte deux
 pattes, pas trois.** Le générateur est balayé chaque semaine mais **n'est pas**
 muté par pull request
-([ADR-0049](../adr/0049-drop-the-justdummies-generator-from-the-per-pull-request-mutation-matrix.fr.md)).
+([ADR-0028](../adr/0028-drop-the-justdummies-generator-from-the-per-pull-request-mutation-matrix.fr.md)).
 Comme `--since` sélectionne par **fichier** changé et non par ligne changée, un
 diff d'une centaine de lignes touchant l'une des grosses sources du générateur
 entraîne ce fichier entier : mesuré à 844 mutants, encore en cours après une
@@ -115,7 +115,7 @@ La branche des analyseurs part elle aussi avec `break` à **0**, pour une autre
 raison : ses survivants résiduels sont les mutants d'infrastructure d'analyseur et
 de chaînes de descripteurs que portent aussi les analyseurs FirstClassErrors —
 elle rapporte donc au lieu de bloquer
-([ADR-0044](../adr/0044-ship-justdummies-analyzers.fr.md)).
+([ADR-0023](../adr/0023-ship-justdummies-analyzers.fr.md)).
 
 ## Permissions & sécurité
 
@@ -178,6 +178,6 @@ Les rapports atterrissent dans `StrykerOutput/` (ignoré par git) ; ouvrez
   page de référence)* — l'autre workflow cantonné à JustDummies : il prouve que
   les assets `netstandard2.0` et `net8.0` publiés se comportent bien sur leurs
   runtimes respectifs.
-- [ADR 0043 — Gate pull requests on the mutation score of what they
+- [ADR 0043 (first-class-errors) — Gate pull requests on the mutation score of what they
   changed](../adr/0043-gate-pull-requests-on-the-mutation-score-of-the-diff.fr.md)
   — la décision que les deux workflows mettent en œuvre.

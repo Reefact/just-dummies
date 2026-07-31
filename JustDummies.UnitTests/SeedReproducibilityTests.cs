@@ -12,7 +12,7 @@ namespace JustDummies.UnitTests;
 ///     The example-based half of the reproducibility contract: what the failure report must say, that a
 ///     successful run stays silent, the asynchronous overloads, and the null-argument guards. That two runs
 ///     under the same seed agree — and that different seeds diverge — holds for <i>every</i> seed and is
-///     quantified in <c>JustDummies.PropertyTests</c> instead of pinned to 12345, 777 and 31415 (ADR-0040).
+///     quantified in <c>JustDummies.PropertyTests</c> instead of pinned to 12345, 777 and 31415 (ADR-0019).
 /// </summary>
 [TestSubject(typeof(Any))]
 public sealed class SeedReproducibilityTests {

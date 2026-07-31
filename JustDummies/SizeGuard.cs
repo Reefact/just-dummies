@@ -9,7 +9,7 @@ namespace JustDummies;
 /// <summary>
 ///     The argument validation every length and count constraint shares, defined once so the two surfaces — a string's
 ///     lengths and a collection's counts — cannot drift apart. It distinguishes the two kinds of size a caller can
-///     declare, which ADR-0050 separates: a bound that only <b>caps</b> a draw, and a size the generator must actually
+///     declare, which ADR-0029 separates: a bound that only <b>caps</b> a draw, and a size the generator must actually
 ///     <b>produce</b>.
 /// </summary>
 /// <remarks>

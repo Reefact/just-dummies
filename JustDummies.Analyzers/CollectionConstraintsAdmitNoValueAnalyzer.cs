@@ -109,7 +109,7 @@ public sealed class CollectionConstraintsAdmitNoValueAnalyzer : DiagnosticAnalyz
             return;
         }
 
-        // The cardinality gate (ADR-0013): a distinct collection cannot hold more elements than its element
+        // The cardinality gate (ADR-0004): a distinct collection cannot hold more elements than its element
         // generator has distinct values to give.
         if (!distinct) { return; }
         if (!TryGetProvableCardinality(factory, out int cardinality)) { return; }

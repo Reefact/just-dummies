@@ -35,7 +35,7 @@ public sealed class ContinuousIntervalProperties {
     /// </summary>
     private const int ReachabilityDrawCount = 300;
 
-    /// <summary>The magnitude an arbitrary number stays within unless the declared bounds leave no room (ADR-0052).</summary>
+    /// <summary>The magnitude an arbitrary number stays within unless the declared bounds leave no room (ADR-0031).</summary>
     private const double OrdinaryMagnitude = 1_000_000d;
 
     /// <summary>
@@ -48,7 +48,7 @@ public sealed class ContinuousIntervalProperties {
 
     /// <summary>
     ///     The interval a generator actually draws from: the declared one clipped to the ordinary magnitude window,
-    ///     or the declared one untouched when that clip would leave nothing (ADR-0052).
+    ///     or the declared one untouched when that clip would leave nothing (ADR-0031).
     /// </summary>
     /// <remarks>
     ///     Mirrored here so the two reachability properties can name the range they expect covered. The split of
@@ -357,7 +357,7 @@ public sealed class ContinuousIntervalProperties {
 
     [Fact(DisplayName = "An unconstrained draw is an ordinary number, whatever the seed — arithmetic on it stays finite.")]
     public void UnconstrainedDrawsAreOrdinary() {
-        // ADR-0052. Stated as arithmetic rather than as a magnitude on purpose: what a dummy owes its test is that
+        // ADR-0031. Stated as arithmetic rather than as a magnitude on purpose: what a dummy owes its test is that
         // using it does not sabotage the test. Before this, a sixth of Positive() doubles overflowed to Infinity on
         // a single multiplication, and the decimal equivalent threw OverflowException.
         Prop.ForAll(Generators.Seed().ToArbitrary(),
@@ -374,9 +374,9 @@ public sealed class ContinuousIntervalProperties {
 
     [Fact(DisplayName = "An interval that merely permits large values still yields ordinary ones, for every upper bound.")]
     public void PermittingALargeValueIsNotRequestingOne() {
-        // The heart of ADR-0052: a bound is a permission, not a request. Any.Double().LessThan(huge) says what the
+        // The heart of ADR-0031: a bound is a permission, not a request. Any.Double().LessThan(huge) says what the
         // value may not exceed, so widening that bound must not enlarge the draw — exactly as a size maximum does
-        // not enlarge a string under ADR-0050.
+        // not enlarge a string under ADR-0029.
         Prop.ForAll(Gen.Elements(1e7d, 1e50d, 1e200d, 1e308d, double.MaxValue).ToArbitrary(),
                     permitted => Expect.EveryDraw(Any.Double().Between(0d, permitted), value => value <= OrdinaryMagnitude)
                               && Expect.EveryDraw(Any.Double().LessThan(permitted), value => Math.Abs(value) <= OrdinaryMagnitude))

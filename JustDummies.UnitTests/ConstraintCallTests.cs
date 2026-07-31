@@ -15,7 +15,7 @@ namespace JustDummies.UnitTests;
 ///     type can take that job over without moving a single character of any conflict message.
 /// </summary>
 /// <remarks>
-///     These belong to the example suite (ADR-0040): each asserts one named spelling, and the null cases have no
+///     These belong to the example suite (ADR-0019): each asserts one named spelling, and the null cases have no
 ///     input space. The guards themselves are also held by
 ///     <see cref="NullArgumentGuardConventionTests" /> — reflected over every internal member — but a constraint's
 ///     own contract is worth reading locally.

@@ -10,7 +10,7 @@ namespace JustDummies.Xunit.UnitTests;
 
 /// <summary>
 ///     Guards the boundary of the companion package. JustDummies itself may depend on nothing beyond the standard
-///     library (ADR-0011), which is precisely why the xUnit adapter is a separate package (ADR-0036): it exists to
+///     library (ADR-0003), which is precisely why the xUnit adapter is a separate package (ADR-0015): it exists to
 ///     carry the one dependency JustDummies cannot. What it must never carry is a FirstClassErrors dependency — the
 ///     error-agnostic promise applies to the whole JustDummies line, not just its core assembly.
 /// </summary>

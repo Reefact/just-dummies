@@ -18,10 +18,10 @@ namespace JustDummies;
 ///         Two replays are equal when they replay the same run the same way — the seed alone does not settle it,
 ///         since the same seed replays a run in full or only in part depending on what drew. Being a value with no
 ///         identity beyond what it holds, it says so rather than leaving the reference comparison a reader would get
-///         by default (ADR-0065).
+///         by default (ADR-0042).
 ///     </para>
 ///     <para>
-///         Built while a failure is being reported, so it guards nothing (ADR-0064): a guard on this path would throw
+///         Built while a failure is being reported, so it guards nothing (ADR-0041): a guard on this path would throw
 ///         while a failure is being reported and lose the original. Its parameters are non-nullable instead, which
 ///         makes the contract the compiler's. Comparing and hashing keep that footing: neither composes anything, so
 ///         neither can fail while a failure is reported.

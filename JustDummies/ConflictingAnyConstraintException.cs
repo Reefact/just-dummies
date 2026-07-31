@@ -154,7 +154,7 @@ public sealed class ConflictingAnyConstraintException : DummyException {
     ///     <para>
     ///         Nothing here guards its arguments, and that is the rule rather than an omission: building an exception
     ///         must never throw. A guard would replace the failure being reported with a failure about reporting it,
-    ///         losing the original. ADR-0045 exempts exception types for exactly that reason, and the reflection
+    ///         losing the original. ADR-0024 exempts exception types for exactly that reason, and the reflection
     ///         convention that enforces it skips them outright. The contract is the compiler's instead — these
     ///         parameters are non-nullable, so a caller that cannot prove a value is CS8604 at build time, which is
     ///         how the one nullable constraint name in the interval specs was found.

@@ -73,7 +73,7 @@ public sealed class AnyCollectionTests {
 
     [Fact(DisplayName = "A produced count is refused above the ceiling; the bound just below it is accepted.")]
     public void ProducedCountsAreCeilinged() {
-        // ADR-0050, at the two coordinates a mis-written comparison would pass: the ceiling and the first value past it.
+        // ADR-0029, at the two coordinates a mis-written comparison would pass: the ceiling and the first value past it.
         Check.ThatCode(() => Any.ListOf(Any.Int32()).WithCount(1_000_001)).Throws<ArgumentOutOfRangeException>();
         Check.ThatCode(() => Any.ListOf(Any.Int32()).WithMinCount(1_000_001)).Throws<ArgumentOutOfRangeException>();
         Check.ThatCode(() => Any.SetOf(Any.Int32()).WithCountBetween(1_000_001, 2_000_000)).Throws<ArgumentOutOfRangeException>();

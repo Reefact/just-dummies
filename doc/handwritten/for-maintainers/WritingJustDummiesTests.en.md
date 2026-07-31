@@ -4,7 +4,7 @@
 
 > Where a new test for `JustDummies` belongs, and how to write it. The boundary
 > between the two suites is recorded in
-> [ADR-0040](adr/0040-split-the-justdummies-test-bed-between-example-and-property-suites.md);
+> [ADR-0019](adr/0019-split-the-justdummies-test-bed-between-example-and-property-suites.md);
 > this page is how to apply it.
 
 ## The two suites

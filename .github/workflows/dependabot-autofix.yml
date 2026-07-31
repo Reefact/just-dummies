@@ -43,7 +43,7 @@ name: dependabot-autofix
 #   - The identity is settled against the API, not the event payload, and the branch TIP must
 #     be Dependabot's own GitHub-signed commit (see the resolve step). That is a stricter
 #     check than `dependabot/fetch-metadata` performs, which validates the FIRST commit.
-# Recorded rather than silenced, per ADR-0060: the refusal belongs next to what it refuses.
+# Recorded rather than silenced, per ADR-0060 (first-class-errors): the refusal belongs next to what it refuses.
 on: # zizmor: ignore[dangerous-triggers]
   workflow_run:
     # Every gating workflow a Dependabot PR passes through. Any completion re-runs

@@ -24,12 +24,12 @@ namespace JustDummies.UnitTests;
 ///         and nullable (<c>?</c>) parameters are excluded by design — the former cannot be <c>null</c>, the latter
 ///         are deliberately optional. Exception types are excluded too: constructing an exception must never itself
 ///         throw while an error is being handled or logged — as are the types that exist only to build one, which
-///         declare themselves with <c>[BuiltOnTheFailurePath]</c> (ADR-0064).
+///         declare themselves with <c>[BuiltOnTheFailurePath]</c> (ADR-0041).
 ///     </para>
 ///     <para>
 ///         Testing the internal boundary (the <c>Create</c> factories and internal constructors the public API can
 ///         never route a <c>null</c> through) requires reaching internals, which is why JustDummies opens them to
-///         this suite — see ADR-0045. The test uses .NET 6+ reflection nullability metadata, so it runs on the
+///         this suite — see ADR-0024. The test uses .NET 6+ reflection nullability metadata, so it runs on the
 ///         modern leg only and is excluded from the net472 support-floor build.
 ///     </para>
 /// </remarks>
@@ -131,7 +131,7 @@ public sealed class NullArgumentGuardConventionTests {
         if (typeof(Delegate).IsAssignableFrom(type)) { return false; }
         if (typeof(Exception).IsAssignableFrom(type)) { return false; }
         // Types that exist only to build one of the library's exceptions are exempt for the same reason exception
-        // types are, and say so with the marker rather than being inferred (ADR-0064, widening ADR-0045).
+        // types are, and say so with the marker rather than being inferred (ADR-0041, widening ADR-0024).
         if (type.GetCustomAttribute<BuiltOnTheFailurePathAttribute>() is not null) { return false; }
         if (type.Name.StartsWith('<')) { return false; }
         if (type.GetCustomAttribute<System.Runtime.CompilerServices.CompilerGeneratedAttribute>() is not null) { return false; }

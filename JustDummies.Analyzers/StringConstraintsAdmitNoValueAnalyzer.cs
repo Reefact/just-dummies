@@ -13,7 +13,7 @@ namespace JustDummies.Analyzers;
 ///     holding a character the declared character family forbids, or fragments that cannot fit the declared length.
 /// </summary>
 /// <remarks>
-///     This is the case ADR-0035 names by hand as the one an analyzer should carry and the type system cannot:
+///     This is the case ADR-0014 names by hand as the one an analyzer should carry and the type system cannot:
 ///     <c>Numeric().StartingWith("ORD-")</c> conflicts while <c>Numeric().StartingWith("123")</c> does not, from
 ///     identical call sites and identical static types. Only the argument's value tells them apart, which is exactly
 ///     what makes it value-dependent — and what puts it on the analyzer's side of the ADR's line.

@@ -70,7 +70,7 @@ public sealed class CollectionProperties {
 
     [Fact(DisplayName = "WithMaxCount only caps: it never widens the draw beyond the unconstrained spread.")]
     public void WithMaxCountNeverWidensTheDraw() {
-        // ADR-0050: a maximum is a permission, not a size hint. It composes with the default spread instead of
+        // ADR-0029: a maximum is a permission, not a size hint. It composes with the default spread instead of
         // replacing it, so a loose cap must keep yielding the small unconstrained collection — which matters more
         // here than for strings, since every extra element is itself a generated value.
         Prop.ForAll(Generators.WithEdges(Generators.Count(200), 0, 1, DefaultCountSpread, DefaultCountSpread + 1, 200).ToArbitrary(),

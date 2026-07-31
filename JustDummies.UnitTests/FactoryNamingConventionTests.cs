@@ -9,7 +9,7 @@ using NFluent;
 namespace JustDummies.UnitTests;
 
 /// <summary>
-///     Locks the factory-naming rule recorded in ADR-0031: every parameterless, type-named scalar factory
+///     Locks the factory-naming rule recorded in ADR-0010: every parameterless, type-named scalar factory
 ///     on <see cref="Any" /> is named after the CLR type it produces — which is also the name of its
 ///     <c>Any{ClrType}</c> builder. This is the guard that would have caught the <c>Bool</c>/<c>AnyBool</c>
 ///     deviation before release. The <see cref="Any" />↔<see cref="AnyContext" /> mirror itself is guarded

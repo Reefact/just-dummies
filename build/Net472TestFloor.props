@@ -2,7 +2,7 @@
 
   <!--
     Shared MSBuild plumbing that lets a netstandard2.0-library test project ALSO run on the
-    .NET Framework 4.7.2 support floor (see doc/handwritten/for-maintainers/adr/0022-floor-the-library-on-net-framework-4-7-2.md).
+    .NET Framework 4.7.2 support floor (see doc/handwritten/for-maintainers/adr/0007-floor-the-library-on-net-framework-4-7-2.md).
 
     A test project opts in with
 

@@ -145,5 +145,5 @@ milestone and not the finish line — this list is.
 
 - [`sonar`](sonar.en.md) — the analysis this reconciles against. It reports; it has never
   enforced.
-- [`ci`](ci.en.md) — where the warning ratchet turns a promoted rule into a blocking one.
-- [`lint`](lint.en.md) — the same move for the files the C# compiler never sees.
+- [`ci`](../../../../.github/workflows/ci.yml) — where the warning ratchet turns a promoted rule into a blocking one.
+- [`lint`](../../../../.github/workflows/lint.yml) — the same move for the files the C# compiler never sees.

@@ -149,5 +149,5 @@ SonarCloud vert est donc un jalon, pas la ligne d'arrivée — cette liste, oui.
 
 - [`sonar`](sonar.fr.md) — l'analyse avec laquelle on se réconcilie. Elle rapporte ; elle n'a
   jamais appliqué.
-- [`ci`](ci.fr.md) — là où le ratchet de warnings transforme une règle promue en règle bloquante.
-- [`lint`](lint.fr.md) — le même geste pour les fichiers que le compilateur C# ne voit jamais.
+- [`ci`](../../../../.github/workflows/ci.yml) — là où le ratchet de warnings transforme une règle promue en règle bloquante.
+- [`lint`](../../../../.github/workflows/lint.yml) — le même geste pour les fichiers que le compilateur C# ne voit jamais.

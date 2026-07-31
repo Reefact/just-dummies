@@ -31,7 +31,7 @@ deprecating it stay with a human or an agent.
 - On **`workflow_dispatch`** only — dispatched by hand from the Actions tab against
   the branch you want to check. There is no automatic per-pull-request trigger:
   recording a decision is a human-reviewed act, exactly like the sibling
-  [`changelog`](changelog.en.md) workflow, and an autonomous model call on every
+  [`changelog`](../../../../.github/workflows/changelog.yml) workflow, and an autonomous model call on every
   pull request is neither wanted nor needed.
 - One input, **`base`** (default `main`) — the ref the branch is diffed against.
 - Like any `workflow_dispatch`, it only appears in the Actions tab once this file
@@ -72,7 +72,7 @@ The top-level token is read-only (`contents: read`). The job adds only
 is open — it writes nothing to the repository.
 
 - **Secret:** `ANTHROPIC_API_KEY` (repository secret), shared with the
-  [`changelog`](changelog.en.md) workflow. Because the only trigger is
+  [`changelog`](../../../../.github/workflows/changelog.yml) workflow. Because the only trigger is
   `workflow_dispatch` — available to accounts with write access, never to a fork —
   the key is never exposed to a fork.
 - **Untrusted diff and ADR text is handled as data.** The bundle is JSON-escaped
@@ -98,7 +98,7 @@ is open — it writes nothing to the repository.
 - **The context is byte-capped.** `DIFF_MAX_BYTES` and `ADR_MAX_BYTES` bound the
   payload; a truncation is announced in-band. A very large diff is judged on its
   first slice plus the changed-file list.
-- **Same machine as [`changelog`](changelog.en.md).** Both are manual-dispatch LLM
+- **Same machine as [`changelog`](../../../../.github/workflows/changelog.yml).** Both are manual-dispatch LLM
   workflows (API via `jq`-built payload, untrusted text as data, human in the loop);
   keep them consistent when either changes.
 
@@ -109,5 +109,5 @@ is open — it writes nothing to the repository.
   for contributors without Claude Code.
 - [ADR reference](../adr/README.md) — the format, conventions, and "when is an ADR
   written?" note.
-- [`changelog`](changelog.en.md) — the sibling manual-dispatch LLM-in-CI workflow
+- [`changelog`](../../../../.github/workflows/changelog.yml) — the sibling manual-dispatch LLM-in-CI workflow
   this one mirrors.

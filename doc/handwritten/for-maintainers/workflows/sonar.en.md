@@ -47,7 +47,7 @@ the **SonarQube Cloud GitHub App**, not by this workflow's token, so no
   scanner needs the compilation to **complete** so it can collect the
   `SonarAnalyzer` diagnostics and upload them in `end`; a Sonar-rule warning
   promoted to an error would fail the build before results are reported. The
-  ratchet stays enforced by [`ci`](ci.en.md) on both OS legs — that is the gate,
+  ratchet stays enforced by [`ci`](../../../../.github/workflows/ci.yml) on both OS legs — that is the gate,
   this analysis leg is not.
 - **The fork guard is required, not optional.** The
   `if: … head.repo.full_name == github.repository` condition skips the analysis
@@ -59,5 +59,5 @@ the **SonarQube Cloud GitHub App**, not by this workflow's token, so no
 
 ## Related
 
-- [`ci`](ci.en.md) — produces the same OpenCover coverage shape via the shared
+- [`ci`](../../../../.github/workflows/ci.yml) — produces the same OpenCover coverage shape via the shared
   `coverage.runsettings`, and is where the warning ratchet is actually enforced.

@@ -9,9 +9,9 @@
 
 ## 0. Comment lire ce document
 
-Cette spécification est **autonome à dessein**. JustDummies a vocation à rejoindre son propre
-dépôt avant que le tool soit construit, donc rien ici ne peut dépendre d'une lecture à l'intérieur
-de `Reefact/first-class-errors`.
+Cette spécification est **autonome à dessein**. Elle a été écrite alors que JustDummies vivait
+encore dans `Reefact/first-class-errors`, pour que rien ici ne dépende d'une lecture faite là-bas ;
+le déménagement a eu lieu depuis, et la propriété tient toujours.
 
 * **§1–§9, c'est le produit.** Ce que le tool fait, ce qu'il émet, et pourquoi. Lire le §2
   d'abord : onze décisions portent tout le reste. Le §5 est la partie difficile et la seule qui
@@ -1134,13 +1134,15 @@ enregistrements** les couvrent — D5 et D6 en partagent un. Dans le cours norma
 entreraient dans la base ADR d'un dépôt en `Proposed`, y recevraient un numéro, et seraient
 acceptées par le mainteneur.
 
-**Elles sont tenues à l'intérieur de cette spécification, parce que le dépôt qui devrait les
-accueillir n'existe pas encore.** JustDummies a vocation à quitter `Reefact/first-class-errors`
-avant que ce tool soit construit, et ces enregistrements décrivent un outil qui vivra dans ce
-nouveau dépôt. Les faire entrer dans la base actuelle leur attribuerait des numéros — les poignées
-stables sur lesquelles toute la base est bâtie — qu'il faudrait abandonner ou réécrire au
-déménagement, et laisserait le journal de ce dépôt porter des décisions sur du code qu'il ne
-contient plus.
+**Elles ont été tenues à l'intérieur de cette spécification parce que, à sa rédaction, le dépôt
+qui devait les accueillir n'existait pas encore.** JustDummies était encore dans
+`Reefact/first-class-errors`, et ces enregistrements décrivent un outil qui vivrait dans le dépôt
+d'accueil. Les faire entrer dans cette base-là leur aurait attribué des numéros — les poignées
+stables sur lesquelles toute la base est bâtie — que le déménagement aurait ensuite obligé à
+abandonner ou à réécrire.
+
+Ce dépôt existe désormais : c'est celui-ci. Les décisions ci-dessous sont donc prêtes à entrer dans
+sa base ADR en `Proposed` le jour où le tool sera construit ; d'ici là, elles restent ici.
 
 Les garder ici ne coûte rien et rapporte deux choses. Le raisonnement reste attaché à la
 spécification qu'il justifie, donc l'historique de décision voyage comme un seul artefact plutôt

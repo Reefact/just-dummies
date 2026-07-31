@@ -1,5 +1,5 @@
 #!/bin/sh
-# FirstClassErrors commit-message hook.
+# JustDummies commit-message hook.
 #
 # Delegates to the shared linter so the local check and the CI check can never
 # diverge. Enable it once per clone with:

@@ -20,7 +20,7 @@ hebdomadaire
 ([ADR-0028](../adr/0028-drop-the-justdummies-generator-from-the-per-pull-request-mutation-matrix.fr.md)).
 Ce que *sont* les tests de mutation, et pourquoi ce dépôt
 en fait un barrage, est expliqué une seule fois sur la page
-[`mutation`](mutation.fr.md) — ce workflow est la même machine avec une matrice
+[`mutation`](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/workflows/mutation.fr.md) — ce workflow est la même machine avec une matrice
 différente.
 
 ## Pourquoi un workflow séparé
@@ -31,7 +31,7 @@ volontairement pas `FirstClassErrors`
 destiné à un dépôt à lui. Découper le barrage de mutation le long de cette
 frontière future dès maintenant fait de la migration **un déplacement de fichier
 plutôt qu'une réécriture** : rien dans ce workflow ne nomme un projet
-FirstClassErrors, et rien dans [`mutation`](mutation.fr.md) ne nomme un projet
+FirstClassErrors, et rien dans [`mutation`](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/workflows/mutation.fr.md) ne nomme un projet
 JustDummies.
 
 Cela donne aussi à JustDummies **son propre check**,
@@ -54,7 +54,7 @@ niveau imposé de chacun est son balayage complet hebdomadaire.
 
 ## Comment il s'exécute
 
-Presque à l'identique de [`mutation`](mutation.fr.md), dont la page documente le
+Presque à l'identique de [`mutation`](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/workflows/mutation.fr.md), dont la page documente le
 mécanisme en entier : `changed` mute le diff depuis le point de fourche, `gate`
 regroupe la matrice sous un nom de check stable, `full` balaie tout avec le seuil
 désactivé. Les configurations Stryker sont
@@ -86,14 +86,14 @@ Deux points de cette page comptent ici plus qu'ailleurs :
   réglages de confort.** Avec le runner VSTest par défaut de Stryker, ces suites
   scorent 0 % — tous les mutants rapportés survivants, parce que le runner ne sait
   pas activer un mutant dans un projet de tests xUnit v3. Lisez
-  [cette section](mutation.fr.md#deux-réglages-qui-nen-sont-pas) avant de toucher
+  [cette section](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/workflows/mutation.fr.md#deux-réglages-qui-nen-sont-pas) avant de toucher
   à l'un ou à l'autre.
 
 ## `JustDummies` n'a pas encore de seuil de score
 
 La barre de chaque autre bibliothèque a été fixée à partir d'un balayage complet
 mesuré sur cette bibliothèque
-([comment et pourquoi](mutation.fr.md#doù-viennent-les-seuils)). Pas celle de
+([comment et pourquoi](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/workflows/mutation.fr.md#doù-viennent-les-seuils)). Pas celle de
 `JustDummies` : elle porte quelques milliers de mutants sur une suite lourde, son
 balayage complet dépasse largement l'heure, et **aucun score n'a été mesuré pour
 elle**. Plutôt que d'inventer un chiffre,
@@ -122,34 +122,33 @@ elle rapporte donc au lieu de bloquer
 `contents: read` seulement. Le workflow fait un checkout, un build et lance des
 tests ; il ne stocke aucun secret et n'a besoin d'aucun périmètre en écriture.
 
-## Quand JustDummies partira dans son propre dépôt
+## Le déménagement a eu lieu
 
-À emporter tel quel :
+JustDummies a quitté `Reefact/first-class-errors` le 2026-07-31 et ce dépôt est celui
+qui l'a accueilli. Ce que la migration a réellement fait, consigné ici parce que le
+mode d'emploi qui occupait cette place le décrivait au futur :
 
-- ce fichier de workflow, renommé `mutation.yml` là-bas (et son `name:` avec) ;
-- [`build/stryker/justdummies.json`](../../../../build/stryker/justdummies.json),
-  [`build/stryker/justdummies-xunit.json`](../../../../build/stryker/justdummies-xunit.json)
-  et [`build/stryker/justdummies-analyzers.json`](../../../../build/stryker/justdummies-analyzers.json) ;
-- [`.config/dotnet-tools.json`](../../../../.config/dotnet-tools.json) —
-  l'épinglage de Stryker ;
-- cette page, augmentée des sections partagées de [`mutation`](mutation.fr.md)
-  repliées dedans, puisque la page à laquelle elle renvoie n'existera pas là-bas.
-
-Puis changer exactement une chose : le champ **`solution`** des trois
-configurations, qui nomme encore `FirstClassErrors.sln`. Les chemins `project` et
-`test-projects` sont déjà relatifs au dépôt et inchangés par la migration.
-
-De ce côté-ci, supprimer ce workflow, ses configurations et cette page, et
-retirer l'entrée `JustDummies mutation gate` de la protection de branche.
+- ce workflow a gardé son nom, `justdummies-mutation.yml`, plutôt que de devenir
+  `mutation.yml` — il n'y a pas de second workflow de mutation ici dont il faudrait le
+  distinguer, et le renommer aurait cassé l'entrée `JustDummies mutation gate` de la
+  protection de branche sans rien apporter ;
+- les trois configurations Stryker sont arrivées inchangées à l'exception du champ
+  `solution`, qui nomme désormais `JustDummies.sln` ;
+- [`.config/dotnet-tools.json`](../../../../.config/dotnet-tools.json), l'épinglage de
+  Stryker, est arrivé aussi — mais pas au premier passage, ce qui a fait échouer les
+  deux jambes de mutation sur `dotnet tool restore` jusqu'à sa restauration ;
+- les sections partagées de la page `mutation` n'ont **pas** été repliées dans
+  celle-ci. Cette étape reste à faire : les liens ci-dessous pointent vers la page
+  amont, où la machine est documentée en entier.
 
 ## À manipuler avec précaution
 
-- **Gardez ce workflow et [`mutation`](mutation.fr.md) synchronisés.** Ils sont
+- **Gardez ce workflow et [`mutation`](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/workflows/mutation.fr.md) synchronisés.** Ils sont
   dupliqués à dessein — c'est ce qui fait de la migration un déplacement de
   fichier —, donc un correctif sur l'un est un correctif sur l'autre tant que la
   séparation n'a pas eu lieu.
 - Tout ce qui figure sous
-  [*À manipuler avec précaution* sur la page `mutation`](mutation.fr.md#à-manipuler-avec-précaution)
+  [*À manipuler avec précaution* sur la page `mutation`](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/workflows/mutation.fr.md#à-manipuler-avec-précaution)
   vaut ici mot pour mot : `fetch-depth: 0`, `--since` qui refuse `HEAD`,
   `if: always()` sur `gate`, le moteur épinglé, l'endroit où vivent les seuils.
 
@@ -172,7 +171,7 @@ Les rapports atterrissent dans `StrykerOutput/` (ignoré par git) ; ouvrez
 
 ## Voir aussi
 
-- [`mutation`](mutation.fr.md) — la même machine pour les bibliothèques
+- [`mutation`](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/workflows/mutation.fr.md) — la même machine pour les bibliothèques
   FirstClassErrors, et l'endroit où le mécanisme est documenté en entier.
 - [`justdummies`](../../../../.github/workflows/justdummies.yml) *(pas encore de
   page de référence)* — l'autre workflow cantonné à JustDummies : il prouve que

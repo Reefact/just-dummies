@@ -66,24 +66,22 @@ jobs:
       # real release, because there is only one definition of "pack the release artifacts".
       # (The unit/integration tests run in ci.yml; this job's unique contribution is the packaging.)
       #
-      # Only the trains that CAN be packed today are rehearsed:
-      #   * lib   -> always.
-      #   * xunit -> only once the library has been released. The adapter's ProjectReference makes
-      #              `dotnet pack` stamp a JustDummies dependency at the version being packed, and pack.sh
-      #              refuses a version matching no lib-v* tag (it would ship an unresolvable dependency).
-      #              Before the first library release that guard fires on every dry run by construction, so
-      #              rehearsing it would mean a permanently red job that says nothing new. It starts
-      #              rehearsing itself the moment a lib-v* tag exists.
-      #   * cli   -> the `dum` scaffolder is specified, not built; pack.sh fails that train loudly on purpose.
+      # Both publishable trains are rehearsed, every time, under --dry-run.
+      #
+      # They are packed at DRYRUN_VERSION (0.0.0-dryrun), which is precisely why the flag exists: the xunit
+      # train's guard requires the stamped JustDummies dependency to match a lib-v* tag, and no
+      # lib-v0.0.0-dryrun tag will ever be pushed. Gating the train on `git tag --list 'lib-v*'` instead --
+      # what this step used to do -- looked equivalent and was not: it skipped xunit until the first library
+      # release, then began packing it and failed on the dryrun version. Under --dry-run the guard reports
+      # rather than fails, so the train is rehearsed from the first pull request onward.
+      #
+      # cli is still not rehearsed: the `dum` scaffolder is specified, not built, and pack.sh fails that train
+      # loudly on purpose.
       - name: Pack with SBOM (build artifacts, no publish)
         run: |
           set -euo pipefail
-          tools/packaging/pack.sh "$DRYRUN_VERSION" lib
-          if git tag --list 'lib-v*' | grep -q .; then
-            tools/packaging/pack.sh "$DRYRUN_VERSION" xunit
-          else
-            echo "::notice::skipping the xunit train: no lib-v* tag exists yet, so its JustDummies dependency could not resolve. See tools/packaging/pack.sh."
-          fi
+          tools/packaging/pack.sh "$DRYRUN_VERSION" lib --dry-run
+          tools/packaging/pack.sh "$DRYRUN_VERSION" xunit --dry-run
 
       # Rehearse the train-scoped release-notes generation too (release.yml's other production-only path),
       # so a bug in it surfaces here instead of during a real release. Prints to the log; publishes nothing.

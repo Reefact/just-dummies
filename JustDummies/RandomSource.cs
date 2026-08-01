@@ -79,6 +79,7 @@ internal sealed class SeededRandom {
 
     private readonly object _gate = new();
     private readonly Random _random;
+    private          long   _draws;
 
     #endregion
 
@@ -99,26 +100,52 @@ internal sealed class SeededRandom {
 
     internal int Seed { get; }
 
+    /// <summary>
+    ///     How many primitive draws have been taken from this generator. Not a statistic: it is the quantity the
+    ///     seed golden master pins alongside the values, because a change that leaves a factory's own output
+    ///     identical while consuming one extra draw shifts every value produced after it in the same scope — and a
+    ///     golden master watching only values stays green through exactly that (ADR-0049). Read under the same lock
+    ///     the draws take, so a count read after a concurrent batch is the count that batch reached.
+    /// </summary>
+    internal long Draws {
+        get { lock (_gate) { return _draws; } }
+    }
+
     /// <summary>Draws a non-negative <see cref="int" /> below <paramref name="maxExclusive" />.</summary>
     internal int Next(int maxExclusive) {
-        lock (_gate) { return _random.Next(maxExclusive); }
+        lock (_gate) {
+            _draws++;
+
+            return _random.Next(maxExclusive);
+        }
     }
 
     /// <summary>Draws an <see cref="int" /> in the half-open range [<paramref name="minInclusive" />, <paramref name="maxExclusive" />).</summary>
     internal int Next(int minInclusive, int maxExclusive) {
-        lock (_gate) { return _random.Next(minInclusive, maxExclusive); }
+        lock (_gate) {
+            _draws++;
+
+            return _random.Next(minInclusive, maxExclusive);
+        }
     }
 
     /// <summary>Fills <paramref name="buffer" /> with random bytes.</summary>
     internal void NextBytes(byte[] buffer) {
         if (buffer is null) { throw new ArgumentNullException(nameof(buffer)); }
 
-        lock (_gate) { _random.NextBytes(buffer); }
+        lock (_gate) {
+            _draws++;
+            _random.NextBytes(buffer);
+        }
     }
 
     /// <summary>Draws a <see cref="double" /> in the half-open range [0, 1).</summary>
     internal double NextDouble() {
-        lock (_gate) { return _random.NextDouble(); }
+        lock (_gate) {
+            _draws++;
+
+            return _random.NextDouble();
+        }
     }
 
 }

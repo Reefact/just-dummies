@@ -1,12 +1,45 @@
 # JustDummies — guide for Claude Code
 
-JustDummies is a .NET library that generates **arbitrary yet valid test values**:
+JustDummies generates **explicit, constrained, domain-respecting dummies** for .NET:
 a fluent DSL where constraints express the invariants a value must satisfy, never
-what the test asserts. Keep changes aligned with that goal — a generator describes
-a value, it does not decide what a test proves. Two properties carry the product
-and are worth protecting in every change: contradictory constraints fail fast with
-a message naming both sides rather than looping or drawing something that satisfies
-neither, and any sequential run replays from the seed it reports.
+what the test asserts. Keep changes aligned with that. Two properties carry the
+product and are worth protecting in every change: contradictory constraints fail
+fast with a message naming both sides rather than looping or drawing something that
+satisfies neither, and any sequential run replays from the seed it reports.
+
+## Scope — *just* dummies
+
+The name is the scope. A dummy is a value that is arbitrary and **valid for the
+constraints declared at the call site** — not a statistically ideal draw, not a
+universal generator, not a constraint solver. Being deliberate is not the same as
+being exhaustive, and this library chooses deliberate.
+
+The decision base already says this six times over, in the same shape each time:
+**bound the surface, bound the effort, and refuse loudly at the edge.**
+
+* `Any.Combine` stops at arity eight and says so (ADR-0005).
+* `Any.StringMatching` parses the **regular subset** with the library's own parser
+  and refuses a non-regular construct with a named exception, rather than taking a
+  regex-automaton dependency to widen coverage (ADR-0008).
+* Distinct collections, string exclusions and regex matching all use a **bounded**
+  redraw that fails explicitly and reproducibly instead of looping until it wins
+  (ADR-0004, ADR-0012, ADR-0027).
+* A size the generator must actually produce is refused above one million
+  (ADR-0029), and floating-point draws stay within an ordinary magnitude of one
+  million rather than roaming the type's full range (ADR-0031).
+
+So, when a change would make the generator cleverer, ask first whether the honest
+answer is a **clear refusal** instead. A first-class error naming what cannot be
+honoured beats a value drawn by a mechanism nobody can reason about. Concretely,
+treat these as needing a decision rather than a patch: adding a solver or
+constraint-propagation pass, taking a runtime dependency to widen what can be
+generated, silently widening an existing bound, or making a previously refused
+case succeed by luck rather than by construction.
+
+None of this licenses sloppiness — a drawn value must satisfy every constraint
+declared, and the analyzers and property suite exist to hold that line. The point
+is where the effort goes: into being **honest about the boundary**, not into
+pushing it.
 
 ## Language
 

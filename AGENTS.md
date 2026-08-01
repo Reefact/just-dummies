@@ -5,9 +5,20 @@ Two roles are covered: **writing code** and **reviewing pull requests**.
 
 ## Project orientation (code changes)
 
-- A .NET library that generates arbitrary yet valid test values: constraints express the invariants a
-  value must satisfy, never what the test asserts. Targets netstandard2.0 (the floor) and net8.0; the
-  supported .NET Framework floor is 4.7.2. Ships 28 Roslyn analyzers (`JD001`-`JD028`) inside the package.
+- Generates **explicit, constrained, domain-respecting dummies** for .NET: constraints express the
+  invariants a value must satisfy, never what the test asserts. Targets netstandard2.0 (the floor) and
+  net8.0; the supported .NET Framework floor is 4.7.2. Ships 28 Roslyn analyzers (`JD001`-`JD028`)
+  inside the package.
+- **The name is the scope: *just* dummies.** A dummy is arbitrary and valid for the constraints declared
+  at the call site — not a statistically ideal draw, not a universal generator, not a constraint solver.
+  The decision base repeats one move: bound the surface, bound the effort, refuse loudly at the edge —
+  `Any.Combine` stops at arity eight (ADR-0005); `Any.StringMatching` covers the regular subset with the
+  library's own parser and refuses the rest by name rather than taking a dependency (ADR-0008); distinct
+  collections, string exclusions and regex matching use a bounded redraw that fails explicitly
+  (ADR-0004, ADR-0012, ADR-0027); sizes are capped at a million (ADR-0029) and float draws stay within an
+  ordinary magnitude (ADR-0031). Before making the generator cleverer, ask whether the honest answer is a
+  clear refusal. A solver, a runtime dependency taken to widen coverage, or a silently widened bound
+  needs a decision, not a patch.
 - Build: `dotnet build JustDummies.sln`
 - Test: `dotnet test JustDummies.sln` (analyzer tests: `dotnet test JustDummies.Analyzers.UnitTests`).
 - Adding a `JustDummies` test? It belongs to exactly one of two suites:

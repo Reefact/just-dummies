@@ -33,12 +33,12 @@ promised before 1.0.
 
 xUnit v3, and a `JustDummies` version published from this repository.
 
-Note a constraint the two trains have today: `dotnet pack` stamps the `JustDummies` dependency at the
-version being packed, and `tools/packaging/pack.sh` refuses to pack against a version no `lib-v*` tag
-matches — an adapter demanding a library that was never released would be unresolvable for the
-consumer, on an immutable artifact. In practice the two trains therefore have to move together, which
-is not what "independent trains" was meant to mean; see the open question in
-[`tools/trains.sh`](../tools/trains.sh).
+The two trains version independently ([ADR-0047](../doc/handwritten/for-maintainers/adr/0047-declare-the-adapters-library-dependency-independently.md)):
+this package declares a dependency on the newest `JustDummies` version published from this repository,
+chosen at pack time rather than inherited from the version the adapter itself is packed at. An
+adapter-only fix therefore ships on its own. `tools/packaging/pack.sh` still refuses to pack against a
+version no `lib-v*` tag matches — an adapter demanding a library that was never released would be
+unresolvable for the consumer, on an immutable artifact.
 
 Also developed inside [`Reefact/first-class-errors`](https://github.com/Reefact/first-class-errors)
 and [extracted into this repository](../doc/handwritten/for-maintainers/adr/0044-extract-justdummies-into-its-own-repository.md)

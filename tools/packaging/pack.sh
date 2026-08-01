@@ -73,9 +73,26 @@ case "$scope" in
     ;;
 esac
 
+# The version of JustDummies the ADAPTER declares a dependency on -- decided here, not inherited from the
+# version being packed (ADR-0047). Without this, -p:Version reaches the referenced library through the project
+# graph and the adapter ends up demanding its OWN version of the library, which locks the two trains together.
+#
+# The right answer is the newest library version this repository has actually published, and its lib-v* tags
+# are the record of exactly that. Sorted by version, not lexically: lib-v0.10.0 must outrank lib-v0.9.0. If no
+# lib-v* tag exists yet the variable stays empty and the default stamping applies, which the guard below then
+# refuses on a real release -- the correct outcome, since there is no published library to depend on.
+dependency_version=""
+if [ "$scope" = "xunit" ]; then
+  dependency_version="$(git tag --list 'lib-v*' | sed 's/^lib-v//' | sort -V | tail -n1)"
+  if [ -n "$dependency_version" ]; then
+    echo "note: the adapter will declare a dependency on JustDummies $dependency_version (latest lib-v tag)"
+  fi
+fi
+
 # Intentionally unquoted: $projects is a space-separated list of project paths (no spaces in paths).
 for project in $projects; do
-  dotnet pack "$project" -c Release --no-build -p:Version="$version" -p:GenerateSBOM=true -o artifacts
+  dotnet pack "$project" -c Release --no-build -p:Version="$version" -p:GenerateSBOM=true \
+    -p:JustDummiesDependencyVersion="$dependency_version" -o artifacts
 done
 
 # Positive proof, not just a green pack: a pack that silently stopped embedding
@@ -123,17 +140,18 @@ if [ "$scope" = "lib" ]; then
 fi
 
 # Intra-product dependency guard for the xunit train. This is the cost of giving the adapter its own train.
-# JustDummies.Xunit carries a ProjectReference on JustDummies, so `dotnet pack` stamps
-# <dependency id="JustDummies" version="$version" /> -- the version being packed HERE, on the xunit train.
-# Publishing xunit-v0.2.0 while the library sits at lib-v0.1.0 would therefore ship an adapter demanding a
-# JustDummies 0.2.0 that was never published: NU1102 for the consumer, on an immutable artifact. The library
-# versions this repository has actually published are exactly its lib-v* tags, so require the stamped
-# dependency to match one. Offline by construction: no nuget.org round trip.
+# The adapter must declare a dependency on a JustDummies version that EXISTS. Publishing one that demands a
+# library release that never happened is NU1102 for the consumer, on an immutable artifact.
 #
-# On a DRY RUN the check reports instead of failing, and that is not a loophole. A dry run packs a version that
-# exists to be thrown away (0.0.0-dryrun), so demanding a lib-v0.0.0-dryrun tag asks for a tag nobody will ever
-# push -- the guard would fail every rehearsal for a reason no release can ever have. It still prints what a
-# real release would require, so the rehearsal shows the check running rather than hiding it.
+# Since ADR-0047 the declared version is chosen above rather than inherited, so this now verifies a decision
+# instead of catching an accident -- and it stays, because the decision can still be wrong: an empty tag list,
+# a hand-passed -p:JustDummiesDependencyVersion, a tag deleted between the two steps. The library versions this
+# repository has published are exactly its lib-v* tags, so the declared dependency must match one. Offline by
+# construction: no nuget.org round trip.
+#
+# On a DRY RUN it reports instead of failing, and that is not a loophole: before the first library release
+# there is no lib-v* tag to point at, and the rehearsal would then be red for a reason no real release can
+# have. It still prints what a real release would require.
 if [ "$scope" = "xunit" ]; then
   for package in artifacts/JustDummies.Xunit.*.nupkg; do
     nuspec="$(unzip -p "$package" '*.nuspec')" || { echo "error: cannot read the nuspec from $package" >&2; exit 1; }

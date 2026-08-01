@@ -17,13 +17,20 @@
 # versions with the library it adapts. No dum-v* tag was ever pushed before the
 # extraction, so renaming the trains here discarded no published version.
 #
-# The adapter now has its own train. That decoupling has a COST, and pack.sh
-# guards it: JustDummies.Xunit carries a ProjectReference on JustDummies, so
-# `dotnet pack` stamps <dependency id="JustDummies" version="$version" /> with the
-# version being packed. Publishing xunit-v0.2.0 while the library sits at
-# lib-v0.1.0 would ship an adapter demanding a JustDummies 0.2.0 that was never
-# published — NU1102 for the consumer, on an immutable artifact. The guard in
-# tools/packaging/pack.sh refuses that pack.
+# The adapter now has its own train, and it is genuinely its own (ADR-0047).
+#
+# It did not start that way. JustDummies.Xunit carries a ProjectReference on
+# JustDummies, and `dotnet pack` declares such a dependency at the version the
+# referenced project was BUILT with — which the release scripts set globally, so
+# the adapter demanded its own version of the library. An adapter-only fix could
+# not ship as xunit-v0.1.1 until a lib-v0.1.1 existed: independent in name,
+# locked in fact. pack.sh now CHOOSES that dependency, as the newest published
+# lib-v* tag, so the two trains move separately.
+#
+# The guard in tools/packaging/pack.sh stays: the declared dependency must still
+# match a lib-v* tag, because publishing one that matches none is NU1102 for the
+# consumer, on an immutable artifact. It verifies a decision now instead of
+# catching an accident.
 #
 # ── Adding a train ────────────────────────────────────────────────────────────
 # Add one row to trains_rows() below, then make the static edits GitHub forces

@@ -135,3 +135,4 @@ and it was decided on 2026-08-01 — the index carries the order, the numbering 
 | [ADR-0046](0046-bound-the-generators-ambition-never-its-correctness.md) | Bound the generator's ambition, never its correctness | Accepted | recorded here |
 | [ADR-0047](0047-declare-the-adapters-library-dependency-independently.md) | Declare the adapter's library dependency independently of the version it is packed at | Accepted | recorded here |
 | [ADR-0048](0048-publish-only-from-a-commit-that-is-on-main.md) | Publish only from a commit that is on main | Accepted | recorded here |
+| [ADR-0049](0049-replay-a-seed-across-patch-and-minor-versions.md) | Replay a seed across patch and minor versions | Accepted | recorded here |

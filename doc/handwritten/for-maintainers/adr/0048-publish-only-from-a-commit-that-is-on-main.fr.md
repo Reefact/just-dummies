@@ -119,6 +119,14 @@ garde-fou coûte un `git fetch` : l'arbitrage n'est pas serré.
 
 * Envisager un ruleset GitHub de protection de tag sur `lib-v*`, `xunit-v*` et `cli-v*`. C'est un
   réglage de dépôt, complémentaire de cet enregistrement, et qui ne peut pas être commité ici.
+  * 2026-08-01 — fait. Un ruleset couvrant ces trois motifs restreint désormais la création, la
+    modification et la suppression des tags de release. Il répond à une autre question que la
+    vérification consignée ici — *qui peut poser un tag* plutôt que *ce qui peut être publié* — et ses
+    règles de modification et de suppression couvrent une fenêtre que cet enregistrement laisse
+    ouverte : le contrôle d'ascendance s'exécute au moment du push du tag et ne dit rien de son
+    déplacement ultérieur, qui romprait le lien entre un artefact publié immuable et le commit que son
+    tag désigne. Le réglage vit dans la configuration du dépôt et n'est pas visible depuis les
+    sources : cette ligne consigne qu'il a été appliqué, elle ne vérifie pas qu'il l'est encore.
 
 ## Références
 

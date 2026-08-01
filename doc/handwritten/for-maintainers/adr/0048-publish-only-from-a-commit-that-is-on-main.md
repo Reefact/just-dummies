@@ -113,6 +113,13 @@ guard costs one `git fetch`, so the trade is not close.
 
 * Consider a GitHub tag-protection ruleset on `lib-v*`, `xunit-v*` and `cli-v*`. It is a repository
   setting, complementary to this record, and cannot be committed here.
+  * 2026-08-01 — done. A ruleset covering those three patterns now restricts the creation, update and
+    deletion of release tags. It answers a different question from the check recorded here — *who may
+    tag* rather than *what may be published* — and its update and deletion rules cover a window this
+    record does not: the ancestry check runs when the tag is pushed and says nothing about the tag
+    being moved afterwards, which would break the link between an immutable published artifact and the
+    commit its tag names. The setting lives in the repository configuration and is not visible from the
+    sources, so this line records that it was applied; it does not verify that it still is.
 
 ## References
 

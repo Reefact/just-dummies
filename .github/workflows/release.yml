@@ -92,7 +92,7 @@ jobs:
       # Ancestry of main is the whole check, and it is enough. main is protected and requires its checks, so a
       # commit reachable from main provably went through them. Querying the API for each check run of the tagged
       # commit would be more precise and much heavier for the same verdict -- a bounded check that refuses
-      # loudly, rather than a clever one (ADR-0046).
+      # loudly, rather than a clever one (ADR-0046). The decision itself is ADR-0048.
       #
       # The explicit fetch is required: checkout resolved a TAG, so origin/main is not necessarily present in
       # the clone even at fetch-depth 0. Skipped on workflow_dispatch, whose ref is already a branch.

@@ -93,4 +93,29 @@
     <PackageReference Include="Microsoft.Sbom.Targets" PrivateAssets="all" />
   </ItemGroup>
 
+  <!-- Decouple the two release trains (ADR-0047).
+
+       By default `dotnet pack` stamps a ProjectReference's dependency at the version the referenced project
+       is BUILT with, and the release packs pass -p:Version as a global property, which reaches every project
+       in the graph. The adapter packed at 0.2.0 therefore declared a dependency on JustDummies 0.2.0 — a
+       version that need not exist — so the two trains could only ever move together. That is the opposite of
+       what "independent trains" means.
+
+       _ProjectReferencesWithVersions is NuGet's own hook for the case: it is the item NuGet reads to build the
+       nuspec's dependency list, so rewriting the entry here sets the DECLARED dependency without touching what
+       is built or referenced. The ProjectReference itself is untouched: local builds, tests, analyzers and the
+       IDE keep compiling against the sibling sources.
+
+       tools/packaging/pack.sh passes the last published lib-v* tag. Unset (a plain `dotnet pack`, a local
+       build), the default behaviour stands, so nothing about developing here changes. -->
+  <Target Name="PinTheJustDummiesDependencyVersion"
+          AfterTargets="_GetProjectReferenceVersions"
+          Condition="'$(JustDummiesDependencyVersion)' != ''">
+    <ItemGroup>
+      <_ProjectReferencesWithVersions Condition="'%(Filename)' == 'JustDummies'">
+        <ProjectVersion>$(JustDummiesDependencyVersion)</ProjectVersion>
+      </_ProjectReferencesWithVersions>
+    </ItemGroup>
+  </Target>
+
 </Project>

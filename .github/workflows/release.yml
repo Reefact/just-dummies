@@ -83,6 +83,34 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
+      # A release tag bypasses every gate that protects main: branch protection protects BRANCHES, and this
+      # workflow triggers on a tag push. `actions/checkout` above has no `ref:`, so it checks out the tagged
+      # commit itself -- whatever that commit is. Nothing so far required it to have been reviewed, tested, or
+      # even seen: `git push origin <tag>` carries the objects the tag needs, so a commit that never existed on
+      # the remote arrives with it and gets published. nuget.org versions are immutable.
+      #
+      # Ancestry of main is the whole check, and it is enough. main is protected and requires its checks, so a
+      # commit reachable from main provably went through them. Querying the API for each check run of the tagged
+      # commit would be more precise and much heavier for the same verdict -- a bounded check that refuses
+      # loudly, rather than a clever one (ADR-0046). The decision itself is ADR-0048.
+      #
+      # The explicit fetch is required: checkout resolved a TAG, so origin/main is not necessarily present in
+      # the clone even at fetch-depth 0. Skipped on workflow_dispatch, whose ref is already a branch.
+      - name: Refuse to publish a commit that is not on main
+        if: github.event_name == 'push'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main --quiet
+          # FETCH_HEAD, not origin/main: checkout configures the remote for the ref that triggered the run, so
+          # the remote-tracking branch may simply not exist here. FETCH_HEAD is what the fetch just wrote.
+          if git merge-base --is-ancestor "$GITHUB_SHA" FETCH_HEAD; then
+            echo "ok: $GITHUB_SHA is on main"
+          else
+            echo "::error::The tagged commit $GITHUB_SHA is not an ancestor of main, so it never passed the checks that protect it. Refusing to publish. Tag a commit that is on main."
+            exit 1
+          fi
+
       - name: Resolve version
         id: version
         shell: bash

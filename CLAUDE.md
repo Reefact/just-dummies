@@ -14,7 +14,9 @@ constraints declared at the call site** — not a statistically ideal draw, not 
 universal generator, not a constraint solver. Being deliberate is not the same as
 being exhaustive, and this library chooses deliberate.
 
-The decision base already says this six times over, in the same shape each time:
+This is recorded as a decision — [ADR-0046](doc/handwritten/for-maintainers/adr/0046-bound-the-generators-ambition-never-its-correctness.md),
+which is where the reasoning, the alternatives and the consequences live. The base
+had already made the same move seven times before naming it:
 **bound the surface, bound the effort, and refuse loudly at the edge.**
 
 * `Any.Combine` stops at arity eight and says so (ADR-0005).
@@ -37,9 +39,11 @@ generated, silently widening an existing bound, or making a previously refused
 case succeed by luck rather than by construction.
 
 None of this licenses sloppiness — a drawn value must satisfy every constraint
-declared, and the analyzers and property suite exist to hold that line. The point
-is where the effort goes: into being **honest about the boundary**, not into
-pushing it.
+declared, and the analyzers and property suite exist to hold that line. That is the
+second half of ADR-0046 and it is not decoration: the boundary is about what the
+library *attempts*, never about what it *guarantees* once it does. The point is
+where the effort goes: into being **honest about the boundary**, not into pushing
+it.
 
 ## Language
 

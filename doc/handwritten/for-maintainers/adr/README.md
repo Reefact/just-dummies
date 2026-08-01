@@ -74,6 +74,15 @@ right*, it belongs in the reference docs, and the ADR links to it.
 * A citation of an ADR that lives only in the other repository is qualified
   `ADR-00NN (first-class-errors)`; an unqualified number always means this base.
 
+## Start here
+
+One record is not about a feature but about how every feature question is answered:
+[**ADR-0046 — Bound the generator's ambition, never its correctness**](0046-bound-the-generators-ambition-never-its-correctness.md).
+Seven of the decisions below each bound a surface or an effort; ADR-0046 is the rule they share, and
+it is the default answer to *"should the generator handle this case too?"*. Read it before the
+others. Its number is late because [numbers here are stable handles, not a reading order](0045-renumber-the-decision-base.md)
+and it was decided on 2026-08-01 — the index carries the order, the numbering carries identity.
+
 ## Index
 
 | ADR | Title | Status | Origin |
@@ -123,3 +132,4 @@ right*, it belongs in the reference docs, and the ADR links to it.
 | [ADR-0043](0043-declare-a-value-object-and-enforce-its-identity.md) | Declare a value object with an attribute, and enforce its identity by convention | Accepted | moved · FCE ADR-0066 |
 | [ADR-0044](0044-extract-justdummies-into-its-own-repository.md) | Extract JustDummies into its own repository | Accepted | recorded here |
 | [ADR-0045](0045-renumber-the-decision-base.md) | Renumber the decision base into a contiguous sequence | Accepted | recorded here |
+| [ADR-0046](0046-bound-the-generators-ambition-never-its-correctness.md) | Bound the generator's ambition, never its correctness | Accepted | recorded here |

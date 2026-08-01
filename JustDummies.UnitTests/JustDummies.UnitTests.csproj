@@ -75,6 +75,14 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- The seed golden master's reference (ADR-0049). Copied beside the test assembly rather than embedded as a
+         resource, so the file a failing run names is the file a maintainer opens in the repository — an embedded
+         copy would be read from the assembly while the repository file drifted, and the failure message would then
+         point at something the reader cannot see. -->
+    <Content Include="SeedGoldenMaster.expected.txt" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
   <!-- Three suites are saturated with .NET 8+ surface and cannot compile on the net472 floor: the modern
        generators (DateOnly/TimeOnly/Int128/UInt128/Half), absent from the netstandard2.0 asset, and the
        Math.BitIncrement / MathF / BitConverter.Half helpers (netstandard2.1+, absent from net472) used to build

@@ -8,19 +8,14 @@ Releases are cut from the `xunit` train (see [CONTRIBUTING.md](../CONTRIBUTING.m
 
 ## [Unreleased]
 
-_No unreleased changes recorded yet. This section is drafted automatically from
-merged pull requests — see [`.github/workflows/changelog.yml`](../.github/workflows/changelog.yml)._
+Nothing is published yet: **`JustDummies.Xunit` has never been released to nuget.org**, so everything
+below belongs to its first version, whatever number and date that version ends up carrying. This
+section was previously written as a shipped `0.1.0-preview.1` dated 2026-07-31 — a release that never
+happened, whose two links pointed at a tag that does not exist.
 
-## [0.1.0-preview.1] - 2026-07-31
-
-First published version. Like the library it adapts, this package was developed inside
-[`Reefact/first-class-errors`](https://github.com/Reefact/first-class-errors) and
-[extracted into this repository](../doc/handwritten/for-maintainers/adr/0044-extract-justdummies-into-its-own-repository.md)
-with its history on 2026-07-31.
-
-**A preview on purpose**, for the same reason as `JustDummies`: the surface is declared in
+**A preview when it ships**, for the same reason as `JustDummies`: the surface is declared in
 `PublicAPI/netstandard2.0/PublicAPI.Unshipped.txt`, not `PublicAPI.Shipped.txt`, so nothing here is
-promised yet.
+promised before 1.0.
 
 ### Added
 
@@ -36,10 +31,15 @@ promised yet.
 
 ### Requires
 
-xUnit v3, and a `JustDummies` version published from this repository. The two version
-independently, and `tools/packaging/pack.sh` refuses to pack this package against a `JustDummies`
-version no `lib-v*` tag corresponds to — an adapter demanding a library that was never released
-would be unresolvable for the consumer, on an immutable artifact.
+xUnit v3, and a `JustDummies` version published from this repository.
 
-[Unreleased]: https://github.com/Reefact/just-dummies/compare/xunit-v0.1.0-preview.1...HEAD
-[0.1.0-preview.1]: https://github.com/Reefact/just-dummies/releases/tag/xunit-v0.1.0-preview.1
+Note a constraint the two trains have today: `dotnet pack` stamps the `JustDummies` dependency at the
+version being packed, and `tools/packaging/pack.sh` refuses to pack against a version no `lib-v*` tag
+matches — an adapter demanding a library that was never released would be unresolvable for the
+consumer, on an immutable artifact. In practice the two trains therefore have to move together, which
+is not what "independent trains" was meant to mean; see the open question in
+[`tools/trains.sh`](../tools/trains.sh).
+
+Also developed inside [`Reefact/first-class-errors`](https://github.com/Reefact/first-class-errors)
+and [extracted into this repository](../doc/handwritten/for-maintainers/adr/0044-extract-justdummies-into-its-own-repository.md)
+with its history on 2026-07-31.

@@ -53,12 +53,17 @@ number that promises compatibility. Two guards, wired once in
 * **Multi-target (`JustDummies`)**: each framework has its own baseline under
   `PublicAPI/<tfm>/`, and `dotnet format` rewrites only one framework's file per
   run — update `net8.0` and `netstandard2.0` separately when a change touches both.
-* **At release**: promote the accumulated `PublicAPI.Unshipped.txt` entries into
-  `PublicAPI.Shipped.txt` (the *"mark shipped"* fix, or by hand).
+* **At the first STABLE release**: promote the accumulated `PublicAPI.Unshipped.txt` entries into
+  `PublicAPI.Shipped.txt` (the *"mark shipped"* fix, or by hand). Deliberately **not** at a preview:
+  promoting turns every later removal into an `RS0017` violation, and below 1.0 this library keeps the
+  right to remove. The same applies to `AnalyzerReleases.Unshipped.md` — the 28 rules stay unshipped
+  until the surface is frozen. Until then, `PublicAPI.Shipped.txt` being empty is the honest state, and
+  it means nothing automated protects a published preview's surface: that is the accepted trade of
+  being below 1.0, not an oversight.
 
 `RS0026`/`RS0027` (the "optional parameters across overloads" design rules) are
 disabled deliberately: they fire on the library's central fluent APIs
-(`Outcome.Then`/`Recover`/`Finally`/`Try`, `Any.Reproducibly`), where enforcing
+(`Any.String()`/`Int32()` and their constraint chains, `Any.Reproducibly`), where enforcing
 them would demand a breaking redesign — a separate decision, not a baseline chore.
 
 ## Enabling the commit-message hook
@@ -92,7 +97,7 @@ reviewer cannot tell the request from the residue.
 ```
 $ git log --oneline origin/main..HEAD    # the second branch
 a1b2c3d feat(core): the change the pull request is for
-9f8e7d6 feat(gendoc): a renderer already merged, dragged along
+9f8e7d6 feat(xunit): an adapter change already merged, dragged along
 ...twelve more commits already on main...
 ```
 
@@ -118,8 +123,8 @@ below follows from that.
   `<author>` is the branch owner's GitHub handle — the person or the tool the
   work belongs to: `sylvain/…`, `claude/…`, `dependabot/…`. The
   `<short-description>` MUST be English, lowercase, kebab-case, and name the
-  change, not the file it touches: `sylvain/gendoc-invalid-culture`, never
-  `sylvain/GenDoc.cs`.
+  change, not the file it touches: `sylvain/string-exclusion-redraw`, never
+  `sylvain/AnyString.cs`.
 * A tool that generates its own branches owns its namespace and keeps its
   native layout beneath it — `dependabot/nuget/Newtonsoft.Json-13.0.1`,
   `renovate/…`. The `<author>/<short-description>` form binds the branches a
@@ -195,7 +200,7 @@ of the commit that carries two intentions.
 | Branch | Why it fits |
 |---|---|
 | `sylvain/add-html-renderer` | Owner and change, named plainly. The type it will carry lives in its commits. |
-| `claude/gendoc-invalid-culture` | An agent's branch; the description names the zone, not `GenDoc.cs`. |
+| `claude/string-exclusion-redraw` | An agent's branch; the description names the zone, not `AnyString.cs`. |
 | `dependabot/nuget/Newtonsoft.Json-13.0.1` | A generator keeps its native layout under its `dependabot/` namespace. |
 | `sylvain/security-policy` | The description alone carries the subject; the branch needs no type. |
 
@@ -206,7 +211,7 @@ of the commit that carries two intentions.
 | a commit pushed straight to `main` | `main` moves only by merge. Even a one-line fix takes a branch and a pull request. |
 | `patch-1`, `my-work`, `tmp` | No owner, and it names nothing. A branch name is read in the pull-request list; it MUST say who owns what. |
 | `feat/add-html-renderer` | A type in the owner's slot. The type belongs on the commits; the branch prefix is the owner: `sylvain/add-html-renderer`. |
-| `sylvain/GenDoc.cs` | Names a file. It should name the change: `sylvain/gendoc-invalid-culture`. |
+| `sylvain/AnyString.cs` | Names a file. It should name the change: `sylvain/string-exclusion-redraw`. |
 | `sylvain/corrige-le-rendu` | Not English. |
 | reviving a merged `claude/add-html-renderer` for a follow-up | A merged branch is spent. Cut the follow-up fresh from `origin/main`. |
 | a branch cut from a three-week-old local `main` | The pull request diff fills with commits already on `main`. Fetch first; cut from `origin/main`. |
@@ -234,9 +239,9 @@ a3f1c2e fix bug
 This history teaches nothing. Every question forces a diff open.
 
 ```
-a3f1c2e fix(gendoc): render error examples with the invariant culture
-8b41d90 feat(gendoc): emit an RFC 9457 problem type in examples
-1d0e4aa refactor(gendoc): extract output routing into a writer
+a3f1c2e fix(core): honour a string exclusion through a bounded redraw
+8b41d90 feat(core): draw flag-enum combinations behind an opt-in
+1d0e4aa refactor(core): extract the ordinal space into one discrete generator
 ```
 
 This one answers three questions without opening a single diff: what the branch
@@ -332,14 +337,14 @@ order is alphabetical so a given pair is always written the same way, and found
 again with a single `git log --grep`.
 
 ```
-fix(cli,gendoc): thread cancellation through the generate command
+fix(analyzers,core): reject a constraint chain that admits no value
 ```
 
 #### Description
 
 * It MUST be in the imperative present: `add`, not `added` nor `adds`. The
   description completes one sentence — *If applied, this commit will …* — and
-  only the imperative fits it: *…will add Outcome.Map*.
+  only the imperative fits it: *…will add `Any.SetOf`*.
 * It MUST begin with a lowercase letter and MUST NOT end with a period. The
   header line is not a sentence; it is a title.
 * The full header line — type, optional scope, optional `!`, colon and
@@ -388,11 +393,12 @@ A breaking change MUST be signalled twice: by a `!` placed just before the
 colon, and by a `BREAKING CHANGE:` footer in capitals.
 
 ```
-feat(core)!: fail Outcome<T>.To with an Outcome instead of throwing
+feat(core)!: refuse a distinctness request the element generator cannot meet
 
-BREAKING CHANGE: Outcome<T>.To returns a failed Outcome<TTarget> where it
-used to throw on a null conversion. Callers must handle the Outcome instead
-of catching.
+BREAKING CHANGE: Any.SetOf(...).WithCount(n) now throws AnyGenerationException
+when the element generator's domain holds fewer than n values, where it used to
+loop until the redraw budget ran out and return a shorter set. Callers relying on
+the short result must widen the element domain.
 ```
 
 The `!` is what one sees in a `git log --oneline`. The footer is what one reads
@@ -400,8 +406,8 @@ when it is time to migrate. The two have different readers; neither replaces the
 other.
 
 What is breaking reads on the **published contract**, not on internal code. In
-this repository that contract explicitly includes error codes, diagnostic IDs
-(`FCExxx`), and public types: renaming any of them is a breaking change (see
+this repository that contract explicitly includes diagnostic IDs (`JDxxx`) and
+public types: renaming any of them is a breaking change (see
 `CLAUDE.md`). Renaming an `internal` type breaks nothing.
 
 #### Reverts
@@ -410,7 +416,7 @@ A revert commit MUST carry the `revert` type, repeat the description of the
 reverted commit, and reference its SHA in a `Reverts:` footer.
 
 ```
-revert(gendoc): emit an RFC 9457 problem type in examples
+revert(core): draw flag-enum combinations behind an opt-in
 
 Reverts: b36765a
 ```
@@ -469,7 +475,7 @@ types.
 **A feature, with scope and issue.**
 
 ```
-feat(analyzers): add FCE016 for an undocumented error code
+feat(analyzers): add JD029 for a pool whose values all collapse
 
 Refs: #142
 ```
@@ -477,7 +483,7 @@ Refs: #142
 **A fix whose why is not readable from the diff.**
 
 ```
-fix(gendoc): render error examples with the invariant culture
+fix(core): honour a string exclusion through a bounded redraw
 
 Sample amounts were formatted with the host's culture, so the Verify
 baselines matched on an invariant machine and failed on a comma-decimal one.
@@ -496,11 +502,12 @@ refactor(core): extract transience computation into TransienceCalculator
 **A breaking change, with the migration instruction.**
 
 ```
-feat(core)!: fail Outcome<T>.To with an Outcome instead of throwing
+feat(core)!: refuse a distinctness request the element generator cannot meet
 
-BREAKING CHANGE: Outcome<T>.To returns a failed Outcome<TTarget> where it
-used to throw on a null conversion. Callers must handle the Outcome instead
-of catching.
+BREAKING CHANGE: Any.SetOf(...).WithCount(n) now throws AnyGenerationException
+when the element generator's domain holds fewer than n values, where it used to
+loop until the redraw budget ran out and return a shorter set. Callers relying on
+the short result must widen the element domain.
 
 Refs: #150
 ```
@@ -515,13 +522,13 @@ Ordered as the rules are: type, scope, description, body, breaking, issue.
 | `feat: refactor the extraction reader` | The type contradicts the description. One of the two is lying. |
 | `fix(core): correct transience and add a CI cache` | Two changes, two commits. No version can describe this one. |
 | `fix(ErrorCode.cs): formatting` | The scope names a file. It designates a zone: `core`. |
-| `feat(gendoc, cli): carry the source description` | A space after the comma, and the order is not alphabetical. Two spellings for one pair — write `feat(cli,gendoc):`. |
+| `feat(core, analyzers): carry the declared constraint` | A space after the comma, and the order is not alphabetical. Two spellings for one pair — write `feat(analyzers,core):`. |
 | `fix(core): Fixed the null dereference.` | Capital, past tense, trailing period. Three form rules broken, one useful word. |
 | `feat(core): add support` | Support for what? The description must stand alone in a `git log`. |
 | `fix(core): change line 42 of Error` | The description names a line. It should name a change. |
-| `fix(gendoc): render with the invariant culture` — body: `Replaced DateTime.Now with CultureInfo.InvariantCulture` | The body repeats the diff. It should say why the culture varied across hosts. |
-| `feat(core)!: fail Outcome<T>.To with an Outcome` — no footer | The `!` warns; it migrates no one. |
-| `feat(core): add Outcome.Map (#142)` | The issue eats the 72 characters of the description. Its place is a footer. |
+| `fix(core): honour a string exclusion` — body: `Replaced the while loop with a bounded redraw` | The body repeats the diff. It should say why the unbounded loop could never terminate. |
+| `feat(core)!: refuse an unmeetable distinctness request` — no footer | The `!` warns; it migrates no one. |
+| `feat(core): add Any.SetOf (#142)` | The issue eats the 72 characters of the description. Its place is a footer. |
 | `refs: #142` | Lowercase token. The footer token is `Refs`. |
 
 ### Adoption
@@ -590,7 +597,7 @@ it stands on the review, as the code does.
 | Title | Why it fits |
 |---|---|
 | `ci: add dependency review on pull requests` | One intention. The title is the commit header. |
-| `feat(analyzers): add FCE016 for an undocumented error code` | One intention, scoped. The issue it closes lives in the description, not here. |
+| `feat(analyzers): add JD029 for a pool whose values all collapse` | One intention, scoped. The issue it closes lives in the description, not here. |
 | `Adopt and enforce a Conventional Commits convention` | The guide, the hook, and the CI gate — several commits of several types. A plain title names them all. |
 | `Release supply chain: build provenance + embedded SBOM` | Several intentions under one topic. A topical prefix carries it; no single `type:` would be honest. |
 
@@ -600,5 +607,5 @@ it stands on the review, as the code does.
 |---|---|
 | `feat: various improvements` | A type on a grab-bag. Either it is one intention — name it — or it is several, and `feat:` hides them. |
 | `fix(core): Fixed the null dereference.` | The single-intention form, wearing the commit header's own faults: capital, past tense, trailing period. |
-| `Add Outcome.Map (#142)` | The issue number belongs in the description's `Closes`/`Refs`, where GitHub reads it — not eating the title. |
+| `Add Any.SetOf (#142)` | The issue number belongs in the description's `Closes`/`Refs`, where GitHub reads it — not eating the title. |
 | `Corrige le rendu des exemples` | Not English. |

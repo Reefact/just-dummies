@@ -5,7 +5,22 @@ Two roles are covered: **writing code** and **reviewing pull requests**.
 
 ## Project orientation (code changes)
 
-- .NET Standard 2.0 library. Errors are first-class, documented, diagnosable concepts.
+- Generates **explicit, constrained, domain-respecting dummies** for .NET: constraints express the
+  invariants a value must satisfy, never what the test asserts. Targets netstandard2.0 (the floor) and
+  net8.0; the supported .NET Framework floor is 4.7.2. Ships 28 Roslyn analyzers (`JD001`-`JD028`)
+  inside the package.
+- **The name is the scope: *just* dummies** (ADR-0046). A dummy is arbitrary and valid for the
+  constraints declared at the call site — not a statistically ideal draw, not a universal generator, not
+  a constraint solver. Correctness is never what gets bounded: a returned value satisfies every
+  constraint declared.
+  The decision base repeats one move: bound the surface, bound the effort, refuse loudly at the edge —
+  `Any.Combine` stops at arity eight (ADR-0005); `Any.StringMatching` covers the regular subset with the
+  library's own parser and refuses the rest by name rather than taking a dependency (ADR-0008); distinct
+  collections, string exclusions and regex matching use a bounded redraw that fails explicitly
+  (ADR-0004, ADR-0012, ADR-0027); sizes are capped at a million (ADR-0029) and float draws stay within an
+  ordinary magnitude (ADR-0031). Before making the generator cleverer, ask whether the honest answer is a
+  clear refusal. A solver, a runtime dependency taken to widen coverage, or a silently widened bound
+  needs a decision, not a patch.
 - Build: `dotnet build JustDummies.sln`
 - Test: `dotnet test JustDummies.sln` (analyzer tests: `dotnet test JustDummies.Analyzers.UnitTests`).
 - Adding a `JustDummies` test? It belongs to exactly one of two suites:
@@ -15,14 +30,15 @@ Two roles are covered: **writing code** and **reviewing pull requests**.
   [`doc/handwritten/for-maintainers/WritingJustDummiesTests.en.md`](doc/handwritten/for-maintainers/WritingJustDummiesTests.en.md)
   first; the decision behind it is ADR-0019.
 - Repository language is **English** (code, comments, commits, PRs, issues, and
-  review comments). French lives only in `doc/handwritten/for-users/README.fr.md` and must stay in sync
-  with the English README.
-- `Error` and its hierarchy, `ErrorCode`, `ErrorContextKey`, `Outcome`/`Outcome<T>`
-  and any value object are **`class`, never `struct`** — a struct exposes a
-  zero-initialized default that bypasses validating constructors. Enums
-  (`Transience`, `ErrorOrigin`) are the only value-type exception.
-- Keep changes small and focused. Treat renamed error codes, diagnostic IDs and
-  public types as breaking changes.
+  review comments). French documentation is a translation kept in sync with the English page it mirrors:
+  every maintainer page and every analyzer page comes as an `.en.md`/`.fr.md` pair. Change a page, change
+  its twin.
+- A type marked `[ValueObject]` (ADR-0043 — today `ConstraintClaim`, `ConstraintCall`, `Replay`) is
+  **`class`, never `struct`**: a struct exposes a zero-initialized default that bypasses validating
+  constructors. A reflection convention in `JustDummies.UnitTests/ValueObjectConventionTests.cs` holds
+  every marked type to a full value identity. Enums are the only value-type exception.
+- A declared constraint is carried as a value object, never as the text it renders to (ADR-0042).
+- Keep changes small and focused. Treat renamed diagnostic IDs and public types as breaking changes.
 - Adding a new project? Also add its GUID to `JustDummies.sln`'s
   `GlobalSection(NestedProjects)`, nested under the `src` or `tests` solution
   folder like its siblings — a project left out of that section sits loose at
@@ -152,13 +168,14 @@ Decorations, when present, go in parentheses (for example `(security)`).
 Canonical example:
 
 ```text
-issue (security): The raw connection string is copied into the error context and reaches the logs.
+issue (correctness): The redraw loop can exit without satisfying the declared exclusion.
 
-`ConnectionError.Create` stores the full connection string in the `ErrorContext`, and the
-log sink serializes every `Values` entry. The password therefore appears verbatim in any
-aggregated log output.
+`AnyString.Excluding` redraws while the candidate is excluded, but the bounded-redraw guard
+returns the last candidate when the budget runs out instead of throwing. A generator that
+cannot honour its constraint must fail loudly (ADR-0012), not hand back a value that violates
+the invariant the caller declared.
 
-Store only the host, or a redacted form, in the context — never the credential itself.
+Raise `AnyGenerationException` when the budget is exhausted, as the collection path does.
 ```
 
 ### Labels (one per comment)

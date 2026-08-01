@@ -2,8 +2,9 @@
 
 🌍 🇬🇧 [English](0048-publish-only-from-a-commit-that-is-on-main.md) · 🇫🇷 Français (ce fichier)
 
-**Status:** Proposed
+**Status:** Accepted
 **Proposed:** 2026-08-01
+**Accepted:** 2026-08-01
 **Decision Makers:** Reefact
 
 ## Contexte

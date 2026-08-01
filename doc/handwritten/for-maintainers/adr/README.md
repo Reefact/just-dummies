@@ -133,5 +133,5 @@ and it was decided on 2026-08-01 — the index carries the order, the numbering 
 | [ADR-0044](0044-extract-justdummies-into-its-own-repository.md) | Extract JustDummies into its own repository | Accepted | recorded here |
 | [ADR-0045](0045-renumber-the-decision-base.md) | Renumber the decision base into a contiguous sequence | Accepted | recorded here |
 | [ADR-0046](0046-bound-the-generators-ambition-never-its-correctness.md) | Bound the generator's ambition, never its correctness | Accepted | recorded here |
-| [ADR-0047](0047-declare-the-adapters-library-dependency-independently.md) | Declare the adapter's library dependency independently of the version it is packed at | Proposed | recorded here |
-| [ADR-0048](0048-publish-only-from-a-commit-that-is-on-main.md) | Publish only from a commit that is on main | Proposed | recorded here |
+| [ADR-0047](0047-declare-the-adapters-library-dependency-independently.md) | Declare the adapter's library dependency independently of the version it is packed at | Accepted | recorded here |
+| [ADR-0048](0048-publish-only-from-a-commit-that-is-on-main.md) | Publish only from a commit that is on main | Accepted | recorded here |

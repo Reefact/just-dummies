@@ -2,8 +2,9 @@
 
 🌍 🇬🇧 [English](0047-declare-the-adapters-library-dependency-independently.md) · 🇫🇷 Français (ce fichier)
 
-**Status:** Proposed
+**Status:** Accepted
 **Proposed:** 2026-08-01
+**Accepted:** 2026-08-01
 **Decision Makers:** Reefact
 
 ## Contexte

@@ -50,9 +50,12 @@ Both target `netstandard2.0`; `JustDummies` additionally carries a `net8.0` asse
 (`DateOnly`, `TimeOnly`, `Int128`, `UInt128`, `Half`) that do not exist downlevel. The supported .NET
 Framework floor is **4.7.2**, and CI runs the suites on it ([ADR-0007](doc/handwritten/for-maintainers/adr/0007-floor-the-library-on-net-framework-4-7-2.md)).
 
-> **Not published yet.** Neither package is on nuget.org. See
+> **Preview.** [`JustDummies 0.1.0-preview.1`](https://www.nuget.org/packages/JustDummies/0.1.0-preview.1)
+> is on nuget.org; `JustDummies.Xunit` is not published yet. The public surface is declared in
+> `PublicAPI.Unshipped.txt`, not `PublicAPI.Shipped.txt` — nothing is promised before 1.0, and that includes
+> the values a given seed draws. See
 > [the trusted-publishing setup](doc/handwritten/for-maintainers/migration/nuget-trusted-publishing.md) for
-> what the first release needs.
+> how a release is cut.
 
 ## Analyzers
 

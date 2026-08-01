@@ -1,8 +1,12 @@
 # JustDummies — guide for Claude Code
 
-JustDummies is a .NET library that treats errors as first-class,
-documented, and diagnosable concepts. Keep changes aligned with that goal:
-errors should stay structured, documented, and close to the code.
+JustDummies is a .NET library that generates **arbitrary yet valid test values**:
+a fluent DSL where constraints express the invariants a value must satisfy, never
+what the test asserts. Keep changes aligned with that goal — a generator describes
+a value, it does not decide what a test proves. Two properties carry the product
+and are worth protecting in every change: contradictory constraints fail fast with
+a message naming both sides rather than looping or drawing something that satisfies
+neither, and any sequential run replays from the seed it reports.
 
 ## Language
 
@@ -10,14 +14,18 @@ errors should stay structured, documented, and close to the code.
   source code, code comments, commit messages, branch names,
   PR titles and descriptions, and issues.
 * The English documentation is canonical.
-* The French documentation in `doc/handwritten/for-users/README.fr.md` is an intentional translation
-  and must stay in sync with the English documentation when user-facing behavior changes.
+* French documentation is an intentional translation and must stay in sync with the English page it
+  mirrors. It is not one file: every maintainer page and every analyzer page comes as an `.en.md`/`.fr.md`
+  pair (28 of them under `doc/handwritten/for-users/analyzers/`), plus `doc/handwritten/for-users/`'s
+  `CONTRIBUTING.fr.md` and `SECURITY.fr.md`. Change a page, change its twin.
 * You may reply to me in French in the chat, but never write repository content in French
   unless you are updating the French documentation.
 
 ## Build & test
 
-* Target framework: **.NET Standard 2.0**.
+* Target frameworks: **netstandard2.0** (the floor, widest reach) and **net8.0** (which additionally
+  carries the generators for types absent downlevel: `DateOnly`, `TimeOnly`, `Int128`, `UInt128`,
+  `Half`). The supported .NET Framework floor is 4.7.2 and CI runs the suites on it (ADR-0007).
 * Build: `dotnet build JustDummies.sln`
 * Test: `dotnet test JustDummies.sln`
 * Run the analyzer tests when touching analyzers:
@@ -33,8 +41,13 @@ errors should stay structured, documented, and close to the code.
   single check — `JustDummies mutation gate` — covering the library, the xUnit
   adapter and the analyzers (decisions: ADR-0022, and ADR-0025 which made the
   per-PR check **advisory** — it reports the diff's score but does not block the
-  merge; the enforced bar is the weekly full sweep). The generator is swept weekly
-  only, never per pull request (ADR-0028). A test that *executes* new code without
+  merge). The generator is swept weekly only, never per pull request (ADR-0028).
+  **Nothing currently enforces a mutation score.** `justdummies.json` and
+  `justdummies-analyzers.json` both set `break: 0`, and the weekly sweep passes
+  `--break-at 0` by construction, so the only component with a real bar is
+  `justdummies-xunit` (80) and even that one only reports. Treat the score as
+  information, not as a gate, and do not claim a pull request "passed the mutation
+  bar" — there is none to pass. A test that *executes* new code without
   *asserting* it will pass `dotnet test` and still be reported as a survivor.
   Reproduce it on a branch with
   `dotnet tool restore && dotnet stryker --config-file build/stryker/<project>.json --since:$(git merge-base origin/main HEAD)`;
@@ -67,19 +80,19 @@ fact several times; check it every time a `.csproj` is added.
 * Do not introduce new dependencies without a clear reason.
 * Do not make public API changes unless they are required by the task.
 * Treat renamed error codes, diagnostic IDs, and public types as breaking changes unless explicitly stated otherwise.
-* **Value objects and results are reference types (`class`), never structs.**
-  Types that enforce invariants — `Error` and its hierarchy, `ErrorCode`,
-  `ErrorContextKey`, `Outcome`/`Outcome<T>`, and any future value object — must be
-  declared `class`. A `struct` always exposes an unsuppressable default/parameterless
-  constructor (`default(T)`, `new T[]`, uninitialized fields) that yields a
-  zero-initialized instance bypassing every validating constructor; nullable
-  reference types only warn at compile time and cannot prevent it. A validating
-  class keeps its constructor/factory as the single entry point. Do not convert
-  these types to `struct`/`readonly struct` for allocation reasons: error/result
-  paths are not hot loops, and invariant correctness takes precedence. (Enums such
-  as `Transience` and `ErrorOrigin` are the legitimate value-type case — they carry
-  no invariant to bypass.)
-* Preserve compatibility with **.NET Standard 2.0**.
+* **Value objects are reference types (`class`), never structs.** A type whose instances are values
+  declares itself with `[ValueObject]` (ADR-0043) — today `ConstraintClaim`, `ConstraintCall` and
+  `Replay` — and a reflection convention in `JustDummies.UnitTests/ValueObjectConventionTests.cs` holds
+  every marked type to a full value identity and to rendering itself for a reader. Such a type must be a
+  `class`: a `struct` always exposes an unsuppressable default constructor (`default(T)`, `new T[]`,
+  uninitialized fields) yielding a zero-initialized instance that bypasses every validating constructor,
+  and nullable reference types only warn at compile time. Do not convert one to `struct`/`readonly
+  struct` for allocation reasons: these sit on the constraint-declaration path, not in a hot loop, and
+  invariant correctness takes precedence. (Enums are the legitimate value-type case — they carry no
+  invariant to bypass.)
+* **A declared constraint is carried as a value object, never as the text it renders to** (ADR-0042).
+* Preserve compatibility with the **netstandard2.0** floor: a net8.0-only API belongs behind the
+  existing `#if NET8_0_OR_GREATER` additive branch, never in the common surface.
 
 ## Coding rules
 
@@ -105,13 +118,16 @@ states how it is checked, so none of them rests on attention alone.
   task requires and leave their neighbours alone, even when the surrounding
   alignment already looks stale.
 
-## Error and documentation conventions
+## Diagnostic and documentation conventions
 
-* When you add or change an error, update its documentation accordingly.
-* When you change user-facing behavior, keep the English README and the French translation
-  (`doc/handwritten/for-users/README.fr.md`) in sync.
+* When you change user-facing behavior, keep the English page and its French twin in sync.
 * When you change analyzers, update or add analyzer tests.
-* When you change diagnostics, keep diagnostic IDs, messages, documentation, and tests consistent.
+* When you add, change or retire a rule, keep all five in step: the `JDxxx` id, its message, its
+  `AnalyzerReleases.*.md` entry, its `doc/handwritten/for-users/analyzers/JDxxx.{en,fr}.md` pages, and the
+  table in `doc/handwritten/for-users/analyzers/README.md`. The release-tracking analyzer (RS2003) checks
+  the second of those and nothing checks the rest.
+* A generated value's relationship to its seed is **not** a versioned contract while the library is
+  below 1.0 — changing a draw sequence is allowed. Say so in the changelog when you do.
 
 ## Architecture decisions (ADRs)
 
@@ -126,8 +142,10 @@ The essentials, inlined so they hold even if `AGENTS.md` is not read:
   ADR should not need editing.* Most pull requests need none; the **check** is the
   habit, the **ADR** is the exception.
 * **Create** — a new lasting decision (public API contract, cross-cutting invariant,
-  supported-platform floor, dependency or security/compatibility policy): draft one
-  ADR per decision as `Status: Proposed`, index it, and link it from the PR.
+  supported-platform floor, dependency or security/compatibility policy): copy
+  [`doc/handwritten/for-maintainers/adr/template.md`](doc/handwritten/for-maintainers/adr/template.md),
+  draft one ADR per decision as `Status: Proposed`, index it in that folder's `README.md`, and link it
+  from the PR.
 * **Supersede** — the change replaces a recorded decision: draft the successor as
   `Proposed`; never edit an accepted ADR in place or flip its status yourself.
 * **Alert** — the change contradicts an accepted ADR: flag it in the PR description

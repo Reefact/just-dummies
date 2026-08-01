@@ -76,8 +76,42 @@ if [ "$status" = "OK" ]; then
   exit 0
 fi
 
+condition_count="$(printf '%s' "$body" | jq -r '.projectStatus.conditions | length')"
+
+# NONE is not a verdict, and this script must not report it as one.
+#
+# SonarCloud answers NONE with an empty condition list when the gate assigned to the project evaluated
+# nothing. The usual cause is that the gate's conditions are scoped to NEW CODE while the project has no
+# new-code period defined, so there is no "new" for them to measure -- which is the state a freshly
+# created project sits in until someone sets one.
+#
+# It is treated as a FAILURE on purpose. "The gate measured nothing" and "the gate found nothing wrong"
+# are different facts with the same green colour, and this job exists precisely because a Sonar upload
+# that reported nothing had let two VULNERABILITY-typed findings reach main behind a permanently green
+# check. Passing on NONE would rebuild that hole one level up. The message says what to fix instead of
+# printing an empty list of failing conditions.
+if [ "$status" = "NONE" ]; then
+  printf 'check-gate: the SonarCloud quality gate returned NONE for %s -- it evaluated nothing.\n' "$PROJECT" >&2
+  printf '\n' >&2
+  printf 'This is not a pass. The gate is assigned but measured no condition (%s reported), so no\n' "$condition_count" >&2
+  printf 'verdict exists to enforce. The usual cause is a missing NEW CODE period: the default "Sonar\n' >&2
+  printf 'way" gate scopes its conditions to new code, and a project without a baseline has none.\n' >&2
+  printf '\n' >&2
+  printf 'Set one at https://sonarcloud.io/project/new_code?id=%s, then re-run this job.\n' "$PROJECT" >&2
+  printf 'Verify with: curl -s "%s/qualitygates/project_status?projectKey=%s"\n' "$API" "$PROJECT" >&2
+  exit 1
+fi
+
 printf 'check-gate: the SonarCloud quality gate is %s for %s.\n' "$status" "$PROJECT" >&2
 printf '\n' >&2
+# A non-OK status with nothing to render would otherwise print a bare heading and leave the reader with
+# no idea whether the gate found something unnameable or the response was shaped unexpectedly.
+if [ "$condition_count" -eq 0 ]; then
+  printf 'The gate is not green, yet it reports no condition at all. That combination is unexpected;\n' >&2
+  printf 'read the raw response before trusting either half of it:\n' >&2
+  printf '  curl -s "%s/qualitygates/project_status?projectKey=%s"\n' "$API" "$PROJECT" >&2
+  exit 1
+fi
 printf 'Failing conditions:\n' >&2
 render >&2
 printf '\n' >&2

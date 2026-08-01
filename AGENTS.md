@@ -9,8 +9,10 @@ Two roles are covered: **writing code** and **reviewing pull requests**.
   invariants a value must satisfy, never what the test asserts. Targets netstandard2.0 (the floor) and
   net8.0; the supported .NET Framework floor is 4.7.2. Ships 28 Roslyn analyzers (`JD001`-`JD028`)
   inside the package.
-- **The name is the scope: *just* dummies.** A dummy is arbitrary and valid for the constraints declared
-  at the call site — not a statistically ideal draw, not a universal generator, not a constraint solver.
+- **The name is the scope: *just* dummies** (ADR-0046). A dummy is arbitrary and valid for the
+  constraints declared at the call site — not a statistically ideal draw, not a universal generator, not
+  a constraint solver. Correctness is never what gets bounded: a returned value satisfies every
+  constraint declared.
   The decision base repeats one move: bound the surface, bound the effort, refuse loudly at the edge —
   `Any.Combine` stops at arity eight (ADR-0005); `Any.StringMatching` covers the regular subset with the
   library's own parser and refuses the rest by name rather than taking a dependency (ADR-0008); distinct

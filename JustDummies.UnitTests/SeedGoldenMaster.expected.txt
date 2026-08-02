@@ -1,0 +1,47 @@
+# Seed golden master — the mapping ADR-0049 promises to keep.
+#
+# One line per factory: <key> | draws=<count> | <rendered value>, drawn under seed 20260801,
+# each case in its own fresh Any.UseSeed scope. Generated and checked by SeedGoldenMasterTests.
+#
+# A line here is a PROMISE, not a snapshot to refresh. If a case goes red the seed mapping moved,
+# which ADR-0049 makes a MAJOR-version change: fix the change, or take the major deliberately and
+# update this file in that commit. Never edit it to make a build green.
+#
+# The draws= count is load-bearing: a change that leaves a value identical while consuming one more
+# draw shifts every value produced after it in the same scope, and nothing else here would see it.
+Boolean | draws=1 | True
+Byte | draws=1 | 57
+SByte | draws=1 | -71
+Int16 | draws=1 | -12231
+UInt16 | draws=1 | 20537
+Int32 | draws=1 | -280080327
+UInt32 | draws=1 | 1867403321
+Int64 | draws=1 | -7852055884375109575
+UInt64 | draws=1 | 1371316152479666233
+Single | draws=1 | c9599507
+Double | draws=1 | c12b32a0ed3d5a42
+Decimal | draws=1 | 885624.7943240866053775632146
+Char | draws=1 | D
+Guid | draws=1 | 6f4e5039-e4c6-1307-3c27-5cf11dd019b1
+TimeSpan | draws=1 | -7852055884375109575
+DateTime | draws=1 | 1371316152479666233
+String | draws=15 | U8YXV12X7fvPF
+Uri | draws=20 | http://i7e.hlw/08xw/9nn
+DateTimeOffset | draws=1 | 1371316152479666233+0
+Int32.Between | draws=1 | 234
+Int64.Between | draws=1 | 341
+Double.Between | draws=1 | 404b322576de6448
+Decimal.Between | draws=1 | 942.8123971620433026887816073
+String.NonEmpty.WithMaxLength | draws=16 | U8YXV12X7fvPFd
+StringMatching | draws=10 | lwx-3883
+Int32.OrNull | draws=1 | \null
+String.OrNull | draws=1 | \null
+OneOf | draws=1 | alpha
+Enum | draws=1 | Clubs
+ArrayOf | draws=5 | 3,6,0
+ListOf | draws=5 | 3,6,0
+SequenceOf | draws=3 | 6,3
+SetOf | draws=5 | 33,60,76
+DictionaryOf | draws=5 | 33=Y,76=8
+PairOf | draws=2 | 5,a
+TripleOf | draws=3 | 5,a,False

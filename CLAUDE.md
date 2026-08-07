@@ -114,6 +114,13 @@ fact several times; check it every time a `.csproj` is added.
 ## Change guidelines
 
 * Keep changes small, focused, and aligned with the requested task.
+* **Never alter an image I supply.** An icon I give you ships byte for byte — not resized, not
+  recoloured, not cropped, not composited with anything, and not redrawn from what you can see of it.
+  If it does not work — over the format's size limit, wrong format, unreadable at the 128 px a
+  nuget.org listing renders, wrong aspect — **say so and stop**. Changing it is my call, not yours.
+  Check the file rather than describing it: format, dimensions, weight, transparency, and how much of
+  the canvas it fills. This is written down because it was got wrong: three variants were composited
+  out of one supplied mark, and every one was worse than the file it started from.
 * Do not introduce new dependencies without a clear reason.
 * Do not make public API changes unless they are required by the task.
 * Treat renamed error codes, diagnostic IDs, and public types as breaking changes unless explicitly stated otherwise.

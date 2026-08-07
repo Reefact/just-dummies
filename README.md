@@ -54,7 +54,7 @@ Framework floor is **4.7.2**, and CI runs the suites on it ([ADR-0007](doc/handw
 > is on nuget.org; `JustDummies.Xunit` is not published yet. The public surface is declared in
 > `PublicAPI.Unshipped.txt`, not `PublicAPI.Shipped.txt` — nothing is promised before 1.0, and that includes
 > the values a given seed draws. See
-> [the trusted-publishing setup](doc/handwritten/for-maintainers/migration/nuget-trusted-publishing.md) for
+> [the trusted-publishing setup](doc/handwritten/for-maintainers/workflows/nuget-trusted-publishing.en.md) for
 > how a release is cut.
 
 ## Analyzers

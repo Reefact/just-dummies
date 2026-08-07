@@ -8,12 +8,15 @@ Releases are cut from the `xunit` train (see [CONTRIBUTING.md](../CONTRIBUTING.m
 
 ## [Unreleased]
 
-Nothing is published yet: **`JustDummies.Xunit` has never been released to nuget.org**, so everything
-below belongs to its first version, whatever number and date that version ends up carrying. This
-section was previously written as a shipped `0.1.0-preview.1` dated 2026-07-31 — a release that never
-happened, whose two links pointed at a tag that does not exist.
+_No unreleased changes recorded yet._
 
-**A preview when it ships**, for the same reason as `JustDummies`: the surface is declared in
+## [1.0.0-preview.1] - 2026-08-07
+
+First published version: **`JustDummies.Xunit` had never reached nuget.org before this one.** It starts
+at the library's number rather than at `0.1.0` because it is the adapter offered for the library's 1.0,
+not an earlier sketch of one.
+
+**A preview**, for the same reason as `JustDummies`: the surface is declared in
 `PublicAPI/netstandard2.0/PublicAPI.Unshipped.txt`, not `PublicAPI.Shipped.txt`, so nothing here is
 promised before 1.0.
 
@@ -43,3 +46,6 @@ unresolvable for the consumer, on an immutable artifact.
 Also developed inside [`Reefact/first-class-errors`](https://github.com/Reefact/first-class-errors)
 and [extracted into this repository](../doc/handwritten/for-maintainers/adr/0044-extract-justdummies-into-its-own-repository.md)
 with its history on 2026-07-31.
+
+[Unreleased]: https://github.com/Reefact/just-dummies/compare/xunit-v1.0.0-preview.1...HEAD
+[1.0.0-preview.1]: https://github.com/Reefact/just-dummies/releases/tag/xunit-v1.0.0-preview.1

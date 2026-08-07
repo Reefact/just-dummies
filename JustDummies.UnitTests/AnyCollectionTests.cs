@@ -128,7 +128,7 @@ public sealed class AnyCollectionTests {
     }
 
     [Fact(DisplayName = "Distinct: over an element type without value equality the requirement is inert, and the collection holds repeats.")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("JustDummies.Composition", "JD028:Distinctness is declared over an element type that has no value equality",
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(JustDummiesRule.JD028.Category, JustDummiesRule.JD028.Id,
                                                      Justification =
                                                          "The inert distinctness IS the subject. This pins the silent behaviour JD028 reports, which the library cannot report itself: from " +
                                                          "its side the requirement is met, because the draws really are pairwise unequal under the comparer it was given.")]

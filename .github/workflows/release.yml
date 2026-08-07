@@ -5,10 +5,12 @@ on:
     # Publish on a train-prefixed semantic-version tag. The trains version independently:
     #   lib-v1.2.3   -> JustDummies (the library, with its analyzers bundled in)
     #   xunit-v1.2.3 -> JustDummies.Xunit (the xUnit v3 adapter)
+    #   catalog-v1.2.3 -> JustDummies.DiagnosticCatalog (the JD rules as constants)
     #   cli-v1.2.3   -> dum (the scaffolder; specified, not built yet)
     tags:
       - 'lib-v*.*.*'
       - 'xunit-v*.*.*'
+      - 'catalog-v*.*.*'
       - 'cli-v*.*.*'
   workflow_dispatch:
     inputs:
@@ -133,6 +135,7 @@ jobs:
             case "$REF_NAME" in
               lib-v*)   COMPONENT="lib";   VERSION="${REF_NAME#lib-v}" ;;
               xunit-v*) COMPONENT="xunit"; VERSION="${REF_NAME#xunit-v}" ;;
+              catalog-v*) COMPONENT="catalog"; VERSION="${REF_NAME#catalog-v}" ;;
               cli-v*)   COMPONENT="cli";   VERSION="${REF_NAME#cli-v}" ;;
               *) echo "::error::Tag '$REF_NAME' is not a release tag; expected lib-v*.*.*, xunit-v*.*.* or cli-v*.*.*."; exit 1 ;;
             esac

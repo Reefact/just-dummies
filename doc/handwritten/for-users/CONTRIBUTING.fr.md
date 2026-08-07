@@ -316,6 +316,7 @@ est présent, il DOIT être en minuscules et DOIT être l’un des suivants :
 | `core` | `JustDummies` — la bibliothèque de génération (`Any`, les specs de contraintes, le moteur d’expressions régulières, …) |
 | `analyzers` | `JustDummies.Analyzers` — les analyzers Roslyn et leurs diagnostics `JDxxx` |
 | `xunit` | `JustDummies.Xunit` — l’adaptateur xUnit v3 |
+| `catalog` | `JustDummies.DiagnosticCatalog` — les règles `JDxxx` en constantes qu'une suppression peut nommer |
 | `cli` | `dum` — le scaffolder (spécifié, pas encore construit) |
 
 Cette liste vit ici, dans le dépôt, là où un outil peut la vérifier. Un scope NE DOIT PAS
@@ -325,8 +326,9 @@ non. `fix(core):`, jamais `fix(ErrorCode.cs):`.
 Le scope porte le dossier de release. L’outillage répartit les commits en **trains de
 release** selon le scope — `tools/trains.sh` est la source de vérité unique — et chaque train
 publie indépendamment : `lib` (scopes `core`, `analyzers` → `JustDummies`, analyzers
-embarqués dedans), `xunit` (scope `xunit` → `JustDummies.Xunit`) et `cli` (scope `cli` → le
-scaffolder `dum`, spécifié mais pas encore construit). Le scope
+embarqués dedans), `xunit` (scope `xunit` → `JustDummies.Xunit`), `catalog` (scope `catalog` →
+`JustDummies.DiagnosticCatalog`) et `cli` (scope `cli` → le scaffolder `dum`,
+spécifié mais pas encore construit). Le scope
 d’un commit décide dans les release notes et le changelog de quel train il atterrit ; voir
 [Ajouter un train de release](../for-maintainers/AddingAReleaseTrain.fr.md).
 

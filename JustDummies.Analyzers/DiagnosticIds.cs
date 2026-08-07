@@ -1,3 +1,5 @@
+using JustDummies.Diagnostics;
+
 namespace JustDummies.Analyzers;
 
 /// <summary>
@@ -7,47 +9,47 @@ namespace JustDummies.Analyzers;
 internal static class DiagnosticIds {
 
     // Category: Reproducibility
-    public const string AsyncBodyPassedToReproducibly     = "JD001";
-    public const string DiscardedReproduciblyAsyncResult  = "JD002";
-    public const string AwaitableBodyPassedToReproducibly = "JD003";
-    public const string DiscardedSeedingResult            = "JD004";
+    public const string AsyncBodyPassedToReproducibly = JustDummiesRule.JD001.Id;
+    public const string DiscardedReproduciblyAsyncResult = JustDummiesRule.JD002.Id;
+    public const string AwaitableBodyPassedToReproducibly = JustDummiesRule.JD003.Id;
+    public const string DiscardedSeedingResult = JustDummiesRule.JD004.Id;
 
     // Category: Usage
-    public const string GeneratorRenderedAsText   = "JD005";
-    public const string DiscardedGeneratorResult  = "JD006";
+    public const string GeneratorRenderedAsText = JustDummiesRule.JD005.Id;
+    public const string DiscardedGeneratorResult = JustDummiesRule.JD006.Id;
 
     // Category: Reproducibility — draws that escape the pinned seed scope
-    public const string DrawOutsideThePinnedScope  = "JD007";
-    public const string ArbitraryValueInTheoryData = "JD008";
-    public const string DrawInStaticInitializer    = "JD009";
-    public const string ReproducibleOnNonTestMethod = "JD010";
+    public const string DrawOutsideThePinnedScope = JustDummiesRule.JD007.Id;
+    public const string ArbitraryValueInTheoryData = JustDummiesRule.JD008.Id;
+    public const string DrawInStaticInitializer = JustDummiesRule.JD009.Id;
+    public const string ReproducibleOnNonTestMethod = JustDummiesRule.JD010.Id;
 
     // Category: Usage — a recipe reaching a position that wanted the value
-    public const string GeneratorWhereValueExpected = "JD011";
-    public const string GeneratorPooledAsValue      = "JD012";
-    public const string HeldCollectionPassedToOneOf = "JD013";
+    public const string GeneratorWhereValueExpected = JustDummiesRule.JD011.Id;
+    public const string GeneratorPooledAsValue = JustDummiesRule.JD012.Id;
+    public const string HeldCollectionPassedToOneOf = JustDummiesRule.JD013.Id;
 
     // Category: Constraints — decidable from compile-time constants
-    public const string RejectedConstantArgument      = "JD014";
-    public const string StringConstraintsAdmitNoValue     = "JD015";
-    public const string CollectionConstraintsAdmitNoValue = "JD016";
-    public const string EnumUniverseViolation             = "JD017";
+    public const string RejectedConstantArgument = JustDummiesRule.JD014.Id;
+    public const string StringConstraintsAdmitNoValue = JustDummiesRule.JD015.Id;
+    public const string CollectionConstraintsAdmitNoValue = JustDummiesRule.JD016.Id;
+    public const string EnumUniverseViolation = JustDummiesRule.JD017.Id;
 
     // Category: Reproducibility — the seeding long tail
-    public const string NestedReproducibilityScope    = "JD018";
-    public const string CommittedReplaySeed           = "JD019";
-    public const string SharedStaticAnyContext        = "JD020";
-    public const string BlankReplaySnippet            = "JD021";
-    public const string ParallelDrawWithoutPerItemSeed = "JD022";
+    public const string NestedReproducibilityScope = JustDummiesRule.JD018.Id;
+    public const string CommittedReplaySeed = JustDummiesRule.JD019.Id;
+    public const string SharedStaticAnyContext = JustDummiesRule.JD020.Id;
+    public const string BlankReplaySnippet = JustDummiesRule.JD021.Id;
+    public const string ParallelDrawWithoutPerItemSeed = JustDummiesRule.JD022.Id;
 
-    public const string ScalarChainAdmitsNoValue = "JD023";
-    public const string ConstraintWithNoEffect   = "JD024";
+    public const string ScalarChainAdmitsNoValue = JustDummiesRule.JD023.Id;
+    public const string ConstraintWithNoEffect = JustDummiesRule.JD024.Id;
 
-    public const string DuplicatePoolValue = "JD025";
-    public const string EmptyRelativeUri   = "JD026";
+    public const string DuplicatePoolValue = JustDummiesRule.JD025.Id;
+    public const string EmptyRelativeUri = JustDummiesRule.JD026.Id;
 
     // Category: Composition — a part that reaches no result, a constraint that cannot bind
-    public const string UnusedCombineOperand = "JD027";
-    public const string InertDistinctness    = "JD028";
+    public const string UnusedCombineOperand = JustDummiesRule.JD027.Id;
+    public const string InertDistinctness = JustDummiesRule.JD028.Id;
 
 }

@@ -50,11 +50,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- The adapter carries its own mark: the same mannequin, at the same size as JustDummies',
-         with an X laid over it. PackagePath renames it on the way in, so both packages ship their
-         own drawing under the single icon.png path <PackageIcon> names — the same rename the
-         readme below already uses. -->
-    <None Include="..\icon-xunit.png" Pack="true" PackagePath="icon.png" />
+    <!-- The crash-test dummy, the one mark all three packages wear. Deliberately not varied per package:
+         a nuget.org listing renders it at 128 px, where a per-package badge is a few pixels nobody reads,
+         and one mark repeated is what makes the three read as one product. Icon by Magnific, from
+         Flaticon — the attribution is in this package's README. -->
+    <None Include="..\icon.png" Pack="true" PackagePath="icon.png" />
     <None Include="README.nuget.md" Pack="true" PackagePath="readme.md" />
   </ItemGroup>
 

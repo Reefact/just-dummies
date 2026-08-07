@@ -52,7 +52,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- The library's mark, not the adapter's: this package catalogues the rules JustDummies itself ships. -->
+    <!-- The crash-test dummy, the one mark all three packages wear. Deliberately not varied per package:
+         a nuget.org listing renders it at 128 px, where a per-package badge is a few pixels nobody reads,
+         and one mark repeated is what makes the three read as one product. Icon by Magnific, from
+         Flaticon — the attribution is in this package's README. -->
     <None Include="..\icon.png" Pack="true" PackagePath="icon.png" />
     <None Include="README.nuget.md" Pack="true" PackagePath="readme.md" />
 

@@ -27,7 +27,10 @@ name: dependabot-autofix
 #     fine-grained PAT / GitHub App token with contents + pull-requests write): that
 #     makes `ci` re-run on the fix, which a kept auto-merge needs. Without it the fix
 #     is still pushed, but the checks must be re-triggered by hand.
-# See doc/handwritten/for-maintainers/workflows/dependabot-autofix.en.md.
+# This workflow carries no page of its own under doc/handwritten/for-maintainers/workflows/ —
+# the header above is its documentation, and the triage rules live in
+# .github/dependabot-autofix-prompt.md. See that folder's README.md ("Dependency
+# maintenance") for where it sits among the others.
 
 # A workflow-security audit (zizmor `dangerous-triggers`) reports this trigger as a
 # privilege-escalation vector, and the pattern generally is one: `workflow_run` runs in the
@@ -292,7 +295,10 @@ jobs:
           marker='<!-- dependabot-autofix -->'
           category="$(jq -r '.category // "other"' verdict.json)"
           explanation="$(jq -r '.explanation // ""' verdict.json)"
-          doc='doc/handwritten/for-maintainers/workflows/dependabot-autofix.en.md'
+          # Points at the workflow itself, not at a page under doc/: this workflow has none, and
+          # the pointer read as a dead link on every comment it posted. Its header comment is the
+          # design, and the triage rules are in .github/dependabot-autofix-prompt.md beside it.
+          doc='.github/workflows/dependabot-autofix.yml'
 
           # verdict "ok" (transient/unrelated failure): drop any stale comment.
           if [ "$VERDICT" = "ok" ]; then

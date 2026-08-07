@@ -2,8 +2,9 @@
 
 🌍 🇬🇧 English (this file) · 🇫🇷 [Français](0050-name-a-suppressed-rule-through-a-catalogue-constant.fr.md)
 
-**Status:** Proposed
+**Status:** Accepted
 **Proposed:** 2026-08-02
+**Accepted:** 2026-08-02
 **Decision Makers:** Reefact
 
 ## Context

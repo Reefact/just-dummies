@@ -136,4 +136,4 @@ and it was decided on 2026-08-01 — the index carries the order, the numbering 
 | [ADR-0047](0047-declare-the-adapters-library-dependency-independently.md) | Declare the adapter's library dependency independently of the version it is packed at | Accepted | recorded here |
 | [ADR-0048](0048-publish-only-from-a-commit-that-is-on-main.md) | Publish only from a commit that is on main | Accepted | recorded here |
 | [ADR-0049](0049-replay-a-seed-across-patch-and-minor-versions.md) | Replay a seed across patch and minor versions | Accepted | recorded here |
-| [ADR-0050](0050-name-a-suppressed-rule-through-a-catalogue-constant.md) | Name a suppressed rule through a catalogue constant, not a string literal | Proposed | recorded here |
+| [ADR-0050](0050-name-a-suppressed-rule-through-a-catalogue-constant.md) | Name a suppressed rule through a catalogue constant, not a string literal | Accepted | recorded here |

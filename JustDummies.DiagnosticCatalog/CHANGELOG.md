@@ -12,8 +12,13 @@ retired, a category changed — which is not when the library or the adapter mov
 
 ## [Unreleased]
 
-Nothing is published yet: **`JustDummies.DiagnosticCatalog` has never been released to nuget.org**, so
-everything below belongs to its first version, whatever number and date that version ends up carrying.
+_No unreleased changes recorded yet._
+
+## [1.0.0-preview.1] - 2026-08-07
+
+First published version: **`JustDummies.DiagnosticCatalog` had never reached nuget.org before this
+one.** It starts at the library's number because it describes the rule set the library's 1.0 ships, not
+because the two move together afterwards — they do not, for the reason stated above.
 
 ### Added
 
@@ -37,3 +42,6 @@ there is no `CatalogSource` attribute here: nothing upstream is being snapshotte
 **A rule is never removed and a member is never renamed.** These are `const`, so they are inlined into
 a consumer's assembly at their compile time; removing one breaks their build with a message that names
 nothing they wrote. A rule retired from the product is carried forward as `[Obsolete]` instead.
+
+[Unreleased]: https://github.com/Reefact/just-dummies/compare/catalog-v1.0.0-preview.1...HEAD
+[1.0.0-preview.1]: https://github.com/Reefact/just-dummies/releases/tag/catalog-v1.0.0-preview.1

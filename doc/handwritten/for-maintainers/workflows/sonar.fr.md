@@ -73,6 +73,23 @@ s'authentifie avec le secret `SONAR_TOKEN`.
 
   Les branches internes au dépôt (le flux contributeur normal) tournent
   normalement.
+- **Les exclusions de couverture portent sur ce qui ne peut pas être couvert.**
+  Trois chemins sont passés à `sonar.coverage.exclusions` : tout le projet
+  `JustDummies.DiagnosticCatalog`, `DiagnosticIds.cs` et
+  `DiagnosticCategories.cs`. Chacun ne contient que des `const string`, et une
+  `const` ne produit **aucune IL** — la valeur est substituée à chaque site
+  d'appel et la déclaration n'émet rien. Sonar compte les lignes à couvrir
+  depuis l'arbre syntaxique et non depuis le rapport de couverture : un tel
+  fichier ressort donc à 0 % pour toujours, et aucun test ne peut l'en bouger.
+  Mesuré le jour où cela a mordu : 116 des 245 lignes neuves à couvrir étaient
+  dans ces trois fichiers, à 0 %, ce qui mettait `new_coverage` à 52,7 % contre
+  un seuil de 80 et faisait passer le gate au rouge, alors que la couverture
+  globale était à 88,5 %. L'alternative — un test qui touche une constante pour
+  faire bouger un chiffre — n'affirme rien et est refusée. Le risque assumé est
+  qu'un de ces fichiers gagne un jour une méthode et que l'exclusion la masque ;
+  c'est pourquoi deux des trois sont nommés fichier par fichier, et le troisième
+  est un projet dont la vacuité est consignée dans l'ADR-0052 plutôt que
+  supposée.
 - **`fetch-depth: 0` compte.** Un checkout superficiel casserait la détection de
   code neuf et l'attribution par blame de Sonar.
 

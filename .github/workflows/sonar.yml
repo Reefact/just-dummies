@@ -98,6 +98,30 @@ jobs:
       #     `local` is not POSIX. tools/trains.sh already shows the price of obeying without it: the one helper
       #     that needed named parameters carries `_tf_`-prefixed globals instead. Paying that in every two-line
       #     helper, to name a `$1` sitting one line below the function's own name, buys nothing.
+      # Coverage exclusions, and why these three and nothing else.
+      #
+      # A `const` compiles to no IL: the compiler substitutes its value at every use site and emits nothing
+      # for the declaration. There is therefore no sequence point, nothing for a coverage run to record, and
+      # nothing a test could execute. Sonar counts lines to cover from the syntax tree rather than from the
+      # coverage report, so a file of nothing but constants is reported as 0% covered for ever, and no test
+      # can move it.
+      #
+      # Measured on the run that made this necessary: 116 of the 245 new lines to cover sat in these three
+      # files, at 0%, which put new_coverage at 52.7% against a threshold of 80 and turned the quality gate
+      # red. Overall coverage was 88.5% at the same moment. The gate was measuring an artifact.
+      #
+      # The three, and the invariant each rests on:
+      #   JustDummies.DiagnosticCatalog/**  - the whole project. ADR-0052 records that it declares constants
+      #                                       and no executable statement; it is the one project here that
+      #                                       cannot even run the analyzers on itself.
+      #   DiagnosticIds.cs                  - 28 const string, each delegating to the catalogue.
+      #   DiagnosticCategories.cs           - 4 const string, likewise.
+      #
+      # EXCLUDING IS THE HONEST FIX, and writing tests that touch a constant to raise a number is not: such a
+      # test asserts nothing about behaviour and would exist only to move a gauge. What this does risk is the
+      # day one of these files gains a method — the exclusion would then hide it. That is why two of the three
+      # are named file by file rather than by a pattern, and why the third is a project whose emptiness is a
+      # recorded decision rather than a habit.
       - name: Begin analysis
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -109,6 +133,7 @@ jobs:
           /d:sonar.host.url="https://sonarcloud.io"
           /d:sonar.cs.opencover.reportsPaths="artifacts/coverage/**/coverage.opencover.xml"
           /d:sonar.exclusions="**/*.verified.*"
+          /d:sonar.coverage.exclusions="JustDummies.DiagnosticCatalog/**/*.cs,JustDummies.Analyzers/DiagnosticIds.cs,JustDummies.Analyzers/DiagnosticCategories.cs"
           /d:sonar.issue.ignore.multicriteria="s7682,s7679"
           /d:sonar.issue.ignore.multicriteria.s7682.ruleKey="shelldre:S7682"
           /d:sonar.issue.ignore.multicriteria.s7682.resourceKey="**/*.sh"

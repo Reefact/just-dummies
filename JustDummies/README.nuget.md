@@ -158,7 +158,10 @@ matter — and that is the point.
   contain. Drawing from several threads at once is safe — values stay arbitrary and
   well-formed — but concurrent draws interleave, so a seed replays a run only while its
   draws are taken one at a time; open an `Any.UseSeed(...)` scope per unit of work to
-  keep a parallel run reproducible.
+  keep a parallel run reproducible. A seed keeps its meaning across upgrades: within a
+  major version, it draws the same values in every patch and minor, so a pinned seed
+  committed today still covers the case it was pinned for after an upgrade. The mapping
+  may change on a major version.
 
 ## Example
 

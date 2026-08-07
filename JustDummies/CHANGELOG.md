@@ -11,6 +11,35 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 _No unreleased changes recorded yet. This section is drafted automatically from
 merged pull requests — see [`.github/workflows/changelog.yml`](../.github/workflows/changelog.yml)._
 
+## [1.0.0-preview.1] - 2026-08-07
+
+**Why the jump from `0.1.0-preview.1`.** Not because the surface grew — it did not change at all
+between the two, and `PublicAPI.Unshipped.txt` is still where it is declared. Because the number was
+understating the intent. `0.1.0` reads as an early sketch inviting nobody; this library has been in
+use inside another repository for its whole life, and what the preview is waiting for is an outside
+consumer, not more design. A `1.0.0-preview` says what is actually true: this is the surface offered
+for 1.0, and the preview exists so it can be contradicted before it freezes.
+
+A preview still promises nothing about the surface. What it does now promise is the seed.
+
+### Added
+
+- **A seed replays across patch and minor versions.** Within a major version, a given seed draws the
+  same values; the mapping may change on a major
+  ([ADR-0049](../doc/handwritten/for-maintainers/adr/0049-replay-a-seed-across-patch-and-minor-versions.md)).
+  This matters because a pinned seed is usually committed: without the promise an upgrade would not
+  break such a test, it would leave it green while it quietly stopped covering the case it was pinned
+  for. The promise is enforced rather than stated — a golden master pins, for each factory at a fixed
+  seed, both the values produced and the number of draws consumed, the latter because a single
+  sequential stream is shared by the whole scope, so a generator that changes how much it consumes
+  shifts every value drawn after it.
+
+### Changed
+
+- The package carries an icon, shared by every package this repository publishes.
+- The packaged readme's links point at this repository rather than the one JustDummies was extracted
+  from.
+
 ## [0.1.0-preview.1] - 2026-07-31
 
 First published version. The library itself is not new — it was developed inside
@@ -52,5 +81,6 @@ in [ADR-0045](../doc/handwritten/for-maintainers/adr/0045-renumber-the-decision-
 migration record is under
 [`doc/handwritten/for-maintainers/migration/`](../doc/handwritten/for-maintainers/migration/).
 
-[Unreleased]: https://github.com/Reefact/just-dummies/compare/lib-v0.1.0-preview.1...HEAD
+[Unreleased]: https://github.com/Reefact/just-dummies/compare/lib-v1.0.0-preview.1...HEAD
+[1.0.0-preview.1]: https://github.com/Reefact/just-dummies/compare/lib-v0.1.0-preview.1...lib-v1.0.0-preview.1
 [0.1.0-preview.1]: https://github.com/Reefact/just-dummies/releases/tag/lib-v0.1.0-preview.1

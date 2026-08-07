@@ -39,6 +39,10 @@ Two roles are covered: **writing code** and **reviewing pull requests**.
   every marked type to a full value identity. Enums are the only value-type exception.
 - A declared constraint is carried as a value object, never as the text it renders to (ADR-0042).
 - Keep changes small and focused. Treat renamed diagnostic IDs and public types as breaking changes.
+- **An image the maintainer supplies ships byte for byte.** Never resize, recolour, crop, composite or
+  redraw one. If it does not work — over the size limit, wrong format, unreadable at the 128 px a
+  nuget.org listing renders — say so and stop; replacing it is the maintainer's call. Check the file
+  itself rather than describing it: format, dimensions, weight, transparency, canvas fill.
 - Adding a new project? Also add its GUID to `JustDummies.sln`'s
   `GlobalSection(NestedProjects)`, nested under the `src` or `tests` solution
   folder like its siblings — a project left out of that section sits loose at

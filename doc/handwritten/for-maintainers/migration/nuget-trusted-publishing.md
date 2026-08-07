@@ -4,18 +4,18 @@
 short-lived, single-use NuGet API key. No long-lived key is stored anywhere. The exchange only works once
 nuget.org holds a policy that names this repository and this workflow.
 
-**Neither `JustDummies` nor `JustDummies.Xunit` has ever been published**, so no policy exists yet. Until the
-steps below are done, every run of `release.yml` — including a dry run — fails at the `NuGet login (OIDC)`
-step. That is by design: the dry run rehearses the exchange precisely so a misconfiguration surfaces before a
-real release rather than during one.
+**The policy exists and works.** `JustDummies` has been published from it, so the OIDC exchange in
+`release.yml` is proven end to end rather than assumed. Until a policy exists, every run of `release.yml` —
+including a dry run — fails at the `NuGet login (OIDC)` step, by design: the dry run rehearses the exchange
+precisely so a misconfiguration surfaces before a real release rather than during one.
 
 None of this can be automated from CI: creating a trusted-publishing policy requires an authenticated session
 on nuget.org as the package owner.
 
 ## What to configure on nuget.org
 
-Sign in as the account that will own the packages, then for **each** package ID create a trusted-publishing
-policy under *Account settings → Trusted Publishing*.
+Sign in as the account that will own the packages and create a trusted-publishing policy under
+*Account settings → Trusted Publishing*.
 
 | Field | Value |
 | --- | --- |
@@ -25,17 +25,22 @@ policy under *Account settings → Trusted Publishing*.
 | Workflow file | `release.yml` |
 | Environment | *(leave empty — `release.yml` declares no environment)* |
 
-Create one policy per package ID:
+**The policy is scoped to the repository, not to a package id** — confirmed by the maintainer, who holds the
+account. One policy therefore covers every package this repository publishes, and a new package id needs no
+new policy:
 
-* `JustDummies` — published by the `lib-v*` train
-* `JustDummies.Xunit` — published by the `xunit-v*` train
+* `JustDummies` — the `lib-v*` train
+* `JustDummies.Xunit` — the `xunit-v*` train
+* `JustDummies.DiagnosticCatalog` — the `catalog-v*` train
+* `dum` — the `cli-v*` train, once it is built and its package id is decided; `tools/packaging/pack.sh`
+  fails that train loudly until then
 
-Both packages are **new IDs on nuget.org**. A trusted-publishing policy can be created for an ID the account
-does not own yet: nuget.org reserves it to the account on the first successful push. Verify the ID is not
-already taken by someone else before relying on it.
+An id nobody owns yet is reserved to the account on the first successful push, so a package can be published
+before it exists. Verify the id is not already taken by somebody else before relying on it.
 
-The future `dum` scaffolder (`cli-v*` train) will need a third policy when it is built and its package ID is
-decided; `tools/packaging/pack.sh` fails that train loudly until then.
+This page previously said one policy was needed per package id. It was wrong, and it was written before any
+package had been published — which is why nothing had contradicted it. The first `JustDummies.Xunit` release
+is what will demonstrate the repository scope on a second id rather than on the maintainer's word.
 
 ## What to configure on GitHub
 
@@ -69,9 +74,19 @@ gh workflow run release.yml -f component=lib -f version=0.0.0-dry.1 -f dry_run=t
 A green run proves the whole pipeline end to end — restore, build, test, pack, SBOM, attestation and the OIDC
 exchange — while publishing nothing: the push and the GitHub Release are the only steps a dry run skips.
 
-## What is deliberately not done
+## What has been published
 
-No package is published by this migration, and no version has been decided. Publishing the first
-`JustDummies` version is also the prerequisite for the FirstClassErrors cleanup: until a restorable package
-exists, `FirstClassErrors.Testing` must keep embedding `JustDummies.dll` (see ADR-0044 and, in
+Two versions of `JustDummies`, and nothing else:
+
+* `0.1.0-preview.1` — the first release, 2026-07-31.
+* `0.0.0-rulesetcheck` — **published by mistake**, 2026-08-01. A `lib-v0.0.0-rulesetcheck` tag was pushed to
+  test a repository tag-protection setting, and pushing a `lib-v*` tag is what triggers `release.yml`. A
+  published version is immutable, so it can only be unlisted and deprecated. **Pushing a `<train>-v*` tag
+  publishes.** To exercise tag protection without publishing, use a ref the release trigger does not match,
+  or `workflow_dispatch` with `dry_run=true` as above.
+
+`JustDummies.Xunit` and `JustDummies.DiagnosticCatalog` have never been published.
+
+Publishing `JustDummies` was also the prerequisite for the FirstClassErrors cleanup: until a restorable
+package exists, `FirstClassErrors.Testing` must keep embedding `JustDummies.dll` (see ADR-0044 and, in
 `Reefact/first-class-errors`, issue #229).

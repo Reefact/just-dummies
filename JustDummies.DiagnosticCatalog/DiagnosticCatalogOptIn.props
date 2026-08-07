@@ -1,0 +1,28 @@
+<Project>
+
+  <!--
+    Packed as build/JustDummies.DiagnosticCatalog.props — the name is not decorative. NuGet imports a
+    package's build/<package id>.props and ignores a file called anything else, so a typo here is a
+    catalogue that checks nobody and says nothing about it.
+
+    WITHOUT THIS FILE THE CATALOGUE IS SILENT. The DCAT analyzers live in the DiagnosticCatalog
+    foundation and, since its ADR-0038, reach a compiler only where a catalogue asks for them. A
+    catalogue that ships no opt-in still delivers its constants, and delivers no DCAT0006 on the
+    literals a consumer has not converted — a codebase nothing checks, indistinguishable from one with
+    nothing to report.
+
+    It is OUR file rather than the foundation's because NuGet imports build/ for a DIRECT reference and
+    for nothing further out. That asymmetry is the only point in the mechanism where "somebody
+    referenced this catalogue" is distinguishable from "somebody is downstream of something that did",
+    and only this package sits at it. Which is what stops an application referencing a library that took
+    this catalogue for its own suppressions from being analysed by a catalogue it never chose.
+
+    The condition lets the consuming project win whichever order MSBuild reads the two in: false keeps
+    the catalogue and declines the analysis, true asks for the checks from further out than a direct
+    reference. Neither is a case this package handles.
+  -->
+  <PropertyGroup>
+    <EnableDiagnosticCatalogAnalyzers Condition="'$(EnableDiagnosticCatalogAnalyzers)' == ''">true</EnableDiagnosticCatalogAnalyzers>
+  </PropertyGroup>
+
+</Project>

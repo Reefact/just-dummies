@@ -57,7 +57,7 @@ public sealed class AnyOneOfTests {
     }
 
     [Fact(DisplayName = "Duplicate values are collapsed under the default comparer: both distinct values are still drawn, nothing else.")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("JustDummies.Constraints", "JD025:The same value is listed twice in a pool",
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(JustDummiesRule.JD025.Category, JustDummiesRule.JD025.Id,
                                                      Justification =
                                                          "The duplicate IS the subject. This pins the collapsing JD025 reports: without it there is nothing to collapse and the test " +
                                                          "asserts nothing.")]
@@ -209,7 +209,7 @@ public sealed class AnyOneOfTests {
     }
 
     [Fact(DisplayName = "A held collection passed to OneOf is one pool member: the draw is the collection itself, not a value from it.")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("JustDummies.Usage", "JD013:A held collection is passed to Any.OneOf, making a pool of one",
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(JustDummiesRule.JD013.Category, JustDummiesRule.JD013.Id,
                                                      Justification =
                                                          "The one-member pool IS the subject. This pins the behaviour JD013 reports: inference binds T to the collection, so the call is " +
                                                          "legal, the draw succeeds, and what comes back is the whole list.")]

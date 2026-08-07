@@ -153,6 +153,7 @@
     <PackageReference Include="DiagnosticCatalog.NetAnalyzers" PrivateAssets="all" />
     <Using Include="DiagnosticCatalog.Sonar" />
     <Using Include="DiagnosticCatalog.NetAnalyzers" />
+
   </ItemGroup>
 
 </Project>

@@ -57,6 +57,11 @@
                       OutputItemType="Analyzer"
                       ReferenceOutputAssembly="false"
                       PrivateAssets="all" />
+
+    <!-- The catalogue of this product's own JD rules, referenced the way a CONSUMER references it (ADR-0052).
+         The seven [SuppressMessage] attributes in this project that silence a JD rule are the first users of it,
+         which is the point: the package is exercised here before anyone outside meets it. -->
+    <ProjectReference Include="..\JustDummies.DiagnosticCatalog\JustDummies.DiagnosticCatalog.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -73,6 +78,12 @@
 
   <ItemGroup>
     <Using Include="Xunit" />
+
+    <!-- This product's own catalogue (ADR-0052). Declared HERE and not in Directory.Build.props, unlike the two
+         third-party catalogues: those arrive as packages every project restores, whereas this one is a project
+         in this solution that only some projects reference — and a global using naming a namespace the compiler
+         cannot resolve is CS0234, not a no-op. -->
+    <Using Include="JustDummies.Diagnostics" />
   </ItemGroup>
 
   <ItemGroup>

@@ -197,7 +197,7 @@ public sealed class CompositionTests {
     }
 
     [Fact(DisplayName = "Combine draws every operand before composing, including one the composer never reads.")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("JustDummies.Composition", "JD027:A Combine operand never reaches the composed value",
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(JustDummiesRule.JD027.Category, JustDummiesRule.JD027.Id,
                                                      Justification =
                                                          "The ignored operand IS the subject. This pins the behaviour JD027 reports: the operand is generated in full — constraints built, " +
                                                          "conflict checks run — and then dropped, with nothing failing.")]

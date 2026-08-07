@@ -24,9 +24,9 @@
 set -u
 
 TYPES='feat|fix|build|chore|ci|docs|perf|refactor|revert|style|test'
-SCOPES='core|analyzers|xunit|cli'
+SCOPES='core|analyzers|xunit|cli|catalog'
 TYPES_HUMAN='feat, fix, build, chore, ci, docs, perf, refactor, revert, style, test'
-SCOPES_HUMAN='core, analyzers, xunit, cli'
+SCOPES_HUMAN='core, analyzers, xunit, cli, catalog'
 MAX=72
 
 # --- options ------------------------------------------------------------------

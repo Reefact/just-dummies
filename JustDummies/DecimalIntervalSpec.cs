@@ -65,7 +65,7 @@ internal sealed class DecimalIntervalSpec {
 
     #endregion
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Major Code Smell", "S107:Methods should not have too many parameters",
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S107.Category, SonarRule.S107.Id,
                                                      Justification =
                                                          "This private constructor carries the engine's whole immutable state: the 'constrain once, draw many' design rebuilds the spec on " +
                                                          "every With* call, so every field has to be threaded through it. A parameter object would only rename the same list, and the " +
@@ -360,14 +360,14 @@ internal sealed class DecimalIntervalSpec {
         return _excluded.Any(excluded => value == excluded);
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1822:Mark members as static",
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(NetAnalyzersRule.CA1822.Category, NetAnalyzersRule.CA1822.Id,
                                                      Justification =
                                                          "Validated is the uniform validation hook of the fluent builders: every With* method routes its candidate through it, and all " +
                                                          "seven engines declare it with the same signature. It reads the CANDIDATE's state rather than this instance's — which is what " +
                                                          "the rule notices — but that is a builder validating its own successor, not an oversight. Making it static across seven types " +
                                                          "would break a family resemblance the reader relies on, for no measurable gain on a path that runs once per declared " +
                                                          "constraint.")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Minor Code Smell", "S2325:Methods and properties that do not access instance data should be static",
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S2325.Category, SonarRule.S2325.Id,
                                                      Justification =
                                                          "Validated is the uniform validation hook of the fluent builders: every With* method routes its candidate through it, and all " +
                                                          "seven engines declare it with the same signature. It reads the CANDIDATE's state rather than this instance's — which is what " +
@@ -394,7 +394,7 @@ internal sealed class DecimalIntervalSpec {
         return !IsExcluded(_min);
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Major Code Smell", "S125:Sections of code should not be commented out",
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S125.Category, SonarRule.S125.Id,
                                                      Justification =
                                                          "The flagged lines are prose, not disabled code: the heuristic reads an equation, a bracketed range or a semicolon inside an " +
                                                          "explanatory sentence as a statement. These comments carry the reasoning this codebase asks every comment to carry, so the " +

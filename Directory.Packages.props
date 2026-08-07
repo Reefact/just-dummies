@@ -29,6 +29,11 @@
 
   <ItemGroup>
     <PackageVersion Include="coverlet.collector" Version="10.0.1" />
+    <!-- The catalogues behind every [SuppressMessage] in this repository. DiagnosticCatalog.Sonar mirrors
+         SonarAnalyzer.CSharp 10.31.0.145097 — the exact version pinned below, which is what makes the constants
+         describe the rules this build actually runs. Bumping one asks for the other to follow. -->
+    <PackageVersion Include="DiagnosticCatalog.NetAnalyzers" Version="1.0.0" />
+    <PackageVersion Include="DiagnosticCatalog.Sonar" Version="1.0.0" />
     <PackageVersion Include="FsCheck" Version="3.3.4" />
     <PackageVersion Include="JetBrains.Annotations" Version="2026.2.0" />
     <PackageVersion Include="Microsoft.CodeAnalysis.Analyzers" Version="5.6.0" />

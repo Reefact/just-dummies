@@ -84,7 +84,7 @@ internal sealed class ContinuousIntervalSpec {
 
     #endregion
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Major Code Smell", "S107:Methods should not have too many parameters",
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S107.Category, SonarRule.S107.Id,
                                                      Justification =
                                                          "This private constructor carries the engine's whole immutable state: the 'constrain once, draw many' design rebuilds the spec on " +
                                                          "every With* call, so every field has to be threaded through it. A parameter object would only rename the same list, and the " +
@@ -188,7 +188,7 @@ internal sealed class ContinuousIntervalSpec {
     ///     engine does not carry), so it stays outside the eager cardinality perimeter and a distinct collection over
     ///     it falls back to the bounded draw. Feeds <see cref="ICardinalityHint{T}" />.
     /// </summary>
-    [SuppressMessage("Major Bug", "S1244:Floating point numbers should not be tested for equality",
+    [SuppressMessage(SonarRule.S1244.Category, SonarRule.S1244.Id,
                      Justification =
                          "Exact equality is the question, not an approximation of it: _min and _max are not measured " +
                          "quantities but the bounds the constraint chain validated, and the test asks whether they are the " +
@@ -216,7 +216,7 @@ internal sealed class ContinuousIntervalSpec {
     }
 
     /// <summary>Draws one value satisfying the whole specification.</summary>
-    [SuppressMessage("Major Bug", "S1244:Floating point numbers should not be tested for equality",
+    [SuppressMessage(SonarRule.S1244.Category, SonarRule.S1244.Id,
                      Justification =
                          "Exact equality detects the validated pin (the singleton domain Cardinality also reports) and " +
                          "returns the only value the bounds leave; IsSatisfiable already proved that value is not excluded, " +
@@ -297,7 +297,7 @@ internal sealed class ContinuousIntervalSpec {
         return quantized;
     }
 
-    [SuppressMessage("Major Bug", "S1244:Floating point numbers should not be tested for equality",
+    [SuppressMessage(SonarRule.S1244.Category, SonarRule.S1244.Id,
                      Justification =
                          "Exclusion-list membership is exact by definition: DifferentFrom(x) forbids the value x, not a " +
                          "neighbourhood of it. Widening it to a tolerance would carve a band out of the continuum that no " +
@@ -309,14 +309,14 @@ internal sealed class ContinuousIntervalSpec {
         return _excluded.Any(excluded => value.Equals(excluded));
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1822:Mark members as static",
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(NetAnalyzersRule.CA1822.Category, NetAnalyzersRule.CA1822.Id,
                                                      Justification =
                                                          "Validated is the uniform validation hook of the fluent builders: every With* method routes its candidate through it, and all " +
                                                          "seven engines declare it with the same signature. It reads the CANDIDATE's state rather than this instance's — which is what " +
                                                          "the rule notices — but that is a builder validating its own successor, not an oversight. Making it static across seven types " +
                                                          "would break a family resemblance the reader relies on, for no measurable gain on a path that runs once per declared " +
                                                          "constraint.")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Minor Code Smell", "S2325:Methods and properties that do not access instance data should be static",
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S2325.Category, SonarRule.S2325.Id,
                                                      Justification =
                                                          "Validated is the uniform validation hook of the fluent builders: every With* method routes its candidate through it, and all " +
                                                          "seven engines declare it with the same signature. It reads the CANDIDATE's state rather than this instance's — which is what " +

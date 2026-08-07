@@ -14,11 +14,17 @@ retired, a category changed — which is not when the library or the adapter mov
 
 _No unreleased changes recorded yet._
 
-## [1.0.0-preview.1] - 2026-08-07
+## [1.0.0-preview.2] - 2026-08-07
 
 First published version: **`JustDummies.DiagnosticCatalog` had never reached nuget.org before this
 one.** It starts at the library's number because it describes the rule set the library's 1.0 ships, not
 because the two move together afterwards — they do not, for the reason stated above.
+
+**There is no `1.0.0-preview.1`, and there never was one on nuget.org.** A `catalog-v1.0.0-preview.1`
+tag was pushed and its release run failed at version resolution, before packing or pushing anything:
+`release.yml` carried an allowlist of trains that had never learned this one. The number is skipped
+rather than reused because the tag it belongs to still exists and points at a commit without the fix,
+and no protection was going to be relaxed to reclaim a preview number.
 
 ### Added
 
@@ -43,5 +49,5 @@ there is no `CatalogSource` attribute here: nothing upstream is being snapshotte
 a consumer's assembly at their compile time; removing one breaks their build with a message that names
 nothing they wrote. A rule retired from the product is carried forward as `[Obsolete]` instead.
 
-[Unreleased]: https://github.com/Reefact/just-dummies/compare/catalog-v1.0.0-preview.1...HEAD
-[1.0.0-preview.1]: https://github.com/Reefact/just-dummies/releases/tag/catalog-v1.0.0-preview.1
+[Unreleased]: https://github.com/Reefact/just-dummies/compare/catalog-v1.0.0-preview.2...HEAD
+[1.0.0-preview.2]: https://github.com/Reefact/just-dummies/releases/tag/catalog-v1.0.0-preview.2

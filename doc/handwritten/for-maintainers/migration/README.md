@@ -28,7 +28,7 @@ The source repository was never force-pushed and never committed to directly by 
 | `commit-map.txt` | old SHA → new SHA for all 1350 source commits (`0000…` = commit dropped) |
 | `ref-map.txt` | old ref → new ref |
 | `suboptimal-issues.txt` | `filter-repo`'s report of commit hashes referenced in messages that no longer exist |
-| `nuget-trusted-publishing.md` | the manual nuget.org setup the release workflow needs (not done yet) |
+| `nuget-trusted-publishing.md` | the manual nuget.org setup the release workflow needs, and what has been published from it |
 
 ## How the boundary was decided
 
@@ -80,8 +80,9 @@ extraction. Regenerate it from this repository's own SonarCloud project once tha
 
 ## Known follow-ups
 
-* **nuget.org trusted publishing is not configured** — see `nuget-trusted-publishing.md`. `release.yml` and
-  `release-dryrun.yml` fail at the OIDC exchange until it is.
+* ~~**nuget.org trusted publishing is not configured**~~ — done. The policy exists and `JustDummies` has
+  been published from it; see `nuget-trusted-publishing.md`, which also records what went out and the one
+  version that went out by mistake.
 * **Sonar, Scorecard and the Claude-driven workflows** (`adr-check`, `changelog`, `dependabot-autofix`) were
   ported as-is and need `SONAR_TOKEN` / `ANTHROPIC_API_KEY` plus a SonarCloud project keyed
   `reefact_just-dummies`. They are red until then, by explicit choice: porting them keeps the intent visible

@@ -66,6 +66,20 @@ the **SonarQube Cloud GitHub App**, not by this workflow's token, so no
     Dependabot branch gets the secrets back and that run analyses normally.
 
   Branches inside this repository (the normal contributor flow) run normally.
+- **Coverage exclusions cover what cannot be covered.** Three paths are passed
+  to `sonar.coverage.exclusions`: the whole `JustDummies.DiagnosticCatalog`
+  project, `DiagnosticIds.cs` and `DiagnosticCategories.cs`. Each holds nothing
+  but `const string`, and a `const` compiles to **no IL** — the value is
+  substituted at every use site and the declaration emits nothing. Sonar counts
+  lines to cover from the syntax tree rather than from the coverage report, so
+  such a file reads as 0% covered for ever and no test can move it. Measured
+  when it first bit: 116 of 245 new lines to cover sat in those three files at
+  0%, putting `new_coverage` at 52.7% against a threshold of 80 and turning the
+  gate red, while overall coverage was 88.5%. The alternative — a test that
+  touches a constant so a number moves — asserts nothing and is refused. The
+  risk this accepts is a file gaining a method later and the exclusion hiding
+  it; that is why two of the three are named file by file, and the third is a
+  project whose emptiness is recorded in ADR-0052 rather than assumed.
 - **`fetch-depth: 0` matters.** A shallow checkout would break Sonar's new-code
   detection and blame attribution.
 

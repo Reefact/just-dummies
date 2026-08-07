@@ -80,9 +80,11 @@ request and let `@reefact` judge rather than guessing.
 ## Tidying history before a pull request (acting agent)
 
 This governs the agent that *prepares* a branch for review, not the reviewer.
-This repository merges pull requests with a **merge commit**, so every commit a
-branch carries lands in `main`'s history — a messy branch is not squashed away
-on merge, it pollutes protected history for good. `CONTRIBUTING.md` already
+This repository lands pull requests by **rebase** ([ADR-0051](doc/handwritten/for-maintainers/adr/0051-land-pull-requests-by-rebase.md)),
+so every commit a branch carries is replayed onto `main` — a messy branch is not
+squashed away on merge, and no merge commit brackets it either: its commits
+arrive one by one on the line, indistinguishable from the rest. It pollutes
+protected history for good. `CONTRIBUTING.md` already
 fixes the endpoint (autosquash placeholders squashed before merge, a conforming
 header on every commit, one intention per commit); this section makes the agent
 *reach* it **on its own initiative**, the way it runs the ADR check without

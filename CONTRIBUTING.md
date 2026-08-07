@@ -179,9 +179,10 @@ enforces it. The branch name adds the one thing the commits omit — whose work 
 is — so `claude/…` and `dependabot/…` are not exceptions but the rule itself,
 read the same on a human or a machine.
 
-**A branch is disposable.** Its history is preserved by the merge commit that
-lands it; the ref itself is cut fresh and deleted on merge. Nothing of value
-lives only on a branch.
+**A branch is disposable.** Its commits are replayed onto `main` when it lands
+(ADR-0051); the ref itself is cut fresh and deleted on merge. Nothing of value
+lives only on a branch — not even the hashes the branch carried, which the
+rebase leaves behind with it.
 
 **A merged branch is spent.** Reviving it stacks new work on settled history and
 forks from a `main` that has moved. The reviewer pays the cost, reading the
@@ -559,11 +560,12 @@ own, and it is not the same object: the commit is the unit of the change, the
 draws between the commit and the issue. A pull request MAY therefore gather
 several commits, of several types.
 
-Its title is read in three places: the list of open pull requests, the
-`Merge pull request #NN` commit GitHub writes when the branch lands (this
-repository merges with a merge commit), and the draft of the release notes. It
-earns the same care as a commit header. Unlike a commit, it is **not** linted;
-it stands on the review, as the code does.
+Its title is read in two places: the list of open pull requests, and the draft of
+the release notes. It never becomes a commit — this repository lands pull
+requests by rebase (ADR-0051), so GitHub writes no `Merge pull request #NN` and
+the commits carry the whole record `main` keeps. It earns the same care as a
+commit header nonetheless. Unlike a commit, it is **not** linted; it stands on
+the review, as the code does.
 
 ### The rule
 

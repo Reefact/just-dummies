@@ -190,9 +190,10 @@ l’impose. Le nom de branche ajoute la seule chose que les commits omettent —
 appartient le travail — de sorte que `claude/…` et `dependabot/…` ne sont pas des
 exceptions mais la règle elle-même, lue de la même façon sur un humain ou sur une machine.
 
-**Une branche est jetable.** Son historique est préservé par le commit de merge qui
-l’intègre ; la référence elle-même est coupée à neuf et supprimée au merge. Rien de
-précieux ne vit uniquement sur une branche.
+**Une branche est jetable.** Ses commits sont rejoués sur `main` lorsqu’elle est intégrée
+(ADR-0051) ; la référence elle-même est coupée à neuf et supprimée au merge. Rien de
+précieux ne vit uniquement sur une branche — pas même les hashes qu’elle portait, que le
+rebase laisse derrière avec elle.
 
 **Une branche mergée est épuisée.** La raviver empile du nouveau travail sur un historique
 déjà réglé et bifurque depuis un `main` qui a bougé. Le relecteur en paie le prix, lisant
@@ -558,11 +559,12 @@ ce n’est pas le même objet : le commit est l’unité du changement, la **pul
 la demande** — la relation que la doctrine trace déjà entre le commit et l’issue. Une pull
 request PEUT donc rassembler plusieurs commits, de plusieurs types.
 
-Son titre se lit à trois endroits : la liste des pull requests ouvertes, le commit
-`Merge pull request #NN` que GitHub écrit lorsque la branche est intégrée (ce dépôt fusionne
-avec un commit de merge), et le brouillon des notes de version. Il mérite le même soin qu’un
-en-tête de commit. Contrairement à un commit, il n’est **pas** linté ; il tient sur la
-relecture, comme le code.
+Son titre se lit à deux endroits : la liste des pull requests ouvertes, et le brouillon des
+notes de version. Il ne devient jamais un commit — ce dépôt intègre les pull requests par
+rebase (ADR-0051), donc GitHub n’écrit aucun `Merge pull request #NN` et ce sont les commits
+qui portent tout ce que `main` conserve. Il mérite malgré tout le même soin qu’un en-tête de
+commit. Contrairement à un commit, il n’est **pas** linté ; il tient sur la relecture, comme
+le code.
 
 ### La règle
 

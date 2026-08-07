@@ -55,8 +55,14 @@ spots:
 - the tag trigger list: add `- '<prefix>*.*.*'` (e.g. `- 'docs-v*.*.*'`);
 - the `component` `workflow_dispatch` choice: add `- <id>`;
 - the version-resolution `case` on `REF_NAME`: add
-  `<prefix>*) COMPONENT="<id>"; VERSION="${REF_NAME#<prefix>}" ;;`, and add `<id>`
-  to the `lib|xunit|cli)` allowlist `case` just below it.
+  `<prefix>*) COMPONENT="<id>"; VERSION="${REF_NAME#<prefix>}" ;;`.
+
+There used to be a fourth: a `lib|xunit|cli)` allowlist validating the resolved component.
+It is gone — the dispatch input is now checked with `require_train` against `trains.sh`, so
+step 1 covers it. It was removed because it is the one this list failed to protect:
+`catalog` was added everywhere else and not there, and `catalog-v1.0.0-preview.1` died on it.
+The lesson is not "read the checklist more carefully"; it is that an edit a checklist has to
+remember belongs in `trains.sh` whenever it can go there.
 
 **4. [`tools/packaging/pack.sh`](../../../tools/packaging/pack.sh)** — add a `<id>)` branch
 selecting which projects that train packs. This is genuinely train-specific packing

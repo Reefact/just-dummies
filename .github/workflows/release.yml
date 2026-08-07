@@ -20,6 +20,7 @@ on:
         options:
           - lib
           - xunit
+          - catalog
           - cli
         required: true
       version:
@@ -129,6 +130,17 @@ jobs:
           if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
             COMPONENT="$INPUT_COMPONENT"
             VERSION="$INPUT_VERSION"
+            # Validated here rather than after the branch, because this is the only place a component name
+            # is READ rather than DERIVED: the tag branch below assigns it from a matched prefix, so it can
+            # only ever hold a value this workflow wrote.
+            #
+            # Against trains.sh rather than a list spelled out here. A hand-kept allowlist is what failed on
+            # catalog-v1.0.0-preview.1: the tag trigger, the prefix mapping and pack.sh all learned the
+            # catalog train, this list did not, and the release stopped at this step. The checklist in
+            # AddingAReleaseTrain.en.md did name the edit — which is the point. A list that has to be
+            # remembered is a list that eventually is not.
+            . tools/trains.sh
+            require_train "$COMPONENT" || exit 1
           else
             # REF_NAME is the train-prefixed tag (e.g. lib-v1.2.3 / cli-v1.2.3): pick the train and strip
             # its prefix. Anything else is not a release tag.
@@ -137,13 +149,9 @@ jobs:
               xunit-v*) COMPONENT="xunit"; VERSION="${REF_NAME#xunit-v}" ;;
               catalog-v*) COMPONENT="catalog"; VERSION="${REF_NAME#catalog-v}" ;;
               cli-v*)   COMPONENT="cli";   VERSION="${REF_NAME#cli-v}" ;;
-              *) echo "::error::Tag '$REF_NAME' is not a release tag; expected lib-v*.*.*, xunit-v*.*.* or cli-v*.*.*."; exit 1 ;;
+              *) echo "::error::Tag '$REF_NAME' is not a release tag; expected lib-v*.*.*, xunit-v*.*.*, catalog-v*.*.* or cli-v*.*.*."; exit 1 ;;
             esac
           fi
-          case "$COMPONENT" in
-            lib|xunit|cli) ;;
-            *) echo "::error::Invalid component '$COMPONENT'; expected 'lib', 'xunit' or 'cli'."; exit 1 ;;
-          esac
           # Build metadata (+...) is deliberately REJECTED even though SemVer allows it: NuGet strips it
           # from the package identity, so a tag like lib-v1.2.3+build5 packs as JustDummies.1.2.3.nupkg.
           # If 1.2.3 were already published, the push's --skip-duplicate would then turn this release into

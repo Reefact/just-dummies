@@ -60,8 +60,15 @@ endroits :
 - la liste des triggers de tag : ajoutez `- '<préfixe>*.*.*'` (p. ex. `- 'docs-v*.*.*'`) ;
 - le choix `component` du `workflow_dispatch` : ajoutez `- <id>` ;
 - le `case` de résolution de version sur `REF_NAME` : ajoutez
-  `<préfixe>*) COMPONENT="<id>"; VERSION="${REF_NAME#<préfixe>}" ;;`, et ajoutez
-  `<id>` à la liste blanche `lib|cli)` du `case` juste en dessous.
+  `<préfixe>*) COMPONENT="<id>"; VERSION="${REF_NAME#<préfixe>}" ;;`.
+
+Il y en avait un quatrième : une liste blanche `lib|xunit|cli)` validant le composant résolu.
+Elle a disparu — l'entrée du `workflow_dispatch` est désormais vérifiée par `require_train`
+contre `trains.sh`, donc l'étape 1 la couvre. Elle a été supprimée parce que c'est justement
+celle que cette checklist n'a pas protégée : `catalog` a été ajouté partout ailleurs et pas là,
+et `catalog-v1.0.0-preview.1` est mort dessus. La leçon n'est pas « lire la checklist plus
+attentivement » ; c'est qu'un édit dont une checklist doit se souvenir a sa place dans
+`trains.sh` dès que c'est possible.
 
 **4. [`tools/packaging/pack.sh`](../../../tools/packaging/pack.sh)** — ajoutez une branche
 `<id>)` sélectionnant quels projets ce train packe. C'est une logique de packaging

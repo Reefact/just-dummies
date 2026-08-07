@@ -48,8 +48,10 @@ else
   range="$end_ref"
 fi
 
-# One line per commit: "<short-hash><TAB><subject>". Merge commits are skipped — a PR merge commit
-# carries no Conventional Commit scope; the real work lives in the commits it brings in.
+# One line per commit: "<short-hash><TAB><subject>". Merge commits are skipped — one carries no
+# Conventional Commit scope, and the real work lives in the commits it brings in. Landing by rebase
+# (ADR-0051) produces none, but `main` still carries those of the pull requests that landed before
+# that decision, so the filter stays.
 commits="$(git log "$range" --no-merges --format='%h%x09%s')"
 
 # Keep a commit only when its Conventional Commit scope list intersects this train's scopes. Header

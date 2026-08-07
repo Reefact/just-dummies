@@ -2,8 +2,9 @@
 
 🌍 🇬🇧 English (this file) · 🇫🇷 [Français](0052-publish-the-jd-rules-as-a-first-party-catalogue.fr.md)
 
-**Status:** Proposed
+**Status:** Accepted
 **Proposed:** 2026-08-02
+**Accepted:** 2026-08-02
 **Decision Makers:** Reefact
 
 ## Context
@@ -128,6 +129,12 @@ neither is anything a suppression names.
   the rules it holds** (`JD`), on the DiagnosticCatalog family mark — which is that project's identity,
   not this product's. The package currently ships the JustDummies mark, which says whose product it is
   and not which rules it holds. Left open deliberately.
+  * 2026-08-02 — decided, and not the way this record framed it. All three packages wear ONE mark, a
+    crash-test dummy, with no per-package badge at all: a nuget.org listing renders the icon at 128 px,
+    where a badge is a few pixels nobody reads, and one mark repeated is what makes the three read as one
+    product. The foundation's badge convention answers a question its own repository has and this one does
+    not — there, every package is a catalogue and the badge is the only discriminator; here the package
+    name carries it. The icon is by Magnific, from Flaticon, credited in each package README.
 * Create the nuget.org trusted-publishing policy for the new package id before its first release.
 
 ## References

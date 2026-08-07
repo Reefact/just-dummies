@@ -69,3 +69,8 @@ ready-made catalogues for SonarAnalyzer, the .NET `CA` rules, StyleCop, xUnit an
 * [The analyzer rules, one page each](https://github.com/Reefact/just-dummies/tree/main/doc/handwritten/for-users/analyzers)
 * [Changelog](https://github.com/Reefact/just-dummies/blob/main/JustDummies.DiagnosticCatalog/CHANGELOG.md)
 * [License](https://github.com/Reefact/just-dummies/blob/main/LICENSE) — Apache-2.0
+
+## Credits
+
+The package icon is a crash-test dummy by **Magnific**, from
+[Flaticon](https://www.flaticon.com/fr/icones-gratuites/crash).

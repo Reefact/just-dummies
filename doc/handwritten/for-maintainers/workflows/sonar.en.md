@@ -16,8 +16,8 @@ static-analysis-plus-coverage view of the codebase, hosted off GitHub.
 ## When it runs
 
 - On every **push to `main`**.
-- On every **pull request targeting `main`** — **except PRs from forks** (see
-  below).
+- On every **pull request targeting `main`** — **except PRs from forks and runs
+  triggered by Dependabot** (see below).
 - On demand via **`workflow_dispatch`**.
 
 ## How it runs
@@ -49,11 +49,23 @@ the **SonarQube Cloud GitHub App**, not by this workflow's token, so no
   promoted to an error would fail the build before results are reported. The
   ratchet stays enforced by [`ci`](../../../../.github/workflows/ci.yml) on both OS legs — that is the gate,
   this analysis leg is not.
-- **The fork guard is required, not optional.** The
-  `if: … head.repo.full_name == github.repository` condition skips the analysis
-  on PRs from forks, because a fork PR cannot read `SONAR_TOKEN` and would fail
-  on a missing secret rather than a real problem. Branches inside this repository
-  (the normal contributor flow) run normally.
+- **The guard on unreadable secrets is required, not optional.** The job's `if`
+  skips the analysis for the two runs that cannot read `SONAR_TOKEN`, because
+  each would fail on a missing secret rather than on a real problem:
+  - **PRs from forks** — `… head.repo.full_name == github.repository`. A fork PR
+    never receives this repository's secrets.
+  - **Runs triggered by Dependabot** — `github.actor != 'dependabot[bot]'`.
+    GitHub treats them like fork runs: they read the separate **Dependabot
+    secrets** store, so `secrets.SONAR_TOKEN` arrives as the empty string and
+    `dotnet-sonarscanner begin` stops on *"The format of the analysis property
+    sonar.token= is invalid"*. Mirroring the token into the Dependabot store is
+    the other available fix and is **declined** — it would hand the analysis
+    token to the least-trusted runs here in order to analyse a version bump. The
+    condition keys on `github.actor` rather than the PR's author because the
+    withheld secret follows whoever *triggered* the run: a human pushing to a
+    Dependabot branch gets the secrets back and that run analyses normally.
+
+  Branches inside this repository (the normal contributor flow) run normally.
 - **`fetch-depth: 0` matters.** A shallow checkout would break Sonar's new-code
   detection and blame attribution.
 

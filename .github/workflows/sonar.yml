@@ -30,9 +30,23 @@ jobs:
     runs-on: ubuntu-latest
     # Scanner + build + test + coverage is ~3 min; cap a stuck analysis well above that.
     timeout-minutes: 20
-    # PRs opened from a fork cannot read SONAR_TOKEN; skip the analysis there rather
-    # than fail. Branches in this repository (the normal case) run normally.
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    # A run that cannot read SONAR_TOKEN skips the analysis rather than fail on the empty
+    # string the secret becomes. Two runs cannot read it:
+    #   - a pull request opened from a fork, which never receives this repository's secrets;
+    #   - a run triggered by Dependabot, which GitHub treats the same way: it reads the
+    #     separate Dependabot secrets store, so `secrets.SONAR_TOKEN` is empty and
+    #     `dotnet-sonarscanner begin` fails with "The format of the analysis property
+    #     sonar.token= is invalid" — a missing secret reported as a red analysis.
+    # Mirroring the token into the Dependabot store is the other way to fix this, and is
+    # declined: it would hand the analysis token to the least-trusted runs in this
+    # repository to analyse a version bump.
+    # Keyed on `github.actor`, not on the pull request's author, because the withheld
+    # secret follows whoever TRIGGERED the run — a human pushing to a Dependabot branch
+    # gets the secrets back, and that run analyses normally.
+    if: >-
+      github.actor != 'dependabot[bot]' &&
+      (github.event_name != 'pull_request' ||
+       github.event.pull_request.head.repo.full_name == github.repository)
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7

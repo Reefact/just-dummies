@@ -16,8 +16,8 @@ C'est la vue analyse-statique-plus-couverture du code, hébergée hors de GitHub
 ## Quand il s'exécute
 
 - À chaque **push sur `main`**.
-- À chaque **pull request visant `main`** — **sauf les PR issues de forks** (voir
-  plus bas).
+- À chaque **pull request visant `main`** — **sauf les PR issues de forks et les
+  exécutions déclenchées par Dependabot** (voir plus bas).
 - À la demande via **`workflow_dispatch`**.
 
 ## Comment il s'exécute
@@ -52,11 +52,27 @@ s'authentifie avec le secret `SONAR_TOKEN`.
   Sonar promu en erreur ferait échouer le build avant que les résultats ne soient
   remontés. Le cliquet reste imposé par [`ci`](../../../../.github/workflows/ci.yml) sur les deux branches OS
   — c'est ça le barrage, pas cette branche d'analyse.
-- **Le garde-fou fork est nécessaire, pas optionnel.** La condition
-  `if: … head.repo.full_name == github.repository` saute l'analyse sur les PR de
-  forks, parce qu'une PR de fork ne peut pas lire `SONAR_TOKEN` et échouerait sur
-  un secret absent plutôt que sur un vrai problème. Les branches internes au dépôt
-  (le flux contributeur normal) tournent normalement.
+- **Le garde-fou sur les secrets illisibles est nécessaire, pas optionnel.** Le
+  `if` du job saute l'analyse pour les deux exécutions qui ne peuvent pas lire
+  `SONAR_TOKEN`, parce que chacune échouerait sur un secret absent plutôt que sur
+  un vrai problème :
+  - **Les PR issues de forks** — `… head.repo.full_name == github.repository`.
+    Une PR de fork ne reçoit jamais les secrets de ce dépôt.
+  - **Les exécutions déclenchées par Dependabot** —
+    `github.actor != 'dependabot[bot]'`. GitHub les traite comme des exécutions
+    de fork : elles lisent le magasin distinct des **secrets Dependabot**, donc
+    `secrets.SONAR_TOKEN` arrive comme chaîne vide et `dotnet-sonarscanner begin`
+    s'arrête sur *« The format of the analysis property sonar.token= is
+    invalid »*. Recopier le token dans le magasin Dependabot est l'autre
+    correctif possible, et il est **écarté** : il confierait le token d'analyse
+    aux exécutions les moins fiables du dépôt pour analyser une montée de
+    version. La condition s'appuie sur `github.actor` plutôt que sur l'auteur de
+    la PR parce que le secret retenu suit celui qui a *déclenché* l'exécution :
+    un humain qui pousse sur une branche Dependabot retrouve les secrets, et
+    cette exécution analyse normalement.
+
+  Les branches internes au dépôt (le flux contributeur normal) tournent
+  normalement.
 - **`fetch-depth: 0` compte.** Un checkout superficiel casserait la détection de
   code neuf et l'attribution par blame de Sonar.
 

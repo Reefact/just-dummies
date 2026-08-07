@@ -137,5 +137,5 @@ and it was decided on 2026-08-01 — the index carries the order, the numbering 
 | [ADR-0048](0048-publish-only-from-a-commit-that-is-on-main.md) | Publish only from a commit that is on main | Accepted | recorded here |
 | [ADR-0049](0049-replay-a-seed-across-patch-and-minor-versions.md) | Replay a seed across patch and minor versions | Accepted | recorded here |
 | [ADR-0050](0050-name-a-suppressed-rule-through-a-catalogue-constant.md) | Name a suppressed rule through a catalogue constant, not a string literal | Accepted | recorded here |
-| [ADR-0051](0051-land-pull-requests-by-rebase.md) | Land pull requests by rebase | Proposed | recorded here |
+| [ADR-0051](0051-land-pull-requests-by-rebase.md) | Land pull requests by rebase | Accepted | recorded here |
 | [ADR-0052](0052-publish-the-jd-rules-as-a-first-party-catalogue.md) | Publish the JD rules as a first-party catalogue, and read the descriptors from it | Accepted | recorded here |

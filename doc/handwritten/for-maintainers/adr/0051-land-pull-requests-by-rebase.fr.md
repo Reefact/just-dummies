@@ -2,8 +2,9 @@
 
 🌍 🇬🇧 [English](0051-land-pull-requests-by-rebase.md) · 🇫🇷 Français (ce fichier)
 
-**Status:** Proposed
+**Status:** Accepted
 **Proposed:** 2026-08-07
+**Accepted:** 2026-08-07
 **Decision Makers:** Reefact
 
 ## Contexte

@@ -1,0 +1,147 @@
+#nullable enable
+JustDummies.Diagnostics.JustDummiesCategory
+JustDummies.Diagnostics.JustDummiesRule
+JustDummies.Diagnostics.JustDummiesRule.JD001
+JustDummies.Diagnostics.JustDummiesRule.JD002
+JustDummies.Diagnostics.JustDummiesRule.JD003
+JustDummies.Diagnostics.JustDummiesRule.JD004
+JustDummies.Diagnostics.JustDummiesRule.JD005
+JustDummies.Diagnostics.JustDummiesRule.JD006
+JustDummies.Diagnostics.JustDummiesRule.JD007
+JustDummies.Diagnostics.JustDummiesRule.JD008
+JustDummies.Diagnostics.JustDummiesRule.JD009
+JustDummies.Diagnostics.JustDummiesRule.JD010
+JustDummies.Diagnostics.JustDummiesRule.JD011
+JustDummies.Diagnostics.JustDummiesRule.JD012
+JustDummies.Diagnostics.JustDummiesRule.JD013
+JustDummies.Diagnostics.JustDummiesRule.JD014
+JustDummies.Diagnostics.JustDummiesRule.JD015
+JustDummies.Diagnostics.JustDummiesRule.JD016
+JustDummies.Diagnostics.JustDummiesRule.JD017
+JustDummies.Diagnostics.JustDummiesRule.JD018
+JustDummies.Diagnostics.JustDummiesRule.JD019
+JustDummies.Diagnostics.JustDummiesRule.JD020
+JustDummies.Diagnostics.JustDummiesRule.JD021
+JustDummies.Diagnostics.JustDummiesRule.JD022
+JustDummies.Diagnostics.JustDummiesRule.JD023
+JustDummies.Diagnostics.JustDummiesRule.JD024
+JustDummies.Diagnostics.JustDummiesRule.JD025
+JustDummies.Diagnostics.JustDummiesRule.JD026
+JustDummies.Diagnostics.JustDummiesRule.JD027
+JustDummies.Diagnostics.JustDummiesRule.JD028
+const JustDummies.Diagnostics.JustDummiesCategory.Composition = "JustDummies.Composition" -> string!
+const JustDummies.Diagnostics.JustDummiesCategory.Constraints = "JustDummies.Constraints" -> string!
+const JustDummies.Diagnostics.JustDummiesCategory.Reproducibility = "JustDummies.Reproducibility" -> string!
+const JustDummies.Diagnostics.JustDummiesCategory.Usage = "JustDummies.Usage" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD001.Category = "JustDummies.Reproducibility" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD001.HelpLinkUri = "https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/analyzers/JD001.en.md" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD001.Id = "JD001" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD001.Title = "An asynchronous body is passed to Any.Reproducibly" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD002.Category = "JustDummies.Reproducibility" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD002.HelpLinkUri = "https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/analyzers/JD002.en.md" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD002.Id = "JD002" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD002.Title = "The task returned by Any.ReproduciblyAsync is discarded" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD003.Category = "JustDummies.Reproducibility" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD003.HelpLinkUri = "https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/analyzers/JD003.en.md" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD003.Id = "JD003" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD003.Title = "An asynchronous body reaches Any.Reproducibly without being awaited" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD004.Category = "JustDummies.Reproducibility" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD004.HelpLinkUri = "https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/analyzers/JD004.en.md" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD004.Id = "JD004" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD004.Title = "The result of a seeding call is discarded" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD005.Category = "JustDummies.Usage" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD005.HelpLinkUri = "https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/analyzers/JD005.en.md" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD005.Id = "JD005" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD005.Title = "A generator is rendered as text instead of the value it would draw" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD006.Category = "JustDummies.Usage" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD006.HelpLinkUri = "https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/analyzers/JD006.en.md" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD006.Id = "JD006" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD006.Title = "The generator returned by a constraint is discarded" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD007.Category = "JustDummies.Reproducibility" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD007.HelpLinkUri = "https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/analyzers/JD007.en.md" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD007.Id = "JD007" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD007.Title = "An arbitrary value is drawn before [Reproducible] pins the seed" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD008.Category = "JustDummies.Reproducibility" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD008.HelpLinkUri = "https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/analyzers/JD008.en.md" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD008.Id = "JD008" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD008.Title = "A theory's data provider draws an arbitrary value" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD009.Category = "JustDummies.Reproducibility" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD009.HelpLinkUri = "https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/analyzers/JD009.en.md" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD009.Id = "JD009" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD009.Title = "An arbitrary value is drawn in a static initializer" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD010.Category = "JustDummies.Reproducibility" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD010.HelpLinkUri = "https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/analyzers/JD010.en.md" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD010.Id = "JD010" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD010.Title = "[Reproducible] is applied to a method that is not a test" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD011.Category = "JustDummies.Usage" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD011.HelpLinkUri = "https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/analyzers/JD011.en.md" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD011.Id = "JD011" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD011.Title = "A generator reaches a position that expected its value" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD012.Category = "JustDummies.Usage" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD012.HelpLinkUri = "https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/analyzers/JD012.en.md" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD012.Id = "JD012" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD012.Title = "A choice pool is built from generators rather than values" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD013.Category = "JustDummies.Usage" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD013.HelpLinkUri = "https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/analyzers/JD013.en.md" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD013.Id = "JD013" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD013.Title = "A held collection is passed to Any.OneOf, making a pool of one" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD014.Category = "JustDummies.Constraints" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD014.HelpLinkUri = "https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/analyzers/JD014.en.md" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD014.Id = "JD014" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD014.Title = "A constant argument is one the generator rejects" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD015.Category = "JustDummies.Constraints" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD015.HelpLinkUri = "https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/analyzers/JD015.en.md" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD015.Id = "JD015" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD015.Title = "The declared string constraints admit no value" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD016.Category = "JustDummies.Constraints" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD016.HelpLinkUri = "https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/analyzers/JD016.en.md" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD016.Id = "JD016" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD016.Title = "The declared collection constraints admit no value" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD017.Category = "JustDummies.Constraints" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD017.HelpLinkUri = "https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/analyzers/JD017.en.md" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD017.Id = "JD017" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD017.Title = "An enum constraint steps outside the generator's universe" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD018.Category = "JustDummies.Reproducibility" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD018.HelpLinkUri = "https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/analyzers/JD018.en.md" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD018.Id = "JD018" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD018.Title = "A reproducibility scope is nested inside another" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD019.Category = "JustDummies.Reproducibility" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD019.HelpLinkUri = "https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/analyzers/JD019.en.md" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD019.Id = "JD019" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD019.Title = "A replay seed is pinned in committed code" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD020.Category = "JustDummies.Reproducibility" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD020.HelpLinkUri = "https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/analyzers/JD020.en.md" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD020.Id = "JD020" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD020.Title = "An AnyContext is shared through a static field" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD021.Category = "JustDummies.Reproducibility" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD021.HelpLinkUri = "https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/analyzers/JD021.en.md" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD021.Id = "JD021" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD021.Title = "Any.UseSeed is given a blank replay snippet" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD022.Category = "JustDummies.Reproducibility" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD022.HelpLinkUri = "https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/analyzers/JD022.en.md" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD022.Id = "JD022" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD022.Title = "A parallel work item draws without its own seed scope" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD023.Category = "JustDummies.Constraints" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD023.HelpLinkUri = "https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/analyzers/JD023.en.md" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD023.Id = "JD023" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD023.Title = "The declared scalar constraints admit no value" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD024.Category = "JustDummies.Constraints" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD024.HelpLinkUri = "https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/analyzers/JD024.en.md" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD024.Id = "JD024" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD024.Title = "A constraint narrows nothing" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD025.Category = "JustDummies.Constraints" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD025.HelpLinkUri = "https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/analyzers/JD025.en.md" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD025.Id = "JD025" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD025.Title = "The same value is listed twice in a pool" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD026.Category = "JustDummies.Constraints" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD026.HelpLinkUri = "https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/analyzers/JD026.en.md" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD026.Id = "JD026" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD026.Title = "The declared relative URI is empty" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD027.Category = "JustDummies.Composition" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD027.HelpLinkUri = "https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/analyzers/JD027.en.md" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD027.Id = "JD027" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD027.Title = "A Combine operand never reaches the composed value" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD028.Category = "JustDummies.Composition" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD028.HelpLinkUri = "https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/analyzers/JD028.en.md" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD028.Id = "JD028" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD028.Title = "Distinctness is declared over an element type that has no value equality" -> string!

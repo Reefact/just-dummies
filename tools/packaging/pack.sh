@@ -15,14 +15,15 @@
 #             dry run passes a throwaway like 0.0.0-dryrun).
 #   <scope>   selects which release train to pack, since the trains are versioned
 #             and released independently (see tools/trains.sh):
-#               lib   -> JustDummies (the library; its analyzers ride inside it)
-#               xunit -> JustDummies.Xunit (the xUnit v3 adapter)
-#               cli   -> dum (the scaffolder; specified, not built yet)
+#               lib     -> JustDummies (the library; its analyzers ride inside it)
+#               xunit   -> JustDummies.Xunit (the xUnit v3 adapter)
+#               catalog -> JustDummies.DiagnosticCatalog (the JD rules as constants)
+#               cli     -> dum (the scaffolder; specified, not built yet)
 
 set -eu
 
 if [ "$#" -lt 2 ] || [ "$#" -gt 3 ] || [ -z "$1" ] || [ -z "$2" ]; then
-  echo "usage: tools/packaging/pack.sh <version> <scope:lib|xunit|cli> [--dry-run]" >&2
+  echo "usage: tools/packaging/pack.sh <version> <scope:lib|xunit|cli|catalog> [--dry-run]" >&2
   exit 2
 fi
 version="$1"
@@ -36,7 +37,7 @@ if [ "$#" -eq 3 ]; then
   if [ "$3" = "--dry-run" ]; then
     dry_run="yes"
   else
-    echo "usage: tools/packaging/pack.sh <version> <scope:lib|xunit|cli> [--dry-run]" >&2
+    echo "usage: tools/packaging/pack.sh <version> <scope:lib|xunit|cli|catalog> [--dry-run]" >&2
     exit 2
   fi
 fi
@@ -58,6 +59,14 @@ case "$scope" in
     # intra-product dependency guard below exists.
     projects='JustDummies.Xunit/JustDummies.Xunit.csproj'
     ;;
+  catalog)
+    # JustDummies.DiagnosticCatalog, the JD rules as compile-checked constants (ADR-0052). Its own train because
+    # it versions on the RULE SET -- a rule added, retired or recategorised -- which is not when the library or
+    # the adapter moves. Unlike every other package here it declares a real dependency, on the DiagnosticCatalog
+    # foundation: a package that PUBLISHES a catalogue must let the foundation reach its consumers, since it
+    # carries both the markers the declarations wear and the analyzers that check a consumer's suppressions.
+    projects='JustDummies.DiagnosticCatalog/JustDummies.DiagnosticCatalog.csproj'
+    ;;
   cli)
     # The `dum` scaffolder. Specified in doc/handwritten/for-maintainers/specifications/justdummies-tool.md
     # ("Status: specification, ready to implement. Nothing is built yet"), so there is no project to pack.
@@ -68,7 +77,7 @@ case "$scope" in
     exit 2
     ;;
   *)
-    echo "error: unknown scope '$scope' (expected 'lib', 'xunit' or 'cli')" >&2
+    echo "error: unknown scope '$scope' (expected 'lib', 'xunit', 'cli' or 'catalog')" >&2
     exit 2
     ;;
 esac

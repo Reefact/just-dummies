@@ -28,6 +28,19 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- The catalogue this analyzer's descriptors read their id, category, title and help link FROM (ADR-0052).
+         That is the loop only a first-party catalogue can close: the rule this analyzer REPORTS and the rule a
+         consumer SILENCES become the same value by construction, rather than two transcriptions of one string
+         that nothing compares.
+
+         PrivateAssets="all" because this project is never packed on its own — its DLL is carried inside
+         JustDummies.nupkg by _AddAnalyzerToPackage — so nothing here may reach that package's dependency graph
+         (ADR-0003). It costs nothing at analyzer load time either: the members are const, so the compiler
+         substitutes their values and the built analyzer carries no reference left to resolve. -->
+    <ProjectReference Include="..\JustDummies.DiagnosticCatalog\JustDummies.DiagnosticCatalog.csproj" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
     <!-- Release tracking (RS2008): declared rules live here, verified at build time. -->
     <AdditionalFiles Include="AnalyzerReleases.Shipped.md" />
     <AdditionalFiles Include="AnalyzerReleases.Unshipped.md" />

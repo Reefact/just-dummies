@@ -2,8 +2,9 @@
 
 🌍 🇬🇧 [English](0052-publish-the-jd-rules-as-a-first-party-catalogue.md) · 🇫🇷 Français (ce fichier)
 
-**Status:** Proposed
+**Status:** Accepted
 **Proposed:** 2026-08-02
+**Accepted:** 2026-08-02
 **Decision Makers:** Reefact
 
 ## Contexte
@@ -137,6 +138,13 @@ l'analyseur, et ni l'un ni l'autre n'est ce qu'une suppression nomme.
   qui est l'identité de ce projet-là, pas celle de ce produit. Le package porte pour l'instant la marque
   JustDummies, qui dit de quel produit il relève et non quelles règles il contient. Laissé ouvert
   délibérément.
+  * 2026-08-02 — tranché, et pas dans les termes de cet enregistrement. Les trois packages portent UNE
+    seule marque, un mannequin de crash-test, sans aucun badge par package : une liste nuget.org rend
+    l'icône à 128 px, taille à laquelle un badge fait quelques pixels que personne ne lit, et c'est la
+    répétition d'une marque unique qui fait lire les trois comme un seul produit. La convention de badge de
+    la fondation répond à une question que son dépôt se pose et que celui-ci ne se pose pas — là-bas tous
+    les packages sont des catalogues et le badge est le seul discriminant ; ici le nom du package le porte.
+    L'icône est de Magnific, via Flaticon, créditée dans le README de chaque package.
 * Créer la politique de trusted publishing nuget.org pour le nouvel identifiant de package avant sa
   première release.
 

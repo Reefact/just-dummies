@@ -70,3 +70,8 @@ replays a particular seed.
 
 - [Repository](https://github.com/Reefact/just-dummies)
 - [JustDummies](https://www.nuget.org/packages/JustDummies)
+
+## Credits
+
+The package icon is a crash-test dummy by **Magnific**, from
+[Flaticon](https://www.flaticon.com/fr/icones-gratuites/crash).

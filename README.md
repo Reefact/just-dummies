@@ -45,15 +45,21 @@ analyzer enforces this).
 | --- | --- |
 | `JustDummies` | the library, with its 28 analyzers bundled in (`analyzers/dotnet/cs`) |
 | `JustDummies.Xunit` | the xUnit v3 adapter: `[Reproducible]` on a test, class or assembly |
+| `JustDummies.DiagnosticCatalog` | the `JD001`–`JD028` rules as constants a `[SuppressMessage]` can name |
 
-Both target `netstandard2.0`; `JustDummies` additionally carries a `net8.0` asset with the modern generators
-(`DateOnly`, `TimeOnly`, `Int128`, `UInt128`, `Half`) that do not exist downlevel. The supported .NET
-Framework floor is **4.7.2**, and CI runs the suites on it ([ADR-0007](doc/handwritten/for-maintainers/adr/0007-floor-the-library-on-net-framework-4-7-2.md)).
+All three target `netstandard2.0`; `JustDummies` additionally carries a `net8.0` asset with the modern
+generators (`DateOnly`, `TimeOnly`, `Int128`, `UInt128`, `Half`) that do not exist downlevel. The supported
+.NET Framework floor is **4.7.2**, and CI runs the suites on it ([ADR-0007](doc/handwritten/for-maintainers/adr/0007-floor-the-library-on-net-framework-4-7-2.md)).
 
-> **Preview.** [`JustDummies 0.1.0-preview.1`](https://www.nuget.org/packages/JustDummies/0.1.0-preview.1)
-> is on nuget.org; `JustDummies.Xunit` is not published yet. The public surface is declared in
-> `PublicAPI.Unshipped.txt`, not `PublicAPI.Shipped.txt` — nothing is promised before 1.0, and that includes
-> the values a given seed draws. See
+> **Preview.** The public surface is declared in `PublicAPI.Unshipped.txt`, not `PublicAPI.Shipped.txt`:
+> nothing about it is promised yet, and a stable release is what will freeze it. The seed is no longer in
+> that bucket — from `1.0.0-preview.1` a given seed draws the same values across every patch and minor of a
+> major version, and a golden master enforces it
+> ([ADR-0049](doc/handwritten/for-maintainers/adr/0049-replay-a-seed-across-patch-and-minor-versions.md)).
+>
+> Which versions are on nuget.org is not repeated here, because a copy of that goes stale the day after a
+> release nobody thought to document: read
+> [the package listing](https://www.nuget.org/packages/JustDummies) instead. See
 > [the trusted-publishing setup](doc/handwritten/for-maintainers/workflows/nuget-trusted-publishing.en.md) for
 > how a release is cut.
 

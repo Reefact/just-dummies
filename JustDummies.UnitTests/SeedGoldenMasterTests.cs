@@ -226,13 +226,13 @@ public sealed class SeedGoldenMasterTests {
         Check.That(File.Exists(path)).As($"the reference file '{path}' next to the test assembly").IsTrue();
 
         return File.ReadAllLines(path)
-                   .Where(line => line.Length > 0 && !line.StartsWith("#", StringComparison.Ordinal))
+                   .Where(line => line.Length > 0 && line[0] != '#')
                    .ToArray();
     }
 
     /// <summary>Draws every case, each in its own fresh seed scope, and renders the run as reference lines.</summary>
     private static string[] DrawAll() {
-        List<string> lines = new();
+        List<string> lines = [];
         foreach ((string Name, Func<string> Draw) item in Cases()) {
             using (Any.UseSeed(GoldenSeed)) {
                 string value = item.Draw();
@@ -268,7 +268,7 @@ public sealed class SeedGoldenMasterTests {
         // Compared key by key rather than as two blocks: a whole-file equality would report "the file changed" and
         // leave the reader to diff it by eye, when the useful fact is WHICH factory moved and how.
         Dictionary<string, string> expectedByKey = expected.ToDictionary(Key, line => line, StringComparer.Ordinal);
-        List<string>               differences   = new();
+        List<string>               differences   = [];
 
         foreach (string line in actual) {
             string key = Key(line);

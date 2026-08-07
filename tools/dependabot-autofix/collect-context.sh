@@ -70,8 +70,24 @@ printf '</failing_checks>\n\n'
 printf '<failure_logs>\n'
 : > .da-logs.txt
 # Filter by head_sha through the REST API (a stable filter, unlike `gh run list`).
+#
+# Reduce to the LATEST run per workflow before filtering on failure. Unlike the
+# check-run endpoint above — which answers `filter=latest` by default and reports one
+# entry per check name — this one returns EVERY run ever created for the commit. A
+# workflow that failed, was re-run, and then succeeded is still in the list under its
+# old conclusion, so filtering on failure alone resurrects it: the triage was handed a
+# superseded failure, described it faithfully, and reported a check as broken that the
+# same commit had since passed. The two blocks disagreed and the model believed the
+# logs.
+# `run_number` increases with every run of a workflow, so the highest one is the most
+# recent. The key carries the event too: today every push trigger here is scoped to
+# `main`, so a branch commit only ever carries `pull_request` runs and the workflow id
+# alone would do — but that is an assumption about other files, and a `push` run and a
+# `pull_request` run of the same workflow are each current in their own lane.
 run_ids="$(gh api "repos/${repo}/actions/runs?head_sha=${sha}&per_page=100" \
-  --jq '.workflow_runs[] | select(.conclusion == "failure" or .conclusion == "timed_out" or .conclusion == "startup_failure") | .id' \
+  --jq '.workflow_runs
+        | group_by([.workflow_id, .event]) | map(max_by(.run_number))
+        | .[] | select(.conclusion == "failure" or .conclusion == "timed_out" or .conclusion == "startup_failure") | .id' \
   2>/dev/null || true)"
 if [ -n "$run_ids" ]; then
   for id in $run_ids; do

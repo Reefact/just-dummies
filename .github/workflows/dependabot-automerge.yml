@@ -101,7 +101,11 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_URL: ${{ github.event.pull_request.html_url }}
-        run: gh pr merge --auto --merge "$PR_URL"
+        # `--rebase` because this repository lands pull requests by rebase and allows no other
+        # method (ADR-0051); asking for a merge commit here fails the job outright rather than
+        # falling back. A Dependabot pull request is a single conventional commit, so the rebase
+        # replays it onto `main` exactly as written.
+        run: gh pr merge --auto --rebase "$PR_URL"
 
       - name: Withdraw auto-merge from a foreign head
         # The step that closes the gap: auto-merge armed on Dependabot's own commit stays

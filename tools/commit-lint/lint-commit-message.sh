@@ -119,7 +119,7 @@ else
     fi
 
     if printf '%s' "$subject" | grep -Eq '^[a-z]+\([^)]*, '; then
-      err "scopes are comma-separated with no space: '(cli,gendoc)', not '(cli, gendoc)'"
+      err "scopes are comma-separated with no space: '(analyzers,core)', not '(analyzers, core)'"
     fi
 
     if printf '%s' "$subject" | grep -Eq '^[a-zA-Z]+\('; then

@@ -376,7 +376,7 @@ internal sealed class RegexParser {
         ValidateGroupName(name, position);
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Minor Code Smell", "S3267:Loops should be simplified with LINQ expressions",
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S3267.Category, SonarRule.S3267.Id,
                                                      Justification =
                                                          "The loop exists to name the FIRST offending element in the exception it throws. A Where clause discards which element failed, so " +
                                                          "the message would have to re-find it, turning one pass into two and one statement into three.")]
@@ -402,7 +402,7 @@ internal sealed class RegexParser {
         }
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Major Code Smell", "S125:Sections of code should not be commented out",
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S125.Category, SonarRule.S125.Id,
                                                      Justification =
                                                          "The flagged lines are prose, not disabled code: the heuristic reads an equation, a bracketed range or a semicolon inside an " +
                                                          "explanatory sentence as a statement. These comments carry the reasoning this codebase asks every comment to carry, so the " +
@@ -584,12 +584,12 @@ internal sealed class RegexParser {
         return new RegexCharacters(RegexAlphabet.WithBothCases(character).Distinct().ToArray());
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Major Code Smell", "S3928:Parameter names used into ArgumentException constructors should match an existing one",
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S3928.Category, SonarRule.S3928.Id,
                                                      Justification =
                                                          "pattern is the public parameter the consumer passed to Any.Pattern(...); this private factory only assembles the exception the " +
                                                          "parser throws on its behalf. Its own reason parameter names the diagnosis, not the argument at fault, so pointing the exception " +
                                                          "at it would send the caller to the wrong place.")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2208:Instantiate argument exceptions correctly",
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(NetAnalyzersRule.CA2208.Category, NetAnalyzersRule.CA2208.Id,
                                                      Justification =
                                                          "Same reason as the S3928 suppression above: pattern is the public parameter the consumer passed to Any.Pattern(...), " +
                                                          "which is the argument they must fix. This private factory only assembles the exception on the parser's behalf.")]

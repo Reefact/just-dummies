@@ -314,7 +314,7 @@ public sealed class CompositionTests {
 
     #region Nested types
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Major Code Smell", "S3877:Exceptions should not be thrown from unexpected methods",
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S3877.Category, SonarRule.S3877.Id,
                                                      Justification =
                                                          "Throwing from ToString() IS the fixture. The test proves diagnostics survive a domain object whose rendering " +
                                                          "explodes, and that a successful draw never renders one — neither of which can be shown without a type that " +

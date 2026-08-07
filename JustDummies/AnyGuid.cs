@@ -172,14 +172,14 @@ public sealed class AnyGuid : IAny<Guid>, IHasRandomSource, ICardinalityHint<Gui
         return Validated(new AnyGuid(_source, _pinned, _pinnedConstraint, _allowed, _allowedConstraint, excluded), applying);
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1822:Mark members as static",
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(NetAnalyzersRule.CA1822.Category, NetAnalyzersRule.CA1822.Id,
                                                      Justification =
                                                          "Validated is the uniform validation hook of the fluent builders: every With* method routes its candidate through it, and all " +
                                                          "seven engines declare it with the same signature. It reads the CANDIDATE's state rather than this instance's — which is what " +
                                                          "the rule notices — but that is a builder validating its own successor, not an oversight. Making it static across seven types " +
                                                          "would break a family resemblance the reader relies on, for no measurable gain on a path that runs once per declared " +
                                                          "constraint.")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Minor Code Smell", "S2325:Methods and properties that do not access instance data should be static",
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S2325.Category, SonarRule.S2325.Id,
                                                      Justification =
                                                          "Validated is the uniform validation hook of the fluent builders: every With* method routes its candidate through it, and all " +
                                                          "seven engines declare it with the same signature. It reads the CANDIDATE's state rather than this instance's — which is what " +

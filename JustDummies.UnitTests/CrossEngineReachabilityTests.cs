@@ -30,7 +30,7 @@ namespace JustDummies.UnitTests;
 ///         unreachable) fails every time. No randomness leaks in, so the suite is a stable CI guard, never a flaky one.
 ///     </para>
 /// </remarks>
-[SuppressMessage("Blocker Code Smell", "S2699:Tests should include assertions",
+[SuppressMessage(SonarRule.S2699.Category, SonarRule.S2699.Id,
                  Justification =
                      "Each theory is one line of dispatch to the per-type adapter; the NFluent Check.That and " +
                      "Assert.Throws calls live in the IntervalCase<T> overrides. The rule does follow assertions into " +

@@ -98,7 +98,7 @@ internal sealed class StringSpec {
 
     #endregion
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Major Code Smell", "S107:Methods should not have too many parameters",
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S107.Category, SonarRule.S107.Id,
                                                      Justification =
                                                          "This private constructor carries the engine's whole immutable state: the 'constrain once, draw many' design rebuilds the spec on " +
                                                          "every With* call, so every field has to be threaded through it. A parameter object would only rename the same list, and the " +
@@ -293,7 +293,7 @@ internal sealed class StringSpec {
     }
 
     /// <summary>Adds values the generated string must avoid; may be declared several times, the exclusions accumulate.</summary>
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Minor Code Smell", "S3267:Loops should be simplified with LINQ expressions",
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S3267.Category, SonarRule.S3267.Id,
                                                      Justification =
                                                          "The condition reads the collection the body mutates. Where is lazily evaluated, so lifting the filter out would run each " +
                                                          "predicate against a snapshot taken before the additions it is meant to see, and let duplicates through.")]
@@ -602,7 +602,7 @@ internal sealed class StringSpec {
                });
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2249:Consider using String.Contains instead of String.IndexOf",
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(NetAnalyzersRule.CA2249.Category, NetAnalyzersRule.CA2249.Id,
                                                      Justification =
                                                          "string.Contains(string, StringComparison) does not exist on netstandard2.0, which this library targets " +
                                                          "(ADR-0007). IndexOf with StringComparison.Ordinal is the same comparison and the only spelling that " +

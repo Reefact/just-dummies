@@ -111,7 +111,7 @@ public sealed class AnySetTypeTests {
     }
 
     [Fact(DisplayName = "Enum: unconstrained draws yield only declared members and reach all of them.")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2263:Prefer generic overload when type is known",
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(NetAnalyzersRule.CA2263.Category, NetAnalyzersRule.CA2263.Id,
                                                      Justification =
                                                          "Enum.IsDefined<TEnum>(TEnum) arrived in .NET 5 and this suite also runs on the .NET Framework 4.7.2 " +
                                                          "support floor (ADR-0007, build/Net472TestFloor.props), where it does not exist. The non-generic overload " +

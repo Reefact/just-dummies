@@ -333,7 +333,7 @@ public sealed class AnyStringValueSetTests {
     }
 
     [Fact(DisplayName = "OneOf rejects null, empty, or null-containing value lists as arguments.")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Major Code Smell", "S3220:Method calls should not resolve ambiguously to overloads with \"params\"",
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S3220.Category, SonarRule.S3220.Id,
                                                      Justification =
                                                          "Passing a bare null to a params parameter is exactly what this test asserts about: OneOf(null!) must be " +
                                                          "refused with ArgumentNullException rather than read as an empty list. The ambiguity the rule warns about " +

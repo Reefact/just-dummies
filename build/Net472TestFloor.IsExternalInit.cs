@@ -9,7 +9,7 @@ namespace System.Runtime.CompilerServices {
     // Empty BY CONTRACT. The compiler looks this type up by name and never reads a member, so there is
     // nothing to write and it cannot become an interface: it must be a class the compiler can bind to.
     // Sonar's S2094 only fires on the net472 inner build, which is the only one that compiles this file.
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Minor Code Smell", "S2094:Classes should not be empty",
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S2094.Category, SonarRule.S2094.Id,
                                                      Justification =
                                                          "A compiler-recognised marker type. Its emptiness is the specification: the compiler binds " +
                                                          "System.Runtime.CompilerServices.IsExternalInit by name to enable `init` accessors and records, " +

@@ -195,7 +195,7 @@ public sealed class AnyEnum<TEnum> : IAny<TEnum>, IHasRandomSource, ICardinality
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="values" /> is <c>null</c>.</exception>
     /// <exception cref="ArgumentException">Thrown when <paramref name="values" /> is empty or contains a value outside the generator's universe.</exception>
     /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Minor Code Smell", "S3267:Loops should be simplified with LINQ expressions",
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S3267.Category, SonarRule.S3267.Id,
                                                      Justification =
                                                          "The loop exists to name the FIRST offending element in the exception it throws. A Where clause discards which element failed, so " +
                                                          "the message would have to re-find it, turning one pass into two and one statement into three.")]
@@ -265,14 +265,14 @@ public sealed class AnyEnum<TEnum> : IAny<TEnum>, IHasRandomSource, ICardinality
         return Validated(new AnyEnum<TEnum>(_source, _universe, _combinable, _allowed, _allowedConstraint, excluded), applying);
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1822:Mark members as static",
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(NetAnalyzersRule.CA1822.Category, NetAnalyzersRule.CA1822.Id,
                                                      Justification =
                                                          "Validated is the uniform validation hook of the fluent builders: every With* method routes its candidate through it, and all " +
                                                          "seven engines declare it with the same signature. It reads the CANDIDATE's state rather than this instance's — which is what " +
                                                          "the rule notices — but that is a builder validating its own successor, not an oversight. Making it static across seven types " +
                                                          "would break a family resemblance the reader relies on, for no measurable gain on a path that runs once per declared " +
                                                          "constraint.")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Minor Code Smell", "S2325:Methods and properties that do not access instance data should be static",
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S2325.Category, SonarRule.S2325.Id,
                                                      Justification =
                                                          "Validated is the uniform validation hook of the fluent builders: every With* method routes its candidate through it, and all " +
                                                          "seven engines declare it with the same signature. It reads the CANDIDATE's state rather than this instance's — which is what " +

@@ -37,7 +37,7 @@ public sealed class AwaitableBodyPassedToReproduciblyAnalyzer : DiagnosticAnalyz
         context.RegisterOperationAction(operationContext => Analyze(operationContext, symbols.Any), OperationKind.Invocation);
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Minor Code Smell", "S3267:Loops should be simplified with \"LINQ\" expressions",
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S3267.Category, SonarRule.S3267.Id,
                                                      Justification =
                                                          "The rule asks for Select(argument => argument.Value). The loop unwraps a delegate creation before testing what it found and " +
                                                          "reports on the lambda body, so the projection would rename the loop variable away from what it is without removing a single " +

@@ -185,7 +185,7 @@ public sealed class ConflictMessageTruthfulnessProperties {
 
     #region Engine builders
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Major Code Smell", "S1854:Unused assignments should be removed",
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S1854.Category, SonarRule.S1854.Id,
                                                      Justification =
                                                          "The assignment is dead and the CALL is not. These builders exist to provoke the declaration-time conflict, " +
                                                          "so what matters is that Except() runs; nothing reads the spec afterwards because the verdict is the exception " +
@@ -203,7 +203,7 @@ public sealed class ConflictMessageTruthfulnessProperties {
         } catch (ConflictingAnyConstraintException exception) { return exception.Message; }
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Major Code Smell", "S1854:Unused assignments should be removed",
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S1854.Category, SonarRule.S1854.Id,
                                                      Justification =
                                                          "The assignment is dead and the CALL is not. These builders exist to provoke the declaration-time conflict, " +
                                                          "so what matters is that Except() runs; nothing reads the spec afterwards because the verdict is the exception " +
@@ -220,7 +220,7 @@ public sealed class ConflictMessageTruthfulnessProperties {
         } catch (ConflictingAnyConstraintException exception) { return exception.Message; }
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Major Code Smell", "S1854:Unused assignments should be removed",
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S1854.Category, SonarRule.S1854.Id,
                                                      Justification =
                                                          "The assignment is dead and the CALL is not. These builders exist to provoke the declaration-time conflict, " +
                                                          "so what matters is that Except() runs; nothing reads the spec afterwards because the verdict is the exception " +

@@ -7,7 +7,7 @@ namespace JustDummies;
 ///     time — which is what lets a recipe built outside an <c>Any.Reproducibly(...)</c> scope generate
 ///     deterministically inside one.
 /// </summary>
-[System.Diagnostics.CodeAnalysis.SuppressMessage("Minor Code Smell", "S1694:An abstract class should have both abstract and concrete methods",
+[System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S1694.Category, SonarRule.S1694.Id,
                                                  Justification =
                                                      "The abstract class is the root of a closed, internal hierarchy and is deliberately not an interface: a class cannot be " +
                                                      "implemented from outside the assembly, keeps the option of adding shared state without breaking every subtype, and on the " +
@@ -83,7 +83,7 @@ internal sealed class SeededRandom {
 
     #endregion
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Major Vulnerability", "S2245:Pseudorandom number generators (PRNGs) should not be used in security contexts",
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S2245.Category, SonarRule.S2245.Id,
                                                      Justification =
                                                          "S2245 is right that this generator is predictable; that predictability is the type's contract. A dummy is worth " +
                                                          "generating only if the seed a failing run reports replays it, and a seeded System.Random is the one BCL generator " +
@@ -349,7 +349,7 @@ internal static class RandomSampling {
     ///     <c>Random.NextInt64(long, long)</c> instance method — whose upper bound is EXCLUSIVE — would win
     ///     overload resolution over a same-named extension and silently change the semantics.
     /// </summary>
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Major Code Smell", "S125:Sections of code should not be commented out",
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S125.Category, SonarRule.S125.Id,
                                                      Justification =
                                                          "The flagged lines are prose, not disabled code. The heuristic reads an equation, a bracketed range or a semicolon inside an " +
                                                          "explanatory sentence as a statement. These comments carry the WHY this codebase asks for and deleting them would lose the " +

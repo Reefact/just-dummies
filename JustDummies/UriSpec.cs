@@ -186,7 +186,7 @@ internal sealed class UriSpec {
 
     #endregion
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Major Code Smell", "S107:Methods should not have too many parameters",
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S107.Category, SonarRule.S107.Id,
                                                      Justification =
                                                          "This private constructor carries the engine's whole immutable state: the 'constrain once, draw many' design rebuilds the spec on " +
                                                          "every With* call, so every field has to be threaded through it. A parameter object would only rename the same list, and the " +
@@ -473,7 +473,7 @@ internal sealed class UriSpec {
         return true;
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Minor Code Smell", "S3267:Loops should be simplified with LINQ expressions",
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S3267.Category, SonarRule.S3267.Id,
                                                      Justification =
                                                          "The loop exists to name the FIRST offending element in the exception it throws. A Where clause discards which element failed, so " +
                                                          "the message would have to re-find it, turning one pass into two and one statement into three.")]

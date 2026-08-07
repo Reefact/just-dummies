@@ -124,4 +124,35 @@
     <GlobalAnalyzerConfigFiles Include="$(MSBuildThisFileDirectory)build/sonar-profile.globalconfig" />
   </ItemGroup>
 
+  <!--
+    The rules the two analyzer families above report, as compile-checked constants, so a
+    [SuppressMessage] names a rule the compiler resolves instead of a string nobody verifies
+    (decision: ADR-0050).
+
+    HERE rather than per project, for the same reason the Sonar analyzer itself is here: every project
+    runs these analyzers, so every project can suppress one of their rules, and a project left without
+    the catalogue is a project where a new literal suppression lands unchecked. The condition matches
+    the ItemGroup above so a project opting out of central package management does not meet a
+    version-less reference.
+
+    PrivateAssets="all" keeps all of it — the catalogues and the DiagnosticCatalog foundation they pull
+    in — out of every published package's dependency graph, which is what ADR-0003 requires and what
+    tools/packaging/pack.sh asserts on the produced .nuspec.
+
+    The <Using> items are what let this be adopted without editing a single file's usings region: the
+    constants are in scope everywhere, so a converted attribute is a two-argument rewrite and nothing
+    else. Same mechanism this repository already uses for Xunit in its test projects.
+
+    The DCAT analyzers arrive with the foundation and report a literal suppression a catalogue could
+    describe (DCAT0006) and one carrying no Justification (DCAT0014), both as ERRORS. No .editorconfig
+    downgrade accompanies this: the conversion landed in one commit and all 83 suppressions already
+    carried a justification, so the default severities were met on arrival. A new literal cannot merge.
+  -->
+  <ItemGroup Condition="'$(ManagePackageVersionsCentrally)' == 'true'">
+    <PackageReference Include="DiagnosticCatalog.Sonar" PrivateAssets="all" />
+    <PackageReference Include="DiagnosticCatalog.NetAnalyzers" PrivateAssets="all" />
+    <Using Include="DiagnosticCatalog.Sonar" />
+    <Using Include="DiagnosticCatalog.NetAnalyzers" />
+  </ItemGroup>
+
 </Project>

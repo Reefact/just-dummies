@@ -213,7 +213,7 @@ public sealed class StringShapeProperties {
     }
 
     [Fact(DisplayName = "Containing embeds the value, whatever the value.")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2249:Consider using String.Contains instead of String.IndexOf",
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(NetAnalyzersRule.CA2249.Category, NetAnalyzersRule.CA2249.Id,
                                                      Justification =
                                                          "string.Contains(string, StringComparison) is not on the netstandard2.0 / net472 floor this suite runs " +
                                                          "against (ADR-0007); IndexOf with the same StringComparison.Ordinal carries the identical comparison and " +

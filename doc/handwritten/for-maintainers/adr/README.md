@@ -21,7 +21,7 @@ and the **Origin** column says how each one got here:
   but its record stays live in `Reefact/first-class-errors` too, because that
   repository still applies it. Both copies are now independent: either side can
   supersede its own without touching the other. 9 decisions.
-* **recorded here** — decided in this repository, on its own. 6 decisions.
+* **recorded here** — decided in this repository, on its own. 7 decisions.
 
 The numbers are this base's own, assigned in the order the decisions were
 recorded upstream ([ADR-0045](0045-renumber-the-decision-base.md)); every ADR
@@ -136,3 +136,4 @@ and it was decided on 2026-08-01 — the index carries the order, the numbering 
 | [ADR-0047](0047-declare-the-adapters-library-dependency-independently.md) | Declare the adapter's library dependency independently of the version it is packed at | Accepted | recorded here |
 | [ADR-0048](0048-publish-only-from-a-commit-that-is-on-main.md) | Publish only from a commit that is on main | Accepted | recorded here |
 | [ADR-0049](0049-replay-a-seed-across-patch-and-minor-versions.md) | Replay a seed across patch and minor versions | Accepted | recorded here |
+| [ADR-0050](0050-name-a-suppressed-rule-through-a-catalogue-constant.md) | Name a suppressed rule through a catalogue constant, not a string literal | Proposed | recorded here |

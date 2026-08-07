@@ -55,7 +55,7 @@ public static partial class Any {
     /// <typeparam name="TResult">The type of the composed value.</typeparam>
     /// <returns>A generator of the composed value.</returns>
     /// <exception cref="ArgumentNullException">Thrown when any argument is <c>null</c>.</exception>
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Major Code Smell", "S2436:Types and methods should not have too many generic parameters",
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S2436.Category, SonarRule.S2436.Id,
                                                      Justification =
                                                          "Heterogeneous composition needs one type parameter per part plus the result; the arity-8 ceiling is a deliberate ergonomic " +
                                                          "decision (ADR-0005), and nesting Combine calls to stay under three would bury the shape of the value being composed.")]
@@ -92,7 +92,7 @@ public static partial class Any {
     /// <typeparam name="TResult">The type of the composed value.</typeparam>
     /// <returns>A generator of the composed value.</returns>
     /// <exception cref="ArgumentNullException">Thrown when any argument is <c>null</c>.</exception>
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Major Code Smell", "S2436:Types and methods should not have too many generic parameters",
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S2436.Category, SonarRule.S2436.Id,
                                                      Justification =
                                                          "Heterogeneous composition needs one type parameter per part plus the result; the arity-8 ceiling is a deliberate ergonomic " +
                                                          "decision (ADR-0005), and nesting Combine calls to stay under three would bury the shape of the value being composed.")]
@@ -133,7 +133,7 @@ public static partial class Any {
     /// <typeparam name="TResult">The type of the composed value.</typeparam>
     /// <returns>A generator of the composed value.</returns>
     /// <exception cref="ArgumentNullException">Thrown when any argument is <c>null</c>.</exception>
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Major Code Smell", "S2436:Types and methods should not have too many generic parameters",
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S2436.Category, SonarRule.S2436.Id,
                                                      Justification =
                                                          "Heterogeneous composition needs one type parameter per part plus the result; the arity-8 ceiling is a deliberate ergonomic " +
                                                          "decision (ADR-0005), and nesting Combine calls to stay under three would bury the shape of the value being composed.")]
@@ -178,7 +178,7 @@ public static partial class Any {
     /// <typeparam name="TResult">The type of the composed value.</typeparam>
     /// <returns>A generator of the composed value.</returns>
     /// <exception cref="ArgumentNullException">Thrown when any argument is <c>null</c>.</exception>
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Major Code Smell", "S2436:Types and methods should not have too many generic parameters",
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S2436.Category, SonarRule.S2436.Id,
                                                      Justification =
                                                          "Heterogeneous composition needs one type parameter per part plus the result; the arity-8 ceiling is a deliberate ergonomic " +
                                                          "decision (ADR-0005), and nesting Combine calls to stay under three would bury the shape of the value being composed.")]
@@ -227,9 +227,9 @@ public static partial class Any {
     /// <typeparam name="TResult">The type of the composed value.</typeparam>
     /// <returns>A generator of the composed value.</returns>
     /// <exception cref="ArgumentNullException">Thrown when any argument is <c>null</c>.</exception>
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Major Code Smell", "S107:Methods should not have too many parameters",
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S107.Category, SonarRule.S107.Id,
                                                      Justification = "Heterogeneous composition needs one generator parameter per part; the arity-8 ceiling is a deliberate ergonomic decision (ADR-0005), and a flat parameter list reads better at the call site than nested Combine calls.")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Major Code Smell", "S2436:Types and methods should not have too many generic parameters",
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S2436.Category, SonarRule.S2436.Id,
                                                      Justification =
                                                          "Heterogeneous composition needs one type parameter per part plus the result; the arity-8 ceiling is a deliberate ergonomic " +
                                                          "decision (ADR-0005), and nesting Combine calls to stay under three would bury the shape of the value being composed.")]
@@ -283,9 +283,9 @@ public static partial class Any {
     /// <typeparam name="TResult">The type of the composed value.</typeparam>
     /// <returns>A generator of the composed value.</returns>
     /// <exception cref="ArgumentNullException">Thrown when any argument is <c>null</c>.</exception>
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Major Code Smell", "S107:Methods should not have too many parameters",
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S107.Category, SonarRule.S107.Id,
                                                      Justification = "Heterogeneous composition needs one generator parameter per part; the arity-8 ceiling is a deliberate ergonomic decision (ADR-0005), and a flat parameter list reads better at the call site than nested Combine calls.")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Major Code Smell", "S2436:Types and methods should not have too many generic parameters",
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S2436.Category, SonarRule.S2436.Id,
                                                      Justification =
                                                          "Heterogeneous composition needs one type parameter per part plus the result; the arity-8 ceiling is a deliberate ergonomic " +
                                                          "decision (ADR-0005), and nesting Combine calls to stay under three would bury the shape of the value being composed.")]

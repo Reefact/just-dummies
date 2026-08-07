@@ -90,7 +90,7 @@ as they stand, not carried over on faith:
 
 | Workflow | Purpose |
 | --- | --- |
-| `release` | Build, attest, and publish the NuGet packages on a version tag of one of the three trains (`lib-v*`, `xunit-v*`, `cli-v*`). |
+| [`release`](nuget-trusted-publishing.en.md) | Build, attest, and publish the NuGet packages on a version tag of one of the four trains (`lib-v*`, `xunit-v*`, `catalog-v*`, `cli-v*`). **Pushing such a tag publishes**, and a published version is immutable — the linked page covers the nuget.org trusted-publishing setup it needs and how to rehearse without publishing. |
 | `release-dryrun` | Continuously rehearse the side-effect-free part of the release (pack + SBOM) on every PR and push. |
 | `changelog` | Draft the `[Unreleased]` section of a train's changelog from merged PRs, on manual dispatch, and open a review PR. |
 

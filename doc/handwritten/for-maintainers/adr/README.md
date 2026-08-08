@@ -21,15 +21,18 @@ and the **Origin** column says how each one got here:
   but its record stays live in `Reefact/first-class-errors` too, because that
   repository still applies it. Both copies are now independent: either side can
   supersede its own without touching the other. 9 decisions.
-* **recorded here** — decided in this repository, on its own. 9 decisions.
+* **recorded here** — decided in this repository, on its own. 10 decisions.
 
 The numbers are this base's own, assigned in the order the decisions were
 recorded upstream ([ADR-0045](0045-renumber-the-decision-base.md)); every ADR
 also carries its former number in its header, and the **Origin** column repeats
-the mapping. **The git history was not rewritten**, so a commit message older
+the mapping. **Commit messages were never rewritten**, so a commit message older
 than 2026-07-31 cites the number the decision had in
 `Reefact/first-class-errors` — `docs: draft ADR-0010 hosting Dummies as a
-standalone package` is this repository's ADR-0003.
+standalone package` is this repository's ADR-0003. The history itself was
+rewritten on 2026-08-08
+([ADR-0053](0053-rewrite-the-published-history-to-a-single-line.md)), which
+changed every commit identifier but carried each message over byte for byte.
 
 ## References to the other repository
 
@@ -139,3 +142,4 @@ and it was decided on 2026-08-01 — the index carries the order, the numbering 
 | [ADR-0050](0050-name-a-suppressed-rule-through-a-catalogue-constant.md) | Name a suppressed rule through a catalogue constant, not a string literal | Accepted | recorded here |
 | [ADR-0051](0051-land-pull-requests-by-rebase.md) | Land pull requests by rebase | Accepted | recorded here |
 | [ADR-0052](0052-publish-the-jd-rules-as-a-first-party-catalogue.md) | Publish the JD rules as a first-party catalogue, and read the descriptors from it | Accepted | recorded here |
+| [ADR-0053](0053-rewrite-the-published-history-to-a-single-line.md) | Rewrite the published history to a single line, and carry the release tags onto it | Accepted | recorded here |

@@ -8,8 +8,17 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ## [Unreleased]
 
-_No unreleased changes recorded yet. This section is drafted automatically from
-merged pull requests — see [`.github/workflows/changelog.yml`](../.github/workflows/changelog.yml)._
+### Fixed
+
+- **A conflict caused by an exclusion now names that exclusion.** On `Any.Enum<T>()` and `Any.Guid()`, a
+  constraint that emptied the domain reported the constraint it had emptied instead — so
+  `Any.Enum<T>().OneOf(a, b).Except(a, b)` said *"no value OneOf(a, b) allows remains available"*, naming the
+  victim and leaving the cause to be guessed, and an excluded pin said only *"which the exclusions forbid"*,
+  naming none of them. Both now read like the interval generators, which were fixed first: *"it forbids every
+  value OneOf(a, b) allows"*, and *"Empty() already pins the value to 00000000-… and NonEmpty() forbids it"*.
+  Only exclusions that actually removed something are named, since one whose values were never drawable caused
+  nothing. Generation, conflict detection and the public surface are unchanged — only the wording of the
+  message a failing declaration carries.
 
 ## [1.0.0-preview.1] - 2026-08-07
 

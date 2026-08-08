@@ -48,7 +48,7 @@ public sealed class AnyEnum<TEnum> : IAny<TEnum>, IHasRandomSource, ICardinality
             throw AnyGenerationException.EnumDeclaresNoMembers(typeof(TEnum).Name);
         }
 
-        return new AnyEnum<TEnum>(source, Declared, false, null, null, []);
+        return new AnyEnum<TEnum>(source, Declared, false, null, null, [], []);
     }
 
     /// <summary>
@@ -117,6 +117,10 @@ public sealed class AnyEnum<TEnum> : IAny<TEnum>, IHasRandomSource, ICardinality
     private readonly ConstraintCall?       _allowedConstraint;
     private readonly bool                  _combinable;
     private readonly IReadOnlyList<TEnum>  _excluded;
+    // Provenance for the diagnostic path only: _excluded drives every draw decision, while this records WHICH
+    // constraint contributed which values, so an exhausted pool can name the exclusion that emptied it instead of
+    // the allow-list it emptied. Same split as the interval engines (OrdinalIntervalSpec._exclusions).
+    private readonly IReadOnlyList<(ConstraintCall Constraint, TEnum[] Values)> _exclusions;
     private readonly List<TEnum>           _pool;
     private readonly RandomSource          _source;
     private readonly IReadOnlyList<TEnum>  _universe;
@@ -124,13 +128,15 @@ public sealed class AnyEnum<TEnum> : IAny<TEnum>, IHasRandomSource, ICardinality
     #endregion
 
     private AnyEnum(RandomSource source, IReadOnlyList<TEnum> universe, bool combinable,
-                    IReadOnlyList<TEnum>? allowed, ConstraintCall? allowedConstraint, IReadOnlyList<TEnum> excluded) {
+                    IReadOnlyList<TEnum>? allowed, ConstraintCall? allowedConstraint, IReadOnlyList<TEnum> excluded,
+                    IReadOnlyList<(ConstraintCall Constraint, TEnum[] Values)> exclusions) {
         _source            = source;
         _universe          = universe;
         _combinable        = combinable;
         _allowed           = allowed;
         _allowedConstraint = allowedConstraint;
         _excluded          = excluded;
+        _exclusions        = exclusions;
         // Materialized once here — "constrain once, draw many": Generate never refilters the pool.
         _pool = (allowed ?? universe).Where(value => !excluded.Contains(value)).ToList();
     }
@@ -182,7 +188,7 @@ public sealed class AnyEnum<TEnum> : IAny<TEnum>, IHasRandomSource, ICardinality
             throw ConflictingAnyConstraintException.TooManyCombinableMembers(constraint, typeof(TEnum).Name, V(generators), V(MaxCombinableMembers));
         }
 
-        return Validated(new AnyEnum<TEnum>(_source, Combinations, true, _allowed, _allowedConstraint, _excluded), constraint);
+        return Validated(new AnyEnum<TEnum>(_source, Combinations, true, _allowed, _allowedConstraint, _excluded, _exclusions), constraint);
     }
 
     /// <summary>Requires the value to be one of the supplied members. Declared once per generator.</summary>
@@ -212,7 +218,7 @@ public sealed class AnyEnum<TEnum> : IAny<TEnum>, IHasRandomSource, ICardinality
         if (_allowedConstraint == constraint) { return this; }
         if (_allowedConstraint is not null) { throw ConflictingAnyConstraintException.AlreadyDefined(constraint, _allowedConstraint); }
 
-        return Validated(new AnyEnum<TEnum>(_source, _universe, _combinable, values.Distinct().ToArray(), constraint, _excluded), constraint);
+        return Validated(new AnyEnum<TEnum>(_source, _universe, _combinable, values.Distinct().ToArray(), constraint, _excluded, _exclusions), constraint);
     }
 
     /// <summary>
@@ -260,9 +266,10 @@ public sealed class AnyEnum<TEnum> : IAny<TEnum>, IHasRandomSource, ICardinality
     }
 
     private AnyEnum<TEnum> WithExcluded(TEnum[] values, ConstraintCall applying) {
-        List<TEnum> excluded = [.. _excluded, .. values];
+        List<TEnum>                                            excluded   = [.. _excluded, .. values];
+        List<(ConstraintCall Constraint, TEnum[] Values)>       exclusions = [.. _exclusions, (applying, values)];
 
-        return Validated(new AnyEnum<TEnum>(_source, _universe, _combinable, _allowed, _allowedConstraint, excluded), applying);
+        return Validated(new AnyEnum<TEnum>(_source, _universe, _combinable, _allowed, _allowedConstraint, excluded, exclusions), applying);
     }
 
     [System.Diagnostics.CodeAnalysis.SuppressMessage(NetAnalyzersRule.CA1822.Category, NetAnalyzersRule.CA1822.Id,
@@ -282,14 +289,65 @@ public sealed class AnyEnum<TEnum> : IAny<TEnum>, IHasRandomSource, ICardinality
     private AnyEnum<TEnum> Validated(AnyEnum<TEnum> candidate, ConstraintCall applying) {
         if (candidate._pool.Count > 0) { return candidate; }
 
-        // Three exhausted pools, three different things to tell the reader: an allow-list that nothing survives, a
-        // flags enum whose combinations are all excluded, and a plain enum whose declared members are.
-        string pool;
-        if (candidate._allowedConstraint is not null) { pool = $"no value {candidate._allowedConstraint} allows remains available"; }
-        else if (candidate._combinable) { pool = $"no {typeof(TEnum).Name} combination remains available"; }
-        else { pool = $"no declared {typeof(TEnum).Name} member remains available"; }
+        throw ConflictingAnyConstraintException.NoValueRemains(applying, candidate.DescribeExhaustion(applying));
+    }
 
-        throw ConflictingAnyConstraintException.NoValueRemains(applying, pool);
+    /// <summary>
+    ///     Why the pool is empty, naming the constraint that emptied it. An exclusion is what removes values, so it
+    ///     is what the sentence must name; the allow-list is the victim, and naming it produced the self-referential
+    ///     "no value OneOf(...) allows remains available" this replaces. Same shape as the interval engines'
+    ///     DescribeExhaustion, so the two surfaces read alike.
+    /// </summary>
+    private string DescribeExhaustion(ConstraintCall applying) {
+        IReadOnlyList<ConstraintCall> culprits = ExcludingConstraintsInEffect();
+
+        // No exclusion bit: the pool was empty before any of them, so there is no culprit to name and the old
+        // wording is the honest one. Reachable when a universe is itself empty, not when an exclusion emptied it.
+        if (culprits.Count == 0) {
+            if (_allowedConstraint is not null) { return $"no value {_allowedConstraint} allows remains available"; }
+
+            return _combinable
+                       ? $"no {typeof(TEnum).Name} combination remains available"
+                       : $"no declared {typeof(TEnum).Name} member remains available";
+        }
+
+        string emptied;
+        if (_allowedConstraint is not null) { emptied = $"every value {_allowedConstraint} allows"; }
+        else if (_combinable) { emptied = $"every {typeof(TEnum).Name} combination"; }
+        else { emptied = $"every declared {typeof(TEnum).Name} member"; }
+
+        return $"{Forbids(culprits, applying)} {emptied}";
+    }
+
+    /// <summary>
+    ///     The distinct exclusion constraints that actually caused the exhaustion — those forbidding at least one
+    ///     value the universe and allow-list would otherwise permit. An exclusion whose values were already outside
+    ///     the pool never bit, so naming it would mislead; first-declared order is preserved.
+    /// </summary>
+    private IReadOnlyList<ConstraintCall> ExcludingConstraintsInEffect() {
+        List<ConstraintCall> names = [];
+        foreach ((ConstraintCall constraint, TEnum[] values) in _exclusions) {
+            if (names.Contains(constraint)) { continue; }
+            if (values.Any(WouldAllowIgnoringExclusions)) { names.Add(constraint); }
+        }
+
+        return names;
+    }
+
+    /// <summary>Whether <paramref name="value" /> would be drawable if no exclusion were applied.</summary>
+    private bool WouldAllowIgnoringExclusions(TEnum value) {
+        return (_allowed ?? _universe).Contains(value);
+    }
+
+    /// <summary>
+    ///     The subject of the exhaustion clause. A single culprit that is the constraint being applied becomes "it",
+    ///     so the message reads "Cannot apply Except(Read) because it forbids ..." rather than repeating the
+    ///     constraint on both sides of "because".
+    /// </summary>
+    private static string Forbids(IReadOnlyList<ConstraintCall> names, ConstraintCall applying) {
+        if (names.Count == 1) { return names[0] == applying ? "it forbids" : $"{names[0]} forbids"; }
+
+        return $"{string.Join(", ", names)} forbid";
     }
 
 }

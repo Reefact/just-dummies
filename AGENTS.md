@@ -114,7 +114,15 @@ a cleanup for:
   linter, `git log -1 --format=%B <sha> | tools/commit-lint/lint-commit-message.sh --ci -`;
 - one logical change scattered across commits that do not each stand alone, or
   two unrelated intentions folded into one commit (CONTRIBUTING.md, "Commit
-  messages").
+  messages");
+- a commit whose state no reader will ever reach — one superseded by a later
+  commit of the *same* branch, so the intermediate state never lands on `main`.
+  Each such commit can be well-formed and still be redundant, which is why the
+  four signals above miss it. Recording a decision as `Proposed` and accepting
+  it in the next commit is the recurring case, and it is one intention, not two.
+  It is genuinely two only when the acceptance came later and on its own, as
+  ADR-0051's did seven commits after its record. The hook flags that ADR
+  instance; every other shape of it is your judgement.
 
 When it reads clean, say so in one line and proceed. When it is messy,
 **propose** a concrete plan — which commits to squash, reword, drop, or reorder,

@@ -88,6 +88,30 @@ for sha in $commits; do
   esac
 done
 
+# Soft signal, read over the range rather than per commit: a state no reader will
+# ever reach. An ADR recorded in one commit and given a different status by a
+# later commit of the same branch never exists in that first state on `main`, so
+# the two commits carry one intention. They are two only when the acceptance
+# genuinely came later, on its own — which the range cannot contain by
+# construction. Only the canonical English file is read; its French twin would
+# duplicate every finding.
+for adr in $(git diff --name-only --diff-filter=A "$base" HEAD -- \
+             'doc/handwritten/for-maintainers/adr' 2>/dev/null \
+             | grep -E '/[0-9]{4}-[^/]*\.md$' | grep -v '\.fr\.md$' || true); do
+  add_sha="$(git rev-list --reverse "$range" -- "$adr" 2>/dev/null | head -1)"
+  [ -n "$add_sha" ] || continue
+  status_at_add="$(git show "$add_sha:$adr" 2>/dev/null | sed -n 's/^\*\*Status:\*\* *//p' | head -1)"
+  status_at_head="$(git show "HEAD:$adr" 2>/dev/null | sed -n 's/^\*\*Status:\*\* *//p' | head -1)"
+  if [ -z "$status_at_add" ] || [ -z "$status_at_head" ]; then
+    continue                             # not an ADR header this hook understands
+  fi
+  if [ "$status_at_add" = "$status_at_head" ]; then
+    continue                             # recorded once, in the state it keeps
+  fi
+  soft="${soft}  - ${adr##*/}  (recorded '${status_at_add}', now '${status_at_head}' — one intention, not two)
+"
+done
+
 fatal_hint() {
   cat >&2 <<EOF
 [!] History hygiene — ${range}
@@ -107,7 +131,7 @@ soft_hint() {
   cat >&2 <<EOF
 [i] History hygiene — ${range}
 
-Commits that read like scaffolding to squash before merge:
+Signals that this range carries more commits than it carries intentions:
 
 ${soft}
 Advisory only, nothing was blocked. Judge whether origin/main..HEAD reads clean;

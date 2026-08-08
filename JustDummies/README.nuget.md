@@ -210,6 +210,13 @@ is `true` while `NaN == NaN` is `false`. A `NaN` flowing through `Distinct()` �
 comparer-based collection — therefore deduplicates, while your own `==` sees two
 different values.
 
+**Where the rule stops.** A *typed* builder — `Any.Double()`, `Any.Enum<T>()`, `Any.String()` — draws, and
+accepts as an argument, only valid values of the domain it represents. The generic entry points do not, and
+that is deliberate: `Any.OneOf(...)`, `Any.ElementOf(...)` and `.As(...)` take your pool or your projection as
+the whole specification, because the library cannot judge the semantics of a type it knows nothing about. So
+`Any.OneOf` accepting what `Any.Double()` refuses is the design, not an oversight — it is the door the
+paragraphs above send you through.
+
 **`decimal` is not part of this subject.** `System.Decimal` has no `NaN` and no infinity
 to begin with, so `Any.Decimal()` has nothing to refuse and carries no such guard. If you
 went looking for the symmetry with `Any.Double()`, that is why you did not find it.

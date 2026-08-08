@@ -45,10 +45,19 @@ internal sealed class ContinuousIntervalSpec {
         return new ContinuousIntervalSpec(typeName, render, quantize, nextUp, domainMin, null, domainMax, null, null, null, []);
     }
 
-    /// <summary>Rejects NaN and the infinities — the shared argument guard of every floating-point generator.</summary>
+    /// <summary>
+    ///     Rejects NaN and the infinities — the shared argument guard of every floating-point generator. The message
+    ///     names the way out as well as the rule: a user meeting this wall wants a non-finite value for a reason, and
+    ///     that reason is served by an explicit pool. Stating only the refusal leaves them concluding the library is
+    ///     missing a feature it deliberately does not have.
+    /// </summary>
     internal static void EnsureFinite(double value, string parameterName) {
         if (parameterName is null) { throw new ArgumentNullException(nameof(parameterName)); }
-        if (double.IsNaN(value) || double.IsInfinity(value)) { throw new ArgumentException("The value must be finite: NaN and infinities are never generated.", parameterName); }
+        if (double.IsNaN(value) || double.IsInfinity(value)) {
+            throw new ArgumentException("The value must be finite: NaN and infinities are never generated, and never accepted as arguments. " +
+                                        "To draw a non-finite value that genuinely belongs to your domain, use an explicit pool: Any.OneOf(double.NaN, ...).",
+                                        parameterName);
+        }
     }
 
     /// <summary>The next representable double above <paramref name="value" /> — the exclusive-bound arithmetic.</summary>

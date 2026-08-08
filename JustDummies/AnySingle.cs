@@ -12,6 +12,20 @@ namespace JustDummies;
 ///     contradictory constraints fail eagerly with a <see cref="ConflictingAnyConstraintException" /> naming both
 ///     sides; instances are immutable recipes. NaN and the infinities are never generated nor accepted.
 /// </summary>
+/// <remarks>
+///     <para>
+///         The refusal covers <b>arguments</b> too, not only draws: <c>Except(float.NaN)</c> and a non-finite bound
+///         are rejected with an <see cref="System.ArgumentException" />. A value that cannot be compared is not a
+///         constraint — every comparison with NaN is false — and a NaN drawn into an arrangement the test never meant
+///         to exercise fails an assertion nobody wrote.
+///     </para>
+///     <para>
+///         When a non-finite value is genuinely part of the domain under test, draw it from an explicit pool instead:
+///         <c>Any.OneOf(float.NaN, 1.0f, 2.0f)</c>. The generic entry points carry no finiteness rule, by construction.
+///         When the test <i>asserts on</i> the non-finite path, write the literal at the call site — it is the subject
+///         of the test, not a dummy.
+///     </para>
+/// </remarks>
 public sealed class AnySingle : IAny<float>, IHasRandomSource, ICardinalityHint<float> {
 
     #region Statics members declarations

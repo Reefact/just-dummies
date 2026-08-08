@@ -2,8 +2,9 @@
 
 🌍 🇬🇧 [English](0054-draw-only-valid-values-from-a-typed-builder.md) · 🇫🇷 Français (ce fichier)
 
-**Status:** Proposed
+**Status:** Accepted
 **Proposed:** 2026-08-08
+**Accepted:** 2026-08-08
 **Decision Makers:** Reefact
 
 ## Contexte

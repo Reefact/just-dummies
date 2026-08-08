@@ -74,8 +74,8 @@ public sealed class ConflictingAnyConstraintException : DummyException {
     /// <summary>
     ///     Builds the exception for a pinned value the exclusions declared alongside it forbid.
     /// </summary>
-    internal static ConflictingAnyConstraintException PinnedValueExcluded(ConstraintCall applying, ConstraintCall pinningConstraint, string value) {
-        return Sentence(applying, $"{pinningConstraint} already pins the value to {value}, which the exclusions forbid");
+    internal static ConflictingAnyConstraintException PinnedValueExcluded(ConstraintCall applying, ConstraintCall pinningConstraint, string value, string forbidding) {
+        return Sentence(applying, $"{pinningConstraint} already pins the value to {value}, and {forbidding} it");
     }
 
     /// <summary>

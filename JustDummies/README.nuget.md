@@ -27,7 +27,9 @@ matter — and that is the point.
 - **Fluent, typed generators** implementing `IAny<T>`, materialized through
   `.Generate()`, across the .NET simple types: `String`, `Char`, every integer
   width (`SByte`/`Byte`/`Int16`/`UInt16`/`Int32`/`UInt32`/`Int64`/`UInt64`),
-  `Double`/`Single`/`Decimal` (finite values only — never NaN or infinities),
+  `Double`/`Single`/`Decimal` (finite values only — never NaN or infinities, and
+  never accepted as arguments either: see *NaN and the infinities* below for the
+  way to draw one deliberately),
   `Boolean`, `Guid`, `Enum<T>` (declared members only — a `[Flags]` enum widens to
   every combination with `AllowingCombinations()`), `TimeSpan`, `DateTime` (UTC)
   and `DateTimeOffset`. On modern targets (`net8.0`) the surface extends to
@@ -172,6 +174,45 @@ matter — and that is the point.
         .WithLength(12)
         .As(OrderReference.Create)
         .Generate();
+
+## NaN and the infinities
+
+`Any.Double()`, `Any.Single()` and `Any.Half()` never draw a non-finite value, and they
+**also refuse one as an argument** — so `Any.Double().Except(double.NaN)` throws rather
+than doing something sensible. That surprises people, so here is the whole rule and the
+way out.
+
+**Why.** An arbitrary test value should cross your invariants, not sabotage your
+arithmetic. Every comparison with `NaN` is false, so a `NaN` drawn into an arrangement
+the test never meant to exercise fails an assertion nobody wrote. Refusing it as an
+argument too is the same decision applied one step earlier: a bound or an exclusion that
+cannot be compared is not a constraint.
+
+**The way out — `Any.OneOf`.** The generic entry points carry no finiteness rule, by
+construction: `Any.OneOf(...)` takes your pool as the whole specification, and `.As(...)`
+projects to whatever you return. The library judges the domains it knows; it does not
+judge yours.
+
+**Which shape to use.**
+
+- **The test asserts on the NaN path** — `Rejects_a_non_finite_amount`. Write
+  `double.NaN` as a literal. It is the subject of the test, so it belongs at the call
+  site in plain sight, not behind a generator.
+- **A non-finite value is a real value of your domain** — `NaN` meaning "missing
+  measurement" in a scientific pipeline. Then `Any.OneOf(double.NaN, 1.0, 2.0)` is
+  right: it really is a dummy, drawn from the domain's real value set.
+- **Avoid the middle ground.** A mixed pool added "so the NaN path gets covered too"
+  exercises that path on some seeds and not others, and the run does not tell you which
+  branch it took. That is a test whose meaning depends on the draw.
+
+**If you do pool a `NaN`, know this.** `EqualityComparer<double>.Default.Equals(NaN, NaN)`
+is `true` while `NaN == NaN` is `false`. A `NaN` flowing through `Distinct()` — or any
+comparer-based collection — therefore deduplicates, while your own `==` sees two
+different values.
+
+**`decimal` is not part of this subject.** `System.Decimal` has no `NaN` and no infinity
+to begin with, so `Any.Decimal()` has nothing to refuse and carries no such guard. If you
+went looking for the symmetry with `Any.Double()`, that is why you did not find it.
 
 ## What it is not
 

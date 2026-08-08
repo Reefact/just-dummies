@@ -8,6 +8,18 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ## [Unreleased]
 
+### Documentation
+
+- **How to get a NaN when you actually need one.** `Any.Double()`, `Any.Single()` and `Any.Half()` refuse a
+  non-finite value as an *argument* as well as a draw, so `Any.Double().Except(double.NaN)` throws — which read
+  as a missing feature, because nothing said what to do instead. The packaged readme now carries the rule, its
+  reason, and the exit (`Any.OneOf(double.NaN, ...)`, whose pool the library does not judge), plus when to use a
+  literal rather than a pool, the `Equals`/`==` asymmetry that makes a pooled `NaN` deduplicate, and why
+  `decimal` is not part of the subject at all. The refusal message names the exit too, and the three builders'
+  XML docs carry it, so the answer is reachable from IntelliSense at the moment the caller is blocked. The
+  recipe is locked in by tests: a documented exit that quietly stopped working would be worse than no
+  documentation.
+
 ### Fixed
 
 - **A conflict caused by an exclusion now names that exclusion.** On `Any.Enum<T>()` and `Any.Guid()`, a

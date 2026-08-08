@@ -14,6 +14,20 @@ namespace JustDummies;
 ///     sides; instances are immutable recipes. NaN and the infinities are never generated nor accepted. Available on
 ///     the net8.0 target only, like the type itself.
 /// </summary>
+/// <remarks>
+///     <para>
+///         The refusal covers <b>arguments</b> too, not only draws: <c>Except(Half.NaN)</c> and a non-finite bound
+///         are rejected with an <see cref="System.ArgumentException" />. A value that cannot be compared is not a
+///         constraint — every comparison with NaN is false — and a NaN drawn into an arrangement the test never meant
+///         to exercise fails an assertion nobody wrote.
+///     </para>
+///     <para>
+///         When a non-finite value is genuinely part of the domain under test, draw it from an explicit pool instead:
+///         <c>Any.OneOf(Half.NaN, (Half)1, (Half)2)</c>. The generic entry points carry no finiteness rule, by construction.
+///         When the test <i>asserts on</i> the non-finite path, write the literal at the call site — it is the subject
+///         of the test, not a dummy.
+///     </para>
+/// </remarks>
 public sealed class AnyHalf : IAny<Half>, IHasRandomSource, ICardinalityHint<Half> {
 
     #region Statics members declarations

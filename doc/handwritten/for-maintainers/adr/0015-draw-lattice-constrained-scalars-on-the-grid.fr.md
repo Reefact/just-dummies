@@ -81,6 +81,6 @@ Envisagée parce que « multiple de 4 et de 6 » est mathématiquement « multip
 ## Références
 
 * Issue [#226](https://github.com/Reefact/first-class-errors/issues/226) — le backlog piloté par la demande qui recense `MultipleOf`/`WithScale` et la granularité temporelle.
-* [ADR-0004](0004-gate-distinct-collections-by-cardinality-else-bounded-draw.md) — l'indice de cardinalité qu'un réseau alimente, et le frère du tirage borné.
-* [ADR-0006](0006-materialize-dummies-only-through-generate.md) — les dummies ne se matérialisent qu'à travers `Generate()`.
+* [ADR-0004](0004-gate-distinct-collections-by-cardinality-else-bounded-draw.fr.md) — l'indice de cardinalité qu'un réseau alimente, et le frère du tirage borné.
+* [ADR-0006](0006-materialize-dummies-only-through-generate.fr.md) — les dummies ne se matérialisent qu'à travers `Generate()`.
 * `OrdinalIntervalSpec`, `WideIntervalSpec`, `DecimalIntervalSpec` et les builders concernés dans le projet `JustDummies` ; le readme NuGet de JustDummies.

@@ -94,7 +94,7 @@ les workflows tels qu'ils sont, pas reprise sur parole :
 
 | Workflow | Rôle |
 | --- | --- |
-| [`release`](nuget-trusted-publishing.en.md) | Construit, atteste et publie les packages NuGet sur un tag de version de l'un des quatre trains (`lib-v*`, `xunit-v*`, `catalog-v*`, `cli-v*`). **Pousser un tel tag publie**, et une version publiée est immuable — la page liée couvre la configuration trusted publishing de nuget.org qu'il exige et comment répéter sans publier. (Page en anglais seulement.) |
+| [`release`](nuget-trusted-publishing.fr.md) | Construit, atteste et publie les packages NuGet sur un tag de version de l'un des quatre trains (`lib-v*`, `xunit-v*`, `catalog-v*`, `cli-v*`). **Pousser un tel tag publie**, et une version publiée est immuable — la page liée couvre la configuration trusted publishing de nuget.org qu'il exige et comment répéter sans publier. (Page en anglais seulement.) |
 | `release-dryrun` | Répète en continu la part sans effet de bord de la release (pack + SBOM) sur chaque PR et chaque push. |
 | `changelog` | Rédige la section `[Unreleased]` du changelog d'un train à partir des PR mergées, sur déclenchement manuel, et ouvre une PR de relecture. |
 
@@ -111,5 +111,5 @@ les workflows tels qu'ils sont, pas reprise sur parole :
   trains de release, que `release`, `release-dryrun` et `changelog` lisent tous.
 - [Écrire les tests JustDummies](../WritingJustDummiesTests.fr.md) — à laquelle des
   deux suites appartient un nouveau test.
-- [`CONTRIBUTING.md`](../../../../CONTRIBUTING.md) — les conventions de commit et de PR
+- [`CONTRIBUTING.md`](../../for-users/CONTRIBUTING.fr.md) — les conventions de commit et de PR
   que le workflow `commit-lint` vérifie.

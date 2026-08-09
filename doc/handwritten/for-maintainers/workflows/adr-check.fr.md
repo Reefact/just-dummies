@@ -10,7 +10,7 @@
 ## À quoi il sert
 
 `adr-check` confronte une **branche** à la base d'ADR et indique si elle embarque
-une décision d'architecture que le projet consigne en [ADR](../adr/README.md).
+une décision d'architecture que le projet consigne en [ADR](../adr/README.fr.md).
 C'est le **repli manuel** pour un contributeur **sans Claude Code** — dont la
 session de codage effectue le même contrôle automatiquement (voir
 [`AGENTS.md`](../../../../AGENTS.md) → « Architecture decisions »). Les trois mêmes issues,
@@ -111,7 +111,7 @@ pull request est ouverte — il n'écrit rien dans le dépôt.
 - [`AGENTS.md`](../../../../AGENTS.md) — le contrôle ADR propre à l'agent qui écrit le code,
   lancé automatiquement dans une session Claude Code ; ce workflow en est le pendant
   manuel pour les contributeurs sans Claude Code.
-- [Référence des ADR](../adr/README.md) — le format, les conventions et la note
+- [Référence des ADR](../adr/README.fr.md) — le format, les conventions et la note
   « quand écrit-on un ADR ? ».
 - [`changelog`](../../../../.github/workflows/changelog.yml) — le workflow frère LLM-en-CI à dispatch manuel dont
   celui-ci s'inspire.

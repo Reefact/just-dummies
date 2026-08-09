@@ -2,6 +2,14 @@
 
 🌍 🇬🇧 English (this file)
 
+|  |  |
+| :-- | :-- |
+| **Build** | [![ci](https://github.com/Reefact/just-dummies/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Reefact/just-dummies/actions/workflows/ci.yml) |
+| **Quality** | [![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=reefact_just-dummies&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=reefact_just-dummies) [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=reefact_just-dummies&metric=coverage)](https://sonarcloud.io/summary/new_code?id=reefact_just-dummies) |
+| **Security** | [![codeql](https://github.com/Reefact/just-dummies/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/Reefact/just-dummies/actions/workflows/codeql.yml) [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/14006/badge)](https://www.bestpractices.dev/projects/14006) [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/Reefact/just-dummies/badge)](https://securityscorecards.dev/viewer/?uri=github.com/Reefact/just-dummies) |
+| **Package** | [![NuGet](https://img.shields.io/nuget/vpre/JustDummies?logo=nuget)](https://www.nuget.org/packages/JustDummies) ![.NET Standard 2.0](https://img.shields.io/badge/.NET%20Standard-2.0-512BD4) |
+| **Project** | [![License](https://img.shields.io/github/license/Reefact/just-dummies)](LICENSE) [![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-fe5196?logo=conventionalcommits&logoColor=white)](https://www.conventionalcommits.org) |
+
 **A fluent DSL for generating arbitrary yet valid test values: dummies.**
 
 Constraints express the invariants a value must satisfy — never what the test asserts. Conflicting

@@ -33,16 +33,51 @@ internal static class DocumentationCorpus {
     /// <summary>The repository root, baked in by the project file at build time.</summary>
     public static string RepositoryRoot { get; } = ResolveRepositoryRoot();
 
-    /// <summary>The pages that carry compilable samples, i.e. everything except the analyzer rule pages.</summary>
+    /// <summary>
+    ///     The highest analyzer rule whose pages are grandfathered out of the compile contract. A rule numbered above
+    ///     this one is a page written AFTER the contract existed, so it is held to it like any other.
+    /// </summary>
+    private const int LastGrandfatheredRule = 28;
+
+    /// <summary>
+    ///     The <c>JD001</c>–<c>JD028</c> pages, named one by one rather than matched by their directory.
+    /// </summary>
     /// <remarks>
-    ///     The 28 <c>JD0NN</c> pages predate this suite and are written to a different brief: they show
-    ///     <c>Noncompliant</c> code on purpose, and their samples name symbols (<c>_repository</c>, a test fixture's
-    ///     fields) that only exist in the reader's imagination. Holding them to the compile contract would mean
-    ///     rewriting 56 pages, which is a change to the analyzer documentation and not to this suite. They ARE held to
-    ///     the translation and link contracts, which they already satisfy.
+    ///     <para>
+    ///         These pages predate this suite and are written to a different brief: they show <c>Noncompliant</c> code
+    ///         on purpose, in FRAGMENTS — a lone member, a piece of a method body — naming symbols that exist only in
+    ///         the reader's imagination. Measured by widening the scope over them: 48 of the 56 pages fail, on 348
+    ///         diagnostics, and the majority are syntax errors rather than missing symbols. No fixture repairs that;
+    ///         only rewriting the samples would, which is a change to the analyzer documentation and deserves its own
+    ///         argument (ADR-0055, "Follow-up Actions").
+    ///     </para>
+    ///     <para>
+    ///         Naming them one by one is what keeps the exemption from spreading. Excluding the whole directory would
+    ///         hand the same pass to a page nobody has written yet, so a rule added tomorrow would inherit an exemption
+    ///         argued entirely from the state of pages written yesterday. A <c>JD029</c> page is in scope from the day
+    ///         it is created, and its author meets the contract while writing rather than never.
+    ///     </para>
+    ///     <para>
+    ///         All of them are held to the translation and link contracts, which they already satisfy.
+    ///     </para>
     /// </remarks>
+    private static readonly IReadOnlyCollection<string> GrandfatheredAnalyzerPages = BuildGrandfatheredAnalyzerPages();
+
+    /// <summary>The pages whose C# samples the compile contract applies to.</summary>
     public static IEnumerable<DocumentationPage> PagesWithCompilableSamples =>
-        Pages.Where(page => !page.RelativePath.Contains("for-users/analyzers/", StringComparison.Ordinal));
+        Pages.Where(page => !GrandfatheredAnalyzerPages.Contains(page.RelativePath));
+
+    private static IReadOnlyCollection<string> BuildGrandfatheredAnalyzerPages() {
+        HashSet<string> pages = new(StringComparer.Ordinal);
+
+        for (int rule = 1; rule <= LastGrandfatheredRule; rule++) {
+            string identifier = $"JD{rule:D3}";
+            pages.Add($"doc/handwritten/for-users/analyzers/{identifier}.en.md");
+            pages.Add($"doc/handwritten/for-users/analyzers/{identifier}.fr.md");
+        }
+
+        return pages;
+    }
 
     private static string ResolveRepositoryRoot() {
         string? root = typeof(DocumentationCorpus).Assembly

@@ -1,0 +1,58 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- net10.0 only, like JustDummies.Analyzers.UnitTests and unlike the library's own suites: this project
+       compiles documentation samples with Roslyn, and Microsoft.CodeAnalysis.CSharp does not load on the
+       net472 support floor. Nothing here exercises the netstandard2.0 asset, so the floor has nothing to
+       say about it (ADR-0007 scopes that leg to the suites that carry the library's own contract). -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="NFluent" />
+    <PackageReference Include="xunit.runner.visualstudio">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="xunit.v3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The three shipped packages, referenced as a READER of the documentation would consume them: every
+         type a sample names must resolve from these alone. A sample that compiles here therefore compiles
+         in a consumer's test project. -->
+    <ProjectReference Include="..\JustDummies\JustDummies.csproj" />
+    <ProjectReference Include="..\JustDummies.DiagnosticCatalog\JustDummies.DiagnosticCatalog.csproj" />
+    <ProjectReference Include="..\JustDummies.Xunit\JustDummies.Xunit.csproj" />
+
+    <!-- The analyzers as a plain library reference, so DocumentationSampleRuleTests can INSTANTIATE them and
+         run them over each compiled sample. Not OutputItemType="Analyzer": they are the subject here, not a
+         build-time check on this project's own source. -->
+    <ProjectReference Include="..\JustDummies.Analyzers\JustDummies.Analyzers.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The repository root, because the subject of this suite is FILES, not compiled output: the pages live
+         in the working tree and nothing on the assembly can carry them. Baked in here rather than derived
+         from [CallerFilePath], which CI rewrites to /_/ under the DeterministicSourcePaths that
+         ContinuousIntegrationBuild turns on — the same reason JustDummies.UnitTests does it. -->
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>RepositoryRoot</_Parameter1>
+      <_Parameter2>$(MSBuildThisFileDirectory)..</_Parameter2>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+</Project>

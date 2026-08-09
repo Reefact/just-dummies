@@ -1,6 +1,7 @@
 # JustDummies
 
-🌍 🇬🇧 English (this file)
+🌍 **Languages:**  
+🇬🇧 English (this file) | 🇫🇷 [Français](README.fr.md)
 
 |  |  |
 | :-- | :-- |
@@ -12,18 +13,35 @@
 
 **A fluent DSL for generating arbitrary yet valid test values: dummies.**
 
-Constraints express the invariants a value must satisfy — never what the test asserts. Conflicting
-constraints fail fast with clear, actionable exceptions, and any sequential run is reproducible from a
-reported seed.
+## 🚨 The problem
+
+Every test is full of values it does not care about.
 
 ```csharp
-int    quantity  = Any.Int32().Between(1, 100).Generate();
-string reference = Any.String().StartingWith("ORD-").WithLength(12).Generate();
-Guid   id        = Any.Guid().Generate();
+string reference = "ORD-12345678";
+int    quantity  = 3;
 ```
 
-An `Any.*` call returns a **generator** — an immutable recipe — and `.Generate()` draws a value from it. A
-value object with a stricter contract is built by transforming a constrained primitive:
+A reader cannot tell whether `3` matters or whether `7` would do. Every literal looks equally
+load-bearing, so nobody dares change one — and the test only ever covers that one case. A defect
+needing a different shape of input is a defect this test can never find.
+
+## ✅ The solution
+
+Say what the value must **satisfy**, and let the library draw one that does:
+
+```csharp
+string reference = Any.String().StartingWith("ORD-").WithLength(12).Generate();
+int    quantity  = Any.Int32().Between(1, 100).Generate();
+Guid   id        = Any.Guid().NonEmpty().Generate();
+```
+
+The test now states its assumptions. Everything else varies between runs, which is what makes it find
+things.
+
+An `Any.*` call returns a **generator** — an immutable recipe — and `.Generate()` draws a value from
+it. A value object with a stricter contract is built by transforming a constrained primitive through
+its real factory:
 
 ```csharp
 OrderReference orderRef = Any.String()
@@ -33,10 +51,22 @@ OrderReference orderRef = Any.String()
     .Generate();
 ```
 
-## Reproducibility
+**The one rule that matters:** a constraint states an invariant of the domain, never what the test
+asserts. Contradictory constraints fail fast, with a message naming *both* sides.
 
-Wrap a test body in `Any.Reproducibly` and, if the body throws, the seed that produced the run is **reported**
-before the failure propagates — so a red test tells you exactly how to replay it.
+## 📦 Install
+
+```bash
+dotnet add package JustDummies
+```
+
+No runtime dependency, and the 28 analyzers come bundled inside — they start working on your next
+build.
+
+## 🔁 Reproducible by construction
+
+Random values in tests are only acceptable if a failure can be replayed. Wrap a body, and the seed is
+reported when — and only when — it goes red:
 
 ```csharp
 Any.Reproducibly(() => {
@@ -44,68 +74,68 @@ Any.Reproducibly(() => {
 });
 ```
 
-`Any.ReproduciblyAsync(Func<Task>)` exists for `async` bodies — await it, or failures are silently lost (an
-analyzer enforces this).
+```text
+[JustDummies] These arbitrary values were seeded with 1743029518. Reproduce this run with Any.Reproducibly(1743029518, ...).
+```
 
-## Packages
+Paste the seed into `Any.Reproducibly(1743029518, ...)` and the run comes back value for value. With
+xUnit v3, `[Reproducible]` does it for you. From `1.0.0-preview.1` a seed replays across every patch
+and minor of a major version, enforced by a golden master
+([ADR-0049](doc/handwritten/for-maintainers/adr/0049-replay-a-seed-across-patch-and-minor-versions.md)).
+
+## 📚 Documentation
+
+**→ [Start with the ten-minute guide](doc/handwritten/for-users/guides/getting-started.en.md)**
+
+| | |
+| --- | --- |
+| [Documentation index](doc/handwritten/for-users/README.md) | everything, organised, in English and French |
+| [Core concepts](doc/handwritten/for-users/guides/core-concepts.en.md) | recipe versus value, and the golden rule |
+| [Generator reference](doc/handwritten/for-users/generators/README.md) | every `Any.*` factory and its constraints |
+| [Reproducibility](doc/handwritten/for-users/guides/reproducibility.en.md) | seeds, scopes and replay |
+| [Composition](doc/handwritten/for-users/guides/composition.en.md) | dummies for your own types |
+| [Analyzer rules](doc/handwritten/for-users/analyzers/README.md) | one page per diagnostic |
+| [Design principles](doc/handwritten/for-users/guides/design-principles.en.md) | what it refuses on purpose, and why |
+
+## 🧩 Packages
 
 | Package | What it is |
 | --- | --- |
-| `JustDummies` | the library, with its 28 analyzers bundled in (`analyzers/dotnet/cs`) |
-| `JustDummies.Xunit` | the xUnit v3 adapter: `[Reproducible]` on a test, class or assembly |
-| `JustDummies.DiagnosticCatalog` | the `JD001`–`JD028` rules as constants a `[SuppressMessage]` can name |
+| [`JustDummies`](doc/handwritten/for-users/packages/justdummies.en.md) | the library, with its 28 analyzers bundled in |
+| [`JustDummies.Xunit`](doc/handwritten/for-users/packages/justdummies-xunit.en.md) | the xUnit v3 adapter: `[Reproducible]` |
+| [`JustDummies.DiagnosticCatalog`](doc/handwritten/for-users/packages/justdummies-diagnosticcatalog.en.md) | the `JD001`–`JD028` rules as compile-checked constants |
 
-All three target `netstandard2.0`; `JustDummies` additionally carries a `net8.0` asset with the modern
-generators (`DateOnly`, `TimeOnly`, `Int128`, `UInt128`, `Half`) that do not exist downlevel. The supported
-.NET Framework floor is **4.7.2**, and CI runs the suites on it ([ADR-0007](doc/handwritten/for-maintainers/adr/0007-floor-the-library-on-net-framework-4-7-2.md)).
+All three target `netstandard2.0`; `JustDummies` additionally carries a `net8.0` asset with the
+modern generators (`DateOnly`, `TimeOnly`, `Int128`, `UInt128`, `Half`). The supported .NET Framework
+floor is **4.7.2** ([ADR-0007](doc/handwritten/for-maintainers/adr/0007-floor-the-library-on-net-framework-4-7-2.md)).
 
-> **Preview.** The public surface is declared in `PublicAPI.Unshipped.txt`, not `PublicAPI.Shipped.txt`:
-> nothing about it is promised yet, and a stable release is what will freeze it. The seed is no longer in
-> that bucket — from `1.0.0-preview.1` a given seed draws the same values across every patch and minor of a
-> major version, and a golden master enforces it
-> ([ADR-0049](doc/handwritten/for-maintainers/adr/0049-replay-a-seed-across-patch-and-minor-versions.md)).
->
-> Which versions are on nuget.org is not repeated here, because a copy of that goes stale the day after a
-> release nobody thought to document: read
-> [the package listing](https://www.nuget.org/packages/JustDummies) instead. See
-> [the trusted-publishing setup](doc/handwritten/for-maintainers/workflows/nuget-trusted-publishing.en.md) for
-> how a release is cut.
+> **Preview.** The public surface is declared in `PublicAPI.Unshipped.txt`: nothing about it is
+> promised yet, and a stable release is what will freeze it. The seed contract is the exception —
+> see above. Which versions are on nuget.org is not repeated here, because a copy of that goes stale
+> the day after a release: read [the package listing](https://www.nuget.org/packages/JustDummies).
 
-## Analyzers
+## 🤝 Contributing
 
-28 first-party rules (`JD001`–`JD028`) guard the recipe-versus-value boundary where the type system cannot
-reach it — a generator rendered as text, a discarded result, a draw outside the pinned scope, constraints
-that admit no value. Each rule has a documentation page under
-[`doc/handwritten/for-users/analyzers/`](doc/handwritten/for-users/analyzers/) in English and French, which is
-also where a diagnostic's help link points.
+Issues and pull requests are welcome. Start with [`CONTRIBUTING.md`](CONTRIBUTING.md) for the commit
+conventions and the test-bed rules, and [`SECURITY.md`](SECURITY.md) to report a vulnerability.
 
-## Build and test
-
-```
+```bash
 dotnet build JustDummies.sln -c Release
 dotnet test  JustDummies.sln -c Release
 ```
 
-The repository targets the .NET 10 SDK (pinned in `global.json`).
+The repository targets the .NET 10 SDK (pinned in `global.json`). Maintainer material — architecture
+decisions, workflows, specifications — is under
+[`doc/handwritten/for-maintainers/`](doc/handwritten/for-maintainers/).
 
-## Documentation
-
-* [Maintainer documentation](doc/handwritten/for-maintainers/) — architecture decisions, workflows, the
-  `dum` scaffolder specification, the test-bed conventions.
-* [Architecture decisions](doc/handwritten/for-maintainers/adr/) — every lasting decision, in English and
-  French.
-* [Analyzer rules](doc/handwritten/for-users/analyzers/) — one page per diagnostic.
-
-## History
+## 📜 History and licence
 
 This repository was extracted from
 [`Reefact/first-class-errors`](https://github.com/Reefact/first-class-errors) on 2026-07-31 with
-`git filter-repo`, preserving authors, dates, commit messages and the rename from `Dummies` to
-`JustDummies`. **Commit hashes therefore differ from the source repository, and issue/PR numbers in commit
-messages dated before the extraction refer to `Reefact/first-class-errors`.** The full record — including the
-commit map — is in [`doc/handwritten/for-maintainers/migration/`](doc/handwritten/for-maintainers/migration/);
-the decision is [ADR-0044](doc/handwritten/for-maintainers/adr/0044-extract-justdummies-into-its-own-repository.md).
+`git filter-repo`, preserving authors, dates and commit messages. **Commit hashes therefore differ
+from the source repository, and issue/PR numbers in commit messages dated before the extraction refer
+to `Reefact/first-class-errors`.** The full record is in
+[`doc/handwritten/for-maintainers/migration/`](doc/handwritten/for-maintainers/migration/); the
+decision is [ADR-0044](doc/handwritten/for-maintainers/adr/0044-extract-justdummies-into-its-own-repository.md).
 
-## Licence
-
-[Apache 2.0](LICENSE).
+Licensed under [Apache 2.0](LICENSE).

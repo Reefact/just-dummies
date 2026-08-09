@@ -166,6 +166,11 @@ PublishScripts/
 **/packages/*
 # except build/, which is used as an MSBuild target.
 !**/packages/build/
+# ...and except the user documentation's own packages/ section, which is prose about the three
+# published packages and has nothing to do with a NuGet restore directory. Without this line the
+# rule above swallows eight pages silently: they stay on disk, so a local build and the whole test
+# suite still pass, and only the pushed branch is missing them.
+!doc/handwritten/for-users/packages/**
 # Uncomment if necessary however generally it will be regenerated when needed
 #!**/packages/repositories.config
 # NuGet v3's project.json files produces more ignorable files

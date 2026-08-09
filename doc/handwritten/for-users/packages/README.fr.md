@@ -7,7 +7,7 @@ Trois paquets sont publiés depuis ce dépôt. La plupart des projets n'ont beso
 
 | Paquet | Ce que c'est | En ai-je besoin ? |
 | --- | --- | --- |
-| [`JustDummies`](./justdummies.fr.md) | la bibliothèque, avec ses 28 analyzers embarqués | **Oui** — c'est le produit |
+| [`JustDummies`](./justdummies.fr.md) | la bibliothèque, avec ses 28 règles embarquées | **Oui** — c'est le produit |
 | [`JustDummies.Xunit`](./justdummies-xunit.fr.md) | l'adaptateur xUnit v3 : `[Reproducible]` | Seulement avec xUnit v3, et seulement si vous voulez l'attribut |
 | [`JustDummies.DiagnosticCatalog`](./justdummies-diagnosticcatalog.fr.md) | les règles `JD001`–`JD028` en constantes vérifiées par le compilateur | Seulement pour supprimer une règle sans littéral de chaîne |
 
@@ -15,7 +15,7 @@ Trois paquets sont publiés depuis ce dépôt. La plupart des projets n'ont beso
 
 ```mermaid
 flowchart TD
-    L["JustDummies<br/><i>la bibliothèque</i>"] -->|"embarque"| A["28 analyzers<br/><i>analyzers/dotnet/cs</i>"]
+    L["JustDummies<br/><i>la bibliothèque</i>"] -->|"embarque"| A["28 règles<br/><i>analyzers/dotnet/cs</i>"]
     X["JustDummies.Xunit<br/><i>[Reproducible]</i>"] -->|"dépend de"| L
     C["JustDummies.DiagnosticCatalog<br/><i>JustDummiesRule.JD0NN</i>"]
     C -.->|"nomme les règles de"| A

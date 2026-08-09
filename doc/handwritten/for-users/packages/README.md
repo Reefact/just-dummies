@@ -7,7 +7,7 @@ Three packages ship from this repository. Most projects need exactly one of them
 
 | Package | What it is | Do I need it? |
 | --- | --- | --- |
-| [`JustDummies`](./justdummies.en.md) | the library, with its 28 analyzers bundled in | **Yes** — this is the product |
+| [`JustDummies`](./justdummies.en.md) | the library, with its 28 rules bundled in | **Yes** — this is the product |
 | [`JustDummies.Xunit`](./justdummies-xunit.en.md) | the xUnit v3 adapter: `[Reproducible]` | Only with xUnit v3, and only if you want the attribute |
 | [`JustDummies.DiagnosticCatalog`](./justdummies-diagnosticcatalog.en.md) | the `JD001`–`JD028` rules as compile-checked constants | Only to suppress a rule without a string literal |
 
@@ -15,7 +15,7 @@ Three packages ship from this repository. Most projects need exactly one of them
 
 ```mermaid
 flowchart TD
-    L["JustDummies<br/><i>the library</i>"] -->|"bundles"| A["28 analyzers<br/><i>analyzers/dotnet/cs</i>"]
+    L["JustDummies<br/><i>the library</i>"] -->|"bundles"| A["28 rules<br/><i>analyzers/dotnet/cs</i>"]
     X["JustDummies.Xunit<br/><i>[Reproducible]</i>"] -->|"depends on"| L
     C["JustDummies.DiagnosticCatalog<br/><i>JustDummiesRule.JD0NN</i>"]
     C -.->|"names the rules in"| A

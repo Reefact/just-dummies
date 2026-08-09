@@ -60,7 +60,7 @@ asserts. Contradictory constraints fail fast, with a message naming *both* sides
 dotnet add package JustDummies
 ```
 
-No runtime dependency, and the 28 analyzers come bundled inside — they start working on your next
+No runtime dependency, and the 28 analyzer rules come bundled inside — they start working on your next
 build.
 
 ## 🔁 Reproducible by construction
@@ -115,7 +115,7 @@ seed replays across every patch and minor of a major version, enforced by a gold
 
 | Package | What it is |
 | --- | --- |
-| [`JustDummies`](doc/handwritten/for-users/packages/justdummies.en.md) | the library, with its 28 analyzers bundled in |
+| [`JustDummies`](doc/handwritten/for-users/packages/justdummies.en.md) | the library, with its 28 rules bundled in |
 | [`JustDummies.Xunit`](doc/handwritten/for-users/packages/justdummies-xunit.en.md) | the xUnit v3 adapter: `[Reproducible]` |
 | [`JustDummies.DiagnosticCatalog`](doc/handwritten/for-users/packages/justdummies-diagnosticcatalog.en.md) | the `JD001`–`JD028` rules as compile-checked constants |
 

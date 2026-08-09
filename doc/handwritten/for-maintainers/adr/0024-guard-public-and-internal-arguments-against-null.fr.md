@@ -131,7 +131,7 @@ réelle.
 
 ## Références
 
-* [ADR-0003](0003-host-dummies-as-a-standalone-package.md) — JustDummies est un paquet autonome et agnostique aux erreurs.
+* [ADR-0003](0003-host-dummies-as-a-standalone-package.fr.md) — JustDummies est un paquet autonome et agnostique aux erreurs.
 * [ADR-0026 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0026-rebase-testing-arbitrary-values-on-dummies.md) — le paquet Testing rebase ses valeurs arbitraires sur JustDummies.
 * Audit d'architecture et de conception JustDummies du 2026-07-20, §9.3 (stratégie de test — la posture boîte noire).
 * `CLAUDE.md` — la règle « class, jamais struct » des objets-valeurs (application des invariants à l'exécution).

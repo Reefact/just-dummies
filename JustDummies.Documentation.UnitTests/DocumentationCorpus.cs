@@ -13,10 +13,16 @@ namespace JustDummies.Documentation.UnitTests;
 /// </summary>
 /// <remarks>
 ///     <para>
-///         Scope is the root <c>README</c> pair plus everything under <c>doc/handwritten/for-users/</c> — the pages a
-///         CONSUMER of the packages reads. The maintainer documentation is deliberately outside it for now: it carries
-///         conventions of its own (the ADR base numbers its English pages without a language suffix) that would have to
-///         be settled before the same contracts could be applied to it.
+///         Scope is the root <c>README</c> pair, the two relocated root files, and everything under
+///         <c>doc/handwritten/</c> — the pages a consumer reads AND the pages a maintainer reads.
+///     </para>
+///     <para>
+///         The maintainer half was held back at first, on the belief that the ADR base naming its English pages without
+///         a language suffix would have to be settled before the contracts could reach it. Measured, that was wrong:
+///         <see cref="TwinOf" /> already resolves both spellings, and the 144 maintainer pages satisfied the translation
+///         and link contracts on the day they were brought in — 0 orphans, 0 structural divergences, 0 dead links. What
+///         does NOT reach them is the compile contract: their C# is illustrative, in ADRs whose samples are fragments of
+///         an argument rather than code anybody runs.
 ///     </para>
 ///     <para>
 ///         The pages are read from disk rather than embedded, for the same reason the seed golden master is copied
@@ -63,9 +69,20 @@ internal static class DocumentationCorpus {
     /// </remarks>
     private static readonly IReadOnlyCollection<string> GrandfatheredAnalyzerPages = BuildGrandfatheredAnalyzerPages();
 
-    /// <summary>The pages whose C# samples the compile contract applies to.</summary>
+    /// <summary>
+    ///     The pages whose C# samples the compile contract applies to: the user documentation, minus the grandfathered
+    ///     rule pages.
+    /// </summary>
+    /// <remarks>
+    ///     The maintainer documentation is excluded as a body rather than page by page, because the exclusion is a
+    ///     property of what those pages ARE. An ADR quotes C# to carry an argument — a shape, a signature, the line a
+    ///     decision turns on — and is explicitly forbidden from documenting how the thing is built (see that base's
+    ///     README). Holding those quotations to a contract written for teaching material would make a decision record
+    ///     answer to the code it deliberately outlives.
+    /// </remarks>
     public static IEnumerable<DocumentationPage> PagesWithCompilableSamples =>
-        Pages.Where(page => !GrandfatheredAnalyzerPages.Contains(page.RelativePath));
+        Pages.Where(page => !page.RelativePath.StartsWith("doc/handwritten/for-maintainers/", StringComparison.Ordinal))
+             .Where(page => !GrandfatheredAnalyzerPages.Contains(page.RelativePath));
 
     private static IReadOnlyCollection<string> BuildGrandfatheredAnalyzerPages() {
         HashSet<string> pages = new(StringComparer.Ordinal);
@@ -136,9 +153,9 @@ internal static class DocumentationCorpus {
             Path.Combine(RepositoryRoot, "SECURITY.md")
         ];
 
-        string userDocumentation = Path.Combine(RepositoryRoot, "doc", "handwritten", "for-users");
-        if (Directory.Exists(userDocumentation)) {
-            files.AddRange(Directory.EnumerateFiles(userDocumentation, "*.md", SearchOption.AllDirectories));
+        string handwritten = Path.Combine(RepositoryRoot, "doc", "handwritten");
+        if (Directory.Exists(handwritten)) {
+            files.AddRange(Directory.EnumerateFiles(handwritten, "*.md", SearchOption.AllDirectories));
         }
 
         List<DocumentationPage> pages = [];

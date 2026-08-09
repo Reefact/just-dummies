@@ -52,7 +52,7 @@ autre changement. Les scopes doivent être un sous-ensemble de la liste du commi
 **2. Scopes de commit** — si le train introduit de nouveaux scopes, ajoutez-les à la
 liste fermée de [`tools/commit-lint/lint-commit-message.sh`](../../../tools/commit-lint/lint-commit-message.sh)
 (`SCOPES` **et** `SCOPES_HUMAN`) et au tableau des scopes de
-[`CONTRIBUTING.md`](../../../CONTRIBUTING.md). Sans ça, les commits du nouveau composant
+[`CONTRIBUTING.md`](../for-users/CONTRIBUTING.fr.md). Sans ça, les commits du nouveau composant
 échouent au check commit-lint.
 
 **3. [`.github/workflows/release.yml`](../../../.github/workflows/release.yml)** — trois

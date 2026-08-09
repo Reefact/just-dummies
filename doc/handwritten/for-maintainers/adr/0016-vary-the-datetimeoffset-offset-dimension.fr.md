@@ -72,5 +72,5 @@ Envisagée parce que la plupart du code traite un `DateTimeOffset` comme un inst
 
 * Issue [#297](https://github.com/Reefact/first-class-errors/issues/297) — l'issue dédiée à cette fonctionnalité.
 * Issue [#226](https://github.com/Reefact/first-class-errors/issues/226) — le backlog Nice-to-Have dont elle a été détachée.
-* [ADR-0009](0009-draw-arbitrary-strings-from-an-explicit-terminal-set.md) — la sémantique d'énumération terminale que suit `OneOf`.
+* [ADR-0009](0009-draw-arbitrary-strings-from-an-explicit-terminal-set.fr.md) — la sémantique d'énumération terminale que suit `OneOf`.
 * `AnyDateTimeOffset` dans le projet `JustDummies` ; le readme NuGet de JustDummies.

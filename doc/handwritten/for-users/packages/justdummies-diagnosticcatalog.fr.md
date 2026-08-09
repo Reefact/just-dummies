@@ -60,7 +60,6 @@ comme tout le reste ici.
 Ajoutez l'espace de noms une fois, dans votre fichier projet, et chaque site de suppression voit les
 constantes sans `using` supplémentaire :
 
-<!-- jd:skip -->
 ```xml
 <ItemGroup>
   <Using Include="JustDummies.Diagnostics" />

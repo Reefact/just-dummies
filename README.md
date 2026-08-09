@@ -65,22 +65,36 @@ build.
 
 ## 🔁 Reproducible by construction
 
-Random values in tests are only acceptable if a failure can be replayed. Wrap a body, and the seed is
-reported when — and only when — it goes red:
+Random values in tests are only acceptable if a failure can be replayed. Wrap the test body:
 
 ```csharp
 Any.Reproducibly(() => {
-    // ... arrange with Any, act, assert ...
+    decimal orderTotal = Any.Decimal().Between(0m, 10_000m).WithScale(2).Generate();
+
+    Assert.InRange(Shipping.FeeFor(orderTotal), 0m, 4.90m);
 });
 ```
+
+When it goes red — and only then — the seed that produced the run is reported:
 
 ```text
 [JustDummies] These arbitrary values were seeded with 1743029518. Reproduce this run with Any.Reproducibly(1743029518, ...).
 ```
 
-Paste the seed into `Any.Reproducibly(1743029518, ...)` and the run comes back value for value. With
-xUnit v3, `[Reproducible]` does it for you. From `1.0.0-preview.1` a seed replays across every patch
-and minor of a major version, enforced by a golden master
+Copy that number in front of the body. Same test, one argument more, and the exact run comes back —
+value for value:
+
+```csharp
+Any.Reproducibly(1743029518, () => {
+    // the same body as above; only the seed was added
+});
+```
+
+Fix the defect, then delete the seed so the test varies again.
+
+With xUnit v3, `[Reproducible]` replaces the wrapping entirely — see
+[the adapter](doc/handwritten/for-users/packages/justdummies-xunit.en.md). From `1.0.0-preview.1` a
+seed replays across every patch and minor of a major version, enforced by a golden master
 ([ADR-0049](doc/handwritten/for-maintainers/adr/0049-replay-a-seed-across-patch-and-minor-versions.md)).
 
 ## 📚 Documentation

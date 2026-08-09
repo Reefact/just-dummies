@@ -67,21 +67,37 @@ votre prochaine compilation.
 ## 🔁 Reproductible par construction
 
 Des valeurs aléatoires dans les tests ne sont acceptables que si un échec peut être rejoué.
-Enveloppez un corps, et la graine est rapportée quand — et seulement quand — il passe au rouge :
+Enveloppez le corps du test :
 
 ```csharp
 Any.Reproducibly(() => {
-    // ... arranger avec Any, agir, affirmer ...
+    decimal orderTotal = Any.Decimal().Between(0m, 10_000m).WithScale(2).Generate();
+
+    Assert.InRange(Shipping.FeeFor(orderTotal), 0m, 4.90m);
 });
 ```
+
+Quand il passe au rouge — et seulement alors — la graine qui a produit l'exécution est rapportée :
 
 ```text
 [JustDummies] These arbitrary values were seeded with 1743029518. Reproduce this run with Any.Reproducibly(1743029518, ...).
 ```
 
-Collez la graine dans `Any.Reproducibly(1743029518, ...)` et l'exécution revient valeur pour valeur.
-Avec xUnit v3, `[Reproducible]` le fait pour vous. Depuis `1.0.0-preview.1`, une graine se rejoue sur
-chaque version corrective et mineure d'une majeure, garanti par un golden master
+Recopiez ce nombre devant le corps. Même test, un argument de plus, et l'exécution exacte revient —
+valeur pour valeur :
+
+```csharp
+Any.Reproducibly(1743029518, () => {
+    // le même corps que ci-dessus ; seule la graine a été ajoutée
+});
+```
+
+Corrigez le défaut, puis supprimez la graine pour que le test recommence à varier.
+
+Avec xUnit v3, `[Reproducible]` remplace complètement l'enveloppe — voir
+[l'adaptateur](doc/handwritten/for-users/packages/justdummies-xunit.fr.md). Depuis
+`1.0.0-preview.1`, une graine se rejoue sur chaque version corrective et mineure d'une majeure,
+garanti par un golden master
 ([ADR-0049](doc/handwritten/for-maintainers/adr/0049-replay-a-seed-across-patch-and-minor-versions.fr.md)).
 
 ## 📚 Documentation

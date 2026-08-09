@@ -189,13 +189,17 @@ lève une exception, la graine est rapportée avant que l'échec ne se propage :
 [JustDummies] These arbitrary values were seeded with 1743029518. Reproduce this run with Any.Reproducibly(1743029518, ...).
 ```
 
-Collez ce nombre dans l'autre surcharge et l'exécution exacte revient, valeur pour valeur :
+Recopiez ce nombre devant le corps. Rien d'autre ne bouge — même test, un argument de plus — et
+l'exécution exacte revient, valeur pour valeur :
 
 ```csharp
 Any.Reproducibly(1743029518, () => {
     // les mêmes tirages que l'exécution qui a échoué
 });
 ```
+
+Déboguez sur ces valeurs exactes, corrigez le défaut, puis supprimez la graine pour que le test
+recommence à varier.
 
 Avec xUnit v3, le paquet [`JustDummies.Xunit`](../packages/justdummies-xunit.fr.md) fait cela pour
 vous via un attribut `[Reproducible]` : aucun corps de test n'a besoin d'être enveloppé à la main.

@@ -185,13 +185,16 @@ before the failure propagates:
 [JustDummies] These arbitrary values were seeded with 1743029518. Reproduce this run with Any.Reproducibly(1743029518, ...).
 ```
 
-Paste that number into the other overload and the exact run comes back, value for value:
+Copy that number in front of the body. Nothing else moves — same test, one argument more — and the
+exact run comes back, value for value:
 
 ```csharp
 Any.Reproducibly(1743029518, () => {
     // the same draws as the run that failed
 });
 ```
+
+Debug against those exact values, fix the defect, then delete the seed so the test varies again.
 
 If you use xUnit v3, the [`JustDummies.Xunit`](../packages/justdummies-xunit.en.md) package does
 this for you with a `[Reproducible]` attribute, so no test body needs wrapping by hand.

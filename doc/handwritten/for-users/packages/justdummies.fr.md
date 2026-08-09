@@ -19,7 +19,7 @@ dans votre projet de test, et rien d'autre dans votre graphe de dépendances.
 
 | | |
 | --- | --- |
-| `Any.*` | 25 fabriques couvrant tous les primitifs du BCL, plus les collections, les URI et les choix |
+| `Any.*` | une fabrique par primitif du BCL, plus les collections, les URI et les choix |
 | `IAny<T>` | la couture qu'implémente tout générateur, et la monnaie d'échange de la composition |
 | `Any.Reproducibly` / `UseSeed` / `WithSeed` | les portées de reproductibilité |
 | `AnyContext` | un monde isolé et graîné, portant les mêmes fabriques |

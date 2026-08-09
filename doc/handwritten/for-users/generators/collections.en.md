@@ -26,7 +26,7 @@ HashSet<OrderStatus> states = Any.SetOf(Any.Enum<OrderStatus>()).WithMaxCount(3)
 
 ## The shared count vocabulary
 
-Every collection generator carries the same seven constraints:
+Every collection generator carries the same six count constraints:
 
 ```csharp
 IAny<int> anyQuantity = Any.Int32().Between(1, 100);
@@ -46,7 +46,7 @@ Counts that cannot all hold — a minimum above a maximum, `WithCount(3)` beside
 refused with a message naming both, and the analyzer [JD016](../analyzers/JD016.en.md) catches the
 constant cases at build time.
 
-A count above 1 000 000 is refused
+A count above one million is refused
 ([ADR-0029](../../for-maintainers/adr/0029-let-a-size-maximum-cap-without-steering-the-draw.md)).
 
 ## Requiring specific elements

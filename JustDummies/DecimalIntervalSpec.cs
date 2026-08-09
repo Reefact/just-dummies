@@ -88,8 +88,11 @@ internal sealed class DecimalIntervalSpec {
         _scale             = scale;
         _scaleConstraint   = scaleConstraint;
         // The flat value set drives every draw-time decision; the provenance in _exclusions is consulted only
-        // when a conflict message must name the excluding constraint. Materialized once — "constrain once, draw many".
-        _excluded = exclusions.SelectMany(pair => pair.Ordinals).ToList();
+        // when a conflict message must name the excluding constraint. Materialized once — "constrain once, draw
+        // many" — and DEDUPLICATED, like the ordinal engines': this engine COUNTS excluded grid points to decide
+        // satisfiability and cardinality, so a value excluded twice (Except(x).DifferentFrom(x), or a duplicate
+        // inside one call) must weigh once, or a satisfiable declaration is refused as exhausted.
+        _excluded = exclusions.SelectMany(pair => pair.Ordinals).Distinct().ToList();
         // Lattice-derived state, materialized once — "constrain once, draw many".
         if (scale >= 0) {
             _step            = 1m / Pow10(scale);

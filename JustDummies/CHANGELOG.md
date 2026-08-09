@@ -22,6 +22,13 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Fixed
 
+- **A decimal exclusion declared twice no longer empties a satisfiable grid.** On `Any.Decimal()` with
+  `WithScale`, the engine counts excluded grid points to decide satisfiability and cardinality, and it counted a
+  duplicated value as many times as it was declared — so `Except(0.01m).DifferentFrom(0.01m)` (restating an
+  exclusion already in force) or `Except(0.01m, 0.01m)` could refuse a declaration as exhausted while values
+  were still drawable, with a message claiming every grid value was forbidden. Excluded values are now
+  deduplicated at construction, as the integer engines always did. A genuinely exhausted grid still conflicts
+  eagerly; generation, draw counts and the public surface are unchanged.
 - **A conflict caused by an exclusion now names that exclusion.** On `Any.Enum<T>()` and `Any.Guid()`, a
   constraint that emptied the domain reported the constraint it had emptied instead — so
   `Any.Enum<T>().OneOf(a, b).Except(a, b)` said *"no value OneOf(a, b) allows remains available"*, naming the

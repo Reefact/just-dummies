@@ -59,7 +59,6 @@ like everything else here.
 Add the namespace once, in your project file, and every suppression site sees the constants without
 an extra `using`:
 
-<!-- jd:skip -->
 ```xml
 <ItemGroup>
   <Using Include="JustDummies.Diagnostics" />

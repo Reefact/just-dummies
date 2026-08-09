@@ -1,0 +1,72 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- No PublicApiBaseline.props import, unlike the shipping libraries: a tool carries no public-API
+       compatibility promise, and its surface is the command line, not a set of types (specification §13.4). -->
+
+  <PropertyGroup>
+    <!-- Build. net8.0 with RollForward=Major so the tool runs on any newer runtime the developer has
+         installed, rather than demanding the exact band it was built for. Unlike the engine, this project
+         is NOT pinned to the Roslyn floor: it hosts its own compiler and hands the resulting Compilation
+         down to an engine compiled against an older one, which is the supported direction (§13.2). -->
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <RollForward>Major</RollForward>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+
+    <!-- .NET tool identity. The package is JustDummies.Cli; the command a developer types is `dum`
+         (specification §10.4). -->
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>dum</ToolCommandName>
+
+    <!-- Version. A local/dev fallback only: the cli release train overrides it with -p:Version from the
+         Git tag (cli-v*, see tools/packaging/pack.sh). That train has no packable step yet — this project
+         has no behaviour to publish — so nothing has ever been produced from this number. -->
+    <Version>0.1.0-dev</Version>
+
+    <!-- NuGet identity -->
+    <PackageId>JustDummies.Cli</PackageId>
+    <Authors>Sylvain AURAT</Authors>
+    <Company>Reefact</Company>
+
+    <!-- Description -->
+    <Description>
+      dum, the JustDummies scaffolder: it writes the dummy generator for one of your types, once, as ordinary code you own and edit. It reads your compilation only — it never references JustDummies itself, so the tool and the library version independently.
+    </Description>
+
+    <!-- Metadata -->
+    <PackageTags>testing;test-data;dummies;scaffolding;dotnet-tool;cli;code-generation</PackageTags>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+
+    <!-- Links -->
+    <PackageProjectUrl>https://justdummies.io</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/Reefact/just-dummies.git</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+
+    <Copyright>© Reefact 2026</Copyright>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The command line. The shell owns the command definitions and settings; the engine owns none of it and
+         must never see them (specification §10.2). -->
+    <PackageReference Include="Spectre.Console.Cli" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The engine. No reference to JustDummies accompanies it, here or there: every library symbol the
+         tool reasons about is resolved by metadata name against the DEVELOPER's compilation, exactly as
+         the analyzers do, which is what makes version skew between tool and library impossible
+         (ADR-0063). The packed tool must therefore declare no JustDummies dependency; the release train
+         asserts it on the produced .nuspec (§13.6). -->
+    <ProjectReference Include="..\JustDummies.GenAny\JustDummies.GenAny.csproj" />
+  </ItemGroup>
+
+  <!-- Opens the internals to the shell's own suite: the command line is the tool's contract, and nothing
+       outside this assembly is meant to call the code that reads it. -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="JustDummies.Cli.UnitTests" />
+  </ItemGroup>
+
+</Project>

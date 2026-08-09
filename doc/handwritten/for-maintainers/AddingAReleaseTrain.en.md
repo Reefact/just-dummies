@@ -15,7 +15,7 @@ publishes on its own tag prefix. Today there are three:
 | --- | --- | --- | --- | --- |
 | `lib` | `lib-v*` | `core`, `analyzers` (plus the legacy `dummies`, `justdummies`) | JustDummies, analyzers bundled in | `JustDummies/CHANGELOG.md` |
 | `xunit` | `xunit-v*` | `xunit` | JustDummies.Xunit (the xUnit v3 adapter) | `JustDummies.Xunit/CHANGELOG.md` |
-| `cli` | `cli-v*` | `cli` | `dum`, the scaffolder (specified, not built yet) | `tools/dum/CHANGELOG.md` |
+| `cli` | `cli-v*` | `cli` | `dum`, the scaffolder (skeleton in place, not shipped yet) | `JustDummies.Cli/CHANGELOG.md` |
 
 The train → (prefix, scopes, package, changelog file) mapping lives in **one place**,
 [`tools/trains.sh`](../../../tools/trains.sh), which the release-notes generator, the

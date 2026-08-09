@@ -68,11 +68,15 @@ case "$scope" in
     projects='JustDummies.DiagnosticCatalog/JustDummies.DiagnosticCatalog.csproj'
     ;;
   cli)
-    # The `dum` scaffolder. Specified in doc/handwritten/for-maintainers/specifications/justdummies-tool.md
-    # ("Status: specification, ready to implement. Nothing is built yet"), so there is no project to pack.
-    # The train is declared in tools/trains.sh so the tag trigger, the scope list and the release workflow are
-    # already wired; this arm fails loudly rather than packing nothing and reporting success.
-    echo "error: the 'cli' train has no packable project yet -- the dum scaffolder is specified but not built" >&2
+    # The `dum` scaffolder. JustDummies.Cli exists and packs as a .NET tool, and its command line parses in
+    # full, but nothing sits behind it: `generate` is specified in
+    # doc/handwritten/for-maintainers/specifications/justdummies-tool.md and not implemented, so publishing
+    # this would put a tool that refuses every invocation on nuget.org. The train is
+    # declared in tools/trains.sh so the tag trigger, the scope list and the release workflow are already
+    # wired; this arm fails loudly rather than shipping that. Opening it means adding the project below AND
+    # the assertion that the produced .nuspec declares no JustDummies dependency, which is the executable
+    # form of ADR-0063.
+    echo "error: the 'cli' train has nothing to publish yet -- dum parses 'generate' and does nothing" >&2
     echo "       see doc/handwritten/for-maintainers/specifications/justdummies-tool.md" >&2
     exit 2
     ;;

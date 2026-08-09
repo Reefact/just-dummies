@@ -14,11 +14,15 @@ d'un type donné. Écrit pour qui s'apprête à modifier la bibliothèque, non �
 | `JustDummies.Analyzers` | *dans* `JustDummies` | `netstandard2.0` | les 28 règles Roslyn, sous `analyzers/dotnet/cs` |
 | `JustDummies.Xunit` | `JustDummies.Xunit` | `netstandard2.0` | l'adaptateur xUnit v3 — un attribut |
 | `JustDummies.DiagnosticCatalog` | `JustDummies.DiagnosticCatalog` | `netstandard2.0` | les ids de règles en constantes vérifiées |
+| `JustDummies.GenAny` | *dans* `JustDummies.Cli` | `netstandard2.0` | le moteur de scaffolding de `dum` — **aucune commande implémentée** |
+| `JustDummies.Cli` | `JustDummies.Cli` (l'outil `dum`) | `net8.0` | la coquille : la ligne de commande de la §3, **rien derrière** |
 | `JustDummies.UnitTests` | — | — | cas nommés : messages, validation d'arguments, conventions, régressions |
 | `JustDummies.PropertyTests` | — | — | invariants valables pour tout argument de contrainte légal |
 | `JustDummies.Analyzers.UnitTests` | — | — | une suite par règle, sur des extraits compilés |
 | `JustDummies.Xunit.UnitTests` | — | — | le cycle de vie de l'adaptateur |
 | `JustDummies.Documentation.UnitTests` | — | — | les contrats propres à la documentation |
+| `JustDummies.GenAny.UnitTests` | — | — | le plancher du moteur et ses frontières |
+| `JustDummies.Cli.UnitTests` | — | — | ce que l'outil répond en ligne de commande |
 | `tools/justdummies-check` | — | — | compatibilité de l'asset empaqueté, volontairement hors solution |
 
 Deux frameworks cibles, une raison : `netstandard2.0` est le plancher qui donne sa portée à la

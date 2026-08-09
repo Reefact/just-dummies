@@ -88,8 +88,8 @@ dotnet_diagnostic.CA1859.severity = none
 # few that remain are deliberate and carry a [SuppressMessage] with the reason at the site. The second
 # door keeps the rule enforced everywhere else, which parking it never did.
 
-# Test projects only. `*Tests` matches the four test projects and no shipping one —
-# neither JustDummies nor JustDummies.Xunit ends in `Tests`, so the rules below do not reach them.
+# Test projects only. `*Tests` matches every test project and no shipping one — no project that
+# ships ends in `Tests`, so the rules below do not reach them.
 [*Tests/**.cs]
 # Declined in tests: hoisting constant array arguments. CA1861 asks that a literal array
 # passed to a method — the expected values of an assertion, the cases of a generator — be

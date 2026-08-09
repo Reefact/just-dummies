@@ -7,7 +7,7 @@ name: Draft changelog
 # before merging. The trains version independently and keep separate changelogs:
 #   lib   -> JustDummies/CHANGELOG.md        (the library, with its analyzers bundled in)
 #   xunit -> JustDummies.Xunit/CHANGELOG.md  (the xUnit v3 adapter)
-#   cli   -> tools/dum/CHANGELOG.md          (the dum scaffolder, not built yet)
+#   cli   -> JustDummies.Cli/CHANGELOG.md    (the dum scaffolder, not shipped yet)
 on:
   workflow_dispatch:
     inputs:

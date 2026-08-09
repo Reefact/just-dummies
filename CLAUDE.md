@@ -98,11 +98,18 @@ it.
 * `JustDummies`             — the library (+ `.UnitTests`, `.PropertyTests`)
 * `JustDummies.Analyzers`   — Roslyn analyzers, bundled inside the library package (+ `.UnitTests`)
 * `JustDummies.Xunit`       — xUnit v3 adapter (+ `.UnitTests`)
+* `JustDummies.GenAny`      — the `dum` scaffolding engine, pinned to the Roslyn floor (+ `.UnitTests`)
+* `JustDummies.Cli`         — the `dum` tool itself, the shell around that engine (+ `.UnitTests`)
 * `tools/justdummies-check` — packaged-asset compatibility check, deliberately outside the solution
 * `doc/`                    — documentation: `handwritten/` (`for-users`, `for-maintainers`)
 
 The `dum` scaffolder is specified in
-`doc/handwritten/for-maintainers/specifications/justdummies-tool.md` but not built yet.
+`doc/handwritten/for-maintainers/specifications/justdummies-tool.md`. Its two projects exist and carry
+the constraints that shape them — the engine is netstandard2.0 on the Roslyn floor so a compiler host
+can load it, references no JustDummies assembly, and knows nothing of MSBuild or the console — but
+**no command is implemented**: the Spectre command line of §3 parses in full, and `dum generate`
+then refuses, because nothing behind it is written. Nothing publishes it either; the `cli` release
+train refuses to pack while that holds.
 
 When adding a new project to the solution, also add its GUID to
 `JustDummies.sln`'s `GlobalSection(NestedProjects)`, nested under the

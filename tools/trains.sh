@@ -51,7 +51,7 @@ trains_rows() {
   cat <<'ROWS'
 lib|lib-v|core,analyzers,dummies,justdummies|JustDummies/CHANGELOG.md|JustDummies (the library, with its analyzers bundled in)
 xunit|xunit-v|xunit|JustDummies.Xunit/CHANGELOG.md|JustDummies.Xunit (the xUnit v3 adapter)
-cli|cli-v|cli|tools/dum/CHANGELOG.md|dum (the JustDummies scaffolder)
+cli|cli-v|cli|JustDummies.Cli/CHANGELOG.md|dum (the JustDummies scaffolder)
 catalog|catalog-v|catalog|JustDummies.DiagnosticCatalog/CHANGELOG.md|JustDummies.DiagnosticCatalog (the JD rules as constants)
 ROWS
 }

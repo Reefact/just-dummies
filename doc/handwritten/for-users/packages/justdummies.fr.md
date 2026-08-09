@@ -4,7 +4,7 @@
 🇬🇧 [English](./justdummies.en.md) | 🇫🇷 Français (ce fichier)
 
 La bibliothèque elle-même : le point d'entrée `Any`, tous les générateurs, les portées de
-reproductibilité, et les 28 analyzers qui veillent au bon usage.
+reproductibilité, et les 28 règles qui veillent au bon usage.
 
 ## Installation
 

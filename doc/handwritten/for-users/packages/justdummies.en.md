@@ -4,7 +4,7 @@
 🇬🇧 English (this file) | 🇫🇷 [Français](./justdummies.fr.md)
 
 The library itself: the `Any` entry point, every generator, the reproducibility scopes, and the 28
-analyzers that guard correct usage.
+rules that guard correct usage.
 
 ## Install
 

@@ -144,3 +144,4 @@ and it was decided on 2026-08-01 — the index carries the order, the numbering 
 | [ADR-0052](0052-publish-the-jd-rules-as-a-first-party-catalogue.md) | Publish the JD rules as a first-party catalogue, and read the descriptors from it | Accepted | recorded here |
 | [ADR-0053](0053-rewrite-the-published-history-to-a-single-line.md) | Rewrite the published history to a single line, and carry the release tags onto it | Accepted | recorded here |
 | [ADR-0054](0054-draw-only-valid-values-from-a-typed-builder.md) | Draw only valid values from a typed builder, and judge nothing in a caller-supplied pool | Accepted | recorded here |
+| [ADR-0055](0055-hold-the-user-documentation-to-contracts-the-build-checks.md) | Hold the user documentation to contracts the build checks | Accepted | recorded here |

@@ -1,0 +1,65 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The documentation, as a project an IDE can open.
+
+    It carries NO code. Its only purpose is to make the pages under doc/ appear in the Solution
+    Explorer, so documentation is something a contributor edits from the same window as the code
+    instead of something they have to remember exists.
+
+    WHY THE PROJECT FILE SITS IN doc/ RATHER THAN IN A DIRECTORY OF ITS OWN.
+    A project shows the files under ITS directory. Putting the .csproj at the root of doc/ makes the
+    project directory and the documentation directory the same directory, so the glob below covers
+    every page — including pages nobody has written yet. A page added tomorrow in a folder created
+    tomorrow appears with no edit to this file and no edit to the solution. The alternative, a
+    solution folder listing pages one by one, decorrelates the tree from the file system and goes
+    stale on the first page somebody forgets to register; that is the failure this placement removes
+    rather than manages.
+
+    WHY IT IS STILL AN SDK PROJECT.
+    A no-code project needs SOMETHING an IDE and MSBuild both understand. Microsoft.Build.NoTargets
+    would express "builds nothing" exactly, but it is a new SDK dependency for a cosmetic project;
+    an ordinary SDK project with no compile items produces an empty assembly and costs nothing else.
+    Every property below is there to make that assembly inert: not packed, not published, not
+    covered, not shipped.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+
+    <!-- netstandard2.0 defaults C# to 7.3, which rejects the `global using` directives the SDK generates from the
+         <Using> items Directory.Build.props declares for every project. Nothing here is written in C#, so the
+         language version is pure plumbing — the same concession, for the same reason, that Net472TestFloor.props
+         makes for the support-floor leg. -->
+    <LangVersion>latest</LangVersion>
+
+    <!-- No .cs is compiled, and the default None/EmbeddedResource globs are replaced by the one below. -->
+    <EnableDefaultItems>false</EnableDefaultItems>
+
+    <!-- The Sonar and catalogue analyzers Directory.Build.props brings to every project have nothing to look at
+         here; skipping them keeps a documentation build from paying for a code analysis of no code. -->
+    <RunAnalyzers>false</RunAnalyzers>
+
+    <!-- Nothing here is a package, a deliverable, or a subject for coverage. -->
+    <IsPackable>false</IsPackable>
+    <IsPublishable>false</IsPublishable>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <ExcludeFromCodeCoverage>true</ExcludeFromCodeCoverage>
+
+    <!-- An assembly with no code trips the SDK's "no source files" nudge; that is the intended state here. -->
+    <NoWarn>$(NoWarn);CS2008</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Every page under doc/, now and in the future. Written as one glob on purpose: the moment this
+         becomes a list of files, the list is what goes out of date. -->
+    <None Include="**\*.md" Exclude="bin\**;obj\**" />
+
+    <!-- The root README, which cannot move here — GitHub renders the repository's front page from the
+         root — but which belongs to the documentation a contributor maintains. Included as a LINK so
+         the file stays exactly where GitHub needs it while still opening from this project. -->
+    <None Include="..\README.md" Link="README.md" />
+    <None Include="..\README.fr.md" Link="README.fr.md" />
+  </ItemGroup>
+
+</Project>

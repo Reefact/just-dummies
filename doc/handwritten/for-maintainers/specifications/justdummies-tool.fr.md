@@ -2,7 +2,9 @@
 
 🌍 🇫🇷 Français (ce fichier) · 🇬🇧 [English](justdummies-tool.md)
 
-**Statut :** spécification, prête à implémenter. Rien n'est encore construit.
+**Statut :** spécification, en cours d'implémentation. `JustDummies.GenAny` et `JustDummies.Cli` existent et
+portent les contraintes projet des §10 et §13. La ligne de commande de la §3 est intégralement parsée ; rien
+derrière ne l'est — `dum generate` lit ses options puis refuse, car aucune partie des §4 à §7 n'est écrite.
 **Remplace :** la pré-spécification de travail 0.1 (jamais commitée)
 
 ---
@@ -871,9 +873,13 @@ l'infrastructure d'un autre dépôt.
 
 Pour les dépendances du tool. Nouvelles pour le tool :
 `Microsoft.CodeAnalysis.Workspaces.MSBuild` et `Microsoft.Build.Locator` (CLI uniquement). Déjà
-présentes pour la bibliothèque et ses analyzers : `Microsoft.CodeAnalysis.CSharp` et
-`Spectre.Console.Cli`. *Réalisation actuelle : gestion centralisée des packages dans
-`Directory.Packages.props`.*
+présente pour la bibliothèque et ses analyzers : `Microsoft.CodeAnalysis.CSharp`. *Réalisation
+actuelle : gestion centralisée des packages dans `Directory.Packages.props`.*
+
+`Spectre.Console.Cli` n'était **pas** déjà présente, contrairement à ce que cette section supposait
+lorsqu'elle a été écrite dans le dépôt d'origine : l'extraction l'a retirée, comme tout ce qu'aucun
+projet ne référençait. Elle est revenue avec `JustDummies.Cli`, seul projet autorisé à la porter — la
+§10.2 place les définitions de commandes dans la coquille et les interdit au moteur.
 
 ### 13.2 Une propriété de plancher Roslyn
 

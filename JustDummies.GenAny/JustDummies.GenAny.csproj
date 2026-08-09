@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- No PublicApiBaseline.props import, unlike the shipping libraries. The engine carries no
+       compatibility promise: it is not published as its own package (it travels inside the dum tool as an
+       ordinary managed dependency), so a committed baseline would only flag its whole surface as
+       undeclared. See the specification, §13.4. -->
+
+  <PropertyGroup>
+    <!-- netstandard2.0 so the engine loads inside a Roslyn host: the IDE consumer of §16 runs it in the
+         same process as the compiler, exactly as the analyzers do (ADR-0065). -->
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+
+    <!-- XML documentation -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+
+    <!-- Not published on its own in v1.0 (specification §10.4): the tool package carries this assembly as
+         a plain dependency. Publishing it separately, once an IDE consumer exists, is purely additive. -->
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- LOAD CONTRACT — do not bump. Same reasoning as JustDummies.Analyzers, and the same floor: this
+         assembly is meant to be loadable by a host compiler, so the Microsoft.CodeAnalysis version it is
+         compiled against is the MINIMUM Roslyn able to load it. The CLI is deliberately NOT bound by this
+         — it hosts its own, newer compiler and hands the resulting Compilation down, which is the
+         supported direction (specification §13.2). The floor lives once in Directory.Build.props.
+
+         No PrivateAssets here, unlike the analyzer's pin: the engine's public surface speaks in Roslyn
+         types, and the tool that references it needs them at run time. -->
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" VersionOverride="$(RoslynFloorVersion)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Surface the floor in the assembly itself so RoslynFloorTests reads the SAME value the pin above
+         uses, rather than a copy of it. -->
+    <AssemblyMetadata Include="RoslynFloorVersion" Value="$(RoslynFloorVersion)" />
+  </ItemGroup>
+
+</Project>

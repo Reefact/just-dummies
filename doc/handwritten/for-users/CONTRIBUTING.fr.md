@@ -317,7 +317,7 @@ est présent, il DOIT être en minuscules et DOIT être l’un des suivants :
 | `analyzers` | `JustDummies.Analyzers` — les analyzers Roslyn et leurs diagnostics `JDxxx` |
 | `xunit` | `JustDummies.Xunit` — l’adaptateur xUnit v3 |
 | `catalog` | `JustDummies.DiagnosticCatalog` — les règles `JDxxx` en constantes qu'une suppression peut nommer |
-| `cli` | `dum` — le scaffolder (spécifié, pas encore construit) |
+| `cli` | `dum` — le scaffolder : `JustDummies.Cli` et son moteur `JustDummies.GenAny` |
 
 Cette liste vit ici, dans le dépôt, là où un outil peut la vérifier. Un scope NE DOIT PAS
 être un nom de fichier ni un nom de classe : ceux-ci bougent ; la zone qu’ils habitent,
@@ -328,7 +328,7 @@ release** selon le scope — `tools/trains.sh` est la source de vérité unique 
 publie indépendamment : `lib` (scopes `core`, `analyzers` → `JustDummies`, analyzers
 embarqués dedans), `xunit` (scope `xunit` → `JustDummies.Xunit`), `catalog` (scope `catalog` →
 `JustDummies.DiagnosticCatalog`) et `cli` (scope `cli` → le scaffolder `dum`,
-spécifié mais pas encore construit). Le scope
+pas encore publié). Le scope
 d’un commit décide dans les release notes et le changelog de quel train il atterrit ; voir
 [Ajouter un train de release](../for-maintainers/AddingAReleaseTrain.fr.md).
 

@@ -2,7 +2,9 @@
 
 🌍 🇬🇧 English (this file) · 🇫🇷 [Français](justdummies-tool.fr.md)
 
-**Status:** specification, ready to implement. Nothing is built yet.
+**Status:** specification, being implemented. `JustDummies.GenAny` and `JustDummies.Cli` exist and carry the
+project-level constraints of §10 and §13. The command line of §3 is parsed in full; nothing behind it is —
+`dum generate` reads its options and then refuses, because no part of §4–§7 is written.
 **Supersedes:** the working pre-specification 0.1 (never committed)
 
 ---
@@ -841,9 +843,13 @@ tool against another repository's infrastructure.
 
 For the tool's dependencies. New to the tool:
 `Microsoft.CodeAnalysis.Workspaces.MSBuild` and `Microsoft.Build.Locator` (CLI only). Already
-present for the library and its analyzers: `Microsoft.CodeAnalysis.CSharp` and
-`Spectre.Console.Cli`. *Current realization: central package management in
-`Directory.Packages.props`.*
+present for the library and its analyzers: `Microsoft.CodeAnalysis.CSharp`. *Current realization:
+central package management in `Directory.Packages.props`.*
+
+`Spectre.Console.Cli` was **not** already present, unlike what this section assumed while it was
+written in the source repository: the extraction dropped it along with everything else no project
+referenced. It came back with `JustDummies.Cli`, which is the only project that may hold it — §10.2
+puts the command definitions in the shell and forbids them in the engine.
 
 ### 13.2 A Roslyn floor property
 

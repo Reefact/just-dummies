@@ -22,7 +22,7 @@ n'existe, et la colonne **Origine** dit comment chacune est arrivée ici :
   aussi, car ce dépôt l'applique encore. Les deux copies sont désormais
   indépendantes : chaque côté peut remplacer la sienne sans toucher à l'autre.
   9 décisions.
-* **consigné ici** — décidé dans ce dépôt, de son propre chef. 12 décisions.
+* **consigné ici** — décidé dans ce dépôt, de son propre chef. 22 décisions.
 
 Les numéros appartiennent à cette base, attribués dans l'ordre où les décisions
 ont été consignées en amont
@@ -158,3 +158,13 @@ et qu'elle a été décidée le 01/08/2026 — l'index porte l'ordre, la numéro
 | [ADR-0053](0053-rewrite-the-published-history-to-a-single-line.fr.md) | Réécrire l'historique publié en une seule ligne, et y porter les tags de release | Accepted | consigné ici |
 | [ADR-0054](0054-draw-only-valid-values-from-a-typed-builder.fr.md) | Ne tirer que des valeurs valides depuis un builder typé, et ne rien juger dans un pool fourni par l'appelant | Accepted | consigné ici |
 | [ADR-0055](0055-hold-the-user-documentation-to-contracts-the-build-checks.fr.md) | Tenir la documentation utilisateur à des contrats que le build vérifie | Accepted | consigné ici |
+| [ADR-0056](0056-scaffold-the-generator-once-and-hand-the-file-to-the-developer.fr.md) | Scaffolder le generator une fois et confier le fichier au développeur | Accepted | consigné ici |
+| [ADR-0057](0057-make-the-emitted-generator-a-first-class-iany.fr.md) | Faire du generator émis un `IAny<T>` de plein droit | Accepted | consigné ici |
+| [ADR-0058](0058-leave-the-scaffolded-file-open-to-the-analyzers.fr.md) | Laisser le fichier scaffoldé ouvert aux analyzers JustDummies | Accepted | consigné ici |
+| [ADR-0059](0059-emit-only-members-resolved-in-the-target-compilation.fr.md) | N'émettre que des membres résolus dans la compilation cible | Accepted | consigné ici |
+| [ADR-0060](0060-seed-generators-from-constructor-guards.fr.md) | Amorcer les generators sur les gardes du constructeur, et laisser le reste en erreur de compilation | Accepted | consigné ici |
+| [ADR-0061](0061-draw-from-the-ambient-context-and-hold-no-state.fr.md) | Tirer du contexte ambiant et ne détenir aucun état | Accepted | consigné ici |
+| [ADR-0062](0062-emit-the-generator-into-the-target-types-namespace.fr.md) | Émettre le generator dans le namespace du type cible | Accepted | consigné ici |
+| [ADR-0063](0063-give-the-scaffolder-no-dependency-on-the-package.fr.md) | Ne donner au scaffolder aucune dépendance sur le package JustDummies | Accepted | consigné ici |
+| [ADR-0064](0064-never-draw-null-for-a-nullable-parameter.fr.md) | Ne jamais tirer null pour un paramètre nullable | Accepted | consigné ici |
+| [ADR-0065](0065-keep-the-scaffolding-engine-loadable-by-a-roslyn-host.fr.md) | Garder le moteur de scaffolding chargeable par un hôte Roslyn | Accepted | consigné ici |

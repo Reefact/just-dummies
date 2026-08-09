@@ -21,7 +21,7 @@ and the **Origin** column says how each one got here:
   but its record stays live in `Reefact/first-class-errors` too, because that
   repository still applies it. Both copies are now independent: either side can
   supersede its own without touching the other. 9 decisions.
-* **recorded here** — decided in this repository, on its own. 12 decisions.
+* **recorded here** — decided in this repository, on its own. 22 decisions.
 
 The numbers are this base's own, assigned in the order the decisions were
 recorded upstream ([ADR-0045](0045-renumber-the-decision-base.md)); every ADR
@@ -145,3 +145,13 @@ and it was decided on 2026-08-01 — the index carries the order, the numbering 
 | [ADR-0053](0053-rewrite-the-published-history-to-a-single-line.md) | Rewrite the published history to a single line, and carry the release tags onto it | Accepted | recorded here |
 | [ADR-0054](0054-draw-only-valid-values-from-a-typed-builder.md) | Draw only valid values from a typed builder, and judge nothing in a caller-supplied pool | Accepted | recorded here |
 | [ADR-0055](0055-hold-the-user-documentation-to-contracts-the-build-checks.md) | Hold the user documentation to contracts the build checks | Accepted | recorded here |
+| [ADR-0056](0056-scaffold-the-generator-once-and-hand-the-file-to-the-developer.md) | Scaffold the generator once and hand the file to the developer | Accepted | recorded here |
+| [ADR-0057](0057-make-the-emitted-generator-a-first-class-iany.md) | Make the emitted generator a first-class `IAny<T>` | Accepted | recorded here |
+| [ADR-0058](0058-leave-the-scaffolded-file-open-to-the-analyzers.md) | Leave the scaffolded file open to the JustDummies analyzers | Accepted | recorded here |
+| [ADR-0059](0059-emit-only-members-resolved-in-the-target-compilation.md) | Emit only members resolved in the target compilation | Accepted | recorded here |
+| [ADR-0060](0060-seed-generators-from-constructor-guards.md) | Seed generators from constructor guards, and leave the rest as a compile error | Accepted | recorded here |
+| [ADR-0061](0061-draw-from-the-ambient-context-and-hold-no-state.md) | Draw from the ambient context and hold no state | Accepted | recorded here |
+| [ADR-0062](0062-emit-the-generator-into-the-target-types-namespace.md) | Emit the generator into the target type's namespace | Accepted | recorded here |
+| [ADR-0063](0063-give-the-scaffolder-no-dependency-on-the-package.md) | Give the scaffolder no dependency on the JustDummies package | Accepted | recorded here |
+| [ADR-0064](0064-never-draw-null-for-a-nullable-parameter.md) | Never draw null for a nullable parameter | Accepted | recorded here |
+| [ADR-0065](0065-keep-the-scaffolding-engine-loadable-by-a-roslyn-host.md) | Keep the scaffolding engine loadable by a Roslyn host | Accepted | recorded here |

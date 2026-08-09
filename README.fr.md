@@ -147,7 +147,7 @@ dotnet test  JustDummies.sln -c Release
 
 Le dépôt cible le SDK .NET 10 (épinglé dans `global.json`). Le matériel destiné aux mainteneurs —
 décisions d'architecture, workflows, spécifications — se trouve sous
-[`doc/handwritten/for-maintainers/`](doc/handwritten/for-maintainers/).
+[`doc/handwritten/for-maintainers/`](doc/handwritten/for-maintainers/README.fr.md).
 
 ## 📜 Histoire et licence
 

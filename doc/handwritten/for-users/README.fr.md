@@ -93,7 +93,7 @@ flowchart TD
 
 * [Guide de contribution](./CONTRIBUTING.fr.md) — conventions de commit, pull requests, règles du banc de test
 * [Politique de sécurité](./SECURITY.fr.md) — comment signaler une vulnérabilité
-* [Documentation mainteneur](../for-maintainers/) — décisions d'architecture, workflows, spécifications
+* [Documentation mainteneur](../for-maintainers/README.fr.md) — décisions d'architecture, workflows, spécifications
 
 ---
 

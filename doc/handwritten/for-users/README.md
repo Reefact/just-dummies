@@ -93,7 +93,7 @@ flowchart TD
 
 * [Contributing guide](../../../CONTRIBUTING.md) — commit conventions, pull requests, the test-bed rules
 * [Security policy](../../../SECURITY.md) — how to report a vulnerability
-* [Maintainer documentation](../for-maintainers/) — architecture decisions, workflows, specifications
+* [Maintainer documentation](../for-maintainers/README.md) — architecture decisions, workflows, specifications
 
 ---
 

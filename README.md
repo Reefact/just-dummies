@@ -140,7 +140,7 @@ dotnet test  JustDummies.sln -c Release
 
 The repository targets the .NET 10 SDK (pinned in `global.json`). Maintainer material — architecture
 decisions, workflows, specifications — is under
-[`doc/handwritten/for-maintainers/`](doc/handwritten/for-maintainers/).
+[`doc/handwritten/for-maintainers/`](doc/handwritten/for-maintainers/README.md).
 
 ## 📜 History and licence
 

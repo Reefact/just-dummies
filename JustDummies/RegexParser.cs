@@ -376,10 +376,7 @@ internal sealed class RegexParser {
         ValidateGroupName(name, position);
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S3267.Category, SonarRule.S3267.Id,
-                                                     Justification =
-                                                         "The loop exists to name the FIRST offending element in the exception it throws. A Where clause discards which element failed, so " +
-                                                         "the message would have to re-find it, turning one pass into two and one statement into three.")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S3267.Category, SonarRule.S3267.Id, Justification = SuppressionJustification.S3267.LoopNamesFirstOffender)]
     private void ValidateGroupName(string name, int position) {
         // A '-' marks a balancing group; it manipulates the capture stack (the backreference family), so it is
         // non-regular and refused here even when its target is undefined (see SkipGroupName for why the divergence
@@ -402,11 +399,7 @@ internal sealed class RegexParser {
         }
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S125.Category, SonarRule.S125.Id,
-                                                     Justification =
-                                                         "The flagged lines are prose, not disabled code: the heuristic reads an equation, a bracketed range or a semicolon inside an " +
-                                                         "explanatory sentence as a statement. These comments carry the reasoning this codebase asks every comment to carry, so the " +
-                                                         "finding is recorded rather than the comment deleted.")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S125.Category, SonarRule.S125.Id, Justification = SuppressionJustification.S125.ProseNotDisabledCode)]
     private RegexNode ParseEscape() {
         int position = _index;
         _index++; // consume '\'

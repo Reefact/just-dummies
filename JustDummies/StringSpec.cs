@@ -98,11 +98,7 @@ internal sealed class StringSpec {
 
     #endregion
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S107.Category, SonarRule.S107.Id,
-                                                     Justification =
-                                                         "This private constructor carries the engine's whole immutable state: the 'constrain once, draw many' design rebuilds the spec on " +
-                                                         "every With* call, so every field has to be threaded through it. A parameter object would only rename the same list, and the " +
-                                                         "constructor is private — no caller ever writes this argument list.")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S107.Category, SonarRule.S107.Id, Justification = SuppressionJustification.S107.EngineImmutableState)]
     private StringSpec(int?    exactLength, ConstraintCall? exactConstraint,
                        int     minLength,   ConstraintCall? minConstraint,
                        int?    maxLength,   ConstraintCall? maxConstraint,
@@ -293,10 +289,7 @@ internal sealed class StringSpec {
     }
 
     /// <summary>Adds values the generated string must avoid; may be declared several times, the exclusions accumulate.</summary>
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S3267.Category, SonarRule.S3267.Id,
-                                                     Justification =
-                                                         "The condition reads the collection the body mutates. Where is lazily evaluated, so lifting the filter out would run each " +
-                                                         "predicate against a snapshot taken before the additions it is meant to see, and let duplicates through.")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S3267.Category, SonarRule.S3267.Id, Justification = SuppressionJustification.S3267.ConditionReadsMutatedCollection)]
     internal StringSpec WithExcluded(IReadOnlyList<string> values, ConstraintCall applying) {
         if (values is null) { throw new ArgumentNullException(nameof(values)); }
         if (applying is null) { throw new ArgumentNullException(nameof(applying)); }

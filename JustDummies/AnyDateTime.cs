@@ -137,10 +137,7 @@ public sealed class AnyDateTime : IAny<DateTime>, IHasRandomSource, ICardinality
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="values" /> is <c>null</c>.</exception>
     /// <exception cref="ArgumentException">Thrown when <paramref name="values" /> is empty.</exception>
     /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S3267.Category, SonarRule.S3267.Id,
-                                                     Justification =
-                                                         "The condition reads the collection the body mutates. Where is lazily evaluated, so lifting the filter out would run each " +
-                                                         "predicate against a snapshot taken before the additions it is meant to see, and let duplicates through.")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S3267.Category, SonarRule.S3267.Id, Justification = SuppressionJustification.S3267.ConditionReadsMutatedCollection)]
     public AnyDateTime OneOf(params DateTime[] values) {
         if (values is null) { throw new ArgumentNullException(nameof(values)); }
         if (values.Length == 0) { throw new ArgumentException("At least one value is required.", nameof(values)); }

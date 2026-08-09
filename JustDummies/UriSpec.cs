@@ -186,11 +186,7 @@ internal sealed class UriSpec {
 
     #endregion
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S107.Category, SonarRule.S107.Id,
-                                                     Justification =
-                                                         "This private constructor carries the engine's whole immutable state: the 'constrain once, draw many' design rebuilds the spec on " +
-                                                         "every With* call, so every field has to be threaded through it. A parameter object would only rename the same list, and the " +
-                                                         "constructor is private — no caller ever writes this argument list.")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S107.Category, SonarRule.S107.Id, Justification = SuppressionJustification.S107.EngineImmutableState)]
     private UriSpec(UriFamily? family, string? scheme, ConstraintCall? schemeConstraint, string? host,
                     bool hasUserInfo, string? user, string? password,
                     bool hasPort, int? port,
@@ -473,10 +469,7 @@ internal sealed class UriSpec {
         return true;
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S3267.Category, SonarRule.S3267.Id,
-                                                     Justification =
-                                                         "The loop exists to name the FIRST offending element in the exception it throws. A Where clause discards which element failed, so " +
-                                                         "the message would have to re-find it, turning one pass into two and one statement into three.")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S3267.Category, SonarRule.S3267.Id, Justification = SuppressionJustification.S3267.LoopNamesFirstOffender)]
     internal static string RequireUserInfoPart(string value, string parameterName) {
         if (value is null) { throw new ArgumentNullException(parameterName); }
         if (parameterName is null) { throw new ArgumentNullException(nameof(parameterName)); }

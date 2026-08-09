@@ -55,10 +55,7 @@ public static partial class Any {
     /// <typeparam name="TResult">The type of the composed value.</typeparam>
     /// <returns>A generator of the composed value.</returns>
     /// <exception cref="ArgumentNullException">Thrown when any argument is <c>null</c>.</exception>
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S2436.Category, SonarRule.S2436.Id,
-                                                     Justification =
-                                                         "Heterogeneous composition needs one type parameter per part plus the result; the arity-8 ceiling is a deliberate ergonomic " +
-                                                         "decision (ADR-0005), and nesting Combine calls to stay under three would bury the shape of the value being composed.")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S2436.Category, SonarRule.S2436.Id, Justification = SuppressionJustification.S2436.HeterogeneousCombine)]
     public static IAny<TResult> Combine<T1, T2, T3, TResult>(IAny<T1> first, IAny<T2> second, IAny<T3> third, Func<T1, T2, T3, TResult> compose) {
         if (first is null) { throw new ArgumentNullException(nameof(first)); }
         if (second is null) { throw new ArgumentNullException(nameof(second)); }
@@ -92,10 +89,7 @@ public static partial class Any {
     /// <typeparam name="TResult">The type of the composed value.</typeparam>
     /// <returns>A generator of the composed value.</returns>
     /// <exception cref="ArgumentNullException">Thrown when any argument is <c>null</c>.</exception>
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S2436.Category, SonarRule.S2436.Id,
-                                                     Justification =
-                                                         "Heterogeneous composition needs one type parameter per part plus the result; the arity-8 ceiling is a deliberate ergonomic " +
-                                                         "decision (ADR-0005), and nesting Combine calls to stay under three would bury the shape of the value being composed.")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S2436.Category, SonarRule.S2436.Id, Justification = SuppressionJustification.S2436.HeterogeneousCombine)]
     public static IAny<TResult> Combine<T1, T2, T3, T4, TResult>(IAny<T1> first, IAny<T2> second, IAny<T3> third, IAny<T4> fourth, Func<T1, T2, T3, T4, TResult> compose) {
         if (first is null) { throw new ArgumentNullException(nameof(first)); }
         if (second is null) { throw new ArgumentNullException(nameof(second)); }
@@ -133,10 +127,7 @@ public static partial class Any {
     /// <typeparam name="TResult">The type of the composed value.</typeparam>
     /// <returns>A generator of the composed value.</returns>
     /// <exception cref="ArgumentNullException">Thrown when any argument is <c>null</c>.</exception>
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S2436.Category, SonarRule.S2436.Id,
-                                                     Justification =
-                                                         "Heterogeneous composition needs one type parameter per part plus the result; the arity-8 ceiling is a deliberate ergonomic " +
-                                                         "decision (ADR-0005), and nesting Combine calls to stay under three would bury the shape of the value being composed.")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S2436.Category, SonarRule.S2436.Id, Justification = SuppressionJustification.S2436.HeterogeneousCombine)]
     public static IAny<TResult> Combine<T1, T2, T3, T4, T5, TResult>(IAny<T1> first, IAny<T2> second, IAny<T3> third, IAny<T4> fourth, IAny<T5> fifth, Func<T1, T2, T3, T4, T5, TResult> compose) {
         if (first is null) { throw new ArgumentNullException(nameof(first)); }
         if (second is null) { throw new ArgumentNullException(nameof(second)); }
@@ -178,10 +169,7 @@ public static partial class Any {
     /// <typeparam name="TResult">The type of the composed value.</typeparam>
     /// <returns>A generator of the composed value.</returns>
     /// <exception cref="ArgumentNullException">Thrown when any argument is <c>null</c>.</exception>
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S2436.Category, SonarRule.S2436.Id,
-                                                     Justification =
-                                                         "Heterogeneous composition needs one type parameter per part plus the result; the arity-8 ceiling is a deliberate ergonomic " +
-                                                         "decision (ADR-0005), and nesting Combine calls to stay under three would bury the shape of the value being composed.")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S2436.Category, SonarRule.S2436.Id, Justification = SuppressionJustification.S2436.HeterogeneousCombine)]
     public static IAny<TResult> Combine<T1, T2, T3, T4, T5, T6, TResult>(IAny<T1> first, IAny<T2> second, IAny<T3> third, IAny<T4> fourth, IAny<T5> fifth, IAny<T6> sixth, Func<T1, T2, T3, T4, T5, T6, TResult> compose) {
         if (first is null) { throw new ArgumentNullException(nameof(first)); }
         if (second is null) { throw new ArgumentNullException(nameof(second)); }
@@ -227,12 +215,8 @@ public static partial class Any {
     /// <typeparam name="TResult">The type of the composed value.</typeparam>
     /// <returns>A generator of the composed value.</returns>
     /// <exception cref="ArgumentNullException">Thrown when any argument is <c>null</c>.</exception>
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S107.Category, SonarRule.S107.Id,
-                                                     Justification = "Heterogeneous composition needs one generator parameter per part; the arity-8 ceiling is a deliberate ergonomic decision (ADR-0005), and a flat parameter list reads better at the call site than nested Combine calls.")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S2436.Category, SonarRule.S2436.Id,
-                                                     Justification =
-                                                         "Heterogeneous composition needs one type parameter per part plus the result; the arity-8 ceiling is a deliberate ergonomic " +
-                                                         "decision (ADR-0005), and nesting Combine calls to stay under three would bury the shape of the value being composed.")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S107.Category, SonarRule.S107.Id, Justification = SuppressionJustification.S107.HeterogeneousCombine)]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S2436.Category, SonarRule.S2436.Id, Justification = SuppressionJustification.S2436.HeterogeneousCombine)]
     public static IAny<TResult> Combine<T1, T2, T3, T4, T5, T6, T7, TResult>(IAny<T1> first, IAny<T2> second, IAny<T3> third, IAny<T4> fourth, IAny<T5> fifth, IAny<T6> sixth, IAny<T7> seventh, Func<T1, T2, T3, T4, T5, T6, T7, TResult> compose) {
         if (first is null) { throw new ArgumentNullException(nameof(first)); }
         if (second is null) { throw new ArgumentNullException(nameof(second)); }
@@ -283,12 +267,8 @@ public static partial class Any {
     /// <typeparam name="TResult">The type of the composed value.</typeparam>
     /// <returns>A generator of the composed value.</returns>
     /// <exception cref="ArgumentNullException">Thrown when any argument is <c>null</c>.</exception>
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S107.Category, SonarRule.S107.Id,
-                                                     Justification = "Heterogeneous composition needs one generator parameter per part; the arity-8 ceiling is a deliberate ergonomic decision (ADR-0005), and a flat parameter list reads better at the call site than nested Combine calls.")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S2436.Category, SonarRule.S2436.Id,
-                                                     Justification =
-                                                         "Heterogeneous composition needs one type parameter per part plus the result; the arity-8 ceiling is a deliberate ergonomic " +
-                                                         "decision (ADR-0005), and nesting Combine calls to stay under three would bury the shape of the value being composed.")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S107.Category, SonarRule.S107.Id, Justification = SuppressionJustification.S107.HeterogeneousCombine)]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S2436.Category, SonarRule.S2436.Id, Justification = SuppressionJustification.S2436.HeterogeneousCombine)]
     public static IAny<TResult> Combine<T1, T2, T3, T4, T5, T6, T7, T8, TResult>(IAny<T1> first, IAny<T2> second, IAny<T3> third, IAny<T4> fourth, IAny<T5> fifth, IAny<T6> sixth, IAny<T7> seventh, IAny<T8> eighth, Func<T1, T2, T3, T4, T5, T6, T7, T8, TResult> compose) {
         if (first is null) { throw new ArgumentNullException(nameof(first)); }
         if (second is null) { throw new ArgumentNullException(nameof(second)); }

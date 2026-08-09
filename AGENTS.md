@@ -39,6 +39,12 @@ Two roles are covered: **writing code** and **reviewing pull requests**.
   every marked type to a full value identity. Enums are the only value-type exception.
 - A declared constraint is carried as a value object, never as the text it renders to (ADR-0042).
 - Keep changes small and focused. Treat renamed diagnostic IDs and public types as breaking changes.
+- A `[SuppressMessage]` names its rule through the catalogue constants (`SonarRule`, `NetAnalyzersRule`,
+  `JustDummiesRule` — ADR-0050), never string literals; a rule outside the referenced catalogues is
+  reported to the maintainer, not suppressed by literal. A justification **duplicated** across sites (and
+  only such a one) lives as a `const` in `SuppressionJustification.<RuleId>`, detailed reasoning in its
+  `///<summary>`, crisp sentence as its value; a single-site justification stays inline, or may take the
+  same value/summary split when its author wants the detail documented.
 - **An image the maintainer supplies ships byte for byte.** Never resize, recolour, crop, composite or
   redraw one. If it does not work — over the size limit, wrong format, unreadable at the 128 px a
   nuget.org listing renders — say so and stop; replacing it is the maintainer's call. Check the file

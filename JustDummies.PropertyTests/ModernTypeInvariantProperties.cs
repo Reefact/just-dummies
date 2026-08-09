@@ -182,12 +182,7 @@ public sealed class ModernTypeInvariantProperties {
         ConflictMessageTruthfulnessProperties.CheckEngine(BuildInt128, supportsLattice: true);
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S1854.Category, SonarRule.S1854.Id,
-                                                     Justification =
-                                                         "The assignment is dead and the CALL is not. These builders exist to provoke the declaration-time conflict, " +
-                                                         "so what matters is that Except() runs; nothing reads the spec afterwards because the verdict is the exception " +
-                                                         "or its absence. Dropping `spec =` from the last line alone would break the uniform chain that makes the " +
-                                                         "sequence of constraints readable.")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S1854.Category, SonarRule.S1854.Id, Justification = SuppressionJustification.S1854.CallIsTheSubject)]
     private static string? BuildInt128(bool hasBetween, int lo, int hi, int step, int[] allow, int[] excl) {
         try {
             AnyInt128 spec = Any.Int128();

@@ -7,11 +7,7 @@ namespace JustDummies;
 ///     time — which is what lets a recipe built outside an <c>Any.Reproducibly(...)</c> scope generate
 ///     deterministically inside one.
 /// </summary>
-[System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S1694.Category, SonarRule.S1694.Id,
-                                                 Justification =
-                                                     "The abstract class is the root of a closed, internal hierarchy and is deliberately not an interface: a class cannot be " +
-                                                     "implemented from outside the assembly, keeps the option of adding shared state without breaking every subtype, and on the " +
-                                                     "netstandard2.0 leg cannot be replaced by an interface with non-public members.")]
+[System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S1694.Category, SonarRule.S1694.Id, Justification = SuppressionJustification.S1694.ClosedInternalHierarchyRoot)]
 internal abstract class RandomSource {
 
     /// <summary>The seeded generator to draw from right now. Every draw goes through it, serialized on its own lock.</summary>

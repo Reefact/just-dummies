@@ -162,6 +162,20 @@ states how it is checked, so none of them rests on attention alone.
   task requires and leave their neighbours alone, even when the surrounding
   alignment already looks stale.
 
+
+* **Suppress a rule through its catalogue constant, and a duplicated justification through
+  `SuppressionJustification`.** A `[SuppressMessage]` names its rule as `<Catalogue>Rule.<Id>.Category` /
+  `.Id` — `SonarRule`, `NetAnalyzersRule`, `JustDummiesRule` — never as string literals (ADR-0050); if the
+  rule you need belongs to a catalogue this repository does not reference yet, say so and stop rather than
+  falling back to literals. A justification used at a **single** site stays inline, next to what it
+  justifies. The moment the **same text** serves a second site, it moves to a `const` in a nested static
+  class named after the rule id — `SuppressionJustification.S3267.AccumulatorAdvancesInLoop` — whose
+  `///<summary>` carries the detailed reasoning while the constant's value stays one crisp sentence; both
+  sites then reference the constant, so the reasoning has one home and cannot drift into diverging copies
+  (a copy-paste of one of these blocks is also how a duplicated attribute once slipped in). The same
+  value/summary split is **allowed** for a single-site justification whose author wants the attribute short
+  and the detail documented. Checked by review: the duplication is visible in any search for the text.
+
 ## Diagnostic and documentation conventions
 
 * When you change user-facing behavior, keep the English page and its French twin in sync.

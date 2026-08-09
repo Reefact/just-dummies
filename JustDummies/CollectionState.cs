@@ -146,10 +146,7 @@ internal sealed class CollectionState<T> {
     }
 
     /// <summary>Builds one collection satisfying the whole specification — laid out directly, never generate-then-retry.</summary>
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S3267.Category, SonarRule.S3267.Id,
-                                                     Justification =
-                                                         "The condition reads the collection the body mutates. Where is lazily evaluated, so lifting the filter out would run each " +
-                                                         "predicate against a snapshot taken before the additions it is meant to see, and let duplicates through.")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S3267.Category, SonarRule.S3267.Id, Justification = SuppressionJustification.S3267.ConditionReadsMutatedCollection)]
     internal List<T> Materialize(RandomSource source) {
         if (source is null) { throw new ArgumentNullException(nameof(source)); }
 

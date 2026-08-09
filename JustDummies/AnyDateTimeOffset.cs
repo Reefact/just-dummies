@@ -202,10 +202,7 @@ public sealed class AnyDateTimeOffset : IAny<DateTimeOffset>, IHasRandomSource, 
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="values" /> is <c>null</c>.</exception>
     /// <exception cref="ArgumentException">Thrown when <paramref name="values" /> is empty.</exception>
     /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S3267.Category, SonarRule.S3267.Id,
-                                                     Justification =
-                                                         "The condition reads the collection the body mutates. Where is lazily evaluated, so lifting the filter out would run each " +
-                                                         "predicate against a snapshot taken before the additions it is meant to see, and let duplicates through.")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S3267.Category, SonarRule.S3267.Id, Justification = SuppressionJustification.S3267.ConditionReadsMutatedCollection)]
     public AnyDateTimeOffset OneOf(params DateTimeOffset[] values) {
         if (values is null) { throw new ArgumentNullException(nameof(values)); }
         if (values.Length == 0) { throw new ArgumentException("At least one value is required.", nameof(values)); }
@@ -273,11 +270,7 @@ public sealed class AnyDateTimeOffset : IAny<DateTimeOffset>, IHasRandomSource, 
         return new AnyDateTimeOffset(_source, spec, _allowedOriginals, _offsetConstraint, _offsetMinMinutes, _offsetMaxMinutes);
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S125.Category, SonarRule.S125.Id,
-                                                     Justification =
-                                                         "The flagged lines are prose, not disabled code: the heuristic reads an equation, a bracketed range or a semicolon inside an " +
-                                                         "explanatory sentence as a statement. These comments carry the reasoning this codebase asks every comment to carry, so the " +
-                                                         "finding is recorded rather than the comment deleted.")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S125.Category, SonarRule.S125.Id, Justification = SuppressionJustification.S125.ProseNotDisabledCode)]
     private AnyDateTimeOffset WithOffsetRange(int minMinutes, int maxMinutes, ConstraintCall applying) {
         if (_offsetConstraint is not null) {
             if (_offsetMinMinutes == minMinutes && _offsetMaxMinutes == maxMinutes) { return this; }

@@ -110,11 +110,7 @@ internal sealed class OrdinalIntervalSpec {
 
     #endregion
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S107.Category, SonarRule.S107.Id,
-                                                     Justification =
-                                                         "This private constructor carries the engine's whole immutable state: the 'constrain once, draw many' design rebuilds the spec on " +
-                                                         "every With* call, so every field has to be threaded through it. A parameter object would only rename the same list, and the " +
-                                                         "constructor is private — no caller ever writes this argument list.")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S107.Category, SonarRule.S107.Id, Justification = SuppressionJustification.S107.EngineImmutableState)]
     private OrdinalIntervalSpec(string typeName, Func<ulong, string> render, ulong domainMin, ulong domainMax,
                                 ulong  min,     ConstraintCall? minConstraint,
                                 ulong  max,     ConstraintCall? maxConstraint,
@@ -298,16 +294,7 @@ internal sealed class OrdinalIntervalSpec {
     }
 
     /// <summary>Draws one ordinal satisfying the whole specification — built directly, never generate-then-retry.</summary>
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S3267.Category, SonarRule.S3267.Id,
-                                                     Justification =
-                                                         "The loop body advances the very accumulator the condition tests — each iteration changes what the next one compares against — so " +
-                                                         "the filter cannot be lifted out of the loop. A Where clause would evaluate every predicate against the value the accumulator " +
-                                                         "held on entry and silently skip exclusions.")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S3267.Category, SonarRule.S3267.Id,
-                                                     Justification =
-                                                         "The loop body advances the very accumulator the condition tests — each iteration changes what the next one compares against — so " +
-                                                         "the filter cannot be lifted out of the loop. A Where clause would evaluate every predicate against the value the accumulator " +
-                                                         "held on entry and silently skip exclusions.")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S3267.Category, SonarRule.S3267.Id, Justification = SuppressionJustification.S3267.AccumulatorAdvancesInLoop)]
     internal ulong GenerateOrdinal(SeededRandom random) {
         if (random is null) { throw new ArgumentNullException(nameof(random)); }
 
@@ -355,20 +342,8 @@ internal sealed class OrdinalIntervalSpec {
         return _min == ulong.MinValue && _max == ulong.MaxValue;
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(NetAnalyzersRule.CA1822.Category, NetAnalyzersRule.CA1822.Id,
-                                                     Justification =
-                                                         "Validated is the uniform validation hook of the fluent builders: every With* method routes its candidate through it, and all " +
-                                                         "seven engines declare it with the same signature. It reads the CANDIDATE's state rather than this instance's — which is what " +
-                                                         "the rule notices — but that is a builder validating its own successor, not an oversight. Making it static across seven types " +
-                                                         "would break a family resemblance the reader relies on, for no measurable gain on a path that runs once per declared " +
-                                                         "constraint.")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S2325.Category, SonarRule.S2325.Id,
-                                                     Justification =
-                                                         "Validated is the uniform validation hook of the fluent builders: every With* method routes its candidate through it, and all " +
-                                                         "seven engines declare it with the same signature. It reads the CANDIDATE's state rather than this instance's — which is what " +
-                                                         "the rule notices — but that is a builder validating its own successor, not an oversight. Making it static across seven types " +
-                                                         "would break a family resemblance the reader relies on, for no measurable gain on a path that runs once per declared " +
-                                                         "constraint.")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(NetAnalyzersRule.CA1822.Category, NetAnalyzersRule.CA1822.Id, Justification = SuppressionJustification.CA1822.UniformValidatedHook)]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S2325.Category, SonarRule.S2325.Id, Justification = SuppressionJustification.S2325.UniformValidatedHook)]
     private OrdinalIntervalSpec Validated(OrdinalIntervalSpec candidate, ConstraintCall applying) {
         if (candidate.IsSatisfiable()) { return candidate; }
 

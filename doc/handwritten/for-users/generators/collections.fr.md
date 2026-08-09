@@ -26,7 +26,7 @@ HashSet<OrderStatus> states = Any.SetOf(Any.Enum<OrderStatus>()).WithMaxCount(3)
 
 ## Le vocabulaire d'effectif partagé
 
-Tout générateur de collection porte les mêmes sept contraintes :
+Tout générateur de collection porte les mêmes six contraintes d'effectif :
 
 ```csharp
 IAny<int> anyQuantity = Any.Int32().Between(1, 100);

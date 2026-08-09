@@ -28,7 +28,7 @@ string atMost    = Any.String().WithMaxLength(50).Generate();
 string withStuff = Any.String().NonEmpty().Generate();
 ```
 
-A length above 1 000 000 is refused: past that point a test wanted a load test, not a dummy
+A length above one million is refused: past that point a test wanted a load test, not a dummy
 ([ADR-0029](../../for-maintainers/adr/0029-let-a-size-maximum-cap-without-steering-the-draw.md)).
 
 ## Alphabet

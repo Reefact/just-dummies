@@ -19,7 +19,7 @@ project and nothing else into your dependency graph.
 
 | | |
 | --- | --- |
-| `Any.*` | 25 factories covering every BCL primitive, plus collections, URIs and choices |
+| `Any.*` | a factory for every BCL primitive, plus collections, URIs and choices |
 | `IAny<T>` | the seam every generator implements, and the currency of composition |
 | `Any.Reproducibly` / `UseSeed` / `WithSeed` | the reproducibility scopes |
 | `AnyContext` | an isolated, seeded world with the same factories on it |

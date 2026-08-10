@@ -59,7 +59,7 @@
          own copy of an MSBuild assembly loads it instead of the SDK's, and then fails at run time in ways
          that name nothing. JustDummies.Cli therefore takes it with ExcludeAssets="runtime", at the version
          Workspaces.MSBuild resolves — the number is matched to that dependency, not chosen. -->
-    <PackageVersion Include="Microsoft.Build.Framework" Version="17.11.48" />
+    <PackageVersion Include="Microsoft.Build.Framework" Version="18.8.2" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.8.1" />
     <PackageVersion Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" />
     <PackageVersion Include="Microsoft.NETFramework.ReferenceAssemblies.net472" Version="1.0.3" />

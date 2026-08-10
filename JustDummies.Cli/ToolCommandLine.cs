@@ -30,9 +30,9 @@ internal static class ToolCommandLine {
     /// <param name="error">Where a refusal is written.</param>
     /// <returns>One of <see cref="ExitCode" />.</returns>
     internal static int Run(string[] args, IAnsiConsole output, IAnsiConsole error) {
-        if (args is null) { throw new ArgumentNullException(nameof(args)); }
-        if (output is null) { throw new ArgumentNullException(nameof(output)); }
-        if (error is null) { throw new ArgumentNullException(nameof(error)); }
+        ArgumentNullException.ThrowIfNull(args);
+        ArgumentNullException.ThrowIfNull(output);
+        ArgumentNullException.ThrowIfNull(error);
 
         // The one thing a command needs and cannot reach for itself. Spectre constructs the command, so the
         // consoles are handed to it the way any dependency is: registered, then taken as a constructor

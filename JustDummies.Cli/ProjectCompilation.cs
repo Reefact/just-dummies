@@ -38,7 +38,7 @@ internal static class ProjectCompilation {
     ///     it.
     /// </summary>
     internal static async Task<LoadedProject> OpenAsync(string projectPath, CancellationToken cancellationToken) {
-        if (projectPath is null) { throw new ArgumentNullException(nameof(projectPath)); }
+        ArgumentNullException.ThrowIfNull(projectPath);
 
         RegisterMSBuild();
 

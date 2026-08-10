@@ -53,8 +53,8 @@ internal static class Recap {
 
     /// <summary>Renders one scaffold, as §6 writes it.</summary>
     internal static void Render(ScaffoldOutcome outcome, IAnsiConsole console) {
-        if (outcome is null) { throw new ArgumentNullException(nameof(outcome)); }
-        if (console is null) { throw new ArgumentNullException(nameof(console)); }
+        ArgumentNullException.ThrowIfNull(outcome);
+        ArgumentNullException.ThrowIfNull(console);
         if (!outcome.Succeeded) { return; }
 
         ScaffoldPlan plan = outcome.Plan!;

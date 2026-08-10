@@ -8,8 +8,21 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ## [Unreleased]
 
-Nothing has been published from this train yet: no `cli-v*` tag exists, so everything below is what a
-first release would carry.
+_No unreleased changes recorded yet._
+
+## [1.0.0-beta.1] - 2026-08-10
+
+First published version: **`dum` had never reached nuget.org before this one.** It starts at the number
+of the specification it implements rather than at `0.1.0`, because it implements that specification
+entire — not an earlier sketch of it.
+
+**A beta, not a preview**, and the difference is deliberate. `JustDummies` and `JustDummies.Xunit` say
+`preview` to mean one precise thing: their surface is declared in `PublicAPI.Unshipped.txt`, so no API is
+promised before 1.0. A tool takes no public-API baseline at all — it carries no compatibility promise, and
+its public surface is the command line rather than a set of types
+([specification §13.4](../doc/handwritten/for-maintainers/specifications/justdummies-tool.md)). `beta`
+states what is true of *that* surface: complete against the specification, and not yet run against anyone
+else's project.
 
 ### Added
 
@@ -43,4 +56,5 @@ on the produced package — both that the nuspec declares no such dependency and
 bundled beside the tool, since a .NET tool ships its closure as files and the first check alone would pass
 on an empty dependency list.
 
-[Unreleased]: https://github.com/Reefact/just-dummies/commits/main/JustDummies.Cli
+[Unreleased]: https://github.com/Reefact/just-dummies/compare/cli-v1.0.0-beta.1...HEAD
+[1.0.0-beta.1]: https://github.com/Reefact/just-dummies/releases/tag/cli-v1.0.0-beta.1

@@ -36,7 +36,7 @@ public sealed class NonFiniteRecipeTests {
         ["Any.Single().OneOf(1.0f, float.PositiveInfinity)"]    = () => Any.Single().OneOf(1.0f, float.PositiveInfinity),
     };
 
-    public static TheoryData<string> GuardedEntryPoints => new(Declarations.Keys);
+    public static TheoryData<string> GuardedEntryPoints => [.. Declarations.Keys];
 
     [Theory(DisplayName = "The guarded entry points reject a non-finite ARGUMENT, not only a non-finite draw.")]
     [MemberData(nameof(GuardedEntryPoints))]

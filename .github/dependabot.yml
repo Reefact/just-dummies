@@ -17,6 +17,15 @@ updates:
       # nuget config cannot scope the rule to one project, so these also freeze in the analyzer test project.
       - dependency-name: "Microsoft.CodeAnalysis.CSharp"
       - dependency-name: "Microsoft.CodeAnalysis.Common"
+      # Microsoft.Build.Framework is not a version CHOICE, it is a version MATCH: JustDummies.Cli references
+      # it only to compile against, at whatever Microsoft.CodeAnalysis.Workspaces.MSBuild resolves — 5.6.0
+      # requires exactly 17.11.48 — and takes it with ExcludeAssets="runtime" so the assembly that actually
+      # loads is the SDK's, found by MSBuildLocator. Bumping it alone drags Microsoft.NET.StringTools in as a
+      # runtime asset that guard does not cover, and Microsoft.Build.Locator then fails the build outright
+      # with MSBL001; measured on pull request #60, red on both OS legs. The number moves only when
+      # Workspaces.MSBuild itself asks for another one, and it is re-matched by hand when it does — including
+      # the day that makes this pin a downgrade (NU1605) rather than an upgrade.
+      - dependency-name: "Microsoft.Build.Framework"
 
   - package-ecosystem: "github-actions"
     directory: "/"

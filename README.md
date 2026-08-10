@@ -97,6 +97,31 @@ With xUnit v3, `[Reproducible]` replaces the wrapping entirely — see
 seed replays across every patch and minor of a major version, enforced by a golden master
 ([ADR-0049](doc/handwritten/for-maintainers/adr/0049-replay-a-seed-across-patch-and-minor-versions.md)).
 
+## 🛠 Scaffold one for your own type
+
+Writing an `IAny<T>` by hand for each of your domain types is the tedious part. `dum` writes the
+first draft:
+
+```bash
+dotnet tool install --global JustDummies.Cli
+dum generate Order
+```
+
+```text
+  reference  OrderReference  Any.String().NonEmpty().As(OrderReference.Create)  factory, guard
+  customer   Customer        —                                                  TODO
+  quantity   int             Any.Int32().Positive()                             guard
+
+✓ AnyOrder.cs — 5 of 6 parameters inferred, 1 TODO.
+```
+
+It reads your compilation, tightens what the constructor's own guard clauses tell it
+(`quantity <= 0` → `.Positive()`), and emits ordinary code you then own. What it could not infer it
+leaves as an identifier that does not exist — so **your** build names the gap, at the line, instead
+of a plausible value being drawn behind your back.
+
+→ [`JustDummies.Cli`](doc/handwritten/for-users/packages/justdummies-cli.en.md)
+
 ## 📚 Documentation
 
 **→ [Start with the ten-minute guide](doc/handwritten/for-users/guides/getting-started.en.md)**
@@ -118,10 +143,13 @@ seed replays across every patch and minor of a major version, enforced by a gold
 | [`JustDummies`](doc/handwritten/for-users/packages/justdummies.en.md) | the library, with its 28 rules bundled in |
 | [`JustDummies.Xunit`](doc/handwritten/for-users/packages/justdummies-xunit.en.md) | the xUnit v3 adapter: `[Reproducible]` |
 | [`JustDummies.DiagnosticCatalog`](doc/handwritten/for-users/packages/justdummies-diagnosticcatalog.en.md) | the `JD001`–`JD028` rules as compile-checked constants |
+| [`JustDummies.Cli`](doc/handwritten/for-users/packages/justdummies-cli.en.md) | `dum`, the scaffolder — a global tool, never a project reference |
 
-All three target `netstandard2.0`; `JustDummies` additionally carries a `net8.0` asset with the
-modern generators (`DateOnly`, `TimeOnly`, `Int128`, `UInt128`, `Half`). The supported .NET Framework
-floor is **4.7.2** ([ADR-0007](doc/handwritten/for-maintainers/adr/0007-floor-the-library-on-net-framework-4-7-2.md)).
+The three libraries target `netstandard2.0`; `JustDummies` additionally carries a `net8.0` asset with
+the modern generators (`DateOnly`, `TimeOnly`, `Int128`, `UInt128`, `Half`). The supported .NET
+Framework floor is **4.7.2** ([ADR-0007](doc/handwritten/for-maintainers/adr/0007-floor-the-library-on-net-framework-4-7-2.md)).
+`dum` is a tool rather than a library: it targets `net8.0` and rolls forward, whatever the project it
+analyzes targets.
 
 > **Preview.** The public surface is declared in `PublicAPI.Unshipped.txt`: nothing about it is
 > promised yet, and a stable release is what will freeze it. The seed contract is the exception —

@@ -15,7 +15,7 @@ of a given kind belongs. Written for someone about to modify the library, not to
 | `JustDummies.Xunit` | `JustDummies.Xunit` | `netstandard2.0` | the xUnit v3 adapter — one attribute |
 | `JustDummies.DiagnosticCatalog` | `JustDummies.DiagnosticCatalog` | `netstandard2.0` | the rule ids as compile-checked constants |
 | `JustDummies.GenAny` | *inside* `JustDummies.Cli` | `netstandard2.0` | the `dum` engine: §4 and §5 entire — emission, resolution, guards |
-| `JustDummies.Cli` | `JustDummies.Cli` (the `dum` tool) | `net8.0` | the shell: the §3 command line, **nothing behind it yet** |
+| `JustDummies.Cli` | `JustDummies.Cli` (the `dum` tool) | `net8.0` | the shell: §3's command line, §6's recap, §7's exit codes |
 | `JustDummies.UnitTests` | — | — | named cases: messages, argument validation, conventions, regressions |
 | `JustDummies.PropertyTests` | — | — | invariants that hold for every legal constraint argument |
 | `JustDummies.Analyzers.UnitTests` | — | — | one suite per rule, over compiled snippets |

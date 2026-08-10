@@ -57,7 +57,7 @@ internal static class Composition {
     ///     and is named <c>Create</c>, <c>From</c>, <c>Of</c> or <c>Parse</c>. <c>Create</c> wins where several
     ///     do; where several still remain the parameter is left unresolved rather than guessed at.
     /// </remarks>
-    internal static IMethodSymbol? FactoryFor(INamedTypeSymbol type) {
+    internal static IReadOnlyList<IMethodSymbol> FactoriesFor(INamedTypeSymbol type) {
         IMethodSymbol[] qualifying = type.GetMembers()
                                          .OfType<IMethodSymbol>()
                                          .Where(method => method.IsStatic
@@ -67,11 +67,13 @@ internal static class Composition {
                                                        && SymbolEqualityComparer.Default.Equals(method.ReturnType, type))
                                          .ToArray();
 
-        if (qualifying.Length <= 1) { return qualifying.FirstOrDefault(); }
+        if (qualifying.Length <= 1) { return qualifying; }
 
         IMethodSymbol[] preferred = qualifying.Where(method => method.Name == Recognised[0]).ToArray();
 
-        return preferred.Length == 1 ? preferred[0] : null;
+        // Create wins where several qualify; where several still remain, the caller reports all of them and
+        // leaves the parameter open rather than picking one on the developer's behalf.
+        return preferred.Length == 1 ? preferred : qualifying;
     }
 
     private static bool Qualifies(INamedTypeSymbol? candidate, INamedTypeSymbol type) {

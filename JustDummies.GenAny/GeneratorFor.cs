@@ -238,11 +238,14 @@ internal sealed class GeneratorFor {
             return DrawnGenerator.From($"new {names.Of(scaffolded)}()", scaffolded, provenance: Provenance.Scaffolded);
         }
 
-        IMethodSymbol? factory = Composition.FactoryFor(type);
+        IReadOnlyList<IMethodSymbol> qualifying = Composition.FactoriesFor(type);
 
-        if (factory is null) { return DrawnGenerator.Unresolved(); }
+        if (qualifying.Count != 1) {
+            return DrawnGenerator.Unresolved(candidates: [.. qualifying.Select(method => $"{names.Of(type)}.{method.Name}")]);
+        }
 
-        IParameterSymbol source = factory.Parameters[0];
+        IMethodSymbol    factory = qualifying[0];
+        IParameterSymbol source  = factory.Parameters[0];
         DrawnGenerator   inner  = Draw(source.Type, remaining - 1, [.. underway, type]);
 
         if (!inner.Resolved) { return DrawnGenerator.Unresolved(); }

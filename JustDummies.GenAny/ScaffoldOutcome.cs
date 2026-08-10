@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace JustDummies.GenAny;
 
@@ -7,10 +8,14 @@ namespace JustDummies.GenAny;
 /// </summary>
 public sealed class ScaffoldOutcome {
 
-    private ScaffoldOutcome(ScaffoldStatus status, ScaffoldPlan? plan, ScaffoldedFile? file) {
-        Status = status;
-        Plan   = plan;
-        File   = file;
+    private ScaffoldOutcome(ScaffoldStatus status,
+                            ScaffoldPlan? plan,
+                            ScaffoldedFile? file,
+                            IReadOnlyList<ScaffoldWarning> warnings) {
+        Status   = status;
+        Plan     = plan;
+        File     = file;
+        Warnings = warnings;
     }
 
     /// <summary>How the scaffold ended.</summary>
@@ -27,16 +32,23 @@ public sealed class ScaffoldOutcome {
     /// <summary>The emitted file — null unless <see cref="Succeeded" />.</summary>
     public ScaffoldedFile? File { get; }
 
+    /// <summary>
+    ///     What is worth saying about this scaffold without stopping it — the shadowing case of §7.
+    /// </summary>
+    public IReadOnlyList<ScaffoldWarning> Warnings { get; }
+
     /// <summary>Whether a file was produced. It may still carry TODOs, which is a success (§7).</summary>
     public bool Succeeded => Status == ScaffoldStatus.Scaffolded;
 
     /// <summary>A file was produced.</summary>
     /// <exception cref="ArgumentNullException">Any argument is null.</exception>
-    public static ScaffoldOutcome Scaffolded(ScaffoldPlan plan, ScaffoldedFile file) {
+    public static ScaffoldOutcome Scaffolded(ScaffoldPlan plan,
+                                             ScaffoldedFile file,
+                                             IReadOnlyList<ScaffoldWarning>? warnings = null) {
         if (plan is null) { throw new ArgumentNullException(nameof(plan)); }
         if (file is null) { throw new ArgumentNullException(nameof(file)); }
 
-        return new ScaffoldOutcome(ScaffoldStatus.Scaffolded, plan, file);
+        return new ScaffoldOutcome(ScaffoldStatus.Scaffolded, plan, file, warnings ?? []);
     }
 
     /// <summary>Nothing was produced, and this is why.</summary>
@@ -47,7 +59,7 @@ public sealed class ScaffoldOutcome {
                                         nameof(status));
         }
 
-        return new ScaffoldOutcome(status, plan: null, file: null);
+        return new ScaffoldOutcome(status, plan: null, file: null, warnings: []);
     }
 
     /// <inheritdoc />

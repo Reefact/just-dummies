@@ -6,9 +6,10 @@
 portent les contraintes projet des §10 et §13. Écrites : la §3, la ligne de commande ; la §4, le fichier émis ; et
 **toute la §5** — choix du constructeur, table de base, guards, composition et paramètre ouvert — ainsi que la
 provenance que rapporte la §6. L'exemple travaillé du §4.1 est désormais produit de bout en bout depuis sa propre
-source, au caractère près. **Pas écrites :** la §6, le récapitulatif console, et la §7, les codes de sortie et
-l'avertissement de masquage ; ni le chargement de projet de la §11.1, donc `dum generate` refuse toujours au lieu
-d'exécuter tout cela.
+source, au caractère près. Écrites également : la §6, le récapitulatif console, et les codes de sortie et l'avertissement de masquage de la
+§7, tous deux vérifiés contre les exécutions que ce document écrit noir sur blanc. **Pas écrits :** le chargement
+de projet et la résolution de type des §11.1 et §3.2 — rien ne remet donc encore de compilation au moteur, et
+`dum generate` refuse toujours au lieu d'exécuter tout cela.
 **Remplace :** la pré-spécification de travail 0.1 (jamais commitée)
 
 ---

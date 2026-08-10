@@ -64,7 +64,7 @@ public static class Scaffolder {
                                 names.Usings,
                                 parameters);
 
-        return ScaffoldOutcome.Scaffolded(plan, GeneratorEmitter.Emit(plan));
+        return ScaffoldOutcome.Scaffolded(plan, GeneratorEmitter.Emit(plan), Shadowing(plan, library));
     }
 
     /// <summary>
@@ -81,7 +81,9 @@ public static class Scaffolder {
                               | (guards.SourceAvailable ? Provenance.None : Provenance.NoSource)
                               | (guards.Unread(parameter.Name) ? Provenance.UnreadGuards : Provenance.None);
 
-        if (!drawn.Resolved) { return ScaffoldedParameter.Unresolved(parameter.Name, typeDisplay, provenance); }
+        if (!drawn.Resolved) {
+            return ScaffoldedParameter.Unresolved(parameter.Name, typeDisplay, provenance, drawn.Candidates);
+        }
 
         IReadOnlyList<GuardConstraint> tightening = guards.For(parameter.Name);
         string                         expression = GeneratorFor.Chain(drawn, tightening, out bool dropped);
@@ -113,6 +115,27 @@ public static class Scaffolder {
                      .Where(candidate => candidate.Parameters.All(parameter => parameter.RefKind is RefKind.None or RefKind.In))
                      .OrderByDescending(candidate => candidate.Parameters.Length)
                      .FirstOrDefault();
+    }
+
+    /// <summary>
+    ///     Whether the scaffolded name is one the library already uses (§7).
+    /// </summary>
+    /// <remarks>
+    ///     Read off the library the developer references rather than from a list here, for the same reason
+    ///     every other member is (ADR-0063), and compared on <b>arity</b> as well as name: a generic
+    ///     <c>AnySet&lt;T&gt;</c> cannot be shadowed by a scaffolded <c>AnySet</c>, since arity is part of a
+    ///     type's identity in C#. Warning on the generic ones would cry wolf on a domain type named
+    ///     <c>Set</c>, <c>List</c> or <c>Sequence</c>.
+    /// </remarks>
+    private static IReadOnlyList<ScaffoldWarning> Shadowing(ScaffoldPlan plan, LibrarySurface library) {
+        INamedTypeSymbol? shadowed = library.Any
+                                            .ContainingNamespace
+                                            .GetTypeMembers()
+                                            .FirstOrDefault(type => type.Arity == 0
+                                                                 && type.DeclaredAccessibility == Accessibility.Public
+                                                                 && type.Name == plan.GeneratorName);
+
+        return shadowed is null ? [] : [ScaffoldWarning.Shadows(plan.GeneratorName, shadowed.ToDisplayString())];
     }
 
     private static string? NamespaceOf(INamedTypeSymbol target) {

@@ -1,0 +1,189 @@
+using NFluent;
+
+namespace JustDummies.GenAny.UnitTests;
+
+/// <summary>
+///     How a type the base table has no row for is drawn anyway (§5.4).
+/// </summary>
+public sealed class CompositionTests {
+
+    /// <summary>
+    ///     A scaffolded generator wins, and that is how aggregates compose in cascade: scaffold
+    ///     <c>Customer</c>, re-run <c>--force</c> on <c>Order</c>, and the open parameter closes.
+    /// </summary>
+    [Fact(DisplayName = "A generator already scaffolded for the type is used.")]
+    public void AGeneratorAlreadyScaffoldedIsUsed() {
+        ScaffoldedParameter parameter = Composed("""
+                                                 public sealed class Customer { public Customer(string name) { } }
+
+                                                 public sealed class AnyCustomer : IAny<Customer> {
+                                                     public Customer Generate() { return new Customer("name"); }
+                                                 }
+                                                 """,
+                                                 "Customer");
+
+        Check.That(parameter.Expression).IsEqualTo("new AnyCustomer()");
+        Check.That(parameter.Provenance.HasFlag(Provenance.Scaffolded)).IsTrue();
+    }
+
+    // It is the developer's own answer to the question, so it outranks anything the engine could infer.
+    [Fact(DisplayName = "A scaffolded generator wins over a static factory.")]
+    public void AScaffoldedGeneratorWinsOverAFactory() {
+        ScaffoldedParameter parameter = Composed("""
+                                                 public sealed class Email {
+                                                     public static Email Create(string value) { return new Email(); }
+                                                 }
+
+                                                 public sealed class AnyEmail : IAny<Email> {
+                                                     public Email Generate() { return Email.Create("a@b.c"); }
+                                                 }
+                                                 """,
+                                                 "Email");
+
+        Check.That(parameter.Expression).IsEqualTo("new AnyEmail()");
+    }
+
+    [Theory(DisplayName = "A one-parameter static factory is recognised by name.")]
+    [InlineData("Create")]
+    [InlineData("From")]
+    [InlineData("Of")]
+    [InlineData("Parse")]
+    public void AOneParameterStaticFactoryIsRecognisedByName(string factory) {
+        ScaffoldedParameter parameter = Composed($$"""
+                                                  public sealed class Email {
+                                                      public static Email {{factory}}(string value) { return new Email(); }
+                                                  }
+                                                  """,
+                                                  "Email");
+
+        Check.That(parameter.Expression).IsEqualTo($"Any.String().NonEmpty().As(Email.{factory})");
+        Check.That(parameter.Provenance.HasFlag(Provenance.Factory)).IsTrue();
+    }
+
+    /// <summary>
+    ///     Guard reading is what makes factory composition correct rather than nominally present.
+    /// </summary>
+    /// <remarks>
+    ///     <c>OrderReference.Create</c> guards on <c>IsNullOrWhiteSpace</c>, so the emitted chain is
+    ///     <c>Any.String().NonEmpty().As(OrderReference.Create)</c>. Without the guard it would be
+    ///     <c>Any.String().As(OrderReference.Create)</c> — measured throwing <c>AnyGenerationException</c> 594
+    ///     times in 10 000 draws, about one in seventeen, which is what an unconstrained draw over the
+    ///     seventeen lengths 0 to 16 predicts.
+    /// </remarks>
+    [Fact(DisplayName = "A factory's own guards tighten the generator for its parameter.")]
+    public void AFactorysOwnGuardsTightenItsParameter() {
+        ScaffoldedParameter parameter = Composed("""
+                                                 public sealed class OrderReference {
+
+                                                     public static OrderReference Create(string value) {
+                                                         if (string.IsNullOrWhiteSpace(value)) {
+                                                             throw new ArgumentException(nameof(value));
+                                                         }
+
+                                                         if (value.Length != 12) { throw new ArgumentException(nameof(value)); }
+
+                                                         return new OrderReference();
+                                                     }
+
+                                                 }
+                                                 """,
+                                                 "OrderReference");
+
+        Check.That(parameter.Expression).IsEqualTo("Any.String().NonEmpty().WithLength(12).As(OrderReference.Create)");
+        Check.That(parameter.Provenance.HasFlag(Provenance.Factory)).IsTrue();
+        Check.That(parameter.Provenance.HasFlag(Provenance.Guard)).IsTrue();
+    }
+
+    [Fact(DisplayName = "Create wins where several factories qualify.")]
+    public void CreateWinsWhereSeveralQualify() {
+        ScaffoldedParameter parameter = Composed("""
+                                                 public sealed class Email {
+                                                     public static Email Of(string value) { return new Email(); }
+                                                     public static Email Create(string value) { return new Email(); }
+                                                 }
+                                                 """,
+                                                 "Email");
+
+        Check.That(parameter.Expression).IsEqualTo("Any.String().NonEmpty().As(Email.Create)");
+    }
+
+    // Where several remain the parameter is left open rather than guessed at: which one the developer meant is
+    // theirs to say.
+    [Fact(DisplayName = "Several qualifying factories and no Create leaves the parameter open.")]
+    public void SeveralQualifyingFactoriesLeaveTheParameterOpen() {
+        ScaffoldedParameter parameter = Composed("""
+                                                 public sealed class Email {
+                                                     public static Email Of(string value) { return new Email(); }
+                                                     public static Email From(string value) { return new Email(); }
+                                                 }
+                                                 """,
+                                                 "Email");
+
+        Check.That(parameter.IsUnresolved).IsTrue();
+    }
+
+    [Theory(DisplayName = "A method that is not a one-parameter conversion does not qualify.")]
+    [InlineData("public static Email Create(string value, bool checked_) { return new Email(); }")]
+    [InlineData("public static string Create(string value) { return value; }")]
+    [InlineData("public Email Create(string value) { return new Email(); }")]
+    [InlineData("internal static Email Create(string value) { return new Email(); }")]
+    [InlineData("public static Email Build(string value) { return new Email(); }")]
+    public void AMethodThatIsNotAOneParameterConversionDoesNotQualify(string method) {
+        ScaffoldedParameter parameter = Composed($$"""
+                                                  public sealed class Email {
+                                                      {{method}}
+                                                  }
+                                                  """,
+                                                  "Email");
+
+        Check.That(parameter.IsUnresolved).IsTrue();
+    }
+
+    // The guard §5.2 asks for, now that composition is what can make a type reach itself.
+    [Fact(DisplayName = "A factory taking its own type does not send the engine round in circles.")]
+    public void AFactoryTakingItsOwnTypeIsNotFollowedForever() {
+        ScaffoldedParameter parameter = Composed("""
+                                                 public sealed class Email {
+                                                     public static Email Create(Email value) { return value; }
+                                                 }
+                                                 """,
+                                                 "Email");
+
+        Check.That(parameter.IsUnresolved).IsTrue();
+    }
+
+    [Fact(DisplayName = "A composed element inside a collection is composed too.")]
+    public void AComposedElementInsideACollectionIsComposedToo() {
+        ScaffoldedParameter parameter = Composed("""
+                                                 public sealed class Email {
+                                                     public static Email Create(string value) { return new Email(); }
+                                                 }
+                                                 """,
+                                                 "IReadOnlyList<Email>");
+
+        Check.That(parameter.Expression).IsEqualTo("Any.ListOf(Any.String().NonEmpty().As(Email.Create))");
+    }
+
+    /// <summary>Scaffolds a <c>Subject</c> whose single parameter is of <paramref name="parameterType" />.</summary>
+    private static ScaffoldedParameter Composed(string declarations, string parameterType) {
+        ScaffoldOutcome outcome = Subject.Scaffold($$"""
+                                                   namespace Shop.Domain;
+
+                                                   using System;
+                                                   using System.Collections.Generic;
+
+                                                   using JustDummies;
+
+                                                   {{declarations}}
+
+                                                   public sealed class Subject {
+                                                       public Subject({{parameterType}} value) { }
+                                                   }
+                                                   """);
+
+        Check.That(outcome.Status).IsEqualTo(ScaffoldStatus.Scaffolded);
+
+        return outcome.Plan!.Parameters[0];
+    }
+
+}

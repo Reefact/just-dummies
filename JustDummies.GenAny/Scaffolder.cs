@@ -48,19 +48,15 @@ public static class Scaffolder {
 
         string?      fileNamespace = options.NamespaceOverride ?? NamespaceOf(target);
         TypeNames    names         = new(fileNamespace);
-        GeneratorFor generators    = new(library, names);
+        GeneratorFor generators    = new(library, names, compilation, options.Naming);
+        GuardReading guards        = Guards.Read(constructor, compilation);
 
         string targetName = names.Of(target);
 
         List<ScaffoldedParameter> parameters = [];
 
         foreach (IParameterSymbol parameter in constructor.Parameters) {
-            string  typeDisplay = names.Of(parameter.Type);
-            string? expression  = generators.Resolve(parameter.Type);
-
-            parameters.Add(expression is null
-                               ? ScaffoldedParameter.Unresolved(parameter.Name, typeDisplay)
-                               : ScaffoldedParameter.DrawnFrom(parameter.Name, typeDisplay, expression));
+            parameters.Add(Resolve(parameter, names, generators, guards));
         }
 
         ScaffoldPlan plan = new(new TargetType(targetName, fileNamespace, StyleOf(target, fileNamespace)),
@@ -69,6 +65,31 @@ public static class Scaffolder {
                                 parameters);
 
         return ScaffoldOutcome.Scaffolded(plan, GeneratorEmitter.Emit(plan));
+    }
+
+    /// <summary>
+    ///     One parameter: the table's answer for its type, tightened by whatever its guards said (§5.3).
+    /// </summary>
+    private static ScaffoldedParameter Resolve(IParameterSymbol parameter,
+                                               TypeNames names,
+                                               GeneratorFor generators,
+                                               GuardReading guards) {
+        string         typeDisplay = names.Of(parameter.Type);
+        DrawnGenerator drawn       = generators.Draw(parameter.Type);
+
+        Provenance provenance = drawn.Provenance
+                              | (guards.SourceAvailable ? Provenance.None : Provenance.NoSource)
+                              | (guards.Unread(parameter.Name) ? Provenance.UnreadGuards : Provenance.None);
+
+        if (!drawn.Resolved) { return ScaffoldedParameter.Unresolved(parameter.Name, typeDisplay, provenance); }
+
+        IReadOnlyList<GuardConstraint> tightening = guards.For(parameter.Name);
+        string                         expression = GeneratorFor.Chain(drawn, tightening, out bool dropped);
+
+        if (tightening.Count > 0) { provenance |= Provenance.Guard; }
+        if (dropped) { provenance |= Provenance.GuardsNotCombined; }
+
+        return ScaffoldedParameter.DrawnFrom(parameter.Name, typeDisplay, expression, provenance);
     }
 
     /// <summary>

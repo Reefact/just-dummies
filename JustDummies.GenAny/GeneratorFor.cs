@@ -102,62 +102,167 @@ internal sealed class GeneratorFor {
         "System.Collections.Generic.IReadOnlyDictionary`2"
     ];
 
+    /// <summary>The rows that exist only on the net8.0 asset, so their absence can be reported as such.</summary>
+    private static readonly string[] ModernOnly = ["DateOnly", "TimeOnly", "Int128", "UInt128", "Half"];
+
     private readonly LibrarySurface library;
 
     private readonly TypeNames names;
 
-    internal GeneratorFor(LibrarySurface library, TypeNames names) {
-        this.library = library;
-        this.names   = names;
+    private readonly Compilation compilation;
+
+    private readonly NamingOptions naming;
+
+    internal GeneratorFor(LibrarySurface library, TypeNames names, Compilation compilation, NamingOptions naming) {
+        this.library     = library;
+        this.names       = names;
+        this.compilation = compilation;
+        this.naming      = naming;
+    }
+
+    /// <summary>Whether a size guard on this type reads against the count family rather than the length one.</summary>
+    /// <remarks>
+    ///     A collection generator exposes <c>NonEmpty</c>, <c>WithCount</c>, <c>WithMinCount</c> and
+    ///     <c>WithMaxCount</c>, and no <c>WithLength</c> at all (§14.3). Reading <c>p.Length &gt; N</c> on a
+    ///     <c>T[]</c> against the string family would emit a member ADR-0059 drops <b>silently</b> — a real
+    ///     constraint lost without a trace.
+    /// </remarks>
+    internal static bool SizedByCount(ITypeSymbol type) {
+        if (type is IArrayTypeSymbol) { return true; }
+
+        return type is INamedTypeSymbol named
+            && Definition(named) is { } definition
+            && (ByCollection.ContainsKey(definition) || Dictionaries.Contains(definition, StringComparer.Ordinal));
     }
 
     /// <summary>
-    ///     The expression that draws a <paramref name="type" />, or null when the table has no row for it.
+    ///     The generator for <paramref name="type" />, in the three parts a guard can be slotted between.
     /// </summary>
-    internal string? Resolve(ITypeSymbol type) {
-        return Resolve(type, MaximumDepth);
+    internal DrawnGenerator Draw(ITypeSymbol type) {
+        return Draw(type, MaximumDepth, []);
     }
 
-    private string? Resolve(ITypeSymbol type, int remaining) {
+    /// <summary>
+    ///     The complete expression for <paramref name="drawn" />, with <paramref name="guards" /> read into it.
+    /// </summary>
+    /// <remarks>
+    ///     Every constraint is checked against the builder before it is written (ADR-0059): <c>.Positive()</c>
+    ///     on a <c>uint</c> parameter does not resolve, and is skipped rather than emitted.
+    /// </remarks>
+    internal static string Chain(DrawnGenerator drawn, IReadOnlyList<GuardConstraint> guards, out bool dropped) {
+        IReadOnlyList<GuardConstraint> kept = GuardReading.Combine([.. drawn.Seeded, .. guards], out dropped);
+
+        string chain = string.Concat(kept.Where(constraint => LibrarySurface.Carries(drawn.Builder,
+                                                                                     constraint.Member,
+                                                                                     constraint.Arity))
+                                         .Select(constraint => constraint.Render()));
+
+        return drawn.Core + chain + drawn.Suffix;
+    }
+
+    /// <summary>The complete expression for a type nothing further will constrain — an element, a key.</summary>
+    private string? Resolve(ITypeSymbol type, int remaining, IReadOnlyCollection<ITypeSymbol> underway) {
+        DrawnGenerator drawn = Draw(type, remaining, underway);
+
+        return drawn.Resolved ? Chain(drawn, [], out _) : null;
+    }
+
+    private DrawnGenerator Draw(ITypeSymbol type, int remaining, IReadOnlyCollection<ITypeSymbol> underway) {
         // Counted in hops between composites, so the scalar at the bottom is free: a list of dictionaries of
         // arrays is three, and resolves; a fourth wrapper does not.
-        if (remaining < 0) { return null; }
+        if (remaining < 0) { return DrawnGenerator.Unresolved(); }
 
-        if (type is IArrayTypeSymbol array) { return Collection("ArrayOf", array.ElementType, remaining); }
+        // A type that reaches itself — Email.Create(Email) — would otherwise be followed until the depth bound
+        // stopped it, which reads as a coincidence rather than as the rule it is.
+        if (underway.Any(seen => SymbolEqualityComparer.Default.Equals(seen, type))) { return DrawnGenerator.Unresolved(); }
 
-        if (type is not INamedTypeSymbol named) { return null; }
+        if (type is IArrayTypeSymbol array) { return Collection("ArrayOf", array.ElementType, remaining, underway, type); }
+
+        if (type is not INamedTypeSymbol named) { return DrawnGenerator.Unresolved(); }
 
         if (named.TypeKind == TypeKind.Enum) { return Enum(named); }
 
         if (named.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T) {
-            return NullableValue(named, remaining);
+            return NullableValue(named, remaining, underway);
         }
 
         string? collection = Definition(named) is { } definition && ByCollection.TryGetValue(definition, out string? factory)
                                  ? factory
                                  : null;
 
-        if (collection is not null) { return Collection(collection, named.TypeArguments[0], remaining); }
+        if (collection is not null) { return Collection(collection, named.TypeArguments[0], remaining, underway, named); }
 
         if (Definition(named) is { } dictionary && Dictionaries.Contains(dictionary, StringComparer.Ordinal)) {
-            return Dictionary(named, remaining);
+            return Dictionary(named, remaining, underway);
         }
 
-        return Scalar(named);
+        DrawnGenerator scalar = Scalar(named);
+
+        return scalar.Resolved ? scalar : Composed(named, remaining, underway, scalar.Provenance);
     }
 
     /// <summary>A type the table names directly, with the one constraint its row carries.</summary>
-    private string? Scalar(INamedTypeSymbol type) {
+    private DrawnGenerator Scalar(INamedTypeSymbol type) {
         if (!ByMetadataName.TryGetValue(MetadataName(type), out string? factory)
          && !BySpecialType.TryGetValue(type.SpecialType, out factory)) {
-            return null;
+            return DrawnGenerator.Unresolved();
         }
 
         ITypeSymbol? generator = library.Returned(factory);
 
-        if (generator is null) { return null; }
+        if (generator is null) {
+            // The library HAS this generator; this project's asset does not. Saying so turns a dead end into
+            // an instruction — retarget, or write it yourself — where "not inferred" would not.
+            return DrawnGenerator.Unresolved(ModernOnly.Contains(factory, StringComparer.Ordinal)
+                                                 ? Provenance.Unavailable
+                                                 : Provenance.None);
+        }
 
-        return $"Any.{factory}()" + Refinement(factory, generator);
+        return DrawnGenerator.From($"Any.{factory}()", generator, Refinement(factory, generator));
+    }
+
+    /// <summary>
+    ///     A type the base table has no row for, drawn through the developer's own code instead (§5.4).
+    /// </summary>
+    private DrawnGenerator Composed(INamedTypeSymbol type,
+                                    int remaining,
+                                    IReadOnlyCollection<ITypeSymbol> underway,
+                                    Provenance refusal) {
+        if (refusal != Provenance.None) { return DrawnGenerator.Unresolved(refusal); }
+
+        INamedTypeSymbol? scaffolded = Composition.ScaffoldedFor(type, compilation, naming);
+
+        if (scaffolded is not null) {
+            names.Open(NamespaceOf(scaffolded));
+
+            return DrawnGenerator.From($"new {names.Of(scaffolded)}()", scaffolded, provenance: Provenance.Scaffolded);
+        }
+
+        IMethodSymbol? factory = Composition.FactoryFor(type);
+
+        if (factory is null) { return DrawnGenerator.Unresolved(); }
+
+        IParameterSymbol source = factory.Parameters[0];
+        DrawnGenerator   inner  = Draw(source.Type, remaining - 1, [.. underway, type]);
+
+        if (!inner.Resolved) { return DrawnGenerator.Unresolved(); }
+
+        // Guard reading is what makes factory composition correct rather than nominally present:
+        // OrderReference.Create guards on IsNullOrWhiteSpace, so the chain becomes
+        // Any.String().NonEmpty().As(OrderReference.Create) — one measured throwing about one draw in
+        // seventeen without it.
+        GuardReading                   read       = Guards.Read(factory, compilation);
+        IReadOnlyList<GuardConstraint> tightening = read.For(source.Name);
+        Provenance                     provenance = Provenance.Factory
+                                                  | (tightening.Count > 0 ? Provenance.Guard : Provenance.None)
+                                                  | (read.SourceAvailable ? Provenance.None : Provenance.NoSource)
+                                                  | (read.Unread(source.Name) ? Provenance.UnreadGuards : Provenance.None);
+
+        return inner.Then($".As({names.Of(type)}.{factory.Name})", provenance, tightening);
+    }
+
+    private static string NamespaceOf(INamedTypeSymbol type) {
+        return type.ContainingNamespace is { IsGlobalNamespace: false } @namespace ? @namespace.ToDisplayString() : string.Empty;
     }
 
     /// <summary>
@@ -170,35 +275,51 @@ internal sealed class GeneratorFor {
     ///     exists to remove, so the row is <c>.NonEmpty()</c>. Same argument for <c>Guid</c>, whose empty value
     ///     is the one most guards reject.
     /// </remarks>
-    private static string Refinement(string factory, ITypeSymbol generator) {
+    private static IReadOnlyList<GuardConstraint> Refinement(string factory, ITypeSymbol generator) {
         return factory switch {
-            "String" or "Guid" when LibrarySurface.Carries(generator, "NonEmpty") => ".NonEmpty()",
-            "Uri" when LibrarySurface.Carries(generator, "Web")                   => ".Web()",
-            _                                                              => string.Empty
+            "String" or "Guid" when LibrarySurface.Carries(generator, "NonEmpty") =>
+                [new GuardConstraint("NonEmpty", argument: null, Bound.Emptiness)],
+            "Uri" when LibrarySurface.Carries(generator, "Web") =>
+                [new GuardConstraint("Web", argument: null, Bound.Exact)],
+            _ => []
         };
     }
 
-    private string? Enum(INamedTypeSymbol type) {
-        if (library.Returned("Enum", typeArguments: 1) is null) { return null; }
+    private DrawnGenerator Enum(INamedTypeSymbol type) {
+        ITypeSymbol? generator = library.Returned("Enum", typeArguments: 1);
 
-        return $"Any.Enum<{names.Of(type)}>()";
+        return generator is null
+                   ? DrawnGenerator.Unresolved()
+                   : DrawnGenerator.From($"Any.Enum<{names.Of(type)}>()", generator);
     }
 
-    private string? Collection(string factory, ITypeSymbol element, int remaining) {
-        if (library.Returned(factory, typeArguments: 1, parameters: 1) is null) { return null; }
+    private DrawnGenerator Collection(string factory,
+                                      ITypeSymbol element,
+                                      int remaining,
+                                      IReadOnlyCollection<ITypeSymbol> underway,
+                                      ITypeSymbol self) {
+        ITypeSymbol? generator = library.Returned(factory, typeArguments: 1, parameters: 1);
 
-        string? item = Resolve(element, remaining - 1);
+        if (generator is null) { return DrawnGenerator.Unresolved(); }
 
-        return item is null ? null : $"Any.{factory}({item})";
+        string? item = Resolve(element, remaining - 1, [.. underway, self]);
+
+        return item is null
+                   ? DrawnGenerator.Unresolved()
+                   : DrawnGenerator.From($"Any.{factory}({item})", generator);
     }
 
-    private string? Dictionary(INamedTypeSymbol type, int remaining) {
-        if (library.Returned("DictionaryOf", typeArguments: 2, parameters: 2) is null) { return null; }
+    private DrawnGenerator Dictionary(INamedTypeSymbol type, int remaining, IReadOnlyCollection<ITypeSymbol> underway) {
+        ITypeSymbol? generator = library.Returned("DictionaryOf", typeArguments: 2, parameters: 2);
 
-        string? keys   = Resolve(type.TypeArguments[0], remaining - 1);
-        string? values = Resolve(type.TypeArguments[1], remaining - 1);
+        if (generator is null) { return DrawnGenerator.Unresolved(); }
 
-        return keys is null || values is null ? null : $"Any.DictionaryOf({keys}, {values})";
+        string? keys   = Resolve(type.TypeArguments[0], remaining - 1, [.. underway, type]);
+        string? values = Resolve(type.TypeArguments[1], remaining - 1, [.. underway, type]);
+
+        return keys is null || values is null
+                   ? DrawnGenerator.Unresolved()
+                   : DrawnGenerator.From($"Any.DictionaryOf({keys}, {values})", generator);
     }
 
     /// <summary>
@@ -210,13 +331,14 @@ internal sealed class GeneratorFor {
     ///     <c>IAny&lt;int?&gt;</c>, so the conversion has to be written. Never <c>.OrNull()</c>: the emitted
     ///     generator does not draw null (ADR-0064).
     /// </remarks>
-    private string? NullableValue(INamedTypeSymbol type, int remaining) {
-        if (!library.CarriesAs()) { return null; }
+    private DrawnGenerator NullableValue(INamedTypeSymbol type, int remaining, IReadOnlyCollection<ITypeSymbol> underway) {
+        if (!library.CarriesAs()) { return DrawnGenerator.Unresolved(); }
 
-        ITypeSymbol underlying = type.TypeArguments[0];
-        string?     inner      = Resolve(underlying, remaining);
+        DrawnGenerator inner = Draw(type.TypeArguments[0], remaining, [.. underway, type]);
 
-        return inner is null ? null : $"{inner}.As(value => ({names.Of(type)})value)";
+        return inner.Resolved
+                   ? inner.Then($".As(value => ({names.Of(type)})value)", Provenance.None)
+                   : DrawnGenerator.Unresolved(inner.Provenance);
     }
 
     private static string? Definition(INamedTypeSymbol type) {

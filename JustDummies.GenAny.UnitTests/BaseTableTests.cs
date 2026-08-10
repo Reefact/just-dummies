@@ -98,8 +98,7 @@ public sealed class BaseTableTests {
 
     // Until §5.4 composes through a scaffolded generator or a static factory, a domain type has no row. The
     // parameter comes back open, and §5.5 turns that into a TODO the developer's own build reports.
-    [SuppressMessage(SonarRule.S1135.Category, SonarRule.S1135.Id,
-                     Justification = "Names the marker the tool emits by design (§5.5), not unfinished work here.")]
+    [SuppressMessage(SonarRule.S1135.Category, SonarRule.S1135.Id, Justification = "Names the marker the tool emits by design (§5.5), not unfinished work here.")]
     [Theory(DisplayName = "A type the table has no row for comes back open.")]
     [InlineData("Customer")]
     [InlineData("IReadOnlyList<Customer>")]

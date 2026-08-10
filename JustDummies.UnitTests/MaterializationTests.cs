@@ -1,5 +1,7 @@
 #region Usings declarations
 
+using System.Diagnostics.CodeAnalysis;
+
 using JetBrains.Annotations;
 
 using NFluent;
@@ -66,10 +68,7 @@ public sealed class MaterializationTests {
     }
 
     [Fact(DisplayName = "Building a generator draws nothing at all, which is why a chain left unmaterialized is silent.")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id,
-                                                     Justification =
-                                                         "The discarded generator IS the subject. This pins the behaviour JD006 reports: the arrange line reads like it did something, " +
-                                                         "and drew nothing.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = "The discarded generator IS the subject. This pins the behaviour JD006 reports: the arrange line reads like it did something, and drew nothing.")]
     public void BuildingAGeneratorDrawsNothing() {
         int draws = 0;
 
@@ -83,10 +82,7 @@ public sealed class MaterializationTests {
     }
 
     [Fact(DisplayName = "A generator interpolated into text renders its type name, never a value it could draw.")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(JustDummiesRule.JD005.Category, JustDummiesRule.JD005.Id,
-                                                     Justification =
-                                                         "The rendered generator IS the subject. This pins the behaviour JD005 reports, and the deliberate absence of a ToString override " +
-                                                         "that would mask it — an override returning a drawn value would make this test red, which is the point.")]
+    [SuppressMessage(JustDummiesRule.JD005.Category, JustDummiesRule.JD005.Id, Justification = "The rendered generator IS the subject. This pins the behaviour JD005 reports, and the deliberate absence of a ToString override that would mask it — an override returning a drawn value would make this test red, which is the point.")]
     public void AGeneratorRendersAsItsTypeName() {
         string rendered = $"{Any.Int32()}";
 

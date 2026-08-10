@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
@@ -37,11 +38,7 @@ public sealed class AwaitableBodyPassedToReproduciblyAnalyzer : DiagnosticAnalyz
         context.RegisterOperationAction(operationContext => Analyze(operationContext, symbols.Any), OperationKind.Invocation);
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S3267.Category, SonarRule.S3267.Id,
-                                                     Justification =
-                                                         "The rule asks for Select(argument => argument.Value). The loop unwraps a delegate creation before testing what it found and " +
-                                                         "reports on the lambda body, so the projection would rename the loop variable away from what it is without removing a single " +
-                                                         "step: `argument` is an IArgumentOperation, and the unwrapping still has to happen inside.")]
+    [SuppressMessage(SonarRule.S3267.Category, SonarRule.S3267.Id, Justification = "The rule asks for Select(argument => argument.Value). The loop unwraps a delegate creation before testing what it found and reports on the lambda body, so the projection would rename the loop variable away from what it is without removing a single step: `argument` is an IArgumentOperation, and the unwrapping still has to happen inside.")]
     private static void Analyze(OperationAnalysisContext context, INamedTypeSymbol anyType) {
         IInvocationOperation invocation = (IInvocationOperation)context.Operation;
         IMethodSymbol        method     = invocation.TargetMethod;

@@ -1,5 +1,7 @@
 #region Usings declarations
 
+using System.Diagnostics.CodeAnalysis;
+
 using NFluent;
 
 #endregion
@@ -85,10 +87,8 @@ public sealed class NonFiniteRecipeTests {
         for (int i = 0; i < SampleCount; i++) { Check.ThatCode(() => Any.Decimal().Generate()).DoesNotThrow(); }
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(NetAnalyzersRule.CA2242.Category, NetAnalyzersRule.CA2242.Id,
-                                                     Justification = SuppressionJustification.CA2242.ComparisonIsTheAssertion)]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S2688.Category, SonarRule.S2688.Id,
-                                                     Justification = SuppressionJustification.S2688.ComparisonIsTheAssertion)]
+    [SuppressMessage(NetAnalyzersRule.CA2242.Category, NetAnalyzersRule.CA2242.Id, Justification = SuppressionJustification.CA2242.ComparisonIsTheAssertion)]
+    [SuppressMessage(SonarRule.S2688.Category, SonarRule.S2688.Id, Justification = SuppressionJustification.S2688.ComparisonIsTheAssertion)]
     [Fact(DisplayName = "The Equals/== asymmetry the recipe warns about is real: a pooled NaN deduplicates.")]
     public void PooledNaNDeduplicatesUnderTheDefaultComparer() {
         // The trap, asserted rather than described: user code comparing with == sees two different values where a

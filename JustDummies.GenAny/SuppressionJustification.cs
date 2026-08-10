@@ -13,8 +13,7 @@ internal static class SuppressionJustification {
 
     /// <summary>Justifications for S1135 — "Complete the task associated to this 'TODO' comment".</summary>
     /// <remarks>The rule reads its own name here, and the justification below covers that too.</remarks>
-    [SuppressMessage(SonarRule.S1135.Category, SonarRule.S1135.Id,
-                     Justification = S1135.DocumentsTheMarkerTheToolEmits)]
+    [SuppressMessage(SonarRule.S1135.Category, SonarRule.S1135.Id, Justification = S1135.DocumentsTheMarkerTheToolEmits)]
     internal static class S1135 {
 
         /// <summary>

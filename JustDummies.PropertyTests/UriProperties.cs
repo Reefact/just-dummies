@@ -1,5 +1,7 @@
 #region Usings declarations
 
+using System.Diagnostics.CodeAnalysis;
+
 using FsCheck;
 using FsCheck.Fluent;
 
@@ -246,17 +248,8 @@ public sealed class UriProperties {
     }
 
     /// <summary>Whether one relative draw is a relative reference carrying exactly the declared path, query and fragment.</summary>
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(NetAnalyzersRule.CA1870.Category, NetAnalyzersRule.CA1870.Id,
-                                                     Justification =
-                                                         "SearchValues<T> arrived in .NET 8 and this suite also runs on the .NET Framework 4.7.2 support floor " +
-                                                         "(ADR-0007, build/Net472TestFloor.props), where the type does not exist. The rule is right on net10.0 only; " +
-                                                         "IndexOfAny over a two-character array carries the same meaning on both legs. Same downlevel wall as " +
-                                                         "SYSLIB1045 and CA1510 (ADR-0037).")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(NetAnalyzersRule.CA1865.Category, NetAnalyzersRule.CA1865.Id,
-                                                     Justification =
-                                                         "string.StartsWith(char) is not on the .NET Framework 4.7.2 support floor this suite also runs on " +
-                                                         "(ADR-0007): measured, the net472 leg rejects it with CS1503, cannot convert from 'char' to 'string'. " +
-                                                         "The explicit StringComparison.Ordinal overload compiles on both legs and states the comparison it uses.")]
+    [SuppressMessage(NetAnalyzersRule.CA1870.Category, NetAnalyzersRule.CA1870.Id, Justification = "SearchValues<T> arrived in .NET 8 and this suite also runs on the .NET Framework 4.7.2 support floor (ADR-0007, build/Net472TestFloor.props), where the type does not exist. The rule is right on net10.0 only; IndexOfAny over a two-character array carries the same meaning on both legs. Same downlevel wall as SYSLIB1045 and CA1510 (ADR-0037).")]
+    [SuppressMessage(NetAnalyzersRule.CA1865.Category, NetAnalyzersRule.CA1865.Id, Justification = "string.StartsWith(char) is not on the .NET Framework 4.7.2 support floor this suite also runs on (ADR-0007): measured, the net472 leg rejects it with CS1503, cannot convert from 'char' to 'string'. The explicit StringComparison.Ordinal overload compiles on both legs and states the comparison it uses.")]
     private static bool RelativeDrawCarries(Uri value, (int? Segments, bool Rooted, bool Query, bool Fragment) testCase) {
         string reference = value.OriginalString;
         int    cut       = reference.IndexOfAny(new[] { '?', '#' });
@@ -328,10 +321,7 @@ public sealed class UriProperties {
     }
 
     [Fact(DisplayName = "Declared user-info reaches the URI, whichever of the three overloads declared it.")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S2692.Category, SonarRule.S2692.Id,
-                                                     Justification =
-                                                         "0 is deliberately excluded. The check asserts that a user-info draw renders user:password with a NON-EMPTY " +
-                                                         "user, so a colon at index 0 — an empty local part — must fail the property, which is exactly what > 0 says.")]
+    [SuppressMessage(SonarRule.S2692.Category, SonarRule.S2692.Id, Justification = "0 is deliberately excluded. The check asserts that a user-info draw renders user:password with a NON-EMPTY user, so a colon at index 0 — an empty local part — must fail the property, which is exactly what > 0 says.")]
     public void UserInfoShapesReachTheUri() {
         Gen<(UserInfoChoice Choice, string User, string Password)> cases =
             from choice in Gen.Elements(UserInfoChoice.Arbitrary, UserInfoChoice.UserOnly, UserInfoChoice.UserAndPassword)

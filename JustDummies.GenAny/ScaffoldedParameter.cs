@@ -57,8 +57,7 @@ public sealed class ScaffoldedParameter {
     public IReadOnlyList<string> Candidates { get; }
 
     /// <summary>Whether the emitted file will carry a TODO for this parameter.</summary>
-    [SuppressMessage(SonarRule.S1135.Category, SonarRule.S1135.Id,
-                     Justification = SuppressionJustification.S1135.DocumentsTheMarkerTheToolEmits)]
+    [SuppressMessage(SonarRule.S1135.Category, SonarRule.S1135.Id, Justification = SuppressionJustification.S1135.DocumentsTheMarkerTheToolEmits)]
     public bool IsUnresolved => Expression is null;
 
     /// <summary>

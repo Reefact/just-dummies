@@ -1,5 +1,6 @@
 #region Usings declarations
 
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text;
 
@@ -98,7 +99,7 @@ internal sealed class StringSpec {
 
     #endregion
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S107.Category, SonarRule.S107.Id, Justification = SuppressionJustification.S107.EngineImmutableState)]
+    [SuppressMessage(SonarRule.S107.Category, SonarRule.S107.Id, Justification = SuppressionJustification.S107.EngineImmutableState)]
     private StringSpec(int?    exactLength, ConstraintCall? exactConstraint,
                        int     minLength,   ConstraintCall? minConstraint,
                        int?    maxLength,   ConstraintCall? maxConstraint,
@@ -289,7 +290,7 @@ internal sealed class StringSpec {
     }
 
     /// <summary>Adds values the generated string must avoid; may be declared several times, the exclusions accumulate.</summary>
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S3267.Category, SonarRule.S3267.Id, Justification = SuppressionJustification.S3267.ConditionReadsMutatedCollection)]
+    [SuppressMessage(SonarRule.S3267.Category, SonarRule.S3267.Id, Justification = SuppressionJustification.S3267.ConditionReadsMutatedCollection)]
     internal StringSpec WithExcluded(IReadOnlyList<string> values, ConstraintCall applying) {
         if (values is null) { throw new ArgumentNullException(nameof(values)); }
         if (applying is null) { throw new ArgumentNullException(nameof(applying)); }
@@ -595,11 +596,7 @@ internal sealed class StringSpec {
                });
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(NetAnalyzersRule.CA2249.Category, NetAnalyzersRule.CA2249.Id,
-                                                     Justification =
-                                                         "string.Contains(string, StringComparison) does not exist on netstandard2.0, which this library targets " +
-                                                         "(ADR-0007). IndexOf with StringComparison.Ordinal is the same comparison and the only spelling that " +
-                                                         "compiles on the shipped asset. Same downlevel wall as CA1510 (ADR-0037).")]
+    [SuppressMessage(NetAnalyzersRule.CA2249.Category, NetAnalyzersRule.CA2249.Id, Justification = "string.Contains(string, StringComparison) does not exist on netstandard2.0, which this library targets (ADR-0007). IndexOf with StringComparison.Ordinal is the same comparison and the only spelling that compiles on the shipped asset. Same downlevel wall as CA1510 (ADR-0037).")]
     private IEnumerable<(ConstraintCall Constraint, Func<string, bool> Admits)> Declarations() {
         if (_exactLength is int exact) { yield return (_exactConstraint!, value => value.Length == exact); }
         if (_minLength > 0) { yield return (_minConstraint!, value => value.Length >= _minLength); }

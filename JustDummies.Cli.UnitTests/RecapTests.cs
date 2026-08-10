@@ -16,9 +16,7 @@ namespace JustDummies.Cli.UnitTests;
 ///     CLI renders it", and that is what makes the recap checkable without a compilation, a project on disk or
 ///     a terminal. The expected text below is §6's own worked example, copied from the specification.
 /// </remarks>
-[SuppressMessage(SonarRule.S1135.Category, SonarRule.S1135.Id,
-                 Justification = "Names the marker the tool emits by design (§5.5) and prints in the recap (§6), "
-                               + "not unfinished work here.")]
+[SuppressMessage(SonarRule.S1135.Category, SonarRule.S1135.Id, Justification = "Names the marker the tool emits by design (§5.5) and prints in the recap (§6), not unfinished work here.")]
 public sealed class RecapTests {
 
     /// <summary>

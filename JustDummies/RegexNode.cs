@@ -1,5 +1,6 @@
 #region Usings declarations
 
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 #endregion
@@ -49,7 +50,7 @@ internal sealed class RegexGenerationContext {
 ///     stands for into the <see cref="RegexGenerationContext" />, drawing counts and choices from the seeded random
 ///     generator — so the whole tree yields exactly one string that matches the pattern, in one pass.
 /// </summary>
-[System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S1694.Category, SonarRule.S1694.Id, Justification = SuppressionJustification.S1694.ClosedInternalHierarchyRoot)]
+[SuppressMessage(SonarRule.S1694.Category, SonarRule.S1694.Id, Justification = SuppressionJustification.S1694.ClosedInternalHierarchyRoot)]
 internal abstract class RegexNode {
 
     internal abstract void Append(RegexGenerationContext context);

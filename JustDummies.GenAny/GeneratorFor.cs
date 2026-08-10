@@ -21,8 +21,7 @@ namespace JustDummies.GenAny;
 ///         neutral generator for its type and nothing more.
 ///     </para>
 /// </remarks>
-[SuppressMessage(SonarRule.S1135.Category, SonarRule.S1135.Id,
-                 Justification = SuppressionJustification.S1135.DocumentsTheMarkerTheToolEmits)]
+[SuppressMessage(SonarRule.S1135.Category, SonarRule.S1135.Id, Justification = SuppressionJustification.S1135.DocumentsTheMarkerTheToolEmits)]
 internal sealed class GeneratorFor {
 
     /// <summary>The collection row every read-only and mutable list interface shares.</summary>

@@ -1,5 +1,7 @@
 #region Usings declarations
 
+using System.Diagnostics.CodeAnalysis;
+
 using FsCheck;
 using FsCheck.Fluent;
 
@@ -185,7 +187,7 @@ public sealed class ConflictMessageTruthfulnessProperties {
 
     #region Engine builders
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S1854.Category, SonarRule.S1854.Id, Justification = SuppressionJustification.S1854.CallIsTheSubject)]
+    [SuppressMessage(SonarRule.S1854.Category, SonarRule.S1854.Id, Justification = SuppressionJustification.S1854.CallIsTheSubject)]
     private static string? BuildInt32(bool hasBetween, int lo, int hi, int step, int[] allow, int[] excl) {
         try {
             AnyInt32 spec = Any.Int32();
@@ -198,7 +200,7 @@ public sealed class ConflictMessageTruthfulnessProperties {
         } catch (ConflictingAnyConstraintException exception) { return exception.Message; }
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S1854.Category, SonarRule.S1854.Id, Justification = SuppressionJustification.S1854.CallIsTheSubject)]
+    [SuppressMessage(SonarRule.S1854.Category, SonarRule.S1854.Id, Justification = SuppressionJustification.S1854.CallIsTheSubject)]
     private static string? BuildDecimal(bool hasBetween, int lo, int hi, int step, int[] allow, int[] excl) {
         try {
             AnyDecimal spec = Any.Decimal();
@@ -210,7 +212,7 @@ public sealed class ConflictMessageTruthfulnessProperties {
         } catch (ConflictingAnyConstraintException exception) { return exception.Message; }
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S1854.Category, SonarRule.S1854.Id, Justification = SuppressionJustification.S1854.CallIsTheSubject)]
+    [SuppressMessage(SonarRule.S1854.Category, SonarRule.S1854.Id, Justification = SuppressionJustification.S1854.CallIsTheSubject)]
     private static string? BuildDouble(bool hasBetween, int lo, int hi, int step, int[] allow, int[] excl) {
         try {
             AnyDouble spec = Any.Double();

@@ -1,5 +1,7 @@
 #region Usings declarations
 
+using System.Diagnostics.CodeAnalysis;
+
 using JetBrains.Annotations;
 
 using NFluent;
@@ -197,10 +199,7 @@ public sealed class CompositionTests {
     }
 
     [Fact(DisplayName = "Combine draws every operand before composing, including one the composer never reads.")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(JustDummiesRule.JD027.Category, JustDummiesRule.JD027.Id,
-                                                     Justification =
-                                                         "The ignored operand IS the subject. This pins the behaviour JD027 reports: the operand is generated in full — constraints built, " +
-                                                         "conflict checks run — and then dropped, with nothing failing.")]
+    [SuppressMessage(JustDummiesRule.JD027.Category, JustDummiesRule.JD027.Id, Justification = "The ignored operand IS the subject. This pins the behaviour JD027 reports: the operand is generated in full — constraints built, conflict checks run — and then dropped, with nothing failing.")]
     public void CombineDrawsAnOperandTheComposerIgnores() {
         int drawnFirst  = 0;
         int drawnSecond = 0;
@@ -314,11 +313,7 @@ public sealed class CompositionTests {
 
     #region Nested types
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S3877.Category, SonarRule.S3877.Id,
-                                                     Justification =
-                                                         "Throwing from ToString() IS the fixture. The test proves diagnostics survive a domain object whose rendering " +
-                                                         "explodes, and that a successful draw never renders one — neither of which can be shown without a type that " +
-                                                         "throws exactly here.")]
+    [SuppressMessage(SonarRule.S3877.Category, SonarRule.S3877.Id, Justification = "Throwing from ToString() IS the fixture. The test proves diagnostics survive a domain object whose rendering explodes, and that a successful draw never renders one — neither of which can be shown without a type that throws exactly here.")]
     private sealed class Unrenderable {
 
         // A domain object whose ToString() throws: the ordinary shape of it is a renderer reaching for state the

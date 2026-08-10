@@ -6,7 +6,7 @@ on:
     #   lib-v1.2.3   -> JustDummies (the library, with its analyzers bundled in)
     #   xunit-v1.2.3 -> JustDummies.Xunit (the xUnit v3 adapter)
     #   catalog-v1.2.3 -> JustDummies.DiagnosticCatalog (the JD rules as constants)
-    #   cli-v1.2.3   -> dum (the scaffolder; specified, not built yet)
+    #   cli-v1.2.3   -> dum (the scaffolder, packed as a .NET tool)
     tags:
       - 'lib-v*.*.*'
       - 'xunit-v*.*.*'

@@ -86,7 +86,7 @@ public sealed class EmitterGoldenTests {
         string emitted = GeneratorEmitter.Emit(Shapes.Order()).SourceText;
 
         Check.That(emitted).Not.Contains("\r");
-        Check.That(emitted.EndsWith("\n", StringComparison.Ordinal)).IsTrue();
+        Check.That(emitted.EndsWith('\n')).IsTrue();
     }
 
 }

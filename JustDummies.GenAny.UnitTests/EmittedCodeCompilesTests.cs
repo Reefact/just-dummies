@@ -32,7 +32,7 @@ public sealed class EmittedCodeCompilesTests {
     /// </summary>
     public static TheoryData<string> CompilableGoldens {
         get {
-            TheoryData<string> goldens = new();
+            TheoryData<string> goldens = [];
 
             foreach (string name in GoldenFile.All()) {
                 if (name != OpenParameterGolden) { goldens.Add(name); }

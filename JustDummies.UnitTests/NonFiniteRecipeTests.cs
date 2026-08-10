@@ -17,21 +17,29 @@ public sealed class NonFiniteRecipeTests {
 
     private const int SampleCount = 200;
 
-    public static TheoryData<Func<object>> GuardedEntryPoints => new() {
-        () => Any.Double().Except(double.NaN),
-        () => Any.Double().DifferentFrom(double.PositiveInfinity),
-        () => Any.Double().GreaterThan(double.NegativeInfinity),
-        () => Any.Double().LessThan(double.NaN),
-        () => Any.Double().OneOf(1.0, double.NaN),
-        () => Any.Single().Except(float.NaN),
-        () => Any.Single().GreaterThan(float.NegativeInfinity),
-        () => Any.Single().OneOf(1.0f, float.PositiveInfinity),
+    /// <summary>
+    ///     The guarded declarations, each under the call it makes. The delegate itself cannot travel as theory data
+    ///     — a <c>Func&lt;object&gt;</c> is not serializable, so the runner shows eight rows it cannot tell apart
+    ///     and cannot run one of them on its own. The key travels instead, and it is what names the row: a failure
+    ///     then says WHICH entry point stopped refusing rather than that one of eight did.
+    /// </summary>
+    private static readonly Dictionary<string, Func<object>> Declarations = new() {
+        ["Any.Double().Except(double.NaN)"]                     = () => Any.Double().Except(double.NaN),
+        ["Any.Double().DifferentFrom(double.PositiveInfinity)"] = () => Any.Double().DifferentFrom(double.PositiveInfinity),
+        ["Any.Double().GreaterThan(double.NegativeInfinity)"]   = () => Any.Double().GreaterThan(double.NegativeInfinity),
+        ["Any.Double().LessThan(double.NaN)"]                   = () => Any.Double().LessThan(double.NaN),
+        ["Any.Double().OneOf(1.0, double.NaN)"]                 = () => Any.Double().OneOf(1.0, double.NaN),
+        ["Any.Single().Except(float.NaN)"]                      = () => Any.Single().Except(float.NaN),
+        ["Any.Single().GreaterThan(float.NegativeInfinity)"]    = () => Any.Single().GreaterThan(float.NegativeInfinity),
+        ["Any.Single().OneOf(1.0f, float.PositiveInfinity)"]    = () => Any.Single().OneOf(1.0f, float.PositiveInfinity),
     };
+
+    public static TheoryData<string> GuardedEntryPoints => new(Declarations.Keys);
 
     [Theory(DisplayName = "The guarded entry points reject a non-finite ARGUMENT, not only a non-finite draw.")]
     [MemberData(nameof(GuardedEntryPoints))]
-    public void GuardedEntryPointsRejectNonFiniteArguments(Func<object> declaration) {
-        Check.ThatCode(() => declaration()).Throws<ArgumentException>();
+    public void GuardedEntryPointsRejectNonFiniteArguments(string declaration) {
+        Check.ThatCode(() => Declarations[declaration]()).Throws<ArgumentException>();
     }
 
     [Fact(DisplayName = "The refusal names the way out, so the wall explains its own exit.")]
@@ -77,11 +85,10 @@ public sealed class NonFiniteRecipeTests {
         for (int i = 0; i < SampleCount; i++) { Check.ThatCode(() => Any.Decimal().Generate()).DoesNotThrow(); }
     }
 
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(NetAnalyzersRule.CA2242.Category, NetAnalyzersRule.CA2242.Id,
+                                                     Justification = SuppressionJustification.CA2242.ComparisonIsTheAssertion)]
     [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S2688.Category, SonarRule.S2688.Id,
-                                                     Justification =
-                                                         "The rule says to write double.IsNaN(x) rather than compare with ==, which is right everywhere except here: this " +
-                                                         "test asserts that the two DISAGREE. Replacing the comparison with IsNaN would delete the assertion and leave a " +
-                                                         "test that proves nothing, on the exact trap the README warns a user about.")]
+                                                     Justification = SuppressionJustification.S2688.ComparisonIsTheAssertion)]
     [Fact(DisplayName = "The Equals/== asymmetry the recipe warns about is real: a pooled NaN deduplicates.")]
     public void PooledNaNDeduplicatesUnderTheDefaultComparer() {
         // The trap, asserted rather than described: user code comparing with == sees two different values where a

@@ -3,8 +3,9 @@
 🌍 🇬🇧 English (this file) · 🇫🇷 [Français](justdummies-tool.fr.md)
 
 **Status:** specification, being implemented. `JustDummies.GenAny` and `JustDummies.Cli` exist and carry the
-project-level constraints of §10 and §13. The command line of §3 is parsed in full; nothing behind it is —
-`dum generate` reads its options and then refuses, because no part of §4–§7 is written.
+project-level constraints of §10 and §13. The command line of §3 is parsed in full, and §4 — the emitted file —
+is written and pinned by approved files that are compiled against the library with the analyzers wired. §5 to §7
+are not written, so nothing builds a plan for the emitter to render yet and `dum generate` still refuses.
 **Supersedes:** the working pre-specification 0.1 (never committed)
 
 ---

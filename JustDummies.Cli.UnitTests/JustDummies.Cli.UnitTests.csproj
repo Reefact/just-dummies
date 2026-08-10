@@ -15,6 +15,11 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+    <!-- The compilation the command reads. Every step of `generate` except the first is exercised against one
+         built in memory here: the project loading of §11.1 is the shell's one dependency on MSBuild, a disk
+         and a restored project, and it is handed over as a delegate so the rows of §7 can be checked without
+         any of the three. -->
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="NFluent" />
     <PackageReference Include="xunit.runner.visualstudio">
@@ -31,6 +36,12 @@
          the shell render it, which is what lets these tests build the model by hand and never open a project,
          a compilation or a terminal. -->
     <ProjectReference Include="..\JustDummies.GenAny\JustDummies.GenAny.csproj" />
+
+    <!-- The library, as the compilation under test must reference it: without it not one expression resolves
+         (ADR-0059) and every scaffold refuses. That the TOOL may not reference JustDummies (ADR-0063) says
+         nothing about this project — the guard is on the shipped assemblies, and a suite that could not build
+         a compilation referencing the library could not check what `generate` does over one. -->
+    <ProjectReference Include="..\JustDummies\JustDummies.csproj" />
   </ItemGroup>
 
   <ItemGroup>

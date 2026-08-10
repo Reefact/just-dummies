@@ -1,5 +1,7 @@
 using System;
 
+using Microsoft.CodeAnalysis;
+
 using NFluent;
 
 namespace JustDummies.GenAny.UnitTests;
@@ -135,9 +137,10 @@ public sealed class ScaffolderTests {
         Check.That(outcome.File.SourceText).Contains("public sealed partial class AnyLine : IAny<Subject.Line> {");
     }
 
-    [Fact(DisplayName = "Every argument is required.")]
+    [Fact(DisplayName = "Every argument is required, on both overloads.")]
     public void EveryArgumentIsRequired() {
-        Check.ThatCode(() => Scaffolder.Scaffold(null!, null!, null!)).Throws<ArgumentNullException>();
+        Check.ThatCode(() => Scaffolder.Scaffold(null!, (INamedTypeSymbol)null!, null!)).Throws<ArgumentNullException>();
+        Check.ThatCode(() => Scaffolder.Scaffold(null!, (string)null!, null!)).Throws<ArgumentNullException>();
     }
 
 }

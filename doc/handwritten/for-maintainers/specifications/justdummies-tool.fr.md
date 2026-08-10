@@ -2,14 +2,14 @@
 
 🌍 🇫🇷 Français (ce fichier) · 🇬🇧 [English](justdummies-tool.md)
 
-**Statut :** spécification, en cours d'implémentation. `JustDummies.GenAny` et `JustDummies.Cli` existent et
-portent les contraintes projet des §10 et §13. Écrites : la §3, la ligne de commande ; la §4, le fichier émis ; et
-**toute la §5** — choix du constructeur, table de base, guards, composition et paramètre ouvert — ainsi que la
-provenance que rapporte la §6. L'exemple travaillé du §4.1 est désormais produit de bout en bout depuis sa propre
-source, au caractère près. Écrites également : la §6, le récapitulatif console, et les codes de sortie et l'avertissement de masquage de la
-§7, tous deux vérifiés contre les exécutions que ce document écrit noir sur blanc. **Pas écrits :** le chargement
-de projet et la résolution de type des §11.1 et §3.2 — rien ne remet donc encore de compilation au moteur, et
-`dum generate` refuse toujours au lieu d'exécuter tout cela.
+**Statut :** spécification, implémentée. `JustDummies.GenAny` et `JustDummies.Cli` existent et
+portent les contraintes projet des §10 et §13. Écrites : la §3, la ligne de commande, et la résolution de type
+du §3.2 ; la §4, le fichier émis ; **toute la §5** — choix du constructeur, table de base, guards, composition et
+paramètre ouvert — ainsi que la provenance que rapporte la §6 ; la §6, le récapitulatif console ; les codes de
+sortie et l'avertissement de masquage de la §7 ; et tout le pipeline du §11.1, si bien que `dum generate` ouvre un
+vrai projet et écrit un vrai fichier. L'exemple travaillé du §4.1 est produit de bout en bout depuis sa propre
+source, au caractère près. **Pas fait :** rien ne publie l'outil — le train de release `cli` est câblé mais refuse
+d'empaqueter, ce qui relève d'une décision à prendre et non de code à écrire (§13.6).
 **Remplace :** la pré-spécification de travail 0.1 (jamais commitée)
 
 ---
@@ -880,6 +880,16 @@ Pour les dépendances du tool. Nouvelles pour le tool :
 `Microsoft.CodeAnalysis.Workspaces.MSBuild` et `Microsoft.Build.Locator` (CLI uniquement). Déjà
 présente pour la bibliothèque et ses analyzers : `Microsoft.CodeAnalysis.CSharp`. *Réalisation
 actuelle : gestion centralisée des packages dans `Directory.Packages.props`.*
+
+Il en a fallu deux de plus que ce que cette section listait, et pour des raisons qui méritent d'être
+écrites. `Microsoft.CodeAnalysis.CSharp.Workspaces`, parce que construire une compilation est un
+service **de langage** et que `Workspaces.MSBuild` ne porte que les services indépendants du
+langage : sans elle, le projet s'ouvre, ne signale aucune erreur, et répond `null` quand on lui
+demande sa compilation. `Microsoft.Build.Framework`, avec `ExcludeAssets="runtime"` et
+`PrivateAssets="all"`, parce que `Workspaces.MSBuild` en déposerait sinon une copie à côté de
+l'outil — ce que `Microsoft.Build.Locator` refuse par construction (`MSBL001`), un outil qui charge
+son propre assembly MSBuild au lieu de celui du SDK échouant à l'exécution d'une manière qui ne
+nomme rien.
 
 `Spectre.Console.Cli` n'était **pas** déjà présente, contrairement à ce que cette section supposait
 lorsqu'elle a été écrite dans le dépôt d'origine : l'extraction l'a retirée, comme tout ce qu'aucun

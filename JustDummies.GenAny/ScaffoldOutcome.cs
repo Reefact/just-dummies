@@ -11,11 +11,13 @@ public sealed class ScaffoldOutcome {
     private ScaffoldOutcome(ScaffoldStatus status,
                             ScaffoldPlan? plan,
                             ScaffoldedFile? file,
-                            IReadOnlyList<ScaffoldWarning> warnings) {
-        Status   = status;
-        Plan     = plan;
-        File     = file;
-        Warnings = warnings;
+                            IReadOnlyList<ScaffoldWarning> warnings,
+                            IReadOnlyList<string> candidates) {
+        Status     = status;
+        Plan       = plan;
+        File       = file;
+        Warnings   = warnings;
+        Candidates = candidates;
     }
 
     /// <summary>How the scaffold ended.</summary>
@@ -37,6 +39,12 @@ public sealed class ScaffoldOutcome {
     /// </summary>
     public IReadOnlyList<ScaffoldWarning> Warnings { get; }
 
+    /// <summary>
+    ///     The names the console offers when the target could not be settled: the closest ones when nothing
+    ///     matched, the full ones when several did (§3.2). Empty otherwise.
+    /// </summary>
+    public IReadOnlyList<string> Candidates { get; }
+
     /// <summary>Whether a file was produced. It may still carry TODOs, which is a success (§7).</summary>
     public bool Succeeded => Status == ScaffoldStatus.Scaffolded;
 
@@ -48,18 +56,18 @@ public sealed class ScaffoldOutcome {
         if (plan is null) { throw new ArgumentNullException(nameof(plan)); }
         if (file is null) { throw new ArgumentNullException(nameof(file)); }
 
-        return new ScaffoldOutcome(ScaffoldStatus.Scaffolded, plan, file, warnings ?? []);
+        return new ScaffoldOutcome(ScaffoldStatus.Scaffolded, plan, file, warnings ?? [], candidates: []);
     }
 
     /// <summary>Nothing was produced, and this is why.</summary>
     /// <exception cref="ArgumentException"><paramref name="status" /> is <see cref="ScaffoldStatus.Scaffolded" />.</exception>
-    public static ScaffoldOutcome Refused(ScaffoldStatus status) {
+    public static ScaffoldOutcome Refused(ScaffoldStatus status, IReadOnlyList<string>? candidates = null) {
         if (status == ScaffoldStatus.Scaffolded) {
             throw new ArgumentException("A refusal carries the reason there is no file; use Scaffolded for one that succeeded.",
                                         nameof(status));
         }
 
-        return new ScaffoldOutcome(status, plan: null, file: null, warnings: []);
+        return new ScaffoldOutcome(status, plan: null, file: null, warnings: [], candidates ?? []);
     }
 
     /// <inheritdoc />

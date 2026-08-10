@@ -1,5 +1,6 @@
 using System.ComponentModel;
 
+using Spectre.Console;
 using Spectre.Console.Cli;
 
 namespace JustDummies.Cli;
@@ -46,5 +47,26 @@ internal sealed class GenerateSettings : CommandSettings {
     [CommandOption("--dry-run")]
     [Description("Print the file instead of writing it.")]
     public bool DryRun { get; set; }
+
+    /// <summary>
+    ///     Refuses an option that was given without a value.
+    /// </summary>
+    /// <remarks>
+    ///     <c>--namespace ""</c> is not "no namespace override": it is an override to nothing, and the three
+    ///     options below would each answer it differently and late — a path routine throwing, a namespace
+    ///     declaration emitted empty. Refused here instead, where it is what it is: a command line the tool
+    ///     could not read, which is exit <c>2</c> and not a scaffolding failure.
+    /// </remarks>
+    public override ValidationResult Validate() {
+        foreach ((string option, string? value) in new[] {
+                     ("--project", Project), ("--output", Output), ("--namespace", Namespace)
+                 }) {
+            if (value is not null && value.Trim().Length == 0) {
+                return ValidationResult.Error($"{option} was given without a value. Omit it to take its default.");
+            }
+        }
+
+        return ValidationResult.Success();
+    }
 
 }

@@ -52,6 +52,25 @@
     <!-- The command line. The shell owns the command definitions and settings; the engine owns none of it and
          must never see them (specification §10.2). -->
     <PackageReference Include="Spectre.Console.Cli" />
+
+    <!-- Project loading (§11.1), and the compiler this shell hosts.
+
+         Microsoft.CodeAnalysis.CSharp is declared here at the CURRENT version, deliberately and in so many
+         words: §13.2 has the engine pinned to $(RoslynFloorVersion) so a compiler host can load it, and the
+         CLI explicitly NOT bound by that floor because it hosts its own. Leaving it implicit made restore
+         meet the engine's transitive 4.8.0 beside this workspace's 5.6.0 and warn (NU1608); saying which
+         Roslyn the shell runs on answers that instead of silencing it, and matches what the two projects
+         are for. The direction stays the supported one — a newer runtime satisfying an older reference. -->
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Workspaces.MSBuild" />
+    <PackageReference Include="Microsoft.Build.Locator" />
+
+    <!-- Compiled against, never copied: MSBuild's own assemblies must come from the SDK the developer has
+         installed, which is the whole point of the locator above. Declared here only because
+         Workspaces.MSBuild would otherwise bring it in as a runtime asset, which the locator refuses by
+         design (MSBL001). -->
+    <PackageReference Include="Microsoft.Build.Framework" ExcludeAssets="runtime" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>

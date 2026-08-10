@@ -68,15 +68,15 @@ case "$scope" in
     projects='JustDummies.DiagnosticCatalog/JustDummies.DiagnosticCatalog.csproj'
     ;;
   cli)
-    # The `dum` scaffolder. JustDummies.Cli exists and packs as a .NET tool, and its command line parses in
-    # full, but nothing sits behind it: `generate` is specified in
-    # doc/handwritten/for-maintainers/specifications/justdummies-tool.md and not implemented, so publishing
-    # this would put a tool that refuses every invocation on nuget.org. The train is
-    # declared in tools/trains.sh so the tag trigger, the scope list and the release workflow are already
-    # wired; this arm fails loudly rather than shipping that. Opening it means adding the project below AND
-    # the assertion that the produced .nuspec declares no JustDummies dependency, which is the executable
-    # form of ADR-0063.
-    echo "error: the 'cli' train has nothing to publish yet -- dum parses 'generate' and does nothing" >&2
+    # The `dum` scaffolder. `generate` is now implemented end to end -- it opens a project, resolves the type,
+    # emits the file and writes it -- so what kept this arm shut no longer holds. It stays shut anyway,
+    # because publishing is a decision and not a consequence: nothing has ever been released under the
+    # JustDummies.Cli id, and opening the train means adding the project below AND the assertion that the
+    # produced .nuspec declares no JustDummies dependency, which is the executable form of ADR-0063. The
+    # train is declared in tools/trains.sh, so the tag trigger, the scope list and the release workflow are
+    # already wired and waiting for that one change.
+    echo "error: the 'cli' train is not open yet -- dum works, but nothing has decided to publish it" >&2
+    echo "       opening it: add the project here, plus the no-JustDummies-dependency .nuspec assertion" >&2
     echo "       see doc/handwritten/for-maintainers/specifications/justdummies-tool.md" >&2
     exit 2
     ;;

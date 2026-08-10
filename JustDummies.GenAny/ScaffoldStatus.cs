@@ -22,6 +22,18 @@ public enum ScaffoldStatus {
     ///     Nothing constructs the target: no public instance constructor, or only ones taking <c>ref</c> or
     ///     <c>out</c> parameters, which <c>Generate()</c> could not call (§5.1).
     /// </summary>
-    NoEligibleConstructor = 2
+    NoEligibleConstructor = 2,
+
+    /// <summary>
+    ///     The named type matched nothing in this compilation. The outcome carries the closest names, so the
+    ///     answer is a correction rather than a denial (§3.2).
+    /// </summary>
+    TypeNotFound = 3,
+
+    /// <summary>
+    ///     The name matched several types. The outcome carries their full names, and the developer says which
+    ///     — the engine does not pick.
+    /// </summary>
+    TypeAmbiguous = 4
 
 }

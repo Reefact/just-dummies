@@ -58,7 +58,11 @@ internal static class Guards {
 
         if (declaration?.Body is null) { return GuardReading.WithoutSource(); }
 
-        SemanticModel model   = compilation.GetSemanticModel(declaration.SyntaxTree);
+        Compilation? declaring = Declaring(declaration.SyntaxTree, method, compilation);
+
+        if (declaring is null) { return GuardReading.WithoutSource(); }
+
+        SemanticModel model   = declaring.GetSemanticModel(declaration.SyntaxTree);
         GuardReading  reading = GuardReading.FromSource();
 
         foreach (StatementSyntax statement in declaration.Body.Statements) {
@@ -73,6 +77,27 @@ internal static class Guards {
         }
 
         return reading;
+    }
+
+    /// <summary>
+    ///     The compilation that owns <paramref name="tree" />, which is not always the one being scaffolded.
+    /// </summary>
+    /// <remarks>
+    ///     §3.1 runs the tool from the test project, so the target type usually comes from the production
+    ///     project next door — and a workspace hands that over as a <b>compilation</b> reference, not as
+    ///     metadata. Its constructor then has a real body, in a tree the analyzed compilation does not own, and
+    ///     asking that compilation for a semantic model over it throws. The reference carries the compilation
+    ///     that does own it, so the guards of §5.3 are read from the source they were written in rather than
+    ///     reported as absent — which is the difference between <c>Any.String().NonEmpty()</c> and a plain
+    ///     <c>Any.String()</c> for most of the types this tool exists to scaffold.
+    /// </remarks>
+    private static Compilation? Declaring(SyntaxTree tree, IMethodSymbol method, Compilation compilation) {
+        if (compilation.ContainsSyntaxTree(tree)) { return compilation; }
+
+        return compilation.GetMetadataReference(method.ContainingAssembly) is CompilationReference referenced
+            && referenced.Compilation.ContainsSyntaxTree(tree)
+                   ? referenced.Compilation
+                   : null;
     }
 
     private static void ReadOne(ExpressionSyntax condition,

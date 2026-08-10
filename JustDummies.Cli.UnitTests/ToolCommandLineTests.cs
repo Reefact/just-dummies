@@ -7,14 +7,17 @@ using NFluent;
 namespace JustDummies.Cli.UnitTests;
 
 /// <summary>
-///     What the tool answers today. The command line of §3 is parsed in full — every option, with its help —
-///     and `generate` then refuses, because no part of §4–§7 is implemented.
+///     The surface around the one verb: what <c>dum</c> answers before any project is opened.
 /// </summary>
 /// <remarks>
-///     The refusal is what keeps this build honest: a tool that accepted `generate` and printed nothing would
-///     read, to a script, as a scaffolding run that produced no file.
+///     What <c>generate</c> then does is <see cref="GenerateCommandTests" />' subject, over a compilation built
+///     in memory. What is checked here is the wiring — that the command is reached at all, with the consoles it
+///     needs — and the two answers that never reach it: a version, and a command line the tool could not read.
 /// </remarks>
 public sealed class ToolCommandLineTests {
+
+    /// <summary>A project that is not there, so no run reaches MSBuild or the directory the suite runs from.</summary>
+    private static readonly string Absent = Path.Combine(Path.GetTempPath(), "dum-absent", "Nothing.csproj");
 
     [Fact(DisplayName = "--version reports the version, on stdout, and succeeds.")]
     public void VersionIsReportedOnStandardOutput() {
@@ -47,18 +50,25 @@ public sealed class ToolCommandLineTests {
         Check.That(invocation.Error).IsEmpty();
     }
 
-    // The whole point of shaping the surface before the behaviour: `generate` parses, and then says so.
-    [Theory(DisplayName = "generate parses and refuses, on stderr, without claiming a scaffolding failure.")]
+    /// <summary>
+    ///     Every option of §3 parses, reaches the command, and comes back as §7's exit <c>1</c>.
+    /// </summary>
+    /// <remarks>
+    ///     Named <c>--project</c> at a path that does not exist, so each of these gets as far as the first step
+    ///     of §11.1 and no further: nothing is opened, nothing is written, and the answer is the tool's own
+    ///     refusal rather than whatever happens to sit in the directory the suite runs from.
+    /// </remarks>
+    [Theory(DisplayName = "Every option of §3 parses, reaches generate, and fails on the named project.")]
     [InlineData("generate Order")]
     [InlineData("generate Order Customer")]
     [InlineData("generate Order --force --dry-run")]
-    [InlineData("generate Shop.Domain.Order --project a.csproj --output gen --namespace Shop.Tests")]
-    public void GenerateParsesAndRefuses(string commandLine) {
-        Invocation invocation = Invocation.Of(commandLine);
+    [InlineData("generate Shop.Domain.Order --output gen --namespace Shop.Tests")]
+    public void EveryOptionParsesAndReachesGenerate(string commandLine) {
+        Invocation invocation = Invocation.Of(commandLine + " --project " + Absent);
 
-        // 2, not the 1 of §7: that code says a scaffolding run failed, and no run was started here.
-        Check.That(invocation.ExitCode).IsEqualTo(2);
-        Check.That(invocation.Error).Contains("not implemented yet");
+        // 1, not the 2 above: the command line was read, so this is a scaffolding run that failed (§7).
+        Check.That(invocation.ExitCode).IsEqualTo(1);
+        Check.That(invocation.Error).Contains(Absent);
         Check.That(invocation.Output).IsEmpty();
     }
 

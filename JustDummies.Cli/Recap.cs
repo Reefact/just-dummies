@@ -165,8 +165,7 @@ internal static class Recap {
 
     /// <summary>One line, unwrapped, ending in the newline every platform reads the same.</summary>
     private static void Line(IAnsiConsole console, string text) {
-        console.Profile.Out.Writer.Write(text);
-        console.Profile.Out.Writer.Write('\n');
+        Unwrapped.Line(console, text);
     }
 
     private static string FullName(ScaffoldPlan plan) {

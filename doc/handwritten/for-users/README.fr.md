@@ -44,10 +44,11 @@ De quoi chercher, organisé par le type dont vous avez besoin.
 
 | Page | Couvre |
 | --- | --- |
-| [Vue d'ensemble](./packages/README.fr.md) | lequel des trois paquets vous faut-il, et comment ils s'articulent |
+| [Vue d'ensemble](./packages/README.fr.md) | lequel des quatre paquets vous faut-il, et comment ils s'articulent |
 | [`JustDummies`](./packages/justdummies.fr.md) | la bibliothèque et ses analyzers embarqués |
 | [`JustDummies.Xunit`](./packages/justdummies-xunit.fr.md) | l'attribut `[Reproducible]` pour xUnit v3 |
 | [`JustDummies.DiagnosticCatalog`](./packages/justdummies-diagnosticcatalog.fr.md) | les constantes de règles pour `[SuppressMessage]` |
+| [`JustDummies.Cli`](./packages/justdummies-cli.fr.md) | `dum`, le scaffolder : le générateur d'un de vos types, écrit une fois |
 
 ## Règles des analyzers
 
@@ -85,9 +86,10 @@ flowchart TD
 
 1. [Paquets](./packages/README.fr.md) — décider quoi installer
 2. [Composition](./guides/composition.fr.md) — construire d'abord les dummies de vos types métier ; le reste suit
-3. [`JustDummies.Xunit`](./packages/justdummies-xunit.fr.md) — faire de la reproductibilité le défaut de la suite
-4. [Erreurs et conflits](./guides/errors-and-conflicts.fr.md) — savoir ce que signifie un refus avant d'en rencontrer un
-5. [Règles des analyzers](./analyzers/README.fr.md) — ajuster les sévérités à votre équipe
+3. [`JustDummies.Cli`](./packages/justdummies-cli.fr.md) — scaffolder ces premiers générateurs plutôt que les écrire à la main
+4. [`JustDummies.Xunit`](./packages/justdummies-xunit.fr.md) — faire de la reproductibilité le défaut de la suite
+5. [Erreurs et conflits](./guides/errors-and-conflicts.fr.md) — savoir ce que signifie un refus avant d'en rencontrer un
+6. [Règles des analyzers](./analyzers/README.fr.md) — ajuster les sévérités à votre équipe
 
 ## Contribuer et sécurité
 

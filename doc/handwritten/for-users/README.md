@@ -44,10 +44,11 @@ Look-up material, organised by the type you need.
 
 | Page | Covers |
 | --- | --- |
-| [Overview](./packages/README.md) | which of the three packages you need, and how they relate |
+| [Overview](./packages/README.md) | which of the four packages you need, and how they relate |
 | [`JustDummies`](./packages/justdummies.en.md) | the library and its bundled analyzers |
 | [`JustDummies.Xunit`](./packages/justdummies-xunit.en.md) | the xUnit v3 `[Reproducible]` attribute |
 | [`JustDummies.DiagnosticCatalog`](./packages/justdummies-diagnosticcatalog.en.md) | rule constants for `[SuppressMessage]` |
+| [`JustDummies.Cli`](./packages/justdummies-cli.en.md) | `dum`, the scaffolder: a generator for your own type, written once |
 
 ## Analyzer rules
 
@@ -85,9 +86,10 @@ flowchart TD
 
 1. [Packages](./packages/README.md) — decide what to install
 2. [Composition](./guides/composition.en.md) — build dummies for your domain types first; the rest follows
-3. [`JustDummies.Xunit`](./packages/justdummies-xunit.en.md) — make reproducibility the default for the suite
-4. [Errors and conflicts](./guides/errors-and-conflicts.en.md) — know what a refusal means before you meet one
-5. [Analyzer rules](./analyzers/README.md) — tune severities to your team
+3. [`JustDummies.Cli`](./packages/justdummies-cli.en.md) — scaffold those first generators instead of writing them by hand
+4. [`JustDummies.Xunit`](./packages/justdummies-xunit.en.md) — make reproducibility the default for the suite
+5. [Errors and conflicts](./guides/errors-and-conflicts.en.md) — know what a refusal means before you meet one
+6. [Analyzer rules](./analyzers/README.md) — tune severities to your team
 
 ## Contributing and security
 

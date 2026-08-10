@@ -100,6 +100,32 @@ Avec xUnit v3, `[Reproducible]` remplace complètement l'enveloppe — voir
 garanti par un golden master
 ([ADR-0049](doc/handwritten/for-maintainers/adr/0049-replay-a-seed-across-patch-and-minor-versions.fr.md)).
 
+## 🛠 En scaffolder un pour vos propres types
+
+Écrire un `IAny<T>` à la main pour chacun de vos types métier, c'est la partie fastidieuse. `dum` en
+écrit le premier jet :
+
+```bash
+dotnet tool install --global JustDummies.Cli
+dum generate Order
+```
+
+```text
+  reference  OrderReference  Any.String().NonEmpty().As(OrderReference.Create)  factory, guard
+  customer   Customer        —                                                  TODO
+  quantity   int             Any.Int32().Positive()                             guard
+
+✓ AnyOrder.cs — 5 of 6 parameters inferred, 1 TODO.
+```
+
+Il lit votre compilation, resserre ce que les guards du constructeur lui disent
+(`quantity <= 0` → `.Positive()`), et émet du code ordinaire qui vous appartient ensuite. Ce qu'il
+n'a pas pu inférer, il le laisse sous forme d'un identifiant qui n'existe pas — si bien que c'est
+**votre** build qui nomme le trou, à la ligne, au lieu qu'une valeur plausible soit tirée dans votre
+dos.
+
+→ [`JustDummies.Cli`](doc/handwritten/for-users/packages/justdummies-cli.fr.md)
+
 ## 📚 Documentation
 
 **→ [Commencez par le guide en dix minutes](doc/handwritten/for-users/guides/getting-started.fr.md)**
@@ -121,11 +147,14 @@ garanti par un golden master
 | [`JustDummies`](doc/handwritten/for-users/packages/justdummies.fr.md) | la bibliothèque, avec ses 28 règles embarquées |
 | [`JustDummies.Xunit`](doc/handwritten/for-users/packages/justdummies-xunit.fr.md) | l'adaptateur xUnit v3 : `[Reproducible]` |
 | [`JustDummies.DiagnosticCatalog`](doc/handwritten/for-users/packages/justdummies-diagnosticcatalog.fr.md) | les règles `JD001`–`JD028` en constantes vérifiées par le compilateur |
+| [`JustDummies.Cli`](doc/handwritten/for-users/packages/justdummies-cli.fr.md) | `dum`, le scaffolder — outil global, jamais une référence de projet |
 
-Les trois ciblent `netstandard2.0` ; `JustDummies` publie en plus un asset `net8.0` avec les
-générateurs modernes (`DateOnly`, `TimeOnly`, `Int128`, `UInt128`, `Half`). Le plancher .NET
+Les trois bibliothèques ciblent `netstandard2.0` ; `JustDummies` publie en plus un asset `net8.0`
+avec les générateurs modernes (`DateOnly`, `TimeOnly`, `Int128`, `UInt128`, `Half`). Le plancher .NET
 Framework supporté est **4.7.2**
 ([ADR-0007](doc/handwritten/for-maintainers/adr/0007-floor-the-library-on-net-framework-4-7-2.fr.md)).
+`dum` est un outil et non une bibliothèque : il cible `net8.0` et roule vers l'avant, quelle que soit
+la cible du projet qu'il analyse.
 
 > **Préversion.** La surface publique est déclarée dans `PublicAPI.Unshipped.txt` : rien n'en est
 > encore promis, et c'est une version stable qui la figera. Le contrat de graine fait exception —

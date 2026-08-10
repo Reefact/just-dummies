@@ -3,13 +3,15 @@
 🌍 **Languages:**  
 🇬🇧 English (this file) | 🇫🇷 [Français](./README.fr.md)
 
-Three packages ship from this repository. Most projects need exactly one of them.
+Four packages ship from this repository. Three are libraries you reference, and most projects need
+exactly one of them; the fourth is a command-line tool you install globally and never reference.
 
 | Package | What it is | Do I need it? |
 | --- | --- | --- |
 | [`JustDummies`](./justdummies.en.md) | the library, with its 28 rules bundled in | **Yes** — this is the product |
 | [`JustDummies.Xunit`](./justdummies-xunit.en.md) | the xUnit v3 adapter: `[Reproducible]` | Only with xUnit v3, and only if you want the attribute |
 | [`JustDummies.DiagnosticCatalog`](./justdummies-diagnosticcatalog.en.md) | the `JD001`–`JD028` rules as compile-checked constants | Only to suppress a rule without a string literal |
+| [`JustDummies.Cli`](./justdummies-cli.en.md) | `dum`, the scaffolder: writes a generator for one of your types | Only to scaffold one — a global tool, never a reference |
 
 ## How they relate
 
@@ -19,9 +21,11 @@ flowchart TD
     X["JustDummies.Xunit<br/><i>[Reproducible]</i>"] -->|"depends on"| L
     C["JustDummies.DiagnosticCatalog<br/><i>JustDummiesRule.JD0NN</i>"]
     C -.->|"names the rules in"| A
+    D["dum<br/><i>the scaffolder</i>"] -.->|"emits code calling"| L
     style L fill:#e8eaf6,stroke:#3f51b5,color:#1a237e
     style X fill:#e8f5e9,stroke:#43a047,color:#1b5e20
     style C fill:#fff8e1,stroke:#f9a825,color:#e65100
+    style D fill:#fce4ec,stroke:#d81b60,color:#880e4f
 ```
 
 `JustDummies` stands alone: it takes no runtime dependency. The analyzers travel **inside** it, so
@@ -29,6 +33,10 @@ adding the package is all it takes to get them.
 
 `JustDummies.Xunit` depends on the library and on xUnit v3. `JustDummies.DiagnosticCatalog` is
 standalone — it carries no generator, only the rule identifiers.
+
+`dum` is the odd one out: it references **nothing**. It resolves every library symbol by name against
+your own compilation, so the code it writes calls JustDummies without the tool ever depending on it
+([ADR-0063](../../for-maintainers/adr/0063-give-the-scaffolder-no-dependency-on-the-package.md)).
 
 ## Installing
 
@@ -40,6 +48,9 @@ dotnet add package JustDummies.Xunit
 
 # only to name a rule in a [SuppressMessage]
 dotnet add package JustDummies.DiagnosticCatalog
+
+# a global tool, not a project reference
+dotnet tool install --global JustDummies.Cli
 ```
 
 Which versions are on nuget.org is not repeated here, because a copy of that goes stale the day after
@@ -47,7 +58,9 @@ a release: read [the package listing](https://www.nuget.org/packages/JustDummies
 
 ## Target frameworks
 
-All three target **`netstandard2.0`**, which is what gives them their reach.
+The three libraries target **`netstandard2.0`**, which is what gives them their reach. `dum` is a
+tool rather than a library, so reach does not apply to it the same way: it targets **`net8.0`** and
+rolls forward onto any newer runtime you have installed, whatever the project it analyzes targets.
 
 `JustDummies` additionally ships a **`net8.0`** asset carrying the generators for types that do not
 exist downlevel — `DateOnly`, `TimeOnly`, `Int128`, `UInt128` and `Half`. A project targeting .NET 8

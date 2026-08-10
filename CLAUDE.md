@@ -106,12 +106,14 @@ it.
 The `dum` scaffolder is specified in
 `doc/handwritten/for-maintainers/specifications/justdummies-tool.md`. Its two projects exist and carry
 the constraints that shape them — the engine is netstandard2.0 on the Roslyn floor so a compiler host
-can load it, references no JustDummies assembly, and knows nothing of MSBuild or the console. Two
-sections are written: §3, the Spectre command line, which parses in full, and §4, the emitter, whose
-output is pinned by approved files under `JustDummies.GenAny.UnitTests/Golden/` and compiled against
-the library with the analyzers wired. **§5 to §7 are not**, so nothing builds a plan for the emitter
-to render and `dum generate` still refuses. Nothing publishes it either; the `cli` release train
-refuses to pack while that holds.
+can load it, references no JustDummies assembly, and knows nothing of MSBuild or the console.
+Written: §3, the Spectre command line, which parses in full; §4, the emitter, pinned by approved
+files under `JustDummies.GenAny.UnitTests/Golden/` and compiled against the library with the
+analyzers wired; and the type half of §5 — constructor choice, the base table, the open parameter —
+so `Scaffolder.Scaffold` turns a real compilation into a file that compiles. **Not written: §5.3
+(constructor guards), §5.4 (composition), §6 and §7**, so a domain-typed parameter comes back open
+and `dum generate` still refuses. Nothing publishes it either; the `cli` release train refuses to
+pack while that holds.
 
 When adding a new project to the solution, also add its GUID to
 `JustDummies.sln`'s `GlobalSection(NestedProjects)`, nested under the

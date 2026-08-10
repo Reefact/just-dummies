@@ -85,9 +85,20 @@ internal static class EmittedCodeCompiler {
 
     /// <summary>Compiles <paramref name="emitted" /> together with the domain it names.</summary>
     internal static CSharpCompilation Compile(string emitted) {
+        return CompileWith(emitted, Domain);
+    }
+
+    /// <summary>
+    ///     Compiles <paramref name="emitted" /> against <paramref name="domain" /> rather than the fixture one.
+    /// </summary>
+    /// <remarks>
+    ///     What the resolution tests need: their domain is the snippet they scaffolded from, so the file under
+    ///     compilation is one the engine produced end to end rather than one written by hand.
+    /// </remarks>
+    internal static CSharpCompilation CompileWith(string emitted, string domain) {
         return CSharpCompilation.Create(
             assemblyName: "JustDummies.GenAny.Emitted",
-            syntaxTrees: [Parse(emitted), Parse(Domain)],
+            syntaxTrees: [Parse(emitted), Parse(domain)],
             references: References,
             options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
     }

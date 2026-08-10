@@ -3,10 +3,12 @@
 🌍 🇫🇷 Français (ce fichier) · 🇬🇧 [English](justdummies-tool.md)
 
 **Statut :** spécification, en cours d'implémentation. `JustDummies.GenAny` et `JustDummies.Cli` existent et
-portent les contraintes projet des §10 et §13. La ligne de commande de la §3 est intégralement parsée, et la §4 —
-le fichier émis — est écrite et figée par des fichiers approuvés, compilés contre la bibliothèque avec les
-analyzers branchés. Les §5 à §7 ne sont pas écrites : rien ne construit encore de plan à rendre à l'émetteur, et
-`dum generate` refuse toujours.
+portent les contraintes projet des §10 et §13. Écrites : la §3, la ligne de commande ; la §4, le fichier émis ; et
+la moitié « types » de la §5 — choix du constructeur (§5.1), table de base (§5.2) et paramètre ouvert (§5.5), si
+bien qu'un plan est désormais construit depuis une vraie compilation et que le fichier produit compile. **Pas
+écrites :** la §5.3, les guards de constructeur, et la §5.4, la composition via un générateur scaffoldé ou une
+fabrique statique — un paramètre d'un type du domaine revient donc ouvert. Ni les §6 et §7, donc `dum generate`
+refuse toujours au lieu d'exécuter tout cela.
 **Remplace :** la pré-spécification de travail 0.1 (jamais commitée)
 
 ---

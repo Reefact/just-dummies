@@ -9,13 +9,14 @@
 ## Ce qu'est un train
 
 Un **train de release** est un paquet (ou un groupe de paquets versionnés en
-lockstep) qui se version et se publie sur son propre préfixe de tag. Il y en a trois
+lockstep) qui se version et se publie sur son propre préfixe de tag. Il y en a quatre
 aujourd'hui :
 
 | Train | Préfixe de tag | Scopes | Paquet(s) | Changelog |
 | --- | --- | --- | --- | --- |
 | `lib` | `lib-v*` | `core`, `analyzers` (plus les historiques `dummies`, `justdummies`) | JustDummies, analyzers embarqués dedans | `JustDummies/CHANGELOG.md` |
 | `xunit` | `xunit-v*` | `xunit` | JustDummies.Xunit (l'adaptateur xUnit v3) | `JustDummies.Xunit/CHANGELOG.md` |
+| `catalog` | `catalog-v*` | `catalog` | JustDummies.DiagnosticCatalog (les règles JD en constantes) | `JustDummies.DiagnosticCatalog/CHANGELOG.md` |
 | `cli` | `cli-v*` | `cli` | `dum`, le scaffolder, empaqueté en outil .NET | `JustDummies.Cli/CHANGELOG.md` |
 
 Le mapping train → (préfixe, scopes, paquet, fichier changelog) vit à **un seul

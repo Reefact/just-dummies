@@ -82,12 +82,14 @@ jobs:
           set -euo pipefail
           tools/packaging/pack.sh "$DRYRUN_VERSION" lib --dry-run
           tools/packaging/pack.sh "$DRYRUN_VERSION" xunit --dry-run
+          tools/packaging/pack.sh "$DRYRUN_VERSION" catalog --dry-run
           tools/packaging/pack.sh "$DRYRUN_VERSION" cli --dry-run
 
       # Rehearse the train-scoped release-notes generation too (release.yml's other production-only path),
       # so a bug in it surfaces here instead of during a real release. Prints to the log; publishes nothing.
       - name: Rehearse release notes (all trains, no publish)
         run: |
-          echo "----- lib notes -----";   tools/packaging/release-notes.sh lib HEAD
-          echo "----- xunit notes -----"; tools/packaging/release-notes.sh xunit HEAD
-          echo "----- cli notes -----";   tools/packaging/release-notes.sh cli HEAD
+          echo "----- lib notes -----";     tools/packaging/release-notes.sh lib HEAD
+          echo "----- xunit notes -----";   tools/packaging/release-notes.sh xunit HEAD
+          echo "----- catalog notes -----"; tools/packaging/release-notes.sh catalog HEAD
+          echo "----- cli notes -----";     tools/packaging/release-notes.sh cli HEAD

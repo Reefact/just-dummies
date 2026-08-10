@@ -1,0 +1,97 @@
+# dum — the JustDummies scaffolder
+
+`dum` writes the dummy generator for one of your types, **once**, as ordinary
+code you own and edit. It is not a source generator and it does not run at build
+time: it reads your compilation, emits a file, and gets out of the way.
+
+    dotnet tool install --global JustDummies.Cli
+    dum generate Order
+
+## What it produces
+
+Run from your **test** project — that is where the file belongs, and where the
+type is reachable from:
+
+```console
+$ dum generate Order
+
+Analyzing Shop.Domain.Order
+  constructor Order(OrderReference, Customer, int, OrderStatus, IReadOnlyList<string>, DateTime)
+
+  reference  OrderReference         Any.String().NonEmpty().As(OrderReference.Create)  factory, guard
+  customer   Customer               —                                                  TODO
+  quantity   int                    Any.Int32().Positive()                             guard
+  status     OrderStatus            Any.Enum<OrderStatus>()
+  tags       IReadOnlyList<string>  Any.ListOf(Any.String().NonEmpty())
+  placedAt   DateTime               Any.DateTime()
+
+✓ AnyOrder.cs — 5 of 6 parameters inferred, 1 TODO.
+  The file will not compile until you resolve it. That is deliberate.
+```
+
+`AnyOrder.cs` is a `partial class` implementing `IAny<Order>`, with a `With…`
+method per constructor parameter. It is yours from that moment: read it, edit
+it, commit it. Re-running with `--force` overwrites it.
+
+## What the right-hand column means
+
+It is the point of the recap, not decoration — it says what was **inferred** and
+what was **guessed**:
+
+| Word | Meaning |
+| --- | --- |
+| *(empty)* | straight from the base table for that type |
+| `guard` | a constructor guard tightened it (`quantity <= 0` → `.Positive()`) |
+| `factory` | composed through a static factory (`.As(OrderReference.Create)`) |
+| `AnyX` | a generator you already scaffolded was reused |
+| `TODO` | nothing could be inferred; the file names what to do |
+| `unavailable` | the generator exists in JustDummies but not in the asset your project resolves |
+
+`customer` above is open because `AnyCustomer` does not exist yet. Scaffold it,
+rebuild, re-run with `--force`, and the line closes to `new AnyCustomer()`. That
+two-step is the intended way through a graph of aggregates.
+
+**A TODO is not a failure.** The tool emits an identifier that does not exist,
+so *your own build* reports what it could not infer, at the exact line, with the
+type in hand. A generator that quietly drew a plausible value there would be far
+worse.
+
+## Options
+
+| Option | Default | Meaning |
+| --- | --- | --- |
+| `--project <path>` | the single `*.csproj` in the current directory | project whose compilation is analyzed |
+| `--output <dir>` | the current directory | where the file is written |
+| `--namespace <ns>` | the target type's namespace | namespace of the emitted type |
+| `--force` | off | overwrite an existing file |
+| `--dry-run` | off | print the file to stdout; write nothing |
+
+`dum generate Order Customer Invoice` scaffolds several; they are processed
+independently, and the exit code is the worst of them. Exit `0` is a file
+written (TODOs and all), `1` a scaffolding run that failed, `2` a command line
+that could not be read.
+
+## It never references JustDummies
+
+The tool resolves every library symbol **by name against your compilation**, and
+declares no dependency on the library. So the tool and the library version
+independently, and `dum` will not drag a JustDummies upgrade into your project —
+if a generator does not exist in the asset you resolve, it says so rather than
+emitting a call that will not compile.
+
+## Requires
+
+The [`JustDummies`](https://www.nuget.org/packages/JustDummies) package in the
+project being analyzed — without it nothing can be resolved, and `dum` says so.
+The tool itself targets .NET 8 and rolls forward, so any newer runtime you have
+installed will run it.
+
+## Links
+
+- [Repository](https://github.com/Reefact/just-dummies)
+- [JustDummies](https://www.nuget.org/packages/JustDummies)
+
+## Credits
+
+The package icon is a crash-test dummy by **Magnific**, from
+[Flaticon](https://www.flaticon.com/fr/icones-gratuites/crash).

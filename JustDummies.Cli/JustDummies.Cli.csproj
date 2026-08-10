@@ -21,8 +21,8 @@
     <ToolCommandName>dum</ToolCommandName>
 
     <!-- Version. A local/dev fallback only: the cli release train overrides it with -p:Version from the
-         Git tag (cli-v*, see tools/packaging/pack.sh). That train has no packable step yet — this project
-         has no behaviour to publish — so nothing has ever been produced from this number. -->
+         Git tag (cli-v*, see tools/packaging/pack.sh). Nothing has been published from this number yet;
+         the train packs, and no cli-v* tag has been pushed. -->
     <Version>0.1.0-dev</Version>
 
     <!-- NuGet identity -->
@@ -46,7 +46,21 @@
     <RepositoryType>git</RepositoryType>
 
     <Copyright>© Reefact 2026</Copyright>
+
+    <!-- Package assets. The readme is not decoration on a tool: without PackageReadmeFile the pack emits
+         NU5133, and the CI ratchet turns that into an error — which is the right pressure, since a tool
+         nobody can read the usage of on its listing page is a tool nobody installs. -->
+    <PackageIcon>icon.png</PackageIcon>
+    <PackageReadmeFile>readme.md</PackageReadmeFile>
   </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The crash-test dummy, the one mark every package here wears — deliberately not varied per package,
+         since a nuget.org listing renders it at 128 px. Icon by Magnific, from Flaticon; the attribution is
+         in this package's README. -->
+    <None Include="..\icon.png" Pack="true" PackagePath="icon.png" />
+    <None Include="README.nuget.md" Pack="true" PackagePath="readme.md" />
+  </ItemGroup>
 
   <ItemGroup>
     <!-- The command line. The shell owns the command definitions and settings; the engine owns none of it and
@@ -80,6 +94,14 @@
          (ADR-0063). The packed tool must therefore declare no JustDummies dependency; the release train
          asserts it on the produced .nuspec (§13.6). -->
     <ProjectReference Include="..\JustDummies.GenAny\JustDummies.GenAny.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Embed an SPDX SBOM inside the package at pack time, as the three library packages do. It matters
+         more here than there: a .NET tool ships its whole dependency closure as files rather than as a
+         dependency list, so the nuspec of this package names nothing and the SBOM is the only inventory of
+         what a consumer actually installs. Build-time only: never a consumer-visible dependency. -->
+    <PackageReference Include="Microsoft.Sbom.Targets" PrivateAssets="all" />
   </ItemGroup>
 
   <!-- Opens the internals to the shell's own suite: the command line is the tool's contract, and nothing

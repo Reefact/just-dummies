@@ -319,7 +319,7 @@ into **release trains** by scope — `tools/trains.sh` is the single source of
 truth — and each train publishes independently: `lib` (scopes `core`, `analyzers` → `JustDummies`, analyzers bundled in),
 `xunit` (scope `xunit` → `JustDummies.Xunit`), `catalog` (scope `catalog` →
 `JustDummies.DiagnosticCatalog`) and `cli` (scope `cli` → the `dum` scaffolder,
-not shipped yet). A commit's scope decides which train's
+packed as a .NET tool). A commit's scope decides which train's
 release notes and changelog it lands in; see
 [Adding a release train](doc/handwritten/for-maintainers/AddingAReleaseTrain.en.md).
 

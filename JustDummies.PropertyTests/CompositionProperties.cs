@@ -432,8 +432,8 @@ public sealed class CompositionProperties {
     }
 
     /// <summary>The failure a factory raises, distinguishable from anything the library itself could throw.</summary>
-    [SuppressMessage(SonarRule.S3871.Category, SonarRule.S3871.Id, Justification = "A fixture, not part of any contract. It exists so a test factory can raise a failure distinguishable from anything the library itself throws; making it public would export a type from a test assembly for no reader.")]
-    [SuppressMessage(SonarRule.S3376.Category, SonarRule.S3376.Id, Justification = "Named for what it reads as at the throw site inside the property. The Exception suffix would say nothing the base type does not, and this type is private to one test class.")]
+    [SuppressMessage(SonarRule.S3871.Category, SonarRule.S3871.Id, Justification = SuppressionJustification.S3871.FixtureNotContract)]
+    [SuppressMessage(SonarRule.S3376.Category, SonarRule.S3376.Id, Justification = SuppressionJustification.S3376.NamedForTheThrowSite)]
     private sealed class FactoryRejection : Exception {
 
         internal FactoryRejection() : base("The factory rejected the generated value.") { }

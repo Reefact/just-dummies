@@ -20,7 +20,7 @@ namespace JustDummies.Analyzers;
 ///     mirrors <c>SizeGuard</c> and the per-generator guards exactly; where it cannot be certain it stays silent.
 /// </remarks>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
-[SuppressMessage(SonarRule.S3267.Category, SonarRule.S3267.Id, Justification = "Every TryCheck* member walks the argument list and reports the first offender through its out parameters. The rule asks for Select(argument => argument.Value), a projection that buys nothing and renames the loop variable away from what it is: `argument` is an IArgumentOperation, and `argument.Value` reads as the operation behind it. TryCheckSize cannot honour it at all — its filter produces the `out int value` its body then reports on, so a projection would force a second TryGetInt32 call. The family reads the same way on purpose, so it is declared once here rather than four times below.")]
+[SuppressMessage(SonarRule.S3267.Category, SonarRule.S3267.Id, Justification = SuppressionJustification.S3267.ArgumentIsTheOperation)]
 public sealed class RejectedConstantArgumentAnalyzer : DiagnosticAnalyzer {
 
     // SizeGuard.MaxProducibleSize — a size the generator must actually produce is capped here.

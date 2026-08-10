@@ -332,7 +332,7 @@ public sealed class AnyStringValueSetTests {
     }
 
     [Fact(DisplayName = "OneOf rejects null, empty, or null-containing value lists as arguments.")]
-    [SuppressMessage(SonarRule.S3220.Category, SonarRule.S3220.Id, Justification = "Passing a bare null to a params parameter is exactly what this test asserts about: OneOf(null!) must be refused with ArgumentNullException rather than read as an empty list. The ambiguity the rule warns about IS the input under test.")]
+    [SuppressMessage(SonarRule.S3220.Category, SonarRule.S3220.Id, Justification = SuppressionJustification.S3220.AmbiguityIsTheInputUnderTest)]
     public void RejectsInvalidValueLists() {
         Check.ThatCode(() => Any.String().OneOf()).Throws<ArgumentException>();
         Check.ThatCode(() => Any.String().OneOf(null!)).Throws<ArgumentNullException>();

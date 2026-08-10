@@ -82,7 +82,7 @@ public sealed class MaterializationTests {
     }
 
     [Fact(DisplayName = "A generator interpolated into text renders its type name, never a value it could draw.")]
-    [SuppressMessage(JustDummiesRule.JD005.Category, JustDummiesRule.JD005.Id, Justification = "The rendered generator IS the subject. This pins the behaviour JD005 reports, and the deliberate absence of a ToString override that would mask it — an override returning a drawn value would make this test red, which is the point.")]
+    [SuppressMessage(JustDummiesRule.JD005.Category, JustDummiesRule.JD005.Id, Justification = SuppressionJustification.JD005.RenderedGeneratorIsTheSubject)]
     public void AGeneratorRendersAsItsTypeName() {
         string rendered = $"{Any.Int32()}";
 

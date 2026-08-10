@@ -578,8 +578,8 @@ internal sealed class RegexParser {
         return new RegexCharacters(RegexAlphabet.WithBothCases(character).Distinct().ToArray());
     }
 
-    [SuppressMessage(SonarRule.S3928.Category, SonarRule.S3928.Id, Justification = "pattern is the public parameter the consumer passed to Any.Pattern(...); this private factory only assembles the exception the parser throws on its behalf. Its own reason parameter names the diagnosis, not the argument at fault, so pointing the exception at it would send the caller to the wrong place.")]
-    [SuppressMessage(NetAnalyzersRule.CA2208.Category, NetAnalyzersRule.CA2208.Id, Justification = "Same reason as the S3928 suppression above: pattern is the public parameter the consumer passed to Any.Pattern(...), which is the argument they must fix. This private factory only assembles the exception on the parser's behalf.")]
+    [SuppressMessage(SonarRule.S3928.Category, SonarRule.S3928.Id, Justification = SuppressionJustification.S3928.PatternIsTheCallersArgument)]
+    [SuppressMessage(NetAnalyzersRule.CA2208.Category, NetAnalyzersRule.CA2208.Id, Justification = SuppressionJustification.CA2208.PatternIsTheCallersArgument)]
     private ArgumentException Malformed(string reason) {
         return new ArgumentException($"The regular expression pattern \"{_pattern}\" is invalid: {reason} (at position {_index}).", "pattern");
     }

@@ -596,7 +596,7 @@ internal sealed class StringSpec {
                });
     }
 
-    [SuppressMessage(NetAnalyzersRule.CA2249.Category, NetAnalyzersRule.CA2249.Id, Justification = "string.Contains(string, StringComparison) does not exist on netstandard2.0, which this library targets (ADR-0007). IndexOf with StringComparison.Ordinal is the same comparison and the only spelling that compiles on the shipped asset. Same downlevel wall as CA1510 (ADR-0037).")]
+    [SuppressMessage(NetAnalyzersRule.CA2249.Category, NetAnalyzersRule.CA2249.Id, Justification = SuppressionJustification.CA2249.NoContainsWithComparisonDownlevel)]
     private IEnumerable<(ConstraintCall Constraint, Func<string, bool> Admits)> Declarations() {
         if (_exactLength is int exact) { yield return (_exactConstraint!, value => value.Length == exact); }
         if (_minLength > 0) { yield return (_minConstraint!, value => value.Length >= _minLength); }

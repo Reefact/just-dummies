@@ -17,7 +17,7 @@ namespace JustDummies.GenAny;
 ///     </para>
 /// </remarks>
 [Flags]
-[SuppressMessage(SonarRule.S2342.Category, SonarRule.S2342.Id, Justification = "The specification names this concept in the singular (§6, \"provenance\"), and the property that carries it is Provenance; a plural type name would make every use site read `Provenances Provenance`.")]
+[SuppressMessage(SonarRule.S2342.Category, SonarRule.S2342.Id, Justification = SuppressionJustification.S2342.TheSpecificationNamesItSingular)]
 public enum Provenance {
 
     /// <summary>Nothing to report: straight from the base table (§5.2), and the recap's column stays empty.</summary>

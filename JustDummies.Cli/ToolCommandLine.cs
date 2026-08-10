@@ -10,14 +10,14 @@ namespace JustDummies.Cli;
 ///     Builds the tool's command line and runs one invocation.
 /// </summary>
 /// <remarks>
-///     The surface is complete and the behaviour is not: <c>generate</c> parses exactly what §3 specifies — every
-///     option, every default described in its help — and then refuses, because no part of §4–§7 is implemented.
-///     A tool that accepted the command and printed nothing would read, to a script, as a scaffolding run that
-///     produced no file.
+///     <c>generate</c> is the only verb (§3), and everything it does happens in <see cref="GenerateCommand" />;
+///     what is decided here is the surface around it — the application name a help screen carries, strict
+///     parsing, and the fact that a command line the tool could not read exits with the tool's own code rather
+///     than the framework's.
 ///     <para>
-///         Two consoles rather than one, from the start: §6 has <c>--dry-run</c> print the file to stdout and the
-///         recap to stderr, so the split is part of the specification and not a detail of this build. They are
-///         parameters so the suite reads what the tool says without capturing a process's console.
+///         Two consoles rather than one: §6 has <c>--dry-run</c> print the file to stdout and the recap to
+///         stderr, so the split is part of the specification. They are parameters so the suite reads what the
+///         tool says without capturing a process's console.
 ///     </para>
 /// </remarks>
 internal static class ToolCommandLine {
@@ -34,7 +34,14 @@ internal static class ToolCommandLine {
         if (output is null) { throw new ArgumentNullException(nameof(output)); }
         if (error is null) { throw new ArgumentNullException(nameof(error)); }
 
-        CommandApp app = new();
+        // The one thing a command needs and cannot reach for itself. Spectre constructs the command, so the
+        // consoles are handed to it the way any dependency is: registered, then taken as a constructor
+        // argument.
+        ToolTypeRegistrar registrar = new();
+
+        registrar.RegisterInstance(typeof(ToolConsoles), new ToolConsoles(output, error));
+
+        CommandApp app = new(registrar);
 
         app.Configure(config => {
             config.SetApplicationName("dum");
@@ -53,17 +60,7 @@ internal static class ToolCommandLine {
                 return ExitCode.Usage;
             });
 
-            // A delegate rather than a Command<T> class, and deliberately so: with no body to write, a class
-            // would exist only to hold one refusal, and reaching the error console from it would mean standing
-            // up a type registrar for a constructor argument nothing else needs yet. The settings — the part
-            // the specification fixes — are a real type either way. When §4-§7 arrive, this becomes
-            // GenerateCommand and the registrar comes with it.
-            config.AddDelegate<GenerateSettings>("generate", (_, _, _) => {
-                       error.MarkupLine("[red]`generate` is specified but not implemented yet.[/] "
-                                      + "This build of dum answers --version and --help, and nothing else.");
-
-                       return ExitCode.Usage;
-                   })
+            config.AddCommand<GenerateCommand>("generate")
                   .WithDescription("Write the dummy generator for a type, as code you then own.");
         });
 

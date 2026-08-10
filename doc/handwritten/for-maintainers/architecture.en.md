@@ -14,15 +14,15 @@ of a given kind belongs. Written for someone about to modify the library, not to
 | `JustDummies.Analyzers` | *inside* `JustDummies` | `netstandard2.0` | the 28 Roslyn rules, at `analyzers/dotnet/cs` |
 | `JustDummies.Xunit` | `JustDummies.Xunit` | `netstandard2.0` | the xUnit v3 adapter — one attribute |
 | `JustDummies.DiagnosticCatalog` | `JustDummies.DiagnosticCatalog` | `netstandard2.0` | the rule ids as compile-checked constants |
-| `JustDummies.GenAny` | *inside* `JustDummies.Cli` | `netstandard2.0` | the `dum` engine: §4 and §5 entire — emission, resolution, guards |
-| `JustDummies.Cli` | `JustDummies.Cli` (the `dum` tool) | `net8.0` | the shell: §3's command line, §6's recap, §7's exit codes |
+| `JustDummies.GenAny` | *inside* `JustDummies.Cli` | `netstandard2.0` | the `dum` engine: §3.2, §4 and §5 entire — lookup, emission, resolution, guards |
+| `JustDummies.Cli` | `JustDummies.Cli` (the `dum` tool) | `net8.0` | the shell: §3's command line, §11.1's project loading, §6's recap, §7's exit codes |
 | `JustDummies.UnitTests` | — | — | named cases: messages, argument validation, conventions, regressions |
 | `JustDummies.PropertyTests` | — | — | invariants that hold for every legal constraint argument |
 | `JustDummies.Analyzers.UnitTests` | — | — | one suite per rule, over compiled snippets |
 | `JustDummies.Xunit.UnitTests` | — | — | the adapter's lifecycle |
 | `JustDummies.Documentation.UnitTests` | — | — | the documentation's own contracts |
 | `JustDummies.GenAny.UnitTests` | — | — | the engine's floor and its boundaries |
-| `JustDummies.Cli.UnitTests` | — | — | what the tool answers on the command line |
+| `JustDummies.Cli.UnitTests` | — | — | project discovery, what the tool answers, and the exit codes of §7 |
 | `tools/justdummies-check` | — | — | packaged-asset compatibility, deliberately outside the solution |
 
 Two target frameworks, one reason: `netstandard2.0` is the floor that gives the library its reach —

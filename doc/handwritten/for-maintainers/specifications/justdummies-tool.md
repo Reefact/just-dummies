@@ -2,13 +2,14 @@
 
 🌍 🇬🇧 English (this file) · 🇫🇷 [Français](justdummies-tool.fr.md)
 
-**Status:** specification, being implemented. `JustDummies.GenAny` and `JustDummies.Cli` exist and carry the
-project-level constraints of §10 and §13. Written: §3, the command line; §4, the emitted file; and **all of §5** —
-constructor choice, the base table, the guard clauses, composition and the open parameter — together with the
-provenance §6 reports. The worked example of §4.1 is now produced end to end from its own source, byte for byte.
-Also written: §6, the console recap, and §7's exit codes and shadowing warning, both checked against the worked
-runs this document writes out. **Not written:** the project loading and type resolution of §11.1 and §3.2 — so
-nothing hands the engine a compilation yet, and `dum generate` still refuses rather than running any of it.
+**Status:** specification, implemented. `JustDummies.GenAny` and `JustDummies.Cli` exist and carry the
+project-level constraints of §10 and §13. Written: §3, the command line, and §3.2's type resolution; §4, the
+emitted file; **all of §5** — constructor choice, the base table, the guard clauses, composition and the open
+parameter — together with the provenance §6 reports; §6, the console recap; §7's exit codes and shadowing
+warning; and §11.1's pipeline entire, so `dum generate` opens a real project and writes a real file. The worked
+example of §4.1 is produced end to end from its own source, byte for byte. **Not done:** nothing publishes the
+tool — the `cli` release train is wired but refuses to pack, which is a decision to take rather than code to
+write (§13.6).
 **Supersedes:** the working pre-specification 0.1 (never committed)
 
 ---
@@ -849,6 +850,15 @@ For the tool's dependencies. New to the tool:
 `Microsoft.CodeAnalysis.Workspaces.MSBuild` and `Microsoft.Build.Locator` (CLI only). Already
 present for the library and its analyzers: `Microsoft.CodeAnalysis.CSharp`. *Current realization:
 central package management in `Directory.Packages.props`.*
+
+Two more were needed than this section listed, and both for reasons worth writing down.
+`Microsoft.CodeAnalysis.CSharp.Workspaces`, because building a compilation is a **language**
+service and `Workspaces.MSBuild` carries only the language-neutral ones: without it the project
+opens, reports no error, and answers `null` when asked for its compilation.
+`Microsoft.Build.Framework`, with `ExcludeAssets="runtime"` and `PrivateAssets="all"`, because
+`Workspaces.MSBuild` would otherwise place a copy of it beside the tool — which
+`Microsoft.Build.Locator` refuses by design (`MSBL001`), since a tool loading its own MSBuild
+assembly instead of the SDK's fails at run time in ways that name nothing.
 
 `Spectre.Console.Cli` was **not** already present, unlike what this section assumed while it was
 written in the source repository: the extraction dropped it along with everything else no project

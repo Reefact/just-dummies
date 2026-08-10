@@ -27,6 +27,44 @@ namespace JustDummies.GenAny;
 public static class Scaffolder {
 
     /// <summary>
+    ///     Scaffolds a generator for the type <paramref name="typeArgument" /> names (§3.2).
+    /// </summary>
+    /// <remarks>
+    ///     The overload §11.1 describes: the shell hands over the compilation and the name the developer typed,
+    ///     and gets back a file or a reason — including "that name matched nothing" and "it matched several",
+    ///     as data rather than as an exception. The symbol overload below stays for the caller that has already
+    ///     resolved one, which is how §10.3 words the same boundary.
+    /// </remarks>
+    /// <param name="compilation">The developer's compilation, which every symbol is resolved against.</param>
+    /// <param name="typeArgument">The type, spelled as a developer would type it: <c>Order</c>,
+    ///     <c>Shop.Domain.Order</c>, or <c>Order.Line</c> for a nested one.</param>
+    /// <param name="options">Where the generator lands and how it is named.</param>
+    /// <exception cref="ArgumentNullException">Any argument is null.</exception>
+    /// <exception cref="ArgumentException"><paramref name="typeArgument" /> is blank.</exception>
+    public static ScaffoldOutcome Scaffold(Compilation compilation, string typeArgument, ScaffoldOptions options) {
+        if (compilation is null) { throw new ArgumentNullException(nameof(compilation)); }
+        if (typeArgument is null) { throw new ArgumentNullException(nameof(typeArgument)); }
+        if (options is null) { throw new ArgumentNullException(nameof(options)); }
+        if (typeArgument.Trim().Length == 0) {
+            throw new ArgumentException("A scaffold names a type.", nameof(typeArgument));
+        }
+
+        IReadOnlyList<INamedTypeSymbol> found = TypeLookup.Find(compilation, typeArgument.Trim());
+
+        if (found.Count == 0) {
+            return ScaffoldOutcome.Refused(ScaffoldStatus.TypeNotFound,
+                                           TypeLookup.Closest(compilation, typeArgument.Trim()));
+        }
+
+        if (found.Count > 1) {
+            return ScaffoldOutcome.Refused(ScaffoldStatus.TypeAmbiguous,
+                                           [.. found.Select(type => type.ToDisplayString()).OrderBy(name => name, StringComparer.Ordinal)]);
+        }
+
+        return Scaffold(compilation, found[0], options);
+    }
+
+    /// <summary>
     ///     Scaffolds a generator for <paramref name="target" /> against <paramref name="compilation" />.
     /// </summary>
     /// <param name="compilation">The developer's compilation, which every symbol is resolved against.</param>

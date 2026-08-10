@@ -82,6 +82,47 @@ internal static class Subject {
         return outcome.Plan!.Parameters.Single();
     }
 
+    /// <summary>
+    ///     Scaffolds by the name a developer would type, over the sources given (§3.2).
+    /// </summary>
+    internal static ScaffoldOutcome ScaffoldByName(string typeArgument, params string[] sources) {
+        CSharpCompilation compilation = CSharpCompilation.Create(
+            "Subject",
+            [.. sources.Select(Parse)],
+            Referenced(downlevel: false, withLibrary: true),
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary,
+                                         nullableContextOptions: NullableContextOptions.Enable));
+
+        return Scaffolder.Scaffold(compilation, typeArgument, ScaffoldOptions.Default);
+    }
+
+    /// <summary>
+    ///     Scaffolds by name, over sources compiled here and a type that lives in a <b>referenced</b> assembly.
+    /// </summary>
+    /// <remarks>
+    ///     Which is where the target type usually is: the tool is run from the test project (§3.1), so the type
+    ///     it is pointed at reaches the compilation through a reference and is not in its source at all.
+    /// </remarks>
+    internal static ScaffoldOutcome ScaffoldByNameReferencing(string referencedSource,
+                                                              string typeArgument,
+                                                              params string[] sources) {
+        CSharpCompilation referenced = CSharpCompilation.Create(
+            "Referenced",
+            [Parse(referencedSource)],
+            Referenced(downlevel: false, withLibrary: true),
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary,
+                                         nullableContextOptions: NullableContextOptions.Enable));
+
+        CSharpCompilation compilation = CSharpCompilation.Create(
+            "Subject",
+            [.. sources.Select(Parse)],
+            [.. Referenced(downlevel: false, withLibrary: true), referenced.ToMetadataReference()],
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary,
+                                         nullableContextOptions: NullableContextOptions.Enable));
+
+        return Scaffolder.Scaffold(compilation, typeArgument, ScaffoldOptions.Default);
+    }
+
     /// <summary>Scaffolds <c>Shop.Domain.Subject</c>, declared by <paramref name="declarations" />.</summary>
     internal static ScaffoldOutcome Scaffold(string declarations,
                                              ScaffoldOptions? options = null,

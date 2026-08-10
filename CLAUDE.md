@@ -111,11 +111,14 @@ Written: §3, the Spectre command line, which parses in full; §4, the emitter, 
 files under `JustDummies.GenAny.UnitTests/Golden/` and compiled against the library with the
 analyzers wired; **all of §5** — constructor choice, base table, guard clauses, composition, open
 parameters — so `Scaffolder.Scaffold` turns a real compilation into a file that compiles, and the
-worked example of §4.1 is reproduced from its own source byte for byte; and §6's recap with §7's
-exit codes and shadowing warning, checked against the runs the specification writes out. **Not
-written: the project loading and type resolution of §11.1 and §3.2**, so nothing hands the engine a
-compilation and `dum generate` still refuses. Nothing publishes it either; the `cli` release train
-refuses to pack while that holds.
+worked example of §4.1 is reproduced from its own source byte for byte; §6's recap with §7's
+exit codes and shadowing warning, checked against the runs the specification writes out; and §11.1's
+pipeline entire — `MSBuildLocator`, `MSBuildWorkspace`, the `.csproj` discovery of §3.1, the type
+lookup of §3.2 and the file writing — so `dum generate` opens a real project and writes a real file.
+**Not done: nothing publishes it.** The `cli` release train is wired and refuses to pack; opening it
+means adding the project to `tools/packaging/pack.sh` and the assertion that the produced `.nuspec`
+declares no JustDummies dependency (the executable form of ADR-0063). That is a decision to take,
+not code that is missing.
 
 When adding a new project to the solution, also add its GUID to
 `JustDummies.sln`'s `GlobalSection(NestedProjects)`, nested under the

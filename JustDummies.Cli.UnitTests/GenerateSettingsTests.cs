@@ -4,6 +4,8 @@ using System.Reflection;
 
 using NFluent;
 
+using Spectre.Console;
+
 namespace JustDummies.Cli.UnitTests;
 
 /// <summary>
@@ -51,6 +53,37 @@ public sealed class GenerateSettingsTests {
                               .ToArray();
 
         Check.That(undescribed).IsEmpty();
+    }
+
+    /// <summary>
+    ///     An option given as an empty string is refused where it is read, not where it is used.
+    /// </summary>
+    /// <remarks>
+    ///     <c>--namespace ""</c> is not "no override": it is an override to nothing, and the three options
+    ///     would each answer it differently and late — a path routine throwing, a namespace declared empty.
+    /// </remarks>
+    [Theory(DisplayName = "An option given as an empty value is refused, naming which one.")]
+    [InlineData("--project")]
+    [InlineData("--output")]
+    [InlineData("--namespace")]
+    public void AnEmptyOptionValueIsRefused(string option) {
+        GenerateSettings settings = new() { Types = ["Order"] };
+
+        switch (option) {
+            case "--project": settings.Project = "   "; break;
+            case "--output":  settings.Output = "   "; break;
+            default:          settings.Namespace = "   "; break;
+        }
+
+        ValidationResult refused = settings.Validate();
+
+        Check.That(refused.Successful).IsFalse();
+        Check.That(refused.Message).Contains(option);
+    }
+
+    [Fact(DisplayName = "A command line with nothing left blank validates.")]
+    public void ACompleteCommandLineValidates() {
+        Check.That(new GenerateSettings { Types = ["Order"] }.Validate().Successful).IsTrue();
     }
 
     private static string[] TemplatesOf(string attributeName) {

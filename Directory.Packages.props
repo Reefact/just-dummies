@@ -44,6 +44,22 @@
     <PackageVersion Include="Microsoft.CodeAnalysis.Analyzers" Version="5.6.0" />
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="5.6.0" />
     <PackageVersion Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" Version="5.6.0" />
+    <!-- The dum tool's project loading (§11.1), JustDummies.Cli only. Workspaces.MSBuild is kept at the same
+         version as Microsoft.CodeAnalysis.CSharp above: the two ship together and a workspace built against a
+         different Roslyn than the compilation it produces is the classic way this fails at run time. The
+         engine takes neither — it is handed a Compilation and knows nothing of MSBuild (ADR-0065). -->
+    <PackageVersion Include="Microsoft.CodeAnalysis.Workspaces.MSBuild" Version="5.6.0" />
+    <!-- The C# half of the workspace layer, and not optional: without it a workspace opens the project,
+         reports no error, and then answers null when asked for its compilation — because the service that
+         builds one is a LANGUAGE service, and Workspaces.MSBuild carries only the language-neutral ones. -->
+    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="5.6.0" />
+    <PackageVersion Include="Microsoft.Build.Locator" Version="1.11.2" />
+    <!-- Compiled against, never shipped beside the tool. Workspaces.MSBuild brings this one in as a runtime
+         asset, and Microsoft.Build.Locator refuses that arrangement by design (MSBL001): a tool carrying its
+         own copy of an MSBuild assembly loads it instead of the SDK's, and then fails at run time in ways
+         that name nothing. JustDummies.Cli therefore takes it with ExcludeAssets="runtime", at the version
+         Workspaces.MSBuild resolves — the number is matched to that dependency, not chosen. -->
+    <PackageVersion Include="Microsoft.Build.Framework" Version="17.11.48" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.8.1" />
     <PackageVersion Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" />
     <PackageVersion Include="Microsoft.NETFramework.ReferenceAssemblies.net472" Version="1.0.3" />

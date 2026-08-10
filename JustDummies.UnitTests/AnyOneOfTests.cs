@@ -208,7 +208,7 @@ public sealed class AnyOneOfTests {
     }
 
     [Fact(DisplayName = "A held collection passed to OneOf is one pool member: the draw is the collection itself, not a value from it.")]
-    [SuppressMessage(JustDummiesRule.JD013.Category, JustDummiesRule.JD013.Id, Justification = "The one-member pool IS the subject. This pins the behaviour JD013 reports: inference binds T to the collection, so the call is legal, the draw succeeds, and what comes back is the whole list.")]
+    [SuppressMessage(JustDummiesRule.JD013.Category, JustDummiesRule.JD013.Id, Justification = SuppressionJustification.JD013.OneMemberPoolIsTheSubject)]
     public void AHeldCollectionPassedToOneOfIsOnePoolMember() {
         IReadOnlyList<int> held = new[] { 1, 2, 3 };
 

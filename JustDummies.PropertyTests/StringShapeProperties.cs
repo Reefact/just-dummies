@@ -215,7 +215,7 @@ public sealed class StringShapeProperties {
     }
 
     [Fact(DisplayName = "Containing embeds the value, whatever the value.")]
-    [SuppressMessage(NetAnalyzersRule.CA2249.Category, NetAnalyzersRule.CA2249.Id, Justification = "string.Contains(string, StringComparison) is not on the netstandard2.0 / net472 floor this suite runs against (ADR-0007); IndexOf with the same StringComparison.Ordinal carries the identical comparison and compiles on every leg. The rule is right on net10.0 only.")]
+    [SuppressMessage(NetAnalyzersRule.CA2249.Category, NetAnalyzersRule.CA2249.Id, Justification = SuppressionJustification.CA2249.NoContainsWithComparisonDownlevel)]
     public void ContainingEmbedsTheValue() {
         Prop.ForAll(Affix(DefaultAlphabet, 8).ToArbitrary(),
                     fragment => Expect.EveryDraw(Any.String().Containing(fragment),

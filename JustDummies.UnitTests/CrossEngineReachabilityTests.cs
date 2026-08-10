@@ -30,7 +30,7 @@ namespace JustDummies.UnitTests;
 ///         unreachable) fails every time. No randomness leaks in, so the suite is a stable CI guard, never a flaky one.
 ///     </para>
 /// </remarks>
-[SuppressMessage(SonarRule.S2699.Category, SonarRule.S2699.Id, Justification = "Each theory is one line of dispatch to the per-type adapter; the NFluent Check.That and Assert.Throws calls live in the IntervalCase<T> overrides. The rule does follow assertions into concrete helpers, but this call resolves statically to the abstract ReachabilityCase declaration, which has no body, so it cannot see past the virtual dispatch. Lifting the assertions into the test bodies would flatten the one-row-per-builder design and reduce the per-draw scenarios to a single aggregated boolean.")]
+[SuppressMessage(SonarRule.S2699.Category, SonarRule.S2699.Id, Justification = SuppressionJustification.S2699.AssertionsLiveInTheAdapterOverrides)]
 public sealed class CrossEngineReachabilityTests {
 
     #region Statics members declarations

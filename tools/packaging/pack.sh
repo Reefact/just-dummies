@@ -18,7 +18,7 @@
 #               lib     -> JustDummies (the library; its analyzers ride inside it)
 #               xunit   -> JustDummies.Xunit (the xUnit v3 adapter)
 #               catalog -> JustDummies.DiagnosticCatalog (the JD rules as constants)
-#               cli     -> dum (the scaffolder; specified, not built yet)
+#               cli     -> JustDummies.Cli (dum, the scaffolder, packed as a .NET tool)
 
 set -eu
 
@@ -68,17 +68,12 @@ case "$scope" in
     projects='JustDummies.DiagnosticCatalog/JustDummies.DiagnosticCatalog.csproj'
     ;;
   cli)
-    # The `dum` scaffolder. `generate` is now implemented end to end -- it opens a project, resolves the type,
-    # emits the file and writes it -- so what kept this arm shut no longer holds. It stays shut anyway,
-    # because publishing is a decision and not a consequence: nothing has ever been released under the
-    # JustDummies.Cli id, and opening the train means adding the project below AND the assertion that the
-    # produced .nuspec declares no JustDummies dependency, which is the executable form of ADR-0063. The
-    # train is declared in tools/trains.sh, so the tag trigger, the scope list and the release workflow are
-    # already wired and waiting for that one change.
-    echo "error: the 'cli' train is not open yet -- dum works, but nothing has decided to publish it" >&2
-    echo "       opening it: add the project here, plus the no-JustDummies-dependency .nuspec assertion" >&2
-    echo "       see doc/handwritten/for-maintainers/specifications/justdummies-tool.md" >&2
-    exit 2
+    # The `dum` scaffolder, packed as a .NET tool (PackAsTool, command name `dum`). Unlike the three
+    # library packages, this one ships its whole dependency closure as FILES under tools/net8.0/any/ --
+    # Roslyn, the workspace layer, Spectre -- because that is what a tool package is. Its nuspec therefore
+    # declares no dependencies at all, which is why the ADR-0063 guard below reads the payload as well as
+    # the nuspec: on this train the nuspec check alone would pass on an empty list and prove nothing.
+    projects='JustDummies.Cli/JustDummies.Cli.csproj'
     ;;
   *)
     echo "error: unknown scope '$scope' (expected 'lib', 'xunit', 'cli' or 'catalog')" >&2
@@ -149,6 +144,38 @@ if [ "$scope" = "lib" ]; then
       echo "error: JustDummies.Analyzers.dll missing from analyzers/dotnet/cs in $package" >&2
       exit 1
     fi
+  done
+fi
+
+# Independence guard for the cli train -- the executable form of ADR-0063. The tool resolves every library
+# symbol by metadata name against the DEVELOPER's compilation and holds no reference to JustDummies, which is
+# what makes version skew between tool and library impossible. A ProjectReference added for convenience would
+# undo that silently: everything would still build, still test and still pack.
+#
+# Two checks, because a .NET tool can break the rule in two different ways and each check is blind to the
+# other. A tool package ships its closure as FILES, so its nuspec normally declares nothing at all -- the
+# nuspec check alone would pass on an empty dependency list and prove nothing, while a referenced
+# JustDummies.dll sat in tools/net8.0/any/. The payload check is the one that bites; the nuspec check covers
+# the case where the reference is declared rather than bundled.
+#
+# JustDummies.GenAny.dll is expected in there and is not a violation: the engine is the tool's own half,
+# packed inside it (specification §10.4), and it references no JustDummies assembly either.
+if [ "$scope" = "cli" ]; then
+  for package in artifacts/JustDummies.Cli.*.nupkg; do
+    nuspec="$(unzip -p "$package" '*.nuspec')" || { echo "error: cannot read the nuspec from $package" >&2; exit 1; }
+    if printf '%s\n' "$nuspec" | grep -q '<dependency [^>]*id="JustDummies"'; then
+      echo "error: $package declares a JustDummies dependency; the tool resolves the library by name (ADR-0063)" >&2
+      exit 1
+    fi
+
+    # Fail CLOSED here too: an unreadable listing must not pass as "nothing bundled".
+    entries="$(unzip -l "$package")" || { echo "error: cannot list the contents of $package" >&2; exit 1; }
+    if printf '%s\n' "$entries" | grep -q '/JustDummies\.dll$'; then
+      echo "error: $package bundles JustDummies.dll; the tool must reference no library assembly (ADR-0063)" >&2
+      exit 1
+    fi
+
+    echo "ok: $package declares and bundles no JustDummies (ADR-0063)"
   done
 fi
 

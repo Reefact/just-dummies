@@ -43,7 +43,7 @@ agent merges a pull request.
 | [Architecture](./architecture.en.md) | the projects, the draw pipeline, where to add a generator, an analyzer or a rule |
 | [Writing JustDummies tests](./WritingJustDummiesTests.en.md) | the example suite versus the property suite |
 | [Adding a release train](./AddingAReleaseTrain.en.md) | how a package gets its own versioned train |
-| [The `dum` scaffolder](./specifications/justdummies-tool.md) | specified and implemented; `dum generate` runs — nothing publishes it yet |
+| [The `dum` scaffolder](./specifications/justdummies-tool.md) | specified and implemented; `dum generate` runs, and the `cli` train packs it — no version released yet |
 
 ## Workflows
 

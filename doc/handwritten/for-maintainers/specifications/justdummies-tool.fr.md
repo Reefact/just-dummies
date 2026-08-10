@@ -8,8 +8,8 @@ du §3.2 ; la §4, le fichier émis ; **toute la §5** — choix du constructeur
 paramètre ouvert — ainsi que la provenance que rapporte la §6 ; la §6, le récapitulatif console ; les codes de
 sortie et l'avertissement de masquage de la §7 ; et tout le pipeline du §11.1, si bien que `dum generate` ouvre un
 vrai projet et écrit un vrai fichier. L'exemple travaillé du §4.1 est produit de bout en bout depuis sa propre
-source, au caractère près. **Pas fait :** rien ne publie l'outil — le train de release `cli` est câblé mais refuse
-d'empaqueter, ce qui relève d'une décision à prendre et non de code à écrire (§13.6).
+source, au caractère près. Le train de release `cli` l'empaquette et asserte la D9 sur le paquet produit
+(§13.6). **Pas fait :** aucun tag `cli-v*` n'a été poussé, donc aucune version n'a été publiée.
 **Remplace :** la pré-spécification de travail 0.1 (jamais commitée)
 
 ---
@@ -934,8 +934,16 @@ Distinct de celui de la bibliothèque. Le tool ne
 versionne pas en lockstep avec la bibliothèque (D9), donc il ne doit pas monter sur son train.
 L'étape de packaging du train doit asserter que le `.nupkg` produit ne déclare **aucune dépendance
 `JustDummies`** — la forme exécutable de D9. *Réalisation actuelle : `tools/packaging/pack.sh` avec
-un train par famille de packages et une assertion « standalone » déjà écrite pour le train de la
+un train par famille de packages, et l'assertion propre au train `cli` à côté de celle de la
 bibliothèque.*
+
+Cette assertion a demandé une seconde moitié que cette section n'avait pas anticipée. Un outil .NET
+embarque toute sa clôture de dépendances sous forme de **fichiers** dans `tools/<tfm>/any/`, si bien
+que son nuspec ne déclare rien du tout : le contrôle des dépendances déclarées passe sur une liste
+vide et ne prouve rien, pendant qu'un `JustDummies.dll` ajouté par un `ProjectReference` malencontreux
+resterait dans la charge utile sans être vu. Le packaging asserte donc les deux : aucune dépendance
+`JustDummies` dans le nuspec, et aucun `JustDummies.dll` dans le paquet. Mesuré, pas supposé —
+ajouter la référence fait échouer le packaging sur le second contrôle et passer le premier.
 
 ### 13.7 Les analyzers doivent pouvoir tourner sur le code de l'hôte
 

@@ -7,9 +7,9 @@ project-level constraints of §10 and §13. Written: §3, the command line, and 
 emitted file; **all of §5** — constructor choice, the base table, the guard clauses, composition and the open
 parameter — together with the provenance §6 reports; §6, the console recap; §7's exit codes and shadowing
 warning; and §11.1's pipeline entire, so `dum generate` opens a real project and writes a real file. The worked
-example of §4.1 is produced end to end from its own source, byte for byte. **Not done:** nothing publishes the
-tool — the `cli` release train is wired but refuses to pack, which is a decision to take rather than code to
-write (§13.6).
+example of §4.1 is produced end to end from its own source, byte for byte. The `cli` release train packs it
+and asserts D9 on the produced package (§13.6). **Not done:** no `cli-v*` tag has been pushed, so no version
+has been published.
 **Supersedes:** the working pre-specification 0.1 (never committed)
 
 ---
@@ -905,8 +905,15 @@ weekly sweep.*
 Separate from the library's. The tool does not version in
 lockstep with the library (D9), so it must not ride the library's train. The train's packing step
 must assert that the produced `.nupkg` declares **no `JustDummies` dependency** — the executable
-form of D9. *Current realization: `tools/packaging/pack.sh` with one train per package family and
-a standalone assertion already written for the library's train.*
+form of D9. *Current realization: `tools/packaging/pack.sh` with one train per package family, and
+the `cli` train's own assertion beside the library's.*
+
+That assertion needed a second half this section did not anticipate. A .NET tool ships its whole
+dependency closure as **files** under `tools/<tfm>/any/`, so its nuspec declares nothing at all — the
+declared-dependency check passes on an empty list and proves nothing, while a `JustDummies.dll` added
+by an accidental `ProjectReference` would sit in the payload unnoticed. The pack therefore asserts
+both: no `JustDummies` dependency in the nuspec, and no `JustDummies.dll` in the package. Measured,
+not assumed — adding the reference fails the pack on the second check and passes the first.
 
 ### 13.7 The analyzers must be runnable over the host's own code
 

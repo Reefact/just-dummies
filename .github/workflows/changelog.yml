@@ -5,9 +5,10 @@ name: Draft changelog
 # requests merged since that train's last tag, then opens a pull request so a human
 # can review it (and delete any benefit the model inferred rather than found)
 # before merging. The trains version independently and keep separate changelogs:
-#   lib   -> JustDummies/CHANGELOG.md        (the library, with its analyzers bundled in)
-#   xunit -> JustDummies.Xunit/CHANGELOG.md  (the xUnit v3 adapter)
-#   cli   -> JustDummies.Cli/CHANGELOG.md    (the dum scaffolder, packed as a .NET tool)
+#   lib     -> JustDummies/CHANGELOG.md                    (the library, with its analyzers bundled in)
+#   xunit   -> JustDummies.Xunit/CHANGELOG.md              (the xUnit v3 adapter)
+#   cli     -> JustDummies.Cli/CHANGELOG.md                (the dum scaffolder, packed as a .NET tool)
+#   catalog -> JustDummies.DiagnosticCatalog/CHANGELOG.md  (the JD rules as constants)
 on:
   workflow_dispatch:
     inputs:
@@ -18,6 +19,7 @@ on:
           - lib
           - xunit
           - cli
+          - catalog
         required: true
       from_ref:
         description: "Previous tag to diff from. Leave blank to auto-detect the train's latest tag; if the train has no tag yet, the whole history is used."

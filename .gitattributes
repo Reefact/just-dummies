@@ -1,0 +1,15 @@
+# Line endings in the working tree.
+#
+# Git's default on Windows converts a checked-out text file to CRLF. For source that is harmless —
+# the compiler does not care, and .editorconfig's `end_of_line = lf` governs what an editor writes
+# back. For the scaffolder's approved files it is not: those are BYTE-EXACT fixtures.
+#
+# The dum emitter writes LF on every platform, deliberately, because §8.1 of the tool specification
+# promises the same bytes from the same type on any machine — Environment.NewLine promises the
+# opposite. GoldenFile.Approve therefore compares raw text, with no normalisation, since normalising
+# would stop checking the very thing the constant exists for. Left to Git's default, that comparison
+# passes on Linux and fails on Windows on every golden at once, which is exactly what it did.
+#
+# Scoped rather than repository-wide: this pins the files whose bytes are the contract, and leaves
+# every other file to the developer's own Git configuration.
+JustDummies.GenAny.UnitTests/Golden/*.approved.cs text eol=lf

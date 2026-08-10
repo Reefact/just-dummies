@@ -45,7 +45,7 @@ comme aucun agent ne merge une pull request.
 | [Architecture](./architecture.fr.md) | les projets, le pipeline de tirage, où ajouter un générateur, un analyzer ou une règle |
 | [Écrire les tests JustDummies](./WritingJustDummiesTests.fr.md) | la suite par l'exemple contre la suite par propriétés |
 | [Ajouter un train de release](./AddingAReleaseTrain.fr.md) | comment un paquet obtient son propre train versionné |
-| [L'outil `dum`](./specifications/justdummies-tool.fr.md) | spécifié ; les deux projets existent, `generate` non |
+| [L'outil `dum`](./specifications/justdummies-tool.fr.md) | spécifié ; la ligne de commande et l'émetteur existent, la résolution non |
 
 ## Workflows
 

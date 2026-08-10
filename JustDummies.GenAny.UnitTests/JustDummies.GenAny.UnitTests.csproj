@@ -29,10 +29,36 @@
 
   <ItemGroup>
     <ProjectReference Include="..\JustDummies.GenAny\JustDummies.GenAny.csproj" />
+
+    <!-- The library and its analyzers, as the SUBJECT of EmittedCodeCompilesTests: each golden file is
+         compiled against them, and must produce no CS* error and no JD* diagnostic. That the engine may not
+         reference JustDummies (ADR-0063) says nothing about this project — the guard is on the engine's own
+         assembly, and a test that could not reference the library could not check what the emitted code does
+         against it. -->
+    <ProjectReference Include="..\JustDummies\JustDummies.csproj" />
+    <ProjectReference Include="..\JustDummies.Analyzers\JustDummies.Analyzers.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The approved files are C#, so they read as code in a review and compile in the test that compiles
+         them. They are NOT this project's own source: compiling them here would demand the fixture types in
+         this assembly, and the TODO golden does not compile by design. -->
+    <Compile Remove="Golden\**\*.cs" />
+    <None Include="Golden\**\*.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The repository root, because the approved files live in the working tree and nothing on the assembly
+         can carry them. Baked in here rather than derived from [CallerFilePath], which CI rewrites to /_/
+         under the DeterministicSourcePaths that ContinuousIntegrationBuild turns on. -->
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>RepositoryRoot</_Parameter1>
+      <_Parameter2>$(MSBuildThisFileDirectory)..</_Parameter2>
+    </AssemblyAttribute>
   </ItemGroup>
 
 </Project>

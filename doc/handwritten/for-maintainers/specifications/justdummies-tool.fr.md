@@ -3,8 +3,10 @@
 🌍 🇫🇷 Français (ce fichier) · 🇬🇧 [English](justdummies-tool.md)
 
 **Statut :** spécification, en cours d'implémentation. `JustDummies.GenAny` et `JustDummies.Cli` existent et
-portent les contraintes projet des §10 et §13. La ligne de commande de la §3 est intégralement parsée ; rien
-derrière ne l'est — `dum generate` lit ses options puis refuse, car aucune partie des §4 à §7 n'est écrite.
+portent les contraintes projet des §10 et §13. La ligne de commande de la §3 est intégralement parsée, et la §4 —
+le fichier émis — est écrite et figée par des fichiers approuvés, compilés contre la bibliothèque avec les
+analyzers branchés. Les §5 à §7 ne sont pas écrites : rien ne construit encore de plan à rendre à l'émetteur, et
+`dum generate` refuse toujours.
 **Remplace :** la pré-spécification de travail 0.1 (jamais commitée)
 
 ---

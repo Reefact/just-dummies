@@ -45,7 +45,7 @@ internal sealed class GenerateCommand : AsyncCommand<GenerateSettings> {
 
     /// <summary>Runs one <c>generate</c> and returns what the process exits with (§7).</summary>
     internal async Task<int> RunAsync(GenerateSettings settings, CancellationToken cancellationToken) {
-        if (settings is null) { throw new ArgumentNullException(nameof(settings)); }
+        ArgumentNullException.ThrowIfNull(settings);
 
         string        here    = Directory.GetCurrentDirectory();
         ProjectChoice project = ProjectLocator.Locate(here, settings.Project);

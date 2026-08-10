@@ -29,8 +29,8 @@ internal static class Unwrapped {
     ///     been written to disk, or piping it into one would not be the same thing as running without the flag.
     /// </remarks>
     internal static void Text(IAnsiConsole console, string text) {
-        if (console is null) { throw new ArgumentNullException(nameof(console)); }
-        if (text is null) { throw new ArgumentNullException(nameof(text)); }
+        ArgumentNullException.ThrowIfNull(console);
+        ArgumentNullException.ThrowIfNull(text);
 
         console.Profile.Out.Writer.Write(text);
     }

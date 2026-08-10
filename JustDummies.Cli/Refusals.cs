@@ -25,15 +25,15 @@ internal static class Refusals {
 
     /// <summary>A scaffold that produced nothing, and the reason the engine gave (§3.2, §5.1, §11.1).</summary>
     internal static void Render(string typeArgument, ScaffoldOutcome outcome, IAnsiConsole console) {
-        if (typeArgument is null) { throw new ArgumentNullException(nameof(typeArgument)); }
-        if (outcome is null) { throw new ArgumentNullException(nameof(outcome)); }
+        ArgumentNullException.ThrowIfNull(typeArgument);
+        ArgumentNullException.ThrowIfNull(outcome);
 
         Say(console, Sentences(typeArgument, outcome));
     }
 
     /// <summary>No project to analyze, or too many to choose from (§3.1).</summary>
     internal static void NoProject(ProjectChoice choice, IAnsiConsole console) {
-        if (choice is null) { throw new ArgumentNullException(nameof(choice)); }
+        ArgumentNullException.ThrowIfNull(choice);
 
         List<string> sentences = [Mark + choice.Refusal];
 
@@ -47,7 +47,7 @@ internal static class Refusals {
     ///     that carries the information; this is the sentence that says the run stopped there.
     /// </summary>
     internal static void ProjectDidNotLoad(string projectPath, IAnsiConsole console) {
-        if (projectPath is null) { throw new ArgumentNullException(nameof(projectPath)); }
+        ArgumentNullException.ThrowIfNull(projectPath);
 
         Say(console, [
             Mark + $"{projectPath} did not load, so nothing was scaffolded.",
@@ -59,7 +59,7 @@ internal static class Refusals {
     ///     Something is already there, and this tool does not silently replace a developer's file.
     /// </summary>
     internal static void FileExists(string path, IAnsiConsole console) {
-        if (path is null) { throw new ArgumentNullException(nameof(path)); }
+        ArgumentNullException.ThrowIfNull(path);
 
         Say(console, [
             Mark + $"{path} already exists.",
@@ -147,7 +147,7 @@ internal static class Refusals {
     ///     The refusal, then a blank line — so a run over several types does not read as one long paragraph.
     /// </summary>
     private static void Say(IAnsiConsole console, IEnumerable<string> sentences) {
-        if (console is null) { throw new ArgumentNullException(nameof(console)); }
+        ArgumentNullException.ThrowIfNull(console);
 
         foreach (string sentence in sentences) { Unwrapped.Line(console, sentence); }
 

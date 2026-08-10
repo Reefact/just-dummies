@@ -32,8 +32,8 @@ internal static class ScaffoldWriter {
     ///     </para>
     /// </remarks>
     internal static WriteOutcome Write(ScaffoldedFile file, string directory, bool force) {
-        if (file is null) { throw new ArgumentNullException(nameof(file)); }
-        if (directory is null) { throw new ArgumentNullException(nameof(directory)); }
+        ArgumentNullException.ThrowIfNull(file);
+        ArgumentNullException.ThrowIfNull(directory);
 
         string path = Path.Combine(directory, file.FileName);
 

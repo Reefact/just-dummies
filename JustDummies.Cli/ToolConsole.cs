@@ -32,7 +32,7 @@ internal static class ToolConsole {
     ///     A console writing to <paramref name="writer" />, readable whether or not a terminal is attached.
     /// </summary>
     internal static IAnsiConsole On(TextWriter writer) {
-        if (writer is null) { throw new ArgumentNullException(nameof(writer)); }
+        ArgumentNullException.ThrowIfNull(writer);
 
         IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings { Out = new AnsiConsoleOutput(writer) });
 

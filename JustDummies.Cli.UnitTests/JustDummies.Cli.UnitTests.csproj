@@ -26,6 +26,11 @@
 
   <ItemGroup>
     <ProjectReference Include="..\JustDummies.Cli\JustDummies.Cli.csproj" />
+
+    <!-- The engine, because the recap's subject is its result model: §6 has the engine decide provenance and
+         the shell render it, which is what lets these tests build the model by hand and never open a project,
+         a compilation or a terminal. -->
+    <ProjectReference Include="..\JustDummies.GenAny\JustDummies.GenAny.csproj" />
   </ItemGroup>
 
   <ItemGroup>

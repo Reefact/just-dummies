@@ -6,8 +6,9 @@
 project-level constraints of §10 and §13. Written: §3, the command line; §4, the emitted file; and **all of §5** —
 constructor choice, the base table, the guard clauses, composition and the open parameter — together with the
 provenance §6 reports. The worked example of §4.1 is now produced end to end from its own source, byte for byte.
-**Not written:** §6, the console recap, and §7, the exit codes and the shadowing warning; nor the project loading
-of §11.1, so `dum generate` still refuses rather than running any of it.
+Also written: §6, the console recap, and §7's exit codes and shadowing warning, both checked against the worked
+runs this document writes out. **Not written:** the project loading and type resolution of §11.1 and §3.2 — so
+nothing hands the engine a compilation yet, and `dum generate` still refuses rather than running any of it.
 **Supersedes:** the working pre-specification 0.1 (never committed)
 
 ---

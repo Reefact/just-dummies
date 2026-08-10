@@ -33,8 +33,7 @@ public sealed class ScaffoldedFile {
     ///     its closing line (§6), and searching emitted source for a marker is exactly the kind of check that
     ///     stops working the day the marker is reworded.
     /// </remarks>
-    [SuppressMessage(SonarRule.S1135.Category, SonarRule.S1135.Id,
-                     Justification = SuppressionJustification.S1135.DocumentsTheMarkerTheToolEmits)]
+    [SuppressMessage(SonarRule.S1135.Category, SonarRule.S1135.Id, Justification = SuppressionJustification.S1135.DocumentsTheMarkerTheToolEmits)]
     public bool ContainsTodo { get; }
 
     /// <inheritdoc />

@@ -1,5 +1,6 @@
 #region Usings declarations
 
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 #endregion
@@ -376,7 +377,7 @@ internal sealed class RegexParser {
         ValidateGroupName(name, position);
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S3267.Category, SonarRule.S3267.Id, Justification = SuppressionJustification.S3267.LoopNamesFirstOffender)]
+    [SuppressMessage(SonarRule.S3267.Category, SonarRule.S3267.Id, Justification = SuppressionJustification.S3267.LoopNamesFirstOffender)]
     private void ValidateGroupName(string name, int position) {
         // A '-' marks a balancing group; it manipulates the capture stack (the backreference family), so it is
         // non-regular and refused here even when its target is undefined (see SkipGroupName for why the divergence
@@ -399,7 +400,7 @@ internal sealed class RegexParser {
         }
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S125.Category, SonarRule.S125.Id, Justification = SuppressionJustification.S125.ProseNotDisabledCode)]
+    [SuppressMessage(SonarRule.S125.Category, SonarRule.S125.Id, Justification = SuppressionJustification.S125.ProseNotDisabledCode)]
     private RegexNode ParseEscape() {
         int position = _index;
         _index++; // consume '\'
@@ -577,15 +578,8 @@ internal sealed class RegexParser {
         return new RegexCharacters(RegexAlphabet.WithBothCases(character).Distinct().ToArray());
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S3928.Category, SonarRule.S3928.Id,
-                                                     Justification =
-                                                         "pattern is the public parameter the consumer passed to Any.Pattern(...); this private factory only assembles the exception the " +
-                                                         "parser throws on its behalf. Its own reason parameter names the diagnosis, not the argument at fault, so pointing the exception " +
-                                                         "at it would send the caller to the wrong place.")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(NetAnalyzersRule.CA2208.Category, NetAnalyzersRule.CA2208.Id,
-                                                     Justification =
-                                                         "Same reason as the S3928 suppression above: pattern is the public parameter the consumer passed to Any.Pattern(...), " +
-                                                         "which is the argument they must fix. This private factory only assembles the exception on the parser's behalf.")]
+    [SuppressMessage(SonarRule.S3928.Category, SonarRule.S3928.Id, Justification = "pattern is the public parameter the consumer passed to Any.Pattern(...); this private factory only assembles the exception the parser throws on its behalf. Its own reason parameter names the diagnosis, not the argument at fault, so pointing the exception at it would send the caller to the wrong place.")]
+    [SuppressMessage(NetAnalyzersRule.CA2208.Category, NetAnalyzersRule.CA2208.Id, Justification = "Same reason as the S3928 suppression above: pattern is the public parameter the consumer passed to Any.Pattern(...), which is the argument they must fix. This private factory only assembles the exception on the parser's behalf.")]
     private ArgumentException Malformed(string reason) {
         return new ArgumentException($"The regular expression pattern \"{_pattern}\" is invalid: {reason} (at position {_index}).", "pattern");
     }

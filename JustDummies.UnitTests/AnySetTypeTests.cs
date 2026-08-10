@@ -1,5 +1,7 @@
 #region Usings declarations
 
+using System.Diagnostics.CodeAnalysis;
+
 using NFluent;
 
 #endregion
@@ -111,12 +113,7 @@ public sealed class AnySetTypeTests {
     }
 
     [Fact(DisplayName = "Enum: unconstrained draws yield only declared members and reach all of them.")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(NetAnalyzersRule.CA2263.Category, NetAnalyzersRule.CA2263.Id,
-                                                     Justification =
-                                                         "Enum.IsDefined<TEnum>(TEnum) arrived in .NET 5 and this suite also runs on the .NET Framework 4.7.2 " +
-                                                         "support floor (ADR-0007, build/Net472TestFloor.props), where it does not exist. The non-generic overload " +
-                                                         "is the only spelling that compiles on both legs; the reason is restated at the call site so a reader meets " +
-                                                         "it there too.")]
+    [SuppressMessage(NetAnalyzersRule.CA2263.Category, NetAnalyzersRule.CA2263.Id, Justification = "Enum.IsDefined<TEnum>(TEnum) arrived in .NET 5 and this suite also runs on the .NET Framework 4.7.2 support floor (ADR-0007, build/Net472TestFloor.props), where it does not exist. The non-generic overload is the only spelling that compiles on both legs; the reason is restated at the call site so a reader meets it there too.")]
     public void EnumDrawsDeclaredMembers() {
         HashSet<OrderStatus> seen = [];
         for (int i = 0; i < SampleCount; i++) {

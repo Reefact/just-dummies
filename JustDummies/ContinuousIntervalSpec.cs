@@ -93,7 +93,7 @@ internal sealed class ContinuousIntervalSpec {
 
     #endregion
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S107.Category, SonarRule.S107.Id, Justification = SuppressionJustification.S107.EngineImmutableState)]
+    [SuppressMessage(SonarRule.S107.Category, SonarRule.S107.Id, Justification = SuppressionJustification.S107.EngineImmutableState)]
     private ContinuousIntervalSpec(string  typeName, Func<double, string> render, Func<double, double> quantize, Func<double, double> nextUp,
                                    double  min,      ConstraintCall? minConstraint,
                                    double  max,      ConstraintCall? maxConstraint,
@@ -193,13 +193,7 @@ internal sealed class ContinuousIntervalSpec {
     ///     engine does not carry), so it stays outside the eager cardinality perimeter and a distinct collection over
     ///     it falls back to the bounded draw. Feeds <see cref="ICardinalityHint{T}" />.
     /// </summary>
-    [SuppressMessage(SonarRule.S1244.Category, SonarRule.S1244.Id,
-                     Justification =
-                         "Exact equality is the question, not an approximation of it: _min and _max are not measured " +
-                         "quantities but the bounds the constraint chain validated, and the test asks whether they are the " +
-                         "SAME representable value. A tolerance would answer a different question, and answer it wrongly: " +
-                         "[1.0, 1.0 + 1e-12] holds millions of representable doubles, so reporting a cardinality of 1 would " +
-                         "make ICardinalityHint promise a distinct collection of one element over a range that can serve many.")]
+    [SuppressMessage(SonarRule.S1244.Category, SonarRule.S1244.Id, Justification = "Exact equality is the question, not an approximation of it: _min and _max are not measured quantities but the bounds the constraint chain validated, and the test asks whether they are the SAME representable value. A tolerance would answer a different question, and answer it wrongly: [1.0, 1.0 + 1e-12] holds millions of representable doubles, so reporting a cardinality of 1 would make ICardinalityHint promise a distinct collection of one element over a range that can serve many.")]
     internal long? Cardinality {
         get {
             if (_effectiveAllowed is not null) { return _effectiveAllowed.Count; }
@@ -221,14 +215,7 @@ internal sealed class ContinuousIntervalSpec {
     }
 
     /// <summary>Draws one value satisfying the whole specification.</summary>
-    [SuppressMessage(SonarRule.S1244.Category, SonarRule.S1244.Id,
-                     Justification =
-                         "Exact equality detects the validated pin (the singleton domain Cardinality also reports) and " +
-                         "returns the only value the bounds leave; IsSatisfiable already proved that value is not excluded, " +
-                         "which is why this early return may skip the nudge walk. A tolerance would break both halves: it " +
-                         "would collapse every draw of a merely narrow interval such as [1.0, 1.0 + 1e-12] onto its lower " +
-                         "bound instead of sampling it, and it would take that exclusion-free shortcut for an interval whose " +
-                         "lower bound IS excluded, returning a value the constraints forbid.")]
+    [SuppressMessage(SonarRule.S1244.Category, SonarRule.S1244.Id, Justification = "Exact equality detects the validated pin (the singleton domain Cardinality also reports) and returns the only value the bounds leave; IsSatisfiable already proved that value is not excluded, which is why this early return may skip the nudge walk. A tolerance would break both halves: it would collapse every draw of a merely narrow interval such as [1.0, 1.0 + 1e-12] onto its lower bound instead of sampling it, and it would take that exclusion-free shortcut for an interval whose lower bound IS excluded, returning a value the constraints forbid.")]
     internal double Generate(RandomSource source) {
         if (source is null) { throw new ArgumentNullException(nameof(source)); }
 
@@ -302,20 +289,13 @@ internal sealed class ContinuousIntervalSpec {
         return quantized;
     }
 
-    [SuppressMessage(SonarRule.S1244.Category, SonarRule.S1244.Id,
-                     Justification =
-                         "Exclusion-list membership is exact by definition: DifferentFrom(x) forbids the value x, not a " +
-                         "neighbourhood of it. Widening it to a tolerance would carve a band out of the continuum that no " +
-                         "constraint asked for, and Generate's nudge walk would have to step clear of that band, turning a " +
-                         "measure-zero collision into a systematic bias away from every excluded point. Equals(double) is " +
-                         "'a == b || (IsNaN(a) && IsNaN(b))'; the NaN arm is unreachable because EnsureFinite rejects NaN at " +
-                         "every entry point, so this is plain exact equality with a defensive tail.")]
+    [SuppressMessage(SonarRule.S1244.Category, SonarRule.S1244.Id, Justification = "Exclusion-list membership is exact by definition: DifferentFrom(x) forbids the value x, not a neighbourhood of it. Widening it to a tolerance would carve a band out of the continuum that no constraint asked for, and Generate's nudge walk would have to step clear of that band, turning a measure-zero collision into a systematic bias away from every excluded point. Equals(double) is 'a == b || (IsNaN(a) && IsNaN(b))'; the NaN arm is unreachable because EnsureFinite rejects NaN at every entry point, so this is plain exact equality with a defensive tail.")]
     private bool IsExcluded(double value) {
         return _excluded.Any(excluded => value.Equals(excluded));
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(NetAnalyzersRule.CA1822.Category, NetAnalyzersRule.CA1822.Id, Justification = SuppressionJustification.CA1822.UniformValidatedHook)]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S2325.Category, SonarRule.S2325.Id, Justification = SuppressionJustification.S2325.UniformValidatedHook)]
+    [SuppressMessage(NetAnalyzersRule.CA1822.Category, NetAnalyzersRule.CA1822.Id, Justification = SuppressionJustification.CA1822.UniformValidatedHook)]
+    [SuppressMessage(SonarRule.S2325.Category, SonarRule.S2325.Id, Justification = SuppressionJustification.S2325.UniformValidatedHook)]
     private ContinuousIntervalSpec Validated(ContinuousIntervalSpec candidate, ConstraintCall applying) {
         if (candidate.IsSatisfiable()) { return candidate; }
 

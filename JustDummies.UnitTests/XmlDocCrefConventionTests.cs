@@ -1,5 +1,6 @@
 #region Usings declarations
 
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -183,11 +184,7 @@ public sealed class XmlDocCrefConventionTests {
         return positions.ToString();
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(NetAnalyzersRule.CA1870.Category, NetAnalyzersRule.CA1870.Id,
-                                                     Justification =
-                                                         "SearchValues<T> arrived in .NET 8 and this suite also runs on the .NET Framework 4.7.2 support floor " +
-                                                         "(ADR-0007), where the type does not exist. IndexOfAny over two characters, run once per cref in a " +
-                                                         "convention test, is not the cost this rule exists to remove.")]
+    [SuppressMessage(NetAnalyzersRule.CA1870.Category, NetAnalyzersRule.CA1870.Id, Justification = "SearchValues<T> arrived in .NET 8 and this suite also runs on the .NET Framework 4.7.2 support floor (ADR-0007), where the type does not exist. IndexOfAny over two characters, run once per cref in a convention test, is not the cost this rule exists to remove.")]
     private static string MemberPath(string cref) {
         int end = cref.IndexOfAny(new[] { '{', '(' });
 
@@ -202,15 +199,8 @@ public sealed class XmlDocCrefConventionTests {
 
     // obj/ carries generated sources (AssemblyInfo, global usings) and bin/ a copy of whatever was compiled;
     // scanning either would double-count and, worse, report a file nobody can fix.
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S125.Category, SonarRule.S125.Id,
-                                                     Justification =
-                                                         "Prose, not code. The line explains what obj/ and bin/ contain and why scanning them would double-count; " +
-                                                         "the rule reads the slashes and the parenthetical as a commented-out statement.")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S3220.Category, SonarRule.S3220.Id,
-                                                     Justification =
-                                                         "Two separators passed to Split's params overload, which is the only spelling that works on both target " +
-                                                         "frameworks. Wrapping them in an explicit array to disambiguate would immediately trip S3878, which asks " +
-                                                         "for that array to be removed again.")]
+    [SuppressMessage(SonarRule.S125.Category, SonarRule.S125.Id, Justification = "Prose, not code. The line explains what obj/ and bin/ contain and why scanning them would double-count; the rule reads the slashes and the parenthetical as a commented-out statement.")]
+    [SuppressMessage(SonarRule.S3220.Category, SonarRule.S3220.Id, Justification = "Two separators passed to Split's params overload, which is the only spelling that works on both target frameworks. Wrapping them in an explicit array to disambiguate would immediately trip S3878, which asks for that array to be removed again.")]
     private static bool IsBuildOutput(string file) {
         return file.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
                    .Any(segment => segment is "bin" or "obj");

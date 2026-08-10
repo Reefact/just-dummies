@@ -22,8 +22,7 @@ namespace JustDummies.GenAny;
 ///         for its type, or a TODO.
 ///     </para>
 /// </remarks>
-[SuppressMessage(SonarRule.S1135.Category, SonarRule.S1135.Id,
-                 Justification = SuppressionJustification.S1135.DocumentsTheMarkerTheToolEmits)]
+[SuppressMessage(SonarRule.S1135.Category, SonarRule.S1135.Id, Justification = SuppressionJustification.S1135.DocumentsTheMarkerTheToolEmits)]
 public static class Scaffolder {
 
     /// <summary>

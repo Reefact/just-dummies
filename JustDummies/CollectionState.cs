@@ -1,5 +1,6 @@
 #region Usings declarations
 
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 #endregion
@@ -146,7 +147,7 @@ internal sealed class CollectionState<T> {
     }
 
     /// <summary>Builds one collection satisfying the whole specification — laid out directly, never generate-then-retry.</summary>
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S3267.Category, SonarRule.S3267.Id, Justification = SuppressionJustification.S3267.ConditionReadsMutatedCollection)]
+    [SuppressMessage(SonarRule.S3267.Category, SonarRule.S3267.Id, Justification = SuppressionJustification.S3267.ConditionReadsMutatedCollection)]
     internal List<T> Materialize(RandomSource source) {
         if (source is null) { throw new ArgumentNullException(nameof(source)); }
 

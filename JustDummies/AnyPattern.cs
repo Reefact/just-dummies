@@ -1,5 +1,6 @@
 #region Usings declarations
 
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text.RegularExpressions;
 
@@ -187,11 +188,7 @@ public sealed class AnyPattern : IAny<string>, IHasRandomSource {
         }
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S3267.Category, SonarRule.S3267.Id,
-                                                     Justification =
-                                                         "The loop body MUTATES the very list its condition reads: each accepted value is appended to `excluded`, " +
-                                                         "so a later duplicate in `values` is rejected against the values already taken. A Where clause would read " +
-                                                         "as a filter over a fixed collection, which is precisely what this is not.")]
+    [SuppressMessage(SonarRule.S3267.Category, SonarRule.S3267.Id, Justification = "The loop body MUTATES the very list its condition reads: each accepted value is appended to `excluded`, so a later duplicate in `values` is rejected against the values already taken. A Where clause would read as a filter over a fixed collection, which is precisely what this is not.")]
     private AnyPattern Excluding(IReadOnlyList<string> values) {
         List<string> excluded = [.. _excluded];
         foreach (string value in values) {

@@ -1,3 +1,9 @@
+#region Usings declarations
+
+using System.Diagnostics.CodeAnalysis;
+
+#endregion
+
 namespace JustDummies;
 
 /// <summary>
@@ -16,11 +22,7 @@ namespace JustDummies;
 /// <typeparam name="TItem">The element type.</typeparam>
 /// <typeparam name="TResult">The collection type <see cref="Generate" /> produces.</typeparam>
 /// <typeparam name="TSelf">The concrete generator type, so the fluent methods return it.</typeparam>
-[System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S2436.Category, SonarRule.S2436.Id,
-                                                 Justification =
-                                                     "TItem and TResult are the element type and the collection type they build; TSelf is the CRTP self-type that lets every fluent " +
-                                                     "method return the concrete generator instead of this base. Dropping it would make each chained call return AnyCollection and force " +
-                                                     "a cast at every step.")]
+[SuppressMessage(SonarRule.S2436.Category, SonarRule.S2436.Id, Justification = "TItem and TResult are the element type and the collection type they build; TSelf is the CRTP self-type that lets every fluent method return the concrete generator instead of this base. Dropping it would make each chained call return AnyCollection and force a cast at every step.")]
 public abstract class AnyCollection<TItem, TResult, TSelf> : IAny<TResult>, IHasRandomSource
     where TSelf : AnyCollection<TItem, TResult, TSelf> {
 

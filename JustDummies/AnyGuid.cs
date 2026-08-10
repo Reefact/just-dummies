@@ -1,3 +1,9 @@
+#region Usings declarations
+
+using System.Diagnostics.CodeAnalysis;
+
+#endregion
+
 namespace JustDummies;
 
 /// <summary>
@@ -179,8 +185,8 @@ public sealed class AnyGuid : IAny<Guid>, IHasRandomSource, ICardinalityHint<Gui
         return Validated(new AnyGuid(_source, _pinned, _pinnedConstraint, _allowed, _allowedConstraint, excluded, exclusions), applying);
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(NetAnalyzersRule.CA1822.Category, NetAnalyzersRule.CA1822.Id, Justification = SuppressionJustification.CA1822.UniformValidatedHook)]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S2325.Category, SonarRule.S2325.Id, Justification = SuppressionJustification.S2325.UniformValidatedHook)]
+    [SuppressMessage(NetAnalyzersRule.CA1822.Category, NetAnalyzersRule.CA1822.Id, Justification = SuppressionJustification.CA1822.UniformValidatedHook)]
+    [SuppressMessage(SonarRule.S2325.Category, SonarRule.S2325.Id, Justification = SuppressionJustification.S2325.UniformValidatedHook)]
     private AnyGuid Validated(AnyGuid candidate, ConstraintCall applying) {
         if (candidate._pinned is Guid pinned) {
             if (candidate._excluded.Contains(pinned)) {

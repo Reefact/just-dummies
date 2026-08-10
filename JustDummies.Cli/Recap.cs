@@ -32,9 +32,7 @@ namespace JustDummies.Cli;
 ///         the same, and is checkable the same, on every platform.
 ///     </para>
 /// </remarks>
-[SuppressMessage(SonarRule.S1135.Category, SonarRule.S1135.Id,
-                 Justification = "Names the marker the tool emits by design (§5.5) and prints in the recap's "
-                               + "right-hand column (§6), not unfinished work here.")]
+[SuppressMessage(SonarRule.S1135.Category, SonarRule.S1135.Id, Justification = "Names the marker the tool emits by design (§5.5) and prints in the recap's right-hand column (§6), not unfinished work here.")]
 internal static class Recap {
 
     /// <summary>What an open parameter shows where an expression would be.</summary>

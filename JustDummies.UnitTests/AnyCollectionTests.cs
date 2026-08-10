@@ -1,5 +1,6 @@
 #region Usings declarations
 
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 
@@ -128,10 +129,7 @@ public sealed class AnyCollectionTests {
     }
 
     [Fact(DisplayName = "Distinct: over an element type without value equality the requirement is inert, and the collection holds repeats.")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(JustDummiesRule.JD028.Category, JustDummiesRule.JD028.Id,
-                                                     Justification =
-                                                         "The inert distinctness IS the subject. This pins the silent behaviour JD028 reports, which the library cannot report itself: from " +
-                                                         "its side the requirement is met, because the draws really are pairwise unequal under the comparer it was given.")]
+    [SuppressMessage(JustDummiesRule.JD028.Category, JustDummiesRule.JD028.Id, Justification = "The inert distinctness IS the subject. This pins the silent behaviour JD028 reports, which the library cannot report itself: from its side the requirement is met, because the draws really are pairwise unequal under the comparer it was given.")]
     public void DistinctOverReferenceEqualityIsInert() {
         // Percentage has no value equality, and '.As' builds a NEW instance per draw, so the default comparer can
         // never call two of them equal. Six 'distinct' elements over a two-value domain therefore succeed — and hold

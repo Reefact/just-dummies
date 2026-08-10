@@ -1,4 +1,10 @@
 #if NET8_0_OR_GREATER
+#region Usings declarations
+
+using System.Diagnostics.CodeAnalysis;
+
+#endregion
+
 namespace JustDummies;
 
 /// <summary>
@@ -75,7 +81,7 @@ internal sealed class WideIntervalSpec {
 
     #endregion
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S107.Category, SonarRule.S107.Id, Justification = SuppressionJustification.S107.EngineImmutableState)]
+    [SuppressMessage(SonarRule.S107.Category, SonarRule.S107.Id, Justification = SuppressionJustification.S107.EngineImmutableState)]
     private WideIntervalSpec(string typeName, Func<UInt128, string> render, UInt128 domainMin, UInt128 domainMax,
                              UInt128 min, ConstraintCall? minConstraint,
                              UInt128 max, ConstraintCall? maxConstraint,
@@ -243,7 +249,7 @@ internal sealed class WideIntervalSpec {
     }
 
     /// <summary>Draws one ordinal satisfying the whole specification — built directly, never generate-then-retry.</summary>
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S3267.Category, SonarRule.S3267.Id, Justification = SuppressionJustification.S3267.AccumulatorAdvancesInLoop)]
+    [SuppressMessage(SonarRule.S3267.Category, SonarRule.S3267.Id, Justification = SuppressionJustification.S3267.AccumulatorAdvancesInLoop)]
     internal UInt128 GenerateOrdinal(SeededRandom random) {
         if (random is null) { throw new ArgumentNullException(nameof(random)); }
 
@@ -288,8 +294,8 @@ internal sealed class WideIntervalSpec {
         return _min == UInt128.MinValue && _max == UInt128.MaxValue;
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(NetAnalyzersRule.CA1822.Category, NetAnalyzersRule.CA1822.Id, Justification = SuppressionJustification.CA1822.UniformValidatedHook)]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S2325.Category, SonarRule.S2325.Id, Justification = SuppressionJustification.S2325.UniformValidatedHook)]
+    [SuppressMessage(NetAnalyzersRule.CA1822.Category, NetAnalyzersRule.CA1822.Id, Justification = SuppressionJustification.CA1822.UniformValidatedHook)]
+    [SuppressMessage(SonarRule.S2325.Category, SonarRule.S2325.Id, Justification = SuppressionJustification.S2325.UniformValidatedHook)]
     private WideIntervalSpec Validated(WideIntervalSpec candidate, ConstraintCall applying) {
         if (candidate.IsSatisfiable()) { return candidate; }
 

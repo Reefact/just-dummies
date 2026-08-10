@@ -87,8 +87,7 @@ public sealed class ScaffoldPlan {
     public bool IsDegenerate => Parameters.Count == 0;
 
     /// <summary>Whether at least one parameter went unresolved, so the emitted file carries a TODO.</summary>
-    [SuppressMessage(SonarRule.S1135.Category, SonarRule.S1135.Id,
-                     Justification = SuppressionJustification.S1135.DocumentsTheMarkerTheToolEmits)]
+    [SuppressMessage(SonarRule.S1135.Category, SonarRule.S1135.Id, Justification = SuppressionJustification.S1135.DocumentsTheMarkerTheToolEmits)]
     public bool ContainsTodo => Parameters.Any(parameter => parameter.IsUnresolved);
 
 }

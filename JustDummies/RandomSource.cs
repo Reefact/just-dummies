@@ -1,3 +1,9 @@
+#region Usings declarations
+
+using System.Diagnostics.CodeAnalysis;
+
+#endregion
+
 namespace JustDummies;
 
 /// <summary>
@@ -7,7 +13,7 @@ namespace JustDummies;
 ///     time — which is what lets a recipe built outside an <c>Any.Reproducibly(...)</c> scope generate
 ///     deterministically inside one.
 /// </summary>
-[System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S1694.Category, SonarRule.S1694.Id, Justification = SuppressionJustification.S1694.ClosedInternalHierarchyRoot)]
+[SuppressMessage(SonarRule.S1694.Category, SonarRule.S1694.Id, Justification = SuppressionJustification.S1694.ClosedInternalHierarchyRoot)]
 internal abstract class RandomSource {
 
     /// <summary>The seeded generator to draw from right now. Every draw goes through it, serialized on its own lock.</summary>
@@ -79,16 +85,7 @@ internal sealed class SeededRandom {
 
     #endregion
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S2245.Category, SonarRule.S2245.Id,
-                                                     Justification =
-                                                         "S2245 is right that this generator is predictable; that predictability is the type's contract. A dummy is worth " +
-                                                         "generating only if the seed a failing run reports replays it, and a seeded System.Random is the one BCL generator " +
-                                                         "whose sequence a recorded seed reproduces. RandomNumberGenerator is seedless by design, so adopting it would delete " +
-                                                         "Any.Reproducibly, Any.WithSeed and Any.UseSeed outright, along with the seed every generation failure reports. It " +
-                                                         "would also break a checked contract: justdummies.yml compares the SEEDBATCH banner that tools/justdummies-check draws " +
-                                                         "from CrossTfmSeed byte-for-byte between the lib/netstandard2.0 and lib/net8.0 assets. No draw in this solution is " +
-                                                         "security material: SeededRandom is internal and reachable only through the Any.* test-data generators, and " +
-                                                         "README.nuget.md tells consumers never to draw a secret, key, token or nonce from Any.*.")]
+    [SuppressMessage(SonarRule.S2245.Category, SonarRule.S2245.Id, Justification = "S2245 is right that this generator is predictable; that predictability is the type's contract. A dummy is worth generating only if the seed a failing run reports replays it, and a seeded System.Random is the one BCL generator whose sequence a recorded seed reproduces. RandomNumberGenerator is seedless by design, so adopting it would delete Any.Reproducibly, Any.WithSeed and Any.UseSeed outright, along with the seed every generation failure reports. It would also break a checked contract: justdummies.yml compares the SEEDBATCH banner that tools/justdummies-check draws from CrossTfmSeed byte-for-byte between the lib/netstandard2.0 and lib/net8.0 assets. No draw in this solution is security material: SeededRandom is internal and reachable only through the Any.* test-data generators, and README.nuget.md tells consumers never to draw a secret, key, token or nonce from Any.*.")]
     internal SeededRandom(int seed) {
         Seed    = seed;
         _random = new Random(seed);
@@ -345,11 +342,7 @@ internal static class RandomSampling {
     ///     <c>Random.NextInt64(long, long)</c> instance method — whose upper bound is EXCLUSIVE — would win
     ///     overload resolution over a same-named extension and silently change the semantics.
     /// </summary>
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S125.Category, SonarRule.S125.Id,
-                                                     Justification =
-                                                         "The flagged lines are prose, not disabled code. The heuristic reads an equation, a bracketed range or a semicolon inside an " +
-                                                         "explanatory sentence as a statement. These comments carry the WHY this codebase asks for and deleting them would lose the " +
-                                                         "reasoning, so the finding is recorded here instead.")]
+    [SuppressMessage(SonarRule.S125.Category, SonarRule.S125.Id, Justification = "The flagged lines are prose, not disabled code. The heuristic reads an equation, a bracketed range or a semicolon inside an explanatory sentence as a statement. These comments carry the WHY this codebase asks for and deleting them would lose the reasoning, so the finding is recorded here instead.")]
     internal static long NextInt64Inclusive(this SeededRandom random, long minInclusive, long maxInclusive) {
         if (random is null) { throw new ArgumentNullException(nameof(random)); }
         if (minInclusive > maxInclusive) { throw new ArgumentOutOfRangeException(nameof(maxInclusive), "The maximum must be greater than or equal to the minimum."); }

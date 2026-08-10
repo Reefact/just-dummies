@@ -1,5 +1,6 @@
 #region Usings declarations
 
+using System.Diagnostics.CodeAnalysis;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -186,7 +187,7 @@ internal sealed class UriSpec {
 
     #endregion
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S107.Category, SonarRule.S107.Id, Justification = SuppressionJustification.S107.EngineImmutableState)]
+    [SuppressMessage(SonarRule.S107.Category, SonarRule.S107.Id, Justification = SuppressionJustification.S107.EngineImmutableState)]
     private UriSpec(UriFamily? family, string? scheme, ConstraintCall? schemeConstraint, string? host,
                     bool hasUserInfo, string? user, string? password,
                     bool hasPort, int? port,
@@ -469,7 +470,7 @@ internal sealed class UriSpec {
         return true;
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S3267.Category, SonarRule.S3267.Id, Justification = SuppressionJustification.S3267.LoopNamesFirstOffender)]
+    [SuppressMessage(SonarRule.S3267.Category, SonarRule.S3267.Id, Justification = SuppressionJustification.S3267.LoopNamesFirstOffender)]
     internal static string RequireUserInfoPart(string value, string parameterName) {
         if (value is null) { throw new ArgumentNullException(parameterName); }
         if (parameterName is null) { throw new ArgumentNullException(nameof(parameterName)); }

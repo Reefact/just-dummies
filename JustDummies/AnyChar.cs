@@ -1,3 +1,9 @@
+#region Usings declarations
+
+using System.Diagnostics.CodeAnalysis;
+
+#endregion
+
 namespace JustDummies;
 
 /// <summary>
@@ -42,7 +48,7 @@ public sealed class AnyChar : IAny<char>, IHasRandomSource, ICardinalityHint<cha
 
     #endregion
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S107.Category, SonarRule.S107.Id, Justification = SuppressionJustification.S107.EngineImmutableState)]
+    [SuppressMessage(SonarRule.S107.Category, SonarRule.S107.Id, Justification = SuppressionJustification.S107.EngineImmutableState)]
     private AnyChar(RandomSource source,
                     CharacterSet? charset, ConstraintCall? charsetConstraint,
                     LetterCasing? casing,  ConstraintCall? casingConstraint,
@@ -178,8 +184,8 @@ public sealed class AnyChar : IAny<char>, IHasRandomSource, ICardinalityHint<cha
         return Validated(new AnyChar(_source, _charset, _charsetConstraint, _casing, _casingConstraint, _allowed, _allowedConstraint, excluded), applying);
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(NetAnalyzersRule.CA1822.Category, NetAnalyzersRule.CA1822.Id, Justification = SuppressionJustification.CA1822.UniformValidatedHook)]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S2325.Category, SonarRule.S2325.Id, Justification = SuppressionJustification.S2325.UniformValidatedHook)]
+    [SuppressMessage(NetAnalyzersRule.CA1822.Category, NetAnalyzersRule.CA1822.Id, Justification = SuppressionJustification.CA1822.UniformValidatedHook)]
+    [SuppressMessage(SonarRule.S2325.Category, SonarRule.S2325.Id, Justification = SuppressionJustification.S2325.UniformValidatedHook)]
     private AnyChar Validated(AnyChar candidate, ConstraintCall applying) {
         if (candidate._pool.Count > 0) { return candidate; }
 

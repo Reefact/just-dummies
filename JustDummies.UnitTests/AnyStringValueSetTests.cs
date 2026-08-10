@@ -1,5 +1,7 @@
 #region Usings declarations
 
+using System.Diagnostics.CodeAnalysis;
+
 using JetBrains.Annotations;
 
 using NFluent;
@@ -68,7 +70,7 @@ public sealed class AnyStringValueSetTests {
     }
 
     [Fact(DisplayName = "Duplicate values are collapsed: both distinct values are still drawn, nothing else.")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(JustDummiesRule.JD025.Category, JustDummiesRule.JD025.Id, Justification = SuppressionJustification.JD025.DuplicateIsTheSubject)]
+    [SuppressMessage(JustDummiesRule.JD025.Category, JustDummiesRule.JD025.Id, Justification = SuppressionJustification.JD025.DuplicateIsTheSubject)]
     public void DuplicatesAreCollapsed() {
         HashSet<string> seen = [.. Samples(Any.String().OneOf("a", "a", "b"))];
 
@@ -330,11 +332,7 @@ public sealed class AnyStringValueSetTests {
     }
 
     [Fact(DisplayName = "OneOf rejects null, empty, or null-containing value lists as arguments.")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(SonarRule.S3220.Category, SonarRule.S3220.Id,
-                                                     Justification =
-                                                         "Passing a bare null to a params parameter is exactly what this test asserts about: OneOf(null!) must be " +
-                                                         "refused with ArgumentNullException rather than read as an empty list. The ambiguity the rule warns about " +
-                                                         "IS the input under test.")]
+    [SuppressMessage(SonarRule.S3220.Category, SonarRule.S3220.Id, Justification = "Passing a bare null to a params parameter is exactly what this test asserts about: OneOf(null!) must be refused with ArgumentNullException rather than read as an empty list. The ambiguity the rule warns about IS the input under test.")]
     public void RejectsInvalidValueLists() {
         Check.ThatCode(() => Any.String().OneOf()).Throws<ArgumentException>();
         Check.ThatCode(() => Any.String().OneOf(null!)).Throws<ArgumentNullException>();

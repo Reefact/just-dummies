@@ -222,12 +222,24 @@ internal sealed record MarkdownLink(string Target, int Line, string Text) {
 }
 
 /// <summary>A single documentation page, parsed into the shapes the contracts are expressed over.</summary>
-internal sealed class DocumentationPage {
+internal sealed partial class DocumentationPage {
 
-    private static readonly Regex FenceExpression   = new(@"^\s*(`{3,})\s*(\S*)\s*$", RegexOptions.Compiled);
-    private static readonly Regex HeadingExpression = new(@"^(#{1,6})\s+\S", RegexOptions.Compiled);
-    private static readonly Regex MarkerExpression  = new(@"^\s*<!--\s*jd:(?<tokens>.*?)\s*-->\s*$", RegexOptions.Compiled);
-    private static readonly Regex LinkExpression    = new(@"\[(?<text>[^\]]*)\]\((?<target>[^)\s]+)(?:\s+""[^""]*"")?\)", RegexOptions.Compiled);
+    // Source-generated rather than constructed: the pattern is parsed at BUILD time, so a typo in one of them is
+    // a compiler error rather than an exception on the first page read, and the generator emits the matcher —
+    // which leaves RegexOptions.Compiled nothing to do. This suite targets net10.0 alone, so the .NET 7 floor
+    // [GeneratedRegex] carries is no obstacle here; the library's own suite still runs on net472 and keeps the
+    // constructed form (ADR-0037, ADR-0007).
+    [GeneratedRegex(@"^\s*(`{3,})\s*(\S*)\s*$")]
+    private static partial Regex FenceExpression { get; }
+
+    [GeneratedRegex(@"^(#{1,6})\s+\S")]
+    private static partial Regex HeadingExpression { get; }
+
+    [GeneratedRegex(@"^\s*<!--\s*jd:(?<tokens>.*?)\s*-->\s*$")]
+    private static partial Regex MarkerExpression { get; }
+
+    [GeneratedRegex(@"\[(?<text>[^\]]*)\]\((?<target>[^)\s]+)(?:\s+""[^""]*"")?\)")]
+    private static partial Regex LinkExpression { get; }
 
     private DocumentationPage(string absolutePath, string relativePath, IReadOnlyList<int> headingLevels, IReadOnlyList<CodeFence> fences, IReadOnlyList<MarkdownLink> links) {
         AbsolutePath  = absolutePath;

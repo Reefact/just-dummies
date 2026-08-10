@@ -195,6 +195,15 @@ states how it is checked, so none of them rests on attention alone.
   value/summary split is **allowed** for a single-site justification whose author wants the attribute short
   and the detail documented. Checked by review: the duplication is visible in any search for the text.
 
+* **Write `[SuppressMessage(…)]` short, and on one line.** The attribute is spelled with the short name —
+  the file carries `using System.Diagnostics.CodeAnalysis;` — and its whole argument list stays on a single
+  line, however long that line runs. Both halves serve the same reading: when two suppressions sit on one
+  member, one line each shows at a glance that they are two different rules rather than one wrapped block,
+  and the qualifier repeated 79 times said nothing the using does not. An attribute whose justification
+  makes that line unreadable has the value/summary split above as its remedy — move the text to a
+  `SuppressionJustification` constant; do not re-wrap the attribute. Checked by review: a wrapped
+  attribute is visible in any search for `SuppressMessage(`.
+
 ## Diagnostic and documentation conventions
 
 * When you change user-facing behavior, keep the English page and its French twin in sync.

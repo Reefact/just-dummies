@@ -45,6 +45,10 @@ Two roles are covered: **writing code** and **reviewing pull requests**.
   only such a one) lives as a `const` in `SuppressionJustification.<RuleId>`, detailed reasoning in its
   `///<summary>`, crisp sentence as its value; a single-site justification stays inline, or may take the
   same value/summary split when its author wants the detail documented.
+- A `[SuppressMessage]` is written with the **short name** (the file carries `using
+  System.Diagnostics.CodeAnalysis;`) and its whole argument list on **one line**, however long — so two
+  suppressions on one member read as two rules rather than one wrapped block. A justification long enough
+  to make that unreadable moves to a `SuppressionJustification` constant; the attribute is not re-wrapped.
 - **An image the maintainer supplies ships byte for byte.** Never resize, recolour, crop, composite or
   redraw one. If it does not work — over the size limit, wrong format, unreadable at the 128 px a
   nuget.org listing renders — say so and stop; replacing it is the maintainer's call. Check the file

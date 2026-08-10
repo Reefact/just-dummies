@@ -55,6 +55,33 @@ internal static class Subject {
         return outcome.Plan!.Parameters.Single().Expression;
     }
 
+    /// <summary>
+    ///     The single parameter of a <c>Subject</c> whose constructor carries <paramref name="body" />.
+    /// </summary>
+    /// <remarks>
+    ///     The guard is written as a developer would write it, inside a real constructor with a real assignment
+    ///     after it, so the reading is exercised against the syntax and the semantic model rather than against a
+    ///     shape invented here.
+    /// </remarks>
+    internal static ScaffoldedParameter GuardedBy(string parameterType, string body) {
+        ScaffoldOutcome outcome = Scaffold($$"""
+                                            public sealed class Subject {
+
+                                                private readonly {{parameterType}} kept;
+
+                                                public Subject({{parameterType}} value) {
+                                            {{body}}
+                                                    kept = value;
+                                                }
+
+                                            }
+                                            """);
+
+        Check.That(outcome.Status).IsEqualTo(ScaffoldStatus.Scaffolded);
+
+        return outcome.Plan!.Parameters.Single();
+    }
+
     /// <summary>Scaffolds <c>Shop.Domain.Subject</c>, declared by <paramref name="declarations" />.</summary>
     internal static ScaffoldOutcome Scaffold(string declarations,
                                              ScaffoldOptions? options = null,

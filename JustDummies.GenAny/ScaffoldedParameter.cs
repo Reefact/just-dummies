@@ -15,10 +15,11 @@ namespace JustDummies.GenAny;
 /// </remarks>
 public sealed class ScaffoldedParameter {
 
-    private ScaffoldedParameter(string name, string typeDisplay, string? expression) {
+    private ScaffoldedParameter(string name, string typeDisplay, string? expression, Provenance provenance) {
         Name        = name;
         TypeDisplay = typeDisplay;
         Expression  = expression;
+        Provenance  = provenance;
     }
 
     /// <summary>The parameter's name, exactly as the constructor declares it.</summary>
@@ -29,6 +30,16 @@ public sealed class ScaffoldedParameter {
 
     /// <summary>The inferred generator expression, or null when none was inferred.</summary>
     public string? Expression { get; }
+
+    /// <summary>
+    ///     Where that expression came from, and what could not be read while producing it (§6).
+    /// </summary>
+    /// <remarks>
+    ///     Data, not output: the engine decides it, the console renders it. That is what makes the recap
+    ///     testable without a console — and what keeps the tool honest about the difference between "inferred"
+    ///     and "guessed".
+    /// </remarks>
+    public Provenance Provenance { get; }
 
     /// <summary>Whether the emitted file will carry a TODO for this parameter.</summary>
     [SuppressMessage(SonarRule.S1135.Category, SonarRule.S1135.Id,
@@ -63,21 +74,32 @@ public sealed class ScaffoldedParameter {
     /// <summary>A parameter the engine inferred a generator for.</summary>
     /// <exception cref="ArgumentNullException">Any argument is null.</exception>
     /// <exception cref="ArgumentException"><paramref name="name" /> or <paramref name="typeDisplay" /> is blank.</exception>
-    public static ScaffoldedParameter DrawnFrom(string name, string typeDisplay, string expression) {
+    public static ScaffoldedParameter DrawnFrom(string name,
+                                                string typeDisplay,
+                                                string expression,
+                                                Provenance provenance = Provenance.None) {
         if (expression is null) { throw new ArgumentNullException(nameof(expression)); }
         if (expression.Trim().Length == 0) {
             throw new ArgumentException("An inferred parameter carries an expression; use Unresolved for one that does not.",
                                         nameof(expression));
         }
 
-        return new ScaffoldedParameter(Checked(name, nameof(name)), Checked(typeDisplay, nameof(typeDisplay)), expression);
+        return new ScaffoldedParameter(Checked(name, nameof(name)),
+                                       Checked(typeDisplay, nameof(typeDisplay)),
+                                       expression,
+                                       provenance);
     }
 
     /// <summary>A parameter the engine inferred no generator for (§5.5).</summary>
     /// <exception cref="ArgumentNullException">Any argument is null.</exception>
     /// <exception cref="ArgumentException"><paramref name="name" /> or <paramref name="typeDisplay" /> is blank.</exception>
-    public static ScaffoldedParameter Unresolved(string name, string typeDisplay) {
-        return new ScaffoldedParameter(Checked(name, nameof(name)), Checked(typeDisplay, nameof(typeDisplay)), expression: null);
+    public static ScaffoldedParameter Unresolved(string name,
+                                                 string typeDisplay,
+                                                 Provenance provenance = Provenance.None) {
+        return new ScaffoldedParameter(Checked(name, nameof(name)),
+                                       Checked(typeDisplay, nameof(typeDisplay)),
+                                       expression: null,
+                                       provenance);
     }
 
     private static string Checked(string value, string parameterName) {

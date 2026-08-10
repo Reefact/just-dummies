@@ -109,11 +109,12 @@ the constraints that shape them — the engine is netstandard2.0 on the Roslyn f
 can load it, references no JustDummies assembly, and knows nothing of MSBuild or the console.
 Written: §3, the Spectre command line, which parses in full; §4, the emitter, pinned by approved
 files under `JustDummies.GenAny.UnitTests/Golden/` and compiled against the library with the
-analyzers wired; and the type half of §5 — constructor choice, the base table, the open parameter —
-so `Scaffolder.Scaffold` turns a real compilation into a file that compiles. **Not written: §5.3
-(constructor guards), §5.4 (composition), §6 and §7**, so a domain-typed parameter comes back open
-and `dum generate` still refuses. Nothing publishes it either; the `cli` release train refuses to
-pack while that holds.
+analyzers wired; and **all of §5** — constructor choice, base table, guard clauses, composition,
+open parameters — so `Scaffolder.Scaffold` turns a real compilation into a file that compiles, and
+the worked example of §4.1 is reproduced from its own source byte for byte. **Not written: §6 (the
+console recap), §7 (exit codes, the shadowing warning) and the project loading of §11.1**, so
+`dum generate` still refuses. Nothing publishes it either; the `cli` release train refuses to pack
+while that holds.
 
 When adding a new project to the solution, also add its GUID to
 `JustDummies.sln`'s `GlobalSection(NestedProjects)`, nested under the

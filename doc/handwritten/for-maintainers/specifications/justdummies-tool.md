@@ -3,11 +3,11 @@
 🌍 🇬🇧 English (this file) · 🇫🇷 [Français](justdummies-tool.fr.md)
 
 **Status:** specification, being implemented. `JustDummies.GenAny` and `JustDummies.Cli` exist and carry the
-project-level constraints of §10 and §13. Written: §3, the command line; §4, the emitted file; and the type half
-of §5 — constructor choice (§5.1), the base table (§5.2) and the open parameter (§5.5), so a plan is now built
-from a real compilation and the file it produces compiles. **Not written:** §5.3, the constructor guards, and
-§5.4, composition through a scaffolded generator or a static factory — so a domain-typed parameter comes back
-open. Nor §6 and §7, so `dum generate` still refuses rather than running any of it.
+project-level constraints of §10 and §13. Written: §3, the command line; §4, the emitted file; and **all of §5** —
+constructor choice, the base table, the guard clauses, composition and the open parameter — together with the
+provenance §6 reports. The worked example of §4.1 is now produced end to end from its own source, byte for byte.
+**Not written:** §6, the console recap, and §7, the exit codes and the shadowing warning; nor the project loading
+of §11.1, so `dum generate` still refuses rather than running any of it.
 **Supersedes:** the working pre-specification 0.1 (never committed)
 
 ---

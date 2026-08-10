@@ -118,8 +118,10 @@ lookup of §3.2 and the file writing — so `dum generate` opens a real project 
 The `cli` release train is open: `tools/packaging/pack.sh` packs the tool, and asserts ADR-0063 on
 the produced package twice — the nuspec declares no JustDummies dependency, and no `JustDummies.dll`
 is bundled beside the tool. Both are needed: a .NET tool ships its closure as files, so the nuspec
-check alone passes on an empty dependency list. **No `cli-v*` tag has been pushed**, so nothing has
-been published from it yet; cutting the first release is the maintainer's call.
+check alone passes on an empty dependency list. The train has published its first release,
+**`cli-v1.0.0-beta.1`** — 1.0.0 because the tool implements its specification entire, and a beta rather
+than a preview because a tool takes no public-API baseline (§13.4): what a version commits to here is the
+command line, not a set of types.
 
 When adding a new project to the solution, also add its GUID to
 `JustDummies.sln`'s `GlobalSection(NestedProjects)`, nested under the

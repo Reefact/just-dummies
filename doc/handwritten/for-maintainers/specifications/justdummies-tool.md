@@ -8,8 +8,9 @@ emitted file; **all of §5** — constructor choice, the base table, the guard c
 parameter — together with the provenance §6 reports; §6, the console recap; §7's exit codes and shadowing
 warning; and §11.1's pipeline entire, so `dum generate` opens a real project and writes a real file. The worked
 example of §4.1 is produced end to end from its own source, byte for byte. The `cli` release train packs it
-and asserts D9 on the produced package (§13.6). **Not done:** no `cli-v*` tag has been pushed, so no version
-has been published.
+and asserts D9 on the produced package (§13.6). **Published:** `cli-v1.0.0-beta.1`, the train's first
+release — a beta because a tool takes no public-API baseline (§13.4), so what a version commits to here is
+the command line of §3, and no project outside this repository has exercised it yet.
 **Supersedes:** the working pre-specification 0.1 (never committed)
 
 ---

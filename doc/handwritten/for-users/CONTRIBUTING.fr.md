@@ -328,7 +328,7 @@ release** selon le scope — `tools/trains.sh` est la source de vérité unique 
 publie indépendamment : `lib` (scopes `core`, `analyzers` → `JustDummies`, analyzers
 embarqués dedans), `xunit` (scope `xunit` → `JustDummies.Xunit`), `catalog` (scope `catalog` →
 `JustDummies.DiagnosticCatalog`) et `cli` (scope `cli` → le scaffolder `dum`,
-pas encore publié). Le scope
+empaqueté en outil .NET). Le scope
 d’un commit décide dans les release notes et le changelog de quel train il atterrit ; voir
 [Ajouter un train de release](../for-maintainers/AddingAReleaseTrain.fr.md).
 

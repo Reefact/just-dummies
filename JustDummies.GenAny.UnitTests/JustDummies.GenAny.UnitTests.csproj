@@ -59,6 +59,15 @@
       <_Parameter1>RepositoryRoot</_Parameter1>
       <_Parameter2>$(MSBuildThisFileDirectory)..</_Parameter2>
     </AssemblyAttribute>
+
+    <!-- The library's OTHER asset, the one a project below .NET 8 resolves. It cannot be found from the
+         referenced assembly's own location: what lands beside this project's output is the net8.0 leg,
+         copied. Passed as a path so it follows the configuration the suite is built in, and so
+         DownlevelAssetTests can prove ADR-0059 with the same parameter and two answers. -->
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>DownlevelLibrary</_Parameter1>
+      <_Parameter2>$(MSBuildThisFileDirectory)..\JustDummies\bin\$(Configuration)\netstandard2.0\JustDummies.dll</_Parameter2>
+    </AssemblyAttribute>
   </ItemGroup>
 
 </Project>

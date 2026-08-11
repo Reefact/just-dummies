@@ -2,8 +2,9 @@
 
 🌍 🇬🇧 English (this file) · 🇫🇷 [Français](0067-report-a-filtered-pool-through-an-explicit-interface.fr.md)
 
-**Status:** Proposed
+**Status:** Accepted
 **Proposed:** 2026-08-11
+**Accepted:** 2026-08-11
 **Decision Makers:** Reefact
 
 ## Context

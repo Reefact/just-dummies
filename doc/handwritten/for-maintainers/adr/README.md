@@ -156,4 +156,4 @@ and it was decided on 2026-08-01 — the index carries the order, the numbering 
 | [ADR-0064](0064-never-draw-null-for-a-nullable-parameter.md) | Never draw null for a nullable parameter | Accepted | recorded here |
 | [ADR-0065](0065-keep-the-scaffolding-engine-loadable-by-a-roslyn-host.md) | Keep the scaffolding engine loadable by a Roslyn host | Accepted | recorded here |
 | [ADR-0066](0066-load-msbuild-from-the-sdk-never-from-the-tool.md) | Load MSBuild from the installed SDK, never from the tool's own files | Accepted | recorded here |
-| [ADR-0067](0067-report-a-filtered-pool-through-an-explicit-interface.md) | Report a filtered pool through an explicitly implemented interface, and warn about nothing | Proposed | recorded here |
+| [ADR-0067](0067-report-a-filtered-pool-through-an-explicit-interface.md) | Report a filtered pool through an explicitly implemented interface, and warn about nothing | Accepted | recorded here |

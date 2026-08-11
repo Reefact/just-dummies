@@ -22,7 +22,7 @@ n'existe, et la colonne **Origine** dit comment chacune est arrivée ici :
   aussi, car ce dépôt l'applique encore. Les deux copies sont désormais
   indépendantes : chaque côté peut remplacer la sienne sans toucher à l'autre.
   9 décisions.
-* **consigné ici** — décidé dans ce dépôt, de son propre chef. 23 décisions.
+* **consigné ici** — décidé dans ce dépôt, de son propre chef. 24 décisions.
 
 Les numéros appartiennent à cette base, attribués dans l'ordre où les décisions
 ont été consignées en amont
@@ -170,3 +170,4 @@ et qu'elle a été décidée le 01/08/2026 — l'index porte l'ordre, la numéro
 | [ADR-0065](0065-keep-the-scaffolding-engine-loadable-by-a-roslyn-host.fr.md) | Garder le moteur de scaffolding chargeable par un hôte Roslyn | Accepted | consigné ici |
 | [ADR-0066](0066-load-msbuild-from-the-sdk-never-from-the-tool.fr.md) | Charger MSBuild depuis le SDK installé, jamais depuis les fichiers de l'outil | Accepted | consigné ici |
 | [ADR-0067](0067-report-a-filtered-pool-through-an-explicit-interface.fr.md) | Rendre compte d'un pool filtré par une interface implémentée explicitement, et n'avertir de rien | Accepted | consigné ici |
+| [ADR-0068](0068-carry-the-pool-inspection-wherever-a-caller-supplies-the-values.fr.md) | Porter l'inspection de pool partout où l'appelant fournit les valeurs, et nulle part ailleurs | Accepted | consigné ici |

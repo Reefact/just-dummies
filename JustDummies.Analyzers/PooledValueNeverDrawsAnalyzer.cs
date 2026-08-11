@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Globalization;
 using System.Linq;
 
 using Microsoft.CodeAnalysis;
@@ -10,8 +11,9 @@ using Microsoft.CodeAnalysis.Operations;
 namespace JustDummies.Analyzers;
 
 /// <summary>
-///     JD029 — reports a constant written into an <c>AnyString</c> value set that a declared constraint refuses, so
-///     no draw can ever yield it. The dual of JD024: that one reports a constraint narrowing nothing, this one a
+///     JD029 — reports a constant written into a value set that a declared constraint refuses, so no draw can ever
+///     yield it. Covers the string families and the numeric ones whose constants fold exactly: every integer type
+///     and <c>decimal</c>. The dual of JD024: that one reports a constraint narrowing nothing, this one a
 ///     value nothing lets through.
 /// </summary>
 /// <remarks>
@@ -23,7 +25,7 @@ namespace JustDummies.Analyzers;
 ///         false accusation, and this shape cannot produce one.
 ///     </para>
 ///     <para>
-///         The predicates below restate what <c>StringSpec</c> applies at run time, because an analyzer references
+///         The predicates below restate what the run-time specifications apply, because an analyzer references
 ///         no JustDummies assembly and cannot call it — the same duplication JD015 already carries for the
 ///         character families and the casing. It is bounded on purpose: a constraint this switch does not name is
 ///         not evaluated rather than guessed at.
@@ -40,6 +42,14 @@ public sealed class PooledValueNeverDrawsAnalyzer : DiagnosticAnalyzer {
     private const string UpperLetters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     private const string LowerLetters = "abcdefghijklmnopqrstuvwxyz";
     private const string Digits       = "0123456789";
+
+    /// <summary>
+    ///     The factories whose pool holds numbers this rule can judge: every integer family and <c>decimal</c>, each
+    ///     folding exactly into a decimal. The binary floating-point families are absent on purpose, and so are the
+    ///     128-bit ones, whose range decimal cannot hold.
+    /// </summary>
+    private static readonly ImmutableHashSet<string> ScalarFactories =
+        ImmutableHashSet.Create("Byte", "SByte", "Int16", "UInt16", "Int32", "UInt32", "Int64", "UInt64", "Decimal");
 
     /// <inheritdoc />
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; } =
@@ -65,12 +75,22 @@ public sealed class PooledValueNeverDrawsAnalyzer : DiagnosticAnalyzer {
         // Analyse each chain once, from its outermost call — the only point where every constraint is in hand.
         if (invocation.Parent is IInvocationOperation) { return; }
         if (!AnyChainFacts.TryGetChain(invocation, symbols, out IReadOnlyList<IInvocationOperation> constraints, out IInvocationOperation? factory)) { return; }
-        if (factory is null || factory.TargetMethod.Name != "String") { return; }
+        if (factory is null) { return; }
         if (NegativeTestGuard.IsSoleBodyOfLambdaArgument(invocation.Syntax)) { return; }
 
         IInvocationOperation? valueSet = constraints.FirstOrDefault(constraint => constraint.TargetMethod.Name == "OneOf");
         if (valueSet is null) { return; }
 
+        if (factory.TargetMethod.Name == "String") {
+            AnalyzeStrings(context, constraints, valueSet);
+
+            return;
+        }
+
+        if (ScalarFactories.Contains(factory.TargetMethod.Name)) { AnalyzeScalars(context, constraints, valueSet); }
+    }
+
+    private static void AnalyzeStrings(OperationAnalysisContext context, IReadOnlyList<IInvocationOperation> constraints, IInvocationOperation valueSet) {
         List<(string Rendered, Func<string, bool> Admits)> tests = ConstantTests(constraints);
         if (tests.Count == 0) { return; }
 
@@ -83,8 +103,24 @@ public sealed class PooledValueNeverDrawsAnalyzer : DiagnosticAnalyzer {
         }
     }
 
-    private static void Report(OperationAnalysisContext context, IOperation element, string value, List<(string Rendered, Func<string, bool> Admits)> tests) {
-        foreach ((string rendered, Func<string, bool> admits) in tests) {
+    /// <summary>
+    ///     The same question on the families whose pool holds numbers. Every integer type and <c>decimal</c> fold
+    ///     exactly into a <c>decimal</c>, which is what lets one set of predicates serve all nine — and what keeps
+    ///     the binary floating-point families out, since comparing them through decimal would misstate them.
+    /// </summary>
+    private static void AnalyzeScalars(OperationAnalysisContext context, IReadOnlyList<IInvocationOperation> constraints, IInvocationOperation valueSet) {
+        List<(string Rendered, Func<decimal, bool> Admits)> tests = ScalarTests(constraints);
+        if (tests.Count == 0) { return; }
+
+        foreach (IOperation element in PoolElements(valueSet)) {
+            if (!TryGetNumber(element, out decimal value)) { continue; }
+
+            Report(context, element, value, tests);
+        }
+    }
+
+    private static void Report<T>(OperationAnalysisContext context, IOperation element, T value, List<(string Rendered, Func<T, bool> Admits)> tests) {
+        foreach ((string rendered, Func<T, bool> admits) in tests) {
             if (admits(value)) { continue; }
 
             // The first refusal is enough to establish the claim, and naming one constraint keeps the hint
@@ -173,6 +209,134 @@ public sealed class PooledValueNeverDrawsAnalyzer : DiagnosticAnalyzer {
         }
 
         return tests;
+    }
+
+    /// <summary>
+    ///     The declared constraints of a numeric chain, each paired with the test a pooled number must pass.
+    ///     <c>Positive</c> and <c>Negative</c> are modelled as strictly beyond zero, which is what both the integer
+    ///     families and <c>decimal</c> mean by them — the integers set a minimum of one, and on whole numbers that is
+    ///     the same predicate.
+    /// </summary>
+    private static List<(string Rendered, Func<decimal, bool> Admits)> ScalarTests(IReadOnlyList<IInvocationOperation> constraints) {
+        List<(string Rendered, Func<decimal, bool> Admits)> tests = [];
+
+        foreach (IInvocationOperation constraint in constraints) {
+            switch (constraint.TargetMethod.Name) {
+                case "Positive": tests.Add(("Positive()", value => value > 0m));  break;
+                case "Negative": tests.Add(("Negative()", value => value < 0m));  break;
+                case "Zero":     tests.Add(("Zero()", value => value == 0m));     break;
+                case "NonZero":  tests.Add(("NonZero()", value => value != 0m));  break;
+
+                case "GreaterThan" when TryGetSingleNumber(constraint, out decimal above):
+                    tests.Add(($"GreaterThan({Render(above)})", value => value > above));
+
+                    break;
+
+                case "GreaterThanOrEqualTo" when TryGetSingleNumber(constraint, out decimal minimum):
+                    tests.Add(($"GreaterThanOrEqualTo({Render(minimum)})", value => value >= minimum));
+
+                    break;
+
+                case "LessThan" when TryGetSingleNumber(constraint, out decimal below):
+                    tests.Add(($"LessThan({Render(below)})", value => value < below));
+
+                    break;
+
+                case "LessThanOrEqualTo" when TryGetSingleNumber(constraint, out decimal maximum):
+                    tests.Add(($"LessThanOrEqualTo({Render(maximum)})", value => value <= maximum));
+
+                    break;
+
+                // One call, two bounds, one name — judged under that one name, exactly as the run time renders it.
+                case "Between" when constraint.Arguments.Length == 2
+                                 && TryGetNumber(constraint.Arguments[0].Value, out decimal low)
+                                 && TryGetNumber(constraint.Arguments[1].Value, out decimal high):
+                    tests.Add(($"Between({Render(low)}, {Render(high)})", value => value >= low && value <= high));
+
+                    break;
+
+                case "MultipleOf" when TryGetSingleNumber(constraint, out decimal step) && step != 0m:
+                    tests.Add(($"MultipleOf({Render(step)})", value => value % step == 0m));
+
+                    break;
+
+                // A scale caps the digits after the point: a value is on the grid when rounding to it changes
+                // nothing. Rounding beyond decimal's own 28 digits is not a question this rule asks.
+                case "WithScale" when TryGetSingleInt32(constraint, out int scale) && scale is >= 0 and <= 28:
+                    tests.Add(($"WithScale({scale})", value => decimal.Round(value, scale) == value));
+
+                    break;
+
+                case "DifferentFrom" when TryGetSingleNumber(constraint, out decimal excluded):
+                    tests.Add(($"DifferentFrom({Render(excluded)})", value => value != excluded));
+
+                    break;
+
+                case "Except": {
+                    List<decimal> excluded = ConstantNumbers(constraint);
+                    if (excluded.Count == 0) { break; }
+
+                    tests.Add(($"Except({string.Join(", ", excluded.Select(Render))})", value => !excluded.Contains(value)));
+
+                    break;
+                }
+            }
+        }
+
+        return tests;
+    }
+
+    /// <summary>
+    ///     The numbers of an <c>Except</c>-shaped call. Empty when any of them does not fold, so the rule never
+    ///     renders a constraint the caller did not write nor judges against fewer values than are declared.
+    /// </summary>
+    private static List<decimal> ConstantNumbers(IInvocationOperation constraint) {
+        List<decimal> values = [];
+
+        foreach (IOperation element in ParamArrayElements(constraint)) {
+            if (!TryGetNumber(element, out decimal value)) { return []; }
+
+            values.Add(value);
+        }
+
+        return values;
+    }
+
+    /// <summary>
+    ///     Folds a constant of any integer type or of <c>decimal</c> into a <c>decimal</c>, which holds every one of
+    ///     them exactly. A binary floating-point constant answers <c>false</c>: it has no exact decimal, so judging
+    ///     it here could refuse a value the run time admits.
+    /// </summary>
+    private static bool TryGetNumber(IOperation operation, out decimal value) {
+        value = 0m;
+
+        IOperation unwrapped = GeneratorFacts.Unwrap(operation);
+        if (unwrapped.ConstantValue is not { HasValue: true, Value: { } constant }) { return false; }
+
+        switch (constant) {
+            case decimal number: value = number;         break;
+            case int number:     value = number;         break;
+            case long number:    value = number;         break;
+            case short number:   value = number;         break;
+            case sbyte number:   value = number;         break;
+            case byte number:    value = number;         break;
+            case ushort number:  value = number;         break;
+            case uint number:    value = number;         break;
+            case ulong number:   value = number;         break;
+            default:             return false;
+        }
+
+        return true;
+    }
+
+    private static bool TryGetSingleNumber(IInvocationOperation constraint, out decimal value) {
+        value = 0m;
+
+        return constraint.Arguments.Length == 1 && TryGetNumber(constraint.Arguments[0].Value, out value);
+    }
+
+    private static string Render(decimal value) {
+        return value.ToString(CultureInfo.InvariantCulture);
     }
 
     private static Func<string, bool> DrawnFrom(string pool) {

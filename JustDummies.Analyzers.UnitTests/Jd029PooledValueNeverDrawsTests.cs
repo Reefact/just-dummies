@@ -33,12 +33,32 @@ public class Jd029PooledValueNeverDrawsTests {
     [InlineData("_ = Any.String().OneOf(\"a-FR\", \"a-BE\").EndingWith(\"-FR\");", "EndingWith(\"-FR\")")]
     [InlineData("_ = Any.String().OneOf(\"xKEYx\", \"nope\").Containing(\"KEY\");", "Containing(\"KEY\")")]
     [InlineData("_ = Any.String().OneOf(\"a\", \"b\").DifferentFrom(\"b\");", "DifferentFrom(\"b\")")]
+    [InlineData("_ = Any.Int32().OneOf(1, 5, 42).Between(1, 10);", "Between(1, 10)")]
+    [InlineData("_ = Any.Int32().OneOf(1, -3).Positive();", "Positive()")]
+    [InlineData("_ = Any.Int32().OneOf(-1, 3).Negative();", "Negative()")]
+    [InlineData("_ = Any.Int32().OneOf(0, 7).NonZero();", "NonZero()")]
+    [InlineData("_ = Any.Int32().OneOf(6, 7).MultipleOf(3);", "MultipleOf(3)")]
+    [InlineData("_ = Any.Int32().OneOf(4, 12).GreaterThan(5);", "GreaterThan(5)")]
+    [InlineData("_ = Any.Int64().OneOf(1L, 99L).LessThanOrEqualTo(50L);", "LessThanOrEqualTo(50)")]
+    [InlineData("_ = Any.Byte().OneOf((byte)1, (byte)9).LessThan(5);", "LessThan(5)")]
+    [InlineData("_ = Any.Decimal().OneOf(1.5m, 2.25m).WithScale(1);", "WithScale(1)")]
+    [InlineData("_ = Any.Decimal().OneOf(1.5m, -2m).Positive();", "Positive()")]
+    [InlineData("_ = Any.Int32().OneOf(1, 2).DifferentFrom(2);", "DifferentFrom(2)")]
     public async Task Reports_the_value_a_declared_constraint_refuses(string body, string expected) {
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync($"        {body}");
 
         Check.That(diagnostics.Length).IsEqualTo(1);
         Check.That(diagnostics[0].Id).IsEqualTo("JD029");
         Check.That(diagnostics[0].GetMessage()).IsEqualTo($"This value never draws: {expected} refuses it");
+    }
+
+    [Fact]
+    public async Task Does_not_report_a_binary_floating_point_pool() {
+        // Double and Single are out of scope on purpose: their constants have no exact decimal, and judging one
+        // through decimal could refuse a value the run time admits. Under-reporting is the safe direction.
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync("        _ = Any.Double().OneOf(0.1, 99.0).LessThan(1.0);");
+
+        Check.That(diagnostics.Length).IsEqualTo(0);
     }
 
     [Fact]
@@ -82,6 +102,9 @@ public class Jd029PooledValueNeverDrawsTests {
     [InlineData("_ = Any.String().OneOf(\"12\", \"34\").Numeric();")]
     [InlineData("_ = Any.String().WithLength(3).Alpha();")]
     [InlineData("_ = Any.String().OneOf(\"abc\", \"de\");")]
+    [InlineData("_ = Any.Int32().OneOf(2, 4).Between(1, 10);")]
+    [InlineData("_ = Any.Int32().Between(1, 10);")]
+    [InlineData("_ = Any.Decimal().OneOf(1.5m, 2.5m).WithScale(1);")]
     public async Task Does_not_report_a_pool_in_step_with_its_constraints(string body) {
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync($"        {body}");
 

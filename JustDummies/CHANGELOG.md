@@ -32,7 +32,9 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   read as five values and draw from three. The new rule reports each such value where it is written, naming the
   constraint that refuses it. It is the dual of JD024: that one reports a constraint narrowing nothing, this one
   a value nothing lets through. **Info, not a warning**: narrowing a shared pool at one call site is what the
-  composition is *for*, so this states a fact to weigh rather than a verdict. It reads only what is written at
+  composition is *for*, so this states a fact to weigh rather than a verdict. It covers the string value sets and
+  the numeric ones whose constants fold exactly — every integer type and `decimal`; the binary floating-point
+  families stay out, a `double` constant having no exact decimal to judge it by. It reads only what is written at
   the call site — a pool held in a variable, which is what a catalogue always is, is answered instead at run
   time by `IPoolInspection<T>`. The claim is deliberately one-sided: a constraint whose argument does not fold
   is skipped rather than guessed at, so the rule can under-report but never accuse a value it has not tested.

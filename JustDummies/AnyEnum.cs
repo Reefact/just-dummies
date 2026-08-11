@@ -1,5 +1,6 @@
 #region Usings declarations
 
+using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
@@ -22,7 +23,7 @@ namespace JustDummies;
 ///     combination.
 /// </remarks>
 /// <typeparam name="TEnum">The enum type to draw values from.</typeparam>
-public sealed class AnyEnum<TEnum> : IAny<TEnum>, IHasRandomSource, ICardinalityHint<TEnum>
+public sealed class AnyEnum<TEnum> : IAny<TEnum>, IHasRandomSource, ICardinalityHint<TEnum>, IPoolInspection<TEnum>
     where TEnum : struct, Enum {
 
     // The ceiling on the number of non-zero declared members AllowingCombinations() will enumerate. The universe is
@@ -149,6 +150,32 @@ public sealed class AnyEnum<TEnum> : IAny<TEnum>, IHasRandomSource, ICardinality
 
     // The pool is the exact draw set, so membership is a direct pool lookup.
     bool ICardinalityHint<TEnum>.Contains(TEnum value) => _pool.Contains(value);
+
+    // Explicit, like the cardinality hint above (ADR-0067). Without OneOf the pool is the enum's own universe,
+    // which the caller did not supply and has nothing to audit -- so IsPooled answers on the allow-list alone.
+    bool IPoolInspection<TEnum>.IsPooled => _allowed is not null;
+
+    IReadOnlyList<TEnum> IPoolInspection<TEnum>.GetSurvivors() {
+        return _allowed is null ? Array.Empty<TEnum>() : new ReadOnlyCollection<TEnum>(_pool.ToArray());
+    }
+
+    IReadOnlyList<PoolRejection<TEnum>> IPoolInspection<TEnum>.GetRejections() {
+        if (_allowed is null) { return Array.Empty<PoolRejection<TEnum>>(); }
+
+        List<PoolRejection<TEnum>> rejections = [];
+        foreach (TEnum value in _allowed) {
+            if (!_excluded.Contains(value)) { continue; }
+
+            List<DeclaredConstraint> culprits = _exclusions
+                                                .Where(entry => entry.Values.Contains(value))
+                                                .Select(entry => entry.Constraint.ToDeclaredConstraint())
+                                                .ToList();
+
+            rejections.Add(new PoolRejection<TEnum>(value, culprits));
+        }
+
+        return new ReadOnlyCollection<PoolRejection<TEnum>>(rejections);
+    }
 
     /// <summary>
     ///     Widens the draw from the declared members to every <b>combination</b> of them — the values a

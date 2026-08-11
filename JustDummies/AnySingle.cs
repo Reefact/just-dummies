@@ -26,7 +26,7 @@ namespace JustDummies;
 ///         of the test, not a dummy.
 ///     </para>
 /// </remarks>
-public sealed class AnySingle : IAny<float>, IHasRandomSource, ICardinalityHint<float> {
+public sealed class AnySingle : IAny<float>, IHasRandomSource, ICardinalityHint<float>, IPoolInspection<float> {
 
     #region Statics members declarations
 
@@ -74,6 +74,14 @@ public sealed class AnySingle : IAny<float>, IHasRandomSource, ICardinalityHint<
 
     // The allow-list holds the doubles the supplied floats widen to, so membership tests the same widening.
     bool ICardinalityHint<float>.Contains(float value) => _spec.Contains((double)value);
+
+    // Explicit, like the cardinality hint above: an inspection answers a maintenance question and does not
+    // belong in the completion list a caller writes constraints in (ADR-0067).
+    bool IPoolInspection<float>.IsPooled => _spec.IsPooled;
+
+    IReadOnlyList<float> IPoolInspection<float>.GetSurvivors() => _spec.GetSurvivors(value => (float)value);
+
+    IReadOnlyList<PoolRejection<float>> IPoolInspection<float>.GetRejections() => _spec.GetRejections(value => (float)value);
 
     /// <summary>Requires a value strictly greater than zero.</summary>
     /// <returns>A new generator carrying the added constraint.</returns>

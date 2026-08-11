@@ -16,7 +16,7 @@ namespace JustDummies;
 ///     constraint: a reproducible test pins its reference dates explicitly with <see cref="After" /> and
 ///     <see cref="Before" />.
 /// </summary>
-public sealed class AnyDateOnly : IAny<DateOnly>, IHasRandomSource, ICardinalityHint<DateOnly> {
+public sealed class AnyDateOnly : IAny<DateOnly>, IHasRandomSource, ICardinalityHint<DateOnly>, IPoolInspection<DateOnly> {
 
     #region Statics members declarations
 
@@ -61,6 +61,15 @@ public sealed class AnyDateOnly : IAny<DateOnly>, IHasRandomSource, ICardinality
     long? ICardinalityHint<DateOnly>.DistinctCardinality => _spec.Cardinality;
 
     bool ICardinalityHint<DateOnly>.Contains(DateOnly value) => _spec.Contains(Ord(value));
+
+    // Explicit, like the cardinality hint above: an inspection answers a maintenance question and does not
+    // belong in the completion list a caller writes constraints in (ADR-0067). Val projects the engine's
+    // ordinal back to the caller's own type.
+    bool IPoolInspection<DateOnly>.IsPooled => _spec.IsPooled;
+
+    IReadOnlyList<DateOnly> IPoolInspection<DateOnly>.GetSurvivors() => _spec.GetSurvivors(Val);
+
+    IReadOnlyList<PoolRejection<DateOnly>> IPoolInspection<DateOnly>.GetRejections() => _spec.GetRejections(Val);
 
     /// <summary>Requires a date strictly after <paramref name="date" />.</summary>
     /// <param name="date">The exclusive lower bound.</param>

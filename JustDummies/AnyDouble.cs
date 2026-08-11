@@ -26,7 +26,7 @@ namespace JustDummies;
 ///         of the test, not a dummy.
 ///     </para>
 /// </remarks>
-public sealed class AnyDouble : IAny<double>, IHasRandomSource, ICardinalityHint<double> {
+public sealed class AnyDouble : IAny<double>, IHasRandomSource, ICardinalityHint<double>, IPoolInspection<double> {
 
     #region Statics members declarations
 
@@ -63,6 +63,14 @@ public sealed class AnyDouble : IAny<double>, IHasRandomSource, ICardinalityHint
     long? ICardinalityHint<double>.DistinctCardinality => _spec.Cardinality;
 
     bool ICardinalityHint<double>.Contains(double value) => _spec.Contains(value);
+
+    // Explicit, like the cardinality hint above: an inspection answers a maintenance question and does not
+    // belong in the completion list a caller writes constraints in (ADR-0067).
+    bool IPoolInspection<double>.IsPooled => _spec.IsPooled;
+
+    IReadOnlyList<double> IPoolInspection<double>.GetSurvivors() => _spec.GetSurvivors(value => value);
+
+    IReadOnlyList<PoolRejection<double>> IPoolInspection<double>.GetRejections() => _spec.GetRejections(value => value);
 
     /// <summary>Requires a value strictly greater than zero.</summary>
     /// <returns>A new generator carrying the added constraint.</returns>

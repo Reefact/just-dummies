@@ -2,6 +2,7 @@
 
 using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 
 using NFluent;
 
@@ -18,24 +19,127 @@ namespace JustDummies.UnitTests;
 /// </summary>
 public sealed class PoolInspectionTests {
 
+    /// <summary>A small enum for the pooled-enum cases; the universe is the declaration, never a caller's list.</summary>
+    public enum Priority { Low, Medium, High }
+
     #region Statics members declarations
 
     private static IPoolInspection<string> Inspect(AnyString generator) {
         return generator;
     }
 
+    /// <summary>Whether <paramref name="type" /> closes <paramref name="definition" /> at any type argument.</summary>
+    private static bool Implements(Type type, Type definition) {
+        return type.GetInterfaces().Any(candidate => candidate.IsGenericType && candidate.GetGenericTypeDefinition() == definition);
+    }
+
     #endregion
 
-    [Fact(DisplayName = "Only the generators whose pool the caller supplies carry the inspection.")]
-    public void OnlyPoolBackedGeneratorsCarryTheInspection() {
-        // The interface is optional by decision, so the cast is written as a test rather than assumed. A scalar
-        // builder narrows within its own domain instead of picking from supplied values, and answers nothing here.
-        // Asserted over the types rather than over instances: the compiler proves the negative cases outright, so
-        // an `is` test against them is a warning rather than a check.
-        Check.That(typeof(IPoolInspection<string>).IsAssignableFrom(typeof(AnyString))).IsTrue();
-        Check.That(typeof(IPoolInspection<string>).IsAssignableFrom(typeof(AnyOneOf<string>))).IsTrue();
-        Check.That(typeof(IPoolInspection<int>).IsAssignableFrom(typeof(AnyInt32))).IsFalse();
-        Check.That(typeof(IPoolInspection<string>).IsAssignableFrom(typeof(AnyPattern))).IsFalse();
+    [Fact(DisplayName = "Every generator that admits a caller-supplied value set carries the inspection.")]
+    public void EveryPooledGeneratorCarriesTheInspection() {
+        // Reflection rather than a hand-kept list: the drift this pins is a family that gains OneOf — or a whole new
+        // family — without the inspection, which would leave the surface asymmetric for no stated reason.
+        List<string> missing = typeof(Any).Assembly
+                                          .GetTypes()
+                                          .Where(type => type.IsPublic && Implements(type, typeof(IAny<>)))
+                                          .Where(type => type.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+                                                             .Any(method => method.Name == "OneOf"))
+                                          .Where(type => !Implements(type, typeof(IPoolInspection<>)))
+                                          .Select(type => type.Name)
+                                          .OrderBy(name => name, StringComparer.Ordinal)
+                                          .ToList();
+
+        Check.WithCustomMessage($"These generators expose OneOf but not IPoolInspection<T>: {string.Join(", ", missing)}")
+             .That(missing)
+             .IsEmpty();
+    }
+
+    [Fact(DisplayName = "A generator with no caller-supplied pool does not carry the inspection at all.")]
+    public void AGeneratorWithoutAPoolDoesNotCarryTheInspection() {
+        // The interface is optional by decision, so the cast is written as a test rather than assumed. A pattern
+        // builds its value from a language, and a boolean has a two-value universe nobody supplied: neither has a
+        // pool of the caller's to report on, so neither answers here — not even with an empty report.
+        Check.That(Implements(typeof(AnyPattern), typeof(IPoolInspection<>))).IsFalse();
+        Check.That(Implements(typeof(AnyBoolean), typeof(IPoolInspection<>))).IsFalse();
+    }
+
+    [Fact(DisplayName = "A scalar interval is not a pool, however countable it is.")]
+    public void AScalarIntervalIsNotAPool() {
+        // The trap this pins: a bounded integer range HAS a cardinality, so wiring IsPooled to "the domain is
+        // countable" would compile and then try to enumerate a range nobody supplied. The inspection reports on a
+        // pool the CALLER handed over, never on the generator's own domain.
+        IPoolInspection<int> inspection = Any.Int32().Between(1, 1_000_000);
+
+        Check.That(inspection.IsPooled).IsFalse();
+        Check.That(inspection.GetSurvivors()).IsEmpty();
+        Check.That(inspection.GetRejections()).IsEmpty();
+    }
+
+    [Fact(DisplayName = "On an integer pool the bound that removed a value is the one the rejection names.")]
+    public void AnIntegerPoolNamesTheBoundThatRefusedTheValue() {
+        IPoolInspection<int> inspection = Any.Int32().OneOf(1, 5, 42).Between(1, 10);
+
+        Check.That(inspection.GetSurvivors()).ContainsExactly(1, 5);
+        Check.That(inspection.GetRejections().Single().Value).IsEqualTo(42);
+        Check.That(inspection.GetRejections().Single().RejectedBy.Single().ToString()).IsEqualTo("Between(1, 10)");
+    }
+
+    [Fact(DisplayName = "A two-bound call is named once, under the name the caller wrote.")]
+    public void ATwoBoundCallIsNamedOnce() {
+        // Between sets a minimum and a maximum under one name, and the caller can only loosen the call. Naming a
+        // half would point at something they cannot edit on its own.
+        IPoolInspection<int> inspection = Any.Int32().OneOf(0, 15, 50).Between(10, 20);
+
+        Check.That(inspection.GetSurvivors()).ContainsExactly(15);
+        Check.That(inspection.GetRejections().Select(rejection => rejection.Value)).ContainsExactly(0, 50);
+        Check.That(inspection.GetRejections()[0].RejectedBy).HasSize(1);
+        Check.That(inspection.GetRejections()[0].RejectedBy.Single().ToString()).IsEqualTo("Between(10, 20)");
+    }
+
+    [Fact(DisplayName = "A date pool reports in the caller's own type, not in the engine's ordinal space.")]
+    public void ADatePoolReportsInTheCallersType() {
+        DateTime kept    = new(2026, 3, 1, 0, 0, 0, DateTimeKind.Unspecified);
+        DateTime refused = new(2020, 3, 1, 0, 0, 0, DateTimeKind.Unspecified);
+
+        IPoolInspection<DateTime> inspection = Any.DateTime().OneOf(kept, refused).After(new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Unspecified));
+
+        Check.That(inspection.GetSurvivors()).ContainsExactly(kept);
+        Check.That(inspection.GetRejections().Single().Value).IsEqualTo(refused);
+    }
+
+    [Fact(DisplayName = "A decimal pool names the scale that refused a value.")]
+    public void ADecimalPoolNamesTheScaleThatRefusedTheValue() {
+        IPoolInspection<decimal> inspection = Any.Decimal().OneOf(1.5m, 2.25m).WithScale(1);
+
+        Check.That(inspection.GetSurvivors()).ContainsExactly(1.5m);
+        Check.That(inspection.GetRejections().Single().Value).IsEqualTo(2.25m);
+    }
+
+    [Fact(DisplayName = "A character pool names the character family that refused a value.")]
+    public void ACharacterPoolNamesTheFamilyThatRefusedTheValue() {
+        IPoolInspection<char> inspection = Any.Char().OneOf('a', '3').Numeric();
+
+        Check.That(inspection.GetSurvivors()).ContainsExactly('3');
+        Check.That(inspection.GetRejections().Single().Value).IsEqualTo('a');
+        Check.That(inspection.GetRejections().Single().RejectedBy.Single().ToString()).IsEqualTo("Numeric()");
+    }
+
+    [Fact(DisplayName = "A Guid pool names the exclusion that removed a value.")]
+    public void AGuidPoolNamesTheExclusionThatRemovedTheValue() {
+        Guid kept    = Guid.NewGuid();
+        Guid removed = Guid.NewGuid();
+
+        IPoolInspection<Guid> inspection = Any.Guid().OneOf(kept, removed).Except(removed);
+
+        Check.That(inspection.GetSurvivors()).ContainsExactly(kept);
+        Check.That(inspection.GetRejections().Single().Value).IsEqualTo(removed);
+        Check.That(inspection.GetRejections().Single().RejectedBy.Single().Name).IsEqualTo("Except");
+    }
+
+    [Fact(DisplayName = "An enum without OneOf is not pooled: its universe is the declaration's, not the caller's.")]
+    public void AnEnumUniverseIsNotAPool() {
+        Check.That(((IPoolInspection<Priority>)Any.Enum<Priority>()).IsPooled).IsFalse();
+        Check.That(((IPoolInspection<Priority>)Any.Enum<Priority>().OneOf(Priority.Low, Priority.High)).IsPooled).IsTrue();
     }
 
     [Fact(DisplayName = "A shaped string is not pooled, and reports neither survivors nor rejections.")]

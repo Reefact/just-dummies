@@ -1,5 +1,6 @@
 #region Usings declarations
 
+using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
 
 #endregion
@@ -230,6 +231,77 @@ internal sealed class DecimalIntervalSpec {
         if (_scale >= 0 && !IsOnGrid(value, _scale)) { return false; }
 
         return value >= _min && value <= _max && !IsExcluded(value);
+    }
+
+    /// <summary>
+    ///     Whether an allow-list is in force — the caller supplied the values, and there is a pool to report on.
+    ///     Deliberately <b>not</b> "the domain is countable": a plain interval has no pool, and reporting its members
+    ///     would enumerate a range nobody supplied (ADR-0067). Feeds <see cref="IPoolInspection{T}.IsPooled" />.
+    /// </summary>
+    internal bool IsPooled => _effectiveAllowed is not null;
+
+    /// <summary>
+    ///     The supplied values satisfying every declared constraint, in the order they were supplied, projected back
+    ///     to the caller's own type by <paramref name="project" />.
+    /// </summary>
+    internal IReadOnlyList<T> GetSurvivors<T>(Func<decimal, T> project) {
+        if (project is null) { throw new ArgumentNullException(nameof(project)); }
+
+        return _effectiveAllowed is null
+                   ? Array.Empty<T>()
+                   : new ReadOnlyCollection<T>(_effectiveAllowed.Select(project).ToArray());
+    }
+
+    /// <summary>
+    ///     The supplied values no draw can yield, in the order they were supplied, each with the declared constraints
+    ///     refusing it — derived from the same declarations the allow-list filter is built from.
+    /// </summary>
+    internal IReadOnlyList<PoolRejection<T>> GetRejections<T>(Func<decimal, T> project) {
+        if (project is null) { throw new ArgumentNullException(nameof(project)); }
+        if (_allowed is null) { return Array.Empty<PoolRejection<T>>(); }
+
+        List<PoolRejection<T>> rejections = [];
+        foreach (decimal value in _allowed) {
+            if (Admits(value)) { continue; }
+
+            List<DeclaredConstraint> culprits = DeclaredConstraints()
+                                                .Where(entry => !entry.Admits(value))
+                                                .Select(entry => entry.Constraint.ToDeclaredConstraint())
+                                                .ToList();
+
+            rejections.Add(new PoolRejection<T>(project(value), culprits));
+        }
+
+        return new ReadOnlyCollection<PoolRejection<T>>(rejections);
+    }
+
+    /// <summary>Whether <paramref name="value" /> satisfies every declared constraint — the allow-list filter.</summary>
+    private bool Admits(decimal value) {
+        return DeclaredConstraints().All(entry => entry.Admits(value));
+    }
+
+    /// <summary>
+    ///     Every declared constraint paired with the test a value must pass to satisfy it, grouped by the constraint
+    ///     as the caller wrote it and conjoined — one call can set two bounds under one name, and the caller can only
+    ///     loosen the call.
+    /// </summary>
+    private IEnumerable<(ConstraintCall Constraint, Func<decimal, bool> Admits)> DeclaredConstraints() {
+        return Declarations()
+               .GroupBy(entry => entry.Constraint)
+               .Select(group => {
+                   Func<decimal, bool>[] tests = group.Select(entry => entry.Admits).ToArray();
+
+                   return (group.Key, (Func<decimal, bool>)(value => tests.All(test => test(value))));
+               });
+    }
+
+    private IEnumerable<(ConstraintCall Constraint, Func<decimal, bool> Admits)> Declarations() {
+        if (_minConstraint is not null) { yield return (_minConstraint, value => value >= _min); }
+        if (_maxConstraint is not null) { yield return (_maxConstraint, value => value <= _max); }
+        if (_scaleConstraint is not null && _scale >= 0) { yield return (_scaleConstraint, value => IsOnGrid(value, _scale)); }
+        foreach ((ConstraintCall constraint, decimal[] excluded) in _exclusions) {
+            yield return (constraint, value => !excluded.Contains(value));
+        }
     }
 
     /// <summary>Draws one value satisfying the whole specification.</summary>

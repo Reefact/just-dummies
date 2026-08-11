@@ -16,7 +16,7 @@ namespace JustDummies;
 ///     constraint: a reproducible test pins its reference time of days explicitly with <see cref="After" /> and
 ///     <see cref="Before" />.
 /// </summary>
-public sealed class AnyTimeOnly : IAny<TimeOnly>, IHasRandomSource, ICardinalityHint<TimeOnly> {
+public sealed class AnyTimeOnly : IAny<TimeOnly>, IHasRandomSource, ICardinalityHint<TimeOnly>, IPoolInspection<TimeOnly> {
 
     #region Statics members declarations
 
@@ -61,6 +61,15 @@ public sealed class AnyTimeOnly : IAny<TimeOnly>, IHasRandomSource, ICardinality
     long? ICardinalityHint<TimeOnly>.DistinctCardinality => _spec.Cardinality;
 
     bool ICardinalityHint<TimeOnly>.Contains(TimeOnly value) => _spec.Contains(Ord(value));
+
+    // Explicit, like the cardinality hint above: an inspection answers a maintenance question and does not
+    // belong in the completion list a caller writes constraints in (ADR-0067). Val projects the engine's
+    // ordinal back to the caller's own type.
+    bool IPoolInspection<TimeOnly>.IsPooled => _spec.IsPooled;
+
+    IReadOnlyList<TimeOnly> IPoolInspection<TimeOnly>.GetSurvivors() => _spec.GetSurvivors(Val);
+
+    IReadOnlyList<PoolRejection<TimeOnly>> IPoolInspection<TimeOnly>.GetRejections() => _spec.GetRejections(Val);
 
     /// <summary>Requires a time of day strictly after <paramref name="time" />.</summary>
     /// <param name="time">The exclusive lower bound.</param>

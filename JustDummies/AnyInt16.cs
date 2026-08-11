@@ -12,7 +12,7 @@ namespace JustDummies;
 ///     contradictory constraints fail eagerly with a <see cref="ConflictingAnyConstraintException" /> naming both
 ///     sides; instances are immutable recipes, and each value is built to satisfy the constraints in one draw.
 /// </summary>
-public sealed class AnyInt16 : IAny<short>, IHasRandomSource, ICardinalityHint<short> {
+public sealed class AnyInt16 : IAny<short>, IHasRandomSource, ICardinalityHint<short>, IPoolInspection<short> {
 
     #region Statics members declarations
 
@@ -57,6 +57,15 @@ public sealed class AnyInt16 : IAny<short>, IHasRandomSource, ICardinalityHint<s
     long? ICardinalityHint<short>.DistinctCardinality => _spec.Cardinality;
 
     bool ICardinalityHint<short>.Contains(short value) => _spec.Contains(Ord(value));
+
+    // Explicit, like the cardinality hint above: an inspection answers a maintenance question and does not
+    // belong in the completion list a caller writes constraints in (ADR-0067). Val projects the engine's
+    // ordinal back to the caller's own type.
+    bool IPoolInspection<short>.IsPooled => _spec.IsPooled;
+
+    IReadOnlyList<short> IPoolInspection<short>.GetSurvivors() => _spec.GetSurvivors(Val);
+
+    IReadOnlyList<PoolRejection<short>> IPoolInspection<short>.GetRejections() => _spec.GetRejections(Val);
 
     /// <summary>Requires a value strictly greater than zero.</summary>
     /// <returns>A new generator carrying the added constraint.</returns>

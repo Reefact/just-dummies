@@ -14,7 +14,7 @@ namespace JustDummies;
 ///     sides; instances are immutable recipes, and each value is built to satisfy the constraints in one draw.
 ///     Available on the net8.0 target only, like the type itself.
 /// </summary>
-public sealed class AnyUInt128 : IAny<UInt128>, IHasRandomSource, ICardinalityHint<UInt128> {
+public sealed class AnyUInt128 : IAny<UInt128>, IHasRandomSource, ICardinalityHint<UInt128>, IPoolInspection<UInt128> {
 
     #region Statics members declarations
 
@@ -59,6 +59,14 @@ public sealed class AnyUInt128 : IAny<UInt128>, IHasRandomSource, ICardinalityHi
     long? ICardinalityHint<UInt128>.DistinctCardinality => _spec.Cardinality;
 
     bool ICardinalityHint<UInt128>.Contains(UInt128 value) => _spec.Contains(Ord(value));
+
+    // Explicit, like the cardinality hint above: an inspection answers a maintenance question and does not
+    // belong in the completion list a caller writes constraints in (ADR-0067).
+    bool IPoolInspection<UInt128>.IsPooled => _spec.IsPooled;
+
+    IReadOnlyList<UInt128> IPoolInspection<UInt128>.GetSurvivors() => _spec.GetSurvivors(Val);
+
+    IReadOnlyList<PoolRejection<UInt128>> IPoolInspection<UInt128>.GetRejections() => _spec.GetRejections(Val);
 
     /// <summary>Pins the value to exactly zero. Useful for symmetry with the other constraints when a test sweeps cases.</summary>
     /// <returns>A new generator carrying the added constraint.</returns>

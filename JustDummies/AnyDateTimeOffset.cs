@@ -23,7 +23,7 @@ namespace JustDummies;
 ///     constraint (no "in the past/future"): a reproducible test pins its reference instants explicitly with
 ///     <see cref="After" /> and <see cref="Before" />.
 /// </remarks>
-public sealed class AnyDateTimeOffset : IAny<DateTimeOffset>, IHasRandomSource, ICardinalityHint<DateTimeOffset> {
+public sealed class AnyDateTimeOffset : IAny<DateTimeOffset>, IHasRandomSource, ICardinalityHint<DateTimeOffset>, IPoolInspection<DateTimeOffset> {
 
     // DateTimeOffset admits an offset in whole minutes within ±14:00.
     private const int MaxOffsetMinutes = 14 * 60;
@@ -94,6 +94,15 @@ public sealed class AnyDateTimeOffset : IAny<DateTimeOffset>, IHasRandomSource, 
     long? ICardinalityHint<DateTimeOffset>.DistinctCardinality => _spec.Cardinality;
 
     bool ICardinalityHint<DateTimeOffset>.Contains(DateTimeOffset value) => _spec.Contains(Ord(value));
+
+    // Explicit, like the cardinality hint above: an inspection answers a maintenance question and does not
+    // belong in the completion list a caller writes constraints in (ADR-0067). Val projects the engine's
+    // ordinal back to the caller's own type.
+    bool IPoolInspection<DateTimeOffset>.IsPooled => _spec.IsPooled;
+
+    IReadOnlyList<DateTimeOffset> IPoolInspection<DateTimeOffset>.GetSurvivors() => _spec.GetSurvivors(Val);
+
+    IReadOnlyList<PoolRejection<DateTimeOffset>> IPoolInspection<DateTimeOffset>.GetRejections() => _spec.GetRejections(Val);
 
     /// <summary>Requires an instant strictly after <paramref name="instant" />.</summary>
     /// <param name="instant">The exclusive lower bound.</param>

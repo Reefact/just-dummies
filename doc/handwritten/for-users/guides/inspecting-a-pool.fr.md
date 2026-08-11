@@ -104,10 +104,11 @@ la déclaration d'une contrainte à côté d'un value set — un générateur qu
 tort plus souvent que raison. Tirer un prénom d'adulte d'un catalogue qui contient aussi des prénoms
 d'enfants, c'est le même mécanisme fonctionnant comme prévu.
 
-L'interface est par ailleurs **optionnelle**. Elle est portée par les générateurs dont vous fournissez le
-pool entier — `Any.String().OneOf(...)` et `Any.OneOf(...)`/`Any.ElementOf(...)` — et non par les
-builders qui construisent une valeur ou narrowent dans leur propre domaine. Écrivez donc le cast comme un
-test quand vous ne savez pas ce que vous tenez :
+L'interface est par ailleurs **optionnelle**. Elle est portée par tout générateur qui admet un value set
+que vous fournissez — `Any.OneOf(...)`/`Any.ElementOf(...)`, `Any.String().OneOf(...)`, et toutes les
+familles dotées d'un `OneOf` : les entiers, `Any.Decimal()`, les flottants, les dates et heures,
+`Any.Char()`, `Any.Guid()` et `Any.Enum<T>()`. Un générateur sans pool à vous ne la porte pas du tout,
+alors écrivez le cast comme un test quand vous ne savez pas ce que vous tenez :
 
 ```csharp
 IAny<string> generator = Any.String().OneOf("Camille", "Ada");
@@ -120,6 +121,11 @@ if (generator is IPoolInspection<string> inspectable && inspectable.IsPooled) {
 `IsPooled` est la seconde moitié de cette question : un générateur de chaîne qui construit sa valeur au
 lieu de la choisir parmi des valeurs fournies répond `false`, avec un rapport vide plutôt qu'une
 exception.
+
+Et ce n'est *pas* « ce générateur a un domaine dénombrable ». `Any.Int32().Between(1, 1_000_000)` est
+parfaitement dénombrable et répond `false` : ce million de valeurs appartient au moteur, pas à vous. Il
+n'y a rien de vôtre à auditer, donc rien à rendre — l'inspection ne parle jamais que d'une liste que vous
+avez confiée.
 
 ---
 

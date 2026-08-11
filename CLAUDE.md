@@ -204,6 +204,20 @@ states how it is checked, so none of them rests on attention alone.
   `SuppressionJustification` constant; do not re-wrap the attribute. Checked by review: a wrapped
   attribute is visible in any search for `SuppressMessage(`.
 
+* **A property protects a field; a computation is a method.** A getter is read as an access, not as
+  a call: callers put one in a loop, in a debugger watch, in a condition evaluated twice, on the
+  assumption that reading it again costs what reading it once did. So a member that allocates,
+  copies a collection or walks one — however short — is a **method**, named for the work it does,
+  while a member that returns a field, or a field plus an O(1) test, stays a property. The surface
+  already reads this way and must keep doing so: on `ICardinalityHint<T>`, `DistinctCardinality` is
+  a property because it is a field's `Count`, and `Contains(T)` is a method because it searches.
+  Watch the case that looks free: handing out a `List<T>` field as `IReadOnlyList<T>` leaks a handle
+  a caller can cast back and mutate, so it has to be wrapped — and the wrapper is an allocation per
+  call, which makes the member a method. Checked in part by `S2365` (*properties should not make
+  collection or array copies*), enabled at `warning` in `build/sonar-profile.globalconfig` and
+  turned into an error by CI; it does not see a scalar property doing O(n) work, so that half rests
+  on review.
+
 ## Diagnostic and documentation conventions
 
 * When you change user-facing behavior, keep the English page and its French twin in sync.

@@ -1,5 +1,6 @@
 #region Usings declarations
 
+using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
 
 #endregion
@@ -297,6 +298,83 @@ internal sealed class OrdinalIntervalSpec {
         if (_step > 1UL && !IsOnLattice(ordinal, _anchor, _step)) { return false; }
 
         return ordinal >= _min && ordinal <= _max && !_excludedInRange.Contains(ordinal);
+    }
+
+    /// <summary>
+    ///     Whether an allow-list is in force — the caller supplied the values, and there is a pool to report on.
+    ///     Deliberately <b>not</b> "the domain is countable": a plain interval has a cardinality and no pool, and
+    ///     reporting its members would enumerate a range nobody supplied (ADR-0067). Feeds
+    ///     <see cref="IPoolInspection{T}.IsPooled" />.
+    /// </summary>
+    internal bool IsPooled => _effectiveAllowed is not null;
+
+    /// <summary>
+    ///     The supplied values satisfying every declared constraint, in the order they were supplied, projected back
+    ///     out of the ordinal space by <paramref name="project" /> — the caller's own type, since an ordinal is this
+    ///     engine's private currency.
+    /// </summary>
+    internal IReadOnlyList<T> GetSurvivors<T>(Func<ulong, T> project) {
+        if (project is null) { throw new ArgumentNullException(nameof(project)); }
+
+        return _effectiveAllowed is null
+                   ? Array.Empty<T>()
+                   : new ReadOnlyCollection<T>(_effectiveAllowed.Select(project).ToArray());
+    }
+
+    /// <summary>
+    ///     The supplied values no draw can yield, in the order they were supplied, each with the declared constraints
+    ///     refusing it. Derived from the same <see cref="DeclaredConstraints" /> the allow-list filter is built from,
+    ///     so a reported reason can never drift from the filtering it explains.
+    /// </summary>
+    internal IReadOnlyList<PoolRejection<T>> GetRejections<T>(Func<ulong, T> project) {
+        if (project is null) { throw new ArgumentNullException(nameof(project)); }
+        if (_allowed is null) { return Array.Empty<PoolRejection<T>>(); }
+
+        List<PoolRejection<T>> rejections = [];
+        foreach (ulong ordinal in _allowed) {
+            if (Admits(ordinal)) { continue; }
+
+            List<DeclaredConstraint> culprits = DeclaredConstraints()
+                                                .Where(entry => !entry.Admits(ordinal))
+                                                .Select(entry => entry.Constraint.ToDeclaredConstraint())
+                                                .ToList();
+
+            rejections.Add(new PoolRejection<T>(project(ordinal), culprits));
+        }
+
+        return new ReadOnlyCollection<PoolRejection<T>>(rejections);
+    }
+
+    /// <summary>Whether <paramref name="ordinal" /> satisfies every declared constraint — the allow-list filter.</summary>
+    private bool Admits(ulong ordinal) {
+        return DeclaredConstraints().All(entry => entry.Admits(ordinal));
+    }
+
+    /// <summary>
+    ///     Every declared constraint paired with the test an ordinal must pass to satisfy it, grouped by the
+    ///     constraint <b>as the caller wrote it</b> and conjoined — one call can set two bounds under one name
+    ///     (<c>Between</c> does), and the caller can only loosen the call, so judging its halves apart would blame a
+    ///     side they cannot edit on its own. The same shape <c>StringSpec</c> carries, for the same reason.
+    /// </summary>
+    private IEnumerable<(ConstraintCall Constraint, Func<ulong, bool> Admits)> DeclaredConstraints() {
+        return Declarations()
+               .GroupBy(entry => entry.Constraint)
+               .Select(group => {
+                   Func<ulong, bool>[] tests = group.Select(entry => entry.Admits).ToArray();
+
+                   return (group.Key, (Func<ulong, bool>)(ordinal => tests.All(test => test(ordinal))));
+               });
+    }
+
+    private IEnumerable<(ConstraintCall Constraint, Func<ulong, bool> Admits)> Declarations() {
+        // A bound the caller never declared sits at the domain edge with no constraint to name, so it is not a
+        // declaration and cannot be a culprit.
+        if (_minConstraint is not null) { yield return (_minConstraint, ordinal => ordinal >= _min); }
+        if (_maxConstraint is not null) { yield return (_maxConstraint, ordinal => ordinal <= _max); }
+        if (_stepConstraint is not null && _step > 1UL) { yield return (_stepConstraint, ordinal => IsOnLattice(ordinal, _anchor, _step)); }
+        foreach ((ConstraintCall constraint, ulong[] ordinals) in _exclusions) {
+            yield return (constraint, ordinal => !ordinals.Contains(ordinal));
+        }
     }
 
     /// <summary>Draws one ordinal satisfying the whole specification — built directly, never generate-then-retry.</summary>

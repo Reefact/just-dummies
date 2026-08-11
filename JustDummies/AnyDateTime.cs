@@ -20,7 +20,7 @@ namespace JustDummies;
 ///     comparison operators do. Values supplied to <see cref="OneOf" /> are returned as given, Kind included. There is deliberately no clock-relative constraint (no "in the past/future"): a
 ///     reproducible test pins its reference instants explicitly with <see cref="After" /> and <see cref="Before" />.
 /// </remarks>
-public sealed class AnyDateTime : IAny<DateTime>, IHasRandomSource, ICardinalityHint<DateTime> {
+public sealed class AnyDateTime : IAny<DateTime>, IHasRandomSource, ICardinalityHint<DateTime>, IPoolInspection<DateTime> {
 
     #region Statics members declarations
 
@@ -67,6 +67,15 @@ public sealed class AnyDateTime : IAny<DateTime>, IHasRandomSource, ICardinality
     long? ICardinalityHint<DateTime>.DistinctCardinality => _spec.Cardinality;
 
     bool ICardinalityHint<DateTime>.Contains(DateTime value) => _spec.Contains(Ord(value));
+
+    // Explicit, like the cardinality hint above: an inspection answers a maintenance question and does not
+    // belong in the completion list a caller writes constraints in (ADR-0067). Val projects the engine's
+    // ordinal back to the caller's own type.
+    bool IPoolInspection<DateTime>.IsPooled => _spec.IsPooled;
+
+    IReadOnlyList<DateTime> IPoolInspection<DateTime>.GetSurvivors() => _spec.GetSurvivors(Val);
+
+    IReadOnlyList<PoolRejection<DateTime>> IPoolInspection<DateTime>.GetRejections() => _spec.GetRejections(Val);
 
     /// <summary>Requires an instant strictly after <paramref name="instant" />.</summary>
     /// <param name="instant">The exclusive lower bound.</param>

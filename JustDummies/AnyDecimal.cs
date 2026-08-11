@@ -13,7 +13,7 @@ namespace JustDummies;
 ///     sides; instances are immutable recipes. Exclusive bounds are expressed as the inclusive bound plus a point
 ///     exclusion, since <see cref="decimal" /> has no next-representable-value ladder.
 /// </summary>
-public sealed class AnyDecimal : IAny<decimal>, IHasRandomSource, ICardinalityHint<decimal> {
+public sealed class AnyDecimal : IAny<decimal>, IHasRandomSource, ICardinalityHint<decimal>, IPoolInspection<decimal> {
 
     /// <summary>The fewest decimal places <see cref="WithScale" /> accepts — a whole number, with no fractional part.</summary>
     private const int MinScale = 0;
@@ -53,6 +53,14 @@ public sealed class AnyDecimal : IAny<decimal>, IHasRandomSource, ICardinalityHi
     long? ICardinalityHint<decimal>.DistinctCardinality => _spec.Cardinality;
 
     bool ICardinalityHint<decimal>.Contains(decimal value) => _spec.Contains(value);
+
+    // Explicit, like the cardinality hint above: an inspection answers a maintenance question and does not
+    // belong in the completion list a caller writes constraints in (ADR-0067).
+    bool IPoolInspection<decimal>.IsPooled => _spec.IsPooled;
+
+    IReadOnlyList<decimal> IPoolInspection<decimal>.GetSurvivors() => _spec.GetSurvivors(value => value);
+
+    IReadOnlyList<PoolRejection<decimal>> IPoolInspection<decimal>.GetRejections() => _spec.GetRejections(value => value);
 
     /// <summary>Requires a value strictly greater than zero.</summary>
     /// <returns>A new generator carrying the added constraint.</returns>

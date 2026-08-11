@@ -14,7 +14,7 @@ namespace JustDummies;
 ///     sides; instances are immutable recipes, and each value is built to satisfy the constraints in one draw.
 ///     Available on the net8.0 target only, like the type itself.
 /// </summary>
-public sealed class AnyInt128 : IAny<Int128>, IHasRandomSource, ICardinalityHint<Int128> {
+public sealed class AnyInt128 : IAny<Int128>, IHasRandomSource, ICardinalityHint<Int128>, IPoolInspection<Int128> {
 
     /// <summary>
     ///     The bit that tells a negative <see cref="Int128" /> from a non-negative one. Flipping it maps a signed
@@ -67,6 +67,14 @@ public sealed class AnyInt128 : IAny<Int128>, IHasRandomSource, ICardinalityHint
     long? ICardinalityHint<Int128>.DistinctCardinality => _spec.Cardinality;
 
     bool ICardinalityHint<Int128>.Contains(Int128 value) => _spec.Contains(Ord(value));
+
+    // Explicit, like the cardinality hint above: an inspection answers a maintenance question and does not
+    // belong in the completion list a caller writes constraints in (ADR-0067).
+    bool IPoolInspection<Int128>.IsPooled => _spec.IsPooled;
+
+    IReadOnlyList<Int128> IPoolInspection<Int128>.GetSurvivors() => _spec.GetSurvivors(Val);
+
+    IReadOnlyList<PoolRejection<Int128>> IPoolInspection<Int128>.GetRejections() => _spec.GetRejections(Val);
 
     /// <summary>Requires a value strictly greater than zero.</summary>
     /// <returns>A new generator carrying the added constraint.</returns>

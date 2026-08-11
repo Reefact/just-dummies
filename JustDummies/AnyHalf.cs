@@ -28,7 +28,7 @@ namespace JustDummies;
 ///         of the test, not a dummy.
 ///     </para>
 /// </remarks>
-public sealed class AnyHalf : IAny<Half>, IHasRandomSource, ICardinalityHint<Half> {
+public sealed class AnyHalf : IAny<Half>, IHasRandomSource, ICardinalityHint<Half>, IPoolInspection<Half> {
 
     #region Statics members declarations
 
@@ -76,6 +76,14 @@ public sealed class AnyHalf : IAny<Half>, IHasRandomSource, ICardinalityHint<Hal
 
     // The allow-list holds the doubles the supplied halves widen to, so membership tests the same widening.
     bool ICardinalityHint<Half>.Contains(Half value) => _spec.Contains((double)value);
+
+    // Explicit, like the cardinality hint above: an inspection answers a maintenance question and does not
+    // belong in the completion list a caller writes constraints in (ADR-0067).
+    bool IPoolInspection<Half>.IsPooled => _spec.IsPooled;
+
+    IReadOnlyList<Half> IPoolInspection<Half>.GetSurvivors() => _spec.GetSurvivors(value => (Half)value);
+
+    IReadOnlyList<PoolRejection<Half>> IPoolInspection<Half>.GetRejections() => _spec.GetRejections(value => (Half)value);
 
     /// <summary>Requires a value strictly greater than zero.</summary>
     /// <returns>A new generator carrying the added constraint.</returns>

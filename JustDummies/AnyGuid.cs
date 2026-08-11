@@ -1,5 +1,6 @@
 #region Usings declarations
 
+using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
 
 #endregion
@@ -14,7 +15,7 @@ namespace JustDummies;
 ///     <see cref="Empty" /> to pin the empty identifier. Contradictory constraints fail eagerly with a
 ///     <see cref="ConflictingAnyConstraintException" /> naming both sides.
 /// </summary>
-public sealed class AnyGuid : IAny<Guid>, IHasRandomSource, ICardinalityHint<Guid> {
+public sealed class AnyGuid : IAny<Guid>, IHasRandomSource, ICardinalityHint<Guid>, IPoolInspection<Guid> {
 
     /// <summary>How many bytes a <see cref="Guid" /> is made of — its 128 bits, which a draw fills whole.</summary>
     private const int GuidByteCount = 16;
@@ -94,6 +95,32 @@ public sealed class AnyGuid : IAny<Guid>, IHasRandomSource, ICardinalityHint<Gui
         if (_effectiveAllowed is not null) { return _effectiveAllowed.Contains(value); }
 
         return !_excluded.Contains(value);
+    }
+
+    // Explicit, like the cardinality hint above (ADR-0067). A Guid generator without a pool draws from the whole
+    // 128-bit space, which becomes the caller's business only once they hand over a list of their own.
+    bool IPoolInspection<Guid>.IsPooled => _effectiveAllowed is not null;
+
+    IReadOnlyList<Guid> IPoolInspection<Guid>.GetSurvivors() {
+        return _effectiveAllowed is null ? Array.Empty<Guid>() : new ReadOnlyCollection<Guid>(_effectiveAllowed.ToArray());
+    }
+
+    IReadOnlyList<PoolRejection<Guid>> IPoolInspection<Guid>.GetRejections() {
+        if (_allowed is null) { return Array.Empty<PoolRejection<Guid>>(); }
+
+        List<PoolRejection<Guid>> rejections = [];
+        foreach (Guid value in _allowed) {
+            if (!_excludedSet.Contains(value)) { continue; }
+
+            List<DeclaredConstraint> culprits = _exclusions
+                                                .Where(entry => entry.Values.Contains(value))
+                                                .Select(entry => entry.Constraint.ToDeclaredConstraint())
+                                                .ToList();
+
+            rejections.Add(new PoolRejection<Guid>(value, culprits));
+        }
+
+        return new ReadOnlyCollection<PoolRejection<Guid>>(rejections);
     }
 
     /// <summary>Requires an identifier different from <see cref="Guid.Empty" />.</summary>

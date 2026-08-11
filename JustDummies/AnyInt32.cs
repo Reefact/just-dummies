@@ -28,7 +28,7 @@ namespace JustDummies;
 ///         </code>
 ///     </example>
 /// </remarks>
-public sealed class AnyInt32 : IAny<int>, IHasRandomSource, ICardinalityHint<int> {
+public sealed class AnyInt32 : IAny<int>, IHasRandomSource, ICardinalityHint<int>, IPoolInspection<int> {
 
     #region Statics members declarations
 
@@ -73,6 +73,15 @@ public sealed class AnyInt32 : IAny<int>, IHasRandomSource, ICardinalityHint<int
     long? ICardinalityHint<int>.DistinctCardinality => _spec.Cardinality;
 
     bool ICardinalityHint<int>.Contains(int value) => _spec.Contains(Ord(value));
+
+    // Explicit, like the cardinality hint above: an inspection answers a maintenance question and does not
+    // belong in the completion list a caller writes constraints in (ADR-0067). Val projects the engine's
+    // ordinal back to the caller's own type.
+    bool IPoolInspection<int>.IsPooled => _spec.IsPooled;
+
+    IReadOnlyList<int> IPoolInspection<int>.GetSurvivors() => _spec.GetSurvivors(Val);
+
+    IReadOnlyList<PoolRejection<int>> IPoolInspection<int>.GetRejections() => _spec.GetRejections(Val);
 
     /// <summary>Requires a value strictly greater than zero.</summary>
     /// <returns>A new generator carrying the added constraint.</returns>

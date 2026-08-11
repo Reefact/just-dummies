@@ -16,9 +16,13 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   invariant or fix the catalogue. `IPoolInspection<T>` answers it: `GetSurvivors()` for the values still
   drawable, `GetRejections()` for the ones refused, each naming every `DeclaredConstraint` that refuses it — a
   name and its rendered arguments kept apart, so you can group and filter instead of parsing text. It is carried
-  by the generators whose pool you supply whole (`Any.String().OneOf(...)`, `Any.OneOf(...)`/`Any.ElementOf(...)`)
-  and implemented **explicitly**, so it never appears among the constraints while you write them; reach it with a
-  cast, and test the cast, since the interface is optional. Nothing here draws or consumes randomness, so an
+  by **every** generator that admits a value set you supply — `Any.OneOf(...)`/`Any.ElementOf(...)`,
+  `Any.String().OneOf(...)`, and all twenty-two families with a `OneOf`: the integers, `Any.Decimal()`, the
+  floating-point builders, the dates and times, `Any.Char()`, `Any.Guid()` and `Any.Enum<T>()` — so a catalogue
+  loaded from a file is answered whatever its element type. It is implemented **explicitly**, so it never appears
+  among the constraints while you write them; reach it with a cast, and test the cast, since a generator with no
+  pool of yours carries it not at all. `IsPooled` is not "this domain is countable": `Any.Int32().Between(1,
+  1_000_000)` answers `false`, those values being the engine's rather than yours. Nothing here draws or consumes randomness, so an
   inspection between two draws leaves a seeded run replaying identically. The library reports and does not judge:
   it never warns that a pool was narrowed, because narrowing a shared catalogue at one call site is what the
   composition is for. New guide: *Inspecting a pool* ([ADR-0067](../doc/handwritten/for-maintainers/adr/0067-report-a-filtered-pool-through-an-explicit-interface.md)).

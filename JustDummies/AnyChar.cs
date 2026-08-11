@@ -1,5 +1,6 @@
 #region Usings declarations
 
+using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
 
 #endregion
@@ -14,14 +15,14 @@ namespace JustDummies;
 ///     <see cref="DifferentFrom" />. A combination that empties the pool fails eagerly with a
 ///     <see cref="ConflictingAnyConstraintException" />.
 /// </summary>
-public sealed class AnyChar : IAny<char>, IHasRandomSource, ICardinalityHint<char> {
+public sealed class AnyChar : IAny<char>, IHasRandomSource, ICardinalityHint<char>, IPoolInspection<char> {
 
     #region Statics members declarations
 
     internal static AnyChar Create(RandomSource source) {
         if (source is null) { throw new ArgumentNullException(nameof(source)); }
 
-        return new AnyChar(source, null, null, null, null, null, null, []);
+        return new AnyChar(source, null, null, null, null, null, null, [], []);
     }
 
     private static string V(char value) {
@@ -44,6 +45,10 @@ public sealed class AnyChar : IAny<char>, IHasRandomSource, ICardinalityHint<cha
     private readonly CharacterSet?        _charset;
     private readonly ConstraintCall?      _charsetConstraint;
     private readonly IReadOnlyList<char>  _excluded;
+    // Provenance for the diagnostic path only: _excluded drives every draw decision, while this records WHICH
+    // exclusion removed what, so a pool inspection can name the constraint responsible. Same split as the
+    // interval engines (OrdinalIntervalSpec._exclusions).
+    private readonly IReadOnlyList<(ConstraintCall Constraint, char[] Values)> _exclusions;
     private readonly RandomSource         _source;
 
     #endregion
@@ -53,7 +58,8 @@ public sealed class AnyChar : IAny<char>, IHasRandomSource, ICardinalityHint<cha
                     CharacterSet? charset, ConstraintCall? charsetConstraint,
                     LetterCasing? casing,  ConstraintCall? casingConstraint,
                     IReadOnlyList<char>? allowed, ConstraintCall? allowedConstraint,
-                    IReadOnlyList<char>  excluded) {
+                    IReadOnlyList<char>  excluded,
+                    IReadOnlyList<(ConstraintCall Constraint, char[] Values)> exclusions) {
         _source            = source;
         _charset           = charset;
         _charsetConstraint = charsetConstraint;
@@ -62,6 +68,7 @@ public sealed class AnyChar : IAny<char>, IHasRandomSource, ICardinalityHint<cha
         _allowed           = allowed;
         _allowedConstraint = allowedConstraint;
         _excluded          = excluded;
+        _exclusions        = exclusions;
         // Materialized once here — "constrain once, draw many": Generate never refilters the pool. The full
         // constant pool is the unconstrained start; MatchesCharset narrows it, so no per-charset pre-narrowing
         // is needed.
@@ -76,6 +83,41 @@ public sealed class AnyChar : IAny<char>, IHasRandomSource, ICardinalityHint<cha
 
     // The pool is the exact draw set, so membership is a direct pool lookup.
     bool ICardinalityHint<char>.Contains(char value) => _pool.Contains(value);
+
+    // Explicit, like the cardinality hint above (ADR-0067). A pool is in force only when the caller supplied one:
+    // the unconstrained start is the library's own alphabet, not theirs, so there is nothing of theirs to audit.
+    bool IPoolInspection<char>.IsPooled => _allowed is not null;
+
+    IReadOnlyList<char> IPoolInspection<char>.GetSurvivors() {
+        return _allowed is null ? Array.Empty<char>() : new ReadOnlyCollection<char>(_pool.ToArray());
+    }
+
+    IReadOnlyList<PoolRejection<char>> IPoolInspection<char>.GetRejections() {
+        if (_allowed is null) { return Array.Empty<PoolRejection<char>>(); }
+
+        List<PoolRejection<char>> rejections = [];
+        foreach (char character in _allowed) {
+            if (MatchesCharset(character) && MatchesCasing(character) && !_excluded.Contains(character)) { continue; }
+
+            List<DeclaredConstraint> culprits = DeclaredConstraints()
+                                                .Where(entry => !entry.Admits(character))
+                                                .Select(entry => entry.Constraint.ToDeclaredConstraint())
+                                                .ToList();
+
+            rejections.Add(new PoolRejection<char>(character, culprits));
+        }
+
+        return new ReadOnlyCollection<PoolRejection<char>>(rejections);
+    }
+
+    /// <summary>Every declared constraint paired with the test a character must pass to satisfy it.</summary>
+    private IEnumerable<(ConstraintCall Constraint, Func<char, bool> Admits)> DeclaredConstraints() {
+        if (_charsetConstraint is not null) { yield return (_charsetConstraint, MatchesCharset); }
+        if (_casingConstraint is not null) { yield return (_casingConstraint, MatchesCasing); }
+        foreach ((ConstraintCall constraint, char[] values) in _exclusions) {
+            yield return (constraint, character => !values.Contains(character));
+        }
+    }
 
     /// <summary>Restricts the character to ASCII letters only. Declared once per generator.</summary>
     /// <returns>A new generator carrying the added constraint.</returns>
@@ -128,7 +170,7 @@ public sealed class AnyChar : IAny<char>, IHasRandomSource, ICardinalityHint<cha
         if (_allowedConstraint == constraint) { return this; }
         if (_allowedConstraint is not null) { throw ConflictingAnyConstraintException.AlreadyDefined(constraint, _allowedConstraint); }
 
-        return Validated(new AnyChar(_source, _charset, _charsetConstraint, _casing, _casingConstraint, values.Distinct().ToArray(), constraint, _excluded), constraint);
+        return Validated(new AnyChar(_source, _charset, _charsetConstraint, _casing, _casingConstraint, values.Distinct().ToArray(), constraint, _excluded, _exclusions), constraint);
     }
 
     /// <summary>Requires the character to be none of the supplied values.</summary>
@@ -166,7 +208,7 @@ public sealed class AnyChar : IAny<char>, IHasRandomSource, ICardinalityHint<cha
         if (_charsetConstraint == applying) { return this; }
         if (_charsetConstraint is not null) { throw ConflictingAnyConstraintException.AlreadyDefined(applying, _charsetConstraint); }
 
-        return Validated(new AnyChar(_source, charset, applying, _casing, _casingConstraint, _allowed, _allowedConstraint, _excluded), applying);
+        return Validated(new AnyChar(_source, charset, applying, _casing, _casingConstraint, _allowed, _allowedConstraint, _excluded, _exclusions), applying);
     }
 
     private AnyChar WithCasing(LetterCasing casing, ConstraintCall applying) {
@@ -175,13 +217,13 @@ public sealed class AnyChar : IAny<char>, IHasRandomSource, ICardinalityHint<cha
         if (_casingConstraint == applying) { return this; }
         if (_casingConstraint is not null) { throw ConflictingAnyConstraintException.AlreadyDefined(applying, _casingConstraint); }
 
-        return Validated(new AnyChar(_source, _charset, _charsetConstraint, casing, applying, _allowed, _allowedConstraint, _excluded), applying);
+        return Validated(new AnyChar(_source, _charset, _charsetConstraint, casing, applying, _allowed, _allowedConstraint, _excluded, _exclusions), applying);
     }
 
     private AnyChar WithExcluded(char[] values, ConstraintCall applying) {
         List<char> excluded = [.. _excluded, .. values];
 
-        return Validated(new AnyChar(_source, _charset, _charsetConstraint, _casing, _casingConstraint, _allowed, _allowedConstraint, excluded), applying);
+        return Validated(new AnyChar(_source, _charset, _charsetConstraint, _casing, _casingConstraint, _allowed, _allowedConstraint, excluded, [.. _exclusions, (applying, values)]), applying);
     }
 
     [SuppressMessage(NetAnalyzersRule.CA1822.Category, NetAnalyzersRule.CA1822.Id, Justification = SuppressionJustification.CA1822.UniformValidatedHook)]

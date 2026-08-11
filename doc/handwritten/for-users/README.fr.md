@@ -23,6 +23,7 @@ Le parcours conceptuel. À lire dans l'ordre la première fois.
 | [Reproductibilité](./guides/reproducibility.fr.md) | graines, portées, rejeu d'un échec, l'attribut xUnit |
 | [Composition](./guides/composition.fr.md) | des dummies pour vos propres types : `.As`, `Combine`, `OrNull` |
 | [Erreurs et conflits](./guides/errors-and-conflicts.fr.md) | la hiérarchie d'exceptions, et comment lire un message de conflit |
+| [Inspecter un pool](./guides/inspecting-a-pool.fr.md) | quelles valeurs fournies sont encore tirables, et quelle contrainte a pris les autres |
 | [Principes de conception](./guides/design-principles.fr.md) | ce que la bibliothèque refuse volontairement, et pourquoi |
 | [FAQ](./guides/faq.fr.md) | réponses courtes aux questions les plus fréquentes |
 

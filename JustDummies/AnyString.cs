@@ -43,7 +43,7 @@ namespace JustDummies;
 ///         </code>
 ///     </example>
 /// </remarks>
-public sealed class AnyString : IAny<string>, IHasRandomSource, ICardinalityHint<string> {
+public sealed class AnyString : IAny<string>, IHasRandomSource, ICardinalityHint<string>, IPoolInspection<string> {
 
     #region Statics members declarations
 
@@ -101,6 +101,15 @@ public sealed class AnyString : IAny<string>, IHasRandomSource, ICardinalityHint
     // this membership answer must not turn a pinned null into an exception the pool generator never raises.
     [SuppressMessage(SonarRule.S125.Category, SonarRule.S125.Id, Justification = SuppressionJustification.S125.ProseNotDisabledCode)]
     bool ICardinalityHint<string>.Contains(string value) => value is not null && _spec.Contains(value);
+
+    // Implemented explicitly so the inspection never reaches the completion list a caller writes constraints in: a
+    // shaped string answers it too, with an empty report, because "no value set here" is the honest answer to the
+    // question rather than a reason to refuse it (ADR-0067).
+    bool IPoolInspection<string>.IsPooled => _spec.IsPooled;
+
+    IReadOnlyList<string> IPoolInspection<string>.GetSurvivors() => _spec.GetSurvivors();
+
+    IReadOnlyList<PoolRejection<string>> IPoolInspection<string>.GetRejections() => _spec.GetRejections();
 
     /// <summary>Requires at least one character.</summary>
     /// <returns>A new generator carrying the added constraint.</returns>

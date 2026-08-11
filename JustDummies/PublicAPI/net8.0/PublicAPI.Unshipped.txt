@@ -435,15 +435,33 @@ JustDummies.AnyWebUri.WithUserInfo(string! user) -> JustDummies.AnyWebUri!
 JustDummies.AnyWebUri.WithUserInfo(string! user, string! password) -> JustDummies.AnyWebUri!
 JustDummies.ConflictingAnyConstraintException
 JustDummies.ConflictingAnyConstraintException.ConflictingAnyConstraintException(string! message) -> void
+JustDummies.DeclaredConstraint
+JustDummies.DeclaredConstraint.Arguments.get -> string!
+JustDummies.DeclaredConstraint.Equals(JustDummies.DeclaredConstraint? other) -> bool
+JustDummies.DeclaredConstraint.Name.get -> string!
 JustDummies.DummyException
 JustDummies.DummyException.DummyException(string! message) -> void
 JustDummies.DummyException.DummyException(string! message, System.Exception! innerException) -> void
 JustDummies.IAny<T>
 JustDummies.IAny<T>.Generate() -> T
+JustDummies.IPoolInspection<T>
+JustDummies.IPoolInspection<T>.GetRejections() -> System.Collections.Generic.IReadOnlyList<JustDummies.PoolRejection<T>!>!
+JustDummies.IPoolInspection<T>.GetSurvivors() -> System.Collections.Generic.IReadOnlyList<T>!
+JustDummies.IPoolInspection<T>.IsPooled.get -> bool
 JustDummies.NullableExtensions
 JustDummies.NullableReferenceExtensions
+JustDummies.PoolRejection<T>
+JustDummies.PoolRejection<T>.Equals(JustDummies.PoolRejection<T>? other) -> bool
+JustDummies.PoolRejection<T>.RejectedBy.get -> System.Collections.Generic.IReadOnlyList<JustDummies.DeclaredConstraint!>!
+JustDummies.PoolRejection<T>.Value.get -> T
 JustDummies.UnsupportedRegexException
 JustDummies.UnsupportedRegexException.UnsupportedRegexException(string! message) -> void
+override JustDummies.DeclaredConstraint.Equals(object? obj) -> bool
+override JustDummies.DeclaredConstraint.GetHashCode() -> int
+override JustDummies.DeclaredConstraint.ToString() -> string!
+override JustDummies.PoolRejection<T>.Equals(object? obj) -> bool
+override JustDummies.PoolRejection<T>.GetHashCode() -> int
+override JustDummies.PoolRejection<T>.ToString() -> string!
 static JustDummies.Any.ArrayOf<T>(JustDummies.IAny<T>! item) -> JustDummies.AnyArray<T>!
 static JustDummies.Any.Boolean() -> JustDummies.AnyBoolean!
 static JustDummies.Any.Byte() -> JustDummies.AnyByte!
@@ -498,5 +516,9 @@ static JustDummies.Any.UseSeed(int seed) -> System.IDisposable!
 static JustDummies.Any.UseSeed(int seed, string! replaySnippet) -> System.IDisposable!
 static JustDummies.Any.WithSeed(int seed) -> JustDummies.AnyContext!
 static JustDummies.AnyExtensions.As<TSource, TResult>(this JustDummies.IAny<TSource>! generator, System.Func<TSource, TResult>! factory) -> JustDummies.IAny<TResult>!
+static JustDummies.DeclaredConstraint.operator !=(JustDummies.DeclaredConstraint? left, JustDummies.DeclaredConstraint? right) -> bool
+static JustDummies.DeclaredConstraint.operator ==(JustDummies.DeclaredConstraint? left, JustDummies.DeclaredConstraint? right) -> bool
 static JustDummies.NullableExtensions.OrNull<T>(this JustDummies.IAny<T>! generator) -> JustDummies.IAny<T?>!
 static JustDummies.NullableReferenceExtensions.OrNull<T>(this JustDummies.IAny<T!>! generator) -> JustDummies.IAny<T?>!
+static JustDummies.PoolRejection<T>.operator !=(JustDummies.PoolRejection<T>? left, JustDummies.PoolRejection<T>? right) -> bool
+static JustDummies.PoolRejection<T>.operator ==(JustDummies.PoolRejection<T>? left, JustDummies.PoolRejection<T>? right) -> bool

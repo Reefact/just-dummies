@@ -8,6 +8,21 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ## [Unreleased]
 
+### Added
+
+- **See what your constraints left of a pool you supplied.** When a value set is declared beside constraints, a
+  value the constraints refuse leaves the domain silently — only an emptied domain is reported. That is fine
+  until the value set is a *catalogue* you maintain, at which point you cannot tell whether to widen the
+  invariant or fix the catalogue. `IPoolInspection<T>` answers it: `GetSurvivors()` for the values still
+  drawable, `GetRejections()` for the ones refused, each naming every `DeclaredConstraint` that refuses it — a
+  name and its rendered arguments kept apart, so you can group and filter instead of parsing text. It is carried
+  by the generators whose pool you supply whole (`Any.String().OneOf(...)`, `Any.OneOf(...)`/`Any.ElementOf(...)`)
+  and implemented **explicitly**, so it never appears among the constraints while you write them; reach it with a
+  cast, and test the cast, since the interface is optional. Nothing here draws or consumes randomness, so an
+  inspection between two draws leaves a seeded run replaying identically. The library reports and does not judge:
+  it never warns that a pool was narrowed, because narrowing a shared catalogue at one call site is what the
+  composition is for. New guide: *Inspecting a pool* ([ADR-0067](../doc/handwritten/for-maintainers/adr/0067-report-a-filtered-pool-through-an-explicit-interface.md)).
+
 ### Documentation
 
 - **How to get a NaN when you actually need one.** `Any.Double()`, `Any.Single()` and `Any.Half()` refuse a

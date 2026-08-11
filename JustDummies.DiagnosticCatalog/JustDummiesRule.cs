@@ -571,4 +571,22 @@ public static class JustDummiesRule {
 
     }
 
+    /// <summary>A value written into a pool that a declared constraint refuses, so no draw can ever yield it</summary>
+    [DiagnosticRule]
+    public static class JD029 {
+
+        /// <summary>The canonical identifier of this diagnostic.</summary>
+        public const string Id = nameof(JD029);
+
+        /// <summary>The category this diagnostic is grouped under.</summary>
+        public const string Category = JustDummiesCategory.Constraints;
+
+        /// <summary>The one-line summary the IDE shows beside the rule.</summary>
+        public const string Title = "A value written into a pool that a declared constraint refuses";
+
+        /// <summary>The page explaining the condition this diagnostic detects.</summary>
+        public const string HelpLinkUri = HelpLinkBase + nameof(JD029) + HelpLinkSuffix;
+
+    }
+
 }

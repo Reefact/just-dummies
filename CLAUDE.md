@@ -53,7 +53,7 @@ it.
 * The English documentation is canonical.
 * French documentation is an intentional translation and must stay in sync with the English page it
   mirrors. It is not one file: every maintainer page and every analyzer page comes as an `.en.md`/`.fr.md`
-  pair (28 of them under `doc/handwritten/for-users/analyzers/`), plus `doc/handwritten/for-users/`'s
+  pair (29 of them under `doc/handwritten/for-users/analyzers/`), plus `doc/handwritten/for-users/`'s
   `CONTRIBUTING.fr.md` and `SECURITY.fr.md`. Change a page, change its twin.
 * You may reply to me in French in the chat, but never write repository content in French
   unless you are updating the French documentation.

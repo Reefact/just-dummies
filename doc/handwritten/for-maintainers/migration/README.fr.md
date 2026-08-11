@@ -91,7 +91,7 @@ créé.
   explicite : les porter garde l'intention visible plutôt que de l'abandonner en silence.
 * **`tools/analyzer-count-check` n'a pas été porté.** Il vérifie qu'un README annonce le bon nombre
   d'analyzers ; `JustDummies/README.nuget.md` ne fait aucune annonce de ce genre, la vérification
-  n'avait donc ici aucun invariant à garder. À réintroduire si le README se met à annoncer les 28
+  n'avait donc ici aucun invariant à garder. À réintroduire si le README se met à annoncer les 29
   règles.
 * **Une branche source porte du travail JustDummies non mergé** :
   `agent/extract-adr-specifications` dans `Reefact/first-class-errors` (31 commits d'avance sur son

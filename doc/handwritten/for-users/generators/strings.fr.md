@@ -89,6 +89,7 @@ sont constants : l'échec arrive donc généralement avant même l'exécution du
 
 ## Appartenance et exclusion
 
+<!-- jd:allow=JD029 -->
 ```csharp
 string currency = Any.String().OneOf("EUR", "USD", "GBP").Generate();
 string status   = Any.String().OneOf(["draft", "sent", "paid"]).Generate();

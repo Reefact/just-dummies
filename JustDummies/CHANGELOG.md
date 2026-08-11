@@ -23,6 +23,16 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   it never warns that a pool was narrowed, because narrowing a shared catalogue at one call site is what the
   composition is for. New guide: *Inspecting a pool* ([ADR-0067](../doc/handwritten/for-maintainers/adr/0067-report-a-filtered-pool-through-an-explicit-interface.md)).
 
+- **JD029 tells you at build time when a value you wrote into a pool can never be drawn.** A value set composes
+  with the constraints declared beside it, and a value they refuse leaves the domain in silence — so a pool can
+  read as five values and draw from three. The new rule reports each such value where it is written, naming the
+  constraint that refuses it. It is the dual of JD024: that one reports a constraint narrowing nothing, this one
+  a value nothing lets through. **Info, not a warning**: narrowing a shared pool at one call site is what the
+  composition is *for*, so this states a fact to weigh rather than a verdict. It reads only what is written at
+  the call site — a pool held in a variable, which is what a catalogue always is, is answered instead at run
+  time by `IPoolInspection<T>`. The claim is deliberately one-sided: a constraint whose argument does not fold
+  is skipped rather than guessed at, so the rule can under-report but never accuse a value it has not tested.
+
 ### Documentation
 
 - **How to get a NaN when you actually need one.** `Any.Double()`, `Any.Single()` and `Any.Half()` refuse a

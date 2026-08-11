@@ -60,7 +60,7 @@ référence dans le même commit :
   `PublicAPI.Unshipped.txt` vers `PublicAPI.Shipped.txt` (le correctif *« mark shipped »*, ou à la
   main). Délibérément **pas** à une préversion : promouvoir transforme toute suppression ultérieure en
   violation `RS0017`, et sous la 1.0 cette bibliothèque garde le droit de retirer. Idem pour
-  `AnalyzerReleases.Unshipped.md` — les 28 règles restent non publiées tant que la surface n'est pas
+  `AnalyzerReleases.Unshipped.md` — les 29 règles restent non publiées tant que la surface n'est pas
   gelée. D'ici là, un `PublicAPI.Shipped.txt` vide est l'état honnête, et cela signifie qu'aucun
   mécanisme automatique ne protège la surface d'une préversion publiée : c'est le prix assumé d'être
   sous la 1.0, pas un oubli.

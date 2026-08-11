@@ -3,7 +3,7 @@
 🌍 **Langues :**  
 🇬🇧 [English](./justdummies-diagnosticcatalog.en.md) | 🇫🇷 Français (ce fichier)
 
-Les règles `JD001`–`JD028`, publiées sous forme de constantes qu'un `[SuppressMessage]` peut nommer.
+Les règles `JD001`–`JD029`, publiées sous forme de constantes qu'un `[SuppressMessage]` peut nommer.
 Ce paquet ne vous est utile que si vous supprimez un diagnostic JustDummies et souhaitez que le
 compilateur vérifie que la règle nommée existe.
 

@@ -4,7 +4,7 @@
 🇬🇧 [English](./justdummies.en.md) | 🇫🇷 Français (ce fichier)
 
 La bibliothèque elle-même : le point d'entrée `Any`, tous les générateurs, les portées de
-reproductibilité, et les 28 règles qui veillent au bon usage.
+reproductibilité, et les 29 règles qui veillent au bon usage.
 
 ## Installation
 
@@ -24,7 +24,7 @@ dans votre projet de test, et rien d'autre dans votre graphe de dépendances.
 | `Any.Reproducibly` / `UseSeed` / `WithSeed` | les portées de reproductibilité |
 | `AnyContext` | un monde isolé et graîné, portant les mêmes fabriques |
 | `DummyException` et ses trois sous-types | le vocabulaire des échecs |
-| 28 règles Roslyn | embarquées dans le paquet, actives dès la compilation suivante |
+| 29 règles Roslyn | embarquées dans le paquet, actives dès la compilation suivante |
 
 ## Les analyzers voyagent dans le paquet
 
@@ -36,7 +36,7 @@ pas de paquet d'analyzers compagnon à retenir, ni de version à maintenir en ph
 Ils existent parce que le système de types n'atteint pas l'endroit où vivent ces erreurs — un
 générateur rendu sous forme de texte, une contrainte dont le résultat est jeté, une graine épinglée
 hors de sa portée, une chaîne n'admettant aucune valeur. Voir
-l'[index des règles](../analyzers/README.fr.md) pour les 28, et
+l'[index des règles](../analyzers/README.fr.md) pour les 29, et
 [JD005](../analyzers/JD005.fr.md) pour celle qui attrape le faux pas le plus courant.
 
 Pour ajuster une sévérité, utilisez `.editorconfig` :

@@ -168,3 +168,4 @@ et qu'elle a été décidée le 01/08/2026 — l'index porte l'ordre, la numéro
 | [ADR-0063](0063-give-the-scaffolder-no-dependency-on-the-package.fr.md) | Ne donner au scaffolder aucune dépendance sur le package JustDummies | Accepted | consigné ici |
 | [ADR-0064](0064-never-draw-null-for-a-nullable-parameter.fr.md) | Ne jamais tirer null pour un paramètre nullable | Accepted | consigné ici |
 | [ADR-0065](0065-keep-the-scaffolding-engine-loadable-by-a-roslyn-host.fr.md) | Garder le moteur de scaffolding chargeable par un hôte Roslyn | Accepted | consigné ici |
+| [ADR-0066](0066-load-msbuild-from-the-sdk-never-from-the-tool.fr.md) | Charger MSBuild depuis le SDK installé, jamais depuis les fichiers de l'outil | Accepted | consigné ici |

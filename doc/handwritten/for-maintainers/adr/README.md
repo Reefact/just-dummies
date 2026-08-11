@@ -21,7 +21,7 @@ and the **Origin** column says how each one got here:
   but its record stays live in `Reefact/first-class-errors` too, because that
   repository still applies it. Both copies are now independent: either side can
   supersede its own without touching the other. 9 decisions.
-* **recorded here** — decided in this repository, on its own. 23 decisions.
+* **recorded here** — decided in this repository, on its own. 24 decisions.
 
 The numbers are this base's own, assigned in the order the decisions were
 recorded upstream ([ADR-0045](0045-renumber-the-decision-base.md)); every ADR
@@ -157,3 +157,4 @@ and it was decided on 2026-08-01 — the index carries the order, the numbering 
 | [ADR-0065](0065-keep-the-scaffolding-engine-loadable-by-a-roslyn-host.md) | Keep the scaffolding engine loadable by a Roslyn host | Accepted | recorded here |
 | [ADR-0066](0066-load-msbuild-from-the-sdk-never-from-the-tool.md) | Load MSBuild from the installed SDK, never from the tool's own files | Accepted | recorded here |
 | [ADR-0067](0067-report-a-filtered-pool-through-an-explicit-interface.md) | Report a filtered pool through an explicitly implemented interface, and warn about nothing | Accepted | recorded here |
+| [ADR-0068](0068-carry-the-pool-inspection-wherever-a-caller-supplies-the-values.md) | Carry the pool inspection wherever a caller supplies the values, and nowhere else | Accepted | recorded here |

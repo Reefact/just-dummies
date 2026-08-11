@@ -22,10 +22,12 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   loaded from a file is answered whatever its element type. It is implemented **explicitly**, so it never appears
   among the constraints while you write them; reach it with a cast, and test the cast, since a generator with no
   pool of yours carries it not at all. `IsPooled` is not "this domain is countable": `Any.Int32().Between(1,
-  1_000_000)` answers `false`, those values being the engine's rather than yours. Nothing here draws or consumes randomness, so an
-  inspection between two draws leaves a seeded run replaying identically. The library reports and does not judge:
-  it never warns that a pool was narrowed, because narrowing a shared catalogue at one call site is what the
-  composition is for. New guide: *Inspecting a pool* ([ADR-0067](../doc/handwritten/for-maintainers/adr/0067-report-a-filtered-pool-through-an-explicit-interface.md)).
+  1_000_000)` answers `false`, those values being the engine's rather than yours. Nothing here draws or consumes
+  randomness, so an inspection between two draws leaves a seeded run replaying identically. The library reports
+  and does not judge: it never warns that a pool was narrowed, because narrowing a shared catalogue at one call
+  site is what the composition is for. New guide: *Inspecting a pool*
+  ([ADR-0067](../doc/handwritten/for-maintainers/adr/0067-report-a-filtered-pool-through-an-explicit-interface.md),
+  [ADR-0068](../doc/handwritten/for-maintainers/adr/0068-carry-the-pool-inspection-wherever-a-caller-supplies-the-values.md)).
 
 - **JD029 tells you at build time when a value you wrote into a pool can never be drawn.** A value set composes
   with the constraints declared beside it, and a value they refuse leaves the domain in silence — so a pool can

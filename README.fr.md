@@ -61,7 +61,7 @@ côtés.
 dotnet add package JustDummies
 ```
 
-Aucune dépendance à l'exécution, et les 28 règles d'analyzer sont embarquées — elles se mettent à travailler dès
+Aucune dépendance à l'exécution, et les 29 règles d'analyzer sont embarquées — elles se mettent à travailler dès
 votre prochaine compilation.
 
 ## 🔁 Reproductible par construction
@@ -144,9 +144,9 @@ dos.
 
 | Paquet | Ce que c'est |
 | --- | --- |
-| [`JustDummies`](doc/handwritten/for-users/packages/justdummies.fr.md) | la bibliothèque, avec ses 28 règles embarquées |
+| [`JustDummies`](doc/handwritten/for-users/packages/justdummies.fr.md) | la bibliothèque, avec ses 29 règles embarquées |
 | [`JustDummies.Xunit`](doc/handwritten/for-users/packages/justdummies-xunit.fr.md) | l'adaptateur xUnit v3 : `[Reproducible]` |
-| [`JustDummies.DiagnosticCatalog`](doc/handwritten/for-users/packages/justdummies-diagnosticcatalog.fr.md) | les règles `JD001`–`JD028` en constantes vérifiées par le compilateur |
+| [`JustDummies.DiagnosticCatalog`](doc/handwritten/for-users/packages/justdummies-diagnosticcatalog.fr.md) | les règles `JD001`–`JD029` en constantes vérifiées par le compilateur |
 | [`JustDummies.Cli`](doc/handwritten/for-users/packages/justdummies-cli.fr.md) | `dum`, le scaffolder — outil global, jamais une référence de projet |
 
 Les trois bibliothèques ciblent `netstandard2.0` ; `JustDummies` publie en plus un asset `net8.0`

@@ -47,6 +47,7 @@ internal static class DiagnosticIds {
 
     public const string DuplicatePoolValue = JustDummiesRule.JD025.Id;
     public const string EmptyRelativeUri = JustDummiesRule.JD026.Id;
+    public const string PooledValueNeverDraws = JustDummiesRule.JD029.Id;
 
     // Category: Composition — a part that reaches no result, a constraint that cannot bind
     public const string UnusedCombineOperand = JustDummiesRule.JD027.Id;

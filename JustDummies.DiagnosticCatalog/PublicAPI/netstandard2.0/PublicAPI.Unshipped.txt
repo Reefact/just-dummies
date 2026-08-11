@@ -29,6 +29,7 @@ JustDummies.Diagnostics.JustDummiesRule.JD025
 JustDummies.Diagnostics.JustDummiesRule.JD026
 JustDummies.Diagnostics.JustDummiesRule.JD027
 JustDummies.Diagnostics.JustDummiesRule.JD028
+JustDummies.Diagnostics.JustDummiesRule.JD029
 const JustDummies.Diagnostics.JustDummiesCategory.Composition = "JustDummies.Composition" -> string!
 const JustDummies.Diagnostics.JustDummiesCategory.Constraints = "JustDummies.Constraints" -> string!
 const JustDummies.Diagnostics.JustDummiesCategory.Reproducibility = "JustDummies.Reproducibility" -> string!
@@ -145,3 +146,7 @@ const JustDummies.Diagnostics.JustDummiesRule.JD028.Category = "JustDummies.Comp
 const JustDummies.Diagnostics.JustDummiesRule.JD028.HelpLinkUri = "https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/analyzers/JD028.en.md" -> string!
 const JustDummies.Diagnostics.JustDummiesRule.JD028.Id = "JD028" -> string!
 const JustDummies.Diagnostics.JustDummiesRule.JD028.Title = "Distinctness is declared over an element type that has no value equality" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD029.Category = "JustDummies.Constraints" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD029.HelpLinkUri = "https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/analyzers/JD029.en.md" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD029.Id = "JD029" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD029.Title = "A value written into a pool that a declared constraint refuses" -> string!

@@ -86,6 +86,7 @@ constants, so the failure usually arrives before the test ever runs.
 
 ## Membership and exclusion
 
+<!-- jd:allow=JD029 -->
 ```csharp
 string currency = Any.String().OneOf("EUR", "USD", "GBP").Generate();
 string status   = Any.String().OneOf(["draft", "sent", "paid"]).Generate();

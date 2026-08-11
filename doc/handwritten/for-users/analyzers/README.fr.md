@@ -3,7 +3,7 @@
 🌍 **Langues :**  
 🇬🇧 [English](./README.md) | 🇫🇷 Français (ce fichier)
 
-Le package `JustDummies` embarque 28 règles Roslyn (`JD001`–`JD028`), sous
+Le package `JustDummies` embarque 29 règles Roslyn (`JD001`–`JD029`), sous
 `analyzers/dotnet/cs`. Tout projet qui référence le package les récupère automatiquement, sans
 installation supplémentaire. Elles s'exécutent pendant la compilation et transforment en
 diagnostics de build des erreurs que l'exécution signalerait tard — ou jamais.
@@ -64,6 +64,7 @@ Ces règles anticipent, à la compilation, le sous-ensemble des vérifications d
 | [JD024 ConstraintWithNoEffect](JD024.fr.md) | 🔵 Info | on | Une contrainte ne rétrécit rien : exclusion d'une valeur que le domaine ne pouvait pas produire, ou borne déjà impliquée. La seule famille de contraintes que l'exécution ne signale jamais. |
 | [JD025 DuplicatePoolValue](JD025.fr.md) | 🟠 Avertissement | on | La même constante figure deux fois dans un réservoir ; les doublons sont écrasés, donc le réservoir est plus petit d'une valeur qu'il n'y paraît et le doublon ne pondère rien. |
 | [JD026 EmptyRelativeUri](JD026.fr.md) | 🟠 Avertissement | on | Une URI relative à zéro segment, sans requête, fragment ni racine est la référence vide — la seule chaîne dont l'échec atterrit au moment de l'act plutôt que sur la ligne d'arrange. |
+| [JD029 PooledValueNeverDraws](JD029.fr.md) | 🔵 Info | on | Une valeur écrite dans un value set de chaîne qu'une contrainte de la même chaîne refuse : aucun tirage ne peut la rendre. Le dual de JD024, et elle ne voit que ce qui est écrit à l'appel. |
 
 ## Composition
 

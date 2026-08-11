@@ -88,7 +88,7 @@ extraction. Regenerate it from this repository's own SonarCloud project once tha
   rather than quietly dropping it.
 * **`tools/analyzer-count-check` was not ported.** It asserts that a README advertises the right number of
   analyzers; `JustDummies/README.nuget.md` makes no such claim, so the check had no invariant to guard here.
-  Re-add it if the README starts advertising the 28 rules.
+  Re-add it if the README starts advertising the 29 rules.
 * **One source branch carries unmerged JustDummies work**: `agent/extract-adr-specifications` in
   `Reefact/first-class-errors` (31 commits ahead of its `main`, 4 JustDummies files touched). It was not
   included in the cutoff and must be recreated here by hand if it is still wanted.

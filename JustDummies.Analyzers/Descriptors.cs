@@ -266,6 +266,16 @@ internal static class Descriptors {
         description: "A pool is deduplicated under the default equality when it is built, so a value listed twice contributes exactly once. The library declines to weight a pool on purpose — writing a value twice therefore cannot mean 'draw this more often', and the pool is one value smaller than it reads. That gap surfaces far from here, when a distinct collection over the pool gates against the real distinct count and reports a number the author cannot find in their source.",
         helpLinkUri: JustDummiesRule.JD025.HelpLinkUri);
 
+    public static readonly DiagnosticDescriptor PooledValueNeverDraws = new(
+        id: JustDummiesRule.JD029.Id,
+        title: JustDummiesRule.JD029.Title,
+        messageFormat: "This value never draws: {0} refuses it",
+        category: JustDummiesRule.JD029.Category,
+        defaultSeverity: DiagnosticSeverity.Info,
+        isEnabledByDefault: true,
+        description: "A value set composes with the other constraints, so each value passes or fails them and the domain is the values that pass. A value that fails leaves the domain in silence — only an EMPTIED domain is reported, at declaration. This rule is the dual of JD024: where that one reports a constraint narrowing nothing, this one reports a value nothing lets through. It sees only what is written at the call site, since a pool held in a variable is not knowable here; a catalogue loaded at run time is answered instead by IPoolInspection<T>, which reports the same fact against the values actually supplied. Reported as information, not as a warning: narrowing a shared pool at one call site is what the composition is for, so this is a fact to weigh, never a verdict.",
+        helpLinkUri: JustDummiesRule.JD029.HelpLinkUri);
+
     public static readonly DiagnosticDescriptor EmptyRelativeUri = new(
         id: JustDummiesRule.JD026.Id,
         title: JustDummiesRule.JD026.Title,

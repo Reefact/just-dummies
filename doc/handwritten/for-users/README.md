@@ -23,6 +23,7 @@ The conceptual path. Read them in order the first time.
 | [Reproducibility](./guides/reproducibility.en.md) | seeds, scopes, replaying a failure, the xUnit attribute |
 | [Composition](./guides/composition.en.md) | dummies for your own types: `.As`, `Combine`, `OrNull` |
 | [Errors and conflicts](./guides/errors-and-conflicts.en.md) | the exception hierarchy, and how to read a conflict message |
+| [Inspecting a pool](./guides/inspecting-a-pool.en.md) | which of your supplied values still draw, and which constraint took the rest |
 | [Design principles](./guides/design-principles.en.md) | what the library refuses on purpose, and why |
 | [FAQ](./guides/faq.en.md) | short answers to the questions that come up most |
 

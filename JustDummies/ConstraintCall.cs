@@ -125,12 +125,25 @@ internal sealed class ConstraintCall : IEquatable<ConstraintCall> {
 
     #region Fields declarations
 
+    private readonly string _arguments;
+    private readonly string _name;
     private readonly string _rendered;
 
     #endregion
 
     private ConstraintCall(string name, string arguments) {
-        _rendered = name + "(" + arguments + ")";
+        _arguments = arguments;
+        _name      = name;
+        _rendered  = name + "(" + arguments + ")";
+    }
+
+    /// <summary>
+    ///     Projects the constraint into the public value a pool inspection hands back — the same name and the same
+    ///     rendered arguments, in a type a caller may hold, so the engine's own vocabulary stays internal.
+    /// </summary>
+    /// <returns>The public projection of this constraint.</returns>
+    internal DeclaredConstraint ToDeclaredConstraint() {
+        return new DeclaredConstraint(_name, _arguments);
     }
 
     /// <summary>

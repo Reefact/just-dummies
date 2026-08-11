@@ -1,5 +1,6 @@
 #region Usings declarations
 
+using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text;
@@ -349,6 +350,47 @@ internal sealed class StringSpec {
         if (value is null) { throw new ArgumentNullException(nameof(value)); }
 
         return _effectiveAllowed is not null && _effectiveAllowed.Contains(value, StringComparer.Ordinal);
+    }
+
+    /// <summary>
+    ///     Whether an allow-list is in force. The specification is then a filter over supplied values and there is a
+    ///     pool to report on; a shaped string has none. Feeds <see cref="IPoolInspection{T}.IsPooled" />.
+    /// </summary>
+    internal bool IsPooled => _effectiveAllowed is not null;
+
+    /// <summary>
+    ///     The supplied values satisfying every declared constraint, in the order they were supplied — the exact
+    ///     domain <see cref="Generate" /> picks from. A method rather than a property: the surviving pool is the live list
+    ///     the draw samples, so it is copied behind a read-only view rather than handed out for a caller to cast
+    ///     back and mutate.
+    /// </summary>
+    internal IReadOnlyList<string> GetSurvivors() {
+        return _effectiveAllowed is null
+                   ? Array.Empty<string>()
+                   : new ReadOnlyCollection<string>(_effectiveAllowed.ToArray());
+    }
+
+    /// <summary>
+    ///     The supplied values no draw can yield, in the order they were supplied, each with the declared
+    ///     constraints refusing it. Derived from the same <see cref="DeclaredConstraints" /> the pool filter runs
+    ///     on, so a reported reason can never drift from the filtering it explains.
+    /// </summary>
+    internal IReadOnlyList<PoolRejection<string>> GetRejections() {
+        if (_allowed is null) { return Array.Empty<PoolRejection<string>>(); }
+
+        List<PoolRejection<string>> rejections = [];
+        foreach (string value in _allowed) {
+            if (Admits(value)) { continue; }
+
+            List<DeclaredConstraint> culprits = DeclaredConstraints()
+                                                .Where(entry => !entry.Admits(value))
+                                                .Select(entry => entry.Constraint.ToDeclaredConstraint())
+                                                .ToList();
+
+            rejections.Add(new PoolRejection<string>(value, culprits));
+        }
+
+        return new ReadOnlyCollection<PoolRejection<string>>(rejections);
     }
 
     /// <summary>

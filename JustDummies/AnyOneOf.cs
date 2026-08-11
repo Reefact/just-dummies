@@ -1,3 +1,9 @@
+#region Usings declarations
+
+using System.Collections.ObjectModel;
+
+#endregion
+
 namespace JustDummies;
 
 /// <summary>
@@ -36,7 +42,7 @@ namespace JustDummies;
 ///     </example>
 /// </remarks>
 /// <typeparam name="T">The type of the pooled values.</typeparam>
-public sealed class AnyOneOf<T> : IAny<T>, IHasRandomSource, ICardinalityHint<T> {
+public sealed class AnyOneOf<T> : IAny<T>, IHasRandomSource, ICardinalityHint<T>, IPoolInspection<T> {
 
     #region Statics members declarations
 
@@ -53,7 +59,7 @@ public sealed class AnyOneOf<T> : IAny<T>, IHasRandomSource, ICardinalityHint<T>
 
         T[] distinct = values.Distinct().ToArray();
 
-        return new AnyOneOf<T>(source, distinct, distinct, declaring);
+        return new AnyOneOf<T>(source, distinct, distinct, declaring, Array.Empty<PoolRejection<T>>());
     }
 
     #endregion
@@ -63,18 +69,22 @@ public sealed class AnyOneOf<T> : IAny<T>, IHasRandomSource, ICardinalityHint<T>
     // The pool as declared, before any exclusion removed a value from it. It is what tells a conflict message
     // whether the applied exclusion forbids the whole declared pool or merely the part earlier exclusions had left,
     // so the message can make the stronger claim exactly when it is true.
-    private readonly IReadOnlyList<T> _declared;
-    private readonly ConstraintCall   _declaringConstraint;
-    private readonly RandomSource     _source;
-    private readonly IReadOnlyList<T> _values;
+    private readonly IReadOnlyList<T>                _declared;
+    private readonly ConstraintCall                  _declaringConstraint;
+    // What the exclusions took, accumulated as they were declared. A value already removed cannot be removed twice,
+    // so each rejection names exactly one constraint, and the pool as declared minus these is what is left.
+    private readonly IReadOnlyList<PoolRejection<T>> _rejections;
+    private readonly RandomSource                    _source;
+    private readonly IReadOnlyList<T>                _values;
 
     #endregion
 
-    private AnyOneOf(RandomSource source, IReadOnlyList<T> values, IReadOnlyList<T> declared, ConstraintCall declaringConstraint) {
+    private AnyOneOf(RandomSource source, IReadOnlyList<T> values, IReadOnlyList<T> declared, ConstraintCall declaringConstraint, IReadOnlyList<PoolRejection<T>> rejections) {
         _source              = source;
         _values              = values;
         _declared            = declared;
         _declaringConstraint = declaringConstraint;
+        _rejections          = rejections;
     }
 
     RandomSource? IHasRandomSource.Source => _source;
@@ -89,6 +99,14 @@ public sealed class AnyOneOf<T> : IAny<T>, IHasRandomSource, ICardinalityHint<T>
     long? ICardinalityHint<T>.DistinctCardinality => _values.Count;
 
     bool ICardinalityHint<T>.Contains(T value) => _values.Contains(value);
+
+    // Explicit, like the cardinality hint above. A pool is always in force here — it is the whole specification —
+    // so the answer is unconditional, and what the inspection reports is what the exclusions have taken from it.
+    bool IPoolInspection<T>.IsPooled => true;
+
+    IReadOnlyList<T> IPoolInspection<T>.GetSurvivors() => new ReadOnlyCollection<T>(_values.ToArray());
+
+    IReadOnlyList<PoolRejection<T>> IPoolInspection<T>.GetRejections() => _rejections;
 
     /// <summary>
     ///     Requires the generated value to be none of the supplied <paramref name="values" /> — they are removed from
@@ -145,7 +163,17 @@ public sealed class AnyOneOf<T> : IAny<T>, IHasRandomSource, ICardinalityHint<T>
             throw ConflictingAnyConstraintException.NoValueRemains(applying, emptied);
         }
 
-        return new AnyOneOf<T>(_source, survivors, _declared, _declaringConstraint);
+        return new AnyOneOf<T>(_source, survivors, _declared, _declaringConstraint, RejectionsAfter(excluded, applying));
+    }
+
+    // Only the values this exclusion actually takes are recorded: one naming a value the pool never held, or one
+    // an earlier exclusion already removed, removes nothing and has nothing to report.
+    private IReadOnlyList<PoolRejection<T>> RejectionsAfter(IReadOnlyList<T> excluded, ConstraintCall applying) {
+        DeclaredConstraint     declared   = applying.ToDeclaredConstraint();
+        List<PoolRejection<T>> rejections = [.._rejections];
+        rejections.AddRange(_values.Where(excluded.Contains).Select(value => new PoolRejection<T>(value, [declared])));
+
+        return new ReadOnlyCollection<PoolRejection<T>>(rejections);
     }
 
 }

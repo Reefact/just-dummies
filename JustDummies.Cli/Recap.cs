@@ -143,6 +143,7 @@ internal static class Recap {
 
         if (total == 0) {
             Line(console, $"✓ {outcome.File!.FileName} — no constructor parameters to infer.");
+            EntryPoint(outcome, console);
 
             return;
         }
@@ -152,13 +153,29 @@ internal static class Recap {
 
         Line(console, $"✓ {outcome.File!.FileName} — {counted}");
 
-        if (open == 0) { return; }
+        if (open > 0) {
+            Line(console, "  The file will not compile until you resolve it. That is deliberate.");
 
-        Line(console, "  The file will not compile until you resolve it. That is deliberate.");
-
-        foreach (ScaffoldedParameter parameter in plan.Parameters.Where(p => p.Candidates.Count > 0)) {
-            Line(console, $"  {parameter.Name}: several factories qualify — {string.Join(", ", parameter.Candidates)}.");
+            foreach (ScaffoldedParameter parameter in plan.Parameters.Where(p => p.Candidates.Count > 0)) {
+                Line(console, $"  {parameter.Name}: several factories qualify — {string.Join(", ", parameter.Candidates)}.");
+            }
         }
+
+        EntryPoint(outcome, console);
+    }
+
+    /// <summary>
+    ///     The second file, when one was asked for, and the call it just made possible.
+    /// </summary>
+    /// <remarks>
+    ///     Last, and after whatever the open parameters had to say, so that advice keeps naming the file it is
+    ///     about. The call comes from the engine's model rather than being assembled here from a root and a type
+    ///     name — the recap renders facts, it does not decide spellings (§6).
+    /// </remarks>
+    private static void EntryPoint(ScaffoldOutcome outcome, IAnsiConsole console) {
+        if (outcome.EntryPoint is null) { return; }
+
+        Line(console, $"✓ {outcome.EntryPoint.File.FileName} — entry point {outcome.EntryPoint.Call}");
     }
 
     /// <summary>One line, unwrapped, ending in the newline every platform reads the same.</summary>

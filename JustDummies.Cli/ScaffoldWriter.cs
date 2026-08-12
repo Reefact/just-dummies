@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
@@ -43,6 +44,34 @@ internal static class ScaffoldWriter {
         File.WriteAllText(path, file.SourceText, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
 
         return WriteOutcome.Written(path);
+    }
+
+    /// <summary>
+    ///     Writes every file of one scaffold, or none of them.
+    /// </summary>
+    /// <remarks>
+    ///     The whole set is checked before anything is written, which is what a scaffold producing two files
+    ///     needs (§4.5). Writing the generator and then refusing its entry point would leave a working tree
+    ///     neither the developer nor a re-run asked for — half a scaffold, under the exit code of a failure —
+    ///     and the re-run with <c>--force</c> that follows would silently overwrite the half that had landed.
+    /// </remarks>
+    internal static WriteOutcome WriteAll(IReadOnlyList<ScaffoldedFile> files, string directory, bool force) {
+        ArgumentNullException.ThrowIfNull(files);
+        ArgumentNullException.ThrowIfNull(directory);
+
+        if (!force) {
+            foreach (ScaffoldedFile candidate in files) {
+                string path = Path.Combine(directory, candidate.FileName);
+
+                if (File.Exists(path)) { return WriteOutcome.Refused(path); }
+            }
+        }
+
+        WriteOutcome outcome = WriteOutcome.Written(directory);
+
+        foreach (ScaffoldedFile file in files) { outcome = Write(file, directory, force: true); }
+
+        return outcome;
     }
 
 }

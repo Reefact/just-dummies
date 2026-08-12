@@ -101,7 +101,10 @@ public static class Scaffolder {
                                 names.Usings,
                                 parameters);
 
-        return ScaffoldOutcome.Scaffolded(plan, GeneratorEmitter.Emit(plan), Shadowing(plan, library));
+        return ScaffoldOutcome.Scaffolded(plan,
+                                          GeneratorEmitter.Emit(plan),
+                                          Shadowing(plan, library),
+                                          EntryPointEmitter.Emit(plan, options.EntryPoint));
     }
 
     /// <summary>

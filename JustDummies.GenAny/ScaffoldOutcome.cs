@@ -11,11 +11,13 @@ public sealed class ScaffoldOutcome {
     private ScaffoldOutcome(ScaffoldStatus status,
                             ScaffoldPlan? plan,
                             ScaffoldedFile? file,
+                            ScaffoldedEntryPoint? entryPoint,
                             IReadOnlyList<ScaffoldWarning> warnings,
                             IReadOnlyList<string> candidates) {
         Status     = status;
         Plan       = plan;
         File       = file;
+        EntryPoint = entryPoint;
         Warnings   = warnings;
         Candidates = candidates;
     }
@@ -35,6 +37,16 @@ public sealed class ScaffoldOutcome {
     public ScaffoldedFile? File { get; }
 
     /// <summary>
+    ///     The entry-point file emitted beside it, or null when none was asked for (§4.5).
+    /// </summary>
+    /// <remarks>
+    ///     A second file rather than a second shape: <see cref="File" /> is byte-identical whether an entry
+    ///     point was requested or not, which is what keeps §4.4's language floor a property of the generator
+    ///     and not of the run.
+    /// </remarks>
+    public ScaffoldedEntryPoint? EntryPoint { get; }
+
+    /// <summary>
     ///     What is worth saying about this scaffold without stopping it — the shadowing case of §7.
     /// </summary>
     public IReadOnlyList<ScaffoldWarning> Warnings { get; }
@@ -52,11 +64,12 @@ public sealed class ScaffoldOutcome {
     /// <exception cref="ArgumentNullException">Any argument is null.</exception>
     public static ScaffoldOutcome Scaffolded(ScaffoldPlan plan,
                                              ScaffoldedFile file,
-                                             IReadOnlyList<ScaffoldWarning>? warnings = null) {
+                                             IReadOnlyList<ScaffoldWarning>? warnings = null,
+                                             ScaffoldedEntryPoint? entryPoint = null) {
         if (plan is null) { throw new ArgumentNullException(nameof(plan)); }
         if (file is null) { throw new ArgumentNullException(nameof(file)); }
 
-        return new ScaffoldOutcome(ScaffoldStatus.Scaffolded, plan, file, warnings ?? [], candidates: []);
+        return new ScaffoldOutcome(ScaffoldStatus.Scaffolded, plan, file, entryPoint, warnings ?? [], candidates: []);
     }
 
     /// <summary>Nothing was produced, and this is why.</summary>
@@ -67,7 +80,7 @@ public sealed class ScaffoldOutcome {
                                         nameof(status));
         }
 
-        return new ScaffoldOutcome(status, plan: null, file: null, warnings: [], candidates ?? []);
+        return new ScaffoldOutcome(status, plan: null, file: null, entryPoint: null, warnings: [], candidates ?? []);
     }
 
     /// <inheritdoc />

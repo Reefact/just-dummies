@@ -89,6 +89,21 @@ internal static class EmittedCodeCompiler {
     }
 
     /// <summary>
+    ///     Compiles several emitted files together, against the fixture domain.
+    /// </summary>
+    /// <remarks>
+    ///     What an entry point needs (§4.5): it names the generator it reaches, so it has no meaning apart from
+    ///     it, and the pair is what lands in the developer's project.
+    /// </remarks>
+    internal static CSharpCompilation CompileTogether(params string[] emitted) {
+        return CSharpCompilation.Create(
+            assemblyName: "JustDummies.GenAny.Emitted",
+            syntaxTrees: [.. emitted.Select(Parse), Parse(Domain)],
+            references: References,
+            options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+    }
+
+    /// <summary>
     ///     Compiles <paramref name="emitted" /> against <paramref name="domain" /> rather than the fixture one.
     /// </summary>
     /// <remarks>

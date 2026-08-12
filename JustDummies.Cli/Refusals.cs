@@ -68,6 +68,26 @@ internal static class Refusals {
     }
 
     /// <summary>
+    ///     <c>--entry-point any</c> against a project that cannot compile what it would write (§4.5).
+    /// </summary>
+    /// <remarks>
+    ///     Asked of the compilation rather than guessed from the target framework, because the target framework
+    ///     does not decide it: the <c>extension</c> member compiles for <c>netstandard2.0</c> as readily as for
+    ///     <c>net10.0</c> — verified — and what it needs is the language version the project is built at. And
+    ///     refused rather than quietly downgraded to a static root: a developer who asked for
+    ///     <c>Any.Order()</c> and silently got <c>Dummies.Order()</c> would find out at the call site.
+    /// </remarks>
+    internal static void LanguageVersionTooLow(string projectPath, string current, IAnsiConsole console) {
+        ArgumentNullException.ThrowIfNull(projectPath);
+        ArgumentNullException.ThrowIfNull(current);
+
+        Say(console, [
+            Mark + $"--entry-point any emits a C# 14 extension member, and {projectPath} compiles at {current}.",
+            "  Raise <LangVersion> in that project, or ask for --entry-point static:<Name>, which needs no C# 14."
+        ]);
+    }
+
+    /// <summary>
     ///     The sentences for one refused scaffold.
     /// </summary>
     /// <remarks>

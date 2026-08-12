@@ -83,6 +83,16 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   This restores what [ADR-0030](../doc/handwritten/for-maintainers/adr/0030-filter-the-datetimeoffset-pool-by-the-declared-offset.md)
   recorded as a consequence. **A seeded run drawing from such a pool may now yield a different spelling of the same
   instant** — the draw sequence is not a versioned contract below 1.0, and the value's instant is unchanged.
+- **A distinct collection no longer refuses a count its own comparer makes reachable.** `DateTimeOffset` equality
+  compares the instant and ignores the offset, so one instant drawn across a declared offset range is a single
+  value under the default comparer and hundreds under one built on `EqualsExact` — but the cardinality gate,
+  measured in instants, refused the wider count outright:
+  `ListOf(Any.DateTimeOffset().Between(t, t).WithOffsetBetween(-2h, +2h)).Distinct(bySpelling).WithCount(3)` was
+  rejected at declaration as exceeding *"the 1 distinct value(s) the element generator can produce"*, while 208
+  distinct spellings were drawable. A generator whose bound a finer comparer can exceed now answers for the
+  comparer actually in force, and the collection re-asks when one is declared instead of trusting a bound taken
+  before it existed. **No behaviour changes under the default comparer** — the same specification is still
+  refused there, and correctly, because the three spellings really are one value by that equality.
 - **JD023 and JD024 no longer depend on how you spell an unsigned literal.** Both rules declare `UInt16`,
   `UInt32` and `UInt64` in scope, and their constant reader handled none of them — so
   `Any.UInt32().GreaterThan(5).LessThan(3)` was reported while `GreaterThan(5u).LessThan(3u)`, the same

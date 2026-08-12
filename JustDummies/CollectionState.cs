@@ -44,7 +44,7 @@ internal sealed class CollectionState<T> {
     internal static CollectionState<T> Create(IAny<T> item, bool distinct, IEqualityComparer<T>? comparer) {
         if (item is null) { throw new ArgumentNullException(nameof(item)); }
 
-        return new CollectionState<T>(item, AnyDerivation.CardinalityOf(item), CountSpec.Unconstrained, distinct, comparer,
+        return new CollectionState<T>(item, AnyDerivation.CardinalityOf(item, comparer), CountSpec.Unconstrained, distinct, comparer,
                                       Array.Empty<T>(), Array.Empty<IAny<T>>());
     }
 
@@ -184,7 +184,10 @@ internal sealed class CollectionState<T> {
 
     private CollectionState<T> Rebuild(CountSpec count, bool distinct, IEqualityComparer<T>? comparer,
                                        IReadOnlyList<T> fixedContaining, IReadOnlyList<IAny<T>> generatedContaining, ConstraintCall applying) {
-        CollectionState<T> candidate = new(_item, _itemCardinality, count, distinct, comparer, fixedContaining, generatedContaining);
+        // Asked again rather than carried: Create ran before Distinct(comparer) could arrive, so a cardinality
+        // captured there was measured under an equality the collection may since have replaced. Re-asking here --
+        // the single funnel every constraint routes through -- is what makes the two declaration orders agree.
+        CollectionState<T> candidate = new(_item, AnyDerivation.CardinalityOf(_item, comparer), count, distinct, comparer, fixedContaining, generatedContaining);
         candidate.Validate(applying);
 
         return candidate;

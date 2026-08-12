@@ -137,7 +137,11 @@ public sealed class PoolInspectionProperties {
     public void TheVerdictDoesNotDependOnTheOrderItWasWrittenIn() {
         Prop.ForAll(PoolWithRepeatedInstants().ToArbitrary(),
                     testCase => {
-                        DateTimeOffset[] reversed = testCase.Pool.Reverse().ToArray();
+                        // Enumerable.Reverse called by name, not through the extension syntax: on the .NET
+                        // Framework floor an array binds `.Reverse()` to MemoryExtensions.Reverse(this Span<T>),
+                        // which reverses IN PLACE and returns void, so the expression does not compile there while
+                        // it does on net10 -- a break only the 4.7.2 job can see.
+                        DateTimeOffset[] reversed = Enumerable.Reverse(testCase.Pool).ToArray();
 
                         // The claim ADR-0030 records: the two DECLARATION orders of one chain reach one verdict.
                         // Whole report, spelling for spelling, and the seeded draw with it.

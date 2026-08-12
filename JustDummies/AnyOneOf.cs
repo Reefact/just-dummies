@@ -59,7 +59,7 @@ public sealed class AnyOneOf<T> : IAny<T>, IHasRandomSource, ICardinalityHint<T>
 
         T[] distinct = values.Distinct().ToArray();
 
-        return new AnyOneOf<T>(source, distinct, distinct, declaring, Array.Empty<PoolRejection<T>>());
+        return new AnyOneOf<T>(source, distinct, distinct, declaring, []);
     }
 
     #endregion
@@ -71,20 +71,21 @@ public sealed class AnyOneOf<T> : IAny<T>, IHasRandomSource, ICardinalityHint<T>
     // so the message can make the stronger claim exactly when it is true.
     private readonly IReadOnlyList<T>                _declared;
     private readonly ConstraintCall                  _declaringConstraint;
-    // What the exclusions took, accumulated as they were declared. A value already removed cannot be removed twice,
-    // so each rejection names exactly one constraint, and the pool as declared minus these is what is left.
-    private readonly IReadOnlyList<PoolRejection<T>> _rejections;
+    // Provenance for the diagnostic path only: _values drives every draw decision, while this records WHICH
+    // exclusion named what, so a rejection can name EVERY constraint that refuses a value rather than only the one
+    // that happened to remove it first. Same split as the interval engines (OrdinalIntervalSpec._exclusions).
+    private readonly IReadOnlyList<(ConstraintCall Constraint, T[] Values)> _exclusions;
     private readonly RandomSource                    _source;
     private readonly IReadOnlyList<T>                _values;
 
     #endregion
 
-    private AnyOneOf(RandomSource source, IReadOnlyList<T> values, IReadOnlyList<T> declared, ConstraintCall declaringConstraint, IReadOnlyList<PoolRejection<T>> rejections) {
+    private AnyOneOf(RandomSource source, IReadOnlyList<T> values, IReadOnlyList<T> declared, ConstraintCall declaringConstraint, IReadOnlyList<(ConstraintCall Constraint, T[] Values)> exclusions) {
         _source              = source;
         _values              = values;
         _declared            = declared;
         _declaringConstraint = declaringConstraint;
-        _rejections          = rejections;
+        _exclusions          = exclusions;
     }
 
     RandomSource? IHasRandomSource.Source => _source;
@@ -106,7 +107,23 @@ public sealed class AnyOneOf<T> : IAny<T>, IHasRandomSource, ICardinalityHint<T>
 
     IReadOnlyList<T> IPoolInspection<T>.GetSurvivors() => new ReadOnlyCollection<T>(_values.ToArray());
 
-    IReadOnlyList<PoolRejection<T>> IPoolInspection<T>.GetRejections() => _rejections;
+    IReadOnlyList<PoolRejection<T>> IPoolInspection<T>.GetRejections() {
+        List<PoolRejection<T>> rejections = [];
+        foreach (T value in _declared) {
+            if (_values.Contains(value)) { continue; }
+
+            // Every exclusion naming the value, not only the one that removed it: a reader told to loosen one of
+            // two would find the value still absent, which is the misdirection PoolRejection exists to prevent.
+            List<DeclaredConstraint> culprits = _exclusions
+                                                .Where(entry => entry.Values.Contains(value))
+                                                .Select(entry => entry.Constraint.ToDeclaredConstraint())
+                                                .ToList();
+
+            rejections.Add(new PoolRejection<T>(value, culprits));
+        }
+
+        return new ReadOnlyCollection<PoolRejection<T>>(rejections);
+    }
 
     /// <summary>
     ///     Requires the generated value to be none of the supplied <paramref name="values" /> — they are removed from
@@ -163,17 +180,7 @@ public sealed class AnyOneOf<T> : IAny<T>, IHasRandomSource, ICardinalityHint<T>
             throw ConflictingAnyConstraintException.NoValueRemains(applying, emptied);
         }
 
-        return new AnyOneOf<T>(_source, survivors, _declared, _declaringConstraint, RejectionsAfter(excluded, applying));
-    }
-
-    // Only the values this exclusion actually takes are recorded: one naming a value the pool never held, or one
-    // an earlier exclusion already removed, removes nothing and has nothing to report.
-    private IReadOnlyList<PoolRejection<T>> RejectionsAfter(IReadOnlyList<T> excluded, ConstraintCall applying) {
-        DeclaredConstraint     declared   = applying.ToDeclaredConstraint();
-        List<PoolRejection<T>> rejections = [.._rejections];
-        rejections.AddRange(_values.Where(excluded.Contains).Select(value => new PoolRejection<T>(value, [declared])));
-
-        return new ReadOnlyCollection<PoolRejection<T>>(rejections);
+        return new AnyOneOf<T>(_source, survivors, _declared, _declaringConstraint, [.. _exclusions, (applying, excluded.ToArray())]);
     }
 
 }

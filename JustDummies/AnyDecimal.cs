@@ -175,7 +175,7 @@ public sealed class AnyDecimal : IAny<decimal>, IHasRandomSource, ICardinalityHi
         if (values is null) { throw new ArgumentNullException(nameof(values)); }
         if (values.Length == 0) { throw new ArgumentException("At least one value is required.", nameof(values)); }
 
-        return new AnyDecimal(_source, _spec.WithExcluded(values, ConstraintCall.Of(nameof(Except), Join(values))));
+        return new AnyDecimal(_source, _spec.WithExcluded(values.ToArray(), ConstraintCall.Of(nameof(Except), Join(values))));
     }
 
     /// <summary>

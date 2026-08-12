@@ -292,7 +292,7 @@ public sealed class AnyEnum<TEnum> : IAny<TEnum>, IHasRandomSource, ICardinality
 
     private AnyEnum<TEnum> WithExcluded(TEnum[] values, ConstraintCall applying) {
         List<TEnum>                                            excluded   = [.. _excluded, .. values];
-        List<(ConstraintCall Constraint, TEnum[] Values)>       exclusions = [.. _exclusions, (applying, values)];
+        List<(ConstraintCall Constraint, TEnum[] Values)>       exclusions = [.. _exclusions, (applying, values.ToArray())];
 
         return Validated(new AnyEnum<TEnum>(_source, _universe, _combinable, _allowed, _allowedConstraint, excluded, exclusions), applying);
     }

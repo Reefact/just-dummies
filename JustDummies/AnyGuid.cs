@@ -102,7 +102,13 @@ public sealed class AnyGuid : IAny<Guid>, IHasRandomSource, ICardinalityHint<Gui
     bool IPoolInspection<Guid>.IsPooled => _effectiveAllowed is not null;
 
     IReadOnlyList<Guid> IPoolInspection<Guid>.GetSurvivors() {
-        return _effectiveAllowed is null ? Array.Empty<Guid>() : new ReadOnlyCollection<Guid>(_effectiveAllowed.ToArray());
+        if (_effectiveAllowed is null) { return Array.Empty<Guid>(); }
+        // A pin short-circuits Generate before the allow-list is ever reached, so it is the whole drawable domain.
+        // Reporting the rest as survivors would name values no draw can yield -- the one direction this feature
+        // must never take.
+        if (_pinned is Guid pinned) { return new ReadOnlyCollection<Guid>([pinned]); }
+
+        return new ReadOnlyCollection<Guid>(_effectiveAllowed.ToArray());
     }
 
     IReadOnlyList<PoolRejection<Guid>> IPoolInspection<Guid>.GetRejections() {
@@ -110,6 +116,13 @@ public sealed class AnyGuid : IAny<Guid>, IHasRandomSource, ICardinalityHint<Gui
 
         List<PoolRejection<Guid>> rejections = [];
         foreach (Guid value in _allowed) {
+            // A pooled value the pin displaces is refused as surely as an excluded one, and the pin is what to
+            // loosen. Validated guarantees the pin is itself in the pool, so it is never its own culprit.
+            if (_pinned is Guid pinned && value != pinned) {
+                rejections.Add(new PoolRejection<Guid>(value, [_pinnedConstraint!.ToDeclaredConstraint()]));
+
+                continue;
+            }
             if (!_excludedSet.Contains(value)) { continue; }
 
             List<DeclaredConstraint> culprits = _exclusions
@@ -207,7 +220,7 @@ public sealed class AnyGuid : IAny<Guid>, IHasRandomSource, ICardinalityHint<Gui
 
     private AnyGuid WithExcluded(Guid[] values, ConstraintCall applying) {
         List<Guid>                                        excluded   = [.. _excluded, .. values];
-        List<(ConstraintCall Constraint, Guid[] Values)>  exclusions = [.. _exclusions, (applying, values)];
+        List<(ConstraintCall Constraint, Guid[] Values)>  exclusions = [.. _exclusions, (applying, values.ToArray())];
 
         return Validated(new AnyGuid(_source, _pinned, _pinnedConstraint, _allowed, _allowedConstraint, excluded, exclusions), applying);
     }

@@ -73,9 +73,18 @@ public sealed class AnyDateTime : IAny<DateTime>, IHasRandomSource, ICardinality
     // ordinal back to the caller's own type.
     bool IPoolInspection<DateTime>.IsPooled => _spec.IsPooled;
 
-    IReadOnlyList<DateTime> IPoolInspection<DateTime>.GetSurvivors() => _spec.GetSurvivors(Val);
+    IReadOnlyList<DateTime> IPoolInspection<DateTime>.GetSurvivors() => _spec.GetSurvivors(Supplied);
 
-    IReadOnlyList<PoolRejection<DateTime>> IPoolInspection<DateTime>.GetRejections() => _spec.GetRejections(Val);
+    IReadOnlyList<PoolRejection<DateTime>> IPoolInspection<DateTime>.GetRejections() => _spec.GetRejections(Supplied);
+
+    /// <summary>
+    ///     The value as the caller supplied it, recovered from the ordinal — the same projection
+    ///     <see cref="Generate" /> uses, and for the same reason: an ordinal carries only the ticks, so rebuilding
+    ///     from it would report a value whose <see cref="DateTime.Kind" /> the draw never yields.
+    /// </summary>
+    private DateTime Supplied(ulong ordinal) {
+        return _allowedOriginals is not null && _allowedOriginals.TryGetValue(ordinal, out DateTime original) ? original : Val(ordinal);
+    }
 
     /// <summary>Requires an instant strictly after <paramref name="instant" />.</summary>
     /// <param name="instant">The exclusive lower bound.</param>

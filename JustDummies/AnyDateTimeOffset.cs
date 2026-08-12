@@ -34,7 +34,7 @@ public sealed class AnyDateTimeOffset : IAny<DateTimeOffset>, IHasRandomSource, 
     internal static AnyDateTimeOffset Create(RandomSource source) {
         if (source is null) { throw new ArgumentNullException(nameof(source)); }
 
-        return new AnyDateTimeOffset(source, OrdinalIntervalSpec.Unconstrained("DateTimeOffset", ordinal => V(Val(ordinal)), Ord(DateTimeOffset.MinValue), Ord(DateTimeOffset.MaxValue)), null, null, 0, 0, []);
+        return new AnyDateTimeOffset(source, OrdinalIntervalSpec.Unconstrained("DateTimeOffset", ordinal => V(Val(ordinal)), Ord(DateTimeOffset.MinValue), Ord(DateTimeOffset.MaxValue)), null, null, 0, 0);
     }
 
     private static ulong Ord(DateTimeOffset value) {
@@ -71,29 +71,29 @@ public sealed class AnyDateTimeOffset : IAny<DateTimeOffset>, IHasRandomSource, 
 
     #region Fields declarations
 
-    private readonly IReadOnlyDictionary<ulong, DateTimeOffset>? _allowedOriginals;
-    private readonly ConstraintCall?                             _offsetConstraint;
-    private readonly int                                         _offsetMaxMinutes;
-    private readonly int                                         _offsetMinMinutes;
-    private readonly RandomSource                                _source;
-    // The pooled values the offset dimension refused. That filter runs OUTSIDE the ordinal engine -- the engine
-    // never sees them -- so without this the inspection would report them neither as survivors nor as
-    // rejections, and the supplied pool would stop adding up (ADR-0067).
-    private readonly IReadOnlyList<DateTimeOffset>               _offsetRejected;
-    private readonly OrdinalIntervalSpec                         _spec;
+    // EVERY spelling the caller supplied, grouped by instant and in supplied order -- never filtered. An ordinal
+    // carries the instant alone, so this is where the offset a caller wrote survives; and because the offset
+    // dimension may be declared before or after the pool, whichever comes second has to be able to judge the WHOLE
+    // supplied set. Filtering here is what used to make the two declaration orders disagree: the earlier one
+    // collapsed same-instant spellings to whichever was written first, and the later one then judged that
+    // arbitrary survivor -- refusing a pool that demonstrably held an admissible value.
+    private readonly IReadOnlyDictionary<ulong, DateTimeOffset[]>? _allowedOriginals;
+    private readonly ConstraintCall?                               _offsetConstraint;
+    private readonly int                                           _offsetMaxMinutes;
+    private readonly int                                           _offsetMinMinutes;
+    private readonly RandomSource                                  _source;
+    private readonly OrdinalIntervalSpec                           _spec;
 
     #endregion
 
-    private AnyDateTimeOffset(RandomSource source, OrdinalIntervalSpec spec, IReadOnlyDictionary<ulong, DateTimeOffset>? allowedOriginals,
-                             ConstraintCall? offsetConstraint, int offsetMinMinutes, int offsetMaxMinutes,
-                             IReadOnlyList<DateTimeOffset> offsetRejected) {
+    private AnyDateTimeOffset(RandomSource source, OrdinalIntervalSpec spec, IReadOnlyDictionary<ulong, DateTimeOffset[]>? allowedOriginals,
+                             ConstraintCall? offsetConstraint, int offsetMinMinutes, int offsetMaxMinutes) {
         _source           = source;
         _spec             = spec;
         _allowedOriginals = allowedOriginals;
         _offsetConstraint = offsetConstraint;
         _offsetMinMinutes = offsetMinMinutes;
         _offsetMaxMinutes = offsetMaxMinutes;
-        _offsetRejected   = offsetRejected;
     }
 
     RandomSource? IHasRandomSource.Source => _source;
@@ -107,37 +107,30 @@ public sealed class AnyDateTimeOffset : IAny<DateTimeOffset>, IHasRandomSource, 
     // ordinal back to the caller's own type.
     bool IPoolInspection<DateTimeOffset>.IsPooled => _spec.IsPooled;
 
+    // No offset special case on either side. The offset dimension is carried into the engine as an exclusion over
+    // the instants no supplied spelling can satisfy, so the engine's own report already knows about it and names
+    // it -- alongside every other constraint refusing the same instant, which is what a rejection owes its reader.
     IReadOnlyList<DateTimeOffset> IPoolInspection<DateTimeOffset>.GetSurvivors() => _spec.GetSurvivors(Supplied);
 
-    IReadOnlyList<PoolRejection<DateTimeOffset>> IPoolInspection<DateTimeOffset>.GetRejections() {
-        // The engine reports what IT refused; the offset dimension filters the pool before the engine ever sees a
-        // value, so those refusals have to be added back here or the supplied pool would not add up.
-        List<PoolRejection<DateTimeOffset>> rejections = [.. _spec.GetRejections(Supplied)];
-        if (_offsetConstraint is not null) {
-            DeclaredConstraint declared = _offsetConstraint.ToDeclaredConstraint();
-            foreach (DateTimeOffset value in _offsetRejected) {
-                // The offset is what removed the value, but it need not be the only thing refusing it: the value
-                // left the allow-list before the engine judged it, so the engine's own report cannot see it and
-                // every bound and exclusion that also refuses its instant would go unnamed. A reader repairing the
-                // offset alone would find the value still undrawable, which is exactly what PoolRejection promises
-                // not to do. Asked of the engine rather than recomputed here, so the two reports say the same thing.
-                List<DeclaredConstraint> culprits = [declared];
-                culprits.AddRange(_spec.ConstraintsRefusing(Ord(value)).Where(constraint => constraint != declared));
-
-                rejections.Add(new PoolRejection<DateTimeOffset>(value, culprits));
-            }
-        }
-
-        return new ReadOnlyCollection<PoolRejection<DateTimeOffset>>(rejections);
-    }
+    IReadOnlyList<PoolRejection<DateTimeOffset>> IPoolInspection<DateTimeOffset>.GetRejections() => _spec.GetRejections(Supplied);
 
     /// <summary>
     ///     The value as the caller supplied it, recovered from the ordinal — the same projection
-    ///     <see cref="Generate" /> uses. An ordinal carries only the instant, so rebuilding from it would report a
-    ///     value whose offset the draw never yields.
+    ///     <see cref="Generate" /> uses, so a survivor is what a draw actually yields. An ordinal carries only the
+    ///     instant, so rebuilding from it would report a value whose offset the draw never returns. Of the spellings
+    ///     the caller wrote for one instant, the first the declared offset admits: it is the one the draw returns,
+    ///     and choosing it here rather than when the pool was declared is what lets the offset be declared on either
+    ///     side of it.
     /// </summary>
     private DateTimeOffset Supplied(ulong ordinal) {
-        return _allowedOriginals is not null && _allowedOriginals.TryGetValue(ordinal, out DateTimeOffset original) ? original : Val(ordinal);
+        if (_allowedOriginals is null) { return Val(ordinal); }
+        if (!_allowedOriginals.TryGetValue(ordinal, out DateTimeOffset[]? spellings) || spellings is null) { return Val(ordinal); }
+
+        int admitted = Array.FindIndex(spellings, SatisfiesDeclaredOffset);
+
+        // A negative index is reached only for an instant the offset refuses outright, which the engine reports as
+        // a rejection: the caller is owed a value they wrote, so the first spelling is the honest one to hand back.
+        return admitted >= 0 ? spellings[admitted] : spellings[0];
     }
 
     /// <summary>Requires an instant strictly after <paramref name="instant" />.</summary>
@@ -254,29 +247,26 @@ public sealed class AnyDateTimeOffset : IAny<DateTimeOffset>, IHasRandomSource, 
         if (values.Length == 0) { throw new ArgumentException("At least one value is required.", nameof(values)); }
 
         ConstraintCall applying = ConstraintCall.Of(nameof(OneOf), Join(values));
-        // A pooled value is returned as given, offset included — rebuilding it from the ordinal would normalize the
-        // offset to UTC. So when an offset constraint is already in force, the pool is FILTERED by it rather than
-        // the constraint being ignored: a value carrying a different offset is one this generator must not produce.
-        DateTimeOffset[] admitted = _offsetConstraint is not null ? values.Where(SatisfiesDeclaredOffset).ToArray() : values;
-        if (admitted.Length == 0) { throw OffsetExcludesEveryPooledValue(applying, _offsetMinMinutes, _offsetMaxMinutes); }
+        // Re-declaring the SAME pool is a no-op in the engine, which returns itself rather than conflicting, so it
+        // must be one here too: rebuilding would repeat whatever this method records beside the spec.
+        OrdinalIntervalSpec allowed = _spec.WithAllowed(values.Select(Ord).ToArray(), applying);
+        if (ReferenceEquals(allowed, _spec)) { return this; }
 
-        // Re-declaring the SAME pool is a no-op in the engine, which returns itself rather than conflicting. The
-        // offset-refused list has to honour that too: appending to it again would grow the report on a generator
-        // whose drawable domain did not move, so GetRejections would count one declared value several times.
-        OrdinalIntervalSpec spec = _spec.WithAllowed(admitted.Select(Ord).ToArray(), applying);
-        if (ReferenceEquals(spec, _spec)) { return this; }
+        // Every spelling the caller wrote, grouped by instant and in supplied order. Nothing is dropped for
+        // carrying the wrong offset: that judgement belongs to the offset dimension, which is applied below and
+        // may equally be applied later, and it needs the whole set to reach the same verdict either way.
+        Dictionary<ulong, List<DateTimeOffset>> originals = [];
+        foreach (DateTimeOffset value in values) {
+            ulong ordinal = Ord(value);
+            if (!originals.ContainsKey(ordinal)) { originals.Add(ordinal, []); }
 
-        // Remember the supplied values by instant, so generation returns them as given: the ordinal space
-        // only carries the instant, and rebuilding from it would silently normalize the offset to UTC.
-        Dictionary<ulong, DateTimeOffset> originals = [];
-        foreach (DateTimeOffset value in admitted) {
-            if (!originals.ContainsKey(Ord(value))) { originals.Add(Ord(value), value); }
+            originals[ordinal].Add(value);
         }
 
-        // Guarded on the constraint, exactly as `admitted` above is: with no offset declared there is nothing
-        // refusing anything, and the default 0..0 window would otherwise read as "UTC only" and invent rejections.
-        return new AnyDateTimeOffset(_source, spec, originals, _offsetConstraint, _offsetMinMinutes, _offsetMaxMinutes,
-                                     _offsetConstraint is null ? _offsetRejected : OffsetRefusedAmong(values));
+        Dictionary<ulong, DateTimeOffset[]> supplied = originals.ToDictionary(entry => entry.Key, entry => entry.Value.ToArray());
+
+        return new AnyDateTimeOffset(_source, NarrowedToTheDeclaredOffset(allowed, supplied, applying, _offsetMinMinutes, _offsetMaxMinutes, _offsetConstraint),
+                                     supplied, _offsetConstraint, _offsetMinMinutes, _offsetMaxMinutes);
     }
 
     /// <summary>Requires the instant to be none of the supplied values (compared by instant).</summary>
@@ -308,7 +298,9 @@ public sealed class AnyDateTimeOffset : IAny<DateTimeOffset>, IHasRandomSource, 
     public DateTimeOffset Generate() {
         SeededRandom random  = _source.Current;
         ulong        ordinal = _spec.GenerateOrdinal(random);
-        if (_allowedOriginals is not null && _allowedOriginals.TryGetValue(ordinal, out DateTimeOffset original)) { return original; }
+        // Supplied picks among the spellings without drawing: the choice is decided by the declared offset, not by
+        // chance, so a pooled generator consumes exactly one random number whatever the pool holds (ADR-0049).
+        if (_allowedOriginals is not null) { return Supplied(ordinal); }
         if (_offsetConstraint is null) { return Val(ordinal); }
 
         int minutes = _offsetMinMinutes == _offsetMaxMinutes
@@ -322,7 +314,42 @@ public sealed class AnyDateTimeOffset : IAny<DateTimeOffset>, IHasRandomSource, 
 
     /// <summary>Carries the offset state forward onto a new spec — every instant constraint routes through here.</summary>
     private AnyDateTimeOffset With(OrdinalIntervalSpec spec) {
-        return new AnyDateTimeOffset(_source, spec, _allowedOriginals, _offsetConstraint, _offsetMinMinutes, _offsetMaxMinutes, _offsetRejected);
+        return new AnyDateTimeOffset(_source, spec, _allowedOriginals, _offsetConstraint, _offsetMinMinutes, _offsetMaxMinutes);
+    }
+
+    /// <summary>
+    ///     <paramref name="spec" /> carrying the declared offset dimension, as an <b>exclusion</b> over the instants
+    ///     no supplied spelling can satisfy.
+    /// </summary>
+    /// <remarks>
+    ///     <para>
+    ///         The offset is a dimension the ordinal space does not carry, so it cannot be a bound the engine tests.
+    ///         Recording it as an exclusion is what puts it inside the engine anyway: the excluded ordinals are gone
+    ///         from the draw, and — because an exclusion is one of the engine's own declarations — the offset is
+    ///         named as a culprit by the same report that names the bounds, together with anything else refusing the
+    ///         same instant. That is <see cref="Except" />'s mechanism, reused rather than mirrored.
+    ///     </para>
+    ///     <para>
+    ///         Called from both sides — from <c>OneOf</c> when the offset came first, and from
+    ///         <see cref="WithOffsetRange" /> when the pool did — over the same unfiltered set of spellings. That is
+    ///         what makes the two declaration orders reach one verdict (ADR-0030), and it holds only because nothing
+    ///         upstream of here has already dropped a spelling.
+    ///     </para>
+    /// </remarks>
+    private static OrdinalIntervalSpec NarrowedToTheDeclaredOffset(OrdinalIntervalSpec spec, IReadOnlyDictionary<ulong, DateTimeOffset[]> supplied,
+                                                                   ConstraintCall applying, int minMinutes, int maxMinutes, ConstraintCall? offsetConstraint) {
+        if (offsetConstraint is null) { return spec; }
+
+        ulong[] refused = supplied.Where(entry => !entry.Value.Any(value => SatisfiesOffset(value, minMinutes, maxMinutes)))
+                                  .Select(entry => entry.Key)
+                                  .ToArray();
+        if (refused.Length == 0) { return spec; }
+
+        // Kept ahead of the engine's own emptiness check so the message names the offset dimension rather than
+        // reporting a generic exhaustion: an offset no supplied spelling carries is the one thing worth saying.
+        if (refused.Length == supplied.Count) { throw OffsetExcludesEveryPooledValue(applying, minMinutes, maxMinutes); }
+
+        return spec.WithExcluded(refused, offsetConstraint);
     }
 
     [SuppressMessage(SonarRule.S125.Category, SonarRule.S125.Id, Justification = SuppressionJustification.S125.ProseNotDisabledCode)]
@@ -342,48 +369,20 @@ public sealed class AnyDateTimeOffset : IAny<DateTimeOffset>, IHasRandomSource, 
 
         OrdinalIntervalSpec spec = _spec.WithMinimum(lowerUtc, applying).WithMaximum(upperUtc, applying);
 
-        // The mirror of OneOf's filter, so the two orders reach the same verdict: an offset declared AFTER a pool
-        // narrows that pool to the values it admits, and contradicts when it admits none.
+        // The same derivation OneOf runs, over the same unfiltered spellings, so declaring the offset after the pool
+        // reaches the verdict declaring it before does (ADR-0030). It used to be a mirrored second filter here, over
+        // a table OneOf had already collapsed -- which is exactly how the two orders came to disagree.
         if (_allowedOriginals is not null) {
-            Dictionary<ulong, DateTimeOffset> admitted = _allowedOriginals
-                                                         .Where(entry => SatisfiesOffset(entry.Value, minMinutes, maxMinutes))
-                                                         .ToDictionary(entry => entry.Key, entry => entry.Value);
-            if (admitted.Count == 0) { throw OffsetExcludesEveryPooledValue(applying, minMinutes, maxMinutes); }
-
-            return new AnyDateTimeOffset(_source, spec.NarrowingAllowed(admitted.Keys.ToArray(), applying), admitted, applying, minMinutes, maxMinutes,
-                                         [.. _offsetRejected, .. _allowedOriginals.Where(entry => !SatisfiesOffset(entry.Value, minMinutes, maxMinutes)).Select(entry => entry.Value)]);
+            return new AnyDateTimeOffset(_source, NarrowedToTheDeclaredOffset(spec, _allowedOriginals, applying, minMinutes, maxMinutes, applying),
+                                         _allowedOriginals, applying, minMinutes, maxMinutes);
         }
 
-        return new AnyDateTimeOffset(_source, spec, _allowedOriginals, applying, minMinutes, maxMinutes, _offsetRejected);
-    }
-
-    /// <summary>
-    ///     The offset-refused list extended with the values of <paramref name="values" /> the declared offset turns
-    ///     away, each added once. Deduplicated by <b>exact spelling</b> — instant and offset — rather than by
-    ///     <see cref="DateTimeOffset" />'s own equality, which compares the instant alone: two spellings of one
-    ///     instant are two things the caller wrote, and the offset is precisely what is being judged here.
-    /// </summary>
-    private IReadOnlyList<DateTimeOffset> OffsetRefusedAmong(DateTimeOffset[] values) {
-        HashSet<(long UtcTicks, TimeSpan Offset)> seen    = new(_offsetRejected.Select(Spelling));
-        List<DateTimeOffset>                      refused = [.. _offsetRejected];
-        foreach (DateTimeOffset value in values) {
-            if (SatisfiesDeclaredOffset(value)) { continue; }
-            if (!seen.Add(Spelling(value))) { continue; }
-
-            refused.Add(value);
-        }
-
-        return refused;
-    }
-
-    /// <summary>The value as the caller wrote it: the instant it names, and the offset it carries.</summary>
-    private static (long UtcTicks, TimeSpan Offset) Spelling(DateTimeOffset value) {
-        return (value.UtcTicks, value.Offset);
+        return new AnyDateTimeOffset(_source, spec, _allowedOriginals, applying, minMinutes, maxMinutes);
     }
 
     /// <summary>Whether <paramref name="value" /> carries an offset the declared offset dimension admits.</summary>
     private bool SatisfiesDeclaredOffset(DateTimeOffset value) {
-        return SatisfiesOffset(value, _offsetMinMinutes, _offsetMaxMinutes);
+        return _offsetConstraint is null || SatisfiesOffset(value, _offsetMinMinutes, _offsetMaxMinutes);
     }
 
     private static bool SatisfiesOffset(DateTimeOffset value, int minMinutes, int maxMinutes) {

@@ -61,7 +61,103 @@ public sealed class PoolInspectionProperties {
         return (value.UtcTicks, value.Offset);
     }
 
+    /// <summary>
+    ///     Arbitrary pools drawn from FEW days and several offsets, so two spellings of one instant occur often —
+    ///     the shape that made the two declaration orders disagree. The offset is picked out of the pool, so the
+    ///     generator is declarable whichever order it is written in.
+    /// </summary>
+    private static Gen<(DateTimeOffset[] Pool, TimeSpan Offset)> PoolWithRepeatedInstants() {
+        return from spellings in Gen.NonEmptyListOf(from day in Gen.Choose(1, 4)
+                                                    from hours in Gen.Choose(0, 2)
+                                                    select new DateTimeOffset(2026, 1, day, 0, 0, 0, TimeSpan.Zero).ToOffset(TimeSpan.FromHours(hours)))
+               from index in Gen.Choose(0, 63)
+               let pool = spellings.Take(8).ToArray()
+               select (pool, pool[index % pool.Length].Offset);
+    }
+
+    private static AnyDateTimeOffset Build(DateTimeOffset[] pool, TimeSpan offset, bool poolFirst) {
+        return poolFirst
+                   ? Any.WithSeed(1).DateTimeOffset().OneOf(pool).WithOffset(offset)
+                   : Any.WithSeed(1).DateTimeOffset().WithOffset(offset).OneOf(pool);
+    }
+
+    /// <summary>
+    ///     What one spelling of the chain reports, rendered so two of them can be compared: the conflict if it
+    ///     refuses, otherwise the survivors and the rejections with their reasons. Sorted, because the supplied
+    ///     order is the reported order and reordering the pool legitimately reorders both lists — it is the
+    ///     <i>content</i> that must not move.
+    /// </summary>
+    private static string Report(DateTimeOffset[] pool, TimeSpan offset, bool poolFirst) {
+        AnyDateTimeOffset generator;
+        try { generator = Build(pool, offset, poolFirst); } catch (ConflictingAnyConstraintException caught) { return $"CONFLICT {caught.Message}"; }
+
+        IPoolInspection<DateTimeOffset> inspection = generator;
+
+        return string.Join(";", inspection.GetSurvivors().Select(Spelling).OrderBy(spelling => spelling))
+             + "|" + string.Join(";", inspection.GetRejections().Select(rejection => $"{Spelling(rejection.Value)}<-{string.Join(",", rejection.RejectedBy)}").OrderBy(text => text, StringComparer.Ordinal));
+    }
+
+    /// <summary>
+    ///     The same report reduced to the <b>instant</b> of each value. That is the granularity a pool of
+    ///     <see cref="DateTimeOffset" /> has an identity at — <c>OneOf</c> publishes "duplicates (same instant) are
+    ///     ignored" — so it is what must survive REORDERING the supplied array. The spelling must not: both lists
+    ///     are published as being "in the order they were supplied", and for an instant the caller wrote twice the
+    ///     representative is the first of those spellings, which reordering legitimately changes.
+    /// </summary>
+    private static string ReportByInstant(DateTimeOffset[] pool, TimeSpan offset, bool poolFirst) {
+        AnyDateTimeOffset generator;
+        try { generator = Build(pool, offset, poolFirst); } catch (ConflictingAnyConstraintException caught) { return $"CONFLICT {caught.Message}"; }
+
+        IPoolInspection<DateTimeOffset> inspection = generator;
+
+        return string.Join(";", inspection.GetSurvivors().Select(value => value.UtcTicks).OrderBy(ticks => ticks))
+             + "|" + string.Join(";", inspection.GetRejections().Select(rejection => $"{rejection.Value.UtcTicks}<-{string.Join(",", rejection.RejectedBy)}").OrderBy(text => text, StringComparer.Ordinal));
+    }
+
+    /// <summary>
+    ///     What one spelling of the chain draws from a fixed seed. Compared only between the two DECLARATION orders
+    ///     of one supplied array: reordering the array reorders the pool, and a pool is drawn from by index, so a
+    ///     seeded sequence is expected to differ there.
+    /// </summary>
+    private static string Draws(DateTimeOffset[] pool, TimeSpan offset, bool poolFirst) {
+        AnyDateTimeOffset generator;
+        try { generator = Build(pool, offset, poolFirst); } catch (ConflictingAnyConstraintException caught) { return $"CONFLICT {caught.Message}"; }
+
+        return string.Join(";", Enumerable.Range(0, 8).Select(_ => Spelling(generator.Generate())));
+    }
+
     #endregion
+
+    // The defect this closes: the pool was collapsed to one spelling per instant AT DECLARATION, so whichever of
+    // the offset filter and the instant dedup ran first decided which spelling the other one got to judge. Writing
+    // the same specification in a different order -- or merely re-sorting the supplied array -- changed the
+    // survivors, the rejection count, and whether the declaration was refused at all. ADR-0030 records the
+    // opposite as a consequence of the offset filter, so this quantifies it rather than pinning one example.
+    [Fact(DisplayName = "The verdict does not depend on the order the pool or the offset was written in.")]
+    public void TheVerdictDoesNotDependOnTheOrderItWasWrittenIn() {
+        Prop.ForAll(PoolWithRepeatedInstants().ToArbitrary(),
+                    testCase => {
+                        DateTimeOffset[] reversed = testCase.Pool.Reverse().ToArray();
+
+                        // The claim ADR-0030 records: the two DECLARATION orders of one chain reach one verdict.
+                        // Whole report, spelling for spelling, and the seeded draw with it.
+                        bool declarationOrderAgrees =
+                            Report(testCase.Pool, testCase.Offset, poolFirst: true) == Report(testCase.Pool, testCase.Offset, poolFirst: false)
+                         && Report(reversed, testCase.Offset, poolFirst: true) == Report(reversed, testCase.Offset, poolFirst: false)
+                         && Draws(testCase.Pool, testCase.Offset, poolFirst: true) == Draws(testCase.Pool, testCase.Offset, poolFirst: false)
+                         && Draws(reversed, testCase.Offset, poolFirst: true) == Draws(reversed, testCase.Offset, poolFirst: false);
+
+                        // And re-sorting the supplied array cannot change WHICH instants draw, which are refused,
+                        // or why — nor whether the declaration is refused at all. That last one is what used to
+                        // break: sorting a catalogue the other way turned a satisfiable pool into a conflict.
+                        string byInstant = ReportByInstant(testCase.Pool, testCase.Offset, poolFirst: true);
+
+                        return declarationOrderAgrees
+                            && ReportByInstant(reversed, testCase.Offset, poolFirst: true) == byInstant
+                            && ReportByInstant(reversed, testCase.Offset, poolFirst: false) == byInstant;
+                    })
+            .QuickCheckThrowOnFailure();
+    }
 
     // The string property above cannot see a pool that fails to add up, because Any.String()'s pool is already
     // distinct before the report is built. This one quantifies over the family whose pool is filtered on TWO

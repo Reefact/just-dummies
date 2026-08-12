@@ -130,6 +130,7 @@ dum generate <Type> [<Type>...] [options]
 | `--entry-point-namespace <ns>` *(v1.1)* | the emitted type's namespace | Namespace of the entry-point file alone. |
 | `--force` | off | Overwrite an existing file. |
 | `--dry-run` | off | Print the file to stdout; write nothing. |
+| `--format <f>` *(v1.1)* | `human` | How the run reports itself: `human` or `json` (§6.1). |
 
 That is the entire surface. There is no config file, no `init`, no `list`, no `--all`, and — by
 D1 — no `check`. §16 lists what is deliberately deferred.
@@ -656,6 +657,38 @@ assembled by the console:
 two files, printed in the order they would be written, generator first; no separator is invented
 between them, because each opens with the three header lines of §4.3 that name it.
 
+### 6.1 The machine report *(v1.1)*
+
+`--format json` replaces the recap with **one JSON document on stdout**, for the caller that is a
+script rather than a reader. Decision:
+[ADR-0071](../adr/0071-report-a-run-as-data-without-moving-the-exit-codes.md).
+
+It exists because the exit code cannot carry what §7 decided. A file written with open parameters is
+a **success** — the developer's own build reports the rest, which is the whole of ADR-0060 — and that
+is right for a person and useless to a script scaffolding forty types in one invocation: exit `0`
+reads the same whether every parameter resolved or a third of them did not. `summary.openParameters`
+is that missing number, and the per-parameter rows are why it is what it is.
+
+**The exit codes do not move.** §7 is a published contract, and a run that wrote its files still
+exits `0` whatever the report says. This adds a channel; it does not redefine one.
+
+**stdout carries the document and nothing else.** The recap is suppressed there, since a reader's
+prose would make the document unparseable. Everything written for a person — refusals, the project's
+own diagnostics, the `--dry-run` notice — keeps going to stderr exactly as it does under `human`, so
+`2>/dev/null` leaves a clean pipe.
+
+**One document per run, with no exception to remember.** A run that stopped before its first scaffold
+— no project, a project that would not load, `--entry-point any` below C# 14 — produces one too, with
+`refusal` naming which of them it was. A contract that sometimes writes nothing forces a script to
+tell empty output from a failed parse.
+
+**`--dry-run` puts each file's text in the document**, since stdout is no longer free to carry it.
+`path` and `text` are the two halves of one question and never both answered: a written file carries
+where it went, a dry-run file what it would have been.
+
+The provenance words are the recap's own (§6), read from one table rather than spelled a second time
+— two renderings of one set of facts, which is what keeps them from drifting into two answers.
+
 ---
 
 ## 7. Failure modes and exit codes
@@ -674,6 +707,7 @@ between them, because each opens with the three header lines of §4.3 that name 
 | `--entry-point static:Any` | `2` | Names what would stop compiling, and points at `--entry-point any`. |
 | `--entry-point` given a value that is not one of the three | `2` | Lists the three. |
 | `--entry-point-namespace` with no entry point to place | `2` | Says which option is missing. |
+| `--format` given a value that is neither `human` nor `json` | `2` | Names both. |
 | `Any{Type}` shadows a `JustDummies.Any*` type | `0` | **Warning**, then generate. |
 
 That last row deserves its own note, and the check behind it is narrower than it first looks. The

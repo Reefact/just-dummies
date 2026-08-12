@@ -18,6 +18,16 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 - **`--entry-point-namespace`** — declares the entry-point file somewhere other than beside the generator, so one
   root can gather types from several namespaces. It moves that file and nothing else: the generator stays in the
   namespace `--namespace` (or the target type) gives it, so no call site pays an import for it.
+- **`--format json`** — a run reports itself as one JSON document on stdout instead of the recap, for the caller
+  that is a script rather than a reader. It carries what the exit code cannot: `summary.openParameters`, and a row
+  per parameter with its expression and provenance. §7 makes a file written with open parameters a success — right
+  for a developer, and indistinguishable from a clean run for a script scaffolding forty types at once. **The exit
+  codes do not move**: this adds a channel rather than redefining one
+  ([ADR-0071](../doc/handwritten/for-maintainers/adr/0071-report-a-run-as-data-without-moving-the-exit-codes.md)).
+  Under `json`, stdout carries the document alone and everything written for a person stays on stderr, so
+  `2>/dev/null` leaves a clean pipe; `--dry-run` puts each file's text inside the document; and a run that stopped
+  before its first scaffold still produces one, naming the refusal.
+
 ### Changed
 
 - The emitted generator file is **unchanged**, byte for byte, whichever entry point is asked for. The C# 7.3 floor
@@ -42,6 +52,7 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   which is the mechanism that actually reaches that spelling.
 - `--entry-point any` on a project below C# 14 — refused, naming the language version the project resolved, rather
   than silently downgraded to a static root a developer would only discover at the call site.
+- `--format` given a value that is neither `human` nor `json` — refused at the command line, exit `2`, naming both.
 
 ## [1.0.0-beta.1] - 2026-08-10
 

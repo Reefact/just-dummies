@@ -173,3 +173,4 @@ et qu'elle a été décidée le 01/08/2026 — l'index porte l'ordre, la numéro
 | [ADR-0068](0068-carry-the-pool-inspection-wherever-a-caller-supplies-the-values.fr.md) | Porter l'inspection de pool partout où l'appelant fournit les valeurs, et nulle part ailleurs | Accepted | consigné ici |
 | [ADR-0069](0069-answer-a-cardinality-bound-under-the-comparer-that-will-use-it.fr.md) | Répondre à une borne de cardinalité sous le comparateur qui s'en servira | Accepted | consigné ici |
 | [ADR-0070](0070-emit-an-entry-point-on-request-as-a-file-of-its-own.fr.md) | Émettre un point d'entrée à la demande, dans un fichier à lui | Accepted | consigné ici |
+| [ADR-0071](0071-report-a-run-as-data-without-moving-the-exit-codes.fr.md) | Rendre compte d'une exécution en données sans déplacer les codes de sortie | Proposed | consigné ici |

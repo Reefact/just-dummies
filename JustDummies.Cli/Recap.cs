@@ -119,9 +119,22 @@ internal static class Recap {
 
         if (parameter.IsUnresolved) { words.Add("TODO"); }
 
-        words.AddRange(Words.Where(word => parameter.Provenance.HasFlag(word.Flag)).Select(word => word.Word));
+        words.AddRange(WordsFor(parameter.Provenance));
 
         return string.Join(", ", words);
+    }
+
+    /// <summary>
+    ///     The provenance of one expression, in the fixed order of <see cref="Words" />.
+    /// </summary>
+    /// <remarks>
+    ///     Shared with the machine report of §6.1 rather than spelled a second time there: the two renderings
+    ///     answer one question, and a second copy of this table is how they would come to answer it
+    ///     differently. It carries provenance alone — an open parameter reads as <c>TODO</c> in the recap's
+    ///     column and as <c>resolved: false</c> in the report, which is each rendering's own business.
+    /// </remarks>
+    internal static IReadOnlyList<string> WordsFor(GenAny.Provenance provenance) {
+        return [.. Words.Where(word => provenance.HasFlag(word.Flag)).Select(word => word.Word)];
     }
 
     /// <summary>

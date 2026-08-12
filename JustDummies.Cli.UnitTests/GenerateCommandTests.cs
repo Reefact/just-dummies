@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 using Microsoft.CodeAnalysis;
@@ -274,6 +275,133 @@ public sealed class GenerateCommandTests : IDisposable {
         await Generate(Settings("Order"));
 
         Check.That(File.Exists(Path.Combine(directory, "AnyOrder.Entry.cs"))).IsFalse();
+    }
+
+    /// <summary>
+    ///     The number the exit code cannot carry (§6.1).
+    /// </summary>
+    /// <remarks>
+    ///     §7 makes a file written with open parameters a success, which is right for a developer and useless
+    ///     to a script over forty types: exit <c>0</c> reads the same either way. This is what closes that.
+    /// </remarks>
+    [Fact(DisplayName = "--format json reports the open parameters the exit code cannot.")]
+    public async Task JsonReportsTheOpenParametersTheExitCodeCannot() {
+        GenerateSettings settings = Settings("Warehouse");
+
+        settings.Format = "json";
+
+        Run run = await Generate(settings, Compilation("""
+                                                       namespace Shop.Domain;
+
+                                                       public sealed class Crate { public Crate(int n) { } }
+
+                                                       public sealed class Warehouse {
+                                                           public Warehouse(Crate crate, string name) { }
+                                                       }
+                                                       """));
+
+        JsonElement report = JsonDocument.Parse(run.Output).RootElement;
+
+        Check.That(run.ExitCode).IsEqualTo(0);
+        Check.That(report.GetProperty("summary").GetProperty("openParameters").GetInt32()).IsEqualTo(1);
+        Check.That(report.GetProperty("summary").GetProperty("scaffolded").GetInt32()).IsEqualTo(1);
+        Check.That(report.GetProperty("results")[0].GetProperty("openParameters").GetInt32()).IsEqualTo(1);
+    }
+
+    [Fact(DisplayName = "--format json carries each parameter, its expression and its provenance.")]
+    public async Task JsonCarriesEachParameterAndItsProvenance() {
+        GenerateSettings settings = Settings("Order");
+
+        settings.Format = "json";
+
+        Run          run       = await Generate(settings);
+        JsonElement  quantity  = JsonDocument.Parse(run.Output).RootElement
+                                             .GetProperty("results")[0].GetProperty("parameters")[0];
+
+        Check.That(quantity.GetProperty("name").GetString()).IsEqualTo("quantity");
+        Check.That(quantity.GetProperty("expression").GetString()).IsEqualTo("Any.Int32().Positive()");
+        Check.That(quantity.GetProperty("resolved").GetBoolean()).IsTrue();
+        Check.That(quantity.GetProperty("provenance")[0].GetString()).IsEqualTo("guard");
+    }
+
+    // stdout is the machine channel and carries the document alone; the recap is for a reader and would make
+    // it unparseable.
+    [Fact(DisplayName = "--format json puts one document on stdout, and no recap.")]
+    public async Task JsonPutsOneDocumentOnStdoutAndNoRecap() {
+        GenerateSettings settings = Settings("Order");
+
+        settings.Format = "json";
+
+        Run run = await Generate(settings);
+
+        Check.That(run.Output).StartsWith("{");
+        Check.That(run.Output).Not.Contains("Analyzing Shop.Domain.Order");
+        Check.That(run.Output).Not.Contains("✓ AnyOrder.cs");
+        Check.That(JsonDocument.Parse(run.Output).RootElement.GetProperty("results")[0]
+                               .GetProperty("files")[0].GetProperty("written").GetBoolean()).IsTrue();
+    }
+
+    // Under --dry-run stdout would otherwise carry the file itself, which would not parse as JSON — so the
+    // text travels inside the document instead of being lost.
+    [Fact(DisplayName = "--format json --dry-run carries each file's text in the document.")]
+    public async Task JsonDryRunCarriesEachFilesText() {
+        GenerateSettings settings = Settings("Order");
+
+        settings.Format = "json";
+        settings.DryRun = true;
+
+        Run         run  = await Generate(settings);
+        JsonElement file = JsonDocument.Parse(run.Output).RootElement
+                                       .GetProperty("results")[0].GetProperty("files")[0];
+
+        Check.That(file.GetProperty("written").GetBoolean()).IsFalse();
+        Check.That(file.GetProperty("path").ValueKind).IsEqualTo(JsonValueKind.Null);
+        Check.That(file.GetProperty("text").GetString()).Contains("public sealed partial class AnyOrder");
+        Check.That(Directory.GetFiles(directory)).IsEmpty();
+    }
+
+    [Fact(DisplayName = "--format json names the entry point it emitted.")]
+    public async Task JsonNamesTheEntryPointItEmitted() {
+        GenerateSettings settings = Settings("Order");
+
+        settings.Format     = "json";
+        settings.EntryPoint = "static:Dummies";
+
+        Run         run   = await Generate(settings);
+        JsonElement entry = JsonDocument.Parse(run.Output).RootElement
+                                        .GetProperty("results")[0].GetProperty("entryPoint");
+
+        Check.That(entry.GetProperty("file").GetString()).IsEqualTo("AnyOrder.Entry.cs");
+        Check.That(entry.GetProperty("call").GetString()).IsEqualTo("Dummies.Order()");
+    }
+
+    [Fact(DisplayName = "--format json records a refused argument, with its candidates.")]
+    public async Task JsonRecordsARefusedArgument() {
+        GenerateSettings settings = Settings("Ordr");
+
+        settings.Format = "json";
+
+        Run         run    = await Generate(settings);
+        JsonElement result = JsonDocument.Parse(run.Output).RootElement.GetProperty("results")[0];
+
+        Check.That(run.ExitCode).IsEqualTo(1);
+        Check.That(result.GetProperty("status").GetString()).IsEqualTo("TypeNotFound");
+        Check.That(result.GetProperty("candidates")[0].GetString()).IsEqualTo("Order");
+    }
+
+    // "stdout carries one JSON document" with no exception to remember: a run that stopped before its first
+    // scaffold produces one too, naming why, rather than leaving a script to parse nothing.
+    [Fact(DisplayName = "--format json still produces a document when the run never started.")]
+    public async Task JsonStillProducesADocumentWhenTheRunNeverStarted() {
+        GenerateSettings settings = Settings("Order");
+
+        settings.Format  = "json";
+        settings.Project = Path.Combine(directory, "Absent.csproj");
+
+        Run run = await Run.Of(settings, (_, _) => throw new InvalidOperationException("The project must not be opened."));
+
+        Check.That(run.ExitCode).IsEqualTo(1);
+        Check.That(JsonDocument.Parse(run.Output).RootElement.GetProperty("refusal").GetString()).IsEqualTo("NoProject");
     }
 
     [Fact(DisplayName = "A type that matched nothing fails, on stderr, with the closest name.")]

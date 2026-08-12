@@ -135,8 +135,9 @@ dum generate <Type> [<Type>...] [options]
 | `--dry-run` | inactif | Affiche le fichier sur stdout ; n'écrit rien. |
 | `--format <f>` *(v1.1)* | `human` | Comment l'exécution rend compte : `human` ou `json` (§6.1). |
 
-C'est toute la surface. Pas de fichier de configuration, pas de `init`, pas de `list`, pas de
-`--all`, et — par D1 — pas de `check`. Le §16 liste ce qui est délibérément reporté.
+C'est toute la surface. Pas de `init`, pas de `list`, pas de `--all`, et — par D1 — pas de `check`.
+Le §16 liste ce qui est délibérément reporté. Il **y a** un fichier de configuration depuis la v1.1,
+et uniquement pour des défauts : §3.3.
 
 ### 3.1 Où le tool est lancé
 
@@ -164,6 +165,38 @@ un type de premier niveau dans le namespace englobant, nommé d'après le seul t
 
 Zéro correspondance → erreur, avec les noms les plus proches par distance d'édition. Plus d'une →
 erreur, avec les noms complets, en demandant lequel. Les deux sortent en `1`.
+
+### 3.3 Défauts de projet *(v1.1)*
+
+Un `dum.json` optionnel **à côté du fichier projet** fixe ce que la ligne de commande répéterait
+sinon. Décision :
+[ADR-0072](../adr/0072-read-project-defaults-from-a-file-the-command-line-overrides.fr.md).
+
+```json
+{ "output": "./Dummies", "entryPoint": "static:Dummies", "entryPointNamespace": "Shop.Tests.Dummies" }
+```
+
+Il lit cinq clés — `output`, `namespace`, `entryPoint`, `entryPointNamespace`, `format` — une par
+option qui est une propriété du projet plutôt que d'une invocation. `--force` et `--dry-run` n'en sont
+pas : elles disent à quoi sert cette exécution-ci.
+
+**La ligne de commande l'emporte toujours**, et elle l'emporte simplement en étant déjà là : une
+valeur que le développeur a tapée est non nulle, et rien de ce que le fichier fournit n'en écrase une.
+C'est toute la règle de précédence, et elle tient en une phrase exprès.
+
+**Une clé que le fichier ne lit pas est refusée**, en la nommant et en listant celles qui sont lues.
+Un défaut que quelqu'un croit en vigueur et qui ne l'est pas est un état pire que l'absence de
+fichier. La clé `naming` que réserve le §16 est refusée par cette règle elle aussi, tant que `--name`
+et `--pattern` n'existent pas pour lui donner un sens.
+
+**Un `output` relatif est enraciné dans le dossier du projet**, pas dans le dossier courant. Un chemin
+tapé sur la ligne de commande est relatif à l'endroit où il a été tapé ; un chemin commité dans ce
+fichier doit vouloir dire la même chose d'où que l'outil soit lancé, sinon ce n'est pas un défaut.
+
+L'état fusionné est validé par les règles auxquelles répond la ligne de commande, de sorte qu'une
+valeur venue de ce fichier est refusée pour les mêmes raisons qu'une valeur tapée, et dans les mêmes
+mots. Chaque refus ici est un `2` : rien n'a été scaffoldé, et ce qui n'a pas pu être lu est une
+instruction.
 
 ---
 
@@ -732,6 +765,7 @@ réponses.
 | `--entry-point` reçoit une valeur hors des trois | `2` | Liste les trois. |
 | `--entry-point-namespace` sans point d'entrée à placer | `2` | Dit quelle option manque. |
 | `--format` reçoit une valeur qui n'est ni `human` ni `json` | `2` | Nomme les deux. |
+| `dum.json` illisible, ou fixant une clé non lue | `2` | Nomme la clé, et celles qui sont lues. |
 | `Any{Type}` masque un type `JustDummies.Any*` | `0` | **Avertissement**, puis génération. |
 
 Cette dernière ligne mérite sa note, et le contrôle derrière est plus étroit qu'il n'y paraît. La

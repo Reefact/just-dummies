@@ -76,6 +76,13 @@ same whether every parameter resolved or a third of them did not. `--format json
 says which — one JSON document on stdout, with `summary.openParameters` and a row
 per parameter. The exit codes are unchanged; this adds a channel.
 
+## Setting defaults once
+
+Options that describe the project rather than the invocation go in a `dum.json`
+beside the project file — `output`, `namespace`, `entryPoint`,
+`entryPointNamespace`, `format`. The command line always wins over it, and a key
+it does not read is refused rather than ignored.
+
 ## Options
 
 | Option | Default | Meaning |

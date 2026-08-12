@@ -10,6 +10,7 @@ using JustDummies.GenAny;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 
+using Spectre.Console;
 using Spectre.Console.Cli;
 
 namespace JustDummies.Cli;
@@ -58,6 +59,20 @@ internal sealed class GenerateCommand : AsyncCommand<GenerateSettings> {
             return Refused(settings, RunRefusal.NoProject);
         }
 
+        // Before the project is opened, and before any option is read: what the file sets is what the rest of
+        // this method sees, so nothing downstream has to know there was a file (§3.3).
+        ProjectDefaults defaults = ProjectDefaults.Beside(project.Path!);
+
+        if (!defaults.Understood) { return Unreadable(settings, defaults.Refusal!); }
+
+        defaults.ApplyTo(settings, project.Path!);
+
+        // Validated again over the merged state, through the same rules the command line answered to: a value
+        // this file supplied is refused for exactly the reasons a typed one would be, and in the same words.
+        ValidationResult merged = settings.Validate();
+
+        if (!merged.Successful) { return Unreadable(settings, merged.Message ?? string.Empty); }
+
         LoadedProject loaded = await open(project.Path!, cancellationToken).ConfigureAwait(false);
 
         // Surfaced, not swallowed (§11.1) — and on the way through, not only on failure: a project that opened
@@ -96,6 +111,21 @@ internal sealed class GenerateCommand : AsyncCommand<GenerateSettings> {
         if (settings.ReportsAsJson()) { JsonReport.Write(RunReport.Refused(refusal), consoles.Output); }
 
         return ExitCode.Failed;
+    }
+
+    /// <summary>
+    ///     A <c>dum.json</c> that could not be read, or whose values the merged command line refuses (§3.3).
+    /// </summary>
+    /// <remarks>
+    ///     Exit <c>2</c> rather than <c>1</c>, on the same rule §7 already draws: the tool never got as far as
+    ///     scaffolding anything, and what it could not read is an instruction rather than a project.
+    /// </remarks>
+    private int Unreadable(GenerateSettings settings, string refusal) {
+        Refusals.UnreadableDefaults(refusal, consoles.Error);
+
+        if (settings.ReportsAsJson()) { JsonReport.Write(RunReport.Refused(RunRefusal.UnreadableDefaults), consoles.Output); }
+
+        return ExitCode.Usage;
     }
 
     /// <summary>

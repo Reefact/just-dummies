@@ -161,3 +161,4 @@ and it was decided on 2026-08-01 — the index carries the order, the numbering 
 | [ADR-0069](0069-answer-a-cardinality-bound-under-the-comparer-that-will-use-it.md) | Answer a cardinality bound under the comparer that will use it | Accepted | recorded here |
 | [ADR-0070](0070-emit-an-entry-point-on-request-as-a-file-of-its-own.md) | Emit an entry point on request, as a file of its own | Accepted | recorded here |
 | [ADR-0071](0071-report-a-run-as-data-without-moving-the-exit-codes.md) | Report a run as data without moving the exit codes | Proposed | recorded here |
+| [ADR-0072](0072-read-project-defaults-from-a-file-the-command-line-overrides.md) | Read project defaults from a file the command line overrides | Proposed | recorded here |

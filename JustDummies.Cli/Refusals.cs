@@ -68,6 +68,23 @@ internal static class Refusals {
     }
 
     /// <summary>
+    ///     A <c>dum.json</c> the tool could not read, or whose values it refuses (§3.3).
+    /// </summary>
+    /// <remarks>
+    ///     The sentence comes from whoever found the problem — the reader of the file, or the same validation
+    ///     the command line answers to — because it already names the key or the option at fault. What is
+    ///     added here is the second line every refusal owes: where to go and change it.
+    /// </remarks>
+    internal static void UnreadableDefaults(string refusal, IAnsiConsole console) {
+        ArgumentNullException.ThrowIfNull(refusal);
+
+        Say(console, [
+            Mark + refusal,
+            $"  Fix it in {ProjectDefaults.FileName}, or override it on the command line."
+        ]);
+    }
+
+    /// <summary>
     ///     <c>--entry-point any</c> against a project that cannot compile what it would write (§4.5).
     /// </summary>
     /// <remarks>

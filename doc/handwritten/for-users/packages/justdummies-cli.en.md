@@ -144,6 +144,25 @@ carries exactly one document. Everything written for a person keeps going to std
 The exit codes are unchanged: this adds a channel rather than redefining one. Decision:
 [ADR-0071](../../for-maintainers/adr/0071-report-a-run-as-data-without-moving-the-exit-codes.md).
 
+## Setting defaults once
+
+Options that describe your project rather than this invocation belong in a `dum.json` **beside your
+project file**, committed with it:
+
+```json
+{ "output": "./Dummies", "entryPoint": "static:Dummies", "entryPointNamespace": "Shop.Tests.Dummies" }
+```
+
+Then `dum generate Order` gives you what the long command line would have. Five keys are read —
+`output`, `namespace`, `entryPoint`, `entryPointNamespace`, `format` — and **the command line always
+wins** over any of them, so one invocation can differ without editing the file. `--force` and
+`--dry-run` are not among the keys: they say what this run is for, not what the project is.
+
+A key that is not read is **refused**, naming it — a default you believe is in force and is not is
+worse than no file at all. A relative `output` is resolved against the project's own directory, so it
+means the same thing wherever you run the tool from. Decision:
+[ADR-0072](../../for-maintainers/adr/0072-read-project-defaults-from-a-file-the-command-line-overrides.md).
+
 ## Options
 
 | Option | Default | Meaning |

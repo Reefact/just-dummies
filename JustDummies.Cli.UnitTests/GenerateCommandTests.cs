@@ -404,6 +404,40 @@ public sealed class GenerateCommandTests : IDisposable {
         Check.That(JsonDocument.Parse(run.Output).RootElement.GetProperty("refusal").GetString()).IsEqualTo("NoProject");
     }
 
+    [Fact(DisplayName = "A dum.json beside the project sets what the command line did not.")]
+    public async Task ADumJsonBesideTheProjectSetsTheDefaults() {
+        GenerateSettings settings = Settings("Order");
+
+        await File.WriteAllTextAsync(Path.Combine(Path.GetDirectoryName(settings.Project)!, "dum.json"),
+                                     """{ "namespace": "Shop.Tests.Dummies", "entryPoint": "static:Dummies" }""",
+                                     TestContext.Current.CancellationToken);
+
+        Run run = await Generate(settings);
+
+        Check.That(run.ExitCode).IsEqualTo(0);
+        Check.That(await File.ReadAllTextAsync(Path.Combine(directory, "AnyOrder.cs"), TestContext.Current.CancellationToken))
+             .Contains("namespace Shop.Tests.Dummies;");
+        Check.That(File.Exists(Path.Combine(directory, "AnyOrder.Entry.cs"))).IsTrue();
+    }
+
+    // Refused, not ignored: a default someone believes is in force and is not would be worse than no file. It
+    // is exit 2 because the tool never got as far as scaffolding — what it could not read is an instruction.
+    [Fact(DisplayName = "A dum.json the tool cannot read stops the run, at exit 2.")]
+    public async Task AnUnreadableDumJsonStopsTheRun() {
+        GenerateSettings settings = Settings("Order");
+
+        await File.WriteAllTextAsync(Path.Combine(Path.GetDirectoryName(settings.Project)!, "dum.json"),
+                                     """{ "entryPoint": "static:Any" }""",
+                                     TestContext.Current.CancellationToken);
+
+        Run run = await Generate(settings);
+
+        Check.That(run.ExitCode).IsEqualTo(2);
+        Check.That(run.Error).Contains("Any.Int32()");
+        Check.That(run.Error).Contains("dum.json");
+        Check.That(Directory.GetFiles(directory)).IsEmpty();
+    }
+
     [Fact(DisplayName = "A type that matched nothing fails, on stderr, with the closest name.")]
     public async Task ATypeThatMatchedNothingFails() {
         Run run = await Generate(Settings("Ordr"));

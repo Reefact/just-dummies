@@ -27,6 +27,12 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   Under `json`, stdout carries the document alone and everything written for a person stays on stderr, so
   `2>/dev/null` leaves a clean pipe; `--dry-run` puts each file's text inside the document; and a run that stopped
   before its first scaffold still produces one, naming the refusal.
+- **`dum.json`** — an optional file beside the project supplies defaults for the options that describe the project
+  rather than the invocation: `output`, `namespace`, `entryPoint`, `entryPointNamespace`, `format`. **The command
+  line always wins** over any of them, and it wins by simply already being there — the file fills blanks and
+  overwrites nothing. A relative `output` is rooted at the project's directory, so it means the same thing wherever
+  the tool is run from
+  ([ADR-0072](../doc/handwritten/for-maintainers/adr/0072-read-project-defaults-from-a-file-the-command-line-overrides.md)).
 
 ### Changed
 
@@ -53,6 +59,9 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 - `--entry-point any` on a project below C# 14 — refused, naming the language version the project resolved, rather
   than silently downgraded to a static root a developer would only discover at the call site.
 - `--format` given a value that is neither `human` nor `json` — refused at the command line, exit `2`, naming both.
+- A `dum.json` key that is not read — refused, exit `2`, naming the key and listing the ones that are. A default
+  someone believes is in force and is not is worse than no file at all, so §16's reserved `naming` key is refused
+  too, until `--name` and `--pattern` exist to give it a meaning.
 
 ## [1.0.0-beta.1] - 2026-08-10
 

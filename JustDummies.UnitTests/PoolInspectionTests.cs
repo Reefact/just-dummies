@@ -227,6 +227,37 @@ public sealed class PoolInspectionTests {
              .IsOnlyMadeOf("WithOffset", "After");
     }
 
+    [Theory(DisplayName = "A pool holding two clocks for one instant reaches one verdict, however it is written.")]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public void OneInstantWrittenOnTwoClocksReachesOneVerdict(bool frankfurtFirst, bool offsetFirst) {
+        // London opens 08:00 GMT and Frankfurt 09:00 CET: the same instant on two venue clocks, which is how the
+        // European cash sessions actually line up. The pool used to be collapsed to whichever spelling was written
+        // first, and the offset then judged that arbitrary survivor -- so asking for a Frankfurt-clock open threw
+        // "no pooled value carries an offset it admits" with Frankfurt's own value in the list, and re-sorting a
+        // configuration file was enough to flip a green test to a conflict.
+        DateTimeOffset london    = new(2026, 3, 2, 8, 0, 0, TimeSpan.Zero);
+        DateTimeOffset frankfurt = new(2026, 3, 2, 9, 0, 0, TimeSpan.FromHours(1));
+        DateTimeOffset newYork   = new(2026, 3, 2, 14, 30, 0, TimeSpan.FromHours(-5));
+
+        DateTimeOffset[] venues = frankfurtFirst ? [frankfurt, london, newYork] : [london, frankfurt, newYork];
+
+        AnyDateTimeOffset generator = offsetFirst
+                                          ? Any.DateTimeOffset().WithOffset(TimeSpan.FromHours(1)).OneOf(venues)
+                                          : Any.DateTimeOffset().OneOf(venues).WithOffset(TimeSpan.FromHours(1));
+
+        IPoolInspection<DateTimeOffset> inspection = generator;
+
+        Check.That(inspection.GetSurvivors()).ContainsExactly(frankfurt);
+        Check.That(inspection.GetSurvivors().Single().Offset).IsEqualTo(TimeSpan.FromHours(1));
+        Check.That(generator.Generate()).IsEqualTo(frankfurt);
+        Check.That(generator.Generate().Offset).IsEqualTo(TimeSpan.FromHours(1));
+        Check.That(inspection.GetRejections().Single().Value).IsEqualTo(newYork);
+        Check.That(inspection.GetRejections().Single().RejectedBy.Single().Name).IsEqualTo("WithOffset");
+    }
+
     [Fact(DisplayName = "A value written twice into an offset-filtered pool is refused once.")]
     public void AnOffsetRefusedValueIsReportedOnce() {
         // The surviving side collapses duplicates; the refused side used to keep every spelling the caller wrote,

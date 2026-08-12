@@ -71,6 +71,18 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   Only exclusions that actually removed something are named, since one whose values were never drawable caused
   nothing. Generation, conflict detection and the public surface are unchanged — only the wording of the
   message a failing declaration carries.
+- **A `DateTimeOffset` pool holding two clocks for one instant now reaches one verdict, however it is written.**
+  London opens 08:00 GMT and Frankfurt 09:00 CET — the same instant on two venue clocks. A pool holding both was
+  collapsed to whichever spelling came first in the array, and the declared offset then judged that arbitrary
+  survivor. So `OneOf(venues).WithOffset(+01:00)` threw *"no pooled value carries an offset it admits"* with
+  Frankfurt's own value in the list, while re-sorting the array made the same code work; declaring the offset
+  before the pool gave a third answer, and the rejection count differed between the two. The supplied values are
+  now held whole until both dimensions are known, and the offset is carried into the interval engine as an
+  exclusion — so the two declaration orders agree, the rejection names the offset alongside every other constraint
+  refusing the same instant, and re-ordering a catalogue can no longer turn a satisfiable pool into a conflict.
+  This restores what [ADR-0030](../doc/handwritten/for-maintainers/adr/0030-filter-the-datetimeoffset-pool-by-the-declared-offset.md)
+  recorded as a consequence. **A seeded run drawing from such a pool may now yield a different spelling of the same
+  instant** — the draw sequence is not a versioned contract below 1.0, and the value's instant is unchanged.
 - **Four analyzer rules work again on a seeded chain written in one expression.** JD015, JD023 and JD024 — and
   JD029, which is new — read a chain by walking back to the factory that started it, and the walk descended into
   a call's receiver before asking whether the call was itself the factory. On `Any.WithSeed(1).Int32()...`,

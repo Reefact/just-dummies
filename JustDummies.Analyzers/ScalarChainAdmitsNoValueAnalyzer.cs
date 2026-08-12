@@ -139,6 +139,16 @@ public sealed class ScalarChainAdmitsNoValueAnalyzer : DiagnosticAnalyzer {
             case short s: value = s;   return true;
             case byte b:  value = b;   return true;
             case sbyte sb: value = sb; return true;
+            // The unsigned trio IsIntegerFactory declares. Without them the verdict turned on how the caller
+            // spelled the literal rather than on anything documented: Any.UInt32().GreaterThan(5) was judged
+            // because Unwrap strips the implicit conversion and hands back an int, while GreaterThan(5u) arrives
+            // as a uint, fails to read, and abandons the whole chain.
+            case ushort us: value = us; return true;
+            case uint ui: value = ui; return true;
+            // A ulong past long.MaxValue does not fit the model, whose interval is long-wide, so it falls to the
+            // default and the chain is abandoned -- the same answer this rule gives any argument it cannot
+            // evaluate. Under-reporting is the direction it is allowed to err in; accusing is not.
+            case ulong ul when ul <= long.MaxValue: value = (long)ul; return true;
             default:      return false;
         }
     }

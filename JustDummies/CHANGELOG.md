@@ -83,6 +83,15 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   This restores what [ADR-0030](../doc/handwritten/for-maintainers/adr/0030-filter-the-datetimeoffset-pool-by-the-declared-offset.md)
   recorded as a consequence. **A seeded run drawing from such a pool may now yield a different spelling of the same
   instant** — the draw sequence is not a versioned contract below 1.0, and the value's instant is unchanged.
+- **JD023 and JD024 no longer depend on how you spell an unsigned literal.** Both rules declare `UInt16`,
+  `UInt32` and `UInt64` in scope, and their constant reader handled none of them — so
+  `Any.UInt32().GreaterThan(5).LessThan(3)` was reported while `GreaterThan(5u).LessThan(3u)`, the same
+  unsatisfiable chain, was not: without a suffix the literal reaches the rule as an `int` and is judged, with one
+  it fails to read and the whole chain is abandoned. The verdict turned on a keystroke rather than on any
+  documented boundary. The three types are now read. One real limit remains, and both pages state it: the rules
+  reason in `long`, so a `UInt64` bound above `long.MaxValue` is left unjudged rather than truncated into a bound
+  meaning something else. **Expect new diagnostics on unsigned chains you already have** — both rules were always
+  meant to report them, and neither is an error.
 - **Four analyzer rules work again on a seeded chain written in one expression.** JD015, JD023 and JD024 — and
   JD029, which is new — read a chain by walking back to the factory that started it, and the walk descended into
   a call's receiver before asking whether the call was itself the factory. On `Any.WithSeed(1).Int32()...`,

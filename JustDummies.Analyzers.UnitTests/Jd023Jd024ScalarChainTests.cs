@@ -16,6 +16,12 @@ public class Jd023ScalarChainAdmitsNoValueTests {
     [InlineData("Any.Int32().Zero().NonZero()")]
     [InlineData("Any.Int32().OneOf(5).Except(5)")]
     [InlineData("Any.Int64().GreaterThanOrEqualTo(10).LessThanOrEqualTo(9)")]
+    // The unsigned families, written the way their own type spells a literal. Without a suffix these read as int
+    // constants and were judged; with one they were abandoned unread, so whether the rule spoke turned on how the
+    // caller typed the number rather than on any boundary the page documents.
+    [InlineData("Any.UInt32().GreaterThan(5u).LessThan(3u)")]
+    [InlineData("Any.UInt16().GreaterThan((ushort)5).LessThan((ushort)3)")]
+    [InlineData("Any.UInt64().GreaterThanOrEqualTo(10UL).LessThanOrEqualTo(9UL)")]
     public async Task Reports_a_chain_that_admits_no_value(string expression) {
         string source = $$"""
             using JustDummies;
@@ -39,6 +45,7 @@ public class Jd023ScalarChainAdmitsNoValueTests {
     [InlineData("Any.Int32().Between(1, 10).Except(5)")]
     [InlineData("Any.Int32().OneOf(1, 2, 3).Except(2)")]
     [InlineData("Any.Int32().GreaterThan(-100).LessThan(100).MultipleOf(7)")]
+    [InlineData("Any.UInt32().GreaterThan(5u).LessThan(100u)")]
     public async Task Does_not_report_a_satisfiable_chain(string expression) {
         string source = $$"""
             using JustDummies;
@@ -208,6 +215,27 @@ public class Jd023ScalarChainRepresentableExtremesTests {
             public static class Sample {
                 public static void M() {
                     _ = {{expression}};
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new ScalarChainAdmitsNoValueAnalyzer(), source, "JD023", "JD024");
+
+        Check.That(diagnostics.Length).IsEqualTo(0);
+    }
+
+    [Fact]
+    public async Task Does_not_report_a_ulong_bound_the_model_cannot_hold() {
+        // The interval this rule reasons in is long-wide, so a ulong past long.MaxValue is an argument it cannot
+        // evaluate. It is abandoned like any other unreadable argument rather than truncated into a bound that
+        // would mean something else: the chain below really does admit no value, and staying silent about it is
+        // the direction this rule is allowed to err in. Accusing on a guess is not.
+        const string source = """
+            using JustDummies;
+
+            public static class Sample {
+                public static void M() {
+                    _ = Any.UInt64().GreaterThan(ulong.MaxValue - 1).LessThan(3UL);
                 }
             }
             """;

@@ -40,7 +40,47 @@ public sealed class PoolInspectionProperties {
                select (pool, maximum);
     }
 
+    /// <summary>
+    ///     Arbitrary non-empty pools of instants on distinct days carrying mixed offsets, paired with an offset one
+    ///     of them satisfies. The offset is picked out of the pool rather than filtered for, so the generator is
+    ///     always declarable. Distinct days keep two spellings of one instant out of the sample: what a pool of
+    ///     <see cref="DateTimeOffset" /> considers one value is a separate question this property does not settle.
+    /// </summary>
+    private static Gen<(DateTimeOffset[] Pool, TimeSpan Offset)> DatePoolAndSatisfiableOffset() {
+        return from spellings in Gen.NonEmptyListOf(from day in Gen.Choose(1, 20)
+                                                    from hours in Gen.Choose(0, 2)
+                                                    select new DateTimeOffset(2026, 1, day, 0, 0, 0, TimeSpan.FromHours(hours)))
+               from index in Gen.Choose(0, 63)
+               // Named sameDay rather than group: `group` is a query keyword, and this let sits inside a query.
+               let pool = spellings.GroupBy(value => value.Day).Select(sameDay => sameDay.First()).Take(8).ToArray()
+               select (pool, pool[index % pool.Length].Offset);
+    }
+
+    /// <summary>The value as the caller wrote it — the instant AND the offset, which its own equality ignores.</summary>
+    private static (long UtcTicks, TimeSpan Offset) Spelling(DateTimeOffset value) {
+        return (value.UtcTicks, value.Offset);
+    }
+
     #endregion
+
+    // The string property above cannot see a pool that fails to add up, because Any.String()'s pool is already
+    // distinct before the report is built. This one quantifies over the family whose pool is filtered on TWO
+    // dimensions -- the instant, inside the engine, and the offset, outside it -- where a value can go missing from
+    // both lists or be counted twice, and where both of those actually happened.
+    [Fact(DisplayName = "A date pool filtered on its offset still partitions: nothing is lost, nothing is doubled.")]
+    public void ADatePoolPartitionsAcrossBothOfItsDimensions() {
+        Prop.ForAll(DatePoolAndSatisfiableOffset().ToArbitrary(),
+                    testCase => {
+                        IPoolInspection<DateTimeOffset> inspection = Any.DateTimeOffset().OneOf(testCase.Pool).WithOffset(testCase.Offset);
+
+                        List<DateTimeOffset> reported = [..inspection.GetSurvivors(), ..inspection.GetRejections().Select(rejection => rejection.Value)];
+
+                        return reported.Select(Spelling).Distinct().Count() == reported.Count
+                            && reported.Select(Spelling).OrderBy(spelling => spelling).SequenceEqual(testCase.Pool.Select(Spelling).OrderBy(spelling => spelling))
+                            && inspection.GetRejections().All(rejection => rejection.RejectedBy.Count > 0);
+                    })
+            .QuickCheckThrowOnFailure();
+    }
 
     [Fact(DisplayName = "The survivors and the rejected values partition the supplied pool: nothing is lost, nothing is invented.")]
     public void SurvivorsAndRejectionsPartitionTheSuppliedPool() {

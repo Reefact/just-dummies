@@ -193,6 +193,67 @@ public sealed class PoolInspectionTests {
         Check.That(inspection.GetRejections().Single().RejectedBy.Single().Name).IsEqualTo("WithOffset");
     }
 
+    [Fact(DisplayName = "A pin names the exclusions that refuse a value as well, not instead of them.")]
+    public void APinNamesTheExclusionsAlongsideIt() {
+        // The pin used to end the reasoning about a value: a value both displaced by the pin and named by an
+        // exclusion was blamed on the pin alone, so a reader who dropped the pin -- the only remedy offered --
+        // found it still absent. The same rule the top-level pool obeys must hold with a pin in force.
+        Guid excluded = Guid.NewGuid();
+
+        IPoolInspection<Guid> inspection = Any.Guid().OneOf(Guid.Empty, excluded).Except(excluded).Empty();
+
+        Check.That(inspection.GetSurvivors()).ContainsExactly(Guid.Empty);
+        Check.That(inspection.GetRejections().Single().Value).IsEqualTo(excluded);
+        Check.That(inspection.GetRejections().Single().RejectedBy.Select(constraint => constraint.Name))
+             .IsOnlyMadeOf("Empty", "Except");
+    }
+
+    [Fact(DisplayName = "An offset-refused value names the instant constraints that refuse it too.")]
+    public void AnOffsetRefusedValueNamesTheInstantConstraintsToo() {
+        // The offset filter removes a value from the allow-list before the engine judges it, so the engine's own
+        // report cannot see it. Naming only the offset would send a reader to repair a catalogue entry that stays
+        // undrawable once repaired, because the instant bound refuses it as well.
+        DateTimeOffset early = new(2019, 1, 1, 0, 0, 0, TimeSpan.FromHours(3));
+        DateTimeOffset kept  = new(2022, 1, 1, 0, 0, 0, TimeSpan.Zero);
+
+        IPoolInspection<DateTimeOffset> inspection = Any.DateTimeOffset()
+                                                       .OneOf(early, kept)
+                                                       .After(new DateTimeOffset(2020, 1, 1, 0, 0, 0, TimeSpan.Zero))
+                                                       .WithOffset(TimeSpan.Zero);
+
+        Check.That(inspection.GetSurvivors()).ContainsExactly(kept);
+        Check.That(inspection.GetRejections().Single().Value).IsEqualTo(early);
+        Check.That(inspection.GetRejections().Single().RejectedBy.Select(constraint => constraint.Name))
+             .IsOnlyMadeOf("WithOffset", "After");
+    }
+
+    [Fact(DisplayName = "A value written twice into an offset-filtered pool is refused once.")]
+    public void AnOffsetRefusedValueIsReportedOnce() {
+        // The surviving side collapses duplicates; the refused side used to keep every spelling the caller wrote,
+        // so one declared value came back as several rejections and the count a reader is taught to read was wrong.
+        DateTimeOffset kept    = new(2026, 3, 1, 0, 0, 0, TimeSpan.FromHours(2));
+        DateTimeOffset refused = new(2026, 3, 2, 0, 0, 0, TimeSpan.Zero);
+
+        IPoolInspection<DateTimeOffset> inspection = Any.DateTimeOffset().WithOffset(TimeSpan.FromHours(2)).OneOf(kept, refused, refused);
+
+        Check.That(inspection.GetSurvivors()).ContainsExactly(kept);
+        Check.That(inspection.GetRejections()).HasSize(1);
+        Check.That(inspection.GetRejections().Single().Value).IsEqualTo(refused);
+    }
+
+    [Fact(DisplayName = "Re-declaring the same pool leaves the report where it was.")]
+    public void RedeclaringThePoolDoesNotGrowTheReport() {
+        // Re-declaring an identical constraint is a documented no-op across the library. The offset-refused list
+        // was appended to regardless, so the report grew on a generator whose drawable domain had not moved.
+        DateTimeOffset kept    = new(2026, 3, 1, 0, 0, 0, TimeSpan.FromHours(2));
+        DateTimeOffset refused = new(2026, 3, 2, 0, 0, 0, TimeSpan.Zero);
+
+        AnyDateTimeOffset generator = Any.DateTimeOffset().WithOffset(TimeSpan.FromHours(2)).OneOf(kept, refused);
+
+        Check.That(((IPoolInspection<DateTimeOffset>)generator.OneOf(kept, refused)).GetRejections()).HasSize(1);
+        Check.That(((IPoolInspection<DateTimeOffset>)generator.OneOf(kept, refused).OneOf(kept, refused)).GetRejections()).HasSize(1);
+    }
+
     [Fact(DisplayName = "Mutating the array handed to Except cannot change what the report says.")]
     public void TheReportDoesNotFollowTheCallersArray() {
         // The excluded values are copied at the boundary. Retaining the caller's array would let a later mutation

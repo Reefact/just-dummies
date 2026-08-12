@@ -43,6 +43,12 @@
                       OutputItemType="Analyzer"
                       ReferenceOutputAssembly="false"
                       PrivateAssets="all" />
+
+    <!-- The catalogue of this product's own JD rules, referenced the way a CONSUMER references it (ADR-0052), so a
+         [SuppressMessage] here names its rule through a constant rather than a string literal. Needed since the
+         chain walk learned to see an inline seeded chain: JD026 now reaches the negative test that pins the empty
+         relative reference, which is the one place in this project that has to silence a JD rule. -->
+    <ProjectReference Include="..\JustDummies.DiagnosticCatalog\JustDummies.DiagnosticCatalog.csproj" />
   </ItemGroup>
 
   <ItemGroup>

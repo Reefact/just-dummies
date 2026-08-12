@@ -2,6 +2,8 @@
 
 using System.Diagnostics.CodeAnalysis;
 
+using JustDummies.Diagnostics;
+
 using FsCheck;
 using FsCheck.Fluent;
 
@@ -450,6 +452,7 @@ public sealed class UriProperties {
     }
 
     [Fact(DisplayName = "An explicit zero-segment relative path with nothing else fails at generation, carrying the seed.")]
+    [SuppressMessage(JustDummiesRule.JD026.Category, JustDummiesRule.JD026.Id, Justification = "The empty relative reference IS the subject: this pins that it fails at generation and carries the seed. The rule is right to report the chain, which is why it is silenced here rather than avoided.")]
     public void EmptyRelativeFailsAtGenerationCarryingTheSeed() {
         Prop.ForAll(Generators.Seed().ToArbitrary(),
                     seed => {

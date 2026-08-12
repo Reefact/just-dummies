@@ -112,6 +112,16 @@ public class Jd029PooledValueNeverDrawsTests {
     }
 
     [Fact]
+    public async Task Reports_through_an_inline_seeded_chain() {
+        // The chain walk used to name WithSeed as the factory here and fall through, silencing this rule on the
+        // very form the library recommends for reproducibility.
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync("        _ = Any.WithSeed(1).Int32().OneOf(1, -3).Positive();");
+
+        Check.That(diagnostics.Length).IsEqualTo(1);
+        Check.That(diagnostics[0].GetMessage()).IsEqualTo("This value never draws: Positive() refuses it");
+    }
+
+    [Fact]
     public async Task Does_not_report_a_pool_held_in_a_variable() {
         // The documented limit, and the reason ADR-0067 calls this a complement rather than an alternative: a
         // catalogue is a variable by nature, and IPoolInspection<T> is what answers for it at run time.

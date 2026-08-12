@@ -41,30 +41,27 @@ internal static class AnyChainFacts {
         // non-null — which left the exit path unreachable (Sonar csharpsquid:S2583). Same shape as the
         // redraw loop in AnyPattern.
         for (IInvocationOperation current = outermost;;) {
-            if (current.Instance is null) {
-                // A static call roots the chain: it is the factory when it belongs to Any, otherwise this is not a
-                // JustDummies chain at all.
-                if (!IsFactoryOwner(current.TargetMethod.ContainingType, symbols)) { return false; }
-
+            // The factory is the first call owned by Any or AnyContext, whatever its receiver turns out to be.
+            // Asked BEFORE descending on purpose: a seeded chain written in one expression — Any.WithSeed(s).Int32()
+            // — has an INVOCATION for Int32()'s receiver, so a walk that descends first pushes Int32() onto the
+            // constraints and names WithSeed as the factory. Every rule gated on the factory name then falls
+            // through, which silently disabled four of them on the very form the library recommends for
+            // reproducibility.
+            if (IsFactoryOwner(current.TargetMethod.ContainingType, symbols)) {
                 factory = current;
                 collected.Reverse();
 
                 return true;
             }
 
+            // Not a factory and rooted in a static call: this is not a JustDummies chain at all.
+            if (current.Instance is null) { return false; }
+
             IOperation receiver = GeneratorFacts.Unwrap(current.Instance);
 
-            // An instance call on AnyContext roots the chain the same way Any's static factories do.
-            if (receiver is not IInvocationOperation next) {
-                if (IsFactoryOwner(current.TargetMethod.ContainingType, symbols)) {
-                    factory = current;
-                    collected.Reverse();
-
-                    return true;
-                }
-
-                return false;
-            }
+            // A generator reached through a local, a field or a helper is not followed — the chain must be one
+            // expression for a rule to see every constraint it carries.
+            if (receiver is not IInvocationOperation next) { return false; }
 
             collected.Add(current);
             current = next;

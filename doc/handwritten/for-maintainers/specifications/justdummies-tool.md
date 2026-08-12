@@ -132,8 +132,9 @@ dum generate <Type> [<Type>...] [options]
 | `--dry-run` | off | Print the file to stdout; write nothing. |
 | `--format <f>` *(v1.1)* | `human` | How the run reports itself: `human` or `json` (§6.1). |
 
-That is the entire surface. There is no config file, no `init`, no `list`, no `--all`, and — by
-D1 — no `check`. §16 lists what is deliberately deferred.
+That is the entire surface. There is no `init`, no `list`, no `--all`, and — by D1 — no `check`. §16
+lists what is deliberately deferred. There **is** a config file since v1.1, and only for defaults:
+§3.3.
 
 ### 3.1 Where the tool is run
 
@@ -159,6 +160,35 @@ the containing namespace, named after the nested type alone: `AnyLine`.
 
 Zero matches → error, listing the closest names by edit distance. More than one match → error,
 listing the full names, asking for one of them. Both exit `1`.
+
+### 3.3 Project defaults *(v1.1)*
+
+An optional `dum.json` **beside the project file** sets what the command line would otherwise repeat.
+Decision: [ADR-0072](../adr/0072-read-project-defaults-from-a-file-the-command-line-overrides.md).
+
+```json
+{ "output": "./Dummies", "entryPoint": "static:Dummies", "entryPointNamespace": "Shop.Tests.Dummies" }
+```
+
+It reads five keys — `output`, `namespace`, `entryPoint`, `entryPointNamespace`, `format` — one per
+option that is a property of the project rather than of an invocation. `--force` and `--dry-run` are
+not among them: they state what this run is for.
+
+**The command line always wins**, and it wins by already being there: a value the developer typed is
+non-null, and nothing the file supplies overwrites one. That is the whole precedence rule, and it is
+one sentence on purpose.
+
+**A key the file does not read is refused**, naming it and listing the ones that are read. A default
+someone believes is in force and is not is a worse state than having no file. §16's own `naming` key
+is refused on that rule too, until `--name` and `--pattern` exist to give it a meaning.
+
+**A relative `output` is rooted at the project's directory**, not at the current one. A path typed on
+the command line is relative to where it was typed; a path committed in this file has to mean the
+same thing wherever the tool is run from, or it is not a default.
+
+The merged state is validated through the rules the command line answers to, so a value this file
+supplied is refused for the same reasons a typed one would be, in the same words. Every refusal here
+is exit `2`: nothing was scaffolded, and what could not be read is an instruction.
 
 ---
 
@@ -708,6 +738,7 @@ The provenance words are the recap's own (§6), read from one table rather than 
 | `--entry-point` given a value that is not one of the three | `2` | Lists the three. |
 | `--entry-point-namespace` with no entry point to place | `2` | Says which option is missing. |
 | `--format` given a value that is neither `human` nor `json` | `2` | Names both. |
+| `dum.json` unreadable, or setting a key that is not read | `2` | Names the key, and the ones that are read. |
 | `Any{Type}` shadows a `JustDummies.Any*` type | `0` | **Warning**, then generate. |
 
 That last row deserves its own note, and the check behind it is narrower than it first looks. The

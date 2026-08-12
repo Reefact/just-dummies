@@ -145,6 +145,26 @@ continue d'aller sur stderr, ce qui laisse à `2>/dev/null` un tuyau propre.
 Les codes de sortie sont inchangés : ceci ajoute un canal plutôt que d'en redéfinir un. Décision :
 [ADR-0071](../../for-maintainers/adr/0071-report-a-run-as-data-without-moving-the-exit-codes.fr.md).
 
+## Fixer les défauts une fois
+
+Les options qui décrivent votre projet plutôt que cette invocation ont leur place dans un `dum.json`
+**à côté de votre fichier projet**, commité avec lui :
+
+```json
+{ "output": "./Dummies", "entryPoint": "static:Dummies", "entryPointNamespace": "Shop.Tests.Dummies" }
+```
+
+`dum generate Order` vous donne alors ce que la longue ligne de commande aurait donné. Cinq clés sont
+lues — `output`, `namespace`, `entryPoint`, `entryPointNamespace`, `format` — et **la ligne de commande
+l'emporte toujours** sur chacune, de sorte qu'une invocation peut différer sans éditer le fichier.
+`--force` et `--dry-run` n'en font pas partie : elles disent à quoi sert cette exécution, pas ce
+qu'est le projet.
+
+Une clé non lue est **refusée**, en la nommant — un défaut que vous croyez en vigueur et qui ne l'est
+pas est pire que pas de fichier du tout. Un `output` relatif est résolu depuis le dossier du projet,
+donc il veut dire la même chose d'où que vous lanciez l'outil. Décision :
+[ADR-0072](../../for-maintainers/adr/0072-read-project-defaults-from-a-file-the-command-line-overrides.fr.md).
+
 ## Options
 
 | Option | Défaut | Signification |

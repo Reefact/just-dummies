@@ -69,6 +69,9 @@ internal static class RunRefusal {
     /// <summary><c>--entry-point any</c> against a project that cannot compile what it would write (§4.5).</summary>
     internal const string LanguageVersionTooLow = "LanguageVersionTooLow";
 
+    /// <summary>A <c>dum.json</c> that could not be read, or whose values were refused (§3.3).</summary>
+    internal const string UnreadableDefaults = "UnreadableDefaults";
+
 }
 
 /// <summary>One type argument, and everything the run has to say about it.</summary>

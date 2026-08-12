@@ -23,7 +23,7 @@ encore dans `Reefact/first-class-errors`, pour que rien ici ne dépende d'une le
 le déménagement a eu lieu depuis, et la propriété tient toujours.
 
 * **§1–§9, c'est le produit.** Ce que le tool fait, ce qu'il émet, et pourquoi. Lire le §2
-  d'abord : onze décisions portent tout le reste. Le §5 est la partie difficile et la seule qui
+  d'abord : douze décisions portent tout le reste. Le §5 est la partie difficile et la seule qui
   comporte un vrai risque de conception.
 * **§10–§12, c'est la construction.** Deux projets, le contrat entre eux, et le plan de tests.
 * **§13, c'est le contrat de portabilité.** Tout ce dont le tool a besoin *de son dépôt hôte*,
@@ -31,7 +31,7 @@ le déménagement a eu lieu depuis, et la propriété tient toujours.
 * **§14, c'est la référence.** Chaque fait sur la bibliothèque JustDummies dont dépend cette
   spécification, inliné, avec la commande pour le redériver. Rien dans les §1–§12 n'exige de lire
   la source de la bibliothèque pour être vérifié.
-* **§15, c'est le raisonnement.** Dix enregistrements de décision, désormais entrés dans la base
+* **§15, c'est le raisonnement.** Onze enregistrements de décision, désormais entrés dans la base
   d'ADR de ce dépôt et indexés ici. À lire quand on veut savoir *pourquoi*, ou quand on est tenté
   de revenir sur une décision du §2.
 * **§16, c'est la frontière de la v1.0.** Ce qui est reporté, et ce qui a été abandonné net.
@@ -92,7 +92,7 @@ valeurs valides ; le **tool** rend le test concis.
 
 ## 2. Décisions
 
-Ce sont les décisions porteuses. Les onze sont couvertes par les dix enregistrements de décision du
+Ce sont les décisions porteuses. Les douze sont couvertes par les onze enregistrements de décision du
 §15 — contexte, argument, alternatives écartées, conséquences ; D5 et D6 en partagent un. Cette
 table en est l'index ; elle ne porte aucun argument propre.
 
@@ -109,6 +109,7 @@ table en est l'index ; elle ne porte aucun argument propre.
 | **D9** | Le tool ne prend **aucune dépendance sur le package JustDummies**. | Résolution par nom de métadonnée, comme les analyzers — l'écart de version devient structurellement impossible. |
 | **D10** | Ne jamais émettre `.OrNull()`. | Un dummy aléatoirement `null` est précisément l'instabilité que la bibliothèque existe pour supprimer. |
 | **D11** | Le **moteur de scaffolding est une bibliothèque séparée** au plancher Roslyn ; la CLI est une coquille. | Le second consommateur plausible du moteur est un refactoring IDE, qui n'est pas une CLI et ne peut pas charger un assembly `net8.0`. |
+| **D12** *(v1.1)* | Un point d'entrée est **optionnel**, émis dans un fichier à lui. | Le fichier du generator ne change jamais, donc le plancher du §4.4 reste sa propriété et `new Any{Type}()` continue de fonctionner. |
 
 ---
 
@@ -128,6 +129,8 @@ dum generate <Type> [<Type>...] [options]
 | `--project <path>` | l'unique `*.csproj` du répertoire courant | Projet dont la compilation est analysée. |
 | `--output <dir>` | le répertoire courant | Où le fichier est écrit. |
 | `--namespace <ns>` | le namespace du type cible (D8) | Namespace du type émis. |
+| `--entry-point <v>` *(v1.1)* | `none` | Émet en plus un point d'entrée : `none`, `static:<Name>` ou `any` (§4.5). |
+| `--entry-point-namespace <ns>` *(v1.1)* | le namespace du type émis | Namespace du seul fichier de point d'entrée. |
 | `--force` | inactif | Écrase un fichier existant. |
 | `--dry-run` | inactif | Affiche le fichier sur stdout ; n'écrit rien. |
 
@@ -334,6 +337,59 @@ Le fichier atterrit dans le projet du développeur et doit compiler au `LangVers
 
 La seule exception est la forme du namespace, copiée sur le style de déclaration du type cible pour
 que le fichier émis ressemble à ses voisins.
+
+Le plancher est une propriété de **ce** fichier. Le fichier de point d'entrée du §4.5 peut se voir
+demander une construction plus récente, et le dit dans son propre en-tête ; c'est un fichier séparé
+précisément pour que le plancher ne bouge pas ici.
+
+### 4.5 Le fichier de point d'entrée *(v1.1)*
+
+`new AnyOrder()` est la façon d'atteindre un generator scaffoldé, et elle le reste. `--entry-point`
+demande un **second** fichier à côté, portant une fabrique, pour que le generator s'atteigne aussi
+comme ceux de la bibliothèque — `Any.Int32()` sur une ligne et `Any.Order()` sur la suivante.
+Décision : [ADR-0070](../adr/0070-emit-an-entry-point-on-request-as-a-file-of-its-own.fr.md).
+
+| Valeur | Ce qui est émis | Écriture |
+|---|---|---|
+| `none` *(défaut)* | rien | — |
+| `static:<Name>` | `public static partial class <Name>` portant une fabrique | `Dummies.Order()` |
+| `any` | `extension(Any)` portant une fabrique statique | `Any.Order()` |
+
+**Le fichier du generator ne change pas.** `Any{Type}.cs` est identique octet pour octet sous les
+trois valeurs, donc `new Any{Type}()` continue de fonctionner et le plancher du §4.4 n'est pas
+touché. Ce qui est ajouté l'est à côté, dans `Any{Type}.Entry.cs`.
+
+**Une part par scaffold, jamais un fichier partagé.** La racine statique est `partial`, et chaque
+scaffold écrit sa propre part. Rien n'est lu pour être réécrit, donc le §8.1 tient et D1 n'est pas
+discrètement renversée : `dum generate Order Customer Invoice --entry-point static:Dummies` écrit six
+fichiers et aucun deux fois.
+
+**`any` exige C# 14, et le framework cible n'a rien à y voir.** Un membre d'extension statique
+compile pour une cible `netstandard2.0` aussi bien que pour `net10.0` ; ce qu'il exige, c'est le
+`LangVersion` du projet. Un projet en deçà de C# 14 est refusé, pas rétrogradé (§7).
+
+**`static:Any` est refusé.** C# résout un nom de type simple dans le namespace englobant avant tout
+`using`, donc une classe statique nommée `Any` dans le projet du développeur masque
+`JustDummies.Any` au lieu de la compléter, et `Any.Int32()` cesse de compiler (`CS0117`). C'est à cela
+que sert `any`, et c'est un autre mécanisme.
+
+**Le point d'entrée peut se déplacer seul.** `--entry-point-namespace` place le fichier de point
+d'entrée et rien d'autre ; le generator reste dans le namespace que D8 lui donne, donc aucun site
+d'appel ne paie d'import pour lui. Déplacer le point d'entrée est ce qui rend une racine unique
+atteignable à travers plusieurs namespaces, et cela ouvre le namespace du generator dans le fichier
+émis. `--namespace` déplace toujours le generator, et emmène le point d'entrée avec lui sauf si cette
+option en décide autrement.
+
+**Règles de forme.** Trois lignes d'en-tête comme au §4.3, nommant l'option qui a écrit le fichier.
+Une fabrique publique statique nommée d'après le seul type cible — `Order.Line` scaffolde `AnyLine` et
+s'atteint par `Line()`. Elle rend le generator, jamais une valeur : le contraindre par `With…` et
+appeler `Generate()` appartiennent au développeur, exactement comme avec `new Any{Type}()`. Le fichier
+`static:<Name>` n'utilise aucune construction plus récente que C# 7.3 ; le fichier `any` exige C# 14
+et rien de plus.
+
+Un type cible dont le nom propre est celui de la racine choisie émet un membre nommé comme sa classe
+englobante, ce qui ne compile pas (`CS0542`). C'est bruyant au build du développeur, comme le
+paramètre ouvert du §5.5, et le remède est un autre nom de racine.
 
 ---
 
@@ -607,7 +663,19 @@ change de cible, ou écris-le toi-même ». Un mot transforme une impasse en ins
 **La provenance est une donnée, pas une sortie.** Le moteur la retourne dans son modèle de résultat
 (§10.3) ; la CLI la rend. C'est ce qui rend le récapitulatif testable sans console.
 
-`--dry-run` affiche le même récapitulatif sur stderr et le fichier sur stdout.
+Un point d'entrée (§4.5) clôt le récapitulatif par une seconde ligne à lui, nommant l'écriture qu'il
+vient de rendre possible — la même règle encore, puisque l'écriture vient du modèle de résultat au
+lieu d'être assemblée par la console :
+
+```console
+✓ AnyOrder.cs       — 6 of 6 parameters inferred.
+✓ AnyOrder.Entry.cs — entry point Dummies.Order()
+```
+
+`--dry-run` affiche le même récapitulatif sur stderr et le fichier sur stdout. Avec un point
+d'entrée il y a deux fichiers, affichés dans l'ordre où ils seraient écrits, generator d'abord ;
+aucun séparateur n'est inventé entre eux, car chacun s'ouvre sur les trois lignes d'en-tête du §4.3
+qui le nomment.
 
 ---
 
@@ -623,6 +691,10 @@ change de cible, ou écris-le toi-même ». Un mot transforme une impasse en ins
 | Aucun / plusieurs projets trouvés | `1` | Candidats listés, `--project` suggéré. |
 | Le projet ne charge pas ou n'est pas restauré | `1` | Le diagnostic MSBuild, tel quel. |
 | Le projet ne référence pas JustDummies | `1` | Rien ne peut être résolu (D4) ; le dit et suggère le package. |
+| `--entry-point any`, projet en deçà de C# 14 | `1` | Nomme la version que le projet a résolue, et `static:<Name>`. |
+| `--entry-point static:Any` | `2` | Nomme ce qui cesserait de compiler, et renvoie vers `--entry-point any`. |
+| `--entry-point` reçoit une valeur hors des trois | `2` | Liste les trois. |
+| `--entry-point-namespace` sans point d'entrée à placer | `2` | Dit quelle option manque. |
 | `Any{Type}` masque un type `JustDummies.Any*` | `0` | **Avertissement**, puis génération. |
 
 Cette dernière ligne mérite sa note, et le contrôle derrière est plus étroit qu'il n'y paraît. La
@@ -643,6 +715,19 @@ levier.
 
 Le contrôle doit donc comparer l'arité, pas seulement le nom. Avertir sur les 40 crierait au loup
 sur les huit qui ne peuvent pas entrer en collision.
+
+Les quatre lignes de point d'entrée se répartissent sur deux codes, et le partage est celui que le §7
+trace déjà. Seule la première est un échec de scaffolding : le tool a lu la ligne de commande, ouvert
+le projet, et constaté qu'il ne peut pas compiler ce qui lui est demandé. Les trois autres sont des
+lignes de commande que le tool n'a jamais réussi à exécuter, ce qui est `2`. La première est en outre
+posée **une fois par exécution** plutôt qu'une fois par type, puisque c'est un fait sur le projet —
+`dum generate Order Customer Invoice` l'affiche une fois et s'arrête.
+
+Un scaffold est une unité de travail sur le disque. Là où un point d'entrée a été demandé, l'existence
+de son fichier est vérifiée en même temps que celle du generator avant que l'un ou l'autre ne soit
+écrit, de sorte qu'un `Any{Type}.Entry.cs` déjà présent refuse le scaffold entier plutôt que de
+laisser `Any{Type}.cs` derrière lui. `--force` porte sur les deux, et perd les éditions du développeur
+sur l'un comme sur l'autre par la même phrase.
 
 Plusieurs arguments de type (`dum generate Order Customer Invoice`) sont traités indépendamment ; le
 code de sortie est le pire d'entre eux, et un échec n'empêche pas l'écriture des autres.
@@ -844,7 +929,12 @@ modification de cette fonction plus une liaison d'options, pas un balayage. En v
   une cible à fabrique statique. Le fichier sans paramètre épingle la forme dégénérée du §4.2 —
   émettre les deux constructeurs sans condition y donne un `CS0111`. Le fichier de collision doit
   utiliser un nom de bibliothèque **non générique** (`Pattern`, `Context`, `Uri`), puisqu'un nom
-  générique ne peut pas entrer en collision (§7).
+  générique ne peut pas entrer en collision (§7). Le fichier de point d'entrée du §4.5 en ajoute
+  quatre : une racine statique, un membre d'extension, une racine déplacée dans un namespace à elle
+  (le seul cas qui ouvre un `using`), et le namespace global, qui n'a aucune déclaration à copier.
+  Ils sont compilés **avec le generator qu'ils atteignent**, puisque seul n'est un état dans lequel
+  ni l'un ni l'autre ne se trouve jamais, et le plancher de langage est asserté des deux côtés : le
+  membre d'extension doit échouer en deçà de C# 14, et la racine statique doit parser en C# 7.3.
 * **Tests de compilation de la sortie.** Chaque fichier de référence est compilé contre
   `JustDummies.dll` **avec les analyzers JustDummies branchés**, et la compilation ne doit produire
   aucune erreur `CS*` ni aucun diagnostic `JD*`. C'est le contrôle que D3 rend possible : le fichier
@@ -1160,8 +1250,8 @@ Les chemins sont ceux du dépôt actuel ; les ajuster si la bibliothèque a dém
 
 ## 15. Enregistrements de décision
 
-Les onze décisions de §2 sont toutes architecturales : un mainteneur futur questionnerait chacune
-d'elles, et chacune tiendrait inchangée si l'implémentation était réécrite. **Dix enregistrements**
+Les douze décisions de §2 sont toutes architecturales : un mainteneur futur questionnerait chacune
+d'elles, et chacune tiendrait inchangée si l'implémentation était réécrite. **Onze enregistrements**
 les couvrent — D5 et D6 en partagent un.
 
 Ils ont été tenus dans cette spécification tant que le dépôt qui devait les héberger n'existait
@@ -1182,6 +1272,7 @@ celui-ci — et les enregistrements sont entrés dans sa base d'ADR, chacun cons
 | **D9** | [ADR-0063](../adr/0063-give-the-scaffolder-no-dependency-on-the-package.fr.md) — Ne donner au scaffolder aucune dépendance sur le package JustDummies |
 | **D10** | [ADR-0064](../adr/0064-never-draw-null-for-a-nullable-parameter.fr.md) — Ne jamais tirer null pour un paramètre nullable |
 | **D11** | [ADR-0065](../adr/0065-keep-the-scaffolding-engine-loadable-by-a-roslyn-host.fr.md) — Garder le moteur de scaffolding chargeable par un hôte Roslyn |
+| **D12** | [ADR-0070](../adr/0070-emit-an-entry-point-on-request-as-a-file-of-its-own.fr.md) — Émettre un point d'entrée à la demande, dans un fichier à lui |
 
 Trois de ces enregistrements ont été écrits après le tableau des décisions, et la raison mérite
 d'être conservée. D7, D8 et D10 ont chacun été jugés trop petits au départ — une limite de périmètre

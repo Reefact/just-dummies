@@ -8,7 +8,33 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ## [Unreleased]
 
-_No unreleased changes recorded yet._
+### Added
+
+- **`--entry-point`** — a scaffold can now also write an entry point, so a generator is reached the way the
+  library's own are. `--entry-point any` emits a C# 14 extension member and gives you `Any.Order()` beside
+  `Any.Int32()`; `--entry-point static:<Name>` emits a `partial` root you own and gives you `Dummies.Order()`,
+  with no language requirement at all. The default is `none`, and `new AnyOrder()` is unaffected
+  ([ADR-0070](../doc/handwritten/for-maintainers/adr/0070-emit-an-entry-point-on-request-as-a-file-of-its-own.md)).
+- **`--entry-point-namespace`** — declares the entry-point file somewhere other than beside the generator, so one
+  root can gather types from several namespaces. It moves that file and nothing else: the generator stays in the
+  namespace `--namespace` (or the target type) gives it, so no call site pays an import for it.
+
+### Changed
+
+- The emitted generator file is **unchanged**, byte for byte, whichever entry point is asked for. The C# 7.3 floor
+  of the scaffolded code is a property of that file; only the `--entry-point any` file needs anything newer.
+- Where a scaffold writes two files, it writes both or neither: an existing `Any{Type}.Entry.cs` refuses the whole
+  scaffold rather than leaving the generator behind it, and `--force` covers both.
+- The console recap closes with a second line naming the call the entry point opened —
+  `✓ AnyOrder.Entry.cs — entry point Dummies.Order()`.
+
+### Refused, on purpose
+
+- `--entry-point static:Any` — a static class named `Any` in your own project hides `JustDummies.Any` for its whole
+  namespace rather than extending it, and `Any.Int32()` stops compiling. The refusal points at `--entry-point any`,
+  which is the mechanism that actually reaches that spelling.
+- `--entry-point any` on a project below C# 14 — refused, naming the language version the project resolved, rather
+  than silently downgraded to a static root a developer would only discover at the call site.
 
 ## [1.0.0-beta.1] - 2026-08-10
 

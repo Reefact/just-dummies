@@ -21,7 +21,7 @@ This specification is **self-contained on purpose**. It was written while JustDu
 in `Reefact/first-class-errors`, so that nothing here would depend on being read there; the move has
 since happened, and the property still holds.
 
-* **§1–§9 are the product.** What the tool does, what it emits, and why. Read §2 first: eleven
+* **§1–§9 are the product.** What the tool does, what it emits, and why. Read §2 first: twelve
   decisions carry everything else. §5 is the hard part and the only section with real design risk.
 * **§10–§12 are the build.** Two projects, the contract between them, and the test plan.
 * **§13 is the portability contract.** Everything the tool needs *from its host repository*,
@@ -29,7 +29,7 @@ since happened, and the property still holds.
 * **§14 is the reference.** Every fact about the JustDummies library that this specification
   relies on, inlined, with the command to re-derive each one. Nothing in §1–§12 requires reading
   the library's source to be checked.
-* **§15 is the reasoning.** Ten decision records, now entered into this repository's ADR base and
+* **§15 is the reasoning.** Eleven decision records, now entered into this repository's ADR base and
   indexed here. Read them when you want to know *why*, or when you are tempted to reverse
   something in §2.
 * **§16 is the boundary of v1.0.** What is deferred, and what was dropped outright.
@@ -89,7 +89,7 @@ The value proposition stays distinct from the library's: the **library** makes v
 
 ## 2. Decisions
 
-These are the load-bearing decisions. All eleven are covered by the ten decision records in §15 —
+These are the load-bearing decisions. All twelve are covered by the eleven decision records in §15 —
 context, argument, alternatives rejected, consequences; D5 and D6 share one. This table is the
 index; it holds no argument of its own.
 
@@ -106,6 +106,7 @@ index; it holds no argument of its own.
 | **D9** | The tool takes **no dependency on the JustDummies package**. | Resolution by metadata name, exactly like the analyzers — version skew becomes structurally impossible. |
 | **D10** | Never emit `.OrNull()`. | A dummy that is randomly `null` is the flakiness the library exists to remove. |
 | **D11** | The scaffolding **engine is a separate library** at the Roslyn floor; the CLI is a shell. | The engine's plausible second consumer is an IDE refactoring, which is not a CLI and cannot load a `net8.0` assembly. |
+| **D12** *(v1.1)* | An entry point is **opt-in**, emitted as a file of its own. | The generator file never changes, so §4.4's floor stays its property and `new Any{Type}()` keeps working. |
 
 ---
 
@@ -125,6 +126,8 @@ dum generate <Type> [<Type>...] [options]
 | `--project <path>` | the single `*.csproj` in the current directory | Project whose compilation is analyzed. |
 | `--output <dir>` | the current directory | Where the file is written. |
 | `--namespace <ns>` | the target type's namespace (D8) | Namespace of the emitted type. |
+| `--entry-point <v>` *(v1.1)* | `none` | Also emit an entry point: `none`, `static:<Name>` or `any` (§4.5). |
+| `--entry-point-namespace <ns>` *(v1.1)* | the emitted type's namespace | Namespace of the entry-point file alone. |
 | `--force` | off | Overwrite an existing file. |
 | `--dry-run` | off | Print the file to stdout; write nothing. |
 
@@ -325,6 +328,57 @@ must compile at that project's `LangVersion`.
 
 The one exception is the namespace form, which is copied from the target type's declaration
 style so the emitted file looks like its neighbours.
+
+The floor is a property of **this** file. The entry-point file of §4.5 may be asked for a construct
+newer than it, and says so in its own header; it is a separate file precisely so the floor here does
+not move.
+
+### 4.5 The entry-point file *(v1.1)*
+
+`new AnyOrder()` is how a scaffolded generator is reached, and it stays so. `--entry-point` asks for
+a **second** file beside it, carrying one factory, so the generator can also be reached the way the
+library's own are — `Any.Int32()` on one line and `Any.Order()` on the next. Decision:
+[ADR-0070](../adr/0070-emit-an-entry-point-on-request-as-a-file-of-its-own.md).
+
+| Value | What is emitted | Written |
+|---|---|---|
+| `none` *(default)* | nothing | — |
+| `static:<Name>` | `public static partial class <Name>` with one factory | `Dummies.Order()` |
+| `any` | `extension(Any)` carrying one static factory | `Any.Order()` |
+
+**The generator file does not change.** `Any{Type}.cs` is byte-identical under all three values, so
+`new Any{Type}()` keeps working and §4.4's floor is untouched. What is added is added beside it, in
+`Any{Type}.Entry.cs`.
+
+**One part per scaffold, never a shared file.** The static root is `partial`, and each scaffold
+writes its own part. Nothing is read to be rewritten, so §8.1 holds and D1 is not quietly reversed:
+`dum generate Order Customer Invoice --entry-point static:Dummies` writes six files and no file
+twice.
+
+**`any` needs C# 14, and the target framework has nothing to say about it.** A static extension
+member compiles for a `netstandard2.0` target as readily as for `net10.0`; what it needs is the
+project's `LangVersion`. A project below C# 14 is refused, not downgraded (§7).
+
+**`static:Any` is refused.** C# resolves a simple type name in the enclosing namespace before any
+`using`, so a static class named `Any` in the developer's project hides `JustDummies.Any` rather than
+extending it, and `Any.Int32()` stops compiling (`CS0117`). That is what `any` is for, and it is a
+different mechanism.
+
+**The entry point may move on its own.** `--entry-point-namespace` places the entry-point file and
+nothing else; the generator stays in the namespace D8 gives it, so no call site pays an import for
+it. Moving the entry point is what makes a single root reachable across several namespaces, and it
+opens the generator's namespace in the emitted file. `--namespace` still moves the generator, and
+takes the entry point with it unless this option says otherwise.
+
+**Shape rules.** Three header comment lines like §4.3's, naming the option that wrote the file. One
+public static factory named after the target type alone — `Order.Line` scaffolds `AnyLine` and is
+reached as `Line()`. It returns the generator, never a value: constraining it through `With…` and
+calling `Generate()` are the developer's, exactly as with `new Any{Type}()`. The `static:<Name>` file
+uses no construct newer than C# 7.3; the `any` file needs C# 14 and nothing more.
+
+A target type whose own name is the chosen root name emits a member named like its enclosing class,
+which does not compile (`CS0542`). It is loud at the developer's build, like §5.5's open parameter,
+and the remedy is another root name.
 
 ---
 
@@ -589,7 +643,18 @@ write it yourself". One word turns a dead end into an instruction.
 **Provenance is data, not output.** The engine returns it in its result model (§10.3); the CLI
 renders it. That is what makes the recap testable without a console.
 
-`--dry-run` prints the same recap to stderr and the file to stdout.
+An entry point (§4.5) closes the recap with a second line of its own, naming the call it just made
+possible — the same rule again, since the call comes from the result model rather than being
+assembled by the console:
+
+```console
+✓ AnyOrder.cs       — 6 of 6 parameters inferred.
+✓ AnyOrder.Entry.cs — entry point Dummies.Order()
+```
+
+`--dry-run` prints the same recap to stderr and the file to stdout. With an entry point there are
+two files, printed in the order they would be written, generator first; no separator is invented
+between them, because each opens with the three header lines of §4.3 that name it.
 
 ---
 
@@ -605,6 +670,10 @@ renders it. That is what makes the recap testable without a console.
 | No project / several projects found | `1` | Candidates listed, `--project` suggested. |
 | Project fails to load or restore | `1` | The MSBuild diagnostic, verbatim. |
 | The project does not reference JustDummies | `1` | Nothing can be resolved (D4); says so and suggests the package. |
+| `--entry-point any`, project below C# 14 | `1` | Names the version the project resolved, and `static:<Name>`. |
+| `--entry-point static:Any` | `2` | Names what would stop compiling, and points at `--entry-point any`. |
+| `--entry-point` given a value that is not one of the three | `2` | Lists the three. |
+| `--entry-point-namespace` with no entry point to place | `2` | Says which option is missing. |
 | `Any{Type}` shadows a `JustDummies.Any*` type | `0` | **Warning**, then generate. |
 
 That last row deserves its own note, and the check behind it is narrower than it first looks. The
@@ -624,6 +693,17 @@ developer's call, and v1.1 gives them the switch.
 
 The check must therefore compare arity, not just the name. Warning on all 40 would cry wolf on the
 eight that cannot collide.
+
+The four entry-point rows split across two codes, and the split is the one §7 already draws. Only
+the first is a scaffolding failure: the tool read the command line, opened the project, and found it
+cannot compile what was asked for. The other three are command lines the tool never got as far as
+running, which is `2`. The first is also asked **once per run** rather than once per type, since it
+is a fact about the project — `dum generate Order Customer Invoice` prints it once and stops.
+
+One scaffold is one unit of work on disk. Where an entry point was asked for, its file is checked for
+existence together with the generator's before either is written, so `Any{Type}.Entry.cs` already
+being there refuses the whole scaffold rather than leaving `Any{Type}.cs` behind it. `--force`
+covers both, and loses a developer's edits to either by the same sentence.
 
 Multiple type arguments (`dum generate Order Customer Invoice`) are processed independently; the
 exit code is the worst of them, and one failure does not prevent the others being written.
@@ -814,7 +894,12 @@ sweep. In v1.0 `NamingOptions` carries a single fixed pattern, `Any{Type}`.
   parameter, six parameters, a TODO, a name collision, a positional record, a static-factory
   target. The no-parameter file pins the degenerate shape of §4.2 — emitting the two constructors
   unconditionally there is a `CS0111`. The collision file must use a **non-generic** library name
-  (`Pattern`, `Context`, `Uri`), since a generic one cannot collide (§7).
+  (`Pattern`, `Context`, `Uri`), since a generic one cannot collide (§7). The entry-point file of
+  §4.5 adds four of its own — a static root, an extension member, a root moved into a namespace of
+  its own (the one case that opens a `using`), and the global namespace, which has no declaration to
+  copy. They are compiled **with the generator they reach**, since alone is not a state either file
+  is ever in, and the language floor is asserted from both sides: the extension member must fail
+  below C# 14, and the static root must parse at C# 7.3.
 * **Compile-the-output tests.** Each golden file is compiled against `JustDummies.dll` **with the
   JustDummies analyzers wired**, and the compilation must produce no `CS*` error and no `JD*`
   diagnostic. This is the check D3 buys: since the file is not marked as generated code, the
@@ -1124,8 +1209,8 @@ Paths are those of the current repository; adjust them if the library has moved.
 
 ## 15. Decision records
 
-All eleven decisions in §2 are architectural: a future maintainer would question each of them, and
-each would stand unchanged if the implementation were rewritten. **Ten records** cover them — D5
+All twelve decisions in §2 are architectural: a future maintainer would question each of them, and
+each would stand unchanged if the implementation were rewritten. **Eleven records** cover them — D5
 and D6 share one.
 
 They were held inside this specification while the repository that should hold them did not exist:
@@ -1146,6 +1231,7 @@ exists — it is this one — and the records have been entered into its ADR bas
 | **D9** | [ADR-0063](../adr/0063-give-the-scaffolder-no-dependency-on-the-package.md) — Give the scaffolder no dependency on the JustDummies package |
 | **D10** | [ADR-0064](../adr/0064-never-draw-null-for-a-nullable-parameter.md) — Never draw null for a nullable parameter |
 | **D11** | [ADR-0065](../adr/0065-keep-the-scaffolding-engine-loadable-by-a-roslyn-host.md) — Keep the scaffolding engine loadable by a Roslyn host |
+| **D12** | [ADR-0070](../adr/0070-emit-an-entry-point-on-request-as-a-file-of-its-own.md) — Emit an entry point on request, as a file of its own |
 
 Three of these records were written after the decision table was, and why is worth keeping. D7, D8
 and D10 were each judged too small at first — a scope limit already scheduled for revisiting, a

@@ -234,12 +234,31 @@ internal sealed class OrdinalIntervalSpec {
 
     /// <summary>Adds values the generator must never produce.</summary>
     internal OrdinalIntervalSpec WithExcluded(ulong[] ordinals, ConstraintCall applying) {
-        if (ordinals is null) { throw new ArgumentNullException(nameof(ordinals)); }
-        if (applying is null) { throw new ArgumentNullException(nameof(applying)); }
+        return WithExcluded(ordinals, applying, applying);
+    }
 
-        // The applied constraint tags its own ordinals, so a later exhaustion message can name the exclusion
+    /// <summary>
+    ///     Excludes <paramref name="ordinals" /> on behalf of <paramref name="declaring" />, while the conflict this
+    ///     may raise is reported against <paramref name="applying" /> — the call the caller is actually writing.
+    /// </summary>
+    /// <remarks>
+    ///     The two coincide for every constraint that excludes on its own behalf, which is why the overload above
+    ///     exists. They part when a generator applies a dimension this engine does not model at a moment the caller
+    ///     did not declare it: <c>AnyDateTimeOffset</c> re-applies its declared offset when a pool arrives, so the
+    ///     offset tags the exclusion — it is the constraint to loosen — while the exception belongs to the
+    ///     <c>OneOf</c> being written. Collapsing the two headed such a conflict "Cannot apply WithOffset(…)" and
+    ///     pointed the reader at a line that had already succeeded.
+    /// </remarks>
+    internal OrdinalIntervalSpec WithExcluded(ulong[] ordinals, ConstraintCall declaring, ConstraintCall applying) {
+        if (ordinals is null) { throw new ArgumentNullException(nameof(ordinals)); }
+        // Guarded before `declaring` on purpose: the two-argument overload passes one call for both, so a probe
+        // leaving it null must answer under the name that overload gave it.
+        if (applying is null) { throw new ArgumentNullException(nameof(applying)); }
+        if (declaring is null) { throw new ArgumentNullException(nameof(declaring)); }
+
+        // The declaring constraint tags its own ordinals, so a later exhaustion message can name the exclusion
         // that actually emptied the domain rather than a bound that merely happens to border it.
-        List<(ConstraintCall Constraint, ulong[] Ordinals)> exclusions = [.. _exclusions, (applying, ordinals)];
+        List<(ConstraintCall Constraint, ulong[] Ordinals)> exclusions = [.. _exclusions, (declaring, ordinals)];
 
         return Validated(new OrdinalIntervalSpec(_typeName, _render, _domainMin, _domainMax, _min, _minConstraint, _max, _maxConstraint, _allowed, _allowedConstraint, exclusions, _step, _anchor, _stepConstraint), applying);
     }

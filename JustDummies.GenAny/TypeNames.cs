@@ -108,7 +108,25 @@ internal sealed class TypeNames {
 
         while (outermost.ContainingType is not null) { outermost = outermost.ContainingType; }
 
-        Open(outermost.ContainingNamespace?.ToDisplayString() ?? string.Empty);
+        Open(NamespaceOf(outermost));
+    }
+
+    /// <summary>
+    ///     The namespace a type needs opening, or nothing when it needs none.
+    /// </summary>
+    /// <remarks>
+    ///     The global namespace has to be read as "no namespace" rather than displayed, and that is the whole
+    ///     of this method: <c>ToDisplayString()</c> renders it as the literal <c>&lt;global namespace&gt;</c>,
+    ///     which the emitter would then write out as a <c>using</c> directive that does not parse. Two cases
+    ///     reach it — a domain type declared outside any namespace, and an <b>error</b> type, since a
+    ///     parameter whose type failed to bind is reported as living in the global namespace. The second is
+    ///     the likelier one in the field: it needs only a project that opened with an unresolved reference,
+    ///     which §11.1 surfaces and carries on from.
+    /// </remarks>
+    private static string NamespaceOf(INamedTypeSymbol type) {
+        INamespaceSymbol? containing = type.ContainingNamespace;
+
+        return containing is null || containing.IsGlobalNamespace ? string.Empty : containing.ToDisplayString();
     }
 
 }

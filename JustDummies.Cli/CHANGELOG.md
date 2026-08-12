@@ -18,7 +18,6 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 - **`--entry-point-namespace`** — declares the entry-point file somewhere other than beside the generator, so one
   root can gather types from several namespaces. It moves that file and nothing else: the generator stays in the
   namespace `--namespace` (or the target type) gives it, so no call site pays an import for it.
-
 ### Changed
 
 - The emitted generator file is **unchanged**, byte for byte, whichever entry point is asked for. The C# 7.3 floor
@@ -27,6 +26,14 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   scaffold rather than leaving the generator behind it, and `--force` covers both.
 - The console recap closes with a second line naming the call the entry point opened —
   `✓ AnyOrder.Entry.cs — entry point Dummies.Order()`.
+
+### Fixed
+
+- **A parameter type outside any namespace no longer emits `using <global namespace>;`**, which does not parse.
+  Two cases reached it: a domain type declared outside any namespace, and — the likelier one — an *error* type,
+  since a parameter that failed to bind is reported as living in the global namespace. A project that opened with
+  an unresolved reference therefore scaffolded a file broken on its fifth line, for every parameter it could not
+  resolve.
 
 ### Refused, on purpose
 

@@ -24,7 +24,7 @@ namespace JustDummies;
 ///         value has one spelling and their bounds hold.
 ///     </para>
 ///     <para>
-///         An extension of <see cref="ICardinalityHint{T}" /> rather than a second member on it, which the compiler
+///         Decision: ADR-0069. An extension of <see cref="ICardinalityHint{T}" /> rather than a second member on it, which the compiler
 ///         would then hold every implementer to: the answer is the same for all but one of them, and 26 identical
 ///         restatements would bury the one that differs. The trade is real — a future generator over a
 ///         coarsely-compared type could carry a bound and forget this interface — and it is paid for by naming the

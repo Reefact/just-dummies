@@ -171,3 +171,4 @@ et qu'elle a été décidée le 01/08/2026 — l'index porte l'ordre, la numéro
 | [ADR-0066](0066-load-msbuild-from-the-sdk-never-from-the-tool.fr.md) | Charger MSBuild depuis le SDK installé, jamais depuis les fichiers de l'outil | Accepted | consigné ici |
 | [ADR-0067](0067-report-a-filtered-pool-through-an-explicit-interface.fr.md) | Rendre compte d'un pool filtré par une interface implémentée explicitement, et n'avertir de rien | Accepted | consigné ici |
 | [ADR-0068](0068-carry-the-pool-inspection-wherever-a-caller-supplies-the-values.fr.md) | Porter l'inspection de pool partout où l'appelant fournit les valeurs, et nulle part ailleurs | Accepted | consigné ici |
+| [ADR-0069](0069-answer-a-cardinality-bound-under-the-comparer-that-will-use-it.fr.md) | Répondre à une borne de cardinalité sous le comparateur qui s'en servira | Accepted | consigné ici |

@@ -40,7 +40,7 @@ namespace JustDummies;
 ///         yields values a finer comparer counts as distinct while a bound counted in instants says one. A generator
 ///         in that position declares <see cref="IComparerSensitiveCardinality{T}" /> and answers for the comparer in
 ///         force; every other one is asked, and answers, exactly as before. Either way the collection never refuses a
-///         specification the comparer makes satisfiable.
+///         specification the comparer makes satisfiable (ADR-0069).
 ///     </para>
 /// </remarks>
 /// <typeparam name="T">The element type.</typeparam>

@@ -56,6 +56,19 @@ so *your own build* reports what it could not infer, at the exact line, with the
 type in hand. A generator that quietly drew a plausible value there would be far
 worse.
 
+## Reaching it as `Any.Order()`
+
+`new AnyOrder()` always works. If you would rather the arrange block read alike
+throughout — `Any.Int32()` on one line and `Any.Order()` on the next — ask for an
+entry point, and a second file lands beside the generator:
+
+    dum generate Order --entry-point any               # Any.Order()      needs C# 14
+    dum generate Order --entry-point static:Dummies    # Dummies.Order()  needs nothing
+
+`AnyOrder.cs` is byte-identical either way, so nothing about the generator
+changes. Below C# 14 the first form is refused rather than quietly swapped for
+the second.
+
 ## Options
 
 | Option | Default | Meaning |
@@ -63,7 +76,9 @@ worse.
 | `--project <path>` | the single `*.csproj` in the current directory | project whose compilation is analyzed |
 | `--output <dir>` | the current directory | where the file is written |
 | `--namespace <ns>` | the target type's namespace | namespace of the emitted type |
-| `--force` | off | overwrite an existing file |
+| `--entry-point <v>` | `none` | also emit an entry point: `none`, `static:<Name>` or `any` |
+| `--entry-point-namespace <ns>` | the emitted type's namespace | namespace of the entry-point file alone |
+| `--force` | off | overwrite an existing file — both files, where there are two |
 | `--dry-run` | off | print the file to stdout; write nothing |
 
 `dum generate Order Customer Invoice` scaffolds several; they are processed

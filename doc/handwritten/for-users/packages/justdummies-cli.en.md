@@ -73,6 +73,49 @@ dum generate Order --force
 The line closes to `new AnyCustomer()`. That two-step is the intended way through a graph of
 aggregates: the tool composes only what it can already see in your compilation.
 
+## Reaching it as `Any.Order()`
+
+`new AnyOrder()` is how the generator is reached, and it always works. If you would rather the two
+halves of an arrange block read alike — `Any.Int32()` on one line and `Any.Order()` on the next —
+ask for an entry point:
+
+```bash
+dum generate Order --entry-point any
+```
+
+That writes a second file, `AnyOrder.Entry.cs`, beside the generator:
+
+<!-- jd:skip -->
+```csharp
+Order order = Any.Order().WithStatus(OrderStatus.Pending).Generate();
+```
+
+It uses a C# 14 extension member, so the project has to compile at C# 14; below that `dum` says so
+and stops rather than quietly giving you something else. If you cannot raise the language version —
+or you would rather the root were yours — name one:
+
+```bash
+dum generate Order --entry-point static:Dummies    # Dummies.Order()
+```
+
+That form needs no C# 14. The root is `partial` and each type contributes its own file, so
+`dum generate Order Customer Invoice --entry-point static:Dummies` gives you `Dummies.Order()`,
+`Dummies.Customer()` and `Dummies.Invoice()` without any file being written twice.
+
+By default the entry point is declared beside the generator, which costs your tests no import.
+`--entry-point-namespace` moves that file — and only that file — so one root can gather types from
+several namespaces:
+
+```bash
+dum generate Order --entry-point static:Dummies --entry-point-namespace Shop.Tests.Dummies
+```
+
+The generator itself does not move, and `AnyOrder.cs` is byte-identical whichever of the three you
+ask for. A root named `Any` is refused: a static class by that name in your own project would hide
+`JustDummies.Any` for its whole namespace, and `Any.Int32()` would stop compiling — which is what
+`--entry-point any` exists to avoid. Decision:
+[ADR-0070](../../for-maintainers/adr/0070-emit-an-entry-point-on-request-as-a-file-of-its-own.md).
+
 ## Options
 
 | Option | Default | Meaning |
@@ -80,7 +123,9 @@ aggregates: the tool composes only what it can already see in your compilation.
 | `--project <path>` | the single `*.csproj` in the current directory | project whose compilation is analyzed |
 | `--output <dir>` | the current directory | where the file is written |
 | `--namespace <ns>` | the target type's namespace | namespace of the emitted type |
-| `--force` | off | overwrite an existing file |
+| `--entry-point <v>` | `none` | also emit an entry point: `none`, `static:<Name>` or `any` |
+| `--entry-point-namespace <ns>` | the emitted type's namespace | namespace of the entry-point file alone |
+| `--force` | off | overwrite an existing file — both files, where there are two |
 | `--dry-run` | off | print the file to stdout; write nothing |
 
 `dum generate Order Customer Invoice` scaffolds several. They are processed independently, and the

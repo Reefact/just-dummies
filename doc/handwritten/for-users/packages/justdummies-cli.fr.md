@@ -74,6 +74,49 @@ dum generate Order --force
 La ligne se referme sur `new AnyCustomer()`. Ce parcours en deux temps est la façon prévue de
 traverser un graphe d'agrégats : l'outil ne compose que ce qu'il voit déjà dans votre compilation.
 
+## L'atteindre comme `Any.Order()`
+
+`new AnyOrder()` est la façon d'atteindre le generator, et elle marche toujours. Si vous préférez que
+les deux moitiés d'un bloc d'arrangement se lisent pareil — `Any.Int32()` sur une ligne et
+`Any.Order()` sur la suivante — demandez un point d'entrée :
+
+```bash
+dum generate Order --entry-point any
+```
+
+Cela écrit un second fichier, `AnyOrder.Entry.cs`, à côté du generator :
+
+<!-- jd:skip -->
+```csharp
+Order order = Any.Order().WithStatus(OrderStatus.Pending).Generate();
+```
+
+Il utilise un membre d'extension C# 14, donc le projet doit compiler en C# 14 ; en deçà, `dum` le dit
+et s'arrête plutôt que de vous donner discrètement autre chose. Si vous ne pouvez pas relever la
+version de langage — ou si vous préférez que la racine soit la vôtre — nommez-en une :
+
+```bash
+dum generate Order --entry-point static:Dummies    # Dummies.Order()
+```
+
+Cette forme n'exige aucun C# 14. La racine est `partial` et chaque type apporte son propre fichier,
+donc `dum generate Order Customer Invoice --entry-point static:Dummies` vous donne `Dummies.Order()`,
+`Dummies.Customer()` et `Dummies.Invoice()` sans qu'aucun fichier soit écrit deux fois.
+
+Par défaut le point d'entrée est déclaré à côté du generator, ce qui ne coûte aucun import à vos
+tests. `--entry-point-namespace` déplace ce fichier — et lui seul — pour qu'une racine unique
+rassemble des types de plusieurs namespaces :
+
+```bash
+dum generate Order --entry-point static:Dummies --entry-point-namespace Shop.Tests.Dummies
+```
+
+Le generator, lui, ne bouge pas, et `AnyOrder.cs` est identique octet pour octet quelle que soit la
+valeur demandée. Une racine nommée `Any` est refusée : une classe statique de ce nom dans votre propre
+projet masquerait `JustDummies.Any` pour tout son namespace, et `Any.Int32()` cesserait de compiler —
+ce que `--entry-point any` existe précisément pour éviter. Décision :
+[ADR-0070](../../for-maintainers/adr/0070-emit-an-entry-point-on-request-as-a-file-of-its-own.fr.md).
+
 ## Options
 
 | Option | Défaut | Signification |
@@ -81,7 +124,9 @@ traverser un graphe d'agrégats : l'outil ne compose que ce qu'il voit déjà da
 | `--project <chemin>` | l'unique `*.csproj` du répertoire courant | projet dont la compilation est analysée |
 | `--output <dossier>` | le répertoire courant | où le fichier est écrit |
 | `--namespace <ns>` | le namespace du type visé | namespace du type émis |
-| `--force` | inactif | écrase un fichier existant |
+| `--entry-point <v>` | `none` | émet en plus un point d'entrée : `none`, `static:<Name>` ou `any` |
+| `--entry-point-namespace <ns>` | le namespace du type émis | namespace du seul fichier de point d'entrée |
+| `--force` | inactif | écrase un fichier existant — les deux fichiers, quand il y en a deux |
 | `--dry-run` | inactif | imprime le fichier sur la sortie standard ; n'écrit rien |
 
 `dum generate Order Customer Invoice` en scaffolde plusieurs. Ils sont traités indépendamment, et le

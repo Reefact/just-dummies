@@ -159,3 +159,4 @@ and it was decided on 2026-08-01 — the index carries the order, the numbering 
 | [ADR-0067](0067-report-a-filtered-pool-through-an-explicit-interface.md) | Report a filtered pool through an explicitly implemented interface, and warn about nothing | Accepted | recorded here |
 | [ADR-0068](0068-carry-the-pool-inspection-wherever-a-caller-supplies-the-values.md) | Carry the pool inspection wherever a caller supplies the values, and nowhere else | Accepted | recorded here |
 | [ADR-0069](0069-answer-a-cardinality-bound-under-the-comparer-that-will-use-it.md) | Answer a cardinality bound under the comparer that will use it | Accepted | recorded here |
+| [ADR-0070](0070-emit-an-entry-point-on-request-as-a-file-of-its-own.md) | Emit an entry point on request, as a file of its own | Accepted | recorded here |

@@ -71,6 +71,14 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   Only exclusions that actually removed something are named, since one whose values were never drawable caused
   nothing. Generation, conflict detection and the public surface are unchanged — only the wording of the
   message a failing declaration carries.
+- **Four analyzer rules work again on a seeded chain written in one expression.** JD015, JD023 and JD024 — and
+  JD029, which is new — read a chain by walking back to the factory that started it, and the walk descended into
+  a call's receiver before asking whether the call was itself the factory. On `Any.WithSeed(1).Int32()...`,
+  `Int32()`'s receiver is an invocation, so `WithSeed` was named as the factory and every rule gated on that
+  name fell silent — on precisely the form this library recommends for reproducibility. The same chain routed
+  through a local variable was analysed correctly, which is what kept it hidden. **Expect new diagnostics on
+  seeded chains you already have**: they are ones these rules always meant to report, and none of them is an
+  error. Generation and the public surface are unchanged.
 
 ## [1.0.0-preview.1] - 2026-08-07
 

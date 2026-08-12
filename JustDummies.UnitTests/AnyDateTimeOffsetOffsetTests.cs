@@ -101,6 +101,23 @@ public sealed class AnyDateTimeOffsetOffsetTests {
         Check.That(beforePool.Message).Contains("no pooled value carries an offset it admits");
     }
 
+    [Fact(DisplayName = "WithOffset: a conflict raised while declaring the pool names the pool, and blames the offset.")]
+    public void APoolConflictNamesThePoolAndBlamesTheOffset() {
+        // The two halves of the sentence answer different questions, and the offset is not the answer to both.
+        // The pool is what the caller is writing -- WithOffset was accepted on an earlier line -- while the offset
+        // is what to loosen. Applying the declared offset to an arriving pool once used one call for both roles,
+        // so the message read "Cannot apply WithOffset(...)" and sent the reader at a line that had succeeded.
+        // The case runs past the eager "no pooled value carries an offset" guard: `kept` does carry +01:00.
+        DateTimeOffset kept    = new(2026, 6, 2, 13, 0, 0, TimeSpan.FromHours(1));
+        DateTimeOffset refused = new(2026, 6, 1, 12, 0, 0, TimeSpan.Zero);
+
+        ConflictingAnyConstraintException caught = Assert.Throws<ConflictingAnyConstraintException>(
+            () => Any.DateTimeOffset().Before(kept).WithOffset(TimeSpan.FromHours(1)).OneOf(refused, kept));
+
+        Check.That(caught.Message).StartsWith("Cannot apply OneOf(");
+        Check.That(caught.Message).Contains("WithOffset(01:00:00)");
+    }
+
     [Fact(DisplayName = "Without an offset constraint, OneOf still returns every pooled value with its own offset.")]
     public void AnUnconstrainedOneOfKeepsEveryOffset() {
         // The filter must only fire when an offset is actually declared: an unconstrained pool is unchanged, and that

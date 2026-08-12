@@ -349,7 +349,9 @@ public sealed class AnyDateTimeOffset : IAny<DateTimeOffset>, IHasRandomSource, 
         // reporting a generic exhaustion: an offset no supplied spelling carries is the one thing worth saying.
         if (refused.Length == supplied.Count) { throw OffsetExcludesEveryPooledValue(applying, minMinutes, maxMinutes); }
 
-        return spec.WithExcluded(refused, offsetConstraint);
+        // The offset tags the exclusion -- it is what a reader must loosen -- but the conflict it may raise belongs
+        // to `applying`, which from OneOf is the pool being written and not the offset accepted on an earlier line.
+        return spec.WithExcluded(refused, offsetConstraint, applying);
     }
 
     [SuppressMessage(SonarRule.S125.Category, SonarRule.S125.Id, Justification = SuppressionJustification.S125.ProseNotDisabledCode)]

@@ -137,6 +137,34 @@ public sealed class ScaffolderTests {
         Check.That(outcome.File.SourceText).Contains("public sealed partial class AnyLine : IAny<Subject.Line> {");
     }
 
+    /// <summary>
+    ///     A parameter whose type is in the global namespace opens no <c>using</c> for it.
+    /// </summary>
+    /// <remarks>
+    ///     Regression, 2026-08-12. <c>ToDisplayString()</c> renders the global namespace as the literal
+    ///     <c>&lt;global namespace&gt;</c>, which the emitter wrote out as a <c>using</c> directive that does
+    ///     not parse — so a domain type declared outside any namespace produced a file failing on its fifth
+    ///     line. The likelier way to meet it was worse: an <b>error</b> type is reported as living in the
+    ///     global namespace too, so a project that opened with an unresolved reference — which §11.1 surfaces
+    ///     and carries on from — scaffolded the same broken file for every parameter that failed to bind.
+    /// </remarks>
+    [Fact(DisplayName = "A parameter type outside any namespace opens no using for it.")]
+    public void AParameterTypeOutsideAnyNamespaceOpensNoUsing() {
+        ScaffoldOutcome outcome = Subject.ScaffoldByName("Line",
+                                                         "public sealed class Sku { public Sku(string value) { } }",
+                                                         """
+                                                         namespace Shop.Domain {
+                                                             public sealed class Line {
+                                                                 public Line(Sku sku, int quantity) { }
+                                                             }
+                                                         }
+                                                         """);
+
+        Check.That(outcome.Succeeded).IsTrue();
+        Check.That(outcome.File!.SourceText).Not.Contains("<global namespace>");
+        Check.That(outcome.File.SourceText).Contains("IAny<Sku>");
+    }
+
     [Fact(DisplayName = "Every argument is required, on both overloads.")]
     public void EveryArgumentIsRequired() {
         Check.ThatCode(() => Scaffolder.Scaffold(null!, (INamedTypeSymbol)null!, null!)).Throws<ArgumentNullException>();

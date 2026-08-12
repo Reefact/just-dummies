@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -54,7 +55,7 @@ internal sealed class GenerateCommand : AsyncCommand<GenerateSettings> {
         if (!project.Found) {
             Refusals.NoProject(project, consoles.Error);
 
-            return ExitCode.Failed;
+            return Refused(settings, RunRefusal.NoProject);
         }
 
         LoadedProject loaded = await open(project.Path!, cancellationToken).ConfigureAwait(false);
@@ -67,7 +68,7 @@ internal sealed class GenerateCommand : AsyncCommand<GenerateSettings> {
         if (!loaded.Succeeded) {
             Refusals.ProjectDidNotLoad(project.Path!, consoles.Error);
 
-            return ExitCode.Failed;
+            return Refused(settings, RunRefusal.ProjectDidNotLoad);
         }
 
         EntryPointArgument entryPoint = settings.ReadEntryPoint();
@@ -77,10 +78,24 @@ internal sealed class GenerateCommand : AsyncCommand<GenerateSettings> {
         if (!CanCompileEntryPoint(loaded.Compilation!, entryPoint, out string languageVersion)) {
             Refusals.LanguageVersionTooLow(project.Path!, languageVersion, consoles.Error);
 
-            return ExitCode.Failed;
+            return Refused(settings, RunRefusal.LanguageVersionTooLow);
         }
 
         return ScaffoldEach(loaded.Compilation!, settings, entryPoint, here);
+    }
+
+    /// <summary>
+    ///     A run that stopped before its first scaffold: the sentence is already on stderr, and this is what
+    ///     stdout owes a script.
+    /// </summary>
+    /// <remarks>
+    ///     Emitted even here, so that <c>--format json</c> means "stdout carries one JSON document" with no
+    ///     exception to remember. Under the recap of §6 there is nothing to add — stderr has said it.
+    /// </remarks>
+    private int Refused(GenerateSettings settings, string refusal) {
+        if (settings.ReportsAsJson()) { JsonReport.Write(RunReport.Refused(refusal), consoles.Output); }
+
+        return ExitCode.Failed;
     }
 
     /// <summary>
@@ -111,19 +126,24 @@ internal sealed class GenerateCommand : AsyncCommand<GenerateSettings> {
 
         if (settings.Namespace is not null) { options = options.InNamespace(settings.Namespace); }
 
-        string    directory = settings.Output is null ? here : Path.GetFullPath(settings.Output);
-        List<int> codes     = [];
+        string               directory = settings.Output is null ? here : Path.GetFullPath(settings.Output);
+        List<int>            codes     = [];
+        List<ScaffoldReport> reported  = [];
 
         foreach (string typeArgument in settings.Types) {
-            ScaffoldOutcome outcome = Scaffolder.Scaffold(compilation, typeArgument, options);
+            ScaffoldOutcome  outcome  = Scaffolder.Scaffold(compilation, typeArgument, options);
+            ReportedScaffold scaffold = Report(typeArgument, outcome, settings, directory);
 
-            codes.Add(Report(typeArgument, outcome, settings, directory));
+            codes.Add(scaffold.Code);
+            reported.Add(scaffold.Report);
 
             // The one refusal that is not about the type: without the package nothing in this project can be
             // resolved, so the remaining arguments would each print the same two lines. Said once, and the run
             // stops — the exit code is the same either way.
             if (outcome.Status == ScaffoldStatus.LibraryNotReferenced) { break; }
         }
+
+        if (settings.ReportsAsJson()) { JsonReport.Write(RunReport.Of(reported), consoles.Output); }
 
         return ExitCode.Worst(codes);
     }
@@ -136,27 +156,31 @@ internal sealed class GenerateCommand : AsyncCommand<GenerateSettings> {
     ///     produced. Under <c>--dry-run</c> nothing is written, so the two swap streams instead: the file goes
     ///     to stdout for a developer to pipe, and the recap to stderr for them to read while it does (§6).
     /// </remarks>
-    private int Report(string typeArgument, ScaffoldOutcome outcome, GenerateSettings settings, string directory) {
+    private ReportedScaffold Report(string typeArgument, ScaffoldOutcome outcome, GenerateSettings settings, string directory) {
+        bool json = settings.ReportsAsJson();
+
         if (!outcome.Succeeded) {
             Refusals.Render(typeArgument, outcome, consoles.Error);
 
-            return ExitCode.Failed;
+            return new ReportedScaffold(ExitCode.Failed, ScaffoldReport.Refused(typeArgument, outcome));
         }
 
         IReadOnlyList<ScaffoldedFile> files = Files(outcome);
 
         if (settings.DryRun) {
             Recap.Render(outcome, consoles.Error);
-            Unwrapped.Line(consoles.Error, files.Count == 1
-                                               ? "  Nothing written: --dry-run. The file itself is on stdout."
-                                               : "  Nothing written: --dry-run. Both files are on stdout, in that order.");
+            Unwrapped.Line(consoles.Error, DryRunNotice(files.Count, json));
             Unwrapped.Line(consoles.Error, string.Empty);
 
-            // No separator invented between them: each file opens with the three header lines of §4.3, which
-            // name it and the option that wrote it, so the boundary is already in the text.
-            foreach (ScaffoldedFile file in files) { Unwrapped.Text(consoles.Output, file.SourceText); }
+            // Under the recap of §6 the files themselves go to stdout, with no separator invented between
+            // them: each opens with the three header lines of §4.3, which name it and the option that wrote
+            // it. Under --format json stdout is carrying the document, so each file's text travels inside it.
+            if (!json) {
+                foreach (ScaffoldedFile file in files) { Unwrapped.Text(consoles.Output, file.SourceText); }
+            }
 
-            return ExitCode.Success;
+            return new ReportedScaffold(ExitCode.Success,
+                                        ScaffoldReport.Of(typeArgument, outcome, [.. files.Select(FileReport.Printed)]));
         }
 
         WriteOutcome written = ScaffoldWriter.WriteAll(files, directory, settings.Force);
@@ -164,17 +188,34 @@ internal sealed class GenerateCommand : AsyncCommand<GenerateSettings> {
         if (!written.Succeeded) {
             Refusals.FileExists(written.Path, consoles.Error);
 
-            return ExitCode.Failed;
+            return new ReportedScaffold(ExitCode.Failed, ScaffoldReport.Refused(typeArgument, outcome));
         }
 
-        Recap.Render(outcome, consoles.Output);
+        if (!json) {
+            Recap.Render(outcome, consoles.Output);
 
-        // The separator belongs to the run, not to the recap: §6 writes one scaffold out, and a blank line
-        // under it is what keeps three of them from reading as one paragraph.
-        Unwrapped.Line(consoles.Output, string.Empty);
+            // The separator belongs to the run, not to the recap: §6 writes one scaffold out, and a blank line
+            // under it is what keeps three of them from reading as one paragraph.
+            Unwrapped.Line(consoles.Output, string.Empty);
+        }
 
-        return ExitCode.For(outcome);
+        IReadOnlyList<FileReport> landed = [.. files.Select(file => FileReport.WrittenTo(file.FileName,
+                                                                                        Path.Combine(directory, file.FileName)))];
+
+        return new ReportedScaffold(ExitCode.For(outcome), ScaffoldReport.Of(typeArgument, outcome, landed));
     }
+
+    /// <summary>Where a <c>--dry-run</c>'s files went, which is not the same place under each format.</summary>
+    private static string DryRunNotice(int files, bool json) {
+        if (json) { return "  Nothing written: --dry-run. Each file's text is in the report on stdout."; }
+
+        return files == 1
+                   ? "  Nothing written: --dry-run. The file itself is on stdout."
+                   : "  Nothing written: --dry-run. Both files are on stdout, in that order.";
+    }
+
+    /// <summary>One scaffold's two answers: what the process exits with, and what the report records.</summary>
+    private sealed record ReportedScaffold(int Code, ScaffoldReport Report);
 
     /// <summary>
     ///     Everything one scaffold produced, generator first — the order it is written in, printed in and read

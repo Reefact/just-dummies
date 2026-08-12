@@ -15,6 +15,12 @@ namespace JustDummies.Cli;
 /// </remarks>
 internal sealed class GenerateSettings : CommandSettings {
 
+    /// <summary>The recap of §6, written for a reader — what a run reports unless told otherwise.</summary>
+    internal const string HumanFormat = "human";
+
+    /// <summary>One JSON document on stdout, written for a script (§6.1).</summary>
+    internal const string JsonFormat = "json";
+
     /// <summary>
     ///     The types to scaffold, written as a developer would type them: <c>Order</c>, <c>Shop.Domain.Order</c>,
     ///     or <c>Order.Line</c> for a nested one (§3.2). Several are processed independently (§7).
@@ -62,6 +68,14 @@ internal sealed class GenerateSettings : CommandSettings {
     public bool DryRun { get; set; }
 
     /// <summary>
+    ///     Defaults to the recap of §6, which is written for a reader; <c>json</c> is written for a script
+    ///     (§6.1).
+    /// </summary>
+    [CommandOption("--format <FORMAT>")]
+    [Description("How the run reports itself: human or json. Defaults to human.")]
+    public string? Format { get; set; }
+
+    /// <summary>
     ///     Refuses an option that was given without a value.
     /// </summary>
     /// <remarks>
@@ -73,16 +87,26 @@ internal sealed class GenerateSettings : CommandSettings {
     public override ValidationResult Validate() {
         foreach ((string option, string? value) in new[] {
                      ("--project", Project), ("--output", Output), ("--namespace", Namespace),
-                     ("--entry-point", EntryPoint), ("--entry-point-namespace", EntryPointNamespace)
+                     ("--entry-point", EntryPoint), ("--entry-point-namespace", EntryPointNamespace),
+                     ("--format", Format)
                  }) {
             if (value is not null && value.Trim().Length == 0) {
                 return ValidationResult.Error($"{option} was given without a value. Omit it to take its default.");
             }
         }
 
+        if (Format is not null && Format != HumanFormat && Format != JsonFormat) {
+            return ValidationResult.Error($"--format does not take '{Format}'. It takes {HumanFormat} or {JsonFormat}.");
+        }
+
         EntryPointArgument entryPoint = ReadEntryPoint();
 
         return entryPoint.Understood ? ValidationResult.Success() : ValidationResult.Error(entryPoint.Refusal!);
+    }
+
+    /// <summary>Whether the run reports itself as one JSON document rather than as the recap of §6.</summary>
+    internal bool ReportsAsJson() {
+        return Format == JsonFormat;
     }
 
     /// <summary>

@@ -133,6 +133,7 @@ dum generate <Type> [<Type>...] [options]
 | `--entry-point-namespace <ns>` *(v1.1)* | le namespace du type émis | Namespace du seul fichier de point d'entrée. |
 | `--force` | inactif | Écrase un fichier existant. |
 | `--dry-run` | inactif | Affiche le fichier sur stdout ; n'écrit rien. |
+| `--format <f>` *(v1.1)* | `human` | Comment l'exécution rend compte : `human` ou `json` (§6.1). |
 
 C'est toute la surface. Pas de fichier de configuration, pas de `init`, pas de `list`, pas de
 `--all`, et — par D1 — pas de `check`. Le §16 liste ce qui est délibérément reporté.
@@ -677,6 +678,41 @@ d'entrée il y a deux fichiers, affichés dans l'ordre où ils seraient écrits,
 aucun séparateur n'est inventé entre eux, car chacun s'ouvre sur les trois lignes d'en-tête du §4.3
 qui le nomment.
 
+### 6.1 Le rapport machine *(v1.1)*
+
+`--format json` remplace le récapitulatif par **un unique document JSON sur stdout**, pour l'appelant
+qui est un script plutôt qu'un lecteur. Décision :
+[ADR-0071](../adr/0071-report-a-run-as-data-without-moving-the-exit-codes.fr.md).
+
+Il existe parce que le code de sortie ne peut pas porter ce que le §7 a tranché. Un fichier écrit
+avec des paramètres ouverts est un **succès** — le build du développeur signale le reste, ce qui est
+tout l'ADR-0060 — et c'est juste pour une personne et inutile pour un script qui scaffolde quarante
+types en une invocation : `0` se lit pareil que tous les paramètres aient résolu ou qu'un tiers
+d'entre eux non. `summary.openParameters` est ce nombre manquant, et les lignes par paramètre disent
+pourquoi il vaut ce qu'il vaut.
+
+**Les codes de sortie ne bougent pas.** Le §7 est un contrat publié, et une exécution qui a écrit ses
+fichiers sort toujours en `0` quoi que dise le rapport. Ceci ajoute un canal ; cela n'en redéfinit
+aucun.
+
+**stdout porte le document et rien d'autre.** Le récapitulatif y est supprimé, puisque la prose d'un
+lecteur rendrait le document inanalysable. Tout ce qui est écrit pour une personne — les refus, les
+diagnostics du projet, l'avis de `--dry-run` — continue d'aller sur stderr exactement comme sous
+`human`, de sorte que `2>/dev/null` laisse un tuyau propre.
+
+**Un document par exécution, sans exception à retenir.** Une exécution arrêtée avant son premier
+scaffold — pas de projet, un projet qui ne charge pas, `--entry-point any` en deçà de C# 14 — en
+produit un aussi, dont le `refusal` nomme lequel c'était. Un contrat qui n'écrit parfois rien oblige
+un script à distinguer une sortie vide d'une analyse en échec.
+
+**`--dry-run` met le texte de chaque fichier dans le document**, puisque stdout n'est plus libre de le
+porter. `path` et `text` sont les deux moitiés d'une même question et ne sont jamais répondues
+ensemble : un fichier écrit porte où il est allé, un fichier de `--dry-run` ce qu'il aurait été.
+
+Les mots de provenance sont ceux du récapitulatif (§6), lus dans une seule table plutôt qu'épelés une
+seconde fois — deux rendus d'un même ensemble de faits, ce qui les empêche de dériver vers deux
+réponses.
+
 ---
 
 ## 7. Modes d'échec et codes de sortie
@@ -695,6 +731,7 @@ qui le nomment.
 | `--entry-point static:Any` | `2` | Nomme ce qui cesserait de compiler, et renvoie vers `--entry-point any`. |
 | `--entry-point` reçoit une valeur hors des trois | `2` | Liste les trois. |
 | `--entry-point-namespace` sans point d'entrée à placer | `2` | Dit quelle option manque. |
+| `--format` reçoit une valeur qui n'est ni `human` ni `json` | `2` | Nomme les deux. |
 | `Any{Type}` masque un type `JustDummies.Any*` | `0` | **Avertissement**, puis génération. |
 
 Cette dernière ligne mérite sa note, et le contrôle derrière est plus étroit qu'il n'y paraît. La

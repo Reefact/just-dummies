@@ -116,6 +116,34 @@ ask for. A root named `Any` is refused: a static class by that name in your own 
 `--entry-point any` exists to avoid. Decision:
 [ADR-0070](../../for-maintainers/adr/0070-emit-an-entry-point-on-request-as-a-file-of-its-own.md).
 
+## Reporting to a script
+
+`dum` reports itself to a reader by default. `--format json` reports it to a script instead — one
+JSON document on stdout, and nothing else there:
+
+```bash
+dum generate Order Customer Invoice --format json > report.json
+```
+
+It exists because the exit code cannot say everything. A file written with open `TODO`s is a
+**success** — that is the whole design — so exit `0` reads the same whether every parameter resolved
+or a third of them did not. The report says which:
+
+```json
+{
+  "summary": { "scaffolded": 3, "failed": 0, "openParameters": 2 }
+}
+```
+
+Each result carries the type, the files written and where they went, every parameter with its
+expression and provenance, the entry point if one was emitted, and any warning. A run that stopped
+before its first scaffold produces a document too, with `refusal` naming why — so stdout always
+carries exactly one document. Everything written for a person keeps going to stderr, which leaves
+`2>/dev/null` a clean pipe.
+
+The exit codes are unchanged: this adds a channel rather than redefining one. Decision:
+[ADR-0071](../../for-maintainers/adr/0071-report-a-run-as-data-without-moving-the-exit-codes.md).
+
 ## Options
 
 | Option | Default | Meaning |
@@ -127,6 +155,7 @@ ask for. A root named `Any` is refused: a static class by that name in your own 
 | `--entry-point-namespace <ns>` | the emitted type's namespace | namespace of the entry-point file alone |
 | `--force` | off | overwrite an existing file — both files, where there are two |
 | `--dry-run` | off | print the file to stdout; write nothing |
+| `--format <f>` | `human` | how the run reports itself: `human` or `json` |
 
 `dum generate Order Customer Invoice` scaffolds several. They are processed independently, and the
 exit code is the worst of them: `0` a file written (TODOs and all), `1` a scaffolding run that

@@ -117,6 +117,34 @@ projet masquerait `JustDummies.Any` pour tout son namespace, et `Any.Int32()` ce
 ce que `--entry-point any` existe précisément pour éviter. Décision :
 [ADR-0070](../../for-maintainers/adr/0070-emit-an-entry-point-on-request-as-a-file-of-its-own.fr.md).
 
+## Rendre compte à un script
+
+`dum` rend compte à un lecteur par défaut. `--format json` rend compte à un script à la place — un
+document JSON sur stdout, et rien d'autre dessus :
+
+```bash
+dum generate Order Customer Invoice --format json > report.json
+```
+
+Il existe parce que le code de sortie ne peut pas tout dire. Un fichier écrit avec des `TODO` ouverts
+est un **succès** — c'est tout le design — donc `0` se lit pareil que tous les paramètres aient
+résolu ou qu'un tiers d'entre eux non. Le rapport, lui, le dit :
+
+```json
+{
+  "summary": { "scaffolded": 3, "failed": 0, "openParameters": 2 }
+}
+```
+
+Chaque résultat porte le type, les fichiers écrits et où ils sont allés, chaque paramètre avec son
+expression et sa provenance, le point d'entrée s'il y en a un, et les avertissements. Une exécution
+arrêtée avant son premier scaffold produit un document elle aussi, dont le `refusal` dit pourquoi —
+de sorte que stdout porte toujours exactement un document. Tout ce qui est écrit pour une personne
+continue d'aller sur stderr, ce qui laisse à `2>/dev/null` un tuyau propre.
+
+Les codes de sortie sont inchangés : ceci ajoute un canal plutôt que d'en redéfinir un. Décision :
+[ADR-0071](../../for-maintainers/adr/0071-report-a-run-as-data-without-moving-the-exit-codes.fr.md).
+
 ## Options
 
 | Option | Défaut | Signification |
@@ -128,6 +156,7 @@ ce que `--entry-point any` existe précisément pour éviter. Décision :
 | `--entry-point-namespace <ns>` | le namespace du type émis | namespace du seul fichier de point d'entrée |
 | `--force` | inactif | écrase un fichier existant — les deux fichiers, quand il y en a deux |
 | `--dry-run` | inactif | imprime le fichier sur la sortie standard ; n'écrit rien |
+| `--format <f>` | `human` | comment l'exécution rend compte : `human` ou `json` |
 
 `dum generate Order Customer Invoice` en scaffolde plusieurs. Ils sont traités indépendamment, et le
 code de sortie est le pire d'entre eux : `0` un fichier écrit (TODO compris), `1` un scaffolding qui

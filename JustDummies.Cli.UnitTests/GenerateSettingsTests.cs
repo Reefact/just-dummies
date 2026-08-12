@@ -23,11 +23,11 @@ namespace JustDummies.Cli.UnitTests;
 /// </remarks>
 public sealed class GenerateSettingsTests {
 
-    [Fact(DisplayName = "generate declares the seven options of §3, and no others.")]
+    [Fact(DisplayName = "generate declares the eight options of §3, and no others.")]
     public void GenerateDeclaresTheOptionsOfTheSpecification() {
         string[] expected = [
             "--project <PATH>", "--output <DIR>", "--namespace <NAMESPACE>", "--force", "--dry-run",
-            "--entry-point <VALUE>", "--entry-point-namespace <NAMESPACE>"
+            "--entry-point <VALUE>", "--entry-point-namespace <NAMESPACE>", "--format <FORMAT>"
         ];
 
         Check.That(TemplatesOf("Spectre.Console.Cli.CommandOptionAttribute")).IsEquivalentTo(expected);

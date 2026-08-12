@@ -69,6 +69,13 @@ entry point, and a second file lands beside the generator:
 changes. Below C# 14 the first form is refused rather than quietly swapped for
 the second.
 
+## Reporting to a script
+
+A file written with open `TODO`s is a **success**, so the exit code reads the
+same whether every parameter resolved or a third of them did not. `--format json`
+says which — one JSON document on stdout, with `summary.openParameters` and a row
+per parameter. The exit codes are unchanged; this adds a channel.
+
 ## Options
 
 | Option | Default | Meaning |
@@ -80,6 +87,7 @@ the second.
 | `--entry-point-namespace <ns>` | the emitted type's namespace | namespace of the entry-point file alone |
 | `--force` | off | overwrite an existing file — both files, where there are two |
 | `--dry-run` | off | print the file to stdout; write nothing |
+| `--format <f>` | `human` | how the run reports itself: `human` or `json` |
 
 `dum generate Order Customer Invoice` scaffolds several; they are processed
 independently, and the exit code is the worst of them. Exit `0` is a file

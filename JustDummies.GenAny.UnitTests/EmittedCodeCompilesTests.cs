@@ -27,6 +27,24 @@ public sealed class EmittedCodeCompilesTests {
     /// <summary>The one approved file that must NOT compile, and the reason it exists.</summary>
     private const string OpenParameterGolden = "AnyOrderWithTodo";
 
+    /// <summary>What an entry-point golden's name carries, since it is the generator's plus a shape (§4.5).</summary>
+    private const string EntryPointMarker = ".Entry.";
+
+    /// <summary>
+    ///     Each entry-point golden and the generator golden it reaches.
+    /// </summary>
+    /// <remarks>
+    ///     Paired rather than compiled alone, because alone is not a state either file is ever in: the entry
+    ///     point names the generator, and the two land in the developer's project together.
+    ///     <see cref="EveryEntryPointGoldenIsCompiledWithItsGenerator" /> is what keeps this list honest.
+    /// </remarks>
+    public static TheoryData<string, string> EntryPointGoldens => new() {
+        { "AnyOrder", "AnyOrder.Entry.Static" },
+        { "AnyOrder", "AnyOrder.Entry.Any" },
+        { "AnyPattern", "AnyPattern.Entry.Moved" },
+        { "AnySession", "AnySession.Entry.Any" }
+    };
+
     /// <summary>
     ///     Read from the folder rather than listed here, so a golden added later cannot be left uncompiled.
     /// </summary>
@@ -35,7 +53,7 @@ public sealed class EmittedCodeCompilesTests {
             TheoryData<string> goldens = [];
 
             foreach (string name in GoldenFile.All()) {
-                if (name != OpenParameterGolden) { goldens.Add(name); }
+                if (name != OpenParameterGolden && !IsEntryPoint(name)) { goldens.Add(name); }
             }
 
             return goldens;
@@ -77,6 +95,41 @@ public sealed class EmittedCodeCompilesTests {
         Check.That(await JustDummiesDiagnosticsIn(violation, TestContext.Current.CancellationToken)).Not.IsEmpty();
     }
 
+    [Theory(DisplayName = "An entry point compiles with the generator it reaches, with no error.")]
+    [MemberData(nameof(EntryPointGoldens))]
+    public void AnEntryPointCompilesWithTheGeneratorItReaches(string generator, string entryPoint) {
+        CSharpCompilation compilation = EmittedCodeCompiler.CompileTogether(GoldenFile.ApprovedTextOf(generator),
+                                                                           GoldenFile.ApprovedTextOf(entryPoint));
+
+        Check.That(EmittedCodeCompiler.ErrorsIn(compilation)).IsEmpty();
+    }
+
+    // The pair list above is written out, unlike CompilableGoldens which reads the folder. This is what stops
+    // that from becoming a way to add a golden nothing compiles.
+    [Fact(DisplayName = "Every entry-point golden is compiled with its generator.")]
+    public void EveryEntryPointGoldenIsCompiledWithItsGenerator() {
+        string[] onDisk = [.. GoldenFile.All().Where(IsEntryPoint)];
+        string[] paired = [.. EntryPointGoldens.Select(row => row.Data.Item2)
+                                               .OrderBy(name => name, StringComparer.Ordinal)];
+
+        Check.That(paired).IsEqualTo(onDisk);
+    }
+
+    /// <summary>
+    ///     The claim §4.5 rests on: <c>--entry-point any</c> needs C# 14, and nothing else the tool writes does.
+    /// </summary>
+    /// <remarks>
+    ///     Asserted from both sides on purpose. That the extension member fails below C# 14 is what makes the
+    ///     CLI's refusal a service rather than a formality; that the static root parses at 7.3 is what keeps
+    ///     §4.4's floor a property of every file but this one.
+    /// </remarks>
+    [Fact(DisplayName = "The extension-member entry point needs C# 14, and the static root does not.")]
+    public void TheExtensionMemberEntryPointNeedsCSharp14() {
+        Check.That(ParseErrorsAt("AnyOrder.Entry.Any", LanguageVersion.CSharp13)).Not.IsEmpty();
+        Check.That(ParseErrorsAt("AnyOrder.Entry.Any", LanguageVersion.CSharp14)).IsEmpty();
+        Check.That(ParseErrorsAt("AnyPattern.Entry.Moved", LanguageVersion.CSharp7_3)).IsEmpty();
+    }
+
     /// <summary>
     ///     The open parameter of §5.5 is not a defect of this file: it is the mechanism. The developer's build
     ///     names the missing identifier, at that line, in the IDE and in CI, the minute the file is written
@@ -114,6 +167,18 @@ public sealed class EmittedCodeCompilesTests {
                                                      cancellationToken: TestContext.Current.CancellationToken);
 
         Check.That(tree.GetDiagnostics(TestContext.Current.CancellationToken).Select(diagnostic => diagnostic.Id)).IsEmpty();
+    }
+
+    private static bool IsEntryPoint(string golden) {
+        return golden.Contains(EntryPointMarker, StringComparison.Ordinal);
+    }
+
+    private static string[] ParseErrorsAt(string golden, LanguageVersion version) {
+        SyntaxTree tree = CSharpSyntaxTree.ParseText(GoldenFile.ApprovedTextOf(golden),
+                                                     new CSharpParseOptions(version),
+                                                     cancellationToken: TestContext.Current.CancellationToken);
+
+        return [.. tree.GetDiagnostics(TestContext.Current.CancellationToken).Select(diagnostic => diagnostic.Id)];
     }
 
     private static async Task<string[]> JustDummiesDiagnosticsIn(string source, CancellationToken cancellationToken) {

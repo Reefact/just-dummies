@@ -38,6 +38,19 @@ internal sealed class GenerateSettings : CommandSettings {
     [Description("Namespace of the emitted type. Defaults to the target type's own.")]
     public string? Namespace { get; set; }
 
+    /// <summary>
+    ///     Off by default, so the generator file is all a scaffold writes and <c>new Any{Type}()</c> stays the
+    ///     way in (§4.5).
+    /// </summary>
+    [CommandOption("--entry-point <VALUE>")]
+    [Description("Also emit an entry point: none, static:<Name>, or any. Defaults to none.")]
+    public string? EntryPoint { get; set; }
+
+    /// <summary>Defaults to the emitted generator's own namespace, which costs the call site no import.</summary>
+    [CommandOption("--entry-point-namespace <NAMESPACE>")]
+    [Description("Namespace of the entry-point file. Defaults to the emitted type's.")]
+    public string? EntryPointNamespace { get; set; }
+
     /// <summary>Off by default: an existing file is never overwritten silently (§7).</summary>
     [CommandOption("--force")]
     [Description("Overwrite an existing file. Your edits to it are lost.")]
@@ -59,14 +72,28 @@ internal sealed class GenerateSettings : CommandSettings {
     /// </remarks>
     public override ValidationResult Validate() {
         foreach ((string option, string? value) in new[] {
-                     ("--project", Project), ("--output", Output), ("--namespace", Namespace)
+                     ("--project", Project), ("--output", Output), ("--namespace", Namespace),
+                     ("--entry-point", EntryPoint), ("--entry-point-namespace", EntryPointNamespace)
                  }) {
             if (value is not null && value.Trim().Length == 0) {
                 return ValidationResult.Error($"{option} was given without a value. Omit it to take its default.");
             }
         }
 
-        return ValidationResult.Success();
+        EntryPointArgument entryPoint = ReadEntryPoint();
+
+        return entryPoint.Understood ? ValidationResult.Success() : ValidationResult.Error(entryPoint.Refusal!);
+    }
+
+    /// <summary>
+    ///     What <c>--entry-point</c> and <c>--entry-point-namespace</c> asked for, or why they could not be read.
+    /// </summary>
+    /// <remarks>
+    ///     A method rather than a property: it parses two strings and allocates, and a caller reading a property
+    ///     twice would expect the second read to cost what the first did.
+    /// </remarks>
+    internal EntryPointArgument ReadEntryPoint() {
+        return EntryPointArgument.Parse(EntryPoint, EntryPointNamespace);
     }
 
 }

@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using JustDummies.GenAny;
 
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 
 using Spectre.Console.Cli;
 
@@ -69,16 +70,46 @@ internal sealed class GenerateCommand : AsyncCommand<GenerateSettings> {
             return ExitCode.Failed;
         }
 
-        return ScaffoldEach(loaded.Compilation!, settings, here);
+        EntryPointArgument entryPoint = settings.ReadEntryPoint();
+
+        // Asked once for the run, not once per type: it is a fact about the project, so repeating it under
+        // `dum generate Order Customer Invoice` would print the same two lines three times.
+        if (!CanCompileEntryPoint(loaded.Compilation!, entryPoint, out string languageVersion)) {
+            Refusals.LanguageVersionTooLow(project.Path!, languageVersion, consoles.Error);
+
+            return ExitCode.Failed;
+        }
+
+        return ScaffoldEach(loaded.Compilation!, settings, entryPoint, here);
+    }
+
+    /// <summary>
+    ///     Whether the project could compile the entry point it asked for (§4.5, §7).
+    /// </summary>
+    /// <remarks>
+    ///     The check belongs to the shell and not to the engine: the engine is compiled against the Roslyn floor
+    ///     (§13.2), which has no name for C# 14, while the CLI hosts a current compiler and reads the version
+    ///     the project actually resolved. A compilation that is not C# — none reaches here, but the model
+    ///     admits one — is not asked a question it cannot answer.
+    /// </remarks>
+    private static bool CanCompileEntryPoint(Compilation compilation, EntryPointArgument entryPoint, out string languageVersion) {
+        languageVersion = string.Empty;
+
+        if (entryPoint.Options.Kind != EntryPointKind.Any) { return true; }
+        if (compilation is not CSharpCompilation csharp) { return true; }
+
+        languageVersion = csharp.LanguageVersion.ToDisplayString();
+
+        return csharp.LanguageVersion >= LanguageVersion.CSharp14;
     }
 
     /// <summary>
     ///     One scaffold per type argument, independently, exiting with the worst of them (§7).
     /// </summary>
-    private int ScaffoldEach(Compilation compilation, GenerateSettings settings, string here) {
-        ScaffoldOptions options = settings.Namespace is null
-                                      ? ScaffoldOptions.Default
-                                      : ScaffoldOptions.Default.InNamespace(settings.Namespace);
+    private int ScaffoldEach(Compilation compilation, GenerateSettings settings, EntryPointArgument entryPoint, string here) {
+        ScaffoldOptions options = ScaffoldOptions.Default.WithEntryPoint(entryPoint.Options);
+
+        if (settings.Namespace is not null) { options = options.InNamespace(settings.Namespace); }
 
         string    directory = settings.Output is null ? here : Path.GetFullPath(settings.Output);
         List<int> codes     = [];
@@ -112,16 +143,23 @@ internal sealed class GenerateCommand : AsyncCommand<GenerateSettings> {
             return ExitCode.Failed;
         }
 
+        IReadOnlyList<ScaffoldedFile> files = Files(outcome);
+
         if (settings.DryRun) {
             Recap.Render(outcome, consoles.Error);
-            Unwrapped.Line(consoles.Error, "  Nothing written: --dry-run. The file itself is on stdout.");
+            Unwrapped.Line(consoles.Error, files.Count == 1
+                                               ? "  Nothing written: --dry-run. The file itself is on stdout."
+                                               : "  Nothing written: --dry-run. Both files are on stdout, in that order.");
             Unwrapped.Line(consoles.Error, string.Empty);
-            Unwrapped.Text(consoles.Output, outcome.File!.SourceText);
+
+            // No separator invented between them: each file opens with the three header lines of §4.3, which
+            // name it and the option that wrote it, so the boundary is already in the text.
+            foreach (ScaffoldedFile file in files) { Unwrapped.Text(consoles.Output, file.SourceText); }
 
             return ExitCode.Success;
         }
 
-        WriteOutcome written = ScaffoldWriter.Write(outcome.File!, directory, settings.Force);
+        WriteOutcome written = ScaffoldWriter.WriteAll(files, directory, settings.Force);
 
         if (!written.Succeeded) {
             Refusals.FileExists(written.Path, consoles.Error);
@@ -136,6 +174,14 @@ internal sealed class GenerateCommand : AsyncCommand<GenerateSettings> {
         Unwrapped.Line(consoles.Output, string.Empty);
 
         return ExitCode.For(outcome);
+    }
+
+    /// <summary>
+    ///     Everything one scaffold produced, generator first — the order it is written in, printed in and read
+    ///     in, so a <c>--dry-run</c> and a write never disagree about which file came first.
+    /// </summary>
+    private static IReadOnlyList<ScaffoldedFile> Files(ScaffoldOutcome outcome) {
+        return outcome.EntryPoint is null ? [outcome.File!] : [outcome.File!, outcome.EntryPoint.File];
     }
 
 }

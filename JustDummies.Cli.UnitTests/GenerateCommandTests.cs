@@ -146,6 +146,136 @@ public sealed class GenerateCommandTests : IDisposable {
              .Contains("namespace Shop.Tests.Dummies;");
     }
 
+    [Fact(DisplayName = "--entry-point static:<Name> writes a second file and recaps the call it opens.")]
+    public async Task AStaticEntryPointWritesASecondFile() {
+        GenerateSettings settings = Settings("Order");
+
+        settings.EntryPoint = "static:Dummies";
+
+        Run run = await Generate(settings);
+
+        Check.That(run.ExitCode).IsEqualTo(0);
+        Check.That(run.Output).Contains("✓ AnyOrder.Entry.cs — entry point Dummies.Order()");
+        Check.That(await File.ReadAllTextAsync(Path.Combine(directory, "AnyOrder.Entry.cs"), TestContext.Current.CancellationToken))
+             .Contains("public static partial class Dummies {");
+    }
+
+    [Fact(DisplayName = "--entry-point any writes the extension member, on a project that can compile it.")]
+    public async Task AnEntryPointOnAnyWritesTheExtensionMember() {
+        GenerateSettings settings = Settings("Order");
+
+        settings.EntryPoint = "any";
+
+        Run run = await Generate(settings);
+
+        Check.That(run.ExitCode).IsEqualTo(0);
+        Check.That(run.Output).Contains("entry point Any.Order()");
+        Check.That(await File.ReadAllTextAsync(Path.Combine(directory, "AnyOrder.Entry.cs"), TestContext.Current.CancellationToken))
+             .Contains("extension(Any) {");
+    }
+
+    /// <summary>
+    ///     The refusal of §7 that is about the project rather than the type: what <c>--entry-point any</c>
+    ///     writes needs C# 14, and this project does not compile at it.
+    /// </summary>
+    /// <remarks>
+    ///     Refused before the first scaffold, so a run over several types says it once — and refused rather
+    ///     than downgraded to a static root, which the developer would only discover at the call site.
+    /// </remarks>
+    [Fact(DisplayName = "--entry-point any is refused below C# 14, before anything is written.")]
+    public async Task AnEntryPointOnAnyIsRefusedBelowCSharp14() {
+        GenerateSettings settings = Settings("Order");
+
+        settings.EntryPoint = "any";
+
+        Run run = await Generate(settings, Compilation(Domain, language: LanguageVersion.CSharp12));
+
+        Check.That(run.ExitCode).IsEqualTo(1);
+        Check.That(run.Error).Contains("C# 14");
+        Check.That(run.Error).Contains("--entry-point static:<Name>");
+        Check.That(Directory.GetFiles(directory)).IsEmpty();
+    }
+
+    // The same project, and the same option, once it can compile what the option writes.
+    [Fact(DisplayName = "--entry-point static:<Name> needs no C# 14.")]
+    public async Task AStaticEntryPointNeedsNoCSharp14() {
+        GenerateSettings settings = Settings("Order");
+
+        settings.EntryPoint = "static:Dummies";
+
+        Run run = await Generate(settings, Compilation(Domain, language: LanguageVersion.CSharp12));
+
+        Check.That(run.ExitCode).IsEqualTo(0);
+        Check.That(File.Exists(Path.Combine(directory, "AnyOrder.Entry.cs"))).IsTrue();
+    }
+
+    /// <summary>
+    ///     One scaffold is one unit of work on disk: either both its files land, or neither does.
+    /// </summary>
+    /// <remarks>
+    ///     Half a scaffold under the exit code of a failure would be the worst of both — and the re-run with
+    ///     <c>--force</c> that follows would silently overwrite the half that had landed.
+    /// </remarks>
+    [Fact(DisplayName = "An existing entry-point file stops the generator being written too.")]
+    public async Task AnExistingEntryPointFileStopsTheWholeScaffold() {
+        GenerateSettings settings = Settings("Order");
+
+        settings.EntryPoint = "static:Dummies";
+
+        await File.WriteAllTextAsync(Path.Combine(directory, "AnyOrder.Entry.cs"), "// mine",
+                                     TestContext.Current.CancellationToken);
+
+        Run run = await Generate(settings);
+
+        Check.That(run.ExitCode).IsEqualTo(1);
+        Check.That(run.Error).Contains("AnyOrder.Entry.cs");
+        Check.That(File.Exists(Path.Combine(directory, "AnyOrder.cs"))).IsFalse();
+    }
+
+    [Fact(DisplayName = "--dry-run prints both files and writes neither.")]
+    public async Task ADryRunPrintsBothFiles() {
+        GenerateSettings settings = Settings("Order");
+
+        settings.EntryPoint = "any";
+        settings.DryRun     = true;
+
+        Run run = await Generate(settings);
+
+        Check.That(run.ExitCode).IsEqualTo(0);
+        Check.That(run.Output).Contains("public sealed partial class AnyOrder");
+        Check.That(run.Output).Contains("extension(Any) {");
+        Check.That(run.Error).Contains("Both files are on stdout");
+        Check.That(Directory.GetFiles(directory)).IsEmpty();
+    }
+
+    // ADR-0062 stays intact: the generator does not move, so no call site pays an import for it. Only the
+    // entry point does, which is what makes one root reachable across several namespaces.
+    [Fact(DisplayName = "--entry-point-namespace moves the entry point and leaves the generator alone.")]
+    public async Task AnEntryPointNamespaceMovesOnlyTheEntryPoint() {
+        GenerateSettings settings = Settings("Order");
+
+        settings.EntryPoint          = "static:Dummies";
+        settings.EntryPointNamespace = "Shop.Tests.Dummies";
+
+        await Generate(settings);
+
+        Check.That(await File.ReadAllTextAsync(Path.Combine(directory, "AnyOrder.cs"), TestContext.Current.CancellationToken))
+             .Contains("namespace Shop.Domain;");
+
+        string entry = await File.ReadAllTextAsync(Path.Combine(directory, "AnyOrder.Entry.cs"),
+                                                   TestContext.Current.CancellationToken);
+
+        Check.That(entry).Contains("namespace Shop.Tests.Dummies;");
+        Check.That(entry).Contains("using Shop.Domain;");
+    }
+
+    [Fact(DisplayName = "No entry point asked for, one file written — the default is unchanged.")]
+    public async Task NoEntryPointAskedForWritesOneFile() {
+        await Generate(Settings("Order"));
+
+        Check.That(File.Exists(Path.Combine(directory, "AnyOrder.Entry.cs"))).IsFalse();
+    }
+
     [Fact(DisplayName = "A type that matched nothing fails, on stderr, with the closest name.")]
     public async Task ATypeThatMatchedNothingFails() {
         Run run = await Generate(Settings("Ordr"));
@@ -255,10 +385,19 @@ public sealed class GenerateCommandTests : IDisposable {
         return Run.Of(settings, (_, _) => Task.FromResult(LoadedProject.Opened(compilation, [])));
     }
 
-    /// <summary>The compilation the command reads, with or without the library it resolves against.</summary>
-    private static CSharpCompilation Compilation(string source, bool withLibrary = true) {
+    /// <summary>
+    ///     The compilation the command reads, with or without the library it resolves against.
+    /// </summary>
+    /// <remarks>
+    ///     The language version is a parameter because one refusal turns on it and on nothing else: what
+    ///     <c>--entry-point any</c> writes is a C# 14 construct, and the target framework has no say in it
+    ///     (§4.5).
+    /// </remarks>
+    private static CSharpCompilation Compilation(string source,
+                                                 bool withLibrary = true,
+                                                 LanguageVersion language = LanguageVersion.Latest) {
         return CSharpCompilation.Create("Shop.Tests",
-                                        [CSharpSyntaxTree.ParseText(source, new CSharpParseOptions(LanguageVersion.Latest))],
+                                        [CSharpSyntaxTree.ParseText(source, new CSharpParseOptions(language))],
                                         References(withLibrary),
                                         new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary,
                                                                      nullableContextOptions: NullableContextOptions.Enable));

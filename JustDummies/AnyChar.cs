@@ -223,7 +223,7 @@ public sealed class AnyChar : IAny<char>, IHasRandomSource, ICardinalityHint<cha
     private AnyChar WithExcluded(char[] values, ConstraintCall applying) {
         List<char> excluded = [.. _excluded, .. values];
 
-        return Validated(new AnyChar(_source, _charset, _charsetConstraint, _casing, _casingConstraint, _allowed, _allowedConstraint, excluded, [.. _exclusions, (applying, values)]), applying);
+        return Validated(new AnyChar(_source, _charset, _charsetConstraint, _casing, _casingConstraint, _allowed, _allowedConstraint, excluded, [.. _exclusions, (applying, values.ToArray())]), applying);
     }
 
     [SuppressMessage(NetAnalyzersRule.CA1822.Category, NetAnalyzersRule.CA1822.Id, Justification = SuppressionJustification.CA1822.UniformValidatedHook)]

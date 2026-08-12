@@ -142,6 +142,71 @@ public sealed class PoolInspectionTests {
         Check.That(((IPoolInspection<Priority>)Any.Enum<Priority>().OneOf(Priority.Low, Priority.High)).IsPooled).IsTrue();
     }
 
+    [Fact(DisplayName = "A pin dominates the report, because it dominates the draw.")]
+    public void APinDominatesTheReport() {
+        // Generate short-circuits on the pin before the allow-list is reached, so every other pooled value is
+        // undrawable. Reporting them as survivors would name values no draw can yield.
+        Guid other = Guid.NewGuid();
+
+        IPoolInspection<Guid> inspection = Any.Guid().Empty().OneOf(Guid.Empty, other);
+
+        Check.That(inspection.GetSurvivors()).ContainsExactly(Guid.Empty);
+        Check.That(inspection.GetRejections().Single().Value).IsEqualTo(other);
+        Check.That(inspection.GetRejections().Single().RejectedBy.Single().Name).IsEqualTo("Empty");
+    }
+
+    [Fact(DisplayName = "A top-level pool names every exclusion refusing a value, not only the one that removed it.")]
+    public void ATopLevelPoolNamesEveryRefusingExclusion() {
+        // The second exclusion finds the value already gone, but it refuses it just the same. A reader told to
+        // loosen only the first would find the value still absent.
+        IPoolInspection<string> inspection = (IPoolInspection<string>)Any.OneOf("a", "b").Except("a").DifferentFrom("a");
+
+        Check.That(inspection.GetRejections().Single().Value).IsEqualTo("a");
+        Check.That(inspection.GetRejections().Single().RejectedBy.Select(constraint => constraint.Name))
+             .IsOnlyMadeOf("Except", "DifferentFrom");
+    }
+
+    [Fact(DisplayName = "A date pool reports the Kind the draw returns, not the engine's normalized one.")]
+    public void ADatePoolReportsTheSuppliedKind() {
+        // The ordinal carries only the ticks. Rebuilding from it would report Utc for a value the draw yields as
+        // Local — a survivor that does not equal what comes out of Generate().
+        DateTime local = new(2026, 3, 1, 0, 0, 0, DateTimeKind.Local);
+
+        IPoolInspection<DateTime> inspection = Any.DateTime().OneOf(local);
+
+        Check.That(inspection.GetSurvivors().Single().Kind).IsEqualTo(DateTimeKind.Local);
+        Check.That(inspection.GetSurvivors().Single()).IsEqualTo(local);
+    }
+
+    [Fact(DisplayName = "An offset-refused pooled value is reported, and the survivors keep their supplied offset.")]
+    public void AnOffsetRefusedValueIsReported() {
+        // The offset dimension filters the pool OUTSIDE the ordinal engine, so without care the values it removes
+        // appear in neither list and the supplied pool stops adding up.
+        DateTimeOffset kept    = new(2026, 3, 1, 0, 0, 0, TimeSpan.Zero);
+        DateTimeOffset refused = new(2026, 3, 1, 0, 0, 0, TimeSpan.FromHours(2));
+
+        IPoolInspection<DateTimeOffset> inspection = Any.DateTimeOffset().OneOf(kept, refused).WithOffset(TimeSpan.Zero);
+
+        Check.That(inspection.GetSurvivors()).ContainsExactly(kept);
+        Check.That(inspection.GetSurvivors().Single().Offset).IsEqualTo(TimeSpan.Zero);
+        Check.That(inspection.GetRejections().Single().Value).IsEqualTo(refused);
+        Check.That(inspection.GetRejections().Single().RejectedBy.Single().Name).IsEqualTo("WithOffset");
+    }
+
+    [Fact(DisplayName = "Mutating the array handed to Except cannot change what the report says.")]
+    public void TheReportDoesNotFollowTheCallersArray() {
+        // The excluded values are copied at the boundary. Retaining the caller's array would let a later mutation
+        // make the report accuse a value the generator actually draws.
+        char[] excluded = ['a'];
+
+        IPoolInspection<char> inspection = Any.Char().OneOf('a', 'b').Except(excluded);
+        excluded[0] = 'b';
+
+        Check.That(inspection.GetSurvivors()).ContainsExactly('b');
+        Check.That(inspection.GetRejections().Single().Value).IsEqualTo('a');
+        Check.That(inspection.GetRejections().Single().RejectedBy).HasSize(1);
+    }
+
     [Fact(DisplayName = "A shaped string is not pooled, and reports neither survivors nor rejections.")]
     public void AShapedStringReportsNothing() {
         // Answering "no value set here" is the honest answer to the question, not a reason to refuse it: a caller

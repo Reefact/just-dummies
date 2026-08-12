@@ -181,7 +181,7 @@ public sealed class AnyDouble : IAny<double>, IHasRandomSource, ICardinalityHint
         if (values.Length == 0) { throw new ArgumentException("At least one value is required.", nameof(values)); }
         foreach (double value in values) { ContinuousIntervalSpec.EnsureFinite(value, nameof(values)); }
 
-        return new AnyDouble(_source, _spec.WithExcluded(values, ConstraintCall.Of(nameof(Except), Join(values))));
+        return new AnyDouble(_source, _spec.WithExcluded(values.ToArray(), ConstraintCall.Of(nameof(Except), Join(values))));
     }
 
     /// <summary>

@@ -1,5 +1,6 @@
 #region Usings declarations
 
+using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
@@ -33,7 +34,7 @@ public sealed class AnyDateTimeOffset : IAny<DateTimeOffset>, IHasRandomSource, 
     internal static AnyDateTimeOffset Create(RandomSource source) {
         if (source is null) { throw new ArgumentNullException(nameof(source)); }
 
-        return new AnyDateTimeOffset(source, OrdinalIntervalSpec.Unconstrained("DateTimeOffset", ordinal => V(Val(ordinal)), Ord(DateTimeOffset.MinValue), Ord(DateTimeOffset.MaxValue)), null, null, 0, 0);
+        return new AnyDateTimeOffset(source, OrdinalIntervalSpec.Unconstrained("DateTimeOffset", ordinal => V(Val(ordinal)), Ord(DateTimeOffset.MinValue), Ord(DateTimeOffset.MaxValue)), null, null, 0, 0, []);
     }
 
     private static ulong Ord(DateTimeOffset value) {
@@ -75,18 +76,24 @@ public sealed class AnyDateTimeOffset : IAny<DateTimeOffset>, IHasRandomSource, 
     private readonly int                                         _offsetMaxMinutes;
     private readonly int                                         _offsetMinMinutes;
     private readonly RandomSource                                _source;
+    // The pooled values the offset dimension refused. That filter runs OUTSIDE the ordinal engine -- the engine
+    // never sees them -- so without this the inspection would report them neither as survivors nor as
+    // rejections, and the supplied pool would stop adding up (ADR-0067).
+    private readonly IReadOnlyList<DateTimeOffset>               _offsetRejected;
     private readonly OrdinalIntervalSpec                         _spec;
 
     #endregion
 
     private AnyDateTimeOffset(RandomSource source, OrdinalIntervalSpec spec, IReadOnlyDictionary<ulong, DateTimeOffset>? allowedOriginals,
-                             ConstraintCall? offsetConstraint, int offsetMinMinutes, int offsetMaxMinutes) {
+                             ConstraintCall? offsetConstraint, int offsetMinMinutes, int offsetMaxMinutes,
+                             IReadOnlyList<DateTimeOffset> offsetRejected) {
         _source           = source;
         _spec             = spec;
         _allowedOriginals = allowedOriginals;
         _offsetConstraint = offsetConstraint;
         _offsetMinMinutes = offsetMinMinutes;
         _offsetMaxMinutes = offsetMaxMinutes;
+        _offsetRejected   = offsetRejected;
     }
 
     RandomSource? IHasRandomSource.Source => _source;
@@ -100,9 +107,28 @@ public sealed class AnyDateTimeOffset : IAny<DateTimeOffset>, IHasRandomSource, 
     // ordinal back to the caller's own type.
     bool IPoolInspection<DateTimeOffset>.IsPooled => _spec.IsPooled;
 
-    IReadOnlyList<DateTimeOffset> IPoolInspection<DateTimeOffset>.GetSurvivors() => _spec.GetSurvivors(Val);
+    IReadOnlyList<DateTimeOffset> IPoolInspection<DateTimeOffset>.GetSurvivors() => _spec.GetSurvivors(Supplied);
 
-    IReadOnlyList<PoolRejection<DateTimeOffset>> IPoolInspection<DateTimeOffset>.GetRejections() => _spec.GetRejections(Val);
+    IReadOnlyList<PoolRejection<DateTimeOffset>> IPoolInspection<DateTimeOffset>.GetRejections() {
+        // The engine reports what IT refused; the offset dimension filters the pool before the engine ever sees a
+        // value, so those refusals have to be added back here or the supplied pool would not add up.
+        List<PoolRejection<DateTimeOffset>> rejections = [.. _spec.GetRejections(Supplied)];
+        if (_offsetConstraint is not null) {
+            DeclaredConstraint declared = _offsetConstraint.ToDeclaredConstraint();
+            rejections.AddRange(_offsetRejected.Select(value => new PoolRejection<DateTimeOffset>(value, [declared])));
+        }
+
+        return new ReadOnlyCollection<PoolRejection<DateTimeOffset>>(rejections);
+    }
+
+    /// <summary>
+    ///     The value as the caller supplied it, recovered from the ordinal — the same projection
+    ///     <see cref="Generate" /> uses. An ordinal carries only the instant, so rebuilding from it would report a
+    ///     value whose offset the draw never yields.
+    /// </summary>
+    private DateTimeOffset Supplied(ulong ordinal) {
+        return _allowedOriginals is not null && _allowedOriginals.TryGetValue(ordinal, out DateTimeOffset original) ? original : Val(ordinal);
+    }
 
     /// <summary>Requires an instant strictly after <paramref name="instant" />.</summary>
     /// <param name="instant">The exclusive lower bound.</param>
@@ -231,7 +257,13 @@ public sealed class AnyDateTimeOffset : IAny<DateTimeOffset>, IHasRandomSource, 
             if (!originals.ContainsKey(Ord(value))) { originals.Add(Ord(value), value); }
         }
 
-        return new AnyDateTimeOffset(_source, _spec.WithAllowed(admitted.Select(Ord).ToArray(), applying), originals, _offsetConstraint, _offsetMinMinutes, _offsetMaxMinutes);
+        return new AnyDateTimeOffset(_source, _spec.WithAllowed(admitted.Select(Ord).ToArray(), applying), originals, _offsetConstraint, _offsetMinMinutes, _offsetMaxMinutes,
+                                       // Guarded on the constraint, exactly as `admitted` above is: with no offset
+                                       // declared there is nothing refusing anything, and the default 0..0 window
+                                       // would otherwise read as "UTC only" and invent rejections.
+                                       _offsetConstraint is null
+                                           ? _offsetRejected
+                                           : [.. _offsetRejected, .. values.Where(value => !SatisfiesDeclaredOffset(value))]);
     }
 
     /// <summary>Requires the instant to be none of the supplied values (compared by instant).</summary>
@@ -277,7 +309,7 @@ public sealed class AnyDateTimeOffset : IAny<DateTimeOffset>, IHasRandomSource, 
 
     /// <summary>Carries the offset state forward onto a new spec — every instant constraint routes through here.</summary>
     private AnyDateTimeOffset With(OrdinalIntervalSpec spec) {
-        return new AnyDateTimeOffset(_source, spec, _allowedOriginals, _offsetConstraint, _offsetMinMinutes, _offsetMaxMinutes);
+        return new AnyDateTimeOffset(_source, spec, _allowedOriginals, _offsetConstraint, _offsetMinMinutes, _offsetMaxMinutes, _offsetRejected);
     }
 
     [SuppressMessage(SonarRule.S125.Category, SonarRule.S125.Id, Justification = SuppressionJustification.S125.ProseNotDisabledCode)]
@@ -305,10 +337,11 @@ public sealed class AnyDateTimeOffset : IAny<DateTimeOffset>, IHasRandomSource, 
                                                          .ToDictionary(entry => entry.Key, entry => entry.Value);
             if (admitted.Count == 0) { throw OffsetExcludesEveryPooledValue(applying, minMinutes, maxMinutes); }
 
-            return new AnyDateTimeOffset(_source, spec.NarrowingAllowed(admitted.Keys.ToArray(), applying), admitted, applying, minMinutes, maxMinutes);
+            return new AnyDateTimeOffset(_source, spec.NarrowingAllowed(admitted.Keys.ToArray(), applying), admitted, applying, minMinutes, maxMinutes,
+                                         [.. _offsetRejected, .. _allowedOriginals.Where(entry => !SatisfiesOffset(entry.Value, minMinutes, maxMinutes)).Select(entry => entry.Value)]);
         }
 
-        return new AnyDateTimeOffset(_source, spec, _allowedOriginals, applying, minMinutes, maxMinutes);
+        return new AnyDateTimeOffset(_source, spec, _allowedOriginals, applying, minMinutes, maxMinutes, _offsetRejected);
     }
 
     /// <summary>Whether <paramref name="value" /> carries an offset the declared offset dimension admits.</summary>

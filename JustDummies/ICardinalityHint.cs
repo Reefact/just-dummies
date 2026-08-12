@@ -22,14 +22,25 @@ namespace JustDummies;
 ///         <see cref="AnyGenerationException" />.
 ///     </para>
 ///     <para>
-///         Both answers are given under <see cref="EqualityComparer{T}.Default" />, and only one of them survives a
-///         collection carrying its own <see cref="IEqualityComparer{T}" />. <see cref="DistinctCardinality" /> does:
-///         it is an upper bound, and no comparer can make a generator yield more distinct values than it has.
-///         <see cref="Contains" /> does not — a comparer <i>stricter</i> than the default one (reference equality over
-///         a type with value equality) keeps apart values this membership calls the same, so a value it reports as
-///         inside the domain may be one the collection would count as extending it. A collection carrying a custom
-///         comparer therefore gates on the bound alone and treats every pinned value as outside: that can only defer
-///         to the bounded dedup-draw, never refuse a specification the comparer makes satisfiable.
+///         Both answers are given under <see cref="EqualityComparer{T}.Default" />, and neither survives a collection
+///         carrying its own <see cref="IEqualityComparer{T}" /> unaided. <see cref="Contains" /> does not — a comparer
+///         <i>stricter</i> than the default one (reference equality over a type with value equality) keeps apart
+///         values this membership calls the same, so a value it reports as inside the domain may be one the
+///         collection would count as extending it. A collection carrying a custom comparer therefore treats every
+///         pinned value as outside, which can only defer to the bounded dedup-draw.
+///     </para>
+///     <para>
+///         <see cref="DistinctCardinality" /> survives <b>almost</b> always, and the exception is worth stating
+///         because the obvious reasoning for it is wrong. That reasoning runs: a bound is an upper bound, and no
+///         comparer can make a generator yield more distinct values than it has. It holds while the default comparer
+///         is the finest equality the type admits — a comparer can then only merge values, never split them. It fails
+///         when the BCL defines an equality <b>coarser than the type's own representation</b>: two
+///         <see cref="DateTimeOffset" /> spellings of one instant are equal and hash alike, and a comparer built on
+///         <c>EqualsExact</c> tells them apart again, so a generator drawing one instant across a range of offsets
+///         yields values a finer comparer counts as distinct while a bound counted in instants says one. A generator
+///         in that position declares <see cref="IComparerSensitiveCardinality{T}" /> and answers for the comparer in
+///         force; every other one is asked, and answers, exactly as before. Either way the collection never refuses a
+///         specification the comparer makes satisfiable.
 ///     </para>
 /// </remarks>
 /// <typeparam name="T">The element type.</typeparam>

@@ -92,6 +92,25 @@ internal static class AnyDerivation {
     }
 
     /// <summary>
+    ///     The same bound, asked under the comparer a distinct collection deduplicates with: a generator declaring
+    ///     itself <see cref="IComparerSensitiveCardinality{T}" /> answers for that comparer, everything else answers
+    ///     as it does by default.
+    /// </summary>
+    /// <remarks>
+    ///     The comparer is not inspected, only its presence: nothing tells a finer comparer from a coarser one
+    ///     without probing it, so any custom comparer takes the sensitive generator's own answer. A coarser comparer
+    ///     therefore loses an eager refusal it could have kept — the safe direction, since the bound gates a refusal
+    ///     and an absent bound only defers to the bounded dedup-draw.
+    /// </remarks>
+    internal static long? CardinalityOf<T>(IAny<T> generator, IEqualityComparer<T>? comparer) {
+        if (generator is null) { throw new ArgumentNullException(nameof(generator)); }
+
+        if (comparer is not null && generator is IComparerSensitiveCardinality<T> sensitive) { return sensitive.CardinalityUnderACustomComparer; }
+
+        return CardinalityOf(generator);
+    }
+
+    /// <summary>
     ///     Runs a user-supplied factory or composer and converts its failure into an
     ///     <see cref="AnyGenerationException" /> that names the generated value(s) and, when the random context is
     ///     known, the seed that replays the run. <paramref name="reproducible" /> tells whether the derived value draws

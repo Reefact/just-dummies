@@ -281,6 +281,52 @@ public sealed class AnyCollectionTests {
              .Throws<ConflictingAnyConstraintException>();
     }
 
+    [Fact(DisplayName = "Distinct: a comparer finer than the default does not refuse a satisfiable count over an offset range.")]
+    public void AComparerFinerThanTheDefaultDoesNotRefuseAnOffsetRange() {
+        // The bound's turn, after the membership two tests up: the SAME faulty reasoning, on the other member of the
+        // same interface. DistinctCardinality was held to survive any comparer because a comparer "can only merge
+        // values, never split them" -- true while the default comparer is the finest equality the type admits, and
+        // false for DateTimeOffset, whose Equals compares the instant and ignores the offset. One instant across a
+        // five-hour offset range is one value by default and 241 under EqualsExact; the bound said one and the
+        // declaration below -- satisfiable, and satisfied here -- was refused as exceeding it.
+        DateTimeOffset   instant = new(2026, 1, 1, 12, 0, 0, TimeSpan.Zero);
+        AnyDateTimeOffset ranged = Any.DateTimeOffset().Between(instant, instant).WithOffsetBetween(TimeSpan.FromHours(-2), TimeSpan.FromHours(2));
+
+        List<DateTimeOffset> list = Any.ListOf(ranged).Distinct(new BySpellingComparer()).WithCount(3).Generate();
+
+        Check.That(list.Count).IsEqualTo(3);
+        Check.That(list.Select(value => value.Offset).Distinct().Count()).IsEqualTo(3);
+        // All three are the same instant: it is the spelling the comparer keeps apart, nothing else.
+        Check.That(list.Select(value => value.UtcTicks).Distinct().Count()).IsEqualTo(1);
+    }
+
+    [Fact(DisplayName = "Distinct: the default comparer still refuses three values drawn from one instant.")]
+    public void TheDefaultComparerStillRefusesThreeSpellingsOfOneInstant() {
+        // The other side of the same guard, as above: relaxing the bound under a CUSTOM comparer must not relax it
+        // when there is none. DateTimeOffset equality is by instant, so under the default comparer the three
+        // spellings really are one value and the refusal is correct.
+        DateTimeOffset   instant = new(2026, 1, 1, 12, 0, 0, TimeSpan.Zero);
+        AnyDateTimeOffset ranged = Any.DateTimeOffset().Between(instant, instant).WithOffsetBetween(TimeSpan.FromHours(-2), TimeSpan.FromHours(2));
+
+        Check.ThatCode(() => Any.ListOf(ranged).Distinct().WithCount(3))
+             .Throws<ConflictingAnyConstraintException>();
+    }
+
+    [Fact(DisplayName = "Distinct: a pool keeps its bound under a finer comparer, because it draws one spelling per instant.")]
+    public void APoolKeepsItsBoundUnderAFinerComparer() {
+        // Not a blanket refusal to count: the offset range only splits an instant when the draw picks a minute from
+        // it, and a pool short-circuits before that, returning one supplied spelling per instant. Two instants are
+        // two values under any comparer, so three is still refused eagerly -- the eager check is given up exactly
+        // where it was wrong, and nowhere else.
+        DateTimeOffset first  = new(2026, 1, 1, 12, 0, 0, TimeSpan.Zero);
+        DateTimeOffset second = new(2026, 1, 2, 12, 0, 0, TimeSpan.Zero);
+
+        AnyDateTimeOffset pooled = Any.DateTimeOffset().OneOf(first, second).WithOffsetBetween(TimeSpan.FromHours(-2), TimeSpan.FromHours(2));
+
+        Check.ThatCode(() => Any.ListOf(pooled).Distinct(new BySpellingComparer()).WithCount(3))
+             .Throws<ConflictingAnyConstraintException>();
+    }
+
     [Fact(DisplayName = "Containing: a near-maximum element cardinality plus an out-of-domain value does not overflow into a false conflict.")]
     public void ContainingNearMaximumCardinalityDoesNotOverflow() {
         // Between(0, long.MaxValue - 1) advertises long.MaxValue distinct values; the additive form base + extras
@@ -616,6 +662,20 @@ public sealed class AnyCollectionTests {
 
         public int GetHashCode(Tag obj) {
             return RuntimeHelpers.GetHashCode(obj);
+        }
+
+    }
+
+    private sealed class BySpellingComparer : IEqualityComparer<DateTimeOffset> {
+
+        // Finer than EqualityComparer<DateTimeOffset>.Default, which compares the instant and ignores the offset:
+        // EqualsExact is the BCL's own way of asking whether two values are the same SPELLING of that instant.
+        public bool Equals(DateTimeOffset x, DateTimeOffset y) {
+            return x.EqualsExact(y);
+        }
+
+        public int GetHashCode(DateTimeOffset obj) {
+            return obj.Offset.GetHashCode() ^ obj.DateTime.GetHashCode();
         }
 
     }

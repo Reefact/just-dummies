@@ -24,7 +24,7 @@ namespace JustDummies;
 ///     constraint (no "in the past/future"): a reproducible test pins its reference instants explicitly with
 ///     <see cref="After" /> and <see cref="Before" />.
 /// </remarks>
-public sealed class AnyDateTimeOffset : IAny<DateTimeOffset>, IHasRandomSource, ICardinalityHint<DateTimeOffset>, IPoolInspection<DateTimeOffset> {
+public sealed class AnyDateTimeOffset : IAny<DateTimeOffset>, IHasRandomSource, IComparerSensitiveCardinality<DateTimeOffset>, IPoolInspection<DateTimeOffset> {
 
     // DateTimeOffset admits an offset in whole minutes within ±14:00.
     private const int MaxOffsetMinutes = 14 * 60;
@@ -99,6 +99,15 @@ public sealed class AnyDateTimeOffset : IAny<DateTimeOffset>, IHasRandomSource, 
     RandomSource? IHasRandomSource.Source => _source;
 
     long? ICardinalityHint<DateTimeOffset>.DistinctCardinality => _spec.Cardinality;
+
+    // The instants are the bound only while one instant has one spelling. A declared offset RANGE breaks that:
+    // Generate draws a minute inside it, so the same instant comes back as any of (max - min + 1) DateTimeOffset
+    // values -- equal to each other under the default comparer, which compares instants, and distinct under a finer
+    // one. A pool short-circuits the draw before the offset is chosen, picking one spelling per instant, so it
+    // keeps the bound whatever range is declared. Refusing to count is the honest answer, not a guess at the
+    // product: a coarser comparer would make it wrong in the other direction.
+    long? IComparerSensitiveCardinality<DateTimeOffset>.CardinalityUnderACustomComparer =>
+        _allowedOriginals is null && _offsetMinMinutes != _offsetMaxMinutes ? null : _spec.Cardinality;
 
     bool ICardinalityHint<DateTimeOffset>.Contains(DateTimeOffset value) => _spec.Contains(Ord(value));
 

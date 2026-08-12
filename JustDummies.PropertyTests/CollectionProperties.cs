@@ -56,6 +56,18 @@ public sealed class CollectionProperties {
     }
 
     /// <summary>
+    ///     A requested count paired with an offset range wide enough to reach it — the range spans
+    ///     <c>2 × halfWidth + 1</c> whole minutes, and the count stays at or under half of that, so the draw is never
+    ///     brushing against the bounded dedup budget. That budget is a separate, documented mechanism; a property
+    ///     about the eager gate must not be able to fail through it.
+    /// </summary>
+    private static Gen<(int Count, int HalfWidthMinutes)> SpellingCountAndOffsetRange() {
+        return from count in Gen.Choose(1, 8)
+               from halfWidth in Gen.Choose(count, 4 * count)
+               select (count, halfWidth);
+    }
+
+    /// <summary>
     ///     Requires each of <paramref name="values" /> in turn, so a property can quantify over <i>how many</i> values
     ///     a collection is required to contain rather than pinning that number in the test.
     /// </summary>
@@ -335,6 +347,33 @@ public sealed class CollectionProperties {
             .QuickCheckThrowOnFailure();
     }
 
+    // The eager gate's promise, stated from the side it can get wrong: it may decline to decide, it may never refuse
+    // a count the comparer makes reachable. The example suite pins one offset range against one count; this
+    // quantifies over both, because the bound and the requested count are exactly the pair whose comparison decides
+    // the refusal, and a property fixing either would only ever visit one side of that frontier. The instant is
+    // pinned throughout, so every value the collection separates differs in its OFFSET alone -- the dimension the
+    // default comparer erases and a finer one restores.
+    [Fact(DisplayName = "A comparer finer than the default never turns a reachable count into a refusal.")]
+    public void AFinerComparerNeverRefusesAReachableCount() {
+        Prop.ForAll(SpellingCountAndOffsetRange().ToArbitrary(),
+                    testCase => {
+                        DateTimeOffset instant = new(2026, 1, 1, 12, 0, 0, TimeSpan.Zero);
+
+                        AnyDateTimeOffset ranged = Any.DateTimeOffset()
+                                                      .Between(instant, instant)
+                                                      .WithOffsetBetween(TimeSpan.FromMinutes(-testCase.HalfWidthMinutes), TimeSpan.FromMinutes(testCase.HalfWidthMinutes));
+
+                        List<DateTimeOffset> list = Any.ListOf(ranged).Distinct(new BySpellingComparer()).WithCount(testCase.Count).Generate();
+
+                        // Reachable and reached: the count is honoured, every element differs in spelling, and the
+                        // instant never moved -- so the offsets alone carried the distinctness.
+                        return list.Count == testCase.Count
+                            && list.Distinct(new BySpellingComparer()).Count() == testCase.Count
+                            && list.All(value => value.UtcTicks == instant.UtcTicks);
+                    })
+            .QuickCheckThrowOnFailure();
+    }
+
     #region Nested types
 
     // A value-equal reference type: two Tag(1) are one value under the default comparer and two under reference
@@ -365,6 +404,18 @@ public sealed class CollectionProperties {
 
         public int GetHashCode(Tag obj) {
             return RuntimeHelpers.GetHashCode(obj);
+        }
+
+    }
+
+    private sealed class BySpellingComparer : IEqualityComparer<DateTimeOffset> {
+
+        public bool Equals(DateTimeOffset x, DateTimeOffset y) {
+            return x.EqualsExact(y);
+        }
+
+        public int GetHashCode(DateTimeOffset obj) {
+            return obj.Offset.GetHashCode() ^ obj.DateTime.GetHashCode();
         }
 
     }

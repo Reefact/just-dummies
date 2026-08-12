@@ -116,19 +116,22 @@ public sealed class AnyGuid : IAny<Guid>, IHasRandomSource, ICardinalityHint<Gui
 
         List<PoolRejection<Guid>> rejections = [];
         foreach (Guid value in _allowed) {
+            List<DeclaredConstraint> culprits = [];
             // A pooled value the pin displaces is refused as surely as an excluded one, and the pin is what to
             // loosen. Validated guarantees the pin is itself in the pool, so it is never its own culprit.
-            if (_pinned is Guid pinned && value != pinned) {
-                rejections.Add(new PoolRejection<Guid>(value, [_pinnedConstraint!.ToDeclaredConstraint()]));
+            if (_pinned is Guid pinned && value != pinned) { culprits.Add(_pinnedConstraint!.ToDeclaredConstraint()); }
 
-                continue;
+            // Named ALONGSIDE the pin, never instead of it. This branch used to be skipped whenever the pin had
+            // spoken, so a value both displaced and excluded was blamed on the pin alone -- a reader who dropped
+            // the pin, the only remedy offered, found the value still absent. That is the misdirection
+            // PoolRejection exists to prevent, and it must hold with a pin in force as it does without one.
+            if (_excludedSet.Contains(value)) {
+                culprits.AddRange(_exclusions
+                                  .Where(entry => entry.Values.Contains(value))
+                                  .Select(entry => entry.Constraint.ToDeclaredConstraint()));
             }
-            if (!_excludedSet.Contains(value)) { continue; }
 
-            List<DeclaredConstraint> culprits = _exclusions
-                                                .Where(entry => entry.Values.Contains(value))
-                                                .Select(entry => entry.Constraint.ToDeclaredConstraint())
-                                                .ToList();
+            if (culprits.Count == 0) { continue; }
 
             rejections.Add(new PoolRejection<Guid>(value, culprits));
         }

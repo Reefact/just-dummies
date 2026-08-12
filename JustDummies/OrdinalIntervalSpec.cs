@@ -334,15 +334,25 @@ internal sealed class OrdinalIntervalSpec {
         foreach (ulong ordinal in _allowed) {
             if (Admits(ordinal)) { continue; }
 
-            List<DeclaredConstraint> culprits = DeclaredConstraints()
-                                                .Where(entry => !entry.Admits(ordinal))
-                                                .Select(entry => entry.Constraint.ToDeclaredConstraint())
-                                                .ToList();
-
-            rejections.Add(new PoolRejection<T>(project(ordinal), culprits));
+            rejections.Add(new PoolRejection<T>(project(ordinal), ConstraintsRefusing(ordinal)));
         }
 
         return new ReadOnlyCollection<PoolRejection<T>>(rejections);
+    }
+
+    /// <summary>
+    ///     The declared constraints refusing <paramref name="ordinal" />. Public to the assembly because a generator
+    ///     can filter its pool on a dimension this engine does not model — <c>AnyDateTimeOffset</c> filters on the
+    ///     offset, which an ordinal does not carry — and such a value never reaches
+    ///     <see cref="GetRejections{T}" />, which walks the allow-list only. Without this, that generator could name
+    ///     its own dimension and nothing else, leaving a reader to loosen one constraint and find the value still
+    ///     refused by another. Both callers derive their culprits here so the two can never drift apart.
+    /// </summary>
+    internal IReadOnlyList<DeclaredConstraint> ConstraintsRefusing(ulong ordinal) {
+        return new ReadOnlyCollection<DeclaredConstraint>(DeclaredConstraints()
+                                                          .Where(entry => !entry.Admits(ordinal))
+                                                          .Select(entry => entry.Constraint.ToDeclaredConstraint())
+                                                          .ToArray());
     }
 
     /// <summary>Whether <paramref name="ordinal" /> satisfies every declared constraint — the allow-list filter.</summary>

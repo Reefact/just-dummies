@@ -91,7 +91,14 @@ internal sealed class GenerateSettings : CommandSettings {
                      ("--format", Format)
                  }) {
             if (value is not null && value.Trim().Length == 0) {
-                return ValidationResult.Error($"{option} was given without a value. Omit it to take its default.");
+                // "Omit it to take its default" stopped being true the day a dum.json could set the same
+                // option: omitting it now takes that file's value where there is one (§3.3).
+                string advice = option == "--project"
+                                    ? "Omit it to take its default."
+                                    : $"Omit it to take {ProjectDefaults.FileName}'s value, or the built-in "
+                                    + "default where that file sets nothing.";
+
+                return ValidationResult.Error($"{option} was given without a value. {advice}");
             }
         }
 

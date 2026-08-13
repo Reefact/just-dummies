@@ -45,6 +45,9 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Fixed
 
+- **`--namespace ""` and its four siblings no longer advise "omit it to take its default"**, which stopped being
+  true the day a `dum.json` could set the same option: omitting it takes that file's value where there is one. The
+  refusal now points at the file.
 - **A parameter type outside any namespace no longer emits `using <global namespace>;`**, which does not parse.
   Two cases reached it: a domain type declared outside any namespace, and — the likelier one — an *error* type,
   since a parameter that failed to bind is reported as living in the global namespace. A project that opened with

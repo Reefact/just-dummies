@@ -9,9 +9,9 @@ paramètre ouvert — ainsi que la provenance que rapporte la §6 ; la §6, le r
 sortie et l'avertissement de masquage de la §7 ; et tout le pipeline du §11.1, si bien que `dum generate` ouvre un
 vrai projet et écrit un vrai fichier. L'exemple travaillé du §4.1 est produit de bout en bout depuis sa propre
 source, au caractère près. Le train de release `cli` l'empaquette et asserte la D9 sur le paquet produit
-(§13.6). **Publié :** `cli-v1.0.0-beta.1`, la première release du train — une beta parce qu'un outil ne prend
-aucune baseline d'API publique (§13.4) : ce qu'une version engage ici, c'est la ligne de commande de la §3, et
-aucun projet hors de ce dépôt ne l'a encore éprouvée.
+(§13.6). **Publié :** `cli-v1.1.0-beta.1`, après la première release du train `cli-v1.0.0-beta.1` — une beta
+parce qu'un outil ne prend aucune baseline d'API publique (§13.4) : ce qu'une version engage ici, c'est la
+ligne de commande de la §3, et aucun projet hors de ce dépôt ne l'a encore éprouvée.
 **Remplace :** la pré-spécification de travail 0.1 (jamais commitée)
 
 ---

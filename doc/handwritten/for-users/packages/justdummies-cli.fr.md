@@ -180,7 +180,7 @@ donc il veut dire la même chose d'où que vous lanciez l'outil. Décision :
 
 `dum generate Order Customer Invoice` en scaffolde plusieurs. Ils sont traités indépendamment, et le
 code de sortie est le pire d'entre eux : `0` un fichier écrit (TODO compris), `1` un scaffolding qui
-a échoué, `2` une ligne de commande illisible.
+a échoué, `2` une instruction que l'outil n'a pas pu lire — une ligne de commande, ou un `dum.json`.
 
 ## Il ne référence jamais JustDummies
 

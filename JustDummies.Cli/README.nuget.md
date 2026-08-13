@@ -98,8 +98,8 @@ it does not read is refused rather than ignored.
 
 `dum generate Order Customer Invoice` scaffolds several; they are processed
 independently, and the exit code is the worst of them. Exit `0` is a file
-written (TODOs and all), `1` a scaffolding run that failed, `2` a command line
-that could not be read.
+written (TODOs and all), `1` a scaffolding run that failed, `2` an instruction the
+tool could not read — a command line, or a `dum.json`.
 
 ## It never references JustDummies
 

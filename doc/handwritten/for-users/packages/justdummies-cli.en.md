@@ -178,7 +178,7 @@ means the same thing wherever you run the tool from. Decision:
 
 `dum generate Order Customer Invoice` scaffolds several. They are processed independently, and the
 exit code is the worst of them: `0` a file written (TODOs and all), `1` a scaffolding run that
-failed, `2` a command line that could not be read.
+failed, `2` an instruction the tool could not read — a command line, or a `dum.json`.
 
 ## It never references JustDummies
 

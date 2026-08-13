@@ -8,6 +8,18 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ## [Unreleased]
 
+_No unreleased changes recorded yet._
+
+## [1.1.0-beta.1] - 2026-08-13
+
+A minor release, and additive throughout: three new options, and not one existing behaviour changed.
+`dum generate Order` writes exactly what it wrote in 1.0.0-beta.1, byte for byte, and the exit codes of
+§7 keep the meanings they were published with.
+
+Still a **beta**, for the reason 1.0.0-beta.1 gave: what a version commits to here is the command line
+rather than a set of types, and that surface has still not been exercised by a project outside this
+repository.
+
 ### Added
 
 - **`--entry-point`** — a scaffold can now also write an entry point, so a generator is reached the way the
@@ -112,5 +124,6 @@ on the produced package — both that the nuspec declares no such dependency and
 bundled beside the tool, since a .NET tool ships its closure as files and the first check alone would pass
 on an empty dependency list.
 
-[Unreleased]: https://github.com/Reefact/just-dummies/compare/cli-v1.0.0-beta.1...HEAD
+[Unreleased]: https://github.com/Reefact/just-dummies/compare/cli-v1.1.0-beta.1...HEAD
+[1.1.0-beta.1]: https://github.com/Reefact/just-dummies/releases/tag/cli-v1.1.0-beta.1
 [1.0.0-beta.1]: https://github.com/Reefact/just-dummies/releases/tag/cli-v1.0.0-beta.1

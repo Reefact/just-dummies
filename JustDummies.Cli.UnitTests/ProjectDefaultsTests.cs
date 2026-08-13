@@ -3,6 +3,8 @@ using System.IO;
 
 using NFluent;
 
+using Spectre.Console;
+
 namespace JustDummies.Cli.UnitTests;
 
 /// <summary>
@@ -125,6 +127,18 @@ public sealed class ProjectDefaultsTests : IDisposable {
                 """);
 
         Check.That(ProjectDefaults.Beside(Project()).Understood).IsFalse();
+    }
+
+    // The advice said "Omit it to take its default", which stopped being true the day this file could set the
+    // same option: omitting it takes the file's value.
+    [Fact(DisplayName = "An empty value points at the file, now that omitting reads it.")]
+    public void AnEmptyValuePointsAtTheFile() {
+        GenerateSettings settings = new() { Types = ["Order"], Namespace = "   " };
+
+        ValidationResult refused = settings.Validate();
+
+        Check.That(refused.Successful).IsFalse();
+        Check.That(refused.Message).Contains(ProjectDefaults.FileName);
     }
 
     [Fact(DisplayName = "Both arguments are required.")]

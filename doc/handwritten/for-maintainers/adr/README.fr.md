@@ -175,4 +175,4 @@ et qu'elle a été décidée le 01/08/2026 — l'index porte l'ordre, la numéro
 | [ADR-0070](0070-emit-an-entry-point-on-request-as-a-file-of-its-own.fr.md) | Émettre un point d'entrée à la demande, dans un fichier à lui | Accepted | consigné ici |
 | [ADR-0071](0071-report-a-run-as-data-without-moving-the-exit-codes.fr.md) | Rendre compte d'une exécution en données sans déplacer les codes de sortie | Proposed | consigné ici |
 | [ADR-0072](0072-read-project-defaults-from-a-file-the-command-line-overrides.fr.md) | Lire les défauts de projet dans un fichier que la ligne de commande surcharge | Proposed | consigné ici |
-| [ADR-0073](0073-layer-the-agent-instructions-by-when-they-are-needed.fr.md) | Étager les instructions destinées aux agents selon le moment où elles servent | Proposed | consigné ici |
+| [ADR-0073](0073-layer-the-agent-instructions-by-when-they-are-needed.fr.md) | Étager les instructions destinées aux agents selon le moment où elles servent | Accepted | consigné ici |

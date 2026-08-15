@@ -3,6 +3,13 @@
 Instructions for automated agents (OpenAI Codex and others) in this repository.
 Two roles are covered: **writing code** and **reviewing pull requests**.
 
+This file is self-sufficient: everything an agent needs is here or in the neutral
+documentation it links to. Claude Code additionally packages these same rules under
+`.claude/` — layered by when each is needed, per
+[ADR-0073](doc/handwritten/for-maintainers/adr/0073-layer-the-agent-instructions-by-when-they-are-needed.md).
+That packaging is a delivery mechanism, never a second source of truth: an agent
+that cannot read `.claude/` loses nothing by reading this file instead.
+
 ## Project orientation (code changes)
 
 - Generates **explicit, constrained, domain-respecting dummies** for .NET: constraints express the
@@ -153,7 +160,7 @@ Hard constraints on the rewrite itself (CONTRIBUTING.md, "Branches"):
   before and after — prove it with `git range-diff origin/main <old-head> HEAD`
   (only messages and grouping move, never the tree).
 
-For Claude Code the mechanics are packaged: the `/tidy-history` command runs the
+For Claude Code the mechanics are packaged: the `tidy-history` skill runs the
 assessment and, on approval, the rewrite; a hook (`.claude/`, on pull-request
 creation and after each committing or pushing git command) flags the CI-fatal
 signals so the check is never skipped. Other agents apply the rule by hand.
@@ -162,8 +169,10 @@ here.
 
 ## Review guidelines (pull request reviews)
 
-READ THIS BEFORE REVIEWING. The full specification is in `code_review.md`; the
-rules below are mandatory and inlined so they are never missed.
+READ THIS BEFORE REVIEWING. This section is the whole contract — the rules below
+are mandatory. Review the pull request's delta first (`git diff origin/main...HEAD`,
+the changed files, any earlier findings on the branch); widen to a repository-wide
+scan only when the change's nature demands it.
 
 ### Output format — mandatory
 
@@ -228,8 +237,8 @@ Correctness → security → data integrity → regressions → public API / com
 demonstrated risk → violations of an explicit repository rule (e.g. a value object
 converted to `struct`).
 
-Do NOT report: formatter-enforced style, analyzer-detected issues already flagged
-by an `FCExxx` rule, naming already enforced by tooling, speculative problems with
+Do NOT report: formatter-enforced style, issues already flagged by a `JDxxx`
+analyzer or by the Sonar profile, naming already enforced by tooling, speculative problems with
 no execution path, broad refactors unrelated to the PR, personal style presented as
 a requirement, or pre-existing issues the PR does not materially affect.
 

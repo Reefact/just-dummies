@@ -23,7 +23,7 @@ after the code that implemented it has changed.
 
 | | |
 | --- | --- |
-| [Decision base](./adr/README.md) | all 55 records, the conventions they follow, and the index |
+| [Decision base](./adr/README.md) | all 73 records, the conventions they follow, and the index |
 | [Template](./adr/template.md) | the shape a new record takes |
 | [Implementation reference](./specifications/adr-implementation-reference.md) | what each accepted decision actually enforces, and where |
 | [`adr-check` workflow](./workflows/adr-check.en.md) | the advisory check that reads a pull request against the base |
@@ -91,6 +91,9 @@ The details live in the pages above; these are the ones that catch a newcomer ou
 
 Agent-facing instructions live in [`AGENTS.md`](../../../AGENTS.md) and
 [`CLAUDE.md`](../../../CLAUDE.md); they restate these rules where an agent will actually meet them.
+`CLAUDE.md` keeps only what every task can violate — the rest is layered under `.claude/` as
+path-scoped rules and on-demand skills, and some of it is enforced by a tool instead of stated
+([ADR-0073](./adr/0073-layer-the-agent-instructions-by-when-they-are-needed.md)).
 
 ---
 

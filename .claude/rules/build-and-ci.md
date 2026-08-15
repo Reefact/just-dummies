@@ -87,3 +87,7 @@ inspection, the commit linter. Nothing that writes history, pushes, publishes or
 network belongs in it; `git commit`, `git rebase`, `git push` and `dotnet nuget push` stay
 behind an approval on purpose. Adding an entry that writes is a policy change, not a
 convenience.
+
+The list is honoured only once the workspace is **trusted** — a clone that has never had the
+trust dialog accepted logs `Ignoring N permissions.allow entries` and prompts for everything.
+Accept it once per clone, interactively.

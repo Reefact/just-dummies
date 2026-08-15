@@ -2,8 +2,9 @@
 
 🌍 🇫🇷 Français (ce fichier) · 🇬🇧 [English](0073-layer-the-agent-instructions-by-when-they-are-needed.md)
 
-**Statut :** Proposé
+**Statut :** Accepté
 **Proposé :** 2026-08-15
+**Accepté :** 2026-08-15
 **Décideurs :** Reefact
 
 ## Contexte

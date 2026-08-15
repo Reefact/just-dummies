@@ -21,7 +21,7 @@ and the **Origin** column says how each one got here:
   but its record stays live in `Reefact/first-class-errors` too, because that
   repository still applies it. Both copies are now independent: either side can
   supersede its own without touching the other. 9 decisions.
-* **recorded here** — decided in this repository, on its own. 24 decisions.
+* **recorded here** — decided in this repository, on its own. 25 decisions.
 
 The numbers are this base's own, assigned in the order the decisions were
 recorded upstream ([ADR-0045](0045-renumber-the-decision-base.md)); every ADR
@@ -162,3 +162,4 @@ and it was decided on 2026-08-01 — the index carries the order, the numbering 
 | [ADR-0070](0070-emit-an-entry-point-on-request-as-a-file-of-its-own.md) | Emit an entry point on request, as a file of its own | Accepted | recorded here |
 | [ADR-0071](0071-report-a-run-as-data-without-moving-the-exit-codes.md) | Report a run as data without moving the exit codes | Proposed | recorded here |
 | [ADR-0072](0072-read-project-defaults-from-a-file-the-command-line-overrides.md) | Read project defaults from a file the command line overrides | Proposed | recorded here |
+| [ADR-0073](0073-layer-the-agent-instructions-by-when-they-are-needed.md) | Layer the agent instructions by when they are needed | Proposed | recorded here |

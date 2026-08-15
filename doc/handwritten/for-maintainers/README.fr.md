@@ -25,7 +25,7 @@ fois le code qui l'a mise en œuvre remanié.
 
 | | |
 | --- | --- |
-| [Base de décisions](./adr/README.fr.md) | les 55 enregistrements, leurs conventions, et l'index |
+| [Base de décisions](./adr/README.fr.md) | les 73 enregistrements, leurs conventions, et l'index |
 | [Gabarit](./adr/template.fr.md) | la forme que prend un nouvel enregistrement |
 | [Référence d'implémentation](./specifications/adr-implementation-reference.fr.md) | ce que chaque décision acceptée impose réellement, et où |
 | [Workflow `adr-check`](./workflows/adr-check.fr.md) | la vérification consultative qui lit une pull request contre la base |
@@ -96,7 +96,10 @@ Le détail vit dans les pages ci-dessus ; voici celles qui piègent un nouveau v
 
 Les instructions destinées aux agents vivent dans [`AGENTS.md`](../../../AGENTS.md) et
 [`CLAUDE.md`](../../../CLAUDE.md) ; elles reprennent ces règles là où un agent les rencontrera
-vraiment.
+vraiment. `CLAUDE.md` ne garde que ce que n'importe quelle tâche peut violer — le reste est étagé
+sous `.claude/` en rules portées par chemin et en skills chargées à la demande, et une partie est
+garantie par un outil plutôt qu'énoncée
+([ADR-0073](./adr/0073-layer-the-agent-instructions-by-when-they-are-needed.fr.md)).
 
 ---
 

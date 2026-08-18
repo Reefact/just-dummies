@@ -13,8 +13,9 @@ namespace JustDummies.Documentation.UnitTests;
 /// </summary>
 /// <remarks>
 ///     <para>
-///         Scope is the root <c>README</c> pair, the two relocated root files, and everything under
-///         <c>doc/handwritten/</c> — the pages a consumer reads AND the pages a maintainer reads.
+///         Scope is the root <c>README</c> pair, the two relocated root files, everything under
+///         <c>doc/handwritten/</c>, and each package's <c>RELEASE_NOTES-*.en.md</c>/<c>.fr.md</c> pair — the
+///         pages a consumer reads AND the pages a maintainer reads.
 ///     </para>
 ///     <para>
 ///         The maintainer half was held back at first, on the belief that the ADR base naming its English pages without
@@ -145,6 +146,11 @@ internal static class DocumentationCorpus {
         return absolutePath[..^".md".Length] + ".fr.md";
     }
 
+    /// <summary>The package directories a release note pair (<c>RELEASE_NOTES-*.en.md</c> / <c>.fr.md</c>) may sit in.</summary>
+    private static readonly IReadOnlyList<string> PackageDirectories = [
+        "JustDummies", "JustDummies.Xunit", "JustDummies.Cli", "JustDummies.DiagnosticCatalog"
+    ];
+
     private static IReadOnlyList<DocumentationPage> ReadPages() {
         List<string> files = [
             Path.Combine(RepositoryRoot, "README.md"),
@@ -156,6 +162,15 @@ internal static class DocumentationCorpus {
         string handwritten = Path.Combine(RepositoryRoot, "doc", "handwritten");
         if (Directory.Exists(handwritten)) {
             files.AddRange(Directory.EnumerateFiles(handwritten, "*.md", SearchOption.AllDirectories));
+        }
+
+        // One release-notes pair per package per major version (RELEASE_NOTES-1.x.en.md, then -2.x once a train
+        // opens a 2.0). Discovered by glob, not hand-listed, so a new major version needs no change here.
+        foreach (string package in PackageDirectories) {
+            string packageDirectory = Path.Combine(RepositoryRoot, package);
+            if (Directory.Exists(packageDirectory)) {
+                files.AddRange(Directory.EnumerateFiles(packageDirectory, "RELEASE_NOTES-*.md", SearchOption.TopDirectoryOnly));
+            }
         }
 
         List<DocumentationPage> pages = [];

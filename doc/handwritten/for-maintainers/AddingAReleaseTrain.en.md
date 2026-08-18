@@ -71,11 +71,12 @@ logic (which `.csproj` to pack, whether a symbol package ships), so it is not dr
 from `trains.sh`.
 
 **5. [`.github/workflows/release-dryrun.yml`](../../../.github/workflows/release-dryrun.yml)** —
-both rehearsal steps hardcode the train list: add `tools/packaging/pack.sh "$DRYRUN_VERSION" <id>`
-to the *Pack with SBOM* step and `tools/packaging/release-notes.sh <id> HEAD` to the
-*Rehearse release notes* step. Without this the new train's packaging and notes are
-never exercised before a real release — nothing fails, they are simply never run,
-which defeats the dry-run's whole purpose.
+the *Pack with SBOM* step hardcodes the train list: add
+`tools/packaging/pack.sh "$DRYRUN_VERSION" <id>`. Without this the new train's packaging is
+never exercised before a real release — nothing fails, it is simply never run, which defeats
+the dry-run's whole purpose. The *Rehearse release notes* step needs **no edit**: it loops
+`train_ids` from `trains.sh` and rehearses whichever train has a tag, so the new train is
+picked up on its own once step 1 is done — see the next section.
 
 **6. [`.github/workflows/changelog.yml`](../../../.github/workflows/changelog.yml)** — add
 `- <id>` to the `component` `workflow_dispatch` choice `options`. (The workflow reads
@@ -90,14 +91,22 @@ everything else about the train from `trains.sh`.)
   (`merge-unreleased.sh` lays down the Keep a Changelog preamble if the file is
   missing). You may pre-create it by hand for a tidier first pull request, but you
   do not have to.
+- **The release-notes file is not auto-created.** Unlike the changelog,
+  `RELEASE_NOTES-1.x.en.md`/`.fr.md` (the product-facing rewrite `release-notes.sh` reads at
+  release time) has no generator to lay one down — write it by hand, in both languages, before
+  the train's first tag. See the `release-notes` skill for the format and the transformation
+  from a reviewed `CHANGELOG.md` section.
 
 ## Verify
 
 - **Commit convention:** make a commit under a new scope and confirm
   `tools/commit-lint/lint-commit-message.sh` accepts it (the local hook and the
   `commit-lint` workflow share it).
-- **Release notes:** run `tools/packaging/release-notes.sh <id> <prefix>0.0.0 HEAD`
-  locally; it should list that train's commits and nothing from the other trains.
+- **Release notes:** once the train has published its first tag and you have written
+  `RELEASE_NOTES-1.x.en.md`/`.fr.md` for it (the `release-notes` skill), run
+  `tools/packaging/release-notes.sh <id> <that-tag>` locally; it should print that version's
+  section verbatim. Before a first tag exists there is nothing to verify here — the script
+  refuses on purpose rather than falling back to anything else (see the file's own header).
 - **Packing:** after the step-5 edit, the [`release-dryrun`](../../../.github/workflows/release-dryrun.yml)
   workflow packs and rehearses the new train's notes on every PR — check its log
   lists the new train. Or run `tools/packaging/pack.sh 0.0.0-dry.1 <id>` locally.

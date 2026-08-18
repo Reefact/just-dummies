@@ -86,10 +86,24 @@ jobs:
           tools/packaging/pack.sh "$DRYRUN_VERSION" cli --dry-run
 
       # Rehearse the train-scoped release-notes generation too (release.yml's other production-only path),
-      # so a bug in it surfaces here instead of during a real release. Prints to the log; publishes nothing.
+      # so a bug in it surfaces here instead of during a real release. release-notes.sh now reads a
+      # committed RELEASE_NOTES-<major>.x.en.md file rather than deriving anything from git log, so there
+      # is no "HEAD" to rehearse against — each train is rehearsed against its own latest published tag,
+      # discovered from tools/trains.sh rather than hardcoded, so a new train needs no edit here. A train
+      # with no tag yet (nothing published) is skipped rather than failed: there is no release note to
+      # rehearse before a first release exists.
       - name: Rehearse release notes (all trains, no publish)
         run: |
-          echo "----- lib notes -----";     tools/packaging/release-notes.sh lib HEAD
-          echo "----- xunit notes -----";   tools/packaging/release-notes.sh xunit HEAD
-          echo "----- catalog notes -----"; tools/packaging/release-notes.sh catalog HEAD
-          echo "----- cli notes -----";     tools/packaging/release-notes.sh cli HEAD
+          set -euo pipefail
+          # shellcheck source=tools/trains.sh
+          . tools/trains.sh
+          for train in $(train_ids); do
+            prefix="$(prefix_of "$train")"
+            latest_tag="$(git tag --list "${prefix}*" --sort=-version:refname | head -n1)"
+            if [ -z "$latest_tag" ]; then
+              echo "----- $train notes ----- (no tag published yet, skipped)"
+              continue
+            fi
+            echo "----- $train notes ($latest_tag) -----"
+            tools/packaging/release-notes.sh "$train" "$latest_tag"
+          done

@@ -96,4 +96,16 @@ public class Jd030UndeclaredStringLengthTests {
         Check.That(diagnostics.Length).IsEqualTo(0);
     }
 
+    [Fact]
+    public async Task Reports_the_factory_call_even_when_a_later_statement_narrows_the_reassigned_variable() {
+        // The rule is syntactic (its documented Scope): it reasons about the Any.String() expression as written, not
+        // about what the variable it is assigned to ends up holding. The factory call is reported the moment it is
+        // written with no length, whatever a later statement does to the same variable.
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(
+            "        AnyString s = Any.String();\n            s = s.WithMaxLength(5);\n            _ = s.Generate();");
+
+        Check.That(diagnostics.Length).IsEqualTo(1);
+        Check.That(diagnostics[0].GetMessage()).IsEqualTo("This string dummy declares no length: it draws 0 to 1024 characters");
+    }
+
 }

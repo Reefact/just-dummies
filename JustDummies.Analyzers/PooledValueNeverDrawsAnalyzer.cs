@@ -26,9 +26,10 @@ namespace JustDummies.Analyzers;
 ///     </para>
 ///     <para>
 ///         The predicates below restate what the run-time specifications apply, because an analyzer references
-///         no JustDummies assembly and cannot call it — the same duplication JD015 already carries for the
-///         character families and the casing. It is bounded on purpose: a constraint this switch does not name is
-///         not evaluated rather than guessed at.
+///         no JustDummies assembly and cannot call it — the alphabets themselves live in
+///         <see cref="CharacterFamilies" />, mirrored once and read by JD015 too, since two rules disagreeing about
+///         what a family admits would be worse than either being silent. It is bounded on purpose: a constraint
+///         this switch does not name is not evaluated rather than guessed at.
 ///     </para>
 ///     <para>
 ///         A pool held in a variable is out of reach here, which is the whole limit of a build-time answer to this
@@ -38,10 +39,6 @@ namespace JustDummies.Analyzers;
 /// </remarks>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public sealed class PooledValueNeverDrawsAnalyzer : DiagnosticAnalyzer {
-
-    private const string UpperLetters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    private const string LowerLetters = "abcdefghijklmnopqrstuvwxyz";
-    private const string Digits       = "0123456789";
 
     /// <summary>
     ///     The factories whose pool holds numbers this rule can judge: every integer family and <c>decimal</c>, each
@@ -141,12 +138,22 @@ public sealed class PooledValueNeverDrawsAnalyzer : DiagnosticAnalyzer {
 
         foreach (IInvocationOperation constraint in constraints) {
             switch (constraint.TargetMethod.Name) {
-                case "Alpha":         tests.Add(("Alpha()", DrawnFrom(UpperLetters + LowerLetters)));                 break;
-                case "Numeric":       tests.Add(("Numeric()", DrawnFrom(Digits)));                                    break;
-                case "AlphaNumeric":  tests.Add(("AlphaNumeric()", DrawnFrom(UpperLetters + LowerLetters + Digits))); break;
-                case "NonEmpty":      tests.Add(("NonEmpty()", value => value.Length >= 1));                          break;
-                case "UpperCase":     tests.Add(("UpperCase()", value => !value.Any(char.IsLower)));                   break;
-                case "LowerCase":     tests.Add(("LowerCase()", value => !value.Any(char.IsUpper)));                   break;
+                // Every name in these two labels is one PoolFor resolves, so the lookup cannot come back empty.
+                case "Alpha" or "Numeric" or "AlphaNumeric" or "Punctuation" or "Printable" or "NonPrintable" or "Whitespaces" or "Hexadecimal"
+                    when CharacterFamilies.PoolFor(constraint.TargetMethod.Name) is string family:
+                    tests.Add(($"{constraint.TargetMethod.Name}()", DrawnFrom(family)));
+
+                    break;
+
+                case "WithoutAlpha" or "WithoutNumeric"
+                    when CharacterFamilies.PoolFor(constraint.TargetMethod.Name.Substring("Without".Length)) is string removed:
+                    tests.Add(($"{constraint.TargetMethod.Name}()", DrawnNoneOf(removed)));
+
+                    break;
+
+                case "NonEmpty":      tests.Add(("NonEmpty()", value => value.Length >= 1));                        break;
+                case "UpperCase":     tests.Add(("UpperCase()", value => !value.Any(char.IsLower)));                break;
+                case "LowerCase":     tests.Add(("LowerCase()", value => !value.Any(char.IsUpper)));                break;
 
                 case "WithChars" when TryGetSingleString(constraint, out string pool):
                     tests.Add(($"WithChars({Quote(pool)})", DrawnFrom(pool)));
@@ -341,6 +348,11 @@ public sealed class PooledValueNeverDrawsAnalyzer : DiagnosticAnalyzer {
 
     private static Func<string, bool> DrawnFrom(string pool) {
         return value => value.All(character => pool.IndexOf(character) >= 0);
+    }
+
+    /// <summary>The counterpart of <see cref="DrawnFrom" /> for a subtraction: no character of the removed family.</summary>
+    private static Func<string, bool> DrawnNoneOf(string removed) {
+        return value => value.All(character => removed.IndexOf(character) < 0);
     }
 
     /// <summary>

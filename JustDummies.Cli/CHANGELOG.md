@@ -118,7 +118,7 @@ says so rather than emitting anything.
 
 **No dependency on `JustDummies` is declared, in either direction of the version graph.** The tool resolves
 every library symbol by metadata name against the developer's compilation, exactly as the analyzers do
-([ADR-0063](../doc/handwritten/for-maintainers/adr/0063-resolve-the-library-by-name-never-by-reference.md)),
+([ADR-0063](../doc/handwritten/for-maintainers/adr/0063-give-the-scaffolder-no-dependency-on-the-package.md)),
 which is what makes version skew between tool and library impossible. `tools/packaging/pack.sh` asserts it
 on the produced package — both that the nuspec declares no such dependency and that no `JustDummies.dll` is
 bundled beside the tool, since a .NET tool ships its closure as files and the first check alone would pass

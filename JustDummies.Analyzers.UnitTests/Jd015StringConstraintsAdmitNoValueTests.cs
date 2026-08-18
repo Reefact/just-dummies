@@ -46,6 +46,118 @@ public class Jd015StringConstraintsAdmitNoValueTests {
     }
 
     [Fact]
+    public async Task Reports_a_letter_the_punctuation_family_forbids() {
+        const string source = """
+            using JustDummies;
+
+            public static class Sample {
+                public static string M() {
+                    return Any.String().Punctuation().StartingWith("ORD-").Generate();
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new StringConstraintsAdmitNoValueAnalyzer(), source);
+
+        Check.That(diagnostics.Length).IsEqualTo(1);
+        Check.That(diagnostics[0].GetMessage()).Contains("Punctuation()");
+    }
+
+    [Fact]
+    public async Task Does_not_report_a_punctuated_fragment_under_the_printable_family() {
+        // The widest family is the one that admits the fragment the narrower ones refuse: 'ORD-' conflicts with
+        // Alpha(), with Numeric() and with Punctuation(), and is legal here.
+        const string source = """
+            using JustDummies;
+
+            public static class Sample {
+                public static string M() {
+                    return Any.String().Printable().StartingWith("ORD-").Generate();
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new StringConstraintsAdmitNoValueAnalyzer(), source);
+
+        Check.That(diagnostics.Length).IsEqualTo(0);
+    }
+
+    [Fact]
+    public async Task Reports_a_non_ascii_character_the_printable_family_forbids() {
+        // Printable is the widest family offered and still a bound: an accented letter is outside ASCII, so the
+        // rule names it rather than letting the widest family read as "anything goes".
+        const string source = """
+            using JustDummies;
+
+            public static class Sample {
+                public static string M() {
+                    return Any.String().Printable().Containing("café").Generate();
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new StringConstraintsAdmitNoValueAnalyzer(), source);
+
+        Check.That(diagnostics.Length).IsEqualTo(1);
+        Check.That(diagnostics[0].GetMessage()).Contains("Printable()");
+    }
+
+    [Fact]
+    public async Task Reports_a_digit_a_declared_subtraction_removes() {
+        // A subtraction names its own culprit: whatever family is in force beside it, WithoutNumeric() is what
+        // refused the digit.
+        const string source = """
+            using JustDummies;
+
+            public static class Sample {
+                public static string M() {
+                    return Any.String().WithoutNumeric().StartingWith("ORD-1").Generate();
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new StringConstraintsAdmitNoValueAnalyzer(), source);
+
+        Check.That(diagnostics.Length).IsEqualTo(1);
+        Check.That(diagnostics[0].GetMessage()).Contains("WithoutNumeric()");
+    }
+
+    [Fact]
+    public async Task Does_not_report_a_fragment_the_subtraction_leaves_alone() {
+        const string source = """
+            using JustDummies;
+
+            public static class Sample {
+                public static string M() {
+                    return Any.String().WithoutNumeric().StartingWith("ORD-").Generate();
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new StringConstraintsAdmitNoValueAnalyzer(), source);
+
+        Check.That(diagnostics.Length).IsEqualTo(0);
+    }
+
+    [Fact]
+    public async Task Reports_a_letter_the_hexadecimal_family_forbids() {
+        const string source = """
+            using JustDummies;
+
+            public static class Sample {
+                public static string M() {
+                    return Any.String().Hexadecimal().StartingWith("XYZ").Generate();
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new StringConstraintsAdmitNoValueAnalyzer(), source);
+
+        Check.That(diagnostics.Length).IsEqualTo(1);
+        Check.That(diagnostics[0].GetMessage()).Contains("Hexadecimal()");
+    }
+
+    [Fact]
     public async Task Reports_a_letter_whose_case_the_chain_forbids() {
         const string source = """
             using JustDummies;

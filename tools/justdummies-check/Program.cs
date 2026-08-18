@@ -160,20 +160,22 @@ internal static class Program {
 
     // Draws a fixed mixed sequence from the COMMON surface only (no modern types), so it compiles and runs
     // on both assets. Rendered with InvariantCulture to match the library's own culture-invariant rendering.
-    // Every part renders to printable ASCII (unconstrained Char/String draw ASCII letters and digits; the
-    // pattern and enum are ASCII by construction), so the joined line is safe to emit as a one-line banner.
+    // Every Char/String draw here is pinned to Printable() -- an unconstrained one draws the whole of ASCII
+    // (ADR-0074), control characters included, and a '\n' or '\r' in the value would split this SEEDBATCH
+    // banner across lines, breaking the single-line `sed` extraction in justdummies.yml. The pattern and enum
+    // draws are ASCII by construction and need no such pin.
     private static string SeedBatch(AnyContext any) {
         List<string> parts = new() {
             any.Int32().Generate().ToString(CultureInfo.InvariantCulture),
             any.Int32().Between(1, 1000).Generate().ToString(CultureInfo.InvariantCulture),
-            any.String().NonEmpty().WithMaxLength(50).Generate(),
+            any.String().NonEmpty().Printable().WithMaxLength(50).Generate(),
             any.Int64().Generate().ToString(CultureInfo.InvariantCulture),
             any.UInt64().Generate().ToString(CultureInfo.InvariantCulture),
             any.Double().Between(0d, 1000d).Generate().ToString("R", CultureInfo.InvariantCulture),
             any.Decimal().Between(0m, 1000m).Generate().ToString(CultureInfo.InvariantCulture),
             any.Boolean().Generate().ToString(),
             any.Guid().Generate().ToString(),
-            any.Char().Generate().ToString(),
+            any.Char().Printable().Generate().ToString(),
             any.TimeSpan().Generate().Ticks.ToString(CultureInfo.InvariantCulture),
             any.DateTime().Generate().Ticks.ToString(CultureInfo.InvariantCulture)
         };
@@ -182,14 +184,14 @@ internal static class Program {
         // StringMatching and enum draws. Collections and tuples inherit THIS seeded context through their
         // operand (which carries the source), so every added draw is still reproducible and cross-asset stable.
         parts.Add(any.Int32().Between(0, 100).OrNull().Generate() is int discount ? discount.ToString(CultureInfo.InvariantCulture) : "null");
-        parts.Add(any.String().NonEmpty().WithMaxLength(8).OrNull().Generate() ?? "null");
+        parts.Add(any.String().NonEmpty().Printable().WithMaxLength(8).OrNull().Generate() ?? "null");
         parts.Add(string.Join(",", Any.ArrayOf(any.Int32().Between(0, 9)).WithCount(3).Generate().Select(value => value.ToString(CultureInfo.InvariantCulture))));
         parts.Add(string.Join(",", Any.SequenceOf(any.Int32().Between(0, 9)).WithCount(2).Generate().Select(value => value.ToString(CultureInfo.InvariantCulture))));
 
-        (int, char) pair = Any.PairOf(any.Int32().Between(1, 9), any.Char()).Generate();
+        (int, char) pair = Any.PairOf(any.Int32().Between(1, 9), any.Char().Printable()).Generate();
         parts.Add($"({pair.Item1.ToString(CultureInfo.InvariantCulture)},{pair.Item2})");
 
-        (bool, int, char) triple = Any.TripleOf(any.Boolean(), any.Int32().Between(0, 9), any.Char()).Generate();
+        (bool, int, char) triple = Any.TripleOf(any.Boolean(), any.Int32().Between(0, 9), any.Char().Printable()).Generate();
         parts.Add($"({triple.Item1},{triple.Item2.ToString(CultureInfo.InvariantCulture)},{triple.Item3})");
 
         parts.Add(any.StringMatching("[A-Z]{3}-[0-9]{4}").Generate());

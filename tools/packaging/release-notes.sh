@@ -1,86 +1,76 @@
 #!/bin/sh
-# Generate GitHub Release notes for ONE release train (lib, xunit or cli), containing only the
-# commits that belong to that train — so a lib release never lists adapter work, and vice versa.
+# Emit ONE release's product-facing release note, read verbatim from the train's
+# RELEASE_NOTES-<major>.x.en.md file — a product-facing rewrite of the matching CHANGELOG.md
+# section, drafted by hand (see the release-notes skill) before the tag is pushed.
 #
-# The partition is by Conventional Commit scope (enforced by tools/commit-lint):
-#   lib   -> scopes core, analyzers (JustDummies, analyzers bundled in)
-#   xunit -> scope xunit            (JustDummies.Xunit, the xUnit v3 adapter)
-#   cli   -> scope cli              (the dum scaffolder, specified but not built yet)
-# Commits with no scope (bare `ci:`, `build:`, `chore:` ...) are infrastructure and are left out
-# of both trains: these notes describe what changed for the consumer of the package, nothing else.
+# This deliberately does NOT derive anything from `git log`: a commit subject is a record for
+# maintainers, not an announcement for a consumer deciding whether to upgrade, and mixing the
+# two produced exactly that — see git history before this script's rewrite for what it used to
+# emit.
 #
-# Usage: tools/packaging/release-notes.sh <scope:lib|xunit|cli> <current-tag> [<end-ref>]
-#   Emits Markdown on stdout. Needs full history + tags in the checkout (actions/checkout with
-#   fetch-depth: 0) so the previous same-train tag — the lower bound of the range — resolves. <end-ref>
-#   is the upper bound and defaults to <current-tag>; pass the release commit when the tag does not exist
-#   yet (a workflow_dispatch publish creates the tag only after the notes are built).
+# Usage: tools/packaging/release-notes.sh <scope:lib|xunit|cli|catalog> <current-tag> [<end-ref>]
+#   Emits Markdown on stdout: the "## <version> ..." section of that train's release-notes file
+#   matching <current-tag>'s version. <end-ref> is accepted for compatibility with callers that
+#   still pass the release commit as a third argument, but is not used — the source is a
+#   committed file, not commit history, so there is no range to resolve.
+#
+#   Refuses (exit 1) rather than emitting a fallback when the release-notes file, or the section
+#   for this version, does not exist: an untagged release is the wrong moment to discover that
+#   nobody wrote what the release actually contains.
 
 set -eu
 
 if [ "$#" -lt 2 ] || [ "$#" -gt 3 ] || [ -z "$1" ] || [ -z "$2" ]; then
-  echo "usage: tools/packaging/release-notes.sh <scope:lib|xunit|cli> <current-tag> [<end-ref>]" >&2
+  echo "usage: tools/packaging/release-notes.sh <scope:lib|xunit|cli|catalog> <current-tag> [<end-ref>]" >&2
   exit 2
 fi
 scope="$1"
 current_tag="$2"
-# Upper bound of the commit range. Defaults to <current-tag>, but a caller that has not created the tag yet
-# passes the release commit (e.g. $GITHUB_SHA) so `git log` resolves. <current-tag> is used only to exclude
-# the tag being created from the previous-same-train-tag lookup, so it need not exist as a ref.
-end_ref="${3:-$current_tag}"
 
-# Tag prefix and train scopes come from tools/trains.sh (the single source of truth
-# shared with the changelog tooling), so the two can never disagree on the partition.
+# Tag prefix and changelog location come from tools/trains.sh (the single source of truth
+# shared with the changelog tooling), so the release-notes file location can never drift from it.
 # shellcheck source=tools/trains.sh
 . "$(dirname "$0")/../trains.sh"
 prefix="$(prefix_of "$scope")"
-train_scopes="$(scopes_of "$scope")"
 if [ -z "$prefix" ]; then
   echo "error: unknown scope '$scope' (expected one of: $(train_ids | tr '\n' ' ' | sed 's/ *$//'))" >&2
   exit 2
 fi
 
-# Previous tag of the SAME train (most recent one that is not the current tag). When there is none,
-# this is the train's first release: take the whole history up to the current tag.
-previous_tag="$(git tag --list "${prefix}*" --sort=-version:refname | grep -Fxv "$current_tag" | head -n1 || true)"
-if [ -n "$previous_tag" ]; then
-  range="${previous_tag}..${end_ref}"
-else
-  range="$end_ref"
+case "$current_tag" in
+  "$prefix"*) version="${current_tag#"$prefix"}" ;;
+  *)
+    echo "error: tag '$current_tag' does not start with the '$scope' train's prefix '$prefix'" >&2
+    exit 2
+    ;;
+esac
+
+# The release-notes file lives beside the train's changelog, one per major version, so a train
+# past 1.x opens RELEASE_NOTES-2.x.en.md rather than growing the first file forever.
+major="${version%%.*}"
+changelog="$(changelog_of "$scope")"
+notes_file="$(dirname "$changelog")/RELEASE_NOTES-${major}.x.en.md"
+
+if [ ! -f "$notes_file" ]; then
+  echo "error: $notes_file does not exist — write this major version's release notes (see the release-notes skill) before tagging" >&2
+  exit 1
 fi
 
-# One line per commit: "<short-hash><TAB><subject>". Merge commits are skipped — one carries no
-# Conventional Commit scope, and the real work lives in the commits it brings in. Landing by rebase
-# (ADR-0051) produces none, but `main` still carries those of the pull requests that landed before
-# that decision, so the filter stays.
-commits="$(git log "$range" --no-merges --format='%h%x09%s')"
+# Escape the version for use as a literal in an ERE: it is data (from a git tag), not a pattern,
+# and both '.' and '-' are meaningful in a regex.
+version_pattern="$(printf '%s' "$version" | sed 's/[.[\*^$/-]/\\&/g')"
 
-# Keep a commit only when its Conventional Commit scope list intersects this train's scopes. Header
-# shape: type(scope[,scope...])[!]: description. A commit with no (scope) group is dropped.
-notes=''
-while IFS='	' read -r hash subject; do
-  [ -z "${subject:-}" ] && continue
-  # Extract the first parenthesised scope group ("type(core,cli)!: ..." -> "core,cli"); empty when
-  # the header has no scope, which drops the commit.
-  scope_group="$(printf '%s' "$subject" | sed -n 's/^[a-z][a-z]*(\([a-z,]*\)).*$/\1/p')"
-  [ -z "$scope_group" ] && continue
-  matched=0
-  OLDIFS=$IFS; IFS=','
-  for sc in $scope_group; do
-    case ",${train_scopes}," in
-      *",${sc},"*) matched=1; break ;;
-    esac
-  done
-  IFS=$OLDIFS
-  [ "$matched" = 1 ] && notes="${notes}- ${subject} (${hash})
-"
-done <<EOF
-${commits}
-EOF
+# The version's own section: from its "## <version>" heading (word-boundary after it, so
+# "1.1.0" cannot also match a heading for "1.1.0-beta.1") up to the next "## " heading or EOF.
+notes="$(awk -v heading="^## ${version_pattern}([[:space:]]|\$)" '
+  $0 ~ heading { in_section = 1; print; next }
+  in_section && /^## / { exit }
+  in_section { print }
+' "$notes_file")"
 
-echo "## What's changed"
-echo
-if [ -n "$notes" ]; then
-  printf '%s' "$notes"
-else
-  echo "_No user-facing changes in this component._"
+if [ -z "$notes" ]; then
+  echo "error: $notes_file has no '## $version' section — write it (see the release-notes skill) before tagging" >&2
+  exit 1
 fi
+
+printf '%s\n' "$notes"

@@ -126,6 +126,7 @@ Invoke on demand — `.claude/skills/`:
 | `review-feedback` | acting on review findings: the three routes, and when to escalate |
 | `tidy-history` | before opening a pull request, and after pushing more commits to an open one |
 | `release-train` | cutting, tagging or preparing a release; drafting a changelog |
+| `release-notes` | drafting or refreshing a GitHub release note from a train's changelog, EN/FR |
 
 Canonical documentation, shared with other agents and with humans:
 

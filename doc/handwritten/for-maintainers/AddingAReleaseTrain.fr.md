@@ -77,12 +77,13 @@ réellement spécifique au train (quel `.csproj` packer, si un package de symbol
 livré), donc elle n'est pas pilotée par `trains.sh`.
 
 **5. [`.github/workflows/release-dryrun.yml`](../../../.github/workflows/release-dryrun.yml)** —
-les deux étapes de répétition codent la liste des trains en dur : ajoutez
-`tools/packaging/pack.sh "$DRYRUN_VERSION" <id>` à l'étape *Pack with SBOM* et
-`tools/packaging/release-notes.sh <id> HEAD` à l'étape *Rehearse release notes*.
-Sans cela, le packaging et les notes du nouveau train ne sont jamais exercés avant
-une vraie release — rien n'échoue, ils ne sont simplement jamais lancés, ce qui
-annule tout l'intérêt du dry-run.
+l'étape *Pack with SBOM* code la liste des trains en dur : ajoutez
+`tools/packaging/pack.sh "$DRYRUN_VERSION" <id>`. Sans cela, le packaging du nouveau train
+n'est jamais exercé avant une vraie release — rien n'échoue, il n'est simplement jamais
+lancé, ce qui annule tout l'intérêt du dry-run. L'étape *Rehearse release notes* ne demande
+**aucun édit** : elle boucle sur `train_ids` de `trains.sh` et répète les notes de tout train
+qui a un tag, donc le nouveau train est pris en compte tout seul une fois l'étape 1 faite —
+voir la section suivante.
 
 **6. [`.github/workflows/changelog.yml`](../../../.github/workflows/changelog.yml)** —
 ajoutez `- <id>` aux `options` du choix `component` du `workflow_dispatch`. (Le
@@ -98,14 +99,24 @@ workflow lit tout le reste du train depuis `trains.sh`.)
   (`merge-unreleased.sh` pose le préambule Keep a Changelog si le fichier manque).
   Vous pouvez le pré-créer à la main pour une première pull request plus propre, mais
   ce n'est pas obligatoire.
+- **Le fichier de notes de release n'est pas créé automatiquement.** Contrairement au
+  changelog, `RELEASE_NOTES-1.x.en.md`/`.fr.md` (la réécriture orientée produit que
+  `release-notes.sh` lit au moment de la release) n'a aucun générateur pour le poser —
+  écrivez-le à la main, dans les deux langues, avant le premier tag du train. Voir la
+  skill `release-notes` pour le format et la transformation depuis une section relue
+  de `CHANGELOG.md`.
 
 ## Vérifier
 
 - **Convention de commit :** faites un commit sous un nouveau scope et confirmez que
   `tools/commit-lint/lint-commit-message.sh` l'accepte (le hook local et le workflow
   `commit-lint` le partagent).
-- **Notes de release :** lancez `tools/packaging/release-notes.sh <id> <préfixe>0.0.0 HEAD`
-  en local ; il doit lister les commits de ce train et rien des autres trains.
+- **Notes de release :** une fois le premier tag du train publié et
+  `RELEASE_NOTES-1.x.en.md`/`.fr.md` écrit pour lui (skill `release-notes`), lancez
+  `tools/packaging/release-notes.sh <id> <ce-tag>` en local ; il doit imprimer la section de
+  cette version telle quelle. Avant qu'un premier tag existe, il n'y a rien à vérifier ici —
+  le script refuse volontairement plutôt que de retomber sur autre chose (voir l'en-tête du
+  fichier).
 - **Packaging :** après l'édit de l'étape 5, le workflow
   [`release-dryrun`](../../../.github/workflows/release-dryrun.yml) packe et répète les notes du
   nouveau train sur chaque PR — vérifiez que son log liste le nouveau train. Ou

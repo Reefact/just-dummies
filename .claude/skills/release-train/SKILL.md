@@ -26,16 +26,21 @@ scope is required on `feat` and `fix` (ADR-0013).
 
 1. **Changelog.** The `changelog` workflow (dispatch) drafts a train's `[Unreleased]` from its
    merged pull requests and opens a review pull request. Prefer it to editing by hand.
-2. **Public API baseline.** `RS0016`/`RS0017` track the surface of `JustDummies` and
+2. **Release notes.** Once the changelog section for the version being cut is reviewed and
+   merged, draft or refresh `RELEASE_NOTES-<major>.x.en.md`/`.fr.md` for the train from it — the
+   `release-notes` skill. `tools/packaging/release-notes.sh` reads this file at tag time and
+   refuses the release rather than falling back to anything else if the section is missing, so
+   write it **before** the tag, not after.
+3. **Public API baseline.** `RS0016`/`RS0017` track the surface of `JustDummies` and
    `JustDummies.Xunit` in committed `PublicAPI/<tfm>/` files; each target framework has its
    own, and `dotnet format` rewrites one per run. **Do not promote `PublicAPI.Unshipped.txt`
    into `Shipped.txt` at a preview** — only at the first STABLE release. Promoting early turns
    every later removal into a violation, and below 1.0 this library keeps the right to remove.
    The same holds for `AnalyzerReleases.Unshipped.md`. Full procedure: `CONTRIBUTING.md`,
    "Public API baseline".
-3. **A draw sequence may change below 1.0** — a generated value's relationship to its seed is
+4. **A draw sequence may change below 1.0** — a generated value's relationship to its seed is
    not a versioned contract yet. Say so in the changelog when it does.
-4. **Rehearse.** `release-dryrun` packs and builds the SBOM without publishing.
+5. **Rehearse.** `release-dryrun` packs and builds the SBOM without publishing.
 
 ## Packaging
 

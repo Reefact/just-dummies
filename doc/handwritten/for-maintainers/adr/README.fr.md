@@ -22,7 +22,7 @@ n'existe, et la colonne **Origine** dit comment chacune est arrivée ici :
   aussi, car ce dépôt l'applique encore. Les deux copies sont désormais
   indépendantes : chaque côté peut remplacer la sienne sans toucher à l'autre.
   9 décisions.
-* **consigné ici** — décidé dans ce dépôt, de son propre chef. 25 décisions.
+* **consigné ici** — décidé dans ce dépôt, de son propre chef. 31 décisions.
 
 Les numéros appartiennent à cette base, attribués dans l'ordre où les décisions
 ont été consignées en amont
@@ -176,3 +176,4 @@ et qu'elle a été décidée le 01/08/2026 — l'index porte l'ordre, la numéro
 | [ADR-0071](0071-report-a-run-as-data-without-moving-the-exit-codes.fr.md) | Rendre compte d'une exécution en données sans déplacer les codes de sortie | Proposed | consigné ici |
 | [ADR-0072](0072-read-project-defaults-from-a-file-the-command-line-overrides.fr.md) | Lire les défauts de projet dans un fichier que la ligne de commande surcharge | Proposed | consigné ici |
 | [ADR-0073](0073-layer-the-agent-instructions-by-when-they-are-needed.fr.md) | Étager les instructions destinées aux agents selon le moment où elles servent | Accepted | consigné ici |
+| [ADR-0074](0074-draft-a-releases-github-notes-by-hand-and-refuse-without-them.fr.md) | Rédiger à la main les notes GitHub d'une release à partir du changelog, et refuser sans elles | Proposed | consigné ici |

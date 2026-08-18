@@ -16,13 +16,14 @@ namespace JustDummies;
 /// <remarks>
 ///     Unconstrained, a collection draws between <c>0</c> and <see cref="DefaultCountSpread" /> elements: an
 ///     unconstrained collection can therefore be empty — chain <c>NonEmpty()</c> when the surrounding code requires
-///     content. The spread is deliberately smaller than <see cref="AnyString" />'s (which is 16): a collection's
-///     elements are themselves generated values, heavier than a string's characters, so a smaller default keeps a
-///     dummy collection cheap while still exercising the multi-element path.
+///     content. The spread is deliberately smaller than <see cref="AnyString" />'s (which is 1024, ADR-0075): a
+///     collection's elements are themselves generated values, heavier than a string's characters, so a smaller
+///     default keeps a dummy collection cheap while still exercising the multi-element path.
 ///     <para>
-///         That spread governs every draw, bounded or not (ADR-0029): a declared maximum composes with it rather than
-///         replacing it, so an upper bound only narrows the draw and never widens it. Only a minimum, an exact count
-///         or required elements enlarge a collection.
+///         A declared maximum steers the draw rather than merely capping it (ADR-0075, superseding ADR-0029): the
+///         interval becomes [minimum, maximum] instead of [minimum, minimum + spread], so an upper bound can widen a
+///         collection well past the default spread — a maximum is now produced, not merely honoured, and is
+///         ceilinged like every other size for that reason.
 ///     </para>
 /// </remarks>
 internal sealed class CountSpec {

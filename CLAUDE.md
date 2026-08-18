@@ -23,7 +23,7 @@ and the base had made the same move seven times before naming it: **bound the su
 the effort, and refuse loudly at the edge** — arity capped at eight (ADR-0005), the regular
 subset parsed by the library's own parser rather than taking a regex dependency (ADR-0008),
 bounded redraws that fail explicitly instead of looping (ADR-0004, ADR-0012, ADR-0027), sizes
-capped at a million (ADR-0029), floating-point draws within an ordinary magnitude (ADR-0031).
+capped at a million (ADR-0075, superseding ADR-0029), floating-point draws within an ordinary magnitude (ADR-0031).
 
 **So when a change would make the generator cleverer, ask first whether the honest answer is
 a clear refusal.** A first-class error naming what cannot be honoured beats a value drawn by

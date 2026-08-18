@@ -4,8 +4,9 @@ public static partial class Any {
 
     /// <summary>
     ///     Starts an arbitrary <see cref="string" /> generator drawing from the ambient random context. Unconstrained,
-    ///     it yields a string of 0 to 16 ASCII letters and digits; chain constraints to express what the surrounding
-    ///     code requires (<c>NonEmpty()</c>, <c>WithLength(...)</c>, <c>StartingWith(...)</c>, ...).
+    ///     it yields 0 to 1024 characters drawn from the whole of ASCII, control characters included (ADR-0074,
+    ///     ADR-0075); chain constraints to express what the surrounding code requires (<c>NonEmpty()</c>,
+    ///     <c>WithMaxLength(...)</c>, <c>Printable()</c>, <c>StartingWith(...)</c>, ...).
     /// </summary>
     /// <returns>A string generator to constrain fluently.</returns>
     public static AnyString String() {
@@ -183,8 +184,9 @@ public static partial class Any {
     }
 
     /// <summary>
-    ///     Starts an arbitrary <see cref="char" /> generator drawing from the ambient random context — ASCII letters
-    ///     and digits unless constrained, mirroring <see cref="AnyString" />'s character families.
+    ///     Starts an arbitrary <see cref="char" /> generator drawing from the ambient random context — the whole of
+    ///     ASCII, control characters included, unless constrained (ADR-0074), mirroring <see cref="AnyString" />'s
+    ///     character families.
     /// </summary>
     /// <returns>A generator to constrain fluently.</returns>
     public static AnyChar Char() {

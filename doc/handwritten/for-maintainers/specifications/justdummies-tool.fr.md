@@ -480,7 +480,7 @@ Trois remarques sur la table.
 la chaîne vide (§14.5). Un paramètre de constructeur de type `string` dans un type métier est
 massivement requis non vide, et un défaut qui échoue par intermittence — environ une fois sur
 dix-sept quand le §17 l'a mesuré, une fois sur mille sous l'étendue plus large fixée depuis par
-l'ADR-0075 — est exactement l'instabilité que la bibliothèque existe pour supprimer. Le taux a
+l'ADR-0076 — est exactement l'instabilité que la bibliothèque existe pour supprimer. Le taux a
 bougé ; le défaut, non. Même raisonnement pour `Any.Guid().NonEmpty()`.
 
 **Les collections reposent sur la covariance — les types valeur, non.** `IAny<out T>` est
@@ -1248,8 +1248,8 @@ exercé au §17.
    collection du §5.2 — et la nécessité d'un pour la ligne nullable de type valeur.
 3. **Les generators sont des recettes immuables.** Chaque contrainte fluide retourne une nouvelle
    instance. D2 en hérite.
-4. **`Any.String()` non contraint tire 0 à 1024 caractères dans tout l'ASCII** (ADR-0074,
-   ADR-0075). Il peut retourner la chaîne vide, et il peut retourner du blanc et des caractères de
+4. **`Any.String()` non contraint tire 0 à 1024 caractères dans tout l'ASCII** (ADR-0075,
+   ADR-0076). Il peut retourner la chaîne vide, et il peut retourner du blanc et des caractères de
    contrôle. C'est la première moitié qui porte les §5.2 et §5.3 ; les mesures du §17 ont été
    prises avant ces deux records, quand le tirage allait de 0 à 16 lettres et chiffres.
 5. **`Any.OneOf(value)` exige au moins une valeur, rejette les éléments `null`, et consomme un

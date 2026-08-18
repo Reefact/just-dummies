@@ -35,8 +35,8 @@ string reference = Any.String().Printable().WithMaxLength(32).NonEmpty().Generat
 `NonEmpty()` quand du contenu est requis, `WithMaxLength(...)` pour la longueur que votre colonne ou
 votre contrat autorise, `Printable()` quand un caractère de contrôle n'en fait pas partie. Chacun est
 un fait sur le code environnant, écrit là où il doit l'être
-([ADR-0074](../../for-maintainers/adr/0074-draw-characters-from-the-whole-of-ascii.fr.md),
-[ADR-0075](../../for-maintainers/adr/0075-let-a-declared-maximum-steer-the-size-draw.fr.md)).
+([ADR-0075](../../for-maintainers/adr/0075-draw-characters-from-the-whole-of-ascii.fr.md),
+[ADR-0076](../../for-maintainers/adr/0076-let-a-declared-maximum-steer-the-size-draw.fr.md)).
 
 ## Longueur
 
@@ -61,7 +61,7 @@ comportent identiquement. Avec un minimum seul, le tirage atteint l'étendue par
 
 Tout argument de taille est refusé au-delà de 1 000 000, maxima compris : au-delà, le test voulait un
 test de charge, pas un dummy
-([ADR-0075](../../for-maintainers/adr/0075-let-a-declared-maximum-steer-the-size-draw.fr.md)).
+([ADR-0076](../../for-maintainers/adr/0076-let-a-declared-maximum-steer-the-size-draw.fr.md)).
 
 ## Alphabet
 

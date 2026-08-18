@@ -20,7 +20,7 @@ namespace JustDummies;
 ///         as declared, because the caller asked for that magnitude explicitly. A generator whose declared interval
 ///         merely <i>permits</i> large values — <c>Between(0, double.MaxValue)</c> — keeps drawing ordinary ones,
 ///         because permitting is not requesting. Sizes drew the same distinction once (ADR-0029): a declared bound
-///         narrowed a produced size and never widened it. ADR-0075 moved that policy — a declared maximum now
+///         narrowed a produced size and never widened it. ADR-0076 moved that policy — a declared maximum now
 ///         steers a size draw and can widen it well past the default spread — so this window's own "clip, never
 ///         widen" rule is a numeric-only invariant now, not one this codebase applies uniformly to every kind of
 ///         bound.

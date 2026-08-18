@@ -32,7 +32,7 @@ public sealed class AnyStringTests {
             foreach (char character in value) { seen.Add(character); }
         }
 
-        // The point of the default (ADR-0074): a control character is exactly what an unconstrained draw may hand
+        // The point of the default (ADR-0075): a control character is exactly what an unconstrained draw may hand
         // the code under test, so what the test survives, it has been shown to tolerate.
         Check.That(seen.Any(CharacterPools.IsAsciiNonPrintable)).IsTrue();
     }
@@ -336,7 +336,7 @@ public sealed class AnyStringTests {
 
     [Fact(DisplayName = "A maximum steers the draw and is ceilinged like every other size.")]
     public void AMaximumSteersTheDraw() {
-        // The bound the caller writes is the bound they get (ADR-0075) — and because it now steers, it is a size
+        // The bound the caller writes is the bound they get (ADR-0076) — and because it now steers, it is a size
         // the generator may have to produce, so the ceiling that used to exempt it applies.
         foreach (string value in Samples(Any.String().WithMaxLength(50))) {
             Check.That(value.Length).IsLessOrEqualThan(50);

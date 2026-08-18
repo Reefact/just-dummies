@@ -16,11 +16,11 @@ namespace JustDummies;
 /// <remarks>
 ///     Unconstrained, a collection draws between <c>0</c> and <see cref="DefaultCountSpread" /> elements: an
 ///     unconstrained collection can therefore be empty — chain <c>NonEmpty()</c> when the surrounding code requires
-///     content. The spread is deliberately smaller than <see cref="AnyString" />'s (which is 1024, ADR-0075): a
+///     content. The spread is deliberately smaller than <see cref="AnyString" />'s (which is 1024, ADR-0076): a
 ///     collection's elements are themselves generated values, heavier than a string's characters, so a smaller
 ///     default keeps a dummy collection cheap while still exercising the multi-element path.
 ///     <para>
-///         A declared maximum steers the draw rather than merely capping it (ADR-0075, superseding ADR-0029): the
+///         A declared maximum steers the draw rather than merely capping it (ADR-0076, superseding ADR-0029): the
 ///         interval becomes [minimum, maximum] instead of [minimum, minimum + spread], so an upper bound can widen a
 ///         collection well past the default spread — a maximum is now produced, not merely honoured, and is
 ///         ceilinged like every other size for that reason.
@@ -111,7 +111,7 @@ internal sealed class CountSpec {
         if (_exact is int exact) { return exact; }
 
         int min = Math.Max(_min, requiredMin);
-        // A declared maximum REPLACES the default spread (ADR-0075): the bound the caller wrote governs the count
+        // A declared maximum REPLACES the default spread (ADR-0076): the bound the caller wrote governs the count
         // they get. The spread itself is unchanged here — this record moves the policy, not the magnitude, a
         // thousand elements costing what their element generator costs rather than one character. Long arithmetic:
         // a huge required minimum must saturate instead of overflowing past int.MaxValue.

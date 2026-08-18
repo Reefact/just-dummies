@@ -82,7 +82,7 @@ public sealed class CollectionProperties {
 
     [Fact(DisplayName = "WithMaxCount steers the draw: the declared bound is the bound drawn, for every maximum.")]
     public void WithMaxCountSteersTheDraw() {
-        // ADR-0075: a declared maximum replaces the default spread rather than composing with it. The spread itself
+        // ADR-0076: a declared maximum replaces the default spread rather than composing with it. The spread itself
         // is unchanged for collections — that record moves the policy, not the magnitude, every extra element being
         // itself a generated value.
         Prop.ForAll(Generators.WithEdges(Generators.Count(200), 0, 1, DefaultCountSpread, DefaultCountSpread + 1, 200).ToArbitrary(),

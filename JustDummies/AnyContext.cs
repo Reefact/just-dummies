@@ -265,7 +265,7 @@ public sealed class AnyContext {
 
     /// <summary>
     ///     Starts an arbitrary <see cref="char" /> generator drawing from this context (deterministic under this context's seed) — the whole of
-    ///     ASCII, control characters included, unless constrained (ADR-0074), mirroring <see cref="AnyString" />'s character families.
+    ///     ASCII, control characters included, unless constrained (ADR-0075), mirroring <see cref="AnyString" />'s character families.
     /// </summary>
     /// <returns>A generator to constrain fluently.</returns>
     public AnyChar Char() {

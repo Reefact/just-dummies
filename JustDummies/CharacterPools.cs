@@ -26,7 +26,7 @@ internal enum LetterCasing {
 ///     The ASCII universe every character draw starts from, and the families that narrow it — one definition
 ///     shared by <see cref="AnyString" />'s filler and <see cref="AnyChar" />, so the two generators can never
 ///     drift apart on what they draw. An unconstrained draw is the whole of ASCII and every family is a subset of
-///     it, with no exception (ADR-0074); <see cref="RegexAlphabet" /> keeps its own, narrower universe for the
+///     it, with no exception (ADR-0075); <see cref="RegexAlphabet" /> keeps its own, narrower universe for the
 ///     positions a pattern leaves free, which is a decision of its own.
 /// </summary>
 internal static class CharacterPools {
@@ -138,7 +138,7 @@ internal static class CharacterPools {
     /// <summary>
     ///     The character as it should appear in a message the library writes. A default draw can now carry a control
     ///     character, and <c>ESC</c> would open an ANSI sequence in the terminal reporting the failure — so a
-    ///     diagnostic escapes what it cannot safely print (ADR-0074).
+    ///     diagnostic escapes what it cannot safely print (ADR-0075).
     /// </summary>
     internal static string Escape(char character) {
         return character switch {

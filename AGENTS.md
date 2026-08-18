@@ -24,7 +24,7 @@ that cannot read `.claude/` loses nothing by reading this file instead.
   `Any.Combine` stops at arity eight (ADR-0005); `Any.StringMatching` covers the regular subset with the
   library's own parser and refuses the rest by name rather than taking a dependency (ADR-0008); distinct
   collections, string exclusions and regex matching use a bounded redraw that fails explicitly
-  (ADR-0004, ADR-0012, ADR-0027); sizes are capped at a million (ADR-0075, superseding ADR-0029) and float draws stay within an
+  (ADR-0004, ADR-0012, ADR-0027); sizes are capped at a million (ADR-0076, superseding ADR-0029) and float draws stay within an
   ordinary magnitude (ADR-0031). Before making the generator cleverer, ask whether the honest answer is a
   clear refusal. A solver, a runtime dependency taken to widen coverage, or a silently widened bound
   needs a decision, not a patch.

@@ -71,7 +71,7 @@ internal static class CountConstraints {
     /// <summary>
     ///     Requires at most <paramref name="count" /> elements. A declared maximum steers the draw — the interval
     ///     becomes [minimum, maximum] instead of [minimum, minimum + spread] — so it is ceilinged like every other
-    ///     produced size (ADR-0075), refused above <see cref="SizeGuard" />'s bound.
+    ///     produced size (ADR-0076), refused above <see cref="SizeGuard" />'s bound.
     /// </summary>
     internal static CollectionState<T> WithMaxCount<T>(CollectionState<T> state, int count) {
         if (state is null) { throw new ArgumentNullException(nameof(state)); }

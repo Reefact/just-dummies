@@ -465,7 +465,7 @@ Three notes on the table.
 **`Any.String().NonEmpty()`, not `Any.String()`.** Unconstrained, `Any.String()` can return the
 empty string (§14.5). A constructor parameter of type `string` in a domain type is overwhelmingly
 required non-empty, and a default that fails intermittently — roughly one call in seventeen when
-§17 measured it, one in a thousand under the wider spread ADR-0075 later set — is exactly the
+§17 measured it, one in a thousand under the wider spread ADR-0076 later set — is exactly the
 flakiness the library exists to remove. The rate moved; the defect did not. Same reasoning for
 `Any.Guid().NonEmpty()`.
 
@@ -1203,7 +1203,7 @@ exercised by §17.
 3. **Generators are immutable recipes.** Every fluent constraint returns a new instance. D2
    inherits this.
 4. **`Any.String()` unconstrained draws 0 to 1024 characters from the whole of ASCII**
-   (ADR-0074, ADR-0075). It can return the empty string, and it can return whitespace and control
+   (ADR-0075, ADR-0076). It can return the empty string, and it can return whitespace and control
    characters. The first half is what §5.2 and §5.3 rest on; the measurements in §17 were taken
    before those two records, when the draw was 0 to 16 letters and digits.
 5. **`Any.OneOf(value)` requires at least one value, rejects `null` elements, and consumes a

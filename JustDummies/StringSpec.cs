@@ -44,7 +44,7 @@ namespace JustDummies;
 ///     </para>
 ///     <para>
 ///         A draw is uniform over [minimum, maximum], where an undeclared maximum is the minimum plus the default
-///         spread (ADR-0075): a declared bound therefore governs the value it is declared on, and the two spellings
+///         spread (ADR-0076): a declared bound therefore governs the value it is declared on, and the two spellings
 ///         of a range — <c>WithLengthBetween(a, b)</c> and <c>WithMinLength(a).WithMaxLength(b)</c> — draw alike.
 ///     </para>
 /// </remarks>
@@ -52,7 +52,7 @@ internal sealed class StringSpec {
 
     /// <summary>
     ///     How far above its floor an unconstrained length reaches. Deliberately uncomfortable: a dummy short
-    ///     enough to be convenient is one no length invariant is ever exercised against (ADR-0075).
+    ///     enough to be convenient is one no length invariant is ever exercised against (ADR-0076).
     /// </summary>
     private const int DefaultLengthSpread = 1024;
 
@@ -148,7 +148,7 @@ internal sealed class StringSpec {
         _allowed           = allowed;
         _allowedConstraint = allowedConstraint;
         // "Constrain once, draw many": the filler alphabet is settled here, never per draw. The universe is the
-        // whole of ASCII and the family, the casing and the subtractions narrow it (ADR-0074).
+        // whole of ASCII and the family, the casing and the subtractions narrow it (ADR-0075).
         _fillerPool = customPool ?? new string(CharacterPools.Ascii.Where(character => Admits(character, charset, casing, subtractions)).ToArray());
         // The flat, deduplicated value list drives the redraw and the exhaustion message; the provenance in
         // _exclusions is consulted only when a conflict message must name the excluding constraint. Materialized
@@ -452,7 +452,7 @@ internal sealed class StringSpec {
     private string BuildCandidate(SeededRandom random) {
         int required     = RequiredLength();
         int effectiveMin = Math.Max(_minLength, required);
-        // A declared maximum REPLACES the default spread (ADR-0075): the bound the caller wrote governs the value
+        // A declared maximum REPLACES the default spread (ADR-0076): the bound the caller wrote governs the value
         // they get, so a written range is the range drawn. Long arithmetic: a huge required length must saturate
         // instead of overflowing past int.MaxValue. The floor is honoured whatever the ceiling says — a maximum
         // below it is already refused at declaration.

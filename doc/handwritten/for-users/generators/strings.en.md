@@ -33,8 +33,8 @@ string reference = Any.String().Printable().WithMaxLength(32).NonEmpty().Generat
 `NonEmpty()` when content is required, `WithMaxLength(...)` for the length your column or contract
 allows, `Printable()` when a control character is not one of the things it allows. Each of those is
 a fact about the surrounding code, written where it belongs
-([ADR-0074](../../for-maintainers/adr/0074-draw-characters-from-the-whole-of-ascii.md),
-[ADR-0075](../../for-maintainers/adr/0075-let-a-declared-maximum-steer-the-size-draw.md)).
+([ADR-0075](../../for-maintainers/adr/0075-draw-characters-from-the-whole-of-ascii.md),
+[ADR-0076](../../for-maintainers/adr/0076-let-a-declared-maximum-steer-the-size-draw.md)).
 
 ## Length
 
@@ -59,7 +59,7 @@ yields 1000 to 2024.
 
 Every size argument is refused above one million, maxima included: past that point a test wanted a
 load test, not a dummy
-([ADR-0075](../../for-maintainers/adr/0075-let-a-declared-maximum-steer-the-size-draw.md)).
+([ADR-0076](../../for-maintainers/adr/0076-let-a-declared-maximum-steer-the-size-draw.md)).
 
 ## Alphabet
 

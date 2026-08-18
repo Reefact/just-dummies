@@ -39,7 +39,7 @@ public sealed class StringShapeProperties {
     /// <summary>
     ///     The alphabet affixes are drawn from where a property does not probe the charset boundary — letters and
     ///     digits, which every family but the two narrowest admits. Not the unconstrained draw, which is the whole
-    ///     of ASCII (ADR-0074).
+    ///     of ASCII (ADR-0075).
     /// </summary>
     private const string DefaultAlphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
@@ -176,7 +176,7 @@ public sealed class StringShapeProperties {
 
     [Fact(DisplayName = "WithMaxLength steers the draw: the declared bound is the bound drawn, for every maximum.")]
     public void WithMaxLengthSteersTheDraw() {
-        // ADR-0075: a declared maximum replaces the default spread rather than composing with it, so the bound the
+        // ADR-0076: a declared maximum replaces the default spread rather than composing with it, so the bound the
         // caller wrote governs the value they get. The maxima generated here straddle the spread on both sides —
         // that is where this behaviour and the superseded "a maximum only caps" one disagree.
         Prop.ForAll(Generators.WithEdges(Generators.Count(200), 0, 1, DefaultLengthSpread, DefaultLengthSpread + 1, 200).ToArbitrary(),

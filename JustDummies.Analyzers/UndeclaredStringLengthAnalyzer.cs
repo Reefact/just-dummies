@@ -14,7 +14,7 @@ namespace JustDummies.Analyzers;
 /// </summary>
 /// <remarks>
 ///     <para>
-///         This rule exists because of the shape of the decision it belongs to (ADR-0075). The unconstrained
+///         This rule exists because of the shape of the decision it belongs to (ADR-0076). The unconstrained
 ///         spread was raised on purpose — a dummy short enough to be comfortable is one no length invariant is
 ///         ever exercised against — but an inconvenient default only teaches when something names the remedy, and
 ///         a wall of characters in a failure message does not say <c>WithMaxLength</c>. The analyzer says it, at
@@ -42,7 +42,7 @@ public sealed class UndeclaredStringLengthAnalyzer : DiagnosticAnalyzer {
 
     /// <summary>
     ///     The default spread a string length draws across above its floor, mirrored from <c>StringSpec</c>
-    ///     (ADR-0075). Named here rather than written into the message, so the interval the rule reports is one
+    ///     (ADR-0076). Named here rather than written into the message, so the interval the rule reports is one
     ///     number away from the one the library draws.
     /// </summary>
     private const int DefaultLengthSpread = 1024;

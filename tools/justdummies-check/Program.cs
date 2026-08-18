@@ -161,7 +161,7 @@ internal static class Program {
     // Draws a fixed mixed sequence from the COMMON surface only (no modern types), so it compiles and runs
     // on both assets. Rendered with InvariantCulture to match the library's own culture-invariant rendering.
     // Every Char/String draw here is pinned to Printable() -- an unconstrained one draws the whole of ASCII
-    // (ADR-0074), control characters included, and a '\n' or '\r' in the value would split this SEEDBATCH
+    // (ADR-0075), control characters included, and a '\n' or '\r' in the value would split this SEEDBATCH
     // banner across lines, breaking the single-line `sed` extraction in justdummies.yml. The pattern and enum
     // draws are ASCII by construction and need no such pin.
     private static string SeedBatch(AnyContext any) {

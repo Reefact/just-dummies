@@ -30,6 +30,7 @@ JustDummies.Diagnostics.JustDummiesRule.JD026
 JustDummies.Diagnostics.JustDummiesRule.JD027
 JustDummies.Diagnostics.JustDummiesRule.JD028
 JustDummies.Diagnostics.JustDummiesRule.JD029
+JustDummies.Diagnostics.JustDummiesRule.JD030
 const JustDummies.Diagnostics.JustDummiesCategory.Composition = "JustDummies.Composition" -> string!
 const JustDummies.Diagnostics.JustDummiesCategory.Constraints = "JustDummies.Constraints" -> string!
 const JustDummies.Diagnostics.JustDummiesCategory.Reproducibility = "JustDummies.Reproducibility" -> string!
@@ -150,3 +151,7 @@ const JustDummies.Diagnostics.JustDummiesRule.JD029.Category = "JustDummies.Cons
 const JustDummies.Diagnostics.JustDummiesRule.JD029.HelpLinkUri = "https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/analyzers/JD029.en.md" -> string!
 const JustDummies.Diagnostics.JustDummiesRule.JD029.Id = "JD029" -> string!
 const JustDummies.Diagnostics.JustDummiesRule.JD029.Title = "A value written into a pool that a declared constraint refuses" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD030.Category = "JustDummies.Constraints" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD030.HelpLinkUri = "https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/analyzers/JD030.en.md" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD030.Id = "JD030" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD030.Title = "A string dummy that declares no length" -> string!

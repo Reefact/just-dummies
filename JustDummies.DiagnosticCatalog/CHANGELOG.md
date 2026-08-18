@@ -12,7 +12,10 @@ retired, a category changed — which is not when the library or the adapter mov
 
 ## [Unreleased]
 
-_No unreleased changes recorded yet._
+### Added
+
+- `JustDummiesRule.JD030` — *A string dummy that declares no length*, category `JustDummies.Constraints`. The rule
+  set moves from 29 identifiers to 30.
 
 ## [1.0.0-preview.2] - 2026-08-07
 

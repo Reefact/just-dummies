@@ -42,6 +42,13 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   it instead. Nothing named reaches past ASCII: a pool following the runtime's Unicode version would draw
   differently on two target frameworks, against a guarantee this library checks byte for byte.
 
+- **JD030 names the length you did not declare.** A raised default only teaches when something says what to
+  write instead, and a wall of characters in a failure message does not say `WithMaxLength`. The new rule reports
+  an `Any.String()` chain that settles no length, at the call site, where you can act on it — `NonEmpty()`
+  included, since it raises the floor and leaves the ceiling where it was. Reported as **information**, never a
+  warning: a length a test genuinely does not care about is a legitimate thing to leave unsaid
+  ([JD030](../doc/handwritten/for-users/analyzers/JD030.en.md)).
+
 - **JD015 reads the new families, and the library escapes what it prints.** The build-time rule validates anchored
   fragments against all nine families and reports a subtraction under its own name. And since a draw can now be a
   control character, every value the library renders into a conflict message or a pool inspection is escaped — an

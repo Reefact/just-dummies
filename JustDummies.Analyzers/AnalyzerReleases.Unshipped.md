@@ -34,3 +34,4 @@ JD026   | JustDummies.Constraints     | Warning  | EmptyRelativeUriAnalyzer
 JD027   | JustDummies.Composition     | Warning  | UnusedCombineOperandAnalyzer
 JD028   | JustDummies.Composition     | Warning  | InertDistinctnessAnalyzer
 JD029   | JustDummies.Constraints     | Info     | PooledValueNeverDrawsAnalyzer
+JD030   | JustDummies.Constraints     | Info     | UndeclaredStringLengthAnalyzer

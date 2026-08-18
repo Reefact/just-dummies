@@ -100,7 +100,7 @@ table en est l'index ; elle ne porte aucun argument propre.
 |---|---|---|
 | **D1** | Scaffolder une fois ; le fichier appartient au développeur. | Supprime d'un coup la dérive, le `check` et la question du source generator. |
 | **D2** | Le type émis implémente `IAny<T>` et est **immuable**. | Composabilité, et réarmement des analyzers `JustDummies.Usage` sur le type émis. |
-| **D3** | Le fichier émis n'est **pas** marqué comme code généré. | Les 28 analyzers exemptent le code généré ; le marquer rendrait le fichier aveugle. |
+| **D3** | Le fichier émis n'est **pas** marqué comme code généré. | Les 30 analyzers exemptent le code généré ; le marquer rendrait le fichier aveugle. |
 | **D4** | Ne jamais émettre un membre non résolu dans la compilation cible. | Une règle couvre le clivage de TFM, la baseline d'API publique, l'écart de version et l'arithmétique non signée. |
 | **D5** | Lire les clauses de garde du constructeur pour amorcer chaque generator. | Sans cela le code émis produit des valeurs que le constructeur rejette. |
 | **D6** | Un paramètre non résolu est émis comme **erreur de compilation**. | Le développeur est déjà dans le fichier ; un soulignement rouge est le signal le moins cher. |
@@ -476,11 +476,12 @@ Chaque entrée est soumise à D4 : le membre n'est émis que s'il se résout dan
 
 Trois remarques sur la table.
 
-**`Any.String().NonEmpty()`, pas `Any.String()`.** Sans contrainte, `Any.String()` produit *0 à 16*
-lettres et chiffres ASCII (§14.5) — il peut retourner la chaîne vide. Un paramètre de constructeur
-de type `string` dans un type métier est massivement requis non vide, et un défaut qui échoue
-environ une fois sur dix-sept (mesuré : §17) est exactement l'instabilité que la bibliothèque existe
-pour supprimer. Même raisonnement pour `Any.Guid().NonEmpty()`.
+**`Any.String().NonEmpty()`, pas `Any.String()`.** Sans contrainte, `Any.String()` peut retourner
+la chaîne vide (§14.5). Un paramètre de constructeur de type `string` dans un type métier est
+massivement requis non vide, et un défaut qui échoue par intermittence — environ une fois sur
+dix-sept quand le §17 l'a mesuré, une fois sur mille sous l'étendue plus large fixée depuis par
+l'ADR-0075 — est exactement l'instabilité que la bibliothèque existe pour supprimer. Le taux a
+bougé ; le défaut, non. Même raisonnement pour `Any.Guid().NonEmpty()`.
 
 **Les collections reposent sur la covariance — les types valeur, non.** `IAny<out T>` est
 covariante, donc `Any.ListOf(...)`, de type `IAny<List<T>>`, est directement affectable à un champ
@@ -1008,8 +1009,13 @@ modification de cette fonction plus une liaison d'options, pas un balayage. En v
   membre d'extension doit échouer en deçà de C# 14, et la racine statique doit parser en C# 7.3.
 * **Tests de compilation de la sortie.** Chaque fichier de référence est compilé contre
   `JustDummies.dll` **avec les analyzers JustDummies branchés**, et la compilation ne doit produire
-  aucune erreur `CS*` ni aucun diagnostic `JD*`. C'est le contrôle que D3 rend possible : le fichier
-  n'étant pas marqué comme code généré, les analyzers tournent réellement dessus. Le harnais doit
+  aucune erreur `CS*` ni aucun diagnostic `JD*` **de niveau avertissement ou au-dessus**. C'est le
+  contrôle que D3 rend possible : le fichier n'étant pas marqué comme code généré, les analyzers
+  tournent réellement dessus. Les règles informationnelles sont exclues à dessein : le tool remet le
+  fichier au développeur (ADR-0056), si bien que `JD030` nommant une longueur que la chaîne émise
+  laisse indéclarée est cette règle qui fait son travail sur un fichier dont l'auteur n'est pas
+  encore arrivé — un point de départ, pas un défaut de ce qui a été émis. Un avertissement, lui, dit
+  que le code émis est faux en propre, et c'est ce que ce contrôle prend en charge. Le harnais doit
   inclure un **fichier de contrôle avec une violation connue**, dont on asserte qu'elle se
   déclenche — sinon « aucun diagnostic » ne se distingue pas de « analyzers non chargés » (§17.2).
 * **Le test sur le code du dépôt.** Scaffolder les **vrais types du dépôt hôte**, compiler les
@@ -1242,15 +1248,16 @@ exercé au §17.
    collection du §5.2 — et la nécessité d'un pour la ligne nullable de type valeur.
 3. **Les generators sont des recettes immuables.** Chaque contrainte fluide retourne une nouvelle
    instance. D2 en hérite.
-4. **`Any.String()` non contraint tire 0 à 16 lettres et chiffres ASCII.** Il peut retourner la
-   chaîne vide ; il ne peut jamais retourner du blanc. Les deux moitiés comptent pour les §5.2 et
-   §5.3.
+4. **`Any.String()` non contraint tire 0 à 1024 caractères dans tout l'ASCII** (ADR-0074,
+   ADR-0075). Il peut retourner la chaîne vide, et il peut retourner du blanc et des caractères de
+   contrôle. C'est la première moitié qui porte les §5.2 et §5.3 ; les mesures du §17 ont été
+   prises avant ces deux records, quand le tirage allait de 0 à 16 lettres et chiffres.
 5. **`Any.OneOf(value)` exige au moins une valeur, rejette les éléments `null`, et consomme un
    tirage.** Ces trois raisons sont pourquoi le §4.2 émet un `FixedValue<TValue>` privé à la place.
 
 ### 14.6 Inventaire des analyzers
 
-29 identifiants de diagnostic sur 28 classes d'analyzer — `JD023` et `JD024` en partagent une.
+30 identifiants de diagnostic sur 29 classes d'analyzer — `JD023` et `JD024` en partagent une.
 
 | Plage | Catégorie | Sévérités |
 |---|---|---|
@@ -1270,11 +1277,11 @@ exercé au §17.
 | `JD024` | Constraints | Info |
 | `JD025`–`JD026` | Constraints | Warning |
 | `JD027`–`JD028` | Composition | Warning |
-| `JD029` | Constraints | Info |
+| `JD029`–`JD030` | Constraints | Info |
 
 Trois faits à leur sujet pilotent des décisions de ce document :
 
-* **Les 28 appellent `ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None)`** — d'où D3.
+* **Les 30 appellent `ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None)`** — d'où D3.
 * **Les règles `Usage` matchent tout type implémentant `IAny<T>`**, pas une liste de generators
   intégrés — d'où le second bénéfice de D2.
 * **Les règles `Reproducibility` matchent les chaînes enracinées sur la façade statique `Any`**, et
@@ -1446,7 +1453,7 @@ branchés. Les résultats ci-dessous sont ce que le harnais a affiché.
 | Les paramètres `ref` / `out` cassent le site d'appel | §5.1 | `CS1620` ; `in` accepte un argument par valeur sans broncher |
 | `FixedValue` accepte ce que `Any.OneOf` refuse | §4.2 | `FixedValue<string?>(null)` rend null ; `Any.OneOf<string>(null)` lève `ArgumentException` |
 | `.Positive()` est incorrect pour une garde `p < 1` sur un decimal | §5.3 | 1 tirage sur 5 000 est passé sous 1 sans contrainte ; ~1 sur 5 dès qu'une autre borne resserre |
-| La sortie scaffoldée ne lève aucun diagnostic JD | D3, §12 | 0 diagnostic sur les fichiers émis |
+| La sortie scaffoldée ne lève aucun avertissement JD | D3, §12 | 0 diagnostic de niveau avertissement ou au-dessus sur les fichiers émis |
 | Les analyzers étaient réellement chargés | D3 | un fichier de contrôle a levé `JD006` et `JD005` dans le même build |
 | `<auto-generated/>` les éteint | D3, §15 | le même fichier de contrôle, ainsi marqué, en a levé **0** — l'erreur `JD005` comprise |
 

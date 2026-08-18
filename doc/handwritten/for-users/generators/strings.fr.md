@@ -10,6 +10,7 @@ motif avec `Any.StringMatching`.
 
 ## À quoi ressemble une chaîne non contrainte
 
+<!-- jd:allow=JD030 -->
 ```csharp
 string anything = Any.String().Generate();   // 0 à 1024 caractères, n'importe où dans l'ASCII
 string nonEmpty = Any.String().NonEmpty().Generate();
@@ -39,6 +40,7 @@ un fait sur le code environnant, écrit là où il doit l'être
 
 ## Longueur
 
+<!-- jd:allow=JD030 -->
 ```csharp
 string exact     = Any.String().WithLength(12).Generate();
 string ranged    = Any.String().WithLengthBetween(3, 20).Generate();
@@ -46,6 +48,11 @@ string atLeast   = Any.String().WithMinLength(8).Generate();
 string atMost    = Any.String().WithMaxLength(50).Generate();
 string withStuff = Any.String().NonEmpty().Generate();
 ```
+
+`NonEmpty()` est l'intrus de cette liste : il relève le plancher à un et laisse le plafond là où il
+était, si bien qu'une chaîne qui ne porte que lui tire encore toute l'étendue. L'analyzer
+[JD030](../analyzers/JD030.fr.md) le dit au site d'appel, sur cette ligne comme sur toute autre chaîne
+qui ne déclare aucune longueur.
 
 **Une borne déclarée est la borne obtenue.** `WithMaxLength(50)` tire entre 0 et 50, et
 `WithLengthBetween(1000, 5000)` tire sur tout l'intervalle — les deux écritures d'une plage se
@@ -131,7 +138,7 @@ des caractères.
 préfixe alphabétique est une contradiction, pas un élargissement. Ces deux cas sont refusés au moment
 même de leur déclaration, avec un message nommant les deux côtés :
 
-<!-- jd:allow=JD015,JD006 -->
+<!-- jd:allow=JD015,JD006,JD030 -->
 ```csharp
 Any.String().WithLength(3).StartingWith("ORD-");  // la longueur ne peut pas contenir le préfixe
 Any.String().Numeric().StartingWith("ORD-");      // « ORD- » n'est pas numérique

@@ -49,6 +49,9 @@ internal static class DiagnosticIds {
     public const string EmptyRelativeUri = JustDummiesRule.JD026.Id;
     public const string PooledValueNeverDraws = JustDummiesRule.JD029.Id;
 
+    /// <summary>JD030 — a string dummy that declares no length.</summary>
+    public const string UndeclaredStringLength = JustDummiesRule.JD030.Id;
+
     // Category: Composition — a part that reaches no result, a constraint that cannot bind
     public const string UnusedCombineOperand = JustDummiesRule.JD027.Id;
     public const string InertDistinctness = JustDummiesRule.JD028.Id;

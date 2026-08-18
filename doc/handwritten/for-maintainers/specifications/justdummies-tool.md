@@ -98,7 +98,7 @@ index; it holds no argument of its own.
 |---|---|---|
 | **D1** | Scaffold once; the file belongs to the developer. | Kills drift, `check`, and the source-generator question in one move. |
 | **D2** | The emitted type implements `IAny<T>` and is **immutable**. | Composability, and it re-arms the `JustDummies.Usage` analyzers on the emitted type. |
-| **D3** | The emitted file is **not** marked as generated code. | All 28 analyzers exempt generated code; marking it would blind the file. |
+| **D3** | The emitted file is **not** marked as generated code. | All 30 analyzers exempt generated code; marking it would blind the file. |
 | **D4** | Never emit a member not resolved in the target compilation. | One rule covers the TFM split, the public-API baseline, version skew and unsigned arithmetic. |
 | **D5** | Read constructor guard clauses to seed each generator. | Without it the emitted code produces values the constructor rejects. |
 | **D6** | An unresolved parameter is emitted as a **compile error**. | The developer is already in the file; a red squiggle is the cheapest possible signal. |
@@ -462,11 +462,12 @@ Every entry is subject to D4: the member is emitted only if it resolves in the c
 
 Three notes on the table.
 
-**`Any.String().NonEmpty()`, not `Any.String()`.** Unconstrained, `Any.String()` yields *0 to 16*
-ASCII letters and digits (§14.5) — it can return the empty string. A constructor parameter of type
-`string` in a domain type is overwhelmingly required non-empty, and a default that fails roughly
-one call in seventeen (measured: §17) is exactly the flakiness the library exists to remove. Same
-reasoning for `Any.Guid().NonEmpty()`.
+**`Any.String().NonEmpty()`, not `Any.String()`.** Unconstrained, `Any.String()` can return the
+empty string (§14.5). A constructor parameter of type `string` in a domain type is overwhelmingly
+required non-empty, and a default that fails intermittently — roughly one call in seventeen when
+§17 measured it, one in a thousand under the wider spread ADR-0075 later set — is exactly the
+flakiness the library exists to remove. The rate moved; the defect did not. Same reasoning for
+`Any.Guid().NonEmpty()`.
 
 **Collections rely on covariance — and value types do not.** `IAny<out T>` is covariant, so
 `Any.ListOf(...)`, whose type is `IAny<List<T>>`, is directly assignable to a field of type
@@ -968,8 +969,12 @@ sweep. In v1.0 `NamingOptions` carries a single fixed pattern, `Any{Type}`.
   below C# 14, and the static root must parse at C# 7.3.
 * **Compile-the-output tests.** Each golden file is compiled against `JustDummies.dll` **with the
   JustDummies analyzers wired**, and the compilation must produce no `CS*` error and no `JD*`
-  diagnostic. This is the check D3 buys: since the file is not marked as generated code, the
-  analyzers actually run on it. The harness must include a **control file with a known violation**,
+  diagnostic **at warning level or above**. This is the check D3 buys: since the file is not marked
+  as generated code, the analyzers actually run on it. Informational rules are excluded on purpose:
+  the tool hands the file to the developer (ADR-0056), so `JD030` naming a length the emitted chain
+  leaves undeclared is that rule working on a file whose author has not arrived — a starting point,
+  not a defect in what was emitted. A warning says the emitted code is wrong on its own terms, and
+  that is what this check owns. The harness must include a **control file with a known violation**,
   asserted to fire — otherwise "no diagnostics" cannot be distinguished from "analyzers not
   loaded" (§17.2).
 * **The own-code test.** Scaffold the **hosting repository's real types**, compile the results,
@@ -1197,14 +1202,16 @@ exercised by §17.
    adapter — and why the value-type nullable row does.
 3. **Generators are immutable recipes.** Every fluent constraint returns a new instance. D2
    inherits this.
-4. **`Any.String()` unconstrained draws 0 to 16 ASCII letters and digits.** It can return the
-   empty string; it can never return whitespace. Both halves matter to §5.2 and §5.3.
+4. **`Any.String()` unconstrained draws 0 to 1024 characters from the whole of ASCII**
+   (ADR-0074, ADR-0075). It can return the empty string, and it can return whitespace and control
+   characters. The first half is what §5.2 and §5.3 rest on; the measurements in §17 were taken
+   before those two records, when the draw was 0 to 16 letters and digits.
 5. **`Any.OneOf(value)` requires at least one value, rejects `null` elements, and consumes a
    draw.** All three are why §4.2 emits a private `FixedValue<TValue>` instead.
 
 ### 14.6 Analyzer inventory
 
-29 diagnostic identifiers over 28 analyzer classes — `JD023` and `JD024` share one.
+30 diagnostic identifiers over 29 analyzer classes — `JD023` and `JD024` share one.
 
 | Range | Category | Severities |
 |---|---|---|
@@ -1224,11 +1231,11 @@ exercised by §17.
 | `JD024` | Constraints | Info |
 | `JD025`–`JD026` | Constraints | Warning |
 | `JD027`–`JD028` | Composition | Warning |
-| `JD029` | Constraints | Info |
+| `JD029`–`JD030` | Constraints | Info |
 
 Three facts about them drive decisions in this document:
 
-* **All 28 call `ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None)`** — hence D3.
+* **All 30 call `ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None)`** — hence D3.
 * **The `Usage` rules match any type implementing `IAny<T>`**, not a list of built-in generators —
   hence D2's second benefit.
 * **The `Reproducibility` rules match chains rooted at the static `Any` façade**, deliberately
@@ -1395,7 +1402,7 @@ in. The results below are what the harness printed.
 | `ref` / `out` constructor parameters break the call site | §5.1 | `CS1620`; `in` binds a value argument without complaint |
 | `FixedValue` accepts what `Any.OneOf` refuses | §4.2 | `FixedValue<string?>(null)` yields null; `Any.OneOf<string>(null)` throws `ArgumentException` |
 | `.Positive()` is unsound for a `p < 1` guard on a decimal | §5.3 | 1 draw in 5 000 fell below 1 unconstrained; ~1 in 5 once another bound narrows the range |
-| The scaffolded output raises no JD diagnostic | D3, §12 | 0 diagnostics on the emitted files |
+| The scaffolded output raises no JD warning | D3, §12 | 0 warning-or-above diagnostics on the emitted files |
 | The analyzers were genuinely loaded | D3 | a control file raised `JD006` and `JD005` in the same build |
 | `<auto-generated/>` silences them | D3, §15 | the same control file, so marked, raised **0** — including the `JD005` error |
 

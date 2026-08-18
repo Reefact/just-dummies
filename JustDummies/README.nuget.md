@@ -45,10 +45,25 @@ matter — and that is the point.
   length or a prefix inside it, since building a value in the intersection of two regular
   languages is not something the library does — but the exclusion pair is there:
   `Any.StringMatching(@"^ORD-\d{8}$").DifferentFrom(existing)` never yields `existing`.
+- **A default that certifies something**: an unconstrained `Any.String()` draws 0 to
+  1024 characters from the **whole of ASCII**, control characters included, and
+  `Any.Char()` the same. That is deliberately inconvenient — a dummy the code under test
+  had no say in is what makes a passing test mean anything, and a short, tame one proves
+  nothing about a `\r` or a 300-character input. Narrow it with the invariants your code
+  actually has.
+- **Character families, and every one of them narrows**: `Printable`, `NonPrintable`,
+  `Alpha`, `Numeric`, `AlphaNumeric`, `Punctuation` (POSIX `[:punct:]`), `Whitespaces`
+  and `Hexadecimal` (RFC 4648) each occupy one slot, so a second one conflicts naming
+  both sides; `WithoutAlpha` and `WithoutNumeric` subtract instead and accumulate. On
+  `Any.String()` and `Any.Char()` alike, since the two carry the same families. Nothing
+  named reaches past ASCII: a pool following the runtime's Unicode version would draw
+  differently on two target frameworks.
+- **A declared bound is the bound you get**: `WithMaxLength(50)` draws across 0 to 50 and
+  `WithLengthBetween(1000, 5000)` across the whole range. Every size argument is refused
+  above one million, maxima included.
 - **Custom alphabets**: `Any.String().WithChars("αβγδε")` draws the string from an
-  explicit character pool — the general form of the built-in `Alpha`/`Numeric`/
-  `AlphaNumeric` sets, and the way to reach non-ASCII text (accents, Greek, Cyrillic,
-  CJK) without a `StringMatching` literal. It stays within the Basic Multilingual Plane
+  explicit character pool — the general form of the named sets, and the way to reach
+  non-ASCII text (accents, Greek, Cyrillic, CJK) without a `StringMatching` literal. It stays within the Basic Multilingual Plane
   and rejects a surrogate: an emoji or other astral character is an atomic grapheme, not
   a character family, so draw those as whole strings with `OneOf("😀", "🎉")` instead.
   Anchored fragments must be drawn from the pool, or the conflict is reported at

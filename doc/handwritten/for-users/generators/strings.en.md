@@ -10,13 +10,30 @@ interact, `Any.Char()`, and pattern-driven generation with `Any.StringMatching`.
 ## What an unconstrained string looks like
 
 ```csharp
-string anything = Any.String().Generate();   // 0 to 16 ASCII letters and digits
+string anything = Any.String().Generate();   // 0 to 1024 characters, anywhere in ASCII
 string nonEmpty = Any.String().NonEmpty().Generate();
 ```
 
-An unconstrained draw yields **0 to 16 ASCII letters and digits**, so it can be empty. Chain
-`NonEmpty()` whenever the surrounding code requires content — which is most of the time, and is
-exactly the kind of invariant a constraint is for.
+An unconstrained draw yields **0 to 1024 characters drawn from the whole of ASCII** — control
+characters, tabs and newlines included — so it can be empty, long, and full of things your code may
+not like.
+
+**That is the point, and it is deliberate.** A dummy is a value the code under test had no say in;
+restricting it in advance to short, tame text removes exactly the evidence the draw exists to
+produce. A test that passes with one of these has shown something. A test that passes with `abc123`
+has shown nothing about what happens at 300 characters, or when a `\r` arrives.
+
+So constrain it — with the invariants your code actually has:
+
+```csharp
+string reference = Any.String().Printable().WithMaxLength(32).NonEmpty().Generate();
+```
+
+`NonEmpty()` when content is required, `WithMaxLength(...)` for the length your column or contract
+allows, `Printable()` when a control character is not one of the things it allows. Each of those is
+a fact about the surrounding code, written where it belongs
+([ADR-0074](../../for-maintainers/adr/0074-draw-characters-from-the-whole-of-ascii.md),
+[ADR-0075](../../for-maintainers/adr/0075-let-a-declared-maximum-steer-the-size-draw.md)).
 
 ## Length
 
@@ -28,25 +45,59 @@ string atMost    = Any.String().WithMaxLength(50).Generate();
 string withStuff = Any.String().NonEmpty().Generate();
 ```
 
-A length above one million is refused: past that point a test wanted a load test, not a dummy
-([ADR-0029](../../for-maintainers/adr/0029-let-a-size-maximum-cap-without-steering-the-draw.md)).
+**A declared bound is the bound you get.** `WithMaxLength(50)` draws across 0 to 50, and
+`WithLengthBetween(1000, 5000)` draws across the whole range — the two spellings of a range behave
+identically. With only a minimum, the draw reaches the default spread above it: `WithMinLength(1000)`
+yields 1000 to 2024.
+
+Every size argument is refused above one million, maxima included: past that point a test wanted a
+load test, not a dummy
+([ADR-0075](../../for-maintainers/adr/0075-let-a-declared-maximum-steer-the-size-draw.md)).
 
 ## Alphabet
 
-Six constraints decide which characters may appear:
+The universe is the whole of ASCII, and **every constraint below narrows it** — there is no
+exception to that rule.
+
+| Family | Draws | Size |
+| --- | --- | --- |
+| *(none)* | every ASCII character | 128 |
+| `Printable()` | 0x20 to 0x7E, the space included | 95 |
+| `NonPrintable()` | the C0 controls and `DEL` | 33 |
+| `Alpha()` | `A-Z a-z` | 52 |
+| `Numeric()` | `0-9` | 10 |
+| `AlphaNumeric()` | `A-Z a-z 0-9` | 62 |
+| `Punctuation()` | printable, not a letter, a digit or the space | 32 |
+| `Whitespaces()` | the space and the tab | 2 |
+| `Hexadecimal()` | `0-9 A-F a-f` | 22 |
 
 ```csharp
 string letters      = Any.String().Alpha().WithLength(10).Generate();          // A-Z a-z
 string alphanumeric = Any.String().AlphaNumeric().WithLength(10).Generate();   // A-Z a-z 0-9
 string digits       = Any.String().Numeric().WithLength(6).Generate();         // 0-9
+string symbols      = Any.String().Punctuation().WithLength(4).Generate();     // !"#$%&'()*+,-./ etc.
+string sha          = Any.String().Hexadecimal().LowerCase().WithLength(40).Generate();
+string anyText      = Any.String().Printable().WithLength(20).Generate();      // no control characters
 string shouting     = Any.String().Alpha().UpperCase().WithLength(4).Generate();
-string quiet        = Any.String().Alpha().LowerCase().WithLength(4).Generate();
+string noDigits     = Any.String().Printable().WithoutNumeric().WithLength(8).Generate();
 string custom       = Any.String().WithChars("ACGT").WithLength(20).Generate(); // your own pool
 ```
 
-`WithChars` is the escape hatch: supply the exact pool and the draw uses nothing else. It is how you
-express an alphabet the built-in families do not cover — a DNA sequence, a base-32 alphabet, a set of
-allowed separators.
+A family occupies **one slot**: declaring a second one contradicts the first, and the conflict names
+both sides. `WithoutAlpha()` and `WithoutNumeric()` are different — they **subtract** and accumulate,
+so `WithoutAlpha().WithoutNumeric()` leaves the punctuation, the whitespace and the controls.
+
+Two things to know. `Punctuation()` is the POSIX `[:punct:]` block, which is **broader** than
+`char.IsPunctuation` — that predicate reads `+`, `<` and `$` as symbols, so assert on the invariant
+your code actually has rather than on it. And the space is not in it, deliberately: it is the one
+character a `Trim()` removes in silence, so a separator you can rely on must not be one.
+`Whitespaces()` is what names it.
+
+**Nothing named reaches past ASCII**, and that bound is where localisation would start: a pool
+following the runtime's Unicode version would draw differently on two target frameworks, against a
+guarantee this library checks byte for byte. `WithChars` is the escape hatch — supply the exact pool
+and the draw uses nothing else. It is how you express an alphabet the named families do not cover: a
+DNA sequence, a base-32 alphabet, accented text, a set of allowed separators.
 
 ## Shape: prefixes, suffixes, fragments
 
@@ -111,12 +162,23 @@ produce ends in an explicit `AnyGenerationException` rather than a hang
 `Any.Char()` carries the alphabet family and the membership family:
 
 ```csharp
-char letter    = Any.Char().Alpha().Generate();
-char upper     = Any.Char().Alpha().UpperCase().Generate();
-char digit     = Any.Char().Numeric().Generate();
-char separator = Any.Char().OneOf('-', '_', '.').Generate();
-char notVowel  = Any.Char().Alpha().LowerCase().Except('a', 'e', 'i', 'o', 'u').Generate();
+char letter      = Any.Char().Alpha().Generate();
+char upper       = Any.Char().Alpha().UpperCase().Generate();
+char digit       = Any.Char().Numeric().Generate();
+char punctuation = Any.Char().Punctuation().Generate();
+char printable   = Any.Char().Printable().Generate();
+char control     = Any.Char().NonPrintable().Generate();
+char hex         = Any.Char().Hexadecimal().LowerCase().Generate();
+char separator   = Any.Char().OneOf('-', '_', '.').Generate();
+char notVowel    = Any.Char().Alpha().LowerCase().Except('a', 'e', 'i', 'o', 'u').Generate();
 ```
+
+The families are the same ones `Any.String()` declares, they mean the same thing here, and the
+default is the same too: **an unconstrained `Any.Char()` draws anywhere in ASCII**, so it may well
+hand you a carriage return or a NUL. `Printable()` is what you declare when that is not acceptable;
+`Punctuation()` when the character must not read as alphanumeric; `NonPrintable()` when a control
+character is precisely the counter-example your test needs. Where the set is a specific one — three
+allowed separators, not all thirty-two — `OneOf` says so and says it exactly.
 
 ## Patterns
 

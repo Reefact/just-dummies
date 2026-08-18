@@ -163,4 +163,4 @@ and it was decided on 2026-08-01 — the index carries the order, the numbering 
 | [ADR-0071](0071-report-a-run-as-data-without-moving-the-exit-codes.md) | Report a run as data without moving the exit codes | Proposed | recorded here |
 | [ADR-0072](0072-read-project-defaults-from-a-file-the-command-line-overrides.md) | Read project defaults from a file the command line overrides | Proposed | recorded here |
 | [ADR-0073](0073-layer-the-agent-instructions-by-when-they-are-needed.md) | Layer the agent instructions by when they are needed | Accepted | recorded here |
-| [ADR-0074](0074-draft-a-releases-github-notes-by-hand-and-refuse-without-them.md) | Draft a release's GitHub notes by hand from the changelog, and refuse without them | Proposed | recorded here |
+| [ADR-0074](0074-draft-a-releases-github-notes-by-hand-and-refuse-without-them.md) | Draft a release's GitHub notes by hand from the changelog, and refuse without them | Accepted | recorded here |

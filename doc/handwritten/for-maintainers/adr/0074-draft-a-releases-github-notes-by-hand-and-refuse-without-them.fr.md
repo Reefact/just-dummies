@@ -2,8 +2,9 @@
 
 🌍 🇬🇧 [English](0074-draft-a-releases-github-notes-by-hand-and-refuse-without-them.md) · 🇫🇷 Français (ce fichier)
 
-**Status:** Proposed
+**Status:** Accepted
 **Proposed:** 2026-08-18
+**Accepted:** 2026-08-18
 **Decision Makers:** Reefact
 
 ## Contexte

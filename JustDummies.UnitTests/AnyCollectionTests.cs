@@ -93,7 +93,7 @@ public sealed class AnyCollectionTests {
 
     [Fact(DisplayName = "A maximum steers the count and is ceilinged like every other size.")]
     public void AMaximumSteersTheCount() {
-        // The policy is the string's (ADR-0075); only the spread differs, a thousand elements costing what their
+        // The policy is the string's (ADR-0076); only the spread differs, a thousand elements costing what their
         // element generator costs rather than one character.
         for (int i = 0; i < SampleCount; i++) {
             Check.That(Any.ListOf(Any.Int32()).WithMaxCount(50).Generate().Count).IsLessOrEqualThan(50);

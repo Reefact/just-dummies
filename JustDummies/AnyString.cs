@@ -25,7 +25,7 @@ namespace JustDummies;
 ///     </para>
 ///     <para>
 ///         Unconstrained, the generator yields 0 to 1024 characters drawn from the <b>whole of ASCII</b>, control
-///         characters included (ADR-0074, ADR-0075). That is deliberately inconvenient: a dummy the code under test
+///         characters included (ADR-0075, ADR-0076). That is deliberately inconvenient: a dummy the code under test
 ///         had no say in is what makes a passing test mean something, and a short, tame one certifies nothing. Chain
 ///         <see cref="NonEmpty" /> when content is required, <see cref="WithMaxLength" /> for the length the domain
 ///         actually allows, and <see cref="Printable" /> when a control character is not one of them — each of those
@@ -146,7 +146,7 @@ public sealed class AnyString : IAny<string>, IHasRandomSource, ICardinalityHint
 
     /// <summary>
     ///     Requires at most <paramref name="length" /> characters, and <b>steers</b> the draw: the range becomes
-    ///     [minimum, <paramref name="length" />], so the bound you write is the bound you get (ADR-0075). It is
+    ///     [minimum, <paramref name="length" />], so the bound you write is the bound you get (ADR-0076). It is
     ///     therefore a size the generator may have to produce, and is refused above 1000000 like every other.
     /// </summary>
     /// <param name="length">The inclusive maximum number of characters.</param>

@@ -10,7 +10,7 @@ namespace JustDummies.UnitTests;
 
 /// <summary>
 ///     The size-guard convention, enforced by reflection over every generator the library exposes: <b>every</b>
-///     declared size — exact, minimum or maximum — is refused above the ceiling and accepted at it (ADR-0075).
+///     declared size — exact, minimum or maximum — is refused above the ceiling and accepted at it (ADR-0076).
 /// </summary>
 /// <remarks>
 ///     <para>

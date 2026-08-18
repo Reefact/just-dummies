@@ -13,7 +13,7 @@ namespace JustDummies;
 /// <remarks>
 ///     <para>
 ///         <b>Every</b> declared size is one the generator may have to materialize, maxima included: a maximum steers
-///         the draw rather than merely capping it (ADR-0075), so it decides how much memory and work a draw costs
+///         the draw rather than merely capping it (ADR-0076), so it decides how much memory and work a draw costs
 ///         exactly as an exact or minimum size does. One ceiling therefore covers them all, with no exception to
 ///         remember — the uniformity ADR-0029 considered and set aside while a maximum was still free to honour.
 ///     </para>
@@ -43,7 +43,7 @@ internal static class SizeGuard {
 
     /// <summary>
     ///     Validates a size that only has to be non-negative. Kept for the internal guard <see cref="RequireProducible" />
-    ///     builds on; every public size argument goes through the ceiling instead (ADR-0075).
+    ///     builds on; every public size argument goes through the ceiling instead (ADR-0076).
     /// </summary>
     /// <param name="value">The declared bound.</param>
     /// <param name="parameterName">The name of the parameter the caller wrote.</param>

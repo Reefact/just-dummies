@@ -10,7 +10,7 @@ namespace JustDummies;
 /// <summary>
 ///     A fluent generator of arbitrary <see cref="char" /> values. Unconstrained, it draws from the <b>whole of
 ///     ASCII</b> — 0x00 to 0x7F, control characters included — and every constraint narrows that set, with no
-///     exception (ADR-0074). A dummy that can be a carriage return or a NUL is what makes an unconstrained draw
+///     exception (ADR-0075). A dummy that can be a carriage return or a NUL is what makes an unconstrained draw
 ///     worth something: the code under test had no say in it, so what it survives, it has been shown to tolerate.
 ///     Declare the invariant the surrounding code actually has and the draw respects it.
 /// </summary>
@@ -85,7 +85,7 @@ public sealed class AnyChar : IAny<char>, IHasRandomSource, ICardinalityHint<cha
         _subtractions      = subtractions;
         // Materialized once here — "constrain once, draw many": Generate never refilters the pool. The universe
         // is the whole of ASCII and every constraint narrows it, so one filter over one pool is the whole engine
-        // (ADR-0074).
+        // (ADR-0075).
         IEnumerable<char> candidates = allowed ?? (IEnumerable<char>)CharacterPools.Ascii;
         _pool = candidates.Where(Admits).ToList();
     }

@@ -17,7 +17,7 @@ internal static class CharacterFamilies {
     internal const string Letters          = UpperLetters + LowerLetters;
     internal const string LettersAndDigits = Letters + Digits;
 
-    /// <summary>Every ASCII character — what an unconstrained draw starts from (ADR-0074).</summary>
+    /// <summary>Every ASCII character — what an unconstrained draw starts from (ADR-0075).</summary>
     internal static readonly string Ascii = Range('\u0000', '\u007F');
 
     /// <summary>Every printable ASCII character, 0x20 to 0x7E — the space included.</summary>

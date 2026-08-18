@@ -18,7 +18,7 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   `abc123` had shown nothing about a `\r`, a NUL, or 300 characters. Narrow it with the invariants your code
   actually has — `NonEmpty()`, `WithMaxLength(50)`, `Printable()` — each of which is a fact about the surrounding
   code, written where it belongs
-  ([ADR-0074](../doc/handwritten/for-maintainers/adr/0074-draw-characters-from-the-whole-of-ascii.md)).
+  ([ADR-0075](../doc/handwritten/for-maintainers/adr/0075-draw-characters-from-the-whole-of-ascii.md)).
 
 - **BREAKING — a declared maximum now steers the draw.** `WithMaxLength(50)` used to yield 0 to 16 characters and
   `WithLengthBetween(1000, 5000)` yielded 1000 to 1016 — two numbers written, 1.6 % of the interval drawn. A
@@ -26,7 +26,7 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   under either spelling. The same rule reaches `WithMaxCount` on collections, whose spread is unchanged. Because a
   steering maximum is one the generator has to produce, it is now refused above 1 000 000 like every other size:
   `WithMaxLength(4_000_000)`, legal before, is an `ArgumentOutOfRangeException` now
-  ([ADR-0075](../doc/handwritten/for-maintainers/adr/0075-let-a-declared-maximum-steer-the-size-draw.md)).
+  ([ADR-0076](../doc/handwritten/for-maintainers/adr/0076-let-a-declared-maximum-steer-the-size-draw.md)).
 
 ### Added
 

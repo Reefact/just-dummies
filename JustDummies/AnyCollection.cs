@@ -76,7 +76,7 @@ public abstract class AnyCollection<TItem, TResult, TSelf> : IAny<TResult>, IHas
 
     /// <summary>
     ///     Requires at most <paramref name="count" /> elements, and <b>steers</b> the draw: the range becomes
-    ///     [minimum, <paramref name="count" />], so the bound you write is the bound you get (ADR-0075).
+    ///     [minimum, <paramref name="count" />], so the bound you write is the bound you get (ADR-0076).
     /// </summary>
     /// <param name="count">The inclusive maximum number of elements.</param>
     /// <returns>A new generator carrying the added constraint.</returns>

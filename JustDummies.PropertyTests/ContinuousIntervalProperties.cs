@@ -376,8 +376,8 @@ public sealed class ContinuousIntervalProperties {
     public void PermittingALargeValueIsNotRequestingOne() {
         // The heart of ADR-0031: a bound is a permission, not a request. Any.Double().LessThan(huge) says what the
         // value may not exceed, so widening that bound must not enlarge the draw. A string's WithMaxLength no
-        // longer shares this rule (ADR-0075 lets it steer the draw instead) -- this test is about the numeric
-        // window only, which ADR-0075 left untouched.
+        // longer shares this rule (ADR-0076 lets it steer the draw instead) -- this test is about the numeric
+        // window only, which ADR-0076 left untouched.
         Prop.ForAll(Gen.Elements(1e7d, 1e50d, 1e200d, 1e308d, double.MaxValue).ToArbitrary(),
                     permitted => Expect.EveryDraw(Any.Double().Between(0d, permitted), value => value <= OrdinaryMagnitude)
                               && Expect.EveryDraw(Any.Double().LessThan(permitted), value => Math.Abs(value) <= OrdinaryMagnitude))

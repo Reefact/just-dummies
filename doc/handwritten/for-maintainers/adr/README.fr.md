@@ -131,7 +131,7 @@ et qu'elle a été décidée le 01/08/2026 — l'index porte l'ordre, la numéro
 | [ADR-0026](0026-measure-justdummies-mutation-against-the-unit-suite-only.fr.md) | Mesurer la mutation de JustDummies contre la seule suite unitaire déterministe | Accepted | déplacé · FCE ADR-0047 |
 | [ADR-0027](0027-guarantee-a-generated-regex-value-matches-by-bounded-redraw.fr.md) | Garantir qu'une valeur regex générée matche son pattern, par redraw borné | Accepted | déplacé · FCE ADR-0048 |
 | [ADR-0028](0028-drop-the-justdummies-generator-from-the-per-pull-request-mutation-matrix.fr.md) | Retirer le générateur JustDummies de la matrice de mutation par pull request | Accepted | déplacé · FCE ADR-0049 |
-| [ADR-0029](0029-let-a-size-maximum-cap-without-steering-the-draw.fr.md) | Laisser un maximum de taille plafonner sans piloter le tirage, et plafonner une taille explicitement demandée | Superseded by ADR-0075 | déplacé · FCE ADR-0050 |
+| [ADR-0029](0029-let-a-size-maximum-cap-without-steering-the-draw.fr.md) | Laisser un maximum de taille plafonner sans piloter le tirage, et plafonner une taille explicitement demandée | Superseded by ADR-0076 | déplacé · FCE ADR-0050 |
 | [ADR-0030](0030-filter-the-datetimeoffset-pool-by-the-declared-offset.fr.md) | Filtrer le pool DateTimeOffset par le décalage déclaré | Accepted | déplacé · FCE ADR-0051 |
 | [ADR-0031](0031-draw-arbitrary-numbers-within-an-ordinary-magnitude.fr.md) | Tirer les nombres arbitraires dans une magnitude ordinaire | Accepted | déplacé · FCE ADR-0052 |
 | [ADR-0032](0032-unify-discrete-generation-in-one-ordinal-space.fr.md) | Unifier la génération discrète dans un espace ordinal unique, avec un moteur dédié seulement là où le substrat arithmétique l'impose | Accepted | déplacé · FCE ADR-0053 |

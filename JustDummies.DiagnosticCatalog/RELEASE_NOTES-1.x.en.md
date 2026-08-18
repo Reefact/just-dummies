@@ -2,6 +2,15 @@
 
 What changed for you, release by release, in the `catalog` train. A catalogue's version is its own — it does not describe `JustDummies` at the same number. For the full technical record, see [CHANGELOG.md](https://github.com/Reefact/just-dummies/blob/main/JustDummies.DiagnosticCatalog/CHANGELOG.md).
 
+## 1.0.0-preview.3 — August 18, 2026
+
+_The catalogue catches up with the rule set `JustDummies 1.0.0-preview.2` shipped: two rules join the constants, `JD029` and `JD030`._
+
+### ✨ New
+
+- **`JustDummiesRule.JD029`** — *A value written into a pool that a declared constraint refuses*, category `JustDummies.Constraints`.
+- **`JustDummiesRule.JD030`** — *A string dummy that declares no length*, category `JustDummies.Constraints`.
+
 ## 1.0.0-preview.2 — August 7, 2026
 
 _First published version — the catalogue reaches nuget.org for the first time, at the number of the rule set JustDummies 1.0 ships. There is no `1.0.0-preview.1`: that tag's release run failed before publishing anything, and the number is skipped rather than reused._

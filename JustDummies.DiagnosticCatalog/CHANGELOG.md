@@ -12,10 +12,14 @@ retired, a category changed — which is not when the library or the adapter mov
 
 ## [Unreleased]
 
+## [1.0.0-preview.3] - 2026-08-18
+
 ### Added
 
+- `JustDummiesRule.JD029` — *A value written into a pool that a declared constraint refuses*, category
+  `JustDummies.Constraints`.
 - `JustDummiesRule.JD030` — *A string dummy that declares no length*, category `JustDummies.Constraints`. The rule
-  set moves from 29 identifiers to 30.
+  set moves from 28 identifiers, `1.0.0-preview.2`'s count, to 30.
 
 ## [1.0.0-preview.2] - 2026-08-07
 
@@ -52,5 +56,6 @@ there is no `CatalogSource` attribute here: nothing upstream is being snapshotte
 a consumer's assembly at their compile time; removing one breaks their build with a message that names
 nothing they wrote. A rule retired from the product is carried forward as `[Obsolete]` instead.
 
-[Unreleased]: https://github.com/Reefact/just-dummies/compare/catalog-v1.0.0-preview.2...HEAD
+[Unreleased]: https://github.com/Reefact/just-dummies/compare/catalog-v1.0.0-preview.3...HEAD
+[1.0.0-preview.3]: https://github.com/Reefact/just-dummies/compare/catalog-v1.0.0-preview.2...catalog-v1.0.0-preview.3
 [1.0.0-preview.2]: https://github.com/Reefact/just-dummies/releases/tag/catalog-v1.0.0-preview.2

@@ -23,7 +23,8 @@ public sealed class ConstraintRedeclarationTests {
 
     #region Statics members declarations
 
-    private static readonly Guid Pinned = Guid.Parse("6f9619ff-8b86-d011-b42d-00c04fc964ff");
+    private static readonly Guid Pinned    = Guid.Parse("6f9619ff-8b86-d011-b42d-00c04fc964ff");
+    private static readonly Guid PinnedAlt = Guid.Parse("72b8586b-9d81-4e2a-9d17-8f6a1e6b8c1d");
 
     /// <summary>Every once-only constraint, declared twice with identical arguments.</summary>
     private static IEnumerable<(string Label, Func<object> Redeclare)> IdenticalRedeclarations() {
@@ -45,9 +46,22 @@ public sealed class ConstraintRedeclarationTests {
         yield return ("Double().OneOf(1.5)", () => Any.Double().OneOf(1.5).OneOf(1.5));
         yield return ("Decimal().WithScale(2)", () => Any.Decimal().WithScale(2).WithScale(2));
         yield return ("Char().Alpha()", () => Any.Char().Alpha().Alpha());
+        yield return ("Char().Numeric()", () => Any.Char().Numeric().Numeric());
+        yield return ("Char().AlphaNumeric()", () => Any.Char().AlphaNumeric().AlphaNumeric());
         yield return ("Char().Punctuation()", () => Any.Char().Punctuation().Punctuation());
         yield return ("Char().Printable()", () => Any.Char().Printable().Printable());
+        yield return ("Char().NonPrintable()", () => Any.Char().NonPrintable().NonPrintable());
+        yield return ("Char().Whitespaces()", () => Any.Char().Whitespaces().Whitespaces());
+        yield return ("Char().Hexadecimal()", () => Any.Char().Hexadecimal().Hexadecimal());
         yield return ("Char().LowerCase()", () => Any.Char().LowerCase().LowerCase());
+        yield return ("Char().UpperCase()", () => Any.Char().UpperCase().UpperCase());
+        yield return ("Char().OneOf('a', 'b')", () => Any.Char().OneOf('a', 'b').OneOf('a', 'b'));
+        // Not a once-only slot like the family constraints above — WithoutAlpha/WithoutNumeric accumulate instead —
+        // but re-declaring one is documented as inert rather than contradictory, so it belongs to the same table.
+        yield return ("Char().WithoutAlpha()", () => Any.Char().WithoutAlpha().WithoutAlpha());
+        yield return ("Char().WithoutNumeric()", () => Any.Char().WithoutNumeric().WithoutNumeric());
+        yield return ("Boolean().True()", () => Any.Boolean().True().True());
+        yield return ("Boolean().False()", () => Any.Boolean().False().False());
         yield return ("Guid().OneOf(pinned)", () => Any.Guid().OneOf(Pinned).OneOf(Pinned));
         yield return ("Uri().Web().WithPathSegments(2)", () => Any.Uri().Web().WithPathSegments(2).WithPathSegments(2));
         yield return ("Uri().Web().WithHost(\"a.example\")", () => Any.Uri().Web().WithHost("a.example").WithHost("a.example"));
@@ -71,6 +85,11 @@ public sealed class ConstraintRedeclarationTests {
         yield return ("Decimal().WithScale(2).WithScale(4)", () => Any.Decimal().WithScale(2).WithScale(4));
         yield return ("Char().Alpha().Numeric()", () => Any.Char().Alpha().Numeric());
         yield return ("Char().Punctuation().Printable()", () => Any.Char().Punctuation().Printable());
+        yield return ("Char().Whitespaces().Hexadecimal()", () => Any.Char().Whitespaces().Hexadecimal());
+        yield return ("Char().LowerCase().UpperCase()", () => Any.Char().LowerCase().UpperCase());
+        yield return ("Char().OneOf('a', 'b').OneOf('c', 'd')", () => Any.Char().OneOf('a', 'b').OneOf('c', 'd'));
+        yield return ("Boolean().True().False()", () => Any.Boolean().True().False());
+        yield return ("Guid().OneOf(a).OneOf(b)", () => Any.Guid().OneOf(Pinned).OneOf(PinnedAlt));
         yield return ("Uri().Web().WithPathSegments(2).WithPathSegments(3)", () => Any.Uri().Web().WithPathSegments(2).WithPathSegments(3));
         yield return ("Uri().Web().WithHost(a).WithHost(b)", () => Any.Uri().Web().WithHost("first.example").WithHost("second.example"));
         yield return ("Uri().Web().WithPort(8080).WithPort(9090)", () => Any.Uri().Web().WithPort(8080).WithPort(9090));

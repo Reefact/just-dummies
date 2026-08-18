@@ -68,10 +68,10 @@ public sealed class EmittedCodeCompilesTests {
         Check.That(EmittedCodeCompiler.ErrorsIn(compilation)).IsEmpty();
     }
 
-    [Theory(DisplayName = "An emitted file raises none of the library's own rules.")]
+    [Theory(DisplayName = "An emitted file raises no warning from the library's own rules.")]
     [MemberData(nameof(CompilableGoldens))]
-    public async Task AnEmittedFileRaisesNoneOfTheLibrarysRules(string golden) {
-        string[] raised = await JustDummiesDiagnosticsIn(GoldenFile.ApprovedTextOf(golden), TestContext.Current.CancellationToken);
+    public async Task AnEmittedFileRaisesNoWarningFromTheLibrarysRules(string golden) {
+        string[] raised = await JustDummiesWarningsIn(GoldenFile.ApprovedTextOf(golden), TestContext.Current.CancellationToken);
 
         Check.That(raised).IsEmpty();
     }
@@ -92,7 +92,7 @@ public sealed class EmittedCodeCompilesTests {
                                  }
                                  """;
 
-        Check.That(await JustDummiesDiagnosticsIn(violation, TestContext.Current.CancellationToken)).Not.IsEmpty();
+        Check.That(await JustDummiesWarningsIn(violation, TestContext.Current.CancellationToken)).Not.IsEmpty();
     }
 
     [Theory(DisplayName = "An entry point compiles with the generator it reaches, with no error.")]
@@ -181,12 +181,23 @@ public sealed class EmittedCodeCompilesTests {
         return [.. tree.GetDiagnostics(TestContext.Current.CancellationToken).Select(diagnostic => diagnostic.Id)];
     }
 
-    private static async Task<string[]> JustDummiesDiagnosticsIn(string source, CancellationToken cancellationToken) {
+    /// <summary>
+    ///     The library's own rules raised at warning level or above on <paramref name="source" />.
+    /// </summary>
+    /// <remarks>
+    ///     Informational rules are deliberately excluded. The scaffolder writes each file once and transfers
+    ///     ownership of it to the developer (ADR-0056), so what it emits is a starting point, not a finished
+    ///     arrange line: JD030 pointing at a string whose length nobody has declared yet is that rule doing its
+    ///     job on a file whose author has not arrived. A warning is different — it says the emitted code is
+    ///     wrong on its own terms, and that is this suite's business.
+    /// </remarks>
+    private static async Task<string[]> JustDummiesWarningsIn(string source, CancellationToken cancellationToken) {
         CSharpCompilation          compilation = EmittedCodeCompiler.Compile(source);
         ImmutableArray<Diagnostic> raised      = await compilation.WithAnalyzers(EmittedCodeCompiler.Analyzers)
                                                                   .GetAnalyzerDiagnosticsAsync(cancellationToken);
 
         return raised.Where(diagnostic => diagnostic.Id.StartsWith("JD", StringComparison.Ordinal))
+                     .Where(diagnostic => diagnostic.Severity >= DiagnosticSeverity.Warning)
                      .Select(diagnostic => diagnostic.Id + " at " + diagnostic.Location.GetLineSpan())
                      .ToArray();
     }

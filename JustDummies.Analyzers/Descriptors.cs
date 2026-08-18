@@ -276,6 +276,16 @@ internal static class Descriptors {
         description: "A value set composes with the other constraints, so each value passes or fails them and the domain is the values that pass. A value that fails leaves the domain in silence — only an EMPTIED domain is reported, at declaration. This rule is the dual of JD024: where that one reports a constraint narrowing nothing, this one reports a value nothing lets through. It reads the string families and the numeric ones whose constants fold exactly -- every integer type and decimal; the binary floating-point families are out, since their constants have no exact decimal to judge them by. It sees only what is written at the call site, since a pool held in a variable is not knowable here; a catalogue loaded at run time is answered instead by IPoolInspection<T>, which reports the same fact against the values actually supplied. Reported as information, not as a warning: narrowing a shared pool at one call site is what the composition is for, so this is a fact to weigh, never a verdict.",
         helpLinkUri: JustDummiesRule.JD029.HelpLinkUri);
 
+    public static readonly DiagnosticDescriptor UndeclaredStringLength = new(
+        id: JustDummiesRule.JD030.Id,
+        title: JustDummiesRule.JD030.Title,
+        messageFormat: "This string dummy declares no length: it draws {0} characters",
+        category: JustDummiesRule.JD030.Category,
+        defaultSeverity: DiagnosticSeverity.Info,
+        isEnabledByDefault: true,
+        description: "An unconstrained Any.String() draws 0 to 1024 characters from the whole of ASCII, and NonEmpty() alone only moves that to 1 to 1025 -- it raises the floor and leaves the ceiling where it was. That default is deliberately inconvenient (ADR-0075), because a dummy short enough to be comfortable is one no length invariant is ever exercised against -- but an inconvenient default only teaches when something names the remedy, and a wall of characters in a failure message does not say WithMaxLength. This rule says it, at the call site. Declare the length the surrounding code actually allows: a column width, a contract bound, an exact size. Reported as information, not as a warning: a length a test genuinely does not care about is a legitimate thing to leave unsaid, so this is a fact to weigh, never a verdict.",
+        helpLinkUri: JustDummiesRule.JD030.HelpLinkUri);
+
     public static readonly DiagnosticDescriptor EmptyRelativeUri = new(
         id: JustDummiesRule.JD026.Id,
         title: JustDummiesRule.JD026.Title,

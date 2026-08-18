@@ -62,13 +62,17 @@ public sealed class ResolvedCodeCompilesTests {
         Check.That(EmittedCodeCompiler.ErrorsIn(compilation)).IsEmpty();
     }
 
-    [Fact(DisplayName = "A resolved file raises none of the library's own rules.")]
-    public async Task AResolvedFileRaisesNoneOfTheLibrarysRules() {
+    // Warnings only, for the reason EmittedCodeCompilesTests spells out: the scaffolder hands the file to the
+    // developer (ADR-0056), so an informational rule pointing at what is still undeclared is that rule working,
+    // not a defect in what was emitted.
+    [Fact(DisplayName = "A resolved file raises no warning from the library's own rules.")]
+    public async Task AResolvedFileRaisesNoWarningFromTheLibrarysRules() {
         CSharpCompilation          compilation = EmittedCodeCompiler.CompileWith(Emitted(), Domain);
         ImmutableArray<Diagnostic> raised      = await compilation.WithAnalyzers(EmittedCodeCompiler.Analyzers)
                                                                   .GetAnalyzerDiagnosticsAsync(TestContext.Current.CancellationToken);
 
         string[] justDummies = raised.Where(diagnostic => diagnostic.Id.StartsWith("JD", StringComparison.Ordinal))
+                                     .Where(diagnostic => diagnostic.Severity >= DiagnosticSeverity.Warning)
                                      .Select(diagnostic => diagnostic.Id + " at " + diagnostic.Location.GetLineSpan())
                                      .ToArray();
 

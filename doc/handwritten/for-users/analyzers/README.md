@@ -3,7 +3,7 @@
 🌍 **Languages:**  
 🇬🇧 English (this file) | 🇫🇷 [Français](./README.fr.md)
 
-The `JustDummies` package ships 29 Roslyn rules (`JD001`–`JD029`) inside itself, under
+The `JustDummies` package ships 30 Roslyn rules (`JD001`–`JD030`) inside itself, under
 `analyzers/dotnet/cs`. Any project that references the package picks them up automatically,
 with no extra install. They run while your project compiles, turning mistakes the run time
 would otherwise report late — or never — into build-time diagnostics.
@@ -63,6 +63,7 @@ These rules front-load, to build time, the subset of the library's run-time cons
 | [JD025 DuplicatePoolValue](JD025.en.md) | 🟠 Warning | on | The same constant is listed twice in a pool; duplicates collapse, so the pool is one value smaller than it reads and the duplicate weights nothing. |
 | [JD026 EmptyRelativeUri](JD026.en.md) | 🟠 Warning | on | A relative URI with zero path segments and no query, fragment or root is the empty reference — the one chain whose failure lands at act time rather than at the arrange line. |
 | [JD029 PooledValueNeverDraws](JD029.en.md) | 🔵 Info | on | A value written into a string or numeric value set that a constraint on the same chain refuses, so no draw can yield it. The dual of JD024, and it sees only what is written at the call site. |
+| [JD030 UndeclaredStringLength](JD030.en.md) | 🔵 Info | on | An `Any.String()` chain that declares no length, so it draws the whole default spread — 0 to 1024 characters. Names the remedy where you can act on it. |
 
 ## Composition
 

@@ -31,7 +31,7 @@
 
     <!-- Description -->
     <Description>
-      The JustDummies analyzer rules (JD001-JD029) as strongly referenced constants, so that SuppressMessageAttribute takes compile-checked references instead of magic strings. Reference it to have your suppressions of JustDummies diagnostics checked and offered a fix.
+      The JustDummies analyzer rules (JD001-JD030) as strongly referenced constants, so that SuppressMessageAttribute takes compile-checked references instead of magic strings. Reference it to have your suppressions of JustDummies diagnostics checked and offered a fix.
     </Description>
 
     <!-- Metadata -->

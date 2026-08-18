@@ -589,4 +589,22 @@ public static class JustDummiesRule {
 
     }
 
+    /// <summary>A string dummy that declares no length, so it draws the whole default spread</summary>
+    [DiagnosticRule]
+    public static class JD030 {
+
+        /// <summary>The canonical identifier of this diagnostic.</summary>
+        public const string Id = nameof(JD030);
+
+        /// <summary>The category this diagnostic is grouped under.</summary>
+        public const string Category = JustDummiesCategory.Constraints;
+
+        /// <summary>The one-line summary the IDE shows beside the rule.</summary>
+        public const string Title = "A string dummy that declares no length";
+
+        /// <summary>The page explaining the condition this diagnostic detects.</summary>
+        public const string HelpLinkUri = HelpLinkBase + nameof(JD030) + HelpLinkSuffix;
+
+    }
+
 }

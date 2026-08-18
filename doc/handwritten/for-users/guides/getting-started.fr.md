@@ -47,7 +47,7 @@ caractères parce que *c'est cela, une référence de commande* — et tout le r
 dotnet add package JustDummies
 ```
 
-C'est toute l'installation. Le paquet embarque aussi ses 29 règles d'analyzer, si bien que les garde-fous du
+C'est toute l'installation. Le paquet embarque aussi ses 30 règles d'analyzer, si bien que les garde-fous du
 bon usage se mettent à travailler dès la compilation suivante, sans rien configurer de plus.
 
 ## Votre premier dummy

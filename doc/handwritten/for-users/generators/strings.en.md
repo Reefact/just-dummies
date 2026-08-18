@@ -9,6 +9,7 @@ interact, `Any.Char()`, and pattern-driven generation with `Any.StringMatching`.
 
 ## What an unconstrained string looks like
 
+<!-- jd:allow=JD030 -->
 ```csharp
 string anything = Any.String().Generate();   // 0 to 1024 characters, anywhere in ASCII
 string nonEmpty = Any.String().NonEmpty().Generate();
@@ -37,6 +38,7 @@ a fact about the surrounding code, written where it belongs
 
 ## Length
 
+<!-- jd:allow=JD030 -->
 ```csharp
 string exact     = Any.String().WithLength(12).Generate();
 string ranged    = Any.String().WithLengthBetween(3, 20).Generate();
@@ -44,6 +46,11 @@ string atLeast   = Any.String().WithMinLength(8).Generate();
 string atMost    = Any.String().WithMaxLength(50).Generate();
 string withStuff = Any.String().NonEmpty().Generate();
 ```
+
+`NonEmpty()` is the odd one in that list: it raises the floor to one and leaves the ceiling where it
+was, so a chain carrying only it still draws the whole spread. The analyzer
+[JD030](../analyzers/JD030.en.md) says so at the call site, on that line and on every other chain
+that declares no length.
 
 **A declared bound is the bound you get.** `WithMaxLength(50)` draws across 0 to 50, and
 `WithLengthBetween(1000, 5000)` draws across the whole range — the two spellings of a range behave
@@ -126,7 +133,7 @@ refused rather than quietly reusing characters.
 letter prefix is a contradiction, not a widening. Both of these are refused at the moment they are
 declared, with a message naming both sides:
 
-<!-- jd:allow=JD015,JD006 -->
+<!-- jd:allow=JD015,JD006,JD030 -->
 ```csharp
 Any.String().WithLength(3).StartingWith("ORD-");  // the length cannot hold the prefix
 Any.String().Numeric().StartingWith("ORD-");      // 'ORD-' is not numeric

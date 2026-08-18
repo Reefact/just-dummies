@@ -1195,7 +1195,7 @@ collection, est facile à manquer au comptage : elle est déclarée `public abst
 
 | Famille de generator | Surface de contraintes disponible pour l'émetteur |
 |---|---|
-| `AnyString` | `NonEmpty`, `WithMinLength`, `WithMaxLength`, `WithLength`, `WithLengthBetween`, `StartingWith`, `EndingWith`, `Containing`, `Alpha`, `Numeric`, `AlphaNumeric`, `UpperCase`, `LowerCase`, `WithChars`, `OneOf`, `Except`, `DifferentFrom` |
+| `AnyString` | `NonEmpty`, `WithMinLength`, `WithMaxLength`, `WithLength`, `WithLengthBetween`, `StartingWith`, `EndingWith`, `Containing`, `Alpha`, `Numeric`, `AlphaNumeric`, `Punctuation`, `Printable`, `UpperCase`, `LowerCase`, `WithChars`, `OneOf`, `Except`, `DifferentFrom` |
 | Entiers signés (`SByte`, `Int16`, `Int32`, `Int64`) | `Positive`, `Negative`, `NonZero`, `Zero`, `Between`, `GreaterThan(OrEqualTo)`, `LessThan(OrEqualTo)`, `MultipleOf`, `OneOf`, `Except`, `DifferentFrom` |
 | **Entiers non signés** (`Byte`, `UInt16`, `UInt32`, `UInt64`) | les mêmes **moins `Positive` et `Negative`**, qu'un type non signé ne peut pas exprimer |
 | `AnyDouble`, `AnySingle` | comme les entiers signés, moins `MultipleOf` |

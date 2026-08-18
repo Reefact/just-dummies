@@ -8,7 +8,44 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ## [Unreleased]
 
+### Changed
+
+- **BREAKING — an unconstrained dummy now certifies something.** `Any.String()` used to yield 0 to 16 ASCII
+  letters and digits, and `Any.Char()` one of those 62 characters. Both now draw from the **whole of ASCII**
+  (0x00–0x7F), control characters included, and a string spans **0 to 1024** characters. That is deliberately
+  inconvenient, and it is the point: a dummy is a value the code under test had no say in, so restricting it in
+  advance to short, tame text removes exactly the evidence the draw exists to produce. A test that passed with
+  `abc123` had shown nothing about a `\r`, a NUL, or 300 characters. Narrow it with the invariants your code
+  actually has — `NonEmpty()`, `WithMaxLength(50)`, `Printable()` — each of which is a fact about the surrounding
+  code, written where it belongs
+  ([ADR-0074](../doc/handwritten/for-maintainers/adr/0074-draw-characters-from-the-whole-of-ascii.md)).
+
+- **BREAKING — a declared maximum now steers the draw.** `WithMaxLength(50)` used to yield 0 to 16 characters and
+  `WithLengthBetween(1000, 5000)` yielded 1000 to 1016 — two numbers written, 1.6 % of the interval drawn. A
+  maximum now **replaces** the default spread instead of composing with it, so a written range is the range drawn,
+  under either spelling. The same rule reaches `WithMaxCount` on collections, whose spread is unchanged. Because a
+  steering maximum is one the generator has to produce, it is now refused above 1 000 000 like every other size:
+  `WithMaxLength(4_000_000)`, legal before, is an `ArgumentOutOfRangeException` now
+  ([ADR-0075](../doc/handwritten/for-maintainers/adr/0075-let-a-declared-maximum-steer-the-size-draw.md)).
+
 ### Added
+
+- **Five more character families, and every one of them narrows.** `Punctuation()` (the 32 printable
+  non-alphanumerics, POSIX `[:punct:]`), `Printable()` (0x20–0x7E), `NonPrintable()` (the C0 controls and `DEL`),
+  `Whitespaces()` (the space and the tab) and `Hexadecimal()` (RFC 4648, both cases — chain a casing for the
+  single-case form a hash needs). Each occupies the one family slot, so a second conflicts naming both sides;
+  `WithoutAlpha()` and `WithoutNumeric()` subtract instead and accumulate, so
+  `WithoutAlpha().WithoutNumeric()` leaves the punctuation, the whitespace and the controls. On `Any.String()` and
+  `Any.Char()` alike. Two caveats worth knowing: `Punctuation()` is deliberately **broader** than
+  `char.IsPunctuation`, which reads `+`, `<` and `$` as symbols, and it deliberately excludes the space — the one
+  character a `Trim()` removes in silence, so a separator you can rely on must not be one. `Whitespaces()` names
+  it instead. Nothing named reaches past ASCII: a pool following the runtime's Unicode version would draw
+  differently on two target frameworks, against a guarantee this library checks byte for byte.
+
+- **JD015 reads the new families, and the library escapes what it prints.** The build-time rule validates anchored
+  fragments against all nine families and reports a subtraction under its own name. And since a draw can now be a
+  control character, every value the library renders into a conflict message or a pool inspection is escaped — an
+  `ESC` reaching your terminal would open an ANSI sequence in the very output reporting the failure.
 
 - **See what your constraints left of a pool you supplied.** When a value set is declared beside constraints, a
   value the constraints refuse leaves the domain silently — only an emptied domain is reported. That is fine

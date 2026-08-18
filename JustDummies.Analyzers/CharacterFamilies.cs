@@ -33,8 +33,8 @@ internal static class CharacterFamilies {
     internal static readonly string Punctuation =
         Filter(character => Printable.Contains(character) && character != ' ' && !LettersAndDigits.Contains(character));
 
-    /// <summary>The space and the tab.</summary>
-    internal const string Whitespaces = " \t";
+    /// <summary>The tab and the space, in that order — same as <c>CharacterPools.Whitespaces</c>'s ascending code-point walk.</summary>
+    internal const string Whitespaces = "\t ";
 
     /// <summary>The base-16 alphabet of RFC 4648, both cases.</summary>
     internal const string Hexadecimal = Digits + "ABCDEFabcdef";

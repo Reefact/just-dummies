@@ -80,15 +80,15 @@ public sealed class CollectionProperties {
 
     #endregion
 
-    [Fact(DisplayName = "WithMaxCount only caps: it never widens the draw beyond the unconstrained spread.")]
-    public void WithMaxCountNeverWidensTheDraw() {
-        // ADR-0029: a maximum is a permission, not a size hint. It composes with the default spread instead of
-        // replacing it, so a loose cap must keep yielding the small unconstrained collection — which matters more
-        // here than for strings, since every extra element is itself a generated value.
+    [Fact(DisplayName = "WithMaxCount steers the draw: the declared bound is the bound drawn, for every maximum.")]
+    public void WithMaxCountSteersTheDraw() {
+        // ADR-0075: a declared maximum replaces the default spread rather than composing with it. The spread itself
+        // is unchanged for collections — that record moves the policy, not the magnitude, every extra element being
+        // itself a generated value.
         Prop.ForAll(Generators.WithEdges(Generators.Count(200), 0, 1, DefaultCountSpread, DefaultCountSpread + 1, 200).ToArbitrary(),
-                    maximum => Expect.EveryDraw(Any.ListOf(Any.Int32()).WithMaxCount(maximum), list => list.Count <= Math.Min(maximum, DefaultCountSpread), DrawsPerShape)
-                               && Expect.EveryDraw(Any.ArrayOf(Any.Int32()).WithMaxCount(maximum), array => array.Length <= Math.Min(maximum, DefaultCountSpread), DrawsPerShape)
-                               && Expect.EveryDraw(Any.DictionaryOf(Any.Int32(), Any.Int32()).WithMaxCount(maximum), map => map.Count <= Math.Min(maximum, DefaultCountSpread), DrawsPerShape))
+                    maximum => Expect.EveryDraw(Any.ListOf(Any.Int32()).WithMaxCount(maximum), list => list.Count <= maximum, DrawsPerShape)
+                               && Expect.EveryDraw(Any.ArrayOf(Any.Int32()).WithMaxCount(maximum), array => array.Length <= maximum, DrawsPerShape)
+                               && Expect.EveryDraw(Any.DictionaryOf(Any.Int32(), Any.Int32()).WithMaxCount(maximum), map => map.Count <= maximum, DrawsPerShape))
             .QuickCheckThrowOnFailure();
     }
 

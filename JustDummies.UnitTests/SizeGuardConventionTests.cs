@@ -9,15 +9,14 @@ using NFluent;
 namespace JustDummies.UnitTests;
 
 /// <summary>
-///     The size-guard convention, enforced by reflection over every generator the library exposes: a size a generator
-///     must actually <b>produce</b> — an exact or minimum length or count — is refused above the ceiling, while a size
-///     that only <b>caps</b> a draw accepts any non-negative value (ADR-0029).
+///     The size-guard convention, enforced by reflection over every generator the library exposes: <b>every</b>
+///     declared size — exact, minimum or maximum — is refused above the ceiling and accepted at it (ADR-0075).
 /// </summary>
 /// <remarks>
 ///     <para>
-///         The rule this pins is a rule about how the API reads, so it is stated the way a reader states it: a method
-///         whose name announces a maximum, or a parameter named <c>maximum</c>, declares a cap; everything else that
-///         takes a length or a count declares something the generator has to materialize.
+///         There is no cap-versus-produced distinction left to encode. A declared maximum steers the draw, so it is a
+///         size the generator may have to materialize exactly as a minimum is; the exemption this convention used to
+///         carry went with the decision that justified it.
 ///     </para>
 ///     <para>
 ///         It is written as a convention rather than as one test per method for the reason ADR-0024 gives for the
@@ -36,7 +35,7 @@ public sealed class SizeGuardConventionTests {
     /// <summary>The parameter names the size constraints use across both surfaces.</summary>
     private static readonly string[] SizeParameterNames = ["length", "count", "minimum", "maximum"];
 
-    [Fact(DisplayName = "Every size constraint ceilings what it must produce and leaves a pure cap uncapped.")]
+    [Fact(DisplayName = "Every size constraint ceilings its argument, maxima included.")]
     public void EverySizeConstraintGuardsItsArgumentsToTheConvention() {
         List<string> violations = [];
         List<object> generators = Generators().ToList();
@@ -140,30 +139,12 @@ public sealed class SizeGuardConventionTests {
             && SizeParameterNames.Contains(parameter.Name, StringComparer.Ordinal);
     }
 
-    /// <summary>
-    ///     Whether <paramref name="parameter" /> declares a pure cap: the parameter explicitly named <c>maximum</c>,
-    ///     or the single size of a method that announces a maximum in its name.
-    /// </summary>
-    private static bool IsCap(MethodInfo method, ParameterInfo parameter) {
-        return parameter.Name == "maximum" || method.Name.StartsWith("WithMax", StringComparison.Ordinal);
-    }
-
     private static void Verify(object generator, MethodInfo method, ParameterInfo parameter, List<string> violations) {
         string member = $"{generator.GetType().Name}.{method.Name}(...) [param '{parameter.Name}']";
 
-        // A negative size is a caller mistake on every parameter, cap or not — the rule this one extends.
+        // A negative size is a caller mistake on every parameter — the rule this one extends.
         if (!Throws<ArgumentOutOfRangeException>(generator, method, parameter, -1)) {
             violations.Add($"{member}: a negative size was accepted; expected ArgumentOutOfRangeException.");
-        }
-
-        if (IsCap(method, parameter)) {
-            // A cap costs nothing to honour, so it must stay declarable above the ceiling: refusing it here would
-            // reject a legitimate bound mirroring a storage limit.
-            if (Throws<ArgumentOutOfRangeException>(generator, method, parameter, MaxProducibleSize + 1)) {
-                violations.Add($"{member}: a cap above the ceiling was refused; a maximum only narrows the draw and must accept any non-negative value.");
-            }
-
-            return;
         }
 
         if (!Throws<ArgumentOutOfRangeException>(generator, method, parameter, MaxProducibleSize + 1)) {

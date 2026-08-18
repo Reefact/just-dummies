@@ -23,12 +23,18 @@ public sealed class AnyStringTests {
 
     #endregion
 
-    [Fact(DisplayName = "An unconstrained String yields 0 to 16 ASCII letters and digits.")]
-    public void UnconstrainedYieldsShortAlphanumeric() {
+    [Fact(DisplayName = "An unconstrained String yields 0 to 1024 characters drawn from the whole of ASCII.")]
+    public void UnconstrainedYieldsAsciiUpToTheSpread() {
+        HashSet<char> seen = [];
         foreach (string value in Samples(Any.String())) {
-            Check.That(value.Length).IsLessOrEqualThan(16);
-            Check.That(value.All(char.IsLetterOrDigit)).IsTrue();
+            Check.That(value.Length).IsLessOrEqualThan(1024);
+            Check.That(value.All(CharacterPools.IsAscii)).IsTrue();
+            foreach (char character in value) { seen.Add(character); }
         }
+
+        // The point of the default (ADR-0074): a control character is exactly what an unconstrained draw may hand
+        // the code under test, so what the test survives, it has been shown to tolerate.
+        Check.That(seen.Any(CharacterPools.IsAsciiNonPrintable)).IsTrue();
     }
 
     [Fact(DisplayName = "NonEmpty yields at least one character.")]
@@ -125,6 +131,33 @@ public sealed class AnyStringTests {
     public void AlphaNumericYieldsLettersAndDigitsOnly() {
         foreach (string value in Samples(Any.String().AlphaNumeric().NonEmpty())) {
             Check.That(value.All(character => character is >= 'A' and <= 'Z' or >= 'a' and <= 'z' or >= '0' and <= '9')).IsTrue();
+        }
+    }
+
+    [Fact(DisplayName = "Punctuation yields printable non-alphanumerics only.")]
+    public void PunctuationYieldsPrintableNonAlphaNumericsOnly() {
+        foreach (string value in Samples(Any.String().Punctuation().NonEmpty())) {
+            Check.That(value.All(CharacterPools.IsAsciiPunctuation)).IsTrue();
+        }
+    }
+
+    [Fact(DisplayName = "Printable yields printable ASCII only, and actually reaches punctuation.")]
+    public void PrintableYieldsPrintableAsciiOnly() {
+        HashSet<char> seen = [];
+        foreach (string value in Samples(Any.String().Printable().WithLength(16))) {
+            Check.That(value.All(CharacterPools.IsAsciiPrintable)).IsTrue();
+            foreach (char character in value) { seen.Add(character); }
+        }
+
+        // The point of the family: a filler that stops at letters and digits is what sent a caller looking for a
+        // pool of their own in the first place.
+        Check.That(seen.Any(CharacterPools.IsAsciiPunctuation)).IsTrue();
+    }
+
+    [Fact(DisplayName = "Printable admits a punctuated fragment, which the narrower families refuse.")]
+    public void PrintableAdmitsAPunctuatedFragment() {
+        foreach (string value in Samples(Any.String().Printable().StartingWith("ORD-").NonEmpty())) {
+            Check.That(value).StartsWith("ORD-");
         }
     }
 
@@ -281,13 +314,17 @@ public sealed class AnyStringTests {
         Check.That(error.ParamName).IsEqualTo("length");
     }
 
-    [Fact(DisplayName = "A maximum accepts any non-negative length and still yields a small string.")]
-    public void AMaximumIsACapNotASizeHint() {
-        // Regression: WithMaxLength(int.MaxValue) used to return a string of about 130 MB, because a declared
-        // maximum replaced the default spread instead of composing with it. A maximum is a permission, so it is
-        // never ceilinged — and it never enlarges the draw either.
-        Check.That(Any.String().WithMaxLength(int.MaxValue).Generate().Length).IsStrictlyLessThan(17);
-        Check.That(Any.String().WithMaxLength(4_000_000).Generate().Length).IsStrictlyLessThan(17);
+    [Fact(DisplayName = "A maximum steers the draw and is ceilinged like every other size.")]
+    public void AMaximumSteersTheDraw() {
+        // The bound the caller writes is the bound they get (ADR-0075) — and because it now steers, it is a size
+        // the generator may have to produce, so the ceiling that used to exempt it applies.
+        foreach (string value in Samples(Any.String().WithMaxLength(50))) {
+            Check.That(value.Length).IsLessOrEqualThan(50);
+        }
+
+        Check.ThatCode(() => Any.String().WithMaxLength(int.MaxValue)).Throws<ArgumentOutOfRangeException>();
+        Check.ThatCode(() => Any.String().WithMaxLength(4_000_000)).Throws<ArgumentOutOfRangeException>();
+        Check.ThatCode(() => Any.String().WithMaxLength(1_000_000)).DoesNotThrow();
     }
 
     [Fact(DisplayName = "Fragment arguments are validated as arguments, not as conflicts.")]

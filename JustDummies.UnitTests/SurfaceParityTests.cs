@@ -181,13 +181,21 @@ public sealed class SurfaceParityTests {
         // AnyEnum adds AllowingCombinations, the opt-in widening the draw from the declared members to their
         // combinations — meaningful only for a [Flags] enum, hence a constraint rather than a second factory.
         data.Add(typeof(AnyEnum<DayOfWeek>), new[] { "AllowingCombinations", "OneOf", "Except", "DifferentFrom" });
-        data.Add(typeof(AnyChar), new[] { "Alpha", "AlphaNumeric", "Numeric", "UpperCase", "LowerCase", "OneOf", "Except", "DifferentFrom" });
+        // AnyChar mirrors AnyString's character families exactly, minus the shape constraints a single character
+        // has no room for and minus WithChars, whose general form here is OneOf. A family added to one surface and
+        // forgotten on the other is the drift this pair of rows exists to catch.
+        data.Add(typeof(AnyChar), new[] {
+            "Alpha", "AlphaNumeric", "Numeric", "Punctuation", "Printable", "NonPrintable", "Whitespaces", "Hexadecimal",
+            "WithoutAlpha", "WithoutNumeric", "UpperCase", "LowerCase", "OneOf", "Except", "DifferentFrom"
+        });
 
         // AnyString carries the exclusion pair Except/DifferentFrom (met by a bounded redraw, since strings are not
         // ordinal-mapped) and, like every other family, a composable OneOf that returns the builder itself.
         data.Add(typeof(AnyString), new[] {
             "NonEmpty", "WithLength", "WithMinLength", "WithMaxLength", "WithLengthBetween",
-            "StartingWith", "EndingWith", "Containing", "Alpha", "AlphaNumeric", "Numeric", "WithChars", "UpperCase", "LowerCase",
+            "StartingWith", "EndingWith", "Containing",
+            "Alpha", "AlphaNumeric", "Numeric", "Punctuation", "Printable", "NonPrintable", "Whitespaces", "Hexadecimal",
+            "WithoutAlpha", "WithoutNumeric", "WithChars", "UpperCase", "LowerCase",
             "OneOf", "Except", "DifferentFrom"
         });
 

@@ -91,10 +91,16 @@ public sealed class AnyCollectionTests {
         Check.That(error.ParamName).IsEqualTo("count");
     }
 
-    [Fact(DisplayName = "A maximum accepts any non-negative count and still yields a small collection.")]
-    public void AMaximumIsACapNotASizeHint() {
-        Check.That(Any.ListOf(Any.Int32()).WithMaxCount(int.MaxValue).Generate().Count).IsStrictlyLessThan(9);
-        Check.That(Any.ArrayOf(Any.Int32()).WithMaxCount(4_000_000).Generate().Length).IsStrictlyLessThan(9);
+    [Fact(DisplayName = "A maximum steers the count and is ceilinged like every other size.")]
+    public void AMaximumSteersTheCount() {
+        // The policy is the string's (ADR-0075); only the spread differs, a thousand elements costing what their
+        // element generator costs rather than one character.
+        for (int i = 0; i < SampleCount; i++) {
+            Check.That(Any.ListOf(Any.Int32()).WithMaxCount(50).Generate().Count).IsLessOrEqualThan(50);
+        }
+
+        Check.ThatCode(() => Any.ListOf(Any.Int32()).WithMaxCount(int.MaxValue)).Throws<ArgumentOutOfRangeException>();
+        Check.ThatCode(() => Any.ArrayOf(Any.Int32()).WithMaxCount(4_000_000)).Throws<ArgumentOutOfRangeException>();
     }
 
     [Fact(DisplayName = "Distinct: a wide-domain distinct list holds only distinct elements.")]

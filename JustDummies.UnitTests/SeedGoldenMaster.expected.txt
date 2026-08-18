@@ -21,18 +21,18 @@ UInt64 | draws=1 | 1371316152479666233
 Single | draws=1 | c9599507
 Double | draws=1 | c12b32a0ed3d5a42
 Decimal | draws=1 | 885624.7943240866053775632146
-Char | draws=1 | D
+Char | draws=1 | \u0006
 Guid | draws=1 | 6f4e5039-e4c6-1307-3c27-5cf11dd019b1
 TimeSpan | draws=1 | -7852055884375109575
 DateTime | draws=1 | 1371316152479666233
-String | draws=15 | U8YXV12X7fvPF
+String | draws=935 | *}11,mo/zAb \u000b=xTzs\u001fX=(\u0018\u0011$\u0019BI\u0010%\u000b\u0004yE8w$tF\u0019\u0014\|+6+\u001e\u0019xx BjY{\u0013\u0002e\u001f\u000c\u0012*&\u001fT5^'E\u0005\u00010\u0006,\u0006CA\|af\u0006\u0000JQpc!*}25\u0012\u0004h3nn\\W\u0000MvSsvo<=S7Q\u0005\u00039\u0005\u0012`U.q\u00143)\u0012Oo+\u001dy\u0017Ud%a\u0018\u000f,WZ\u0000&cWFa/\u000fJb!\u000e\u0018.el\u0019M@#\u0006D\u001eD<bm`" uf\u0009z.J0\\c1\u001f`a;X\u0008<6?t~Bk3T<\u0008\u001f\u001bdsOl)l;\u0005\u001e\u007f\u001b;=i\u000e\u0003&ccl3%7!-"2zU&rB\u0011@\u007f>Ps7N\u001c\u0003\u001e6$8@Y\\0-Y%2g><-?\u00079@/x\u000dX*\|iP22+\u0014O0\u0006\u0000\|taY\u001d$x\u0018\u001d^Y@\u0001#4/\u0014\\S&)K\u000eDo\u000c~{-\u0010c77<1J%`#\u000a\u007ft;K#)O\u000f~{\u007fs\\`W0e\u001di\u0011&}k\u000c{!\u0008Dqi\u000948H&4\u0010C F<n\|1\u0010p[Ve\u0000d\u0008v\u0012c\u0002\u0008.P\u0002 \u000a\u001d\u0015rK:\u0013:" "}#T8\u0000:\|\u000aF2_q\u0004\u0001>&d#+bs\u001d&2Qg?E5G\u001cB`B\u000bR=+\u0002N2E<n*+\u0010p\u000d\u0014/\u0017v>/_}"f\u0018{6U~\u0015\u001c\u0011Bvkh8 ]/-a7\u0007%WN8 \u0017\u0005L!\u0012+T\u001bEiS{o=X\u000e\u001aMz!+vv\u0019\u000e\u0001~E\u001a@A,~4g\u0010Po/J\u0016Ms7\u00094>#_y\u000b\u0009S\u0016t!\u000e2\u0013\u0011-\u000f\u0000\u0004(&\|:VG=*\u001d0\u000b]\u0003?\u000fZCZf!47Yh@E\u0001\u001d\\\u001e\u001c\u0007Mn\u000ec7\u0003M\u0017;ak#\u000a\u0016\u001dO#9MS(^PqM\u0014z\u0010F N\u007f\u0013\u0004\u0010\u00151,"?\u000cOeSK6])(2y"QI^o\u001e\u001c\u0015"\u0008<Q\u001b\u0013l\u000f\u0006\u0006\u0008\u001ew\u0016\u000dFYx\|%\u00176Qh\u0014&+-J% w\u0014\u0016\u00006O~J@^&V" \u0013\u0002\u000bC\u0002\u0005v!w~k7T<tg>Dae\u0010\u000aa\u0016Vv[-<Fp_/G\u0000# jH\u001f*V\u001c\u0017\u0014\u007f{AUY\u001fbu<\u000f\u0009!tl\u000b*Id0\u000e\u000b\u0008\u000c<QGT{B;:mI\u0002W{\u0019Xc&\u000djr8w\u0002+}<taql\u0009\u0008wn\u0004\u0004\u0012Kf3\u0000U\u001bWr\u0015\u000f\u0010p\u0001\u0009\u0000!\u0015TEN\u001bV>MZI\u0001@z_\u000d\u0015SQ[&7qb[*8g-dpoc\u0008ga\u0019?5vt(f&\u000c\u001a\u0017x6\u0002{\u001d0-Zj#qi$bn\u0011ijY\u001d7\u0012}sU\u001eZf~QKVA\u0013@1*hR?5.\|>(U\u0011\u0013\u0005\u0016}<2\|_e8\u000e%\u007fUG[\u0019X\u001a(\u0011"<f\u0000\u0017\u001ah\u0009\u0015?K\u007f\u000cG`gS\u000f$D3[y\u001cBSi
 Uri | draws=20 | http://i7e.hlw/08xw/9nn
 DateTimeOffset | draws=1 | 1371316152479666233+0
 Int32.Between | draws=1 | 234
 Int64.Between | draws=1 | 341
 Double.Between | draws=1 | 404b322576de6448
 Decimal.Between | draws=1 | 942.8123971620433026887816073
-String.NonEmpty.WithMaxLength | draws=16 | U8YXV12X7fvPFd
+String.NonEmpty.WithMaxLength | draws=36 | *}11,mo/zAb \u000b=xTzs\u001fX=(\u0018\u0011$\u0019BI\u0010%\u000b\u0004yE
 StringMatching | draws=10 | lwx-3883
 Int32.OrNull | draws=1 | \null
 String.OrNull | draws=1 | \null
@@ -42,6 +42,6 @@ ArrayOf | draws=5 | 3,6,0
 ListOf | draws=5 | 3,6,0
 SequenceOf | draws=3 | 6,3
 SetOf | draws=5 | 33,60,76
-DictionaryOf | draws=5 | 33=Y,76=8
-PairOf | draws=2 | 5,a
-TripleOf | draws=3 | 5,a,False
+DictionaryOf | draws=5 | 33=1,76=}
+PairOf | draws=2 | 5,6
+TripleOf | draws=3 | 5,6,False

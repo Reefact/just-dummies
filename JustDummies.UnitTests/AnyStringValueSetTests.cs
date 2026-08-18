@@ -176,6 +176,8 @@ public sealed class AnyStringValueSetTests {
         NarrowsTo("123", Any.String().OneOf("abc", "123").Numeric());
         NarrowsTo("abc", Any.String().OneOf("abc", "123").Alpha());
         NarrowsTo("abc", Any.String().OneOf("abc", "AB-1").AlphaNumeric());
+        NarrowsTo("-:-", Any.String().OneOf("-:-", "abc").Punctuation());
+        NarrowsTo("AB-1", Any.String().OneOf("AB-1", "café").Printable());
         NarrowsTo("abc", Any.String().OneOf("abc", "ABC").LowerCase());
         NarrowsTo("ABC", Any.String().OneOf("abc", "ABC").UpperCase());
         NarrowsTo("aab", Any.String().OneOf("aab", "xyz").WithChars("ab"));

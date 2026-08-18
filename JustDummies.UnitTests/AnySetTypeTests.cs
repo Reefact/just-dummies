@@ -152,11 +152,10 @@ public sealed class AnySetTypeTests {
         Check.ThatCode(() => Any.Enum<OrderStatus>().OneOf(OrderStatus.Draft, (OrderStatus)42)).Throws<ArgumentException>();
     }
 
-    [Fact(DisplayName = "Char: the default pool is ASCII letters and digits; families narrow it.")]
+    [Fact(DisplayName = "Char: the default pool is the whole of ASCII; families narrow it.")]
     public void CharPools() {
         for (int i = 0; i < SampleCount; i++) {
-            char value = Any.Char().Generate();
-            Check.That(value is >= 'A' and <= 'Z' or >= 'a' and <= 'z' or >= '0' and <= '9').IsTrue();
+            Check.That(CharacterPools.IsAscii(Any.Char().Generate())).IsTrue();
             Check.That(Any.Char().Numeric().Generate() is >= '0' and <= '9').IsTrue();
             Check.That(Any.Char().Alpha().Generate() is >= 'A' and <= 'Z' or >= 'a' and <= 'z').IsTrue();
             Check.That(Any.Char().LowerCase().Generate() is >= 'A' and <= 'Z').IsFalse();
@@ -175,6 +174,46 @@ public sealed class AnySetTypeTests {
         Check.ThatCode(() => Any.Char().Numeric().Alpha()).Throws<ConflictingAnyConstraintException>();
         Check.ThatCode(() => Any.Char().OneOf('a').Except('a')).Throws<ConflictingAnyConstraintException>();
         Check.ThatCode(() => Any.Char().OneOf('a').Numeric()).Throws<ConflictingAnyConstraintException>();
+    }
+
+    // Pinned through the pool inspection rather than by sampling: declared beside a value set the family narrows
+    // it, so the survivors are exactly the characters the family admits — the whole membership, in one
+    // deterministic assertion, with no draw and no coupon-collecting.
+    [Fact(DisplayName = "Char: Punctuation admits the 32 printable non-alphanumerics, the space excluded.")]
+    public void CharPunctuationAdmitsThePrintableNonAlphaNumerics() {
+        IPoolInspection<char> inspection = Any.Char().OneOf(PrintableAscii()).Punctuation();
+
+        Check.That(inspection.GetSurvivors()).ContainsExactly("!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~".ToCharArray());
+    }
+
+    [Fact(DisplayName = "Char: Printable admits every character from the space to '~', the space included.")]
+    public void CharPrintableAdmitsEveryPrintableAsciiCharacter() {
+        IPoolInspection<char> inspection = Any.Char().OneOf(PrintableAscii()).Printable();
+
+        Check.That(inspection.GetSurvivors()).ContainsExactly(PrintableAscii());
+    }
+
+    [Fact(DisplayName = "Char: the wider families draw within themselves and still answer to casing.")]
+    public void CharWiderFamiliesDrawWithinThemselves() {
+        for (int i = 0; i < SampleCount; i++) {
+            Check.That(CharacterPools.IsAsciiPunctuation(Any.Char().Punctuation().Generate())).IsTrue();
+            Check.That(CharacterPools.IsAsciiPrintable(Any.Char().Printable().Generate())).IsTrue();
+            Check.That(Any.Char().Printable().LowerCase().Generate() is >= 'A' and <= 'Z').IsFalse();
+        }
+
+        // A wider family is still a family: it occupies the one charset slot, so a second one contradicts it, and
+        // a value set it admits nothing of is emptied at declaration.
+        Check.ThatCode(() => Any.Char().Punctuation().Alpha()).Throws<ConflictingAnyConstraintException>();
+        Check.ThatCode(() => Any.Char().Printable().Numeric()).Throws<ConflictingAnyConstraintException>();
+        Check.ThatCode(() => Any.Char().Punctuation().OneOf('a')).Throws<ConflictingAnyConstraintException>();
+    }
+
+    /// <summary>Every printable ASCII character, in code-point order — the widest pool a family can admit.</summary>
+    private static char[] PrintableAscii() {
+        char[] characters = new char['~' - ' ' + 1];
+        for (int index = 0; index < characters.Length; index++) { characters[index] = (char)(' ' + index); }
+
+        return characters;
     }
 
 }

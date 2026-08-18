@@ -592,12 +592,10 @@ internal sealed class StringSpec {
 
     private void ValidateFragmentCharacters(ConstraintCall applying) {
         foreach ((string kind, string fragment) in Fragments()) {
-            // A character can only be disallowed by a declared pool or a declared character set, and either is
-            // written together with the constraint that named it: an offending character proves _charsetConstraint.
-            char? offendingCharacter = FirstDisallowedCharacter(fragment);
-            if (offendingCharacter is char outside) {
+            (char Character, ConstraintCall Culprit)? disallowed = FirstDisallowedCharacter(fragment);
+            if (disallowed is (char outside, ConstraintCall culprit)) {
                 throw ConflictingAnyConstraintException.Contradicts(applying,
-                                                                                    ConstraintClaim.Of(_charsetConstraint!, $"does not allow its character '{outside}'"),
+                                                                                    ConstraintClaim.Of(culprit, $"does not allow its character '{outside}'"),
                                                                                     ConstraintClaim.OfPhrase($"the {kind} \"{fragment}\"", $"contains '{outside}', which it does not allow"));
             }
 
@@ -704,7 +702,10 @@ internal sealed class StringSpec {
         foreach ((string fragment, ConstraintCall constraint) in _fragments) {
             yield return (constraint, value => value.IndexOf(fragment, StringComparison.Ordinal) >= 0);
         }
-        if (_charsetConstraint is not null) { yield return (_charsetConstraint, value => FirstDisallowedCharacter(value) is null); }
+        if (_charsetConstraint is not null) { yield return (_charsetConstraint, value => value.All(AllowedByPool)); }
+        foreach ((ConstraintCall constraint, CharacterSet removed) in _subtractions) {
+            yield return (constraint, value => value.All(character => !CharacterPools.Belongs(character, removed)));
+        }
         if (_casing is LetterCasing casing) { yield return (_casingConstraint!, value => FirstAgainstCasing(value, casing) is null); }
         foreach ((ConstraintCall constraint, string[] excluded) in _exclusions) {
             yield return (constraint, value => !excluded.Contains(value, StringComparer.Ordinal));
@@ -742,24 +743,31 @@ internal sealed class StringSpec {
         return required;
     }
 
-    private char? FirstDisallowedCharacter(string fragment) {
-        if (_customPool is not null) {
-            foreach (char character in fragment) {
-                if (_customPool.IndexOf(character) < 0) { return character; }
-            }
-
-            return null;
+    /// <summary>
+    ///     The first character of <paramref name="fragment" /> a declared pool or a declared subtraction refuses, and
+    ///     the constraint to blame for it. The pool is checked across the whole fragment before any subtraction, and
+    ///     subtractions are checked in the order they were declared — the same two-phase order JD015 reports in, so
+    ///     the build-time rule and the run time agree on which constraint a given character is refused by.
+    /// </summary>
+    private (char Character, ConstraintCall Culprit)? FirstDisallowedCharacter(string fragment) {
+        foreach (char character in fragment) {
+            if (!AllowedByPool(character)) { return (character, _charsetConstraint!); }
         }
 
-        return _charset is CharacterSet charset ? FirstOutsideCharset(fragment, charset) : null;
-    }
-
-    private static char? FirstOutsideCharset(string fragment, CharacterSet charset) {
-        foreach (char character in fragment) {
-            if (!CharacterPools.Belongs(character, charset)) { return character; }
+        foreach ((ConstraintCall constraint, CharacterSet removed) in _subtractions) {
+            foreach (char character in fragment) {
+                if (CharacterPools.Belongs(character, removed)) { return (character, constraint); }
+            }
         }
 
         return null;
+    }
+
+    /// <summary>Whether the declared pool — a custom one or a named family — admits the character. True when neither is declared.</summary>
+    private bool AllowedByPool(char character) {
+        if (_customPool is not null) { return _customPool.IndexOf(character) >= 0; }
+
+        return _charset is not CharacterSet charset || CharacterPools.Belongs(character, charset);
     }
 
     /// <summary>

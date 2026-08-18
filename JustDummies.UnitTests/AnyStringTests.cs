@@ -161,6 +161,26 @@ public sealed class AnyStringTests {
         }
     }
 
+    [Fact(DisplayName = "WithoutAlpha yields no letter; WithoutAlpha().WithoutNumeric() yields neither a letter nor a digit.")]
+    public void WithoutAlphaAndWithoutNumericSubtractFromTheFiller() {
+        foreach (string value in Samples(Any.String().WithoutAlpha().NonEmpty())) {
+            Check.That(value.Any(char.IsLetter)).IsFalse();
+        }
+
+        foreach (string value in Samples(Any.String().WithoutAlpha().WithoutNumeric().NonEmpty())) {
+            Check.That(value.Any(char.IsLetterOrDigit)).IsFalse();
+        }
+    }
+
+    [Fact(DisplayName = "WithoutAlpha refuses an anchored fragment holding a letter, blaming itself rather than the (absent) family.")]
+    public void WithoutAlphaRefusesAFragmentHoldingALetter() {
+        ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
+            () => Any.String().WithoutAlpha().Containing("abc"));
+
+        Check.That(conflict.Message).Contains("WithoutAlpha()");
+        Check.That(conflict.Message).Contains("Containing(\"abc\")");
+    }
+
     [Fact(DisplayName = "LowerCase yields no uppercase letter; digits stay allowed.")]
     public void LowerCaseForbidsUppercaseLetters() {
         foreach (string value in Samples(Any.String().LowerCase().NonEmpty())) {

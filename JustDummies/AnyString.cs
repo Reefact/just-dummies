@@ -24,8 +24,12 @@ namespace JustDummies;
 ///         of their lengths.
 ///     </para>
 ///     <para>
-///         Unconstrained, the generator yields 0 to 16 ASCII letters and digits; an unconstrained draw can therefore
-///         be empty — chain <see cref="NonEmpty" /> when the surrounding code requires content.
+///         Unconstrained, the generator yields 0 to 1024 characters drawn from the <b>whole of ASCII</b>, control
+///         characters included (ADR-0074, ADR-0075). That is deliberately inconvenient: a dummy the code under test
+///         had no say in is what makes a passing test mean something, and a short, tame one certifies nothing. Chain
+///         <see cref="NonEmpty" /> when content is required, <see cref="WithMaxLength" /> for the length the domain
+///         actually allows, and <see cref="Printable" /> when a control character is not one of them — each of those
+///         is an invariant the surrounding code has, written where it belongs.
 ///     </para>
 ///     <para>
 ///         <see cref="OneOf(string[])" /> is the one constraint that replaces the layout rather than shaping it: the
@@ -56,16 +60,12 @@ public sealed class AnyString : IAny<string>, IHasRandomSource, ICardinalityHint
     }
 
     private static string Q(string value) {
-        return $"\"{value}\"";
+        return $"\"{CharacterPools.Escape(value)}\"";
     }
 
     private static void RequireText(string value, string parameterName) {
         if (value is null) { throw new ArgumentNullException(parameterName); }
         if (value.Length == 0) { throw new ArgumentException("The value must not be empty.", parameterName); }
-    }
-
-    private static void RequireNonNegative(int length, string parameterName) {
-        SizeGuard.RequireNonNegative(length, parameterName, "length");
     }
 
     private static void RequireProducible(int length, string parameterName) {
@@ -130,9 +130,9 @@ public sealed class AnyString : IAny<string>, IHasRandomSource, ICardinalityHint
     }
 
     /// <summary>
-    ///     Requires at least <paramref name="length" /> characters. A minimum is the only one-sided length bound that
-    ///     enlarges the generated string: the draw spans <paramref name="length" /> to <paramref name="length" /> plus
-    ///     the default spread.
+    ///     Requires at least <paramref name="length" /> characters. With no maximum beside it the draw spans
+    ///     <paramref name="length" /> to <paramref name="length" /> plus the default spread; declare a maximum to say
+    ///     where it stops.
     /// </summary>
     /// <param name="length">The inclusive minimum number of characters.</param>
     /// <returns>A new generator carrying the added constraint.</returns>
@@ -145,35 +145,34 @@ public sealed class AnyString : IAny<string>, IHasRandomSource, ICardinalityHint
     }
 
     /// <summary>
-    ///     Requires at most <paramref name="length" /> characters. A maximum only ever narrows the draw: it never
-    ///     widens it beyond the default spread, so a loose cap still yields the small unconstrained string rather than
-    ///     one sized after the cap. Any non-negative value is accepted, since nothing has to be produced to honour it.
+    ///     Requires at most <paramref name="length" /> characters, and <b>steers</b> the draw: the range becomes
+    ///     [minimum, <paramref name="length" />], so the bound you write is the bound you get (ADR-0075). It is
+    ///     therefore a size the generator may have to produce, and is refused above 1000000 like every other.
     /// </summary>
     /// <param name="length">The inclusive maximum number of characters.</param>
     /// <returns>A new generator carrying the added constraint.</returns>
-    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="length" /> is negative.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="length" /> is negative or exceeds 1000000, the largest length a generator is asked to produce.</exception>
     /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
     public AnyString WithMaxLength(int length) {
-        RequireNonNegative(length, nameof(length));
+        RequireProducible(length, nameof(length));
 
         return new AnyString(_source, _spec.WithMaxLength(length, ConstraintCall.Of(nameof(WithMaxLength), V(length))));
     }
 
     /// <summary>
-    ///     Requires a length within the inclusive range [<paramref name="minimum" />, <paramref name="maximum" />].
-    ///     Equivalent to declaring the two bounds separately, and behaves as they do: the minimum sets the size, the
-    ///     maximum only caps it. A range whose minimum is 0 therefore yields the default spread, not values spread
-    ///     across the whole range — raise <paramref name="minimum" /> to ask for larger strings.
+    ///     Requires a length within the inclusive range [<paramref name="minimum" />, <paramref name="maximum" />],
+    ///     and draws across it. Equivalent to declaring the two bounds separately and behaves identically, which is
+    ///     what keeps the range decomposable.
     /// </summary>
     /// <param name="minimum">The inclusive minimum number of characters.</param>
     /// <param name="maximum">The inclusive maximum number of characters.</param>
     /// <returns>A new generator carrying the added constraint.</returns>
-    /// <exception cref="ArgumentOutOfRangeException">Thrown when a bound is negative, or when <paramref name="minimum" /> exceeds 1000000, the largest length a generator is asked to produce.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when a bound is negative or exceeds 1000000, the largest length a generator is asked to produce.</exception>
     /// <exception cref="ArgumentException">Thrown when <paramref name="minimum" /> is greater than <paramref name="maximum" />.</exception>
     /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
     public AnyString WithLengthBetween(int minimum, int maximum) {
         RequireProducible(minimum, nameof(minimum));
-        RequireNonNegative(maximum, nameof(maximum));
+        RequireProducible(maximum, nameof(maximum));
         if (minimum > maximum) { throw new ArgumentException($"The minimum ({V(minimum)}) must be less than or equal to the maximum ({V(maximum)}).", nameof(minimum)); }
 
         ConstraintCall constraint = ConstraintCall.Of(nameof(WithLengthBetween), V(minimum), V(maximum));
@@ -239,6 +238,84 @@ public sealed class AnyString : IAny<string>, IHasRandomSource, ICardinalityHint
     /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
     public AnyString AlphaNumeric() {
         return new AnyString(_source, _spec.WithCharset(CharacterSet.AlphaNumeric, ConstraintCall.Of(nameof(AlphaNumeric))));
+    }
+
+    /// <summary>
+    ///     Restricts the string to ASCII punctuation — the 32 printable characters that are neither a letter, a digit
+    ///     nor the space, POSIX <c>[:punct:]</c>. The family to declare when the surrounding code requires text it
+    ///     must <b>not</b> read as alphanumeric. Broader than <see cref="char.IsPunctuation(char)" />, which
+    ///     classifies <c>+</c>, <c>&lt;</c> and <c>$</c> as symbols rather than punctuation. Declared once per
+    ///     generator.
+    /// </summary>
+    /// <returns>A new generator carrying the added constraint.</returns>
+    /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
+    public AnyString Punctuation() {
+        return new AnyString(_source, _spec.WithCharset(CharacterSet.Punctuation, ConstraintCall.Of(nameof(Punctuation))));
+    }
+
+    /// <summary>
+    ///     Restricts the string to printable ASCII — every character from the space (0x20) to <c>~</c> (0x7E). The
+    ///     family to declare when the surrounding code cannot take a control character: an unconstrained draw spans
+    ///     the whole of ASCII, so a carriage return or a NUL is exactly what it may hand you. Declared once per
+    ///     generator.
+    /// </summary>
+    /// <returns>A new generator carrying the added constraint.</returns>
+    /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
+    public AnyString Printable() {
+        return new AnyString(_source, _spec.WithCharset(CharacterSet.Printable, ConstraintCall.Of(nameof(Printable))));
+    }
+
+    /// <summary>
+    ///     Restricts the string to the ASCII characters that are <b>not</b> printable — the C0 controls and
+    ///     <c>DEL</c>. The family to declare when the code under test is meant to reject or strip them. Declared once
+    ///     per generator.
+    /// </summary>
+    /// <returns>A new generator carrying the added constraint.</returns>
+    /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
+    public AnyString NonPrintable() {
+        return new AnyString(_source, _spec.WithCharset(CharacterSet.NonPrintable, ConstraintCall.Of(nameof(NonPrintable))));
+    }
+
+    /// <summary>
+    ///     Restricts the string to ASCII whitespace — the space and the tab, the readable pair the regex generator
+    ///     already draws <c>\s</c> from. Declared once per generator.
+    /// </summary>
+    /// <returns>A new generator carrying the added constraint.</returns>
+    /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
+    public AnyString Whitespaces() {
+        return new AnyString(_source, _spec.WithCharset(CharacterSet.Whitespaces, ConstraintCall.Of(nameof(Whitespaces))));
+    }
+
+    /// <summary>
+    ///     Restricts the string to the base-16 alphabet of RFC 4648 — <c>0-9</c>, <c>A-F</c> and <c>a-f</c>. Chain
+    ///     <see cref="LowerCase" /> or <see cref="UpperCase" /> for the single-case form a hash or a colour usually
+    ///     requires. Declared once per generator.
+    /// </summary>
+    /// <returns>A new generator carrying the added constraint.</returns>
+    /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
+    public AnyString Hexadecimal() {
+        return new AnyString(_source, _spec.WithCharset(CharacterSet.Hexadecimal, ConstraintCall.Of(nameof(Hexadecimal))));
+    }
+
+    /// <summary>
+    ///     Removes the ASCII letters from whatever the generator would otherwise draw. Unlike a family, a subtraction
+    ///     does not occupy the one family slot and several accumulate, so <c>WithoutAlpha().WithoutNumeric()</c>
+    ///     leaves the punctuation, the whitespace and the controls.
+    /// </summary>
+    /// <returns>A new generator carrying the added constraint.</returns>
+    /// <exception cref="ConflictingAnyConstraintException">Thrown when the subtraction leaves no character drawable.</exception>
+    public AnyString WithoutAlpha() {
+        return new AnyString(_source, _spec.WithSubtraction(CharacterSet.Alpha, ConstraintCall.Of(nameof(WithoutAlpha))));
+    }
+
+    /// <summary>
+    ///     Removes the ASCII digits from whatever the generator would otherwise draw. Accumulates with
+    ///     <see cref="WithoutAlpha" /> rather than replacing it.
+    /// </summary>
+    /// <returns>A new generator carrying the added constraint.</returns>
+    /// <exception cref="ConflictingAnyConstraintException">Thrown when the subtraction leaves no character drawable.</exception>
+    public AnyString WithoutNumeric() {
+        return new AnyString(_source, _spec.WithSubtraction(CharacterSet.Numeric, ConstraintCall.Of(nameof(WithoutNumeric))));
     }
 
     /// <summary>

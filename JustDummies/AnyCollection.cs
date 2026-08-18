@@ -74,20 +74,26 @@ public abstract class AnyCollection<TItem, TResult, TSelf> : IAny<TResult>, IHas
         return With(CountConstraints.WithMinCount(State, count));
     }
 
-    /// <summary>Requires at most <paramref name="count" /> elements.</summary>
+    /// <summary>
+    ///     Requires at most <paramref name="count" /> elements, and <b>steers</b> the draw: the range becomes
+    ///     [minimum, <paramref name="count" />], so the bound you write is the bound you get (ADR-0075).
+    /// </summary>
     /// <param name="count">The inclusive maximum number of elements.</param>
     /// <returns>A new generator carrying the added constraint.</returns>
-    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="count" /> is negative.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="count" /> is negative or exceeds 1000000, the largest count a generator is asked to produce.</exception>
     /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
     public TSelf WithMaxCount(int count) {
         return With(CountConstraints.WithMaxCount(State, count));
     }
 
-    /// <summary>Requires a number of elements within the inclusive range [<paramref name="minimum" />, <paramref name="maximum" />].</summary>
+    /// <summary>
+    ///     Requires a number of elements within the inclusive range [<paramref name="minimum" />,
+    ///     <paramref name="maximum" />], and draws across it.
+    /// </summary>
     /// <param name="minimum">The inclusive minimum number of elements.</param>
     /// <param name="maximum">The inclusive maximum number of elements.</param>
     /// <returns>A new generator carrying the added constraint.</returns>
-    /// <exception cref="ArgumentOutOfRangeException">Thrown when a bound is negative.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when a bound is negative or exceeds 1000000, the largest count a generator is asked to produce.</exception>
     /// <exception cref="ArgumentException">Thrown when <paramref name="minimum" /> is greater than <paramref name="maximum" />.</exception>
     /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
     public TSelf WithCountBetween(int minimum, int maximum) {

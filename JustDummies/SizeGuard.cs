@@ -8,23 +8,20 @@ namespace JustDummies;
 
 /// <summary>
 ///     The argument validation every length and count constraint shares, defined once so the two surfaces — a string's
-///     lengths and a collection's counts — cannot drift apart. It distinguishes the two kinds of size a caller can
-///     declare, which ADR-0029 separates: a bound that only <b>caps</b> a draw, and a size the generator must actually
-///     <b>produce</b>.
+///     lengths and a collection's counts — cannot drift apart.
 /// </summary>
 /// <remarks>
 ///     <para>
-///         A maximum is a permission, not a request: it narrows a draw and never widens it, so honouring one costs
-///         nothing and any non-negative value is legal — a cap mirroring a storage limit far above
-///         <see cref="MaxProducibleSize" /> stays declarable and still yields small dummies.
+///         <b>Every</b> declared size is one the generator may have to materialize, maxima included: a maximum steers
+///         the draw rather than merely capping it (ADR-0075), so it decides how much memory and work a draw costs
+///         exactly as an exact or minimum size does. One ceiling therefore covers them all, with no exception to
+///         remember — the uniformity ADR-0029 considered and set aside while a maximum was still free to honour.
 ///     </para>
 ///     <para>
-///         An exact or minimum size is the opposite: it is what the generator must materialize, so it decides how much
-///         memory and work a draw costs. Above the ceiling it is refused at declaration time, as an
-///         <see cref="ArgumentOutOfRangeException" /> naming the parameter the caller wrote — a single argument
-///         unusable on its own is a caller mistake, not a contradiction between constraints and not a generation
-///         failure, so it belongs to the same category as the negative size rejected right beside it rather than to
-///         the library's own exception hierarchy.
+///         Above the ceiling a size is refused at declaration time, as an <see cref="ArgumentOutOfRangeException" />
+///         naming the parameter the caller wrote — a single argument unusable on its own is a caller mistake, not a
+///         contradiction between constraints and not a generation failure, so it belongs to the same category as the
+///         negative size rejected right beside it rather than to the library's own exception hierarchy.
 ///     </para>
 /// </remarks>
 internal static class SizeGuard {
@@ -45,8 +42,8 @@ internal static class SizeGuard {
     }
 
     /// <summary>
-    ///     Validates a bound that only ever caps a draw. Any non-negative value is legal; the ceiling deliberately does
-    ///     not apply, because nothing has to be produced to honour a maximum.
+    ///     Validates a size that only has to be non-negative. Kept for the internal guard <see cref="RequireProducible" />
+    ///     builds on; every public size argument goes through the ceiling instead (ADR-0075).
     /// </summary>
     /// <param name="value">The declared bound.</param>
     /// <param name="parameterName">The name of the parameter the caller wrote.</param>
@@ -78,7 +75,7 @@ internal static class SizeGuard {
         RequireNonNegative(value, parameterName, subject); // guards both strings for this method too
         if (value > MaxProducibleSize) {
             throw new ArgumentOutOfRangeException(parameterName, value,
-                                                  $"The {subject} must not exceed {V(MaxProducibleSize)}. Only a size the generator must actually produce is capped; a maximum, which only narrows the draw, accepts any non-negative value.");
+                                                  $"The {subject} must not exceed {V(MaxProducibleSize)}. A declared bound steers the draw, so every {subject} is one the generator may have to produce.");
         }
 
         return value;

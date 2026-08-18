@@ -8,13 +8,22 @@ using System.Diagnostics.CodeAnalysis;
 namespace JustDummies;
 
 /// <summary>
-///     A fluent generator of arbitrary <see cref="char" /> values. Unconstrained, it draws from ASCII letters and
-///     digits — the same readable default as <see cref="AnyString" />'s filler — and the constraints mirror the
-///     string character families: <see cref="Alpha" />, <see cref="Numeric" />, <see cref="AlphaNumeric" />,
-///     <see cref="LowerCase" />, <see cref="UpperCase" />, plus <see cref="OneOf" /> / <see cref="Except" /> /
-///     <see cref="DifferentFrom" />. A combination that empties the pool fails eagerly with a
-///     <see cref="ConflictingAnyConstraintException" />.
+///     A fluent generator of arbitrary <see cref="char" /> values. Unconstrained, it draws from the <b>whole of
+///     ASCII</b> — 0x00 to 0x7F, control characters included — and every constraint narrows that set, with no
+///     exception (ADR-0074). A dummy that can be a carriage return or a NUL is what makes an unconstrained draw
+///     worth something: the code under test had no say in it, so what it survives, it has been shown to tolerate.
+///     Declare the invariant the surrounding code actually has and the draw respects it.
 /// </summary>
+/// <remarks>
+///     The families mirror <see cref="AnyString" />'s exactly: <see cref="Printable" />, <see cref="NonPrintable" />,
+///     <see cref="Whitespaces" />, <see cref="Alpha" />, <see cref="Numeric" />, <see cref="AlphaNumeric" />,
+///     <see cref="Punctuation" /> and <see cref="Hexadecimal" /> each occupy one slot, so a second one contradicts
+///     the first; <see cref="WithoutAlpha" /> and <see cref="WithoutNumeric" /> subtract instead and accumulate;
+///     <see cref="LowerCase" /> / <see cref="UpperCase" /> constrain the letters; and
+///     <see cref="OneOf" /> / <see cref="Except" /> / <see cref="DifferentFrom" /> work on values. A combination
+///     that empties the pool fails eagerly with a <see cref="ConflictingAnyConstraintException" />. Nothing named
+///     reaches past ASCII — a specific alphabet beyond it is <see cref="OneOf" />, whose values are yours.
+/// </remarks>
 public sealed class AnyChar : IAny<char>, IHasRandomSource, ICardinalityHint<char>, IPoolInspection<char> {
 
     #region Statics members declarations
@@ -22,11 +31,11 @@ public sealed class AnyChar : IAny<char>, IHasRandomSource, ICardinalityHint<cha
     internal static AnyChar Create(RandomSource source) {
         if (source is null) { throw new ArgumentNullException(nameof(source)); }
 
-        return new AnyChar(source, null, null, null, null, null, null, [], []);
+        return new AnyChar(source, null, null, null, null, null, null, [], [], []);
     }
 
     private static string V(char value) {
-        return $"'{value}'";
+        return $"'{CharacterPools.Escape(value)}'";
     }
 
     private static string Join(char[] values) {
@@ -49,6 +58,9 @@ public sealed class AnyChar : IAny<char>, IHasRandomSource, ICardinalityHint<cha
     // exclusion removed what, so a pool inspection can name the constraint responsible. Same split as the
     // interval engines (OrdinalIntervalSpec._exclusions).
     private readonly IReadOnlyList<(ConstraintCall Constraint, char[] Values)> _exclusions;
+    // A subtraction removes a whole family rather than named values, and several accumulate — WithoutAlpha()
+    // then WithoutNumeric() leaves what neither admits.
+    private readonly IReadOnlyList<(ConstraintCall Constraint, CharacterSet Removed)> _subtractions;
     private readonly RandomSource         _source;
 
     #endregion
@@ -59,7 +71,8 @@ public sealed class AnyChar : IAny<char>, IHasRandomSource, ICardinalityHint<cha
                     LetterCasing? casing,  ConstraintCall? casingConstraint,
                     IReadOnlyList<char>? allowed, ConstraintCall? allowedConstraint,
                     IReadOnlyList<char>  excluded,
-                    IReadOnlyList<(ConstraintCall Constraint, char[] Values)> exclusions) {
+                    IReadOnlyList<(ConstraintCall Constraint, char[] Values)> exclusions,
+                    IReadOnlyList<(ConstraintCall Constraint, CharacterSet Removed)> subtractions) {
         _source            = source;
         _charset           = charset;
         _charsetConstraint = charsetConstraint;
@@ -69,11 +82,12 @@ public sealed class AnyChar : IAny<char>, IHasRandomSource, ICardinalityHint<cha
         _allowedConstraint = allowedConstraint;
         _excluded          = excluded;
         _exclusions        = exclusions;
-        // Materialized once here — "constrain once, draw many": Generate never refilters the pool. The full
-        // constant pool is the unconstrained start; MatchesCharset narrows it, so no per-charset pre-narrowing
-        // is needed.
-        IEnumerable<char> candidates = allowed ?? (IEnumerable<char>)(CharacterPools.UpperLetters + CharacterPools.LowerLetters + CharacterPools.Digits);
-        _pool = candidates.Where(character => MatchesCharset(character) && MatchesCasing(character) && !excluded.Contains(character)).ToList();
+        _subtractions      = subtractions;
+        // Materialized once here — "constrain once, draw many": Generate never refilters the pool. The universe
+        // is the whole of ASCII and every constraint narrows it, so one filter over one pool is the whole engine
+        // (ADR-0074).
+        IEnumerable<char> candidates = allowed ?? (IEnumerable<char>)CharacterPools.Ascii;
+        _pool = candidates.Where(Admits).ToList();
     }
 
     RandomSource? IHasRandomSource.Source => _source;
@@ -97,7 +111,7 @@ public sealed class AnyChar : IAny<char>, IHasRandomSource, ICardinalityHint<cha
 
         List<PoolRejection<char>> rejections = [];
         foreach (char character in _allowed) {
-            if (MatchesCharset(character) && MatchesCasing(character) && !_excluded.Contains(character)) { continue; }
+            if (Admits(character)) { continue; }
 
             List<DeclaredConstraint> culprits = DeclaredConstraints()
                                                 .Where(entry => !entry.Admits(character))
@@ -114,9 +128,20 @@ public sealed class AnyChar : IAny<char>, IHasRandomSource, ICardinalityHint<cha
     private IEnumerable<(ConstraintCall Constraint, Func<char, bool> Admits)> DeclaredConstraints() {
         if (_charsetConstraint is not null) { yield return (_charsetConstraint, MatchesCharset); }
         if (_casingConstraint is not null) { yield return (_casingConstraint, MatchesCasing); }
+        foreach ((ConstraintCall constraint, CharacterSet removed) in _subtractions) {
+            yield return (constraint, character => !CharacterPools.Belongs(character, removed));
+        }
         foreach ((ConstraintCall constraint, char[] values) in _exclusions) {
             yield return (constraint, character => !values.Contains(character));
         }
+    }
+
+    /// <summary>Whether every constraint declared so far admits the character.</summary>
+    private bool Admits(char character) {
+        return MatchesCharset(character)
+            && MatchesCasing(character)
+            && !_excluded.Contains(character)
+            && _subtractions.All(subtraction => !CharacterPools.Belongs(character, subtraction.Removed));
     }
 
     /// <summary>Restricts the character to ASCII letters only. Declared once per generator.</summary>
@@ -138,6 +163,85 @@ public sealed class AnyChar : IAny<char>, IHasRandomSource, ICardinalityHint<cha
     /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
     public AnyChar AlphaNumeric() {
         return WithCharset(CharacterSet.AlphaNumeric, ConstraintCall.Of(nameof(AlphaNumeric)));
+    }
+
+    /// <summary>
+    ///     Restricts the character to ASCII punctuation — the 32 printable characters that are neither a letter, a
+    ///     digit nor the space, POSIX <c>[:punct:]</c>. The family to declare when the surrounding code requires a
+    ///     character it must <b>not</b> read as alphanumeric: a separator, a delimiter, an operator. Broader than
+    ///     <see cref="char.IsPunctuation(char)" />, which classifies <c>+</c>, <c>&lt;</c> and <c>$</c> as symbols
+    ///     rather than punctuation — assert on the invariant the code actually has, not on that predicate. Declared
+    ///     once per generator.
+    /// </summary>
+    /// <returns>A new generator carrying the added constraint.</returns>
+    /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
+    public AnyChar Punctuation() {
+        return WithCharset(CharacterSet.Punctuation, ConstraintCall.Of(nameof(Punctuation)));
+    }
+
+    /// <summary>
+    ///     Restricts the character to printable ASCII — every character from the space (0x20) to <c>~</c> (0x7E).
+    ///     The family to declare when the surrounding code cannot take a control character: an unconstrained draw
+    ///     spans the whole of ASCII, so a carriage return or a NUL is exactly what it may hand you, and saying so
+    ///     here is what a length or a format invariant does elsewhere. Declared once per generator.
+    /// </summary>
+    /// <returns>A new generator carrying the added constraint.</returns>
+    /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
+    public AnyChar Printable() {
+        return WithCharset(CharacterSet.Printable, ConstraintCall.Of(nameof(Printable)));
+    }
+
+    /// <summary>
+    ///     Restricts the character to the ASCII characters that are <b>not</b> printable — the 33 C0 controls and
+    ///     <c>DEL</c>. The family to declare when the code under test is meant to reject or strip them, so the
+    ///     counter-example is drawn rather than hand-listed. Declared once per generator.
+    /// </summary>
+    /// <returns>A new generator carrying the added constraint.</returns>
+    /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
+    public AnyChar NonPrintable() {
+        return WithCharset(CharacterSet.NonPrintable, ConstraintCall.Of(nameof(NonPrintable)));
+    }
+
+    /// <summary>
+    ///     Restricts the character to ASCII whitespace — the space and the tab, the readable pair the regex
+    ///     generator already draws <c>\s</c> from. Declared once per generator.
+    /// </summary>
+    /// <returns>A new generator carrying the added constraint.</returns>
+    /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
+    public AnyChar Whitespaces() {
+        return WithCharset(CharacterSet.Whitespaces, ConstraintCall.Of(nameof(Whitespaces)));
+    }
+
+    /// <summary>
+    ///     Restricts the character to the base-16 alphabet of RFC 4648 — <c>0-9</c>, <c>A-F</c> and <c>a-f</c>.
+    ///     Chain <see cref="LowerCase" /> or <see cref="UpperCase" /> for the single-case form a hash or a colour
+    ///     usually requires. Declared once per generator.
+    /// </summary>
+    /// <returns>A new generator carrying the added constraint.</returns>
+    /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
+    public AnyChar Hexadecimal() {
+        return WithCharset(CharacterSet.Hexadecimal, ConstraintCall.Of(nameof(Hexadecimal)));
+    }
+
+    /// <summary>
+    ///     Removes the ASCII letters from whatever the generator would otherwise draw. Unlike a family, a
+    ///     subtraction does not occupy the one family slot and several accumulate, so
+    ///     <c>WithoutAlpha().WithoutNumeric()</c> leaves the punctuation, the whitespace and the controls.
+    /// </summary>
+    /// <returns>A new generator carrying the added constraint.</returns>
+    /// <exception cref="ConflictingAnyConstraintException">Thrown when the subtraction leaves no character drawable.</exception>
+    public AnyChar WithoutAlpha() {
+        return Without(CharacterSet.Alpha, ConstraintCall.Of(nameof(WithoutAlpha)));
+    }
+
+    /// <summary>
+    ///     Removes the ASCII digits from whatever the generator would otherwise draw. Accumulates with
+    ///     <see cref="WithoutAlpha" /> rather than replacing it.
+    /// </summary>
+    /// <returns>A new generator carrying the added constraint.</returns>
+    /// <exception cref="ConflictingAnyConstraintException">Thrown when the subtraction leaves no character drawable.</exception>
+    public AnyChar WithoutNumeric() {
+        return Without(CharacterSet.Numeric, ConstraintCall.Of(nameof(WithoutNumeric)));
     }
 
     /// <summary>Requires an alphabetic character to be lowercase. Declared once per generator.</summary>
@@ -170,7 +274,7 @@ public sealed class AnyChar : IAny<char>, IHasRandomSource, ICardinalityHint<cha
         if (_allowedConstraint == constraint) { return this; }
         if (_allowedConstraint is not null) { throw ConflictingAnyConstraintException.AlreadyDefined(constraint, _allowedConstraint); }
 
-        return Validated(new AnyChar(_source, _charset, _charsetConstraint, _casing, _casingConstraint, values.Distinct().ToArray(), constraint, _excluded, _exclusions), constraint);
+        return Validated(new AnyChar(_source, _charset, _charsetConstraint, _casing, _casingConstraint, values.Distinct().ToArray(), constraint, _excluded, _exclusions, _subtractions), constraint);
     }
 
     /// <summary>Requires the character to be none of the supplied values.</summary>
@@ -208,7 +312,7 @@ public sealed class AnyChar : IAny<char>, IHasRandomSource, ICardinalityHint<cha
         if (_charsetConstraint == applying) { return this; }
         if (_charsetConstraint is not null) { throw ConflictingAnyConstraintException.AlreadyDefined(applying, _charsetConstraint); }
 
-        return Validated(new AnyChar(_source, charset, applying, _casing, _casingConstraint, _allowed, _allowedConstraint, _excluded, _exclusions), applying);
+        return Validated(new AnyChar(_source, charset, applying, _casing, _casingConstraint, _allowed, _allowedConstraint, _excluded, _exclusions, _subtractions), applying);
     }
 
     private AnyChar WithCasing(LetterCasing casing, ConstraintCall applying) {
@@ -217,13 +321,13 @@ public sealed class AnyChar : IAny<char>, IHasRandomSource, ICardinalityHint<cha
         if (_casingConstraint == applying) { return this; }
         if (_casingConstraint is not null) { throw ConflictingAnyConstraintException.AlreadyDefined(applying, _casingConstraint); }
 
-        return Validated(new AnyChar(_source, _charset, _charsetConstraint, casing, applying, _allowed, _allowedConstraint, _excluded, _exclusions), applying);
+        return Validated(new AnyChar(_source, _charset, _charsetConstraint, casing, applying, _allowed, _allowedConstraint, _excluded, _exclusions, _subtractions), applying);
     }
 
     private AnyChar WithExcluded(char[] values, ConstraintCall applying) {
         List<char> excluded = [.. _excluded, .. values];
 
-        return Validated(new AnyChar(_source, _charset, _charsetConstraint, _casing, _casingConstraint, _allowed, _allowedConstraint, excluded, [.. _exclusions, (applying, values.ToArray())]), applying);
+        return Validated(new AnyChar(_source, _charset, _charsetConstraint, _casing, _casingConstraint, _allowed, _allowedConstraint, excluded, [.. _exclusions, (applying, values.ToArray())], _subtractions), applying);
     }
 
     [SuppressMessage(NetAnalyzersRule.CA1822.Category, NetAnalyzersRule.CA1822.Id, Justification = SuppressionJustification.CA1822.UniformValidatedHook)]
@@ -239,20 +343,20 @@ public sealed class AnyChar : IAny<char>, IHasRandomSource, ICardinalityHint<cha
     }
 
     private bool MatchesCharset(char character) {
-        return _charset switch {
-            CharacterSet.Alpha        => CharacterPools.IsAsciiLetter(character),
-            CharacterSet.Numeric      => CharacterPools.IsAsciiDigit(character),
-            CharacterSet.AlphaNumeric => CharacterPools.IsAsciiLetter(character) || CharacterPools.IsAsciiDigit(character),
-            _                         => true
-        };
+        return CharacterPools.Belongs(character, _charset);
     }
 
     private bool MatchesCasing(char character) {
-        return _casing switch {
-            LetterCasing.Lower => character is not (>= 'A' and <= 'Z'),
-            LetterCasing.Upper => character is not (>= 'a' and <= 'z'),
-            _                  => true
-        };
+        return CharacterPools.MatchesCasing(character, _casing);
+    }
+
+    private AnyChar Without(CharacterSet removed, ConstraintCall applying) {
+        // Subtractions accumulate rather than occupying a slot: re-declaring one removes what is already gone,
+        // which is inert rather than contradictory, and JD024 is what reports an inert constraint.
+        if (_subtractions.Any(subtraction => subtraction.Constraint == applying)) { return this; }
+
+        return Validated(new AnyChar(_source, _charset, _charsetConstraint, _casing, _casingConstraint, _allowed, _allowedConstraint,
+                                     _excluded, _exclusions, [.. _subtractions, (applying, removed)]), applying);
     }
 
 }

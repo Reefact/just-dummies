@@ -29,10 +29,6 @@ internal static class CountConstraints {
         return value.ToString(CultureInfo.InvariantCulture);
     }
 
-    private static void RequireNonNegative(int count, string parameterName) {
-        SizeGuard.RequireNonNegative(count, parameterName, "count");
-    }
-
     private static void RequireProducible(int count, string parameterName) {
         SizeGuard.RequireProducible(count, parameterName, "count");
     }
@@ -78,7 +74,7 @@ internal static class CountConstraints {
     /// </summary>
     internal static CollectionState<T> WithMaxCount<T>(CollectionState<T> state, int count) {
         if (state is null) { throw new ArgumentNullException(nameof(state)); }
-        RequireNonNegative(count, nameof(count));
+        RequireProducible(count, nameof(count));
 
         return state.WithMaxCount(count, ConstraintCall.Of(nameof(WithMaxCount), V(count)));
     }
@@ -91,7 +87,7 @@ internal static class CountConstraints {
     internal static CollectionState<T> WithCountBetween<T>(CollectionState<T> state, int minimum, int maximum) {
         if (state is null) { throw new ArgumentNullException(nameof(state)); }
         RequireProducible(minimum, nameof(minimum));
-        RequireNonNegative(maximum, nameof(maximum));
+        RequireProducible(maximum, nameof(maximum));
         if (minimum > maximum) { throw new ArgumentException($"The minimum ({V(minimum)}) must be less than or equal to the maximum ({V(maximum)}).", nameof(minimum)); }
 
         ConstraintCall constraint = ConstraintCall.Of(nameof(WithCountBetween), V(minimum), V(maximum));

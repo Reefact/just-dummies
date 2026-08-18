@@ -14,14 +14,15 @@ internal static class RegexAlphabet {
 
     #region Statics members declarations
 
-    internal const char MinPrintable = ' ';  // 0x20
-    internal const char MaxPrintable = '~';  // 0x7E
-
     /// <summary>How far an ASCII letter's two cases sit apart: <c>'a' - 'A'</c>, the single bit that tells them apart.</summary>
     private const int AsciiCaseDistance = 'a' - 'A';
 
-    /// <summary>Every printable ASCII character — the universe negated classes and the dot draw from.</summary>
-    internal static readonly char[] Printable = Range(MinPrintable, MaxPrintable);
+    /// <summary>
+    ///     Every printable ASCII character — the universe negated classes and the dot draw from. Taken from
+    ///     <see cref="CharacterPools" />, which the character families draw their own printable pool from, so the
+    ///     library has one definition of the readable universe rather than one per generator.
+    /// </summary>
+    internal static readonly char[] Printable = CharacterPools.Printable.ToCharArray();
 
     /// <summary><c>\d</c>.</summary>
     internal static readonly char[] Digit = Range('0', '9');

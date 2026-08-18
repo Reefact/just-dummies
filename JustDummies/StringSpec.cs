@@ -43,14 +43,18 @@ namespace JustDummies;
 ///         declaration.
 ///     </para>
 ///     <para>
-///         The default spread governs every draw, bounded or not (ADR-0029): a declared maximum composes with it
-///         rather than replacing it, so an upper bound only narrows the draw and never widens it. Only a minimum, an
-///         exact length or required fragments enlarge a string.
+///         A draw is uniform over [minimum, maximum], where an undeclared maximum is the minimum plus the default
+///         spread (ADR-0075): a declared bound therefore governs the value it is declared on, and the two spellings
+///         of a range — <c>WithLengthBetween(a, b)</c> and <c>WithMinLength(a).WithMaxLength(b)</c> — draw alike.
 ///     </para>
 /// </remarks>
 internal sealed class StringSpec {
 
-    private const int DefaultLengthSpread = 16;
+    /// <summary>
+    ///     How far above its floor an unconstrained length reaches. Deliberately uncomfortable: a dummy short
+    ///     enough to be convenient is one no length invariant is ever exercised against (ADR-0075).
+    /// </summary>
+    private const int DefaultLengthSpread = 1024;
 
     // Bounded escape for exclusions: even the tightest realistic satisfiable shape — a single free character in a
     // ~60-value pool with all but one value excluded — is found with overwhelming probability well within this many
@@ -62,10 +66,18 @@ internal sealed class StringSpec {
     internal static readonly StringSpec Unconstrained = new(null, null, 0, null, null, null,
                                                             null, null, null, null, [],
                                                             null, null, null, null, null, [],
-                                                            null, null);
+                                                            [], null, null);
 
     private static string V(int value) {
         return value.ToString(CultureInfo.InvariantCulture);
+    }
+
+    /// <summary>Whether the declared family, casing and subtractions all admit the character.</summary>
+    private static bool Admits(char character, CharacterSet? charset, LetterCasing? casing,
+                               IReadOnlyList<(ConstraintCall Constraint, CharacterSet Removed)> subtractions) {
+        return CharacterPools.Belongs(character, charset)
+            && CharacterPools.MatchesCasing(character, casing)
+            && subtractions.All(subtraction => !CharacterPools.Belongs(character, subtraction.Removed));
     }
 
     private static string Characters(int count) {
@@ -88,7 +100,10 @@ internal sealed class StringSpec {
     private readonly ConstraintCall?        _exactConstraint;
     private readonly IReadOnlyList<string>  _excluded;
     private readonly IReadOnlyList<(ConstraintCall Constraint, string[] Values)> _exclusions;
+    private readonly string                 _fillerPool;
     private readonly IReadOnlyList<(string Fragment, ConstraintCall Constraint)> _fragments;
+    // A subtraction removes a whole family rather than named values, and several accumulate.
+    private readonly IReadOnlyList<(ConstraintCall Constraint, CharacterSet Removed)> _subtractions;
     private readonly int?                   _maxLength;
     private readonly ConstraintCall?        _maxConstraint;
     private readonly int                    _minLength;
@@ -110,6 +125,7 @@ internal sealed class StringSpec {
                        CharacterSet? charset, ConstraintCall? charsetConstraint, string? customPool,
                        LetterCasing? casing,  ConstraintCall? casingConstraint,
                        IReadOnlyList<(ConstraintCall Constraint, string[] Values)> exclusions,
+                       IReadOnlyList<(ConstraintCall Constraint, CharacterSet Removed)> subtractions,
                        IReadOnlyList<string>? allowed, ConstraintCall? allowedConstraint) {
         _exactLength       = exactLength;
         _exactConstraint   = exactConstraint;
@@ -128,8 +144,12 @@ internal sealed class StringSpec {
         _casing            = casing;
         _casingConstraint  = casingConstraint;
         _exclusions        = exclusions;
+        _subtractions      = subtractions;
         _allowed           = allowed;
         _allowedConstraint = allowedConstraint;
+        // "Constrain once, draw many": the filler alphabet is settled here, never per draw. The universe is the
+        // whole of ASCII and the family, the casing and the subtractions narrow it (ADR-0074).
+        _fillerPool = customPool ?? new string(CharacterPools.Ascii.Where(character => Admits(character, charset, casing, subtractions)).ToArray());
         // The flat, deduplicated value list drives the redraw and the exhaustion message; the provenance in
         // _exclusions is consulted only when a conflict message must name the excluding constraint. Materialized
         // once here — "constrain once, draw many" — in first-declared order.
@@ -150,7 +170,7 @@ internal sealed class StringSpec {
         StringSpec candidate = new(length, applying, _minLength, _minConstraint, _maxLength, _maxConstraint,
                                    _prefix, _prefixConstraint, _suffix, _suffixConstraint, _fragments,
                                    _charset, _charsetConstraint, _customPool, _casing, _casingConstraint, _exclusions,
-                                   _allowed, _allowedConstraint);
+                                   _subtractions, _allowed, _allowedConstraint);
 
         return candidate.Validated(applying, this);
     }
@@ -163,7 +183,7 @@ internal sealed class StringSpec {
         StringSpec candidate = new(_exactLength, _exactConstraint, length, applying, _maxLength, _maxConstraint,
                                    _prefix, _prefixConstraint, _suffix, _suffixConstraint, _fragments,
                                    _charset, _charsetConstraint, _customPool, _casing, _casingConstraint, _exclusions,
-                                   _allowed, _allowedConstraint);
+                                   _subtractions, _allowed, _allowedConstraint);
 
         return candidate.Validated(applying, this);
     }
@@ -176,7 +196,7 @@ internal sealed class StringSpec {
         StringSpec candidate = new(_exactLength, _exactConstraint, _minLength, _minConstraint, length, applying,
                                    _prefix, _prefixConstraint, _suffix, _suffixConstraint, _fragments,
                                    _charset, _charsetConstraint, _customPool, _casing, _casingConstraint, _exclusions,
-                                   _allowed, _allowedConstraint);
+                                   _subtractions, _allowed, _allowedConstraint);
 
         return candidate.Validated(applying, this);
     }
@@ -193,7 +213,7 @@ internal sealed class StringSpec {
         StringSpec candidate = new(_exactLength, _exactConstraint, _minLength, _minConstraint, _maxLength, _maxConstraint,
                                    prefix, applying, _suffix, _suffixConstraint, _fragments,
                                    _charset, _charsetConstraint, _customPool, _casing, _casingConstraint, _exclusions,
-                                   _allowed, _allowedConstraint);
+                                   _subtractions, _allowed, _allowedConstraint);
 
         return candidate.Validated(applying, this);
     }
@@ -210,7 +230,7 @@ internal sealed class StringSpec {
         StringSpec candidate = new(_exactLength, _exactConstraint, _minLength, _minConstraint, _maxLength, _maxConstraint,
                                    _prefix, _prefixConstraint, suffix, applying, _fragments,
                                    _charset, _charsetConstraint, _customPool, _casing, _casingConstraint, _exclusions,
-                                   _allowed, _allowedConstraint);
+                                   _subtractions, _allowed, _allowedConstraint);
 
         return candidate.Validated(applying, this);
     }
@@ -224,7 +244,7 @@ internal sealed class StringSpec {
         StringSpec candidate = new(_exactLength, _exactConstraint, _minLength, _minConstraint, _maxLength, _maxConstraint,
                                    _prefix, _prefixConstraint, _suffix, _suffixConstraint, fragments,
                                    _charset, _charsetConstraint, _customPool, _casing, _casingConstraint, _exclusions,
-                                   _allowed, _allowedConstraint);
+                                   _subtractions, _allowed, _allowedConstraint);
 
         return candidate.Validated(applying, this);
     }
@@ -240,7 +260,7 @@ internal sealed class StringSpec {
         StringSpec candidate = new(_exactLength, _exactConstraint, _minLength, _minConstraint, _maxLength, _maxConstraint,
                                    _prefix, _prefixConstraint, _suffix, _suffixConstraint, _fragments,
                                    charset, applying, _customPool, _casing, _casingConstraint, _exclusions,
-                                   _allowed, _allowedConstraint);
+                                   _subtractions, _allowed, _allowedConstraint);
 
         return candidate.Validated(applying, this);
     }
@@ -266,12 +286,28 @@ internal sealed class StringSpec {
         StringSpec candidate = new(_exactLength, _exactConstraint, _minLength, _minConstraint, _maxLength, _maxConstraint,
                                    _prefix, _prefixConstraint, _suffix, _suffixConstraint, _fragments,
                                    _charset, applying, pool, _casing, _casingConstraint, _exclusions,
-                                   _allowed, _allowedConstraint);
+                                   _subtractions, _allowed, _allowedConstraint);
 
         return candidate.Validated(applying, this);
     }
 
     /// <summary>Imposes a letter casing; declared once per generator.</summary>
+    /// <summary>
+    ///     Removes a whole family from the filler alphabet. Unlike a character set this occupies no slot and several
+    ///     accumulate; re-declaring one removes what is already gone, which is inert rather than contradictory.
+    /// </summary>
+    internal StringSpec WithSubtraction(CharacterSet removed, ConstraintCall applying) {
+        if (applying is null) { throw new ArgumentNullException(nameof(applying)); }
+        if (_subtractions.Any(subtraction => subtraction.Constraint == applying)) { return this; }
+
+        StringSpec candidate = new(_exactLength, _exactConstraint, _minLength, _minConstraint, _maxLength, _maxConstraint,
+                                   _prefix, _prefixConstraint, _suffix, _suffixConstraint, _fragments,
+                                   _charset, _charsetConstraint, _customPool, _casing, _casingConstraint, _exclusions,
+                                   [.. _subtractions, (applying, removed)], _allowed, _allowedConstraint);
+
+        return candidate.Validated(applying, this);
+    }
+
     internal StringSpec WithCasing(LetterCasing casing, ConstraintCall applying) {
         if (applying is null) { throw new ArgumentNullException(nameof(applying)); }
         // Re-declaring the SAME constraint is not a contradiction, so it is a no-op rather than a
@@ -285,7 +321,7 @@ internal sealed class StringSpec {
         StringSpec candidate = new(_exactLength, _exactConstraint, _minLength, _minConstraint, _maxLength, _maxConstraint,
                                    _prefix, _prefixConstraint, _suffix, _suffixConstraint, _fragments,
                                    _charset, _charsetConstraint, _customPool, casing, applying, _exclusions,
-                                   _allowed, _allowedConstraint);
+                                   _subtractions, _allowed, _allowedConstraint);
 
         return candidate.Validated(applying, this);
     }
@@ -303,7 +339,7 @@ internal sealed class StringSpec {
         StringSpec candidate = new(_exactLength, _exactConstraint, _minLength, _minConstraint, _maxLength, _maxConstraint,
                                    _prefix, _prefixConstraint, _suffix, _suffixConstraint, _fragments,
                                    _charset, _charsetConstraint, _customPool, _casing, _casingConstraint, exclusions,
-                                   _allowed, _allowedConstraint);
+                                   _subtractions, _allowed, _allowedConstraint);
 
         return candidate.Validated(applying, this);
     }
@@ -326,7 +362,7 @@ internal sealed class StringSpec {
         StringSpec candidate = new(_exactLength, _exactConstraint, _minLength, _minConstraint, _maxLength, _maxConstraint,
                                    _prefix, _prefixConstraint, _suffix, _suffixConstraint, _fragments,
                                    _charset, _charsetConstraint, _customPool, _casing, _casingConstraint, _exclusions,
-                                   distinct, applying);
+                                   _subtractions, distinct, applying);
 
         return candidate.Validated(applying, this);
     }
@@ -416,11 +452,12 @@ internal sealed class StringSpec {
     private string BuildCandidate(SeededRandom random) {
         int required     = RequiredLength();
         int effectiveMin = Math.Max(_minLength, required);
-        // A declared maximum composes with the default spread instead of replacing it (ADR-0029): it may only narrow
-        // the draw, never widen it, so a loose cap still yields the small unconstrained string. Long arithmetic: a
-        // huge required length must saturate instead of overflowing past int.MaxValue.
-        long spreadCeiling = (long)effectiveMin + DefaultLengthSpread;
-        int  effectiveMax  = (int)Math.Min(_maxLength is int declared ? Math.Min(spreadCeiling, declared) : spreadCeiling, int.MaxValue);
+        // A declared maximum REPLACES the default spread (ADR-0075): the bound the caller wrote governs the value
+        // they get, so a written range is the range drawn. Long arithmetic: a huge required length must saturate
+        // instead of overflowing past int.MaxValue. The floor is honoured whatever the ceiling says — a maximum
+        // below it is already refused at declaration.
+        long ceiling      = _maxLength ?? (long)effectiveMin + DefaultLengthSpread;
+        int  effectiveMax = (int)Math.Min(Math.Max(ceiling, effectiveMin), int.MaxValue);
         int  length        = _exactLength ?? random.NextInt32Inclusive(effectiveMin, effectiveMax);
 
         string pool         = FillerPool();
@@ -469,6 +506,7 @@ internal sealed class StringSpec {
     /// </summary>
     private StringSpec Validated(ConstraintCall applying, StringSpec previous) {
         ValidateLengthBounds(applying);
+        ValidateFillerAlphabet(applying);
         if (_allowed is null) {
             ValidateFragmentBudget(applying);
             ValidateFragmentCharacters(applying);
@@ -479,6 +517,24 @@ internal sealed class StringSpec {
         ValidateAllowedSurvives(applying, previous);
 
         return this;
+    }
+
+    /// <summary>
+    ///     Refuses a family and a set of subtractions that leave no character to draw — <c>Numeric()</c> with
+    ///     <c>WithoutNumeric()</c>, say. Only a shaped string is judged here: with a value set in force nothing is
+    ///     laid out, so an empty alphabet forbids nothing and the surviving values answer for themselves.
+    /// </summary>
+    private void ValidateFillerAlphabet(ConstraintCall applying) {
+        if (_allowed is not null || _fillerPool.Length > 0) { return; }
+
+        ConstraintCall? family = _charsetConstraint;
+        // Index from the front: the netstandard2.0 floor has no System.Index.
+        ConstraintCall  culprit = _subtractions.Count > 0 ? _subtractions[_subtractions.Count - 1].Constraint : applying;
+
+        throw ConflictingAnyConstraintException.Contradicts(applying,
+                                                            ConstraintClaim.OfPhrase("the declared character family",
+                                                                                     family is null ? "is left with no character at all" : $"{family} admits nothing once it is applied"),
+                                                            ConstraintClaim.Of(culprit, "removes every character that remained"));
     }
 
     private void ValidateLengthBounds(ConstraintCall applying) {
@@ -700,13 +756,7 @@ internal sealed class StringSpec {
 
     private static char? FirstOutsideCharset(string fragment, CharacterSet charset) {
         foreach (char character in fragment) {
-            bool allowed = charset switch {
-                CharacterSet.Alpha        => CharacterPools.IsAsciiLetter(character),
-                CharacterSet.Numeric      => CharacterPools.IsAsciiDigit(character),
-                CharacterSet.AlphaNumeric => CharacterPools.IsAsciiLetter(character) || CharacterPools.IsAsciiDigit(character),
-                _                         => true
-            };
-            if (!allowed) { return character; }
+            if (!CharacterPools.Belongs(character, charset)) { return character; }
         }
 
         return null;
@@ -735,19 +785,7 @@ internal sealed class StringSpec {
     }
 
     private string FillerPool() {
-        if (_customPool is not null) { return _customPool; }
-
-        string letters = _casing switch {
-            LetterCasing.Lower => CharacterPools.LowerLetters,
-            LetterCasing.Upper => CharacterPools.UpperLetters,
-            _                  => CharacterPools.UpperLetters + CharacterPools.LowerLetters
-        };
-
-        return _charset switch {
-            CharacterSet.Alpha   => letters,
-            CharacterSet.Numeric => CharacterPools.Digits,
-            _                    => letters + CharacterPools.Digits
-        };
+        return _fillerPool;
     }
 
 }

@@ -110,11 +110,12 @@ internal sealed class CountSpec {
         if (_exact is int exact) { return exact; }
 
         int min = Math.Max(_min, requiredMin);
-        // A declared maximum composes with the default spread instead of replacing it (ADR-0029): it may only narrow
-        // the draw, never widen it, so a loose cap still yields the small unconstrained collection. Long arithmetic: a
-        // huge required minimum must saturate instead of overflowing past int.MaxValue.
-        long spreadCeiling = (long)min + DefaultCountSpread;
-        int  max           = (int)Math.Min(_max is int declared ? Math.Min(spreadCeiling, declared) : spreadCeiling, int.MaxValue);
+        // A declared maximum REPLACES the default spread (ADR-0075): the bound the caller wrote governs the count
+        // they get. The spread itself is unchanged here — this record moves the policy, not the magnitude, a
+        // thousand elements costing what their element generator costs rather than one character. Long arithmetic:
+        // a huge required minimum must saturate instead of overflowing past int.MaxValue.
+        long declaredCeiling = _max ?? (long)min + DefaultCountSpread;
+        int  max             = (int)Math.Min(declaredCeiling, int.MaxValue);
         if (cap is int ceiling && ceiling < max) { max = ceiling; }
         if (max < min) { max = min; }
 

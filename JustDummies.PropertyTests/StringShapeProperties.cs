@@ -36,14 +36,18 @@ namespace JustDummies.PropertyTests;
 [TestSubject(typeof(AnyString))]
 public sealed class StringShapeProperties {
 
-    /// <summary>The alphabet an unconstrained generator draws from: ASCII letters and digits.</summary>
+    /// <summary>
+    ///     The alphabet affixes are drawn from where a property does not probe the charset boundary — letters and
+    ///     digits, which every family but the two narrowest admits. Not the unconstrained draw, which is the whole
+    ///     of ASCII (ADR-0074).
+    /// </summary>
     private const string DefaultAlphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
     /// <summary>
     ///     The number of characters a string may reach above whatever its declared minimum is — the library's
     ///     unconstrained spread, mirrored here because the suite is black-box.
     /// </summary>
-    private const int DefaultLengthSpread = 16;
+    private const int DefaultLengthSpread = 1024;
 
     /// <summary>The digits alone, so an affix can be drawn from inside <c>Numeric()</c>'s own charset.</summary>
     private const string DigitAlphabet = "0123456789";
@@ -76,15 +80,21 @@ public sealed class StringShapeProperties {
     }
 
     /// <summary>
-    ///     Applies one of the four character families by index — 0 <c>Alpha</c>, 1 <c>Numeric</c>, 2
-    ///     <c>AlphaNumeric</c>, 3 <c>WithChars</c> — so a property can quantify over the family itself instead of
-    ///     restating the same invariant four times over.
+    ///     Applies one of the nine character families by index — 0 <c>Alpha</c>, 1 <c>Numeric</c>, 2
+    ///     <c>AlphaNumeric</c>, 3 <c>Punctuation</c>, 4 <c>Printable</c>, 5 <c>NonPrintable</c>, 6
+    ///     <c>Whitespaces</c>, 7 <c>Hexadecimal</c>, 8 <c>WithChars</c> — so a property can quantify over the family
+    ///     itself instead of restating the same invariant nine times over.
     /// </summary>
     private static AnyString ApplyCharacterFamily(AnyString generator, int family, string pool) {
         return family switch {
             0 => generator.Alpha(),
             1 => generator.Numeric(),
             2 => generator.AlphaNumeric(),
+            3 => generator.Punctuation(),
+            4 => generator.Printable(),
+            5 => generator.NonPrintable(),
+            6 => generator.Whitespaces(),
+            7 => generator.Hexadecimal(),
             _ => generator.WithChars(pool)
         };
     }
@@ -95,6 +105,11 @@ public sealed class StringShapeProperties {
             0 => IsAsciiLetter(character),
             1 => IsAsciiDigit(character),
             2 => IsAsciiLetter(character) || IsAsciiDigit(character),
+            3 => IsAsciiPunctuation(character),
+            4 => IsAsciiPrintable(character),
+            5 => IsAsciiNonPrintable(character),
+            6 => character is ' ' or '\t',
+            7 => IsAsciiHexadecimal(character),
             _ => pool.Contains(character)
         };
     }
@@ -120,6 +135,22 @@ public sealed class StringShapeProperties {
         return character is >= '0' and <= '9';
     }
 
+    private static bool IsAsciiPrintable(char character) {
+        return character is >= ' ' and <= '~';
+    }
+
+    private static bool IsAsciiPunctuation(char character) {
+        return IsAsciiPrintable(character) && character != ' ' && !IsAsciiLetter(character) && !IsAsciiDigit(character);
+    }
+
+    private static bool IsAsciiNonPrintable(char character) {
+        return character <= '\u007F' && !IsAsciiPrintable(character);
+    }
+
+    private static bool IsAsciiHexadecimal(char character) {
+        return IsAsciiDigit(character) || character is >= 'A' and <= 'F' or >= 'a' and <= 'f';
+    }
+
     #endregion
 
     [Fact(DisplayName = "WithLength fixes the length exactly, for every length.")]
@@ -143,23 +174,21 @@ public sealed class StringShapeProperties {
             .QuickCheckThrowOnFailure();
     }
 
-    [Fact(DisplayName = "WithMaxLength only caps: it never widens the draw beyond the unconstrained spread.")]
-    public void WithMaxLengthNeverWidensTheDraw() {
-        // ADR-0029: a maximum is a permission, not a size hint. It composes with the default spread instead of
-        // replacing it, so declaring a loose cap must keep yielding the small unconstrained string. The maxima
-        // generated here straddle the spread on both sides — that is where the old "maximum becomes the target"
-        // behaviour and this one disagree.
+    [Fact(DisplayName = "WithMaxLength steers the draw: the declared bound is the bound drawn, for every maximum.")]
+    public void WithMaxLengthSteersTheDraw() {
+        // ADR-0075: a declared maximum replaces the default spread rather than composing with it, so the bound the
+        // caller wrote governs the value they get. The maxima generated here straddle the spread on both sides —
+        // that is where this behaviour and the superseded "a maximum only caps" one disagree.
         Prop.ForAll(Generators.WithEdges(Generators.Count(200), 0, 1, DefaultLengthSpread, DefaultLengthSpread + 1, 200).ToArbitrary(),
                     maximum => Expect.EveryDraw(Any.String().WithMaxLength(maximum),
-                                                value => value.Length <= Math.Min(maximum, DefaultLengthSpread)))
+                                                value => value.Length <= maximum))
             .QuickCheckThrowOnFailure();
     }
 
     [Fact(DisplayName = "A minimum, not a maximum, is what enlarges a string: the draw spans the spread above it.")]
     public void WithMinLengthIsWhatEnlargesTheDraw() {
-        // The counterpart of the property above: since a maximum cannot widen the draw, a minimum is the only
-        // one-sided bound that can. Its draw stays within the spread above it, so asking for large strings costs
-        // exactly what was asked for and nothing more.
+        // The counterpart of the property above: with no maximum beside it, a minimum reaches the default spread
+        // above itself and no further, so asking for large strings costs what was asked for and nothing more.
         Prop.ForAll(Generators.WithEdges(Generators.Count(200), 0, 1, 200).ToArbitrary(),
                     minimum => Expect.EveryDraw(Any.String().WithMinLength(minimum),
                                                 value => value.Length >= minimum && value.Length <= minimum + DefaultLengthSpread))
@@ -228,7 +257,7 @@ public sealed class StringShapeProperties {
     [Fact(DisplayName = "Every character family draws only from its own alphabet, at every length.")]
     public void CharacterFamiliesDrawOnlyFromTheirOwnAlphabet() {
         Gen<(int Family, string Pool, int Length)> cases =
-            from family in Gen.Choose(0, 3)
+            from family in Gen.Choose(0, 8)
             from pool in CharacterPool()
             from length in Generators.Count(20)
             select (Family: family, Pool: pool, Length: length);
@@ -318,8 +347,8 @@ public sealed class StringShapeProperties {
     [Fact(DisplayName = "A second character family conflicts unless it repeats the first, whichever two are combined.")]
     public void ASecondCharacterFamilyConflictsUnlessItRepeatsTheFirst() {
         Gen<(int First, int Second, string Pool)> cases =
-            from first in Gen.Choose(0, 3)
-            from second in Gen.Choose(0, 3)
+            from first in Gen.Choose(0, 8)
+            from second in Gen.Choose(0, 8)
             from pool in CharacterPool()
             select (First: first, Second: second, Pool: pool);
 

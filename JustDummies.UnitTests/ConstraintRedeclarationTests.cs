@@ -33,6 +33,8 @@ public sealed class ConstraintRedeclarationTests {
         yield return ("String().Alpha()", () => Any.String().Alpha().Alpha());
         yield return ("String().Numeric()", () => Any.String().Numeric().Numeric());
         yield return ("String().AlphaNumeric()", () => Any.String().AlphaNumeric().AlphaNumeric());
+        yield return ("String().Punctuation()", () => Any.String().Punctuation().Punctuation());
+        yield return ("String().Printable()", () => Any.String().Printable().Printable());
         yield return ("String().WithChars(\"ab\")", () => Any.String().WithChars("ab").WithChars("ab"));
         yield return ("String().LowerCase()", () => Any.String().LowerCase().LowerCase());
         yield return ("String().UpperCase()", () => Any.String().UpperCase().UpperCase());
@@ -43,6 +45,8 @@ public sealed class ConstraintRedeclarationTests {
         yield return ("Double().OneOf(1.5)", () => Any.Double().OneOf(1.5).OneOf(1.5));
         yield return ("Decimal().WithScale(2)", () => Any.Decimal().WithScale(2).WithScale(2));
         yield return ("Char().Alpha()", () => Any.Char().Alpha().Alpha());
+        yield return ("Char().Punctuation()", () => Any.Char().Punctuation().Punctuation());
+        yield return ("Char().Printable()", () => Any.Char().Printable().Printable());
         yield return ("Char().LowerCase()", () => Any.Char().LowerCase().LowerCase());
         yield return ("Guid().OneOf(pinned)", () => Any.Guid().OneOf(Pinned).OneOf(Pinned));
         yield return ("Uri().Web().WithPathSegments(2)", () => Any.Uri().Web().WithPathSegments(2).WithPathSegments(2));
@@ -59,12 +63,14 @@ public sealed class ConstraintRedeclarationTests {
         yield return ("String().WithLength(3).WithLength(5)", () => Any.String().WithLength(3).WithLength(5));
         yield return ("String().StartingWith(\"a\").StartingWith(\"b\")", () => Any.String().StartingWith("a").StartingWith("b"));
         yield return ("String().Alpha().Numeric()", () => Any.String().Alpha().Numeric());
+        yield return ("String().Printable().Punctuation()", () => Any.String().Printable().Punctuation());
         yield return ("String().LowerCase().UpperCase()", () => Any.String().LowerCase().UpperCase());
         yield return ("String().OneOf(\"a\", \"b\").OneOf(\"c\", \"d\")", () => Any.String().OneOf("a", "b").OneOf("c", "d"));
         yield return ("Int32().OneOf(1, 2).OneOf(3, 4)", () => Any.Int32().OneOf(1, 2).OneOf(3, 4));
         yield return ("Int32().MultipleOf(2).MultipleOf(3)", () => Any.Int32().MultipleOf(2).MultipleOf(3));
         yield return ("Decimal().WithScale(2).WithScale(4)", () => Any.Decimal().WithScale(2).WithScale(4));
         yield return ("Char().Alpha().Numeric()", () => Any.Char().Alpha().Numeric());
+        yield return ("Char().Punctuation().Printable()", () => Any.Char().Punctuation().Printable());
         yield return ("Uri().Web().WithPathSegments(2).WithPathSegments(3)", () => Any.Uri().Web().WithPathSegments(2).WithPathSegments(3));
         yield return ("Uri().Web().WithHost(a).WithHost(b)", () => Any.Uri().Web().WithHost("first.example").WithHost("second.example"));
         yield return ("Uri().Web().WithPort(8080).WithPort(9090)", () => Any.Uri().Web().WithPort(8080).WithPort(9090));

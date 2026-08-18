@@ -2,7 +2,7 @@
 
 🌍 🇫🇷 Français (ce fichier) · 🇬🇧 [English](0029-let-a-size-maximum-cap-without-steering-the-draw.md)
 
-**Statut :** Accepté
+**Statut :** Superseded par l'[ADR-0076](0076-let-a-declared-maximum-steer-the-size-draw.fr.md)
 **Proposé :** 2026-07-28
 **Accepté :** 2026-07-28
 **Décideurs :** Reefact

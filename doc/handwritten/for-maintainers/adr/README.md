@@ -21,7 +21,7 @@ and the **Origin** column says how each one got here:
   but its record stays live in `Reefact/first-class-errors` too, because that
   repository still applies it. Both copies are now independent: either side can
   supersede its own without touching the other. 9 decisions.
-* **recorded here** — decided in this repository, on its own. 31 decisions.
+* **recorded here** — decided in this repository, on its own. 34 decisions.
 
 The numbers are this base's own, assigned in the order the decisions were
 recorded upstream ([ADR-0045](0045-renumber-the-decision-base.md)); every ADR
@@ -118,7 +118,7 @@ and it was decided on 2026-08-01 — the index carries the order, the numbering 
 | [ADR-0026](0026-measure-justdummies-mutation-against-the-unit-suite-only.md) | Measure JustDummies mutation against the deterministic unit suite only | Accepted | moved · FCE ADR-0047 |
 | [ADR-0027](0027-guarantee-a-generated-regex-value-matches-by-bounded-redraw.md) | Guarantee a generated regex value matches its pattern, by bounded redraw | Accepted | moved · FCE ADR-0048 |
 | [ADR-0028](0028-drop-the-justdummies-generator-from-the-per-pull-request-mutation-matrix.md) | Drop the JustDummies generator from the per-pull-request mutation matrix | Accepted | moved · FCE ADR-0049 |
-| [ADR-0029](0029-let-a-size-maximum-cap-without-steering-the-draw.md) | Let a size maximum cap without steering the draw, and ceiling an explicitly demanded size | Accepted | moved · FCE ADR-0050 |
+| [ADR-0029](0029-let-a-size-maximum-cap-without-steering-the-draw.md) | Let a size maximum cap without steering the draw, and ceiling an explicitly demanded size | Superseded by ADR-0075 | moved · FCE ADR-0050 |
 | [ADR-0030](0030-filter-the-datetimeoffset-pool-by-the-declared-offset.md) | Filter the DateTimeOffset pool by the declared offset | Accepted | moved · FCE ADR-0051 |
 | [ADR-0031](0031-draw-arbitrary-numbers-within-an-ordinary-magnitude.md) | Draw arbitrary numbers within an ordinary magnitude | Accepted | moved · FCE ADR-0052 |
 | [ADR-0032](0032-unify-discrete-generation-in-one-ordinal-space.md) | Unify discrete generation in one ordinal space, with a dedicated engine only where the arithmetic substrate forces one | Accepted | moved · FCE ADR-0053 |
@@ -164,3 +164,5 @@ and it was decided on 2026-08-01 — the index carries the order, the numbering 
 | [ADR-0072](0072-read-project-defaults-from-a-file-the-command-line-overrides.md) | Read project defaults from a file the command line overrides | Proposed | recorded here |
 | [ADR-0073](0073-layer-the-agent-instructions-by-when-they-are-needed.md) | Layer the agent instructions by when they are needed | Accepted | recorded here |
 | [ADR-0074](0074-draft-a-releases-github-notes-by-hand-and-refuse-without-them.md) | Draft a release's GitHub notes by hand from the changelog, and refuse without them | Accepted | recorded here |
+| [ADR-0075](0075-draw-characters-from-the-whole-of-ascii.md) | Draw characters from the whole of ASCII, and narrow only by a named family | Accepted | recorded here |
+| [ADR-0076](0076-let-a-declared-maximum-steer-the-size-draw.md) | Let a declared maximum steer the size draw | Accepted | recorded here |

@@ -625,4 +625,22 @@ public static class JustDummiesRule {
 
     }
 
+    /// <summary>A bound declared twice on one chain, where only the tighter one survives</summary>
+    [DiagnosticRule]
+    public static class JD032 {
+
+        /// <summary>The canonical identifier of this diagnostic.</summary>
+        public const string Id = nameof(JD032);
+
+        /// <summary>The category this diagnostic is grouped under.</summary>
+        public const string Category = JustDummiesCategory.Constraints;
+
+        /// <summary>The one-line summary the IDE shows beside the rule.</summary>
+        public const string Title = "A bound declared twice, where only the tighter one survives";
+
+        /// <summary>The page explaining the condition this diagnostic detects.</summary>
+        public const string HelpLinkUri = HelpLinkBase + nameof(JD032) + HelpLinkSuffix;
+
+    }
+
 }

@@ -32,6 +32,7 @@ JustDummies.Diagnostics.JustDummiesRule.JD028
 JustDummies.Diagnostics.JustDummiesRule.JD029
 JustDummies.Diagnostics.JustDummiesRule.JD030
 JustDummies.Diagnostics.JustDummiesRule.JD031
+JustDummies.Diagnostics.JustDummiesRule.JD032
 const JustDummies.Diagnostics.JustDummiesCategory.Composition = "JustDummies.Composition" -> string!
 const JustDummies.Diagnostics.JustDummiesCategory.Constraints = "JustDummies.Constraints" -> string!
 const JustDummies.Diagnostics.JustDummiesCategory.Reproducibility = "JustDummies.Reproducibility" -> string!
@@ -160,3 +161,7 @@ const JustDummies.Diagnostics.JustDummiesRule.JD031.Category = "JustDummies.Cons
 const JustDummies.Diagnostics.JustDummiesRule.JD031.HelpLinkUri = "https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/analyzers/JD031.en.md" -> string!
 const JustDummies.Diagnostics.JustDummiesRule.JD031.Id = "JD031" -> string!
 const JustDummies.Diagnostics.JustDummiesRule.JD031.Title = "Two inclusive bounds the library also names as one range" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD032.Category = "JustDummies.Constraints" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD032.HelpLinkUri = "https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/analyzers/JD032.en.md" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD032.Id = "JD032" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD032.Title = "A bound declared twice, where only the tighter one survives" -> string!

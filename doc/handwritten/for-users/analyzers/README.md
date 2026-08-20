@@ -3,7 +3,7 @@
 🌍 **Languages:**  
 🇬🇧 English (this file) | 🇫🇷 [Français](./README.fr.md)
 
-The `JustDummies` package ships 32 Roslyn rules (`JD001`–`JD032`) inside itself, under
+The `JustDummies` package ships 33 Roslyn rules (`JD001`–`JD033`) inside itself, under
 `analyzers/dotnet/cs`. Any project that references the package picks them up automatically,
 with no extra install. They run while your project compiles, turning mistakes the run time
 would otherwise report late — or never — into build-time diagnostics.
@@ -55,7 +55,7 @@ These rules front-load, to build time, the subset of the library's run-time cons
 | Rule | Severity | Default | Description |
 |------|----------|---------|-------------|
 | [JD014 RejectedConstantArgument](JD014.en.md) | 🟠 Warning | on | A constraint argument is a compile-time constant the generator's own guard refuses, so the call throws every time it runs. |
-| [JD015 StringConstraintsAdmitNoValue](JD015.en.md) | 🟠 Warning | on | An AnyString chain's constant constraints admit no value — anchored fragments that cannot fit the declared length. |
+| [JD015 StringConstraintsAdmitNoValue](JD015.en.md) | 🟠 Warning | on | An AnyString chain's constant constraints admit no value — a fragment outside the declared character family or casing, or fragments that cannot fit the declared length. |
 | [JD016 CollectionConstraintsAdmitNoValue](JD016.en.md) | 🟠 Warning | on | A collection chain's count constraints cannot all hold, or it asks for more distinct elements than its element generator can produce. |
 | [JD017 EnumUniverseViolation](JD017.en.md) | 🟠 Warning | on | An enum constraint steps outside the declared members — a flag combination without AllowingCombinations(), or an exclusion that empties the universe. |
 | [JD023 ScalarChainAdmitsNoValue](JD023.en.md) | 🟠 Warning | on | An integer chain's constant constraints narrow the domain to nothing — bounds, lattice or allow-list. |
@@ -66,6 +66,7 @@ These rules front-load, to build time, the subset of the library's run-time cons
 | [JD030 UndeclaredStringLength](JD030.en.md) | 🔵 Info | on | An `Any.String()` chain that declares no length, so it draws the whole default spread — 0 to 1024 characters. Names the remedy where you can act on it. |
 | [JD031 PairedBoundsHaveARangeForm](JD031.en.md) | 🔵 Info | on | A chain declares both inclusive bounds of a range separately, where the same generator names that range in one call. Nothing is wrong — this closes a discoverability gap. Inclusive pairs only: a strict pair has no exact range form. |
 | [JD032 BoundDeclaredTwice](JD032.en.md) | 🟠 Warning | on | A chain declares the same bound twice; bounds fold silently, so only the tighter one survives and the looser call is dead. Matched on the name, so the aliases stay silent, and a bound held under a name is never followed. |
+| [JD033 AnchoredLiteralOutsideCharacterFamily](JD033.en.md) | 🔵 Info | on | An anchored literal holds a character the declared family, subtraction or casing cannot draw. Legal and deliberate in a fixed-prefix format, so it reports the consequence — that character appears only where you wrote it. |
 
 ## Composition
 

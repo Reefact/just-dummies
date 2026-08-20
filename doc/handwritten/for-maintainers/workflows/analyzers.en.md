@@ -9,7 +9,7 @@
 
 ## What it is for
 
-`JustDummies` ships 32 Roslyn rules (`JD001`–`JD032`) **bundled inside the NuGet package**, at
+`JustDummies` ships 33 Roslyn rules (`JD001`–`JD033`) **bundled inside the NuGet package**, at
 `analyzers/dotnet/cs`. They are therefore loaded by **each consumer's own compiler**, not by ours,
 and that single fact is what this workflow exists for.
 

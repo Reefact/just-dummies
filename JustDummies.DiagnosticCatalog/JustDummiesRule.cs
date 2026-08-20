@@ -643,4 +643,22 @@ public static class JustDummiesRule {
 
     }
 
+    /// <summary>An anchored literal holding a character the declared character family cannot draw</summary>
+    [DiagnosticRule]
+    public static class JD033 {
+
+        /// <summary>The canonical identifier of this diagnostic.</summary>
+        public const string Id = nameof(JD033);
+
+        /// <summary>The category this diagnostic is grouped under.</summary>
+        public const string Category = JustDummiesCategory.Constraints;
+
+        /// <summary>The one-line summary the IDE shows beside the rule.</summary>
+        public const string Title = "An anchored literal the declared characters cannot draw";
+
+        /// <summary>The page explaining the condition this diagnostic detects.</summary>
+        public const string HelpLinkUri = HelpLinkBase + nameof(JD033) + HelpLinkSuffix;
+
+    }
+
 }

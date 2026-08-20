@@ -135,10 +135,14 @@ or a contained value is text **you** wrote: it is kept exactly as written, and n
 constraint can contradict it. That is what lets a format say what it means, with each of its rules a
 named call:
 
+<!-- jd:allow=JD031 -->
 ```csharp
 string reference = Any.String().StartingWith("ORD-").AlphaNumeric().UpperCase().WithLengthBetween(8, 20).Generate();
 // ORD-7K2P9QW, ORD-XZ4M1TB, ORD-B8N3TVJ2 — the hyphen separates, and the body stays alphanumeric
 ```
+
+[JD031](../analyzers/JD031.en.md) notes the separator at the call site — as information, not a complaint: it
+says the `-` lands in the prefix and nowhere else, which is the whole point of writing it there.
 
 Declaring the pool by hand instead would put the hyphen back in the body, which is the opposite of
 the rule being modelled.

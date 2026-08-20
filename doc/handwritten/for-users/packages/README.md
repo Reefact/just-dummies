@@ -8,16 +8,16 @@ exactly one of them; the fourth is a command-line tool you install globally and 
 
 | Package | What it is | Do I need it? |
 | --- | --- | --- |
-| [`JustDummies`](./justdummies.en.md) | the library, with its 32 rules bundled in | **Yes** — this is the product |
+| [`JustDummies`](./justdummies.en.md) | the library, with its 33 rules bundled in | **Yes** — this is the product |
 | [`JustDummies.Xunit`](./justdummies-xunit.en.md) | the xUnit v3 adapter: `[Reproducible]` | Only with xUnit v3, and only if you want the attribute |
-| [`JustDummies.DiagnosticCatalog`](./justdummies-diagnosticcatalog.en.md) | the `JD001`–`JD032` rules as compile-checked constants | Only to suppress a rule without a string literal |
+| [`JustDummies.DiagnosticCatalog`](./justdummies-diagnosticcatalog.en.md) | the `JD001`–`JD033` rules as compile-checked constants | Only to suppress a rule without a string literal |
 | [`JustDummies.Cli`](./justdummies-cli.en.md) | `dum`, the scaffolder: writes a generator for one of your types | Only to scaffold one — a global tool, never a reference |
 
 ## How they relate
 
 ```mermaid
 flowchart TD
-    L["JustDummies<br/><i>the library</i>"] -->|"bundles"| A["32 rules<br/><i>analyzers/dotnet/cs</i>"]
+    L["JustDummies<br/><i>the library</i>"] -->|"bundles"| A["33 rules<br/><i>analyzers/dotnet/cs</i>"]
     X["JustDummies.Xunit<br/><i>[Reproducible]</i>"] -->|"depends on"| L
     C["JustDummies.DiagnosticCatalog<br/><i>JustDummiesRule.JD0NN</i>"]
     C -.->|"names the rules in"| A

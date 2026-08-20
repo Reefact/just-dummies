@@ -53,7 +53,7 @@ Look-up material, organised by the type you need.
 
 ## Analyzer rules
 
-32 rules ship inside the library and run on your next build.
+33 rules ship inside the library and run on your next build.
 → [**Rule index**](./analyzers/README.md), one page per diagnostic, in English and French. A
 diagnostic's help link points straight at its page.
 

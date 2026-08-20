@@ -37,3 +37,4 @@ JD029   | JustDummies.Constraints     | Info     | PooledValueNeverDrawsAnalyzer
 JD030   | JustDummies.Constraints     | Info     | UndeclaredStringLengthAnalyzer
 JD031   | JustDummies.Constraints     | Info     | PairedBoundsHaveARangeFormAnalyzer
 JD032   | JustDummies.Constraints     | Warning  | BoundDeclaredTwiceAnalyzer
+JD033   | JustDummies.Constraints     | Info     | AnchoredLiteralOutsideCharacterFamilyAnalyzer

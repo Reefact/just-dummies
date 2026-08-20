@@ -18,7 +18,7 @@ namespace JustDummies.Documentation.UnitTests;
 /// </summary>
 /// <remarks>
 ///     <para>
-///         A library that ships 32 rules and then teaches the reader to break them has a credibility problem, and the
+///         A library that ships 33 rules and then teaches the reader to break them has a credibility problem, and the
 ///         reader is the one who pays: samples get copied, and a sample carrying a <c>JD006</c> is a defect propagated
 ///         under the author's signature. Compiling a sample proves it binds; running the rules over it proves it is
 ///         also the code this product asks people to write.

@@ -3,7 +3,7 @@
 🌍 **Langues :**  
 🇬🇧 [English](./README.md) | 🇫🇷 Français (ce fichier)
 
-Le package `JustDummies` embarque 32 règles Roslyn (`JD001`–`JD032`), sous
+Le package `JustDummies` embarque 33 règles Roslyn (`JD001`–`JD033`), sous
 `analyzers/dotnet/cs`. Tout projet qui référence le package les récupère automatiquement, sans
 installation supplémentaire. Elles s'exécutent pendant la compilation et transforment en
 diagnostics de build des erreurs que l'exécution signalerait tard — ou jamais.
@@ -57,7 +57,7 @@ Ces règles anticipent, à la compilation, le sous-ensemble des vérifications d
 | Règle | Sévérité | Défaut | Description |
 |-------|----------|--------|-------------|
 | [JD014 RejectedConstantArgument](JD014.fr.md) | 🟠 Avertissement | on | Un argument de contrainte est une constante que la garde du générateur refuse : l'appel lève à chaque exécution. |
-| [JD015 StringConstraintsAdmitNoValue](JD015.fr.md) | 🟠 Avertissement | on | Les contraintes constantes d'une chaîne `AnyString` n'admettent aucune valeur — des fragments ancrés qui ne peuvent pas tenir dans la longueur déclarée. |
+| [JD015 StringConstraintsAdmitNoValue](JD015.fr.md) | 🟠 Avertissement | on | Les contraintes constantes d'une chaîne `AnyString` n'admettent aucune valeur — un fragment hors de la famille de caractères ou de la casse déclarée, ou des fragments qui ne peuvent pas tenir dans la longueur déclarée. |
 | [JD016 CollectionConstraintsAdmitNoValue](JD016.fr.md) | 🟠 Avertissement | on | Les contraintes de cardinal d'une chaîne de collection ne peuvent pas toutes tenir, ou elle réclame plus d'éléments distincts que son générateur d'éléments ne peut en produire. |
 | [JD017 EnumUniverseViolation](JD017.fr.md) | 🟠 Avertissement | on | Une contrainte d'enum sort des membres déclarés — une combinaison de drapeaux sans `AllowingCombinations()`, ou une exclusion qui vide l'univers. |
 | [JD023 ScalarChainAdmitsNoValue](JD023.fr.md) | 🟠 Avertissement | on | Les contraintes constantes d'une chaîne entière réduisent le domaine à rien — bornes, treillis ou liste d'autorisation. |
@@ -68,6 +68,7 @@ Ces règles anticipent, à la compilation, le sous-ensemble des vérifications d
 | [JD030 UndeclaredStringLength](JD030.fr.md) | 🔵 Info | on | Une chaîne `Any.String()` qui ne déclare aucune longueur : elle tire toute l'étendue par défaut — 0 à 1024 caractères. Nomme le remède là où vous pouvez agir. |
 | [JD031 PairedBoundsHaveARangeForm](JD031.fr.md) | 🔵 Info | on | Une chaîne déclare séparément les deux bornes inclusives d'un intervalle, alors que le même générateur nomme cet intervalle en un seul appel. Rien n'est faux — elle comble un manque de découvrabilité. Paires inclusives uniquement : une paire stricte n'a pas de forme intervalle exacte. |
 | [JD032 BoundDeclaredTwice](JD032.fr.md) | 🟠 Warning | on | Une chaîne déclare deux fois la même borne ; les bornes se replient silencieusement, donc seule la plus serrée survit et l'appel le plus lâche est mort. Appariée sur le nom, donc les alias restent muets, et une borne détenue sous un nom n'est jamais suivie. |
+| [JD033 AnchoredLiteralOutsideCharacterFamily](JD033.fr.md) | 🔵 Info | on | Un littéral ancré porte un caractère que la famille, la soustraction ou la casse déclarée ne peut pas tirer. Légal et délibéré dans un format à préfixe fixe : la règle rapporte donc la conséquence — ce caractère n'apparaît que là où vous l'avez écrit. |
 
 ## Composition
 

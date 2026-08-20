@@ -140,7 +140,7 @@ exécute les suites
 
 ### Dois-je installer les analyzers séparément ?
 
-Non. Les 32 règles sont embarquées dans le paquet `JustDummies` lui-même et se mettent à travailler
+Non. Les 33 règles sont embarquées dans le paquet `JustDummies` lui-même et se mettent à travailler
 dès la compilation suivante. Le paquet distinct `JustDummies.DiagnosticCatalog` n'est nécessaire que
 pour nommer une règle dans un `[SuppressMessage]` sans littéral de chaîne — voir
 [sa page](../packages/justdummies-diagnosticcatalog.fr.md).

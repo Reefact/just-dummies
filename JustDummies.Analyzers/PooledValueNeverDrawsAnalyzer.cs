@@ -27,8 +27,8 @@ namespace JustDummies.Analyzers;
 ///     <para>
 ///         The predicates below restate what the run-time specifications apply, because an analyzer references
 ///         no JustDummies assembly and cannot call it — the alphabets themselves live in
-///         <see cref="CharacterFamilies" />, mirrored once and read by JD015 too, since two rules disagreeing about
-///         what a family admits would be worse than either being silent. It is bounded on purpose: a constraint
+///         <see cref="CharacterFamilies" />, mirrored once and kept the single definition any rule needing a family
+///         must read, since two rules disagreeing about what a family admits would be worse than either being silent. It is bounded on purpose: a constraint
 ///         this switch does not name is not evaluated rather than guessed at.
 ///     </para>
 ///     <para>

@@ -46,6 +46,14 @@ int lineQuantity = Any.Int32().GreaterThanOrEqualTo(1).LessThanOrEqualTo(50).Gen
 `Between` is inclusive at both ends. Bounds that cross are refused at once with a message naming
 both — see [Errors and conflicts](../guides/errors-and-conflicts.en.md).
 
+**An unconstrained integer spans its whole type.** Declare nothing and the draw is uniform over the
+full range, and that is deliberate
+([ADR-0031](../../for-maintainers/adr/0031-draw-arbitrary-numbers-within-an-ordinary-magnitude.md)):
+a large integer is still an ordinary integer, where a large `double` stops behaving like arithmetic
+— the floating-point rule below is the exception, not the norm. Uniform over a range also means most
+of that range sits near its extremes: an unconstrained `Int128` carries 38 or 39 digits in about 94
+draws out of 100. Declare a bound when your domain has one.
+
 ## Sign and zero
 
 ```csharp

@@ -24,8 +24,12 @@ scope is required on `feat` and `fix` (ADR-0013).
 
 ## Before a release
 
-1. **Changelog.** The `changelog` workflow (dispatch) drafts a train's `[Unreleased]` from its
-   merged pull requests and opens a review pull request. Prefer it to editing by hand.
+1. **Changelog.** A train's `[Unreleased]` is written **by hand, in the change that produces
+   the entry** — the commit that adds a capability announces it, while the reasoning is still
+   at hand and in the voice the section is written in. The `changelog` workflow (dispatch)
+   drafts a section from merged pull requests and opens a review pull request: use it before a
+   cut as a **net**, to catch what a change forgot to announce, never as the normal route. A
+   generated entry knows a pull request title; it does not know why the decision was taken.
 2. **Release notes.** Once the changelog section for the version being cut is reviewed and
    merged, draft or refresh `RELEASE_NOTES-<major>.x.en.md`/`.fr.md` for the train from it — the
    `release-notes` skill. `tools/packaging/release-notes.sh` reads this file at tag time and

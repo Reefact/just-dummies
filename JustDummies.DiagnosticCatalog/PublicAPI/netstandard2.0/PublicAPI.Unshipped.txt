@@ -31,6 +31,7 @@ JustDummies.Diagnostics.JustDummiesRule.JD027
 JustDummies.Diagnostics.JustDummiesRule.JD028
 JustDummies.Diagnostics.JustDummiesRule.JD029
 JustDummies.Diagnostics.JustDummiesRule.JD030
+JustDummies.Diagnostics.JustDummiesRule.JD031
 const JustDummies.Diagnostics.JustDummiesCategory.Composition = "JustDummies.Composition" -> string!
 const JustDummies.Diagnostics.JustDummiesCategory.Constraints = "JustDummies.Constraints" -> string!
 const JustDummies.Diagnostics.JustDummiesCategory.Reproducibility = "JustDummies.Reproducibility" -> string!
@@ -155,3 +156,7 @@ const JustDummies.Diagnostics.JustDummiesRule.JD030.Category = "JustDummies.Cons
 const JustDummies.Diagnostics.JustDummiesRule.JD030.HelpLinkUri = "https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/analyzers/JD030.en.md" -> string!
 const JustDummies.Diagnostics.JustDummiesRule.JD030.Id = "JD030" -> string!
 const JustDummies.Diagnostics.JustDummiesRule.JD030.Title = "A string dummy that declares no length" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD031.Category = "JustDummies.Constraints" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD031.HelpLinkUri = "https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/analyzers/JD031.en.md" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD031.Id = "JD031" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD031.Title = "Two inclusive bounds the library also names as one range" -> string!

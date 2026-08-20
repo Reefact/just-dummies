@@ -19,9 +19,13 @@
 * Two different kinds of incompatibility occur on that surface. One is **structural**: it holds for the
   combination itself, for every argument value — on `Any.String()`, a second character set after a first is
   always wrong. The other is **value-dependent**: the same method call is legal or illegal according to its
-  argument's run-time value — `Any.String().Numeric().StartingWith("ORD-")` conflicts because the prefix's
-  letters fall outside the numeric set, while `Any.String().Numeric().StartingWith("123")` is valid; the call
-  site and the static types are identical in both.
+  argument's run-time value — `Any.String().WithLength(3).StartingWith("ORD-")` conflicts because the prefix
+  needs four characters, while `Any.String().WithLength(12).StartingWith("ORD-")` is valid; the call site and
+  the static types are identical in both. (This record originally illustrated the same point with
+  `Numeric().StartingWith("ORD-")`. That combination is no longer a conflict — a character family governs what
+  the generator draws, never a literal the caller wrote, [ADR-0077](0077-constrain-what-a-dummy-draws-never-the-literals-it-was-given.md)
+  — so the illustration was repinned onto the length budget. The decision below is untouched: the
+  value-dependent kind still exists and is still the analyzer's.)
 * `Any.Uri()` (issue #226) is the first generator whose space is partitioned into structurally different
   **shapes**: an absolute web, WebSocket, FTP or mailto URI, or a relative reference. Each shape admits a
   different, RFC-fixed set of components — a mailto has no port or authority (RFC 6068), a WebSocket URI no
@@ -53,8 +57,8 @@ illegality is structural, and is otherwise left to the run-time `ConflictingAnyC
   carry it and a run-time check is the only option. The rule follows the grain of what each enforcement point is
   able to know.
 * Applying typed progression to the value-dependent case is not merely unhelpful, it is impossible: no
-  arrangement of types tells `StartingWith("ORD-")` from `StartingWith("123")`, because they differ only in a
-  value. The flat, run-time pattern is therefore not a weaker fallback there — it is the only mechanism that can
+  arrangement of types tells `WithLength(3)` from `WithLength(12)` beside the same `StartingWith("ORD-")`,
+  because they differ only in a value. The flat, run-time pattern is therefore not a weaker fallback there — it is the only mechanism that can
   express the constraint at all.
 * Conversely, leaving a structural URI error to run time throws away a guarantee that is freely available.
   `Mailto().WithPort(...)` is wrong for every possible argument; surfacing it as a failed generation, or even as

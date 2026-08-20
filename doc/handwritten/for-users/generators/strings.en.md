@@ -129,17 +129,28 @@ Two consequences follow, and they explain almost every surprise:
 of four characters plus a suffix of four needs at least eight, so `WithLength(6)` alongside both is
 refused rather than quietly reusing characters.
 
-**A fragment must belong to the declared alphabet.** Declaring digits only and then requiring a
-letter prefix is a contradiction, not a widening. Both of these are refused at the moment they are
-declared, with a message naming both sides:
+**A character constraint governs the filler, not your literals.** The alphabet you declare — a named
+family, `WithChars`, a subtraction, a casing — narrows what the generator *draws*. A prefix, a suffix
+or a contained value is text **you** wrote: it is kept exactly as written, and no character
+constraint can contradict it. That is what lets a format say what it means, with each of its rules a
+named call:
 
-<!-- jd:allow=JD015,JD006,JD030 -->
 ```csharp
-Any.String().WithLength(3).StartingWith("ORD-");  // the length cannot hold the prefix
-Any.String().Numeric().StartingWith("ORD-");      // 'ORD-' is not numeric
+string reference = Any.String().StartingWith("ORD-").AlphaNumeric().UpperCase().WithLengthBetween(8, 20).Generate();
+// ORD-7K2P9QW, ORD-XZ4M1TB, ORD-B8N3TVJ2 — the hyphen separates, and the body stays alphanumeric
 ```
 
-The analyzer [JD015](../analyzers/JD015.en.md) reports both at build time whenever the arguments are
+Declaring the pool by hand instead would put the hyphen back in the body, which is the opposite of
+the rule being modelled.
+
+The length budget is the one thing a literal does not escape — it still has to fit:
+
+<!-- jd:allow=JD015,JD006 -->
+```csharp
+Any.String().WithLength(3).StartingWith("ORD-");  // the length cannot hold the prefix
+```
+
+The analyzer [JD015](../analyzers/JD015.en.md) reports it at build time whenever the arguments are
 constants, so the failure usually arrives before the test ever runs.
 
 ## Membership and exclusion

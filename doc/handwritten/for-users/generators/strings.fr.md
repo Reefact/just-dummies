@@ -134,18 +134,31 @@ simple de leurs longueurs. Un préfixe de quatre caractères plus un suffixe de 
 moins huit : `WithLength(6)` avec les deux est donc refusé, plutôt que de réutiliser silencieusement
 des caractères.
 
-**Un fragment doit appartenir à l'alphabet déclaré.** Déclarer des chiffres seuls puis exiger un
-préfixe alphabétique est une contradiction, pas un élargissement. Ces deux cas sont refusés au moment
-même de leur déclaration, avec un message nommant les deux côtés :
+**Une contrainte de caractères gouverne le remplissage, pas vos littéraux.** L'alphabet que vous
+déclarez — une famille nommée, `WithChars`, une soustraction, une casse — restreint ce que le
+générateur *tire*. Un préfixe, un suffixe ou une valeur contenue est un texte que **vous** avez
+écrit : il est conservé exactement tel quel, et aucune contrainte de caractères ne peut le
+contredire. C'est ce qui permet à un format de dire ce qu'il veut dire, chacune de ses règles restant
+un appel nommé :
 
-<!-- jd:allow=JD015,JD006,JD030 -->
 ```csharp
-Any.String().WithLength(3).StartingWith("ORD-");  // la longueur ne peut pas contenir le préfixe
-Any.String().Numeric().StartingWith("ORD-");      // « ORD- » n'est pas numérique
+string reference = Any.String().StartingWith("ORD-").AlphaNumeric().UpperCase().WithLengthBetween(8, 20).Generate();
+// ORD-7K2P9QW, ORD-XZ4M1TB, ORD-B8N3TVJ2 — le tiret sépare, et le corps reste alphanumérique
 ```
 
-L'analyzer [JD015](../analyzers/JD015.fr.md) signale les deux à la compilation dès que les arguments
-sont constants : l'échec arrive donc généralement avant même l'exécution du test.
+Déclarer le pool à la main remettrait le tiret dans le corps, soit l'inverse de la règle que l'on
+cherche à modéliser.
+
+Le budget de longueur est la seule chose à laquelle un littéral n'échappe pas — il doit toujours
+tenir :
+
+<!-- jd:allow=JD015,JD006 -->
+```csharp
+Any.String().WithLength(3).StartingWith("ORD-");  // la longueur ne peut pas contenir le préfixe
+```
+
+L'analyzer [JD015](../analyzers/JD015.fr.md) le signale à la compilation dès que les arguments sont
+constants : l'échec arrive donc généralement avant même l'exécution du test.
 
 ## Appartenance et exclusion
 

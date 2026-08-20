@@ -66,8 +66,9 @@ matter — and that is the point.
   non-ASCII text (accents, Greek, Cyrillic, CJK) without a `StringMatching` literal. It stays within the Basic Multilingual Plane
   and rejects a surrogate: an emoji or other astral character is an atomic grapheme, not
   a character family, so draw those as whole strings with `OneOf("😀", "🎉")` instead.
-  Anchored fragments must be drawn from the pool, or the conflict is reported at
-  declaration.
+  Anchored fragments are exempt: a pool is what the generator draws from, so a prefix,
+  a suffix or a contained value you wrote is kept as written even when the pool could
+  not produce it.
 - **Strings from an explicit set**: `Any.String().OneOf("EUR", "USD", "GBP")` draws from
   a fixed, closed list — the dummy for a value whose domain is a short enumeration (a
   currency code, a well-known name). Composable like every other family's `OneOf`: the

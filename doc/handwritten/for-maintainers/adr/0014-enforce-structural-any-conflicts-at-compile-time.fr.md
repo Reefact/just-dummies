@@ -20,10 +20,14 @@
 * Deux sortes d'incompatibilité surviennent sur cette surface. L'une est **structurelle** : elle vaut pour la
   combinaison elle-même, pour toute valeur d'argument — sur `Any.String()`, un second jeu de caractères après un
   premier est toujours fautif. L'autre **dépend de la valeur** : le même appel de méthode est licite ou illicite
-  selon la valeur d'exécution de son argument — `Any.String().Numeric().StartingWith("ORD-")` est en conflit
-  parce que les lettres du préfixe tombent hors du jeu numérique, tandis que
-  `Any.String().Numeric().StartingWith("123")` est valide ; le point d'appel et les types statiques sont
-  identiques dans les deux cas.
+  selon la valeur d'exécution de son argument — `Any.String().WithLength(3).StartingWith("ORD-")` est en conflit
+  parce que le préfixe demande quatre caractères, tandis qu'`Any.String().WithLength(12).StartingWith("ORD-")`
+  est valide ; le point d'appel et les types statiques sont identiques dans les deux cas. (Cet enregistrement
+  illustrait à l'origine le même point avec `Numeric().StartingWith("ORD-")`. Cette combinaison n'est plus un
+  conflit — une famille de caractères gouverne ce que le générateur tire, jamais un littéral écrit par
+  l'appelant, [ADR-0077](0077-constrain-what-a-dummy-draws-never-the-literals-it-was-given.fr.md) — l'illustration
+  a donc été replacée sur le budget de longueur. La décision ci-dessous est intacte : la sorte dépendant de la
+  valeur existe toujours et relève toujours de l'analyseur.)
 * `Any.Uri()` (issue #226) est le premier générateur dont l'espace se partitionne en **formes** structurellement
   différentes : une URI web absolue, WebSocket, FTP ou mailto, ou une référence relative. Chaque forme admet un
   ensemble de composants différent et fixé par la RFC — un mailto n'a ni port ni autorité (RFC 6068), une URI
@@ -57,8 +61,8 @@ forme — lorsque l'illicéité est structurelle, et est sinon laissée au chemi
   compilateur ne voit jamais, donc le système de types *ne peut pas* la porter et une vérification à l'exécution
   est la seule option. La règle suit le grain de ce que chaque point d'application est capable de savoir.
 * Appliquer la progression typée au cas dépendant de la valeur n'est pas seulement inutile, c'est impossible :
-  aucun agencement de types ne distingue `StartingWith("ORD-")` de `StartingWith("123")`, puisqu'ils ne
-  diffèrent que par une valeur. Le patron plat à l'exécution n'y est donc pas un repli plus faible — c'est le
+  aucun agencement de types ne distingue `WithLength(3)` de `WithLength(12)` à côté du même
+  `StartingWith("ORD-")`, puisqu'ils ne diffèrent que par une valeur. Le patron plat à l'exécution n'y est donc pas un repli plus faible — c'est le
   seul mécanisme capable d'exprimer la contrainte tout court.
 * Inversement, laisser une erreur structurelle d'URI à l'exécution jette une garantie disponible gratuitement.
   `Mailto().WithPort(...)` est fautif pour tout argument possible ; l'exposer comme une génération en échec, ou

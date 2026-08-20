@@ -25,7 +25,7 @@ namespace JustDummies.PropertyTests;
 ///         illegal depending on the <b>argument value</b>. <c>WithLength(n).StartingWith(prefix)</c> holds exactly
 ///         when <c>n</c> leaves room for the prefix, and it is written as a single property branching on that
 ///         relationship, so what gets tested is the boundary itself rather than a hand-picked point on either side.
-///         A character family used to be a second such boundary; since ADR-0077 it is not one at all — a literal is
+///         A character family used to be a second such boundary; since ADR-0079 it is not one at all — a literal is
 ///         exempt whatever it holds — so the property that probed it is now unconditional, and stronger for it.
 ///     </para>
 ///     <para>
@@ -132,7 +132,7 @@ public sealed class StringShapeProperties {
     /// <summary>
     ///     The characters the generator actually drew: the value with its one anchored literal removed. The layout is
     ///     <c>prefix + filler</c> or <c>filler + suffix</c>, so the remainder is filler and nothing else — which is
-    ///     what a character constraint answers for since ADR-0077.
+    ///     what a character constraint answers for since ADR-0079.
     /// </summary>
     private static string Drawn(string value, string affix, bool asSuffix) {
         return asSuffix
@@ -329,7 +329,7 @@ public sealed class StringShapeProperties {
         // The affixes come from an alphabet reaching well beyond any single family — punctuation included — so the
         // exemption is exercised rather than merely permitted. Where this property used to branch on whether the
         // affix happened to fit the family, it is now unconditional: a literal is never drawn, so no family can
-        // contradict it (ADR-0077), and what is left to prove is the stronger half — that everything the generator
+        // contradict it (ADR-0079), and what is left to prove is the stronger half — that everything the generator
         // DID draw belongs to the family.
         Gen<(int Family, string Pool, string Affix, bool AsSuffix, int Drawn)> cases =
             from family in Gen.Choose(0, 8)
@@ -351,7 +351,7 @@ public sealed class StringShapeProperties {
     [Fact(DisplayName = "A casing governs the drawn characters and exempts the anchored literal, whatever the casing and the literal.")]
     public void ACasingGovernsTheDrawAndExemptsTheLiteral() {
         // The affix alphabet carries both cases, so half the draws anchor a literal the casing would have refused
-        // before ADR-0077 — UpperCase().StartingWith("abc") among them.
+        // before ADR-0079 — UpperCase().StartingWith("abc") among them.
         Gen<(bool Upper, string Affix, bool AsSuffix, int Drawn)> cases =
             from upper in Gen.Elements(false, true)
             from affix in Affix(PoolAlphabet, 6)

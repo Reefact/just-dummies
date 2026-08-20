@@ -141,13 +141,13 @@ générateur *tire*. Un préfixe, un suffixe ou une valeur contenue est un texte
 contredire. C'est ce qui permet à un format de dire ce qu'il veut dire, chacune de ses règles restant
 un appel nommé :
 
-<!-- jd:allow=JD031 -->
+<!-- jd:allow=JD033 -->
 ```csharp
 string reference = Any.String().StartingWith("ORD-").AlphaNumeric().UpperCase().WithLengthBetween(8, 20).Generate();
 // ORD-7K2P9QW, ORD-XZ4M1TB, ORD-B8N3TVJ2 — le tiret sépare, et le corps reste alphanumérique
 ```
 
-[JD031](../analyzers/JD031.fr.md) signale le séparateur au site d'appel — en information, pas en reproche : elle
+[JD033](../analyzers/JD033.fr.md) signale le séparateur au site d'appel — en information, pas en reproche : elle
 dit que le `-` atterrit dans le préfixe et nulle part ailleurs, ce qui est précisément pourquoi il est écrit là.
 
 Déclarer le pool à la main remettrait le tiret dans le corps, soit l'inverse de la règle que l'on

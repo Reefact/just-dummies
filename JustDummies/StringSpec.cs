@@ -25,7 +25,7 @@ namespace JustDummies;
 ///         layout could satisfy is reported as a conflict — a deliberate V1 simplification, kept explicit in the
 ///         conflict messages. The character constraints — a family, a custom pool, the subtractions and the casing —
 ///         narrow the <b>filler</b> alphabet and nothing else, so an anchored fragment is kept verbatim whatever it
-///         holds: it is a literal the caller wrote, not a character the generator drew (ADR-0077).
+///         holds: it is a literal the caller wrote, not a character the generator drew (ADR-0079).
 ///     </para>
 ///     <para>
 ///         With an allow-list the specification is a <b>filter</b> instead: the caller supplied the values, so nothing
@@ -730,7 +730,7 @@ internal sealed class StringSpec {
     ///     pooled value is the caller's own text, so an accented or non-Latin letter must be judged on its actual case
     ///     rather than waved through — the generator picks that value whole, and must not hand back one the casing
     ///     refuses. An anchored fragment is not judged here at all: it is a literal, never a draw, and a casing governs
-    ///     only what the generator draws (ADR-0077).
+    ///     only what the generator draws (ADR-0079).
     /// </summary>
     private static char? FirstAgainstCasing(string value, LetterCasing casing) {
         foreach (char character in value) {

@@ -27,7 +27,7 @@ namespace JustDummies;
 ///         It also settles what a character constraint reaches. A family, a custom pool, a subtraction and a casing
 ///         govern every character the generator <b>draws</b> — the filler, and only the filler. A literal fixed by
 ///         <see cref="StartingWith" />, <see cref="EndingWith" /> or <see cref="Containing" /> is not drawn, so it is
-///         kept exactly as written and no character constraint can contradict it (ADR-0077). That is what lets an
+///         kept exactly as written and no character constraint can contradict it (ADR-0079). That is what lets an
 ///         ordinary format be written as the rules it actually has:
 ///         <c>StartingWith("ORD-").AlphaNumeric()</c> puts the separator in the prefix and nowhere else. The length
 ///         budget is unaffected — a literal that does not fit the declared length is still a conflict.
@@ -192,7 +192,7 @@ public sealed class AnyString : IAny<string>, IHasRandomSource, ICardinalityHint
     /// <summary>
     ///     Requires the string to start with <paramref name="prefix" />. Declared once per generator. The prefix is a
     ///     literal, not a draw: it is kept exactly as written, and the declared character family, subtractions and
-    ///     casing govern the drawn characters beside it rather than the prefix itself (ADR-0077). Its length still
+    ///     casing govern the drawn characters beside it rather than the prefix itself (ADR-0079). Its length still
     ///     counts against the declared length.
     /// </summary>
     /// <param name="prefix">The required prefix.</param>
@@ -209,7 +209,7 @@ public sealed class AnyString : IAny<string>, IHasRandomSource, ICardinalityHint
     /// <summary>
     ///     Requires the string to end with <paramref name="suffix" />. Declared once per generator. Like a prefix it is
     ///     a literal rather than a draw, so the declared character constraints leave it exactly as written and govern
-    ///     the drawn characters beside it (ADR-0077). Its length still counts against the declared length.
+    ///     the drawn characters beside it (ADR-0079). Its length still counts against the declared length.
     /// </summary>
     /// <param name="suffix">The required suffix.</param>
     /// <returns>A new generator carrying the added constraint.</returns>
@@ -226,7 +226,7 @@ public sealed class AnyString : IAny<string>, IHasRandomSource, ICardinalityHint
     ///     Requires the string to contain <paramref name="value" />. May be declared several times; the contained
     ///     values are laid out side by side, without overlap, between the prefix and the suffix. Each is a literal
     ///     rather than a draw, so the declared character constraints leave it exactly as written and govern the drawn
-    ///     characters around it (ADR-0077). Their lengths still count against the declared length.
+    ///     characters around it (ADR-0079). Their lengths still count against the declared length.
     /// </summary>
     /// <param name="value">The value the generated string must contain.</param>
     /// <returns>A new generator carrying the added constraint.</returns>
@@ -349,7 +349,7 @@ public sealed class AnyString : IAny<string>, IHasRandomSource, ICardinalityHint
     ///     combine with <see cref="LowerCase" />/<see cref="UpperCase" /> — put only the casing you want in the pool.
     ///     An anchored fragment (prefix, suffix, contained value) is exempt: the pool is what the generator draws
     ///     from, and a literal the caller wrote is not drawn, so it is kept as written even when the pool could not
-    ///     produce it (ADR-0077). Duplicate characters collapse and each distinct character is
+    ///     produce it (ADR-0079). Duplicate characters collapse and each distinct character is
     ///     equally likely. The pool is a sequence of UTF-16 code units and must stay within the Basic Multilingual
     ///     Plane: a surrogate — an emoji or other astral code point, which spans two units — is rejected, because it
     ///     would be drawn and split unit by unit; draw such values as whole strings with <see cref="OneOf(string[])" />
@@ -373,7 +373,7 @@ public sealed class AnyString : IAny<string>, IHasRandomSource, ICardinalityHint
     /// <summary>
     ///     Requires every alphabetic character the generator <b>draws</b> to be lowercase. Declared once per generator.
     ///     An anchored literal is exempt, so <c>LowerCase().StartingWith("ORD-")</c> yields <c>ORD-</c> followed by
-    ///     lowercase filler (ADR-0077).
+    ///     lowercase filler (ADR-0079).
     /// </summary>
     /// <returns>A new generator carrying the added constraint.</returns>
     /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
@@ -383,7 +383,7 @@ public sealed class AnyString : IAny<string>, IHasRandomSource, ICardinalityHint
 
     /// <summary>
     ///     Requires every alphabetic character the generator <b>draws</b> to be uppercase. Declared once per generator.
-    ///     An anchored literal is exempt, so a lowercase prefix is kept as written beside uppercase filler (ADR-0077).
+    ///     An anchored literal is exempt, so a lowercase prefix is kept as written beside uppercase filler (ADR-0079).
     /// </summary>
     /// <returns>A new generator carrying the added constraint.</returns>
     /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>

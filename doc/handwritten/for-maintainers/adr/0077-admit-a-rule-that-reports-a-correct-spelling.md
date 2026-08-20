@@ -2,7 +2,7 @@
 
 🌍 🇬🇧 English (this file) · 🇫🇷 [Français](0077-admit-a-rule-that-reports-a-correct-spelling.fr.md)
 
-**Status:** Accepted
+**Status:** Superseded by [ADR-0080](0080-admit-a-rule-that-names-a-resolved-ambiguity.md)
 **Proposed:** 2026-08-20
 **Accepted:** 2026-08-20
 **Decision Makers:** Reefact

@@ -286,6 +286,16 @@ internal static class Descriptors {
         description: "An unconstrained Any.String() draws 0 to 1024 characters from the whole of ASCII, and NonEmpty() alone only moves that to 1 to 1025 -- it raises the floor and leaves the ceiling where it was. That default is deliberately inconvenient (ADR-0076), because a dummy short enough to be comfortable is one no length invariant is ever exercised against -- but an inconvenient default only teaches when something names the remedy, and a wall of characters in a failure message does not say WithMaxLength. This rule says it, at the call site. Declare the length the surrounding code actually allows: a column width, a contract bound, an exact size. Reported as information, not as a warning: a length a test genuinely does not care about is a legitimate thing to leave unsaid, so this is a fact to weigh, never a verdict.",
         helpLinkUri: JustDummiesRule.JD030.HelpLinkUri);
 
+    public static readonly DiagnosticDescriptor PairedBoundsHaveARangeForm = new(
+        id: JustDummiesRule.JD031.Id,
+        title: JustDummiesRule.JD031.Title,
+        messageFormat: "These two bounds are the range {0}",
+        category: JustDummiesRule.JD031.Category,
+        defaultSeverity: DiagnosticSeverity.Info,
+        isEnabledByDefault: true,
+        description: "Both inclusive bounds of a range are declared separately, and the same generator names that range in a single call. Nothing is wrong here, and nothing has to change: the two spellings behave identically -- the range method IS the two bounds -- and the decomposed form is decomposable on purpose, so a shared helper can set a floor and a call site add a ceiling. This is a discoverability rule and nothing more. The range form is easy to miss, a reader who writes the bounds separately never learns it exists, and it reads closer to how the rule is usually stated out loud. It also carries one consequence the pair does not: a conflict raised later names the range the author wrote rather than one of its halves. Reported as information, never as a verdict. Only INCLUSIVE pairs are reported, because only they have an exact range form: a strict pair has none at all on a floating-point type, and a different one on an integral type.",
+        helpLinkUri: JustDummiesRule.JD031.HelpLinkUri);
+
     public static readonly DiagnosticDescriptor EmptyRelativeUri = new(
         id: JustDummiesRule.JD026.Id,
         title: JustDummiesRule.JD026.Title,

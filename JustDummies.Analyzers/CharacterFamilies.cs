@@ -6,8 +6,9 @@ namespace JustDummies.Analyzers;
 /// <summary>
 ///     The alphabets the <c>AnyString</c> and <c>AnyChar</c> character families draw from, mirrored from
 ///     <c>JustDummies/CharacterPools.cs</c>. An analyzer references no JustDummies assembly and cannot call it, so
-///     the definition is duplicated — but only once: JD015 and JD029 both read it from here, because two rules
-///     disagreeing about what a family admits would be worse than either being silent about it.
+///     the definition is duplicated — but only once, and it stays the single mirror: JD029 reads it from here, and any
+///     further rule needing a family must too, because two rules disagreeing about what a family admits would be worse
+///     than either being silent about it.
 /// </summary>
 internal static class CharacterFamilies {
 

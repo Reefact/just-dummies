@@ -21,11 +21,12 @@ namespace JustDummies.PropertyTests;
 /// </summary>
 /// <remarks>
 ///     <para>
-///         Two of these properties are of a kind an example cannot express at all: the same call shape is legal or
+///         One of these properties is of a kind an example cannot express at all: the same call shape is legal or
 ///         illegal depending on the <b>argument value</b>. <c>WithLength(n).StartingWith(prefix)</c> holds exactly
-///         when <c>n</c> leaves room for the prefix, and <c>Numeric().StartingWith(prefix)</c> holds exactly when
-///         every character of the prefix is a digit. Both are written as a single property branching on that
+///         when <c>n</c> leaves room for the prefix, and it is written as a single property branching on that
 ///         relationship, so what gets tested is the boundary itself rather than a hand-picked point on either side.
+///         A character family used to be a second such boundary; since ADR-0077 it is not one at all — a literal is
+///         exempt whatever it holds — so the property that probed it is now unconditional, and stronger for it.
 ///     </para>
 ///     <para>
 ///         Conflicts are asserted by <b>type</b> and at the fluent call that declares them, never on message text:
@@ -48,9 +49,6 @@ public sealed class StringShapeProperties {
     ///     unconstrained spread, mirrored here because the suite is black-box.
     /// </summary>
     private const int DefaultLengthSpread = 1024;
-
-    /// <summary>The digits alone, so an affix can be drawn from inside <c>Numeric()</c>'s own charset.</summary>
-    private const string DigitAlphabet = "0123456789";
 
     /// <summary>
     ///     The source alphabet for a <c>WithChars</c> pool. It reaches beyond letters and digits — a custom pool is
@@ -122,6 +120,24 @@ public sealed class StringShapeProperties {
     /// <summary>Anchors <paramref name="affix" /> at one end or the other, so a property can quantify over the end.</summary>
     private static AnyString ApplyAffix(AnyString generator, bool asSuffix, string affix) {
         return asSuffix ? generator.EndingWith(affix) : generator.StartingWith(affix);
+    }
+
+    /// <summary>Whether <paramref name="value" /> carries <paramref name="affix" /> at the end it was anchored to.</summary>
+    private static bool Anchors(string value, string affix, bool asSuffix) {
+        return asSuffix
+                   ? value.EndsWith(affix, StringComparison.Ordinal)
+                   : value.StartsWith(affix, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    ///     The characters the generator actually drew: the value with its one anchored literal removed. The layout is
+    ///     <c>prefix + filler</c> or <c>filler + suffix</c>, so the remainder is filler and nothing else — which is
+    ///     what a character constraint answers for since ADR-0077.
+    /// </summary>
+    private static string Drawn(string value, string affix, bool asSuffix) {
+        return asSuffix
+                   ? value.Substring(0, value.Length - affix.Length)
+                   : value.Substring(affix.Length);
     }
 
     // char.IsAsciiLetter/IsAsciiDigit are .NET 7+, and this suite also runs on the netstandard2.0 asset from the
@@ -308,18 +324,49 @@ public sealed class StringShapeProperties {
             .QuickCheckThrowOnFailure();
     }
 
-    [Fact(DisplayName = "Numeric accepts a prefix exactly when every one of its characters is a digit.")]
-    public void NumericAcceptsAPrefixExactlyWhenEveryCharacterIsADigit() {
-        // Half the prefixes come from the digits themselves and half from the full default alphabet, so both sides of
-        // the boundary are reached often — Numeric().StartingWith("123") is valid where
-        // Numeric().StartingWith("ORD-") conflicts, on the argument value alone.
-        Gen<string> prefixes = Gen.OneOf(Affix(DigitAlphabet, 4), Affix(DefaultAlphabet, 4));
+    [Fact(DisplayName = "A character family governs the drawn characters and exempts the anchored literal, whatever the family and the literal.")]
+    public void ACharacterFamilyGovernsTheDrawAndExemptsTheLiteral() {
+        // The affixes come from an alphabet reaching well beyond any single family — punctuation included — so the
+        // exemption is exercised rather than merely permitted. Where this property used to branch on whether the
+        // affix happened to fit the family, it is now unconditional: a literal is never drawn, so no family can
+        // contradict it (ADR-0077), and what is left to prove is the stronger half — that everything the generator
+        // DID draw belongs to the family.
+        Gen<(int Family, string Pool, string Affix, bool AsSuffix, int Drawn)> cases =
+            from family in Gen.Choose(0, 8)
+            from pool in CharacterPool()
+            from affix in Affix(PoolAlphabet, 6)
+            from asSuffix in Gen.Elements(false, true)
+            from drawn in Generators.Count(20)
+            select (Family: family, Pool: pool, Affix: affix, AsSuffix: asSuffix, Drawn: drawn);
 
-        Prop.ForAll(prefixes.ToArbitrary(),
-                    prefix => prefix.All(IsAsciiDigit)
-                                  ? Expect.EveryDraw(Any.String().Numeric().StartingWith(prefix),
-                                                     value => value.StartsWith(prefix, StringComparison.Ordinal) && value.All(IsAsciiDigit))
-                                  : Expect.Throws<ConflictingAnyConstraintException>(() => Any.String().Numeric().StartingWith(prefix)))
+        Prop.ForAll(cases.ToArbitrary(),
+                    testCase => Expect.EveryDraw(ApplyAffix(ApplyCharacterFamily(Any.String(), testCase.Family, testCase.Pool), testCase.AsSuffix, testCase.Affix)
+                                                     .WithLength(testCase.Affix.Length + testCase.Drawn),
+                                                 value => Anchors(value, testCase.Affix, testCase.AsSuffix)
+                                                       && Drawn(value, testCase.Affix, testCase.AsSuffix)
+                                                          .All(character => AllowedByFamily(character, testCase.Family, testCase.Pool))))
+            .QuickCheckThrowOnFailure();
+    }
+
+    [Fact(DisplayName = "A casing governs the drawn characters and exempts the anchored literal, whatever the casing and the literal.")]
+    public void ACasingGovernsTheDrawAndExemptsTheLiteral() {
+        // The affix alphabet carries both cases, so half the draws anchor a literal the casing would have refused
+        // before ADR-0077 — UpperCase().StartingWith("abc") among them.
+        Gen<(bool Upper, string Affix, bool AsSuffix, int Drawn)> cases =
+            from upper in Gen.Elements(false, true)
+            from affix in Affix(PoolAlphabet, 6)
+            from asSuffix in Gen.Elements(false, true)
+            from drawn in Generators.Count(20)
+            select (Upper: upper, Affix: affix, AsSuffix: asSuffix, Drawn: drawn);
+
+        Prop.ForAll(cases.ToArbitrary(),
+                    testCase => Expect.EveryDraw(ApplyAffix(ApplyCasing(Any.String(), testCase.Upper), testCase.AsSuffix, testCase.Affix)
+                                                     .WithLength(testCase.Affix.Length + testCase.Drawn),
+                                                 value => Anchors(value, testCase.Affix, testCase.AsSuffix)
+                                                       && Drawn(value, testCase.Affix, testCase.AsSuffix)
+                                                          .All(character => testCase.Upper
+                                                                                ? !(character is >= 'a' and <= 'z')
+                                                                                : !(character is >= 'A' and <= 'Z'))))
             .QuickCheckThrowOnFailure();
     }
 

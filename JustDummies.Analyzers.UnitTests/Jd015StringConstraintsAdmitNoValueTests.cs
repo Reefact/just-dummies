@@ -9,7 +9,10 @@ namespace JustDummies.Analyzers.UnitTests;
 public class Jd015StringConstraintsAdmitNoValueTests {
 
     [Fact]
-    public async Task Reports_the_case_ADR_0035_names() {
+    public async Task Does_not_report_a_family_that_excludes_a_fragments_character() {
+        // The '-' is not a digit, but it is not drawn either: the prefix is a literal the caller wrote, and a family
+        // governs only what the generator draws (ADR-0077). Reporting here would refuse at build time a chain the
+        // run time honours — which is what this rule did until #94.
         const string source = """
             using JustDummies;
 
@@ -22,70 +25,13 @@ public class Jd015StringConstraintsAdmitNoValueTests {
 
         ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new StringConstraintsAdmitNoValueAnalyzer(), source);
 
-        Check.That(diagnostics.Length).IsEqualTo(1);
-        Check.That(diagnostics[0].Id).IsEqualTo("JD015");
-        Check.That(diagnostics[0].GetMessage()).Contains("Numeric()");
-    }
-
-    [Fact]
-    public async Task Does_not_report_the_sibling_ADR_0035_contrasts_it_with() {
-        // Identical call site, identical static types — only the argument's value differs, and this one is legal.
-        const string source = """
-            using JustDummies;
-
-            public static class Sample {
-                public static string M() {
-                    return Any.String().Numeric().StartingWith("123").Generate();
-                }
-            }
-            """;
-
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new StringConstraintsAdmitNoValueAnalyzer(), source);
-
         Check.That(diagnostics.Length).IsEqualTo(0);
     }
 
     [Fact]
-    public async Task Reports_a_letter_the_punctuation_family_forbids() {
-        const string source = """
-            using JustDummies;
-
-            public static class Sample {
-                public static string M() {
-                    return Any.String().Punctuation().StartingWith("ORD-").Generate();
-                }
-            }
-            """;
-
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new StringConstraintsAdmitNoValueAnalyzer(), source);
-
-        Check.That(diagnostics.Length).IsEqualTo(1);
-        Check.That(diagnostics[0].GetMessage()).Contains("Punctuation()");
-    }
-
-    [Fact]
-    public async Task Does_not_report_a_punctuated_fragment_under_the_printable_family() {
-        // The widest family is the one that admits the fragment the narrower ones refuse: 'ORD-' conflicts with
-        // Alpha(), with Numeric() and with Punctuation(), and is legal here.
-        const string source = """
-            using JustDummies;
-
-            public static class Sample {
-                public static string M() {
-                    return Any.String().Printable().StartingWith("ORD-").Generate();
-                }
-            }
-            """;
-
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new StringConstraintsAdmitNoValueAnalyzer(), source);
-
-        Check.That(diagnostics.Length).IsEqualTo(0);
-    }
-
-    [Fact]
-    public async Task Reports_a_non_ascii_character_the_printable_family_forbids() {
-        // Printable is the widest family offered and still a bound: an accented letter is outside ASCII, so the
-        // rule names it rather than letting the widest family read as "anything goes".
+    public async Task Does_not_report_a_non_ascii_fragment_under_a_family() {
+        // An accented letter is outside ASCII, so no named family can draw it — and it still passes, because a
+        // contained value is not drawn. The filler stays printable ASCII whatever the literal holds.
         const string source = """
             using JustDummies;
 
@@ -98,14 +44,13 @@ public class Jd015StringConstraintsAdmitNoValueTests {
 
         ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new StringConstraintsAdmitNoValueAnalyzer(), source);
 
-        Check.That(diagnostics.Length).IsEqualTo(1);
-        Check.That(diagnostics[0].GetMessage()).Contains("Printable()");
+        Check.That(diagnostics.Length).IsEqualTo(0);
     }
 
     [Fact]
-    public async Task Reports_a_digit_a_declared_subtraction_removes() {
-        // A subtraction names its own culprit: whatever family is in force beside it, WithoutNumeric() is what
-        // refused the digit.
+    public async Task Does_not_report_a_character_a_subtraction_removes() {
+        // A subtraction narrows the filler alphabet exactly as a family does, so it exempts a literal for the same
+        // reason: WithoutNumeric() removes the digits it draws, not the ones the caller wrote.
         const string source = """
             using JustDummies;
 
@@ -118,73 +63,19 @@ public class Jd015StringConstraintsAdmitNoValueTests {
 
         ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new StringConstraintsAdmitNoValueAnalyzer(), source);
 
-        Check.That(diagnostics.Length).IsEqualTo(1);
-        Check.That(diagnostics[0].GetMessage()).Contains("WithoutNumeric()");
-    }
-
-    [Fact]
-    public async Task Does_not_report_a_fragment_the_subtraction_leaves_alone() {
-        const string source = """
-            using JustDummies;
-
-            public static class Sample {
-                public static string M() {
-                    return Any.String().WithoutNumeric().StartingWith("ORD-").Generate();
-                }
-            }
-            """;
-
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new StringConstraintsAdmitNoValueAnalyzer(), source);
-
         Check.That(diagnostics.Length).IsEqualTo(0);
     }
 
     [Fact]
-    public async Task Reports_a_letter_the_hexadecimal_family_forbids() {
-        const string source = """
-            using JustDummies;
-
-            public static class Sample {
-                public static string M() {
-                    return Any.String().Hexadecimal().StartingWith("XYZ").Generate();
-                }
-            }
-            """;
-
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new StringConstraintsAdmitNoValueAnalyzer(), source);
-
-        Check.That(diagnostics.Length).IsEqualTo(1);
-        Check.That(diagnostics[0].GetMessage()).Contains("Hexadecimal()");
-    }
-
-    [Fact]
-    public async Task Reports_a_letter_whose_case_the_chain_forbids() {
+    public async Task Does_not_report_a_fragment_whose_case_the_chain_forbids() {
+        // A casing is the third filter building the filler alphabet, so it follows the family: LowerCase() holds the
+        // characters it draws to lower case and keeps "ABC" as written.
         const string source = """
             using JustDummies;
 
             public static class Sample {
                 public static string M() {
                     return Any.String().LowerCase().StartingWith("ABC").Generate();
-                }
-            }
-            """;
-
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new StringConstraintsAdmitNoValueAnalyzer(), source);
-
-        Check.That(diagnostics.Length).IsEqualTo(1);
-        Check.That(diagnostics[0].GetMessage()).Contains("uppercase letter 'A'");
-    }
-
-    [Fact]
-    public async Task Does_not_report_a_non_letter_under_a_casing_constraint() {
-        // Verified against the library: casing constrains the case of a fragment's LETTERS and says nothing about its
-        // other characters. This exact chain is asserted legal by JustDummies.UnitTests/AnyStringTests.cs.
-        const string source = """
-            using JustDummies;
-
-            public static class Sample {
-                public static string M() {
-                    return Any.String().UpperCase().StartingWith("ORD-").Generate();
                 }
             }
             """;
@@ -214,8 +105,9 @@ public class Jd015StringConstraintsAdmitNoValueTests {
     }
 
     [Fact]
-    public async Task Reports_the_constraint_in_either_declaration_order() {
-        // StringSpec re-validates the whole spec on every mutation, so the order does not change the verdict.
+    public async Task Does_not_report_a_family_declared_after_the_fragment() {
+        // StringSpec re-validates the whole spec on every mutation, so the order does not change the verdict — the
+        // exemption holds whether the family is declared before or after the fragment.
         const string source = """
             using JustDummies;
 
@@ -228,7 +120,7 @@ public class Jd015StringConstraintsAdmitNoValueTests {
 
         ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new StringConstraintsAdmitNoValueAnalyzer(), source);
 
-        Check.That(diagnostics.Length).IsEqualTo(1);
+        Check.That(diagnostics.Length).IsEqualTo(0);
     }
 
     [Fact]
@@ -285,30 +177,13 @@ public class Jd015StringConstraintsAdmitNoValueTests {
     }
 
     [Fact]
-    public async Task Does_not_report_a_fragment_inside_an_explicit_pool() {
-        const string source = """
-            using JustDummies;
-
-            public static class Sample {
-                public static string M() {
-                    return Any.String().WithChars("ORD-0123456789").StartingWith("ORD-").Generate();
-                }
-            }
-            """;
-
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new StringConstraintsAdmitNoValueAnalyzer(), source);
-
-        Check.That(diagnostics.Length).IsEqualTo(0);
-    }
-
-    [Fact]
     public async Task Does_not_report_a_non_constant_fragment() {
         const string source = """
             using JustDummies;
 
             public static class Sample {
                 public static string M(string prefix) {
-                    return Any.String().Numeric().StartingWith(prefix).Generate();
+                    return Any.String().WithLength(3).StartingWith(prefix).Generate();
                 }
             }
             """;
@@ -327,7 +202,7 @@ public class Jd015StringConstraintsAdmitNoValueTests {
 
             public static class Sample {
                 public static string M() {
-                    AnyString generator = Any.String().Numeric();
+                    AnyString generator = Any.String().WithLength(3);
 
                     return generator.StartingWith("ORD-").Generate();
                 }
@@ -351,7 +226,7 @@ public class Jd015StringConstraintsAdmitNoValueTests {
 
             public static class Sample {
                 public static void M() {
-                    Check2.ThatCode(() => Any.String().Numeric().StartingWith("ORD-"));
+                    Check2.ThatCode(() => Any.String().WithLength(3).StartingWith("ORD-"));
                 }
             }
             """;

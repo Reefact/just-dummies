@@ -161,7 +161,7 @@ internal static class Descriptors {
         category: JustDummiesRule.JD015.Category,
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true,
-        description: "The constraints contradict each other for the constants written at the call site, so the chain throws a ConflictingAnyConstraintException the moment the arrange line runs. This is the case ADR-0014 names as the one an analyzer should carry: Numeric().StartingWith(\"ORD-\") conflicts while Numeric().StartingWith(\"123\") does not, from identical call sites and identical static types — only the argument value tells them apart.",
+        description: "The constants written at the call site admit no value, so the chain throws a ConflictingAnyConstraintException the moment the arrange line runs: the anchored fragments cannot fit the declared length, or a declared character constraint admits none of the values a OneOf(...) supplies -- there being no filler beside a value set, the constraint governs nothing of its own and simply empties the pool, so the remedy is to drop it. This is the case ADR-0014 names as the one an analyzer should carry: WithLength(3).StartingWith(\"ORD-\") conflicts while WithLength(12).StartingWith(\"ORD-\") does not, from identical call sites and identical static types — only the argument value tells them apart. A character family is not checked against a fragment: it governs what the generator draws, never a literal the caller wrote (ADR-0079).",
         helpLinkUri: JustDummiesRule.JD015.HelpLinkUri);
 
     public static readonly DiagnosticDescriptor CollectionConstraintsAdmitNoValue = new(

@@ -77,6 +77,16 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   is `JD029`'s to report. Silence it with `dotnet_diagnostic.JD032.severity = none` if your codebase writes
   fixed-prefix formats everywhere.
 
+- **`JD015` now reports a value set a constraint empties.** `Any.String().AlphaNumeric().OneOf("ORD-1", "ORD-2")`
+  throws at declaration — the family allows neither value — and until now the build said so only through two
+  `JD029` notes at 🔵 Info, a severity that reads as "this still works". It is a 🟠 Warning now, once, about the
+  chain, like every other *admits no value* case. This is the counterpart of the exemption above and the reason
+  the two read differently: an anchored literal claims its own region of a shaped string while the family claims
+  the rest, so the two never meet; a value set claims the **whole** string, so the family's region is that
+  supplied value itself and the two must agree. The remedy the message points at is to drop the constraint — the
+  values are yours, and beside them it contributes nothing. Reported only when **every** value is refused; a pool
+  one value survives is a narrowing, still `JD029`'s, which now stays quiet on the emptied case.
+
 - **`JD015` narrows to the length budget.** The analyzer mirrored the rule above at build time, so leaving it
   would have refused at compile time a chain the run time now honours. It keeps the one check that is still a
   contradiction — anchored fragments that cannot fit the declared length, `WithLength(3).StartingWith("ORD-")` —

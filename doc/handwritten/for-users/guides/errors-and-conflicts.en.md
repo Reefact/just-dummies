@@ -71,7 +71,7 @@ red build and a red test at 3 a.m.:
 | Rule | Catches |
 | --- | --- |
 | [JD014](../analyzers/JD014.en.md) | a constant argument the generator's own guard refuses |
-| [JD015](../analyzers/JD015.en.md) | string fragments that cannot fit the declared length |
+| [JD015](../analyzers/JD015.en.md) | a string chain that throws: fragments too long, or a value set a constraint empties |
 | [JD016](../analyzers/JD016.en.md) | collection counts that cannot all hold |
 | [JD017](../analyzers/JD017.en.md) | an enum constraint stepping outside the declared members |
 | [JD023](../analyzers/JD023.en.md) | an integer chain narrowed to nothing |

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
@@ -10,7 +11,8 @@ namespace JustDummies.Analyzers;
 
 /// <summary>
 ///     JD015 — reports an <c>AnyString</c> chain whose constant constraints admit no value: anchored fragments that
-///     cannot fit the declared length.
+///     cannot fit the declared length, or a declared character constraint that admits none of the values a constant
+///     <c>OneOf(...)</c> supplies.
 /// </summary>
 /// <remarks>
 ///     <para>
@@ -69,7 +71,7 @@ public sealed class StringConstraintsAdmitNoValueAnalyzer : DiagnosticAnalyzer {
     ///     reasons about at all. Everything below assumes that answer is yes.
     /// </remarks>
     private static void AnalyzeConstraints(OperationAnalysisContext context, IReadOnlyList<IInvocationOperation> constraints) {
-        bool                               hasValueSet = false;
+        IInvocationOperation?              valueSet    = null;
         List<(string Text, IOperation At)> fragments   = [];
         int?                               fixedLength = null;
         int?                               maximum     = null;
@@ -78,7 +80,7 @@ public sealed class StringConstraintsAdmitNoValueAnalyzer : DiagnosticAnalyzer {
             switch (constraint.TargetMethod.Name) {
                 // A terminal value set changes what the fragments are checked against: they are matched against the
                 // pooled values rather than laid out side by side, so the length budget below no longer applies.
-                case "OneOf": hasValueSet = true; break;
+                case "OneOf": valueSet = constraint; break;
 
                 case "StartingWith" or "EndingWith" or "Containing" when constraint.Arguments.Length == 1 && ConstantFacts.TryGetString(constraint.Arguments[0].Value, out string fragment):
                     fragments.Add((fragment, constraint.Arguments[0].Value));
@@ -97,9 +99,77 @@ public sealed class StringConstraintsAdmitNoValueAnalyzer : DiagnosticAnalyzer {
             }
         }
 
-        if (hasValueSet) { return; }
+        if (valueSet is not null) {
+            ReportEmptiedValueSet(context, constraints, valueSet);
+
+            return;
+        }
 
         ReportLengthBudget(context, fragments, fixedLength, maximum);
+    }
+
+    /// <summary>
+    ///     Reports a declared character constraint that admits none of the values a constant <c>OneOf(...)</c>
+    ///     supplies, which the run time refuses at declaration.
+    /// </summary>
+    /// <remarks>
+    ///     <para>
+    ///         The counterpart of the exemption ADR-0077 grants an anchored literal, and the reason the two read
+    ///         differently. A literal claims its own region of a shaped string and the family claims the rest, so the
+    ///         two never meet; a value set claims the WHOLE string and leaves no filler, so the family's region is
+    ///         that supplied value itself and the two must agree. When they cannot, the constraint contributes
+    ///         nothing and the chain throws — the remedy is to drop it.
+    ///     </para>
+    ///     <para>
+    ///         Reported only when every value the pool writes inline is refused. A pool one value survives is a
+    ///         narrowing rather than a contradiction, and JD029 reports the values it removed, at the severity a
+    ///         still-working chain deserves.
+    ///     </para>
+    /// </remarks>
+    private static void ReportEmptiedValueSet(OperationAnalysisContext context, IReadOnlyList<IInvocationOperation> constraints, IInvocationOperation valueSet) {
+        List<string> values = [];
+        foreach (IOperation element in ValueSetFacts.Elements(valueSet)) {
+            // A value the walk cannot fold leaves the pool partly unknown, and a claim about ALL of them would be a
+            // guess. Under-reporting is the safe direction.
+            if (!ConstantFacts.TryGetString(element, out string value)) { return; }
+
+            values.Add(value);
+        }
+
+        if (values.Count == 0) { return; }
+
+        foreach ((string rendered, Func<string, bool> admits) in CharacterTests(constraints)) {
+            if (values.Any(admits)) { continue; }
+
+            context.ReportDiagnostic(Diagnostic.Create(
+                Descriptors.StringConstraintsAdmitNoValue, valueSet.Syntax.GetLocation(),
+                $"{rendered} allows none of the values it offers"));
+
+            return;
+        }
+    }
+
+    /// <summary>
+    ///     The declared character constraints, each paired with the test a supplied value must pass. Only the
+    ///     character side: a length or an anchored fragment emptying a pool is a different claim, and JD029 already
+    ///     carries it value by value.
+    /// </summary>
+    private static IEnumerable<(string Rendered, Func<string, bool> Admits)> CharacterTests(IReadOnlyList<IInvocationOperation> constraints) {
+        foreach (IInvocationOperation constraint in constraints) {
+            string name = constraint.TargetMethod.Name;
+
+            if (CharacterFamilies.PoolFor(name) is string family) {
+                yield return ($"{name}()", value => value.All(character => family.IndexOf(character) >= 0));
+            } else if (name is "WithoutAlpha" or "WithoutNumeric" && CharacterFamilies.PoolFor(name.Substring("Without".Length)) is string removed) {
+                yield return ($"{name}()", value => value.All(character => removed.IndexOf(character) < 0));
+            } else if (name == "WithChars" && constraint.Arguments.Length == 1 && ConstantFacts.TryGetString(constraint.Arguments[0].Value, out string pool)) {
+                yield return ($"WithChars(\"{pool}\")", value => value.All(character => pool.IndexOf(character) >= 0));
+            } else if (name == "UpperCase") {
+                yield return ("UpperCase()", value => !value.Any(char.IsLower));
+            } else if (name == "LowerCase") {
+                yield return ("LowerCase()", value => !value.Any(char.IsUpper));
+            }
+        }
     }
 
     private static void ReportLengthBudget(OperationAnalysisContext context, List<(string Text, IOperation At)> fragments, int? fixedLength, int? maximum) {

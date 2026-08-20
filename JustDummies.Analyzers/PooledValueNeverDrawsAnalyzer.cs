@@ -90,8 +90,12 @@ public sealed class PooledValueNeverDrawsAnalyzer : DiagnosticAnalyzer {
     private static void AnalyzeStrings(OperationAnalysisContext context, IReadOnlyList<IInvocationOperation> constraints, IInvocationOperation valueSet) {
         List<(string Rendered, Func<string, bool> Admits)> tests = ConstantTests(constraints);
         if (tests.Count == 0) { return; }
+        // A pool nothing survives is not a narrowing, it is a chain that throws — JD015 says so once, about the
+        // chain. Listing every value here as well would report the same defect a second time, in a register that
+        // reads as "this still works".
+        if (NothingSurvives(valueSet, tests)) { return; }
 
-        foreach (IOperation element in PoolElements(valueSet)) {
+        foreach (IOperation element in ValueSetFacts.Elements(valueSet)) {
             // An element whose value the walk cannot fold is skipped rather than fatal: unlike JD025, whose subject
             // is a relationship BETWEEN two elements, every report here stands on one value alone.
             if (!ConstantFacts.TryGetString(element, out string value)) { continue; }
@@ -109,11 +113,27 @@ public sealed class PooledValueNeverDrawsAnalyzer : DiagnosticAnalyzer {
         List<(string Rendered, Func<decimal, bool> Admits)> tests = ScalarTests(constraints);
         if (tests.Count == 0) { return; }
 
-        foreach (IOperation element in PoolElements(valueSet)) {
+        foreach (IOperation element in ValueSetFacts.Elements(valueSet)) {
             if (!TryGetNumber(element, out decimal value)) { continue; }
 
             Report(context, element, value, tests);
         }
+    }
+
+    /// <summary>
+    ///     Whether every value the pool writes inline is refused. A pool holding a value the walk cannot fold is not
+    ///     one this can answer for, so it counts as surviving: the rule then reports the values it does know, which
+    ///     is the claim it can actually stand behind.
+    /// </summary>
+    private static bool NothingSurvives(IInvocationOperation valueSet, List<(string Rendered, Func<string, bool> Admits)> tests) {
+        bool any = false;
+        foreach (IOperation element in ValueSetFacts.Elements(valueSet)) {
+            any = true;
+            if (!ConstantFacts.TryGetString(element, out string value)) { return false; }
+            if (tests.All(test => test.Admits(value))) { return false; }
+        }
+
+        return any;
     }
 
     private static void Report<T>(OperationAnalysisContext context, IOperation element, T value, List<(string Rendered, Func<T, bool> Admits)> tests) {
@@ -300,7 +320,7 @@ public sealed class PooledValueNeverDrawsAnalyzer : DiagnosticAnalyzer {
     private static List<decimal> ConstantNumbers(IInvocationOperation constraint) {
         List<decimal> values = [];
 
-        foreach (IOperation element in ParamArrayElements(constraint)) {
+        foreach (IOperation element in ValueSetFacts.ParamArrayElements(constraint)) {
             if (!TryGetNumber(element, out decimal value)) { return []; }
 
             values.Add(value);
@@ -362,7 +382,7 @@ public sealed class PooledValueNeverDrawsAnalyzer : DiagnosticAnalyzer {
     private static List<string> ConstantArguments(IInvocationOperation constraint) {
         List<string> values = [];
 
-        foreach (IOperation element in ParamArrayElements(constraint)) {
+        foreach (IOperation element in ValueSetFacts.ParamArrayElements(constraint)) {
             if (!ConstantFacts.TryGetString(element, out string value)) { return []; }
 
             values.Add(value);
@@ -371,27 +391,6 @@ public sealed class PooledValueNeverDrawsAnalyzer : DiagnosticAnalyzer {
         return values;
     }
 
-    private static IEnumerable<IOperation> PoolElements(IInvocationOperation valueSet) {
-        foreach (IOperation element in ParamArrayElements(valueSet)) { yield return element; }
-
-        foreach (IArgumentOperation argument in valueSet.Arguments) {
-            // The IEnumerable<string> overload: only an inline collection is knowable, and anything held in a
-            // variable is the case IPoolInspection<T> answers at run time instead.
-            if (argument.ArgumentKind != ArgumentKind.ParamArray
-             && GeneratorFacts.Unwrap(argument.Value) is IArrayCreationOperation { Initializer: { } inline }) {
-                foreach (IOperation element in inline.ElementValues) { yield return element; }
-            }
-        }
-    }
-
-    private static IEnumerable<IOperation> ParamArrayElements(IInvocationOperation invocation) {
-        foreach (IArgumentOperation argument in invocation.Arguments) {
-            if (argument.ArgumentKind != ArgumentKind.ParamArray) { continue; }
-            if (argument.Value is not IArrayCreationOperation { Initializer: { } initializer }) { continue; }
-
-            foreach (IOperation element in initializer.ElementValues) { yield return element; }
-        }
-    }
 
     private static bool TryGetSingleInt32(IInvocationOperation constraint, out int value) {
         value = 0;

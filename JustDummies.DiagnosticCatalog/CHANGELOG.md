@@ -14,6 +14,11 @@ retired, a category changed — which is not when the library or the adapter mov
 
 ### Added
 
+- `JustDummiesRule.JD032` — *A bound declared twice, where only the tighter one survives*, category
+  `JustDummies.Constraints`. The rule set moves from 31 identifiers to 32.
+
+### Added
+
 - `JustDummiesRule.JD031` — *Two inclusive bounds the library also names as one range*, category
   `JustDummies.Constraints`. The rule set moves from 30 identifiers, `1.0.0-preview.3`'s count, to 31.
 

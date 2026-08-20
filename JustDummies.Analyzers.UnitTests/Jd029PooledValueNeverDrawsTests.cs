@@ -185,4 +185,23 @@ public class Jd029PooledValueNeverDrawsTests {
         Check.That(diagnostics[0].GetMessage()).IsEqualTo("This value never draws: WithLength(3) refuses it");
     }
 
+    [Fact]
+    public async Task Does_not_report_when_no_pooled_value_survives_at_all() {
+        // JD015 owns that chain: it throws, and saying so once about the chain beats listing every value in a
+        // register that reads as "this still works".
+        const string source = """
+            using JustDummies;
+
+            public static class Sample {
+                public static string M() {
+                    return Any.String().AlphaNumeric().OneOf("ORD-1", "ORD-2").Generate();
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new PooledValueNeverDrawsAnalyzer(), source);
+
+        Check.That(diagnostics.Length).IsEqualTo(0);
+    }
+
 }

@@ -73,7 +73,7 @@ différence entre un build rouge et un test rouge à trois heures du matin :
 | Règle | Détecte |
 | --- | --- |
 | [JD014](../analyzers/JD014.fr.md) | un argument constant que la garde du générateur refuse |
-| [JD015](../analyzers/JD015.fr.md) | des fragments de chaîne qui ne peuvent pas tenir dans la longueur déclarée |
+| [JD015](../analyzers/JD015.fr.md) | une chaîne de caractères qui lève : fragments trop longs, ou value set vidé par une contrainte |
 | [JD016](../analyzers/JD016.fr.md) | des effectifs de collection incompatibles entre eux |
 | [JD017](../analyzers/JD017.fr.md) | une contrainte d'énumération sortant des membres déclarés |
 | [JD023](../analyzers/JD023.fr.md) | une chaîne entière réduite à rien |

@@ -124,6 +124,83 @@ public class Jd015StringConstraintsAdmitNoValueTests {
     }
 
     [Fact]
+    public async Task Reports_a_family_that_admits_none_of_a_value_sets_values() {
+        // The counterpart of the exemption: a literal claims its own region of a shaped string, but a value set
+        // claims the whole string, so the family's region IS that supplied value and the two must agree. This one
+        // throws at declaration, and saying so at Info would read as "it still works".
+        const string source = """
+            using JustDummies;
+
+            public static class Sample {
+                public static string M() {
+                    return Any.String().AlphaNumeric().OneOf("ORD-1", "ORD-2").Generate();
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new StringConstraintsAdmitNoValueAnalyzer(), source);
+
+        Check.That(diagnostics.Length).IsEqualTo(1);
+        Check.That(diagnostics[0].Id).IsEqualTo("JD015");
+        Check.That(diagnostics[0].Severity).IsEqualTo(DiagnosticSeverity.Warning);
+        Check.That(diagnostics[0].GetMessage()).Contains("AlphaNumeric()");
+        Check.That(diagnostics[0].GetMessage()).Contains("allows none of the values");
+    }
+
+    [Fact]
+    public async Task Does_not_report_a_value_set_one_value_survives() {
+        // A narrowing rather than a contradiction: the chain draws "12345" happily, and JD029 names what went.
+        const string source = """
+            using JustDummies;
+
+            public static class Sample {
+                public static string M() {
+                    return Any.String().AlphaNumeric().OneOf("ORD-1", "12345").Generate();
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new StringConstraintsAdmitNoValueAnalyzer(), source);
+
+        Check.That(diagnostics.Length).IsEqualTo(0);
+    }
+
+    [Fact]
+    public async Task Reports_a_casing_that_admits_none_of_a_value_sets_values() {
+        const string source = """
+            using JustDummies;
+
+            public static class Sample {
+                public static string M() {
+                    return Any.String().OneOf("abc", "def").UpperCase().Generate();
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new StringConstraintsAdmitNoValueAnalyzer(), source);
+
+        Check.That(diagnostics.Length).IsEqualTo(1);
+        Check.That(diagnostics[0].GetMessage()).Contains("UpperCase()");
+    }
+
+    [Fact]
+    public async Task Does_not_report_a_value_set_whose_values_are_not_constant() {
+        const string source = """
+            using JustDummies;
+
+            public static class Sample {
+                public static string M(string code) {
+                    return Any.String().AlphaNumeric().OneOf("ORD-1", code).Generate();
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new StringConstraintsAdmitNoValueAnalyzer(), source);
+
+        Check.That(diagnostics.Length).IsEqualTo(0);
+    }
+
+    [Fact]
     public async Task Reports_fragments_that_cannot_fit_a_fixed_length() {
         const string source = """
             using JustDummies;

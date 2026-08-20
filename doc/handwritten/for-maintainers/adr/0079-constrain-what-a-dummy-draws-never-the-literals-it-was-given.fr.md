@@ -41,9 +41,10 @@ restreignent le pool fourni au lieu de façonner une chaîne — un mécanisme d
 
 ## Décision
 
-Une famille de caractères, un pool personnalisé, une soustraction et une casse contraignent chaque caractère
-que `Any.String()` **tire** et rien d'autre : un littéral fixé par `StartingWith`, `EndingWith` ou `Containing`
-est donc conservé exactement tel qu'écrit et n'est jamais jugé à leur aune, ni à la déclaration ni par `JD015`.
+Une famille de caractères, un pool personnalisé, une soustraction et une casse gouvernent chaque caractère que
+`Any.String()` **tire** et rien d'autre : sur une chaîne façonnée c'est le remplissage seul, de sorte qu'un
+littéral fixé par `StartingWith`, `EndingWith` ou `Containing` est conservé exactement tel qu'écrit ; sur un
+ensemble de valeurs rien n'est tiré du tout, de sorte que les valeurs fournies leur restent soumises.
 
 ## Justification
 
@@ -65,6 +66,18 @@ elles mais pas de la troisième devrait être portée comme une exception, et ce
 rien dans l'agencement qu'elle prétend décrire. L'uniformité supprime en outre toute une classe de combinaisons
 contradictoires au lieu de la réduire, la valeur même que nomme l'`ADR-0008` lorsqu'il refuse de rendre un
 motif généré chaînable avec les contraintes de chaîne.
+
+Une seule règle couvre les deux chemins, et c'est la lire comme une exemption pour les littéraux qui les fait
+paraître deux. Une contrainte gouverne les caractères tirés, et lesquels le sont est une question d'agencement,
+non de savoir qui les a écrits. Sur une chaîne façonnée, les fragments revendiquent leurs propres régions et la
+famille revendique le complément : les deux ne se rencontrent jamais et ne peuvent pas se contredire — c'est
+pourquoi `AlphaNumeric().StartingWith("ORD-")` se compose. Un ensemble de valeurs revendique au contraire la
+chaîne entière : il fournit la valeur tout entière et ne laisse aucun remplissage, donc la région de la famille
+est cette même valeur, et deux contraintes sur une même région doivent s'accorder exactement comme
+`Alpha().Numeric()` doit s'accorder. `OneOf("ORD-1").AlphaNumeric()` est refusé pour la raison qui fait refuser
+deux familles, pas par un principe différent. La lecture inverse — exempter une valeur fournie parce que
+l'appelant l'a écrite — laisserait la famille ne gouverner absolument rien sur ce chemin, en faisant un no-op
+muet plutôt qu'une contrainte.
 
 `JD015` doit se restreindre avec l'exécution. Un diagnostic qui refuse à la compilation ce que l'exécution
 honore est pire que l'un ou l'autre comportement pris isolément, car l'appelant ne peut pas satisfaire les
@@ -138,18 +151,22 @@ hésitation plutôt qu'une règle.
 
 ### Risques
 
-* Le chemin à ensemble de valeurs continue de filtrer les valeurs fournies par l'appelant selon la famille et
-  la casse : `OneOf("abc").UpperCase()` rejette donc toujours `"abc"` alors qu'`UpperCase().Containing("abc")`
-  le conserve désormais. Les deux chemins sont des mécanismes différents et l'asymétrie est ici délibérée, mais
-  un lecteur peut raisonnablement attendre que l'exemption atteigne les deux, et rencontrera la différence sans
-  règle qui la lui fasse prévoir.
+* Les deux chemins se lisent différemment au site d'appel — `UpperCase().Containing("abc")` conserve désormais
+  `"abc"` alors qu'`OneOf("abc").UpperCase()` le rejette toujours — et un lecteur qui apprend la règle comme
+  « un littéral que vous avez écrit est exempté » attendra que le second soit accepté aussi et trouvera le
+  comportement arbitraire. La règle qui prédit les deux porte sur ce qui est tiré, jamais sur qui l'a écrit ; la
+  documentation doit l'enseigner ainsi, car la lecture par l'auteur est l'intuitive et elle est fausse.
+* Un littéral portant des caractères que la famille déclarée ne peut pas tirer est désormais accepté en
+  silence : une vraie erreur — un préfixe en minuscules à côté d'`UpperCase()`, un séparateur à côté d'une
+  famille choisie par habitude — ne remonte donc plus nulle part. C'est le comportement correct sous cette
+  décision, et cela mérite tout de même l'attention d'un lecteur.
 
 ## Actions de suivi
 
-* Décider séparément si le filtre d'ensemble de valeurs doit suivre le même principe, puisqu'une valeur fournie
-  est elle aussi un texte de l'appelant. C'est un mécanisme différent — un filtre sur un ensemble fourni plutôt
-  qu'un agencement — avec son propre contrat de composition, et il mérite son propre enregistrement plutôt que
-  d'être replié ici.
+* Envisager un diagnostic informatif pour un littéral ancré portant des caractères que la famille déclarée ne
+  peut pas tirer. C'est légal et cela le reste : la règle rapporterait un fait plutôt qu'une faute — la forme
+  que `JD024` et `JD029` occupent déjà à cette sévérité — et remettrait sous forme de note la lecture que le
+  refus retiré donnait sous forme de refus.
 
 ## Références
 

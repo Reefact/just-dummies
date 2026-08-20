@@ -3,7 +3,7 @@
 🌍 **Languages:**  
 🇬🇧 English (this file) | 🇫🇷 [Français](./justdummies-diagnosticcatalog.fr.md)
 
-The `JD001`–`JD032` rules, published as constants a `[SuppressMessage]` can name. You only need this
+The `JD001`–`JD033` rules, published as constants a `[SuppressMessage]` can name. You only need this
 package if you suppress a JustDummies diagnostic and want the compiler to check that the rule you
 named exists.
 

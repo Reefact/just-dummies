@@ -161,7 +161,7 @@ internal static class Descriptors {
         category: JustDummiesRule.JD015.Category,
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true,
-        description: "The anchored fragments cannot fit the declared length, so the chain throws a ConflictingAnyConstraintException the moment the arrange line runs. This is the case ADR-0014 names as the one an analyzer should carry: WithLength(3).StartingWith(\"ORD-\") conflicts while WithLength(12).StartingWith(\"ORD-\") does not, from identical call sites and identical static types — only the argument value tells them apart. A character family is not checked against a fragment: it governs what the generator draws, never a literal the caller wrote (ADR-0077).",
+        description: "The constraints contradict each other for the constants written at the call site, so the chain throws a ConflictingAnyConstraintException the moment the arrange line runs. This is the case ADR-0014 names as the one an analyzer should carry: Numeric().StartingWith(\"ORD-\") conflicts while Numeric().StartingWith(\"123\") does not, from identical call sites and identical static types — only the argument value tells them apart.",
         helpLinkUri: JustDummiesRule.JD015.HelpLinkUri);
 
     public static readonly DiagnosticDescriptor CollectionConstraintsAdmitNoValue = new(
@@ -305,6 +305,16 @@ internal static class Descriptors {
         isEnabledByDefault: true,
         description: "Bounds fold silently and monotonically: a minimum keeps the larger of the two values, a maximum the smaller, and the losing call returns the generator unchanged. Nothing throws, and no run-time report mentions it -- so on a chain that declares the same bound twice, exactly one of the two calls is dead, always the looser one, whichever order they are written in. Reported as a WARNING rather than as information, unlike JD024: an inert exclusion has a defensible reading, since a sentinel can be excluded before the range that would produce it exists, but a bound written twice inside one expression has none -- the tighter simply erases the looser, and there is no future in which the erased call starts mattering. Only a single fluent chain is paired. A generator is an immutable recipe, so once the looser bound is held under a name it is not dead at all: that generator is usable in its own right, and reporting it would be a false positive.",
         helpLinkUri: JustDummiesRule.JD032.HelpLinkUri);
+
+    public static readonly DiagnosticDescriptor AnchoredLiteralOutsideCharacterFamily = new(
+        id: JustDummiesRule.JD033.Id,
+        title: JustDummiesRule.JD033.Title,
+        messageFormat: "{0}, so it appears only where you wrote it",
+        category: JustDummiesRule.JD033.Category,
+        defaultSeverity: DiagnosticSeverity.Info,
+        isEnabledByDefault: true,
+        description: "A character family, a custom pool, a subtraction and a casing govern the characters the generator DRAWS; an anchored literal is kept as written and is exempt (ADR-0079). That is what makes AlphaNumeric().StartingWith(\"ORD-\") the way to express a fixed separator, so this is a fact rather than a fault, and it is reported as information: the separator appears in the prefix and nowhere else. The same sentence covers the case that was not meant -- a lowercase prefix beside UpperCase(), a family chosen out of habit -- which the run time no longer refuses, and which only the author can tell apart from the deliberate one. Silent once OneOf(...) is declared: nothing is drawn beside a pooled value, and a pooled value a constraint refuses is JD029's to report.",
+        helpLinkUri: JustDummiesRule.JD033.HelpLinkUri);
 
     public static readonly DiagnosticDescriptor EmptyRelativeUri = new(
         id: JustDummiesRule.JD026.Id,

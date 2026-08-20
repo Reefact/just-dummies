@@ -60,7 +60,7 @@ asserts. Contradictory constraints fail fast, with a message naming *both* sides
 dotnet add package JustDummies
 ```
 
-No runtime dependency, and the 30 analyzer rules come bundled inside — they start working on your next
+No runtime dependency, and the 31 analyzer rules come bundled inside — they start working on your next
 build.
 
 ## 🔁 Reproducible by construction
@@ -140,9 +140,9 @@ of a plausible value being drawn behind your back.
 
 | Package | What it is |
 | --- | --- |
-| [`JustDummies`](doc/handwritten/for-users/packages/justdummies.en.md) | the library, with its 32 rules bundled in |
+| [`JustDummies`](doc/handwritten/for-users/packages/justdummies.en.md) | the library, with its 33 rules bundled in |
 | [`JustDummies.Xunit`](doc/handwritten/for-users/packages/justdummies-xunit.en.md) | the xUnit v3 adapter: `[Reproducible]` |
-| [`JustDummies.DiagnosticCatalog`](doc/handwritten/for-users/packages/justdummies-diagnosticcatalog.en.md) | the `JD001`–`JD032` rules as compile-checked constants |
+| [`JustDummies.DiagnosticCatalog`](doc/handwritten/for-users/packages/justdummies-diagnosticcatalog.en.md) | the `JD001`–`JD033` rules as compile-checked constants |
 | [`JustDummies.Cli`](doc/handwritten/for-users/packages/justdummies-cli.en.md) | `dum`, the scaffolder — a global tool, never a project reference |
 
 The three libraries target `netstandard2.0`; `JustDummies` additionally carries a `net8.0` asset with

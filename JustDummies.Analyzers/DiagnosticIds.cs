@@ -55,6 +55,9 @@ internal static class DiagnosticIds {
     /// <summary>JD031 — both inclusive bounds declared separately, where the generator names the range.</summary>
     public const string PairedBoundsHaveARangeForm = JustDummiesRule.JD031.Id;
 
+    /// <summary>JD032 — the same bound declared twice on one chain; only the tighter one survives.</summary>
+    public const string BoundDeclaredTwice = JustDummiesRule.JD032.Id;
+
     // Category: Composition — a part that reaches no result, a constraint that cannot bind
     public const string UnusedCombineOperand = JustDummiesRule.JD027.Id;
     public const string InertDistinctness = JustDummiesRule.JD028.Id;

@@ -4,7 +4,7 @@
 🇬🇧 [English](./justdummies.en.md) | 🇫🇷 Français (ce fichier)
 
 La bibliothèque elle-même : le point d'entrée `Any`, tous les générateurs, les portées de
-reproductibilité, et les 31 règles qui veillent au bon usage.
+reproductibilité, et les 32 règles qui veillent au bon usage.
 
 ## Installation
 
@@ -24,7 +24,7 @@ dans votre projet de test, et rien d'autre dans votre graphe de dépendances.
 | `Any.Reproducibly` / `UseSeed` / `WithSeed` | les portées de reproductibilité |
 | `AnyContext` | un monde isolé et graîné, portant les mêmes fabriques |
 | `DummyException` et ses trois sous-types | le vocabulaire des échecs |
-| 31 règles Roslyn | embarquées dans le paquet, actives dès la compilation suivante |
+| 32 règles Roslyn | embarquées dans le paquet, actives dès la compilation suivante |
 
 ## Les analyzers voyagent dans le paquet
 

@@ -3,7 +3,7 @@
 🌍 **Langues :**  
 🇬🇧 [English](./README.md) | 🇫🇷 Français (ce fichier)
 
-Le package `JustDummies` embarque 31 règles Roslyn (`JD001`–`JD031`), sous
+Le package `JustDummies` embarque 32 règles Roslyn (`JD001`–`JD032`), sous
 `analyzers/dotnet/cs`. Tout projet qui référence le package les récupère automatiquement, sans
 installation supplémentaire. Elles s'exécutent pendant la compilation et transforment en
 diagnostics de build des erreurs que l'exécution signalerait tard — ou jamais.
@@ -67,6 +67,7 @@ Ces règles anticipent, à la compilation, le sous-ensemble des vérifications d
 | [JD029 PooledValueNeverDraws](JD029.fr.md) | 🔵 Info | on | Une valeur écrite dans un value set de chaîne ou numérique qu'une contrainte de la même chaîne refuse : aucun tirage ne peut la rendre. Le dual de JD024, et elle ne voit que ce qui est écrit à l'appel. |
 | [JD030 UndeclaredStringLength](JD030.fr.md) | 🔵 Info | on | Une chaîne `Any.String()` qui ne déclare aucune longueur : elle tire toute l'étendue par défaut — 0 à 1024 caractères. Nomme le remède là où vous pouvez agir. |
 | [JD031 PairedBoundsHaveARangeForm](JD031.fr.md) | 🔵 Info | on | Une chaîne déclare séparément les deux bornes inclusives d'un intervalle, alors que le même générateur nomme cet intervalle en un seul appel. Rien n'est faux — elle comble un manque de découvrabilité. Paires inclusives uniquement : une paire stricte n'a pas de forme intervalle exacte. |
+| [JD032 BoundDeclaredTwice](JD032.fr.md) | 🟠 Warning | on | Une chaîne déclare deux fois la même borne ; les bornes se replient silencieusement, donc seule la plus serrée survit et l'appel le plus lâche est mort. Appariée sur le nom, donc les alias restent muets, et une borne détenue sous un nom n'est jamais suivie. |
 
 ## Composition
 

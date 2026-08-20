@@ -9,7 +9,7 @@
 
 ## À quoi il sert
 
-`JustDummies` livre 31 règles Roslyn (`JD001`–`JD031`) **embarqués dans le package NuGet**, sous
+`JustDummies` livre 32 règles Roslyn (`JD001`–`JD032`) **embarqués dans le package NuGet**, sous
 `analyzers/dotnet/cs`. Ils sont donc chargés par **le compilateur de chaque consommateur**, pas par
 le nôtre, et c'est ce seul fait qui justifie ce workflow.
 

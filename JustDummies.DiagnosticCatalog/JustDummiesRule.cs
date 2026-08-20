@@ -607,4 +607,22 @@ public static class JustDummiesRule {
 
     }
 
+    /// <summary>Two inclusive bounds the library also names as one range</summary>
+    [DiagnosticRule]
+    public static class JD031 {
+
+        /// <summary>The canonical identifier of this diagnostic.</summary>
+        public const string Id = nameof(JD031);
+
+        /// <summary>The category this diagnostic is grouped under.</summary>
+        public const string Category = JustDummiesCategory.Constraints;
+
+        /// <summary>The one-line summary the IDE shows beside the rule.</summary>
+        public const string Title = "Two inclusive bounds the library also names as one range";
+
+        /// <summary>The page explaining the condition this diagnostic detects.</summary>
+        public const string HelpLinkUri = HelpLinkBase + nameof(JD031) + HelpLinkSuffix;
+
+    }
+
 }

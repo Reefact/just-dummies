@@ -9,16 +9,16 @@ commande que vous installez globalement et ne référencez jamais.
 
 | Paquet | Ce que c'est | En ai-je besoin ? |
 | --- | --- | --- |
-| [`JustDummies`](./justdummies.fr.md) | la bibliothèque, avec ses 31 règles embarquées | **Oui** — c'est le produit |
+| [`JustDummies`](./justdummies.fr.md) | la bibliothèque, avec ses 32 règles embarquées | **Oui** — c'est le produit |
 | [`JustDummies.Xunit`](./justdummies-xunit.fr.md) | l'adaptateur xUnit v3 : `[Reproducible]` | Seulement avec xUnit v3, et seulement si vous voulez l'attribut |
-| [`JustDummies.DiagnosticCatalog`](./justdummies-diagnosticcatalog.fr.md) | les règles `JD001`–`JD031` en constantes vérifiées par le compilateur | Seulement pour supprimer une règle sans littéral de chaîne |
+| [`JustDummies.DiagnosticCatalog`](./justdummies-diagnosticcatalog.fr.md) | les règles `JD001`–`JD032` en constantes vérifiées par le compilateur | Seulement pour supprimer une règle sans littéral de chaîne |
 | [`JustDummies.Cli`](./justdummies-cli.fr.md) | `dum`, le scaffolder : écrit le générateur d'un de vos types | Seulement pour en scaffolder un — outil global, jamais une référence |
 
 ## Comment ils s'articulent
 
 ```mermaid
 flowchart TD
-    L["JustDummies<br/><i>la bibliothèque</i>"] -->|"embarque"| A["31 règles<br/><i>analyzers/dotnet/cs</i>"]
+    L["JustDummies<br/><i>la bibliothèque</i>"] -->|"embarque"| A["32 règles<br/><i>analyzers/dotnet/cs</i>"]
     X["JustDummies.Xunit<br/><i>[Reproducible]</i>"] -->|"dépend de"| L
     C["JustDummies.DiagnosticCatalog<br/><i>JustDummiesRule.JD0NN</i>"]
     C -.->|"nomme les règles de"| A

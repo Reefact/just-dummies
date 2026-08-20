@@ -24,7 +24,7 @@ project and nothing else into your dependency graph.
 | `Any.Reproducibly` / `UseSeed` / `WithSeed` | the reproducibility scopes |
 | `AnyContext` | an isolated, seeded world with the same factories on it |
 | `DummyException` and its three subtypes | the failure vocabulary |
-| 31 Roslyn rules | bundled inside the package, active on your next build |
+| 32 Roslyn rules | bundled inside the package, active on your next build |
 
 ## The analyzers travel inside the package
 

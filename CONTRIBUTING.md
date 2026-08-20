@@ -56,7 +56,7 @@ number that promises compatibility. Two guards, wired once in
 * **At the first STABLE release**: promote the accumulated `PublicAPI.Unshipped.txt` entries into
   `PublicAPI.Shipped.txt` (the *"mark shipped"* fix, or by hand). Deliberately **not** at a preview:
   promoting turns every later removal into an `RS0017` violation, and below 1.0 this library keeps the
-  right to remove. The same applies to `AnalyzerReleases.Unshipped.md` — the 31 rules stay unshipped
+  right to remove. The same applies to `AnalyzerReleases.Unshipped.md` — the 32 rules stay unshipped
   until the surface is frozen. Until then, `PublicAPI.Shipped.txt` being empty is the honest state, and
   it means nothing automated protects a published preview's surface: that is the accepted trade of
   being below 1.0, not an oversight.

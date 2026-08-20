@@ -38,9 +38,10 @@ a different mechanism with its own contract (`ADR-0054`).
 
 ## Decision
 
-A character family, a custom pool, a subtraction and a casing constrain every character `Any.String()`
-**draws** and nothing else, so a literal fixed by `StartingWith`, `EndingWith` or `Containing` is kept exactly
-as written and is never judged against them, at declaration or by `JD015`.
+A character family, a custom pool, a subtraction and a casing govern every character `Any.String()` **draws**
+and nothing else: on a shaped string that is the filler alone, so a literal fixed by `StartingWith`,
+`EndingWith` or `Containing` is kept exactly as written; on a value set nothing is drawn at all, so the
+supplied values stay subject to them.
 
 ## Rationale
 
@@ -61,6 +62,17 @@ alphabet the filler is drawn from. A rule exempting a literal from two of them b
 be carried as an exception, and that exception would follow from nothing in the layout it claims to describe.
 Uniformity also removes a whole class of contradictory combinations instead of shrinking it, the same value
 `ADR-0008` names when it refuses to make a generated pattern chainable with the string constraints.
+
+One rule covers both paths, and reading it as an exemption for literals is what makes them look like two. A
+constraint governs the characters drawn, and what those are is a question about the layout rather than about
+who wrote them. On a shaped string the fragments claim their own regions and the family claims the complement,
+so the two never meet and cannot contradict each other — which is why `AlphaNumeric().StartingWith("ORD-")`
+composes. A value set claims the whole string instead: it supplies the value entire and leaves no filler, so
+the family's region is that same value, and two constraints over one region must agree exactly as
+`Alpha().Numeric()` must. `OneOf("ORD-1").AlphaNumeric()` is refused for the reason two families are refused,
+not by a different principle. The alternative reading — exempting a supplied value because the caller wrote it
+— would leave the family governing nothing whatsoever on that path, making it a silent no-op rather than a
+constraint.
 
 `JD015` has to narrow with the run time. A diagnostic that refuses at build time what the run time honours is
 worse than either behaviour on its own, because the caller cannot satisfy both. The rule keeps the length
@@ -130,16 +142,21 @@ a rule.
 
 ### Risks
 
-* The value-set path keeps filtering caller-supplied values by the family and the casing, so
-  `OneOf("abc").UpperCase()` still rejects `"abc"` while `UpperCase().Containing("abc")` now keeps it. The two
-  paths are different mechanisms and the asymmetry is deliberate here, but a reader may reasonably expect the
-  exemption to reach both, and will meet the difference without a rule to predict it from.
+* The two paths read differently at the call site — `UpperCase().Containing("abc")` now keeps `"abc"` while
+  `OneOf("abc").UpperCase()` still rejects it — and a reader who learns the rule as "a literal you wrote is
+  exempt" will expect the second to be accepted too and find the behaviour arbitrary. The rule that predicts
+  both is about what is drawn, never about who wrote it; the documentation has to teach it that way, because
+  the authorship reading is the intuitive one and it is wrong.
+* A literal carrying characters the declared family cannot draw is now accepted in silence, so a genuine
+  mistake — a lowercase prefix beside `UpperCase()`, a separator beside a family chosen by habit — no longer
+  surfaces anywhere. That is correct behaviour under this decision and still worth a reader's attention.
 
 ## Follow-up Actions
 
-* Decide separately whether the value-set filter should follow the same principle, since a pooled value is
-  caller-supplied text too. It is a different mechanism — a filter over a supplied set rather than a layout —
-  with its own composition contract, and it deserves its own record rather than being folded in here.
+* Consider an informational diagnostic for an anchored literal holding characters the declared family cannot
+  draw. It is legal and stays legal, so the rule would report a fact rather than a fault — the shape `JD024` and
+  `JD029` already occupy at that severity — and it would put back, as a note, the reading the removed refusal
+  gave as a refusal.
 
 ## References
 

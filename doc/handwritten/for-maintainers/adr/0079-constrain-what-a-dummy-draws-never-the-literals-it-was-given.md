@@ -129,9 +129,10 @@ a rule.
 * The constraint semantics stop depending on the order the constraints are declared in, because no combination
   of a character constraint and a fragment can fail any more.
 * `JD015` becomes smaller and truer: one check, matching the run time exactly.
-* What it stops refusing, `JD031` reports as information: the literal's character appears where it was written
-  and nowhere else. The reading the refusal carried survives as a note, which is what it should have been — a
-  fixed-prefix format is the intended use, and only its author can tell it from a slip.
+* What it stops refusing, `JD031` names as an ambiguity rather than a fault. A chain asking for alphanumerics
+  and then writing a hyphen states two things about its characters, and this decision picks one reading of them;
+  the note says which, at the call site, without refusing what is the simple way to get a fixed separator. The
+  refusal became information, which is the register the case always warranted.
 * A relaxation, not a break — no chain that works today stops working, and no generated value changes shape.
   Only code asserting on the removed exception is affected.
 
@@ -157,9 +158,9 @@ a rule.
 
 ## Follow-up Actions
 
-* Watch whether `JD031` keeps carrying news. It is `Info` precisely so that answer can come from use rather
-  than from prediction: a codebase writing fixed-prefix formats everywhere may reasonably silence it, and if
-  that becomes the common outcome the rule is telling readers something they already know.
+* Watch the wording `JD031` uses, not whether it fires. It fires on the deliberate case by design — that is the
+  case carrying the ambiguity — so the sentence has to read as a note about what the declaration means, never as
+  a complaint about it. If readers take it as a complaint, the message is what to change.
 
 ## References
 

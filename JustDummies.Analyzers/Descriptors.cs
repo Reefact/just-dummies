@@ -323,7 +323,7 @@ internal static class Descriptors {
         category: JustDummiesRule.JD026.Category,
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true,
-        description: "The chain describes the empty reference, which no URI can be. The library reports it, but only at Generate() — this is the one constraint family member whose failure lands at act time rather than at the arrange line, so the stack points at the code under test instead of at the declaration that is wrong. Add WithQuery(), WithFragment(), Rooted(), or a positive segment count.",
+        description: "The chain says two things about its characters: an alphabet, and then a literal holding a character that alphabet excludes. AlphaNumeric().StartingWith(\"ORD-\") asks for alphanumerics and writes a hyphen. That reads as a contradiction, and the library resolves it one specific way -- the literal is kept as written, and the alphabet governs the characters drawn beside it (ADR-0079) -- which is exactly what makes the chain the simple way to get ORD-pDc8. The rule names the ambiguity at the call site so the reader knows which reading applies, without refusing a deliberate and useful thing to write; that is why it is information rather than a warning. Silent once OneOf(...) is declared: nothing is drawn beside a pooled value, so there is no second reading to choose between -- the caller supplied the whole value, and a constraint that admits none of it is refused outright.",
         helpLinkUri: JustDummiesRule.JD026.HelpLinkUri);
 
     public static readonly DiagnosticDescriptor UnusedCombineOperand = new(

@@ -59,6 +59,7 @@ public sealed class ScalarChainAdmitsNoValueAnalyzer : DiagnosticAnalyzer {
     /// </remarks>
     private static void AnalyzeConstraints(OperationAnalysisContext context, IReadOnlyList<IInvocationOperation> constraints) {
         ScalarConstraintState state = ScalarConstraintState.Unconstrained();
+        HashSet<string>       seen  = [];
 
         foreach (IInvocationOperation constraint in constraints) {
             if (!TryReadArguments(constraint, out IReadOnlyList<long> arguments)) { return; }
@@ -84,7 +85,11 @@ public sealed class ScalarChainAdmitsNoValueAnalyzer : DiagnosticAnalyzer {
                 return;
             }
 
-            if (IsNarrowingConstraint(name) && state.NarrowsNothing(next)) {
+            // A bound the chain already named is JD032's, not this rule's: the same NAME twice is one phenomenon,
+            // reported once, in both writing orders and in every generator family (ADR-0078). JD024 keeps what its
+            // message actually describes -- a constraint that narrows nothing -- which still covers a bound implied
+            // by a DIFFERENT one, Positive() after GreaterThan(5) being the shape it exists for.
+            if (IsNarrowingConstraint(name) && state.NarrowsNothing(next) && !IsSecondDeclarationOfTheSameBound(name, arguments, seen)) {
                 context.ReportDiagnostic(Diagnostic.Create(
                     Descriptors.ConstraintWithNoEffect, constraint.Syntax.GetLocation(),
                     $"{name} is already implied by the constraints declared before it"));
@@ -92,8 +97,14 @@ public sealed class ScalarChainAdmitsNoValueAnalyzer : DiagnosticAnalyzer {
                 return;
             }
 
+            seen.Add(name);
             state = next;
         }
+    }
+
+    /// <summary>Whether JD032 owns this call: a single-argument folding bound whose name the chain already used.</summary>
+    private static bool IsSecondDeclarationOfTheSameBound(string name, IReadOnlyList<long> arguments, HashSet<string> seen) {
+        return arguments.Count == 1 && BoundDeclaredTwiceAnalyzer.FoldingBounds.Contains(name) && seen.Contains(name);
     }
 
     // A bound whose job is to narrow. Applying one that changes nothing is what JD024 reports; Positive() after

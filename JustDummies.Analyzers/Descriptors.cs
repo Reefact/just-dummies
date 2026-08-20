@@ -296,6 +296,16 @@ internal static class Descriptors {
         description: "Both inclusive bounds of a range are declared separately, and the same generator names that range in a single call. Nothing is wrong here, and nothing has to change: the two spellings behave identically -- the range method IS the two bounds -- and the decomposed form is decomposable on purpose, so a shared helper can set a floor and a call site add a ceiling. This is a discoverability rule and nothing more. The range form is easy to miss, a reader who writes the bounds separately never learns it exists, and it reads closer to how the rule is usually stated out loud. It also carries one consequence the pair does not: a conflict raised later names the range the author wrote rather than one of its halves. Reported as information, never as a verdict. Only INCLUSIVE pairs are reported, because only they have an exact range form: a strict pair has none at all on a floating-point type, and a different one on an integral type.",
         helpLinkUri: JustDummiesRule.JD031.HelpLinkUri);
 
+    public static readonly DiagnosticDescriptor BoundDeclaredTwice = new(
+        id: JustDummiesRule.JD032.Id,
+        title: JustDummiesRule.JD032.Title,
+        messageFormat: "{0} is declared twice on this chain — {1} then {2} — and only the tighter applies",
+        category: JustDummiesRule.JD032.Category,
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true,
+        description: "Bounds fold silently and monotonically: a minimum keeps the larger of the two values, a maximum the smaller, and the losing call returns the generator unchanged. Nothing throws, and no run-time report mentions it -- so on a chain that declares the same bound twice, exactly one of the two calls is dead, always the looser one, whichever order they are written in. Reported as a WARNING rather than as information, unlike JD024: an inert exclusion has a defensible reading, since a sentinel can be excluded before the range that would produce it exists, but a bound written twice inside one expression has none -- the tighter simply erases the looser, and there is no future in which the erased call starts mattering. Only a single fluent chain is paired. A generator is an immutable recipe, so once the looser bound is held under a name it is not dead at all: that generator is usable in its own right, and reporting it would be a false positive.",
+        helpLinkUri: JustDummiesRule.JD032.HelpLinkUri);
+
     public static readonly DiagnosticDescriptor EmptyRelativeUri = new(
         id: JustDummiesRule.JD026.Id,
         title: JustDummiesRule.JD026.Title,

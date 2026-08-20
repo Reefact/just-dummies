@@ -10,6 +10,28 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Added
 
+- **JD032 — *A bound declared twice, where only the tighter one survives*** (category `JustDummies.Constraints`,
+  🟠 Warning, on by default). Bounds fold silently and monotonically — a minimum keeps the larger of the two values,
+  a maximum the smaller — and the losing call returns the generator unchanged, so on a chain that declares the same
+  bound twice one of the two calls is always dead, the looser one, whichever order it was written in. Nothing threw
+  and nothing reported it
+  ([ADR-0078](../doc/handwritten/for-maintainers/adr/0078-own-a-bound-declared-twice-as-one-rule.md)).
+
+  A warning rather than information, on JD025's precedent: a duplicate that collapses silently is already a warning
+  in this rule set. It is matched on the constraint's **name**, which leaves the aliases alone — `NonEmpty()` and
+  `Positive()` reach a minimum too, and choosing them says something the explicit bound does not. It never follows a
+  generator held under a name, and there that is soundness rather than scope: a generator is an immutable recipe, so
+  a named intermediate still draws and its bound is not dead.
+
+### Changed
+
+- **JD024 no longer reports a bound already implied by a bound of the same name** — that shape is JD032's now, in
+  both writing orders and in every generator family, so one mistake draws one diagnostic. JD024 keeps what its
+  message describes: an inert `Except`/`DifferentFrom`, a bound implied by a *different* one such as `Positive()`
+  after `GreaterThan(5)`, and a range declared twice to no effect. Its pages state the boundary.
+
+### Added
+
 - **JD031 — *Two inclusive bounds the library also names as one range*** (category `JustDummies.Constraints`,
   🔵 Info, on by default). A chain that declares both inclusive bounds separately — `WithMinLength(8).WithMaxLength(20)`,
   `GreaterThanOrEqualTo(1).LessThanOrEqualTo(50)` — is pointed at the range form the same generator exposes.

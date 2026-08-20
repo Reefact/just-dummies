@@ -22,7 +22,7 @@ n'existe, et la colonne **Origine** dit comment chacune est arrivée ici :
   aussi, car ce dépôt l'applique encore. Les deux copies sont désormais
   indépendantes : chaque côté peut remplacer la sienne sans toucher à l'autre.
   9 décisions.
-* **consigné ici** — décidé dans ce dépôt, de son propre chef. 36 décisions.
+* **consigné ici** — décidé dans ce dépôt, de son propre chef. 37 décisions.
 
 Les numéros appartiennent à cette base, attribués dans l'ordre où les décisions
 ont été consignées en amont
@@ -181,3 +181,4 @@ et qu'elle a été décidée le 01/08/2026 — l'index porte l'ordre, la numéro
 | [ADR-0076](0076-let-a-declared-maximum-steer-the-size-draw.fr.md) | Laisser un maximum déclaré piloter le tirage de taille | Accepted | consigné ici |
 | [ADR-0077](0077-admit-a-rule-that-reports-a-correct-spelling.fr.md) | Admettre une règle JD qui signale une écriture correcte, bornée par un équivalent nommé exact | Accepted | consigné ici |
 | [ADR-0078](0078-own-a-bound-declared-twice-as-one-rule.fr.md) | Confier à une seule règle la borne déclarée deux fois, et en retirer JD024 | Accepted | consigné ici |
+| [ADR-0079](0079-constrain-what-a-dummy-draws-never-the-literals-it-was-given.fr.md) | Contraindre ce qu'un dummy tire, jamais les littéraux qu'on lui a donnés | Accepted | consigné ici |

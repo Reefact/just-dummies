@@ -17,7 +17,7 @@ maintainer judge rather than guessing.
 
 ## 1 — Select, do not read the base
 
-There are 73 records. Reading them all is not what this check means, and never was.
+There are 78 records. Reading them all is not what this check means, and never was.
 
 1. Read only the index table:
    `grep '^| \[ADR-' doc/handwritten/for-maintainers/adr/README.md`

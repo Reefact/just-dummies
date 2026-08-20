@@ -11,7 +11,7 @@ d'un type donné. Écrit pour qui s'apprête à modifier la bibliothèque, non �
 | Projet | Publié comme | Cibles | Ce que c'est |
 | --- | --- | --- | --- |
 | `JustDummies` | `JustDummies` | `netstandard2.0` + `net8.0` | la bibliothèque, analyzers empaquetés dedans |
-| `JustDummies.Analyzers` | *dans* `JustDummies` | `netstandard2.0` | les 30 règles Roslyn, sous `analyzers/dotnet/cs` |
+| `JustDummies.Analyzers` | *dans* `JustDummies` | `netstandard2.0` | les 31 règles Roslyn, sous `analyzers/dotnet/cs` |
 | `JustDummies.Xunit` | `JustDummies.Xunit` | `netstandard2.0` | l'adaptateur xUnit v3 — un attribut |
 | `JustDummies.DiagnosticCatalog` | `JustDummies.DiagnosticCatalog` | `netstandard2.0` | les ids de règles en constantes vérifiées |
 | `JustDummies.GenAny` | *dans* `JustDummies.Cli` | `netstandard2.0` | le moteur de `dum` : les §3.2, §4 et §5 entières — recherche, émission, résolution, guards |

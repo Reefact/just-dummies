@@ -3,7 +3,7 @@
 🌍 **Languages:**  
 🇬🇧 English (this file) | 🇫🇷 [Français](./justdummies.fr.md)
 
-The library itself: the `Any` entry point, every generator, the reproducibility scopes, and the 30
+The library itself: the `Any` entry point, every generator, the reproducibility scopes, and the 31
 rules that guard correct usage.
 
 ## Install
@@ -24,7 +24,7 @@ project and nothing else into your dependency graph.
 | `Any.Reproducibly` / `UseSeed` / `WithSeed` | the reproducibility scopes |
 | `AnyContext` | an isolated, seeded world with the same factories on it |
 | `DummyException` and its three subtypes | the failure vocabulary |
-| 30 Roslyn rules | bundled inside the package, active on your next build |
+| 31 Roslyn rules | bundled inside the package, active on your next build |
 
 ## The analyzers travel inside the package
 

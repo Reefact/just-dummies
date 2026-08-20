@@ -10,7 +10,7 @@
 
 JustDummies generates **explicit, constrained, domain-respecting dummies** for .NET: a
 fluent DSL where constraints express the invariants a value must satisfy, never what the
-test asserts. It ships 30 Roslyn analyzers (`JD001`–`JD030`) inside its own package.
+test asserts. It ships 31 Roslyn analyzers (`JD001`–`JD031`) inside its own package.
 
 ## The name is the scope — *just* dummies
 
@@ -131,7 +131,7 @@ Invoke on demand — `.claude/skills/`:
 Canonical documentation, shared with other agents and with humans:
 
 * [`doc/handwritten/for-maintainers/README.md`](doc/handwritten/for-maintainers/README.md) — the hub: architecture, conventions, records.
-* [`adr/README.md`](doc/handwritten/for-maintainers/adr/README.md) — the 73 decisions and their index.
+* [`adr/README.md`](doc/handwritten/for-maintainers/adr/README.md) — the 78 decisions and their index.
 * [`specifications/`](doc/handwritten/for-maintainers/specifications/) — the `dum` specification; what each accepted decision enforces and where.
 * [`CONTRIBUTING.md`](CONTRIBUTING.md) — branches, commit messages, pull-request titles, the public API baseline.
 * [`AGENTS.md`](AGENTS.md) — the same rules for agents that do not read `.claude/`.

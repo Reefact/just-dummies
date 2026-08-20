@@ -14,7 +14,7 @@ that cannot read `.claude/` loses nothing by reading this file instead.
 
 - Generates **explicit, constrained, domain-respecting dummies** for .NET: constraints express the
   invariants a value must satisfy, never what the test asserts. Targets netstandard2.0 (the floor) and
-  net8.0; the supported .NET Framework floor is 4.7.2. Ships 30 Roslyn analyzers (`JD001`-`JD030`)
+  net8.0; the supported .NET Framework floor is 4.7.2. Ships 31 Roslyn analyzers (`JD001`-`JD031`)
   inside the package.
 - **The name is the scope: *just* dummies** (ADR-0046). A dummy is arbitrary and valid for the
   constraints declared at the call site — not a statistically ideal draw, not a universal generator, not

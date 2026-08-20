@@ -98,7 +98,7 @@ index; it holds no argument of its own.
 |---|---|---|
 | **D1** | Scaffold once; the file belongs to the developer. | Kills drift, `check`, and the source-generator question in one move. |
 | **D2** | The emitted type implements `IAny<T>` and is **immutable**. | Composability, and it re-arms the `JustDummies.Usage` analyzers on the emitted type. |
-| **D3** | The emitted file is **not** marked as generated code. | All 30 analyzers exempt generated code; marking it would blind the file. |
+| **D3** | The emitted file is **not** marked as generated code. | All 31 analyzers exempt generated code; marking it would blind the file. |
 | **D4** | Never emit a member not resolved in the target compilation. | One rule covers the TFM split, the public-API baseline, version skew and unsigned arithmetic. |
 | **D5** | Read constructor guard clauses to seed each generator. | Without it the emitted code produces values the constructor rejects. |
 | **D6** | An unresolved parameter is emitted as a **compile error**. | The developer is already in the file; a red squiggle is the cheapest possible signal. |
@@ -1211,7 +1211,7 @@ exercised by §17.
 
 ### 14.6 Analyzer inventory
 
-30 diagnostic identifiers over 29 analyzer classes — `JD023` and `JD024` share one.
+31 diagnostic identifiers over 30 analyzer classes — `JD023` and `JD024` share one.
 
 | Range | Category | Severities |
 |---|---|---|
@@ -1231,11 +1231,11 @@ exercised by §17.
 | `JD024` | Constraints | Info |
 | `JD025`–`JD026` | Constraints | Warning |
 | `JD027`–`JD028` | Composition | Warning |
-| `JD029`–`JD030` | Constraints | Info |
+| `JD029`–`JD031` | Constraints | Info |
 
 Three facts about them drive decisions in this document:
 
-* **All 30 call `ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None)`** — hence D3.
+* **All 31 call `ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None)`** — hence D3.
 * **The `Usage` rules match any type implementing `IAny<T>`**, not a list of built-in generators —
   hence D2's second benefit.
 * **The `Reproducibility` rules match chains rooted at the static `Any` façade**, deliberately

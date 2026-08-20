@@ -53,7 +53,7 @@ De quoi chercher, organisé par le type dont vous avez besoin.
 
 ## Règles des analyzers
 
-30 règles sont embarquées dans la bibliothèque et s'exécutent dès votre prochaine compilation.
+31 règles sont embarquées dans la bibliothèque et s'exécutent dès votre prochaine compilation.
 → [**Index des règles**](./analyzers/README.fr.md), une page par diagnostic, en anglais et en
 français. Le lien d'aide d'un diagnostic pointe directement vers sa page.
 

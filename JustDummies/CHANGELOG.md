@@ -47,6 +47,32 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   `WithLengthBetween(8, 8)` and never as `WithLength(8)`, which settles the length without drawing and would
   therefore move every later value on a seeded run.
 
+### Changed
+
+- **A character constraint now governs what is drawn, not the literals you wrote.** `Alpha()`, `Numeric()`,
+  `AlphaNumeric()`, `Punctuation()`, `Printable()`, `NonPrintable()`, `Whitespaces()`, `Hexadecimal()`,
+  `WithChars(...)`, the subtractive `WithoutAlpha()`/`WithoutNumeric()` and the casings `LowerCase()`/`UpperCase()`
+  used to be checked against every anchored fragment as well, so `Any.String().AlphaNumeric().StartingWith("ORD-")`
+  threw at declaration: the separator you wrote is not alphanumeric. It never was going to be drawn. A prefix, a
+  suffix and a contained value are now kept exactly as written, and the declared alphabet governs the characters
+  the generator draws beside them — so that chain yields `ORD-` followed by alphanumerics only, the hyphen
+  appearing in the prefix and nowhere else. A very ordinary format finally says what it means, with each of its
+  rules a named call: `Any.String().StartingWith("ORD-").AlphaNumeric().UpperCase().WithLengthBetween(8, 20)`.
+  The workaround this replaces — a custom pool holding the separator — made the separator drawable *everywhere*,
+  yielding `ORD-SWLTLFk-` and `ORD-7-tVsCQNj61I17`, and cost the casing too, since a pool occupies the family slot
+  and refuses to combine with one. Two consequences worth knowing: `UpperCase()` now means "every letter I draw",
+  so a lowercase literal beside it is kept rather than refused; and a value set is unchanged, so
+  `OneOf("abc").UpperCase()` still rejects `"abc"` — there the values are yours and the constraints filter them
+  rather than shape a string
+  ([ADR-0077](../doc/handwritten/for-maintainers/adr/0079-constrain-what-a-dummy-draws-never-the-literals-it-was-given.md)).
+  This is a relaxation: no chain that worked stops working, and no generated value changes shape. Only code
+  asserting on the removed conflict is affected.
+
+- **`JD015` narrows to the length budget.** The analyzer mirrored the rule above at build time, so leaving it
+  would have refused at compile time a chain the run time now honours. It keeps the one check that is still a
+  contradiction — anchored fragments that cannot fit the declared length, `WithLength(3).StartingWith("ORD-")` —
+  with its message unchanged. Its id, title, category and severity are unchanged.
+
 ## [1.0.0-preview.2] - 2026-08-18
 
 ### Changed

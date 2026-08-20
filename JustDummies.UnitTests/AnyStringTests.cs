@@ -172,13 +172,14 @@ public sealed class AnyStringTests {
         }
     }
 
-    [Fact(DisplayName = "WithoutAlpha refuses an anchored fragment holding a letter, blaming itself rather than the (absent) family.")]
-    public void WithoutAlphaRefusesAFragmentHoldingALetter() {
-        ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.String().WithoutAlpha().Containing("abc"));
-
-        Check.That(conflict.Message).Contains("WithoutAlpha()");
-        Check.That(conflict.Message).Contains("Containing(\"abc\")");
+    [Fact(DisplayName = "WithoutAlpha keeps a contained value holding a letter: a subtraction governs the filler alone.")]
+    public void WithoutAlphaKeepsAContainedValueHoldingALetter() {
+        foreach (string value in Samples(Any.String().WithoutAlpha().Containing("abc").WithLengthBetween(6, 12))) {
+            Check.That(value).Contains("abc");
+            // The filler carries no letter, so the first occurrence is the literal itself: removing it leaves
+            // exactly what was drawn, and the subtraction answers for all of that.
+            Check.That(value.Remove(value.IndexOf("abc", StringComparison.Ordinal), 3).Any(char.IsLetter)).IsFalse();
+        }
     }
 
     [Fact(DisplayName = "LowerCase yields no uppercase letter; digits stay allowed.")]
@@ -188,12 +189,59 @@ public sealed class AnyStringTests {
         }
     }
 
-    [Fact(DisplayName = "UpperCase yields no lowercase letter; fragments keep their own characters.")]
+    [Fact(DisplayName = "UpperCase draws no lowercase letter, and keeps a lowercase literal as written.")]
     public void UpperCaseForbidsLowercaseLetters() {
-        foreach (string value in Samples(Any.String().UpperCase().StartingWith("ORD-").NonEmpty())) {
-            Check.That(value.Any(character => character is >= 'a' and <= 'z')).IsFalse();
-            Check.That(value).StartsWith("ORD-");
+        foreach (string value in Samples(Any.String().UpperCase().StartingWith("ord-").WithLengthBetween(6, 12))) {
+            Check.That(value).StartsWith("ord-");
+            Check.That(value.Substring(4).Any(character => character is >= 'a' and <= 'z')).IsFalse();
         }
+    }
+
+    // A character constraint governs what the generator DRAWS; a literal fixed by StartingWith, EndingWith or
+    // Containing is not drawn, and is therefore exempt (ADR-0077). The cases below are the formats that could not be
+    // written before: a fixed separator in the prefix, and a body the family still governs on its own.
+
+    [Fact(DisplayName = "AlphaNumeric with an anchored prefix draws the separator nowhere but the prefix.")]
+    public void AlphaNumericWithAPrefixDrawsTheSeparatorNowhereElse() {
+        foreach (string value in Samples(Any.String().AlphaNumeric().StartingWith("ORD-").WithLengthBetween(8, 20))) {
+            Check.That(value).StartsWith("ORD-");
+            Check.That(value.IndexOf('-', 4)).IsEqualTo(-1);
+            Check.That(value.Substring(4).All(char.IsLetterOrDigit)).IsTrue();
+        }
+    }
+
+    [Fact(DisplayName = "An order reference keeps its four rules as named calls: prefix, family, casing and length.")]
+    public void AnOrderReferenceKeepsItsFourRulesNamed() {
+        foreach (string value in Samples(Any.String().StartingWith("ORD-").AlphaNumeric().UpperCase().WithLengthBetween(8, 20))) {
+            Check.That(value).StartsWith("ORD-");
+            Check.That(value.Length).IsGreaterOrEqualThan(8);
+            Check.That(value.Length).IsLessOrEqualThan(20);
+            Check.That(value.Substring(4).All(character => char.IsUpper(character) || char.IsDigit(character))).IsTrue();
+        }
+    }
+
+    [Fact(DisplayName = "A family and an anchored suffix compose the same way whichever is declared first.")]
+    public void AFamilyAndASuffixAreOrderIndependent() {
+        foreach (AnyString generator in new[] { Any.String().Alpha().EndingWith("-42"), Any.String().EndingWith("-42").Alpha() }) {
+            foreach (string value in Samples(generator.WithLengthBetween(6, 12))) {
+                Check.That(value).EndsWith("-42");
+                Check.That(value.Substring(0, value.Length - 3).All(char.IsLetter)).IsTrue();
+            }
+        }
+    }
+
+    [Fact(DisplayName = "WithChars keeps a contained value its pool cannot draw, and still draws only from the pool.")]
+    public void WithCharsKeepsAContainedValueOutsideItsPool() {
+        foreach (string value in Samples(Any.String().WithChars("0123456789").Containing("-OK-").WithLengthBetween(8, 16))) {
+            Check.That(value).Contains("-OK-");
+            // The pool is digits only, so no filler can spell the literal: the first occurrence is the literal.
+            Check.That(value.Remove(value.IndexOf("-OK-", StringComparison.Ordinal), 4).All(char.IsDigit)).IsTrue();
+        }
+    }
+
+    [Fact(DisplayName = "A length the prefix fills exactly draws nothing, so the family governs nothing.")]
+    public void APrefixFillingTheWholeLengthDrawsNothing() {
+        Check.That(Any.String().Numeric().WithLength(4).StartingWith("ORD-").Generate()).IsEqualTo("ORD-");
     }
 
     [Fact(DisplayName = "A second WithLength conflicts: the exact length is declared once.")]
@@ -225,13 +273,12 @@ public sealed class AnyStringTests {
         Check.That(conflict.Message).Contains("4");
     }
 
-    [Fact(DisplayName = "A numeric-only string cannot start with a non-numeric prefix.")]
-    public void NumericPrefixMismatchConflicts() {
-        ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.String().Numeric().StartingWith("ORD-"));
-
-        Check.That(conflict.Message).Contains("StartingWith(\"ORD-\")");
-        Check.That(conflict.Message).Contains("Numeric()");
+    [Fact(DisplayName = "A numeric string anchors a non-numeric prefix: the family governs the draw, not the literal.")]
+    public void NumericAnchorsANonNumericPrefix() {
+        foreach (string value in Samples(Any.String().Numeric().StartingWith("ORD-").WithLengthBetween(8, 20))) {
+            Check.That(value).StartsWith("ORD-");
+            Check.That(value.Substring(4).All(char.IsDigit)).IsTrue();
+        }
     }
 
     // A contained value is the one constraint the specification records per occurrence rather than in a named slot,
@@ -244,13 +291,12 @@ public sealed class AnyStringTests {
         Check.That(conflict.Message).Contains("Containing(\"ABC\")");
     }
 
-    [Fact(DisplayName = "Declaring the charset after an incompatible prefix conflicts too: order does not matter.")]
-    public void CharsetAfterIncompatiblePrefixConflicts() {
-        ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.String().StartingWith("ORD-").Numeric());
-
-        Check.That(conflict.Message).Contains("Numeric()");
-        Check.That(conflict.Message).Contains("ORD-");
+    [Fact(DisplayName = "Declaring the charset after the prefix exempts it too: order does not matter.")]
+    public void CharsetAfterAPrefixExemptsItToo() {
+        foreach (string value in Samples(Any.String().StartingWith("ORD-").Numeric().WithLengthBetween(8, 20))) {
+            Check.That(value).StartsWith("ORD-");
+            Check.That(value.Substring(4).All(char.IsDigit)).IsTrue();
+        }
     }
 
     [Fact(DisplayName = "A minimum length above the maximum conflicts.")]
@@ -281,13 +327,12 @@ public sealed class AnyStringTests {
         Check.ThatCode(() => Any.String().Alpha().Numeric()).Throws<ConflictingAnyConstraintException>();
     }
 
-    [Fact(DisplayName = "A lowercase-only string cannot anchor an uppercase prefix.")]
-    public void LowerCaseUppercasePrefixConflicts() {
-        ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.String().LowerCase().StartingWith("ORD-"));
-
-        Check.That(conflict.Message).Contains("StartingWith(\"ORD-\")");
-        Check.That(conflict.Message).Contains("LowerCase()");
+    [Fact(DisplayName = "A lowercase string anchors an uppercase prefix, kept verbatim.")]
+    public void LowerCaseAnchorsAnUppercasePrefix() {
+        foreach (string value in Samples(Any.String().LowerCase().StartingWith("ORD-").WithLengthBetween(8, 20))) {
+            Check.That(value).StartsWith("ORD-");
+            Check.That(value.Substring(4).Any(character => character is >= 'A' and <= 'Z')).IsFalse();
+        }
     }
 
     [Fact(DisplayName = "A second StartingWith conflicts: the prefix is declared once.")]
@@ -529,24 +574,20 @@ public sealed class AnyStringTests {
         Check.That(conflict.Message).Contains("UpperCase()");
     }
 
-    [Fact(DisplayName = "A WithChars pool cannot anchor a prefix with an outside character.")]
-    public void WithCharsPrefixOutsidePoolConflicts() {
-        ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.String().WithChars("0123456789").StartingWith("ID-"));
-
-        Check.That(conflict.Message).Contains("StartingWith(\"ID-\")");
-        Check.That(conflict.Message).Contains("WithChars(\"0123456789\")");
-        Check.That(conflict.Message).Contains("'I'");
+    [Fact(DisplayName = "A WithChars pool anchors a prefix its pool cannot draw, and keeps drawing from the pool alone.")]
+    public void WithCharsAnchorsAPrefixOutsideItsPool() {
+        foreach (string value in Samples(Any.String().WithChars("0123456789").StartingWith("ID-").WithLengthBetween(6, 14))) {
+            Check.That(value).StartsWith("ID-");
+            Check.That(value.Substring(3).All(char.IsDigit)).IsTrue();
+        }
     }
 
-    [Fact(DisplayName = "Declaring WithChars after an incompatible fragment conflicts too: order does not matter.")]
-    public void WithCharsAfterIncompatibleFragmentConflicts() {
-        ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.String().StartingWith("ID-").WithChars("0123456789"));
-
-        Check.That(conflict.Message).Contains("WithChars(\"0123456789\")");
-        Check.That(conflict.Message).Contains("ID-");
-        Check.That(conflict.Message).Contains("'I'");
+    [Fact(DisplayName = "Declaring WithChars after the fragment exempts it too: order does not matter.")]
+    public void WithCharsAfterAFragmentExemptsItToo() {
+        foreach (string value in Samples(Any.String().StartingWith("ID-").WithChars("0123456789").WithLengthBetween(6, 14))) {
+            Check.That(value).StartsWith("ID-");
+            Check.That(value.Substring(3).All(char.IsDigit)).IsTrue();
+        }
     }
 
     [Fact(DisplayName = "WithChars arguments are validated as arguments, not as conflicts.")]

@@ -23,7 +23,9 @@ namespace JustDummies;
 ///         <c>prefix + filler + contained values + filler + suffix</c>, without overlap analysis, so the length budget
 ///         the fragments require is the plain sum of their lengths. A combination that only a cleverer overlapping
 ///         layout could satisfy is reported as a conflict — a deliberate V1 simplification, kept explicit in the
-///         conflict messages.
+///         conflict messages. The character constraints — a family, a custom pool, the subtractions and the casing —
+///         narrow the <b>filler</b> alphabet and nothing else, so an anchored fragment is kept verbatim whatever it
+///         holds: it is a literal the caller wrote, not a character the generator drew (ADR-0077).
 ///     </para>
 ///     <para>
 ///         With an allow-list the specification is a <b>filter</b> instead: the caller supplied the values, so nothing
@@ -509,7 +511,6 @@ internal sealed class StringSpec {
         ValidateFillerAlphabet(applying);
         if (_allowed is null) {
             ValidateFragmentBudget(applying);
-            ValidateFragmentCharacters(applying);
 
             return this;
         }
@@ -587,27 +588,6 @@ internal sealed class StringSpec {
             throw ConflictingAnyConstraintException.Contradicts(applying,
                                                                                 ConstraintClaim.Of(_maxConstraint!, $"allows at most {Characters(max)} while {description} {requires} {V(required)}"),
                                                                                 ConstraintClaim.OfPhrase(description, $"already {requires} {Characters(required)}"));
-        }
-    }
-
-    private void ValidateFragmentCharacters(ConstraintCall applying) {
-        foreach ((string kind, string fragment) in Fragments()) {
-            (char Character, ConstraintCall Culprit)? disallowed = FirstDisallowedCharacter(fragment);
-            if (disallowed is (char outside, ConstraintCall culprit)) {
-                throw ConflictingAnyConstraintException.Contradicts(applying,
-                                                                                    ConstraintClaim.Of(culprit, $"does not allow its character '{outside}'"),
-                                                                                    ConstraintClaim.OfPhrase($"the {kind} \"{fragment}\"", $"contains '{outside}', which it does not allow"));
-            }
-
-            if (_casing is LetterCasing casing) {
-                char? offending = FirstAgainstCasing(fragment, casing);
-                if (offending is char against) {
-                    string caseName = casing == LetterCasing.Lower ? "uppercase" : "lowercase";
-                    throw ConflictingAnyConstraintException.Contradicts(applying,
-                                                                                        ConstraintClaim.Of(_casingConstraint!, $"forbids its {caseName} letter '{against}'"),
-                                                                                        ConstraintClaim.OfPhrase($"the {kind} \"{fragment}\"", $"contains the {caseName} letter '{against}'"));
-                }
-            }
         }
     }
 
@@ -721,12 +701,6 @@ internal sealed class StringSpec {
         return true;
     }
 
-    private IEnumerable<(string Kind, string Fragment)> Fragments() {
-        if (_prefix is not null) { yield return ("prefix", _prefix); }
-        foreach ((string fragment, ConstraintCall _) in _fragments) { yield return ("contained value", fragment); }
-        if (_suffix is not null) { yield return ("suffix", _suffix); }
-    }
-
     private (string Description, bool Several) DescribeFragments() {
         List<string> parts = [];
         if (_prefix is not null) { parts.Add($"the prefix \"{_prefix}\""); }
@@ -743,26 +717,6 @@ internal sealed class StringSpec {
         return required;
     }
 
-    /// <summary>
-    ///     The first character of <paramref name="fragment" /> a declared pool or a declared subtraction refuses, and
-    ///     the constraint to blame for it. The pool is checked across the whole fragment before any subtraction, and
-    ///     subtractions are checked in the order they were declared — the same two-phase order JD015 reports in, so
-    ///     the build-time rule and the run time agree on which constraint a given character is refused by.
-    /// </summary>
-    private (char Character, ConstraintCall Culprit)? FirstDisallowedCharacter(string fragment) {
-        foreach (char character in fragment) {
-            if (!AllowedByPool(character)) { return (character, _charsetConstraint!); }
-        }
-
-        foreach ((ConstraintCall constraint, CharacterSet removed) in _subtractions) {
-            foreach (char character in fragment) {
-                if (CharacterPools.Belongs(character, removed)) { return (character, constraint); }
-            }
-        }
-
-        return null;
-    }
-
     /// <summary>Whether the declared pool — a custom one or a named family — admits the character. True when neither is declared.</summary>
     private bool AllowedByPool(char character) {
         if (_customPool is not null) { return _customPool.IndexOf(character) >= 0; }
@@ -771,14 +725,15 @@ internal sealed class StringSpec {
     }
 
     /// <summary>
-    ///     The first character of <paramref name="fragment" /> the declared casing forbids. The test is the Unicode
-    ///     one, not an ASCII range: the constructive filler is ASCII, but an anchored fragment and a pooled value are
-    ///     the caller's own text, so an accented or non-Latin letter must be judged on its actual case rather than
-    ///     waved through — the constraint says "every alphabetic character", and a generator must not emit a value
-    ///     that violates the constraint it was given.
+    ///     The first character of <paramref name="value" /> the declared casing forbids — the filter a <b>pooled</b>
+    ///     value must pass. The test is the Unicode one, not an ASCII range: the constructive filler is ASCII, but a
+    ///     pooled value is the caller's own text, so an accented or non-Latin letter must be judged on its actual case
+    ///     rather than waved through — the generator picks that value whole, and must not hand back one the casing
+    ///     refuses. An anchored fragment is not judged here at all: it is a literal, never a draw, and a casing governs
+    ///     only what the generator draws (ADR-0077).
     /// </summary>
-    private static char? FirstAgainstCasing(string fragment, LetterCasing casing) {
-        foreach (char character in fragment) {
+    private static char? FirstAgainstCasing(string value, LetterCasing casing) {
+        foreach (char character in value) {
             if (casing == LetterCasing.Lower && char.IsUpper(character)) { return character; }
             if (casing == LetterCasing.Upper && char.IsLower(character)) { return character; }
         }

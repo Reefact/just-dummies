@@ -24,6 +24,15 @@ namespace JustDummies;
 ///         of their lengths.
 ///     </para>
 ///     <para>
+///         It also settles what a character constraint reaches. A family, a custom pool, a subtraction and a casing
+///         govern every character the generator <b>draws</b> — the filler, and only the filler. A literal fixed by
+///         <see cref="StartingWith" />, <see cref="EndingWith" /> or <see cref="Containing" /> is not drawn, so it is
+///         kept exactly as written and no character constraint can contradict it (ADR-0077). That is what lets an
+///         ordinary format be written as the rules it actually has:
+///         <c>StartingWith("ORD-").AlphaNumeric()</c> puts the separator in the prefix and nowhere else. The length
+///         budget is unaffected — a literal that does not fit the declared length is still a conflict.
+///     </para>
+///     <para>
 ///         Unconstrained, the generator yields 0 to 1024 characters drawn from the <b>whole of ASCII</b>, control
 ///         characters included (ADR-0075, ADR-0076). That is deliberately inconvenient: a dummy the code under test
 ///         had no say in is what makes a passing test mean something, and a short, tame one certifies nothing. Chain
@@ -42,8 +51,8 @@ namespace JustDummies;
 ///     <example>
 ///         <code>
 ///         string code = Any.String().NonEmpty().WithMaxLength(50).StartingWith("ORD-").Generate();
+///         string reference = Any.String().StartingWith("ORD-").AlphaNumeric().UpperCase().WithLength(12).Generate();
 ///         Any.String().WithLength(3).StartingWith("ORD-");  // throws ConflictingAnyConstraintException
-///         Any.String().Numeric().StartingWith("ORD-");      // throws ConflictingAnyConstraintException
 ///         </code>
 ///     </example>
 /// </remarks>
@@ -180,7 +189,12 @@ public sealed class AnyString : IAny<string>, IHasRandomSource, ICardinalityHint
         return new AnyString(_source, _spec.WithMinLength(minimum, constraint).WithMaxLength(maximum, constraint));
     }
 
-    /// <summary>Requires the string to start with <paramref name="prefix" />. Declared once per generator.</summary>
+    /// <summary>
+    ///     Requires the string to start with <paramref name="prefix" />. Declared once per generator. The prefix is a
+    ///     literal, not a draw: it is kept exactly as written, and the declared character family, subtractions and
+    ///     casing govern the drawn characters beside it rather than the prefix itself (ADR-0077). Its length still
+    ///     counts against the declared length.
+    /// </summary>
     /// <param name="prefix">The required prefix.</param>
     /// <returns>A new generator carrying the added constraint.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="prefix" /> is <c>null</c>.</exception>
@@ -192,7 +206,11 @@ public sealed class AnyString : IAny<string>, IHasRandomSource, ICardinalityHint
         return new AnyString(_source, _spec.WithPrefix(prefix, ConstraintCall.Of(nameof(StartingWith), Q(prefix))));
     }
 
-    /// <summary>Requires the string to end with <paramref name="suffix" />. Declared once per generator.</summary>
+    /// <summary>
+    ///     Requires the string to end with <paramref name="suffix" />. Declared once per generator. Like a prefix it is
+    ///     a literal rather than a draw, so the declared character constraints leave it exactly as written and govern
+    ///     the drawn characters beside it (ADR-0077). Its length still counts against the declared length.
+    /// </summary>
     /// <param name="suffix">The required suffix.</param>
     /// <returns>A new generator carrying the added constraint.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="suffix" /> is <c>null</c>.</exception>
@@ -206,7 +224,9 @@ public sealed class AnyString : IAny<string>, IHasRandomSource, ICardinalityHint
 
     /// <summary>
     ///     Requires the string to contain <paramref name="value" />. May be declared several times; the contained
-    ///     values are laid out side by side, without overlap, between the prefix and the suffix.
+    ///     values are laid out side by side, without overlap, between the prefix and the suffix. Each is a literal
+    ///     rather than a draw, so the declared character constraints leave it exactly as written and govern the drawn
+    ///     characters around it (ADR-0077). Their lengths still count against the declared length.
     /// </summary>
     /// <param name="value">The value the generated string must contain.</param>
     /// <returns>A new generator carrying the added constraint.</returns>
@@ -219,21 +239,21 @@ public sealed class AnyString : IAny<string>, IHasRandomSource, ICardinalityHint
         return new AnyString(_source, _spec.WithFragment(value, ConstraintCall.Of(nameof(Containing), Q(value))));
     }
 
-    /// <summary>Restricts the string to ASCII letters only. Declared once per generator.</summary>
+    /// <summary>Restricts the string to ASCII letters only. Declared once per generator. Governs the characters drawn, not an anchored literal.</summary>
     /// <returns>A new generator carrying the added constraint.</returns>
     /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
     public AnyString Alpha() {
         return new AnyString(_source, _spec.WithCharset(CharacterSet.Alpha, ConstraintCall.Of(nameof(Alpha))));
     }
 
-    /// <summary>Restricts the string to ASCII digits only. Declared once per generator.</summary>
+    /// <summary>Restricts the string to ASCII digits only. Declared once per generator. Governs the characters drawn, not an anchored literal.</summary>
     /// <returns>A new generator carrying the added constraint.</returns>
     /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
     public AnyString Numeric() {
         return new AnyString(_source, _spec.WithCharset(CharacterSet.Numeric, ConstraintCall.Of(nameof(Numeric))));
     }
 
-    /// <summary>Restricts the string to ASCII letters and digits only. Declared once per generator.</summary>
+    /// <summary>Restricts the string to ASCII letters and digits only. Declared once per generator. Governs the characters drawn, not an anchored literal.</summary>
     /// <returns>A new generator carrying the added constraint.</returns>
     /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
     public AnyString AlphaNumeric() {
@@ -245,7 +265,7 @@ public sealed class AnyString : IAny<string>, IHasRandomSource, ICardinalityHint
     ///     nor the space, POSIX <c>[:punct:]</c>. The family to declare when the surrounding code requires text it
     ///     must <b>not</b> read as alphanumeric. Broader than <see cref="char.IsPunctuation(char)" />, which
     ///     classifies <c>+</c>, <c>&lt;</c> and <c>$</c> as symbols rather than punctuation. Declared once per
-    ///     generator.
+    ///     generator. Governs the characters drawn, not an anchored literal.
     /// </summary>
     /// <returns>A new generator carrying the added constraint.</returns>
     /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
@@ -257,7 +277,7 @@ public sealed class AnyString : IAny<string>, IHasRandomSource, ICardinalityHint
     ///     Restricts the string to printable ASCII — every character from the space (0x20) to <c>~</c> (0x7E). The
     ///     family to declare when the surrounding code cannot take a control character: an unconstrained draw spans
     ///     the whole of ASCII, so a carriage return or a NUL is exactly what it may hand you. Declared once per
-    ///     generator.
+    ///     generator. Governs the characters drawn, not an anchored literal.
     /// </summary>
     /// <returns>A new generator carrying the added constraint.</returns>
     /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
@@ -268,7 +288,7 @@ public sealed class AnyString : IAny<string>, IHasRandomSource, ICardinalityHint
     /// <summary>
     ///     Restricts the string to the ASCII characters that are <b>not</b> printable — the C0 controls and
     ///     <c>DEL</c>. The family to declare when the code under test is meant to reject or strip them. Declared once
-    ///     per generator.
+    ///     per generator. Governs the characters drawn, not an anchored literal.
     /// </summary>
     /// <returns>A new generator carrying the added constraint.</returns>
     /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
@@ -278,7 +298,7 @@ public sealed class AnyString : IAny<string>, IHasRandomSource, ICardinalityHint
 
     /// <summary>
     ///     Restricts the string to ASCII whitespace — the space and the tab, the readable pair the regex generator
-    ///     already draws <c>\s</c> from. Declared once per generator.
+    ///     already draws <c>\s</c> from. Declared once per generator. Governs the characters drawn, not an anchored literal.
     /// </summary>
     /// <returns>A new generator carrying the added constraint.</returns>
     /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
@@ -289,7 +309,7 @@ public sealed class AnyString : IAny<string>, IHasRandomSource, ICardinalityHint
     /// <summary>
     ///     Restricts the string to the base-16 alphabet of RFC 4648 — <c>0-9</c>, <c>A-F</c> and <c>a-f</c>. Chain
     ///     <see cref="LowerCase" /> or <see cref="UpperCase" /> for the single-case form a hash or a colour usually
-    ///     requires. Declared once per generator.
+    ///     requires. Declared once per generator. Governs the characters drawn, not an anchored literal.
     /// </summary>
     /// <returns>A new generator carrying the added constraint.</returns>
     /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
@@ -300,7 +320,8 @@ public sealed class AnyString : IAny<string>, IHasRandomSource, ICardinalityHint
     /// <summary>
     ///     Removes the ASCII letters from whatever the generator would otherwise draw. Unlike a family, a subtraction
     ///     does not occupy the one family slot and several accumulate, so <c>WithoutAlpha().WithoutNumeric()</c>
-    ///     leaves the punctuation, the whitespace and the controls.
+    ///     leaves the punctuation, the whitespace and the controls. Governs the characters drawn, not an anchored
+    ///     literal.
     /// </summary>
     /// <returns>A new generator carrying the added constraint.</returns>
     /// <exception cref="ConflictingAnyConstraintException">Thrown when the subtraction leaves no character drawable.</exception>
@@ -310,7 +331,8 @@ public sealed class AnyString : IAny<string>, IHasRandomSource, ICardinalityHint
 
     /// <summary>
     ///     Removes the ASCII digits from whatever the generator would otherwise draw. Accumulates with
-    ///     <see cref="WithoutAlpha" /> rather than replacing it.
+    ///     <see cref="WithoutAlpha" /> rather than replacing it. Governs the characters drawn, not an anchored
+    ///     literal.
     /// </summary>
     /// <returns>A new generator carrying the added constraint.</returns>
     /// <exception cref="ConflictingAnyConstraintException">Thrown when the subtraction leaves no character drawable.</exception>
@@ -325,8 +347,9 @@ public sealed class AnyString : IAny<string>, IHasRandomSource, ICardinalityHint
     ///     <see cref="Any.StringMatching(string)" /> literal. Declared once per generator: it occupies the same
     ///     character-family slot as the named sets, and because the pool is the whole character definition it cannot
     ///     combine with <see cref="LowerCase" />/<see cref="UpperCase" /> — put only the casing you want in the pool.
-    ///     Any anchored fragment (prefix, suffix, contained value) must be drawn from the pool, otherwise the conflict
-    ///     is reported at declaration naming both sides. Duplicate characters collapse and each distinct character is
+    ///     An anchored fragment (prefix, suffix, contained value) is exempt: the pool is what the generator draws
+    ///     from, and a literal the caller wrote is not drawn, so it is kept as written even when the pool could not
+    ///     produce it (ADR-0077). Duplicate characters collapse and each distinct character is
     ///     equally likely. The pool is a sequence of UTF-16 code units and must stay within the Basic Multilingual
     ///     Plane: a surrogate — an emoji or other astral code point, which spans two units — is rejected, because it
     ///     would be drawn and split unit by unit; draw such values as whole strings with <see cref="OneOf(string[])" />
@@ -347,14 +370,21 @@ public sealed class AnyString : IAny<string>, IHasRandomSource, ICardinalityHint
         return new AnyString(_source, _spec.WithCharPool(distinct, ConstraintCall.Of(nameof(WithChars), Q(pool))));
     }
 
-    /// <summary>Requires every alphabetic character to be lowercase. Declared once per generator.</summary>
+    /// <summary>
+    ///     Requires every alphabetic character the generator <b>draws</b> to be lowercase. Declared once per generator.
+    ///     An anchored literal is exempt, so <c>LowerCase().StartingWith("ORD-")</c> yields <c>ORD-</c> followed by
+    ///     lowercase filler (ADR-0077).
+    /// </summary>
     /// <returns>A new generator carrying the added constraint.</returns>
     /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
     public AnyString LowerCase() {
         return new AnyString(_source, _spec.WithCasing(LetterCasing.Lower, ConstraintCall.Of(nameof(LowerCase))));
     }
 
-    /// <summary>Requires every alphabetic character to be uppercase. Declared once per generator.</summary>
+    /// <summary>
+    ///     Requires every alphabetic character the generator <b>draws</b> to be uppercase. Declared once per generator.
+    ///     An anchored literal is exempt, so a lowercase prefix is kept as written beside uppercase filler (ADR-0077).
+    /// </summary>
     /// <returns>A new generator carrying the added constraint.</returns>
     /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
     public AnyString UpperCase() {

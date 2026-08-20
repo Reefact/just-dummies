@@ -47,6 +47,15 @@ int lineQuantity = Any.Int32().GreaterThanOrEqualTo(1).LessThanOrEqualTo(50).Gen
 avec un message les nommant toutes deux — voir
 [Erreurs et conflits](../guides/errors-and-conflicts.fr.md).
 
+**Un entier non contraint parcourt tout son type.** Ne déclarez rien et le tirage est uniforme sur
+toute la plage, et c'est délibéré
+([ADR-0031](../../for-maintainers/adr/0031-draw-arbitrary-numbers-within-an-ordinary-magnitude.fr.md)) :
+un grand entier reste un entier ordinaire, là où un grand `double` cesse de se comporter comme de
+l'arithmétique — la règle sur la virgule flottante, plus bas, est l'exception et non la norme.
+Uniforme sur une plage signifie aussi que l'essentiel de cette plage se trouve près de ses extrêmes :
+un `Int128` non contraint porte 38 ou 39 chiffres dans environ 94 tirages sur 100. Déclarez une
+borne quand votre domaine en a une.
+
 ## Signe et zéro
 
 ```csharp

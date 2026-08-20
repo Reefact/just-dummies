@@ -8,6 +8,23 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ## [Unreleased]
 
+### Added
+
+- **JD031 — *Two inclusive bounds the library also names as one range*** (category `JustDummies.Constraints`,
+  🔵 Info, on by default). A chain that declares both inclusive bounds separately — `WithMinLength(8).WithMaxLength(20)`,
+  `GreaterThanOrEqualTo(1).LessThanOrEqualTo(50)` — is pointed at the range form the same generator exposes.
+  Nothing is wrong at such a call site and nothing has to change: the two spellings behave identically, and
+  declaring the bounds separately stays a documented, supported way to write a range. The rule closes a
+  discoverability gap, which is why it is information and not a warning
+  ([ADR-0077](../doc/handwritten/for-maintainers/adr/0077-admit-a-rule-that-reports-a-correct-spelling.md)).
+
+  It reports **inclusive pairs only**: `GreaterThan(5).LessThan(10)` is `Between(6, 9)` on an integral type and
+  has no range form at all on a floating-point one, so every strict and mixed pair is silent. It is also silent
+  when the bounds are not in the same chain, when a bound is declared twice, when a bound is reached through an
+  alias such as `NonEmpty()`, and when the chain also settles an exact size. A pair of equal bounds is named as
+  `WithLengthBetween(8, 8)` and never as `WithLength(8)`, which settles the length without drawing and would
+  therefore move every later value on a seeded run.
+
 ## [1.0.0-preview.2] - 2026-08-18
 
 ### Changed

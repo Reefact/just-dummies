@@ -52,6 +52,9 @@ internal static class DiagnosticIds {
     /// <summary>JD030 — a string dummy that declares no length.</summary>
     public const string UndeclaredStringLength = JustDummiesRule.JD030.Id;
 
+    /// <summary>JD031 — both inclusive bounds declared separately, where the generator names the range.</summary>
+    public const string PairedBoundsHaveARangeForm = JustDummiesRule.JD031.Id;
+
     // Category: Composition — a part that reaches no result, a constraint that cannot bind
     public const string UnusedCombineOperand = JustDummiesRule.JD027.Id;
     public const string InertDistinctness = JustDummiesRule.JD028.Id;

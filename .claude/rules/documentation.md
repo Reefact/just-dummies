@@ -55,5 +55,7 @@ happens.
 An ADR records a **decision and its reasoning**, never how it is implemented; mechanics live
 in the code and in the reference documentation the ADR links to.
 
-Changelogs are per release train and are drafted by the `changelog` workflow from merged
-pull requests — see the `release-train` skill before editing one by hand.
+Changelogs are per release train, and an entry is written **by hand in the change that
+produces it** — a user-facing change announces itself in the same commit. The `changelog`
+workflow drafts a section from merged pull requests as a net before a cut, not as the normal
+route. See the `release-train` skill before cutting a section.

@@ -3,7 +3,7 @@
 🌍 **Langues :**  
 🇬🇧 [English](./README.md) | 🇫🇷 Français (ce fichier)
 
-Le package `JustDummies` embarque 30 règles Roslyn (`JD001`–`JD030`), sous
+Le package `JustDummies` embarque 31 règles Roslyn (`JD001`–`JD031`), sous
 `analyzers/dotnet/cs`. Tout projet qui référence le package les récupère automatiquement, sans
 installation supplémentaire. Elles s'exécutent pendant la compilation et transforment en
 diagnostics de build des erreurs que l'exécution signalerait tard — ou jamais.
@@ -66,6 +66,7 @@ Ces règles anticipent, à la compilation, le sous-ensemble des vérifications d
 | [JD026 EmptyRelativeUri](JD026.fr.md) | 🟠 Avertissement | on | Une URI relative à zéro segment, sans requête, fragment ni racine est la référence vide — la seule chaîne dont l'échec atterrit au moment de l'act plutôt que sur la ligne d'arrange. |
 | [JD029 PooledValueNeverDraws](JD029.fr.md) | 🔵 Info | on | Une valeur écrite dans un value set de chaîne ou numérique qu'une contrainte de la même chaîne refuse : aucun tirage ne peut la rendre. Le dual de JD024, et elle ne voit que ce qui est écrit à l'appel. |
 | [JD030 UndeclaredStringLength](JD030.fr.md) | 🔵 Info | on | Une chaîne `Any.String()` qui ne déclare aucune longueur : elle tire toute l'étendue par défaut — 0 à 1024 caractères. Nomme le remède là où vous pouvez agir. |
+| [JD031 PairedBoundsHaveARangeForm](JD031.fr.md) | 🔵 Info | on | Une chaîne déclare séparément les deux bornes inclusives d'un intervalle, alors que le même générateur nomme cet intervalle en un seul appel. Rien n'est faux — elle comble un manque de découvrabilité. Paires inclusives uniquement : une paire stricte n'a pas de forme intervalle exacte. |
 
 ## Composition
 

@@ -32,6 +32,7 @@ The factory is named after the CLR type, never after the C# keyword — `Any.Int
 
 Five constraints narrow the range, and they compose:
 
+<!-- jd:allow=JD031 -->
 ```csharp
 int quantity   = Any.Int32().Between(1, 100).Generate();          // inclusive on both ends
 int positive   = Any.Int32().GreaterThan(0).Generate();
@@ -45,6 +46,11 @@ int lineQuantity = Any.Int32().GreaterThanOrEqualTo(1).LessThanOrEqualTo(50).Gen
 
 `Between` is inclusive at both ends. Bounds that cross are refused at once with a message naming
 both — see [Errors and conflicts](../guides/errors-and-conflicts.en.md).
+
+The composed line above is deliberate: two inclusive bounds declared separately behave exactly like
+`Between(1, 50)`, which is what keeps a range decomposable — a shared helper can set the floor and a
+call site add the ceiling. [JD031](../analyzers/JD031.en.md) points at the range form when both bounds
+sit in one chain, as information rather than as a verdict; the pair stays correct either way.
 
 **An unconstrained integer spans its whole type.** Declare nothing and the draw is uniform over the
 full range, and that is deliberate

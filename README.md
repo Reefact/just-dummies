@@ -140,9 +140,9 @@ of a plausible value being drawn behind your back.
 
 | Package | What it is |
 | --- | --- |
-| [`JustDummies`](doc/handwritten/for-users/packages/justdummies.en.md) | the library, with its 30 rules bundled in |
+| [`JustDummies`](doc/handwritten/for-users/packages/justdummies.en.md) | the library, with its 31 rules bundled in |
 | [`JustDummies.Xunit`](doc/handwritten/for-users/packages/justdummies-xunit.en.md) | the xUnit v3 adapter: `[Reproducible]` |
-| [`JustDummies.DiagnosticCatalog`](doc/handwritten/for-users/packages/justdummies-diagnosticcatalog.en.md) | the `JD001`–`JD030` rules as compile-checked constants |
+| [`JustDummies.DiagnosticCatalog`](doc/handwritten/for-users/packages/justdummies-diagnosticcatalog.en.md) | the `JD001`–`JD031` rules as compile-checked constants |
 | [`JustDummies.Cli`](doc/handwritten/for-users/packages/justdummies-cli.en.md) | `dum`, the scaffolder — a global tool, never a project reference |
 
 The three libraries target `netstandard2.0`; `JustDummies` additionally carries a `net8.0` asset with

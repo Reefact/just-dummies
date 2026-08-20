@@ -32,6 +32,7 @@ La fabrique porte le nom du type CLR, jamais celui du mot-clé C# — `Any.Int32
 
 Cinq contraintes resserrent l'intervalle, et elles se composent :
 
+<!-- jd:allow=JD031 -->
 ```csharp
 int quantity   = Any.Int32().Between(1, 100).Generate();          // inclusif des deux côtés
 int positive   = Any.Int32().GreaterThan(0).Generate();
@@ -46,6 +47,12 @@ int lineQuantity = Any.Int32().GreaterThanOrEqualTo(1).LessThanOrEqualTo(50).Gen
 `Between` est inclusif aux deux extrémités. Des bornes qui se croisent sont refusées immédiatement,
 avec un message les nommant toutes deux — voir
 [Erreurs et conflits](../guides/errors-and-conflicts.fr.md).
+
+La ligne composée ci-dessus est délibérée : deux bornes inclusives déclarées séparément se comportent
+exactement comme `Between(1, 50)`, ce qui est précisément ce qui garde un intervalle décomposable — un
+helper partagé peut poser le plancher et un site d'appel ajouter le plafond.
+[JD031](../analyzers/JD031.fr.md) désigne la forme intervalle quand les deux bornes tiennent dans une
+même chaîne, en information et non en verdict ; la paire reste correcte dans les deux cas.
 
 **Un entier non contraint parcourt tout son type.** Ne déclarez rien et le tirage est uniforme sur
 toute la plage, et c'est délibéré

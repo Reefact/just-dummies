@@ -100,7 +100,7 @@ table en est l'index ; elle ne porte aucun argument propre.
 |---|---|---|
 | **D1** | Scaffolder une fois ; le fichier appartient au développeur. | Supprime d'un coup la dérive, le `check` et la question du source generator. |
 | **D2** | Le type émis implémente `IAny<T>` et est **immuable**. | Composabilité, et réarmement des analyzers `JustDummies.Usage` sur le type émis. |
-| **D3** | Le fichier émis n'est **pas** marqué comme code généré. | Les 30 analyzers exemptent le code généré ; le marquer rendrait le fichier aveugle. |
+| **D3** | Le fichier émis n'est **pas** marqué comme code généré. | Les 31 analyzers exemptent le code généré ; le marquer rendrait le fichier aveugle. |
 | **D4** | Ne jamais émettre un membre non résolu dans la compilation cible. | Une règle couvre le clivage de TFM, la baseline d'API publique, l'écart de version et l'arithmétique non signée. |
 | **D5** | Lire les clauses de garde du constructeur pour amorcer chaque generator. | Sans cela le code émis produit des valeurs que le constructeur rejette. |
 | **D6** | Un paramètre non résolu est émis comme **erreur de compilation**. | Le développeur est déjà dans le fichier ; un soulignement rouge est le signal le moins cher. |
@@ -1257,7 +1257,7 @@ exercé au §17.
 
 ### 14.6 Inventaire des analyzers
 
-30 identifiants de diagnostic sur 29 classes d'analyzer — `JD023` et `JD024` en partagent une.
+31 identifiants de diagnostic sur 30 classes d'analyzer — `JD023` et `JD024` en partagent une.
 
 | Plage | Catégorie | Sévérités |
 |---|---|---|
@@ -1277,11 +1277,11 @@ exercé au §17.
 | `JD024` | Constraints | Info |
 | `JD025`–`JD026` | Constraints | Warning |
 | `JD027`–`JD028` | Composition | Warning |
-| `JD029`–`JD030` | Constraints | Info |
+| `JD029`–`JD031` | Constraints | Info |
 
 Trois faits à leur sujet pilotent des décisions de ce document :
 
-* **Les 30 appellent `ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None)`** — d'où D3.
+* **Les 31 appellent `ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None)`** — d'où D3.
 * **Les règles `Usage` matchent tout type implémentant `IAny<T>`**, pas une liste de generators
   intégrés — d'où le second bénéfice de D2.
 * **Les règles `Reproducibility` matchent les chaînes enracinées sur la façade statique `Any`**, et

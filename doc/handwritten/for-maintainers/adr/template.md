@@ -14,7 +14,7 @@
 
 <!-- Accepting this ADR ADDS a `**Accepted:** YYYY-MM-DD` line below `Proposed:`
      and leaves `Proposed:` untouched; no date is ever overwritten. A supersession
-     adds no date at all. See README.md, "Title and header" (ADR-0057). -->
+     adds no date at all. See README.md, "File conventions" (ADR-0036). -->
 
 ## Context
 

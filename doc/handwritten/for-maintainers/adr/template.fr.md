@@ -17,7 +17,7 @@
 <!-- Accepter cette ADR AJOUTE une ligne `**Accepted:** AAAA-MM-JJ` sous
      `Proposed:` et laisse `Proposed:` intact ; aucune date n'est jamais
      écrasée. Un remplacement n'ajoute aucune date.
-     Voir README.fr.md, « Conventions de fichiers » (ADR-0057). -->
+     Voir README.fr.md, « Conventions de fichiers » (ADR-0036). -->
 
 ## Contexte
 

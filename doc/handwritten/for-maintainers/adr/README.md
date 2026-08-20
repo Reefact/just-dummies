@@ -74,6 +74,17 @@ right*, it belongs in the reference docs, and the ADR links to it.
   and no date is ever overwritten
   ([ADR-0036](0036-keep-one-dated-line-per-state-an-adr-reached.md)).
 * Status is one of *Proposed*, *Accepted*, *Superseded* or *Deprecated*.
+* A **supersession** is written on both sides and adds no date. The superseded
+  record's status becomes `Superseded by` and a link to the successor; nothing
+  else about it changes — its dates stay, and its body is never edited, because
+  an accepted decision is a piece of history rather than a draft. The successor
+  carries a `Supersedes` line below its header, linking back. Each side links
+  its own language's twin. The worked pair is
+  [ADR-0029](0029-let-a-size-maximum-cap-without-steering-the-draw.md) and
+  [ADR-0076](0076-let-a-declared-maximum-steer-the-size-draw.md).
+* A citation of a superseded record is **not** repinned. Its status line names
+  the successor, which is what a reader follows; a citation only moves when what
+  it claims stopped being true.
 * A citation of an ADR that lives only in the other repository is qualified
   `ADR-00NN (first-class-errors)`; an unqualified number always means this base.
 

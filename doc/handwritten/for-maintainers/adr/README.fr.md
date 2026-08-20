@@ -84,6 +84,18 @@ juste*, il appartient à la documentation de référence, et l'ADR y renvoie.
   décision, et aucune date n'est jamais écrasée
   ([ADR-0036](0036-keep-one-dated-line-per-state-an-adr-reached.fr.md)).
 * Le statut vaut *Proposed*, *Accepted*, *Superseded* ou *Deprecated*.
+* Une **supersession** s'écrit des deux côtés et n'ajoute aucune date. Le statut
+  de l'enregistrement superséedé devient `Superseded by` suivi d'un lien vers le
+  successeur ; rien d'autre ne change chez lui : ses dates restent, et son corps
+  n'est jamais retouché, car une décision acceptée est une pièce d'histoire et
+  non un brouillon. Le successeur porte une ligne `Supersède l'…` sous son
+  en-tête, qui pointe en retour. Chaque côté pointe le jumeau de sa propre
+  langue. Le couple de référence est
+  [ADR-0029](0029-let-a-size-maximum-cap-without-steering-the-draw.fr.md) et
+  [ADR-0076](0076-let-a-declared-maximum-steer-the-size-draw.fr.md).
+* La citation d'un enregistrement superséedé ne se repinne **pas**. Sa ligne de
+  statut nomme le successeur, et c'est cela qu'un lecteur suit ; une citation ne
+  bouge que si ce qu'elle affirme a cessé d'être vrai.
 * La citation d'une ADR qui ne vit que dans l'autre dépôt se qualifie
   `ADR-00NN (first-class-errors)` ; un numéro non qualifié désigne toujours cette
   base.

@@ -68,6 +68,15 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   This is a relaxation: no chain that worked stops working, and no generated value changes shape. Only code
   asserting on the removed conflict is affected.
 
+- **New rule `JD032` — an anchored literal the declared characters cannot draw.** 🔵 Info, on by default. It
+  reports the consequence of the change above rather than a fault: in
+  `Any.String().AlphaNumeric().StartingWith("ORD-")` the hyphen appears in the prefix and nowhere else. That is
+  the intended way to write a fixed-separator format, so the rule is information — and the same sentence covers
+  the case nobody meant, a lowercase prefix beside `UpperCase()`, which the run time no longer refuses. Silent
+  once `OneOf(...)` is declared: nothing is drawn beside a pooled value, and a pooled value a constraint refuses
+  is `JD029`'s to report. Silence it with `dotnet_diagnostic.JD032.severity = none` if your codebase writes
+  fixed-prefix formats everywhere.
+
 - **`JD015` narrows to the length budget.** The analyzer mirrored the rule above at build time, so leaving it
   would have refused at compile time a chain the run time now honours. It keeps the one check that is still a
   contradiction — anchored fragments that cannot fit the declared length, `WithLength(3).StartingWith("ORD-")` —

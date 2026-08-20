@@ -137,6 +137,9 @@ hésitation plutôt qu'une règle.
 * La sémantique des contraintes cesse de dépendre de l'ordre de déclaration, puisqu'aucune combinaison d'une
   contrainte de caractères et d'un fragment ne peut plus échouer.
 * `JD015` devient plus petite et plus juste : une seule vérification, exactement alignée sur l'exécution.
+* Ce qu'elle cesse de refuser, `JD031` le rapporte en information : le caractère du littéral apparaît là où il a
+  été écrit et nulle part ailleurs. La lecture que portait le refus survit sous forme de note, ce qu'elle aurait
+  dû être — un format à préfixe fixe est l'usage voulu, et seul son auteur le distingue d'un lapsus.
 * C'est un assouplissement, pas une rupture — aucune chaîne qui fonctionne aujourd'hui ne cesse de fonctionner,
   et aucune valeur générée ne change de forme. Seul du code affirmant l'exception retirée est concerné.
 
@@ -156,17 +159,17 @@ hésitation plutôt qu'une règle.
   « un littéral que vous avez écrit est exempté » attendra que le second soit accepté aussi et trouvera le
   comportement arbitraire. La règle qui prédit les deux porte sur ce qui est tiré, jamais sur qui l'a écrit ; la
   documentation doit l'enseigner ainsi, car la lecture par l'auteur est l'intuitive et elle est fausse.
-* Un littéral portant des caractères que la famille déclarée ne peut pas tirer est désormais accepté en
-  silence : une vraie erreur — un préfixe en minuscules à côté d'`UpperCase()`, un séparateur à côté d'une
-  famille choisie par habitude — ne remonte donc plus nulle part. C'est le comportement correct sous cette
-  décision, et cela mérite tout de même l'attention d'un lecteur.
+* Un littéral portant des caractères que la famille déclarée ne peut pas tirer est accepté : une vraie erreur —
+  un préfixe en minuscules à côté d'`UpperCase()`, un séparateur à côté d'une famille choisie par habitude — ne
+  fait donc plus échouer quoi que ce soit. `JD031` la met sous les yeux de l'auteur en `Info`, ce qui est une
+  note et non un arrêt : une base de code qui éteint la règle perd le dernier témoin de ce cas.
 
 ## Actions de suivi
 
-* Envisager un diagnostic informatif pour un littéral ancré portant des caractères que la famille déclarée ne
-  peut pas tirer. C'est légal et cela le reste : la règle rapporterait un fait plutôt qu'une faute — la forme
-  que `JD024` et `JD029` occupent déjà à cette sévérité — et remettrait sous forme de note la lecture que le
-  refus retiré donnait sous forme de refus.
+* Observer si `JD031` continue d'apprendre quelque chose. Elle est en `Info` précisément pour que la réponse
+  vienne de l'usage plutôt que d'une prédiction : une base de code qui écrit partout des formats à préfixe fixe
+  peut raisonnablement l'éteindre, et si cela devient l'issue courante, la règle dit aux lecteurs ce qu'ils
+  savent déjà.
 
 ## Références
 

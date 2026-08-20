@@ -129,6 +129,9 @@ a rule.
 * The constraint semantics stop depending on the order the constraints are declared in, because no combination
   of a character constraint and a fragment can fail any more.
 * `JD015` becomes smaller and truer: one check, matching the run time exactly.
+* What it stops refusing, `JD031` reports as information: the literal's character appears where it was written
+  and nowhere else. The reading the refusal carried survives as a note, which is what it should have been — a
+  fixed-prefix format is the intended use, and only its author can tell it from a slip.
 * A relaxation, not a break — no chain that works today stops working, and no generated value changes shape.
   Only code asserting on the removed exception is affected.
 
@@ -147,16 +150,16 @@ a rule.
   exempt" will expect the second to be accepted too and find the behaviour arbitrary. The rule that predicts
   both is about what is drawn, never about who wrote it; the documentation has to teach it that way, because
   the authorship reading is the intuitive one and it is wrong.
-* A literal carrying characters the declared family cannot draw is now accepted in silence, so a genuine
-  mistake — a lowercase prefix beside `UpperCase()`, a separator beside a family chosen by habit — no longer
-  surfaces anywhere. That is correct behaviour under this decision and still worth a reader's attention.
+* A literal carrying characters the declared family cannot draw is accepted, so a genuine mistake — a lowercase
+  prefix beside `UpperCase()`, a separator beside a family chosen by habit — no longer fails anything. `JD031`
+  puts it in front of the author at `Info`, which is a note rather than a stop: a codebase that silences the
+  rule loses the last thing watching that case.
 
 ## Follow-up Actions
 
-* Consider an informational diagnostic for an anchored literal holding characters the declared family cannot
-  draw. It is legal and stays legal, so the rule would report a fact rather than a fault — the shape `JD024` and
-  `JD029` already occupy at that severity — and it would put back, as a note, the reading the removed refusal
-  gave as a refusal.
+* Watch whether `JD031` keeps carrying news. It is `Info` precisely so that answer can come from use rather
+  than from prediction: a codebase writing fixed-prefix formats everywhere may reasonably silence it, and if
+  that becomes the common outcome the rule is telling readers something they already know.
 
 ## References
 

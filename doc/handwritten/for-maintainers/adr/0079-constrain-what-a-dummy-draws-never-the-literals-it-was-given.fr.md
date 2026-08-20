@@ -137,9 +137,11 @@ hésitation plutôt qu'une règle.
 * La sémantique des contraintes cesse de dépendre de l'ordre de déclaration, puisqu'aucune combinaison d'une
   contrainte de caractères et d'un fragment ne peut plus échouer.
 * `JD015` devient plus petite et plus juste : une seule vérification, exactement alignée sur l'exécution.
-* Ce qu'elle cesse de refuser, `JD031` le rapporte en information : le caractère du littéral apparaît là où il a
-  été écrit et nulle part ailleurs. La lecture que portait le refus survit sous forme de note, ce qu'elle aurait
-  dû être — un format à préfixe fixe est l'usage voulu, et seul son auteur le distingue d'un lapsus.
+* Ce qu'elle cesse de refuser, `JD031` le nomme comme une ambiguïté plutôt que comme une faute. Une chaîne qui
+  demande de l'alphanumérique puis écrit un tiret dit deux choses de ses caractères, et la présente décision
+  choisit une de ces lectures ; la note dit laquelle, au site d'appel, sans refuser ce qui est la façon simple
+  d'obtenir un séparateur fixe. Le refus est devenu une information, le registre que ce cas méritait depuis le
+  début.
 * C'est un assouplissement, pas une rupture — aucune chaîne qui fonctionne aujourd'hui ne cesse de fonctionner,
   et aucune valeur générée ne change de forme. Seul du code affirmant l'exception retirée est concerné.
 
@@ -166,10 +168,9 @@ hésitation plutôt qu'une règle.
 
 ## Actions de suivi
 
-* Observer si `JD031` continue d'apprendre quelque chose. Elle est en `Info` précisément pour que la réponse
-  vienne de l'usage plutôt que d'une prédiction : une base de code qui écrit partout des formats à préfixe fixe
-  peut raisonnablement l'éteindre, et si cela devient l'issue courante, la règle dit aux lecteurs ce qu'ils
-  savent déjà.
+* Observer la formulation de `JD031`, pas sa fréquence. Elle se déclenche sur le cas délibéré par construction —
+  c'est lui qui porte l'ambiguïté — donc la phrase doit se lire comme une note sur ce que la déclaration
+  signifie, jamais comme un reproche. Si les lecteurs y lisent un reproche, c'est le message qu'il faut changer.
 
 ## Références
 

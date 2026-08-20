@@ -21,7 +21,7 @@ retired, a category changed — which is not when the library or the adapter mov
 
 - `JustDummiesRule.JD031` — *Two inclusive bounds the library also names as one range*, category
   `JustDummies.Constraints`.
-- `JustDummiesRule.JD032` — *An anchored literal the declared characters cannot draw*, category
+- `JustDummiesRule.JD033` — *An anchored literal the declared characters cannot draw*, category
   `JustDummies.Constraints`.
 
   The rule set moves from 30 identifiers, `1.0.0-preview.3`'s count, to 32.

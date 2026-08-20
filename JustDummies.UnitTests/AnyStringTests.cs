@@ -198,7 +198,7 @@ public sealed class AnyStringTests {
     }
 
     // A character constraint governs what the generator DRAWS; a literal fixed by StartingWith, EndingWith or
-    // Containing is not drawn, and is therefore exempt (ADR-0077). The cases below are the formats that could not be
+    // Containing is not drawn, and is therefore exempt (ADR-0079). The cases below are the formats that could not be
     // written before: a fixed separator in the prefix, and a body the family still governs on its own.
 
     [Fact(DisplayName = "AlphaNumeric with an anchored prefix draws the separator nowhere but the prefix.")]

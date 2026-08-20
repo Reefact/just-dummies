@@ -23,7 +23,7 @@
   needs four characters, while `Any.String().WithLength(12).StartingWith("ORD-")` is valid; the call site and
   the static types are identical in both. (This record originally illustrated the same point with
   `Numeric().StartingWith("ORD-")`. That combination is no longer a conflict — a character family governs what
-  the generator draws, never a literal the caller wrote, [ADR-0077](0077-constrain-what-a-dummy-draws-never-the-literals-it-was-given.md)
+  the generator draws, never a literal the caller wrote, [ADR-0079](0079-constrain-what-a-dummy-draws-never-the-literals-it-was-given.md)
   — so the illustration was repinned onto the length budget. The decision below is untouched: the
   value-dependent kind still exists and is still the analyzer's.)
 * `Any.Uri()` (issue #226) is the first generator whose space is partitioned into structurally different

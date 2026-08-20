@@ -25,7 +25,7 @@
   est valide ; le point d'appel et les types statiques sont identiques dans les deux cas. (Cet enregistrement
   illustrait à l'origine le même point avec `Numeric().StartingWith("ORD-")`. Cette combinaison n'est plus un
   conflit — une famille de caractères gouverne ce que le générateur tire, jamais un littéral écrit par
-  l'appelant, [ADR-0077](0077-constrain-what-a-dummy-draws-never-the-literals-it-was-given.fr.md) — l'illustration
+  l'appelant, [ADR-0079](0079-constrain-what-a-dummy-draws-never-the-literals-it-was-given.fr.md) — l'illustration
   a donc été replacée sur le budget de longueur. La décision ci-dessous est intacte : la sorte dépendant de la
   valeur existe toujours et relève toujours de l'analyseur.)
 * `Any.Uri()` (issue #226) est le premier générateur dont l'espace se partitionne en **formes** structurellement

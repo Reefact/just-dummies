@@ -25,7 +25,7 @@ namespace JustDummies.Analyzers;
 ///         The rule used to check the fragments against the declared family, subtractions and casing as well. It no
 ///         longer does, and must not: a character constraint governs what the generator <b>draws</b>, and an anchored
 ///         fragment is a literal the caller wrote, so <c>AlphaNumeric().StartingWith("ORD-")</c> is legal and draws no
-///         hyphen anywhere but that prefix (ADR-0077). Reporting it here would refuse at build time what the run time
+///         hyphen anywhere but that prefix (ADR-0079). Reporting it here would refuse at build time what the run time
 ///         honours.
 ///     </para>
 /// </remarks>
@@ -114,7 +114,7 @@ public sealed class StringConstraintsAdmitNoValueAnalyzer : DiagnosticAnalyzer {
     /// </summary>
     /// <remarks>
     ///     <para>
-    ///         The counterpart of the exemption ADR-0077 grants an anchored literal, and the reason the two read
+    ///         The counterpart of the exemption ADR-0079 grants an anchored literal, and the reason the two read
     ///         differently. A literal claims its own region of a shaped string and the family claims the rest, so the
     ///         two never meet; a value set claims the WHOLE string and leaves no filler, so the family's region is
     ///         that supplied value itself and the two must agree. When they cannot, the constraint contributes

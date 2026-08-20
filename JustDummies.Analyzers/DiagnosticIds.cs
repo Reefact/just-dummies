@@ -58,6 +58,9 @@ internal static class DiagnosticIds {
     /// <summary>JD032 — the same bound declared twice on one chain; only the tighter one survives.</summary>
     public const string BoundDeclaredTwice = JustDummiesRule.JD032.Id;
 
+    /// <summary>JD033 — an anchored literal holding a character the declared characters cannot draw.</summary>
+    public const string AnchoredLiteralOutsideCharacterFamily = JustDummiesRule.JD033.Id;
+
     // Category: Composition — a part that reaches no result, a constraint that cannot bind
     public const string UnusedCombineOperand = JustDummiesRule.JD027.Id;
     public const string InertDistinctness = JustDummiesRule.JD028.Id;

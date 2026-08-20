@@ -68,13 +68,13 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   This is a relaxation: no chain that worked stops working, and no generated value changes shape. Only code
   asserting on the removed conflict is affected.
 
-- **New rule `JD032` — an anchored literal the declared characters cannot draw.** 🔵 Info, on by default. It
+- **New rule `JD033` — an anchored literal the declared characters cannot draw.** 🔵 Info, on by default. It
   names an ambiguity rather than a fault. `Any.String().AlphaNumeric().StartingWith("ORD-")` says two things
   about its characters — only alphanumerics, and then a hyphen — and the change above resolves that one specific
   way: the hyphen appears in the prefix and nowhere else. The rule tells you which reading applies, at the call
   site, without refusing what is the simple way to write `ORD-pDc8`. Silent
   once `OneOf(...)` is declared: nothing is drawn beside a pooled value, and a pooled value a constraint refuses
-  is `JD029`'s to report. Silence it with `dotnet_diagnostic.JD032.severity = none` if your codebase writes
+  is `JD029`'s to report. Silence it with `dotnet_diagnostic.JD033.severity = none` if your codebase writes
   fixed-prefix formats everywhere.
 
 - **`JD015` now reports a value set a constraint empties.** `Any.String().AlphaNumeric().OneOf("ORD-1", "ORD-2")`

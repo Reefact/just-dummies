@@ -2,6 +2,22 @@
 
 Ce qui a changé pour vous, version par version, sur le train `lib`. Pour le registre technique complet — chaque contrainte, chaque cas limite, chaque ADR — voir [CHANGELOG.md](https://github.com/Reefact/just-dummies/blob/main/JustDummies/CHANGELOG.md). Précédemment : [0.x](https://github.com/Reefact/just-dummies/blob/main/JustDummies/RELEASE_NOTES-0.x.fr.md).
 
+## 1.0.0-preview.3 — 21 août 2026
+
+_Un format à préfixe fixe et alphabet restreint — `ORD-` suivi d'alphanumériques — est enfin une seule chaîne plutôt qu'un contournement._
+
+### ✨ Nouveautés
+
+- Une famille de caractères, une soustraction ou une casse ne gouverne désormais que les caractères que le générateur tire — jamais un préfixe, un suffixe ou une valeur contenue que vous avez écrits. `Any.String().StartingWith("ORD-").AlphaNumeric()` ne lève plus d'exception à la déclaration, et produit `ORD-` suivi uniquement d'alphanumériques ([ADR-0079](https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-maintainers/adr/0079-constrain-what-a-dummy-draws-never-the-literals-it-was-given.md)). Aucune chaîne qui fonctionnait avant ne cesse de fonctionner, et aucune valeur générée ne change de forme.
+- Nouvelle règle JD033 — nomme un fragment ancré que les caractères déclarés ne peuvent pas tirer, à l'endroit de l'appel, sans refuser la chaîne. Information uniquement, active par défaut.
+- Nouvelle règle JD031 — pointe une chaîne déclarant les deux bornes inclusives séparément (`WithMinLength(8).WithMaxLength(20)`) vers la forme d'intervalle que le même générateur expose (`WithLengthBetween(8, 20)`). Information uniquement.
+- Nouvelle règle JD032 — avertit lorsqu'une borne est déclarée deux fois et que l'appel le plus lâche perd silencieusement, quel que soit l'ordre d'écriture des deux.
+
+### 🙌 Améliorations
+
+- JD015 signale désormais, en avertissement, un ensemble de valeurs que chaque contrainte déclarée vide — jusqu'ici cela n'apparaissait que sous forme de deux notes JD029 au niveau information.
+- JD024 et JD015 se resserrent pour rester en phase avec les changements ci-dessus : JD024 ne signale plus une borne que JD032 possède désormais, et JD015 ne garde que sa vérification du budget de longueur, si bien qu'aucune des deux ne refuse à la compilation ce que la bibliothèque honore désormais à l'exécution.
+
 ## 1.0.0-preview.2 — 18 août 2026
 
 _Deux défauts qui cassent la compatibilité, tous deux au service de la même idée : un dummy non contraint devrait certifier quelque chose, pas seulement paraître inoffensif._

@@ -2,6 +2,22 @@
 
 What changed for you, release by release, in the `lib` train. For the full technical record — every constraint, every edge case, every ADR — see [CHANGELOG.md](https://github.com/Reefact/just-dummies/blob/main/JustDummies/CHANGELOG.md). Earlier: [0.x](https://github.com/Reefact/just-dummies/blob/main/JustDummies/RELEASE_NOTES-0.x.en.md).
 
+## 1.0.0-preview.3 — August 21, 2026
+
+_A fixed-prefix, restricted-alphabet format — `ORD-` followed by alphanumerics — is finally one chain instead of a workaround._
+
+### ✨ New
+
+- A character family, a subtraction or a casing now governs only the characters the generator draws — never a prefix, suffix or contained value you wrote. `Any.String().StartingWith("ORD-").AlphaNumeric()` no longer throws at declaration, and yields `ORD-` followed by alphanumerics only ([ADR-0079](https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-maintainers/adr/0079-constrain-what-a-dummy-draws-never-the-literals-it-was-given.md)). No chain that worked before stops working, and no generated value changes shape.
+- New rule JD033 — names an anchored literal the declared characters cannot draw, at the call site, without refusing the chain. Information only, on by default.
+- New rule JD031 — points a chain declaring both inclusive bounds separately (`WithMinLength(8).WithMaxLength(20)`) at the range form the same generator exposes (`WithLengthBetween(8, 20)`). Information only.
+- New rule JD032 — warns when a bound is declared twice and the looser call silently loses, whichever order the two were written in.
+
+### 🙌 Improvements
+
+- JD015 now reports, as a warning, a value set every declared constraint empties — until now this surfaced only as two information-level JD029 notes.
+- JD024 and JD015 narrow to stay in step with the changes above: JD024 no longer reports a bound JD032 now owns, and JD015 keeps only its length-budget check, so neither refuses at build time what the library now honours at run time.
+
 ## 1.0.0-preview.2 — August 18, 2026
 
 _Two breaking defaults, both in service of the same idea: an unconstrained dummy should certify something, not just look harmless._

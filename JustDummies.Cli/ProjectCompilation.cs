@@ -12,17 +12,6 @@ using Microsoft.CodeAnalysis.MSBuild;
 namespace JustDummies.Cli;
 
 /// <summary>
-///     Opening the project named by <paramref name="projectPath" />.
-/// </summary>
-/// <remarks>
-///     A delegate rather than a direct call, so the one step of the pipeline that needs MSBuild, a restored
-///     project and a disk is the one step a test can stand in for. Everything after it — resolution, emission,
-///     the recap, the exit codes of §7 — is then exercised against a compilation built in memory, which is the
-///     only way those rows are checkable at all.
-/// </remarks>
-internal delegate Task<LoadedProject> ProjectOpener(string projectPath, CancellationToken cancellationToken);
-
-/// <summary>
 ///     Opens a project on disk and hands its compilation to the engine (§11.1, steps 1 to 3).
 /// </summary>
 /// <remarks>
@@ -98,35 +87,6 @@ internal static class ProjectCompilation {
         List<string> Reported() {
             lock (reporting) { return [.. diagnostics]; }
         }
-    }
-
-}
-
-/// <summary>A project that opened, or the diagnostics that stopped it.</summary>
-internal sealed class LoadedProject {
-
-    private LoadedProject(Compilation? compilation, IReadOnlyList<string> diagnostics) {
-        Compilation = compilation;
-        Diagnostics = diagnostics;
-    }
-
-    /// <summary>The compilation to scaffold against, or null when the project did not open.</summary>
-    internal Compilation? Compilation { get; }
-
-    /// <summary>
-    ///     What MSBuild said on the way, verbatim (§7). Present even on success: a project can open with
-    ///     warnings that explain why a reference is missing.
-    /// </summary>
-    internal IReadOnlyList<string> Diagnostics { get; }
-
-    internal bool Succeeded => Compilation is not null;
-
-    internal static LoadedProject Opened(Compilation compilation, IReadOnlyList<string> diagnostics) {
-        return new LoadedProject(compilation, diagnostics);
-    }
-
-    internal static LoadedProject Failed(IReadOnlyList<string> diagnostics) {
-        return new LoadedProject(compilation: null, diagnostics);
     }
 
 }

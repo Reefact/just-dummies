@@ -1,35 +1,12 @@
 #region Usings declarations
 
 using System.Diagnostics.CodeAnalysis;
-using System;
-using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 using System.Text;
 
 #endregion
 
 namespace JustDummies;
-
-/// <summary>The URI families the builder can produce, one per distinct valid shape.</summary>
-internal enum UriFamily {
-
-    Web,       // http / https  — full authority: host, userinfo, port, path, query, fragment
-    WebSocket, // ws   / wss    — authority without userinfo or fragment (RFC 6455)
-    Ftp,       // ftp           — authority without query or fragment
-    Mailto,    // mailto        — local@domain (+ optional headers)
-    Relative   // no scheme     — path (+ optional query, fragment)
-
-}
-
-/// <summary>How the path component is drawn.</summary>
-internal enum UriPathMode {
-
-    Auto, // 0 to 2 arbitrary segments
-    Root, // no segments (an authority family still renders "/")
-    Exact // a fixed number of segments
-
-}
 
 /// <summary>
 ///     The immutable specification behind every <c>AnyUri</c> family builder. It records the constrained family and

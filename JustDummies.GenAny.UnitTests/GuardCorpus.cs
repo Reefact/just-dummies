@@ -176,7 +176,31 @@ internal static class GuardCorpus {
                                                                          if (slot == Slot.None) { throw new ArgumentOutOfRangeException(nameof(slot)); }
                                                                      }
                                                                  }
-                                                                 """, beyondTheEngine: true)
+                                                                 """, beyondTheEngine: true),
+
+        // ---- The bug report behind this reading path: validation delegated to a helper, no `if` at all for
+        // ---- §5.3 to parse. Its own domain is satisfiable — a length of 8 to 20 is well within the library's
+        // ---- reach — the engine just cannot see the guard, which is why it blocks compilation rather than
+        // ---- drawing (ADR-0083) instead of being reported merely `BeyondTheEngine`.
+
+        new GuardedShape("helper-delegated-length", "Reference", """
+                                                                  public sealed class Reference {
+
+                                                                      private readonly string value;
+
+                                                                      public Reference(string value) {
+                                                                          Validate(value);
+                                                                          this.value = value;
+                                                                      }
+
+                                                                      private static void Validate(string candidate) {
+                                                                          if (string.IsNullOrWhiteSpace(candidate)) { throw new ArgumentException(nameof(candidate)); }
+                                                                          if (candidate.Length < 8) { throw new ArgumentException(nameof(candidate)); }
+                                                                          if (candidate.Length > 20) { throw new ArgumentException(nameof(candidate)); }
+                                                                      }
+
+                                                                  }
+                                                                  """, requiresVerification: true)
     ];
 
     /// <summary>The shape names, as the theory rows carry them.</summary>
@@ -184,14 +208,25 @@ internal static class GuardCorpus {
         return All.Select(shape => shape.Name);
     }
 
-    /// <summary>The shapes whose domain a generator of this library can satisfy.</summary>
+    /// <summary>
+    ///     The shapes whose domain a generator of this library can satisfy, and whose chain the engine vouches
+    ///     for — so the emitted file is expected to compile as written.
+    /// </summary>
     internal static IEnumerable<string> SatisfiableNames() {
-        return All.Where(shape => !shape.BeyondTheEngine).Select(shape => shape.Name);
+        return All.Where(shape => !shape.BeyondTheEngine && !shape.RequiresVerification).Select(shape => shape.Name);
     }
 
     /// <summary>The shapes whose domain it cannot, where the contract is a clean refusal.</summary>
     internal static IEnumerable<string> BeyondTheEngineNames() {
         return All.Where(shape => shape.BeyondTheEngine).Select(shape => shape.Name);
+    }
+
+    /// <summary>
+    ///     The shapes whose domain the engine COULD satisfy, but whose guard it could not vouch for — so the
+    ///     emitted file is expected to block compilation, with the recipe it did infer kept underneath (§5.6).
+    /// </summary>
+    internal static IEnumerable<string> RequiresVerificationNames() {
+        return All.Where(shape => shape.RequiresVerification).Select(shape => shape.Name);
     }
 
     /// <summary>The shape a row names.</summary>
@@ -207,12 +242,14 @@ internal static class GuardCorpus {
                               string target,
                               string declarations,
                               string? defect = null,
-                              bool beyondTheEngine = false) {
-            Name            = name;
-            Target          = target;
-            Domain          = Preamble + declarations;
-            Defect          = defect;
-            BeyondTheEngine = beyondTheEngine;
+                              bool beyondTheEngine = false,
+                              bool requiresVerification = false) {
+            Name                 = name;
+            Target               = target;
+            Domain               = Preamble + declarations;
+            Defect               = defect;
+            BeyondTheEngine      = beyondTheEngine;
+            RequiresVerification = requiresVerification;
         }
 
         /// <summary>The row's name, which is what a failure names.</summary>
@@ -240,6 +277,17 @@ internal static class GuardCorpus {
         ///     since the domain itself rejects every value there is.
         /// </remarks>
         internal bool BeyondTheEngine { get; }
+
+        /// <summary>
+        ///     Whether the domain is satisfiable, but a guard toward it is one the engine could not vouch for
+        ///     (§5.6) — so the emitted file is expected NOT to compile as written, unlike every other shape.
+        /// </summary>
+        /// <remarks>
+        ///     Distinct from <see cref="BeyondTheEngine" />: there the domain itself admits nothing the library
+        ///     can draw; here it admits plenty, the engine simply cannot see the rule that says so, and the
+        ///     factory blocks compilation rather than risk a value the real constructor rejects (ADR-0083).
+        /// </remarks>
+        internal bool RequiresVerification { get; }
 
         /// <inheritdoc />
         public override string ToString() {

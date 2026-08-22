@@ -14,6 +14,11 @@ public class Jd014RejectedConstantArgumentTests {
     [InlineData("Any.String().WithLength(-1)",                  "negative")]
     [InlineData("Any.String().WithMaxLength(-1)",               "negative")]
     [InlineData("Any.String().WithLength(2000000)",             "1,000,000")]
+    // A ceiling steers the draw as a floor does, so ADR-0076 caps it too — one rule for every size argument.
+    // This row said otherwise until the scaffolder emitted WithMaxLength(1048576) for an ordinary 1 MiB limit,
+    // compiled clean, drew no diagnostic, and threw inside the emitted parameterless constructor.
+    [InlineData("Any.String().WithMaxLength(2000000)",          "1,000,000")]
+    [InlineData("Any.ListOf(Any.Int32()).WithMaxCount(2000000)", "1,000,000")]
     [InlineData("Any.Int32().MultipleOf(0)",                    "strictly positive")]
     [InlineData("Any.Decimal().WithScale(29)",                  "[0, 28]")]
     [InlineData("Any.String().StartingWith(\"\")",              "must not be empty")]
@@ -97,6 +102,9 @@ public class Jd014RejectedConstantArgumentTests {
     [InlineData("Any.Int32().Between(5, 5)")]
     [InlineData("Any.String().WithLength(0)")]
     [InlineData("Any.String().WithMaxLength(0)")]
+    // Verified rather than assumed: UriSpec.RequireSegmentCount refuses a negative count and nothing else, so
+    // the one member of this family that really is uncapped keeps its silence.
+    [InlineData("Any.Uri().Relative().WithPathSegments(2000000)")]
     [InlineData("Any.Int32().MultipleOf(7)")]
     [InlineData("Any.Decimal().WithScale(28)")]
     [InlineData("Any.String().StartingWith(\"ORD-\")")]

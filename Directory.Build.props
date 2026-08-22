@@ -121,6 +121,7 @@
   -->
   <ItemGroup Condition="'$(ManagePackageVersionsCentrally)' == 'true'">
     <PackageReference Include="SonarAnalyzer.CSharp" PrivateAssets="all" />
+    <PackageReference Include="StyleCop.Analyzers" PrivateAssets="all" />
     <GlobalAnalyzerConfigFiles Include="$(MSBuildThisFileDirectory)build/sonar-profile.globalconfig" />
   </ItemGroup>
 
@@ -154,6 +155,10 @@
     <Using Include="DiagnosticCatalog.Sonar" />
     <Using Include="DiagnosticCatalog.NetAnalyzers" />
 
+  </ItemGroup>
+
+  <ItemGroup>
+    <AdditionalFiles Include="$(MSBuildThisFileDirectory)stylecop.json" Link="stylecop.json" />
   </ItemGroup>
 
 </Project>

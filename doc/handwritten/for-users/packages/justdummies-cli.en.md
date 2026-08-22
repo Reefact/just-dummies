@@ -53,12 +53,38 @@ It is the point of the recap, not decoration — it separates what was **inferre
 | `factory` | composed through a static factory (`.As(OrderReference.Create)`) |
 | `AnyX` | a generator you had already scaffolded was reused |
 | `TODO` | nothing could be inferred; the file names what to do |
+| `to verify` | a generator *was* inferred, but something near that parameter could not be read — check it |
+| `unread guards` | that "something": a guard the tool does not recognise, or a helper it cannot see into |
+| `constraint unavailable` | a guard was understood, and this generator has no member to express it with |
+| `no source` | the type comes from a package, so there was no constructor body to read |
 | `unavailable` | the generator exists in JustDummies, but not in the asset your project resolves |
 
 **A `TODO` is not a failure.** The tool emits an identifier that does not exist, so *your own build*
 reports what could not be inferred, at the exact line, with the type in hand
 ([ADR-0060](../../for-maintainers/adr/0060-seed-generators-from-constructor-guards.md)). A generator
 that quietly drew a plausible value there would be far worse.
+
+**`to verify` works the same way, and for the same reason.** Where your constructor delegates its
+validation to a helper, or guards in a shape the tool does not parse, it cannot promise the recipe
+it inferred honours your real invariant — so it writes that recipe as your working base and adds one
+line that does not compile above it:
+
+<!-- jd:skip -->
+```csharp
+private static IAny<string> ValueFactory() {
+    // TODO(dum): 'string value' may be guarded by something dum could not read (§9).
+    //   This is dum's best generator for the type; verify it honours the real invariant,
+    //   or replace it, then delete the line below.
+    _ = TODO_verify_the_generator_for_value;
+
+    return Any.String().NonEmpty();
+}
+```
+
+Keep the recipe or replace it, delete that one line, and you are done. The alternative — a file that
+compiles and draws a value your constructor rejects on some later run — is the failure that costs
+most, because it surfaces far from its cause
+([ADR-0083](../../for-maintainers/adr/0083-block-compilation-on-a-guard-the-engine-cannot-vouch-for.md)).
 
 ## Through a graph of aggregates
 
@@ -131,9 +157,14 @@ or a third of them did not. The report says which:
 
 ```json
 {
-  "summary": { "scaffolded": 3, "failed": 0, "openParameters": 2 }
+  "summary": { "scaffolded": 3, "failed": 0, "openParameters": 2, "parametersToVerify": 1 }
 }
 ```
+
+The two counts are separate because they describe different states: an open parameter has no
+expression at all, one to verify has one and still needs your eyes. Each parameter row says both —
+`"resolved"` and `"requiresVerification"` — so the counts can be checked against the rows rather
+than taken on trust.
 
 Each result carries the type, the files written and where they went, every parameter with its
 expression and provenance, the entry point if one was emitted, and any warning. A run that stopped

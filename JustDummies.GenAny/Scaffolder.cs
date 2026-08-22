@@ -148,21 +148,6 @@ public static class Scaffolder {
     }
 
     /// <summary>
-    ///     The constructor <c>Generate()</c> will call: the public instance one taking the most parameters,
-    ///     ties broken by source order (§5.1).
-    /// </summary>
-    /// <remarks>
-    ///     Widest-first because the widest constructor is the one that states the type's whole shape; a narrower
-    ///     overload usually defaults something the developer would rather see varied.
-    ///     <para>
-    ///         A constructor with a <c>ref</c> or <c>out</c> parameter is skipped rather than chosen and
-    ///         patched: <c>Generate()</c> passes value arguments, and such a call site does not compile
-    ///         (<c>CS1620</c>). <c>in</c> is fine — a value argument binds to it.
-    ///     </para>
-    ///     A positional record needs no special handling: its primary constructor is an ordinary public one, and
-    ///     the copy constructor the compiler adds is protected, so it never competes.
-    /// </remarks>
-    /// <summary>
     ///     Whether the emitted file would have a type argument it cannot supply.
     /// </summary>
     /// <remarks>
@@ -205,6 +190,21 @@ public static class Scaffolder {
                                          == "System.Diagnostics.CodeAnalysis.SetsRequiredMembersAttribute");
     }
 
+    /// <summary>
+    ///     The constructor <c>Generate()</c> will call: the public instance one taking the most parameters,
+    ///     ties broken by source order (§5.1).
+    /// </summary>
+    /// <remarks>
+    ///     Widest-first because the widest constructor is the one that states the type's whole shape; a narrower
+    ///     overload usually defaults something the developer would rather see varied.
+    ///     <para>
+    ///         A constructor with a <c>ref</c> or <c>out</c> parameter is skipped rather than chosen and
+    ///         patched: <c>Generate()</c> passes value arguments, and such a call site does not compile
+    ///         (<c>CS1620</c>). <c>in</c> is fine — a value argument binds to it.
+    ///     </para>
+    ///     A positional record needs no special handling: its primary constructor is an ordinary public one, and
+    ///     the copy constructor the compiler adds is protected, so it never competes.
+    /// </remarks>
     private static IMethodSymbol? ChosenConstructor(INamedTypeSymbol target) {
         return target.InstanceConstructors
                      .Where(candidate => candidate.DeclaredAccessibility == Accessibility.Public)

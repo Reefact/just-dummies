@@ -308,6 +308,53 @@ public sealed class GenerateCommandTests : IDisposable {
         Check.That(report.GetProperty("results")[0].GetProperty("openParameters").GetInt32()).IsEqualTo(1);
     }
 
+    /// <summary>
+    ///     The other number a script branches on, and the row it has to agree with (§6.1).
+    /// </summary>
+    /// <remarks>
+    ///     A parameter the engine inferred but cannot vouch for (§5.6) is <b>resolved</b> — it carries an
+    ///     expression — and its file still does not compile. Counting it under <c>openParameters</c> would make
+    ///     that number disagree with the rows reporting <c>resolved: false</c>, so it has a count of its own and
+    ///     the row states the same fact. A script summing rows and a script reading the summary must not reach
+    ///     two different answers about one document.
+    /// </remarks>
+    [Fact(DisplayName = "--format json counts a parameter to verify apart from an open one, and its row agrees.")]
+    public async Task JsonCountsAParameterToVerifyApartFromAnOpenOne() {
+        GenerateSettings settings = Settings("Reference");
+
+        settings.Format = "json";
+
+        Run run = await Generate(settings, Compilation("""
+                                                       namespace Shop.Domain;
+
+                                                       public sealed class Reference {
+
+                                                           private readonly string value;
+
+                                                           public Reference(string value) {
+                                                               Validate(value);
+                                                               this.value = value;
+                                                           }
+
+                                                           private static void Validate(string candidate) {
+                                                               if (string.IsNullOrWhiteSpace(candidate)) { throw new System.ArgumentException(nameof(candidate)); }
+                                                           }
+
+                                                       }
+                                                       """));
+
+        JsonElement report    = JsonDocument.Parse(run.Output).RootElement;
+        JsonElement summary   = report.GetProperty("summary");
+        JsonElement parameter = report.GetProperty("results")[0].GetProperty("parameters")[0];
+
+        Check.That(summary.GetProperty("openParameters").GetInt32()).IsEqualTo(0);
+        Check.That(summary.GetProperty("parametersToVerify").GetInt32()).IsEqualTo(1);
+
+        Check.That(parameter.GetProperty("resolved").GetBoolean()).IsTrue();
+        Check.That(parameter.GetProperty("requiresVerification").GetBoolean()).IsTrue();
+        Check.That(parameter.GetProperty("expression").GetString()).IsNotNull();
+    }
+
     [Fact(DisplayName = "--format json carries each parameter, its expression and its provenance.")]
     public async Task JsonCarriesEachParameterAndItsProvenance() {
         GenerateSettings settings = Settings("Order");

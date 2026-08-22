@@ -32,7 +32,8 @@ internal sealed record RunReport(string Tool,
     ///     a contract with a hole in it.
     /// </remarks>
     internal static RunReport Refused(string refusal) {
-        return new RunReport("dum", refusal, [], new RunSummary(Scaffolded: 0, Failed: 0, OpenParameters: 0));
+        return new RunReport("dum", refusal, [],
+                             new RunSummary(Scaffolded: 0, Failed: 0, OpenParameters: 0, ParametersToVerify: 0));
     }
 
     /// <summary>A run that scaffolded, whatever each of its arguments came to.</summary>
@@ -42,7 +43,8 @@ internal sealed record RunReport(string Tool,
                              results,
                              new RunSummary(results.Count(result => result.Status == nameof(ScaffoldStatus.Scaffolded)),
                                             results.Count(result => result.Status != nameof(ScaffoldStatus.Scaffolded)),
-                                            results.Sum(result => result.OpenParameters)));
+                                            results.Sum(result => result.OpenParameters),
+                                            results.Sum(result => result.ParametersToVerify)));
     }
 
 }

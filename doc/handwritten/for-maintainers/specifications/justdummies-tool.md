@@ -556,11 +556,36 @@ kept. That is the ordinary bounded-range idiom, written as two consecutive guard
 would make guard reading useless for the case it most often meets. Both compositions were verified
 against the library (§17).
 
-Two guards setting *the same* bound are irreconcilable: both are dropped and the parameter is
-reported as `guards not combined`. So is a lower bound above an upper one — the library rejects
-that chain with `ConflictingAnyConstraintException`, and `JD023` reports it at compile time (§17),
-but the engine must not emit it in the first place. No recognised guard produces a charset or a
-pattern constraint, so those axes never arise.
+Two guards setting *the same* bound are a **conjunction**, not a collision: both `if`s throw, so a
+value must satisfy both, and the tighter one is the only thing they can both mean. It survives and
+the looser is dropped in silence — the library folds them exactly that way, so emitting both would
+write a call `JD032` reports as dead.
+
+Bounds that leave **no value at all** are irreconcilable: all of them are dropped and the parameter
+is reported as `guards not combined`. The library rejects such a chain with
+`ConflictingAnyConstraintException`, and `JD016`, `JD023` and their siblings report it at compile
+time (§17), but the engine must not emit it in the first place — which guard the developer meant is
+not its guess to make. This is interval arithmetic over the whole of the constraint's `Bound`, and
+being only that is the point (ADR-0046): a lower bound above an upper one, an **exact** size beside
+a bound that excludes it, and a **sign** against an opposing bound are the same question asked three
+ways. `.Positive()` is a floor at zero that zero does not satisfy, so
+`.Positive().LessThanOrEqualTo(0.5m)` composes and `.Positive().LessThanOrEqualTo(-5)` does not.
+
+**A base-table refinement yields to a guard.** The `.NonEmpty()` of §5.2's `string` row is the
+engine's own opinion; a guard is the developer's declaration. Where the two cannot both hold — a
+constructor demanding a blank string — the refinement is dropped and the guard stands, with no
+`guards not combined`, because nothing of the developer's was reconciled away. The same reading
+absorbs it where they merely overlap: a floor of eight already says non-empty, so
+`.NonEmpty().WithMinLength(8)` states one invariant twice and `JD024` says so.
+
+**A floor and a ceiling of the same family are emitted as the range they are** —
+`.WithLengthBetween(8, 20)`, `.WithCountBetween(2, 5)`, `.Between(0, 100)`. Not obedience to
+`JD031`, which reports the two-bound spelling as information and nothing more: the engine was told
+an interval, so writing the interval is writing what it meant. Only a pair carrying arguments folds,
+which leaves `.Positive()` out — it has nothing to put in a range call. Every range member is looked
+up before it is written, like all the rest (§13.1).
+
+No recognised guard produces a charset or a pattern constraint, so those axes never arise.
 
 **Regex guards are deliberately not read.** `!Regex.IsMatch(p, "…")` looks like the ideal guard to
 translate: the library has `Any.StringMatching(...)`, and the pattern sits right there as a
@@ -976,7 +1001,8 @@ sweep. In v1.0 `NamingOptions` carries a single fixed pattern, `Any{Type}`.
   `JustDummies.dll`, and assert the emitted expression string per parameter. Fast, no MSBuild.
   Cover every row of §5.2, every row of §5.3, both §5.4 paths, and the §5.5 fallback. Include the
   unsigned case (`p <= 0` on a `uint`), the value-type nullable case, both composition outcomes of
-  §5.3 (complementary bounds kept, same bound dropped), a size guard on a **collection** parameter
+  §5.3 (complementary bounds kept and folded to a range, same side folded to the tighter, bounds
+  admitting no value dropped, a refinement yielding to a guard), a size guard on a **collection** parameter
   (which must reach `WithMaxCount`, never `WithMaxLength`), and `p < 1` on an integral and on a
   `decimal` parameter — the two rows that differ only by the parameter's type. Add a negative case:
   a constructor guarded by `!Regex.IsMatch(...)` must produce **no** pattern constraint, so the

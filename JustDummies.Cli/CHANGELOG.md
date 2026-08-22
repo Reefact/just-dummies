@@ -23,6 +23,20 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   inferred. `_id` failed the other way: the field derived from it carried the same identifier as the
   constructor parameter, so the assignment was `_id = _id`, which compiles and leaves the field null, making
   every draw throw. Both names are ones §17 already promised worked.
+- **A bounded parameter is scaffolded as the range it is, once.** `dum generate Order` on a factory guarding
+  `IsNullOrWhiteSpace`, `Length < 8` and `Length > 20` emitted
+  `Any.String().NonEmpty().WithMinLength(8).WithMaxLength(20)` — a chain the tool's own package reports
+  (`JD031`), so the scaffolded file was marked on its first run, before its author had touched it, and one whose
+  `NonEmpty()` narrowed nothing beside a floor of eight. It is now
+  `Any.String().WithLengthBetween(8, 20)`. `WithCountBetween` and `Between` fold the same way.
+- **Constraints that cannot stand together are reconciled properly, or refused.** Composition read two of the
+  six things a constraint can pin down, so three shapes escaped it and reached the developer as a generator that
+  throws the moment it is constructed: an exact size beside a bound excluding it (`WithCount(2).WithMinCount(5)`),
+  a sign against an opposing bound (`Positive().LessThanOrEqualTo(-5)`), and — the engine's own doing — the
+  base table's `NonEmpty()` against a guard demanding a blank string. Two guards bounding the *same* side are no
+  longer dropped either: they are a conjunction, and the tighter one is what they both mean, so an invariant the
+  engine had read correctly is no longer thrown away. Where nothing survives, the parameter keeps its neutral
+  generator and the recap says `guards not combined`, as before.
 - **A guard constant the engine cannot carry no longer ends the run.** `if (value > 1e30)` on a `double`
   overflowed the conversion to `decimal` and the exception escaped `Scaffolder.Scaffold`: the types before it
   were on disk, the rest absent, `--format json` printed nothing, and the exit code said the command line had

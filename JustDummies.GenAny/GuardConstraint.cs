@@ -13,11 +13,12 @@ namespace JustDummies.GenAny;
 /// </remarks>
 internal sealed class GuardConstraint {
 
-    internal GuardConstraint(string member, string? argument, Bound bound, decimal? value = null) {
-        Member   = member;
-        Argument = argument;
-        Bound    = bound;
-        Value    = value;
+    internal GuardConstraint(string member, string? argument, Bound bound, decimal? value = null, bool exclusive = false) {
+        Member    = member;
+        Argument  = argument;
+        Bound     = bound;
+        Value     = value;
+        Exclusive = exclusive;
     }
 
     /// <summary>The constraint member — <c>NonEmpty</c>, <c>WithMaxLength</c>, <c>Positive</c>.</summary>
@@ -31,6 +32,18 @@ internal sealed class GuardConstraint {
 
     /// <summary>The bound's value where it has one, so a floor above a ceiling can be caught.</summary>
     internal decimal? Value { get; }
+
+    /// <summary>
+    ///     Whether the bound excludes its own value.
+    /// </summary>
+    /// <remarks>
+    ///     <c>Positive</c> is a floor at zero that zero itself does not satisfy, and saying so is what keeps it
+    ///     honest on both sides of the type divide: on an integral type it means one, on a <c>decimal</c> it
+    ///     means anything above zero, and a single value would have to be wrong for one of them.
+    ///     <c>Positive().LessThanOrEqualTo(0.5m)</c> draws perfectly well, and a floor written as <c>1</c> would
+    ///     have declared it empty.
+    /// </remarks>
+    internal bool Exclusive { get; }
 
     /// <summary>How many arguments the member takes, which is what ADR-0059 is checked against.</summary>
     internal int Arity => Argument is null ? 0 : 1;

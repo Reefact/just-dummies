@@ -149,14 +149,65 @@ internal sealed class GeneratorFor {
     ///     on a <c>uint</c> parameter does not resolve, and is skipped rather than emitted.
     /// </remarks>
     internal static string Chain(DrawnGenerator drawn, IReadOnlyList<GuardConstraint> guards, out bool dropped) {
-        IReadOnlyList<GuardConstraint> kept = GuardReading.Combine([.. drawn.Seeded, .. guards], out dropped);
+        IReadOnlyList<GuardConstraint> kept = GuardReading.Combine(drawn.Seeded, guards, out dropped);
 
-        string chain = string.Concat(kept.Where(constraint => LibrarySurface.Carries(drawn.Builder,
-                                                                                     constraint.Member,
-                                                                                     constraint.Arity))
-                                         .Select(constraint => constraint.Render()));
+        List<GuardConstraint> written = [.. kept.Where(constraint => LibrarySurface.Carries(drawn.Builder,
+                                                                                            constraint.Member,
+                                                                                            constraint.Arity))];
+
+        string chain = string.Concat(Ranged(written, drawn.Builder).Select(constraint => constraint.Render()));
 
         return drawn.Core + chain + drawn.Suffix;
+    }
+
+    /// <summary>
+    ///     The two vocabularies a bounded range is spelled in, and the one call that replaces each pair.
+    /// </summary>
+    /// <remarks>
+    ///     Three of <c>JD031</c>'s four; the temporal pair is out of reach because §5.3 never emits a temporal
+    ///     bound. The range member is looked up like every other (ADR-0059) — it takes two arguments, so the
+    ///     lookup has to say so.
+    /// </remarks>
+    private static readonly (string Minimum, string Maximum, string Range)[] Ranges = [
+        ("WithMinLength", "WithMaxLength", "WithLengthBetween"),
+        ("WithMinCount", "WithMaxCount", "WithCountBetween"),
+        ("GreaterThanOrEqualTo", "LessThanOrEqualTo", "Between")
+    ];
+
+    /// <summary>
+    ///     A floor and a ceiling of the same family written as the range they are.
+    /// </summary>
+    /// <remarks>
+    ///     Not a nicety, and not obedience to <c>JD031</c> either: the engine knows it was told an interval, so
+    ///     writing the interval is writing what it meant. The two-bound spelling is legal and documented — it
+    ///     is how a shared helper sets a floor and a call site adds a ceiling — but nothing here is shared or
+    ///     partial, and a reader who is handed both bounds never learns the range form exists.
+    ///     <para>
+    ///         Only a pair that carries arguments folds. <c>Positive()</c> is a floor with nothing to put in a
+    ///         range call, and its exclusive edge has no inclusive spelling on a floating-point type anyway.
+    ///     </para>
+    /// </remarks>
+    private static IReadOnlyList<GuardConstraint> Ranged(IReadOnlyList<GuardConstraint> written, ITypeSymbol? builder) {
+        foreach ((string minimum, string maximum, string range) in Ranges) {
+            GuardConstraint? floor   = written.FirstOrDefault(constraint => constraint.Member == minimum && constraint.Argument is not null);
+            GuardConstraint? ceiling = written.FirstOrDefault(constraint => constraint.Member == maximum && constraint.Argument is not null);
+
+            if (floor is null || ceiling is null) { continue; }
+            if (!LibrarySurface.Carries(builder, range, parameters: 2)) { continue; }
+
+            GuardConstraint       ranged = new(range, $"{floor.Argument}, {ceiling.Argument}", Bound.Exact);
+            List<GuardConstraint> folded = [];
+
+            foreach (GuardConstraint constraint in written) {
+                if (ReferenceEquals(constraint, ceiling)) { continue; }
+
+                folded.Add(ReferenceEquals(constraint, floor) ? ranged : constraint);
+            }
+
+            return folded;
+        }
+
+        return written;
     }
 
     /// <summary>The complete expression for a type nothing further will constrain — an element, a key.</summary>

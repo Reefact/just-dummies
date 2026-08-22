@@ -18,8 +18,8 @@ public sealed class GuardReadingTests {
     [InlineData("if (value.Length == 0) { throw new ArgumentException(nameof(value)); }", "Any.String().NonEmpty()")]
     [InlineData("if (value.Length < 1) { throw new ArgumentException(nameof(value)); }", "Any.String().NonEmpty()")]
     [InlineData("if (value.Length > 10) { throw new ArgumentException(nameof(value)); }", "Any.String().NonEmpty().WithMaxLength(10)")]
-    [InlineData("if (value.Length < 3) { throw new ArgumentException(nameof(value)); }", "Any.String().NonEmpty().WithMinLength(3)")]
-    [InlineData("if (value.Length != 12) { throw new ArgumentException(nameof(value)); }", "Any.String().NonEmpty().WithLength(12)")]
+    [InlineData("if (value.Length < 3) { throw new ArgumentException(nameof(value)); }", "Any.String().WithMinLength(3)")]
+    [InlineData("if (value.Length != 12) { throw new ArgumentException(nameof(value)); }", "Any.String().WithLength(12)")]
     public void AGuardOnAStringIsReadIntoTheStringFamily(string guard, string expected) {
         ScaffoldedParameter parameter = Subject.GuardedBy("string", guard);
 
@@ -133,7 +133,7 @@ public sealed class GuardReadingTests {
                         if (value < 0) { throw new ArgumentOutOfRangeException(nameof(value)); }
                         if (value > 100) { throw new ArgumentOutOfRangeException(nameof(value)); }
                 """,
-                "Any.Int32().GreaterThanOrEqualTo(0).LessThanOrEqualTo(100)")]
+                "Any.Int32().Between(0, 100)")]
     [InlineData("string",
                 """
                         if (string.IsNullOrEmpty(value)) { throw new ArgumentException(nameof(value)); }
@@ -148,29 +148,92 @@ public sealed class GuardReadingTests {
     }
 
     /// <summary>
-    ///     Two guards setting the same bound, or a floor above a ceiling, are dropped rather than reconciled.
+    ///     Two guards bounding the same side are a conjunction, not a collision.
     /// </summary>
     /// <remarks>
-    ///     The library refuses such a chain at construction with <c>ConflictingAnyConstraintException</c>, and
-    ///     <c>JD023</c> reports it at compile time — so the engine must not write it in the first place. Which
-    ///     one the developer meant is not the engine's guess to make.
+    ///     Both <c>if</c>s throw, so a value has to satisfy both, and the conjunction of two ceilings is the
+    ///     lower one. Picking it is not guessing which the developer meant — it is the only thing they can both
+    ///     mean. Dropping both, as this once did, threw away an invariant the engine had read correctly, and
+    ///     writing both would emit a call the library folds away in silence, which <c>JD032</c> reports as dead.
     /// </remarks>
-    [Theory(DisplayName = "Two guards on the same bound are dropped, and the parameter says so.")]
+    [Theory(DisplayName = "Two guards bounding the same side fold to the tighter one.")]
     [InlineData("""
                         if (value > 100) { throw new ArgumentOutOfRangeException(nameof(value)); }
                         if (value > 50) { throw new ArgumentOutOfRangeException(nameof(value)); }
                 """,
-                "Any.Int32()")]
+                "Any.Int32().LessThanOrEqualTo(50)")]
     [InlineData("""
-                        if (value < 100) { throw new ArgumentOutOfRangeException(nameof(value)); }
-                        if (value > 10) { throw new ArgumentOutOfRangeException(nameof(value)); }
+                        if (value < 10) { throw new ArgumentOutOfRangeException(nameof(value)); }
+                        if (value < 40) { throw new ArgumentOutOfRangeException(nameof(value)); }
                 """,
-                "Any.Int32()")]
-    public void TwoGuardsOnTheSameBoundAreDropped(string guards, string expected) {
+                "Any.Int32().GreaterThanOrEqualTo(40)")]
+    public void TwoGuardsBoundingTheSameSideFoldToTheTighter(string guards, string expected) {
         ScaffoldedParameter parameter = Subject.GuardedBy("int", guards);
 
         Check.That(parameter.Expression).IsEqualTo(expected);
+        Check.That(parameter.Provenance.HasFlag(Provenance.GuardsNotCombined)).IsFalse();
+    }
+
+    /// <summary>
+    ///     Bounds that leave no value at all are dropped rather than reconciled, and the parameter says so.
+    /// </summary>
+    /// <remarks>
+    ///     The library refuses such a chain at construction with <c>ConflictingAnyConstraintException</c>, and
+    ///     <c>JD023</c> and its siblings report it at compile time — so the engine must not write it in the
+    ///     first place. Which guard the developer meant is not the engine's guess to make; the contradiction is
+    ///     theirs to see, and the recap points at it.
+    ///     <para>
+    ///         The three rows are the three shapes that used to escape: a floor above a ceiling was caught, but
+    ///         an exact size beside a floor above it was not, and neither was a sign against an opposing bound
+    ///         — <c>Bound</c> has six members and the check read two of them.
+    ///     </para>
+    /// </remarks>
+    [Theory(DisplayName = "Bounds that admit no value are dropped, and the parameter says so.")]
+    [InlineData("int", """
+                               if (value < 100) { throw new ArgumentOutOfRangeException(nameof(value)); }
+                               if (value > 10) { throw new ArgumentOutOfRangeException(nameof(value)); }
+                       """,
+                "Any.Int32()")]
+    [InlineData("int", """
+                               if (value <= 0) { throw new ArgumentOutOfRangeException(nameof(value)); }
+                               if (value > -5) { throw new ArgumentOutOfRangeException(nameof(value)); }
+                       """,
+                "Any.Int32()")]
+    [InlineData("string", """
+                                  if (value.Length < 10) { throw new ArgumentException(nameof(value)); }
+                                  if (value.Length != 8) { throw new ArgumentException(nameof(value)); }
+                          """,
+                "Any.String()")]
+    public void BoundsThatAdmitNoValueAreDropped(string parameterType, string guards, string expected) {
+        ScaffoldedParameter parameter = Subject.GuardedBy(parameterType, guards);
+
+        Check.That(parameter.Expression).IsEqualTo(expected);
         Check.That(parameter.Provenance.HasFlag(Provenance.GuardsNotCombined)).IsTrue();
+    }
+
+    /// <summary>
+    ///     The base table's own refinement yields to a guard, rather than contradicting it.
+    /// </summary>
+    /// <remarks>
+    ///     A constructor demanding a blank string is not contradicting itself; it is contradicting the row that
+    ///     assumed a <c>string</c> parameter wants <c>NonEmpty</c>. Dropping both sides would emit a generator
+    ///     that violates a perfectly good guard and report a reconciliation the developer never asked for — so
+    ///     the opinion yields and the declaration stands.
+    ///     <para>
+    ///         The same reading absorbs it where they merely overlap: a floor of eight already says non-empty,
+    ///         so writing both states one invariant twice.
+    ///     </para>
+    /// </remarks>
+    [Theory(DisplayName = "A base-table refinement yields to the guard it cannot stand beside.")]
+    [InlineData("if (value.Length > 0) { throw new ArgumentException(nameof(value)); }", "Any.String().WithMaxLength(0)")]
+    [InlineData("if (value.Length != 0) { throw new ArgumentException(nameof(value)); }", "Any.String().WithLength(0)")]
+    [InlineData("if (value.Length < 8) { throw new ArgumentException(nameof(value)); }", "Any.String().WithMinLength(8)")]
+    public void ABaseTableRefinementYieldsToTheGuard(string guard, string expected) {
+        ScaffoldedParameter parameter = Subject.GuardedBy("string", guard);
+
+        Check.That(parameter.Expression).IsEqualTo(expected);
+        Check.That(parameter.Provenance.HasFlag(Provenance.Guard)).IsTrue();
+        Check.That(parameter.Provenance.HasFlag(Provenance.GuardsNotCombined)).IsFalse();
     }
 
     // ADR-0059 reaches the guards too: .Positive() is not declared on the unsigned engine, so it is skipped

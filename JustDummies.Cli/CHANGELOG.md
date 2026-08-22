@@ -8,6 +8,8 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ## [Unreleased]
 
+## [1.1.0-beta.2] - 2026-08-22
+
 ### Fixed
 
 - **A guard is read only where the parameter is its subject.** `if (Math.Abs(degrees) > 90)` became

@@ -2,6 +2,23 @@
 
 What changed for you, release by release, in the `cli` train. For the full technical record — every constraint, every edge case, every ADR — see [CHANGELOG.md](https://github.com/Reefact/just-dummies/blob/main/JustDummies.Cli/CHANGELOG.md).
 
+## 1.1.0-beta.2 — August 22, 2026
+
+_A correctness pass over guard reading, and one shape change: every emitted file now names each parameter's recipe in its own factory method._
+
+### ⚠️ Breaking changes
+
+- **Each parameter's recipe now lives in its own private factory method**, not inlined in the constructor's initializer — every emitted file's shape changes, though `Generate()`, the fields and the `With…` methods do not.
+- **A guard the tool cannot vouch for now blocks compilation**, the same way an unresolved parameter already did, instead of quietly keeping a neutral generator that could draw a value the real constructor rejects ([ADR-0083](https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-maintainers/adr/0083-block-compilation-on-a-guard-the-engine-cannot-vouch-for.md)). The recap counts it separately — `1 TODO, 1 to verify` — since a generator *was* inferred there.
+
+### 🐛 Bug Fixes
+
+- **A guard delegated to a helper, or spelled with a modern throw-helper**, is now read the same as its `if`-based equivalent — `Ensure.NotBlank(name)` and `ArgumentNullException.ThrowIfNull(name)` no longer pass over in silence or block a build that was already correct.
+- **A throwing guard in a shape the tool can't parse** — an `else if` chain, a block that logs before it throws — is now marked `unread guards` instead of reporting nothing at all.
+- **Several arithmetic, size and cross-parameter guards that were misread, silently dropped, or crashed the run** are now read correctly, composed, or refused explicitly: a condition on a value derived from the parameter, an odd parameter name (`@event`, `_id`), a size past what the library can produce, a guard constant past `decimal`, a non-`int` size bound, an `Enum.IsDefined` guard, a guard spanning two parameters, and a type the emitted file could not construct.
+- **`--format json`'s `openParameters` no longer counts a parameter that only needs verifying** — it keeps its published meaning, and the new `summary.parametersToVerify` carries the other count.
+- **The recap no longer disagrees with itself about one parameter** — a row reading `to verify` is now counted as `to verify` in the footer too, not `TODO`.
+
 ## 1.1.0-beta.1 — August 13, 2026
 
 _A minor release, additive throughout: three new options, and not one existing behaviour changed. `dum generate Order` still writes exactly what it wrote in 1.0.0-beta.1, byte for byte._

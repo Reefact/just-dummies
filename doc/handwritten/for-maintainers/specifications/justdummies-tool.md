@@ -1092,6 +1092,15 @@ Named explicitly so they are not mistaken for oversights.
   tool still cannot tell the parameter from an unconstrained one, and it does not guess — which is
   the residue this non-goal is about: not what happens once doubt is established, but the doubt the
   tool never sees.
+  A **guard read after the parameter was reassigned** fails differently from all of these, and is
+  the one case where the tool is confidently wrong rather than merely blind: it sees the guard,
+  reads it correctly, and attributes it to a value the generator no longer draws.
+  `if (percent < 0) { throw … } percent = 100 - percent; if (percent < 0) { throw … }` yields
+  `.GreaterThanOrEqualTo(0)`, which the second guard does not state about the drawn value at all.
+  Only an assignment to a **field or property** ends the leading-guard scan (§5.3), so reassigning
+  the parameter itself does not — in any spelling, written bare or inside an `else`. Guards written
+  *before* the reassignment are honoured; the ones after it are read against something else, and
+  nothing says so.
 * **Round-tripping.** The tool never reads a file it previously wrote.
 * **`init` / `required` members, property-only construction.** Constructor and static factory only.
 * **Anything under `--all`.** Explicit type arguments only.

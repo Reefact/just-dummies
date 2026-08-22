@@ -112,13 +112,19 @@ internal static class Recap {
     ///     The right-hand column: empty for the base table, and never silent about a guess.
     /// </summary>
     /// <remarks>
-    ///     <c>TODO</c> comes first on an open parameter because it is what the reader is scanning for; the rest
+    ///     <c>TODO</c> comes first on an open parameter because it is what the reader is scanning for, and
+    ///     <c>to verify</c> takes its place on one the engine inferred but cannot vouch for (§5.6); the rest
     ///     follows in a fixed order, so the same facts always read the same way.
+    ///     <para>
+    ///         The two are the words the closing line counts with, and a row saying one while the count says the
+    ///         other is a recap contradicting itself about the very parameter it is describing.
+    ///     </para>
     /// </remarks>
     private static string Column(ScaffoldedParameter parameter) {
         List<string> words = [];
 
-        if (parameter.IsUnresolved || parameter.RequiresVerification) { words.Add("TODO"); }
+        if (parameter.IsUnresolved) { words.Add("TODO"); }
+        if (parameter.RequiresVerification) { words.Add("to verify"); }
 
         words.AddRange(WordsFor(parameter.Provenance));
 

@@ -98,6 +98,15 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   replace rather than write from nothing. The recap counts this separately — `1 TODO, 1 to verify` — since a
   generator *was* inferred here. Reaches every existing `unread guards` case, including a size past the
   library's producible cap and a count past what an element row can draw, not only the helper case above.
+- **The recap no longer says two things about one parameter.** A parameter to verify read `TODO` in its own
+  row while the closing line counted it under `1 to verify` and *not* under TODO — the table and the footer
+  disagreeing about the same parameter. The row now reads `to verify` too.
+- **`--format json` counts a parameter to verify apart from an open one.** `summary.openParameters` had been
+  widened to include it, which made that number disagree with the rows: a parameter to verify carries an
+  expression, so its row reads `resolved: true`, and a script summing those rows and a script reading the
+  count answered differently about one document. `openParameters` keeps its published meaning, the new
+  `summary.parametersToVerify` carries the other count, and each row states both facts — `resolved` and the
+  new `requiresVerification` — so the summary is checkable against the rows.
 
 ## [1.1.0-beta.1] - 2026-08-13
 

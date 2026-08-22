@@ -814,8 +814,18 @@ write it yourself". One word turns a dead end into an instruction.
 
 A parameter requiring verification (§5.6) closes the recap the same way an open one does — the
 file will not compile — but counted separately, as *N* **to verify** rather than *N* **TODO**: a
-generator was inferred there, and the count says so. Both together read `4 of 6 parameters
-inferred, 1 TODO, 1 to verify.`, in the order a developer acts on them.
+generator was inferred there, and the count says so. Its row reads the same word, never `TODO`,
+since the row and the closing line describe the same parameter:
+
+```console
+  customer   Customer   —                        TODO
+  name       string     Any.String().NonEmpty()  to verify, unread guards
+
+✓ AnyOrder.cs — 5 of 6 parameters inferred, 1 TODO, 1 to verify.
+  The file will not compile until you resolve it. That is deliberate.
+```
+
+Both counts read in the order a developer acts on them: supply the one, check the other.
 
 **Provenance is data, not output.** The engine returns it in its result model (§10.3); the CLI
 renders it. That is what makes the recap testable without a console.
@@ -845,6 +855,13 @@ is right for a person and useless to a script scaffolding forty types in one inv
 reads the same whether every parameter resolved or a third of them did not. `summary.openParameters`
 is that missing number, and the per-parameter rows are why it is what it is.
 
+**A parameter to verify is counted apart, in `summary.parametersToVerify`.** It is not an open
+parameter: it carries an expression, so its row reads `resolved: true`, and its file still does not
+compile (§5.6). Folding the two into one number would make that number disagree with the rows it
+summarises — a script summing `resolved: false` and a script reading the count would answer
+differently about one document. Each row states both facts, `resolved` and `requiresVerification`,
+so the summary is checkable against the rows rather than believed.
+
 **The exit codes do not move.** §7 is a published contract, and a run that wrote its files still
 exits `0` whatever the report says. This adds a channel; it does not redefine one.
 
@@ -872,7 +889,7 @@ The provenance words are the recap's own (§6), read from one table rather than 
 | Situation | Exit | Behaviour |
 |---|---|---|
 | File written, everything inferred | `0` | — |
-| File written, one or more TODOs | `0` | The write succeeded; the developer's build reports the rest. |
+| File written, one or more TODOs or parameters to verify | `0` | The write succeeded; the developer's build reports the rest. |
 | `--dry-run` | `0` | Nothing written. |
 | Type not found / ambiguous | `1` | Candidates listed. |
 | Output file exists, no `--force` | `1` | Names the file, suggests `--force`, warns that edits are lost. |
@@ -981,14 +998,16 @@ Named explicitly so they are not mistaken for oversights.
   factory, depth-limited to 3. Beyond that the developer writes it.
 * **Invariants the tool cannot see.** §5.3 reads a closed set of guard idioms. Where the
   constructor throws in a way the set does not match — a cross-parameter rule, an arithmetic
-  condition, a regex guard (§5.3) — the parameter gets the neutral generator and the recap marks it
-  `unread guards`, so the developer knows where to look. The same mark now reaches a guard delegated
-  entirely to a helper called on the parameter itself (`Guard.Against.Null(value)`), even with no
-  `if` in the body at all (§5.3). What still escapes it is a guard reached only through a level of
-  indirection the tool does not follow — a local copy of the parameter (`var v = value;
-  Validate(v);`), a lambda closing over it, a call reached through a member rather than the
-  parameter's own name. There the tool still cannot tell the parameter from an unconstrained one,
-  and it does not guess.
+  condition, a regex guard (§5.3) — the parameter keeps the neutral generator, the recap marks it
+  `unread guards`, and **the file does not compile until the developer says the generator is right**
+  (§5.6): the recipe is still written, under a line naming an identifier that does not exist. The
+  same mark reaches a guard delegated entirely to a helper called on the parameter itself
+  (`Guard.Against.Null(value)`), even with no `if` in the body at all (§5.3). What still escapes it
+  is a guard reached only through a level of indirection the tool does not follow — a local copy of
+  the parameter (`var v = value; Validate(v);`), a lambda closing over it, a call reached through a
+  member rather than the parameter's own name. There the tool still cannot tell the parameter from
+  an unconstrained one, and it does not guess — which is the residue this non-goal is about: not
+  what happens once doubt is established, but the doubt the tool never sees.
 * **Round-tripping.** The tool never reads a file it previously wrote.
 * **`init` / `required` members, property-only construction.** Constructor and static factory only.
 * **Anything under `--all`.** Explicit type arguments only.

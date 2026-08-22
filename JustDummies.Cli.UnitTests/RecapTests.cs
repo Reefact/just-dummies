@@ -81,6 +81,16 @@ public sealed class RecapTests {
         Check.That(rendered).Contains("The file will not compile until you resolve it. That is deliberate.");
     }
 
+    // The row and the closing line describe the same parameter, so they say the same word about it. A row
+    // reading TODO under a count reading `1 to verify, 0 TODO` is the recap contradicting itself.
+    [Fact(DisplayName = "A parameter requiring verification reads `to verify` in its row too, never TODO.")]
+    public void AParameterRequiringVerificationReadsToVerifyInItsRow() {
+        string rendered = Rendered(Plan([Inferred("name", "string", "Any.String().NonEmpty()", Provenance.UnreadGuards)]));
+
+        Check.That(rendered).Contains("to verify, unread guards");
+        Check.That(rendered).Not.Contains("TODO");
+    }
+
     // Both at once, the ordinary case where one parameter is wholly open and another only doubtful: the two
     // counts read side by side, in the order a developer acts on them — supply one, verify the other.
     [Fact(DisplayName = "An open parameter and one requiring verification are both counted, TODO first.")]

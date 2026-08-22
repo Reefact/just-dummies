@@ -53,12 +53,38 @@ qui a été **deviné** :
 | `factory` | composé via une fabrique statique (`.As(OrderReference.Create)`) |
 | `AnyX` | un générateur que vous aviez déjà scaffoldé a été réutilisé |
 | `TODO` | rien n'a pu être inféré ; le fichier nomme ce qu'il reste à faire |
+| `to verify` | un générateur *a bien* été inféré, mais quelque chose près de ce paramètre n'a pas pu être lu — vérifiez-le |
+| `unread guards` | ce « quelque chose » : une garde que l'outil ne reconnaît pas, ou un helper dans lequel il ne voit pas |
+| `constraint unavailable` | une garde a été comprise, et ce générateur n'a aucun membre pour l'exprimer |
+| `no source` | le type vient d'un package, il n'y avait donc aucun corps de constructeur à lire |
 | `unavailable` | le générateur existe dans JustDummies, mais pas dans l'asset que votre projet résout |
 
 **Un `TODO` n'est pas un échec.** L'outil émet un identifiant qui n'existe pas, si bien que *votre
 propre build* signale ce qui n'a pas pu être inféré, à la ligne exacte, avec le type sous la main
 ([ADR-0060](../../for-maintainers/adr/0060-seed-generators-from-constructor-guards.fr.md)). Un
 générateur qui tirerait discrètement une valeur plausible à cet endroit serait bien pire.
+
+**`to verify` fonctionne pareil, et pour la même raison.** Là où votre constructeur délègue sa
+validation à un helper, ou garde dans une forme que l'outil n'analyse pas, il ne peut pas promettre
+que la recette inférée honore votre véritable invariant — alors il écrit cette recette comme base de
+travail et ajoute au-dessus une ligne qui ne compile pas :
+
+<!-- jd:skip -->
+```csharp
+private static IAny<string> ValueFactory() {
+    // TODO(dum): 'string value' may be guarded by something dum could not read (§9).
+    //   This is dum's best generator for the type; verify it honours the real invariant,
+    //   or replace it, then delete the line below.
+    _ = TODO_verify_the_generator_for_value;
+
+    return Any.String().NonEmpty();
+}
+```
+
+Gardez la recette ou remplacez-la, supprimez cette seule ligne, et c'est réglé. L'alternative — un
+fichier qui compile et tire une valeur que votre constructeur rejette lors d'une exécution
+ultérieure — est l'échec qui coûte le plus cher, parce qu'il surgit loin de sa cause
+([ADR-0083](../../for-maintainers/adr/0083-block-compilation-on-a-guard-the-engine-cannot-vouch-for.fr.md)).
 
 ## À travers un graphe d'agrégats
 
@@ -132,9 +158,14 @@ résolu ou qu'un tiers d'entre eux non. Le rapport, lui, le dit :
 
 ```json
 {
-  "summary": { "scaffolded": 3, "failed": 0, "openParameters": 2 }
+  "summary": { "scaffolded": 3, "failed": 0, "openParameters": 2, "parametersToVerify": 1 }
 }
 ```
+
+Les deux compteurs sont distincts parce qu'ils décrivent des états différents : un paramètre ouvert
+n'a aucune expression, un paramètre à vérifier en a une et réclame quand même votre regard. Chaque
+ligne de paramètre énonce les deux — `"resolved"` et `"requiresVerification"` — de sorte que les
+compteurs se vérifient contre les lignes au lieu d'être crus sur parole.
 
 Chaque résultat porte le type, les fichiers écrits et où ils sont allés, chaque paramètre avec son
 expression et sa provenance, le point d'entrée s'il y en a un, et les avertissements. Une exécution

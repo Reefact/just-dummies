@@ -846,8 +846,19 @@ change de cible, ou écris-le toi-même ». Un mot transforme une impasse en ins
 
 Un paramètre à vérifier (§5.6) clôt le récapitulatif de la même façon qu'un paramètre ouvert — le
 fichier ne compilera pas — mais compté séparément, comme *N* **to verify** plutôt que *N*
-**TODO** : un generator y a bien été inféré, et le compte le dit. Les deux ensemble se lisent
-`4 of 6 parameters inferred, 1 TODO, 1 to verify.`, dans l'ordre où un développeur agit dessus.
+**TODO** : un generator y a bien été inféré, et le compte le dit. Sa ligne porte le même mot,
+jamais `TODO`, puisque la ligne et la ligne de clôture décrivent le même paramètre :
+
+```console
+  customer   Customer   —                        TODO
+  name       string     Any.String().NonEmpty()  to verify, unread guards
+
+✓ AnyOrder.cs — 5 of 6 parameters inferred, 1 TODO, 1 to verify.
+  The file will not compile until you resolve it. That is deliberate.
+```
+
+Les deux comptes se lisent dans l'ordre où un développeur agit dessus : fournir l'un, vérifier
+l'autre.
 
 **La provenance est une donnée, pas une sortie.** Le moteur la retourne dans son modèle de résultat
 (§10.3) ; la CLI la rend. C'est ce qui rend le récapitulatif testable sans console.
@@ -879,6 +890,14 @@ types en une invocation : `0` se lit pareil que tous les paramètres aient réso
 d'entre eux non. `summary.openParameters` est ce nombre manquant, et les lignes par paramètre disent
 pourquoi il vaut ce qu'il vaut.
 
+**Un paramètre à vérifier est compté à part, dans `summary.parametersToVerify`.** Ce n'est pas un
+paramètre ouvert : il porte une expression, donc sa ligne indique `resolved: true`, et son fichier
+ne compile toujours pas (§5.6). Fondre les deux en un seul nombre ferait diverger ce nombre des
+lignes qu'il résume — un script qui somme les `resolved: false` et un script qui lit le compteur
+répondraient différemment à propos d'un même document. Chaque ligne énonce les deux faits,
+`resolved` et `requiresVerification`, si bien que le résumé se vérifie contre les lignes au lieu
+d'être cru sur parole.
+
 **Les codes de sortie ne bougent pas.** Le §7 est un contrat publié, et une exécution qui a écrit ses
 fichiers sort toujours en `0` quoi que dise le rapport. Ceci ajoute un canal ; cela n'en redéfinit
 aucun.
@@ -908,7 +927,7 @@ réponses.
 | Situation | Sortie | Comportement |
 |---|---|---|
 | Fichier écrit, tout inféré | `0` | — |
-| Fichier écrit, un ou plusieurs TODO | `0` | L'écriture a réussi ; le build du développeur signale le reste. |
+| Fichier écrit, un ou plusieurs TODO ou paramètres à vérifier | `0` | L'écriture a réussi ; le build du développeur signale le reste. |
 | `--dry-run` | `0` | Rien n'est écrit. |
 | Type introuvable / ambigu | `1` | Candidats listés. |
 | Fichier de sortie existant, sans `--force` | `1` | Nomme le fichier, suggère `--force`, avertit que les éditions seront perdues. |
@@ -1022,14 +1041,17 @@ Nommés explicitement pour ne pas être pris pour des oublis.
   fabrique à un paramètre, limitée à une profondeur de 3. Au-delà, le développeur l'écrit.
 * **Les invariants que le tool ne peut pas voir.** Le §5.3 lit un ensemble clos d'idiomes de garde.
   Là où le constructeur lève d'une façon que l'ensemble n'apparie pas — règle inter-paramètres,
-  condition arithmétique, garde regex (§5.3) — le paramètre obtient le generator neutre et le
-  récapitulatif le marque `unread guards`, pour que le développeur sache où regarder. Le même
-  marquage atteint désormais une garde entièrement déléguée à un helper appelé sur le paramètre
-  lui-même (`Guard.Against.Null(value)`), même sans aucun `if` dans le corps (§5.3). Ce qui lui
-  échappe encore, c'est une garde atteinte seulement par un niveau d'indirection que le tool ne suit
-  pas — une copie locale du paramètre (`var v = value; Validate(v);`), un lambda qui le capture, un
-  appel atteint via un membre plutôt que par le nom propre du paramètre. Là, le tool ne peut
-  toujours pas distinguer ce paramètre d'un paramètre non contraint, et il ne devine pas.
+  condition arithmétique, garde regex (§5.3) — le paramètre garde le generator neutre, le
+  récapitulatif le marque `unread guards`, et **le fichier ne compile pas tant que le développeur
+  n'a pas dit que le generator est le bon** (§5.6) : la recette est bien écrite, sous une ligne
+  nommant un identifiant qui n'existe pas. Le même marquage atteint une garde entièrement déléguée
+  à un helper appelé sur le paramètre lui-même (`Guard.Against.Null(value)`), même sans aucun `if`
+  dans le corps (§5.3). Ce qui lui échappe encore, c'est une garde atteinte seulement par un niveau
+  d'indirection que le tool ne suit pas — une copie locale du paramètre (`var v = value;
+  Validate(v);`), un lambda qui le capture, un appel atteint via un membre plutôt que par le nom
+  propre du paramètre. Là, le tool ne peut toujours pas distinguer ce paramètre d'un paramètre non
+  contraint, et il ne devine pas — c'est de ce résidu que parle ce non-objectif : non pas ce qui
+  arrive une fois le doute établi, mais le doute que le tool ne voit jamais.
 * **L'aller-retour.** Le tool ne relit jamais un fichier qu'il a écrit.
 * **Membres `init` / `required`, construction par propriétés.** Constructeur et fabrique statique
   uniquement.

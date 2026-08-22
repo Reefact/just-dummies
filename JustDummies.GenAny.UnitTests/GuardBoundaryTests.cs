@@ -174,6 +174,34 @@ public sealed class GuardBoundaryTests {
         Check.That(parameter.Provenance.HasFlag(Provenance.UnreadGuards)).IsFalse();
     }
 
+    /// <summary>
+    ///     An <c>else if</c> chain is readable only where every branch before the one being read throws
+    ///     unconditionally too — the moment one does not, reaching a later branch depends on that earlier
+    ///     condition, and §9 already names a cross-parameter rule as out of reach.
+    /// </summary>
+    /// <remarks>
+    ///     <c>if (first &lt; 0) { first = 0; } else if (second &gt; 100) { throw … }</c>: reaching
+    ///     <c>second</c>'s test presupposes <c>first &gt;= 0</c>, which is not <c>second</c>'s own invariant to
+    ///     state. Both parameters are marked unread — <c>second</c> because its guard is not standalone, and
+    ///     <c>first</c> because the branch it sits in was handed to the same rule.
+    /// </remarks>
+    [Fact(DisplayName = "An else-if branch whose predecessor does not throw unconditionally is unread.")]
+    public void AnElseIfBranchWhosePredecessorDoesNotThrowUnconditionallyIsUnread() {
+        ScaffoldOutcome outcome = Subject.Scaffold("""
+                                                   public sealed class Subject {
+
+                                                       public Subject(int first, int second) {
+                                                           if (first < 0) { first = 0; } else if (second > 100) { throw new ArgumentOutOfRangeException(nameof(second)); }
+                                                       }
+
+                                                   }
+                                                   """);
+
+        Check.That(outcome.Plan!.Parameters[0].Provenance.HasFlag(Provenance.UnreadGuards)).IsTrue();
+        Check.That(outcome.Plan.Parameters[1].Provenance.HasFlag(Provenance.UnreadGuards)).IsTrue();
+        Check.That(outcome.Plan.Parameters[1].Provenance.HasFlag(Provenance.Guard)).IsFalse();
+    }
+
     /// <summary>The parentheses a writer is free to add do not make the subject something else.</summary>
     [Theory(DisplayName = "Parentheses around the subject leave the guard readable.")]
     [InlineData("if ((value).Length < 8) { throw new ArgumentException(nameof(value)); }")]
@@ -228,11 +256,6 @@ public sealed class GuardBoundaryTests {
     ///     exactly like a parameter nobody had constrained.
     /// </remarks>
     [Theory(DisplayName = "A throwing guard the set cannot parse is unread, not silent.")]
-    [InlineData("if (value <= 0) { throw new ArgumentOutOfRangeException(nameof(value)); } else { }")]
-    [InlineData("""
-                        if (value < 0) { throw new ArgumentOutOfRangeException(nameof(value)); }
-                        else if (value > 100) { throw new ArgumentOutOfRangeException(nameof(value)); }
-                """)]
     [InlineData("""
                         if (value < 0) {
                             Console.WriteLine("out of range");
@@ -255,13 +278,37 @@ public sealed class GuardBoundaryTests {
                                                    public sealed class Subject {
 
                                                        public Subject(int value, string other) {
-                                                           if (value < 0) { throw new ArgumentException(nameof(other)); } else { }
+                                                           if (value < 0) {
+                                                               Console.WriteLine(value);
+                                                               throw new ArgumentException(nameof(other));
+                                                           }
                                                        }
 
                                                    }
                                                    """);
 
         Check.That(outcome.Plan!.Parameters[0].Provenance.HasFlag(Provenance.UnreadGuards)).IsTrue();
+        Check.That(outcome.Plan.Parameters[1].Provenance.HasFlag(Provenance.UnreadGuards)).IsFalse();
+    }
+
+    /// <summary>
+    ///     A guard whose <c>else</c> is empty reads exactly like one with no <c>else</c> at all — the shape
+    ///     that used to stop guard reading before this widening, now read the same either way.
+    /// </summary>
+    [Fact(DisplayName = "A throw naming a parameter only in its message does not mark it, even beside an else.")]
+    public void AThrowNamingAParameterOnlyInItsMessageDoesNotMarkItBesideAnElse() {
+        ScaffoldOutcome outcome = Subject.Scaffold("""
+                                                   public sealed class Subject {
+
+                                                       public Subject(int value, string other) {
+                                                           if (value < 0) { throw new ArgumentException(nameof(other)); } else { }
+                                                       }
+
+                                                   }
+                                                   """);
+
+        Check.That(outcome.Plan!.Parameters[0].Provenance.HasFlag(Provenance.Guard)).IsTrue();
+        Check.That(outcome.Plan.Parameters[0].Provenance.HasFlag(Provenance.UnreadGuards)).IsFalse();
         Check.That(outcome.Plan.Parameters[1].Provenance.HasFlag(Provenance.UnreadGuards)).IsFalse();
     }
 

@@ -73,8 +73,8 @@ internal static class Guards {
             // is ordinary logic and says nothing about what the parameter may be.
             if (AssignsState(statement, model)) { break; }
 
-            if (statement is IfStatementSyntax { Else: null } guard && ThrowsUnconditionally(guard.Statement)) {
-                ReadOne(guard.Condition, model, method, reading);
+            if (statement is IfStatementSyntax guard) {
+                ReadChain(guard, model, method, reading);
             } else {
                 MarkIfItRejects(statement, model, method, reading);
                 MarkIfValidatedElsewhere(statement, model, method, reading);
@@ -85,20 +85,70 @@ internal static class Guards {
     }
 
     /// <summary>
+    ///     Walks an <c>if</c>/<c>else if</c> chain, reading each branch's condition as its own guard for as
+    ///     long as every branch before it throws unconditionally.
+    /// </summary>
+    /// <remarks>
+    ///     An <c>else</c> branch says only what happens when its condition is <b>false</b> — exactly the case
+    ///     where the branches before it let the value through — so it can never weaken what they reject:
+    ///     <c>if (v &lt; 0) { throw … } else { … }</c> means <c>v &gt;= 0</c> holds whatever the <c>else</c>
+    ///     contains, and the condition is read the same as it would be with no <c>else</c> at all.
+    ///     <para>
+    ///         An <c>else if</c> needs one more step, and it is why this used to stop at the first <c>else</c>
+    ///         rather than read through it: <c>if (a &lt; 0) { throw … } else if (b &gt; 100) { throw … }</c> is
+    ///         readable on both — reaching <c>b</c>'s test presupposes only that <c>a</c>'s already rejected the
+    ///         value, and <c>b</c>'s own guard holds regardless of <c>a</c>. But
+    ///         <c>if (a &lt; 0) { _x = 1; } else if (b &gt; 100) { throw … }</c> is not: reaching <c>b</c>'s test
+    ///         now presupposes <c>a &gt;= 0</c> too, a cross-parameter rule §9 already names as out of reach.
+    ///         The rule that falls out is exactly the one this method walks: keep reading while every branch so
+    ///         far throws unconditionally, and hand the first branch that does not — condition, body and
+    ///         whatever follows it — to <see cref="MarkIfItRejects" />, the same as any other shape the closed
+    ///         set cannot parse.
+    ///     </para>
+    /// </remarks>
+    private static void ReadChain(IfStatementSyntax branch, SemanticModel model, IMethodSymbol method, GuardReading reading) {
+        if (!ThrowsUnconditionally(branch.Statement)) {
+            MarkIfItRejects(branch, model, method, reading);
+            MarkIfValidatedElsewhere(branch, model, method, reading);
+
+            return;
+        }
+
+        ReadOne(branch.Condition, model, method, reading);
+
+        switch (branch.Else?.Statement) {
+            case IfStatementSyntax elseIf:
+                ReadChain(elseIf, model, method, reading);
+
+                break;
+            case StatementSyntax terminal:
+                // No condition of its own to read, but a plain `else` that still throws is a reject the closed
+                // set has nothing to say about — §9's `unread guards`, not silence.
+                MarkIfItRejects(terminal, model, method, reading);
+                MarkIfValidatedElsewhere(terminal, model, method, reading);
+
+                break;
+        }
+    }
+
+    /// <summary>
     ///     Whether a leading statement rejects values at all, in a shape §5.3 could not read, and marks every
     ///     parameter it names as unread.
     /// </summary>
     /// <remarks>
     ///     The one thing a <c>throw</c> before the first assignment to state cannot be is ordinary logic: it
     ///     refuses to build the object, which is the definition of a guard. So a statement carrying one is a
-    ///     guard whatever its shape, and where the recognised set could not parse that shape — an
-    ///     <c>else if</c> chain, a block that logs before it throws, a condition outside the closed set — the
-    ///     right answer is the one §9 already gives, <c>unread guards</c>, and not silence.
+    ///     guard whatever its shape, and where the recognised set could not parse that shape — a block that logs
+    ///     before it throws, a condition outside the closed set, an <c>else if</c> chain whose reachability
+    ///     depends on an earlier branch that does not throw — the right answer is the one §9 already gives,
+    ///     <c>unread guards</c>, and not silence.
     ///     <para>
     ///         Silence was what it got: those shapes fall past the recognised-guard branch above, and the call
     ///         rule below only catches them where the body happens to call something naming the parameter. So
-    ///         <c>if (v &lt; 0) { throw … } else if (v &gt; 100) { throw … }</c> read exactly like a parameter
-    ///         nobody had constrained — a throwing guard, in plain sight, reported as none.
+    ///         <c>if (v &lt; 0) { throw … } else if (v &gt; 100) { throw … }</c> used to read exactly like a
+    ///         parameter nobody had constrained — a throwing guard, in plain sight, reported as none.
+    ///         <see cref="ReadChain" /> now reads both conditions instead; this rule catches only the chains it
+    ///         hands off, and every other shape that rejects without matching the closed set.
     ///     </para>
     ///     <para>
     ///         A parameter named only inside the <c>nameof</c> of the throw's own message does not count, for

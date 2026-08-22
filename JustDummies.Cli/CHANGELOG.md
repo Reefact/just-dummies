@@ -10,19 +10,31 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Fixed
 
-- **A guard written below a reassignment of its parameter is no longer read as a bound on the drawn
-  value.** `if (percent < 0) { throw … } percent = 100 - percent; if (percent < 0) { throw … }` read
-  `.GreaterThanOrEqualTo(0)` over a real domain of 0 to 100 — the one shape where the tool was
+- **A guard the tool cannot place above every write to its parameter is no longer read as a bound on
+  the drawn value.** `if (percent < 0) { throw … } percent = 100 - percent; if (percent < 0) { throw … }`
+  read `.GreaterThanOrEqualTo(0)` over a real domain of 0 to 100 — the one shape where the tool was
   confidently wrong rather than blind, since it saw the guard, parsed it correctly, and attributed it
   to a value the constructor had already replaced. A draw of a million then threw inside that
   constructor, under a recap reporting the parameter inferred and nothing worth looking at. Only an
-  assignment to a field or a property ended the guard scan; writing over the parameter itself now
-  ends the reading of **that** parameter — in every spelling of a reassignment (`=`, `+=`, `++`,
-  `--`), nested inside an `else`, a block or a loop as readily as written bare — and of no other, so
-  the guards of the constructor's remaining parameters are untouched. Guards written *above* the
-  reassignment still stand, because they are true of the value the generator draws. **This narrows
-  what compiles:** such a parameter is now marked `unread guards`, so its scaffold blocks compilation
-  until its author confirms the generator, where before it compiled over a constraint that was wrong.
+  assignment to a field or a property ended the guard scan; a write to the parameter itself now ends
+  the reading of **that** parameter, and of no other, so the guards of the constructor's remaining
+  parameters are untouched. Guards written *above* the write still stand, because they are true of
+  the value the generator draws.
+
+  Which writes count is asked of the compiler's own data-flow analysis rather than of a list of
+  spellings, so `=`, `+=`, `++` and `--` are covered along with the ones a list misses: a
+  deconstruction (`(percent, rate) = (100 - percent, rate)`), an `out` argument
+  (`int.TryParse(text, out percent)`) and a `ref` local aliasing the parameter. Where they sit is a
+  question about execution rather than about statements — a write and a guard share one statement in
+  `else { percent = 100 - percent; ThrowIfNegative(percent); }`, which was measured emitting
+  `.Between(0, 50)` for a domain whose real answer is 50 and above. Three shapes carry no readable
+  position and are refused outright: a guard sharing a loop with a write (the write runs above it on
+  the next turn), a write inside a local function or a lambda (it runs when called, not where it is
+  written), and any body carrying a `goto`.
+
+  **This narrows what compiles:** such a parameter is now marked `unread guards`, so its scaffold
+  blocks compilation until its author confirms the generator, where before it compiled over a
+  constraint that was wrong.
 - **A sign guard on an unsigned parameter no longer loses its constraint.** `if (size <= 0) { throw … }`
   on a `byte`, `ushort`, `uint`, `ulong` or `UInt128` was read as `.Positive()` — a member the unsigned
   generators do not carry, so the lookup dropped it and the parameter kept an unnarrowed draw under a

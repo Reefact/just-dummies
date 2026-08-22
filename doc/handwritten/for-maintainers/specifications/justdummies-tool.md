@@ -535,7 +535,7 @@ conservative, mirroring how the library's own analyzers under-report rather than
 * it is an `if` statement whose body throws unconditionally;
 * it appears before the first assignment to a field or property;
 * its condition mentions **exactly one** parameter and contains no `&&` or `||`;
-* that parameter has not been written over earlier in the body;
+* no write to that parameter can already have run where it sits;
 * every other operand is a compile-time constant.
 
 **An `else` does not stop the reading.** An `else` branch says only what happens when its own
@@ -560,15 +560,38 @@ if (percent < 0) { throw … }` yielded `.GreaterThanOrEqualTo(0)` over a real d
 reported as inferred, and a draw of a million threw inside the constructor with no sentinel and
 nothing to look at. So a guard written **below** a reassignment of its own parameter is marked
 `unread guards` (§9) rather than read, and one written **above** it still stands: it is true of the
-drawn value, and dropping it too would cost a constraint for nothing. A reassignment is any
-spelling of one — `percent = 100 - percent`, `percent += 10`, `percent++`, `--percent` — nested
-inside an `else`, a block or a loop as readily as written bare. It is scoped to the parameter it
-writes over, because ending the scan outright would drop the guards of every *other* parameter the
-constructor declares, trading one constraint that must not be read for several that must. The
-timing is what leaves the `else` rule above intact: a condition is evaluated before anything its own
-`else` body runs, so `if (v < 0) { throw … } else { v = -v; }` still reads `v < 0`, and it is the
-statements below it that are about what the `else` left behind. `ref` and `out` need no rule of
-their own — §5.1 already declines a constructor carrying either.
+drawn value, and dropping it too would cost a constraint for nothing. It is scoped to the parameter
+written, because ending the scan outright would drop the guards of every *other* parameter the
+constructor declares, trading one constraint that must not be read for several that must.
+
+**Which writes exist is asked of the compiler, and where they sit is asked of execution.** Both
+halves are refusals to guess. A list of the spellings — `=`, the compound forms, `++`, `--` — reads
+as complete and is not: `(percent, rate) = (100 - percent, rate)` writes through a tuple whose left
+side resolves to no parameter at all, `int.TryParse(text, out percent)` writes with no assignment
+anywhere, and a `ref` local aliases the parameter under another name. All three were measured being
+read as bounds on the drawn value. So the question goes to data-flow analysis, which answers for
+every spelling at once, including the ones nobody thought to list.
+
+Position is the other half, and a statement is the wrong unit for it. A write and a guard share one
+statement as readily as they occupy two — `else { percent = 100 - percent; ThrowIfNegative(percent); }`
+is a single statement carrying both — so what the engine asks about is the regions that have
+**finished** when the guard is evaluated: the statements above it at every level of nesting, and the
+condition of every `if` it sits under. That last part is what leaves the `else` rule above intact: a
+condition is evaluated before anything its own `else` body runs, so `if (v < 0) { throw … } else
+{ v = -v; }` still reads `v < 0` — the condition has no region of its own statement above it.
+
+Three shapes have no position the engine could read, and each is refused rather than modelled. **A
+loop is asked about entire**, because a write the source puts below the guard runs above it on the
+next turn: `while (v < 100) { ThrowIfGreaterThan(v, 50); v += 30; }` accepts no drawn value between
+51 and 99 and rejects 40, which source order alone calls `.LessThanOrEqualTo(50)`. **A write inside
+a local function or a lambda** is refused wherever it is declared, since such a body runs when it is
+called and `Bump(); … void Bump() { v++; }` writes first and reads last — §9 already names the
+indirection the tool does not follow, and this is the same gap from the other side. And **a `goto`
+anywhere in the body** ends the reading of every parameter the body writes, because a backward jump
+puts a write above a guard the source puts below it and nothing in the text says so.
+
+`ref` and `out` on the constructor's **own** parameters need no rule here — §5.1 already declines
+such a constructor, since the emitted factory could not call it.
 
 The recognised set is closed:
 
@@ -1102,9 +1125,9 @@ Named explicitly so they are not mistaken for oversights.
   (§5.6): the recipe is still written, under a line naming an identifier that does not exist. The
   same mark reaches any statement that throws in a shape the set could not parse at all, and a guard
   delegated entirely to a helper called on the parameter itself for its effect alone
-  (`Guard.Against.Null(value);`), even with no `if` in the body at all — and a guard written below a
-  reassignment of its own parameter, which states an invariant of the value the constructor computed
-  rather than of the one the generator draws (§5.3). Two shapes still
+  (`Guard.Against.Null(value);`), even with no `if` in the body at all — and a guard the engine cannot
+  place above every write to its own parameter, which would otherwise state an invariant of the value
+  the constructor computed rather than of the one the generator draws (§5.3). Two shapes still
   escape it, and both are silent rather than merely unread — the tool sees no rejection to be
   uncertain about. A guard helper that **returns** the value it checked —
   `_name = Ensure.NotBlank(value);` — is indistinguishable from normalisation, and reading it as

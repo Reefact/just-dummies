@@ -20,8 +20,9 @@ namespace JustDummies.GenAny;
 ///         Deliberately conservative, mirroring how the library's own analyzers under-report rather than
 ///         misfire: a statement counts as a guard only when it is an <c>if</c> with no <c>else</c> whose body
 ///         throws unconditionally, it appears before the first assignment to state, its condition mentions
-///         exactly one parameter and carries no <c>&amp;&amp;</c> or <c>||</c>, and every other operand is a
-///         compile-time constant. Anything else is left alone and reported as unread.
+///         exactly one parameter the body has not written over, and carries no <c>&amp;&amp;</c> or
+///         <c>||</c>, and every other operand is a compile-time constant. Anything else is left alone and
+///         reported as unread.
 ///     </para>
 ///     <para>
 ///         <b>Regex guards are not read</b>, and that is a decision rather than an omission. The library builds
@@ -74,17 +75,26 @@ internal static class Guards {
         SemanticModel model   = declaring.GetSemanticModel(declaration.SyntaxTree);
         GuardReading  reading = GuardReading.FromSource();
 
+        // The parameters the body has written over. A guard below one of those is about the value the
+        // constructor computed, not the value the generator draws, so it is not that parameter's to read.
+        HashSet<string> reassigned = new(StringComparer.Ordinal);
+
         foreach (StatementSyntax statement in declaration.Body.Statements) {
             // "Leading" is what makes a guard a guard: past the first assignment to state, an `if` that throws
             // is ordinary logic and says nothing about what the parameter may be.
             if (AssignsState(statement, model)) { break; }
 
             if (statement is IfStatementSyntax guard) {
-                ReadChain(guard, model, method, reading, names);
+                ReadChain(guard, model, method, reading, names, reassigned);
             } else {
                 MarkIfItRejects(statement, model, method, reading);
-                MarkIfValidatedElsewhere(statement, model, method, reading);
+                MarkIfValidatedElsewhere(statement, model, method, reading, reassigned);
             }
+
+            // Collected AFTER the statement is read, never before: a condition is evaluated before anything
+            // its own else contains runs, so a guard that rejects a value and then flips it in its else still
+            // says what it said about the drawn one. The statements below are the ones about what it left.
+            foreach (IParameterSymbol written in Reassignments(statement, model, method)) { reassigned.Add(written.Name); }
         }
 
         return reading;
@@ -112,26 +122,31 @@ internal static class Guards {
     ///         set cannot parse.
     ///     </para>
     /// </remarks>
-    private static void ReadChain(IfStatementSyntax branch, SemanticModel model, IMethodSymbol method, GuardReading reading, TypeNames names) {
+    private static void ReadChain(IfStatementSyntax branch,
+                                  SemanticModel model,
+                                  IMethodSymbol method,
+                                  GuardReading reading,
+                                  TypeNames names,
+                                  HashSet<string> reassigned) {
         if (!ThrowsUnconditionally(branch.Statement)) {
             MarkIfItRejects(branch, model, method, reading);
-            MarkIfValidatedElsewhere(branch, model, method, reading);
+            MarkIfValidatedElsewhere(branch, model, method, reading, reassigned);
 
             return;
         }
 
-        ReadOne(branch.Condition, model, method, reading, names);
+        ReadOne(branch.Condition, model, method, reading, names, reassigned);
 
         switch (branch.Else?.Statement) {
             case IfStatementSyntax elseIf:
-                ReadChain(elseIf, model, method, reading, names);
+                ReadChain(elseIf, model, method, reading, names, reassigned);
 
                 break;
             case StatementSyntax terminal:
                 // No condition of its own to read, but a plain `else` that still throws is a reject the closed
                 // set has nothing to say about — §9's `unread guards`, not silence.
                 MarkIfItRejects(terminal, model, method, reading);
-                MarkIfValidatedElsewhere(terminal, model, method, reading);
+                MarkIfValidatedElsewhere(terminal, model, method, reading, reassigned);
 
                 break;
         }
@@ -202,11 +217,23 @@ internal static class Guards {
     ///         value it checked, <c>_name = Ensure.NotBlank(name);</c>, reads as production and is missed.
     ///     </para>
     /// </remarks>
-    private static void MarkIfValidatedElsewhere(StatementSyntax statement, SemanticModel model, IMethodSymbol method, GuardReading reading) {
+    private static void MarkIfValidatedElsewhere(StatementSyntax statement,
+                                                 SemanticModel model,
+                                                 IMethodSymbol method,
+                                                 GuardReading reading,
+                                                 HashSet<string> reassigned) {
         foreach (ExpressionStatementSyntax discarded in statement.DescendantNodesAndSelf().OfType<ExpressionStatementSyntax>()) {
             if (discarded.Expression is not InvocationExpressionSyntax invocation || IsNameOf(invocation)) { continue; }
 
             foreach (IParameterSymbol parameter in Mentioned(invocation, model, method)) {
+                // The rule the condition reader keeps, in the other spelling: a helper the set knows, called
+                // on a parameter the body has already written over, states an invariant of the computed value.
+                if (reassigned.Contains(parameter.Name)) {
+                    reading.MarkUnread(parameter.Name);
+
+                    continue;
+                }
+
                 if (!TryRecogniseThrowHelper(invocation, model, parameter, GeneratorFor.Sizes(parameter.Type),
                                              out GuardConstraint? constraint)) {
                     reading.MarkUnread(parameter.Name);
@@ -382,7 +409,8 @@ internal static class Guards {
                                 SemanticModel model,
                                 IMethodSymbol method,
                                 GuardReading reading,
-                                TypeNames names) {
+                                TypeNames names,
+                                HashSet<string> reassigned) {
         IParameterSymbol[] mentioned = Mentioned(condition, model, method);
 
         // Exactly one, or the engine cannot say whose invariant this is. A cross-parameter rule is precisely
@@ -399,6 +427,17 @@ internal static class Guards {
         }
 
         IParameterSymbol parameter = mentioned[0];
+
+        // Read correctly, about the wrong value. Every other gap in §9 is a guard the engine cannot see; this
+        // is the one shape where it sees the guard, parses it, and attributes it to a value the generator no
+        // longer draws — `percent = 100 - percent;` above a second `percent < 0` test yields
+        // `GreaterThanOrEqualTo(0)` over a real domain of 0..100, under a recap reporting it inferred. So the
+        // guard is not this parameter's to read, and §9 already has the word for that (ADR-0083).
+        if (reassigned.Contains(parameter.Name)) {
+            reading.MarkUnread(parameter.Name);
+
+            return;
+        }
 
         if (condition.DescendantNodesAndSelf().OfType<BinaryExpressionSyntax>()
                      .Any(binary => binary.IsKind(SyntaxKind.LogicalAndExpression)
@@ -814,6 +853,52 @@ internal static class Guards {
     private static bool AssignsState(StatementSyntax statement, SemanticModel model) {
         return statement is ExpressionStatementSyntax { Expression: AssignmentExpressionSyntax assignment }
             && model.GetSymbolInfo(assignment.Left).Symbol is IFieldSymbol or IPropertySymbol;
+    }
+
+    /// <summary>
+    ///     The parameters <paramref name="statement" /> writes over, in every spelling C# gives that.
+    /// </summary>
+    /// <remarks>
+    ///     The counterpart of <see cref="AssignsState" />, and deliberately wider on both axes it differs on.
+    ///     That one asks about one top-level statement, because an assignment to state ends the scan for
+    ///     <b>every</b> parameter at once and a nested one does not sit in the leading run; this asks about a
+    ///     whole subtree, because a reassignment inside an <c>else</c>, a block or a loop changes what the
+    ///     guards below it are about just as surely as a bare one does. And it ends nothing: only the
+    ///     parameter written over stops being readable, since breaking the loop would drop the guards of every
+    ///     other parameter — one lost constraint traded for several.
+    ///     <para>
+    ///         <b>A reassignment is not only <c>=</c>.</b> The compound forms are
+    ///         <see cref="AssignmentExpressionSyntax" /> like any other, but <c>percent++</c> and
+    ///         <c>--percent</c> are not, and reading the assignment node alone would let the two shortest
+    ///         reassignments there are through unnoticed.
+    ///     </para>
+    ///     <para>
+    ///         <c>ref</c> and <c>out</c> need nothing here: §5.1's constructor choice already declines a
+    ///         constructor carrying either, since the emitted factory could not call it (<c>CS1620</c>).
+    ///     </para>
+    /// </remarks>
+    private static IEnumerable<IParameterSymbol> Reassignments(StatementSyntax statement, SemanticModel model, IMethodSymbol method) {
+        foreach (SyntaxNode node in statement.DescendantNodesAndSelf()) {
+            ExpressionSyntax? written = node switch {
+                AssignmentExpressionSyntax assignment                           => assignment.Left,
+                PrefixUnaryExpressionSyntax prefix when Steps(prefix.Kind())    => prefix.Operand,
+                PostfixUnaryExpressionSyntax postfix when Steps(postfix.Kind()) => postfix.Operand,
+                _                                                               => null
+            };
+
+            if (written is null) { continue; }
+
+            if (model.GetSymbolInfo(written).Symbol is IParameterSymbol parameter
+             && method.Parameters.Contains(parameter, SymbolEqualityComparer.Default)) {
+                yield return parameter;
+            }
+        }
+    }
+
+    /// <summary>Whether an operator moves its operand by one, which is a reassignment written short.</summary>
+    private static bool Steps(SyntaxKind kind) {
+        return kind is SyntaxKind.PreIncrementExpression or SyntaxKind.PreDecrementExpression
+                    or SyntaxKind.PostIncrementExpression or SyntaxKind.PostDecrementExpression;
     }
 
     private static bool IsNumber(object value) {

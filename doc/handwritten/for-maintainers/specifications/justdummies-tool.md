@@ -535,6 +535,7 @@ conservative, mirroring how the library's own analyzers under-report rather than
 * it is an `if` statement whose body throws unconditionally;
 * it appears before the first assignment to a field or property;
 * its condition mentions **exactly one** parameter and contains no `&&` or `||`;
+* that parameter has not been written over earlier in the body;
 * every other operand is a compile-time constant.
 
 **An `else` does not stop the reading.** An `else` branch says only what happens when its own
@@ -548,6 +549,26 @@ unconditionally, reading stops there: `if (a < 0) { a = 0; } else if (b > 100) {
 neither, because reaching `b`'s test now presupposes `a >= 0` too — a cross-parameter rule, which is
 exactly the case this section already refuses to read. That branch, and everything from it onward,
 is marked `unread guards` instead of passed over in silence.
+
+**A reassignment of a parameter ends the reading of that parameter, and of no other.** Only an
+assignment to a field or a property ends the leading-guard scan, so a constructor that writes over a
+parameter and then guards it used to have those guards read as bounds on the drawn value. That was
+the one shape where the engine was confidently wrong rather than blind — every other gap §9 names is
+a guard it cannot see; here it saw the guard, parsed it correctly, and attributed it to a value the
+constructor had already replaced. `if (percent < 0) { throw … } percent = 100 - percent;
+if (percent < 0) { throw … }` yielded `.GreaterThanOrEqualTo(0)` over a real domain of 0 to 100,
+reported as inferred, and a draw of a million threw inside the constructor with no sentinel and
+nothing to look at. So a guard written **below** a reassignment of its own parameter is marked
+`unread guards` (§9) rather than read, and one written **above** it still stands: it is true of the
+drawn value, and dropping it too would cost a constraint for nothing. A reassignment is any
+spelling of one — `percent = 100 - percent`, `percent += 10`, `percent++`, `--percent` — nested
+inside an `else`, a block or a loop as readily as written bare. It is scoped to the parameter it
+writes over, because ending the scan outright would drop the guards of every *other* parameter the
+constructor declares, trading one constraint that must not be read for several that must. The
+timing is what leaves the `else` rule above intact: a condition is evaluated before anything its own
+`else` body runs, so `if (v < 0) { throw … } else { v = -v; }` still reads `v < 0`, and it is the
+statements below it that are about what the `else` left behind. `ref` and `out` need no rule of
+their own — §5.1 already declines a constructor carrying either.
 
 The recognised set is closed:
 
@@ -1081,7 +1102,9 @@ Named explicitly so they are not mistaken for oversights.
   (§5.6): the recipe is still written, under a line naming an identifier that does not exist. The
   same mark reaches any statement that throws in a shape the set could not parse at all, and a guard
   delegated entirely to a helper called on the parameter itself for its effect alone
-  (`Guard.Against.Null(value);`), even with no `if` in the body at all (§5.3). Two shapes still
+  (`Guard.Against.Null(value);`), even with no `if` in the body at all — and a guard written below a
+  reassignment of its own parameter, which states an invariant of the value the constructor computed
+  rather than of the one the generator draws (§5.3). Two shapes still
   escape it, and both are silent rather than merely unread — the tool sees no rejection to be
   uncertain about. A guard helper that **returns** the value it checked —
   `_name = Ensure.NotBlank(value);` — is indistinguishable from normalisation, and reading it as
@@ -1092,15 +1115,6 @@ Named explicitly so they are not mistaken for oversights.
   tool still cannot tell the parameter from an unconstrained one, and it does not guess — which is
   the residue this non-goal is about: not what happens once doubt is established, but the doubt the
   tool never sees.
-  A **guard read after the parameter was reassigned** fails differently from all of these, and is
-  the one case where the tool is confidently wrong rather than merely blind: it sees the guard,
-  reads it correctly, and attributes it to a value the generator no longer draws.
-  `if (percent < 0) { throw … } percent = 100 - percent; if (percent < 0) { throw … }` yields
-  `.GreaterThanOrEqualTo(0)`, which the second guard does not state about the drawn value at all.
-  Only an assignment to a **field or property** ends the leading-guard scan (§5.3), so reassigning
-  the parameter itself does not — in any spelling, written bare or inside an `else`. Guards written
-  *before* the reassignment are honoured; the ones after it are read against something else, and
-  nothing says so.
 * **Round-tripping.** The tool never reads a file it previously wrote.
 * **`init` / `required` members, property-only construction.** Constructor and static factory only.
 * **Anything under `--all`.** Explicit type arguments only.

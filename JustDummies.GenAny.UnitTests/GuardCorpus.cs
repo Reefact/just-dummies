@@ -200,7 +200,28 @@ internal static class GuardCorpus {
                                                                       }
 
                                                                   }
-                                                                  """, requiresVerification: true)
+                                                                  """, requiresVerification: true),
+
+        // ---- The one shape where the engine was confidently wrong rather than blind: it read the second
+        // ---- guard correctly and attributed it to a value the constructor no longer holds. The domain is 0
+        // ---- to 100, well within the library's reach — what the engine cannot see is which value the guard
+        // ---- is about, so it blocks compilation over the one guard it CAN vouch for (ADR-0083) rather than
+        // ---- drawing under a recap claiming the whole range was read.
+
+        new GuardedShape("reassigned-then-guarded", "Discount", """
+                                                                public sealed class Discount {
+
+                                                                    private readonly int percent;
+
+                                                                    public Discount(int percent) {
+                                                                        if (percent < 0) { throw new ArgumentOutOfRangeException(nameof(percent)); }
+                                                                        percent = 100 - percent;
+                                                                        if (percent < 0) { throw new ArgumentOutOfRangeException(nameof(percent)); }
+                                                                        this.percent = percent;
+                                                                    }
+
+                                                                }
+                                                                """, requiresVerification: true)
     ];
 
     /// <summary>The shape names, as the theory rows carry them.</summary>

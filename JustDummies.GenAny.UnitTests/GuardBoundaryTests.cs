@@ -234,6 +234,155 @@ public sealed class GuardBoundaryTests {
         Check.That(outcome.Plan!.Parameters[0].Expression).IsEqualTo("Any.Int32()");
     }
 
+    /// <summary>
+    ///     A guard below a reassignment of its own parameter is unread, and the ones above it still stand.
+    /// </summary>
+    /// <remarks>
+    ///     The one shape where the tool was confidently wrong rather than blind: it saw the guard, parsed it
+    ///     correctly, and attributed it to a value the generator no longer draws. Only an assignment to a field
+    ///     or a property ended the leading scan, so writing over the parameter itself ended nothing and the
+    ///     test below it read as a bound on the drawn value — <c>GreaterThanOrEqualTo(0)</c> over a real domain
+    ///     of 0 to 100, reported as inferred, with a draw of a million throwing inside the constructor.
+    ///     <para>
+    ///         What the reading keeps matters as much as what it drops. The guard above the reassignment is
+    ///         true of the drawn value, so the parameter is narrowed <b>and</b> marked rather than losing both
+    ///         to one blunt refusal.
+    ///     </para>
+    /// </remarks>
+    [Fact(DisplayName = "A guard below a reassignment of its parameter is unread, and one above it still reads.")]
+    public void AGuardBelowAReassignmentOfItsParameterIsUnread() {
+        string body = """
+                              if (value < 0) { throw new ArgumentOutOfRangeException(nameof(value)); }
+                              value = 100 - value;
+                              if (value < 0) { throw new ArgumentOutOfRangeException(nameof(value)); }
+                      """;
+
+        ScaffoldedParameter parameter = Subject.GuardedBy("int", body);
+
+        Check.That(parameter.Expression).IsEqualTo("Any.Int32().GreaterThanOrEqualTo(0)");
+        Check.That(parameter.Provenance.HasFlag(Provenance.Guard)).IsTrue();
+        Check.That(parameter.Provenance.HasFlag(Provenance.UnreadGuards)).IsTrue();
+        Check.That(parameter.RequiresVerification).IsTrue();
+    }
+
+    /// <summary>
+    ///     Every spelling of a reassignment ends the reading, because every one of them changes the value.
+    /// </summary>
+    /// <remarks>
+    ///     The compound forms are assignments like any other and fall out of the same node. The increments are
+    ///     not assignments at all in the syntax tree, so reading that node alone would let the two shortest
+    ///     reassignments C# has through unnoticed — over exactly the guard the engine then gets wrong. The last
+    ///     row is the other axis: a reassignment nested inside a block is still a reassignment.
+    /// </remarks>
+    [Theory(DisplayName = "A guard below a reassignment is unread, in every spelling a reassignment takes.")]
+    [InlineData("        value = 100 - value;")]
+    [InlineData("        value += 10;")]
+    [InlineData("        value++;")]
+    [InlineData("        --value;")]
+    [InlineData("        if (value > 100) { value = 100; }")]
+    public void AGuardBelowAReassignmentIsUnreadInEverySpelling(string reassignment) {
+        string body = reassignment + "\n        if (value < 0) { throw new ArgumentOutOfRangeException(nameof(value)); }";
+
+        ScaffoldedParameter parameter = Subject.GuardedBy("int", body);
+
+        Check.That(parameter.Expression).IsEqualTo("Any.Int32()");
+        Check.That(parameter.Provenance.HasFlag(Provenance.UnreadGuards)).IsTrue();
+    }
+
+    /// <summary>
+    ///     A reassignment inside an <c>else</c> ends the reading below it, and not the condition above it.
+    /// </summary>
+    /// <remarks>
+    ///     Both halves are the same piece of timing: a condition is evaluated before anything its own
+    ///     <c>else</c> body runs, so the first guard is true of the drawn value and stays, while the value that
+    ///     <c>else</c> leaves behind is what every statement below is about. Collecting the reassignment before
+    ///     reading the statement rather than after it would lose the first constraint for nothing.
+    /// </remarks>
+    [Fact(DisplayName = "A reassignment inside an else ends the reading below it, not the condition above it.")]
+    public void AReassignmentInsideAnElseEndsTheReadingBelowIt() {
+        string body = """
+                              if (value < 0) { throw new ArgumentOutOfRangeException(nameof(value)); } else { value = 100 - value; }
+                              if (value > 1000) { throw new ArgumentOutOfRangeException(nameof(value)); }
+                      """;
+
+        ScaffoldedParameter parameter = Subject.GuardedBy("int", body);
+
+        Check.That(parameter.Expression).IsEqualTo("Any.Int32().GreaterThanOrEqualTo(0)");
+        Check.That(parameter.Provenance.HasFlag(Provenance.UnreadGuards)).IsTrue();
+    }
+
+    /// <summary>
+    ///     The call spelling of a guard obeys the reassignment rule too.
+    /// </summary>
+    /// <remarks>
+    ///     A throw helper the closed set knows is read straight into a numeric row, by a path of its own that
+    ///     never passes through the condition reader — so a reassignment above it would have produced the same
+    ///     false bound the <c>if</c> spelling did, and the rule has to be spelled in both places.
+    /// </remarks>
+    [Fact(DisplayName = "A throw helper below a reassignment of its parameter is unread, not read.")]
+    public void AThrowHelperBelowAReassignmentIsUnread() {
+        string body = """
+                              value = 100 - value;
+                              ArgumentOutOfRangeException.ThrowIfNegative(value);
+                      """;
+
+        ScaffoldedParameter parameter = Subject.GuardedBy("int", body);
+
+        Check.That(parameter.Expression).IsEqualTo("Any.Int32()");
+        Check.That(parameter.Provenance.HasFlag(Provenance.UnreadGuards)).IsTrue();
+    }
+
+    /// <summary>
+    ///     The mark follows the parameter that was written over, and no other.
+    /// </summary>
+    /// <remarks>
+    ///     Ending the whole scan at a reassignment would be one line shorter and would drop the guards of every
+    ///     other parameter the constructor declares — one constraint the engine must not read, traded for
+    ///     several it must.
+    /// </remarks>
+    [Fact(DisplayName = "A reassignment ends the reading for its own parameter only.")]
+    public void AReassignmentEndsTheReadingForItsOwnParameterOnly() {
+        ScaffoldOutcome outcome = Subject.Scaffold("""
+                                                   public sealed class Subject {
+
+                                                       private readonly int percent;
+                                                       private readonly string label;
+
+                                                       public Subject(int percent, string label) {
+                                                           percent = 100 - percent;
+
+                                                           if (percent < 0) { throw new ArgumentOutOfRangeException(nameof(percent)); }
+                                                           if (label.Length < 8) { throw new ArgumentException(nameof(label)); }
+
+                                                           this.percent = percent;
+                                                           this.label = label;
+                                                       }
+
+                                                   }
+                                                   """);
+
+        Check.That(outcome.Plan!.Parameters[0].Provenance.HasFlag(Provenance.UnreadGuards)).IsTrue();
+        Check.That(outcome.Plan.Parameters[1].Expression).IsEqualTo("Any.String().WithMinLength(8)");
+        Check.That(outcome.Plan.Parameters[1].RequiresVerification).IsFalse();
+    }
+
+    // A reassignment says nothing on its own about which values are admissible, so a constructor that
+    // normalises and guards nothing more reads exactly as it did before. This narrowing costs only the guards
+    // that were being read wrong.
+    [Theory(DisplayName = "A reassignment with no guard below it changes nothing.")]
+    [InlineData("        value = value.Trim();")]
+    [InlineData("""
+                        if (string.IsNullOrWhiteSpace(value)) { throw new ArgumentException(nameof(value)); }
+                        value = value.Trim();
+                """)]
+    public void AReassignmentWithNoGuardBelowItChangesNothing(string body) {
+        ScaffoldedParameter parameter = Subject.GuardedBy("string", body);
+
+        Check.That(parameter.Expression).IsEqualTo("Any.String().NonEmpty()");
+        Check.That(parameter.Provenance.HasFlag(Provenance.UnreadGuards)).IsFalse();
+        Check.That(parameter.RequiresVerification).IsFalse();
+    }
+
     // A statement that rejects nothing constrains nothing: defaulting a value is not refusing it, so there is
     // no invariant here for a draw to violate and nothing to send the developer looking at.
     [Theory(DisplayName = "A statement that rejects no value is not a guard, and says nothing.")]

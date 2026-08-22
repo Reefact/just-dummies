@@ -186,7 +186,7 @@ public sealed class SurfaceParityTests {
         // forgotten on the other is the drift this pair of rows exists to catch.
         data.Add(typeof(AnyChar), new[] {
             "Alpha", "AlphaNumeric", "Numeric", "Punctuation", "Printable", "NonPrintable", "Whitespaces", "Hexadecimal",
-            "WithoutAlpha", "WithoutNumeric", "UpperCase", "LowerCase", "OneOf", "Except", "DifferentFrom"
+            "WithoutAlpha", "WithoutNumeric", "InUpperCase", "InLowerCase", "OneOf", "Except", "DifferentFrom"
         });
 
         // AnyString carries the exclusion pair Except/DifferentFrom (met by a bounded redraw, since strings are not
@@ -195,7 +195,7 @@ public sealed class SurfaceParityTests {
             "NonEmpty", "WithLength", "WithMinLength", "WithMaxLength", "WithLengthBetween",
             "StartingWith", "EndingWith", "Containing",
             "Alpha", "AlphaNumeric", "Numeric", "Punctuation", "Printable", "NonPrintable", "Whitespaces", "Hexadecimal",
-            "WithoutAlpha", "WithoutNumeric", "WithChars", "UpperCase", "LowerCase",
+            "WithoutAlpha", "WithoutNumeric", "WithChars", "InUpperCase", "InLowerCase",
             "OneOf", "Except", "DifferentFrom"
         });
 

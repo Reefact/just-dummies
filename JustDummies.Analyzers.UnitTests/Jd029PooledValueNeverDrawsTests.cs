@@ -34,7 +34,7 @@ public class Jd029PooledValueNeverDrawsTests {
     [InlineData("_ = Any.String().OneOf(\"-:-\", \"abc\").WithoutAlpha();", "WithoutAlpha()")]
     [InlineData("_ = Any.String().OneOf(\"-:-\", \"a1c\").WithoutNumeric();", "WithoutNumeric()")]
     [InlineData("_ = Any.String().OneOf(\"AB-1\", \"caf\\u00E9\").Printable();", "Printable()")]
-    [InlineData("_ = Any.String().OneOf(\"ABC\", \"abc\").UpperCase();", "UpperCase()")]
+    [InlineData("_ = Any.String().OneOf(\"ABC\", \"abc\").InUpperCase();", "InUpperCase()")]
     [InlineData("_ = Any.String().OneOf(\"ORD-1\", \"INV-1\").StartingWith(\"ORD-\");", "StartingWith(\"ORD-\")")]
     [InlineData("_ = Any.String().OneOf(\"a-FR\", \"a-BE\").EndingWith(\"-FR\");", "EndingWith(\"-FR\")")]
     [InlineData("_ = Any.String().OneOf(\"xKEYx\", \"nope\").Containing(\"KEY\");", "Containing(\"KEY\")")]

@@ -49,7 +49,7 @@ Une contrainte ne modifie jamais le générateur sur lequel elle est appelée. E
 
 ```csharp
 AnyString anyCode     = Any.String().Alpha().WithLength(8);
-AnyString anyUpperCode = anyCode.UpperCase();
+AnyString anyUpperCode = anyCode.InUpperCase();
 
 string mixed = anyCode.Generate();      // 8 lettres, casse quelconque
 string upper = anyUpperCode.Generate(); // 8 lettres, majuscules

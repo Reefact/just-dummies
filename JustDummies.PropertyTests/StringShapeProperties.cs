@@ -114,7 +114,7 @@ public sealed class StringShapeProperties {
 
     /// <summary>Applies one of the two casings, so a property can quantify over the casing itself.</summary>
     private static AnyString ApplyCasing(AnyString generator, bool upper) {
-        return upper ? generator.UpperCase() : generator.LowerCase();
+        return upper ? generator.InUpperCase() : generator.InLowerCase();
     }
 
     /// <summary>Anchors <paramref name="affix" /> at one end or the other, so a property can quantify over the end.</summary>
@@ -351,7 +351,7 @@ public sealed class StringShapeProperties {
     [Fact(DisplayName = "A casing governs the drawn characters and exempts the anchored literal, whatever the casing and the literal.")]
     public void ACasingGovernsTheDrawAndExemptsTheLiteral() {
         // The affix alphabet carries both cases, so half the draws anchor a literal the casing would have refused
-        // before ADR-0079 — UpperCase().StartingWith("abc") among them.
+        // before ADR-0079 — InUpperCase().StartingWith("abc") among them.
         Gen<(bool Upper, string Affix, bool AsSuffix, int Drawn)> cases =
             from upper in Gen.Elements(false, true)
             from affix in Affix(PoolAlphabet, 6)

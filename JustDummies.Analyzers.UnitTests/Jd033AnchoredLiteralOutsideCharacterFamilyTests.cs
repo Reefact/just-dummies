@@ -93,7 +93,7 @@ public class Jd033AnchoredLiteralOutsideCharacterFamilyTests {
 
             public static class Sample {
                 public static string M() {
-                    return Any.String().UpperCase().StartingWith("ord-").WithLength(12).Generate();
+                    return Any.String().InUpperCase().StartingWith("ord-").WithLength(12).Generate();
                 }
             }
             """;
@@ -101,7 +101,7 @@ public class Jd033AnchoredLiteralOutsideCharacterFamilyTests {
         ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new AnchoredLiteralOutsideCharacterFamilyAnalyzer(), source);
 
         Check.That(diagnostics.Length).IsEqualTo(1);
-        Check.That(diagnostics[0].GetMessage()).Contains("UpperCase()");
+        Check.That(diagnostics[0].GetMessage()).Contains("InUpperCase()");
         Check.That(diagnostics[0].GetMessage()).Contains("lowercase 'o'");
     }
 
@@ -114,7 +114,7 @@ public class Jd033AnchoredLiteralOutsideCharacterFamilyTests {
 
             public static class Sample {
                 public static string M() {
-                    return Any.String().UpperCase().StartingWith("ORD-").WithLength(12).Generate();
+                    return Any.String().InUpperCase().StartingWith("ORD-").WithLength(12).Generate();
                 }
             }
             """;

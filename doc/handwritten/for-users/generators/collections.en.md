@@ -110,7 +110,7 @@ hold what a reader would call the same value twice. That is diagnostic
 
 ```csharp
 Dictionary<string, int> stock = Any.DictionaryOf(
-                                       Any.String().Alpha().UpperCase().WithLength(3),
+                                       Any.String().Alpha().InUpperCase().WithLength(3),
                                        Any.Int32().Between(0, 500))
                                    .WithCountBetween(2, 5)
                                    .Generate();
@@ -122,7 +122,7 @@ default equality is not the one your domain uses.
 Three constraints are specific to dictionaries:
 
 ```csharp
-IAny<string> anyCode  = Any.String().Alpha().UpperCase().WithLength(3);
+IAny<string> anyCode  = Any.String().Alpha().InUpperCase().WithLength(3);
 IAny<int>    anyLevel = Any.Int32().Between(0, 500);
 
 // A key that must be present.

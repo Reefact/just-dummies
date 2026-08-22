@@ -164,10 +164,10 @@ public sealed class StringConstraintsAdmitNoValueAnalyzer : DiagnosticAnalyzer {
                 yield return ($"{name}()", value => value.All(character => removed.IndexOf(character) < 0));
             } else if (name == "WithChars" && constraint.Arguments.Length == 1 && ConstantFacts.TryGetString(constraint.Arguments[0].Value, out string pool)) {
                 yield return ($"WithChars(\"{pool}\")", value => value.All(character => pool.IndexOf(character) >= 0));
-            } else if (name == "UpperCase") {
-                yield return ("UpperCase()", value => !value.Any(char.IsLower));
-            } else if (name == "LowerCase") {
-                yield return ("LowerCase()", value => !value.Any(char.IsUpper));
+            } else if (name == "InUpperCase") {
+                yield return ("InUpperCase()", value => !value.Any(char.IsLower));
+            } else if (name == "InLowerCase") {
+                yield return ("InLowerCase()", value => !value.Any(char.IsUpper));
             }
         }
     }

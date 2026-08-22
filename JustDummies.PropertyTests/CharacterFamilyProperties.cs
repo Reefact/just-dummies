@@ -56,7 +56,7 @@ public sealed class CharacterFamilyProperties {
 
     /// <summary>Applies one of the two casings, so a property can quantify over the casing itself.</summary>
     private static AnyChar ApplyCasing(AnyChar generator, bool upper) {
-        return upper ? generator.UpperCase() : generator.LowerCase();
+        return upper ? generator.InUpperCase() : generator.InLowerCase();
     }
 
     // char.IsAsciiLetter/IsAsciiDigit are .NET 7+, and this suite also runs on the netstandard2.0 asset from the

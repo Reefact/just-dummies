@@ -68,14 +68,14 @@ public class Jd015StringConstraintsAdmitNoValueTests {
 
     [Fact]
     public async Task Does_not_report_a_fragment_whose_case_the_chain_forbids() {
-        // A casing is the third filter building the filler alphabet, so it follows the family: LowerCase() holds the
+        // A casing is the third filter building the filler alphabet, so it follows the family: InLowerCase() holds the
         // characters it draws to lower case and keeps "ABC" as written.
         const string source = """
             using JustDummies;
 
             public static class Sample {
                 public static string M() {
-                    return Any.String().LowerCase().StartingWith("ABC").Generate();
+                    return Any.String().InLowerCase().StartingWith("ABC").Generate();
                 }
             }
             """;
@@ -172,7 +172,7 @@ public class Jd015StringConstraintsAdmitNoValueTests {
 
             public static class Sample {
                 public static string M() {
-                    return Any.String().OneOf("abc", "def").UpperCase().Generate();
+                    return Any.String().OneOf("abc", "def").InUpperCase().Generate();
                 }
             }
             """;
@@ -180,7 +180,7 @@ public class Jd015StringConstraintsAdmitNoValueTests {
         ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new StringConstraintsAdmitNoValueAnalyzer(), source);
 
         Check.That(diagnostics.Length).IsEqualTo(1);
-        Check.That(diagnostics[0].GetMessage()).Contains("UpperCase()");
+        Check.That(diagnostics[0].GetMessage()).Contains("InUpperCase()");
     }
 
     [Fact]

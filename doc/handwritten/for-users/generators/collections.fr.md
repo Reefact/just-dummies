@@ -111,7 +111,7 @@ diagnostic [JD028](../analyzers/JD028.fr.md).
 
 ```csharp
 Dictionary<string, int> stock = Any.DictionaryOf(
-                                       Any.String().Alpha().UpperCase().WithLength(3),
+                                       Any.String().Alpha().InUpperCase().WithLength(3),
                                        Any.Int32().Between(0, 500))
                                    .WithCountBetween(2, 5)
                                    .Generate();
@@ -123,7 +123,7 @@ Les clés sont distinctes par construction. Une seconde surcharge prend un
 Trois contraintes sont propres aux dictionnaires :
 
 ```csharp
-IAny<string> anyCode  = Any.String().Alpha().UpperCase().WithLength(3);
+IAny<string> anyCode  = Any.String().Alpha().InUpperCase().WithLength(3);
 IAny<int>    anyLevel = Any.Int32().Between(0, 500);
 
 // Une clé qui doit être présente.

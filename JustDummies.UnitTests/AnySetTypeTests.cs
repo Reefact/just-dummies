@@ -158,8 +158,8 @@ public sealed class AnySetTypeTests {
             Check.That(CharacterPools.IsAscii(Any.Char().Generate())).IsTrue();
             Check.That(Any.Char().Numeric().Generate() is >= '0' and <= '9').IsTrue();
             Check.That(Any.Char().Alpha().Generate() is >= 'A' and <= 'Z' or >= 'a' and <= 'z').IsTrue();
-            Check.That(Any.Char().LowerCase().Generate() is >= 'A' and <= 'Z').IsFalse();
-            Check.That(Any.Char().Alpha().UpperCase().Generate() is >= 'A' and <= 'Z').IsTrue();
+            Check.That(Any.Char().InLowerCase().Generate() is >= 'A' and <= 'Z').IsFalse();
+            Check.That(Any.Char().Alpha().InUpperCase().Generate() is >= 'A' and <= 'Z').IsTrue();
         }
     }
 
@@ -198,7 +198,7 @@ public sealed class AnySetTypeTests {
         for (int i = 0; i < SampleCount; i++) {
             Check.That(CharacterPools.IsAsciiPunctuation(Any.Char().Punctuation().Generate())).IsTrue();
             Check.That(CharacterPools.IsAsciiPrintable(Any.Char().Printable().Generate())).IsTrue();
-            Check.That(Any.Char().Printable().LowerCase().Generate() is >= 'A' and <= 'Z').IsFalse();
+            Check.That(Any.Char().Printable().InLowerCase().Generate() is >= 'A' and <= 'Z').IsFalse();
         }
 
         // A wider family is still a family: it occupies the one charset slot, so a second one contradicts it, and

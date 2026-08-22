@@ -171,9 +171,9 @@ public sealed class PooledValueNeverDrawsAnalyzer : DiagnosticAnalyzer {
 
                     break;
 
-                case "NonEmpty":      tests.Add(("NonEmpty()", value => value.Length >= 1));                        break;
-                case "UpperCase":     tests.Add(("UpperCase()", value => !value.Any(char.IsLower)));                break;
-                case "LowerCase":     tests.Add(("LowerCase()", value => !value.Any(char.IsUpper)));                break;
+                case "NonEmpty":    tests.Add(("NonEmpty()", value => value.Length >= 1));               break;
+                case "InUpperCase": tests.Add(("InUpperCase()", value => !value.Any(char.IsLower)));      break;
+                case "InLowerCase": tests.Add(("InLowerCase()", value => !value.Any(char.IsUpper)));      break;
 
                 case "WithChars" when TryGetSingleString(constraint, out string pool):
                     tests.Add(($"WithChars({Quote(pool)})", DrawnFrom(pool)));

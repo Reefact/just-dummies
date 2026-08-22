@@ -19,7 +19,7 @@ namespace JustDummies;
 ///     <see cref="Whitespaces" />, <see cref="Alpha" />, <see cref="Numeric" />, <see cref="AlphaNumeric" />,
 ///     <see cref="Punctuation" /> and <see cref="Hexadecimal" /> each occupy one slot, so a second one contradicts
 ///     the first; <see cref="WithoutAlpha" /> and <see cref="WithoutNumeric" /> subtract instead and accumulate;
-///     <see cref="LowerCase" /> / <see cref="UpperCase" /> constrain the letters; and
+///     <see cref="InLowerCase" /> / <see cref="InUpperCase" /> constrain the letters; and
 ///     <see cref="OneOf" /> / <see cref="Except" /> / <see cref="DifferentFrom" /> work on values. A combination
 ///     that empties the pool fails eagerly with a <see cref="ConflictingAnyConstraintException" />. Nothing named
 ///     reaches past ASCII — a specific alphabet beyond it is <see cref="OneOf" />, whose values are yours.
@@ -214,7 +214,7 @@ public sealed class AnyChar : IAny<char>, IHasRandomSource, ICardinalityHint<cha
 
     /// <summary>
     ///     Restricts the character to the base-16 alphabet of RFC 4648 — <c>0-9</c>, <c>A-F</c> and <c>a-f</c>.
-    ///     Chain <see cref="LowerCase" /> or <see cref="UpperCase" /> for the single-case form a hash or a colour
+    ///     Chain <see cref="InLowerCase" /> or <see cref="InUpperCase" /> for the single-case form a hash or a colour
     ///     usually requires. Declared once per generator.
     /// </summary>
     /// <returns>A new generator carrying the added constraint.</returns>
@@ -247,15 +247,15 @@ public sealed class AnyChar : IAny<char>, IHasRandomSource, ICardinalityHint<cha
     /// <summary>Requires an alphabetic character to be lowercase. Declared once per generator.</summary>
     /// <returns>A new generator carrying the added constraint.</returns>
     /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
-    public AnyChar LowerCase() {
-        return WithCasing(LetterCasing.Lower, ConstraintCall.Of(nameof(LowerCase)));
+    public AnyChar InLowerCase() {
+        return WithCasing(LetterCasing.Lower, ConstraintCall.Of(nameof(InLowerCase)));
     }
 
     /// <summary>Requires an alphabetic character to be uppercase. Declared once per generator.</summary>
     /// <returns>A new generator carrying the added constraint.</returns>
     /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
-    public AnyChar UpperCase() {
-        return WithCasing(LetterCasing.Upper, ConstraintCall.Of(nameof(UpperCase)));
+    public AnyChar InUpperCase() {
+        return WithCasing(LetterCasing.Upper, ConstraintCall.Of(nameof(InUpperCase)));
     }
 
     /// <summary>Requires the character to be one of the supplied values. Declared once per generator.</summary>

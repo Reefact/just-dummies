@@ -553,6 +553,7 @@ plutôt que se tromper :
 * c'est un `if` dont le corps lève inconditionnellement ;
 * elle apparaît avant la première affectation à un champ ou une propriété ;
 * sa condition mentionne **exactement un** paramètre et ne contient ni `&&` ni `||` ;
+* ce paramètre n'a pas été réécrit plus haut dans le corps ;
 * tout autre opérande est une constante de compilation.
 
 **Un `else` n'arrête pas la lecture.** Une branche `else` ne dit que ce qui se passe quand sa propre
@@ -567,6 +568,28 @@ branche ne lève pas inconditionnellement, la lecture s'arrête là : `if (a < 0
 désormais aussi `a >= 0` — une règle inter-paramètres, exactement le cas que cette section refuse
 déjà de lire. Cette branche, et tout ce qui suit, est marquée `unread guards` plutôt que passée sous
 silence.
+
+**La réassignation d'un paramètre met fin à la lecture de ce paramètre, et d'aucun autre.** Seule
+une affectation à un champ ou une propriété met fin au parcours des gardes de tête : un constructeur
+qui réécrit un paramètre puis le garde voyait donc ces gardes lues comme des bornes sur la valeur
+tirée. C'était le seul cas où le moteur se trompait avec assurance plutôt que d'être aveugle — tous
+les autres manques que nomme le §9 sont des gardes qu'il ne voit pas ; ici il voyait la garde, la
+lisait correctement, et l'attribuait à une valeur que le constructeur avait déjà remplacée.
+`if (percent < 0) { throw … } percent = 100 - percent; if (percent < 0) { throw … }` donnait
+`.GreaterThanOrEqualTo(0)` sur un domaine réel de 0 à 100, rapporté comme inféré, et un tirage d'un
+million levait dans le constructeur, sans sentinelle et sans rien à regarder. Une garde écrite
+**sous** une réassignation de son propre paramètre est donc marquée `unread guards` (§9) plutôt que
+lue, et une garde écrite **au-dessus** tient toujours : elle est vraie de la valeur tirée, et la
+jeter aussi coûterait une contrainte pour rien. Une réassignation, c'est n'importe laquelle de ses
+orthographes — `percent = 100 - percent`, `percent += 10`, `percent++`, `--percent` — nichée dans un
+`else`, un bloc ou une boucle aussi bien qu'écrite nue. Elle est cantonnée au paramètre qu'elle
+réécrit : arrêter le parcours purement et simplement jetterait les gardes de tous les *autres*
+paramètres du constructeur, échangeant une contrainte à ne pas lire contre plusieurs à lire. C'est
+la chronologie qui laisse intacte la règle du `else` ci-dessus : une condition est évaluée avant que
+quoi que ce soit du corps de son propre `else` ne s'exécute, donc
+`if (v < 0) { throw … } else { v = -v; }` lit toujours `v < 0`, et ce sont les instructions
+au-dessous qui portent sur ce que le `else` a laissé. `ref` et `out` n'ont besoin d'aucune règle
+propre — le §5.1 décline déjà un constructeur qui en porte.
 
 L'ensemble reconnu est clos :
 
@@ -1131,8 +1154,10 @@ Nommés explicitement pour ne pas être pris pour des oublis.
   n'a pas dit que le generator est le bon** (§5.6) : la recette est bien écrite, sous une ligne
   nommant un identifiant qui n'existe pas. Le même marquage atteint une garde entièrement déléguée
   à un helper appelé sur le paramètre lui-même (`Guard.Against.Null(value)`), même sans aucun `if`
-  dans le corps (§5.3), dès lors que l'appel est fait pour son seul effet ; et il atteint aussi toute
-  instruction qui lève dans une forme que l'ensemble n'a pas su analyser du tout. Deux formes lui
+  dans le corps (§5.3), dès lors que l'appel est fait pour son seul effet ; il atteint aussi toute
+  instruction qui lève dans une forme que l'ensemble n'a pas su analyser du tout ; et il atteint une
+  garde écrite sous une réassignation de son propre paramètre, qui énonce un invariant de la valeur
+  calculée par le constructeur et non de celle que le generator tire (§5.3). Deux formes lui
   échappent encore, et toutes deux sont silencieuses plutôt que simplement non lues — le tool n'y
   voit aucun rejet dont douter. Une garde-helper qui **retourne** la valeur vérifiée —
   `_name = Ensure.NotBlank(value);` —
@@ -1144,15 +1169,6 @@ Nommés explicitement pour ne pas être pris pour des oublis.
   cas, le tool ne peut toujours pas distinguer ce paramètre d'un paramètre non contraint, et il ne
   devine pas — c'est de ce résidu que parle ce non-objectif : non pas ce qui arrive une fois le
   doute établi, mais le doute que le tool ne voit jamais.
-  Une **garde lue après la réassignation du paramètre** échoue autrement que toutes celles-ci, et
-  c'est le seul cas où le tool se trompe avec assurance plutôt que d'être simplement aveugle : il
-  voit la garde, la lit correctement, et l'attribue à une valeur que le generator ne tire plus.
-  `if (percent < 0) { throw … } percent = 100 - percent; if (percent < 0) { throw … }` donne
-  `.GreaterThanOrEqualTo(0)`, ce que la seconde garde n'énonce nullement sur la valeur tirée. Seule
-  une affectation à un **champ ou une propriété** met fin au parcours des gardes de tête (§5.3) :
-  réassigner le paramètre lui-même n'y met pas fin, quelle qu'en soit l'orthographe, écrite nue ou
-  dans un `else`. Les gardes écrites *avant* la réassignation sont honorées ; celles d'après portent
-  sur autre chose, et rien ne le dit.
 * **L'aller-retour.** Le tool ne relit jamais un fichier qu'il a écrit.
 * **Membres `init` / `required`, construction par propriétés.** Constructeur et fabrique statique
   uniquement.

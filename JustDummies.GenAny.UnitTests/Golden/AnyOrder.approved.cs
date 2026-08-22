@@ -26,12 +26,36 @@ public sealed partial class AnyOrder : IAny<Order> {
 
     /// <summary>Creates the generator with a default recipe for every constructor parameter.</summary>
     public AnyOrder()
-        : this(reference: Any.String().NonEmpty().As(OrderReference.Create),
-               customer:  new AnyCustomer(),
-               quantity:  Any.Int32().Positive(),
-               status:    Any.Enum<OrderStatus>(),
-               tags:      Any.ListOf(Any.String().NonEmpty()),
-               placedAt:  Any.DateTime()) { }
+        : this(reference: ReferenceFactory(),
+               customer:  CustomerFactory(),
+               quantity:  QuantityFactory(),
+               status:    StatusFactory(),
+               tags:      TagsFactory(),
+               placedAt:  PlacedAtFactory()) { }
+
+    private static IAny<OrderReference> ReferenceFactory() {
+        return Any.String().NonEmpty().As(OrderReference.Create);
+    }
+
+    private static IAny<Customer> CustomerFactory() {
+        return new AnyCustomer();
+    }
+
+    private static IAny<int> QuantityFactory() {
+        return Any.Int32().Positive();
+    }
+
+    private static IAny<OrderStatus> StatusFactory() {
+        return Any.Enum<OrderStatus>();
+    }
+
+    private static IAny<IReadOnlyList<string>> TagsFactory() {
+        return Any.ListOf(Any.String().NonEmpty());
+    }
+
+    private static IAny<DateTime> PlacedAtFactory() {
+        return Any.DateTime();
+    }
 
     private AnyOrder(IAny<OrderReference>        reference,
                      IAny<Customer>              customer,

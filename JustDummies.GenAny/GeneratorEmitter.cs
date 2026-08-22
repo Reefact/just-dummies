@@ -119,6 +119,7 @@ public static class GeneratorEmitter {
         } else {
             WriteFields(file, plan, member);
             WritePublicConstructor(file, plan, member);
+            WriteFactories(file, plan, member);
             WritePrivateConstructor(file, plan, member);
             WriteWithMethods(file, plan, member);
         }
@@ -156,7 +157,9 @@ public static class GeneratorEmitter {
     }
 
     /// <summary>
-    ///     Named arguments, aligned, so a reader maps each expression to its parameter without counting (§4.2).
+    ///     Named arguments, aligned, so a reader maps each call to its parameter without counting (§4.2). Each
+    ///     one is a call to that parameter's own factory (§4.2) — never the chain itself, which is written
+    ///     once, in that factory's body.
     /// </summary>
     private static void WritePublicConstructor(StringBuilder file, ScaffoldPlan plan, string indent) {
         Line(file, $"{indent}/// <summary>Creates the generator with a default recipe for every constructor parameter.</summary>");
@@ -170,15 +173,34 @@ public static class GeneratorEmitter {
             ScaffoldedParameter parameter = plan.Parameters[index];
             bool                last      = index == plan.Parameters.Count - 1;
             string              lead      = index == 0 ? opening : continuing;
-
-            if (parameter.IsUnresolved) { WriteTodo(file, parameter, continuing); }
-
-            string argument = $"{(parameter.Identifier + ":").PadRight(width)} {parameter.Expression ?? parameter.TodoIdentifier}";
+            string              argument  = $"{(parameter.Identifier + ":").PadRight(width)} {parameter.FactoryMethodName}()";
 
             Line(file, lead + argument + (last ? ") { }" : ","));
         }
 
         Line(file, string.Empty);
+    }
+
+    /// <summary>
+    ///     One factory per parameter (§4.2): the method the public constructor calls, and the place a parameter
+    ///     with something to say for itself says it, right beside the chain it is about.
+    /// </summary>
+    private static void WriteFactories(StringBuilder file, ScaffoldPlan plan, string indent) {
+        string body = indent + Indent;
+
+        foreach (ScaffoldedParameter parameter in plan.Parameters) {
+            Line(file, $"{indent}private static IAny<{parameter.TypeDisplay}> {parameter.FactoryMethodName}() {{");
+
+            if (parameter.IsUnresolved) {
+                WriteTodo(file, parameter, body);
+                Line(file, $"{body}return {parameter.TodoIdentifier};");
+            } else {
+                Line(file, $"{body}return {parameter.Expression};");
+            }
+
+            Line(file, $"{indent}}}");
+            Line(file, string.Empty);
+        }
     }
 
     /// <summary>
@@ -188,7 +210,7 @@ public static class GeneratorEmitter {
     private static void WriteTodo(StringBuilder file, ScaffoldedParameter parameter, string indent) {
         Line(file, $"{indent}// TODO(dum): no generator inferred for '{parameter.TypeDisplay} {parameter.Name}'.");
         Line(file, $"{indent}//   Scaffold one:  dum generate {parameter.TypeDisplay}");
-        Line(file, $"{indent}//   or write one here, or delete this argument and always pass .With{parameter.PascalCasedName}(...).");
+        Line(file, $"{indent}//   or write one here, or replace it and always pass .With{parameter.PascalCasedName}(...) instead.");
     }
 
     private static void WritePrivateConstructor(StringBuilder file, ScaffoldPlan plan, string indent) {

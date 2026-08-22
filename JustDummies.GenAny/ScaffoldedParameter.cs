@@ -102,6 +102,16 @@ public sealed class ScaffoldedParameter {
     /// <summary>The field this parameter is copied into.</summary>
     public string FieldName => "_" + Bare();
 
+    /// <summary>
+    ///     The name of the private static method that draws this parameter's generator (§4.2).
+    /// </summary>
+    /// <remarks>
+    ///     One method per parameter, called from the public constructor's initializer, rather than the chain
+    ///     built inline there: the constructor then reads as a list of names, and whatever a parameter has to
+    ///     say for itself is said inside the method that owns it.
+    /// </remarks>
+    public string FactoryMethodName => PascalCasedName + "Factory";
+
     /// <summary>The identifier §5.5 emits in place of a generator, which is deliberately undefined.</summary>
     public string TodoIdentifier => "TODO_supply_a_generator_for_" + Bare();
 

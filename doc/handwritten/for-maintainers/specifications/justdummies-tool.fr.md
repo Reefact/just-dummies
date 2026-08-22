@@ -738,8 +738,17 @@ La colonne de droite porte la provenance de chaque expression : vide pour la tab
 quand le §5.3 l'a resserrée, `factory` quand le §5.4 l'a composée, `AnyX` quand un generator
 scaffoldé a été réutilisé, `guards not combined` pour le cas de conflit du §5.3, `no source` quand le
 corps du constructeur était indisponible et qu'aucune garde n'a pu être lue, `unread guards` quand
-le corps lève d'une façon que l'ensemble reconnu n'a pas appariée, et `unavailable` quand le
-generator existe dans la bibliothèque mais pas dans l'asset que ce projet résout.
+le corps lève d'une façon que l'ensemble reconnu n'a pas appariée, `constraint unavailable` quand
+une garde a été lue et comprise et que ce generator ne porte aucun membre pour l'exprimer, et
+`unavailable` quand le generator existe dans la bibliothèque mais pas dans l'asset que ce projet
+résout.
+
+`guard` se calcule depuis les contraintes **appliquées**, jamais depuis les contraintes lues. La
+distinction fait toute la valeur de la colonne : une garde dont le generator n'a pas le membre est
+abandonnée par D4 — à raison, puisque l'alternative est une chaîne qui ne compile pas — et la
+signaler `guard` affirme un invariant que rien n'a honoré. `constraint unavailable` est ce que cet
+abandon dit à la place, et ce n'est pas `unavailable` : là c'est le *generator* du type qui manque,
+ici le generator est exactement le bon et c'est une contrainte qui ne peut pas s'y exprimer.
 
 Cette dernière valeur compte plus qu'il n'y paraît. Sans elle, la dégradation de D4 est
 indiscernable d'une simple ignorance du tool : un paramètre `DateOnly` sur un projet downlevel se

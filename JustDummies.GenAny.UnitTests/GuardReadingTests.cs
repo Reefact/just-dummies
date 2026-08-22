@@ -236,13 +236,48 @@ public sealed class GuardReadingTests {
         Check.That(parameter.Provenance.HasFlag(Provenance.GuardsNotCombined)).IsFalse();
     }
 
-    // ADR-0059 reaches the guards too: .Positive() is not declared on the unsigned engine, so it is skipped
-    // rather than emitted into a chain that would not compile.
-    [Fact(DisplayName = "A constraint the generator does not carry is skipped.")]
+    /// <summary>
+    ///     ADR-0059 reaches the guards too, and a drop it makes is said out loud.
+    /// </summary>
+    /// <remarks>
+    ///     <c>.Positive()</c> is not declared on the unsigned engine, so it is skipped rather than emitted into
+    ///     a chain that would not compile — that half was always right. What was not is the column beside it:
+    ///     provenance was computed from the constraints <b>read</b>, so the parameter reported <c>guard</c>
+    ///     over an invariant nothing honoured, and the run reported every parameter inferred. §6 words that
+    ///     column <c>tightened</c>, and a constraint with no member to be written with tightened nothing.
+    ///     <para>
+    ///         The <c>uint</c> case is benign — no draw violates it — and that is exactly why it is the one to
+    ///         pin. The same silence over an enum guard the closed set cannot express costs a third of the
+    ///         draws, and the two are one bug.
+    ///     </para>
+    /// </remarks>
+    [Fact(DisplayName = "A constraint the generator does not carry is skipped, and reported as unavailable.")]
     public void AConstraintTheGeneratorDoesNotCarryIsSkipped() {
         string guard = "if (value <= 0) { throw new ArgumentOutOfRangeException(nameof(value)); }";
 
-        Check.That(Subject.GuardedBy("uint", guard).Expression).IsEqualTo("Any.UInt32()");
+        ScaffoldedParameter parameter = Subject.GuardedBy("uint", guard);
+
+        Check.That(parameter.Expression).IsEqualTo("Any.UInt32()");
+        Check.That(parameter.Provenance.HasFlag(Provenance.ConstraintUnavailable)).IsTrue();
+        Check.That(parameter.Provenance.HasFlag(Provenance.Guard)).IsFalse();
+    }
+
+    /// <summary>A guard that did reach the chain still reports <c>guard</c>, whatever the fold did to it.</summary>
+    /// <remarks>
+    ///     The range fold rewrites a floor and a ceiling into one call neither of them is, so a provenance read
+    ///     off the finished text would lose them both. It is read before the fold: how a chain is spelled is
+    ///     never what it says.
+    /// </remarks>
+    [Fact(DisplayName = "A folded pair of bounds still reports the guard that produced it.")]
+    public void AFoldedPairStillReportsTheGuard() {
+        ScaffoldedParameter parameter = Subject.GuardedBy("int", """
+                                                                         if (value < 0) { throw new ArgumentOutOfRangeException(nameof(value)); }
+                                                                         if (value > 100) { throw new ArgumentOutOfRangeException(nameof(value)); }
+                                                                 """);
+
+        Check.That(parameter.Expression).IsEqualTo("Any.Int32().Between(0, 100)");
+        Check.That(parameter.Provenance.HasFlag(Provenance.Guard)).IsTrue();
+        Check.That(parameter.Provenance.HasFlag(Provenance.ConstraintUnavailable)).IsFalse();
     }
 
     // §5.3: the constraint belongs to the generator for the parameter's own type, BEFORE the conversion. The

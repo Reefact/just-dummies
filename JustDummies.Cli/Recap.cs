@@ -45,6 +45,7 @@ internal static class Recap {
         (GenAny.Provenance.Guard, "guard"),
         (GenAny.Provenance.GuardsNotCombined, "guards not combined"),
         (GenAny.Provenance.UnreadGuards, "unread guards"),
+        (GenAny.Provenance.ConstraintUnavailable, "constraint unavailable"),
         (GenAny.Provenance.NoSource, "no source"),
         (GenAny.Provenance.Unavailable, "unavailable")
     ];

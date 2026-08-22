@@ -136,12 +136,15 @@ public static class Scaffolder {
         }
 
         IReadOnlyList<GuardConstraint> tightening = guards.For(parameter.Name);
-        string                         expression = GeneratorFor.Chain(drawn, tightening, out bool dropped);
+        ChainReport                    written    = GeneratorFor.Chain(drawn, tightening);
 
-        if (tightening.Count > 0) { provenance |= Provenance.Guard; }
-        if (dropped) { provenance |= Provenance.GuardsNotCombined; }
+        // Computed from the constraints APPLIED, not the constraints read. §6 words this column `tightened`,
+        // and a guard the generator carries no member for tightened nothing however well it was understood.
+        if (written.GuardApplied) { provenance |= Provenance.Guard; }
+        if (written.GuardsNotCombined) { provenance |= Provenance.GuardsNotCombined; }
+        if (written.ConstraintUnavailable) { provenance |= Provenance.ConstraintUnavailable; }
 
-        return ScaffoldedParameter.DrawnFrom(parameter.Name, typeDisplay, expression, provenance);
+        return ScaffoldedParameter.DrawnFrom(parameter.Name, typeDisplay, written.Expression, provenance);
     }
 
     /// <summary>

@@ -23,6 +23,13 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   inferred. `_id` failed the other way: the field derived from it carried the same identifier as the
   constructor parameter, so the assignment was `_id = _id`, which compiles and leaves the field null, making
   every draw throw. Both names are ones §17 already promised worked.
+- **The recap no longer claims a guard it did not honour.** `if (status == Status.None) throw …` — the
+  commonest enum guard there is — was read, understood, and then dropped because `Any.Enum<T>()` carries no
+  member to say it with. That drop is right; reporting it as `guard` was not. The column now reads
+  `constraint unavailable`, a new value distinct from `unavailable`: there the *generator* for the type is
+  missing, here the generator is exactly right and one constraint cannot be expressed on it. `guard` itself is
+  now computed from the constraints **applied** rather than the constraints read, which is what §6's word
+  *tightened* meant all along. The JSON report carries the value like any other.
 - **A bounded parameter is scaffolded as the range it is, once.** `dum generate Order` on a factory guarding
   `IsNullOrWhiteSpace`, `Length < 8` and `Length > 20` emitted
   `Any.String().NonEmpty().WithMinLength(8).WithMaxLength(20)` — a chain the tool's own package reports

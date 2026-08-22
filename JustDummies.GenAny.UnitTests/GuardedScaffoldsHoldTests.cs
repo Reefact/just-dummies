@@ -57,6 +57,8 @@ public sealed class GuardedScaffoldsHoldTests {
 
     public static TheoryData<string> BeyondTheEngine => Rows(GuardCorpus.BeyondTheEngineNames());
 
+    public static TheoryData<string> RequiresVerification => Rows(GuardCorpus.RequiresVerificationNames());
+
     private static TheoryData<string> Rows(IEnumerable<string> names) {
         TheoryData<string> shapes = [];
 
@@ -140,6 +142,83 @@ public sealed class GuardedScaffoldsHoldTests {
 
             Check.WithCustomMessage($"Any{shape.Target}: {failure}").That(failure).IsNull();
         }
+    }
+
+    /// <summary>
+    ///     A guard the engine could not vouch for blocks compilation, and what it kept underneath is not a
+    ///     placeholder — deleting the blocking line, as §5.6 tells the developer to, leaves a chain that
+    ///     compiles and raises no rule of the library's own. It does not leave a chain proven correct: this
+    ///     shape's own base recipe still fails against the real constructor, which is the whole reason blocking
+    ///     compilation was the right call rather than a formality.
+    /// </summary>
+    /// <remarks>
+    ///     The other theories above prove a golden file's <i>shape</i>; this one proves the claim behind
+    ///     it — and the claim was never "dum's guess is correct". It is "dum's guess is real, not a stub", and
+    ///     that a generator this unverified, shipped as ordinary code, is exactly the silent failure ADR-0083
+    ///     exists to stop.
+    /// </remarks>
+    [Theory(DisplayName = "A guard the engine cannot vouch for blocks compilation, over a base that is real but still unverified.")]
+    [MemberData(nameof(RequiresVerification))]
+    public async Task ARequiresVerificationBlocksCompilationOverAnUnverifiedBase(string shapeName) {
+        GuardCorpus.GuardedShape shape = GuardCorpus.Named(shapeName);
+
+        if (shape.Defect is not null) { Assert.Skip($"{shape.Defect} — the engine does not hold this shape yet."); }
+
+        ScaffoldOutcome outcome = Scaffolded(shape);
+
+        Check.WithCustomMessage($"Any{shape.Target} was not marked as requiring verification.")
+             .That(outcome.Plan!.Parameters.Any(parameter => parameter.RequiresVerification))
+             .IsTrue();
+        Check.WithCustomMessage($"Any{shape.Target} compiled despite a drop the engine cannot vouch for.")
+             .That(EmittedCodeCompiler.ErrorsIn(Compiled(outcome, shape)))
+             .Not.IsEmpty();
+
+        CSharpCompilation resolved = EmittedCodeCompiler.CompileWith(WithoutVerifySentinel(outcome.File!.SourceText), shape.Domain);
+
+        Check.WithCustomMessage($"Any{shape.Target}, with the blocking line deleted, still does not compile.")
+             .That(EmittedCodeCompiler.ErrorsIn(resolved))
+             .IsEmpty();
+
+        IReadOnlyList<Diagnostic> raised = await JustDummiesRulesOn(resolved, TestContext.Current.CancellationToken);
+
+        Check.That(raised.Where(diagnostic => diagnostic.Severity >= DiagnosticSeverity.Warning).Select(Render)).IsEmpty();
+
+        // Pinned rather than merely tolerated: this shape is in the corpus BECAUSE its base recipe throws once
+        // resolved, and a green run here silently, with nothing catching it, is this test proving the opposite
+        // of what it is for.
+        string? failure = EmittedAssembly.DrawFrom(resolved, $"Shop.Domain.Any{shape.Target}", Draws);
+
+        Check.WithCustomMessage($"Any{shape.Target} drew {Draws} values its own domain accepted — the unverified base "
+                              + "turned out sound, which this shape was chosen to show is not guaranteed.")
+             .That(failure)
+             .Not.IsNull();
+    }
+
+    /// <summary>
+    ///     What a developer does per §5.6's own instruction: delete the sentinel statement, and the blank line
+    ///     the emitter puts after it — nothing else, so what compiled before compiles the same way now.
+    /// </summary>
+    private static string WithoutVerifySentinel(string source) {
+        List<string> kept        = [];
+        bool         skipNext    = false;
+
+        foreach (string line in source.Split('\n')) {
+            if (skipNext) {
+                skipNext = false; // the blank line WriteFactories emits right after the sentinel.
+
+                continue;
+            }
+
+            if (line.TrimStart().StartsWith("_ = TODO_verify_the_generator_for_", System.StringComparison.Ordinal)) {
+                skipNext = true;
+
+                continue;
+            }
+
+            kept.Add(line);
+        }
+
+        return string.Join('\n', kept);
     }
 
     /// <summary>The shape scaffolded, and its generator compiled beside the domain it names.</summary>

@@ -107,8 +107,17 @@ internal static class Guards {
         IParameterSymbol[] mentioned = Mentioned(condition, model, method);
 
         // Exactly one, or the engine cannot say whose invariant this is. A cross-parameter rule is precisely
-        // the case §9 names as out of reach, and it is left alone rather than half-read.
-        if (mentioned.Length != 1) { return; }
+        // the case §9 names as out of reach — and §9 says how it ends, too: `unread guards`, on every
+        // parameter it spans. Silence there measured 5008 throws in 10 000 draws on `Range(min, max)`, under
+        // a recap reporting both parameters inferred and nothing to look at.
+        //
+        // A condition mentioning NO parameter is different and stays silent — one testing the clock, say, is
+        // about none of them, so there is nobody to send looking. The loop below says both at once.
+        if (mentioned.Length != 1) {
+            foreach (IParameterSymbol spanned in mentioned) { reading.MarkUnread(spanned.Name); }
+
+            return;
+        }
 
         IParameterSymbol parameter = mentioned[0];
 
@@ -148,8 +157,12 @@ internal static class Guards {
         }
 
         if (condition is PrefixUnaryExpressionSyntax { RawKind: (int)SyntaxKind.LogicalNotExpression } negation) {
-            // `!Enum.IsDefined(typeof(E), p)` — Any.Enum<E>() already draws only declared members.
-            return IsCall(negation.Operand, model, "System.Enum", "IsDefined");
+            // `!Enum.IsDefined(typeof(E), p)` — Any.Enum<E>() already draws only declared members, which holds
+            // only where the parameter IS E. On an int-backed status column the row's own justification fails:
+            // nothing narrows Any.Int32(), and the outcome is indistinguishable from a guard there was nothing
+            // to read — worse than a lost constraint, because it does not even say it lost one.
+            return IsCall(negation.Operand, model, "System.Enum", "IsDefined")
+                && NamesTheParametersOwnUniverse(negation.Operand, model, parameter);
         }
 
         if (condition is InvocationExpressionSyntax invocation) {
@@ -189,8 +202,7 @@ internal static class Guards {
         Optional<object?> constant = model.GetConstantValue(other);
 
         if (!constant.HasValue || constant.Value is null || !IsNumber(constant.Value)) { return false; }
-
-        decimal value = Convert.ToDecimal(constant.Value, CultureInfo.InvariantCulture);
+        if (!TryDecimal(constant.Value, out decimal value)) { return false; }
 
         constraint = sized
                          ? Sized(@operator, value, sizedByCount)
@@ -199,12 +211,50 @@ internal static class Guards {
         return constraint is not null;
     }
 
+    /// <summary>
+    ///     The constant as a decimal, or the fact that it is not one a bound can be read from.
+    /// </summary>
+    /// <remarks>
+    ///     <see cref="IsNumber" /> admits <c>float</c> and <c>double</c>, whose range runs far past
+    ///     <c>decimal</c>'s — and whose NaN and infinities are not points on the number line at all. The
+    ///     conversion throws on each, out of a method the public <c>Scaffolder.Scaffold</c> declares no such
+    ///     exception for: one <c>if (value &gt; 1e30)</c> in one domain type ended a whole run, leaving the
+    ///     types before it on disk, the rest absent, and the shell reporting a command line it had understood
+    ///     perfectly well (§10.3).
+    /// </remarks>
+    private static bool TryDecimal(object constant, out decimal value) {
+        value = 0m;
+
+        if (constant is double asDouble && (double.IsNaN(asDouble) || double.IsInfinity(asDouble))) { return false; }
+        if (constant is float asSingle && (float.IsNaN(asSingle) || float.IsInfinity(asSingle))) { return false; }
+
+        try {
+            value = Convert.ToDecimal(constant, CultureInfo.InvariantCulture);
+        } catch (OverflowException) {
+            // The range boundary is not expressible as a comparison — (double)decimal.MaxValue rounds ABOVE
+            // decimal.MaxValue — so the conversion's own documented failure is the test, turned here into the
+            // false every caller of this path already handles.
+            return false;
+        }
+
+        return true;
+    }
+
     /// <summary>A guard on how long, or how many. The two families share only <c>NonEmpty</c> (§14.3).</summary>
+    /// <remarks>
+    ///     Every size member takes an <c>int</c> (§14.3), so a constant that does not render as one is not a
+    ///     size this family can be written with. <c>text.Length &gt; Budget / 2.0</c> folds to <c>140.5</c>:
+    ///     emitted verbatim that is <c>CS1503</c> in the developer's own build, and even spelled as an integer
+    ///     it is not the bound the guard states. The numeric branch has carried a type-aware literal since the
+    ///     <c>decimal</c> case forced one; this is the same rule, for the family that had no equivalent.
+    /// </remarks>
     private static GuardConstraint? Sized(SyntaxKind @operator, decimal value, bool byCount) {
+        if (value != decimal.Truncate(value) || value < 0 || value > int.MaxValue) { return null; }
+
         string exact = byCount ? "WithCount" : "WithLength";
         string min   = byCount ? "WithMinCount" : "WithMinLength";
         string max   = byCount ? "WithMaxCount" : "WithMaxLength";
-        string count = value.ToString(CultureInfo.InvariantCulture);
+        string count = ((int)value).ToString(CultureInfo.InvariantCulture);
 
         return @operator switch {
             SyntaxKind.EqualsExpression when value == 0            => Emptiness(byCount),
@@ -281,6 +331,28 @@ internal static class Guards {
         }
 
         return false;
+    }
+
+    /// <summary>
+    ///     Whether the universe an <c>Enum.IsDefined</c> guard checks against is the parameter's own type.
+    /// </summary>
+    /// <remarks>
+    ///     Both overloads are read, and only one of them needs the check: <c>IsDefined&lt;TEnum&gt;(TEnum)</c>
+    ///     infers the universe from the value it is given, so naming the parameter there settles it, while
+    ///     <c>IsDefined(Type, object)</c> takes the two independently and will happily judge an <c>int</c>
+    ///     against an enum's members.
+    /// </remarks>
+    private static bool NamesTheParametersOwnUniverse(ExpressionSyntax call, SemanticModel model, IParameterSymbol parameter) {
+        if (call is not InvocationExpressionSyntax invocation) { return false; }
+
+        SeparatedSyntaxList<ArgumentSyntax> arguments = invocation.ArgumentList.Arguments;
+
+        if (arguments.Count == 1) { return IsParameter(arguments[0].Expression, model, parameter); }
+
+        return arguments.Count == 2
+            && arguments[0].Expression is TypeOfExpressionSyntax universe
+            && SymbolEqualityComparer.Default.Equals(model.GetTypeInfo(universe.Type).Type, Underlying(parameter.Type))
+            && IsParameter(arguments[1].Expression, model, parameter);
     }
 
     /// <summary>The parameter itself, or the one derived form the table has rows for: its length or its count.</summary>
@@ -384,10 +456,21 @@ internal static class Guards {
         return value is sbyte or byte or short or ushort or int or uint or long or ulong or float or double or decimal;
     }
 
+    /// <summary>
+    ///     The type a bound is actually read against — <c>int</c> for an <c>int?</c>.
+    /// </summary>
+    /// <remarks>
+    ///     One definition, because three readers have to agree on it: whether the type is integral, how its
+    ///     literal is spelled, and which enum universe a guard may name.
+    /// </remarks>
+    private static ITypeSymbol Underlying(ITypeSymbol type) {
+        return type is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T } nullable
+                   ? nullable.TypeArguments[0]
+                   : type;
+    }
+
     private static bool IsIntegral(ITypeSymbol type) {
-        ITypeSymbol underlying = type is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T } nullable
-                                     ? nullable.TypeArguments[0]
-                                     : type;
+        ITypeSymbol underlying = Underlying(type);
 
         return underlying.SpecialType is SpecialType.System_SByte or SpecialType.System_Byte
                                       or SpecialType.System_Int16 or SpecialType.System_UInt16
@@ -403,9 +486,7 @@ internal static class Guards {
     ///     conversion — the emitted chain would not compile. The suffix is not decoration.
     /// </remarks>
     private static string Literal(object value, ITypeSymbol type) {
-        ITypeSymbol underlying = type is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T } nullable
-                                     ? nullable.TypeArguments[0]
-                                     : type;
+        ITypeSymbol underlying = Underlying(type);
 
         string written = Convert.ToString(value, CultureInfo.InvariantCulture) ?? "0";
 

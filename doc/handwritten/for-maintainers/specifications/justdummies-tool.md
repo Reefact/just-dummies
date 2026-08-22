@@ -526,11 +526,21 @@ The recognised set is closed:
 | `p > N` | `.LessThanOrEqualTo(N)` |
 | `p < N` | `.GreaterThanOrEqualTo(N)` |
 | `p == Guid.Empty` | `.NonEmpty()` |
-| `!Enum.IsDefined(typeof(E), p)` | none — `Any.Enum<E>()` already draws only declared members |
+| `!Enum.IsDefined(typeof(E), p)`, `!Enum.IsDefined(p)` | none — `Any.Enum<E>()` already draws only declared members, **where `p` is of type `E`** |
 
 `.NonEmpty()` covers `IsNullOrWhiteSpace` as well as `IsNullOrEmpty`, because an unconstrained
 `Any.String()` draws only ASCII letters and digits, so a non-empty draw can never be whitespace
 (§14.5).
+
+Two conditions bound the table's own arithmetic, and both are refusals rather than approximations.
+**`N` in a size row has to render as the `int` every size member takes** (§14.3): a bound folding to
+`140.5`, or past `int`'s range, is not a size the engine can write, and emitting it verbatim fails
+the developer's build. **A constant that is not a point on the number line, or lies outside
+`decimal`, is not read at all** — `double` and `float` both reach past `decimal`, and NaN and the
+infinities are not bounds. In either case the parameter keeps its neutral generator and is marked
+`unread guards` (§9), which is also what an `Enum.IsDefined` guard naming a universe other than the
+parameter's own type gets: the row's justification is that the generator already draws declared
+members, and that holds only where the parameter is of that enum's type.
 
 **A size guard on a collection parameter maps to the count family, not the length family.** A
 collection generator exposes `NonEmpty`, `WithCount`, `WithMinCount` and `WithMaxCount`, and no

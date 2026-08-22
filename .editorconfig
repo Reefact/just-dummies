@@ -173,6 +173,23 @@ dotnet_diagnostic.S108.severity = none
 dotnet_diagnostic.SA1402.severity = none
 dotnet_diagnostic.SA1649.severity = none
 
+[build/*.cs]
+# Declined for the shared build shim: one type per file, and the file name matching the first
+# type. build/Net472TestFloor.IsExternalInit.cs is a polyfill that Net472TestFloor.props injects
+# into every net472 test assembly, and it is named after the floor mechanism it serves rather than
+# after a type — which is the information a reader needs at that path. Its two types sit together
+# on purpose, and the file says why: the suppression justification cannot live in any project's own
+# SuppressionJustification, because each net472 assembly compiles its own copy and none of them
+# shares the others' internals. Splitting it would yield two shims named after types and lose the
+# tie to the props file that injects them.
+#
+# This path is NOT covered by the test-scoped declines above: those match on the file's own path,
+# and this file lives in build/ even though only test assemblies ever compile it. It is also
+# invisible to an ordinary build — the net472 inner build is gated behind EnableNet472Floor, so
+# these two rules first reported from CI (ADR-0081, ADR-0007).
+dotnet_diagnostic.SA1402.severity = none
+dotnet_diagnostic.SA1649.severity = none
+
 [*.{csproj,props,targets,nuspec,config,xml}]
 indent_size = 2
 

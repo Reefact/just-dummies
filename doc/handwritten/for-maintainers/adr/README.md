@@ -21,7 +21,7 @@ and the **Origin** column says how each one got here:
   but its record stays live in `Reefact/first-class-errors` too, because that
   repository still applies it. Both copies are now independent: either side can
   supersede its own without touching the other. 9 decisions.
-* **recorded here** — decided in this repository, on its own. 38 decisions.
+* **recorded here** — decided in this repository, on its own. 39 decisions.
 
 The numbers are this base's own, assigned in the order the decisions were
 recorded upstream ([ADR-0045](0045-renumber-the-decision-base.md)); every ADR
@@ -181,3 +181,4 @@ and it was decided on 2026-08-01 — the index carries the order, the numbering 
 | [ADR-0078](0078-own-a-bound-declared-twice-as-one-rule.md) | Own a bound declared twice as one rule, and narrow JD024 out of it | Accepted | recorded here |
 | [ADR-0079](0079-constrain-what-a-dummy-draws-never-the-literals-it-was-given.md) | Constrain what a dummy draws, never the literals it was given | Accepted | recorded here |
 | [ADR-0080](0080-admit-a-rule-that-names-a-resolved-ambiguity.md) | Admit a JD rule that names an ambiguity the library resolves, alongside the shorter equivalent | Accepted | recorded here |
+| [ADR-0081](0081-declare-one-top-level-type-per-file.md) | Declare one top-level type per file, enforced by a third-party style analyzer | Accepted | recorded here |

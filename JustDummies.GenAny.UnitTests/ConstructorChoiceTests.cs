@@ -84,6 +84,71 @@ public sealed class ConstructorChoiceTests {
         Check.That(Subject.Scaffold(declaration).Status).IsEqualTo(ScaffoldStatus.NoEligibleConstructor);
     }
 
+    /// <summary>
+    ///     Finding a constructor is not the same question as being able to call it.
+    /// </summary>
+    /// <remarks>
+    ///     Each of these three declares a public constructor, so §5.1 chose one and a file was written that
+    ///     said <c>1 of 1 parameters inferred</c> — then failed the developer's own build with <c>CS0144</c>,
+    ///     <c>CS0246</c> and <c>CS9035</c> respectively. A refusal is the outcome ADR-0046 asks for, and for
+    ///     the required-member row it is also what §16 deferring the feature has to mean.
+    /// </remarks>
+    [Theory(DisplayName = "A type the emitted file could not construct is refused before anything is written.")]
+    [InlineData("public abstract class Subject { public Subject(int one) { } }",
+                "Shop.Domain.Subject",
+                ScaffoldStatus.TypeIsAbstract)]
+    [InlineData("public sealed class Subject<TPayload> { public Subject(int one) { } }",
+                "Shop.Domain.Subject`1",
+                ScaffoldStatus.TypeIsGeneric)]
+    [InlineData("public sealed class Subject { public required string Name { get; init; } public Subject(int one) { } }",
+                "Shop.Domain.Subject",
+                ScaffoldStatus.RequiredMembersUnset)]
+    public void ATypeTheEmittedFileCouldNotConstructIsRefused(string declaration, string metadataName, ScaffoldStatus expected) {
+        ScaffoldOutcome outcome = Subject.Scaffold(declaration, metadataName: metadataName);
+
+        Check.That(outcome.Status).IsEqualTo(expected);
+        Check.That(outcome.File).IsNull();
+    }
+
+    /// <summary>A required member the constructor does set is not a refusal — the bar is the call site.</summary>
+    [Fact(DisplayName = "A constructor marked SetsRequiredMembers scaffolds despite the required member.")]
+    public void AConstructorMarkedSetsRequiredMembersScaffolds() {
+        ScaffoldOutcome outcome = Subject.Scaffold("""
+                                                   using System.Diagnostics.CodeAnalysis;
+
+                                                   namespace Shop.Domain;
+
+                                                   public sealed class Subject {
+
+                                                       public required string Name { get; init; }
+
+                                                       [SetsRequiredMembers]
+                                                       public Subject(string name) {
+                                                           Name = name;
+                                                       }
+
+                                                   }
+                                                   """);
+
+        Check.That(outcome.Status).IsEqualTo(ScaffoldStatus.Scaffolded);
+        Check.That(Names(outcome)).ContainsExactly("name");
+    }
+
+    /// <summary>A nested type cannot be named without its container's type argument either.</summary>
+    [Fact(DisplayName = "A type nested in a generic one is refused as generic.")]
+    public void ATypeNestedInAGenericOneIsRefusedAsGeneric() {
+        ScaffoldOutcome outcome = Subject.Scaffold("""
+                                                   public sealed class Outer<TPayload> {
+                                                       public sealed class Subject {
+                                                           public Subject(int one) { }
+                                                       }
+                                                   }
+                                                   """,
+                                                   metadataName: "Shop.Domain.Outer`1+Subject");
+
+        Check.That(outcome.Status).IsEqualTo(ScaffoldStatus.TypeIsGeneric);
+    }
+
     // A record needs no special handling: its primary constructor is an ordinary public one, and the copy
     // constructor the compiler adds is protected, so it never competes.
     [Fact(DisplayName = "A positional record scaffolds from its primary constructor.")]

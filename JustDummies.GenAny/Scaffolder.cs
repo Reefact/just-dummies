@@ -83,6 +83,16 @@ public static class Scaffolder {
 
         if (constructor is null) { return ScaffoldOutcome.Refused(ScaffoldStatus.NoEligibleConstructor); }
 
+        // Choosing a constructor is not the same question as whether the emitted file can name the type and
+        // call that constructor. Each of these three finds a public constructor and then fails the developer's
+        // own build, so the refusal has to come first — a file nobody can compile, written under a recap that
+        // says every parameter was inferred, is the one outcome §7 has no row for.
+        if (IsGeneric(target)) { return ScaffoldOutcome.Refused(ScaffoldStatus.TypeIsGeneric); }
+        if (target.IsAbstract) { return ScaffoldOutcome.Refused(ScaffoldStatus.TypeIsAbstract); }
+        if (LeavesRequiredMembersUnset(target, constructor)) {
+            return ScaffoldOutcome.Refused(ScaffoldStatus.RequiredMembersUnset);
+        }
+
         string?      fileNamespace = options.NamespaceOverride ?? NamespaceOf(target);
         TypeNames    names         = new(fileNamespace);
         GeneratorFor generators    = new(library, names, compilation, options.Naming);
@@ -149,6 +159,49 @@ public static class Scaffolder {
     ///     A positional record needs no special handling: its primary constructor is an ordinary public one, and
     ///     the copy constructor the compiler adds is protected, so it never competes.
     /// </remarks>
+    /// <summary>
+    ///     Whether the emitted file would have a type argument it cannot supply.
+    /// </summary>
+    /// <remarks>
+    ///     The containing types count: <c>Outer&lt;T&gt;.Inner</c> is not itself generic and still cannot be
+    ///     named without <c>T</c>.
+    /// </remarks>
+    private static bool IsGeneric(INamedTypeSymbol target) {
+        for (INamedTypeSymbol? type = target; type is not null; type = type.ContainingType) {
+            if (type.IsGenericType) { return true; }
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    ///     Whether <c>new</c> through <paramref name="constructor" /> would leave a required member unset.
+    /// </summary>
+    /// <remarks>
+    ///     Inherited ones count as much as declared ones — the compiler asks for every required member in the
+    ///     hierarchy — and <c>[SetsRequiredMembers]</c> answers for all of them at once, which is why it is
+    ///     read first rather than per member.
+    /// </remarks>
+    private static bool LeavesRequiredMembersUnset(INamedTypeSymbol target, IMethodSymbol constructor) {
+        if (SetsRequiredMembers(constructor)) { return false; }
+
+        for (INamedTypeSymbol? type = target; type is not null; type = type.BaseType) {
+            if (type.GetMembers().Any(IsRequired)) { return true; }
+        }
+
+        return false;
+    }
+
+    private static bool IsRequired(ISymbol member) {
+        return member is IPropertySymbol { IsRequired: true } or IFieldSymbol { IsRequired: true };
+    }
+
+    private static bool SetsRequiredMembers(IMethodSymbol constructor) {
+        return constructor.GetAttributes()
+                          .Any(attribute => attribute.AttributeClass?.ToDisplayString()
+                                         == "System.Diagnostics.CodeAnalysis.SetsRequiredMembersAttribute");
+    }
+
     private static IMethodSymbol? ChosenConstructor(INamedTypeSymbol target) {
         return target.InstanceConstructors
                      .Where(candidate => candidate.DeclaredAccessibility == Accessibility.Public)

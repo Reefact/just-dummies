@@ -693,6 +693,20 @@ assigned first, where before the scan stopped after the first assignment and spa
 cost is the mirror case, named in §9: a guard helper that *returns* the value it checked —
 `_name = Ensure.NotBlank(value);` — reads as production and is missed.
 
+**The guards the set already knows are read in either spelling.** `ArgumentNullException.ThrowIfNull(value)`
+and `if (value is null) { throw … }` state one invariant, and so do
+`ArgumentException.ThrowIfNullOrEmpty(value)` / `ThrowIfNullOrWhiteSpace(value)` and the
+`string.IsNullOr…` conditions above. Only the older spelling was read, so the modern one fell to the
+call rule and blocked the developer's build — over a chain that was already exactly right, since a
+null check adds nothing (ADR-0064 draws no null) and an emptiness check is the row's own `NonEmpty`.
+Reading a guard the set understands as one it could not read is the worst of both outcomes: nothing
+is tightened, and nothing compiles either. The first argument has to **be** the parameter, the same
+subject-identity discipline the comparison rows keep.
+
+Only those helpers, and deliberately so: `ArgumentOutOfRangeException.ThrowIfNegative` and its
+siblings map to real constraints too, and reading them would **widen** the closed set rather than
+recognise a second spelling of what is in it. That is ADR-0082's follow-up, and a decision of its own.
+
 ### 5.4 Composition
 
 **A scaffolded generator wins.** If the compilation contains a type named `Any{T}` implementing

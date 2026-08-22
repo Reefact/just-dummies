@@ -37,6 +37,9 @@ internal static class Guards {
 
     private static readonly string[] EmptinessChecks = ["IsNullOrEmpty", "IsNullOrWhiteSpace"];
 
+    /// <summary>The same two emptiness checks, spelled as the throw helper that performs them.</summary>
+    private static readonly string[] EmptinessThrowHelpers = ["ThrowIfNullOrEmpty", "ThrowIfNullOrWhiteSpace"];
+
     /// <summary>
     ///     Names types by namespace, never by keyword.
     /// </summary>
@@ -85,13 +88,14 @@ internal static class Guards {
     ///     parameter it finds that way as unread.
     /// </summary>
     /// <remarks>
-    ///     A guard delegated to a helper — <c>Ensure.NotBlank(name);</c>, <c>Validate(name);</c>,
-    ///     <c>ArgumentNullException.ThrowIfNull(name)</c> — throws from inside a call the closed set of §5.3
-    ///     does not parse, so the loop above never sees an <c>if</c> at all and passed over the statement in
-    ///     silence: the parameter read exactly like one with no guard on it, and the neutral generator it kept
-    ///     violated the invariant the helper enforces on every draw the helper would have rejected. §9 already
-    ///     has the right word for "something here could not be read" — <c>unread guards</c> — and the developer
-    ///     needs it here as much as on a condition the set fails to recognise.
+    ///     A guard delegated to a helper — <c>Ensure.NotBlank(name);</c>, <c>Validate(name);</c> — throws from
+    ///     inside a call the closed set of §5.3 does not parse, so the loop above never sees an <c>if</c> at
+    ///     all and passed over the statement in silence: the parameter read exactly like one with no guard on
+    ///     it, and the neutral generator it kept violated the invariant the helper enforces on every draw the
+    ///     helper would have rejected. §9 already has the right word for "something here could not be read" —
+    ///     <c>unread guards</c> — and the developer needs it here as much as on a condition the set fails to
+    ///     recognise. A helper the set <b>does</b> know is read first, by
+    ///     <see cref="TryRecogniseThrowHelper" />, and never reaches the mark.
     ///     <para>
     ///         <b>The call's result has to be discarded</b>, and that one test is the whole rule. A call whose
     ///         value is used is <i>producing</i> something — <c>_name = name.Trim()</c>,
@@ -112,8 +116,63 @@ internal static class Guards {
         foreach (ExpressionStatementSyntax discarded in statement.DescendantNodesAndSelf().OfType<ExpressionStatementSyntax>()) {
             if (discarded.Expression is not InvocationExpressionSyntax invocation || IsNameOf(invocation)) { continue; }
 
-            foreach (IParameterSymbol parameter in Mentioned(invocation, model, method)) { reading.MarkUnread(parameter.Name); }
+            foreach (IParameterSymbol parameter in Mentioned(invocation, model, method)) {
+                if (!TryRecogniseThrowHelper(invocation, model, parameter, GeneratorFor.Sizes(parameter.Type),
+                                             out GuardConstraint? constraint)) {
+                    reading.MarkUnread(parameter.Name);
+
+                    continue;
+                }
+
+                if (constraint is not null) { reading.Add(parameter.Name, constraint); }
+            }
         }
+    }
+
+    /// <summary>
+    ///     The closed set of §5.3 again, for the guards it already knows written as a call rather than as an
+    ///     <c>if</c>. Returning true with no constraint means the same as it does there: understood, and adds
+    ///     nothing the generator does not already guarantee.
+    /// </summary>
+    /// <remarks>
+    ///     <c>ArgumentNullException.ThrowIfNull(value)</c> and <c>if (value is null) { throw … }</c> state one
+    ///     invariant in two spellings, and so do <c>ArgumentException.ThrowIfNullOrWhiteSpace(value)</c> and
+    ///     the <c>string.IsNullOrWhiteSpace</c> condition. Only the older spelling was read, so the modern one
+    ///     fell to the call rule above and blocked the developer's build — over a generator that was already
+    ///     exactly right, since a null check adds nothing (ADR-0064 draws no null) and an emptiness check is
+    ///     the row's own <c>NonEmpty</c>. Reading a guard the set already understands as one it could not read
+    ///     is the worst of both: it neither tightens anything nor lets the file compile.
+    ///     <para>
+    ///         The first argument has to <b>be</b> the parameter, the same subject-identity discipline the
+    ///         comparison rows keep: <c>ThrowIfNull(other.Thing)</c> is about something else.
+    ///     </para>
+    ///     <para>
+    ///         Deliberately only the helpers whose <c>if</c> form the set already covers. The arithmetic ones —
+    ///         <c>ArgumentOutOfRangeException.ThrowIfNegative</c> and its siblings — map to real constraints
+    ///         too, and adding them would <b>widen</b> the closed set rather than recognise a second spelling
+    ///         of what is in it. That is ADR-0082's follow-up, and a decision of its own.
+    ///     </para>
+    /// </remarks>
+    private static bool TryRecogniseThrowHelper(InvocationExpressionSyntax invocation,
+                                                SemanticModel model,
+                                                IParameterSymbol parameter,
+                                                (bool ByCount, int Ceiling, int Floor) sizes,
+                                                out GuardConstraint? constraint) {
+        constraint = null;
+
+        SeparatedSyntaxList<ArgumentSyntax> arguments = invocation.ArgumentList.Arguments;
+
+        if (arguments.Count == 0 || !IsParameter(arguments[0].Expression, model, parameter)) { return false; }
+
+        if (IsCall(invocation, model, "System.ArgumentNullException", "ThrowIfNull")) { return true; }
+
+        if (IsCall(invocation, model, "System.ArgumentException", EmptinessThrowHelpers)) {
+            constraint = Emptiness(sizes.ByCount);
+
+            return true;
+        }
+
+        return false;
     }
 
     /// <summary>

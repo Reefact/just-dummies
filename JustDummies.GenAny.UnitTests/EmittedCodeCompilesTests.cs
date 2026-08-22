@@ -169,6 +169,50 @@ public sealed class EmittedCodeCompilesTests {
         Check.That(tree.GetDiagnostics(TestContext.Current.CancellationToken).Select(diagnostic => diagnostic.Id)).IsEmpty();
     }
 
+    /// <summary>
+    ///     The odd parameter names §17 promises work, and the two ways they used not to.
+    /// </summary>
+    /// <remarks>
+    ///     Roslyn reports <c>@event</c> as <c>event</c>, so writing the name down as it comes gave a file that
+    ///     did not <b>parse</b> — and a file that does not parse carries no named identifier at a line for
+    ///     ADR-0060 to point the developer at, while the recap claimed every parameter inferred.
+    ///     <para>
+    ///         <c>_id</c> failed the other way round, and worse: the field §4.2 derives from it carried the same
+    ///         identifier as the constructor parameter, so the emitted assignment was <c>_id = _id</c>. That
+    ///         compiles — three warnings, no error — and leaves the field null, so every draw throws and no
+    ///         <c>WithId(…)</c> can rescue it, since the pinning overloads route through the same constructor.
+    ///         Compiling is therefore not enough here: the assignment has to be read as well.
+    ///     </para>
+    ///     <para>
+    ///         Neither name is exotic. <c>@event</c> is ordinary in an event-sourced domain, and an
+    ///         underscore-prefixed constructor parameter is one house style among several.
+    ///     </para>
+    /// </remarks>
+    [Theory(DisplayName = "A parameter whose name needs escaping or stripping emits a file that compiles.")]
+    [InlineData("@event", "@event", "_event")]
+    [InlineData("@class", "@class", "_class")]
+    [InlineData("_id", "id", "_id")]
+    public void AnOddParameterNameEmitsAFileThatCompiles(string declared, string identifier, string field) {
+        string domain = $$"""
+                          namespace Shop.Domain;
+
+                          public sealed class Envelope {
+                              public Envelope(string {{declared}}) { }
+                          }
+                          """;
+
+        ScaffoldOutcome outcome = Subject.ScaffoldByName("Envelope", domain);
+
+        Check.That(outcome.Succeeded).IsTrue();
+
+        string emitted = outcome.File!.SourceText;
+
+        // The parameter carries the escape Roslyn dropped, and the field it feeds is a different identifier.
+        Check.That(emitted).Contains($"IAny<string> {identifier})");
+        Check.That(emitted).Contains($"{field} = {identifier};");
+        Check.That(EmittedCodeCompiler.ErrorsIn(EmittedCodeCompiler.CompileWith(emitted, domain))).IsEmpty();
+    }
+
     private static bool IsEntryPoint(string golden) {
         return golden.Contains(EntryPointMarker, StringComparison.Ordinal);
     }

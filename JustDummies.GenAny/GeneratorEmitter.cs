@@ -162,7 +162,7 @@ public static class GeneratorEmitter {
         Line(file, $"{indent}/// <summary>Creates the generator with a default recipe for every constructor parameter.</summary>");
         Line(file, $"{indent}public {plan.GeneratorName}()");
 
-        int    width       = plan.Parameters.Max(parameter => parameter.Name.Length) + 1;
+        int    width       = plan.Parameters.Max(parameter => parameter.Identifier.Length) + 1;
         string opening     = $"{indent}{Indent}: this(";
         string continuing  = new(' ', opening.Length);
 
@@ -173,7 +173,7 @@ public static class GeneratorEmitter {
 
             if (parameter.IsUnresolved) { WriteTodo(file, parameter, continuing); }
 
-            string argument = $"{(parameter.Name + ":").PadRight(width)} {parameter.Expression ?? parameter.TodoIdentifier}";
+            string argument = $"{(parameter.Identifier + ":").PadRight(width)} {parameter.Expression ?? parameter.TodoIdentifier}";
 
             Line(file, lead + argument + (last ? ") { }" : ","));
         }
@@ -201,13 +201,13 @@ public static class GeneratorEmitter {
             bool                last      = index == plan.Parameters.Count - 1;
             string              lead      = index == 0 ? opening : continuing;
 
-            Line(file, $"{lead}{GeneratorTypeOf(parameter).PadRight(width)} {parameter.Name}{(last ? ") {" : ",")}");
+            Line(file, $"{lead}{GeneratorTypeOf(parameter).PadRight(width)} {parameter.Identifier}{(last ? ") {" : ",")}");
         }
 
         int assignment = plan.Parameters.Max(parameter => parameter.FieldName.Length);
 
         foreach (ScaffoldedParameter parameter in plan.Parameters) {
-            Line(file, $"{indent}{Indent}{parameter.FieldName.PadRight(assignment)} = {parameter.Name};");
+            Line(file, $"{indent}{Indent}{parameter.FieldName.PadRight(assignment)} = {parameter.Identifier};");
         }
 
         Line(file, $"{indent}}}");

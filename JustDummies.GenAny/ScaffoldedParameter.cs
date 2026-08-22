@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
+using Microsoft.CodeAnalysis.CSharp;
+
 namespace JustDummies.GenAny;
 
 /// <summary>
@@ -71,19 +73,50 @@ public sealed class ScaffoldedParameter {
     /// </remarks>
     public string PascalCasedName {
         get {
-            string bare = Name.TrimStart('_', '@');
-
-            if (bare.Length == 0) { return Name; }
+            string bare = Bare();
 
             return char.ToUpperInvariant(bare[0]).ToString(CultureInfo.InvariantCulture) + bare.Substring(1);
         }
     }
 
+    /// <summary>
+    ///     The parameter's name as the emitted file spells it.
+    /// </summary>
+    /// <remarks>
+    ///     Two things separate this from <see cref="Name" />, and both are load-bearing. Roslyn reports
+    ///     <c>@event</c> as <c>event</c>, so the escape has to be put back or the emitted file does not parse at
+    ///     all — no named identifier at a line, and nothing for ADR-0060's mechanism to point the developer at.
+    ///     And the leading <c>_</c> that §4.2 strips everywhere else is stripped here too, so that a parameter
+    ///     named <c>_id</c> cannot carry the same identifier as the field it is copied into: the emitted
+    ///     assignment would then be <c>_id = _id</c>, which compiles, leaves the field null, and makes every
+    ///     draw throw.
+    /// </remarks>
+    public string Identifier {
+        get {
+            string bare = Bare();
+
+            return SyntaxFacts.GetKeywordKind(bare) == SyntaxKind.None ? bare : "@" + bare;
+        }
+    }
+
     /// <summary>The field this parameter is copied into.</summary>
-    public string FieldName => "_" + Name.TrimStart('_', '@');
+    public string FieldName => "_" + Bare();
 
     /// <summary>The identifier §5.5 emits in place of a generator, which is deliberately undefined.</summary>
-    public string TodoIdentifier => "TODO_supply_a_generator_for_" + Name.TrimStart('_', '@');
+    public string TodoIdentifier => "TODO_supply_a_generator_for_" + Bare();
+
+    /// <summary>
+    ///     The name past the leading <c>_</c> or <c>@</c> of §4.2, or the whole name when nothing survives it.
+    /// </summary>
+    /// <remarks>
+    ///     One definition, because the three members that read it have to agree: a field named from one bare
+    ///     name and a parameter named from another is exactly the collision this guards against.
+    /// </remarks>
+    private string Bare() {
+        string bare = Name.TrimStart('_', '@');
+
+        return bare.Length == 0 ? Name : bare;
+    }
 
     /// <summary>A parameter the engine inferred a generator for.</summary>
     /// <exception cref="ArgumentNullException">Any argument is null.</exception>

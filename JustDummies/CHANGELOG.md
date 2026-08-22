@@ -17,6 +17,15 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   `WithPathSegments` keeps its silence — verified rather than assumed, `UriSpec.RequireSegmentCount` refuses a
   negative count and nothing else.
 
+### Changed
+
+- **BREAKING — `AnyChar` and `AnyString` rename `LowerCase()`/`UpperCase()` to `InLowerCase()`/`InUpperCase()`.**
+  The bare names read like a state change rather than a quality of the drawn value — unlike `Alpha()`, `Numeric()`
+  or `Hexadecimal()`, which are adjectives on their own. The new names read as a chained clause instead:
+  `Any.String().AlphaNumeric().InUpperCase()`. No behaviour changes; only the two names do.
+
+## [1.0.0-preview.3] - 2026-08-21
+
 ### Added
 
 - **JD032 — *A bound declared twice, where only the tighter one survives*** (category `JustDummies.Constraints`,
@@ -33,11 +42,6 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   a named intermediate still draws and its bound is not dead.
 
 ### Changed
-
-- **BREAKING — `AnyChar` and `AnyString` rename `LowerCase()`/`UpperCase()` to `InLowerCase()`/`InUpperCase()`.**
-  The bare names read like a state change rather than a quality of the drawn value — unlike `Alpha()`, `Numeric()`
-  or `Hexadecimal()`, which are adjectives on their own. The new names read as a chained clause instead:
-  `Any.String().AlphaNumeric().InUpperCase()`. No behaviour changes; only the two names do.
 
 - **JD024 no longer reports a bound already implied by a bound of the same name** — that shape is JD032's now, in
   both writing orders and in every generator family, so one mistake draws one diagnostic. JD024 keeps what its

@@ -734,6 +734,36 @@ first test run, and omitting the parameter makes `AnyOrder` quietly unusable wit
 The developer runs the tool and opens the file in the same minute; a red squiggle at the exact
 line costs them ten seconds, and a runtime failure a week later costs far more.
 
+### 5.6 Parameters requiring verification
+
+A guard the engine cannot vouch for — one it did not read at all, or one it read and had to drop
+without being certain the drop is safe (§5.3, §9) — blocks compilation the same way, with one
+difference: a generator **was** inferred here, and it stays as the factory's working base rather
+than being thrown away.
+
+```csharp
+    private static IAny<string> NameFactory() {
+        // TODO(dum): 'string name' may be guarded by something dum could not read (§9).
+        //   This is dum's best generator for the type; verify it honours the real invariant,
+        //   or replace it, then delete the line below.
+        _ = TODO_verify_the_generator_for_name;
+
+        return Any.String().NonEmpty();
+    }
+```
+
+The identifier on the discarded line does not exist, so the build fails at that exact line, the
+same as §5.5 — the discard assignment is what keeps a second, unrelated `CS0201` from muddying
+what the developer needs to read. The `return` beneath it is real: deleting one line leaves
+exactly what dum would otherwise have written silently, for the developer to keep or replace.
+
+A generator that compiles and draws a value the real constructor still rejects is a worse failure
+than one that never compiles: it passes today's run and fails a later one, indistinguishable from
+a flaky test to whoever hits it — the developer trusted the scaffold, committed it, and the
+invariant it silently missed surfaces somewhere else entirely (ADR-0046). Emitting the neutral
+recipe without a word read as the tool having decided the guard was safe to drop; blocking
+compilation says plainly that it decided nothing.
+
 ---
 
 ## 6. Console output
@@ -781,6 +811,11 @@ That last value matters more than it looks. Without it, D4's degradation is indi
 the tool simply not knowing: a `DateOnly` parameter on a downlevel project would read as "not
 inferred", when the truth is "inferred, but `Any.DateOnly()` does not exist here — retarget, or
 write it yourself". One word turns a dead end into an instruction.
+
+A parameter requiring verification (§5.6) closes the recap the same way an open one does — the
+file will not compile — but counted separately, as *N* **to verify** rather than *N* **TODO**: a
+generator was inferred there, and the count says so. Both together read `4 of 6 parameters
+inferred, 1 TODO, 1 to verify.`, in the order a developer acts on them.
 
 **Provenance is data, not output.** The engine returns it in its result model (§10.3); the CLI
 renders it. That is what makes the recap testable without a console.

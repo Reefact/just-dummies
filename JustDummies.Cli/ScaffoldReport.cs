@@ -41,7 +41,7 @@ internal sealed record ScaffoldReport(string Argument,
                                   plan.GeneratorName,
                                   files,
                                   [.. plan.Parameters.Select(ParameterReport.Of)],
-                                  plan.Parameters.Count(parameter => parameter.IsUnresolved),
+                                  plan.Parameters.Count(parameter => parameter.IsUnresolved || parameter.RequiresVerification),
                                   outcome.EntryPoint is null
                                       ? null
                                       : new EntryPointReport(outcome.EntryPoint.File.FileName, outcome.EntryPoint.Call),

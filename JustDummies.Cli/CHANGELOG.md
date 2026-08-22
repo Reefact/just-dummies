@@ -89,6 +89,15 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   parameter's TODO moves with it: the non-existent identifier is now the factory's `return`, not the
   constructor argument. Every emitted file's shape changes; `Generate()`, the fields and the `With…` methods
   do not.
+- **A guard the engine cannot vouch for now blocks compilation, the same as one it cannot infer a generator
+  for at all.** A parameter marked `unread guards` used to keep its neutral generator and say nothing more —
+  compiling, looking finished, and drawing a value the real constructor could reject on some later run,
+  indistinguishable from a flaky test to whoever hits it. Its factory now carries the same non-existent-
+  identifier mechanism ADR-0060 already uses for an unresolved parameter, with one difference: the generator
+  dum inferred stays as the working base underneath the line that blocks it, for the developer to verify or
+  replace rather than write from nothing. The recap counts this separately — `1 TODO, 1 to verify` — since a
+  generator *was* inferred here. Reaches every existing `unread guards` case, including a size past the
+  library's producible cap and a count past what an element row can draw, not only the helper case above.
 
 ## [1.1.0-beta.1] - 2026-08-13
 

@@ -63,6 +63,19 @@ public sealed class ScaffoldedParameter {
     public bool IsUnresolved => Expression is null;
 
     /// <summary>
+    ///     Whether this parameter's own factory blocks compilation until the developer checks it (§5.5).
+    /// </summary>
+    /// <remarks>
+    ///     Resolved, and carrying <see cref="Provenance.UnreadGuards" />: something before the first assignment
+    ///     to state could be a guard the engine could not read, so the expression it drew may be exactly right
+    ///     or may be the base recipe a real invariant rejects on some draw, and the engine cannot tell which.
+    ///     Distinct from <see cref="IsUnresolved" />, which has no expression to offer at all — here one exists,
+    ///     and stays the factory's working base once the developer deletes the line that blocks it.
+    /// </remarks>
+    [SuppressMessage(SonarRule.S1135.Category, SonarRule.S1135.Id, Justification = SuppressionJustification.S1135.DocumentsTheMarkerTheToolEmits)]
+    public bool RequiresVerification => !IsUnresolved && Provenance.HasFlag(Provenance.UnreadGuards);
+
+    /// <summary>
     ///     The name of the <c>With</c> methods that pin or replace this parameter.
     /// </summary>
     /// <remarks>
@@ -114,6 +127,11 @@ public sealed class ScaffoldedParameter {
 
     /// <summary>The identifier §5.5 emits in place of a generator, which is deliberately undefined.</summary>
     public string TodoIdentifier => "TODO_supply_a_generator_for_" + Bare();
+
+    /// <summary>
+    ///     The identifier §5.5 emits above a working generator it is not certain of, equally undefined.
+    /// </summary>
+    public string VerifyIdentifier => "TODO_verify_the_generator_for_" + Bare();
 
     /// <summary>
     ///     The name past the leading <c>_</c> or <c>@</c> of §4.2, or the whole name when nothing survives it.

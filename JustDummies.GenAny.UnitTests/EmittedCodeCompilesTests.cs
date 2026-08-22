@@ -27,6 +27,11 @@ public sealed class EmittedCodeCompilesTests {
     /// <summary>The one approved file that must NOT compile, and the reason it exists.</summary>
     private const string OpenParameterGolden = "AnyOrderWithTodo";
 
+    /// <summary>
+    ///     The other approved file that must NOT compile — a different reason, the same mechanism (§5.5).
+    /// </summary>
+    private const string RequiresVerificationGolden = "AnyOrderRequiringVerification";
+
     /// <summary>What an entry-point golden's name carries, since it is the generator's plus a shape (§4.5).</summary>
     private const string EntryPointMarker = ".Entry.";
 
@@ -53,7 +58,9 @@ public sealed class EmittedCodeCompilesTests {
             TheoryData<string> goldens = [];
 
             foreach (string name in GoldenFile.All()) {
-                if (name != OpenParameterGolden && !IsEntryPoint(name)) { goldens.Add(name); }
+                if (name != OpenParameterGolden && name != RequiresVerificationGolden && !IsEntryPoint(name)) {
+                    goldens.Add(name);
+                }
             }
 
             return goldens;
@@ -147,6 +154,30 @@ public sealed class EmittedCodeCompilesTests {
         // while leaving the parameter open.
         Check.That(errors.Select(error => error.Id)).IsEquivalentTo("CS0103");
         Check.That(errors.Single().GetMessage()).Contains("TODO_supply_a_generator_for_customer");
+    }
+
+    /// <summary>
+    ///     A guard the engine cannot vouch for is not a defect of this file either: it is the same mechanism
+    ///     as the open parameter above, applied where a generator WAS inferred — so it stays right underneath
+    ///     the line that blocks it, once the developer deletes that line (§5.5, ADR-0082's follow-up).
+    /// </summary>
+    [Fact(DisplayName = "A parameter requiring verification fails the developer's build, with its working base intact.")]
+    public void AParameterRequiringVerificationFailsTheDevelopersBuildWithItsBaseIntact() {
+        string             text        = GoldenFile.ApprovedTextOf(RequiresVerificationGolden);
+        CSharpCompilation  compilation = EmittedCodeCompiler.Compile(text);
+
+        Diagnostic[] errors = compilation.GetDiagnostics(TestContext.Current.CancellationToken)
+                                         .Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error)
+                                         .ToArray();
+
+        // Exactly one, same as the open-parameter case: the discard assignment is what keeps a second,
+        // unrelated CS0201 (not a valid statement expression) from muddying what the developer needs to read.
+        Check.That(errors.Select(error => error.Id)).IsEquivalentTo("CS0103");
+        Check.That(errors.Single().GetMessage()).Contains("TODO_verify_the_generator_for_customer");
+
+        // The point of this mechanism, proven rather than assumed: the working recipe is still there to keep
+        // or replace, one line below the one that blocks compilation.
+        Check.That(text).Contains("return new AnyCustomer();");
     }
 
     /// <summary>

@@ -66,7 +66,7 @@ public sealed class GuardedScaffoldsHoldTests {
     }
 
     [Theory(DisplayName = "A guarded scaffold compiles in the developer's project.")]
-    [MemberData(nameof(Corpus))]
+    [MemberData(nameof(Satisfiable))]
     public void AGuardedScaffoldCompiles(string shapeName) {
         GuardCorpus.GuardedShape shape = GuardCorpus.Named(shapeName);
 
@@ -76,7 +76,7 @@ public sealed class GuardedScaffoldsHoldTests {
     }
 
     [Theory(DisplayName = "A guarded scaffold raises no rule of the library's own, above information.")]
-    [MemberData(nameof(Corpus))]
+    [MemberData(nameof(Satisfiable))]
     public async Task AGuardedScaffoldRaisesNoRule(string shapeName) {
         GuardCorpus.GuardedShape shape = GuardCorpus.Named(shapeName);
 
@@ -102,17 +102,21 @@ public sealed class GuardedScaffoldsHoldTests {
     }
 
     /// <summary>
-    ///     A domain no generator can satisfy is refused cleanly, and the refusal is on the record.
+    ///     A domain no generator can satisfy is refused cleanly, and the refusal is on the record — as a
+    ///     working generator the engine vouches for, or as a factory that blocks compilation where it cannot.
     /// </summary>
     /// <remarks>
-    ///     Three things a developer's own contradiction — or a bound past what the library will produce —
-    ///     does NOT excuse. The chain still has to construct, because a generator that throws the moment it
-    ///     is built is unusable and no <c>With…</c> call rescues it. It still has to raise no rule, because a
-    ///     scaffold arrives before its author. And the recap still has to say so, because the alternative is a
-    ///     file reporting every parameter inferred over an invariant nobody honoured. Only the draw is off the
-    ///     table, and only because the domain rejects every value there is.
+    ///     A drop the engine fully understands — <c>ConstraintUnavailable</c>: a guard read, understood, and
+    ///     precisely known to have no member on this generator — still has to construct: a generator that
+    ///     throws the moment it is built is unusable and no <c>With…</c> call rescues it. A drop it cannot
+    ///     vouch for — <c>UnreadGuards</c>, which now also covers a size past what the library will produce
+    ///     or a count past what the element row can draw — is worse than merely throwing on every draw: it
+    ///     throws on <b>every</b> one, which is exactly the shape the factory's own doubt mechanism (§5.5)
+    ///     exists for, so it blocks compilation there instead, with the engine's best attempt kept underneath
+    ///     as what to verify or replace. Either way the recap still has to say so, because the alternative is
+    ///     a file reporting every parameter inferred over an invariant nobody honoured.
     /// </remarks>
-    [Theory(DisplayName = "A domain beyond the engine is refused, constructed and reported.")]
+    [Theory(DisplayName = "A domain beyond the engine is refused and reported — constructed where the engine vouches for the drop, blocked where it does not.")]
     [MemberData(nameof(BeyondTheEngine))]
     public void ADomainBeyondTheEngineIsRefusedAndReported(string shapeName) {
         GuardCorpus.GuardedShape shape = GuardCorpus.Named(shapeName);
@@ -120,16 +124,22 @@ public sealed class GuardedScaffoldsHoldTests {
         if (shape.Defect is not null) { Assert.Skip($"{shape.Defect} — the engine does not hold this shape yet."); }
 
         ScaffoldOutcome outcome = Scaffolded(shape);
-        string?         failure = EmittedAssembly.DrawFrom(Compiled(outcome, shape),
-                                                           $"Shop.Domain.Any{shape.Target}",
-                                                           count: 0);
 
-        Check.WithCustomMessage($"Any{shape.Target}: {failure}").That(failure).IsNull();
         Check.WithCustomMessage($"Any{shape.Target} honoured nothing and said nothing.")
              .That(outcome.Plan!.Parameters.Any(parameter => parameter.Provenance.HasFlag(Provenance.GuardsNotCombined)
                                                           || parameter.Provenance.HasFlag(Provenance.UnreadGuards)
                                                           || parameter.Provenance.HasFlag(Provenance.ConstraintUnavailable)))
              .IsTrue();
+
+        if (outcome.Plan.Parameters.Any(parameter => parameter.RequiresVerification)) {
+            Check.WithCustomMessage($"Any{shape.Target} compiled despite a drop the engine cannot vouch for.")
+                 .That(EmittedCodeCompiler.ErrorsIn(Compiled(outcome, shape)))
+                 .Not.IsEmpty();
+        } else {
+            string? failure = EmittedAssembly.DrawFrom(Compiled(outcome, shape), $"Shop.Domain.Any{shape.Target}", count: 0);
+
+            Check.WithCustomMessage($"Any{shape.Target}: {failure}").That(failure).IsNull();
+        }
     }
 
     /// <summary>The shape scaffolded, and its generator compiled beside the domain it names.</summary>

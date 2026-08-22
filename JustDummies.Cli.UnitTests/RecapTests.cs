@@ -71,6 +71,26 @@ public sealed class RecapTests {
         Check.That(rendered).Not.Contains("That is deliberate");
     }
 
+    // A guard the engine cannot vouch for closes the recap the same way an open parameter does — the file
+    // will not compile — but counted separately, since a generator WAS inferred here and stays as the base.
+    [Fact(DisplayName = "A parameter requiring verification closes with its own count and the compile sentence.")]
+    public void AParameterRequiringVerificationClosesWithItsOwnCount() {
+        string rendered = Rendered(Plan([Inferred("name", "string", "Any.String().NonEmpty()", Provenance.UnreadGuards)]));
+
+        Check.That(rendered).Contains("✓ AnySubject.cs — 1 of 1 parameters inferred, 1 to verify.");
+        Check.That(rendered).Contains("The file will not compile until you resolve it. That is deliberate.");
+    }
+
+    // Both at once, the ordinary case where one parameter is wholly open and another only doubtful: the two
+    // counts read side by side, in the order a developer acts on them — supply one, verify the other.
+    [Fact(DisplayName = "An open parameter and one requiring verification are both counted, TODO first.")]
+    public void AnOpenParameterAndOneRequiringVerificationAreBothCounted() {
+        string rendered = Rendered(Plan([ScaffoldedParameter.Unresolved("customer", "Customer"),
+                                         Inferred("name", "string", "Any.String().NonEmpty()", Provenance.UnreadGuards)]));
+
+        Check.That(rendered).Contains("✓ AnySubject.cs — 1 of 2 parameters inferred, 1 TODO, 1 to verify.");
+    }
+
     // A generator for a type with a parameterless constructor is still worth having — it composes into
     // Any.ListOf(…) where `new Subject()` does not — so the recap says so rather than counting to zero.
     [Fact(DisplayName = "A generator with no parameters has its own closing line.")]

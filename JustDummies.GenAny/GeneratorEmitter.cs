@@ -194,6 +194,11 @@ public static class GeneratorEmitter {
             if (parameter.IsUnresolved) {
                 WriteTodo(file, parameter, body);
                 Line(file, $"{body}return {parameter.TodoIdentifier};");
+            } else if (parameter.RequiresVerification) {
+                WriteVerify(file, parameter, body);
+                Line(file, $"{body}_ = {parameter.VerifyIdentifier};");
+                Line(file, string.Empty);
+                Line(file, $"{body}return {parameter.Expression};");
             } else {
                 Line(file, $"{body}return {parameter.Expression};");
             }
@@ -211,6 +216,17 @@ public static class GeneratorEmitter {
         Line(file, $"{indent}// TODO(dum): no generator inferred for '{parameter.TypeDisplay} {parameter.Name}'.");
         Line(file, $"{indent}//   Scaffold one:  dum generate {parameter.TypeDisplay}");
         Line(file, $"{indent}//   or write one here, or replace it and always pass .With{parameter.PascalCasedName}(...) instead.");
+    }
+
+    /// <summary>
+    ///     The identifier below does not exist either, and blocks compilation the same way — but the return
+    ///     beneath it is a working recipe, not a placeholder: this parameter's own generator, kept as the base
+    ///     to check rather than thrown away over a doubt the engine cannot resolve on its own (ADR-0082).
+    /// </summary>
+    private static void WriteVerify(StringBuilder file, ScaffoldedParameter parameter, string indent) {
+        Line(file, $"{indent}// TODO(dum): '{parameter.TypeDisplay} {parameter.Name}' may be guarded by something dum could not read (§9).");
+        Line(file, $"{indent}//   This is dum's best generator for the type; verify it honours the real invariant,");
+        Line(file, $"{indent}//   or replace it, then delete the line below.");
     }
 
     private static void WritePrivateConstructor(StringBuilder file, ScaffoldPlan plan, string indent) {

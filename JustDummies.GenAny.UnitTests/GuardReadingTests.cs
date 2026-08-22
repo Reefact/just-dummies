@@ -41,6 +41,57 @@ public sealed class GuardReadingTests {
     }
 
     /// <summary>
+    ///     The arithmetic <c>ArgumentOutOfRangeException</c> throw helpers read into the same numeric rows as
+    ///     the equivalent <c>if</c> condition would.
+    /// </summary>
+    /// <remarks>
+    ///     <c>ThrowIfNegative</c> throws on <c>value &lt; 0</c>, so zero is admissible —
+    ///     <c>GreaterThanOrEqualTo(0)</c>, not <c>Positive()</c>. <c>ThrowIfNegativeOrZero</c> throws on
+    ///     <c>value &lt;= 0</c>, which is <c>Positive()</c>. Getting the two the wrong way round is exactly the
+    ///     failure mode this reading exists to remove: a generator whose draws the constructor rejects.
+    /// </remarks>
+    [Theory(DisplayName = "An arithmetic throw helper is read into the numeric family.")]
+    [InlineData("int", "ArgumentOutOfRangeException.ThrowIfNegative(value);", "Any.Int32().GreaterThanOrEqualTo(0)")]
+    [InlineData("int", "ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);", "Any.Int32().Positive()")]
+    [InlineData("int", "ArgumentOutOfRangeException.ThrowIfZero(value);", "Any.Int32().NonZero()")]
+    [InlineData("int", "ArgumentOutOfRangeException.ThrowIfLessThan(value, 18);", "Any.Int32().GreaterThanOrEqualTo(18)")]
+    [InlineData("int", "ArgumentOutOfRangeException.ThrowIfGreaterThan(value, 100);", "Any.Int32().LessThanOrEqualTo(100)")]
+    [InlineData("int", "ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(value, 0);", "Any.Int32().GreaterThan(0)")]
+    [InlineData("int", "ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(value, 100);", "Any.Int32().LessThan(100)")]
+    [InlineData("decimal", "ArgumentOutOfRangeException.ThrowIfLessThan(value, 9.99m);", "Any.Decimal().GreaterThanOrEqualTo(9.99m)")]
+    public void AnArithmeticThrowHelperIsReadIntoTheNumericFamily(string parameterType, string guard, string expected) {
+        ScaffoldedParameter parameter = Subject.GuardedBy(parameterType, guard);
+
+        Check.That(parameter.Expression).IsEqualTo(expected);
+        Check.That(parameter.Provenance.HasFlag(Provenance.Guard)).IsTrue();
+        Check.That(parameter.RequiresVerification).IsFalse();
+    }
+
+    // The subject-identity discipline the comparison rows keep, on the arithmetic throw helpers too.
+    [Fact(DisplayName = "An arithmetic throw helper naming something other than the parameter is not read as its guard.")]
+    public void AnArithmeticThrowHelperNamingSomethingElseIsNotReadAsItsGuard() {
+        ScaffoldedParameter parameter = Subject.GuardedBy("int", "ArgumentOutOfRangeException.ThrowIfLessThan(18, value);");
+
+        Check.That(parameter.Provenance.HasFlag(Provenance.UnreadGuards)).IsTrue();
+    }
+
+    // The second argument has to be a compile-time constant, the same discipline the comparison rows keep.
+    [Fact(DisplayName = "An arithmetic throw helper compared against a non-constant is unread.")]
+    public void AnArithmeticThrowHelperComparedAgainstANonConstantIsUnread() {
+        ScaffoldOutcome outcome = Subject.Scaffold("""
+                                                   public sealed class Subject {
+
+                                                       public Subject(int value, int other) {
+                                                           ArgumentOutOfRangeException.ThrowIfLessThan(value, other);
+                                                       }
+
+                                                   }
+                                                   """);
+
+        Check.That(outcome.Plan!.Parameters[0].Provenance.HasFlag(Provenance.UnreadGuards)).IsTrue();
+    }
+
+    /// <summary>
     ///     Where two rows both match, the more specific wins.
     /// </summary>
     /// <remarks>

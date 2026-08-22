@@ -181,10 +181,9 @@ internal static class Guards {
     ///         comparison rows keep: <c>ThrowIfNull(other.Thing)</c> is about something else.
     ///     </para>
     ///     <para>
-    ///         Deliberately only the helpers whose <c>if</c> form the set already covers. The arithmetic ones —
-    ///         <c>ArgumentOutOfRangeException.ThrowIfNegative</c> and its siblings — map to real constraints
-    ///         too, and adding them would <b>widen</b> the closed set rather than recognise a second spelling
-    ///         of what is in it. That is ADR-0082's follow-up, and a decision of its own.
+    ///         The arithmetic helpers — <c>ArgumentOutOfRangeException.ThrowIfNegative</c> and its siblings —
+    ///         are read too, by <see cref="TryRecogniseArithmeticThrowHelper" />: ADR-0082's follow-up, widening
+    ///         the closed set rather than recognising a second spelling of what was already in it.
     ///     </para>
     /// </remarks>
     private static bool TryRecogniseThrowHelper(InvocationExpressionSyntax invocation,
@@ -202,6 +201,90 @@ internal static class Guards {
 
         if (IsCall(invocation, model, "System.ArgumentException", EmptinessThrowHelpers)) {
             constraint = Emptiness(sizes.ByCount);
+
+            return true;
+        }
+
+        return TryRecogniseArithmeticThrowHelper(invocation, model, parameter, arguments, out constraint);
+    }
+
+    /// <summary>
+    ///     <c>ArgumentOutOfRangeException</c>'s arithmetic throw helpers, mapped to the same rows
+    ///     <see cref="Numeric" /> already builds for the equivalent <c>if</c> condition — the same invariant,
+    ///     read from a second spelling.
+    /// </summary>
+    /// <remarks>
+    ///     <c>ThrowIfLessThanOrEqual</c> and <c>ThrowIfGreaterThanOrEqual</c> have no zero-valued shortcut to
+    ///     fall back on the way <c>if (v &lt;= 0)</c> does — they need the general exclusive bound at whatever
+    ///     value the second argument names, so they are built directly rather than through <see cref="Numeric" />.
+    ///     <para>
+    ///         <b><c>ThrowIfNegative</c> is not <c>Positive()</c>.</b> It throws on <c>v &lt; 0</c>, so <c>0</c>
+    ///         is admissible — that is <c>GreaterThanOrEqualTo(0)</c>. <c>Positive()</c> (<c>v &gt; 0</c>) is
+    ///         <c>ThrowIfNegativeOrZero</c>. The two read from different <see cref="Numeric" /> rows for exactly
+    ///         that reason.
+    ///     </para>
+    ///     <para>
+    ///         The second argument of a two-argument helper has to be a compile-time constant, the same
+    ///         discipline <see cref="TryComparison" /> already keeps for the <c>if</c> spelling.
+    ///     </para>
+    /// </remarks>
+    private static bool TryRecogniseArithmeticThrowHelper(InvocationExpressionSyntax invocation,
+                                                           SemanticModel model,
+                                                           IParameterSymbol parameter,
+                                                           SeparatedSyntaxList<ArgumentSyntax> arguments,
+                                                           out GuardConstraint? constraint) {
+        constraint = null;
+
+        const string containing = "System.ArgumentOutOfRangeException";
+
+        if (IsCall(invocation, model, containing, "ThrowIfNegative")) {
+            constraint = Numeric(SyntaxKind.LessThanExpression, 0m, parameter.Type, Literal(0m, parameter.Type));
+
+            return true;
+        }
+
+        if (IsCall(invocation, model, containing, "ThrowIfNegativeOrZero")) {
+            constraint = Numeric(SyntaxKind.LessThanOrEqualExpression, 0m, parameter.Type, Literal(0m, parameter.Type));
+
+            return true;
+        }
+
+        if (IsCall(invocation, model, containing, "ThrowIfZero")) {
+            constraint = Numeric(SyntaxKind.EqualsExpression, 0m, parameter.Type, Literal(0m, parameter.Type));
+
+            return true;
+        }
+
+        if (arguments.Count < 2) { return false; }
+
+        Optional<object?> bound = model.GetConstantValue(arguments[1].Expression);
+
+        if (!bound.HasValue || bound.Value is null || !IsNumber(bound.Value) || !TryDecimal(bound.Value, out decimal value)) {
+            return false;
+        }
+
+        string literal = Literal(bound.Value, parameter.Type);
+
+        if (IsCall(invocation, model, containing, "ThrowIfLessThan")) {
+            constraint = Numeric(SyntaxKind.LessThanExpression, value, parameter.Type, literal);
+
+            return true;
+        }
+
+        if (IsCall(invocation, model, containing, "ThrowIfGreaterThan")) {
+            constraint = Numeric(SyntaxKind.GreaterThanExpression, value, parameter.Type, literal);
+
+            return true;
+        }
+
+        if (IsCall(invocation, model, containing, "ThrowIfLessThanOrEqual")) {
+            constraint = new GuardConstraint("GreaterThan", literal, Bound.Lower, value, exclusive: true);
+
+            return true;
+        }
+
+        if (IsCall(invocation, model, containing, "ThrowIfGreaterThanOrEqual")) {
+            constraint = new GuardConstraint("LessThan", literal, Bound.Upper, value, exclusive: true);
 
             return true;
         }

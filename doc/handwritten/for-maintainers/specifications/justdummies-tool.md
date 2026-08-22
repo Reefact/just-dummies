@@ -714,9 +714,15 @@ Reading a guard the set understands as one it could not read is the worst of bot
 is tightened, and nothing compiles either. The first argument has to **be** the parameter, the same
 subject-identity discipline the comparison rows keep.
 
-Only those helpers, and deliberately so: `ArgumentOutOfRangeException.ThrowIfNegative` and its
-siblings map to real constraints too, and reading them would **widen** the closed set rather than
-recognise a second spelling of what is in it. That is ADR-0082's follow-up, and a decision of its own.
+**The arithmetic throw helpers are read too.** `ArgumentOutOfRangeException.ThrowIfNegative`,
+`ThrowIfNegativeOrZero`, `ThrowIfZero`, `ThrowIfLessThan`, `ThrowIfGreaterThan`,
+`ThrowIfLessThanOrEqual` and `ThrowIfGreaterThanOrEqual` map to the same numeric rows a comparison
+would (§5.3 above): `ThrowIfNegative(value)` throws on `value < 0`, so zero is admissible —
+`GreaterThanOrEqualTo(0)`, not `Positive()` — while `ThrowIfNegativeOrZero(value)` throws on
+`value <= 0`, which *is* `Positive()`. Widening the closed set rather than recognising a second
+spelling of what was already in it, per ADR-0082's follow-up. The subject-identity discipline
+applies here too, and a two-argument helper's second argument has to be a compile-time constant,
+the same as a comparison's other side.
 
 ### 5.4 Composition
 

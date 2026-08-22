@@ -247,25 +247,61 @@ internal static class Guards {
         return new GuardConstraint("NonEmpty", argument: null, Bound.Emptiness);
     }
 
+    /// <summary>
+    ///     The side the guard is about, and the side it compares against.
+    /// </summary>
+    /// <remarks>
+    ///     The subject side has to <b>be</b> the parameter, or the one derived form the table has rows for — its
+    ///     length or its count. Merely mentioning it is not enough, and the difference is not academic:
+    ///     <c>Math.Abs(p) &gt; 90</c>, <c>p * 2 &gt; 100</c> and <c>p.TotalMinutes &lt; 5</c> all mention the
+    ///     parameter while saying nothing about <c>p</c> itself, which is what every row of the table is written
+    ///     about. Read as bounds on <c>p</c> they produce a generator whose every draw the guard rejects — or,
+    ///     where the member belongs to a type the constraint's argument cannot bind to, a chain that does not
+    ///     compile. §9 names the arithmetic condition as out of reach, so a side that is not the parameter is
+    ///     left unread and reported as such.
+    /// </remarks>
     private static bool TrySides(BinaryExpressionSyntax comparison,
                                  SemanticModel model,
                                  IParameterSymbol parameter,
                                  out ExpressionSyntax subject,
                                  out ExpressionSyntax other,
                                  out bool flipped) {
-        if (Mentions(comparison.Left, model, parameter)) {
-            subject = comparison.Left;
-            other   = comparison.Right;
-            flipped = false;
+        subject = comparison.Left;
+        other   = comparison.Right;
+        flipped = false;
 
-            return !Mentions(comparison.Right, model, parameter);
+        if (IsSubject(comparison.Left, model, parameter)) { return !Mentions(comparison.Right, model, parameter); }
+
+        if (IsSubject(comparison.Right, model, parameter)) {
+            subject = comparison.Right;
+            other   = comparison.Left;
+            flipped = true;
+
+            return !Mentions(comparison.Left, model, parameter);
         }
 
-        subject = comparison.Right;
-        other   = comparison.Left;
-        flipped = true;
+        return false;
+    }
 
-        return Mentions(comparison.Right, model, parameter);
+    /// <summary>The parameter itself, or the one derived form the table has rows for: its length or its count.</summary>
+    private static bool IsSubject(ExpressionSyntax expression, SemanticModel model, IParameterSymbol parameter) {
+        return IsParameter(expression, model, parameter) || IsSize(expression, parameter, model);
+    }
+
+    private static bool IsParameter(ExpressionSyntax expression, SemanticModel model, IParameterSymbol parameter) {
+        ExpressionSyntax bare = Unwrapped(expression);
+
+        return bare is IdentifierNameSyntax
+            && SymbolEqualityComparer.Default.Equals(model.GetSymbolInfo(bare).Symbol, parameter);
+    }
+
+    /// <summary>The expression itself, past the parentheses a writer is free to add around it.</summary>
+    private static ExpressionSyntax Unwrapped(ExpressionSyntax expression) {
+        ExpressionSyntax bare = expression;
+
+        while (bare is ParenthesizedExpressionSyntax parenthesised) { bare = parenthesised.Expression; }
+
+        return bare;
     }
 
     /// <summary>Reads a comparison written the other way round as the one the table lists.</summary>
@@ -281,10 +317,19 @@ internal static class Guards {
         };
     }
 
+    /// <summary>
+    ///     How long, or how many — the parameter's own, never that of something read off it.
+    /// </summary>
+    /// <remarks>
+    ///     The receiver has to <b>be</b> the parameter. <c>p[0].Length</c>, <c>p.Split(',').Length</c> and
+    ///     <c>p.Trim().Length</c> are the length of something else, and the family the constraint is written in
+    ///     comes from the parameter's own type — so an element's length reads as the collection's count, a
+    ///     different invariant emitted with a straight face.
+    /// </remarks>
     private static bool IsSize(ExpressionSyntax subject, IParameterSymbol parameter, SemanticModel model) {
-        return subject is MemberAccessExpressionSyntax access
+        return Unwrapped(subject) is MemberAccessExpressionSyntax access
             && access.Name.Identifier.Text is "Length" or "Count"
-            && Mentions(access.Expression, model, parameter);
+            && IsParameter(access.Expression, model, parameter);
     }
 
     private static bool IsNull(ExpressionSyntax expression) {

@@ -710,8 +710,16 @@ The right-hand column carries the provenance of each expression: empty for the b
 `guard` when §5.3 tightened it, `factory` when §5.4 composed it, `AnyX` when a scaffolded
 generator was reused, `guards not combined` for the §5.3 conflict case, `no source` when the
 constructor body was unavailable so no guard could be read, `unread guards` when the body throws in
-a way the recognised set did not match, and `unavailable` when the generator exists in the library
-but not in the asset this project resolves.
+a way the recognised set did not match, `constraint unavailable` when a guard was read and
+understood and this generator carries no member to say it with, and `unavailable` when the
+generator exists in the library but not in the asset this project resolves.
+
+`guard` is computed from the constraints **applied**, never from the constraints read. The
+distinction is the whole worth of the column: a guard the generator has no member for is dropped by
+D4 — rightly, since the alternative is a chain that does not compile — and reporting it as `guard`
+asserts an invariant nothing honoured. `constraint unavailable` is what that drop says instead, and
+it is not `unavailable`: there the *generator* for the type is missing, here the generator is
+exactly right and one constraint cannot be expressed on it.
 
 That last value matters more than it looks. Without it, D4's degradation is indistinguishable from
 the tool simply not knowing: a `DateOnly` parameter on a downlevel project would read as "not

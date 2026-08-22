@@ -53,9 +53,9 @@ public sealed class GuardedScaffoldsHoldTests {
 
     public static TheoryData<string> Corpus => Rows(GuardCorpus.Names());
 
-    public static TheoryData<string> Satisfiable => Rows(GuardCorpus.Satisfiable());
+    public static TheoryData<string> Satisfiable => Rows(GuardCorpus.SatisfiableNames());
 
-    public static TheoryData<string> BeyondTheEngine => Rows(GuardCorpus.BeyondTheEngine());
+    public static TheoryData<string> BeyondTheEngine => Rows(GuardCorpus.BeyondTheEngineNames());
 
     private static TheoryData<string> Rows(IEnumerable<string> names) {
         TheoryData<string> shapes = [];
@@ -127,7 +127,8 @@ public sealed class GuardedScaffoldsHoldTests {
         Check.WithCustomMessage($"Any{shape.Target}: {failure}").That(failure).IsNull();
         Check.WithCustomMessage($"Any{shape.Target} honoured nothing and said nothing.")
              .That(outcome.Plan!.Parameters.Any(parameter => parameter.Provenance.HasFlag(Provenance.GuardsNotCombined)
-                                                          || parameter.Provenance.HasFlag(Provenance.UnreadGuards)))
+                                                          || parameter.Provenance.HasFlag(Provenance.UnreadGuards)
+                                                          || parameter.Provenance.HasFlag(Provenance.ConstraintUnavailable)))
              .IsTrue();
     }
 

@@ -148,8 +148,8 @@ internal sealed class GeneratorFor {
     ///     Every constraint is checked against the builder before it is written (ADR-0059): <c>.Positive()</c>
     ///     on a <c>uint</c> parameter does not resolve, and is skipped rather than emitted.
     /// </remarks>
-    internal static string Chain(DrawnGenerator drawn, IReadOnlyList<GuardConstraint> guards, out bool dropped) {
-        IReadOnlyList<GuardConstraint> kept = GuardReading.Combine(drawn.Seeded, guards, out dropped);
+    internal static ChainReport Chain(DrawnGenerator drawn, IReadOnlyList<GuardConstraint> guards) {
+        IReadOnlyList<GuardConstraint> kept = GuardReading.Combine(drawn.Seeded, guards, out bool dropped);
 
         List<GuardConstraint> written = [.. kept.Where(constraint => LibrarySurface.Carries(drawn.Builder,
                                                                                             constraint.Member,
@@ -157,7 +157,14 @@ internal sealed class GeneratorFor {
 
         string chain = string.Concat(Ranged(written, drawn.Builder).Select(constraint => constraint.Render()));
 
-        return drawn.Core + chain + drawn.Suffix;
+        // Read against what was WRITTEN, never against what was read: a guard whose member this generator does
+        // not carry survived composition and still reached nothing, and the recap has to say which of the two
+        // happened. Compared before the fold, since that rewrites a pair into a call neither half is.
+        bool applied     = guards.Any(guard => written.Contains(guard, GuardConstraint.SameCall));
+        bool unavailable = kept.Any(constraint => !written.Contains(constraint)
+                                               && guards.Contains(constraint, GuardConstraint.SameCall));
+
+        return new ChainReport(drawn.Core + chain + drawn.Suffix, applied, dropped, unavailable);
     }
 
     /// <summary>
@@ -214,7 +221,7 @@ internal sealed class GeneratorFor {
     private string? Resolve(ITypeSymbol type, int remaining, IReadOnlyCollection<ITypeSymbol> underway) {
         DrawnGenerator drawn = Draw(type, remaining, underway);
 
-        return drawn.Resolved ? Chain(drawn, [], out _) : null;
+        return drawn.Resolved ? Chain(drawn, []).Expression : null;
     }
 
     private DrawnGenerator Draw(ITypeSymbol type, int remaining, IReadOnlyCollection<ITypeSymbol> underway) {

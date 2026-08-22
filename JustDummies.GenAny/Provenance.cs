@@ -60,6 +60,23 @@ public enum Provenance {
     ///     Worth its own value rather than reading as "not inferred": the truth is "inferred, but not available
     ///     here — retarget, or write it yourself", and one word turns a dead end into an instruction.
     /// </remarks>
-    Unavailable = 64
+    Unavailable = 64,
+
+    /// <summary>
+    ///     A guard was read and understood, and this generator carries no member to say it with.
+    /// </summary>
+    /// <remarks>
+    ///     ADR-0059 has the engine look a member up before writing it, and drop it where it does not resolve.
+    ///     That is right — the alternative is a chain that does not compile — but until this value existed the
+    ///     drop had no channel at all, so the column stayed empty and the run reported every parameter
+    ///     inferred. The invariant was gone and nothing said so.
+    ///     <para>
+    ///         Distinct from <see cref="Unavailable" />, which is about the <b>generator</b> for a type. Here
+    ///         the generator is exactly right and it is one constraint that cannot be expressed on it — an
+    ///         enum universe the closed set has no member for, <c>Positive</c> on an unsigned engine. Folding
+    ///         the two under one word would make the recap ambiguous precisely where it is trying to be exact.
+    ///     </para>
+    /// </remarks>
+    ConstraintUnavailable = 128
 
 }

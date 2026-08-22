@@ -179,8 +179,7 @@ internal static class GuardCorpus {
                                                                          if (slot == Slot.None) { throw new ArgumentOutOfRangeException(nameof(slot)); }
                                                                      }
                                                                  }
-                                                                 """,
-                         defect: "D4")
+                                                                 """, beyondTheEngine: true)
     ];
 
     /// <summary>The shape names, as the theory rows carry them.</summary>
@@ -189,12 +188,12 @@ internal static class GuardCorpus {
     }
 
     /// <summary>The shapes whose domain a generator of this library can satisfy.</summary>
-    internal static IEnumerable<string> Satisfiable() {
+    internal static IEnumerable<string> SatisfiableNames() {
         return All.Where(shape => !shape.BeyondTheEngine).Select(shape => shape.Name);
     }
 
     /// <summary>The shapes whose domain it cannot, where the contract is a clean refusal.</summary>
-    internal static IEnumerable<string> BeyondTheEngine() {
+    internal static IEnumerable<string> BeyondTheEngineNames() {
         return All.Where(shape => shape.BeyondTheEngine).Select(shape => shape.Name);
     }
 
@@ -236,7 +235,8 @@ internal static class GuardCorpus {
         /// </summary>
         /// <remarks>
         ///     A developer's own contradiction, a size past the producible cap, a set wanting more distinct
-        ///     values than its element row holds. ADR-0046 has one answer for all three and it is not a
+        ///     values than its element row holds, an invariant the closed set of §5.3 has no member to say.
+        ///     ADR-0046 has one answer for all four and it is not a
         ///     cleverer draw: emit a chain the library accepts, and say plainly that the domain was not
         ///     honoured. So the bar moves rather than lifting — the generator must still CONSTRUCT, must
         ///     still raise no rule, and the recap must carry the refusal; only the draw is off the table,

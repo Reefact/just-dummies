@@ -150,9 +150,9 @@ discards a proposal the engine got right for every other parameter over a doubt 
 
 ### Risks
 
-* A codebase whose constructors mix real guards with unrelated calls — logging, normalisation —
-  turns the wide detection this reuses from a recap note into a compile-time cost for every such
-  call, not only for a genuine guard.
+* Every widening of what counts as `unread guards` now carries a compile-time cost rather than a
+  recap note, so the two decisions are coupled: what the mark means was decided here, what earns it
+  is decided in §5.3, and a change there is no longer only a change of wording.
 * A later decision to distinguish a provably safe drop from a genuine doubt would have to revise
   this record, not only its implementation.
 
@@ -160,7 +160,10 @@ discards a proposal the engine got right for every other parameter over a doubt 
 
 * If the false-positive rate on real codebases proves high, narrowing what counts as `unread
   guards` is the fix — not loosening this decision, which only decides what happens once that mark
-  is set.
+  is set. **Applied once already**: a call whose result is *used* was found to read every ordinary
+  normalising constructor (`_name = value.Trim();`) as doubt, and §5.3 now requires the result to be
+  discarded. That cost was named under this heading rather than under Negative because it was
+  expected to be borne, and it was not.
 * Extending §5.3's closed set of recognised guards, already a follow-up of ADR-0082, reduces how
   often `unread guards` fires at all, which is the more precise remedy to the same cost.
 

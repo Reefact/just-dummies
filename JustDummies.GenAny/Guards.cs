@@ -66,43 +66,51 @@ internal static class Guards {
         GuardReading  reading = GuardReading.FromSource();
 
         foreach (StatementSyntax statement in declaration.Body.Statements) {
+            // "Leading" is what makes a guard a guard: past the first assignment to state, an `if` that throws
+            // is ordinary logic and says nothing about what the parameter may be.
+            if (AssignsState(statement, model)) { break; }
+
             if (statement is IfStatementSyntax { Else: null } guard && ThrowsUnconditionally(guard.Statement)) {
                 ReadOne(guard.Condition, model, method, reading);
             } else {
-                MarkIfCalledWith(statement, model, method, reading);
+                MarkIfValidatedElsewhere(statement, model, method, reading);
             }
-
-            // "Leading" is what makes a guard a guard: past the first assignment to state, an `if` that throws
-            // is ordinary logic and says nothing about what the parameter may be. The statement making that
-            // assignment is read above before the loop stops on it, so a call folded into the assignment
-            // itself — `_name = Ensure.NotBlank(name);` — is not missed either.
-            if (AssignsState(statement, model)) { break; }
         }
 
         return reading;
     }
 
     /// <summary>
-    ///     Whether a leading statement that is not itself a recognised guard still calls something involving a
-    ///     parameter, and marks every parameter it finds that way as unread.
+    ///     Whether a leading statement hands a parameter to a call made for its effect alone, and marks every
+    ///     parameter it finds that way as unread.
     /// </summary>
     /// <remarks>
-    ///     A guard delegated to a helper — <c>Ensure.NotBlank(name);</c>, <c>Validate(name);</c> — throws from
-    ///     inside a call the closed set of §5.3 does not parse, so the loop above never sees an <c>if</c> at all
-    ///     and used to pass over the statement in silence: the parameter read exactly like one with no guard on
-    ///     it, and the neutral generator it kept violated the invariant the helper enforces on every draw the
-    ///     helper would have rejected. §9 already has the right word for "something here could not be read" —
-    ///     <c>unread guards</c> — and the developer needs it here as much as on a condition it fails to
-    ///     recognise, so the tool never states a chain as safe where it cannot tell.
+    ///     A guard delegated to a helper — <c>Ensure.NotBlank(name);</c>, <c>Validate(name);</c>,
+    ///     <c>ArgumentNullException.ThrowIfNull(name)</c> — throws from inside a call the closed set of §5.3
+    ///     does not parse, so the loop above never sees an <c>if</c> at all and passed over the statement in
+    ///     silence: the parameter read exactly like one with no guard on it, and the neutral generator it kept
+    ///     violated the invariant the helper enforces on every draw the helper would have rejected. §9 already
+    ///     has the right word for "something here could not be read" — <c>unread guards</c> — and the developer
+    ///     needs it here as much as on a condition the set fails to recognise.
     ///     <para>
-    ///         Deliberately wide rather than trying to guess which calls validate and which merely normalise: a
-    ///         call the tool cannot read is a call it cannot rule out, and ADR-0046 says which of the two a
-    ///         library built on refusing loudly would rather risk.
+    ///         <b>The call's result has to be discarded</b>, and that one test is the whole rule. A call whose
+    ///         value is used is <i>producing</i> something — <c>_name = name.Trim()</c>,
+    ///         <c>_tags = tags.ToList()</c> — and normalising a value or copying a collection says nothing
+    ///         about which values are admissible; flagging those blocked the compilation of constructors
+    ///         carrying no guard at all, which is most of them. A call whose value is thrown away was made for
+    ///         its effect, and the only effect a call on a constructor parameter can have before the first
+    ///         assignment is to reject it.
+    ///     </para>
+    ///     <para>
+    ///         Structural rather than a list of names a validator is expected to be spelled with: a set of
+    ///         blessed prefixes is a guess about intent that no reader could reproduce, which is the kind of
+    ///         mechanism ADR-0046 refuses. The cost is named in §9 — a guard helper that <i>returns</i> the
+    ///         value it checked, <c>_name = Ensure.NotBlank(name);</c>, reads as production and is missed.
     ///     </para>
     /// </remarks>
-    private static void MarkIfCalledWith(StatementSyntax statement, SemanticModel model, IMethodSymbol method, GuardReading reading) {
-        foreach (InvocationExpressionSyntax invocation in statement.DescendantNodesAndSelf().OfType<InvocationExpressionSyntax>()) {
-            if (IsNameOf(invocation)) { continue; }
+    private static void MarkIfValidatedElsewhere(StatementSyntax statement, SemanticModel model, IMethodSymbol method, GuardReading reading) {
+        foreach (ExpressionStatementSyntax discarded in statement.DescendantNodesAndSelf().OfType<ExpressionStatementSyntax>()) {
+            if (discarded.Expression is not InvocationExpressionSyntax invocation || IsNameOf(invocation)) { continue; }
 
             foreach (IParameterSymbol parameter in Mentioned(invocation, model, method)) { reading.MarkUnread(parameter.Name); }
         }

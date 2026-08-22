@@ -703,12 +703,25 @@ déléguée à un helper — `Ensure.NotBlank(value);`, appelé tel quel, sans a
 constructeur — lève depuis l'intérieur d'un appel que l'ensemble clos ci-dessus n'analyse pas, et
 passait donc inaperçue : le paramètre se lisait exactement comme un paramètre sans garde, et le
 generator neutre qu'il gardait pouvait tirer une valeur que le helper rejette à chaque construction
-réelle. Toute instruction précédant la première affectation à l'état qui atteint le paramètre par un
-tel appel est désormais marquée `unread guards` elle aussi, comme une condition que l'ensemble ne
-reconnaît pas — `nameof(...)` en est exempté, puisqu'il nomme le paramètre pour un message plutôt que
-d'appeler quoi que ce soit. Le marquage s'élargit plutôt qu'il ne se resserre, à dessein : un appel
-que le tool ne peut pas lire est un appel qu'il ne peut pas écarter (ADR-0046), donc il préfère
-signaler un simple `.Trim()` que rester silencieux sur `Ensure.NotBlank(value)`.
+réelle. Une instruction précédant la première affectation à l'état et qui confie le paramètre à un
+tel appel est marquée `unread guards` elle aussi, comme une condition que l'ensemble ne reconnaît
+pas — et `nameof(...)` en est exempté, puisqu'il nomme le paramètre pour un message plutôt que
+d'appeler quoi que ce soit.
+
+**Le résultat de l'appel doit être jeté**, et ce seul test constitue toute la règle. Un appel dont
+la valeur est *utilisée* produit quelque chose — `_name = value.Trim()`, `_tags = tags.ToList()` —
+et normaliser une valeur ou copier une collection ne dit rien sur les valeurs admissibles. Un appel
+dont la valeur est jetée a été fait pour son effet, et le seul effet qu'un appel sur un paramètre de
+constructeur puisse avoir avant la première affectation est de le rejeter.
+
+Le test est structurel plutôt qu'une liste de noms sous lesquels un validateur est censé s'écrire :
+un ensemble de préfixes bénis est une supposition sur l'intention qu'aucun lecteur ne pourrait
+reproduire, exactement le genre de mécanisme qu'ADR-0046 refuse. Cela rend aussi le marquage
+indépendant de l'ordre des instructions, ce qu'une règle comptant les résultats utilisés n'était
+pas : deux paramètres normalisés sur des lignes consécutives se lisent pareil, quel que soit celui
+affecté en premier, là où le parcours s'arrêtait après la première affectation et épargnait le
+second. Le coût est le cas miroir, nommé au §9 : une garde-helper qui *retourne* la valeur
+vérifiée — `_name = Ensure.NotBlank(value);` — se lit comme une production et échappe au filet.
 
 ### 5.4 Composition
 
@@ -1046,12 +1059,16 @@ Nommés explicitement pour ne pas être pris pour des oublis.
   n'a pas dit que le generator est le bon** (§5.6) : la recette est bien écrite, sous une ligne
   nommant un identifiant qui n'existe pas. Le même marquage atteint une garde entièrement déléguée
   à un helper appelé sur le paramètre lui-même (`Guard.Against.Null(value)`), même sans aucun `if`
-  dans le corps (§5.3). Ce qui lui échappe encore, c'est une garde atteinte seulement par un niveau
-  d'indirection que le tool ne suit pas — une copie locale du paramètre (`var v = value;
-  Validate(v);`), un lambda qui le capture, un appel atteint via un membre plutôt que par le nom
-  propre du paramètre. Là, le tool ne peut toujours pas distinguer ce paramètre d'un paramètre non
-  contraint, et il ne devine pas — c'est de ce résidu que parle ce non-objectif : non pas ce qui
-  arrive une fois le doute établi, mais le doute que le tool ne voit jamais.
+  dans le corps (§5.3), dès lors que l'appel est fait pour son seul effet. Deux formes lui échappent
+  encore. Une garde-helper qui **retourne** la valeur vérifiée — `_name = Ensure.NotBlank(value);` —
+  est indiscernable d'une normalisation, et la lire comme un doute reviendrait à lire
+  `_name = value.Trim();` comme un doute aussi, ce qui bloque la compilation de constructeurs ne
+  portant aucune garde. Et une garde atteinte seulement par un niveau d'indirection que le tool ne
+  suit pas — une copie locale du paramètre (`var v = value; Validate(v);`), un lambda qui le
+  capture, un appel atteint via un membre plutôt que par le nom propre du paramètre. Dans les deux
+  cas, le tool ne peut toujours pas distinguer ce paramètre d'un paramètre non contraint, et il ne
+  devine pas — c'est de ce résidu que parle ce non-objectif : non pas ce qui arrive une fois le
+  doute établi, mais le doute que le tool ne voit jamais.
 * **L'aller-retour.** Le tool ne relit jamais un fichier qu'il a écrit.
 * **Membres `init` / `required`, construction par propriétés.** Constructeur et fabrique statique
   uniquement.

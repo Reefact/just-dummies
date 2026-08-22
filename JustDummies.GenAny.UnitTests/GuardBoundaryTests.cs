@@ -1,3 +1,5 @@
+using System.Linq;
+
 using NFluent;
 
 namespace JustDummies.GenAny.UnitTests;
@@ -248,6 +250,50 @@ public sealed class GuardBoundaryTests {
         // construction, which is the whole cost of a guard the tool cannot read.
         Check.That(parameter.Expression).IsEqualTo("Any.String().NonEmpty()");
         Check.That(parameter.Provenance.HasFlag(Provenance.UnreadGuards)).IsTrue();
+    }
+
+    // A call whose value is USED is producing something, and normalising a value or copying a collection says
+    // nothing about which values are admissible. Flagging those blocked the compilation of constructors
+    // carrying no guard at all — which is most of them — so the discarded result is what separates a call made
+    // to reject from a call made to produce.
+    [Theory(DisplayName = "A call whose result is used is production, not a guard, and does not block.")]
+    [InlineData("string", "        this.kept = value.Trim();")]
+    [InlineData("string", "        this.kept = value.ToUpperInvariant();")]
+    [InlineData("IReadOnlyList<string>", "        this.kept = value.ToList();")]
+    public void ACallWhoseResultIsUsedIsNotAGuard(string parameterType, string body) {
+        ScaffoldedParameter parameter = Subject.GuardedBy(parameterType, body);
+
+        Check.That(parameter.Provenance.HasFlag(Provenance.UnreadGuards)).IsFalse();
+        Check.That(parameter.RequiresVerification).IsFalse();
+    }
+
+    /// <summary>
+    ///     Two parameters normalised on consecutive lines are read the same way, whichever comes first.
+    /// </summary>
+    /// <remarks>
+    ///     The scan stops at the first assignment to state, so while a used result still counted as doubt the
+    ///     verdict fell on whichever parameter happened to be assigned first and spared the other — the same
+    ///     two calls, the same two parameters, opposite outcomes decided by statement order. Nobody chose that,
+    ///     and a mark that moves with the line order is not a judgement about the code.
+    /// </remarks>
+    [Fact(DisplayName = "Two normalised parameters read the same, whichever is assigned first.")]
+    public void TwoNormalisedParametersReadTheSameWhicheverIsAssignedFirst() {
+        ScaffoldOutcome outcome = Subject.Scaffold("""
+                                                   public sealed class Subject {
+
+                                                       private readonly string name;
+                                                       private readonly string city;
+
+                                                       public Subject(string name, string city) {
+                                                           this.name = name.Trim();
+                                                           this.city = city.Trim();
+                                                       }
+
+                                                   }
+                                                   """);
+
+        Check.That(outcome.Plan!.Parameters.Select(parameter => parameter.RequiresVerification))
+             .IsEquivalentTo(false, false);
     }
 
     // A cross-parameter rule is precisely the case §9 names as out of reach: the engine cannot say whose

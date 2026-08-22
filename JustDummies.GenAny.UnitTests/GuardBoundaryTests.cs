@@ -207,12 +207,47 @@ public sealed class GuardBoundaryTests {
     [Theory(DisplayName = "A statement that is not an unconditional throw is not a guard.")]
     [InlineData("if (value <= 0) { value = 1; }")]
     [InlineData("if (value <= 0) { throw new ArgumentOutOfRangeException(nameof(value)); } else { }")]
-    [InlineData("if (value <= 0) { Console.WriteLine(value); throw new ArgumentOutOfRangeException(nameof(value)); }")]
     public void AStatementThatIsNotAnUnconditionalThrowIsNotAGuard(string guard) {
         ScaffoldedParameter parameter = Subject.GuardedBy("int", guard);
 
         Check.That(parameter.Expression).IsEqualTo("Any.Int32()");
         Check.That(parameter.Provenance.HasFlag(Provenance.UnreadGuards)).IsFalse();
+    }
+
+    // Not itself a guard — the block throws conditionally on the surrounding `if`, but only once every other
+    // statement in it has run — and it still calls something involving the parameter the closed set of §5.3
+    // does not parse. That call could be a guard the tool cannot read as easily as it could be a log line, and
+    // it cannot tell the two apart, so it reports the same doubt it would over a helper it cannot see into.
+    [Fact(DisplayName = "A call involving the parameter, beside a throw the recognised set does not parse alone, is unread.")]
+    public void ACallInvolvingTheParameterBesideAnUnrecognisedThrowIsUnread() {
+        ScaffoldedParameter parameter = Subject.GuardedBy("int",
+                                                          "if (value <= 0) { Console.WriteLine(value); throw new ArgumentOutOfRangeException(nameof(value)); }");
+
+        Check.That(parameter.Expression).IsEqualTo("Any.Int32()");
+        Check.That(parameter.Provenance.HasFlag(Provenance.UnreadGuards)).IsTrue();
+    }
+
+    // The shape the bug report behind this whole reading path was about: validation delegated entirely to a
+    // helper, with no `if` in the constructor for §5.3 to parse at all. Before this case, the parameter read
+    // exactly like one with no guard on it — `None`, indistinguishable from truly unconstrained — and the
+    // neutral generator it kept could draw a value the helper would have rejected on every real construction.
+    [Fact(DisplayName = "A guard delegated entirely to a helper, with no `if` to read, is unread rather than silent.")]
+    public void AGuardDelegatedToAHelperIsUnreadRatherThanSilent() {
+        string guard = """
+                               Validate(value);
+
+                               static void Validate(string candidate) {
+                                   if (string.IsNullOrWhiteSpace(candidate)) { throw new ArgumentException(nameof(candidate)); }
+                               }
+                       """;
+
+        ScaffoldedParameter parameter = Subject.GuardedBy("string", guard);
+
+        // The base table's own NonEmpty() (§5.2) — close to the helper's real invariant, and not it: a
+        // generator this neutral still draws the empty-adjacent strings the helper rejects on every real
+        // construction, which is the whole cost of a guard the tool cannot read.
+        Check.That(parameter.Expression).IsEqualTo("Any.String().NonEmpty()");
+        Check.That(parameter.Provenance.HasFlag(Provenance.UnreadGuards)).IsTrue();
     }
 
     // A cross-parameter rule is precisely the case §9 names as out of reach: the engine cannot say whose

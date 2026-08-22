@@ -46,9 +46,11 @@ public enum Provenance {
     NoSource = 16,
 
     /// <summary>
-    ///     The body throws in a way the recognised set does not match: a cross-parameter rule, an arithmetic
-    ///     condition, a regex. The parameter carries the neutral generator, and the developer is told where to
-    ///     look (§9).
+    ///     Something before the first assignment to state could be a guard on this parameter, and was not read:
+    ///     an <c>if</c> that throws in a way the recognised set does not match — a cross-parameter rule, an
+    ///     arithmetic condition, a regex — or a call reaching the parameter with no <c>if</c> at all, the shape
+    ///     a guard delegated to a helper takes. The parameter carries the neutral generator, and the developer
+    ///     is told where to look (§9).
     /// </summary>
     UnreadGuards = 32,
 

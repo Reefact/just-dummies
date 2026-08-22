@@ -75,10 +75,14 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 - **A guard delegated to a helper is no longer read as no guard at all.** `Ensure.NotBlank(name);` — a call by
   itself, with no `if` in the constructor for §5.3 to parse — used to pass over in silence: the parameter read
   with an empty provenance column, indistinguishable from one with no guard on it, and the neutral generator
-  it kept could draw a value the helper rejects on every real construction. A leading statement that reaches a
-  parameter through a call the recognised set does not parse is now marked `unread guards`, the same word
-  already used for a condition it fails to recognise. `nameof(...)` inside a throw's own message is exempted:
-  it names the rejected parameter rather than calling anything.
+  it kept could draw a value the helper rejects on every real construction. A leading statement that hands a
+  parameter to a call **made for its effect alone** is now marked `unread guards`, the same word already used
+  for a condition it fails to recognise. `nameof(...)` inside a throw's own message is exempted: it names the
+  rejected parameter rather than calling anything. A call whose result is *used* is production, not a guard —
+  `_name = value.Trim();` and `_tags = tags.ToList();` say nothing about which values are admissible, and
+  reading them as doubt would block the compilation of constructors carrying no guard at all. The cost of
+  drawing the line there is named in §9: a guard helper that returns the value it checked
+  (`_name = Ensure.NotBlank(value);`) reads as production and is missed.
 
 ### Changed
 

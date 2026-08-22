@@ -164,10 +164,10 @@ paramètre, à cause d'un doute sur un seul.
 
 ### Risques
 
-* Une base de code dont les constructeurs mêlent de vraies gardes à des appels sans rapport —
-  journalisation, normalisation — transforme la détection large que ceci réutilise, d'une note de
-  récapitulatif, en un coût à la compilation pour chacun de ces appels, pas seulement pour une
-  garde véritable.
+* Tout élargissement de ce qui compte comme `unread guards` porte désormais un coût à la
+  compilation plutôt qu'une note de récapitulatif ; les deux décisions sont donc couplées : ce que
+  la marque signifie a été tranché ici, ce qui la mérite l'est au §5.3, et un changement là-bas
+  n'est plus un simple changement de formulation.
 * Une décision ultérieure de distinguer un abandon prouvé sûr d'un doute véritable devrait réviser
   cette décision, pas seulement son implémentation.
 
@@ -175,7 +175,11 @@ paramètre, à cause d'un doute sur un seul.
 
 * Si le taux de faux positifs sur des bases de code réelles s'avère élevé, resserrer ce qui compte
   comme `unread guards` est le correctif — pas assouplir cette décision, qui ne décide que de ce
-  qui se passe une fois cette marque posée.
+  qui se passe une fois cette marque posée. **Déjà appliqué une fois** : un appel dont le résultat
+  est *utilisé* lisait comme un doute tout constructeur normalisant ordinaire
+  (`_name = value.Trim();`), et le §5.3 exige désormais que le résultat soit jeté. Ce coût était
+  nommé sous cette rubrique plutôt que sous Négatives parce qu'on s'attendait à l'assumer ; ce ne
+  fut pas le cas.
 * Étendre l'ensemble clos de gardes reconnues du §5.3, déjà une action de suivi d'ADR-0082, réduit
   la fréquence à laquelle `unread guards` se déclenche du tout, ce qui est le remède plus précis au
   même coût.

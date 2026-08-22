@@ -674,12 +674,24 @@ alternatives weighed against it.
 `Ensure.NotBlank(value);`, called plainly, with no `if` in the constructor at all — throws from
 inside a call the closed set above does not parse, so it used to pass unnoticed: the parameter read
 exactly like one with no guard on it, and the neutral generator it kept could draw a value the
-helper rejects on every real construction. Any statement before the first assignment to state that
-reaches the parameter through such a call is now marked `unread guards` too, the same as a condition
-the set fails to recognise — `nameof(...)` is exempted, since it names the parameter for a message
-rather than calling anything. The mark widens rather than narrows on purpose: a call the tool cannot
-read is a call it cannot rule out (ADR-0046), so it would rather flag an ordinary `.Trim()` than stay
-silent over `Ensure.NotBlank(value)`.
+helper rejects on every real construction. A statement before the first assignment to state that
+hands the parameter to such a call is marked `unread guards` too, the same as a condition the set
+fails to recognise — and `nameof(...)` is exempted, since it names the parameter for a message
+rather than calling anything.
+
+**The call's result has to be discarded**, and that one test is the whole rule. A call whose value
+is *used* is producing something — `_name = value.Trim()`, `_tags = tags.ToList()` — and normalising
+a value or copying a collection says nothing about which values are admissible. A call whose value
+is thrown away was made for its effect, and the only effect a call on a constructor parameter can
+have before the first assignment is to reject it.
+
+The test is structural rather than a list of names a validator is expected to be spelled with: a set
+of blessed prefixes is a guess about intent no reader could reproduce, which is the kind of mechanism
+ADR-0046 refuses. It also makes the mark independent of statement order, which a rule reading used
+results was not: two parameters normalised on consecutive lines are read the same way whichever is
+assigned first, where before the scan stopped after the first assignment and spared the second. The
+cost is the mirror case, named in §9: a guard helper that *returns* the value it checked —
+`_name = Ensure.NotBlank(value);` — reads as production and is missed.
 
 ### 5.4 Composition
 
@@ -1001,13 +1013,17 @@ Named explicitly so they are not mistaken for oversights.
   condition, a regex guard (§5.3) — the parameter keeps the neutral generator, the recap marks it
   `unread guards`, and **the file does not compile until the developer says the generator is right**
   (§5.6): the recipe is still written, under a line naming an identifier that does not exist. The
-  same mark reaches a guard delegated entirely to a helper called on the parameter itself
-  (`Guard.Against.Null(value)`), even with no `if` in the body at all (§5.3). What still escapes it
-  is a guard reached only through a level of indirection the tool does not follow — a local copy of
-  the parameter (`var v = value; Validate(v);`), a lambda closing over it, a call reached through a
-  member rather than the parameter's own name. There the tool still cannot tell the parameter from
-  an unconstrained one, and it does not guess — which is the residue this non-goal is about: not
-  what happens once doubt is established, but the doubt the tool never sees.
+  same mark reaches a guard delegated entirely to a helper called on the parameter itself for its
+  effect alone (`Guard.Against.Null(value);`), even with no `if` in the body at all (§5.3). Two
+  shapes still escape it. A guard helper that **returns** the value it checked —
+  `_name = Ensure.NotBlank(value);` — is indistinguishable from normalisation, and reading it as
+  doubt would mean reading `_name = value.Trim();` as doubt too, which blocks the compilation of
+  constructors carrying no guard at all. And a guard reached only through a level of indirection the
+  tool does not follow — a local copy of the parameter (`var v = value; Validate(v);`), a lambda
+  closing over it, a call reached through a member rather than the parameter's own name. In both the
+  tool still cannot tell the parameter from an unconstrained one, and it does not guess — which is
+  the residue this non-goal is about: not what happens once doubt is established, but the doubt the
+  tool never sees.
 * **Round-tripping.** The tool never reads a file it previously wrote.
 * **`init` / `required` members, property-only construction.** Constructor and static factory only.
 * **Anything under `--all`.** Explicit type arguments only.

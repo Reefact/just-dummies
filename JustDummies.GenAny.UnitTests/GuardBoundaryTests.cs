@@ -206,14 +206,63 @@ public sealed class GuardBoundaryTests {
         Check.That(outcome.Plan!.Parameters[0].Expression).IsEqualTo("Any.Int32()");
     }
 
-    [Theory(DisplayName = "A statement that is not an unconditional throw is not a guard.")]
+    // A statement that rejects nothing constrains nothing: defaulting a value is not refusing it, so there is
+    // no invariant here for a draw to violate and nothing to send the developer looking at.
+    [Theory(DisplayName = "A statement that rejects no value is not a guard, and says nothing.")]
     [InlineData("if (value <= 0) { value = 1; }")]
-    [InlineData("if (value <= 0) { throw new ArgumentOutOfRangeException(nameof(value)); } else { }")]
-    public void AStatementThatIsNotAnUnconditionalThrowIsNotAGuard(string guard) {
+    public void AStatementThatRejectsNoValueIsNotAGuard(string guard) {
         ScaffoldedParameter parameter = Subject.GuardedBy("int", guard);
 
         Check.That(parameter.Expression).IsEqualTo("Any.Int32()");
         Check.That(parameter.Provenance.HasFlag(Provenance.UnreadGuards)).IsFalse();
+    }
+
+    /// <summary>
+    ///     A statement that throws is a guard whatever its shape, so one the recognised set cannot parse is
+    ///     reported as unread rather than passed over.
+    /// </summary>
+    /// <remarks>
+    ///     The one thing a <c>throw</c> before the first assignment to state cannot be is ordinary logic: it
+    ///     refuses to build the object. Each shape below fell past the recognised-guard branch and, carrying no
+    ///     call that names the parameter, past the call rule as well — so a throwing guard in plain sight read
+    ///     exactly like a parameter nobody had constrained.
+    /// </remarks>
+    [Theory(DisplayName = "A throwing guard the set cannot parse is unread, not silent.")]
+    [InlineData("if (value <= 0) { throw new ArgumentOutOfRangeException(nameof(value)); } else { }")]
+    [InlineData("""
+                        if (value < 0) { throw new ArgumentOutOfRangeException(nameof(value)); }
+                        else if (value > 100) { throw new ArgumentOutOfRangeException(nameof(value)); }
+                """)]
+    [InlineData("""
+                        if (value < 0) {
+                            Console.WriteLine("out of range");
+                            throw new ArgumentOutOfRangeException(nameof(value));
+                        }
+                """)]
+    [InlineData("        if (value < 0 || value > 100) { throw new ArgumentOutOfRangeException(nameof(value)); }")]
+    public void AThrowingGuardTheSetCannotParseIsUnread(string guard) {
+        ScaffoldedParameter parameter = Subject.GuardedBy("int", guard);
+
+        Check.That(parameter.Expression).IsEqualTo("Any.Int32()");
+        Check.That(parameter.Provenance.HasFlag(Provenance.UnreadGuards)).IsTrue();
+    }
+
+    // The throw names its rejected parameter with `nameof`, so counting that would make the message the
+    // evidence instead of the test — and would mark a parameter a guard about something else merely mentions.
+    [Fact(DisplayName = "A throw naming a parameter only in its message does not mark that parameter.")]
+    public void AThrowNamingAParameterOnlyInItsMessageDoesNotMarkIt() {
+        ScaffoldOutcome outcome = Subject.Scaffold("""
+                                                   public sealed class Subject {
+
+                                                       public Subject(int value, string other) {
+                                                           if (value < 0) { throw new ArgumentException(nameof(other)); } else { }
+                                                       }
+
+                                                   }
+                                                   """);
+
+        Check.That(outcome.Plan!.Parameters[0].Provenance.HasFlag(Provenance.UnreadGuards)).IsTrue();
+        Check.That(outcome.Plan.Parameters[1].Provenance.HasFlag(Provenance.UnreadGuards)).IsFalse();
     }
 
     // Not itself a guard — the block throws conditionally on the surrounding `if`, but only once every other

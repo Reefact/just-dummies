@@ -83,6 +83,12 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   reading them as doubt would block the compilation of constructors carrying no guard at all. The cost of
   drawing the line there is named in §9: a guard helper that returns the value it checked
   (`_name = Ensure.NotBlank(value);`) reads as production and is missed.
+- **A throwing guard the tool cannot parse is no longer read as no guard at all.** An `else if` chain, a block
+  that logs before it throws, a condition outside the recognised set — each fell past guard reading entirely
+  and, carrying no call naming the parameter, past the helper rule too, so `if (v < 0) { throw … } else if
+  (v > 100) { throw … }` reported nothing whatsoever. A `throw` before the first assignment to state cannot be
+  ordinary logic — it refuses to build the object — so the parameters such a statement names are now marked
+  `unread guards`. A parameter named only inside the `nameof` of the throw's own message does not count.
 - **A guard the tool already knows is read in either spelling.** `ArgumentNullException.ThrowIfNull(value)` and
   `if (value is null) { throw … }` state one invariant, and so do
   `ArgumentException.ThrowIfNullOrEmpty` / `ThrowIfNullOrWhiteSpace` and the `string.IsNullOr…` conditions.

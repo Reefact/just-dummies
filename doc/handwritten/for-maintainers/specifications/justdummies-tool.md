@@ -670,7 +670,18 @@ which is what an unconstrained draw over the seventeen lengths 0 to 16 predicts 
 That single measurement is why this section exists at all; D5 + D6 sets out the argument and the
 alternatives weighed against it.
 
-**A leading statement need not be an `if` to matter.** A guard delegated entirely to a helper —
+**A statement that throws is a guard whatever its shape.** The one thing a `throw` before the first
+assignment to state cannot be is ordinary logic: it refuses to build the object. So where the
+recognised set could not parse the shape carrying it — an `else if` chain, a block that logs before
+it throws, a condition outside the closed set — the parameters that statement names are marked
+`unread guards`, the same as a condition the set fails to recognise. Those shapes used to fall past
+the recognised-guard branch and be reported as nothing at all: `if (v < 0) { throw … } else if (v >
+100) { throw … }` read exactly like a parameter nobody had constrained. A parameter named only
+inside the `nameof` of the throw's own message does not count — that names the rejected parameter
+for a reader rather than testing anything, and every real guard of this shape names its subject in
+the condition too.
+
+**A leading statement need not be an `if` to matter either.** A guard delegated entirely to a helper —
 `Ensure.NotBlank(value);`, called plainly, with no `if` in the constructor at all — throws from
 inside a call the closed set above does not parse, so it used to pass unnoticed: the parameter read
 exactly like one with no guard on it, and the neutral generator it kept could draw a value the
@@ -1027,9 +1038,11 @@ Named explicitly so they are not mistaken for oversights.
   condition, a regex guard (§5.3) — the parameter keeps the neutral generator, the recap marks it
   `unread guards`, and **the file does not compile until the developer says the generator is right**
   (§5.6): the recipe is still written, under a line naming an identifier that does not exist. The
-  same mark reaches a guard delegated entirely to a helper called on the parameter itself for its
-  effect alone (`Guard.Against.Null(value);`), even with no `if` in the body at all (§5.3). Two
-  shapes still escape it. A guard helper that **returns** the value it checked —
+  same mark reaches any statement that throws in a shape the set could not parse at all, and a guard
+  delegated entirely to a helper called on the parameter itself for its effect alone
+  (`Guard.Against.Null(value);`), even with no `if` in the body at all (§5.3). Two shapes still
+  escape it, and both are silent rather than merely unread — the tool sees no rejection to be
+  uncertain about. A guard helper that **returns** the value it checked —
   `_name = Ensure.NotBlank(value);` — is indistinguishable from normalisation, and reading it as
   doubt would mean reading `_name = value.Trim();` as doubt too, which blocks the compilation of
   constructors carrying no guard at all. And a guard reached only through a level of indirection the

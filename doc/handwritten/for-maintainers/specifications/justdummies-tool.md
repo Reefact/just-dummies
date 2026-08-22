@@ -566,10 +566,21 @@ The recognised set is closed:
 | `p < N` | `.GreaterThanOrEqualTo(N)` |
 | `p == Guid.Empty` | `.NonEmpty()` |
 | `!Enum.IsDefined(typeof(E), p)`, `!Enum.IsDefined(p)` | none — `Any.Enum<E>()` already draws only declared members, **where `p` is of type `E`** |
+| `p == E.Member` | `.DifferentFrom(E.Member)`, **where `p` is of type `E`** |
 
 `.NonEmpty()` covers `IsNullOrWhiteSpace` as well as `IsNullOrEmpty`, because an unconstrained
 `Any.String()` draws only ASCII letters and digits, so a non-empty draw can never be whitespace
 (§14.5).
+
+**An enum exclusion guard is read too, and it is the commonest enum guard there is** —
+`if (status == Status.None) { throw … }`. Roslyn reports a zero-valued enum member as a plain
+**integer** constant, so without this row the condition fell into the numeric family's own
+`p == 0` row and read as `.NonZero()` — a member `AnyEnum<T>` does not carry, dropped silently by
+the member lookup (§5.2). A non-zero member matched no numeric row at all and read as an unguarded
+parameter. The same subject-identity discipline as `Enum.IsDefined` applies: the member has to
+belong to the parameter's **own** enum type. The negation, `p != E.Member`, is a different
+invariant — it throws unless the value **is** that member, a pin rather than an exclusion — and is
+not read as this row's inverse.
 
 Several conditions bound the table's own arithmetic, and all of them are refusals rather than
 approximations. **`N` in a size row has to render as the `int` every size member takes** (§14.3): a

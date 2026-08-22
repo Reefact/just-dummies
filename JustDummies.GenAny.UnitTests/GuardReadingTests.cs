@@ -197,6 +197,48 @@ public sealed class GuardReadingTests {
         Check.That(Subject.GuardedBy("Guid", guard).Expression).IsEqualTo("Any.Guid().NonEmpty()");
     }
 
+    /// <summary>
+    ///     An enum exclusion guard reads as <c>AnyEnum&lt;T&gt;.DifferentFrom</c> — the commonest enum guard
+    ///     there is, and the one the numeric family's own rows could never say, since Roslyn reports a
+    ///     zero-valued enum member as a plain integer constant.
+    /// </summary>
+    [Fact(DisplayName = "An enum exclusion guard is read as DifferentFrom.")]
+    public void AnEnumExclusionGuardIsReadAsDifferentFrom() {
+        string guard = "if (value == OrderStatus.Draft) { throw new ArgumentOutOfRangeException(nameof(value)); }";
+
+        ScaffoldedParameter parameter = Subject.GuardedBy("OrderStatus", guard);
+
+        Check.That(parameter.Expression).IsEqualTo("Any.Enum<OrderStatus>().DifferentFrom(OrderStatus.Draft)");
+        Check.That(parameter.Provenance.HasFlag(Provenance.Guard)).IsTrue();
+        Check.That(parameter.Provenance.HasFlag(Provenance.UnreadGuards)).IsFalse();
+    }
+
+    /// <summary>The universe check unwraps a nullable enum the same way the numeric rows unwrap a nullable number.</summary>
+    [Fact(DisplayName = "An enum exclusion guard is read the same on a nullable enum parameter.")]
+    public void AnEnumExclusionGuardIsReadTheSameOnANullableEnumParameter() {
+        string guard = "if (value == OrderStatus.Draft) { throw new ArgumentOutOfRangeException(nameof(value)); }";
+
+        ScaffoldedParameter parameter = Subject.GuardedBy("OrderStatus?", guard);
+
+        Check.That(parameter.Expression)
+             .IsEqualTo("Any.Enum<OrderStatus>().DifferentFrom(OrderStatus.Draft).As(value => (OrderStatus?)value)");
+    }
+
+    /// <summary>
+    ///     The negation is a different invariant, not this guard's inverse: <c>value != E.Member</c> throws
+    ///     unless the value <b>is</b> that member — a pin, not an exclusion — and is out of scope for this
+    ///     reading, so it is reported as unread rather than misread as <c>DifferentFrom</c>.
+    /// </summary>
+    [Fact(DisplayName = "An enum equality guard's negation is not read as an exclusion.")]
+    public void AnEnumEqualityGuardsNegationIsNotReadAsAnExclusion() {
+        string guard = "if (value != OrderStatus.Draft) { throw new ArgumentOutOfRangeException(nameof(value)); }";
+
+        ScaffoldedParameter parameter = Subject.GuardedBy("OrderStatus", guard);
+
+        Check.That(parameter.Expression).IsEqualTo("Any.Enum<OrderStatus>()");
+        Check.That(parameter.Provenance.HasFlag(Provenance.UnreadGuards)).IsTrue();
+    }
+
     // The row's own refinement and a guard saying the same thing collapse, rather than colliding: a string row
     // is already NonEmpty, and a constructor guarding on IsNullOrWhiteSpace agrees with it.
     [Fact(DisplayName = "A guard repeating the row's own constraint collapses into it.")]

@@ -585,10 +585,22 @@ L'ensemble reconnu est clos :
 | `p < N` | `.GreaterThanOrEqualTo(N)` |
 | `p == Guid.Empty` | `.NonEmpty()` |
 | `!Enum.IsDefined(typeof(E), p)`, `!Enum.IsDefined(p)` | aucune — `Any.Enum<E>()` ne tire déjà que des membres déclarés, **là où `p` est de type `E`** |
+| `p == E.Member` | `.DifferentFrom(E.Member)`, **là où `p` est de type `E`** |
 
 `.NonEmpty()` couvre `IsNullOrWhiteSpace` aussi bien que `IsNullOrEmpty`, parce qu'un
 `Any.String()` non contraint ne tire que des lettres et chiffres ASCII : un tirage non vide ne peut
 jamais être blanc (§14.5).
+
+**Une garde d'exclusion d'énumération est lue elle aussi, et c'est la garde d'énumération la plus
+courante qui soit** — `if (status == Status.None) { throw … }`. Roslyn rapporte un membre
+d'énumération à zéro comme une simple constante **entière**, donc sans cette ligne la condition
+tombait dans la ligne `p == 0` de la famille numérique et se lisait `.NonZero()` — un membre
+qu'`AnyEnum<T>` ne porte pas, abandonné silencieusement par la recherche de membre (§5.2). Un
+membre non nul ne correspondait à aucune ligne numérique et se lisait comme un paramètre sans
+garde. La même discipline d'identité du sujet que pour `Enum.IsDefined` s'applique : le membre
+doit appartenir au type d'énumération **propre** au paramètre. La négation, `p != E.Member`, est un
+invariant différent — elle lève à moins que la valeur **soit** ce membre, une fixation plutôt
+qu'une exclusion — et n'est pas lue comme l'inverse de cette ligne.
 
 Plusieurs conditions bornent l'arithmétique de la table elle-même, et toutes sont des refus plutôt
 que des approximations. **Le `N` d'une ligne de taille doit se rendre en l'`int` que prend tout

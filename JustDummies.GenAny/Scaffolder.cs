@@ -96,7 +96,7 @@ public static class Scaffolder {
         string?      fileNamespace = options.NamespaceOverride ?? NamespaceOf(target);
         TypeNames    names         = new(fileNamespace);
         GeneratorFor generators    = new(library, names, compilation, options.Naming);
-        GuardReading guards        = Guards.Read(constructor, compilation);
+        GuardReading guards        = Guards.Read(constructor, compilation, names);
 
         string targetName = names.Of(target);
 

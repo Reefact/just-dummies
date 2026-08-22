@@ -575,20 +575,37 @@ every spelling at once, including the ones nobody thought to list.
 Position is the other half, and a statement is the wrong unit for it. A write and a guard share one
 statement as readily as they occupy two — `else { percent = 100 - percent; ThrowIfNegative(percent); }`
 is a single statement carrying both — so what the engine asks about is the regions that have
-**finished** when the guard is evaluated: the statements above it at every level of nesting, and the
-condition of every `if` it sits under. That last part is what leaves the `else` rule above intact: a
-condition is evaluated before anything its own `else` body runs, so `if (v < 0) { throw … } else
-{ v = -v; }` still reads `v < 0` — the condition has no region of its own statement above it.
+**finished** when the guard is evaluated.
 
-Three shapes have no position the engine could read, and each is refused rather than modelled. **A
-loop is asked about entire**, because a write the source puts below the guard runs above it on the
-next turn: `while (v < 100) { ThrowIfGreaterThan(v, 50); v += 30; }` accepts no drawn value between
-51 and 99 and rejects 40, which source order alone calls `.LessThanOrEqualTo(50)`. **A write inside
-a local function or a lambda** is refused wherever it is declared, since such a body runs when it is
-called and `Bump(); … void Bump() { v++; }` writes first and reads last — §9 already names the
-indirection the tool does not follow, and this is the same gap from the other side. And **a `goto`
-anywhere in the body** ends the reading of every parameter the body writes, because a backward jump
-puts a write above a guard the source puts below it and nothing in the text says so.
+**It reads one order, and asks about every other construct entire.** The order it reads is statement
+sequencing, plus the fact that reaching either branch of an `if` means the condition ran first — and
+that second part is what leaves the `else` rule above intact, a condition having no region of its own
+statement above it, so `if (v < 0) { throw … } else { v = -v; }` still reads `v < 0`. Everything else
+answers whole. A loop runs its body again, so a write the source puts below the guard runs above it
+next turn; a `finally` runs after a `try` that wrote; a `switch` evaluates its governing expression
+before the section it picked; a `using` its resource before the body it scopes.
+
+That is the rule rather than a fallback for shapes nobody listed, and the reason is what the engine
+gets wrong when it is not. A walk that knows how to enter some constructs and yields nothing for the
+rest makes **silence** the answer for everything unlisted, and silence reads as *no write ran* — the
+one answer that turns a guard the engine cannot place into one it emits. All four constructs above
+were measured doing exactly that: `while (v < 100) { ThrowIfGreaterThan(v, 50); v += 30; }` accepts
+no drawn value between 51 and 99 and rejects 40, and `try { v = 100 - v; } finally { ThrowIfNegative(v); }`
+says nothing whatever about the drawn value, yet both were read as bounds on it. Asking about a
+region that is a *superset* can only add refusals and never remove one, so it holds for the
+constructs this page does not name, including the ones C# has not grown yet.
+
+Two writes sit outside that walk altogether and are refused wherever they are written. **One inside
+a local function or a lambda** runs when it is called rather than where it is declared —
+`Bump(); … void Bump() { v++; }` writes first and reads last — and §9 already names the indirection
+the tool does not follow; this is the same gap from the other side. And **any write at all in a body
+carrying a `goto`**, because a backward jump puts a write above a guard the source puts below it and
+nothing in the text says so.
+
+The price of asking entire is precision, and it is deliberate: a guard inside a `try`, a `switch` or
+a `using` whose construct writes the parameter only *after* that guard is refused although it was
+readable. Refusing a constraint costs an `unread guards` mark its author resolves once; emitting a
+wrong one costs a generator whose every draw the constructor rejects, reported as inferred.
 
 `ref` and `out` on the constructor's **own** parameters need no rule here — §5.1 already declines
 such a constructor, since the emitted factory could not call it.

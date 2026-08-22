@@ -596,23 +596,41 @@ orthographes d'un coup, y compris celles auxquelles personne n'a pensé.
 La position est l'autre moitié, et l'instruction en est la mauvaise unité. Une écriture et une garde
 partagent une instruction aussi facilement qu'elles en occupent deux —
 `else { percent = 100 - percent; ThrowIfNegative(percent); }` est une seule instruction qui porte les
-deux — donc ce que le moteur interroge, ce sont les régions **terminées** quand la garde est
-évaluée : les instructions au-dessus d'elle à chaque niveau d'imbrication, et la condition de chaque
-`if` sous lequel elle se trouve. C'est cette dernière partie qui laisse intacte la règle du `else`
-ci-dessus : une condition est évaluée avant que quoi que ce soit du corps de son propre `else` ne
-s'exécute, donc `if (v < 0) { throw … } else { v = -v; }` lit toujours `v < 0` — la condition n'a
-au-dessus d'elle aucune région de sa propre instruction.
+deux — donc ce que le moteur interroge, ce sont les régions **terminées** quand la garde est évaluée.
 
-Trois formes n'ont aucune position que le moteur puisse lire, et chacune est refusée plutôt que
-modélisée. **Une boucle est interrogée entière**, car une écriture que la source place sous la garde
-s'exécute au-dessus d'elle au tour suivant : `while (v < 100) { ThrowIfGreaterThan(v, 50); v += 30; }`
-n'accepte aucune valeur tirée entre 51 et 99 et rejette 40, ce que l'ordre de la source seul appelle
-`.LessThanOrEqualTo(50)`. **Une écriture dans une fonction locale ou un lambda** est refusée où
-qu'elle soit déclarée, puisqu'un tel corps s'exécute quand on l'appelle et que
-`Bump(); … void Bump() { v++; }` écrit en premier et lit en dernier — le §9 nomme déjà l'indirection
-que le tool ne suit pas, et c'est la même lacune vue de l'autre côté. Et **un `goto` n'importe où
-dans le corps** met fin à la lecture de tout paramètre que le corps écrit, car un saut arrière place
-une écriture au-dessus d'une garde que la source place au-dessous, et rien dans le texte ne le dit.
+**Il lit un seul ordre, et interroge entière toute autre construction.** L'ordre qu'il lit, c'est
+l'enchaînement des instructions, plus le fait qu'atteindre l'une ou l'autre branche d'un `if` signifie
+que sa condition s'est exécutée d'abord — et c'est cette seconde partie qui laisse intacte la règle du
+`else` ci-dessus, une condition n'ayant au-dessus d'elle aucune région de sa propre instruction, donc
+`if (v < 0) { throw … } else { v = -v; }` lit toujours `v < 0`. Tout le reste répond entier. Une boucle
+réexécute son corps, donc une écriture que la source place sous la garde s'exécute au-dessus d'elle au
+tour suivant ; un `finally` s'exécute après un `try` qui a écrit ; un `switch` évalue son expression de
+contrôle avant la section qu'elle sélectionne ; un `using` sa ressource avant le corps qu'il délimite.
+
+C'est la règle, et non un repli pour les formes que personne n'a listées ; la raison en est ce que le
+moteur se met à croire quand ce n'en est pas une. Un parcours qui sait entrer dans certaines
+constructions et ne rend rien pour les autres fait du **silence** la réponse pour tout ce qui n'est pas
+listé, et le silence se lit *aucune écriture ne s'est exécutée* — la seule réponse qui transforme une
+garde que le moteur ne peut pas placer en une garde qu'il émet. Les quatre constructions ci-dessus ont
+été mesurées en train de faire exactement cela :
+`while (v < 100) { ThrowIfGreaterThan(v, 50); v += 30; }` n'accepte aucune valeur tirée entre 51 et 99
+et rejette 40, et `try { v = 100 - v; } finally { ThrowIfNegative(v); }` n'énonce rigoureusement rien
+sur la valeur tirée, et pourtant les deux étaient lues comme des bornes sur elle. Interroger une région
+qui est un *sur-ensemble* ne peut qu'ajouter des refus, jamais en retirer : la règle vaut donc pour les
+constructions que cette page ne nomme pas, y compris celles que C# n'a pas encore.
+
+Deux écritures échappent entièrement à ce parcours et sont refusées où qu'elles soient écrites. **Celle
+qui se trouve dans une fonction locale ou un lambda** s'exécute quand on l'appelle et non là où elle est
+déclarée — `Bump(); … void Bump() { v++; }` écrit en premier et lit en dernier — et le §9 nomme déjà
+l'indirection que le tool ne suit pas ; c'est la même lacune vue de l'autre côté. Et **toute écriture
+dans un corps portant un `goto`**, car un saut arrière place une écriture au-dessus d'une garde que la
+source place au-dessous, et rien dans le texte ne le dit.
+
+Le prix d'une interrogation entière, c'est la précision, et il est délibéré : une garde dans un `try`,
+un `switch` ou un `using` dont la construction n'écrit le paramètre qu'*après* elle est refusée alors
+qu'elle était lisible. Refuser une contrainte coûte un marquage `unread guards` que son auteur lève une
+fois ; en émettre une fausse coûte un generator dont le constructeur rejette chaque tirage, rapporté
+comme inféré.
 
 `ref` et `out` sur les paramètres **propres** du constructeur n'ont besoin d'aucune règle ici — le
 §5.1 décline déjà un tel constructeur, puisque la fabrique émise ne saurait l'appeler.

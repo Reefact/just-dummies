@@ -27,10 +27,17 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   (`int.TryParse(text, out percent)`) and a `ref` local aliasing the parameter. Where they sit is a
   question about execution rather than about statements — a write and a guard share one statement in
   `else { percent = 100 - percent; ThrowIfNegative(percent); }`, which was measured emitting
-  `.Between(0, 50)` for a domain whose real answer is 50 and above. Three shapes carry no readable
-  position and are refused outright: a guard sharing a loop with a write (the write runs above it on
-  the next turn), a write inside a local function or a lambda (it runs when called, not where it is
-  written), and any body carrying a `goto`.
+  `.Between(0, 50)` for a domain whose real answer is 50 and above.
+
+  The tool reads one order — statements run as written, and reaching either branch of an `if` means
+  its condition ran first — and asks about every other construct **entire**. A loop runs its body
+  again, a `finally` runs after a `try` that wrote, a `switch` evaluates its governing expression
+  before the section it picked, a `using` its resource before the body it scopes; all four were
+  measured reading a guard as a bound on a value the constructor had already replaced. Two writes are
+  refused wherever they are written: one inside a local function or a lambda, which runs when called
+  rather than where it is declared, and any write in a body carrying a `goto`. The cost of asking
+  entire is precision — a guard inside a `try`, a `switch` or a `using` whose construct writes the
+  parameter only *after* it is refused although it was readable — and that trade is deliberate.
 
   **This narrows what compiles:** such a parameter is now marked `unread guards`, so its scaffold
   blocks compilation until its author confirms the generator, where before it compiled over a

@@ -22,7 +22,7 @@ n'existe, et la colonne **Origine** dit comment chacune est arrivée ici :
   aussi, car ce dépôt l'applique encore. Les deux copies sont désormais
   indépendantes : chaque côté peut remplacer la sienne sans toucher à l'autre.
   9 décisions.
-* **consigné ici** — décidé dans ce dépôt, de son propre chef. 39 décisions.
+* **consigné ici** — décidé dans ce dépôt, de son propre chef. 40 décisions.
 
 Les numéros appartiennent à cette base, attribués dans l'ordre où les décisions
 ont été consignées en amont
@@ -197,3 +197,4 @@ et qu'elle a été décidée le 01/08/2026 — l'index porte l'ordre, la numéro
 | [ADR-0080](0080-admit-a-rule-that-names-a-resolved-ambiguity.fr.md) | Admettre une règle JD qui nomme une ambiguïté que la bibliothèque tranche, à côté de l'équivalent plus court | Accepted | consigné ici |
 | [ADR-0081](0081-declare-one-top-level-type-per-file.fr.md) | Déclarer un seul type de premier niveau par fichier, via un analyseur de style tiers | Accepted | consigné ici |
 | [ADR-0082](0082-answer-for-the-finished-chain-not-each-constraint.fr.md) | Répondre de la chaîne finie, pas de chaque contrainte lue | Accepted | consigné ici |
+| [ADR-0083](0083-block-compilation-on-a-guard-the-engine-cannot-vouch-for.fr.md) | Bloquer la compilation sur une garde que le moteur ne peut pas cautionner | Accepted | consigné ici |

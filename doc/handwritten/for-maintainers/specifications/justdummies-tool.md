@@ -670,6 +670,17 @@ which is what an unconstrained draw over the seventeen lengths 0 to 16 predicts 
 That single measurement is why this section exists at all; D5 + D6 sets out the argument and the
 alternatives weighed against it.
 
+**A leading statement need not be an `if` to matter.** A guard delegated entirely to a helper —
+`Ensure.NotBlank(value);`, called plainly, with no `if` in the constructor at all — throws from
+inside a call the closed set above does not parse, so it used to pass unnoticed: the parameter read
+exactly like one with no guard on it, and the neutral generator it kept could draw a value the
+helper rejects on every real construction. Any statement before the first assignment to state that
+reaches the parameter through such a call is now marked `unread guards` too, the same as a condition
+the set fails to recognise — `nameof(...)` is exempted, since it names the parameter for a message
+rather than calling anything. The mark widens rather than narrows on purpose: a call the tool cannot
+read is a call it cannot rule out (ADR-0046), so it would rather flag an ordinary `.Trim()` than stay
+silent over `Ensure.NotBlank(value)`.
+
 ### 5.4 Composition
 
 **A scaffolded generator wins.** If the compilation contains a type named `Any{T}` implementing
@@ -754,9 +765,9 @@ Analyzing Shop.Domain.Order
 The right-hand column carries the provenance of each expression: empty for the base table,
 `guard` when §5.3 tightened it, `factory` when §5.4 composed it, `AnyX` when a scaffolded
 generator was reused, `guards not combined` for the §5.3 conflict case, `no source` when the
-constructor body was unavailable so no guard could be read, `unread guards` when the body throws in
-a way the recognised set did not match, `constraint unavailable` when a guard was read and
-understood and this generator carries no member to say it with, and `unavailable` when the
+constructor body was unavailable so no guard could be read, `unread guards` when a leading statement
+throws or calls in a way the recognised set did not match, `constraint unavailable` when a guard was
+read and understood and this generator carries no member to say it with, and `unavailable` when the
 generator exists in the library but not in the asset this project resolves.
 
 `guard` is computed from the constraints **applied**, never from the constraints read. The
@@ -936,9 +947,13 @@ Named explicitly so they are not mistaken for oversights.
 * **Invariants the tool cannot see.** §5.3 reads a closed set of guard idioms. Where the
   constructor throws in a way the set does not match — a cross-parameter rule, an arithmetic
   condition, a regex guard (§5.3) — the parameter gets the neutral generator and the recap marks it
-  `unread guards`, so the developer knows where to look. Where validation is delegated entirely to a helper
-  (`Guard.Against.Null(p)`), there is no throw in the body to see, and the tool cannot tell that
-  parameter from an unconstrained one. In neither case does it guess.
+  `unread guards`, so the developer knows where to look. The same mark now reaches a guard delegated
+  entirely to a helper called on the parameter itself (`Guard.Against.Null(value)`), even with no
+  `if` in the body at all (§5.3). What still escapes it is a guard reached only through a level of
+  indirection the tool does not follow — a local copy of the parameter (`var v = value;
+  Validate(v);`), a lambda closing over it, a call reached through a member rather than the
+  parameter's own name. There the tool still cannot tell the parameter from an unconstrained one,
+  and it does not guess.
 * **Round-tripping.** The tool never reads a file it previously wrote.
 * **`init` / `required` members, property-only construction.** Constructor and static factory only.
 * **Anything under `--all`.** Explicit type arguments only.

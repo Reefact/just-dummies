@@ -698,6 +698,18 @@ prédit un tirage non contraint sur les dix-sept longueurs de 0 à 16 (§17).
 Cette seule mesure est la raison d'être de cette section ; D5 + D6 en expose l'argument et les
 alternatives pesées contre lui.
 
+**Une instruction de tête n'a pas besoin d'être un `if` pour compter.** Une garde entièrement
+déléguée à un helper — `Ensure.NotBlank(value);`, appelé tel quel, sans aucun `if` dans le
+constructeur — lève depuis l'intérieur d'un appel que l'ensemble clos ci-dessus n'analyse pas, et
+passait donc inaperçue : le paramètre se lisait exactement comme un paramètre sans garde, et le
+generator neutre qu'il gardait pouvait tirer une valeur que le helper rejette à chaque construction
+réelle. Toute instruction précédant la première affectation à l'état qui atteint le paramètre par un
+tel appel est désormais marquée `unread guards` elle aussi, comme une condition que l'ensemble ne
+reconnaît pas — `nameof(...)` en est exempté, puisqu'il nomme le paramètre pour un message plutôt que
+d'appeler quoi que ce soit. Le marquage s'élargit plutôt qu'il ne se resserre, à dessein : un appel
+que le tool ne peut pas lire est un appel qu'il ne peut pas écarter (ADR-0046), donc il préfère
+signaler un simple `.Trim()` que rester silencieux sur `Ensure.NotBlank(value)`.
+
 ### 5.4 Composition
 
 **Un generator scaffoldé l'emporte.** Si la compilation contient un type nommé `Any{T}` implémentant
@@ -784,7 +796,8 @@ La colonne de droite porte la provenance de chaque expression : vide pour la tab
 quand le §5.3 l'a resserrée, `factory` quand le §5.4 l'a composée, `AnyX` quand un generator
 scaffoldé a été réutilisé, `guards not combined` pour le cas de conflit du §5.3, `no source` quand le
 corps du constructeur était indisponible et qu'aucune garde n'a pu être lue, `unread guards` quand
-le corps lève d'une façon que l'ensemble reconnu n'a pas appariée, `constraint unavailable` quand
+une instruction de tête lève ou appelle d'une façon que l'ensemble reconnu n'a pas appariée,
+`constraint unavailable` quand
 une garde a été lue et comprise et que ce generator ne porte aucun membre pour l'exprimer, et
 `unavailable` quand le generator existe dans la bibliothèque mais pas dans l'asset que ce projet
 résout.
@@ -975,11 +988,13 @@ Nommés explicitement pour ne pas être pris pour des oublis.
 * **Les invariants que le tool ne peut pas voir.** Le §5.3 lit un ensemble clos d'idiomes de garde.
   Là où le constructeur lève d'une façon que l'ensemble n'apparie pas — règle inter-paramètres,
   condition arithmétique, garde regex (§5.3) — le paramètre obtient le generator neutre et le
-  récapitulatif le marque `unread guards`, pour que le développeur sache où regarder. Là où la
-  validation est entièrement déléguée à un helper (`Guard.Against.Null(p)`), il n'y a aucun `throw`
-  à voir dans le corps, et le
-  tool ne peut pas distinguer ce paramètre d'un paramètre non contraint. Dans aucun des deux cas il
-  ne devine.
+  récapitulatif le marque `unread guards`, pour que le développeur sache où regarder. Le même
+  marquage atteint désormais une garde entièrement déléguée à un helper appelé sur le paramètre
+  lui-même (`Guard.Against.Null(value)`), même sans aucun `if` dans le corps (§5.3). Ce qui lui
+  échappe encore, c'est une garde atteinte seulement par un niveau d'indirection que le tool ne suit
+  pas — une copie locale du paramètre (`var v = value; Validate(v);`), un lambda qui le capture, un
+  appel atteint via un membre plutôt que par le nom propre du paramètre. Là, le tool ne peut
+  toujours pas distinguer ce paramètre d'un paramètre non contraint, et il ne devine pas.
 * **L'aller-retour.** Le tool ne relit jamais un fichier qu'il a écrit.
 * **Membres `init` / `required`, construction par propriétés.** Constructeur et fabrique statique
   uniquement.

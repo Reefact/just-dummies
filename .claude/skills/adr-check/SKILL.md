@@ -17,11 +17,12 @@ maintainer judge rather than guessing.
 
 ## 1 — Select, do not read the base
 
-There are 78 records. Reading them all is not what this check means, and never was.
+The base holds far more records than this check is meant to read. Reading them all is not
+what it means, and never was.
 
 1. Read only the index table:
    `grep '^| \[ADR-' doc/handwritten/for-maintainers/adr/README.md`
-   — 73 rows of *number · title · status · origin*.
+   — one row per decision: *number · title · status · origin*.
 2. Pick the **2 to 5** whose titles could plausibly bear on this change. Match on the
    subject the change touches, not on the words in the diff.
 3. Read those files, and only those. Widen only if one of them points at another.

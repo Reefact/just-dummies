@@ -47,7 +47,7 @@ happens.
 |---|---|
 | `doc/handwritten/for-users/` | how to write tests **with** JustDummies; analyzer pages; guides |
 | `doc/handwritten/for-maintainers/` | how to change this repository — start at its `README.md` |
-| `doc/handwritten/for-maintainers/adr/` | the 73 decision records and their index |
+| `doc/handwritten/for-maintainers/adr/` | the decision records and their index |
 | `doc/handwritten/for-maintainers/specifications/` | the `dum` specification, the ADR implementation reference |
 | `doc/handwritten/for-maintainers/workflows/` | one page per CI workflow |
 | `doc/handwritten/for-maintainers/audit/`, `migration/` | dated records of a past state, not current rules |

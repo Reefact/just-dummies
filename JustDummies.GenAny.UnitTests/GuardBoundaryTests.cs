@@ -677,6 +677,137 @@ public sealed class GuardBoundaryTests {
                                  """);
     }
 
+    /// <summary>
+    ///     A constructor initializer that writes the parameter ends the reading of the body's guards; one
+    ///     that does not leaves them read.
+    /// </summary>
+    /// <remarks>
+    ///     <c>: this(…)</c> and <c>: base(…)</c> run <b>entire</b> before the first statement of the body, so
+    ///     a write in one has already replaced the drawn value by the time any guard below it is evaluated.
+    ///     The placement walk started at the body, where an initializer is not a preceding statement but a
+    ///     sibling of the block itself — so it saw nothing, and
+    ///     <c>: this(Normalise(ref value))</c> above <c>if (value &lt; 0)</c> read as a bound on what the
+    ///     generator draws. An ordinary delegation to a wider overload, and the guard was about the value the
+    ///     delegation had computed.
+    ///     <para>
+    ///         The quiet row is the half that keeps the fix honest: having an initializer at all is not a
+    ///         reason to refuse, only writing the parameter in one is. It also pins that the compiler will
+    ///         analyse an initializer argument — a region reported as unanalysable would refuse here, and
+    ///         this row would fail rather than pass quietly.
+    ///     </para>
+    /// </remarks>
+    [Theory(DisplayName = "A constructor initializer is unread only where it writes the parameter.")]
+    [InlineData("Any.Int32()", true, "this(Normalize(ref value), true)")]
+    [InlineData("Any.Int32()", true, "this(Normalize(out value), true)")]
+    [InlineData("Any.Int32().GreaterThanOrEqualTo(0)", false, "this(value, true)")]
+    public void AnInitializerIsUnreadOnlyWhereItWritesTheParameter(string expected, bool unread, string initializer) {
+        ScaffoldOutcome outcome = Subject.Scaffold($$"""
+                                                   public sealed class Subject {
+
+                                                       private readonly int kept;
+
+                                                       public Subject(int value) : {{initializer}} {
+                                                           if (value < 0) { throw new ArgumentOutOfRangeException(nameof(value)); }
+
+                                                           kept = value;
+                                                       }
+
+                                                       private Subject(int seed, bool _) { kept = seed; }
+
+                                                       private static int Normalize(ref int value) { value = 100 - value; return value; }
+
+                                                       private static int Normalize(out int candidate) { candidate = 42; return candidate; }
+
+                                                   }
+                                                   """);
+
+        ScaffoldedParameter parameter = outcome.Plan!.Parameters[0];
+
+        Check.That(parameter.Expression).IsEqualTo(expected);
+        Check.That(parameter.Provenance.HasFlag(Provenance.UnreadGuards)).IsEqualTo(unread);
+    }
+
+    // `: base(…)` is the same rule and a different syntax node, so it is pinned rather than assumed to
+    // follow: a base initializer may write a parameter through `ref` or `out` exactly as a `this` one may.
+    [Fact(DisplayName = "A base initializer that writes the parameter ends the reading too.")]
+    public void ABaseInitializerThatWritesEndsTheReading() {
+        ScaffoldOutcome outcome = Subject.Scaffold("""
+                                                   public abstract class Root {
+                                                       protected Root(int seed) { }
+                                                   }
+
+                                                   public sealed class Subject : Root {
+
+                                                       private readonly int kept;
+
+                                                       public Subject(int value) : base(Normalize(out value)) {
+                                                           if (value < 0) { throw new ArgumentOutOfRangeException(nameof(value)); }
+
+                                                           kept = value;
+                                                       }
+
+                                                       private static int Normalize(out int candidate) { candidate = 42; return candidate; }
+
+                                                   }
+                                                   """);
+
+        Check.That(outcome.Plan!.Parameters[0].Expression).IsEqualTo("Any.Int32()");
+        Check.That(outcome.Plan.Parameters[0].Provenance.HasFlag(Provenance.UnreadGuards)).IsTrue();
+    }
+
+    // The initializer obeys the same scoping as every other write: it ends the reading of the parameter it
+    // writes and of no other, so the constructor's remaining guards are untouched.
+    [Fact(DisplayName = "An initializer write ends the reading of its own parameter only.")]
+    public void AnInitializerWriteEndsTheReadingOfItsOwnParameterOnly() {
+        ScaffoldOutcome outcome = Subject.Scaffold("""
+                                                   public sealed class Subject {
+
+                                                       private readonly int percent;
+                                                       private readonly string label;
+
+                                                       public Subject(int percent, string label) : this(Normalize(ref percent), label, true) {
+                                                           if (percent < 0) { throw new ArgumentOutOfRangeException(nameof(percent)); }
+                                                           if (label.Length < 8) { throw new ArgumentException(nameof(label)); }
+
+                                                           this.percent = percent;
+                                                           this.label = label;
+                                                       }
+
+                                                       private Subject(int seed, string text, bool _) { percent = seed; label = text; }
+
+                                                       private static int Normalize(ref int value) { value = 100 - value; return value; }
+
+                                                   }
+                                                   """);
+
+        Check.That(outcome.Plan!.Parameters[0].Provenance.HasFlag(Provenance.UnreadGuards)).IsTrue();
+        Check.That(outcome.Plan.Parameters[1].Expression).IsEqualTo("Any.String().WithMinLength(8)");
+        Check.That(outcome.Plan.Parameters[1].Provenance.HasFlag(Provenance.UnreadGuards)).IsFalse();
+    }
+
+    /// <summary>
+    ///     A constructor with no body of its own reads no guards at all, so the placement question never
+    ///     arises for it.
+    /// </summary>
+    /// <remarks>
+    ///     The modern constructor forms §5.1 already accepts — a positional record, a primary constructor —
+    ///     declare no <c>BaseMethodDeclarationSyntax</c> to read, so §6 reports them as having no source
+    ///     rather than as having no guards. That is not an accident worth relying on silently: it is the
+    ///     reason an initializer on one of those forms cannot produce a bound the generator would draw
+    ///     against, and it is pinned here so the day one of them grows a body is the day this test says so.
+    /// </remarks>
+    [Theory(DisplayName = "A constructor form with no body of its own reads no guards, and says so.")]
+    [InlineData("public sealed record Subject(int Value);")]
+    [InlineData("public sealed class Subject(int value) { public int Kept => value; }")]
+    public void AConstructorFormWithNoBodyReadsNoGuards(string declaration) {
+        ScaffoldOutcome outcome = Subject.Scaffold(declaration);
+
+        ScaffoldedParameter parameter = outcome.Plan!.Parameters[0];
+
+        Check.That(parameter.Provenance.HasFlag(Provenance.NoSource)).IsTrue();
+        Check.That(parameter.Provenance.HasFlag(Provenance.Guard)).IsFalse();
+    }
+
     // A statement that rejects nothing constrains nothing: defaulting a value is not refusing it, so there is
     // no invariant here for a draw to violate and nothing to send the developer looking at.
     [Theory(DisplayName = "A statement that rejects no value is not a guard, and says nothing.")]

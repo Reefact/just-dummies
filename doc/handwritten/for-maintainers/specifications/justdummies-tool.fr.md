@@ -619,6 +619,13 @@ sur la valeur tirée, et pourtant les deux étaient lues comme des bornes sur el
 qui est un *sur-ensemble* ne peut qu'ajouter des refus, jamais en retirer : la règle vaut donc pour les
 constructions que cette page ne nomme pas, y compris celles que C# n'a pas encore.
 
+**Le corps n'est pas là où le constructeur commence.** Un `: this(…)` ou un `: base(…)` s'exécute entier
+avant la première instruction : ses arguments sont donc des régions terminées pour toute garde en
+dessous — `: this(Normalise(ref value))` est une délégation ordinaire vers une surcharge plus large, et
+elle a déjà remplacé la valeur tirée quand le premier `if` du corps est évalué. Une forme de
+constructeur qui ne déclare aucun corps propre — record positionnel, constructeur primaire — ne lit
+aucune garde et est rapportée comme sans source (§6) : la question ne s'y pose pas.
+
 Deux écritures échappent entièrement à ce parcours et sont refusées où qu'elles soient écrites. **Celle
 qui se trouve dans une fonction locale ou un lambda** s'exécute quand on l'appelle et non là où elle est
 déclarée — `Bump(); … void Bump() { v++; }` écrit en premier et lit en dernier — et le §9 nomme déjà

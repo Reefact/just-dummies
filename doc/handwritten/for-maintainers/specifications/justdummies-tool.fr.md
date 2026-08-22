@@ -698,7 +698,19 @@ prédit un tirage non contraint sur les dix-sept longueurs de 0 à 16 (§17).
 Cette seule mesure est la raison d'être de cette section ; D5 + D6 en expose l'argument et les
 alternatives pesées contre lui.
 
-**Une instruction de tête n'a pas besoin d'être un `if` pour compter.** Une garde entièrement
+**Une instruction qui lève est une garde, quelle que soit sa forme.** La seule chose qu'un `throw`
+placé avant la première affectation à l'état ne peut pas être, c'est de la logique ordinaire : il
+refuse de construire l'objet. Donc là où l'ensemble reconnu n'a pas su analyser la forme qui le
+porte — une chaîne d'`else if`, un bloc qui journalise avant de lever, une condition hors de
+l'ensemble clos — les paramètres que cette instruction nomme sont marqués `unread guards`, comme
+une condition que l'ensemble ne reconnaît pas. Ces formes tombaient auparavant à côté de la branche
+des gardes reconnues et n'étaient signalées d'aucune façon :
+`if (v < 0) { throw … } else if (v > 100) { throw … }` se lisait exactement comme un paramètre que
+personne n'avait contraint. Un paramètre nommé seulement dans le `nameof` du message du `throw` ne
+compte pas — cela nomme le paramètre rejeté à l'intention d'un lecteur plutôt que de tester quoi que
+ce soit, et toute garde réelle de cette forme nomme aussi son sujet dans la condition.
+
+**Une instruction de tête n'a pas besoin non plus d'être un `if` pour compter.** Une garde entièrement
 déléguée à un helper — `Ensure.NotBlank(value);`, appelé tel quel, sans aucun `if` dans le
 constructeur — lève depuis l'intérieur d'un appel que l'ensemble clos ci-dessus n'analyse pas, et
 passait donc inaperçue : le paramètre se lisait exactement comme un paramètre sans garde, et le
@@ -1075,8 +1087,11 @@ Nommés explicitement pour ne pas être pris pour des oublis.
   n'a pas dit que le generator est le bon** (§5.6) : la recette est bien écrite, sous une ligne
   nommant un identifiant qui n'existe pas. Le même marquage atteint une garde entièrement déléguée
   à un helper appelé sur le paramètre lui-même (`Guard.Against.Null(value)`), même sans aucun `if`
-  dans le corps (§5.3), dès lors que l'appel est fait pour son seul effet. Deux formes lui échappent
-  encore. Une garde-helper qui **retourne** la valeur vérifiée — `_name = Ensure.NotBlank(value);` —
+  dans le corps (§5.3), dès lors que l'appel est fait pour son seul effet ; et il atteint aussi toute
+  instruction qui lève dans une forme que l'ensemble n'a pas su analyser du tout. Deux formes lui
+  échappent encore, et toutes deux sont silencieuses plutôt que simplement non lues — le tool n'y
+  voit aucun rejet dont douter. Une garde-helper qui **retourne** la valeur vérifiée —
+  `_name = Ensure.NotBlank(value);` —
   est indiscernable d'une normalisation, et la lire comme un doute reviendrait à lire
   `_name = value.Trim();` comme un doute aussi, ce qui bloque la compilation de constructeurs ne
   portant aucune garde. Et une garde atteinte seulement par un niveau d'indirection que le tool ne

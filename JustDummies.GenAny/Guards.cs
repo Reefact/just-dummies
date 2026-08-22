@@ -76,11 +76,45 @@ internal static class Guards {
             if (statement is IfStatementSyntax { Else: null } guard && ThrowsUnconditionally(guard.Statement)) {
                 ReadOne(guard.Condition, model, method, reading);
             } else {
+                MarkIfItRejects(statement, model, method, reading);
                 MarkIfValidatedElsewhere(statement, model, method, reading);
             }
         }
 
         return reading;
+    }
+
+    /// <summary>
+    ///     Whether a leading statement rejects values at all, in a shape §5.3 could not read, and marks every
+    ///     parameter it names as unread.
+    /// </summary>
+    /// <remarks>
+    ///     The one thing a <c>throw</c> before the first assignment to state cannot be is ordinary logic: it
+    ///     refuses to build the object, which is the definition of a guard. So a statement carrying one is a
+    ///     guard whatever its shape, and where the recognised set could not parse that shape — an
+    ///     <c>else if</c> chain, a block that logs before it throws, a condition outside the closed set — the
+    ///     right answer is the one §9 already gives, <c>unread guards</c>, and not silence.
+    ///     <para>
+    ///         Silence was what it got: those shapes fall past the recognised-guard branch above, and the call
+    ///         rule below only catches them where the body happens to call something naming the parameter. So
+    ///         <c>if (v &lt; 0) { throw … } else if (v &gt; 100) { throw … }</c> read exactly like a parameter
+    ///         nobody had constrained — a throwing guard, in plain sight, reported as none.
+    ///     </para>
+    ///     <para>
+    ///         A parameter named only inside the <c>nameof</c> of the throw's own message does not count, for
+    ///         the reason <see cref="IsNameOf" /> gives: that names the rejected parameter for a reader rather
+    ///         than testing anything. Every real guard of this shape names its subject in the condition too.
+    ///     </para>
+    /// </remarks>
+    private static void MarkIfItRejects(StatementSyntax statement, SemanticModel model, IMethodSymbol method, GuardReading reading) {
+        if (!Throws(statement)) { return; }
+
+        foreach (IParameterSymbol parameter in Mentioned(statement, model, method)) { reading.MarkUnread(parameter.Name); }
+    }
+
+    /// <summary>Whether anything anywhere in <paramref name="statement" /> refuses to go on.</summary>
+    private static bool Throws(StatementSyntax statement) {
+        return statement.DescendantNodesAndSelf().Any(node => node is ThrowStatementSyntax or ThrowExpressionSyntax);
     }
 
     /// <summary>
@@ -552,15 +586,28 @@ internal static class Guards {
                                                                                   parameter));
     }
 
-    private static IParameterSymbol[] Mentioned(ExpressionSyntax condition, SemanticModel model, IMethodSymbol method) {
-        return condition.DescendantNodesAndSelf()
-                        .OfType<IdentifierNameSyntax>()
-                        .Select(identifier => model.GetSymbolInfo(identifier).Symbol as IParameterSymbol)
-                        .Where(symbol => symbol is not null && method.Parameters.Contains(symbol, SymbolEqualityComparer.Default))
-                        .Select(symbol => symbol!)
-                        .Distinct(SymbolEqualityComparer.Default)
-                        .OfType<IParameterSymbol>()
-                        .ToArray();
+    /// <summary>
+    ///     The parameters <paramref name="node" /> names for itself, past any <c>nameof</c> inside it.
+    /// </summary>
+    /// <remarks>
+    ///     The exclusion matters once whole statements are read rather than conditions alone: every guard's own
+    ///     throw spells its rejected parameter with <c>nameof</c>, so counting it would make the message the
+    ///     evidence instead of the test.
+    /// </remarks>
+    private static IParameterSymbol[] Mentioned(SyntaxNode node, SemanticModel model, IMethodSymbol method) {
+        InvocationExpressionSyntax[] spelled = [.. node.DescendantNodesAndSelf()
+                                                       .OfType<InvocationExpressionSyntax>()
+                                                       .Where(IsNameOf)];
+
+        return node.DescendantNodesAndSelf()
+                   .OfType<IdentifierNameSyntax>()
+                   .Where(identifier => !spelled.Any(name => name.Contains(identifier)))
+                   .Select(identifier => model.GetSymbolInfo(identifier).Symbol as IParameterSymbol)
+                   .Where(symbol => symbol is not null && method.Parameters.Contains(symbol, SymbolEqualityComparer.Default))
+                   .Select(symbol => symbol!)
+                   .Distinct(SymbolEqualityComparer.Default)
+                   .OfType<IParameterSymbol>()
+                   .ToArray();
     }
 
     /// <summary>A body that throws whatever happens, rather than one that merely might.</summary>

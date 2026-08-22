@@ -73,6 +73,16 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   the run exited `0`. Each is now a refusal naming the remedy. Required members stay deferred (§16) — this
   makes deferring them audible. **The exit codes do not move**: every one of these is §7's existing `1`.
 
+### Changed
+
+- **Each parameter's recipe now lives in its own factory.** The public constructor's initializer used to build
+  every chain inline; it now names one `private static` factory per parameter — `CustomerFactory()` beside
+  `ReferenceFactory()` — and calls it. The constructor reads as a list of names, and whatever a parameter has
+  to say for itself is said inside the method that owns it rather than crowding the call site. An unresolved
+  parameter's TODO moves with it: the non-existent identifier is now the factory's `return`, not the
+  constructor argument. Every emitted file's shape changes; `Generate()`, the fields and the `With…` methods
+  do not.
+
 ## [1.1.0-beta.1] - 2026-08-13
 
 A minor release, and additive throughout: three new options, and not one existing behaviour changed.

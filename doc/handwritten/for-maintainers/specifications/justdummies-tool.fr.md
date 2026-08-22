@@ -264,12 +264,36 @@ public sealed partial class AnyOrder : IAny<Order> {
 
     /// <summary>Creates the generator with a default recipe for every constructor parameter.</summary>
     public AnyOrder()
-        : this(reference: Any.String().NonEmpty().As(OrderReference.Create),
-               customer:  new AnyCustomer(),
-               quantity:  Any.Int32().Positive(),
-               status:    Any.Enum<OrderStatus>(),
-               tags:      Any.ListOf(Any.String().NonEmpty()),
-               placedAt:  Any.DateTime()) { }
+        : this(reference: ReferenceFactory(),
+               customer:  CustomerFactory(),
+               quantity:  QuantityFactory(),
+               status:    StatusFactory(),
+               tags:      TagsFactory(),
+               placedAt:  PlacedAtFactory()) { }
+
+    private static IAny<OrderReference> ReferenceFactory() {
+        return Any.String().NonEmpty().As(OrderReference.Create);
+    }
+
+    private static IAny<Customer> CustomerFactory() {
+        return new AnyCustomer();
+    }
+
+    private static IAny<int> QuantityFactory() {
+        return Any.Int32().Positive();
+    }
+
+    private static IAny<OrderStatus> StatusFactory() {
+        return Any.Enum<OrderStatus>();
+    }
+
+    private static IAny<IReadOnlyList<string>> TagsFactory() {
+        return Any.ListOf(Any.String().NonEmpty());
+    }
+
+    private static IAny<DateTime> PlacedAtFactory() {
+        return Any.DateTime();
+    }
 
     private AnyOrder(IAny<OrderReference>        reference,
                      IAny<Customer>              customer,
@@ -331,7 +355,11 @@ public sealed partial class AnyOrder : IAny<Order> {
 * Un `private readonly IAny<TParam> _param;` par paramètre du constructeur, dans l'ordre de
   déclaration.
 * Un **constructeur public sans paramètre** portant la recette inférée, écrit avec des arguments
-  nommés pour que le lecteur associe chaque expression à son paramètre sans compter.
+  nommés pour que le lecteur associe chaque appel à son paramètre sans compter.
+* Une **fabrique privée statique** par paramètre — `{Param}Factory()` — logeant sa recette.
+  L'initialiseur du constructeur public les appelle par leur nom plutôt que d'inliner chaque
+  chaîne ; le TODO d'un paramètre non résolu (§5.5) vit dans sa propre fabrique, pas au point
+  d'appel.
 * Un **constructeur privé complet** réalisant la copie.
 * Par paramètre, **deux** surcharges `With{Param}` retournant une nouvelle instance :
   `With{Param}(TParam value)` et `With{Param}(IAny<TParam> generator)`.
@@ -689,23 +717,35 @@ la règle de conception 2.
 
 ### 5.5 Paramètres non résolus
 
-L'argument du paramètre dans le constructeur public devient un identifiant qui n'existe pas :
+La fabrique propre au paramètre retourne un identifiant qui n'existe pas, exactement là où sa
+recette se trouverait sinon — le point d'appel dans le constructeur public reste un simple nom,
+comme pour tout autre paramètre :
 
 ```csharp
     public AnyOrder()
-        : this(reference: Any.String().NonEmpty().As(OrderReference.Create),
-               // TODO(dum): no generator inferred for 'Customer customer'.
-               //   Scaffold one:  dum generate Customer
-               //   or write one here, or delete this argument and always pass .WithCustomer(...).
-               customer:  TODO_supply_a_generator_for_customer,
-               quantity:  Any.Int32().Positive(),
-               ...
+        : this(reference: ReferenceFactory(),
+               customer:  CustomerFactory(),
+               quantity:  QuantityFactory(),
+               ...) { }
+
+    private static IAny<OrderReference> ReferenceFactory() {
+        return Any.String().NonEmpty().As(OrderReference.Create);
+    }
+
+    private static IAny<Customer> CustomerFactory() {
+        // TODO(dum): no generator inferred for 'Customer customer'.
+        //   Scaffold one:  dum generate Customer
+        //   or write one here, or replace it and always pass .WithCustomer(...) instead.
+        return TODO_supply_a_generator_for_customer;
+    }
+
+    // ... une fabrique par paramètre ...
 ```
 
 Le fichier ne compile pas tant que le développeur n'a pas agi. C'est le but (D6). Le message du
 compilateur lui-même — *« The name 'TODO_supply_a_generator_for_customer' does not exist in the
 current context »* — est l'instruction, et il apparaît dans l'IDE, dans la liste d'erreurs et en
-intégration continue.
+intégration continue, à la ligne propre à `CustomerFactory`.
 
 Les deux alternatives ont été écartées : une expression `throw` compile et reporte l'échec au premier
 run de test, et omettre le paramètre rend `AnyOrder` silencieusement inutilisable. Le développeur

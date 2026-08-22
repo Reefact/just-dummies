@@ -19,8 +19,16 @@ public sealed partial class AnyAddress : IAny<Address> {
 
     /// <summary>Creates the generator with a default recipe for every constructor parameter.</summary>
     public AnyAddress()
-        : this(street: Any.String().NonEmpty(),
-               city:   Any.String().NonEmpty()) { }
+        : this(street: StreetFactory(),
+               city:   CityFactory()) { }
+
+    private static IAny<string> StreetFactory() {
+        return Any.String().NonEmpty();
+    }
+
+    private static IAny<string> CityFactory() {
+        return Any.String().NonEmpty();
+    }
 
     private AnyAddress(IAny<string> street,
                        IAny<string> city) {

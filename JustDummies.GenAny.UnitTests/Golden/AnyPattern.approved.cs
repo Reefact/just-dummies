@@ -18,7 +18,11 @@ namespace Shop.Legacy {
 
         /// <summary>Creates the generator with a default recipe for every constructor parameter.</summary>
         public AnyPattern()
-            : this(text: Any.String().NonEmpty()) { }
+            : this(text: TextFactory()) { }
+
+        private static IAny<string> TextFactory() {
+            return Any.String().NonEmpty();
+        }
 
         private AnyPattern(IAny<string> text) {
             _text = text;

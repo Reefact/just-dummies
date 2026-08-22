@@ -441,11 +441,22 @@ le paramètre non résolu.
 3. Un constructeur sans paramètre donne un `AnyOrder` valide et trivial, sans méthode `With`.
 4. Les records positionnels fonctionnent sans traitement particulier — leur constructeur primaire
    est un constructeur public ordinaire. Les membres `init` et `required` sont **hors périmètre**
-   (§16).
+   (§16) — et hors périmètre est un **refus**, jamais un silence : un type dont le constructeur
+   retenu laisse un membre `required` non assigné est refusé (§7), parce que l'alternative est un
+   fichier annonçant `1 of 1 parameters inferred` puis faisant échouer la compilation du
+   développeur en `CS9035`. Un constructeur marqué `[SetsRequiredMembers]` les assigne, et est
+   scaffoldé comme n'importe quel autre.
 5. Un constructeur ayant un paramètre `ref` ou `out` n'est **pas éligible** : `Generate()` passe des
    arguments par valeur, et un tel site d'appel échoue en `CS1620` — vérifié. L'ignorer et
    considérer le candidat suivant ; s'il n'en reste aucun, le type est non résolu (§7). `in`
    convient, un argument par valeur s'y lie.
+6. **Trouver un constructeur n'est pas la même question que pouvoir l'appeler.** Un type
+   **abstrait** déclare des constructeurs publics et ne peut pas être instancié (`CS0144`) ; un
+   type **générique** — ou imbriqué dans un générique — ne peut pas même être nommé, puisque rien
+   n'en fournit l'argument de type (`CS0246`). Les deux sont refusés avant que quoi que ce soit ne
+   soit écrit (§7). La vérification est ici plutôt que dans l'émetteur : un fichier que le
+   développeur ne peut pas compiler, écrit sous un récapitulatif affirmant que tous les paramètres
+   ont été inférés, est pire que pas de fichier du tout.
 
 ### 5.2 La table de base
 
@@ -761,6 +772,10 @@ réponses.
 | Aucun / plusieurs projets trouvés | `1` | Candidats listés, `--project` suggéré. |
 | Le projet ne charge pas ou n'est pas restauré | `1` | Le diagnostic MSBuild, tel quel. |
 | Le projet ne référence pas JustDummies | `1` | Rien ne peut être résolu (D4) ; le dit et suggère le package. |
+| Rien ne construit le type cible (§5.1) | `1` | Nomme ce dont `Generate()` a besoin : un constructeur d'instance public passant tous ses paramètres par valeur. |
+| Le type cible est abstrait | `1` | Il a des constructeurs et ne peut pas être instancié ; suggère un type concret qui en dérive. |
+| Le type cible est générique, ou imbriqué dans un générique | `1` | Rien n'en fournit l'argument de type, donc le fichier émis ne pourrait pas le nommer. |
+| Les membres `required` du type cible ne sont pas assignés par le constructeur retenu | `1` | Reporté au §16 ; nomme `[SetsRequiredMembers]`, scaffoldé comme n'importe quel autre constructeur. |
 | `--entry-point any`, projet en deçà de C# 14 | `1` | Nomme la version que le projet a résolue, et `static:<Name>`. |
 | `--entry-point static:Any` | `2` | Nomme ce qui cesserait de compiler, et renvoie vers `--entry-point any`. |
 | `--entry-point` reçoit une valeur hors des trois | `2` | Liste les trois. |

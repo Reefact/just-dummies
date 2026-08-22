@@ -8,7 +8,26 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ## [Unreleased]
 
-_No unreleased changes recorded yet._
+### Fixed
+
+- **A guard is read only where the parameter is its subject.** `if (Math.Abs(degrees) > 90)` became
+  `Any.Int32().LessThanOrEqualTo(90)` — a generator every draw of which that guard rejects, reported as
+  `guard` rather than as unread. Two siblings did the same: a bound on a member of a non-numeric parameter
+  (`duration.TotalMinutes < 5` on a `TimeSpan`) emitted an argument the constraint could not bind, failing
+  the developer's build with `CS1503`; and a `Length` read off something *derived* from the parameter
+  (`value.Split(',').Length`, `value[0].Length`) was taken for the parameter's own size, so an element's
+  length became a collection's count. All three now leave the parameter with its neutral generator and mark
+  it `unread guards`, which is what §9 always said an arithmetic condition gets.
+- **An odd parameter name emits a file that compiles.** `@event` reached the emitted file as `event` —
+  Roslyn drops the escape — so the file did not parse at all, under a recap claiming every parameter
+  inferred. `_id` failed the other way: the field derived from it carried the same identifier as the
+  constructor parameter, so the assignment was `_id = _id`, which compiles and leaves the field null, making
+  every draw throw. Both names are ones §17 already promised worked.
+- **A type the emitted file could not construct is now refused, not scaffolded.** An **abstract** type
+  (`CS0144`), a **generic** one or one nested in a generic (`CS0246`), and a type whose chosen constructor
+  leaves a `required` member unset (`CS9035`) each declared a public constructor, so a file was written and
+  the run exited `0`. Each is now a refusal naming the remedy. Required members stay deferred (§16) — this
+  makes deferring them audible. **The exit codes do not move**: every one of these is §7's existing `1`.
 
 ## [1.1.0-beta.1] - 2026-08-13
 

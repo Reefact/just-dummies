@@ -427,11 +427,21 @@ marks the parameter unresolved.
    returning itself, that factory is used instead and `Generate()` calls it.
 3. A parameterless constructor yields a valid, trivial `AnyOrder` with no `With` methods.
 4. Positional records work with no special handling — their primary constructor is an ordinary
-   public constructor. `init` and `required` members are **out of scope** (§16).
+   public constructor. `init` and `required` members are **out of scope** (§16) — and out of scope
+   is a **refusal**, never a silence: a type whose chosen constructor leaves a `required` member
+   unset is refused (§7), because the alternative is a file reporting `1 of 1 parameters inferred`
+   and then failing the developer's build with `CS9035`. A constructor marked
+   `[SetsRequiredMembers]` sets them, and is scaffolded like any other.
 5. A constructor with a `ref` or `out` parameter is **not eligible**: `Generate()` passes plain
    value arguments, and such a call site fails with `CS1620` — verified. Skip it and consider the
    next candidate; if none remains, the type is unresolved (§7). `in` is fine, a value argument
    binds to it.
+6. **Finding a constructor is not the same question as being able to call it.** An **abstract**
+   type declares public constructors and cannot be instantiated (`CS0144`); a **generic** one — or
+   one nested in a generic one — cannot be named at all, since nothing supplies its type argument
+   (`CS0246`). Both are refused before anything is written (§7). The check belongs here rather
+   than in the emitter: a file the developer cannot compile, written under a recap claiming every
+   parameter inferred, is worse than no file.
 
 ### 5.2 The base table
 
@@ -735,6 +745,10 @@ The provenance words are the recap's own (§6), read from one table rather than 
 | No project / several projects found | `1` | Candidates listed, `--project` suggested. |
 | Project fails to load or restore | `1` | The MSBuild diagnostic, verbatim. |
 | The project does not reference JustDummies | `1` | Nothing can be resolved (D4); says so and suggests the package. |
+| Nothing constructs the target (§5.1) | `1` | Names what `Generate()` needs: a public instance constructor passing every parameter by value. |
+| The target is abstract | `1` | It has constructors and cannot be instantiated; suggests a concrete type that derives from it. |
+| The target is generic, or nested in a generic type | `1` | Nothing supplies the type argument, so the emitted file could not name it. |
+| The target's `required` members are unset by the chosen constructor | `1` | Deferred to §16; names `[SetsRequiredMembers]`, which is scaffolded like any other constructor. |
 | `--entry-point any`, project below C# 14 | `1` | Names the version the project resolved, and `static:<Name>`. |
 | `--entry-point static:Any` | `2` | Names what would stop compiling, and points at `--entry-point any`. |
 | `--entry-point` given a value that is not one of the three | `2` | Lists the three. |

@@ -118,6 +118,9 @@ internal static class Refusals {
             ScaffoldStatus.TypeAmbiguous         => Ambiguous(typeArgument, outcome.Candidates),
             ScaffoldStatus.LibraryNotReferenced  => NotReferenced(typeArgument),
             ScaffoldStatus.NoEligibleConstructor => NotConstructible(typeArgument),
+            ScaffoldStatus.TypeIsAbstract        => Abstract(typeArgument),
+            ScaffoldStatus.TypeIsGeneric         => Generic(typeArgument),
+            ScaffoldStatus.RequiredMembersUnset  => RequiredMembers(typeArgument),
             _                                    => [Mark + $"{typeArgument}: {outcome.Status}."]
         };
     }
@@ -172,6 +175,37 @@ internal static class Refusals {
         return [
             Mark + $"{typeArgument}: nothing here constructs it.",
             "  Generate() needs a public instance constructor whose parameters are all passed by value."
+        ];
+    }
+
+    /// <summary>
+    ///     An abstract type has constructors and still cannot be instantiated, which is why this reads
+    ///     differently from <see cref="NotConstructible" />: the remedy is another type, not another
+    ///     constructor.
+    /// </summary>
+    private static IReadOnlyList<string> Abstract(string typeArgument) {
+        return [
+            Mark + $"{typeArgument} is abstract, so Generate() has nothing to instantiate.",
+            "  Scaffold a concrete type that derives from it instead."
+        ];
+    }
+
+    /// <summary>Nothing supplies the type argument, and the tool will not invent one.</summary>
+    private static IReadOnlyList<string> Generic(string typeArgument) {
+        return [
+            Mark + $"{typeArgument} is generic, and the emitted file has no type argument to name.",
+            "  Scaffold a non-generic type, or write by hand the generator for the closing you need."
+        ];
+    }
+
+    /// <summary>
+    ///     Deferred, and deferring it has to be said out loud: the alternative is a file that reports success
+    ///     and then fails the developer's build.
+    /// </summary>
+    private static IReadOnlyList<string> RequiredMembers(string typeArgument) {
+        return [
+            Mark + $"{typeArgument} declares members marked required that its constructor does not set.",
+            "  This tool does not set them yet. Mark that constructor [SetsRequiredMembers], or write the generator by hand."
         ];
     }
 

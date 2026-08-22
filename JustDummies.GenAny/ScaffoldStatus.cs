@@ -34,6 +34,36 @@ public enum ScaffoldStatus {
     ///     The name matched several types. The outcome carries their full names, and the developer says which
     ///     — the engine does not pick.
     /// </summary>
-    TypeAmbiguous = 4
+    TypeAmbiguous = 4,
+
+    /// <summary>
+    ///     The target is abstract, so <c>Generate()</c>'s <c>new</c> would not compile (§5.1).
+    /// </summary>
+    /// <remarks>
+    ///     A public constructor on an abstract class is legal and effectively protected, so the constructor
+    ///     choice of §5.1 finds one and the file emitted from it looked complete — <c>CS0144</c> at the
+    ///     developer's next build, after a recap claiming every parameter inferred.
+    /// </remarks>
+    TypeIsAbstract = 5,
+
+    /// <summary>
+    ///     The target is generic, or nested in a generic type, so the emitted file could not name it (§5.1).
+    /// </summary>
+    /// <remarks>
+    ///     Nothing supplies the type argument: the generator would declare <c>IAny&lt;Envelope&lt;TPayload&gt;&gt;</c>
+    ///     with <c>TPayload</c> bound to nothing, which is <c>CS0246</c> wherever it appears.
+    /// </remarks>
+    TypeIsGeneric = 6,
+
+    /// <summary>
+    ///     The target declares required members the chosen constructor does not set (§5.1, §16).
+    /// </summary>
+    /// <remarks>
+    ///     §16 defers required members to a later version, and this is what deferring one has to mean: a
+    ///     refusal naming the case, never a file that says <c>1 of 1 parameters inferred</c> and then fails
+    ///     the developer's build with <c>CS9035</c>. A constructor marked <c>[SetsRequiredMembers]</c> sets
+    ///     them, and is scaffolded like any other.
+    /// </remarks>
+    RequiredMembersUnset = 7
 
 }

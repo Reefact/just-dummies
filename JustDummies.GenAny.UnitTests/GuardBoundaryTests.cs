@@ -572,6 +572,111 @@ public sealed class GuardBoundaryTests {
         Check.That(parameter.Provenance.HasFlag(Provenance.UnreadGuards)).IsTrue();
     }
 
+    /// <summary>
+    ///     A construct whose order the walk does not claim to read is unread <b>only</b> where it writes the
+    ///     parameter — never for being that construct.
+    /// </summary>
+    /// <remarks>
+    ///     Placement used to work from a list of parents it knew how to walk, and to yield nothing for the
+    ///     rest — so a <c>finally</c> after a <c>try</c> that wrote, a <c>catch</c> over the same, and a
+    ///     <c>switch</c> whose governing expression wrote all read as though nothing had run. Silence was the
+    ///     unsafe default: a construct nobody had listed waved the guard through.
+    ///     <para>
+    ///         The rows come in pairs on purpose. One writes and one does not, and only the write decides —
+    ///         which is what separates a rule that refuses what it cannot place from one that refuses whatever
+    ///         it does not recognise.
+    ///     </para>
+    /// </remarks>
+    [Theory(DisplayName = "A construct the walk does not read is unread only where it writes the parameter.")]
+    [InlineData("Any.Int32()", true, """
+                        try {
+                            value = 100 - value;
+                        } finally {
+                            ArgumentOutOfRangeException.ThrowIfNegative(value);
+                        }
+                """)]
+    [InlineData("Any.Int32().GreaterThanOrEqualTo(0)", false, """
+                        try {
+                        } finally {
+                            ArgumentOutOfRangeException.ThrowIfNegative(value);
+                        }
+                """)]
+    [InlineData("Any.Int32()", true, """
+                        try {
+                            value = 100 - value;
+                        } catch (Exception) {
+                            ArgumentOutOfRangeException.ThrowIfNegative(value);
+                        }
+                """)]
+    [InlineData("Any.Int32().GreaterThanOrEqualTo(0)", false, """
+                        try {
+                        } catch (Exception) {
+                            ArgumentOutOfRangeException.ThrowIfNegative(value);
+                        }
+                """)]
+    [InlineData("Any.Int32()", true, """
+                        switch (value = 100 - value) {
+                            case 0:
+                                ArgumentOutOfRangeException.ThrowIfNegative(value);
+
+                                break;
+                        }
+                """)]
+    [InlineData("Any.Int32().GreaterThanOrEqualTo(0)", false, """
+                        switch (value) {
+                            case 0:
+                                ArgumentOutOfRangeException.ThrowIfNegative(value);
+
+                                break;
+                        }
+                """)]
+    public void AConstructIsUnreadOnlyWhereItWritesTheParameter(string expected, bool unread, string body) {
+        ScaffoldedParameter parameter = Subject.GuardedBy("int", body);
+
+        Check.That(parameter.Expression).IsEqualTo(expected);
+        Check.That(parameter.Provenance.HasFlag(Provenance.UnreadGuards)).IsEqualTo(unread);
+    }
+
+    /// <summary>
+    ///     A <c>using</c> resource is evaluated before the body it scopes, so a write in it ends the reading
+    ///     of the guards inside.
+    /// </summary>
+    /// <remarks>
+    ///     The pair is the point again: the same <c>using</c>, the same guard, and the only difference is
+    ///     whether the resource expression writes the parameter.
+    /// </remarks>
+    [Fact(DisplayName = "A using resource that writes the parameter ends the reading, and one that does not leaves it read.")]
+    public void AUsingResourceThatWritesEndsTheReading() {
+        ScaffoldOutcome writing = Using("Acquire(out value)");
+        ScaffoldOutcome quiet   = Using("Acquire(out int ignored)");
+
+        Check.That(writing.Plan!.Parameters[0].Expression).IsEqualTo("Any.Int32()");
+        Check.That(writing.Plan.Parameters[0].Provenance.HasFlag(Provenance.UnreadGuards)).IsTrue();
+
+        Check.That(quiet.Plan!.Parameters[0].Expression).IsEqualTo("Any.Int32().GreaterThanOrEqualTo(0)");
+        Check.That(quiet.Plan.Parameters[0].Provenance.HasFlag(Provenance.UnreadGuards)).IsFalse();
+    }
+
+    private static ScaffoldOutcome Using(string resource) {
+        return Subject.Scaffold($$"""
+                                 public sealed class Subject {
+
+                                     private readonly int kept;
+
+                                     public Subject(int value) {
+                                         using ({{resource}}) {
+                                             ArgumentOutOfRangeException.ThrowIfNegative(value);
+                                         }
+
+                                         kept = value;
+                                     }
+
+                                     private static System.IO.MemoryStream Acquire(out int candidate) { candidate = 42; return new System.IO.MemoryStream(); }
+
+                                 }
+                                 """);
+    }
+
     // A statement that rejects nothing constrains nothing: defaulting a value is not refusing it, so there is
     // no invariant here for a draw to violate and nothing to send the developer looking at.
     [Theory(DisplayName = "A statement that rejects no value is not a guard, and says nothing.")]

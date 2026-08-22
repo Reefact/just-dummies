@@ -872,18 +872,26 @@ internal static class Guards {
     ///         <b>Where they sit is a question about execution, not about statements.</b> A write and a guard
     ///         share a statement as readily as they occupy two — <c>else { v = 100 - v; ThrowIf…(v); }</c> is
     ///         one statement carrying both — so the regions asked about are the ones that have finished by the
-    ///         time the guard is evaluated: the statements above it at every level of nesting, and the
-    ///         condition of every <c>if</c> it sits under. That is also what keeps the <c>else</c> rule
-    ///         intact — a condition is evaluated before anything its own <c>else</c> body runs, so it has no
-    ///         preceding region inside its own statement and stays readable.
+    ///         time the guard is evaluated.
     ///     </para>
     ///     <para>
-    ///         <b>A loop is the whole loop.</b> Inside one, a write the source puts below the guard runs above
-    ///         it on the next turn: <c>while (v &lt; 100) { ThrowIfGreaterThan(v, 50); v += 30; }</c> accepts
-    ///         no drawn value between 51 and 99 and rejects 40, which the source order alone reads as
-    ///         <c>LessThanOrEqualTo(50)</c>. So an enclosing loop is asked about entire, and a <c>goto</c>
-    ///         anywhere in the body — which can send execution back above any guard at all — is refused
-    ///         wholesale rather than modelled.
+    ///         <b>One order is read, and every other construct is asked about entire.</b> The order read is
+    ///         statement sequencing, plus the fact that reaching either branch of an <c>if</c> means its
+    ///         condition ran first — which is what keeps the <c>else</c> rule intact, a condition having no
+    ///         region of its own statement above it. Everything else answers whole: a loop runs its body
+    ///         again, a <c>finally</c> runs after a <c>try</c> that wrote, a <c>switch</c> evaluates its
+    ///         governing expression before the section it picked, a <c>using</c> its resource before the body
+    ///         it scopes. This was a list of walkable parents that yielded nothing for the rest, and all four
+    ///         of those were measured reading a guard as a bound on a value the constructor had replaced.
+    ///         A superset region can only add refusals and never remove one, so asking entire is the safe
+    ///         default and silence was the unsafe one — and it holds for the constructs nobody listed,
+    ///         including the ones C# has not grown yet.
+    ///     </para>
+    ///     <para>
+    ///         Two writes sit outside that walk altogether and are refused wherever they are written: one
+    ///         inside a local function or a lambda, which runs when it is called rather than where it is
+    ///         declared, and any write at all in a body carrying a <c>goto</c>, which can send execution back
+    ///         above a guard the source puts above it.
     ///     </para>
     /// </remarks>
     private sealed class ParameterWrites {
@@ -928,15 +936,10 @@ internal static class Guards {
 
             while (!ReferenceEquals(node, body) && node.Parent is SyntaxNode parent) {
                 switch (parent) {
+                    // Sequencing, and the one order this walk claims to read: what ran is what is written
+                    // above, and a block has no way back to a statement it has left.
                     case BlockSyntax or SwitchSectionSyntax:
                         foreach (StatementSyntax earlier in Earlier(parent, node)) { yield return earlier; }
-
-                        break;
-
-                    // Entire, because its body runs again: a write below the guard is above it next turn.
-                    case ForStatementSyntax or ForEachStatementSyntax or ForEachVariableStatementSyntax
-                      or WhileStatementSyntax or DoStatementSyntax:
-                        yield return parent;
 
                         break;
 
@@ -944,6 +947,24 @@ internal static class Guards {
                     // branch not taken did not run, so it is not a region that finished.
                     case IfStatementSyntax branch when !ReferenceEquals(node, branch.Condition):
                         yield return branch.Condition;
+
+                        break;
+
+                    // Nothing of an `if` runs before its own condition; a clause runs nothing of its own, and
+                    // the statement it belongs to answers for it below.
+                    case IfStatementSyntax or ElseClauseSyntax
+                      or CatchClauseSyntax or CatchFilterClauseSyntax or FinallyClauseSyntax:
+                        break;
+
+                    // Everything else, and this is the rule rather than a fallback: a construct whose order
+                    // this walk does not claim to read is asked about entire. A loop runs its body again, a
+                    // `finally` runs after a `try` that wrote, a `switch` evaluates its governing expression
+                    // before the section it picked, a `using` its resource before the body it scopes — one
+                    // answer covers all four, and covers the constructs nobody listed here, including the
+                    // ones C# has not grown yet. Asking about a superset can only add refusals, never remove
+                    // one, which is what makes it the safe default and silence the unsafe one.
+                    default:
+                        yield return parent;
 
                         break;
                 }
@@ -963,8 +984,17 @@ internal static class Guards {
         /// <remarks>
         ///     A region the compiler declines to analyse says nothing, and silence would be read here as
         ///     "not written" — the one answer that turns a guard the engine cannot place into one it emits.
+        ///     <para>
+        ///         Which is also why a node that is neither a statement nor an expression answers yes rather
+        ///         than being skipped: only those two are regions at all, so anything else is a shape the walk
+        ///         above did not expect, and an unexpected construct must refuse a guard rather than wave it
+        ///         through. It is what keeps the case list up there a matter of precision rather than of
+        ///         soundness — forgetting one costs a constraint, never a wrong one.
+        ///     </para>
         /// </remarks>
         private bool Written(SyntaxNode region, IParameterSymbol parameter) {
+            if (region is not (StatementSyntax or ExpressionSyntax)) { return true; }
+
             DataFlowAnalysis flow = model.AnalyzeDataFlow(region);
 
             return !flow.Succeeded || flow.WrittenInside.Contains(parameter, SymbolEqualityComparer.Default);

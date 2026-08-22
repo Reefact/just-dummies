@@ -553,7 +553,7 @@ plutôt que se tromper :
 * c'est un `if` dont le corps lève inconditionnellement ;
 * elle apparaît avant la première affectation à un champ ou une propriété ;
 * sa condition mentionne **exactement un** paramètre et ne contient ni `&&` ni `||` ;
-* ce paramètre n'a pas été réécrit plus haut dans le corps ;
+* aucune écriture de ce paramètre n'a pu s'exécuter avant l'endroit où elle se trouve ;
 * tout autre opérande est une constante de compilation.
 
 **Un `else` n'arrête pas la lecture.** Une branche `else` ne dit que ce qui se passe quand sa propre
@@ -580,16 +580,42 @@ lisait correctement, et l'attribuait à une valeur que le constructeur avait dé
 million levait dans le constructeur, sans sentinelle et sans rien à regarder. Une garde écrite
 **sous** une réassignation de son propre paramètre est donc marquée `unread guards` (§9) plutôt que
 lue, et une garde écrite **au-dessus** tient toujours : elle est vraie de la valeur tirée, et la
-jeter aussi coûterait une contrainte pour rien. Une réassignation, c'est n'importe laquelle de ses
-orthographes — `percent = 100 - percent`, `percent += 10`, `percent++`, `--percent` — nichée dans un
-`else`, un bloc ou une boucle aussi bien qu'écrite nue. Elle est cantonnée au paramètre qu'elle
-réécrit : arrêter le parcours purement et simplement jetterait les gardes de tous les *autres*
-paramètres du constructeur, échangeant une contrainte à ne pas lire contre plusieurs à lire. C'est
-la chronologie qui laisse intacte la règle du `else` ci-dessus : une condition est évaluée avant que
-quoi que ce soit du corps de son propre `else` ne s'exécute, donc
-`if (v < 0) { throw … } else { v = -v; }` lit toujours `v < 0`, et ce sont les instructions
-au-dessous qui portent sur ce que le `else` a laissé. `ref` et `out` n'ont besoin d'aucune règle
-propre — le §5.1 décline déjà un constructeur qui en porte.
+jeter aussi coûterait une contrainte pour rien. La règle est cantonnée au paramètre écrit : arrêter
+le parcours purement et simplement jetterait les gardes de tous les *autres* paramètres du
+constructeur, échangeant une contrainte à ne pas lire contre plusieurs à lire.
+
+**Quelles écritures existent, c'est au compilateur qu'on le demande ; où elles se situent, c'est à
+l'exécution.** Les deux moitiés sont des refus de deviner. Une liste des orthographes — `=`, les
+formes composées, `++`, `--` — se lit comme complète et ne l'est pas :
+`(percent, rate) = (100 - percent, rate)` écrit via un tuple dont le côté gauche ne résout vers
+aucun paramètre, `int.TryParse(text, out percent)` écrit sans la moindre affectation, et un local
+`ref` fait alias du paramètre sous un autre nom. Les trois ont été mesurés lus comme des bornes sur
+la valeur tirée. La question passe donc par l'analyse de flot de données, qui répond pour toutes les
+orthographes d'un coup, y compris celles auxquelles personne n'a pensé.
+
+La position est l'autre moitié, et l'instruction en est la mauvaise unité. Une écriture et une garde
+partagent une instruction aussi facilement qu'elles en occupent deux —
+`else { percent = 100 - percent; ThrowIfNegative(percent); }` est une seule instruction qui porte les
+deux — donc ce que le moteur interroge, ce sont les régions **terminées** quand la garde est
+évaluée : les instructions au-dessus d'elle à chaque niveau d'imbrication, et la condition de chaque
+`if` sous lequel elle se trouve. C'est cette dernière partie qui laisse intacte la règle du `else`
+ci-dessus : une condition est évaluée avant que quoi que ce soit du corps de son propre `else` ne
+s'exécute, donc `if (v < 0) { throw … } else { v = -v; }` lit toujours `v < 0` — la condition n'a
+au-dessus d'elle aucune région de sa propre instruction.
+
+Trois formes n'ont aucune position que le moteur puisse lire, et chacune est refusée plutôt que
+modélisée. **Une boucle est interrogée entière**, car une écriture que la source place sous la garde
+s'exécute au-dessus d'elle au tour suivant : `while (v < 100) { ThrowIfGreaterThan(v, 50); v += 30; }`
+n'accepte aucune valeur tirée entre 51 et 99 et rejette 40, ce que l'ordre de la source seul appelle
+`.LessThanOrEqualTo(50)`. **Une écriture dans une fonction locale ou un lambda** est refusée où
+qu'elle soit déclarée, puisqu'un tel corps s'exécute quand on l'appelle et que
+`Bump(); … void Bump() { v++; }` écrit en premier et lit en dernier — le §9 nomme déjà l'indirection
+que le tool ne suit pas, et c'est la même lacune vue de l'autre côté. Et **un `goto` n'importe où
+dans le corps** met fin à la lecture de tout paramètre que le corps écrit, car un saut arrière place
+une écriture au-dessus d'une garde que la source place au-dessous, et rien dans le texte ne le dit.
+
+`ref` et `out` sur les paramètres **propres** du constructeur n'ont besoin d'aucune règle ici — le
+§5.1 décline déjà un tel constructeur, puisque la fabrique émise ne saurait l'appeler.
 
 L'ensemble reconnu est clos :
 
@@ -1156,8 +1182,9 @@ Nommés explicitement pour ne pas être pris pour des oublis.
   à un helper appelé sur le paramètre lui-même (`Guard.Against.Null(value)`), même sans aucun `if`
   dans le corps (§5.3), dès lors que l'appel est fait pour son seul effet ; il atteint aussi toute
   instruction qui lève dans une forme que l'ensemble n'a pas su analyser du tout ; et il atteint une
-  garde écrite sous une réassignation de son propre paramètre, qui énonce un invariant de la valeur
-  calculée par le constructeur et non de celle que le generator tire (§5.3). Deux formes lui
+  garde que le moteur ne peut pas placer au-dessus de toute écriture de son propre paramètre, et qui
+  énoncerait sinon un invariant de la valeur calculée par le constructeur et non de celle que le
+  generator tire (§5.3). Deux formes lui
   échappent encore, et toutes deux sont silencieuses plutôt que simplement non lues — le tool n'y
   voit aucun rejet dont douter. Une garde-helper qui **retourne** la valeur vérifiée —
   `_name = Ensure.NotBlank(value);` —

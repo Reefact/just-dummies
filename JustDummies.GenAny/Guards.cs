@@ -72,12 +72,9 @@ internal static class Guards {
 
         if (declaring is null) { return GuardReading.WithoutSource(); }
 
-        SemanticModel model   = declaring.GetSemanticModel(declaration.SyntaxTree);
-        GuardReading  reading = GuardReading.FromSource();
-
-        // The parameters the body has written over. A guard below one of those is about the value the
-        // constructor computed, not the value the generator draws, so it is not that parameter's to read.
-        HashSet<string> reassigned = new(StringComparer.Ordinal);
+        SemanticModel   model   = declaring.GetSemanticModel(declaration.SyntaxTree);
+        GuardReading    reading = GuardReading.FromSource();
+        ParameterWrites writes  = new(declaration.Body, model);
 
         foreach (StatementSyntax statement in declaration.Body.Statements) {
             // "Leading" is what makes a guard a guard: past the first assignment to state, an `if` that throws
@@ -85,16 +82,11 @@ internal static class Guards {
             if (AssignsState(statement, model)) { break; }
 
             if (statement is IfStatementSyntax guard) {
-                ReadChain(guard, model, method, reading, names, reassigned);
+                ReadChain(guard, model, method, reading, names, writes);
             } else {
                 MarkIfItRejects(statement, model, method, reading);
-                MarkIfValidatedElsewhere(statement, model, method, reading, reassigned);
+                MarkIfValidatedElsewhere(statement, model, method, reading, writes);
             }
-
-            // Collected AFTER the statement is read, never before: a condition is evaluated before anything
-            // its own else contains runs, so a guard that rejects a value and then flips it in its else still
-            // says what it said about the drawn one. The statements below are the ones about what it left.
-            foreach (IParameterSymbol written in Reassignments(statement, model, method)) { reassigned.Add(written.Name); }
         }
 
         return reading;
@@ -127,26 +119,26 @@ internal static class Guards {
                                   IMethodSymbol method,
                                   GuardReading reading,
                                   TypeNames names,
-                                  HashSet<string> reassigned) {
+                                  ParameterWrites writes) {
         if (!ThrowsUnconditionally(branch.Statement)) {
             MarkIfItRejects(branch, model, method, reading);
-            MarkIfValidatedElsewhere(branch, model, method, reading, reassigned);
+            MarkIfValidatedElsewhere(branch, model, method, reading, writes);
 
             return;
         }
 
-        ReadOne(branch.Condition, model, method, reading, names, reassigned);
+        ReadOne(branch.Condition, model, method, reading, names, writes);
 
         switch (branch.Else?.Statement) {
             case IfStatementSyntax elseIf:
-                ReadChain(elseIf, model, method, reading, names, reassigned);
+                ReadChain(elseIf, model, method, reading, names, writes);
 
                 break;
             case StatementSyntax terminal:
                 // No condition of its own to read, but a plain `else` that still throws is a reject the closed
                 // set has nothing to say about — §9's `unread guards`, not silence.
                 MarkIfItRejects(terminal, model, method, reading);
-                MarkIfValidatedElsewhere(terminal, model, method, reading, reassigned);
+                MarkIfValidatedElsewhere(terminal, model, method, reading, writes);
 
                 break;
         }
@@ -221,14 +213,16 @@ internal static class Guards {
                                                  SemanticModel model,
                                                  IMethodSymbol method,
                                                  GuardReading reading,
-                                                 HashSet<string> reassigned) {
+                                                 ParameterWrites writes) {
         foreach (ExpressionStatementSyntax discarded in statement.DescendantNodesAndSelf().OfType<ExpressionStatementSyntax>()) {
             if (discarded.Expression is not InvocationExpressionSyntax invocation || IsNameOf(invocation)) { continue; }
 
             foreach (IParameterSymbol parameter in Mentioned(invocation, model, method)) {
                 // The rule the condition reader keeps, in the other spelling: a helper the set knows, called
-                // on a parameter the body has already written over, states an invariant of the computed value.
-                if (reassigned.Contains(parameter.Name)) {
+                // where a write to that parameter can already have run, states an invariant of the computed
+                // value. This is the placement that matters most — a call sits in the middle of a statement,
+                // where the writes above it are as easy to miss as the ones in the statements above that.
+                if (writes.Precede(parameter, invocation)) {
                     reading.MarkUnread(parameter.Name);
 
                     continue;
@@ -410,7 +404,7 @@ internal static class Guards {
                                 IMethodSymbol method,
                                 GuardReading reading,
                                 TypeNames names,
-                                HashSet<string> reassigned) {
+                                ParameterWrites writes) {
         IParameterSymbol[] mentioned = Mentioned(condition, model, method);
 
         // Exactly one, or the engine cannot say whose invariant this is. A cross-parameter rule is precisely
@@ -430,10 +424,10 @@ internal static class Guards {
 
         // Read correctly, about the wrong value. Every other gap in §9 is a guard the engine cannot see; this
         // is the one shape where it sees the guard, parses it, and attributes it to a value the generator no
-        // longer draws — `percent = 100 - percent;` above a second `percent < 0` test yields
-        // `GreaterThanOrEqualTo(0)` over a real domain of 0..100, under a recap reporting it inferred. So the
-        // guard is not this parameter's to read, and §9 already has the word for that (ADR-0083).
-        if (reassigned.Contains(parameter.Name)) {
+        // longer draws — a write above a `percent < 0` test yields `GreaterThanOrEqualTo(0)` over a real
+        // domain of 0..100, under a recap reporting it inferred. So the guard is not this parameter's to
+        // read, and §9 already has the word for that (ADR-0083).
+        if (writes.Precede(parameter, condition)) {
             reading.MarkUnread(parameter.Name);
 
             return;
@@ -856,49 +850,126 @@ internal static class Guards {
     }
 
     /// <summary>
-    ///     The parameters <paramref name="statement" /> writes over, in every spelling C# gives that.
+    ///     Where a body writes over its own parameters, and whether one of those writes can already have run
+    ///     when a given guard is evaluated.
     /// </summary>
     /// <remarks>
-    ///     The counterpart of <see cref="AssignsState" />, and deliberately wider on both axes it differs on.
-    ///     That one asks about one top-level statement, because an assignment to state ends the scan for
-    ///     <b>every</b> parameter at once and a nested one does not sit in the leading run; this asks about a
-    ///     whole subtree, because a reassignment inside an <c>else</c>, a block or a loop changes what the
-    ///     guards below it are about just as surely as a bare one does. And it ends nothing: only the
-    ///     parameter written over stops being readable, since breaking the loop would drop the guards of every
-    ///     other parameter — one lost constraint traded for several.
+    ///     Only an assignment to a field or a property ends the leading-guard scan, so a body that writes over
+    ///     a parameter and then guards it used to have that guard read as a bound on the drawn value. That is
+    ///     the one shape where the engine is confidently wrong rather than blind, and the fix is a question of
+    ///     <b>placement</b>: a guard states something about the drawn value exactly when no write to its
+    ///     parameter can have run before it.
     ///     <para>
-    ///         <b>A reassignment is not only <c>=</c>.</b> The compound forms are
-    ///         <see cref="AssignmentExpressionSyntax" /> like any other, but <c>percent++</c> and
-    ///         <c>--percent</c> are not, and reading the assignment node alone would let the two shortest
-    ///         reassignments there are through unnoticed.
+    ///         <b>Which writes exist is asked of the compiler, never of the syntax.</b> An enumeration of the
+    ///         spellings — <c>=</c>, the compound forms, <c>++</c>, <c>--</c> — reads as complete and is not:
+    ///         a deconstruction writes through a tuple whose left side resolves to no parameter at all, and an
+    ///         <c>out</c> argument writes with no assignment node anywhere. Both were measured being read as
+    ///         bounds on the drawn value. <see cref="Microsoft.CodeAnalysis.DataFlowAnalysis.WrittenInside" />
+    ///         answers for every spelling at once, including the ones nobody thought to list, which is what
+    ///         ADR-0046 asks of a boundary: it holds against what was not foreseen.
     ///     </para>
     ///     <para>
-    ///         <c>ref</c> and <c>out</c> need nothing here: §5.1's constructor choice already declines a
-    ///         constructor carrying either, since the emitted factory could not call it (<c>CS1620</c>).
+    ///         <b>Where they sit is a question about execution, not about statements.</b> A write and a guard
+    ///         share a statement as readily as they occupy two — <c>else { v = 100 - v; ThrowIf…(v); }</c> is
+    ///         one statement carrying both — so the regions asked about are the ones that have finished by the
+    ///         time the guard is evaluated: the statements above it at every level of nesting, and the
+    ///         condition of every <c>if</c> it sits under. That is also what keeps the <c>else</c> rule
+    ///         intact — a condition is evaluated before anything its own <c>else</c> body runs, so it has no
+    ///         preceding region inside its own statement and stays readable.
+    ///     </para>
+    ///     <para>
+    ///         <b>A loop is the whole loop.</b> Inside one, a write the source puts below the guard runs above
+    ///         it on the next turn: <c>while (v &lt; 100) { ThrowIfGreaterThan(v, 50); v += 30; }</c> accepts
+    ///         no drawn value between 51 and 99 and rejects 40, which the source order alone reads as
+    ///         <c>LessThanOrEqualTo(50)</c>. So an enclosing loop is asked about entire, and a <c>goto</c>
+    ///         anywhere in the body — which can send execution back above any guard at all — is refused
+    ///         wholesale rather than modelled.
     ///     </para>
     /// </remarks>
-    private static IEnumerable<IParameterSymbol> Reassignments(StatementSyntax statement, SemanticModel model, IMethodSymbol method) {
-        foreach (SyntaxNode node in statement.DescendantNodesAndSelf()) {
-            ExpressionSyntax? written = node switch {
-                AssignmentExpressionSyntax assignment                           => assignment.Left,
-                PrefixUnaryExpressionSyntax prefix when Steps(prefix.Kind())    => prefix.Operand,
-                PostfixUnaryExpressionSyntax postfix when Steps(postfix.Kind()) => postfix.Operand,
-                _                                                               => null
-            };
+    private sealed class ParameterWrites {
 
-            if (written is null) { continue; }
+        private readonly BlockSyntax body;
 
-            if (model.GetSymbolInfo(written).Symbol is IParameterSymbol parameter
-             && method.Parameters.Contains(parameter, SymbolEqualityComparer.Default)) {
-                yield return parameter;
+        private readonly SemanticModel model;
+
+        /// <summary>The bodies that run when something calls them, rather than where they are written.</summary>
+        private readonly SyntaxNode[] deferred;
+
+        /// <summary>Whether the body runs in the order it is written, which a <c>goto</c> is the end of.</summary>
+        private readonly bool ordered;
+
+        internal ParameterWrites(BlockSyntax body, SemanticModel model) {
+            this.body  = body;
+            this.model = model;
+            ordered    = !body.DescendantNodes().OfType<GotoStatementSyntax>().Any();
+            deferred   = [.. body.DescendantNodes()
+                                 .Where(node => node is LocalFunctionStatementSyntax or AnonymousFunctionExpressionSyntax)];
+        }
+
+        /// <summary>
+        ///     Whether a write to <paramref name="parameter" /> can already have run when
+        ///     <paramref name="guard" /> is evaluated.
+        /// </summary>
+        internal bool Precede(IParameterSymbol parameter, SyntaxNode guard) {
+            // A write inside something the body calls runs when it is called, not where it is written: a
+            // local function declared below a guard and invoked above it writes before that guard, and the
+            // engine follows no call to see it (§9). So position says nothing about it, and it is refused
+            // wherever it sits.
+            if (deferred.Any(called => Written(called, parameter))) { return true; }
+
+            if (!ordered) { return Written(body, parameter); }
+
+            return Before(guard).Any(region => Written(region, parameter));
+        }
+
+        /// <summary>The regions that have finished running by the time <paramref name="guard" /> is evaluated.</summary>
+        private IEnumerable<SyntaxNode> Before(SyntaxNode guard) {
+            SyntaxNode node = guard;
+
+            while (!ReferenceEquals(node, body) && node.Parent is SyntaxNode parent) {
+                switch (parent) {
+                    case BlockSyntax or SwitchSectionSyntax:
+                        foreach (StatementSyntax earlier in Earlier(parent, node)) { yield return earlier; }
+
+                        break;
+
+                    // Entire, because its body runs again: a write below the guard is above it next turn.
+                    case ForStatementSyntax or ForEachStatementSyntax or ForEachVariableStatementSyntax
+                      or WhileStatementSyntax or DoStatementSyntax:
+                        yield return parent;
+
+                        break;
+
+                    // Reaching either branch means the condition was evaluated first, and it alone — the
+                    // branch not taken did not run, so it is not a region that finished.
+                    case IfStatementSyntax branch when !ReferenceEquals(node, branch.Condition):
+                        yield return branch.Condition;
+
+                        break;
+                }
+
+                node = parent;
             }
         }
-    }
 
-    /// <summary>Whether an operator moves its operand by one, which is a reassignment written short.</summary>
-    private static bool Steps(SyntaxKind kind) {
-        return kind is SyntaxKind.PreIncrementExpression or SyntaxKind.PreDecrementExpression
-                    or SyntaxKind.PostIncrementExpression or SyntaxKind.PostDecrementExpression;
+        /// <summary>The statements of <paramref name="parent" /> that finish before <paramref name="reached" /> begins.</summary>
+        private static IEnumerable<StatementSyntax> Earlier(SyntaxNode parent, SyntaxNode reached) {
+            return parent.ChildNodes()
+                         .OfType<StatementSyntax>()
+                         .TakeWhile(statement => statement.Span.End <= reached.SpanStart);
+        }
+
+        /// <summary>Whether <paramref name="region" /> writes <paramref name="parameter" />, in any spelling.</summary>
+        /// <remarks>
+        ///     A region the compiler declines to analyse says nothing, and silence would be read here as
+        ///     "not written" — the one answer that turns a guard the engine cannot place into one it emits.
+        /// </remarks>
+        private bool Written(SyntaxNode region, IParameterSymbol parameter) {
+            DataFlowAnalysis flow = model.AnalyzeDataFlow(region);
+
+            return !flow.Succeeded || flow.WrittenInside.Contains(parameter, SymbolEqualityComparer.Default);
+        }
+
     }
 
     private static bool IsNumber(object value) {

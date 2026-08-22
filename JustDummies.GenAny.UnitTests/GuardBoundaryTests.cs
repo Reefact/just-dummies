@@ -269,10 +269,12 @@ public sealed class GuardBoundaryTests {
     ///     Every spelling of a reassignment ends the reading, because every one of them changes the value.
     /// </summary>
     /// <remarks>
-    ///     The compound forms are assignments like any other and fall out of the same node. The increments are
-    ///     not assignments at all in the syntax tree, so reading that node alone would let the two shortest
-    ///     reassignments C# has through unnoticed — over exactly the guard the engine then gets wrong. The last
-    ///     row is the other axis: a reassignment nested inside a block is still a reassignment.
+    ///     Which is why the engine does not enumerate them. The compound forms are assignments like any
+    ///     other, but the increments are not assignments at all in the syntax tree, and the last two rows are
+    ///     not written on the parameter's own name in any form: a <c>ref</c> local aliases it, and a
+    ///     deconstruction writes through a tuple. A list of spellings reads as complete and is not, so the
+    ///     question goes to the compiler's own data-flow analysis, which answers for all of them at once.
+    ///     The nesting row is the other axis: a write inside a block is still a write.
     /// </remarks>
     [Theory(DisplayName = "A guard below a reassignment is unread, in every spelling a reassignment takes.")]
     [InlineData("        value = 100 - value;")]
@@ -280,6 +282,7 @@ public sealed class GuardBoundaryTests {
     [InlineData("        value++;")]
     [InlineData("        --value;")]
     [InlineData("        if (value > 100) { value = 100; }")]
+    [InlineData("        ref int alias = ref value;\n        alias = 100 - alias;")]
     public void AGuardBelowAReassignmentIsUnreadInEverySpelling(string reassignment) {
         string body = reassignment + "\n        if (value < 0) { throw new ArgumentOutOfRangeException(nameof(value)); }";
 
@@ -381,6 +384,192 @@ public sealed class GuardBoundaryTests {
         Check.That(parameter.Expression).IsEqualTo("Any.String().NonEmpty()");
         Check.That(parameter.Provenance.HasFlag(Provenance.UnreadGuards)).IsFalse();
         Check.That(parameter.RequiresVerification).IsFalse();
+    }
+
+    /// <summary>
+    ///     A guard below a write it <b>shares a statement with</b> is unread, and the condition above that
+    ///     write still reads.
+    /// </summary>
+    /// <remarks>
+    ///     The reading used to place a write by the statement it sat in rather than by where it sat, so a
+    ///     write and a guard inside one <c>else</c> were read as though the guard came first. This shape was
+    ///     measured emitting <c>Between(0, 50)</c> — a domain whose real answer is 50 and above, so every draw
+    ///     but one is rejected by the constructor, under a recap reporting the parameter fully inferred. Worse
+    ///     than the shape #112 was opened for, where the second guard happened to restate the first.
+    /// </remarks>
+    [Fact(DisplayName = "A guard below a write inside the same statement is unread, and the condition above it still reads.")]
+    public void AGuardBelowAWriteInsideTheSameStatementIsUnread() {
+        string body = """
+                              if (value < 0) {
+                                  throw new ArgumentOutOfRangeException(nameof(value));
+                              } else {
+                                  value = 100 - value;
+                                  ArgumentOutOfRangeException.ThrowIfGreaterThan(value, 50);
+                              }
+                      """;
+
+        ScaffoldedParameter parameter = Subject.GuardedBy("int", body);
+
+        Check.That(parameter.Expression).IsEqualTo("Any.Int32().GreaterThanOrEqualTo(0)");
+        Check.That(parameter.Expression).Not.Contains("50");
+        Check.That(parameter.Provenance.HasFlag(Provenance.UnreadGuards)).IsTrue();
+    }
+
+    /// <summary>
+    ///     A write through a deconstruction ends the reading, though nothing about it is an assignment to the
+    ///     parameter's own name.
+    /// </summary>
+    /// <remarks>
+    ///     The left side of <c>(value, other) = …</c> is a tuple, and asking the compiler what it resolves to
+    ///     yields no parameter at all — so an enumeration of the assignment spellings passed it over and the
+    ///     guard below it was read as a bound on the drawn value. Which is why which writes exist is asked of
+    ///     data-flow analysis rather than of the syntax: it answers for the spellings nobody listed.
+    /// </remarks>
+    [Fact(DisplayName = "A write through a deconstruction ends the reading of that parameter.")]
+    public void AWriteThroughADeconstructionEndsTheReading() {
+        ScaffoldOutcome outcome = Subject.Scaffold("""
+                                                   public sealed class Subject {
+
+                                                       private readonly int kept;
+
+                                                       public Subject(int value, int other) {
+                                                           (value, other) = (100 - value, other);
+
+                                                           if (value < 0) { throw new ArgumentOutOfRangeException(nameof(value)); }
+
+                                                           kept = value + other;
+                                                       }
+
+                                                   }
+                                                   """);
+
+        Check.That(outcome.Plan!.Parameters[0].Expression).IsEqualTo("Any.Int32()");
+        Check.That(outcome.Plan.Parameters[0].Provenance.HasFlag(Provenance.UnreadGuards)).IsTrue();
+    }
+
+    /// <summary>
+    ///     A write through an <c>out</c> argument ends the reading, though there is no assignment node at all.
+    /// </summary>
+    /// <remarks>
+    ///     <c>out</c> on the <b>constructor's own</b> parameters needs no handling — §5.1 declines such a
+    ///     constructor outright — but a parameter handed to somebody else's <c>out</c> is written just the
+    ///     same, and the syntax carries nothing an assignment walk would recognise.
+    /// </remarks>
+    [Fact(DisplayName = "A write through an out argument ends the reading of that parameter.")]
+    public void AWriteThroughAnOutArgumentEndsTheReading() {
+        ScaffoldOutcome outcome = Subject.Scaffold("""
+                                                   public sealed class Subject {
+
+                                                       private readonly int kept;
+
+                                                       public Subject(string text, int value) {
+                                                           bool parsed = int.TryParse(text, out value);
+
+                                                           if (value < 0) { throw new ArgumentOutOfRangeException(nameof(value)); }
+
+                                                           kept = parsed ? value : 0;
+                                                       }
+
+                                                   }
+                                                   """);
+
+        Check.That(outcome.Plan!.Parameters[1].Expression).IsEqualTo("Any.Int32()");
+        Check.That(outcome.Plan.Parameters[1].Provenance.HasFlag(Provenance.UnreadGuards)).IsTrue();
+    }
+
+    /// <summary>
+    ///     A guard sharing a loop with a write to its parameter is unread, whichever of the two the source
+    ///     puts first.
+    /// </summary>
+    /// <remarks>
+    ///     Source order is not execution order inside a loop: the write below the guard runs above it on the
+    ///     next turn. This shape accepts nothing between 51 and 99 and rejects 40, which reading the guard
+    ///     against source order alone calls <c>LessThanOrEqualTo(50)</c> — a generator drawing 40 under a
+    ///     constructor that refuses it.
+    /// </remarks>
+    [Fact(DisplayName = "A guard sharing a loop with a write to its parameter is unread.")]
+    public void AGuardSharingALoopWithAWriteIsUnread() {
+        string body = """
+                              while (value < 100) {
+                                  ArgumentOutOfRangeException.ThrowIfGreaterThan(value, 50);
+                                  value += 30;
+                              }
+                      """;
+
+        ScaffoldedParameter parameter = Subject.GuardedBy("int", body);
+
+        Check.That(parameter.Expression).IsEqualTo("Any.Int32()");
+        Check.That(parameter.Provenance.HasFlag(Provenance.UnreadGuards)).IsTrue();
+    }
+
+    /// <summary>
+    ///     A <c>goto</c> ends the reading of every parameter the body writes, wherever the guard sits.
+    /// </summary>
+    /// <remarks>
+    ///     A backward jump puts a write above a guard the source puts below it, and there is no position the
+    ///     engine could read that says so. Rare enough to refuse wholesale rather than model — and refusing is
+    ///     what a shape the engine cannot place deserves.
+    /// </remarks>
+    [Fact(DisplayName = "A goto ends the reading of a parameter the body writes.")]
+    public void AGotoEndsTheReadingOfAParameterTheBodyWrites() {
+        string body = """
+                              start:
+                              ArgumentOutOfRangeException.ThrowIfNegative(value);
+                              value--;
+
+                              if (value > 0) { goto start; }
+                      """;
+
+        ScaffoldedParameter parameter = Subject.GuardedBy("int", body);
+
+        Check.That(parameter.Expression).IsEqualTo("Any.Int32()");
+        Check.That(parameter.Provenance.HasFlag(Provenance.UnreadGuards)).IsTrue();
+    }
+
+    // A loop is not itself a reason to refuse: what a loop changes is where a WRITE can have run, so a
+    // parameter the loop never writes is read exactly as it would be outside one. The rule narrows what it
+    // must and nothing beside it.
+    [Fact(DisplayName = "A guard inside a loop that writes nothing is read as it would be outside one.")]
+    public void AGuardInsideALoopThatWritesNothingIsRead() {
+        string body = """
+                              for (int index = 0; index < 3; index++) {
+                                  ArgumentOutOfRangeException.ThrowIfNegative(value);
+                              }
+                      """;
+
+        ScaffoldedParameter parameter = Subject.GuardedBy("int", body);
+
+        Check.That(parameter.Expression).IsEqualTo("Any.Int32().GreaterThanOrEqualTo(0)");
+        Check.That(parameter.Provenance.HasFlag(Provenance.UnreadGuards)).IsFalse();
+    }
+
+    /// <summary>
+    ///     A write inside something the body <b>calls</b> ends the reading wherever that thing is written.
+    /// </summary>
+    /// <remarks>
+    ///     A local function or a lambda runs when it is called, not where it is declared, so its position
+    ///     says nothing about whether its write ran before a guard: <c>Bump();</c> above the guard and
+    ///     <c>void Bump() { value++; }</c> below it writes first and reads last. §9 already names a guard
+    ///     reached only through indirection the tool does not follow; a <b>write</b> reached that way is the
+    ///     same gap seen from the other side, and this is the answer it gets.
+    /// </remarks>
+    [Theory(DisplayName = "A write inside a local function or a lambda ends the reading, wherever it is declared.")]
+    [InlineData("""
+                        Action bump = () => value++;
+                        bump();
+                        ArgumentOutOfRangeException.ThrowIfNegative(value);
+                """)]
+    [InlineData("""
+                        Bump();
+                        ArgumentOutOfRangeException.ThrowIfNegative(value);
+
+                        void Bump() { value++; }
+                """)]
+    public void AWriteInsideSomethingCalledEndsTheReading(string body) {
+        ScaffoldedParameter parameter = Subject.GuardedBy("int", body);
+
+        Check.That(parameter.Expression).IsEqualTo("Any.Int32()");
+        Check.That(parameter.Provenance.HasFlag(Provenance.UnreadGuards)).IsTrue();
     }
 
     // A statement that rejects nothing constrains nothing: defaulting a value is not refusing it, so there is

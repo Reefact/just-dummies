@@ -1,27 +1,5 @@
 namespace JustDummies;
 
-/// <summary>The character families a string or char generator can be restricted to.</summary>
-internal enum CharacterSet {
-
-    Alpha,
-    Numeric,
-    AlphaNumeric,
-    Punctuation,
-    Printable,
-    NonPrintable,
-    Whitespaces,
-    Hexadecimal
-
-}
-
-/// <summary>The casing a string or char generator can impose on alphabetic characters.</summary>
-internal enum LetterCasing {
-
-    Lower,
-    Upper
-
-}
-
 /// <summary>
 ///     The ASCII universe every character draw starts from, and the families that narrow it — one definition
 ///     shared by <see cref="AnyString" />'s filler and <see cref="AnyChar" />, so the two generators can never

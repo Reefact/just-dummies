@@ -4,20 +4,23 @@ Ce qui a changé pour vous, version par version, sur le train `cli`. Pour le reg
 
 ## 1.1.0-beta.2 — 22 août 2026
 
-_Une passe de correction sur la lecture des gardes, et un changement de forme : chaque fichier émis nomme désormais la recette de chaque paramètre dans sa propre factory method._
+_La lecture des gardes devient nettement plus complète — une garde déléguée à un helper ou écrite dans une graphie moderne, et une garde qui lève dans une forme que l'outil ne savait pas parser avant, sont maintenant lues toutes les deux — et une garde que l'outil ne peut toujours pas garantir bloque la compilation au lieu de compiler en silence._
 
 ### ⚠️ Changements majeurs
 
 - **La recette de chaque paramètre vit désormais dans sa propre factory method privée**, plutôt qu'en ligne dans l'initialiseur du constructeur — la forme de chaque fichier émis change, mais `Generate()`, les champs et les méthodes `With…` ne changent pas.
 - **Une garde que l'outil ne peut pas garantir bloque désormais la compilation**, comme le fait déjà un paramètre non résolu, au lieu de conserver silencieusement un générateur neutre qui pouvait tirer une valeur que le vrai constructeur rejette ([ADR-0083](https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-maintainers/adr/0083-block-compilation-on-a-guard-the-engine-cannot-vouch-for.md)). Le résumé le compte à part — `1 TODO, 1 to verify` — puisqu'un générateur *a* été inféré ici.
 
-### 🐛 Corrections de bugs
+### 🙌 Améliorations
 
 - **Une garde déléguée à un helper, ou écrite avec un throw-helper moderne**, est maintenant lue comme son équivalent en `if` — `Ensure.NotBlank(name)` et `ArgumentNullException.ThrowIfNull(name)` ne passent plus en silence, et ne bloquent plus un build qui était déjà correct.
-- **Une garde qui lève dans une forme que l'outil ne sait pas parser** — une chaîne `else if`, un bloc qui journalise avant de lever — est désormais marquée `unread guards` au lieu de ne rien rapporter du tout.
-- **Plusieurs gardes arithmétiques, de taille et inter-paramètres, mal lues, silencieusement perdues, ou faisant planter l'exécution** sont maintenant lues correctement, composées, ou refusées explicitement : une condition sur une valeur dérivée du paramètre, un nom de paramètre inhabituel (`@event`, `_id`), une taille au-delà de ce que la bibliothèque peut produire, une constante de garde au-delà de `decimal`, une borne de taille non `int`, une garde `Enum.IsDefined`, une garde portant sur deux paramètres, et un type que le fichier émis ne pouvait pas construire.
+- **Une garde qui lève dans une forme que l'outil ne savait pas parser avant** — une chaîne `else if`, un bloc qui journalise avant de lever — est désormais marquée `unread guards` au lieu de ne rien rapporter du tout.
 - **`openParameters` de `--format json` ne compte plus un paramètre qui a seulement besoin d'être vérifié** — il garde son sens publié, et le nouveau `summary.parametersToVerify` porte l'autre compte.
 - **Le résumé ne se contredit plus au sujet d'un même paramètre** — une ligne lisant `to verify` est désormais comptée `to verify` dans le pied de page aussi, plus `TODO`.
+
+### 🐛 Corrections de bugs
+
+- **Plusieurs gardes arithmétiques, de taille et inter-paramètres, mal lues, silencieusement perdues, ou faisant planter l'exécution** sont maintenant lues correctement, composées, ou refusées explicitement : une condition sur une valeur dérivée du paramètre, un nom de paramètre inhabituel (`@event`, `_id`), une taille au-delà de ce que la bibliothèque peut produire, une constante de garde au-delà de `decimal`, une borne de taille non `int`, une garde `Enum.IsDefined`, une garde portant sur deux paramètres, et un type que le fichier émis ne pouvait pas construire.
 
 ## 1.1.0-beta.1 — 13 août 2026
 

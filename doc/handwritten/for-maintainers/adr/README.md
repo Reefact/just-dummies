@@ -171,8 +171,8 @@ and it was decided on 2026-08-01 — the index carries the order, the numbering 
 | [ADR-0068](0068-carry-the-pool-inspection-wherever-a-caller-supplies-the-values.md) | Carry the pool inspection wherever a caller supplies the values, and nowhere else | Accepted | recorded here |
 | [ADR-0069](0069-answer-a-cardinality-bound-under-the-comparer-that-will-use-it.md) | Answer a cardinality bound under the comparer that will use it | Accepted | recorded here |
 | [ADR-0070](0070-emit-an-entry-point-on-request-as-a-file-of-its-own.md) | Emit an entry point on request, as a file of its own | Accepted | recorded here |
-| [ADR-0071](0071-report-a-run-as-data-without-moving-the-exit-codes.md) | Report a run as data without moving the exit codes | Proposed | recorded here |
-| [ADR-0072](0072-read-project-defaults-from-a-file-the-command-line-overrides.md) | Read project defaults from a file the command line overrides | Proposed | recorded here |
+| [ADR-0071](0071-report-a-run-as-data-without-moving-the-exit-codes.md) | Report a run as data without moving the exit codes | Accepted | recorded here |
+| [ADR-0072](0072-read-project-defaults-from-a-file-the-command-line-overrides.md) | Read project defaults from a file the command line overrides | Accepted | recorded here |
 | [ADR-0073](0073-layer-the-agent-instructions-by-when-they-are-needed.md) | Layer the agent instructions by when they are needed | Accepted | recorded here |
 | [ADR-0074](0074-draft-a-releases-github-notes-by-hand-and-refuse-without-them.md) | Draft a release's GitHub notes by hand from the changelog, and refuse without them | Accepted | recorded here |
 | [ADR-0075](0075-draw-characters-from-the-whole-of-ascii.md) | Draw characters from the whole of ASCII, and narrow only by a named family | Accepted | recorded here |

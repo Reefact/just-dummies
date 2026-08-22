@@ -2,8 +2,9 @@
 
 🌍 🇬🇧 [English](0072-read-project-defaults-from-a-file-the-command-line-overrides.md) · 🇫🇷 Français (ce fichier)
 
-**Status:** Proposed
+**Status:** Accepted
 **Proposed:** 2026-08-12
+**Accepted:** 2026-08-22
 **Decision Makers:** Reefact
 
 > Les renvois de section (§N) pointent vers la [spécification de `dum`](../specifications/justdummies-tool.fr.md).

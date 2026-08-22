@@ -252,6 +252,40 @@ public sealed class GuardBoundaryTests {
         Check.That(parameter.Provenance.HasFlag(Provenance.UnreadGuards)).IsTrue();
     }
 
+    /// <summary>
+    ///     A guard the closed set already knows reads the same written as a throw helper as written as an
+    ///     <c>if</c> — same expression, same provenance, and neither blocks the developer's build.
+    /// </summary>
+    /// <remarks>
+    ///     These are one invariant in two spellings. Reading only the older one sent the modern one to the
+    ///     call rule and blocked compilation over a generator that was already exactly right, which is the
+    ///     worst of both outcomes: nothing tightened, and nothing compiling either.
+    /// </remarks>
+    [Theory(DisplayName = "A guard the set knows reads the same as a throw helper as it does as an `if`.")]
+    [InlineData("        if (value is null) { throw new ArgumentNullException(nameof(value)); }",
+                "        ArgumentNullException.ThrowIfNull(value);")]
+    [InlineData("        if (string.IsNullOrEmpty(value)) { throw new ArgumentException(nameof(value)); }",
+                "        ArgumentException.ThrowIfNullOrEmpty(value);")]
+    [InlineData("        if (string.IsNullOrWhiteSpace(value)) { throw new ArgumentException(nameof(value)); }",
+                "        ArgumentException.ThrowIfNullOrWhiteSpace(value);")]
+    public void AGuardTheSetKnowsReadsTheSameEitherWay(string written, string called) {
+        ScaffoldedParameter asIf   = Subject.GuardedBy("string", written);
+        ScaffoldedParameter asCall = Subject.GuardedBy("string", called);
+
+        Check.That(asCall.Expression).IsEqualTo(asIf.Expression);
+        Check.That(asCall.Provenance).IsEqualTo(asIf.Provenance);
+        Check.That(asCall.RequiresVerification).IsFalse();
+    }
+
+    // The subject-identity discipline the comparison rows keep, on the call form too: the helper has to be
+    // about this parameter, not about something reached from it.
+    [Fact(DisplayName = "A throw helper naming something other than the parameter is not read as its guard.")]
+    public void AThrowHelperNamingSomethingElseIsNotReadAsItsGuard() {
+        ScaffoldedParameter parameter = Subject.GuardedBy("string", "        ArgumentNullException.ThrowIfNull(value.Length);");
+
+        Check.That(parameter.Provenance.HasFlag(Provenance.UnreadGuards)).IsTrue();
+    }
+
     // A call whose value is USED is producing something, and normalising a value or copying a collection says
     // nothing about which values are admissible. Flagging those blocked the compilation of constructors
     // carrying no guard at all — which is most of them — so the discarded result is what separates a call made

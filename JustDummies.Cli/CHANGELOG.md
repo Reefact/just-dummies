@@ -83,6 +83,15 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   reading them as doubt would block the compilation of constructors carrying no guard at all. The cost of
   drawing the line there is named in §9: a guard helper that returns the value it checked
   (`_name = Ensure.NotBlank(value);`) reads as production and is missed.
+- **A guard the tool already knows is read in either spelling.** `ArgumentNullException.ThrowIfNull(value)` and
+  `if (value is null) { throw … }` state one invariant, and so do
+  `ArgumentException.ThrowIfNullOrEmpty` / `ThrowIfNullOrWhiteSpace` and the `string.IsNullOr…` conditions.
+  Only the older spelling was read, so the modern one counted as a guard the tool could not read and blocked
+  the build — over a chain that was already exactly right, since a null check adds nothing and an emptiness
+  check is the string row's own `NonEmpty()`. Both spellings now produce the same expression, the same
+  provenance, and a file that compiles. The arithmetic helpers (`ArgumentOutOfRangeException.ThrowIfNegative`
+  and its siblings) are deliberately not read: that would widen the recognised set rather than admit a second
+  spelling of what is in it.
 
 ### Changed
 

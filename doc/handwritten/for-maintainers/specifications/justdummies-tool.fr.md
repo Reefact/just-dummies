@@ -723,6 +723,22 @@ affecté en premier, là où le parcours s'arrêtait après la première affecta
 second. Le coût est le cas miroir, nommé au §9 : une garde-helper qui *retourne* la valeur
 vérifiée — `_name = Ensure.NotBlank(value);` — se lit comme une production et échappe au filet.
 
+**Les gardes que l'ensemble connaît déjà se lisent dans les deux orthographes.**
+`ArgumentNullException.ThrowIfNull(value)` et `if (value is null) { throw … }` énoncent un seul
+invariant, tout comme `ArgumentException.ThrowIfNullOrEmpty(value)` / `ThrowIfNullOrWhiteSpace(value)`
+et les conditions `string.IsNullOr…` ci-dessus. Seule l'orthographe ancienne était lue, si bien que
+la moderne tombait sous la règle des appels et bloquait le build du développeur — au sujet d'une
+chaîne pourtant déjà exactement juste, puisqu'un contrôle de nullité n'ajoute rien (ADR-0064 ne tire
+jamais null) et qu'un contrôle de vacuité est le `NonEmpty` propre à la ligne. Lire une garde que
+l'ensemble comprend comme une garde qu'il n'a pas su lire, c'est le pire des deux résultats : rien
+n'est resserré, et rien ne compile non plus. Le premier argument doit **être** le paramètre, selon la
+même discipline d'identité du sujet que gardent les lignes de comparaison.
+
+Ces helpers-là seulement, et à dessein : `ArgumentOutOfRangeException.ThrowIfNegative` et ses frères
+correspondent eux aussi à de vraies contraintes, et les lire **élargirait** l'ensemble clos au lieu
+de reconnaître une seconde orthographe de ce qui s'y trouve. C'est le suivi d'ADR-0082, et une
+décision à part entière.
+
 ### 5.4 Composition
 
 **Un generator scaffoldé l'emporte.** Si la compilation contient un type nommé `Any{T}` implémentant

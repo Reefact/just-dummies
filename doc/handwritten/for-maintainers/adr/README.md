@@ -182,3 +182,4 @@ and it was decided on 2026-08-01 — the index carries the order, the numbering 
 | [ADR-0079](0079-constrain-what-a-dummy-draws-never-the-literals-it-was-given.md) | Constrain what a dummy draws, never the literals it was given | Accepted | recorded here |
 | [ADR-0080](0080-admit-a-rule-that-names-a-resolved-ambiguity.md) | Admit a JD rule that names an ambiguity the library resolves, alongside the shorter equivalent | Accepted | recorded here |
 | [ADR-0081](0081-declare-one-top-level-type-per-file.md) | Declare one top-level type per file, enforced by a third-party style analyzer | Accepted | recorded here |
+| [ADR-0082](0082-answer-for-the-finished-chain-not-each-constraint.md) | Answer for the finished chain, not for each constraint read | Accepted | recorded here |

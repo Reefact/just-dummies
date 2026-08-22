@@ -1089,6 +1089,30 @@ modification de cette fonction plus une liaison d'options, pas un balayage. En v
   que le code émis est faux en propre, et c'est ce que ce contrôle prend en charge. Le harnais doit
   inclure un **fichier de contrôle avec une violation connue**, dont on asserte qu'elle se
   déclenche — sinon « aucun diagnostic » ne se distingue pas de « analyzers non chargés » (§17.2).
+* **Le test sur le corpus gardé.** Le contrôle de compilation ci-dessus lit des fichiers golden, et
+  tout paramètre de golden est sans garde ou gardé sur la vacuité — aucun fichier approuvé n'a donc
+  jamais porté de paire de bornes, de compte au-delà des membres d'un enum, de taille au-dessus du
+  plafond de production ni de signe contre une borne opposée, c'est-à-dire toute la composition du
+  §5.3. Un corpus de **types de domaine gardés** est donc mené à travers le moteur et soumis à trois
+  oracles : le fichier émis **compile**, il ne lève **aucun `JD*` de niveau avertissement ou
+  au-dessus**, et le generator **se construit et tire** des valeurs que son propre domaine accepte.
+  Le troisième est celui que les deux autres ne peuvent pas remplacer — une chaîne peut être légale,
+  déclarable, silencieuse sous toutes les règles, et dire tout de même autre chose que les gardes, et
+  seul le constructeur du domaine en décide. Une forme dont aucun generator ne peut satisfaire le
+  domaine — une contradiction écrite par le développeur, une borne au-delà du plafond, un set voulant
+  plus de valeurs distinctes que n'en porte sa ligne d'élément — répond à un quatrième : elle doit
+  tout de même se construire, tout de même ne lever aucune règle, et le récapitulatif doit porter le
+  refus.
+* **Les règles informationnelles sont excusées nommément, jamais par sévérité.** L'exclusion en bloc
+  ci-dessus est juste pour le contrôle auquel elle appartient et fausse comme règle générale, parce
+  qu'elle raisonne sur l'auteur du fichier plutôt que sur la règle. `JD030` nomme une longueur que le
+  domaine n'a jamais énoncée et le moteur n'en inventera pas une pour la faire taire — c'est un fait
+  sur un fichier dont l'auteur n'est pas arrivé. `JD031` et `JD024` signalent ce que le **moteur a
+  choisi** : deux bornes là où il voulait dire un intervalle, une contrainte qui ne resserre rien. Un
+  scaffold sait ce qu'il voulait écrire, donc un diagnostic informationnel sur du code émis est une
+  relecture de cette intention plutôt qu'un verdict sur elle — et un choix que le moteur ne peut pas
+  défendre est un choix qu'il n'aurait pas dû faire. Le corpus nomme donc les règles informationnelles
+  qu'il assume, et toute autre échoue jusqu'à ce que quelqu'un tranche.
 * **Le test sur le code du dépôt.** Scaffolder les **vrais types du dépôt hôte**, compiler les
   résultats et générer une valeur depuis chacun. Le raisonnement est consigné dans la décision
   « faire tourner les analyzers sur notre propre code » (§13.7) : une règle et le snippet qui la

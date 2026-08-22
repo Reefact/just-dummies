@@ -549,11 +549,17 @@ L'ensemble reconnu est clos :
 `Any.String()` non contraint ne tire que des lettres et chiffres ASCII : un tirage non vide ne peut
 jamais être blanc (§14.5).
 
-Deux conditions bornent l'arithmétique de la table elle-même, et les deux sont des refus plutôt que
-des approximations. **Le `N` d'une ligne de taille doit se rendre en l'`int` que prend tout membre
-de taille** (§14.3) : une borne se repliant sur `140.5`, ou hors de la portée d'`int`, n'est pas une
-taille que le moteur peut écrire, et l'émettre telle quelle fait échouer la compilation du
-développeur. **Une constante qui n'est pas un point de la droite numérique, ou qui sort de
+Plusieurs conditions bornent l'arithmétique de la table elle-même, et toutes sont des refus plutôt
+que des approximations. **Le `N` d'une ligne de taille doit se rendre en l'`int` que prend tout
+membre de taille** (§14.3) : une borne se repliant sur `140.5`, ou hors de la portée d'`int`, n'est
+pas une taille que le moteur peut écrire, et l'émettre telle quelle fait échouer la compilation du
+développeur. **Elle doit aussi être une taille que le generator pourrait produire.** Tout membre de
+taille refuse un argument au-delà d'un million (ADR-0076), donc une limite de corps à 1 Mio — une
+règle métier ordinaire — n'est pas écrite : elle lèverait dans le constructeur sans paramètre émis,
+là où aucun appel `With…` ne peut la rattraper. Et un **plancher** sur un set ou un dictionnaire
+demande à la ligne d'élément autant de valeurs *distinctes*, donc un compte de cinq sur un enum à
+trois membres est refusé pour la raison même que `JD016` le signale ; un plafond ne demande rien de
+tel et ne répond qu'au plafond de production. **Une constante qui n'est pas un point de la droite numérique, ou qui sort de
 `decimal`, n'est pas lue du tout** — `double` et `float` vont tous deux au-delà de `decimal`, et NaN
 et les infinis ne sont pas des bornes. Dans les deux cas le paramètre garde son generator neutre et
 est marqué `unread guards` (§9) — ce que reçoit aussi une garde `Enum.IsDefined` nommant un univers

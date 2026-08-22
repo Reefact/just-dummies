@@ -129,7 +129,7 @@ internal static class Guards {
             return;
         }
 
-        if (!TryRecognise(condition, model, parameter, GeneratorFor.SizedByCount(parameter.Type),
+        if (!TryRecognise(condition, model, parameter, GeneratorFor.Sizes(parameter.Type),
                           out GuardConstraint? constraint)) {
             reading.MarkUnread(parameter.Name);
 
@@ -146,7 +146,7 @@ internal static class Guards {
     private static bool TryRecognise(ExpressionSyntax condition,
                                      SemanticModel model,
                                      IParameterSymbol parameter,
-                                     bool sizedByCount,
+                                     (bool ByCount, int Ceiling, int Floor) sizes,
                                      out GuardConstraint? constraint) {
         constraint = null;
 
@@ -168,19 +168,19 @@ internal static class Guards {
         if (condition is InvocationExpressionSyntax invocation) {
             if (!IsCall(invocation, model, "System.String", EmptinessChecks)) { return false; }
 
-            constraint = Emptiness(sizedByCount);
+            constraint = Emptiness(sizes.ByCount);
 
             return true;
         }
 
         return condition is BinaryExpressionSyntax comparison
-            && TryComparison(comparison, model, parameter, sizedByCount, out constraint);
+            && TryComparison(comparison, model, parameter, sizes, out constraint);
     }
 
     private static bool TryComparison(BinaryExpressionSyntax comparison,
                                       SemanticModel model,
                                       IParameterSymbol parameter,
-                                      bool sizedByCount,
+                                      (bool ByCount, int Ceiling, int Floor) sizes,
                                       out GuardConstraint? constraint) {
         constraint = null;
 
@@ -205,7 +205,7 @@ internal static class Guards {
         if (!TryDecimal(constant.Value, out decimal value)) { return false; }
 
         constraint = sized
-                         ? Sized(@operator, value, sizedByCount)
+                         ? Sized(@operator, value, sizes)
                          : Numeric(@operator, value, parameter.Type, Literal(constant.Value, parameter.Type));
 
         return constraint is not null;
@@ -248,21 +248,23 @@ internal static class Guards {
     ///     it is not the bound the guard states. The numeric branch has carried a type-aware literal since the
     ///     <c>decimal</c> case forced one; this is the same rule, for the family that had no equivalent.
     /// </remarks>
-    private static GuardConstraint? Sized(SyntaxKind @operator, decimal value, bool byCount) {
+    private static GuardConstraint? Sized(SyntaxKind @operator, decimal value, (bool ByCount, int Ceiling, int Floor) sizes) {
         if (value != decimal.Truncate(value) || value < 0 || value > int.MaxValue) { return null; }
 
-        string exact = byCount ? "WithCount" : "WithLength";
-        string min   = byCount ? "WithMinCount" : "WithMinLength";
-        string max   = byCount ? "WithMaxCount" : "WithMaxLength";
+        string exact = sizes.ByCount ? "WithCount" : "WithLength";
+        string min   = sizes.ByCount ? "WithMinCount" : "WithMinLength";
+        string max   = sizes.ByCount ? "WithMaxCount" : "WithMaxLength";
         string count = ((int)value).ToString(CultureInfo.InvariantCulture);
 
+        // A floor and an exact size ask the generator to PRODUCE that many, so they answer to both limits; a
+        // ceiling only asks it not to exceed one, so the element domain has nothing to say about it.
         return @operator switch {
-            SyntaxKind.EqualsExpression when value == 0            => Emptiness(byCount),
-            SyntaxKind.LessThanExpression when value == 1          => Emptiness(byCount),
-            SyntaxKind.LessThanExpression                          => new GuardConstraint(min, count, Bound.Lower, value),
-            SyntaxKind.GreaterThanExpression                       => new GuardConstraint(max, count, Bound.Upper, value),
-            SyntaxKind.NotEqualsExpression                         => new GuardConstraint(exact, count, Bound.Exact, value),
-            _                                                      => null
+            SyntaxKind.EqualsExpression when value == 0                => Emptiness(sizes.ByCount),
+            SyntaxKind.LessThanExpression when value == 1              => Emptiness(sizes.ByCount),
+            SyntaxKind.LessThanExpression when value <= sizes.Floor    => new GuardConstraint(min, count, Bound.Lower, value),
+            SyntaxKind.GreaterThanExpression when value <= sizes.Ceiling => new GuardConstraint(max, count, Bound.Upper, value),
+            SyntaxKind.NotEqualsExpression when value <= sizes.Floor   => new GuardConstraint(exact, count, Bound.Exact, value),
+            _                                                          => null
         };
     }
 

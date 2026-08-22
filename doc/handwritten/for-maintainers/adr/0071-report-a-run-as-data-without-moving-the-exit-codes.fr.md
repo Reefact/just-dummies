@@ -2,8 +2,9 @@
 
 🌍 🇬🇧 [English](0071-report-a-run-as-data-without-moving-the-exit-codes.md) · 🇫🇷 Français (ce fichier)
 
-**Status:** Proposed
+**Status:** Accepted
 **Proposed:** 2026-08-12
+**Accepted:** 2026-08-22
 **Decision Makers:** Reefact
 
 > Les renvois de section (§N) pointent vers la [spécification de `dum`](../specifications/justdummies-tool.fr.md).

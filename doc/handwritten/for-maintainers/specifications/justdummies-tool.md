@@ -532,10 +532,22 @@ its leading guard clauses and tightens the generator accordingly.
 A statement is a guard only when **all** of the following hold. The rule is deliberately
 conservative, mirroring how the library's own analyzers under-report rather than misfire:
 
-* it is an `if` statement whose body throws unconditionally, with no `else`;
+* it is an `if` statement whose body throws unconditionally;
 * it appears before the first assignment to a field or property;
 * its condition mentions **exactly one** parameter and contains no `&&` or `||`;
 * every other operand is a compile-time constant.
+
+**An `else` does not stop the reading.** An `else` branch says only what happens when its own
+condition is false — exactly the case where the branches before it already let the value through —
+so it can never weaken what they reject: `if (v < 0) { throw … } else { … }` still reads `v < 0`,
+the same as if the `else` were absent. An `else if` chain is read the same way, one branch at a
+time, for as long as **every branch before the one being read throws unconditionally too**:
+`if (a < 0) { throw … } else if (b > 100) { throw … }` reads both, because reaching `b`'s test
+presupposes only that `a`'s branch already rejected the value. The moment a branch does not throw
+unconditionally, reading stops there: `if (a < 0) { a = 0; } else if (b > 100) { throw … }` reads
+neither, because reaching `b`'s test now presupposes `a >= 0` too — a cross-parameter rule, which is
+exactly the case this section already refuses to read. That branch, and everything from it onward,
+is marked `unread guards` instead of passed over in silence.
 
 The recognised set is closed:
 
@@ -672,14 +684,14 @@ alternatives weighed against it.
 
 **A statement that throws is a guard whatever its shape.** The one thing a `throw` before the first
 assignment to state cannot be is ordinary logic: it refuses to build the object. So where the
-recognised set could not parse the shape carrying it — an `else if` chain, a block that logs before
-it throws, a condition outside the closed set — the parameters that statement names are marked
+recognised set could not parse the shape carrying it — a block that logs before it throws, a
+condition outside the closed set, an `else if` branch whose reachability depends on an earlier
+branch that does not throw unconditionally — the parameters that statement names are marked
 `unread guards`, the same as a condition the set fails to recognise. Those shapes used to fall past
-the recognised-guard branch and be reported as nothing at all: `if (v < 0) { throw … } else if (v >
-100) { throw … }` read exactly like a parameter nobody had constrained. A parameter named only
-inside the `nameof` of the throw's own message does not count — that names the rejected parameter
-for a reader rather than testing anything, and every real guard of this shape names its subject in
-the condition too.
+the recognised-guard branch and be reported as nothing at all: `if (v < 0) { Log(v); throw … }` read
+exactly like a parameter nobody had constrained. A parameter named only inside the `nameof` of the
+throw's own message does not count — that names the rejected parameter for a reader rather than
+testing anything, and every real guard of this shape names its subject in the condition too.
 
 **A leading statement need not be an `if` to matter either.** A guard delegated entirely to a helper —
 `Ensure.NotBlank(value);`, called plainly, with no `if` in the constructor at all — throws from

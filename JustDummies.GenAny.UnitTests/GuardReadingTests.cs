@@ -92,6 +92,44 @@ public sealed class GuardReadingTests {
     }
 
     /// <summary>
+    ///     A guard carrying an <c>else</c> is read the same as one with none — the <c>else</c> only says what
+    ///     happens when the guard's own condition is false, which can never weaken what it rejects.
+    /// </summary>
+    [Fact(DisplayName = "A guard followed by an else is read the same as one with no else at all.")]
+    public void AGuardFollowedByAnElseIsReadTheSameAsOneWithNoElseAtAll() {
+        string guard = "if (value <= 0) { throw new ArgumentOutOfRangeException(nameof(value)); } else { }";
+
+        ScaffoldedParameter parameter = Subject.GuardedBy("int", guard);
+
+        Check.That(parameter.Expression).IsEqualTo("Any.Int32().Positive()");
+        Check.That(parameter.Provenance.HasFlag(Provenance.Guard)).IsTrue();
+        Check.That(parameter.Provenance.HasFlag(Provenance.UnreadGuards)).IsFalse();
+    }
+
+    /// <summary>
+    ///     An <c>else if</c> chain reads every branch, as long as every branch before it throws
+    ///     unconditionally too — reaching a later branch then presupposes only that the earlier ones already
+    ///     rejected the value, never a fact about a parameter of its own.
+    /// </summary>
+    [Fact(DisplayName = "An else-if chain that throws throughout reads every branch's own guard.")]
+    public void AnElseIfChainThatThrowsThroughoutReadsEveryBranchsOwnGuard() {
+        ScaffoldOutcome outcome = Subject.Scaffold("""
+                                                   public sealed class Subject {
+
+                                                       public Subject(int value) {
+                                                           if (value < 0) { throw new ArgumentOutOfRangeException(nameof(value)); }
+                                                           else if (value > 100) { throw new ArgumentOutOfRangeException(nameof(value)); }
+                                                       }
+
+                                                   }
+                                                   """);
+
+        Check.That(outcome.Plan!.Parameters[0].Expression).IsEqualTo("Any.Int32().Between(0, 100)");
+        Check.That(outcome.Plan.Parameters[0].Provenance.HasFlag(Provenance.Guard)).IsTrue();
+        Check.That(outcome.Plan.Parameters[0].Provenance.HasFlag(Provenance.UnreadGuards)).IsFalse();
+    }
+
+    /// <summary>
     ///     Where two rows both match, the more specific wins.
     /// </summary>
     /// <remarks>

@@ -550,10 +550,23 @@ Une instruction n'est une garde que si **toutes** les conditions suivantes tienn
 délibérément conservatrice, à l'image des analyzers de la bibliothèque, qui préfèrent sous-signaler
 plutôt que se tromper :
 
-* c'est un `if` dont le corps lève inconditionnellement, sans `else` ;
+* c'est un `if` dont le corps lève inconditionnellement ;
 * elle apparaît avant la première affectation à un champ ou une propriété ;
 * sa condition mentionne **exactement un** paramètre et ne contient ni `&&` ni `||` ;
 * tout autre opérande est une constante de compilation.
+
+**Un `else` n'arrête pas la lecture.** Une branche `else` ne dit que ce qui se passe quand sa propre
+condition est fausse — exactement le cas où les branches précédentes ont déjà laissé passer la
+valeur — donc elle ne peut jamais affaiblir ce qu'elles rejettent : `if (v < 0) { throw … } else { … }`
+lit toujours `v < 0`, comme si le `else` était absent. Une chaîne `else if` se lit de la même façon,
+branche après branche, tant que **chaque branche précédant celle en cours de lecture lève elle aussi
+inconditionnellement** : `if (a < 0) { throw … } else if (b > 100) { throw … }` lit les deux, parce
+qu'atteindre le test de `b` ne présuppose que le rejet déjà fait par la branche de `a`. Dès qu'une
+branche ne lève pas inconditionnellement, la lecture s'arrête là : `if (a < 0) { a = 0; } else if
+(b > 100) { throw … }` ne lit ni l'une ni l'autre, parce qu'atteindre le test de `b` présuppose
+désormais aussi `a >= 0` — une règle inter-paramètres, exactement le cas que cette section refuse
+déjà de lire. Cette branche, et tout ce qui suit, est marquée `unread guards` plutôt que passée sous
+silence.
 
 L'ensemble reconnu est clos :
 
@@ -701,14 +714,15 @@ alternatives pesées contre lui.
 **Une instruction qui lève est une garde, quelle que soit sa forme.** La seule chose qu'un `throw`
 placé avant la première affectation à l'état ne peut pas être, c'est de la logique ordinaire : il
 refuse de construire l'objet. Donc là où l'ensemble reconnu n'a pas su analyser la forme qui le
-porte — une chaîne d'`else if`, un bloc qui journalise avant de lever, une condition hors de
-l'ensemble clos — les paramètres que cette instruction nomme sont marqués `unread guards`, comme
-une condition que l'ensemble ne reconnaît pas. Ces formes tombaient auparavant à côté de la branche
-des gardes reconnues et n'étaient signalées d'aucune façon :
-`if (v < 0) { throw … } else if (v > 100) { throw … }` se lisait exactement comme un paramètre que
-personne n'avait contraint. Un paramètre nommé seulement dans le `nameof` du message du `throw` ne
-compte pas — cela nomme le paramètre rejeté à l'intention d'un lecteur plutôt que de tester quoi que
-ce soit, et toute garde réelle de cette forme nomme aussi son sujet dans la condition.
+porte — un bloc qui journalise avant de lever, une condition hors de l'ensemble clos, une branche
+`else if` dont l'atteignabilité dépend d'une branche précédente qui ne lève pas
+inconditionnellement — les paramètres que cette instruction nomme sont marqués `unread guards`,
+comme une condition que l'ensemble ne reconnaît pas. Ces formes tombaient auparavant à côté de la
+branche des gardes reconnues et n'étaient signalées d'aucune façon : `if (v < 0) { Log(v); throw …
+}` se lisait exactement comme un paramètre que personne n'avait contraint. Un paramètre nommé
+seulement dans le `nameof` du message du `throw` ne compte pas — cela nomme le paramètre rejeté à
+l'intention d'un lecteur plutôt que de tester quoi que ce soit, et toute garde réelle de cette forme
+nomme aussi son sujet dans la condition.
 
 **Une instruction de tête n'a pas besoin non plus d'être un `if` pour compter.** Une garde entièrement
 déléguée à un helper — `Ensure.NotBlank(value);`, appelé tel quel, sans aucun `if` dans le

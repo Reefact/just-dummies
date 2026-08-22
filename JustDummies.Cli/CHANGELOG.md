@@ -19,6 +19,16 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   `value < 0`, so zero is admissible — `GreaterThanOrEqualTo(0)`, never `Positive()`, which is what
   `ThrowIfNegativeOrZero(value)` reads as instead. The same subject-identity and compile-time-constant
   discipline the comparison rows already keep applies here too.
+- **A guard followed by an `else`, or an `else if` chain that throws throughout, is read rather than
+  passed over.** `if (v < 0) { throw … } else { … }` used to stop guard reading the moment it saw the
+  `else`, even though an `else` branch only says what happens when the guard's own condition is
+  false and can never weaken what it rejects. An `else if` chain now reads one branch at a time, for
+  as long as every branch before it throws unconditionally too: `if (a < 0) { throw … } else if
+  (b > 100) { throw … }` now reads both — reaching `b`'s test presupposes only that `a`'s branch
+  already rejected the value. The moment a branch does not throw unconditionally, reading stops
+  there and that branch, with everything after it, is marked `unread guards` instead: reaching it
+  would otherwise presuppose a fact about an earlier parameter, which is the cross-parameter rule
+  this reading has always refused.
 
 ## [1.1.0-beta.2] - 2026-08-22
 

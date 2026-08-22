@@ -1040,6 +1040,27 @@ sweep. In v1.0 `NamingOptions` carries a single fixed pattern, `Any{Type}`.
   that is what this check owns. The harness must include a **control file with a known violation**,
   asserted to fire — otherwise "no diagnostics" cannot be distinguished from "analyzers not
   loaded" (§17.2).
+* **The guarded-corpus test.** The compile-the-output check above reads golden files, and every
+  golden parameter is unguarded or emptiness-guarded — so no approved file has ever carried a bound
+  pair, a count over an enum's members, a size above the producible cap or a sign against an
+  opposing bound, which is the whole of §5.3's composition. A corpus of **guarded domain types** is
+  therefore driven through the engine and put to three oracles: the emitted file **compiles**, it
+  raises **no `JD*` at warning level or above**, and the generator **constructs and draws** values
+  its own domain accepts. The third is the one the other two cannot stand in for — a chain can be
+  legal, declarable, silent under every rule, and still say something other than what the guards
+  said, and only the domain's own constructor settles that. A shape whose domain no generator can
+  satisfy — a contradiction the developer wrote, a bound past the cap, a set wanting more distinct
+  values than its element row holds — answers a fourth: it must still construct, still raise no
+  rule, and the recap must carry the refusal.
+* **Informational rules are excused by name, never by severity.** The blanket exclusion above is
+  right for the check it belongs to and wrong as a general rule, because it reasons about the file's
+  author rather than about the rule. `JD030` names a length the domain never stated and the engine
+  will not invent one to quieten it — that is a fact about a file whose author has not arrived.
+  `JD031` and `JD024` report what the **engine chose**: two bounds where it meant a range, a
+  constraint that narrows nothing. A scaffold knows what it meant to write, so an informational
+  diagnostic on emitted output is a review of that intention rather than a verdict on it — and a
+  choice the engine cannot defend is one it should not have made. The corpus therefore names the
+  informational rules it stands behind, and any other fails until someone decides which it is.
 * **The own-code test.** Scaffold the **hosting repository's real types**, compile the results,
   and generate a value from each. The reasoning is recorded in the analyzer-on-own-code decision
   (§13.7): a rule and the snippet that tests it, both written by the same author, share the same

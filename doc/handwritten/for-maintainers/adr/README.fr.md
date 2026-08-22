@@ -196,3 +196,4 @@ et qu'elle a été décidée le 01/08/2026 — l'index porte l'ordre, la numéro
 | [ADR-0079](0079-constrain-what-a-dummy-draws-never-the-literals-it-was-given.fr.md) | Contraindre ce qu'un dummy tire, jamais les littéraux qu'on lui a donnés | Accepted | consigné ici |
 | [ADR-0080](0080-admit-a-rule-that-names-a-resolved-ambiguity.fr.md) | Admettre une règle JD qui nomme une ambiguïté que la bibliothèque tranche, à côté de l'équivalent plus court | Accepted | consigné ici |
 | [ADR-0081](0081-declare-one-top-level-type-per-file.fr.md) | Déclarer un seul type de premier niveau par fichier, via un analyseur de style tiers | Accepted | consigné ici |
+| [ADR-0082](0082-answer-for-the-finished-chain-not-each-constraint.fr.md) | Répondre de la chaîne finie, pas de chaque contrainte lue | Accepted | consigné ici |

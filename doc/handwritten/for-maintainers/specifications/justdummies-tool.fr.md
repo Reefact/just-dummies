@@ -764,6 +764,36 @@ run de test, et omettre le paramètre rend `AnyOrder` silencieusement inutilisab
 lance le tool et ouvre le fichier dans la même minute ; un soulignement rouge à la ligne exacte lui
 coûte dix secondes, un échec à l'exécution une semaine plus tard lui coûte bien davantage.
 
+### 5.6 Paramètres à vérifier
+
+Une garde que le moteur ne peut pas cautionner — non lue du tout, ou lue puis abandonnée sans
+certitude que l'abandon soit sûr (§5.3, §9) — bloque la compilation de la même façon, à une
+différence près : un generator **a bien été** inféré ici, et il reste comme base de travail de la
+fabrique plutôt que d'être jeté.
+
+```csharp
+    private static IAny<string> NameFactory() {
+        // TODO(dum): 'string name' may be guarded by something dum could not read (§9).
+        //   This is dum's best generator for the type; verify it honours the real invariant,
+        //   or replace it, then delete the line below.
+        _ = TODO_verify_the_generator_for_name;
+
+        return Any.String().NonEmpty();
+    }
+```
+
+L'identifiant sur la ligne écartée n'existe pas, le build échoue donc à cette ligne exacte, comme
+au §5.5 — l'affectation à `_` est ce qui évite qu'un second `CS0201` sans rapport ne brouille ce
+que le développeur doit lire. Le `return` en dessous est réel : supprimer une seule ligne laisse
+exactement ce que dum aurait écrit en silence sinon, à garder ou à remplacer.
+
+Un generator qui compile et tire une valeur que le vrai constructeur rejette encore est un échec
+pire que celui qui ne compile jamais : il passe la run d'aujourd'hui et échoue plus tard,
+indiscernable d'un test flaky pour qui le rencontre — le développeur a fait confiance au scaffold,
+l'a committé, et l'invariant qu'il a manqué en silence resurgit ailleurs (ADR-0046). Émettre la
+recette neutre sans un mot se lisait comme si le tool avait jugé l'abandon de la garde sûr ;
+bloquer la compilation dit clairement qu'il n'a rien décidé.
+
 ---
 
 ## 6. Sortie console
@@ -813,6 +843,11 @@ Cette dernière valeur compte plus qu'il n'y paraît. Sans elle, la dégradation
 indiscernable d'une simple ignorance du tool : un paramètre `DateOnly` sur un projet downlevel se
 lirait « non inféré », alors que la vérité est « inféré, mais `Any.DateOnly()` n'existe pas ici —
 change de cible, ou écris-le toi-même ». Un mot transforme une impasse en instruction.
+
+Un paramètre à vérifier (§5.6) clôt le récapitulatif de la même façon qu'un paramètre ouvert — le
+fichier ne compilera pas — mais compté séparément, comme *N* **to verify** plutôt que *N*
+**TODO** : un generator y a bien été inféré, et le compte le dit. Les deux ensemble se lisent
+`4 of 6 parameters inferred, 1 TODO, 1 to verify.`, dans l'ordre où un développeur agit dessus.
 
 **La provenance est une donnée, pas une sortie.** Le moteur la retourne dans son modèle de résultat
 (§10.3) ; la CLI la rend. C'est ce qui rend le récapitulatif testable sans console.

@@ -30,6 +30,14 @@ public sealed class EmitterGoldenTests {
         Check.That(file.ContainsTodo).IsTrue();
     }
 
+    [Fact(DisplayName = "One parameter's guard unread — the doubt of §5.5, kept as a working base.")]
+    public void OneParameterRequiresVerification() {
+        ScaffoldedFile file = GeneratorEmitter.Emit(Shapes.OrderRequiringVerification());
+
+        GoldenFile.Approve("AnyOrderRequiringVerification", file.SourceText);
+        Check.That(file.ContainsTodo).IsTrue();
+    }
+
     [Fact(DisplayName = "One parameter, and no System using to separate.")]
     public void OneParameter() {
         GoldenFile.Approve("AnyMoney", GeneratorEmitter.Emit(Shapes.Money()).SourceText);

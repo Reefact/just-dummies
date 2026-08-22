@@ -118,7 +118,7 @@ internal static class Recap {
     private static string Column(ScaffoldedParameter parameter) {
         List<string> words = [];
 
-        if (parameter.IsUnresolved) { words.Add("TODO"); }
+        if (parameter.IsUnresolved || parameter.RequiresVerification) { words.Add("TODO"); }
 
         words.AddRange(WordsFor(parameter.Provenance));
 
@@ -151,9 +151,10 @@ internal static class Recap {
     ///     The closing line, and the one sentence that keeps an open parameter from reading as a failure.
     /// </summary>
     private static void Closing(ScaffoldOutcome outcome, IAnsiConsole console) {
-        ScaffoldPlan plan  = outcome.Plan!;
-        int          open  = plan.Parameters.Count(parameter => parameter.IsUnresolved);
-        int          total = plan.Parameters.Count;
+        ScaffoldPlan plan       = outcome.Plan!;
+        int          open       = plan.Parameters.Count(parameter => parameter.IsUnresolved);
+        int          uncertain  = plan.Parameters.Count(parameter => parameter.RequiresVerification);
+        int          total      = plan.Parameters.Count;
 
         if (total == 0) {
             Line(console, $"✓ {outcome.File!.FileName} — no constructor parameters to infer.");
@@ -162,12 +163,16 @@ internal static class Recap {
             return;
         }
 
+        List<string> notes = [];
+        if (open > 0)      { notes.Add($"{open.ToString(CultureInfo.InvariantCulture)} TODO"); }
+        if (uncertain > 0) { notes.Add($"{uncertain.ToString(CultureInfo.InvariantCulture)} to verify"); }
+
         string counted = $"{total - open} of {total} parameters inferred"
-                       + (open == 0 ? "." : $", {open.ToString(CultureInfo.InvariantCulture)} TODO.");
+                       + (notes.Count == 0 ? "." : $", {string.Join(", ", notes)}.");
 
         Line(console, $"✓ {outcome.File!.FileName} — {counted}");
 
-        if (open > 0) {
+        if (open > 0 || uncertain > 0) {
             Line(console, "  The file will not compile until you resolve it. That is deliberate.");
 
             foreach (ScaffoldedParameter parameter in plan.Parameters.Where(p => p.Candidates.Count > 0)) {

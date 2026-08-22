@@ -30,6 +30,18 @@ internal static class Shapes {
                                 OrderParameters(customer: ScaffoldedParameter.Unresolved("customer", "Customer")));
     }
 
+    /// <summary>
+    ///     The same, with one parameter's guard read but not vouched for: the doubt of §5.5, distinct from the
+    ///     open parameter above — here a generator was inferred, and stays as the factory's working base.
+    /// </summary>
+    internal static ScaffoldPlan OrderRequiringVerification() {
+        return new ScaffoldPlan(new TargetType("Order", "Shop.Domain", NamespaceStyle.FileScoped),
+                                "AnyOrder",
+                                ["System", "System.Collections.Generic", "JustDummies"],
+                                OrderParameters(customer: ScaffoldedParameter.DrawnFrom("customer", "Customer", "new AnyCustomer()",
+                                                                                        Provenance.UnreadGuards)));
+    }
+
     /// <summary>One parameter, and no <c>System</c> using — the group separator has nothing to separate.</summary>
     internal static ScaffoldPlan Money() {
         return new ScaffoldPlan(new TargetType("Money", "Shop.Domain", NamespaceStyle.FileScoped),

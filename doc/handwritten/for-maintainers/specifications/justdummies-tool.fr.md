@@ -577,9 +577,9 @@ L'ensemble reconnu est clos :
 | `p.Length > N` | `.WithMaxLength(N)` |
 | `p.Length < N` | `.WithMinLength(N)` |
 | `p.Length != N` | `.WithLength(N)` |
-| `p <= 0` ; ou `p < 1` sur un type **intégral** | `.Positive()` |
+| `p <= 0` ; ou `p < 1` sur un type **intégral** | `.Positive()`, ou `.NonZero()` sur un type **non signé** |
 | `p < 0` | `.GreaterThanOrEqualTo(0)` |
-| `p >= 0` | `.Negative()` |
+| `p >= 0` | `.Negative()` ; **non lue** sur un type **non signé**, où elle rejette toute valeur possible |
 | `p == 0` | `.NonZero()` |
 | `p > N` | `.LessThanOrEqualTo(N)` |
 | `p < N` | `.GreaterThanOrEqualTo(N)` |
@@ -591,13 +591,26 @@ L'ensemble reconnu est clos :
 `Any.String()` non contraint ne tire que des lettres et chiffres ASCII : un tirage non vide ne peut
 jamais être blanc (§14.5).
 
+**Un signe s'écrit dans le membre que porte le generator propre au paramètre.** Le §14.3 donne aux
+familles non signées la surface signée *moins* `Positive` et `Negative` : écrire `.Positive()` pour
+`p <= 0` sur un `byte` ou un `uint` émet donc un membre que la recherche abandonne ensuite — un
+tirage que rien ne resserre, sous un fichier qui compile pourtant, et un generator qui tire la seule
+valeur que la garde existe pour refuser. Zéro est le plancher d'un type non signé, donc *au-dessus
+de zéro* est exactement *non nul* : `.NonZero()` est la même contrainte dans la seule orthographe
+disponible, pas une plus lâche. `.Negative()` n'a pas d'équivalent — `p >= 0` rejette toute valeur
+qu'un type non signé peut contenir — donc elle n'est pas écrite du tout et le paramètre est marqué
+`unread guards`, le refus que mérite un tel domaine.
+
 **Une garde d'exclusion d'énumération est lue elle aussi, et c'est la garde d'énumération la plus
 courante qui soit** — `if (status == Status.None) { throw … }`. Roslyn rapporte un membre
 d'énumération à zéro comme une simple constante **entière**, donc sans cette ligne la condition
 tombait dans la ligne `p == 0` de la famille numérique et se lisait `.NonZero()` — un membre
-qu'`AnyEnum<T>` ne porte pas, abandonné silencieusement par la recherche de membre (§5.2). Un
-membre non nul ne correspondait à aucune ligne numérique et se lisait comme un paramètre sans
-garde. La même discipline d'identité du sujet que pour `Enum.IsDefined` s'applique : le membre
+qu'`AnyEnum<T>` ne porte pas, donc la recherche de membre (§5.2) l'abandonnait et le paramètre
+rapportait `constraint unavailable` sur un tirage que rien ne resserrait. Un membre **non nul** ne
+correspondait à aucune ligne numérique : il était marqué `unread guards` et bloquait le build du
+développeur — le dénouement bruyant, celui que cette ligne convertit en contrainte lue. Les deux
+moitiés échouaient différemment, et c'est ce qui fait que la ligne vaut mieux que l'une ou l'autre.
+La même discipline d'identité du sujet que pour `Enum.IsDefined` s'applique : le membre
 doit appartenir au type d'énumération **propre** au paramètre. La négation, `p != E.Member`, est un
 invariant différent — elle lève à moins que la valeur **soit** ce membre, une fixation plutôt
 qu'une exclusion — et n'est pas lue comme l'inverse de cette ligne.

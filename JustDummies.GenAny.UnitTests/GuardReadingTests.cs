@@ -67,6 +67,58 @@ public sealed class GuardReadingTests {
         Check.That(parameter.RequiresVerification).IsFalse();
     }
 
+    /// <summary>
+    ///     A sign guard on an unsigned parameter is written in the spelling that generator actually carries.
+    /// </summary>
+    /// <remarks>
+    ///     §14.3 gives the unsigned families the signed surface <b>less <c>Positive</c> and <c>Negative</c></b>,
+    ///     so emitting <c>Positive()</c> there resolves to nothing and ADR-0059 drops it — leaving an
+    ///     unnarrowed draw under a file that still compiles, and a generator that draws the one value the
+    ///     constructor exists to refuse. Zero is the floor of an unsigned type, so <i>above zero</i> is exactly
+    ///     <i>not zero</i>: <c>NonZero()</c> is the same constraint, not a looser one.
+    ///     <para>
+    ///         Both spellings are pinned, because the reading has to hold whichever way the guard is written —
+    ///         and the helper spelling is the one that turned a build this repository used to block into one
+    ///         that compiles.
+    ///     </para>
+    /// </remarks>
+    [Theory(DisplayName = "A sign guard on an unsigned parameter is read as NonZero, which its generator carries.")]
+    [InlineData("byte", "Any.Byte()", "ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);")]
+    [InlineData("uint", "Any.UInt32()", "ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);")]
+    [InlineData("ulong", "Any.UInt64()", "ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);")]
+    [InlineData("ushort", "Any.UInt16()", "ArgumentOutOfRangeException.ThrowIfLessThan(value, 1);")]
+    [InlineData("byte", "Any.Byte()", "if (value <= 0) { throw new ArgumentOutOfRangeException(nameof(value)); }")]
+    [InlineData("uint", "Any.UInt32()", "if (value < 1) { throw new ArgumentOutOfRangeException(nameof(value)); }")]
+    public void ASignGuardOnAnUnsignedParameterIsReadAsNonZero(string parameterType, string generator, string guard) {
+        ScaffoldedParameter parameter = Subject.GuardedBy(parameterType, guard);
+
+        Check.That(parameter.Expression).IsEqualTo(generator + ".NonZero()");
+        Check.That(parameter.Provenance.HasFlag(Provenance.Guard)).IsTrue();
+        Check.That(parameter.Provenance.HasFlag(Provenance.ConstraintUnavailable)).IsFalse();
+        Check.That(parameter.RequiresVerification).IsFalse();
+    }
+
+    /// <summary>
+    ///     The signed reading is unchanged, so the two rows stay told apart — the trap issue #106 named.
+    /// </summary>
+    /// <remarks>
+    ///     Pinned as a <b>pair</b> rather than one row each: the failure this guards against is not either
+    ///     mapping being absent, it is the two being swapped, and a test per row passes just as happily
+    ///     swapped as not.
+    /// </remarks>
+    [Fact(DisplayName = "ThrowIfNegative and ThrowIfNegativeOrZero read as different constraints, in the right order.")]
+    public void ThrowIfNegativeAndThrowIfNegativeOrZeroReadAsDifferentConstraints() {
+        string admittingZero = Subject.GuardedBy("int", "ArgumentOutOfRangeException.ThrowIfNegative(value);").Expression!;
+        string refusingZero  = Subject.GuardedBy("int", "ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);").Expression!;
+
+        // ThrowIfNegative throws on `value < 0`, so zero is admissible; ThrowIfNegativeOrZero throws on
+        // `value <= 0`, so it is not. Read the wrong way round, the second yields a generator drawing a value
+        // the constructor rejects — the failure mode this whole reading exists to remove.
+        Check.That(admittingZero).IsEqualTo("Any.Int32().GreaterThanOrEqualTo(0)");
+        Check.That(refusingZero).IsEqualTo("Any.Int32().Positive()");
+        Check.That(admittingZero).IsNotEqualTo(refusingZero);
+    }
+
     // The subject-identity discipline the comparison rows keep, on the arithmetic throw helpers too.
     [Fact(DisplayName = "An arithmetic throw helper naming something other than the parameter is not read as its guard.")]
     public void AnArithmeticThrowHelperNamingSomethingElseIsNotReadAsItsGuard() {
@@ -371,24 +423,33 @@ public sealed class GuardReadingTests {
     ///     ADR-0059 reaches the guards too, and a drop it makes is said out loud.
     /// </summary>
     /// <remarks>
-    ///     <c>.Positive()</c> is not declared on the unsigned engine, so it is skipped rather than emitted into
-    ///     a chain that would not compile — that half was always right. What was not is the column beside it:
-    ///     provenance was computed from the constraints <b>read</b>, so the parameter reported <c>guard</c>
-    ///     over an invariant nothing honoured, and the run reported every parameter inferred. §6 words that
-    ///     column <c>tightened</c>, and a constraint with no member to be written with tightened nothing.
+    ///     <c>.NonZero()</c> is not declared on the enum engine — <c>AnyEnum&lt;T&gt;</c> carries only
+    ///     <c>OneOf</c>, <c>Except</c>, <c>DifferentFrom</c> and <c>AllowingCombinations</c> — so it is skipped
+    ///     rather than emitted into a chain that would not compile. That half was always right. What was not is
+    ///     the column beside it: provenance was computed from the constraints <b>read</b>, so the parameter
+    ///     reported <c>guard</c> over an invariant nothing honoured, and the run reported every parameter
+    ///     inferred. §6 words that column <c>tightened</c>, and a constraint with no member to be written with
+    ///     tightened nothing.
     ///     <para>
-    ///         The <c>uint</c> case is benign — no draw violates it — and that is exactly why it is the one to
-    ///         pin. The same silence over an enum guard the closed set cannot express costs a third of the
-    ///         draws, and the two are one bug.
+    ///         Written against the enum comparing to a bare <c>0</c> rather than to a named member: the named
+    ///         spelling is now the <c>DifferentFrom</c> row, which resolves, and this case is what is left of
+    ///         the drop it replaced. The pairing matters — the same guard costs a third of the draws in the
+    ///         spelling that is read and nothing in the spelling that is not, which is why the column has to
+    ///         tell them apart.
+    ///     </para>
+    ///     <para>
+    ///         It used to be pinned on <c>.Positive()</c> over a <c>uint</c>. That vehicle is gone on purpose:
+    ///         a sign guard on an unsigned parameter is now written as the <c>NonZero</c> its generator does
+    ///         carry, so nothing is dropped there any more.
     ///     </para>
     /// </remarks>
     [Fact(DisplayName = "A constraint the generator does not carry is skipped, and reported as unavailable.")]
     public void AConstraintTheGeneratorDoesNotCarryIsSkipped() {
-        string guard = "if (value <= 0) { throw new ArgumentOutOfRangeException(nameof(value)); }";
+        string guard = "if (value == 0) { throw new ArgumentOutOfRangeException(nameof(value)); }";
 
-        ScaffoldedParameter parameter = Subject.GuardedBy("uint", guard);
+        ScaffoldedParameter parameter = Subject.GuardedBy("OrderStatus", guard);
 
-        Check.That(parameter.Expression).IsEqualTo("Any.UInt32()");
+        Check.That(parameter.Expression).IsEqualTo("Any.Enum<OrderStatus>()");
         Check.That(parameter.Provenance.HasFlag(Provenance.ConstraintUnavailable)).IsTrue();
         Check.That(parameter.Provenance.HasFlag(Provenance.Guard)).IsFalse();
     }

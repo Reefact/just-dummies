@@ -10,6 +10,15 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Fixed
 
+- **A sign guard on an unsigned parameter no longer loses its constraint.** `if (size <= 0) { throw … }`
+  on a `byte`, `ushort`, `uint`, `ulong` or `UInt128` was read as `.Positive()` — a member the unsigned
+  generators do not carry, so the lookup dropped it and the parameter kept an unnarrowed draw under a
+  file that compiled and reported nothing worth looking at. `Any.Byte()` then drew `0`, the one value
+  the guard exists to refuse, on roughly one draw in two hundred. It is now `.NonZero()`, which is the
+  same constraint rather than a looser one: zero is the floor of an unsigned type, so *above zero* and
+  *not zero* admit exactly the same values. `if (size >= 0)` gets the opposite treatment — it rejects
+  every value an unsigned type can hold, so nothing is written and the parameter is marked
+  `unread guards`. Both spellings are affected, the `if` and the `ArgumentOutOfRangeException` helper.
 - **The arithmetic throw helpers are read as guards, not passed over as unread.**
   `ArgumentOutOfRangeException.ThrowIfNegative(quantity)` — the commonest guard on a quantity there
   is — used to count as a call the tool could not parse and block the developer's build, over an

@@ -312,6 +312,65 @@ public sealed class GuardBoundaryTests {
         Check.That(outcome.Plan.Parameters[1].Provenance.HasFlag(Provenance.UnreadGuards)).IsFalse();
     }
 
+    /// <summary>
+    ///     A plain <c>else</c> is walked, not skipped: what it contains is read by the same two rules every
+    ///     other unrecognised leading statement goes through.
+    /// </summary>
+    /// <remarks>
+    ///     The chain walker reads a branch's condition and then has to say something about the branch that
+    ///     carries no condition of its own. Doing nothing there would be silent, and silence is the one answer
+    ///     §9 refuses: validation delegated to a helper inside an <c>else</c> is exactly the shape the
+    ///     <c>helper-delegated-length</c> corpus shape exists for, with an <c>else</c> in front of it.
+    ///     <para>
+    ///         Both cases below pass just as well with the terminal-<c>else</c> arm deleted <b>if nothing
+    ///         asserts them</b> — which is what makes them worth writing: the empty <c>else</c> the other
+    ///         cases use reaches that arm and finds nothing to do, so it proves the arm runs and not that it
+    ///         does anything.
+    ///     </para>
+    /// </remarks>
+    [Fact(DisplayName = "A guard delegated to a helper inside a plain else is unread, not silent.")]
+    public void AGuardDelegatedToAHelperInsideAPlainElseIsUnread() {
+        ScaffoldedParameter parameter = Subject.GuardedBy("string", """
+                                                                            if (value is null) {
+                                                                                throw new ArgumentNullException(nameof(value));
+                                                                            } else {
+                                                                                Validate(value);
+                                                                            }
+
+                                                                            static void Validate(string candidate) {
+                                                                                if (candidate.Length < 8) { throw new ArgumentException(nameof(candidate)); }
+                                                                            }
+                                                                    """);
+
+        Check.That(parameter.Provenance.HasFlag(Provenance.UnreadGuards)).IsTrue();
+        Check.That(parameter.RequiresVerification).IsTrue();
+    }
+
+    /// <summary>
+    ///     A conditional throw nested inside a plain <c>else</c> is a guard whose shape the closed set cannot
+    ///     parse from there, so the bound it states is reported as unread rather than lost in silence.
+    /// </summary>
+    /// <remarks>
+    ///     The floor from the outer branch is still read and still correct — an <c>else</c> cannot weaken what
+    ///     the branch before it rejects — so the parameter carries a real constraint <b>and</b> the mark. That
+    ///     pairing is the point: without the mark the emitted file compiles, claims the parameter inferred, and
+    ///     draws past a ceiling the developer plainly wrote.
+    /// </remarks>
+    [Fact(DisplayName = "A conditional throw nested inside a plain else keeps the outer bound and is marked unread.")]
+    public void AConditionalThrowNestedInsideAPlainElseKeepsTheOuterBoundAndIsMarkedUnread() {
+        ScaffoldedParameter parameter = Subject.GuardedBy("int", """
+                                                                        if (value < 0) {
+                                                                            throw new ArgumentOutOfRangeException(nameof(value));
+                                                                        } else {
+                                                                            if (value > 100) { throw new ArgumentOutOfRangeException(nameof(value)); }
+                                                                        }
+                                                                """);
+
+        Check.That(parameter.Expression).IsEqualTo("Any.Int32().GreaterThanOrEqualTo(0)");
+        Check.That(parameter.Provenance.HasFlag(Provenance.Guard)).IsTrue();
+        Check.That(parameter.Provenance.HasFlag(Provenance.UnreadGuards)).IsTrue();
+    }
+
     // Not itself a guard — the block throws conditionally on the surrounding `if`, but only once every other
     // statement in it has run — and it still calls something involving the parameter the closed set of §5.3
     // does not parse. That call could be a guard the tool cannot read as easily as it could be a log line, and

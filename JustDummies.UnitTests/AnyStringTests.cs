@@ -182,16 +182,16 @@ public sealed class AnyStringTests {
         }
     }
 
-    [Fact(DisplayName = "LowerCase yields no uppercase letter; digits stay allowed.")]
+    [Fact(DisplayName = "InLowerCase yields no uppercase letter; digits stay allowed.")]
     public void LowerCaseForbidsUppercaseLetters() {
-        foreach (string value in Samples(Any.String().LowerCase().NonEmpty())) {
+        foreach (string value in Samples(Any.String().InLowerCase().NonEmpty())) {
             Check.That(value.Any(character => character is >= 'A' and <= 'Z')).IsFalse();
         }
     }
 
-    [Fact(DisplayName = "UpperCase draws no lowercase letter, and keeps a lowercase literal as written.")]
+    [Fact(DisplayName = "InUpperCase draws no lowercase letter, and keeps a lowercase literal as written.")]
     public void UpperCaseForbidsLowercaseLetters() {
-        foreach (string value in Samples(Any.String().UpperCase().StartingWith("ord-").WithLengthBetween(6, 12))) {
+        foreach (string value in Samples(Any.String().InUpperCase().StartingWith("ord-").WithLengthBetween(6, 12))) {
             Check.That(value).StartsWith("ord-");
             Check.That(value.Substring(4).Any(character => character is >= 'a' and <= 'z')).IsFalse();
         }
@@ -212,7 +212,7 @@ public sealed class AnyStringTests {
 
     [Fact(DisplayName = "An order reference keeps its four rules as named calls: prefix, family, casing and length.")]
     public void AnOrderReferenceKeepsItsFourRulesNamed() {
-        foreach (string value in Samples(Any.String().StartingWith("ORD-").AlphaNumeric().UpperCase().WithLengthBetween(8, 20))) {
+        foreach (string value in Samples(Any.String().StartingWith("ORD-").AlphaNumeric().InUpperCase().WithLengthBetween(8, 20))) {
             Check.That(value).StartsWith("ORD-");
             Check.That(value.Length).IsGreaterOrEqualThan(8);
             Check.That(value.Length).IsLessOrEqualThan(20);
@@ -313,13 +313,13 @@ public sealed class AnyStringTests {
         Check.ThatCode(() => Any.String().WithMaxLength(3).WithLength(5)).Throws<ConflictingAnyConstraintException>();
     }
 
-    [Fact(DisplayName = "LowerCase then UpperCase conflicts: one casing per generator.")]
+    [Fact(DisplayName = "InLowerCase then InUpperCase conflicts: one casing per generator.")]
     public void LowerThenUpperCaseConflicts() {
         ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.String().LowerCase().UpperCase());
+            () => Any.String().InLowerCase().InUpperCase());
 
-        Check.That(conflict.Message).Contains("UpperCase()");
-        Check.That(conflict.Message).Contains("LowerCase()");
+        Check.That(conflict.Message).Contains("InUpperCase()");
+        Check.That(conflict.Message).Contains("InLowerCase()");
     }
 
     [Fact(DisplayName = "Alpha then Numeric conflicts: one character family per generator.")]
@@ -329,7 +329,7 @@ public sealed class AnyStringTests {
 
     [Fact(DisplayName = "A lowercase string anchors an uppercase prefix, kept verbatim.")]
     public void LowerCaseAnchorsAnUppercasePrefix() {
-        foreach (string value in Samples(Any.String().LowerCase().StartingWith("ORD-").WithLengthBetween(8, 20))) {
+        foreach (string value in Samples(Any.String().InLowerCase().StartingWith("ORD-").WithLengthBetween(8, 20))) {
             Check.That(value).StartsWith("ORD-");
             Check.That(value.Substring(4).Any(character => character is >= 'A' and <= 'Z')).IsFalse();
         }
@@ -559,19 +559,19 @@ public sealed class AnyStringTests {
     [Fact(DisplayName = "WithChars then a casing conflicts: the pool is the whole character definition.")]
     public void WithCharsThenCasingConflicts() {
         ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.String().WithChars("abc").LowerCase());
+            () => Any.String().WithChars("abc").InLowerCase());
 
-        Check.That(conflict.Message).Contains("LowerCase()");
+        Check.That(conflict.Message).Contains("InLowerCase()");
         Check.That(conflict.Message).Contains("WithChars(\"abc\")");
     }
 
     [Fact(DisplayName = "A casing then WithChars conflicts: order does not matter.")]
     public void CasingThenWithCharsConflicts() {
         ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.String().UpperCase().WithChars("abc"));
+            () => Any.String().InUpperCase().WithChars("abc"));
 
         Check.That(conflict.Message).Contains("WithChars(\"abc\")");
-        Check.That(conflict.Message).Contains("UpperCase()");
+        Check.That(conflict.Message).Contains("InUpperCase()");
     }
 
     [Fact(DisplayName = "A WithChars pool anchors a prefix its pool cannot draw, and keeps drawing from the pool alone.")]

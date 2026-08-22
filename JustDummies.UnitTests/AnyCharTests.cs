@@ -50,10 +50,10 @@ public sealed class AnyCharTests {
     [Fact(DisplayName = "A second casing conflict names both sides.")]
     public void ASecondCasingConflictNamesBothSides() {
         ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.Char().LowerCase().UpperCase());
+            () => Any.Char().InLowerCase().InUpperCase());
 
-        Check.That(conflict.Message).Contains("LowerCase()");
-        Check.That(conflict.Message).Contains("UpperCase()");
+        Check.That(conflict.Message).Contains("InLowerCase()");
+        Check.That(conflict.Message).Contains("InUpperCase()");
     }
 
 }

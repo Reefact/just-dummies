@@ -37,8 +37,8 @@ public sealed class ConstraintRedeclarationTests {
         yield return ("String().Punctuation()", () => Any.String().Punctuation().Punctuation());
         yield return ("String().Printable()", () => Any.String().Printable().Printable());
         yield return ("String().WithChars(\"ab\")", () => Any.String().WithChars("ab").WithChars("ab"));
-        yield return ("String().LowerCase()", () => Any.String().LowerCase().LowerCase());
-        yield return ("String().UpperCase()", () => Any.String().UpperCase().UpperCase());
+        yield return ("String().InLowerCase()", () => Any.String().InLowerCase().InLowerCase());
+        yield return ("String().InUpperCase()", () => Any.String().InUpperCase().InUpperCase());
         yield return ("String().OneOf(\"a\", \"b\")", () => Any.String().OneOf("a", "b").OneOf("a", "b"));
         yield return ("Int32().OneOf(1, 2)", () => Any.Int32().OneOf(1, 2).OneOf(1, 2));
         yield return ("Int32().MultipleOf(3)", () => Any.Int32().MultipleOf(3).MultipleOf(3));
@@ -53,8 +53,8 @@ public sealed class ConstraintRedeclarationTests {
         yield return ("Char().NonPrintable()", () => Any.Char().NonPrintable().NonPrintable());
         yield return ("Char().Whitespaces()", () => Any.Char().Whitespaces().Whitespaces());
         yield return ("Char().Hexadecimal()", () => Any.Char().Hexadecimal().Hexadecimal());
-        yield return ("Char().LowerCase()", () => Any.Char().LowerCase().LowerCase());
-        yield return ("Char().UpperCase()", () => Any.Char().UpperCase().UpperCase());
+        yield return ("Char().InLowerCase()", () => Any.Char().InLowerCase().InLowerCase());
+        yield return ("Char().InUpperCase()", () => Any.Char().InUpperCase().InUpperCase());
         yield return ("Char().OneOf('a', 'b')", () => Any.Char().OneOf('a', 'b').OneOf('a', 'b'));
         // Not a once-only slot like the family constraints above — WithoutAlpha/WithoutNumeric accumulate instead —
         // but re-declaring one is documented as inert rather than contradictory, so it belongs to the same table.
@@ -78,7 +78,7 @@ public sealed class ConstraintRedeclarationTests {
         yield return ("String().StartingWith(\"a\").StartingWith(\"b\")", () => Any.String().StartingWith("a").StartingWith("b"));
         yield return ("String().Alpha().Numeric()", () => Any.String().Alpha().Numeric());
         yield return ("String().Printable().Punctuation()", () => Any.String().Printable().Punctuation());
-        yield return ("String().LowerCase().UpperCase()", () => Any.String().LowerCase().UpperCase());
+        yield return ("String().InLowerCase().InUpperCase()", () => Any.String().InLowerCase().InUpperCase());
         yield return ("String().OneOf(\"a\", \"b\").OneOf(\"c\", \"d\")", () => Any.String().OneOf("a", "b").OneOf("c", "d"));
         yield return ("Int32().OneOf(1, 2).OneOf(3, 4)", () => Any.Int32().OneOf(1, 2).OneOf(3, 4));
         yield return ("Int32().MultipleOf(2).MultipleOf(3)", () => Any.Int32().MultipleOf(2).MultipleOf(3));
@@ -86,7 +86,7 @@ public sealed class ConstraintRedeclarationTests {
         yield return ("Char().Alpha().Numeric()", () => Any.Char().Alpha().Numeric());
         yield return ("Char().Punctuation().Printable()", () => Any.Char().Punctuation().Printable());
         yield return ("Char().Whitespaces().Hexadecimal()", () => Any.Char().Whitespaces().Hexadecimal());
-        yield return ("Char().LowerCase().UpperCase()", () => Any.Char().LowerCase().UpperCase());
+        yield return ("Char().InLowerCase().InUpperCase()", () => Any.Char().InLowerCase().InUpperCase());
         yield return ("Char().OneOf('a', 'b').OneOf('c', 'd')", () => Any.Char().OneOf('a', 'b').OneOf('c', 'd'));
         yield return ("Boolean().True().False()", () => Any.Boolean().True().False());
         yield return ("Guid().OneOf(a).OneOf(b)", () => Any.Guid().OneOf(Pinned).OneOf(PinnedAlt));

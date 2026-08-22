@@ -48,7 +48,7 @@ one more requirement, leaving the original exactly as it was:
 
 ```csharp
 AnyString anyCode     = Any.String().Alpha().WithLength(8);
-AnyString anyUpperCode = anyCode.UpperCase();
+AnyString anyUpperCode = anyCode.InUpperCase();
 
 string mixed = anyCode.Generate();      // 8 letters, any casing
 string upper = anyUpperCode.Generate(); // 8 letters, upper case

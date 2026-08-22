@@ -18,7 +18,7 @@ namespace JustDummies.Analyzers;
 ///         already occupy. <c>AlphaNumeric().StartingWith("ORD-")</c> is exactly how a fixed separator is expressed,
 ///         so reporting it as a defect would be wrong; what is worth saying is what follows from it, that the
 ///         separator appears where it was written and nowhere else. The same sentence covers the case the caller
-///         did not mean — a lowercase prefix beside <c>UpperCase()</c> — and lets them tell the two apart
+///         did not mean — a lowercase prefix beside <c>InUpperCase()</c> — and lets them tell the two apart
 ///         themselves, which a rule cannot do for them.
 ///     </para>
 ///     <para>
@@ -78,8 +78,8 @@ public sealed class AnchoredLiteralOutsideCharacterFamilyAnalyzer : DiagnosticAn
 
         foreach (IInvocationOperation constraint in constraints) {
             switch (constraint.TargetMethod.Name) {
-                case "UpperCase": requireUpper = true; break;
-                case "LowerCase": requireLower = true; break;
+                case "InUpperCase": requireUpper = true; break;
+                case "InLowerCase": requireLower = true; break;
                 case "OneOf": hasValueSet = true; break;
 
                 case "StartingWith" or "EndingWith" or "Containing" when constraint.Arguments.Length == 1 && ConstantFacts.TryGetString(constraint.Arguments[0].Value, out string literal):
@@ -175,7 +175,7 @@ public sealed class AnchoredLiteralOutsideCharacterFamilyAnalyzer : DiagnosticAn
 
     /// <summary>
     ///     Reports a letter whose case the declared casing does not draw. A casing constrains the case of a letter
-    ///     and says nothing about any other character, so <c>UpperCase().StartingWith("ORD-")</c> reports nothing:
+    ///     and says nothing about any other character, so <c>InUpperCase().StartingWith("ORD-")</c> reports nothing:
     ///     the <c>-</c> is not a letter, and the declared family answers for it instead.
     /// </summary>
     private static void ReportLetterAgainstCasing(OperationAnalysisContext context, bool requireUpper, bool requireLower, List<(string Text, IOperation At)> literals) {
@@ -188,7 +188,7 @@ public sealed class AnchoredLiteralOutsideCharacterFamilyAnalyzer : DiagnosticAn
                 bool offends = requireUpper ? char.IsLower(character) : char.IsUpper(character);
                 if (!offends) { continue; }
 
-                string constraint = requireUpper ? "UpperCase()" : "LowerCase()";
+                string constraint = requireUpper ? "InUpperCase()" : "InLowerCase()";
                 string wrongCase  = requireUpper ? "lowercase" : "uppercase";
 
                 Report(context, at, $"{constraint} cannot draw the {wrongCase} '{character}' this literal holds");

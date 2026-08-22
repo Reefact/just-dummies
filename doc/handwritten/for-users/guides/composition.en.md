@@ -141,7 +141,7 @@ primitive at the call site:
 IAny<Customer> anyCustomer = Any.Combine(
     Any.Guid().NonEmpty(),
     Any.String().Alpha().WithLengthBetween(3, 20),
-    Any.String().Alpha().LowerCase().WithLengthBetween(3, 12),
+    Any.String().Alpha().InLowerCase().WithLengthBetween(3, 12),
     (id, name, localPart) => new Customer(id, name, $"{localPart}@example.test"));
 
 Customer customer = anyCustomer.Generate();

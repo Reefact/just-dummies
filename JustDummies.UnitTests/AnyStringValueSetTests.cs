@@ -179,8 +179,8 @@ public sealed class AnyStringValueSetTests {
         NarrowsTo("-:-", Any.String().OneOf("-:-", "abc").Punctuation());
         NarrowsTo("-:-", Any.String().OneOf("-:-", "abc").WithoutAlpha());
         NarrowsTo("AB-1", Any.String().OneOf("AB-1", "café").Printable());
-        NarrowsTo("abc", Any.String().OneOf("abc", "ABC").LowerCase());
-        NarrowsTo("ABC", Any.String().OneOf("abc", "ABC").UpperCase());
+        NarrowsTo("abc", Any.String().OneOf("abc", "ABC").InLowerCase());
+        NarrowsTo("ABC", Any.String().OneOf("abc", "ABC").InUpperCase());
         NarrowsTo("aab", Any.String().OneOf("aab", "xyz").WithChars("ab"));
         NarrowsTo("abc", Any.String().OneOf("", "abc").NonEmpty());
         NarrowsTo("ab", Any.String().OneOf("ab", "abcdef").WithMaxLength(3));
@@ -281,12 +281,12 @@ public sealed class AnyStringValueSetTests {
     [Fact(DisplayName = "A casing constraint judges a pooled value on its actual case, accents included.")]
     public void CasingJudgesNonAsciiLettersToo() {
         // The constructive filler is ASCII, but a supplied value is the caller's own text: 'É' is an uppercase
-        // letter, so LowerCase() must refuse it rather than wave it through and emit a value violating itself.
-        Check.ThatCode(() => Any.String().OneOf("É").LowerCase()).Throws<ConflictingAnyConstraintException>();
-        Check.ThatCode(() => Any.String().OneOf("é").UpperCase()).Throws<ConflictingAnyConstraintException>();
+        // letter, so InLowerCase() must refuse it rather than wave it through and emit a value violating itself.
+        Check.ThatCode(() => Any.String().OneOf("É").InLowerCase()).Throws<ConflictingAnyConstraintException>();
+        Check.ThatCode(() => Any.String().OneOf("é").InUpperCase()).Throws<ConflictingAnyConstraintException>();
 
-        Check.That(Any.String().OneOf("é", "É").LowerCase().Generate()).IsEqualTo("é");
-        Check.That(Any.String().OneOf("é", "É").UpperCase().Generate()).IsEqualTo("É");
+        Check.That(Any.String().OneOf("é", "É").InLowerCase().Generate()).IsEqualTo("é");
+        Check.That(Any.String().OneOf("é", "É").InUpperCase().Generate()).IsEqualTo("É");
     }
 
     [Fact(DisplayName = "Constraints that contradict each other on their own terms are still refused before a value set is declared.")]

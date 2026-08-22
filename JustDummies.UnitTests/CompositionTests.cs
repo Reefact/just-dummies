@@ -83,9 +83,9 @@ public sealed class CompositionTests {
     [Fact(DisplayName = "Combine assembles three parts through a constructor lambda.")]
     public void CombineAssemblesThreeParts() {
         IAny<string> generator = Any.Combine(
-            Any.String().WithLength(2).UpperCase(),
+            Any.String().WithLength(2).InUpperCase(),
             Any.Int32().Between(10, 99),
-            Any.String().WithLength(2).LowerCase(),
+            Any.String().WithLength(2).InLowerCase(),
             (head, middle, tail) => $"{head}{middle}{tail}");
 
         string value = generator.Generate();

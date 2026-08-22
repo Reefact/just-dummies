@@ -28,13 +28,13 @@ JustDummies.AnyChar.DifferentFrom(char value) -> JustDummies.AnyChar!
 JustDummies.AnyChar.Except(params char[]! values) -> JustDummies.AnyChar!
 JustDummies.AnyChar.Generate() -> char
 JustDummies.AnyChar.Hexadecimal() -> JustDummies.AnyChar!
-JustDummies.AnyChar.LowerCase() -> JustDummies.AnyChar!
+JustDummies.AnyChar.InLowerCase() -> JustDummies.AnyChar!
+JustDummies.AnyChar.InUpperCase() -> JustDummies.AnyChar!
 JustDummies.AnyChar.NonPrintable() -> JustDummies.AnyChar!
 JustDummies.AnyChar.Numeric() -> JustDummies.AnyChar!
 JustDummies.AnyChar.OneOf(params char[]! values) -> JustDummies.AnyChar!
 JustDummies.AnyChar.Printable() -> JustDummies.AnyChar!
 JustDummies.AnyChar.Punctuation() -> JustDummies.AnyChar!
-JustDummies.AnyChar.UpperCase() -> JustDummies.AnyChar!
 JustDummies.AnyChar.Whitespaces() -> JustDummies.AnyChar!
 JustDummies.AnyChar.WithoutAlpha() -> JustDummies.AnyChar!
 JustDummies.AnyChar.WithoutNumeric() -> JustDummies.AnyChar!
@@ -320,7 +320,8 @@ JustDummies.AnyString.EndingWith(string! suffix) -> JustDummies.AnyString!
 JustDummies.AnyString.Except(params string![]! values) -> JustDummies.AnyString!
 JustDummies.AnyString.Generate() -> string!
 JustDummies.AnyString.Hexadecimal() -> JustDummies.AnyString!
-JustDummies.AnyString.LowerCase() -> JustDummies.AnyString!
+JustDummies.AnyString.InLowerCase() -> JustDummies.AnyString!
+JustDummies.AnyString.InUpperCase() -> JustDummies.AnyString!
 JustDummies.AnyString.NonEmpty() -> JustDummies.AnyString!
 JustDummies.AnyString.NonPrintable() -> JustDummies.AnyString!
 JustDummies.AnyString.Numeric() -> JustDummies.AnyString!
@@ -329,7 +330,6 @@ JustDummies.AnyString.OneOf(System.Collections.Generic.IEnumerable<string!>! val
 JustDummies.AnyString.StartingWith(string! prefix) -> JustDummies.AnyString!
 JustDummies.AnyString.Printable() -> JustDummies.AnyString!
 JustDummies.AnyString.Punctuation() -> JustDummies.AnyString!
-JustDummies.AnyString.UpperCase() -> JustDummies.AnyString!
 JustDummies.AnyString.Whitespaces() -> JustDummies.AnyString!
 JustDummies.AnyString.WithChars(string! pool) -> JustDummies.AnyString!
 JustDummies.AnyString.WithLength(int length) -> JustDummies.AnyString!

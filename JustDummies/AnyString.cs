@@ -51,7 +51,7 @@ namespace JustDummies;
 ///     <example>
 ///         <code>
 ///         string code = Any.String().NonEmpty().WithMaxLength(50).StartingWith("ORD-").Generate();
-///         string reference = Any.String().StartingWith("ORD-").AlphaNumeric().UpperCase().WithLength(12).Generate();
+///         string reference = Any.String().StartingWith("ORD-").AlphaNumeric().InUpperCase().WithLength(12).Generate();
 ///         Any.String().WithLength(3).StartingWith("ORD-");  // throws ConflictingAnyConstraintException
 ///         </code>
 ///     </example>
@@ -308,7 +308,7 @@ public sealed class AnyString : IAny<string>, IHasRandomSource, ICardinalityHint
 
     /// <summary>
     ///     Restricts the string to the base-16 alphabet of RFC 4648 — <c>0-9</c>, <c>A-F</c> and <c>a-f</c>. Chain
-    ///     <see cref="LowerCase" /> or <see cref="UpperCase" /> for the single-case form a hash or a colour usually
+    ///     <see cref="InLowerCase" /> or <see cref="InUpperCase" /> for the single-case form a hash or a colour usually
     ///     requires. Declared once per generator. Governs the characters drawn, not an anchored literal.
     /// </summary>
     /// <returns>A new generator carrying the added constraint.</returns>
@@ -346,7 +346,7 @@ public sealed class AnyString : IAny<string>, IHasRandomSource, ICardinalityHint
     ///     characters the named sets cannot, most notably non-ASCII text (accents, other scripts), without a
     ///     <see cref="Any.StringMatching(string)" /> literal. Declared once per generator: it occupies the same
     ///     character-family slot as the named sets, and because the pool is the whole character definition it cannot
-    ///     combine with <see cref="LowerCase" />/<see cref="UpperCase" /> — put only the casing you want in the pool.
+    ///     combine with <see cref="InLowerCase" />/<see cref="InUpperCase" /> — put only the casing you want in the pool.
     ///     An anchored fragment (prefix, suffix, contained value) is exempt: the pool is what the generator draws
     ///     from, and a literal the caller wrote is not drawn, so it is kept as written even when the pool could not
     ///     produce it (ADR-0079). Duplicate characters collapse and each distinct character is
@@ -372,13 +372,13 @@ public sealed class AnyString : IAny<string>, IHasRandomSource, ICardinalityHint
 
     /// <summary>
     ///     Requires every alphabetic character the generator <b>draws</b> to be lowercase. Declared once per generator.
-    ///     An anchored literal is exempt, so <c>LowerCase().StartingWith("ORD-")</c> yields <c>ORD-</c> followed by
+    ///     An anchored literal is exempt, so <c>InLowerCase().StartingWith("ORD-")</c> yields <c>ORD-</c> followed by
     ///     lowercase filler (ADR-0079).
     /// </summary>
     /// <returns>A new generator carrying the added constraint.</returns>
     /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
-    public AnyString LowerCase() {
-        return new AnyString(_source, _spec.WithCasing(LetterCasing.Lower, ConstraintCall.Of(nameof(LowerCase))));
+    public AnyString InLowerCase() {
+        return new AnyString(_source, _spec.WithCasing(LetterCasing.Lower, ConstraintCall.Of(nameof(InLowerCase))));
     }
 
     /// <summary>
@@ -387,8 +387,8 @@ public sealed class AnyString : IAny<string>, IHasRandomSource, ICardinalityHint
     /// </summary>
     /// <returns>A new generator carrying the added constraint.</returns>
     /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
-    public AnyString UpperCase() {
-        return new AnyString(_source, _spec.WithCasing(LetterCasing.Upper, ConstraintCall.Of(nameof(UpperCase))));
+    public AnyString InUpperCase() {
+        return new AnyString(_source, _spec.WithCasing(LetterCasing.Upper, ConstraintCall.Of(nameof(InUpperCase))));
     }
 
     /// <summary>

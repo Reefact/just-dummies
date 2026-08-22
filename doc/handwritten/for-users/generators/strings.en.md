@@ -83,9 +83,9 @@ string letters      = Any.String().Alpha().WithLength(10).Generate();          /
 string alphanumeric = Any.String().AlphaNumeric().WithLength(10).Generate();   // A-Z a-z 0-9
 string digits       = Any.String().Numeric().WithLength(6).Generate();         // 0-9
 string symbols      = Any.String().Punctuation().WithLength(4).Generate();     // !"#$%&'()*+,-./ etc.
-string sha          = Any.String().Hexadecimal().LowerCase().WithLength(40).Generate();
+string sha          = Any.String().Hexadecimal().InLowerCase().WithLength(40).Generate();
 string anyText      = Any.String().Printable().WithLength(20).Generate();      // no control characters
-string shouting     = Any.String().Alpha().UpperCase().WithLength(4).Generate();
+string shouting     = Any.String().Alpha().InUpperCase().WithLength(4).Generate();
 string noDigits     = Any.String().Printable().WithoutNumeric().WithLength(8).Generate();
 string custom       = Any.String().WithChars("ACGT").WithLength(20).Generate(); // your own pool
 ```
@@ -137,7 +137,7 @@ named call:
 
 <!-- jd:allow=JD033 -->
 ```csharp
-string reference = Any.String().StartingWith("ORD-").AlphaNumeric().UpperCase().WithLengthBetween(8, 20).Generate();
+string reference = Any.String().StartingWith("ORD-").AlphaNumeric().InUpperCase().WithLengthBetween(8, 20).Generate();
 // ORD-7K2P9QW, ORD-XZ4M1TB, ORD-B8N3TVJ2 — the hyphen separates, and the body stays alphanumeric
 ```
 
@@ -185,14 +185,14 @@ produce ends in an explicit `AnyGenerationException` rather than a hang
 
 ```csharp
 char letter      = Any.Char().Alpha().Generate();
-char upper       = Any.Char().Alpha().UpperCase().Generate();
+char upper       = Any.Char().Alpha().InUpperCase().Generate();
 char digit       = Any.Char().Numeric().Generate();
 char punctuation = Any.Char().Punctuation().Generate();
 char printable   = Any.Char().Printable().Generate();
 char control     = Any.Char().NonPrintable().Generate();
-char hex         = Any.Char().Hexadecimal().LowerCase().Generate();
+char hex         = Any.Char().Hexadecimal().InLowerCase().Generate();
 char separator   = Any.Char().OneOf('-', '_', '.').Generate();
-char notVowel    = Any.Char().Alpha().LowerCase().Except('a', 'e', 'i', 'o', 'u').Generate();
+char notVowel    = Any.Char().Alpha().InLowerCase().Except('a', 'e', 'i', 'o', 'u').Generate();
 ```
 
 The families are the same ones `Any.String()` declares, they mean the same thing here, and the

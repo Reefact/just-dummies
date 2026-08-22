@@ -179,7 +179,7 @@ public class Jd031PairedBoundsHaveARangeFormTests {
     [Fact]
     public async Task Reports_each_chain_once() {
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync("""
-                    _ = Any.String().Alpha().WithMinLength(8).UpperCase().WithMaxLength(20).Generate();
+                    _ = Any.String().Alpha().WithMinLength(8).InUpperCase().WithMaxLength(20).Generate();
             """);
 
         Check.That(diagnostics.Length).IsEqualTo(1);

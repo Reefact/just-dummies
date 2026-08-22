@@ -53,7 +53,13 @@ internal static class Guards {
             typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypesAndNamespaces);
 
     /// <summary>Reads <paramref name="method" />'s guards, or reports that there was no body to read.</summary>
-    internal static GuardReading Read(IMethodSymbol method, Compilation compilation) {
+    /// <param name="method">The constructor or factory to read leading guards from.</param>
+    /// <param name="compilation">The compilation <paramref name="method" /> is resolved against.</param>
+    /// <param name="names">
+    ///     Spells an enum member in the target file's namespace context — <c>Status.None</c>, possibly
+    ///     qualified — for the one constraint §5.3 reads whose argument is not a number (enum exclusion).
+    /// </param>
+    internal static GuardReading Read(IMethodSymbol method, Compilation compilation, TypeNames names) {
         BaseMethodDeclarationSyntax? declaration = method.DeclaringSyntaxReferences
                                                          .Select(reference => reference.GetSyntax())
                                                          .OfType<BaseMethodDeclarationSyntax>()
@@ -74,7 +80,7 @@ internal static class Guards {
             if (AssignsState(statement, model)) { break; }
 
             if (statement is IfStatementSyntax guard) {
-                ReadChain(guard, model, method, reading);
+                ReadChain(guard, model, method, reading, names);
             } else {
                 MarkIfItRejects(statement, model, method, reading);
                 MarkIfValidatedElsewhere(statement, model, method, reading);
@@ -106,7 +112,7 @@ internal static class Guards {
     ///         set cannot parse.
     ///     </para>
     /// </remarks>
-    private static void ReadChain(IfStatementSyntax branch, SemanticModel model, IMethodSymbol method, GuardReading reading) {
+    private static void ReadChain(IfStatementSyntax branch, SemanticModel model, IMethodSymbol method, GuardReading reading, TypeNames names) {
         if (!ThrowsUnconditionally(branch.Statement)) {
             MarkIfItRejects(branch, model, method, reading);
             MarkIfValidatedElsewhere(branch, model, method, reading);
@@ -114,11 +120,11 @@ internal static class Guards {
             return;
         }
 
-        ReadOne(branch.Condition, model, method, reading);
+        ReadOne(branch.Condition, model, method, reading, names);
 
         switch (branch.Else?.Statement) {
             case IfStatementSyntax elseIf:
-                ReadChain(elseIf, model, method, reading);
+                ReadChain(elseIf, model, method, reading, names);
 
                 break;
             case StatementSyntax terminal:
@@ -375,7 +381,8 @@ internal static class Guards {
     private static void ReadOne(ExpressionSyntax condition,
                                 SemanticModel model,
                                 IMethodSymbol method,
-                                GuardReading reading) {
+                                GuardReading reading,
+                                TypeNames names) {
         IParameterSymbol[] mentioned = Mentioned(condition, model, method);
 
         // Exactly one, or the engine cannot say whose invariant this is. A cross-parameter rule is precisely
@@ -401,7 +408,7 @@ internal static class Guards {
             return;
         }
 
-        if (!TryRecognise(condition, model, parameter, GeneratorFor.Sizes(parameter.Type),
+        if (!TryRecognise(condition, model, parameter, GeneratorFor.Sizes(parameter.Type), names,
                           out GuardConstraint? constraint)) {
             reading.MarkUnread(parameter.Name);
 
@@ -419,6 +426,7 @@ internal static class Guards {
                                      SemanticModel model,
                                      IParameterSymbol parameter,
                                      (bool ByCount, int Ceiling, int Floor) sizes,
+                                     TypeNames names,
                                      out GuardConstraint? constraint) {
         constraint = null;
 
@@ -446,13 +454,14 @@ internal static class Guards {
         }
 
         return condition is BinaryExpressionSyntax comparison
-            && TryComparison(comparison, model, parameter, sizes, out constraint);
+            && TryComparison(comparison, model, parameter, sizes, names, out constraint);
     }
 
     private static bool TryComparison(BinaryExpressionSyntax comparison,
                                       SemanticModel model,
                                       IParameterSymbol parameter,
                                       (bool ByCount, int Ceiling, int Floor) sizes,
+                                      TypeNames names,
                                       out GuardConstraint? constraint) {
         constraint = null;
 
@@ -463,10 +472,18 @@ internal static class Guards {
         SyntaxKind @operator = Operator(comparison.Kind(), flipped);
         bool       sized     = IsSize(subject, parameter, model);
 
-        // `p == null` and `p == Guid.Empty` are the two comparisons whose right side is not a number.
+        // `p == null`, `p == Guid.Empty` and `p == E.Member` are the comparisons whose right side is not a
+        // number.
         if (@operator == SyntaxKind.EqualsExpression && IsNull(other)) { return true; }
         if (@operator == SyntaxKind.EqualsExpression && IsEmptyGuid(other, model)) {
             constraint = new GuardConstraint("NonEmpty", argument: null, Bound.Emptiness);
+
+            return true;
+        }
+
+        if (@operator == SyntaxKind.EqualsExpression
+         && TryEnumMember(other, model, parameter, names, out string? excluded)) {
+            constraint = new GuardConstraint("DifferentFrom", excluded, Bound.Excluded);
 
             return true;
         }
@@ -481,6 +498,27 @@ internal static class Guards {
                          : Numeric(@operator, value, parameter.Type, Literal(constant.Value, parameter.Type));
 
         return constraint is not null;
+    }
+
+    /// <summary>
+    ///     Whether <paramref name="expression" /> names a declared member of <paramref name="parameter" />'s own
+    ///     enum type, spelled the way the emitted file's namespace context needs it.
+    /// </summary>
+    /// <remarks>
+    ///     The same discipline as <see cref="NamesTheParametersOwnUniverse" />: <c>status == OrderStatus.None</c>
+    ///     on an <c>int</c>-backed status column would read as a bound the parameter's own type cannot carry, so
+    ///     the universe the member belongs to has to be the parameter's own — never merely an enum.
+    /// </remarks>
+    private static bool TryEnumMember(ExpressionSyntax expression, SemanticModel model, IParameterSymbol parameter, TypeNames names, out string? spelled) {
+        spelled = null;
+
+        if (model.GetSymbolInfo(expression).Symbol is not IFieldSymbol { HasConstantValue: true } member) { return false; }
+        if (member.ContainingType is not { TypeKind: TypeKind.Enum } universe) { return false; }
+        if (!SymbolEqualityComparer.Default.Equals(universe, Underlying(parameter.Type))) { return false; }
+
+        spelled = names.Of(universe) + "." + member.Name;
+
+        return true;
     }
 
     /// <summary>

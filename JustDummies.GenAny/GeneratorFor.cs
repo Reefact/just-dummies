@@ -370,7 +370,7 @@ internal sealed class GeneratorFor {
         // OrderReference.Create guards on IsNullOrWhiteSpace, so the chain becomes
         // Any.String().NonEmpty().As(OrderReference.Create) — one measured throwing about one draw in
         // seventeen without it.
-        GuardReading                   read       = Guards.Read(factory, compilation);
+        GuardReading                   read       = Guards.Read(factory, compilation, names);
         IReadOnlyList<GuardConstraint> tightening = read.For(source.Name);
         Provenance                     provenance = Provenance.Factory
                                                   | (tightening.Count > 0 ? Provenance.Guard : Provenance.None)

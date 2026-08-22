@@ -17,6 +17,9 @@ internal enum Bound {
     /// <summary>An exact size — <c>WithLength</c>, <c>WithCount</c>.</summary>
     Exact = 3,
 
+    /// <summary>One value excluded from the universe, everything else admissible — <c>DifferentFrom</c>.</summary>
+    Excluded = 4,
+
     /// <summary>Zero itself — <c>NonZero</c>.</summary>
     Zero = 5
 

@@ -29,6 +29,15 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   there and that branch, with everything after it, is marked `unread guards` instead: reaching it
   would otherwise presuppose a fact about an earlier parameter, which is the cross-parameter rule
   this reading has always refused.
+- **An enum exclusion guard is read as `AnyEnum<T>.DifferentFrom`.** `if (status == Status.None) {
+  throw … }` — the commonest enum guard there is — used to read as `.NonZero()`, a member
+  `AnyEnum<T>` does not carry: Roslyn reports a zero-valued enum member as a plain integer
+  constant, so the condition fell into the numeric family's `p == 0` row and the member lookup
+  dropped it silently. A non-zero excluded member matched no numeric row at all and read as an
+  unguarded parameter. Both now read as `.DifferentFrom(Status.None)`, with the same
+  subject-identity discipline `Enum.IsDefined` already keeps: the excluded member has to belong to
+  the parameter's own enum type. The negation, `p != E.Member`, is a different invariant — a pin
+  rather than an exclusion — and stays out of scope.
 
 ## [1.1.0-beta.2] - 2026-08-22
 

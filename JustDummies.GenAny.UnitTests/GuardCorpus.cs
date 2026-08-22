@@ -166,7 +166,7 @@ internal static class GuardCorpus {
                                                          }
                                                          """, beyondTheEngine: true),
 
-        // ---- D4: a constraint the ADR-0059 filter drops, leaving the draw unnarrowed and saying nothing. ----
+        // ---- An enum exclusion guard reads as AnyEnum<T>.DifferentFrom, so this domain is fully satisfiable. ----
 
         new GuardedShape("enum-excluding-default", "Assignment", """
                                                                  public enum Slot { None, Morning, Evening }
@@ -176,7 +176,7 @@ internal static class GuardCorpus {
                                                                          if (slot == Slot.None) { throw new ArgumentOutOfRangeException(nameof(slot)); }
                                                                      }
                                                                  }
-                                                                 """, beyondTheEngine: true),
+                                                                 """),
 
         // ---- The bug report behind this reading path: validation delegated to a helper, no `if` at all for
         // ---- §5.3 to parse. Its own domain is satisfiable — a length of 8 to 20 is well within the library's

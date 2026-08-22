@@ -558,9 +558,9 @@ The recognised set is closed:
 | `p.Length > N` | `.WithMaxLength(N)` |
 | `p.Length < N` | `.WithMinLength(N)` |
 | `p.Length != N` | `.WithLength(N)` |
-| `p <= 0`; or `p < 1` on an **integral** type | `.Positive()` |
+| `p <= 0`; or `p < 1` on an **integral** type | `.Positive()`, or `.NonZero()` on an **unsigned** type |
 | `p < 0` | `.GreaterThanOrEqualTo(0)` |
-| `p >= 0` | `.Negative()` |
+| `p >= 0` | `.Negative()`; **unread** on an **unsigned** type, where it rejects every value there is |
 | `p == 0` | `.NonZero()` |
 | `p > N` | `.LessThanOrEqualTo(N)` |
 | `p < N` | `.GreaterThanOrEqualTo(N)` |
@@ -572,12 +572,24 @@ The recognised set is closed:
 `Any.String()` draws only ASCII letters and digits, so a non-empty draw can never be whitespace
 (§14.5).
 
+**A sign is spelled in the member the parameter's own generator carries.** §14.3 gives the unsigned
+families the signed surface *less* `Positive` and `Negative`, so writing `.Positive()` for
+`p <= 0` on a `byte` or a `uint` emits a member the lookup then drops — an unnarrowed draw under a
+file that still compiles, and a generator that draws the one value the guard exists to refuse. Zero
+is the floor of an unsigned type, so *above zero* is exactly *not zero*: `.NonZero()` is the same
+constraint in the only spelling available, not a looser one. `.Negative()` has no such equivalent —
+`p >= 0` rejects every value an unsigned type can hold — so it is not written at all and the
+parameter is marked `unread guards`, which is the refusal such a domain deserves.
+
 **An enum exclusion guard is read too, and it is the commonest enum guard there is** —
 `if (status == Status.None) { throw … }`. Roslyn reports a zero-valued enum member as a plain
 **integer** constant, so without this row the condition fell into the numeric family's own
-`p == 0` row and read as `.NonZero()` — a member `AnyEnum<T>` does not carry, dropped silently by
-the member lookup (§5.2). A non-zero member matched no numeric row at all and read as an unguarded
-parameter. The same subject-identity discipline as `Enum.IsDefined` applies: the member has to
+`p == 0` row and read as `.NonZero()` — a member `AnyEnum<T>` does not carry, so the member lookup
+(§5.2) dropped it and the parameter reported `constraint unavailable` over a draw nothing narrowed.
+A **non-zero** member matched no numeric row at all, so it was marked `unread guards` and blocked
+the developer's build — the loud outcome, and the one this row converts into a read constraint.
+The two halves failed differently, which is why the row is worth more than either.
+The same subject-identity discipline as `Enum.IsDefined` applies: the member has to
 belong to the parameter's **own** enum type. The negation, `p != E.Member`, is a different
 invariant — it throws unless the value **is** that member, a pin rather than an exclusion — and is
 not read as this row's inverse.

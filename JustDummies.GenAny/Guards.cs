@@ -591,9 +591,9 @@ internal static class Guards {
         bool integral = IsIntegral(type);
 
         return @operator switch {
-            SyntaxKind.LessThanOrEqualExpression when value == 0        => Positive(),
-            SyntaxKind.LessThanExpression when value == 1 && integral   => Positive(),
-            SyntaxKind.GreaterThanOrEqualExpression when value == 0     => Negative(),
+            SyntaxKind.LessThanOrEqualExpression when value == 0        => Positive(type),
+            SyntaxKind.LessThanExpression when value == 1 && integral   => Positive(type),
+            SyntaxKind.GreaterThanOrEqualExpression when value == 0     => Negative(type),
             SyntaxKind.EqualsExpression when value == 0                 => new GuardConstraint("NonZero", null, Bound.Zero),
             SyntaxKind.GreaterThanExpression                            => new GuardConstraint("LessThanOrEqualTo", literal, Bound.Upper, value),
             SyntaxKind.LessThanExpression                               => new GuardConstraint("GreaterThanOrEqualTo", literal, Bound.Lower, value),
@@ -602,7 +602,7 @@ internal static class Guards {
     }
 
     /// <summary>
-    ///     A floor at zero that zero does not satisfy, and a ceiling likewise.
+    ///     A floor at zero that zero does not satisfy, spelled so the parameter's own generator carries it.
     /// </summary>
     /// <remarks>
     ///     Placed on the number line rather than left as a sign, so that composition can see them: a sign
@@ -610,12 +610,33 @@ internal static class Guards {
     ///     the library refuses at construction. Exclusive rather than a floor of one, because these rows fire
     ///     on <c>decimal</c> and <c>double</c> too, where a floor of one would declare
     ///     <c>Positive().LessThanOrEqualTo(0.5m)</c> empty — and it draws.
+    ///     <para>
+    ///         <b>An unsigned generator carries no <c>Positive</c></b> — §14.3 gives the unsigned families the
+    ///         signed surface less <c>Positive</c> and <c>Negative</c> — so emitting it there resolves to
+    ///         nothing and ADR-0059 drops it, leaving an unnarrowed draw under a file that still compiles.
+    ///         Zero is the floor of an unsigned type, so <i>above zero</i> is exactly <i>not zero</i>: the
+    ///         constraint is the same one, in the only spelling the generator has for it. Not an
+    ///         approximation, and not a widening — <c>NonZero</c> admits precisely what <c>Positive</c> would.
+    ///     </para>
     /// </remarks>
-    private static GuardConstraint Positive() {
+    private static GuardConstraint Positive(ITypeSymbol type) {
+        if (IsUnsigned(type)) { return new GuardConstraint("NonZero", argument: null, Bound.Zero); }
+
         return new GuardConstraint("Positive", argument: null, Bound.Lower, value: 0m, exclusive: true);
     }
 
-    private static GuardConstraint Negative() {
+    /// <summary>
+    ///     A ceiling at zero that zero does not satisfy, or nothing where the type leaves no value below it.
+    /// </summary>
+    /// <remarks>
+    ///     <c>if (v &gt;= 0) { throw … }</c> on an unsigned parameter rejects every value the type can hold, so
+    ///     there is no constraint to write and no draw that would satisfy it. Returning nothing sends it to
+    ///     <c>unread guards</c>, which blocks the developer's build (ADR-0083) and says so — the loud refusal
+    ///     ADR-0046 asks for, rather than a <c>Negative</c> the generator would drop on its way out.
+    /// </remarks>
+    private static GuardConstraint? Negative(ITypeSymbol type) {
+        if (IsUnsigned(type)) { return null; }
+
         return new GuardConstraint("Negative", argument: null, Bound.Upper, value: 0m, exclusive: true);
     }
 
@@ -819,6 +840,22 @@ internal static class Guards {
                                       or SpecialType.System_Int16 or SpecialType.System_UInt16
                                       or SpecialType.System_Int32 or SpecialType.System_UInt32
                                       or SpecialType.System_Int64 or SpecialType.System_UInt64;
+    }
+
+    /// <summary>
+    ///     A type whose values are never below zero, which is what decides how a sign is spelled.
+    /// </summary>
+    /// <remarks>
+    ///     <c>UInt128</c> is named rather than read off <see cref="SpecialType" />, which has no member for it:
+    ///     it is an ordinary named type to the compiler, and reading it as signed would put a <c>Positive</c>
+    ///     on the one unsigned generator the downlevel asset does not even carry.
+    /// </remarks>
+    private static bool IsUnsigned(ITypeSymbol type) {
+        ITypeSymbol underlying = Underlying(type);
+
+        return underlying.SpecialType is SpecialType.System_Byte or SpecialType.System_UInt16
+                                      or SpecialType.System_UInt32 or SpecialType.System_UInt64
+            || underlying.ToDisplayString(ByNamespace) == "System.UInt128";
     }
 
     /// <summary>

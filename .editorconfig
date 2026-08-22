@@ -90,6 +90,44 @@ dotnet_diagnostic.CA1859.severity = none
 
 # Test projects only. `*Tests` matches every test project and no shipping one — no project that
 # ships ends in `Tests`, so the rules below do not reach them.
+
+# --- StyleCop: one top-level type per file, and nothing else -----------------------------------
+#
+# StyleCop.Analyzers is referenced as a build-time-only asset for ONE rule and its file-name
+# corollary: SA1402 (a file declares a single top-level type) and SA1649 (the file is named after
+# that type). Neither has a built-in Roslyn equivalent, which is the whole reason the package is
+# taken at all — .editorconfig cannot carry a rule Roslyn does not ship. Decision: ADR-0081.
+#
+# stylecop.json widens SA1402 past its default, which counts CLASSES ONLY: measured, a file holding
+# two enums and a static class went unreported until every type kind was named. The rule this
+# repository decided on is about types, not about classes.
+#
+# EVERYTHING else the package carries is declined, BY CATEGORY rather than rule by rule, so a rule
+# a future version adds inside one of them arrives already off. For the largest families the reason
+# is not noise: spacing, layout, readability and ordering govern exactly what
+# JustDummies.sln.DotSettings owns (ADR-0034), and enabling them would set two configurations
+# against each other over the same lines — the one arrangement this repository has already refused.
+# The naming and documentation families are declined on their own terms: this codebase prefixes its
+# private fields with an underscore, uses regions, carries no file headers, and requires no XML
+# documentation on every member.
+dotnet_analyzer_diagnostic.category-StyleCop.CSharp.SpacingRules.severity = none
+dotnet_analyzer_diagnostic.category-StyleCop.CSharp.ReadabilityRules.severity = none
+dotnet_analyzer_diagnostic.category-StyleCop.CSharp.OrderingRules.severity = none
+dotnet_analyzer_diagnostic.category-StyleCop.CSharp.NamingRules.severity = none
+dotnet_analyzer_diagnostic.category-StyleCop.CSharp.MaintainabilityRules.severity = none
+dotnet_analyzer_diagnostic.category-StyleCop.CSharp.LayoutRules.severity = none
+dotnet_analyzer_diagnostic.category-StyleCop.CSharp.DocumentationRules.severity = none
+dotnet_analyzer_diagnostic.category-StyleCop.CSharp.SpecialRules.severity = none
+
+# SA0001 survives its category being declined — measured, not assumed — so it is named on its own.
+# It reports that XML comment analysis is off, which is a consequence of the documentation family
+# being declined above rather than a finding about the code.
+dotnet_diagnostic.SA0001.severity = none
+
+# The two rules this package is here for. At `warning`, which the CI ratchet promotes to an error.
+dotnet_diagnostic.SA1402.severity = warning
+dotnet_diagnostic.SA1649.severity = warning
+
 [*Tests/**.cs]
 # Declined in tests: hoisting constant array arguments. CA1861 asks that a literal array
 # passed to a method — the expected values of an assertion, the cases of a generator — be
@@ -126,6 +164,14 @@ dotnet_diagnostic.S2326.severity = none
 # what disposal does, and filling the block would add a statement with nothing to say. The rule
 # stays ON for shipping code, where an empty block is usually a forgotten branch.
 dotnet_diagnostic.S108.severity = none
+
+# Declined in tests: one type per file, and the file name matching the first type. A test file here
+# is named after the RANGE it covers — a span of diagnostics, a surface, a fixture family — and
+# holds one class per case inside it. That grouping is the unit a reader navigates to and the name
+# is what announces it, so splitting these files would produce files nobody opens and lose exactly
+# what the name promised. The rule stays ON for every shipping project (ADR-0081).
+dotnet_diagnostic.SA1402.severity = none
+dotnet_diagnostic.SA1649.severity = none
 
 [*.{csproj,props,targets,nuspec,config,xml}]
 indent_size = 2

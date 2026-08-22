@@ -146,8 +146,7 @@ internal static class GuardCorpus {
                                                         if (granted.Count < 5) { throw new ArgumentException(nameof(granted)); }
                                                     }
                                                 }
-                                                """,
-                         defect: "D8", beyondTheEngine: true),
+                                                """, beyondTheEngine: true),
 
         // ---- D9: a size constant above the library's producible cap, on each side of the family. ----
 
@@ -157,8 +156,7 @@ internal static class GuardCorpus {
                                                             if (text.Length < 1500000) { throw new ArgumentException(nameof(text)); }
                                                         }
                                                     }
-                                                    """,
-                         defect: "D9", beyondTheEngine: true),
+                                                    """, beyondTheEngine: true),
 
         new GuardedShape("above-cap-ceiling", "Payload", """
                                                          public sealed class Payload {
@@ -166,8 +164,7 @@ internal static class GuardCorpus {
                                                                  if (text.Length > 1048576) { throw new ArgumentException(nameof(text)); }
                                                              }
                                                          }
-                                                         """,
-                         defect: "D9", beyondTheEngine: true),
+                                                         """, beyondTheEngine: true),
 
         // ---- D4: a constraint the ADR-0059 filter drops, leaving the draw unnarrowed and saying nothing. ----
 

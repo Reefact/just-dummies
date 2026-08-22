@@ -532,10 +532,15 @@ The recognised set is closed:
 `Any.String()` draws only ASCII letters and digits, so a non-empty draw can never be whitespace
 (§14.5).
 
-Two conditions bound the table's own arithmetic, and both are refusals rather than approximations.
-**`N` in a size row has to render as the `int` every size member takes** (§14.3): a bound folding to
-`140.5`, or past `int`'s range, is not a size the engine can write, and emitting it verbatim fails
-the developer's build. **A constant that is not a point on the number line, or lies outside
+Several conditions bound the table's own arithmetic, and all of them are refusals rather than
+approximations. **`N` in a size row has to render as the `int` every size member takes** (§14.3): a
+bound folding to `140.5`, or past `int`'s range, is not a size the engine can write, and emitting it
+verbatim fails the developer's build. **It also has to be a size the generator could produce.** Every
+size member refuses an argument above a million (ADR-0076), so a 1 MiB body limit — an ordinary
+domain rule — is not written down: it would throw inside the emitted parameterless constructor,
+where no `With…` call can rescue it. And a **floor** on a set or a dictionary asks the element row
+for that many *distinct* values, so a count of five over a three-member enum is refused for the same
+reason `JD016` reports it; a ceiling asks for no such thing and answers only to the cap. **A constant that is not a point on the number line, or lies outside
 `decimal`, is not read at all** — `double` and `float` both reach past `decimal`, and NaN and the
 infinities are not bounds. In either case the parameter keeps its neutral generator and is marked
 `unread guards` (§9), which is also what an `Enum.IsDefined` guard naming a universe other than the

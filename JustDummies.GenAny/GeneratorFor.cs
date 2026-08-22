@@ -42,6 +42,16 @@ internal sealed class GeneratorFor {
     /// </remarks>
     private const int MaximumDepth = 3;
 
+    /// <summary>
+    ///     The largest size argument the library will accept, mirrored from <c>SizeGuard</c> (ADR-0076).
+    /// </summary>
+    /// <remarks>
+    ///     A copy, because ADR-0063 keeps the engine from referencing the library to ask. Copies drift, so this
+    ///     one is held to the original by a test that pins the engine's boundary and the library's against each
+    ///     other at the same number, without either of them naming it.
+    /// </remarks>
+    private const int ProducibleSize = 1_000_000;
+
     /// <summary>The façade factory for each type the compiler spells as a keyword or knows specially.</summary>
     private static readonly Dictionary<SpecialType, string> BySpecialType = new() {
         [SpecialType.System_Boolean] = "Boolean",
@@ -132,6 +142,55 @@ internal sealed class GeneratorFor {
         return type is INamedTypeSymbol named
             && Definition(named) is { } definition
             && (ByCollection.ContainsKey(definition) || Dictionaries.Contains(definition, StringComparer.Ordinal));
+    }
+
+    /// <summary>
+    ///     The largest size the engine may declare for <paramref name="type" />, on each side.
+    /// </summary>
+    /// <remarks>
+    ///     Two limits, and the difference between them is what a floor asks for that a ceiling does not.
+    ///     <para>
+    ///         <b>Producible.</b> Every size member refuses an argument above a million (ADR-0076), because a
+    ///         declared bound steers the draw and so every size in range is one the generator may have to
+    ///         produce. A 1 MiB body limit is an ordinary domain rule and lands above it, so the engine must
+    ///         not write that bound down: it would throw inside the emitted parameterless constructor, where
+    ///         no <c>With…</c> call can rescue it. Mirrored here rather than asked of the library, which
+    ///         ADR-0063 forbids — and held to that number by a test that pins both sides at once.
+    ///     </para>
+    ///     <para>
+    ///         <b>Distinct.</b> A set or a dictionary draws distinct elements, so a count floor asks the
+    ///         element row for that many different values. <c>Any.Enum&lt;Permission&gt;()</c> has three, and a
+    ///         floor of five is refused by the library for the same reason <c>JD016</c> reports it. Only the
+    ///         two domains the compiler can settle are counted; anything else is unprovable, and an unprovable
+    ///         domain must never be treated as a small one.
+    ///     </para>
+    /// </remarks>
+    internal static (bool ByCount, int Ceiling, int Floor) Sizes(ITypeSymbol type) {
+        int? distinct = DistinctElements(type);
+
+        return (SizedByCount(type),
+                ProducibleSize,
+                distinct is null ? ProducibleSize : Math.Min(ProducibleSize, distinct.Value));
+    }
+
+    /// <summary>How many different values the element row of a distinct collection can draw, where provable.</summary>
+    private static int? DistinctElements(ITypeSymbol type) {
+        if (type is not INamedTypeSymbol named || Definition(named) is not { } definition) { return null; }
+
+        bool distinct = definition is "System.Collections.Generic.HashSet`1" or "System.Collections.Generic.ISet`1"
+                     || Dictionaries.Contains(definition, StringComparer.Ordinal);
+
+        if (!distinct || named.TypeArguments.Length == 0) { return null; }
+
+        // A dictionary draws distinct KEYS, so it is the key row that is asked for them.
+        ITypeSymbol element = named.TypeArguments[0];
+
+        if (element.SpecialType == SpecialType.System_Boolean) { return 2; }
+        if (element.TypeKind != TypeKind.Enum) { return null; }
+
+        int declared = element.GetMembers().OfType<IFieldSymbol>().Count(field => field.HasConstantValue);
+
+        return declared > 0 ? declared : null;
     }
 
     /// <summary>

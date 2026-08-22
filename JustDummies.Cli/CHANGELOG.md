@@ -23,6 +23,14 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   inferred. `_id` failed the other way: the field derived from it carried the same identifier as the
   constructor parameter, so the assignment was `_id = _id`, which compiles and leaves the field null, making
   every draw throw. Both names are ones §17 already promised worked.
+- **A size the generator could not produce is no longer written down.** Two shapes reached the developer as a
+  generator that throws the moment it is constructed. A bound above the library's producible cap —
+  `if (body.Length > 1_048_576)`, an ordinary 1 MiB limit — was emitted verbatim and threw inside the emitted
+  parameterless constructor, where no `With…` call can rescue it. And a count floor on a `ISet<T>` or a
+  dictionary was written without asking the element row how many *distinct* values it can draw, so five over a
+  three-member enum threw for exactly the reason `JD016` reports it. Both are now refused at reading time and
+  the parameter is marked `unread guards`. A **ceiling** is unaffected by the second: it asks the generator not
+  to exceed a size, never to produce one.
 - **The recap no longer claims a guard it did not honour.** `if (status == Status.None) throw …` — the
   commonest enum guard there is — was read, understood, and then dropped because `Any.Enum<T>()` carries no
   member to say it with. That drop is right; reporting it as `guard` was not. The column now reads

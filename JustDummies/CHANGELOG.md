@@ -8,6 +8,15 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ## [Unreleased]
 
+### Fixed
+
+- **JD014 now reports a size *ceiling* above the producible cap.** `WithMaxLength` and `WithMaxCount` were
+  declared uncapped while the library caps them, a leftover from the per-generator caps of ADR-0029 that
+  ADR-0076 replaced with one rule for every size argument. The consequence was the worst kind of gap: a call
+  the analyzer blessed and the library refused at run time, with nothing between the two to say so.
+  `WithPathSegments` keeps its silence — verified rather than assumed, `UriSpec.RequireSegmentCount` refuses a
+  negative count and nothing else.
+
 ### Added
 
 - **JD032 — *A bound declared twice, where only the tighter one survives*** (category `JustDummies.Constraints`,

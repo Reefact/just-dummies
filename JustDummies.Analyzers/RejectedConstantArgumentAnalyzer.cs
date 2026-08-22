@@ -71,7 +71,16 @@ public sealed class RejectedConstantArgumentAnalyzer : DiagnosticAnalyzer {
             case "WithLength" or "WithMinLength" or "WithCount" or "WithMinCount":
                 return TryCheckSize(invocation, capped: true, out offending, out reason);
 
-            case "WithMaxLength" or "WithMaxCount" or "WithPathSegments":
+            // A ceiling steers the draw exactly as a floor does — every size in range is one the generator may
+            // have to produce — so ADR-0076 caps it too: one rule for every size argument, no exception to
+            // remember. This row said otherwise, a leftover from the per-generator caps ADR-0029 had, and the
+            // consequence was the worst kind: a call the analyzer blessed and the library refused at run time.
+            case "WithMaxLength" or "WithMaxCount":
+                return TryCheckSize(invocation, capped: true, out offending, out reason);
+
+            // Genuinely uncapped, and verified rather than assumed: UriSpec.RequireSegmentCount refuses a
+            // negative count and nothing else.
+            case "WithPathSegments":
                 return TryCheckSize(invocation, capped: false, out offending, out reason);
 
             case "WithLengthBetween" or "WithCountBetween":

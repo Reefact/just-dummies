@@ -74,7 +74,7 @@ internal static class Guards {
 
         SemanticModel   model   = declaring.GetSemanticModel(declaration.SyntaxTree);
         GuardReading    reading = GuardReading.FromSource();
-        ParameterWrites writes  = new(declaration.Body, model);
+        ParameterWrites writes  = new(declaration, declaration.Body, model);
 
         foreach (StatementSyntax statement in declaration.Body.Statements) {
             // "Leading" is what makes a guard a guard: past the first assignment to state, an `if` that throws
@@ -898,6 +898,9 @@ internal static class Guards {
 
         private readonly BlockSyntax body;
 
+        /// <summary>The <c>: this(…)</c> or <c>: base(…)</c> the body runs after, where there is one.</summary>
+        private readonly ConstructorInitializerSyntax? initializer;
+
         private readonly SemanticModel model;
 
         /// <summary>The bodies that run when something calls them, rather than where they are written.</summary>
@@ -906,12 +909,16 @@ internal static class Guards {
         /// <summary>Whether the body runs in the order it is written, which a <c>goto</c> is the end of.</summary>
         private readonly bool ordered;
 
-        internal ParameterWrites(BlockSyntax body, SemanticModel model) {
-            this.body  = body;
-            this.model = model;
-            ordered    = !body.DescendantNodes().OfType<GotoStatementSyntax>().Any();
-            deferred   = [.. body.DescendantNodes()
-                                 .Where(node => node is LocalFunctionStatementSyntax or AnonymousFunctionExpressionSyntax)];
+        internal ParameterWrites(BaseMethodDeclarationSyntax declaration, BlockSyntax body, SemanticModel model) {
+            this.body   = body;
+            this.model  = model;
+            initializer = (declaration as ConstructorDeclarationSyntax)?.Initializer;
+
+            // Over the declaration rather than the body: the initializer is as able to carry a lambda that
+            // writes, or the parameter of a `goto`-bearing body, as the statements below it are.
+            ordered  = !declaration.DescendantNodes().OfType<GotoStatementSyntax>().Any();
+            deferred = [.. declaration.DescendantNodes()
+                                      .Where(node => node is LocalFunctionStatementSyntax or AnonymousFunctionExpressionSyntax)];
         }
 
         /// <summary>
@@ -925,13 +932,35 @@ internal static class Guards {
             // wherever it sits.
             if (deferred.Any(called => Written(called, parameter))) { return true; }
 
-            if (!ordered) { return Written(body, parameter); }
+            return (ordered ? Before(guard) : Everything()).Any(region => Written(region, parameter));
+        }
 
-            return Before(guard).Any(region => Written(region, parameter));
+        /// <summary>Every region the constructor runs, for when its order cannot be read at all.</summary>
+        private IEnumerable<SyntaxNode> Everything() {
+            yield return body;
+
+            foreach (SyntaxNode region in Initializer()) { yield return region; }
+        }
+
+        /// <summary>
+        ///     The arguments of the constructor initializer, which run entire before the body begins.
+        /// </summary>
+        /// <remarks>
+        ///     The one place a write can reach a parameter before the region the walk below covers even
+        ///     starts. <c>: this(Normalise(ref value))</c> is an ordinary delegation to the widest overload,
+        ///     and it had already replaced the drawn value by the time the first guard of the body ran — read,
+        ///     before this, as a bound on what the generator draws. The arguments rather than the initializer
+        ///     itself because those are expressions, which is what the compiler will analyse.
+        /// </remarks>
+        private IEnumerable<SyntaxNode> Initializer() {
+            return initializer?.ArgumentList.Arguments.Select(argument => argument.Expression) ?? [];
         }
 
         /// <summary>The regions that have finished running by the time <paramref name="guard" /> is evaluated.</summary>
         private IEnumerable<SyntaxNode> Before(SyntaxNode guard) {
+            // Every guard this is asked about sits in the body, and the initializer has finished by then.
+            foreach (SyntaxNode region in Initializer()) { yield return region; }
+
             SyntaxNode node = guard;
 
             while (!ReferenceEquals(node, body) && node.Parent is SyntaxNode parent) {

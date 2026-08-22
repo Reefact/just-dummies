@@ -33,9 +33,11 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   its condition ran first — and asks about every other construct **entire**. A loop runs its body
   again, a `finally` runs after a `try` that wrote, a `switch` evaluates its governing expression
   before the section it picked, a `using` its resource before the body it scopes; all four were
-  measured reading a guard as a bound on a value the constructor had already replaced. Two writes are
-  refused wherever they are written: one inside a local function or a lambda, which runs when called
-  rather than where it is declared, and any write in a body carrying a `goto`. The cost of asking
+  measured reading a guard as a bound on a value the constructor had already replaced. A `: this(…)` or `: base(…)` counts too, running
+  entire before the body's first statement — `: this(Normalize(ref value))` had already replaced the
+  drawn value. Two writes are refused wherever they are written: one inside a local function or a
+  lambda, which runs when called rather than where it is declared, and any write in a body carrying a
+  `goto`. The cost of asking
   entire is precision — a guard inside a `try`, a `switch` or a `using` whose construct writes the
   parameter only *after* it is refused although it was readable — and that trade is deliberate.
 

@@ -595,6 +595,13 @@ says nothing whatever about the drawn value, yet both were read as bounds on it.
 region that is a *superset* can only add refusals and never remove one, so it holds for the
 constructs this page does not name, including the ones C# has not grown yet.
 
+**The body is not where the constructor starts.** A `: this(…)` or `: base(…)` runs entire before the
+first statement, so its arguments are regions that have finished for every guard below —
+`: this(Normalise(ref value))` is an ordinary delegation to a wider overload, and it has already
+replaced the drawn value by the time the body's first `if` is evaluated. A constructor form that
+declares no body of its own — a positional record, a primary constructor — reads no guards at all and
+is reported as having no source (§6), so the question never arises for it.
+
 Two writes sit outside that walk altogether and are refused wherever they are written. **One inside
 a local function or a lambda** runs when it is called rather than where it is declared —
 `Bump(); … void Bump() { v++; }` writes first and reads last — and §9 already names the indirection

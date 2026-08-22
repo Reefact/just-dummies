@@ -23,6 +23,21 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   inferred. `_id` failed the other way: the field derived from it carried the same identifier as the
   constructor parameter, so the assignment was `_id = _id`, which compiles and leaves the field null, making
   every draw throw. Both names are ones §17 already promised worked.
+- **A guard constant the engine cannot carry no longer ends the run.** `if (value > 1e30)` on a `double`
+  overflowed the conversion to `decimal` and the exception escaped `Scaffolder.Scaffold`: the types before it
+  were on disk, the rest absent, `--format json` printed nothing, and the exit code said the command line had
+  not been understood. NaN, the infinities and anything past `decimal` are now simply not read.
+- **A size bound that is not an `int` no longer breaks the developer's build.** `if (text.Length > Budget / 2.0)`
+  emitted `WithMaxLength(140.5)` — `CS1503`, from a scaffold reporting success. Every size member takes an
+  `int` (§14.3), so a bound that does not render as one leaves the parameter neutral and `unread guards`.
+- **An `Enum.IsDefined` guard is read only over the parameter's own type.** `!Enum.IsDefined(typeof(OrderStatus), statusCode)`
+  on an `int` was accepted and added nothing, so the parameter drew the whole `int` range against two
+  admissible values — with an empty provenance column, indistinguishable from a type that had no guard at all.
+  The single-argument generic overload is read too, where the universe comes from the value itself.
+- **A cross-parameter guard now marks the parameters it spans.** `Range(int min, int max)` guarding `min > max`
+  was dropped in silence — the one rejection path in the reading that marked nothing, while the `&&` case
+  excluded by the same rule marked correctly. Measured on that shape: 5008 throws in 10 000 draws, under a
+  recap reading `2 of 2 parameters inferred`. A guard mentioning no parameter at all still marks nothing.
 - **A type the emitted file could not construct is now refused, not scaffolded.** An **abstract** type
   (`CS0144`), a **generic** one or one nested in a generic (`CS0246`), and a type whose chosen constructor
   leaves a `required` member unset (`CS9035`) each declared a public constructor, so a file was written and

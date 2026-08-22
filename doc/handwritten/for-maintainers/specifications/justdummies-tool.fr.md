@@ -543,11 +543,22 @@ L'ensemble reconnu est clos :
 | `p > N` | `.LessThanOrEqualTo(N)` |
 | `p < N` | `.GreaterThanOrEqualTo(N)` |
 | `p == Guid.Empty` | `.NonEmpty()` |
-| `!Enum.IsDefined(typeof(E), p)` | aucune — `Any.Enum<E>()` ne tire déjà que des membres déclarés |
+| `!Enum.IsDefined(typeof(E), p)`, `!Enum.IsDefined(p)` | aucune — `Any.Enum<E>()` ne tire déjà que des membres déclarés, **là où `p` est de type `E`** |
 
 `.NonEmpty()` couvre `IsNullOrWhiteSpace` aussi bien que `IsNullOrEmpty`, parce qu'un
 `Any.String()` non contraint ne tire que des lettres et chiffres ASCII : un tirage non vide ne peut
 jamais être blanc (§14.5).
+
+Deux conditions bornent l'arithmétique de la table elle-même, et les deux sont des refus plutôt que
+des approximations. **Le `N` d'une ligne de taille doit se rendre en l'`int` que prend tout membre
+de taille** (§14.3) : une borne se repliant sur `140.5`, ou hors de la portée d'`int`, n'est pas une
+taille que le moteur peut écrire, et l'émettre telle quelle fait échouer la compilation du
+développeur. **Une constante qui n'est pas un point de la droite numérique, ou qui sort de
+`decimal`, n'est pas lue du tout** — `double` et `float` vont tous deux au-delà de `decimal`, et NaN
+et les infinis ne sont pas des bornes. Dans les deux cas le paramètre garde son generator neutre et
+est marqué `unread guards` (§9) — ce que reçoit aussi une garde `Enum.IsDefined` nommant un univers
+autre que le type du paramètre : la justification de la ligne est que le generator ne tire déjà que
+des membres déclarés, et cela ne tient que si le paramètre est du type de cet enum.
 
 **Une garde de taille sur un paramètre collection relève de la famille `Count`, pas de la famille
 `Length`.** Un generator de collection expose `NonEmpty`, `WithCount`, `WithMinCount` et

@@ -1144,6 +1144,15 @@ Nommés explicitement pour ne pas être pris pour des oublis.
   cas, le tool ne peut toujours pas distinguer ce paramètre d'un paramètre non contraint, et il ne
   devine pas — c'est de ce résidu que parle ce non-objectif : non pas ce qui arrive une fois le
   doute établi, mais le doute que le tool ne voit jamais.
+  Une **garde lue après la réassignation du paramètre** échoue autrement que toutes celles-ci, et
+  c'est le seul cas où le tool se trompe avec assurance plutôt que d'être simplement aveugle : il
+  voit la garde, la lit correctement, et l'attribue à une valeur que le generator ne tire plus.
+  `if (percent < 0) { throw … } percent = 100 - percent; if (percent < 0) { throw … }` donne
+  `.GreaterThanOrEqualTo(0)`, ce que la seconde garde n'énonce nullement sur la valeur tirée. Seule
+  une affectation à un **champ ou une propriété** met fin au parcours des gardes de tête (§5.3) :
+  réassigner le paramètre lui-même n'y met pas fin, quelle qu'en soit l'orthographe, écrite nue ou
+  dans un `else`. Les gardes écrites *avant* la réassignation sont honorées ; celles d'après portent
+  sur autre chose, et rien ne le dit.
 * **L'aller-retour.** Le tool ne relit jamais un fichier qu'il a écrit.
 * **Membres `init` / `required`, construction par propriétés.** Constructeur et fabrique statique
   uniquement.

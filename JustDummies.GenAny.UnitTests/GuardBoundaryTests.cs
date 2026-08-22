@@ -54,6 +54,51 @@ public sealed class GuardBoundaryTests {
         Check.That(parameter.Provenance.HasFlag(Provenance.UnreadGuards)).IsTrue();
     }
 
+    /// <summary>
+    ///     Every row of the table is written about the parameter itself, so the subject has to <b>be</b> it.
+    /// </summary>
+    /// <remarks>
+    ///     Mentioning the parameter is not saying something about it, and reading the two as one is not a near
+    ///     miss: <c>Math.Abs(value) &gt; 90</c> read as <c>LessThanOrEqualTo(90)</c> yields a generator every
+    ///     draw of which the guard rejects, and <c>value.TotalMinutes &lt; 5</c> read as a bound on a
+    ///     <c>TimeSpan</c> yields a chain that does not compile, both reported as <c>guard</c> — a false claim
+    ///     rather than a missing one. §9 names the arithmetic condition as out of reach; the only derived form
+    ///     the table has rows for is the parameter's own length or count, and the receiver of that has to be
+    ///     the parameter too, or an element's length reads as the collection's count.
+    ///     <para>
+    ///         The cast is deliberately in this list. <c>(long)value &gt; 100</c> happens to mean what it seems
+    ///         to on an <c>int</c>, and <c>(byte)value &gt; 100</c> does not; telling the two apart is
+    ///         conversion reasoning the engine does not do, so both are left unread.
+    ///     </para>
+    /// </remarks>
+    [Theory(DisplayName = "A bound whose subject is not the parameter itself is reported as unread.")]
+    [InlineData("string", "Any.String().NonEmpty()", "if (value.Split(',').Length < 2) { throw new ArgumentException(nameof(value)); }")]
+    [InlineData("string", "Any.String().NonEmpty()", "if (value.Trim().Length < 8) { throw new ArgumentException(nameof(value)); }")]
+    [InlineData("string", "Any.String().NonEmpty()", "if (value.Substring(2).Length > 10) { throw new ArgumentException(nameof(value)); }")]
+    [InlineData("int", "Any.Int32()", "if (Math.Abs(value) > 90) { throw new ArgumentOutOfRangeException(nameof(value)); }")]
+    [InlineData("int", "Any.Int32()", "if (value * 2 > 100) { throw new ArgumentOutOfRangeException(nameof(value)); }")]
+    [InlineData("int", "Any.Int32()", "if (-value > 0) { throw new ArgumentOutOfRangeException(nameof(value)); }")]
+    [InlineData("int", "Any.Int32()", "if ((long)value > 100) { throw new ArgumentOutOfRangeException(nameof(value)); }")]
+    [InlineData("TimeSpan", "Any.TimeSpan()", "if (value.TotalMinutes < 5) { throw new ArgumentOutOfRangeException(nameof(value)); }")]
+    public void ABoundWhoseSubjectIsNotTheParameterIsReportedAsUnread(string parameterType, string neutral, string guard) {
+        ScaffoldedParameter parameter = Subject.GuardedBy(parameterType, guard);
+
+        Check.That(parameter.Expression).IsEqualTo(neutral);
+        Check.That(parameter.Provenance.HasFlag(Provenance.UnreadGuards)).IsTrue();
+        Check.That(parameter.Provenance.HasFlag(Provenance.Guard)).IsFalse();
+    }
+
+    /// <summary>The parentheses a writer is free to add do not make the subject something else.</summary>
+    [Theory(DisplayName = "Parentheses around the subject leave the guard readable.")]
+    [InlineData("if ((value).Length < 8) { throw new ArgumentException(nameof(value)); }")]
+    [InlineData("if ((value.Length) < 8) { throw new ArgumentException(nameof(value)); }")]
+    public void ParenthesesAroundTheSubjectLeaveTheGuardReadable(string guard) {
+        ScaffoldedParameter parameter = Subject.GuardedBy("string", guard);
+
+        Check.That(parameter.Expression).IsEqualTo("Any.String().NonEmpty().WithMinLength(8)");
+        Check.That(parameter.Provenance.HasFlag(Provenance.Guard)).IsTrue();
+    }
+
     // "Leading" is what makes a guard a guard. Past the first assignment to state, an `if` that throws is
     // ordinary logic and says nothing about what the parameter may be.
     [Fact(DisplayName = "A throwing check after the first assignment is not a guard.")]

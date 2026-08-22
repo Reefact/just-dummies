@@ -746,10 +746,15 @@ l'ensemble comprend comme une garde qu'il n'a pas su lire, c'est le pire des deu
 n'est resserré, et rien ne compile non plus. Le premier argument doit **être** le paramètre, selon la
 même discipline d'identité du sujet que gardent les lignes de comparaison.
 
-Ces helpers-là seulement, et à dessein : `ArgumentOutOfRangeException.ThrowIfNegative` et ses frères
-correspondent eux aussi à de vraies contraintes, et les lire **élargirait** l'ensemble clos au lieu
-de reconnaître une seconde orthographe de ce qui s'y trouve. C'est le suivi d'ADR-0082, et une
-décision à part entière.
+**Les helpers arithmétiques sont lus eux aussi.** `ArgumentOutOfRangeException.ThrowIfNegative`,
+`ThrowIfNegativeOrZero`, `ThrowIfZero`, `ThrowIfLessThan`, `ThrowIfGreaterThan`,
+`ThrowIfLessThanOrEqual` et `ThrowIfGreaterThanOrEqual` correspondent aux mêmes lignes numériques
+qu'une comparaison (§5.3 ci-dessus) : `ThrowIfNegative(value)` lève sur `value < 0`, donc zéro est
+admissible — `GreaterThanOrEqualTo(0)`, pas `Positive()` — tandis que `ThrowIfNegativeOrZero(value)`
+lève sur `value <= 0`, ce qui *est* `Positive()`. Cela élargit l'ensemble clos plutôt que de
+reconnaître une seconde orthographe de ce qui s'y trouvait déjà, selon le suivi d'ADR-0082. La même
+discipline d'identité du sujet s'y applique, et le second argument d'un helper à deux arguments doit
+être une constante à la compilation, comme l'autre côté d'une comparaison.
 
 ### 5.4 Composition
 

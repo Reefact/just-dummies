@@ -8,6 +8,18 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ## [Unreleased]
 
+### Fixed
+
+- **The arithmetic throw helpers are read as guards, not passed over as unread.**
+  `ArgumentOutOfRangeException.ThrowIfNegative(quantity)` — the commonest guard on a quantity there
+  is — used to count as a call the tool could not parse and block the developer's build, over an
+  invariant that was perfectly readable. `ThrowIfNegative`, `ThrowIfNegativeOrZero`, `ThrowIfZero`,
+  `ThrowIfLessThan`, `ThrowIfGreaterThan`, `ThrowIfLessThanOrEqual` and `ThrowIfGreaterThanOrEqual`
+  now map to the same numeric rows a comparison already builds: `ThrowIfNegative(value)` throws on
+  `value < 0`, so zero is admissible — `GreaterThanOrEqualTo(0)`, never `Positive()`, which is what
+  `ThrowIfNegativeOrZero(value)` reads as instead. The same subject-identity and compile-time-constant
+  discipline the comparison rows already keep applies here too.
+
 ## [1.1.0-beta.2] - 2026-08-22
 
 ### Fixed

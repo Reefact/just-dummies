@@ -89,9 +89,45 @@ public sealed class CompositionTests {
                                                  """,
                                                  "OrderReference");
 
-        Check.That(parameter.Expression).IsEqualTo("Any.String().NonEmpty().WithLength(12).As(OrderReference.Create)");
+        Check.That(parameter.Expression).IsEqualTo("Any.String().WithLength(12).As(OrderReference.Create)");
         Check.That(parameter.Provenance.HasFlag(Provenance.Factory)).IsTrue();
         Check.That(parameter.Provenance.HasFlag(Provenance.Guard)).IsTrue();
+    }
+
+    /// <summary>
+    ///     The reported case, pinned: a bounded reference, spelled as the interval it is and nothing more.
+    /// </summary>
+    /// <remarks>
+    ///     Three guards, and the chain deduced from them used to carry two faults the tool's own package
+    ///     reports. <c>WithMinLength(8).WithMaxLength(20)</c> is the pair <c>JD031</c> names, so the scaffolded
+    ///     file was marked on its first run, before its author had touched it. And the <c>NonEmpty</c> read
+    ///     from <c>IsNullOrWhiteSpace</c> narrowed nothing beside a floor of eight, which absorbs it — one
+    ///     invariant stated twice.
+    ///     <para>
+    ///         Both come from the same absence, which is why one change answers both: the engine wrote whatever
+    ///         survived combination without ever asking what the finished chain said.
+    ///     </para>
+    /// </remarks>
+    [Fact(DisplayName = "A bounded factory parameter is emitted as the range it is, once.")]
+    public void ABoundedFactoryParameterIsEmittedAsTheRange() {
+        ScaffoldedParameter parameter = Composed("""
+                                                 public sealed class OrderReference {
+
+                                                     public static OrderReference Create(string value) {
+                                                         if (string.IsNullOrWhiteSpace(value)) { throw new ArgumentException(nameof(value)); }
+                                                         if (value.Length < 8) { throw new ArgumentException(nameof(value)); }
+                                                         if (value.Length > 20) { throw new ArgumentException(nameof(value)); }
+
+                                                         return new OrderReference();
+                                                     }
+
+                                                 }
+                                                 """,
+                                                 "OrderReference");
+
+        Check.That(parameter.Expression).IsEqualTo("Any.String().WithLengthBetween(8, 20).As(OrderReference.Create)");
+        Check.That(parameter.Provenance.HasFlag(Provenance.Guard)).IsTrue();
+        Check.That(parameter.Provenance.HasFlag(Provenance.GuardsNotCombined)).IsFalse();
     }
 
     [Fact(DisplayName = "Create wins where several factories qualify.")]

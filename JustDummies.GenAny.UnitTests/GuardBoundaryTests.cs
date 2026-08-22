@@ -179,7 +179,7 @@ public sealed class GuardBoundaryTests {
     public void ParenthesesAroundTheSubjectLeaveTheGuardReadable(string guard) {
         ScaffoldedParameter parameter = Subject.GuardedBy("string", guard);
 
-        Check.That(parameter.Expression).IsEqualTo("Any.String().NonEmpty().WithMinLength(8)");
+        Check.That(parameter.Expression).IsEqualTo("Any.String().WithMinLength(8)");
         Check.That(parameter.Provenance.HasFlag(Provenance.Guard)).IsTrue();
     }
 

@@ -51,14 +51,18 @@ public sealed class GuardedScaffoldsHoldTests {
     /// </remarks>
     private static readonly ImmutableHashSet<string> Assumed = ImmutableHashSet.Create("JD030");
 
-    public static TheoryData<string> Corpus {
-        get {
-            TheoryData<string> shapes = [];
+    public static TheoryData<string> Corpus => Rows(GuardCorpus.Names());
 
-            foreach (string name in GuardCorpus.Names()) { shapes.Add(name); }
+    public static TheoryData<string> Satisfiable => Rows(GuardCorpus.Satisfiable());
 
-            return shapes;
-        }
+    public static TheoryData<string> BeyondTheEngine => Rows(GuardCorpus.BeyondTheEngine());
+
+    private static TheoryData<string> Rows(IEnumerable<string> names) {
+        TheoryData<string> shapes = [];
+
+        foreach (string name in names) { shapes.Add(name); }
+
+        return shapes;
     }
 
     [Theory(DisplayName = "A guarded scaffold compiles in the developer's project.")]
@@ -86,7 +90,7 @@ public sealed class GuardedScaffoldsHoldTests {
     }
 
     [Theory(DisplayName = "A guarded scaffold draws values its own domain accepts.")]
-    [MemberData(nameof(Corpus))]
+    [MemberData(nameof(Satisfiable))]
     public void AGuardedScaffoldDraws(string shapeName) {
         GuardCorpus.GuardedShape shape = GuardCorpus.Named(shapeName);
 
@@ -97,14 +101,52 @@ public sealed class GuardedScaffoldsHoldTests {
         Check.WithCustomMessage($"Any{shape.Target}: {failure}").That(failure).IsNull();
     }
 
+    /// <summary>
+    ///     A domain no generator can satisfy is refused cleanly, and the refusal is on the record.
+    /// </summary>
+    /// <remarks>
+    ///     Three things a developer's own contradiction — or a bound past what the library will produce —
+    ///     does NOT excuse. The chain still has to construct, because a generator that throws the moment it
+    ///     is built is unusable and no <c>With…</c> call rescues it. It still has to raise no rule, because a
+    ///     scaffold arrives before its author. And the recap still has to say so, because the alternative is a
+    ///     file reporting every parameter inferred over an invariant nobody honoured. Only the draw is off the
+    ///     table, and only because the domain rejects every value there is.
+    /// </remarks>
+    [Theory(DisplayName = "A domain beyond the engine is refused, constructed and reported.")]
+    [MemberData(nameof(BeyondTheEngine))]
+    public void ADomainBeyondTheEngineIsRefusedAndReported(string shapeName) {
+        GuardCorpus.GuardedShape shape = GuardCorpus.Named(shapeName);
+
+        if (shape.Defect is not null) { Assert.Skip($"{shape.Defect} — the engine does not hold this shape yet."); }
+
+        ScaffoldOutcome outcome = Scaffolded(shape);
+        string?         failure = EmittedAssembly.DrawFrom(Compiled(outcome, shape),
+                                                           $"Shop.Domain.Any{shape.Target}",
+                                                           count: 0);
+
+        Check.WithCustomMessage($"Any{shape.Target}: {failure}").That(failure).IsNull();
+        Check.WithCustomMessage($"Any{shape.Target} honoured nothing and said nothing.")
+             .That(outcome.Plan!.Parameters.Any(parameter => parameter.Provenance.HasFlag(Provenance.GuardsNotCombined)
+                                                          || parameter.Provenance.HasFlag(Provenance.UnreadGuards)))
+             .IsTrue();
+    }
+
     /// <summary>The shape scaffolded, and its generator compiled beside the domain it names.</summary>
     private static CSharpCompilation CompiledFor(GuardCorpus.GuardedShape shape) {
+        return Compiled(Scaffolded(shape), shape);
+    }
+
+    private static ScaffoldOutcome Scaffolded(GuardCorpus.GuardedShape shape) {
         ScaffoldOutcome outcome = Subject.ScaffoldByName(shape.Target, shape.Domain);
 
         Check.WithCustomMessage($"{shape.Target} did not scaffold: {outcome.Status}.")
              .That(outcome.Succeeded)
              .IsTrue();
 
+        return outcome;
+    }
+
+    private static CSharpCompilation Compiled(ScaffoldOutcome outcome, GuardCorpus.GuardedShape shape) {
         return EmittedCodeCompiler.CompileWith(outcome.File!.SourceText, shape.Domain);
     }
 

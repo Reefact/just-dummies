@@ -279,14 +279,32 @@ internal static class Guards {
         bool integral = IsIntegral(type);
 
         return @operator switch {
-            SyntaxKind.LessThanOrEqualExpression when value == 0        => new GuardConstraint("Positive", null, Bound.Sign),
-            SyntaxKind.LessThanExpression when value == 1 && integral   => new GuardConstraint("Positive", null, Bound.Sign),
-            SyntaxKind.GreaterThanOrEqualExpression when value == 0     => new GuardConstraint("Negative", null, Bound.Sign),
+            SyntaxKind.LessThanOrEqualExpression when value == 0        => Positive(),
+            SyntaxKind.LessThanExpression when value == 1 && integral   => Positive(),
+            SyntaxKind.GreaterThanOrEqualExpression when value == 0     => Negative(),
             SyntaxKind.EqualsExpression when value == 0                 => new GuardConstraint("NonZero", null, Bound.Zero),
             SyntaxKind.GreaterThanExpression                            => new GuardConstraint("LessThanOrEqualTo", literal, Bound.Upper, value),
             SyntaxKind.LessThanExpression                               => new GuardConstraint("GreaterThanOrEqualTo", literal, Bound.Lower, value),
             _                                                           => null
         };
+    }
+
+    /// <summary>
+    ///     A floor at zero that zero does not satisfy, and a ceiling likewise.
+    /// </summary>
+    /// <remarks>
+    ///     Placed on the number line rather than left as a sign, so that composition can see them: a sign
+    ///     invisible to the interval arithmetic let <c>Positive()</c> stand beside a ceiling below zero, which
+    ///     the library refuses at construction. Exclusive rather than a floor of one, because these rows fire
+    ///     on <c>decimal</c> and <c>double</c> too, where a floor of one would declare
+    ///     <c>Positive().LessThanOrEqualTo(0.5m)</c> empty — and it draws.
+    /// </remarks>
+    private static GuardConstraint Positive() {
+        return new GuardConstraint("Positive", argument: null, Bound.Lower, value: 0m, exclusive: true);
+    }
+
+    private static GuardConstraint Negative() {
+        return new GuardConstraint("Negative", argument: null, Bound.Upper, value: 0m, exclusive: true);
     }
 
     private static GuardConstraint Emptiness(bool byCount) {

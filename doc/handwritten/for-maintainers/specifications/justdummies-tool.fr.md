@@ -576,11 +576,40 @@ l'idiome d'intervalle borné ordinaire, écrit en deux gardes consécutives ; l'
 lecture des gardes inutile pour le cas qu'elle rencontre le plus souvent. Les deux compositions ont
 été vérifiées contre la bibliothèque (§17).
 
-Deux gardes posant *la même* borne sont inconciliables : les deux sont abandonnées et le paramètre
-est signalé `guards not combined`. Une borne inférieure au-dessus d'une borne supérieure aussi — la
-bibliothèque rejette cette chaîne par `ConflictingAnyConstraintException`, et `JD023` la signale à
-la compilation (§17), mais le moteur ne doit pas l'émettre pour autant. Aucune garde reconnue ne
-produit de contrainte de jeu de caractères ni de motif, donc ces axes ne se présentent jamais.
+Deux gardes posant *la même* borne sont une **conjonction**, non une collision : les deux `if`
+lèvent, donc une valeur doit satisfaire les deux, et la plus serrée est la seule chose qu'elles
+puissent toutes deux vouloir dire. Elle survit et la plus lâche est abandonnée en silence — la
+bibliothèque les replie exactement ainsi, donc émettre les deux écrirait un appel que `JD032`
+signale comme mort.
+
+Des bornes ne laissant **aucune valeur** sont inconciliables : toutes sont abandonnées et le
+paramètre est signalé `guards not combined`. La bibliothèque rejette une telle chaîne par
+`ConflictingAnyConstraintException`, et `JD016`, `JD023` et leurs semblables la signalent à la
+compilation (§17), mais le moteur ne doit pas l'émettre pour autant — laquelle des gardes le
+développeur voulait dire n'est pas à lui de le deviner. C'est de l'arithmétique d'intervalles sur
+tout le `Bound` de la contrainte, et n'être que cela est le propos (ADR-0046) : une borne inférieure
+au-dessus d'une supérieure, une taille **exacte** à côté d'une borne qui l'exclut, et un **signe**
+contre une borne opposée sont la même question posée trois fois. `.Positive()` est un plancher à
+zéro que zéro ne satisfait pas, donc `.Positive().LessThanOrEqualTo(0.5m)` compose et
+`.Positive().LessThanOrEqualTo(-5)` non.
+
+**Un raffinement de la table de base cède devant une garde.** Le `.NonEmpty()` de la ligne `string`
+du §5.2 est l'opinion du moteur ; une garde est la déclaration du développeur. Là où les deux ne
+peuvent tenir ensemble — un constructeur exigeant une chaîne vide — le raffinement est abandonné et
+la garde tient, sans `guards not combined`, puisque rien du développeur n'a été concilié de force.
+La même lecture l'absorbe là où ils se recouvrent seulement : un plancher à huit dit déjà non vide,
+donc `.NonEmpty().WithMinLength(8)` énonce un invariant deux fois et `JD024` le dit.
+
+**Un plancher et un plafond de la même famille sont émis comme l'intervalle qu'ils sont** —
+`.WithLengthBetween(8, 20)`, `.WithCountBetween(2, 5)`, `.Between(0, 100)`. Non par obéissance à
+`JD031`, qui signale l'écriture en deux bornes comme une information et rien de plus : le moteur
+s'est fait dire un intervalle, donc écrire l'intervalle c'est écrire ce qu'il voulait dire. Seule
+une paire portant des arguments se replie, ce qui laisse `.Positive()` de côté — il n'a rien à
+mettre dans un appel d'intervalle. Chaque membre d'intervalle est cherché avant d'être écrit, comme
+tous les autres (§13.1).
+
+Aucune garde reconnue ne produit de contrainte de jeu de caractères ni de motif, donc ces axes ne se
+présentent jamais.
 
 **Les gardes regex ne sont délibérément pas lues.** `!Regex.IsMatch(p, "…")` a tout de la garde
 idéale à traduire : la bibliothèque a `Any.StringMatching(...)`, et le motif est là, littéral. Elle
@@ -1016,8 +1045,9 @@ modification de cette fonction plus une liaison d'options, pas un balayage. En v
   sur le `JustDummies.dll` construit, et asserter la chaîne d'expression émise par paramètre.
   Rapide, sans MSBuild. Couvrir chaque ligne du §5.2, chaque ligne du §5.3, les deux chemins du
   §5.4 et le repli du §5.5. Inclure le cas non signé (`p <= 0` sur un `uint`), le cas nullable de
-  type valeur, les deux issues de composition du §5.3 (bornes complémentaires conservées, même borne
-  abandonnée), une garde de taille sur un paramètre **collection** (qui doit atteindre
+  type valeur, les issues de composition du §5.3 (bornes complémentaires conservées et repliées en
+  intervalle, même côté replié sur la plus serrée, bornes n'admettant aucune valeur abandonnées, un
+  raffinement cédant devant une garde), une garde de taille sur un paramètre **collection** (qui doit atteindre
   `WithMaxCount`, jamais `WithMaxLength`), et `p < 1` sur un paramètre intégral puis sur un
   `decimal` — les deux lignes qui ne diffèrent que par le type du paramètre. Ajouter un cas
   négatif : un constructeur gardé par `!Regex.IsMatch(...)` ne doit produire **aucune** contrainte

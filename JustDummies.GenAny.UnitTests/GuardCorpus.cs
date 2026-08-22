@@ -75,8 +75,7 @@ internal static class GuardCorpus {
                                                               if (value.Length > 20) { throw new ArgumentException(nameof(value)); }
                                                           }
                                                       }
-                                                      """,
-                         defect: "D16"),
+                                                      """),
 
         new GuardedShape("range-numeric", "Score", """
                                                    public sealed class Score {
@@ -85,8 +84,7 @@ internal static class GuardCorpus {
                                                            if (value > 100) { throw new ArgumentOutOfRangeException(nameof(value)); }
                                                        }
                                                    }
-                                                   """,
-                         defect: "D16"),
+                                                   """),
 
         new GuardedShape("range-count", "Page", """
                                                 public sealed class Page {
@@ -95,8 +93,7 @@ internal static class GuardCorpus {
                                                         if (lines.Count > 5) { throw new ArgumentException(nameof(lines)); }
                                                     }
                                                 }
-                                                """,
-                         defect: "D16"),
+                                                """),
 
         // ---- D5: an exact size beside a bound that excludes it. Bound.Exact is invisible to Contradicts. ----
 
@@ -107,8 +104,7 @@ internal static class GuardCorpus {
                                                                     if (parts.Count < 5) { throw new ArgumentException(nameof(parts)); }
                                                                 }
                                                             }
-                                                            """,
-                         defect: "D5"),
+                                                            """, beyondTheEngine: true),
 
         new GuardedShape("exact-versus-floor-length", "Code", """
                                                               public sealed class Code {
@@ -117,8 +113,7 @@ internal static class GuardCorpus {
                                                                       if (value.Length != 8) { throw new ArgumentException(nameof(value)); }
                                                                   }
                                                               }
-                                                              """,
-                         defect: "D5"),
+                                                              """, beyondTheEngine: true),
 
         // ---- D6: the seeded NonEmpty against a size the guard pins at zero. The engine's own contradiction. ----
 
@@ -128,8 +123,7 @@ internal static class GuardCorpus {
                                                         if (value.Length > 0) { throw new ArgumentException(nameof(value)); }
                                                     }
                                                 }
-                                                """,
-                         defect: "D6"),
+                                                """),
 
         // ---- D7: a sign constraint beside an opposing bound. Bound.Sign is invisible to Contradicts. ----
 
@@ -140,8 +134,7 @@ internal static class GuardCorpus {
                                                                   if (value > -5) { throw new ArgumentOutOfRangeException(nameof(value)); }
                                                               }
                                                           }
-                                                          """,
-                         defect: "D7"),
+                                                          """, beyondTheEngine: true),
 
         // ---- D8: a count floor on a set, written without consulting what the element row can draw. ----
 
@@ -154,7 +147,7 @@ internal static class GuardCorpus {
                                                     }
                                                 }
                                                 """,
-                         defect: "D8"),
+                         defect: "D8", beyondTheEngine: true),
 
         // ---- D9: a size constant above the library's producible cap, on each side of the family. ----
 
@@ -165,7 +158,7 @@ internal static class GuardCorpus {
                                                         }
                                                     }
                                                     """,
-                         defect: "D9"),
+                         defect: "D9", beyondTheEngine: true),
 
         new GuardedShape("above-cap-ceiling", "Payload", """
                                                          public sealed class Payload {
@@ -174,7 +167,7 @@ internal static class GuardCorpus {
                                                              }
                                                          }
                                                          """,
-                         defect: "D9"),
+                         defect: "D9", beyondTheEngine: true),
 
         // ---- D4: a constraint the ADR-0059 filter drops, leaving the draw unnarrowed and saying nothing. ----
 
@@ -195,6 +188,16 @@ internal static class GuardCorpus {
         return All.Select(shape => shape.Name);
     }
 
+    /// <summary>The shapes whose domain a generator of this library can satisfy.</summary>
+    internal static IEnumerable<string> Satisfiable() {
+        return All.Where(shape => !shape.BeyondTheEngine).Select(shape => shape.Name);
+    }
+
+    /// <summary>The shapes whose domain it cannot, where the contract is a clean refusal.</summary>
+    internal static IEnumerable<string> BeyondTheEngine() {
+        return All.Where(shape => shape.BeyondTheEngine).Select(shape => shape.Name);
+    }
+
     /// <summary>The shape a row names.</summary>
     internal static GuardedShape Named(string name) {
         return All.FirstOrDefault(shape => shape.Name == name)
@@ -204,11 +207,16 @@ internal static class GuardCorpus {
     /// <summary>One domain type, and what the engine is expected to make of its guards.</summary>
     internal sealed class GuardedShape {
 
-        internal GuardedShape(string name, string target, string declarations, string? defect = null) {
-            Name    = name;
-            Target  = target;
-            Domain  = Preamble + declarations;
-            Defect  = defect;
+        internal GuardedShape(string name,
+                              string target,
+                              string declarations,
+                              string? defect = null,
+                              bool beyondTheEngine = false) {
+            Name            = name;
+            Target          = target;
+            Domain          = Preamble + declarations;
+            Defect          = defect;
+            BeyondTheEngine = beyondTheEngine;
         }
 
         /// <summary>The row's name, which is what a failure names.</summary>
@@ -222,6 +230,19 @@ internal static class GuardCorpus {
 
         /// <summary>The defect this shape reproduces today, or null when the engine gets it right.</summary>
         internal string? Defect { get; }
+
+        /// <summary>
+        ///     Whether the domain declares something no generator of this library can draw.
+        /// </summary>
+        /// <remarks>
+        ///     A developer's own contradiction, a size past the producible cap, a set wanting more distinct
+        ///     values than its element row holds. ADR-0046 has one answer for all three and it is not a
+        ///     cleverer draw: emit a chain the library accepts, and say plainly that the domain was not
+        ///     honoured. So the bar moves rather than lifting — the generator must still CONSTRUCT, must
+        ///     still raise no rule, and the recap must carry the refusal; only the draw is off the table,
+        ///     since the domain itself rejects every value there is.
+        /// </remarks>
+        internal bool BeyondTheEngine { get; }
 
         /// <inheritdoc />
         public override string ToString() {

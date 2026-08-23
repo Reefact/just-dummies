@@ -21,11 +21,13 @@ internal sealed class DrawnGenerator {
                            ITypeSymbol? builder,
                            string suffix,
                            IReadOnlyList<GuardConstraint> seeded,
+                           IReadOnlyList<GuardConstraint> tightening,
                            Provenance provenance) {
         Core       = core;
         Builder    = builder;
         Suffix     = suffix;
         Seeded     = seeded;
+        Tightening = tightening;
         Provenance = provenance;
     }
 
@@ -50,6 +52,18 @@ internal sealed class DrawnGenerator {
     /// </remarks>
     internal IReadOnlyList<GuardConstraint> Seeded { get; }
 
+    /// <summary>
+    ///     The constraints a composed factory's own guards declared (§5.3, §5.4).
+    /// </summary>
+    /// <remarks>
+    ///     Apart from <see cref="Seeded" /> because the two answer differently under combination: a row's
+    ///     refinement is the engine's own opinion and yields where a guard contradicts it, while these are the
+    ///     developer's declarations and stand. Keeping them apart is also what lets the recap's <c>guard</c>
+    ///     word be computed from the constraints <b>applied</b> rather than merely read — the same honesty rule
+    ///     the constructor path keeps (§6).
+    /// </remarks>
+    internal IReadOnlyList<GuardConstraint> Tightening { get; }
+
     /// <summary>Where this came from, as the recap will report it.</summary>
     internal Provenance Provenance { get; }
 
@@ -61,7 +75,7 @@ internal sealed class DrawnGenerator {
                                         IReadOnlyList<GuardConstraint>? seeded = null,
                                         string suffix = "",
                                         Provenance provenance = Provenance.None) {
-        return new DrawnGenerator(core, builder, suffix, seeded ?? [], provenance);
+        return new DrawnGenerator(core, builder, suffix, seeded ?? [], tightening: [], provenance);
     }
 
     /// <summary>The factories that all qualified, when that is why nothing was drawn (§5.4).</summary>
@@ -70,18 +84,18 @@ internal sealed class DrawnGenerator {
     /// <summary>No row matched, and <paramref name="why" /> says what the recap should report.</summary>
     internal static DrawnGenerator Unresolved(Provenance why = Provenance.None,
                                               IReadOnlyList<string>? candidates = null) {
-        return new DrawnGenerator(core: null, builder: null, suffix: string.Empty, seeded: [], why) {
+        return new DrawnGenerator(core: null, builder: null, suffix: string.Empty, seeded: [], tightening: [], why) {
             Candidates = candidates ?? []
         };
     }
 
     /// <summary>The same expression with one more hop after its constraints.</summary>
     internal DrawnGenerator Then(string suffix, Provenance added, IReadOnlyList<GuardConstraint>? more = null) {
-        List<GuardConstraint> seeded = [.. Seeded];
+        List<GuardConstraint> tightening = [.. Tightening];
 
-        if (more is not null) { seeded.AddRange(more); }
+        if (more is not null) { tightening.AddRange(more); }
 
-        return new DrawnGenerator(Core, Builder, Suffix + suffix, seeded, Provenance | added);
+        return new DrawnGenerator(Core, Builder, Suffix + suffix, Seeded, tightening, Provenance | added);
     }
 
 }

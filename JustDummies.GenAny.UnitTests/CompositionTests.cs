@@ -130,6 +130,38 @@ public sealed class CompositionTests {
         Check.That(parameter.Provenance.HasFlag(Provenance.GuardsNotCombined)).IsFalse();
     }
 
+    /// <summary>
+    ///     §6 words the column <c>tightened</c>, so <c>guard</c> is computed from the constraints applied,
+    ///     never from those read — on the factory path exactly as on the constructor's.
+    /// </summary>
+    /// <remarks>
+    ///     Two factory guards that admit no value are read correctly and tighten nothing: the bounding
+    ///     constraints are all dropped and the recap says so. Reporting <c>guard</c> beside
+    ///     <c>guards not combined</c> claimed a tightening the chain does not carry — the flag came from the
+    ///     reading, where every other path computes it from the writing.
+    /// </remarks>
+    [Fact(DisplayName = "A factory whose guards admit no value reports the drop, not a tightening.")]
+    public void AFactoryWhoseGuardsAdmitNoValueReportsTheDropNotATightening() {
+        ScaffoldedParameter parameter = Composed("""
+                                                 public sealed class OrderReference {
+
+                                                     public static OrderReference Create(string value) {
+                                                         if (value.Length < 8) { throw new ArgumentException(nameof(value)); }
+                                                         if (value.Length > 5) { throw new ArgumentException(nameof(value)); }
+
+                                                         return new OrderReference();
+                                                     }
+
+                                                 }
+                                                 """,
+                                                 "OrderReference");
+
+        Check.That(parameter.Expression).IsEqualTo("Any.String().As(OrderReference.Create)");
+        Check.That(parameter.Provenance.HasFlag(Provenance.Factory)).IsTrue();
+        Check.That(parameter.Provenance.HasFlag(Provenance.GuardsNotCombined)).IsTrue();
+        Check.That(parameter.Provenance.HasFlag(Provenance.Guard)).IsFalse();
+    }
+
     [Fact(DisplayName = "Create wins where several factories qualify.")]
     public void CreateWinsWhereSeveralQualify() {
         ScaffoldedParameter parameter = Composed("""

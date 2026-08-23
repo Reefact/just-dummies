@@ -21,6 +21,13 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Fixed
 
+- **The recap's `guard` word is computed from the constraints applied on the factory path too.** A
+  factory whose guards were read but tightened nothing — two bounds admitting no value, dropped and
+  reported `guards not combined` — still printed `guard`, because the composition path set the flag
+  at reading time where every other path computes it from the writing. The factory's read
+  constraints now travel apart from the base table's own refinements, are combined as the
+  declarations they are, and set `guard` exactly when one of them reaches the emitted chain.
+
 - **A guard delegated to a throw helper is no longer read where a condition decides whether it runs.**
   `if (strict) { ArgumentOutOfRangeException.ThrowIfNegative(value); }` read
   `Any.Int32().GreaterThanOrEqualTo(0)`, reported as inferred with nothing worth looking at, over a

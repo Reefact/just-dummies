@@ -208,7 +208,11 @@ internal sealed class GeneratorFor {
     ///     on a <c>uint</c> parameter does not resolve, and is skipped rather than emitted.
     /// </remarks>
     internal static ChainReport Chain(DrawnGenerator drawn, IReadOnlyList<GuardConstraint> guards) {
-        IReadOnlyList<GuardConstraint> kept = GuardReading.Combine(drawn.Seeded, guards, out bool dropped);
+        // The factory's own guards count as declarations alongside the constructor's — never as the table's
+        // opinions, which yield under combination where a declaration stands (§5.3).
+        List<GuardConstraint> declared = [.. drawn.Tightening, .. guards];
+
+        IReadOnlyList<GuardConstraint> kept = GuardReading.Combine(drawn.Seeded, declared, out bool dropped);
 
         List<GuardConstraint> written = [.. kept.Where(constraint => LibrarySurface.Carries(drawn.Builder,
                                                                                             constraint.Member,
@@ -219,9 +223,9 @@ internal sealed class GeneratorFor {
         // Read against what was WRITTEN, never against what was read: a guard whose member this generator does
         // not carry survived composition and still reached nothing, and the recap has to say which of the two
         // happened. Compared before the fold, since that rewrites a pair into a call neither half is.
-        bool applied     = guards.Any(guard => written.Contains(guard, GuardConstraint.SameCall));
+        bool applied     = declared.Any(guard => written.Contains(guard, GuardConstraint.SameCall));
         bool unavailable = kept.Any(constraint => !written.Contains(constraint)
-                                               && guards.Contains(constraint, GuardConstraint.SameCall));
+                                               && declared.Contains(constraint, GuardConstraint.SameCall));
 
         return new ChainReport(drawn.Core + chain + drawn.Suffix, applied, dropped, unavailable);
     }
@@ -372,10 +376,12 @@ internal sealed class GeneratorFor {
         // seventeen without it.
         GuardReading                   read       = Guards.Read(factory, compilation, names);
         IReadOnlyList<GuardConstraint> tightening = read.For(source.Name);
-        Provenance                     provenance = Provenance.Factory
-                                                  | (tightening.Count > 0 ? Provenance.Guard : Provenance.None)
-                                                  | (read.SourceAvailable ? Provenance.None : Provenance.NoSource)
-                                                  | (read.Unread(source.Name) ? Provenance.UnreadGuards : Provenance.None);
+
+        // No Guard flag here, however much was read: §6 words that column `tightened`, and whether a read
+        // constraint tightened anything is settled by Chain — applied, not read — like everywhere else.
+        Provenance provenance = Provenance.Factory
+                              | (read.SourceAvailable ? Provenance.None : Provenance.NoSource)
+                              | (read.Unread(source.Name) ? Provenance.UnreadGuards : Provenance.None);
 
         return inner.Then($".As({names.Of(type)}.{factory.Name})", provenance, tightening);
     }

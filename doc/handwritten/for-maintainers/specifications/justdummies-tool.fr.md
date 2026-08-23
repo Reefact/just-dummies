@@ -1033,6 +1033,10 @@ L'exécution ci-dessous porte sur le même `Order` qu'au §4.1, mais *avant* que
 scaffoldé — d'où l'unique paramètre resté ouvert. Scaffolder `Customer` puis relancer avec `--force`
 le referme, et ce deux-temps est la façon prévue de traverser un graphe d'agrégats.
 
+La deuxième ligne nomme la construction que `Generate()` fera, et ce n'est pas toujours un
+constructeur : un type construit par la règle de factory du §5.1 imprime cet appel à la place —
+`factory Email.Create(string)` — puisque c'est celui que le fichier émis écrit.
+
 ```console
 $ dum generate Order
 

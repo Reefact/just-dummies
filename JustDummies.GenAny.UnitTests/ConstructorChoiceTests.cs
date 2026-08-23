@@ -172,6 +172,124 @@ public sealed class ConstructorChoiceTests {
         Check.That(outcome.File!.SourceText).Contains("return new Subject();");
     }
 
+    /// <summary>
+    ///     §5.1's second rule: no accessible constructor, one recognised factory — <c>Generate()</c> calls it.
+    /// </summary>
+    /// <remarks>
+    ///     The canonical validating value object, and the factory's own guards are read like a constructor's:
+    ///     the parameter comes back tightened, not merely present.
+    /// </remarks>
+    [Fact(DisplayName = "A type with no accessible constructor scaffolds through its factory.")]
+    public void ATypeWithNoAccessibleConstructorScaffoldsThroughItsFactory() {
+        ScaffoldOutcome outcome = Subject.Scaffold("""
+                                                   public sealed class Subject {
+
+                                                       private Subject(string value) { }
+
+                                                       public static Subject Create(string value) {
+                                                           if (string.IsNullOrWhiteSpace(value)) { throw new ArgumentException(nameof(value)); }
+
+                                                           return new Subject(value);
+                                                       }
+
+                                                   }
+                                                   """);
+
+        Check.That(Names(outcome)).ContainsExactly("value");
+
+        ScaffoldPlan plan = outcome.Plan!;
+
+        Check.That(plan.Factory).IsEqualTo("Subject.Create");
+        Check.That(plan.Parameters.Single().Expression).IsEqualTo("Any.String().NonEmpty()");
+        Check.That(outcome.File!.SourceText).Contains("return Subject.Create(");
+    }
+
+    /// <summary>
+    ///     <c>CS0144</c> is about <c>new</c>, which a factory call site never writes — so the abstract refusal
+    ///     of §5.1.6 does not reach a type built through its own factory.
+    /// </summary>
+    [Fact(DisplayName = "An abstract type with a factory scaffolds rather than being refused.")]
+    public void AnAbstractTypeWithAFactoryScaffolds() {
+        ScaffoldOutcome outcome = Subject.Scaffold("""
+                                                   public abstract class Subject {
+
+                                                       private sealed class Concrete : Subject {
+                                                           public Concrete(int one) { }
+                                                       }
+
+                                                       public static Subject Create(int one) {
+                                                           return new Concrete(one);
+                                                       }
+
+                                                   }
+                                                   """);
+
+        Check.That(Names(outcome)).ContainsExactly("one");
+        Check.That(outcome.Plan!.Factory).IsEqualTo("Subject.Create");
+    }
+
+    // The bar is the call site (§5.1.4), and a factory call site asks for no required member: setting them is
+    // the factory's own business, checked in the factory's own body by the developer's compiler.
+    [Fact(DisplayName = "A required member does not refuse a type built through its factory.")]
+    public void ARequiredMemberDoesNotRefuseAFactoryBuiltType() {
+        ScaffoldOutcome outcome = Subject.Scaffold("""
+                                                   using System.Diagnostics.CodeAnalysis;
+
+                                                   namespace Shop.Domain;
+
+                                                   public sealed class Subject {
+
+                                                       public required string Name { get; init; }
+
+                                                       [SetsRequiredMembers]
+                                                       private Subject(string name) {
+                                                           Name = name;
+                                                       }
+
+                                                       public static Subject Create(string name) {
+                                                           return new Subject(name);
+                                                       }
+
+                                                   }
+                                                   """);
+
+        Check.That(Names(outcome)).ContainsExactly("name");
+        Check.That(outcome.Plan!.Factory).IsEqualTo("Subject.Create");
+    }
+
+    /// <summary>
+    ///     §5.4's tie rule, applied to the target itself: <c>Create</c> wins, and where several still remain
+    ///     nothing is picked on the developer's behalf.
+    /// </summary>
+    [Fact(DisplayName = "Two factories neither named Create refuse rather than guess.")]
+    public void TwoFactoriesNeitherNamedCreateRefuse() {
+        ScaffoldOutcome outcome = Subject.Scaffold("""
+                                                   public sealed class Subject {
+                                                       private Subject(string value) { }
+                                                       public static Subject From(string value) { return new Subject(value); }
+                                                       public static Subject Parse(string value) { return new Subject(value); }
+                                                   }
+                                                   """);
+
+        Check.That(outcome.Status).IsEqualTo(ScaffoldStatus.NoEligibleConstructor);
+    }
+
+    /// <summary>
+    ///     §5.1.2 gates on <b>no accessible constructor</b>, and §5.1.5 says how an ineligible public one
+    ///     ends: unresolved — not routed around the surface the type itself declares.
+    /// </summary>
+    [Fact(DisplayName = "A public but ineligible constructor is not routed around through a factory.")]
+    public void APublicButIneligibleConstructorIsNotRoutedAroundThroughAFactory() {
+        ScaffoldOutcome outcome = Subject.Scaffold("""
+                                                   public sealed class Subject {
+                                                       public Subject(ref int one) { }
+                                                       public static Subject Create(int one) { return new Subject(ref one); }
+                                                   }
+                                                   """);
+
+        Check.That(outcome.Status).IsEqualTo(ScaffoldStatus.NoEligibleConstructor);
+    }
+
     private static string[] Names(ScaffoldOutcome outcome) {
         Check.That(outcome.Status).IsEqualTo(ScaffoldStatus.Scaffolded);
 

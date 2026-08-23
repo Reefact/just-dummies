@@ -59,7 +59,13 @@ internal static class Recap {
         ScaffoldPlan plan = outcome.Plan!;
 
         Line(console, $"Analyzing {FullName(plan)}");
-        Line(console, $"  constructor {plan.Target.Name}({string.Join(", ", plan.Parameters.Select(p => p.TypeDisplay))})");
+        // The chosen construction is always printed (§5.1) — and it is not always a constructor: a type built
+        // through its own static factory names that factory here, since it is what Generate() will call.
+        string signature = string.Join(", ", plan.Parameters.Select(p => p.TypeDisplay));
+
+        Line(console, plan.Factory is null
+                          ? $"  constructor {plan.Target.Name}({signature})"
+                          : $"  factory {plan.Factory}({signature})");
 
         if (plan.Parameters.Count > 0) {
             Line(console, string.Empty);

@@ -987,6 +987,10 @@ The run below is the same `Order` as §4.1, but *before* `AnyCustomer` was scaff
 `customer` is the one parameter left open. Scaffolding `Customer` and re-running with `--force`
 closes it, and that two-step is the intended way through a graph of aggregates.
 
+The second line names the construction `Generate()` will make, and it is not always a constructor:
+a type built through §5.1's factory rule prints that call instead — `factory Email.Create(string)` —
+since it is the one the emitted file writes.
+
 ```console
 $ dum generate Order
 

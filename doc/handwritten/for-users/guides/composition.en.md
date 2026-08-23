@@ -37,6 +37,8 @@ When a type needs more than one input, `Any.Combine` draws from each generator a
 
 ```mermaid
 flowchart LR
+    accTitle: How Any.Combine composes two generators into one
+    accDescr: A decimal generator bounded between 0 and 1000 and a choice among EUR, USD and GBP are composed into one IAny of Money, which draws a Money such as 412.75 EUR.
     A["Any.Decimal()<br/>Between(0, 1000)"] --> C{{"compose"}}
     B["Any.OneOf<br/>(EUR, USD, GBP)"] --> C
     C --> M["IAny&lt;Money&gt;"]

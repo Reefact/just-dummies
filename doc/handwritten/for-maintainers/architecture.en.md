@@ -42,6 +42,8 @@ Behind each door sits an `AnyXxx` builder, and every one of them is the same thr
 
 ```mermaid
 flowchart LR
+    accTitle: The one shape every generator has
+    accDescr: The Any.Int32() facade returns an immutable AnyInt32 builder. A constraint call returns a NEW builder rather than mutating it. That builder carries a spec value holding the declared constraints, and Generate() draws against a RandomSource to produce the value.
     F["Any.Int32()<br/><i>facade</i>"] --> B["AnyInt32<br/><i>immutable builder</i>"]
     B -->|"a constraint call"| B2["AnyInt32<br/><i>a NEW builder</i>"]
     B2 --> S["a spec value<br/><i>the declared constraints</i>"]
@@ -101,6 +103,8 @@ outcomes, and every generator lands in one of them:
 
 ```mermaid
 flowchart TD
+    accTitle: How a constraint becomes a value
+    accDescr: The declared constraints are asked whether they admit a value. No raises a ConflictingAnyConstraintException naming both claims. Yes constructively builds the value. Yes but only rejectively goes to a bounded redraw, which reaches the value within budget and raises an AnyGenerationException carrying the seed once the budget is exhausted.
     S["declared constraints"] --> Q{"do they admit a value?"}
     Q -->|"no"| C["ConflictingAnyConstraintException<br/><i>naming both claims</i>"]
     Q -->|"yes, constructively"| B["build it"] --> V["the value"]

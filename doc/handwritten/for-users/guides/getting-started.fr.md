@@ -64,6 +64,8 @@ le reste de la bibliothèque n'en est qu'une déclinaison.
 
 ```mermaid
 flowchart LR
+    accTitle: Du générateur à la valeur tirée
+    accDescr: Any.Int32() donne un générateur, Between(1, 100) donne un nouveau générateur, et Generate() donne une valeur.
     A["Any.Int32()<br/><i>un générateur</i>"] --> B["Between(1, 100)<br/><i>un nouveau générateur</i>"]
     B --> C["Generate()<br/><i>une valeur</i>"]
     style A fill:#e8eaf6,stroke:#3f51b5,color:#1a237e

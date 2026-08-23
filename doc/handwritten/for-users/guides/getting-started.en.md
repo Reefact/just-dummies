@@ -62,6 +62,8 @@ the library is just more of them.
 
 ```mermaid
 flowchart LR
+    accTitle: From a generator to a drawn value
+    accDescr: Any.Int32() gives a generator, Between(1, 100) gives a new generator, and Generate() gives a value.
     A["Any.Int32()<br/><i>a generator</i>"] --> B["Between(1, 100)<br/><i>a new generator</i>"]
     B --> C["Generate()<br/><i>a value</i>"]
     style A fill:#e8eaf6,stroke:#3f51b5,color:#1a237e

@@ -42,6 +42,8 @@ Derrière chaque porte se tient un builder `AnyXxx`, et tous sont la même machi
 
 ```mermaid
 flowchart LR
+    accTitle: La forme unique qu'ont tous les générateurs
+    accDescr: La façade Any.Int32() renvoie un builder AnyInt32 immuable. Un appel de contrainte renvoie un NOUVEAU builder plutôt que de le muter. Ce builder porte une valeur de spec tenant les contraintes déclarées, et Generate() tire contre un RandomSource pour produire la valeur.
     F["Any.Int32()<br/><i>façade</i>"] --> B["AnyInt32<br/><i>builder immuable</i>"]
     B -->|"un appel de contrainte"| B2["AnyInt32<br/><i>un NOUVEAU builder</i>"]
     B2 --> S["une valeur de spec<br/><i>les contraintes déclarées</i>"]
@@ -102,6 +104,8 @@ Trois issues, et tout générateur tombe dans l'une d'elles :
 
 ```mermaid
 flowchart TD
+    accTitle: Comment une contrainte devient une valeur
+    accDescr: On demande aux contraintes déclarées si elles admettent une valeur. Non lève une ConflictingAnyConstraintException nommant les deux revendications. Oui par construction construit la valeur. Oui mais par rejet seulement passe par un retirage borné, qui atteint la valeur dans le budget et lève une AnyGenerationException portant la graine une fois le budget épuisé.
     S["contraintes déclarées"] --> Q{"admettent-elles une valeur ?"}
     Q -->|"non"| C["ConflictingAnyConstraintException<br/><i>nommant les deux revendications</i>"]
     Q -->|"oui, par construction"| B["la construire"] --> V["la valeur"]

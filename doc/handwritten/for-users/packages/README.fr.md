@@ -18,6 +18,8 @@ commande que vous installez globalement et ne référencez jamais.
 
 ```mermaid
 flowchart TD
+    accTitle: Comment les quatre paquets s'articulent
+    accDescr: JustDummies, la bibliothèque, embarque les 33 règles sous analyzers/dotnet/cs. JustDummies.Xunit dépend de la bibliothèque. JustDummies.DiagnosticCatalog nomme ces règles sans en dépendre, et dum, le scaffolder, émet du code appelant la bibliothèque.
     L["JustDummies<br/><i>la bibliothèque</i>"] -->|"embarque"| A["33 règles<br/><i>analyzers/dotnet/cs</i>"]
     X["JustDummies.Xunit<br/><i>[Reproducible]</i>"] -->|"dépend de"| L
     C["JustDummies.DiagnosticCatalog<br/><i>JustDummiesRule.JD0NN</i>"]

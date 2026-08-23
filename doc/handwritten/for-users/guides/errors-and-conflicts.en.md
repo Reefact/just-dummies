@@ -11,6 +11,8 @@ contradiction.
 
 ```mermaid
 flowchart TD
+    accTitle: The library's exception hierarchy
+    accDescr: DummyException is abstract and derives from Exception. Three concrete types derive from it. AnyGenerationException, when a draw could not be completed. ConflictingAnyConstraintException, when the constraints admit no value. UnsupportedRegexException, when the pattern falls outside the regular subset.
     E["Exception"] --> D["DummyException<br/><i>abstract — the library's root</i>"]
     D --> A["AnyGenerationException<br/><i>a draw could not be completed</i>"]
     D --> C["ConflictingAnyConstraintException<br/><i>the constraints admit no value</i>"]

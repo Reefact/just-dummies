@@ -17,6 +17,8 @@ exactly one of them; the fourth is a command-line tool you install globally and 
 
 ```mermaid
 flowchart TD
+    accTitle: How the four packages relate
+    accDescr: JustDummies, the library, bundles the 33 rules under analyzers/dotnet/cs. JustDummies.Xunit depends on the library. JustDummies.DiagnosticCatalog names those rules without depending on them, and dum, the scaffolder, emits code calling the library.
     L["JustDummies<br/><i>the library</i>"] -->|"bundles"| A["33 rules<br/><i>analyzers/dotnet/cs</i>"]
     X["JustDummies.Xunit<br/><i>[Reproducible]</i>"] -->|"depends on"| L
     C["JustDummies.DiagnosticCatalog<br/><i>JustDummiesRule.JD0NN</i>"]

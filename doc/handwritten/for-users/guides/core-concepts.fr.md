@@ -30,6 +30,8 @@ attrapé.
 
 ```mermaid
 flowchart TD
+    accTitle: Pourquoi un générateur est une recette et non une valeur
+    accDescr: Any.Int32() renvoie un générateur d'un int quelconque. Between(1, 100) en renvoie un nouveau, et MultipleOf(5) encore un autre. Appeler Generate() deux fois sur ce dernier générateur donne deux valeurs différentes, 45 et 70.
     F["Any.Int32()"] -->|"renvoie"| G1["générateur<br/><i>un int quelconque</i>"]
     G1 -->|".Between(1, 100)"| G2["générateur<br/><i>un int dans 1..100</i>"]
     G2 -->|".MultipleOf(5)"| G3["générateur<br/><i>un multiple de 5 dans 1..100</i>"]
@@ -152,6 +154,8 @@ réagir.
 
 ```mermaid
 flowchart LR
+    accTitle: Les valeurs sont construites pour satisfaire les contraintes, jamais filtrées
+    accDescr: On demande aux contraintes déclarées si elles admettent une valeur. Sinon, une ConflictingAnyConstraintException nomme les deux côtés. Si oui, une valeur qui les satisfait toutes est construite, et c'est la valeur tirée.
     D["contraintes déclarées"] --> C{"admettent-elles<br/>une valeur ?"}
     C -->|non| X["ConflictingAnyConstraintException<br/><i>nommant les deux côtés</i>"]
     C -->|oui| B["construire une valeur<br/>qui les satisfait toutes"]

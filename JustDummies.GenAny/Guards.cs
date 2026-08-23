@@ -23,9 +23,8 @@ namespace JustDummies.GenAny;
 ///         exactly one parameter the body has not written over, and carries no <c>&amp;&amp;</c> or
 ///         <c>||</c>, and every other operand is a compile-time constant. Anything else is left alone and
 ///         reported as unread. A guard written as a call rather than as an <c>if</c> answers the same two
-///         questions of placement: nothing may have written its parameter where it sits, and nothing
-///         <b>enclosing</b> it may decide whether it runs. A jump past it from above — an early
-///         <c>return</c>, a <c>goto</c> — is a third question §9 names as out of reach, for both spellings.
+///         questions of placement: nothing may have written its parameter where it sits, and nothing may
+///         decide whether it runs — neither a construct <b>enclosing</b> it nor a jump <b>above</b> it.
 ///     </para>
 ///     <para>
 ///         <b>Regex guards are not read</b>, and that is a decision rather than an omission. The library builds
@@ -79,17 +78,25 @@ internal static class Guards {
         GuardReading    reading = GuardReading.FromSource();
         ParameterWrites writes  = new(declaration, declaration.Body, model);
 
+        // The other half of the question `RunsUnconditionally` asks. That one looks upward, at what encloses
+        // a guard; this one looks along, at what precedes it — and a statement above that can jump past the
+        // guards below it leaves every one of them unrun on some path the constructor still returns from.
+        // It never lifts again: once a path can skip one statement, it can skip all of them.
+        bool unskipped = true;
+
         foreach (StatementSyntax statement in declaration.Body.Statements) {
             // "Leading" is what makes a guard a guard: past the first assignment to state, an `if` that throws
             // is ordinary logic and says nothing about what the parameter may be.
             if (AssignsState(statement, model)) { break; }
 
             if (statement is IfStatementSyntax guard) {
-                ReadChain(guard, model, method, reading, names, writes);
+                ReadChain(guard, model, method, reading, names, writes, unskipped);
             } else {
                 MarkIfItRejects(statement, model, method, reading);
-                MarkIfValidatedElsewhere(statement, model, method, reading, writes);
+                MarkIfValidatedElsewhere(statement, model, method, reading, writes, unskipped);
             }
+
+            unskipped &= !Jumps(statement, model);
         }
 
         return reading;
@@ -122,29 +129,30 @@ internal static class Guards {
                                   IMethodSymbol method,
                                   GuardReading reading,
                                   TypeNames names,
-                                  ParameterWrites writes) {
+                                  ParameterWrites writes,
+                                  bool unskipped) {
         if (!ThrowsUnconditionally(branch.Statement)) {
             MarkIfItRejects(branch, model, method, reading);
 
             // Handed the `if` itself, so every call under it is conditioned by definition and this can only
             // mark. It is called for the marking, which silence would otherwise cost (§9).
-            MarkIfValidatedElsewhere(branch, model, method, reading, writes);
+            MarkIfValidatedElsewhere(branch, model, method, reading, writes, unskipped);
 
             return;
         }
 
-        ReadOne(branch.Condition, model, method, reading, names, writes);
+        ReadOne(branch.Condition, model, method, reading, names, writes, unskipped);
 
         switch (branch.Else?.Statement) {
             case IfStatementSyntax elseIf:
-                ReadChain(elseIf, model, method, reading, names, writes);
+                ReadChain(elseIf, model, method, reading, names, writes, unskipped);
 
                 break;
             case StatementSyntax terminal:
                 // No condition of its own to read, but a plain `else` that still throws is a reject the closed
                 // set has nothing to say about — §9's `unread guards`, not silence.
                 MarkIfItRejects(terminal, model, method, reading);
-                MarkIfValidatedElsewhere(terminal, model, method, reading, writes);
+                MarkIfValidatedElsewhere(terminal, model, method, reading, writes, unskipped);
 
                 break;
         }
@@ -219,13 +227,15 @@ internal static class Guards {
                                                  SemanticModel model,
                                                  IMethodSymbol method,
                                                  GuardReading reading,
-                                                 ParameterWrites writes) {
+                                                 ParameterWrites writes,
+                                                 bool unskipped) {
         foreach (ExpressionStatementSyntax discarded in statement.DescendantNodesAndSelf().OfType<ExpressionStatementSyntax>()) {
             if (discarded.Expression is not InvocationExpressionSyntax invocation || IsNameOf(invocation)) { continue; }
 
             // Asked once of the statement rather than of each parameter: whether the call runs at all is a
-            // fact about where it sits, and the same for every parameter it names.
-            ReadCall(invocation, RunsUnconditionally(discarded, statement), model, method, reading, writes);
+            // fact about where it sits, and the same for every parameter it names. Both halves of it — that
+            // nothing encloses the call deciding it runs, and that nothing above the statement jumps past it.
+            ReadCall(invocation, unskipped && RunsUnconditionally(discarded, statement), model, method, reading, writes);
         }
     }
 
@@ -441,7 +451,8 @@ internal static class Guards {
                                 IMethodSymbol method,
                                 GuardReading reading,
                                 TypeNames names,
-                                ParameterWrites writes) {
+                                ParameterWrites writes,
+                                bool unskipped) {
         IParameterSymbol[] mentioned = Mentioned(condition, model, method);
 
         // Exactly one, or the engine cannot say whose invariant this is. A cross-parameter rule is precisely
@@ -458,6 +469,16 @@ internal static class Guards {
         }
 
         IParameterSymbol parameter = mentioned[0];
+
+        // Read correctly, about a value that need never have reached this test: a `return` above it leaves
+        // the constructor building the object without ever evaluating the condition. The mark is the same
+        // one a conditioned helper earns, since it is the same question asked along the body rather than up
+        // through it.
+        if (!unskipped) {
+            reading.MarkUnread(parameter.Name);
+
+            return;
+        }
 
         // Read correctly, about the wrong value. Every other gap in §9 is a guard the engine cannot see; this
         // is the one shape where it sees the guard, parses it, and attributes it to a value the generator no
@@ -902,6 +923,10 @@ internal static class Guards {
     ///         survives did. <see cref="ThrowsUnconditionally" /> is therefore not restated here: it stays
     ///         where it is, deciding which <c>else</c> bodies reach this method at all.
     ///     </para>
+    ///     <para>
+    ///         This is one half of whether a guard runs, and <see cref="Jumps" /> is the other: a walk of
+    ///         ancestors can show what encloses a call, never what precedes the statement it sits in.
+    ///     </para>
     /// </remarks>
     private static bool RunsUnconditionally(StatementSyntax carrier, StatementSyntax boundary) {
         SyntaxNode node = carrier;
@@ -933,8 +958,8 @@ internal static class Guards {
     ///     </para>
     ///     <para>
     ///         What it does not answer is a jump <b>past</b> the carrier from above — an early
-    ///         <c>return</c>, a <c>goto</c> — which no ancestor of the call can show. §9 names that as out
-    ///         of reach for both spellings of a guard rather than leaving it unsaid.
+    ///         <c>return</c>, a <c>goto</c> — which no ancestor of the call can show. <see cref="Jumps" />
+    ///         answers that one, along the body rather than up through it.
     ///     </para>
     /// </remarks>
     private static bool AlwaysRuns(SyntaxNode parent, SyntaxNode child) {
@@ -945,6 +970,41 @@ internal static class Guards {
             TryStatementSyntax attempt                                                            => ReferenceEquals(child, attempt.Finally),
             _                                                                                     => false
         };
+    }
+
+    /// <summary>
+    ///     Whether <paramref name="statement" /> can send execution past the statements written below it,
+    ///     while the constructor still returns an object.
+    /// </summary>
+    /// <remarks>
+    ///     The other half of <see cref="RunsUnconditionally" />, and the half no ancestor of a guard can
+    ///     show. <c>if (lenient) { kept = value; return; } ThrowIfNegative(value);</c> has nothing enclosing
+    ///     the guard at all, and yet <c>new Subject(lenient: true, value: -5)</c> constructs happily while
+    ///     the reading emitted <c>GreaterThanOrEqualTo(0)</c> — inferred, with nothing to look at. It is not
+    ///     the call spelling's own: the same <c>return</c> above <c>if (value &lt; 0) { throw … }</c> was
+    ///     measured reading exactly as wrongly.
+    ///     <para>
+    ///         <b>Asked of the compiler, never of the syntax</b>, the same discipline
+    ///         <see cref="ParameterWrites" /> keeps for writes.
+    ///         <see cref="Microsoft.CodeAnalysis.ControlFlowAnalysis.ExitPoints" /> answers for
+    ///         <c>return</c> and <c>goto</c> at once, and for the jumps nobody listed; it excludes a
+    ///         <c>return</c> inside a lambda or a local function, which leaves that body rather than this
+    ///         one, so an ordinary helper declared among the leading statements costs nothing. A list of
+    ///         spellings would have had to be right about all three.
+    ///     </para>
+    ///     <para>
+    ///         <b>A <c>throw</c> is not a jump.</b> It refuses to build the object, which is what makes it a
+    ///         guard rather than a way around one — and counting it would refuse every guard written below
+    ///         another. <see cref="Microsoft.CodeAnalysis.ControlFlowAnalysis.ExitPoints" /> does not report
+    ///         it, which is the second reason the question goes there rather than to a walk of the tree.
+    ///     </para>
+    /// </remarks>
+    private static bool Jumps(StatementSyntax statement, SemanticModel model) {
+        ControlFlowAnalysis? flow = model.AnalyzeControlFlow(statement);
+
+        // A region the compiler declines to analyse says nothing, and silence would be read here as "nothing
+        // jumped" — the one answer that turns a guard the engine cannot reach into one it emits.
+        return flow is not { Succeeded: true } || flow.ExitPoints.Length > 0;
     }
 
     private static bool AssignsState(StatementSyntax statement, SemanticModel model) {

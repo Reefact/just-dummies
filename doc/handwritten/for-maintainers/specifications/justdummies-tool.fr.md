@@ -882,7 +882,7 @@ reconnaître une seconde orthographe de ce qui s'y trouvait déjà, selon le sui
 discipline d'identité du sujet s'y applique, et le second argument d'un helper à deux arguments doit
 être une constante à la compilation, comme l'autre côté d'une comparaison.
 
-**Un helper n'est lu que là où rien autour de lui ne décide s'il s'exécute.** L'orthographe en `if` a toujours exigé
+**Un helper n'est lu que là où rien ne décide s'il s'exécute.** L'orthographe en `if` a toujours exigé
 que la branche lève inconditionnellement avant que sa condition soit lue ; l'orthographe en appel avait
 besoin de la même question, posée à l'instruction qui porte l'appel, et ne l'avait pas.
 `if (strict) { ThrowIfNegative(value); }` lisait `GreaterThanOrEqualTo(0)` sur un constructeur dont les
@@ -911,14 +911,28 @@ refusé comme toute autre condition, rien ne permettant au moteur de la distingu
 Le generator qu'il garde est le plus souvent celui qu'il aurait écrit de toute façon, le `NonEmpty` de
 la ligne elle-même : le coût est alors une confirmation, pas une contrainte.
 
-Deux résidus sont nommés plutôt que poursuivis, et ils se trompent en sens inverse. Une condition que le
-compilateur pourrait prouver constante — `if (true) { ThrowIfNegative(value); }` — est refusée comme
-toute autre, ce qui coûte une confirmation au développeur. Et un saut **par-dessus** la garde, depuis
-au-dessus d'elle, n'est pas vu du tout : un `return` anticipé ou un `goto` laisse inexécutée, sur ce
-chemin, la garde située en dessous, alors que rien ne la conditionne *autour* d'elle, si bien qu'elle
-est lue quand même. Ce second résidu n'appartient pas à l'orthographe en appel — une garde écrite en
-`if` sous le même `return` anticipé est lue tout aussi faussement, et les deux ont été mesurées — d'où
-sa place ici plutôt que comme une limite de cette règle.
+**La question se pose le long du corps autant qu'en le remontant.** Ce qui entoure une garde n'est que
+la moitié de ce qui peut décider qu'elle s'exécute : une instruction au-dessus d'elle peut la sauter, et
+aucun ancêtre de la garde ne le montre. `if (lenient) { kept = value; return; } ThrowIfNegative(value);`
+n'entoure la garde de rien du tout, et pourtant `new Subject(lenient: true, value: -5)` construit très
+bien tandis que la lecture émettait `GreaterThanOrEqualTo(0)`, inféré, sans rien à regarder. Une
+instruction de tête capable d'envoyer l'exécution au-delà de celles qui la suivent met donc fin à la
+lecture de toutes les gardes en dessous d'elle, et dans **les deux orthographes** : le même `return`
+au-dessus d'une garde écrite en `if` a été mesuré lisant tout aussi faussement, d'où la question posée
+au balayage de tête plutôt qu'à la règle des appels.
+
+Quelles instructions peuvent sauter est demandé à l'analyse de flot de contrôle du compilateur plutôt
+qu'à l'arbre, ce qui répond d'un coup à trois choses dont une liste d'orthographes aurait dû être juste
+sur chacune. `return` et `goto` sont couverts ensemble, avec les sauts que personne n'a nommés. Un
+`return` intérieur à un lambda ou à une fonction locale quitte *ce* corps-là et non le constructeur :
+un helper ordinaire déclaré parmi les instructions de tête — qui en porte presque toujours un — ne
+coûte donc rien. Et un `throw` n'est pas un saut : il refuse de construire l'objet, ce qui fait de lui
+une garde et non un moyen de la contourner, et le compter refuserait toute garde écrite sous une autre.
+Un saut *en dessous* d'une garde ne peut pas la sauter, et la laisse lue.
+
+Un résidu est nommé plutôt que poursuivi : une condition que le compilateur pourrait prouver constante —
+`if (true) { ThrowIfNegative(value); }` — est refusée comme toute autre, ce qui coûte une confirmation
+au développeur.
 
 ### 5.4 Composition
 
@@ -1261,9 +1275,10 @@ Nommés explicitement pour ne pas être pris pour des oublis.
   instruction qui lève dans une forme que l'ensemble n'a pas su analyser du tout ; et il atteint une
   garde que le moteur ne peut pas placer au-dessus de toute écriture de son propre paramètre, et qui
   énoncerait sinon un invariant de la valeur calculée par le constructeur et non de celle que le
-  generator tire ; et il atteint un helper dont le moteur ne peut pas montrer qu'il s'exécute sur
-  tout chemin, et qui énoncerait sinon un invariant des chemins qui l'atteignent et non du paramètre
-  (§5.3). Deux formes lui échappent encore, et toutes deux sont silencieuses plutôt que simplement
+  generator tire ; et il atteint une garde dont le moteur ne peut pas montrer qu'elle s'exécute sur
+  tout chemin — parce que quelque chose l'entoure qui en décide, ou parce qu'une instruction au-dessus
+  d'elle peut la sauter — et qui énoncerait sinon un invariant des chemins qui l'atteignent et non du
+  paramètre (§5.3). Deux formes lui échappent encore, et toutes deux sont silencieuses plutôt que simplement
   non lues — le tool n'y voit aucun rejet dont douter. Une garde-helper qui **retourne** la valeur
   vérifiée — `_name = Ensure.NotBlank(value);` — est indiscernable d'une normalisation, et la lire
   comme un doute reviendrait à lire `_name = value.Trim();` comme un doute aussi, ce qui bloque la

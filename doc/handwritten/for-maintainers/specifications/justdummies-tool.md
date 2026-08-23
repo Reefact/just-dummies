@@ -841,7 +841,7 @@ spelling of what was already in it, per ADR-0082's follow-up. The subject-identi
 applies here too, and a two-argument helper's second argument has to be a compile-time constant,
 the same as a comparison's other side.
 
-**A helper is read only where nothing around it decides whether it runs.** The `if` spelling has always demanded
+**A helper is read only where nothing decides whether it runs.** The `if` spelling has always demanded
 that the branch throw unconditionally before its condition is read; the call spelling needs that same
 question asked of the statement carrying the call, and had none.
 `if (strict) { ThrowIfNegative(value); }` read `GreaterThanOrEqualTo(0)` over a constructor whose
@@ -868,13 +868,27 @@ refused like any other condition, nothing telling the engine that one apart from
 generator it keeps is usually the same one it would have written anyway, the row's own `NonEmpty`, so
 the cost there is a confirmation rather than a constraint.
 
-Two residues are named rather than chased, and they err in opposite directions. A condition the
-compiler could prove constant — `if (true) { ThrowIfNegative(value); }` — is refused like any other,
-which costs the developer one confirmation. And a jump **past** the guard from above is not seen at
-all: an early `return` or a `goto` leaves the guard below it unrun on that path, though nothing
-*enclosing* it conditions it, so it is still read. That second one is not the call spelling's own —
-a guard written as an `if` below the same early `return` is read exactly as wrongly, and both were
-measured doing so — which is why it is named here rather than as a limit of this rule.
+**The question is asked along the body as well as up through it.** What encloses a guard is only half
+of what can decide that it runs: a statement above it can jump past it, and no ancestor of the guard
+shows that. `if (lenient) { kept = value; return; } ThrowIfNegative(value);` encloses the guard in
+nothing at all, and yet `new Subject(lenient: true, value: -5)` constructs happily while the reading
+emitted `GreaterThanOrEqualTo(0)`, inferred, with nothing to look at. So a leading statement that can
+send execution past the ones below it ends the reading of every guard under it, and in **both**
+spellings — the same `return` above an `if` guard was measured reading exactly as wrongly, which is
+why the question is asked of the leading scan rather than of the call rule.
+
+Which statements can jump goes to the compiler's control-flow analysis rather than to the tree, and
+that answers three things a list of spellings would each have had to be right about. `return` and
+`goto` are covered together, along with the jumps nobody named. A `return` inside a lambda or a local
+function leaves *that* body rather than the constructor, so an ordinary helper declared among the
+leading statements — which nearly always carries one — costs nothing. And a `throw` is not a jump at
+all: it refuses to build the object, which is what makes it a guard rather than a way around one, and
+counting it would refuse every guard written below another. A jump *below* a guard cannot skip it, and
+leaves it read.
+
+One residue is named rather than chased: a condition the compiler could prove constant —
+`if (true) { ThrowIfNegative(value); }` — is refused like any other, which costs the developer one
+confirmation.
 
 ### 5.4 Composition
 
@@ -1202,8 +1216,9 @@ Named explicitly so they are not mistaken for oversights.
   a helper called on the parameter itself for its effect alone (`Guard.Against.Null(value);`), even
   with no `if` in the body at all — and a guard the engine cannot place above every write to its own
   parameter, which would otherwise state an invariant of the value the constructor computed rather
-  than of the one the generator draws, and a helper the engine cannot show runs on every path, which
-  would otherwise state an invariant of the paths that reach it rather than of the parameter (§5.3).
+  than of the one the generator draws, and a guard the engine cannot show runs on every path — because
+  something encloses it deciding that, or because a statement above it can jump past it — which would
+  otherwise state an invariant of the paths that reach it rather than of the parameter (§5.3).
   Two shapes still escape it, and both are silent rather than merely unread — the tool sees no
   rejection to be uncertain about. A guard helper that **returns** the value it checked — `_name =
   Ensure.NotBlank(value);` — is indistinguishable from normalisation, and reading it as doubt would

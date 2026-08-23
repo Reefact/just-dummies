@@ -50,9 +50,9 @@ public enum Provenance {
     ///     an <c>if</c> that throws in a way the recognised set does not match — a cross-parameter rule, an
     ///     arithmetic condition, a regex — or a call reaching the parameter, whether or not an <c>if</c>
     ///     surrounds it, the shape a guard delegated to a helper takes. A guard the set <b>does</b> match
-    ///     earns the mark too where the engine cannot place it: below a write to its own parameter, or under
-    ///     something deciding whether it runs at all. The parameter carries the neutral generator, and the
-    ///     developer is told where to look (§9).
+    ///     earns the mark too where the engine cannot place it: below a write to its own parameter, under
+    ///     something deciding whether it runs, or below a statement that can jump past it. The parameter
+    ///     carries the neutral generator, and the developer is told where to look (§9).
     /// </summary>
     UnreadGuards = 32,
 

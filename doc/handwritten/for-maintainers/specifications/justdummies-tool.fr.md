@@ -928,7 +928,11 @@ sur chacune. `return` et `goto` sont couverts ensemble, avec les sauts que perso
 un helper ordinaire déclaré parmi les instructions de tête — qui en porte presque toujours un — ne
 coûte donc rien. Et un `throw` n'est pas un saut : il refuse de construire l'objet, ce qui fait de lui
 une garde et non un moyen de la contourner, et le compter refuserait toute garde écrite sous une autre.
-Un saut *en dessous* d'une garde ne peut pas la sauter, et la laisse lue.
+Un saut *en dessous* d'une garde ne peut pas la sauter, et la laisse lue. Il s'agit de
+`SemanticModel.AnalyzeControlFlow`, la requête par région voisine de celle de flot de données sur
+laquelle cette section s'appuie déjà, et non du graphe de flot de contrôle qu'ADR-0084 écarte pour le
+placement — et là où elle refuse de répondre, l'instruction compte comme sautant : son défaut pointe
+donc du même côté qu'interroger une construction entière.
 
 Un résidu est nommé plutôt que poursuivi : une condition que le compilateur pourrait prouver constante —
 `if (true) { ThrowIfNegative(value); }` — est refusée comme toute autre, ce qui coûte une confirmation

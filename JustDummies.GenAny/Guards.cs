@@ -993,6 +993,15 @@ internal static class Guards {
     ///         spellings would have had to be right about all three.
     ///     </para>
     ///     <para>
+    ///         <b>Not the graph ADR-0084 declines.</b> That one is
+    ///         <c>Microsoft.CodeAnalysis.FlowAnalysis.ControlFlowGraph</c>, asked for guard <b>placement</b>,
+    ///         and refused because an edge it does not carry reads as <i>no write ran</i> — the unsafe
+    ///         direction. This is <c>SemanticModel.AnalyzeControlFlow</c>, the region query that sits beside
+    ///         the data-flow one <see cref="ParameterWrites" /> already asks, put to a different question;
+    ///         and where it declines to answer, the statement counts as jumping, so the default points the
+    ///         way that decision requires.
+    ///     </para>
+    ///     <para>
     ///         <b>A <c>throw</c> is not a jump.</b> It refuses to build the object, which is what makes it a
     ///         guard rather than a way around one — and counting it would refuse every guard written below
     ///         another. <see cref="Microsoft.CodeAnalysis.ControlFlowAnalysis.ExitPoints" /> does not report

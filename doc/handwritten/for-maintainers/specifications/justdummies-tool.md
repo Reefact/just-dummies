@@ -598,7 +598,16 @@ constructs this page does not name, including the ones C# has not grown yet.
 **The body is not where the constructor starts.** A `: this(…)` or `: base(…)` runs entire before the
 first statement, so its arguments are regions that have finished for every guard below —
 `: this(Normalise(ref value))` is an ordinary delegation to a wider overload, and it has already
-replaced the drawn value by the time the body's first `if` is evaluated. A constructor form that
+replaced the drawn value by the time the body's first `if` is evaluated. One initializer write is
+invisible to that question and is asked separately: where the modifier belongs to the **argument**
+rather than to something inside it, `: this(ref value, true)`, the region analysed is the bare
+identifier under it and the compiler reports the parameter read rather than written — measured
+yielding `GreaterThanOrEqualTo(0)` over a delegation that had already replaced the value. So the
+initializer's own symbol is asked which parameters it receives by reference, and an argument naming
+the parameter in one of those positions counts as a write. Asked of the invoked constructor rather
+than of the `ref` and `out` keywords, for the same reason the rest of this question goes to the
+compiler; and any kind but by-value counts, `in` included, since naming the kinds that can write
+would have to stay right about every kind the language grows. A constructor form that
 declares no body of its own — a positional record, a primary constructor — reads no guards at all and
 is reported as having no source (§6), so the question never arises for it.
 
@@ -609,10 +618,11 @@ the tool does not follow; this is the same gap from the other side. And **any wr
 carrying a `goto`**, because a backward jump puts a write above a guard the source puts below it and
 nothing in the text says so.
 
-The price of asking entire is precision, and it is deliberate: a guard inside a `try`, a `switch` or
-a `using` whose construct writes the parameter only *after* that guard is refused although it was
-readable. Refusing a constraint costs an `unread guards` mark its author resolves once; emitting a
-wrong one costs a generator whose every draw the constructor rejects, reported as inferred. Roslyn's
+The price of asking entire is precision, and it is deliberate: a guard inside a `using` or a `lock`
+whose construct writes the parameter only *after* that guard is refused although it was readable. A
+`try` or a `switch` no longer illustrates that price, being refused by the question below before this
+one is reached. Refusing a constraint costs an `unread guards` mark its author resolves once; emitting
+a wrong one costs a generator whose every draw the constructor rejects, reported as inferred. Roslyn's
 own control-flow graph was evaluated for this question and not taken, because the direction of its
 default is the opposite one — an edge it does not carry reads as *no write ran*, where a construct
 this walk does not model reads as *ask about it entire*
@@ -831,6 +841,41 @@ spelling of what was already in it, per ADR-0082's follow-up. The subject-identi
 applies here too, and a two-argument helper's second argument has to be a compile-time constant,
 the same as a comparison's other side.
 
+**A helper is read only where nothing around it decides whether it runs.** The `if` spelling has always demanded
+that the branch throw unconditionally before its condition is read; the call spelling needs that same
+question asked of the statement carrying the call, and had none.
+`if (strict) { ThrowIfNegative(value); }` read `GreaterThanOrEqualTo(0)` over a constructor whose
+`strict: false` callers construct happily with a negative — narrower than the domain the constructor
+admits, reported as inferred, and **silent**, since every draw still compiles and still constructs, so
+nothing sent the developer looking. The `if` is only the spelling it was reported in:
+`switch (value) { case 0: ThrowIfNegative(value); }` runs the helper exactly where it cannot throw,
+and a `catch` over an empty `try` never runs at all, yet both narrowed the draw the same way.
+
+So a call is read only where every construct between it and the statement the reading was handed runs
+its body every time — a plain block, a `using`, a `lock`, a `checked` or `unchecked` block, an
+`unsafe` block, a `finally`. Everything else is marked `unread guards`: a loop may run its body no
+times, a `switch` picks one section among several, a `catch` runs only when something threw, a `try`
+may sit under a handler able to swallow the very rejection the guard makes, and a lambda body runs
+where it is called rather than where it is written. A helper inside an `else` still reads, because the branch above it throws unconditionally and
+every construction that survives went through that `else` — the same reasoning that reads an `else if`
+chain one branch at a time. The default is the safe side of this question the way asking *entire* is
+the safe side of the write question: an unlisted construct costs a constraint and can never emit a
+wrong one, so the list stays short instead of pretending to be complete.
+
+The refusal has one cost worth naming, because real constructors are written this way:
+`if (nickname is not null) { ThrowIfNullOrWhiteSpace(nickname); }` — validate what is present — is
+refused like any other condition, nothing telling the engine that one apart from `if (strict)`. The
+generator it keeps is usually the same one it would have written anyway, the row's own `NonEmpty`, so
+the cost there is a confirmation rather than a constraint.
+
+Two residues are named rather than chased, and they err in opposite directions. A condition the
+compiler could prove constant — `if (true) { ThrowIfNegative(value); }` — is refused like any other,
+which costs the developer one confirmation. And a jump **past** the guard from above is not seen at
+all: an early `return` or a `goto` leaves the guard below it unrun on that path, though nothing
+*enclosing* it conditions it, so it is still read. That second one is not the call spelling's own —
+a guard written as an `if` below the same early `return` is read exactly as wrongly, and both were
+measured doing so — which is why it is named here rather than as a limit of this rule.
+
 ### 5.4 Composition
 
 **A scaffolded generator wins.** If the compilation contains a type named `Any{T}` implementing
@@ -946,7 +991,9 @@ The right-hand column carries the provenance of each expression: empty for the b
 `guard` when §5.3 tightened it, `factory` when §5.4 composed it, `AnyX` when a scaffolded
 generator was reused, `guards not combined` for the §5.3 conflict case, `no source` when the
 constructor body was unavailable so no guard could be read, `unread guards` when a leading statement
-throws or calls in a way the recognised set did not match, `constraint unavailable` when a guard was
+throws or calls in a way the recognised set did not match, or in a place the engine cannot vouch for —
+below a write to the parameter, or under something deciding whether it runs at all —,
+`constraint unavailable` when a guard was
 read and understood and this generator carries no member to say it with, and `unavailable` when the
 generator exists in the library but not in the asset this project resolves.
 
@@ -1146,26 +1193,27 @@ Named explicitly so they are not mistaken for oversights.
   No names, no emails, no addresses.
 * **Object-graph auto-filling.** Composition is one hop through `Any{T}` or a one-parameter
   factory, depth-limited to 3. Beyond that the developer writes it.
-* **Invariants the tool cannot see.** §5.3 reads a closed set of guard idioms. Where the
-  constructor throws in a way the set does not match — a cross-parameter rule, an arithmetic
-  condition, a regex guard (§5.3) — the parameter keeps the neutral generator, the recap marks it
-  `unread guards`, and **the file does not compile until the developer says the generator is right**
-  (§5.6): the recipe is still written, under a line naming an identifier that does not exist. The
-  same mark reaches any statement that throws in a shape the set could not parse at all, and a guard
-  delegated entirely to a helper called on the parameter itself for its effect alone
-  (`Guard.Against.Null(value);`), even with no `if` in the body at all — and a guard the engine cannot
-  place above every write to its own parameter, which would otherwise state an invariant of the value
-  the constructor computed rather than of the one the generator draws (§5.3). Two shapes still
-  escape it, and both are silent rather than merely unread — the tool sees no rejection to be
-  uncertain about. A guard helper that **returns** the value it checked —
-  `_name = Ensure.NotBlank(value);` — is indistinguishable from normalisation, and reading it as
-  doubt would mean reading `_name = value.Trim();` as doubt too, which blocks the compilation of
-  constructors carrying no guard at all. And a guard reached only through a level of indirection the
-  tool does not follow — a local copy of the parameter (`var v = value; Validate(v);`), a lambda
-  closing over it, a call reached through a member rather than the parameter's own name. In both the
-  tool still cannot tell the parameter from an unconstrained one, and it does not guess — which is
-  the residue this non-goal is about: not what happens once doubt is established, but the doubt the
-  tool never sees.
+* **Invariants the tool cannot see.** §5.3 reads a closed set of guard idioms. Where the constructor
+  throws in a way the set does not match — a cross-parameter rule, an arithmetic condition, a regex
+  guard (§5.3) — the parameter keeps the neutral generator, the recap marks it `unread guards`, and
+  **the file does not compile until the developer says the generator is right** (§5.6): the recipe
+  is still written, under a line naming an identifier that does not exist. The same mark reaches any
+  statement that throws in a shape the set could not parse at all, and a guard delegated entirely to
+  a helper called on the parameter itself for its effect alone (`Guard.Against.Null(value);`), even
+  with no `if` in the body at all — and a guard the engine cannot place above every write to its own
+  parameter, which would otherwise state an invariant of the value the constructor computed rather
+  than of the one the generator draws, and a helper the engine cannot show runs on every path, which
+  would otherwise state an invariant of the paths that reach it rather than of the parameter (§5.3).
+  Two shapes still escape it, and both are silent rather than merely unread — the tool sees no
+  rejection to be uncertain about. A guard helper that **returns** the value it checked — `_name =
+  Ensure.NotBlank(value);` — is indistinguishable from normalisation, and reading it as doubt would
+  mean reading `_name = value.Trim();` as doubt too, which blocks the compilation of constructors
+  carrying no guard at all. And a guard reached only through a level of indirection the tool does
+  not follow — a local copy of the parameter (`var v = value; Validate(v);`), a lambda closing over
+  it, a call reached through a member rather than the parameter's own name. In both the tool still
+  cannot tell the parameter from an unconstrained one, and it does not guess — which is the residue
+  this non-goal is about: not what happens once doubt is established, but the doubt the tool never
+  sees.
 * **Round-tripping.** The tool never reads a file it previously wrote.
 * **`init` / `required` members, property-only construction.** Constructor and static factory only.
 * **Anything under `--all`.** Explicit type arguments only.

@@ -54,7 +54,7 @@ qui a été **deviné** :
 | `AnyX` | un générateur que vous aviez déjà scaffoldé a été réutilisé |
 | `TODO` | rien n'a pu être inféré ; le fichier nomme ce qu'il reste à faire |
 | `to verify` | un générateur *a bien* été inféré, mais quelque chose près de ce paramètre n'a pas pu être lu — vérifiez-le |
-| `unread guards` | ce « quelque chose » : une garde que l'outil ne reconnaît pas, ou un helper dans lequel il ne voit pas |
+| `unread guards` | ce « quelque chose » : une garde que l'outil ne reconnaît pas, un helper dans lequel il ne voit pas, ou une garde qu'il lit sans pouvoir la situer — sous une écriture du paramètre, ou sous quelque chose qui décide si elle s'exécute |
 | `constraint unavailable` | une garde a été comprise, et ce générateur n'a aucun membre pour l'exprimer |
 | `no source` | le type vient d'un package, il n'y avait donc aucun corps de constructeur à lire |
 | `unavailable` | le générateur existe dans JustDummies, mais pas dans l'asset que votre projet résout |
@@ -65,8 +65,9 @@ propre build* signale ce qui n'a pas pu être inféré, à la ligne exacte, avec
 générateur qui tirerait discrètement une valeur plausible à cet endroit serait bien pire.
 
 **`to verify` fonctionne pareil, et pour la même raison.** Là où votre constructeur délègue sa
-validation à un helper, ou garde dans une forme que l'outil n'analyse pas, il ne peut pas promettre
-que la recette inférée honore votre véritable invariant — alors il écrit cette recette comme base de
+validation à un helper, garde dans une forme que l'outil n'analyse pas, ou garde à un endroit dont il
+ne peut pas répondre — sous une écriture du paramètre, ou sous quelque chose qui décide si la garde
+s'exécute —, il ne peut pas promettre que la recette inférée honore votre véritable invariant — alors il écrit cette recette comme base de
 travail et ajoute au-dessus une ligne qui ne compile pas :
 
 <!-- jd:skip -->

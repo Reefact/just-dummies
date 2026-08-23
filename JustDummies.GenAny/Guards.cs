@@ -23,8 +23,9 @@ namespace JustDummies.GenAny;
 ///         exactly one parameter the body has not written over, and carries no <c>&amp;&amp;</c> or
 ///         <c>||</c>, and every other operand is a compile-time constant. Anything else is left alone and
 ///         reported as unread. A guard written as a call rather than as an <c>if</c> answers the same two
-///         questions of placement: nothing may have written its parameter where it sits, and nothing may
-///         decide whether it runs at all.
+///         questions of placement: nothing may have written its parameter where it sits, and nothing
+///         <b>enclosing</b> it may decide whether it runs. A jump past it from above — an early
+///         <c>return</c>, a <c>goto</c> — is a third question §9 names as out of reach, for both spellings.
 ///     </para>
 ///     <para>
 ///         <b>Regex guards are not read</b>, and that is a decision rather than an omission. The library builds
@@ -124,6 +125,9 @@ internal static class Guards {
                                   ParameterWrites writes) {
         if (!ThrowsUnconditionally(branch.Statement)) {
             MarkIfItRejects(branch, model, method, reading);
+
+            // Handed the `if` itself, so every call under it is conditioned by definition and this can only
+            // mark. It is called for the marking, which silence would otherwise cost (§9).
             MarkIfValidatedElsewhere(branch, model, method, reading, writes);
 
             return;
@@ -879,7 +883,7 @@ internal static class Guards {
 
     /// <summary>
     ///     Whether <paramref name="carrier" /> runs every time <paramref name="boundary" /> does, or
-    ///     something between the two decides whether it runs at all.
+    ///     something enclosing it between the two decides whether it runs.
     /// </summary>
     /// <remarks>
     ///     A guard delegated to a helper was read wherever it was found among the leading statements, with no
@@ -914,17 +918,23 @@ internal static class Guards {
     /// <summary>Whether <paramref name="parent" /> runs <paramref name="child" /> every time it runs itself.</summary>
     /// <remarks>
     ///     <b>Only a construct that scopes its body passes, and every other one refuses.</b> A <c>using</c>,
-    ///     a <c>lock</c> and a <c>checked</c> block run the body they wrap every time, and so does a
-    ///     <c>finally</c>, whose rejection propagates like any other. A loop may run its body no times, a
-    ///     <c>switch</c> picks one section among several, a <c>catch</c> runs only when something threw, a
-    ///     <c>try</c> sits under a handler able to swallow the very rejection the guard makes, and a lambda
-    ///     body runs where it is called rather than where it is written.
+    ///     a <c>lock</c>, a <c>checked</c> or <c>unchecked</c> block and an <c>unsafe</c> block run the body
+    ///     they wrap every time, and so does a <c>finally</c>, whose rejection propagates like any other. A
+    ///     loop may run its body no times, a <c>switch</c> picks one section among several, a <c>catch</c>
+    ///     runs only when something threw, a <c>try</c> may sit under a handler able to swallow the very
+    ///     rejection the guard makes, and a lambda body runs where it is called rather than where it is
+    ///     written.
     ///     <para>
     ///         That default is the safe side of this question, and it is the mirror of the one
     ///         <see cref="ParameterWrites" /> keeps for writes: there an unlisted construct is asked about
-    ///         <b>entire</b>, here it refuses. Both cost a constraint and neither can emit a wrong one, so
-    ///         forgetting a construct is a matter of precision rather than of soundness — which is what lets
-    ///         this list stay short instead of pretending to be complete.
+    ///         <b>entire</b>, here it refuses. A construct left out of this list therefore costs a
+    ///         constraint and can never produce a wrong one, which is what lets the list stay short instead
+    ///         of pretending to be complete.
+    ///     </para>
+    ///     <para>
+    ///         What it does not answer is a jump <b>past</b> the carrier from above — an early
+    ///         <c>return</c>, a <c>goto</c> — which no ancestor of the call can show. §9 names that as out
+    ///         of reach for both spellings of a guard rather than leaving it unsaid.
     ///     </para>
     /// </remarks>
     private static bool AlwaysRuns(SyntaxNode parent, SyntaxNode child) {

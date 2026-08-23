@@ -54,7 +54,7 @@ It is the point of the recap, not decoration — it separates what was **inferre
 | `AnyX` | a generator you had already scaffolded was reused |
 | `TODO` | nothing could be inferred; the file names what to do |
 | `to verify` | a generator *was* inferred, but something near that parameter could not be read — check it |
-| `unread guards` | that "something": a guard the tool does not recognise, or a helper it cannot see into |
+| `unread guards` | that "something": a guard the tool does not recognise, a helper it cannot see into, or a guard it reads but cannot place — below a write to the parameter, or under something deciding whether it runs |
 | `constraint unavailable` | a guard was understood, and this generator has no member to express it with |
 | `no source` | the type comes from a package, so there was no constructor body to read |
 | `unavailable` | the generator exists in JustDummies, but not in the asset your project resolves |
@@ -65,8 +65,9 @@ reports what could not be inferred, at the exact line, with the type in hand
 that quietly drew a plausible value there would be far worse.
 
 **`to verify` works the same way, and for the same reason.** Where your constructor delegates its
-validation to a helper, or guards in a shape the tool does not parse, it cannot promise the recipe
-it inferred honours your real invariant — so it writes that recipe as your working base and adds one
+validation to a helper, guards in a shape the tool does not parse, or guards in a place it cannot
+vouch for — below a write to the parameter, or under something deciding whether the guard runs at
+all — it cannot promise the recipe it inferred honours your real invariant — so it writes that recipe as your working base and adds one
 line that does not compile above it:
 
 <!-- jd:skip -->

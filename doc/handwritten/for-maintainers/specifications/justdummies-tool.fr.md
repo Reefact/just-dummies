@@ -622,7 +622,16 @@ constructions que cette page ne nomme pas, y compris celles que C# n'a pas encor
 **Le corps n'est pas là où le constructeur commence.** Un `: this(…)` ou un `: base(…)` s'exécute entier
 avant la première instruction : ses arguments sont donc des régions terminées pour toute garde en
 dessous — `: this(Normalise(ref value))` est une délégation ordinaire vers une surcharge plus large, et
-elle a déjà remplacé la valeur tirée quand le premier `if` du corps est évalué. Une forme de
+elle a déjà remplacé la valeur tirée quand le premier `if` du corps est évalué. Une écriture
+d'initialiseur échappe à cette question et fait l'objet d'une question à part : là où le modificateur
+appartient à l'**argument** plutôt qu'à quelque chose en son sein, `: this(ref value, true)`, la région
+analysée est l'identifiant nu qu'il porte et le compilateur rapporte le paramètre lu plutôt qu'écrit —
+mesuré donnant `GreaterThanOrEqualTo(0)` sur une délégation qui avait déjà remplacé la valeur. Le
+symbole de l'initialiseur est donc interrogé sur les paramètres qu'il reçoit par référence, et un
+argument nommant le paramètre à l'une de ces positions compte comme une écriture. Posée au constructeur
+appelé plutôt qu'aux mots-clés `ref` et `out`, pour la raison même qui envoie tout le reste de cette
+question au compilateur ; et tout mode de passage autre que par valeur compte, `in` compris, car nommer
+ceux qui peuvent écrire obligerait à rester juste sur tous ceux que le langage se donnera. Une forme de
 constructeur qui ne déclare aucun corps propre — record positionnel, constructeur primaire — ne lit
 aucune garde et est rapportée comme sans source (§6) : la question ne s'y pose pas.
 
@@ -633,9 +642,10 @@ l'indirection que le tool ne suit pas ; c'est la même lacune vue de l'autre cô
 dans un corps portant un `goto`**, car un saut arrière place une écriture au-dessus d'une garde que la
 source place au-dessous, et rien dans le texte ne le dit.
 
-Le prix d'une interrogation entière, c'est la précision, et il est délibéré : une garde dans un `try`,
-un `switch` ou un `using` dont la construction n'écrit le paramètre qu'*après* elle est refusée alors
-qu'elle était lisible. Refuser une contrainte coûte un marquage `unread guards` que son auteur lève une
+Le prix d'une interrogation entière, c'est la précision, et il est délibéré : une garde dans un `using`
+ou un `lock` dont la construction n'écrit le paramètre qu'*après* elle est refusée alors qu'elle était
+lisible. Un `try` ou un `switch` n'illustre plus ce prix, étant refusé par la question ci-dessous avant
+que celle-ci soit atteinte. Refuser une contrainte coûte un marquage `unread guards` que son auteur lève une
 fois ; en émettre une fausse coûte un generator dont le constructeur rejette chaque tirage, rapporté
 comme inféré. Le graphe de flot de contrôle de Roslyn a été évalué pour cette question et n'a pas été
 retenu, parce que la direction de son défaut est l'inverse — une arête qu'il ne porte pas se lit
@@ -872,6 +882,44 @@ reconnaître une seconde orthographe de ce qui s'y trouvait déjà, selon le sui
 discipline d'identité du sujet s'y applique, et le second argument d'un helper à deux arguments doit
 être une constante à la compilation, comme l'autre côté d'une comparaison.
 
+**Un helper n'est lu que là où rien autour de lui ne décide s'il s'exécute.** L'orthographe en `if` a toujours exigé
+que la branche lève inconditionnellement avant que sa condition soit lue ; l'orthographe en appel avait
+besoin de la même question, posée à l'instruction qui porte l'appel, et ne l'avait pas.
+`if (strict) { ThrowIfNegative(value); }` lisait `GreaterThanOrEqualTo(0)` sur un constructeur dont les
+appelants `strict: false` construisent volontiers avec un négatif — plus étroit que le domaine réellement
+admis, rapporté comme inféré, et **silencieux**, puisque chaque tirage compile et construit encore : rien
+n'envoyait le développeur y regarder. Le `if` n'est que l'orthographe sous laquelle la chose a été
+signalée : `switch (value) { case 0: ThrowIfNegative(value); }` exécute le helper précisément là où il ne
+peut pas lever, et un `catch` sur un `try` vide ne s'exécute jamais, et pourtant tous deux resserraient
+le tirage de la même façon.
+
+Un appel n'est donc lu que là où chaque construction entre lui et l'instruction remise à la lecture
+exécute son corps à chaque fois — un bloc simple, un `using`, un `lock`, un bloc `checked` ou
+`unchecked`, un bloc `unsafe`, un `finally`. Tout le reste est marqué `unread guards` : une boucle peut
+ne pas exécuter son corps du tout, un `switch` choisit une section parmi plusieurs, un `catch` ne
+s'exécute que si quelque chose a levé, un `try` peut se tenir sous un gestionnaire capable d'avaler le
+rejet même que la garde énonce, et un corps de lambda s'exécute là où on l'appelle et non là où il est
+écrit. Un helper dans un `else` reste lu, car la branche au-dessus lève inconditionnellement et toute
+construction qui aboutit est passée par cet `else` — le raisonnement même qui lit une chaîne d'`else if`
+une branche à la fois. Le comportement par défaut est le côté sûr de cette question, comme interroger
+*entier* est le côté sûr de la question des écritures : une construction non listée coûte une contrainte
+et ne peut jamais en émettre une fausse, ce qui laisse la liste courte au lieu de prétendre être complète.
+
+Le refus a un coût qui mérite d'être nommé, parce que de vrais constructeurs s'écrivent ainsi :
+`if (nickname is not null) { ThrowIfNullOrWhiteSpace(nickname); }` — valider ce qui est présent — est
+refusé comme toute autre condition, rien ne permettant au moteur de la distinguer d'un `if (strict)`.
+Le generator qu'il garde est le plus souvent celui qu'il aurait écrit de toute façon, le `NonEmpty` de
+la ligne elle-même : le coût est alors une confirmation, pas une contrainte.
+
+Deux résidus sont nommés plutôt que poursuivis, et ils se trompent en sens inverse. Une condition que le
+compilateur pourrait prouver constante — `if (true) { ThrowIfNegative(value); }` — est refusée comme
+toute autre, ce qui coûte une confirmation au développeur. Et un saut **par-dessus** la garde, depuis
+au-dessus d'elle, n'est pas vu du tout : un `return` anticipé ou un `goto` laisse inexécutée, sur ce
+chemin, la garde située en dessous, alors que rien ne la conditionne *autour* d'elle, si bien qu'elle
+est lue quand même. Ce second résidu n'appartient pas à l'orthographe en appel — une garde écrite en
+`if` sous le même `return` anticipé est lue tout aussi faussement, et les deux ont été mesurées — d'où
+sa place ici plutôt que comme une limite de cette règle.
+
 ### 5.4 Composition
 
 **Un generator scaffoldé l'emporte.** Si la compilation contient un type nommé `Any{T}` implémentant
@@ -988,8 +1036,9 @@ La colonne de droite porte la provenance de chaque expression : vide pour la tab
 quand le §5.3 l'a resserrée, `factory` quand le §5.4 l'a composée, `AnyX` quand un generator
 scaffoldé a été réutilisé, `guards not combined` pour le cas de conflit du §5.3, `no source` quand le
 corps du constructeur était indisponible et qu'aucune garde n'a pu être lue, `unread guards` quand
-une instruction de tête lève ou appelle d'une façon que l'ensemble reconnu n'a pas appariée,
-`constraint unavailable` quand
+une instruction de tête lève ou appelle d'une façon que l'ensemble reconnu n'a pas appariée, ou à un
+endroit dont le moteur ne peut pas répondre — sous une écriture du paramètre, ou sous quelque chose qui
+décide s'il s'exécute —, `constraint unavailable` quand
 une garde a été lue et comprise et que ce generator ne porte aucun membre pour l'exprimer, et
 `unavailable` quand le generator existe dans la bibliothèque mais pas dans l'asset que ce projet
 résout.
@@ -1206,24 +1255,24 @@ Nommés explicitement pour ne pas être pris pour des oublis.
   condition arithmétique, garde regex (§5.3) — le paramètre garde le generator neutre, le
   récapitulatif le marque `unread guards`, et **le fichier ne compile pas tant que le développeur
   n'a pas dit que le generator est le bon** (§5.6) : la recette est bien écrite, sous une ligne
-  nommant un identifiant qui n'existe pas. Le même marquage atteint une garde entièrement déléguée
-  à un helper appelé sur le paramètre lui-même (`Guard.Against.Null(value)`), même sans aucun `if`
+  nommant un identifiant qui n'existe pas. Le même marquage atteint une garde entièrement déléguée à
+  un helper appelé sur le paramètre lui-même (`Guard.Against.Null(value)`), même sans aucun `if`
   dans le corps (§5.3), dès lors que l'appel est fait pour son seul effet ; il atteint aussi toute
   instruction qui lève dans une forme que l'ensemble n'a pas su analyser du tout ; et il atteint une
   garde que le moteur ne peut pas placer au-dessus de toute écriture de son propre paramètre, et qui
   énoncerait sinon un invariant de la valeur calculée par le constructeur et non de celle que le
-  generator tire (§5.3). Deux formes lui
-  échappent encore, et toutes deux sont silencieuses plutôt que simplement non lues — le tool n'y
-  voit aucun rejet dont douter. Une garde-helper qui **retourne** la valeur vérifiée —
-  `_name = Ensure.NotBlank(value);` —
-  est indiscernable d'une normalisation, et la lire comme un doute reviendrait à lire
-  `_name = value.Trim();` comme un doute aussi, ce qui bloque la compilation de constructeurs ne
-  portant aucune garde. Et une garde atteinte seulement par un niveau d'indirection que le tool ne
-  suit pas — une copie locale du paramètre (`var v = value; Validate(v);`), un lambda qui le
-  capture, un appel atteint via un membre plutôt que par le nom propre du paramètre. Dans les deux
-  cas, le tool ne peut toujours pas distinguer ce paramètre d'un paramètre non contraint, et il ne
-  devine pas — c'est de ce résidu que parle ce non-objectif : non pas ce qui arrive une fois le
-  doute établi, mais le doute que le tool ne voit jamais.
+  generator tire ; et il atteint un helper dont le moteur ne peut pas montrer qu'il s'exécute sur
+  tout chemin, et qui énoncerait sinon un invariant des chemins qui l'atteignent et non du paramètre
+  (§5.3). Deux formes lui échappent encore, et toutes deux sont silencieuses plutôt que simplement
+  non lues — le tool n'y voit aucun rejet dont douter. Une garde-helper qui **retourne** la valeur
+  vérifiée — `_name = Ensure.NotBlank(value);` — est indiscernable d'une normalisation, et la lire
+  comme un doute reviendrait à lire `_name = value.Trim();` comme un doute aussi, ce qui bloque la
+  compilation de constructeurs ne portant aucune garde. Et une garde atteinte seulement par un
+  niveau d'indirection que le tool ne suit pas — une copie locale du paramètre (`var v = value;
+  Validate(v);`), un lambda qui le capture, un appel atteint via un membre plutôt que par le nom
+  propre du paramètre. Dans les deux cas, le tool ne peut toujours pas distinguer ce paramètre d'un
+  paramètre non contraint, et il ne devine pas — c'est de ce résidu que parle ce non-objectif : non
+  pas ce qui arrive une fois le doute établi, mais le doute que le tool ne voit jamais.
 * **L'aller-retour.** Le tool ne relit jamais un fichier qu'il a écrit.
 * **Membres `init` / `required`, construction par propriétés.** Constructeur et fabrique statique
   uniquement.

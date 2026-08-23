@@ -23,7 +23,7 @@ after the code that implemented it has changed.
 
 | | |
 | --- | --- |
-| [Decision base](./adr/README.md) | all 73 records, the conventions they follow, and the index |
+| [Decision base](./adr/README.md) | all records, the conventions they follow, and the index |
 | [Template](./adr/template.md) | the shape a new record takes |
 | [Implementation reference](./specifications/adr-implementation-reference.md) | what each accepted decision actually enforces, and where |
 | [`adr-check` workflow](./workflows/adr-check.en.md) | the advisory check that reads a pull request against the base |

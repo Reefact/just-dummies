@@ -819,7 +819,9 @@ ADR-0046 refuses. It also makes the mark independent of statement order, which a
 results was not: two parameters normalised on consecutive lines are read the same way whichever is
 assigned first, where before the scan stopped after the first assignment and spared the second. The
 cost is the mirror case, named in §9: a guard helper that *returns* the value it checked —
-`_name = Ensure.NotBlank(value);` — reads as production and is missed.
+`_name = Ensure.NotBlank(value);` — reads as production and is missed. One family crosses that rule
+by measurement rather than by guess — the helpers of the two libraries the next block reads by
+resolved symbol, whose documented contract is precisely to return their validated input.
 
 **The guards the set already knows are read in either spelling.** `ArgumentNullException.ThrowIfNull(value)`
 and `if (value is null) { throw … }` state one invariant, and so do
@@ -840,6 +842,58 @@ would (§5.3 above): `ThrowIfNegative(value)` throws on `value < 0`, so zero is 
 spelling of what was already in it, per ADR-0082's follow-up. The subject-identity discipline
 applies here too, and a two-argument helper's second argument has to be a compile-time constant,
 the same as a comparison's other side.
+
+**The guard helpers of two named libraries are read too, by resolved symbol (ADR-0086).**
+`Ardalis.GuardClauses` and `CommunityToolkit.Diagnostics` state the same invariants the closed set
+already reads, from methods whose semantics is documented and — before any row entered this table —
+**measured** against the pinned package the test corpus references: which values each helper
+rejects, the inclusivity of each bound, and that Ardalis's helpers return their input unchanged.
+The mapped rows are exactly these:
+
+| Helper | Constraint added |
+|---|---|
+| `Guard.Against.Null(p)` / `Guard.IsNotNull(p, …)` | none — the generator never draws `null` anyway |
+| `Guard.Against.NullOrEmpty(p)`, `NullOrWhiteSpace(p)` / `Guard.IsNotNullOrEmpty(p, …)`, `IsNotNullOrWhiteSpace(p, …)` | `.NonEmpty()` |
+| `Guard.Against.Negative(p)` | `.GreaterThanOrEqualTo(0)` |
+| `Guard.Against.NegativeOrZero(p)` | `.Positive()` |
+| `Guard.Against.Zero(p)` | `.NonZero()` |
+| `Guard.Against.OutOfRange(p, name, from, to)` — measured inclusive at **both** ends | `.Between(from, to)` |
+| `Guard.Against.StringTooShort(p, min)`, `StringTooLong(p, max)`, `LengthOutOfRange(p, min, max)` | the matching size rows |
+| `Guard.Against.EnumOutOfRange(p)`, **where `p` is of the enum's own type** | none — declared members only |
+| `Guard.Against.Default(p)` on a `Guid`; on a number | `.NonEmpty()`; `.NonZero()` |
+| `Guard.IsGreaterThan(p, min)` / `Guard.IsLessThan(p, max)` — strict, measured | `.GreaterThan(min)` / `.LessThan(max)` |
+| `Guard.IsGreaterThanOrEqualTo(p, min)` / `Guard.IsLessThanOrEqualTo(p, max)` | `.GreaterThanOrEqualTo(min)` / `.LessThanOrEqualTo(max)` |
+| `Guard.IsInRange(p, min, max)` — measured **half-open** | `.GreaterThanOrEqualTo(min).LessThan(max)` |
+
+The subject-identity discipline holds — the first value argument has to **be** the parameter — and
+a bound has to be a compile-time constant, like every comparison's other side. **A method of a
+recognised library outside these rows is marked `unread guards`, never approximated**: declared
+validation whose semantics this table has not measured — `InvalidFormat`, `Expression`,
+`IsBetween`, a bound that is no constant, the enumerable `OutOfRange` that bounds elements rather
+than the parameter — is a guard the engine cannot vouch for, and §5.6 says what that costs. The two
+range guards are why the rule is worth its bluntness: Ardalis's `OutOfRange` admits both of its
+bounds while the Toolkit's `IsInRange` rejects its upper one, and a table written from what the
+names suggest would have been confidently wrong on one of them. Recognition resolves against the
+developer's own compilation (ADR-0063), so a project referencing neither library pays nothing, and
+one referencing either is read against the assembly it actually builds with. This is not the
+blessed-prefix list refused above: nothing here guesses what a name means — a row exists exactly
+where a package's documented method was measured, and everything else keeps the mark.
+
+**A recognised helper is read in the assigned spelling too — and that one assignment no longer ends
+the scan.** `Name = Guard.Against.NullOrWhiteSpace(name);` is the documented usage of these
+libraries, and it used to be the largest silent surface the engine had: the first such line is an
+assignment to state, so the scan ended before anything was read or marked, and a five-parameter
+constructor guarded entirely in this style reported five parameters nobody had constrained, under a
+recap showing no doubt anywhere. A simple assignment to a field or property whose right side
+**is** a recognised helper call — bare, parentheses aside — both validates and stores, writes over
+no parameter, and so leaves everything below it exactly as leading as it was: the call is read
+through the same placement questions as a discarded one, and the scan continues. Everything else
+stands. An assignment whose right side the set does not recognise ends the scan exactly as before —
+`_name = value.Trim();` stays production, and the false positive ADR-0083's follow-up retired stays
+retired. A recognised helper assigned back to **its own parameter** is a write the placement rules
+refuse to read past, and is marked rather than read — a confirmation where §9 used to be silent.
+Conditioned, or below a write to its subject, the assigned spelling earns the mark exactly as the
+discarded one would.
 
 **A helper is read only where nothing decides whether it runs.** The `if` spelling has always demanded
 that the branch throw unconditionally before its condition is read; the call spelling needs that same
@@ -1230,7 +1284,8 @@ Named explicitly so they are not mistaken for oversights.
   rejection to be uncertain about. A guard helper that **returns** the value it checked — `_name =
   Ensure.NotBlank(value);` — is indistinguishable from normalisation, and reading it as doubt would
   mean reading `_name = value.Trim();` as doubt too, which blocks the compilation of constructors
-  carrying no guard at all. And a guard reached only through a level of indirection the tool does
+  carrying no guard at all; the helpers of the two libraries §5.3 reads by resolved symbol
+  (ADR-0086) are the measured exception, and every other returning validator keeps this answer. And a guard reached only through a level of indirection the tool does
   not follow — a local copy of the parameter (`var v = value; Validate(v);`), a lambda closing over
   it, a call reached through a member rather than the parameter's own name. In both the tool still
   cannot tell the parameter from an unconstrained one, and it does not guess — which is the residue

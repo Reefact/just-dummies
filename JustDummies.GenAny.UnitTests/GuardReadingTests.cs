@@ -482,4 +482,148 @@ public sealed class GuardReadingTests {
              .IsEqualTo("Any.Int32().Positive().As(value => (int?)value)");
     }
 
+    /// <summary>
+    ///     The CommunityToolkit rows of ADR-0086, each pinned at the semantics that was measured — the strict
+    ///     comparisons build the exclusive bound, and <c>IsInRange</c> keeps its half-open ceiling.
+    /// </summary>
+    [Theory(DisplayName = "A CommunityToolkit guard is read into the closed set's own rows.")]
+    [InlineData("string", "Guard.IsNotNullOrWhiteSpace(value, nameof(value));", "Any.String().NonEmpty()")]
+    [InlineData("string", "Guard.IsNotNullOrEmpty(value, nameof(value));", "Any.String().NonEmpty()")]
+    [InlineData("int", "Guard.IsGreaterThan(value, 0, nameof(value));", "Any.Int32().GreaterThan(0)")]
+    [InlineData("int", "Guard.IsGreaterThanOrEqualTo(value, 18, nameof(value));", "Any.Int32().GreaterThanOrEqualTo(18)")]
+    [InlineData("int", "Guard.IsLessThan(value, 100, nameof(value));", "Any.Int32().LessThan(100)")]
+    [InlineData("int", "Guard.IsLessThanOrEqualTo(value, 100, nameof(value));", "Any.Int32().LessThanOrEqualTo(100)")]
+    [InlineData("int", "Guard.IsInRange(value, 0, 100, nameof(value));", "Any.Int32().GreaterThanOrEqualTo(0).LessThan(100)")]
+    public void AToolkitGuardIsReadIntoTheClosedSet(string parameterType, string guard, string expected) {
+        ScaffoldedParameter parameter = LibraryGuarded(parameterType, guard, "using CommunityToolkit.Diagnostics;");
+
+        Check.That(parameter.Expression).IsEqualTo(expected);
+        Check.That(parameter.Provenance.HasFlag(Provenance.Guard)).IsTrue();
+        Check.That(parameter.RequiresVerification).IsFalse();
+    }
+
+    /// <summary>
+    ///     The Ardalis rows of ADR-0086 in the discarded spelling, measured semantics and all: zero passes
+    ///     <c>Negative</c>, both bounds pass <c>OutOfRange</c>, both boundary lengths pass the string pair.
+    /// </summary>
+    [Theory(DisplayName = "An Ardalis guard is read into the closed set's own rows.")]
+    [InlineData("string", "Guard.Against.NullOrWhiteSpace(value);", "Any.String().NonEmpty()")]
+    [InlineData("string", "Guard.Against.NullOrEmpty(value);", "Any.String().NonEmpty()")]
+    [InlineData("int", "Guard.Against.Negative(value);", "Any.Int32().GreaterThanOrEqualTo(0)")]
+    [InlineData("int", "Guard.Against.NegativeOrZero(value);", "Any.Int32().Positive()")]
+    [InlineData("int", "Guard.Against.Zero(value);", "Any.Int32().NonZero()")]
+    [InlineData("int", "Guard.Against.OutOfRange(value, nameof(value), 0, 100);", "Any.Int32().Between(0, 100)")]
+    [InlineData("string", "Guard.Against.StringTooShort(value, 3);", "Any.String().WithMinLength(3)")]
+    [InlineData("string", "Guard.Against.StringTooLong(value, 20);", "Any.String().NonEmpty().WithMaxLength(20)")]
+    [InlineData("string", "Guard.Against.LengthOutOfRange(value, 8, 20);", "Any.String().WithLengthBetween(8, 20)")]
+    [InlineData("System.Guid", "Guard.Against.Default(value);", "Any.Guid().NonEmpty()")]
+    [InlineData("int", "Guard.Against.Default(value);", "Any.Int32().NonZero()")]
+    public void AnArdalisGuardIsReadIntoTheClosedSet(string parameterType, string guard, string expected) {
+        ScaffoldedParameter parameter = LibraryGuarded(parameterType, guard, "using Ardalis.GuardClauses;");
+
+        Check.That(parameter.Expression).IsEqualTo(expected);
+        Check.That(parameter.Provenance.HasFlag(Provenance.Guard)).IsTrue();
+        Check.That(parameter.RequiresVerification).IsFalse();
+    }
+
+    /// <summary>
+    ///     ADR-0086's assigned spelling: the helper returns its validated input, so assigning it to state both
+    ///     validates and stores — and no longer ends the leading scan, which is what used to hide every guard
+    ///     below the first such line.
+    /// </summary>
+    [Fact(DisplayName = "A guard assigned to state is read, and the guards below it still are.")]
+    public void AGuardAssignedToStateIsReadAndTheScanContinues() {
+        ScaffoldOutcome outcome = Subject.Scaffold("""
+                                                   using Ardalis.GuardClauses;
+
+                                                   namespace Shop.Domain;
+
+                                                   public sealed class Subject {
+
+                                                       private readonly int kept;
+
+                                                       public string Name { get; }
+
+                                                       public Subject(string name, int quantity) {
+                                                           Name = Guard.Against.NullOrWhiteSpace(name);
+
+                                                           if (quantity <= 0) { throw new ArgumentOutOfRangeException(nameof(quantity)); }
+
+                                                           kept = quantity;
+                                                       }
+
+                                                   }
+                                                   """);
+
+        Check.That(outcome.Status).IsEqualTo(ScaffoldStatus.Scaffolded);
+
+        IReadOnlyList<ScaffoldedParameter> parameters = outcome.Plan!.Parameters;
+
+        ScaffoldedParameter name     = parameters[0];
+        ScaffoldedParameter quantity = parameters[1];
+
+        Check.That(name.Expression).IsEqualTo("Any.String().NonEmpty()");
+        Check.That(name.Provenance.HasFlag(Provenance.Guard)).IsTrue();
+        Check.That(quantity.Expression).IsEqualTo("Any.Int32().Positive()");
+        Check.That(quantity.Provenance.HasFlag(Provenance.Guard)).IsTrue();
+    }
+
+    /// <summary>
+    ///     The carve-out reaches only a right side the set recognises: any other assignment to state ends the
+    ///     scan exactly as it always did, which is what keeps <c>_name = value.Trim();</c> ordinary
+    ///     production rather than doubt (ADR-0083, Follow-up).
+    /// </summary>
+    [Fact(DisplayName = "An assignment the set does not recognise still ends the scan, in silence.")]
+    public void AnUnrecognisedAssignmentStillEndsTheScan() {
+        ScaffoldOutcome outcome = Subject.Scaffold("""
+                                                   public sealed class Subject {
+
+                                                       private readonly int kept;
+
+                                                       public string Name { get; }
+
+                                                       public Subject(string name, int quantity) {
+                                                           Name = name.Trim();
+
+                                                           if (quantity <= 0) { throw new ArgumentOutOfRangeException(nameof(quantity)); }
+
+                                                           kept = quantity;
+                                                       }
+
+                                                   }
+                                                   """);
+
+        Check.That(outcome.Status).IsEqualTo(ScaffoldStatus.Scaffolded);
+
+        ScaffoldedParameter quantity = outcome.Plan!.Parameters[1];
+
+        Check.That(quantity.Expression).IsEqualTo("Any.Int32()");
+        Check.That(quantity.Provenance.HasFlag(Provenance.Guard)).IsFalse();
+        Check.That(quantity.RequiresVerification).IsFalse();
+    }
+
+    /// <summary>One parameter of a <c>Subject</c> guarded through a library's own spelling, using and all.</summary>
+    private static ScaffoldedParameter LibraryGuarded(string parameterType, string body, string usings) {
+        ScaffoldOutcome outcome = Subject.Scaffold($$"""
+                                                    {{usings}}
+
+                                                    namespace Shop.Domain;
+
+                                                    public sealed class Subject {
+
+                                                        private readonly {{parameterType}} kept;
+
+                                                        public Subject({{parameterType}} value) {
+                                                            {{body}}
+                                                            kept = value;
+                                                        }
+
+                                                    }
+                                                    """);
+
+        Check.That(outcome.Status).IsEqualTo(ScaffoldStatus.Scaffolded);
+
+        return outcome.Plan!.Parameters.Single();
+    }
+
 }

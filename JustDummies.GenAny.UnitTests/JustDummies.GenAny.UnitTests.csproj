@@ -11,6 +11,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- The two guard libraries whose helpers S5.3 reads (ADR-0086), referenced so the corpus and the
+         resolver suite exercise the REAL packages: recognition resolves their true symbols, and the draw
+         oracle calls their true implementations — a mapped row whose measured semantics drifted would fail
+         here, not in a consumer's suite. The engine itself references neither (ADR-0063). -->
+    <PackageReference Include="Ardalis.GuardClauses" />
+    <PackageReference Include="CommunityToolkit.Diagnostics" />
     <PackageReference Include="coverlet.collector">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

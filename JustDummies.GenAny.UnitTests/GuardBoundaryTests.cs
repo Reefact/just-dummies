@@ -1370,4 +1370,116 @@ public sealed class GuardBoundaryTests {
         Check.That(parameter.Provenance.HasFlag(Provenance.UnreadGuards)).IsFalse();
     }
 
+    /// <summary>
+    ///     A recognised library's method the table carries no measured row for is declared validation the
+    ///     engine cannot vouch for — the mark, not silence, and never an approximated bound (ADR-0086).
+    /// </summary>
+    /// <remarks>
+    ///     <c>IsBetween</c> is deliberately in this list: its boundary semantics was not measured, and a row
+    ///     written from what the name suggests is exactly how a range guard goes confidently wrong — the two
+    ///     libraries already disagree about a ceiling. A bound that is no compile-time constant earns the same
+    ///     answer, the discipline every comparison row keeps.
+    /// </remarks>
+    [Theory(DisplayName = "A library method without a measured row is marked, never approximated.")]
+    [InlineData("int", "CommunityToolkit.Diagnostics.Guard.IsBetween(value, 0, 100, nameof(value));", "Any.Int32()")]
+    [InlineData("int", "CommunityToolkit.Diagnostics.Guard.IsGreaterThan(value, int.Parse(\"1\"), nameof(value));", "Any.Int32()")]
+    public void ALibraryMethodWithoutAMeasuredRowIsMarked(string parameterType, string guard, string expected) {
+        ScaffoldedParameter parameter = Subject.GuardedBy(parameterType, guard);
+
+        Check.That(parameter.Expression).IsEqualTo(expected);
+        Check.That(parameter.Provenance.HasFlag(Provenance.UnreadGuards)).IsTrue();
+        Check.That(parameter.RequiresVerification).IsTrue();
+    }
+
+    /// <summary>
+    ///     The assigned spelling answers the same placement questions as the discarded one: conditioned, it
+    ///     states an invariant of the paths that reach it; below a write to its own subject, one of a value
+    ///     the constructor computed. Both earn the mark the discarded spelling would.
+    /// </summary>
+    [Fact(DisplayName = "A guard-assignment under a condition is marked, not read.")]
+    public void AGuardAssignmentUnderAConditionIsMarked() {
+        ScaffoldOutcome outcome = Subject.Scaffold("""
+                                                   using Ardalis.GuardClauses;
+
+                                                   namespace Shop.Domain;
+
+                                                   public sealed class Subject {
+
+                                                       public int Points { get; }
+
+                                                       public Subject(bool strict, int value) {
+                                                           if (strict) { Points = Guard.Against.Negative(value); }
+                                                       }
+
+                                                   }
+                                                   """);
+
+        Check.That(outcome.Status).IsEqualTo(ScaffoldStatus.Scaffolded);
+
+        ScaffoldedParameter value = outcome.Plan!.Parameters[1];
+
+        Check.That(value.Expression).IsEqualTo("Any.Int32()");
+        Check.That(value.Provenance.HasFlag(Provenance.UnreadGuards)).IsTrue();
+    }
+
+    [Fact(DisplayName = "A guard-assignment below a write to its subject is marked, not read.")]
+    public void AGuardAssignmentBelowAWriteToItsSubjectIsMarked() {
+        ScaffoldOutcome outcome = Subject.Scaffold("""
+                                                   using Ardalis.GuardClauses;
+
+                                                   namespace Shop.Domain;
+
+                                                   public sealed class Subject {
+
+                                                       public string Name { get; }
+
+                                                       public Subject(string name) {
+                                                           name = name.Trim();
+                                                           Name = Guard.Against.NullOrWhiteSpace(name);
+                                                       }
+
+                                                   }
+                                                   """);
+
+        Check.That(outcome.Status).IsEqualTo(ScaffoldStatus.Scaffolded);
+
+        ScaffoldedParameter name = outcome.Plan!.Parameters.Single();
+
+        Check.That(name.Expression).IsEqualTo("Any.String().NonEmpty()");
+        Check.That(name.Provenance.HasFlag(Provenance.UnreadGuards)).IsTrue();
+    }
+
+    /// <summary>
+    ///     Assigned back to the parameter itself, the helper is a write the placement rules refuse to read
+    ///     past — same statement, same value, no vouching. The mark converts what used to be the silent
+    ///     returning-helper residue of §9 into a confirmation.
+    /// </summary>
+    [Fact(DisplayName = "A guard assigned back to its own parameter is marked, not silent.")]
+    public void AGuardAssignedBackToItsOwnParameterIsMarked() {
+        ScaffoldOutcome outcome = Subject.Scaffold("""
+                                                   using Ardalis.GuardClauses;
+
+                                                   namespace Shop.Domain;
+
+                                                   public sealed class Subject {
+
+                                                       private readonly string kept;
+
+                                                       public Subject(string value) {
+                                                           value = Guard.Against.NullOrWhiteSpace(value);
+                                                           kept  = value;
+                                                       }
+
+                                                   }
+                                                   """);
+
+        Check.That(outcome.Status).IsEqualTo(ScaffoldStatus.Scaffolded);
+
+        ScaffoldedParameter value = outcome.Plan!.Parameters.Single();
+
+        Check.That(value.Expression).IsEqualTo("Any.String().NonEmpty()");
+        Check.That(value.Provenance.HasFlag(Provenance.UnreadGuards)).IsTrue();
+        Check.That(value.RequiresVerification).IsTrue();
+    }
+
 }

@@ -39,9 +39,18 @@ internal sealed class GuardReading {
     }
 
     /// <summary>
-    ///     Whether a throwing guard on <paramref name="parameter" /> was seen and not understood, so the
-    ///     developer is told where to look rather than left to assume there was nothing there (§9).
+    ///     Whether something refusing values of <paramref name="parameter" /> was seen and not vouched for,
+    ///     so the developer is told where to look rather than left to assume there was nothing there (§9).
     /// </summary>
+    /// <remarks>
+    ///     Two ways to earn it, and the name understates the second. A guard the closed set could not parse
+    ///     is the one it was written for. A guard the set parsed perfectly and the engine could not
+    ///     <b>place</b> earns it just as much — below a write to its own parameter, under something deciding
+    ///     whether it runs, or below a statement that can jump past it — and there the reading understood
+    ///     everything and still cannot say the constraint is about the value the generator draws. What
+    ///     reaches the recap is the same either way, because the developer's question is the same: is this
+    ///     generator right for this parameter?
+    /// </remarks>
     internal bool Unread(string parameter) {
         return unread.Contains(parameter);
     }

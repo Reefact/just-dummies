@@ -526,11 +526,13 @@ public sealed class GuardBoundaryTests {
         Check.That(parameter.Provenance.HasFlag(Provenance.UnreadGuards)).IsTrue();
     }
 
-    // A loop is not itself a reason to refuse: what a loop changes is where a WRITE can have run, so a
-    // parameter the loop never writes is read exactly as it would be outside one. The rule narrows what it
-    // must and nothing beside it.
-    [Fact(DisplayName = "A guard inside a loop that writes nothing is read as it would be outside one.")]
-    public void AGuardInsideALoopThatWritesNothingIsRead() {
+    // A loop is no reason in itself to refuse a guard for the question above: what a loop changes is where a
+    // WRITE can have run, so on that question a parameter the loop never writes reads as it would outside
+    // one. It answers the other question differently, and this pairs with the case above to say so: a `for`
+    // may run its body no times, so a guard inside one states nothing about the value the generator draws
+    // whether the loop writes the parameter or not.
+    [Fact(DisplayName = "A guard inside a loop is unread, a loop being free to run its body no times.")]
+    public void AGuardInsideALoopIsUnread() {
         string body = """
                               for (int index = 0; index < 3; index++) {
                                   ArgumentOutOfRangeException.ThrowIfNegative(value);
@@ -539,8 +541,8 @@ public sealed class GuardBoundaryTests {
 
         ScaffoldedParameter parameter = Subject.GuardedBy("int", body);
 
-        Check.That(parameter.Expression).IsEqualTo("Any.Int32().GreaterThanOrEqualTo(0)");
-        Check.That(parameter.Provenance.HasFlag(Provenance.UnreadGuards)).IsFalse();
+        Check.That(parameter.Expression).IsEqualTo("Any.Int32()");
+        Check.That(parameter.Provenance.HasFlag(Provenance.UnreadGuards)).IsTrue();
     }
 
     /// <summary>
@@ -586,6 +588,13 @@ public sealed class GuardBoundaryTests {
     ///         which is what separates a rule that refuses what it cannot place from one that refuses whatever
     ///         it does not recognise.
     ///     </para>
+    ///     <para>
+    ///         The <c>catch</c> and <c>switch</c> pairs that used to sit here moved to the conditioning
+    ///         theory above, and their move is the point rather than a tidying: whether the guard runs at all
+    ///         is asked before whether a write preceded it, and neither construct runs its body on every
+    ///         path. What is left is the pair where both questions are answered — a <c>finally</c> runs
+    ///         whatever happens, so only the write decides.
+    ///     </para>
     /// </remarks>
     [Theory(DisplayName = "A construct the walk does not read is unread only where it writes the parameter.")]
     [InlineData("Any.Int32()", true, """
@@ -599,35 +608,6 @@ public sealed class GuardBoundaryTests {
                         try {
                         } finally {
                             ArgumentOutOfRangeException.ThrowIfNegative(value);
-                        }
-                """)]
-    [InlineData("Any.Int32()", true, """
-                        try {
-                            value = 100 - value;
-                        } catch (Exception) {
-                            ArgumentOutOfRangeException.ThrowIfNegative(value);
-                        }
-                """)]
-    [InlineData("Any.Int32().GreaterThanOrEqualTo(0)", false, """
-                        try {
-                        } catch (Exception) {
-                            ArgumentOutOfRangeException.ThrowIfNegative(value);
-                        }
-                """)]
-    [InlineData("Any.Int32()", true, """
-                        switch (value = 100 - value) {
-                            case 0:
-                                ArgumentOutOfRangeException.ThrowIfNegative(value);
-
-                                break;
-                        }
-                """)]
-    [InlineData("Any.Int32().GreaterThanOrEqualTo(0)", false, """
-                        switch (value) {
-                            case 0:
-                                ArgumentOutOfRangeException.ThrowIfNegative(value);
-
-                                break;
                         }
                 """)]
     public void AConstructIsUnreadOnlyWhereItWritesTheParameter(string expected, bool unread, string body) {
@@ -1028,6 +1008,188 @@ public sealed class GuardBoundaryTests {
 
         Check.That(parameter.Provenance.HasFlag(Provenance.UnreadGuards)).IsFalse();
         Check.That(parameter.RequiresVerification).IsFalse();
+    }
+
+    /// <summary>
+    ///     A helper the closed set knows says nothing about the drawn value where a condition decides whether
+    ///     it runs at all.
+    /// </summary>
+    /// <remarks>
+    ///     <c>if (strict) { ThrowIfNegative(value); }</c> was measured reading
+    ///     <c>Any.Int32().GreaterThanOrEqualTo(0)</c>, reported as inferred with nothing worth looking at,
+    ///     over a constructor whose <c>strict: false</c> callers construct happily with a negative. The loss
+    ///     is silent rather than loud — every draw still compiles and still constructs, so nothing sends the
+    ///     developer looking, which is what makes it worse than a crash.
+    ///     <para>
+    ///         The braceless row is not a duplicate: a branch without a block reaches the call rule with one
+    ///         less node between the call and the <c>if</c>, which is exactly where an off-by-one walk would
+    ///         let it through.
+    ///     </para>
+    /// </remarks>
+    [Theory(DisplayName = "A throw helper the set knows is unread where a condition decides whether it runs.")]
+    [InlineData("        if (strict) { ArgumentOutOfRangeException.ThrowIfNegative(value); }")]
+    [InlineData("        if (strict) ArgumentOutOfRangeException.ThrowIfNegative(value);")]
+    public void AConditionedThrowHelperIsUnread(string guard) {
+        ScaffoldedParameter parameter = ConditionedSubject(guard).Plan!.Parameters[1];
+
+        Check.That(parameter.Expression).IsEqualTo("Any.Int32()");
+        Check.That(parameter.Provenance.HasFlag(Provenance.UnreadGuards)).IsTrue();
+        Check.That(parameter.RequiresVerification).IsTrue();
+    }
+
+    /// <summary>
+    ///     Every construct that decides whether the statement below it runs conditions the helper inside it,
+    ///     whatever that construct is.
+    /// </summary>
+    /// <remarks>
+    ///     The <c>if</c> is only the spelling the report arrived in. A loop may run its body no times, a
+    ///     <c>switch</c> picks one section among several, a <c>catch</c> runs only when something threw, and
+    ///     a lambda body runs where it is called rather than where it is written — and a <c>try</c> beside a
+    ///     <c>catch</c> is worse than conditioned: the guard runs, and the rejection it exists to make is
+    ///     swallowed, leaving the constructor accepting exactly what the guard refuses.
+    ///     <para>
+    ///         The last two rows moved here from the write-placement theory below, where they were pinned
+    ///         reading <c>GreaterThanOrEqualTo(0)</c>. They were this defect all along:
+    ///         <c>switch (value) { case 0: ThrowIfNegative(value); }</c> runs the helper only where it cannot
+    ///         throw, and a <c>catch</c> over an empty <c>try</c> never runs at all, yet both narrowed the
+    ///         draw as though the guard had held.
+    ///     </para>
+    /// </remarks>
+    [Theory(DisplayName = "A throw helper is unread inside every construct that decides whether it runs.")]
+    [InlineData("        while (strict) { ArgumentOutOfRangeException.ThrowIfNegative(value); break; }")]
+    [InlineData("        foreach (bool flag in new[] { strict }) { ArgumentOutOfRangeException.ThrowIfNegative(value); }")]
+    [InlineData("        Action check = () => { ArgumentOutOfRangeException.ThrowIfNegative(value); }; check();")]
+    [InlineData("        try { ArgumentOutOfRangeException.ThrowIfNegative(value); } catch (OverflowException) { }")]
+    [InlineData("        switch (value) { case 0: ArgumentOutOfRangeException.ThrowIfNegative(value); break; }")]
+    [InlineData("        try { } catch (Exception) { ArgumentOutOfRangeException.ThrowIfNegative(value); }")]
+    public void AThrowHelperInsideAConditioningConstructIsUnread(string guard) {
+        ScaffoldedParameter parameter = ConditionedSubject(guard).Plan!.Parameters[1];
+
+        Check.That(parameter.Expression).IsEqualTo("Any.Int32()");
+        Check.That(parameter.Provenance.HasFlag(Provenance.UnreadGuards)).IsTrue();
+    }
+
+    /// <summary>
+    ///     A construct that only scopes the body it wraps decides nothing, and the helper inside it reads as
+    ///     it would outside one.
+    /// </summary>
+    /// <remarks>
+    ///     The pair to the theory above, and the reason the rule is about conditioning rather than about
+    ///     nesting. A <c>using</c> acquires its resource and runs the body, a <c>lock</c> takes its lock and
+    ///     runs the body, a <c>checked</c> block runs the body under different arithmetic — none of the three
+    ///     can skip it. A refusal here would cost the developer a confirmation over a guard that plainly
+    ///     holds.
+    /// </remarks>
+    [Theory(DisplayName = "A throw helper inside a construct that only scopes its body still reads.")]
+    [InlineData("        using (new System.IO.MemoryStream()) { ArgumentOutOfRangeException.ThrowIfNegative(value); }")]
+    [InlineData("        lock (this) { ArgumentOutOfRangeException.ThrowIfNegative(value); }")]
+    [InlineData("        checked { ArgumentOutOfRangeException.ThrowIfNegative(value); }")]
+    public void AThrowHelperInsideAScopingConstructStillReads(string guard) {
+        ScaffoldedParameter parameter = ConditionedSubject(guard).Plan!.Parameters[1];
+
+        Check.That(parameter.Expression).IsEqualTo("Any.Int32().GreaterThanOrEqualTo(0)");
+        Check.That(parameter.Provenance.HasFlag(Provenance.UnreadGuards)).IsFalse();
+    }
+
+    /// <summary>
+    ///     A condition gating one parameter's helper says nothing about another parameter's unconditional
+    ///     one, and the mark is scoped accordingly.
+    /// </summary>
+    /// <remarks>
+    ///     The same scoping a reassignment already keeps: refusing outright would drop the guards of every
+    ///     other parameter the constructor declares, trading one constraint that must not be read for several
+    ///     that must. The <c>bool</c> doing the gating is not itself marked — it is tested, not guarded.
+    /// </remarks>
+    [Fact(DisplayName = "A condition gating one parameter's helper leaves another parameter's helper read.")]
+    public void AConditionGatingOneHelperLeavesAnotherRead() {
+        ScaffoldOutcome outcome = Subject.Scaffold("""
+                                                   public sealed class Subject {
+
+                                                       private readonly int kept;
+
+                                                       public Subject(bool strict, int first, int second) {
+                                                           if (strict) { ArgumentOutOfRangeException.ThrowIfNegative(first); }
+                                                           ArgumentOutOfRangeException.ThrowIfNegative(second);
+
+                                                           kept = first + second;
+                                                       }
+
+                                                   }
+                                                   """);
+
+        Check.That(outcome.Plan!.Parameters[0].Provenance.HasFlag(Provenance.UnreadGuards)).IsFalse();
+
+        Check.That(outcome.Plan.Parameters[1].Expression).IsEqualTo("Any.Int32()");
+        Check.That(outcome.Plan.Parameters[1].Provenance.HasFlag(Provenance.UnreadGuards)).IsTrue();
+
+        Check.That(outcome.Plan.Parameters[2].Expression).IsEqualTo("Any.Int32().GreaterThanOrEqualTo(0)");
+        Check.That(outcome.Plan.Parameters[2].Provenance.HasFlag(Provenance.UnreadGuards)).IsFalse();
+    }
+
+    /// <summary>
+    ///     An unconditional helper above a conditioned one keeps its constraint, and the parameter carries
+    ///     the mark as well.
+    /// </summary>
+    /// <remarks>
+    ///     The pairing §5.6 asks for, on the call spelling: what the engine could read is true of the drawn
+    ///     value and is kept, and what it could not is said out loud rather than dropped in silence. Without
+    ///     the mark the emitted file compiles, claims the parameter inferred, and draws past a ceiling the
+    ///     developer plainly wrote.
+    /// </remarks>
+    [Fact(DisplayName = "An unconditional throw helper above a conditioned one keeps its bound and is marked.")]
+    public void AnUnconditionalThrowHelperAboveAConditionedOneKeepsItsBound() {
+        ScaffoldedParameter parameter =
+            ConditionedSubject("""
+                                       ArgumentOutOfRangeException.ThrowIfNegative(value);
+                                       if (strict) { ArgumentOutOfRangeException.ThrowIfGreaterThan(value, 100); }
+                               """).Plan!.Parameters[1];
+
+        Check.That(parameter.Expression).IsEqualTo("Any.Int32().GreaterThanOrEqualTo(0)");
+        Check.That(parameter.Provenance.HasFlag(Provenance.Guard)).IsTrue();
+        Check.That(parameter.Provenance.HasFlag(Provenance.UnreadGuards)).IsTrue();
+    }
+
+    /// <summary>
+    ///     A helper inside an <c>else</c> whose branch throws unconditionally still reads, because every
+    ///     construction that survives went through that <c>else</c>.
+    /// </summary>
+    /// <remarks>
+    ///     The one shape a conditioning rule must not take away, and the reason the walk stops where the
+    ///     reading handed it the statement rather than climbing to the body: reaching the <c>else</c> means
+    ///     the condition was false, and the branch above refuses outright, so the helper runs on every path
+    ///     that constructs at all. It is the same reasoning that lets an <c>else if</c> chain be read one
+    ///     branch at a time.
+    /// </remarks>
+    [Fact(DisplayName = "A throw helper inside an else after a branch that throws still reads.")]
+    public void AThrowHelperInsideATerminalElseStillReads() {
+        ScaffoldedParameter parameter =
+            ConditionedSubject("""
+                                       if (strict) {
+                                           throw new ArgumentException(nameof(strict));
+                                       } else {
+                                           ArgumentOutOfRangeException.ThrowIfNegative(value);
+                                       }
+                               """).Plan!.Parameters[1];
+
+        Check.That(parameter.Expression).IsEqualTo("Any.Int32().GreaterThanOrEqualTo(0)");
+        Check.That(parameter.Provenance.HasFlag(Provenance.UnreadGuards)).IsFalse();
+    }
+
+    /// <summary>A <c>Subject</c> whose guard may lean on a <c>bool</c> beside the parameter it is about.</summary>
+    private static ScaffoldOutcome ConditionedSubject(string guard) {
+        return Subject.Scaffold($$"""
+                                 public sealed class Subject {
+
+                                     private readonly int kept;
+
+                                     public Subject(bool strict, int value) {
+                                 {{guard}}
+
+                                         kept = value;
+                                     }
+
+                                 }
+                                 """);
     }
 
     /// <summary>

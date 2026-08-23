@@ -22,7 +22,9 @@ namespace JustDummies.GenAny;
 ///         throws unconditionally, it appears before the first assignment to state, its condition mentions
 ///         exactly one parameter the body has not written over, and carries no <c>&amp;&amp;</c> or
 ///         <c>||</c>, and every other operand is a compile-time constant. Anything else is left alone and
-///         reported as unread.
+///         reported as unread. A guard written as a call rather than as an <c>if</c> answers the same two
+///         questions of placement: nothing may have written its parameter where it sits, and nothing may
+///         decide whether it runs at all.
 ///     </para>
 ///     <para>
 ///         <b>Regex guards are not read</b>, and that is a decision rather than an omission. The library builds
@@ -217,26 +219,57 @@ internal static class Guards {
         foreach (ExpressionStatementSyntax discarded in statement.DescendantNodesAndSelf().OfType<ExpressionStatementSyntax>()) {
             if (discarded.Expression is not InvocationExpressionSyntax invocation || IsNameOf(invocation)) { continue; }
 
-            foreach (IParameterSymbol parameter in Mentioned(invocation, model, method)) {
-                // The rule the condition reader keeps, in the other spelling: a helper the set knows, called
-                // where a write to that parameter can already have run, states an invariant of the computed
-                // value. This is the placement that matters most — a call sits in the middle of a statement,
-                // where the writes above it are as easy to miss as the ones in the statements above that.
-                if (writes.Precede(parameter, invocation)) {
-                    reading.MarkUnread(parameter.Name);
+            // Asked once of the statement rather than of each parameter: whether the call runs at all is a
+            // fact about where it sits, and the same for every parameter it names.
+            ReadCall(invocation, RunsUnconditionally(discarded, statement), model, method, reading, writes);
+        }
+    }
 
-                    continue;
-                }
+    /// <summary>
+    ///     Reads one discarded call as a guard over each parameter it names — <see cref="ReadOne" />'s
+    ///     counterpart for the spelling that has no condition to parse.
+    /// </summary>
+    /// <remarks>
+    ///     A helper that runs only when something else holds states an invariant of the paths that reach it,
+    ///     never of the parameter. <c>if (strict) { ThrowIfNegative(value); }</c> admits every negative a
+    ///     <c>strict: false</c> caller passes, and read as <c>GreaterThanOrEqualTo(0)</c> all the same. The
+    ///     <c>if</c> spelling has always demanded an unconditional throw before its condition is read
+    ///     (<see cref="ThrowsUnconditionally" />), and <see cref="RunsUnconditionally" /> is that same demand
+    ///     asked of the statement carrying the call.
+    /// </remarks>
+    private static void ReadCall(InvocationExpressionSyntax invocation,
+                                 bool unconditional,
+                                 SemanticModel model,
+                                 IMethodSymbol method,
+                                 GuardReading reading,
+                                 ParameterWrites writes) {
+        foreach (IParameterSymbol parameter in Mentioned(invocation, model, method)) {
+            // Whose invariant a conditioned helper states is the paths that reach it, never the parameter,
+            // so the reading owes the developer the same word it owes any guard it could not place.
+            if (!unconditional) {
+                reading.MarkUnread(parameter.Name);
 
-                if (!TryRecogniseThrowHelper(invocation, model, parameter, GeneratorFor.Sizes(parameter.Type),
-                                             out GuardConstraint? constraint)) {
-                    reading.MarkUnread(parameter.Name);
-
-                    continue;
-                }
-
-                if (constraint is not null) { reading.Add(parameter.Name, constraint); }
+                continue;
             }
+
+            // The rule the condition reader keeps, in the other spelling: a helper the set knows, called
+            // where a write to that parameter can already have run, states an invariant of the computed
+            // value. This is the placement that matters most — a call sits in the middle of a statement,
+            // where the writes above it are as easy to miss as the ones in the statements above that.
+            if (writes.Precede(parameter, invocation)) {
+                reading.MarkUnread(parameter.Name);
+
+                continue;
+            }
+
+            if (!TryRecogniseThrowHelper(invocation, model, parameter, GeneratorFor.Sizes(parameter.Type),
+                                         out GuardConstraint? constraint)) {
+                reading.MarkUnread(parameter.Name);
+
+                continue;
+            }
+
+            if (constraint is not null) { reading.Add(parameter.Name, constraint); }
         }
     }
 
@@ -841,6 +874,66 @@ internal static class Guards {
             ThrowStatementSyntax                     => true,
             BlockSyntax { Statements.Count: 1 } block => block.Statements[0] is ThrowStatementSyntax,
             _                                        => false
+        };
+    }
+
+    /// <summary>
+    ///     Whether <paramref name="carrier" /> runs every time <paramref name="boundary" /> does, or
+    ///     something between the two decides whether it runs at all.
+    /// </summary>
+    /// <remarks>
+    ///     A guard delegated to a helper was read wherever it was found among the leading statements, with no
+    ///     check on whether the statement carrying it can be skipped.
+    ///     <c>if (strict) { ThrowIfNegative(value); }</c> read <c>GreaterThanOrEqualTo(0)</c> over a
+    ///     constructor that accepts every negative a <c>strict: false</c> caller passes — narrower than the
+    ///     domain it really admits, reported as inferred, and silent: every draw still compiles and still
+    ///     constructs, so nothing sent the developer looking, which is what makes it worse than a crash.
+    ///     <para>
+    ///         <b>The boundary is the statement the reading was handed</b>, and that is what keeps this a
+    ///         walk of three lines rather than a second model of the language. <see cref="Read" /> hands a
+    ///         leading statement, so the whole nesting inside it is asked about; <see cref="ReadChain" />
+    ///         hands the <c>if</c> whose branch does not throw, so that branch refuses; and it hands the body
+    ///         of a terminal <c>else</c>, which stops the walk before the clause — correctly, since reaching
+    ///         the <c>else</c> of a branch that throws unconditionally is what every construction that
+    ///         survives did. <see cref="ThrowsUnconditionally" /> is therefore not restated here: it stays
+    ///         where it is, deciding which <c>else</c> bodies reach this method at all.
+    ///     </para>
+    /// </remarks>
+    private static bool RunsUnconditionally(StatementSyntax carrier, StatementSyntax boundary) {
+        SyntaxNode node = carrier;
+
+        while (!ReferenceEquals(node, boundary)) {
+            if (node.Parent is not SyntaxNode parent || !AlwaysRuns(parent, node)) { return false; }
+
+            node = parent;
+        }
+
+        return true;
+    }
+
+    /// <summary>Whether <paramref name="parent" /> runs <paramref name="child" /> every time it runs itself.</summary>
+    /// <remarks>
+    ///     <b>Only a construct that scopes its body passes, and every other one refuses.</b> A <c>using</c>,
+    ///     a <c>lock</c> and a <c>checked</c> block run the body they wrap every time, and so does a
+    ///     <c>finally</c>, whose rejection propagates like any other. A loop may run its body no times, a
+    ///     <c>switch</c> picks one section among several, a <c>catch</c> runs only when something threw, a
+    ///     <c>try</c> sits under a handler able to swallow the very rejection the guard makes, and a lambda
+    ///     body runs where it is called rather than where it is written.
+    ///     <para>
+    ///         That default is the safe side of this question, and it is the mirror of the one
+    ///         <see cref="ParameterWrites" /> keeps for writes: there an unlisted construct is asked about
+    ///         <b>entire</b>, here it refuses. Both cost a constraint and neither can emit a wrong one, so
+    ///         forgetting a construct is a matter of precision rather than of soundness — which is what lets
+    ///         this list stay short instead of pretending to be complete.
+    ///     </para>
+    /// </remarks>
+    private static bool AlwaysRuns(SyntaxNode parent, SyntaxNode child) {
+        return parent switch {
+            BlockSyntax or CheckedStatementSyntax or UnsafeStatementSyntax or FinallyClauseSyntax => true,
+            UsingStatementSyntax scoped                                                           => ReferenceEquals(child, scoped.Statement),
+            LockStatementSyntax held                                                              => ReferenceEquals(child, held.Statement),
+            TryStatementSyntax attempt                                                            => ReferenceEquals(child, attempt.Finally),
+            _                                                                                     => false
         };
     }
 

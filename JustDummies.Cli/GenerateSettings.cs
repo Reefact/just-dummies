@@ -6,13 +6,11 @@ using Spectre.Console.Cli;
 namespace JustDummies.Cli;
 
 /// <summary>
-///     The command line of <c>dum generate</c>, as specified in §3 — and the whole of it: there is no config
-///     file, no <c>init</c>, no <c>list</c>, no <c>--all</c> and no <c>check</c>.
+///     The command line of <c>dum generate</c>, as specified in §3 — and the whole of it: there is no
+///     <c>init</c>, no <c>list</c>, no <c>--all</c> and no <c>check</c>. The one file read besides it,
+///     <c>dum.json</c> (§3.3), supplies defaults for these same options and is validated through the same
+///     <see cref="Validate" /> — it can never widen this surface.
 /// </summary>
-/// <remarks>
-///     Declared in full although nothing reads it yet, because this is the surface the specification fixes and the
-///     one a developer will meet first. What is missing is the behaviour behind it, not the shape.
-/// </remarks>
 internal sealed class GenerateSettings : CommandSettings {
 
     /// <summary>The recap of §6, written for a reader — what a run reports unless told otherwise.</summary>

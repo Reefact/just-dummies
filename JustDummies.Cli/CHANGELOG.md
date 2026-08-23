@@ -10,6 +10,44 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Fixed
 
+- **A guard delegated to a throw helper is no longer read where a condition decides whether it runs.**
+  `if (strict) { ArgumentOutOfRangeException.ThrowIfNegative(value); }` read
+  `Any.Int32().GreaterThanOrEqualTo(0)`, reported as inferred with nothing worth looking at, over a
+  constructor whose `strict: false` callers construct happily with a negative. The loss was silent
+  rather than loud — every draw still compiled and still constructed — which is what made it worse
+  than a crash: nothing sent the developer looking. The `if` spelling has always demanded that the
+  branch throw unconditionally before its condition is read; the call spelling now answers the same
+  question, asked of the statement carrying the call.
+
+  The `if` was only the spelling it was reported in.
+  `switch (value) { case 0: ThrowIfNegative(value); }` ran the helper exactly where it cannot throw,
+  a `catch` over an empty `try` never ran at all, and a loop free to run its body no times was read
+  as though it always did — all three narrowed the draw the same way. A call is now read only where
+  every construct between it and the statement the reading was handed runs its body every time: a
+  plain block, a `using`, a `lock`, a `checked` or `unchecked` block, an `unsafe` block, a
+  `finally`. A helper inside an `else` still reads, because the branch above it throws
+  unconditionally and every construction that survives went through that `else`.
+
+  **This narrows what compiles:** such a parameter is now marked `unread guards`, so its scaffold
+  blocks compilation until its author confirms the generator, where before it compiled over a
+  constraint that was wrong. The shape most likely to meet it is validate-what-is-present,
+  `if (nickname is not null) { ThrowIfNullOrWhiteSpace(nickname); }` — nothing tells the tool that
+  condition apart from `if (strict)`. There the generator it keeps is usually the one it would have
+  written anyway, so the cost is the confirmation rather than a constraint.
+- **A constructor initializer that hands a parameter over by reference no longer leaves the guards
+  below it readable.** `: this(ref value, true)`, delegating to a constructor that writes through
+  that `ref`, read `.GreaterThanOrEqualTo(0)` over a value the delegation had already replaced —
+  the same shape as the placement fix above, in the one spelling it missed: `: this(Normalize(ref value))`
+  carries its modifier inside the argument's expression, where data-flow analysis sees it, while
+  `: this(ref value, …)` carries it on the argument, leaving the analysed region a bare identifier
+  the compiler reports as read. Nothing asked the question before this; the initializer's own symbol
+  is now asked which parameters it receives by reference — asked of the invoked constructor rather
+  than by matching the `ref` and `out` keywords in the text, for the same reason the rest of the
+  placement question goes to data-flow analysis.
+
+  **This narrows what compiles:** such a parameter is now marked `unread guards`, so its scaffold
+  blocks compilation until its author confirms the generator, where before it compiled over a
+  constraint that was wrong.
 - **A guard the tool cannot place above every write to its parameter is no longer read as a bound on
   the drawn value.** `if (percent < 0) { throw … } percent = 100 - percent; if (percent < 0) { throw … }`
   read `.GreaterThanOrEqualTo(0)` over a real domain of 0 to 100 — the one shape where the tool was
@@ -38,8 +76,8 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   drawn value. Two writes are refused wherever they are written: one inside a local function or a
   lambda, which runs when called rather than where it is declared, and any write in a body carrying a
   `goto`. The cost of asking
-  entire is precision — a guard inside a `try`, a `switch` or a `using` whose construct writes the
-  parameter only *after* it is refused although it was readable — and that trade is deliberate.
+  entire is precision — a guard inside a `using` or a `lock` whose construct writes the parameter only
+  *after* it is refused although it was readable — and that trade is deliberate.
 
   **This narrows what compiles:** such a parameter is now marked `unread guards`, so its scaffold
   blocks compilation until its author confirms the generator, where before it compiled over a

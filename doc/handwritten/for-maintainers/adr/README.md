@@ -21,7 +21,7 @@ and the **Origin** column says how each one got here:
   but its record stays live in `Reefact/first-class-errors` too, because that
   repository still applies it. Both copies are now independent: either side can
   supersede its own without touching the other. 9 decisions.
-* **recorded here** — decided in this repository, on its own. 42 decisions.
+* **recorded here** — decided in this repository, on its own. 43 decisions.
 
 The numbers are this base's own, assigned in the order the decisions were
 recorded upstream ([ADR-0045](0045-renumber-the-decision-base.md)); every ADR
@@ -196,3 +196,4 @@ failure mode of a "not now" is that nobody remembers the option existed on the d
 | [ADR-0083](0083-block-compilation-on-a-guard-the-engine-cannot-vouch-for.md) | Block compilation on a guard the engine cannot vouch for | Accepted | recorded here |
 | [ADR-0084](0084-place-a-guard-by-syntax-reach-not-a-control-flow-graph.md) | Place a guard by syntax reach, not by a control-flow graph | Accepted | recorded here |
 | [ADR-0085](0085-change-the-guard-reader-only-against-a-field-report.md) | Change the guard reader only against a report from the field | Accepted | recorded here |
+| [ADR-0086](0086-read-the-guard-helpers-of-named-libraries.md) | Read the guard helpers of named libraries, in both their spellings | Accepted | recorded here |

@@ -22,7 +22,7 @@ n'existe, et la colonne **Origine** dit comment chacune est arrivée ici :
   aussi, car ce dépôt l'applique encore. Les deux copies sont désormais
   indépendantes : chaque côté peut remplacer la sienne sans toucher à l'autre.
   9 décisions.
-* **consigné ici** — décidé dans ce dépôt, de son propre chef. 42 décisions.
+* **consigné ici** — décidé dans ce dépôt, de son propre chef. 43 décisions.
 
 Les numéros appartiennent à cette base, attribués dans l'ordre où les décisions
 ont été consignées en amont
@@ -211,3 +211,4 @@ que l'option existait le jour où elle compterait.
 | [ADR-0083](0083-block-compilation-on-a-guard-the-engine-cannot-vouch-for.fr.md) | Bloquer la compilation sur une garde que le moteur ne peut pas cautionner | Accepted | consigné ici |
 | [ADR-0084](0084-place-a-guard-by-syntax-reach-not-a-control-flow-graph.fr.md) | Placer une garde par portée syntaxique, non par un graphe de flot de contrôle | Accepted | consigné ici |
 | [ADR-0085](0085-change-the-guard-reader-only-against-a-field-report.fr.md) | Ne changer le lecteur de gardes que contre un signalement du terrain | Accepted | consigné ici |
+| [ADR-0086](0086-read-the-guard-helpers-of-named-libraries.fr.md) | Lire les aides de garde de bibliothèques nommées, dans leurs deux orthographes | Accepted | consigné ici |

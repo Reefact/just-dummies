@@ -1,0 +1,14 @@
+# The blank issue stays available: this file adds a reminder to the chooser page, it does not put a
+# form in front of anyone.
+#
+# The link exists because some options are refused on purpose and carry the condition that would
+# reopen them. The failure mode of such a decision is not being wrong, it is that on the day a report
+# from the field finally meets the condition, nobody remembers the option existed. The register is
+# the ADR base's "Considered, not adopted" section, and it is meant to be read before filing —
+# a report may already have an answer, or may be the one that revives a decision.
+blank_issues_enabled: true
+
+contact_links:
+  - name: Considered, not adopted — check before filing
+    url: https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-maintainers/adr/README.md#considered-not-adopted
+    about: Options this project refused on purpose, each with the signature to match a report against and what would reopen it. If your case matches one, say so in the issue — that is the evidence those decisions are waiting for.

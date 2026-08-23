@@ -75,7 +75,7 @@ Le placement d'une garde se répond depuis la portée syntaxique — les région
 garde est évaluée, tout construct dont l'ordre n'est pas lu étant interrogé entier — et non depuis le
 graphe de flot de contrôle de Roslyn.
 
-## Raisonnement
+## Justification
 
 **Ce qui se joue est la direction du défaut, pas la précision.** Le parcours syntaxique répond d'un
 construct non modélisé en l'interrogeant entier, ce qui sur-approxime et donc refuse. Un ensemble

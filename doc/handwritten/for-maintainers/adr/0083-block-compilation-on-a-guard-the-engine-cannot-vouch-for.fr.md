@@ -68,7 +68,7 @@ Un paramètre portant `unread guards` bloque la compilation de la même façon q
 résolu le fait déjà, avec son generator inféré gardé comme base de travail de la fabrique, sous la
 ligne qui la bloque.
 
-## Raisonnement
+## Justification
 
 **Un generator qui compile et échoue parfois est un résultat pire qu'un generator qui ne compile
 jamais.** ADR-0060 a déjà pesé ce compromis pour le paramètre sans aucun generator : un signal à la

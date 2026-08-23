@@ -25,7 +25,7 @@ fois le code qui l'a mise en œuvre remanié.
 
 | | |
 | --- | --- |
-| [Base de décisions](./adr/README.fr.md) | les 73 enregistrements, leurs conventions, et l'index |
+| [Base de décisions](./adr/README.fr.md) | tous les enregistrements, leurs conventions, et l'index |
 | [Gabarit](./adr/template.fr.md) | la forme que prend un nouvel enregistrement |
 | [Référence d'implémentation](./specifications/adr-implementation-reference.fr.md) | ce que chaque décision acceptée impose réellement, et où |
 | [Workflow `adr-check`](./workflows/adr-check.fr.md) | la vérification consultative qui lit une pull request contre la base |

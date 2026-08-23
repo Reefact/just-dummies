@@ -120,7 +120,7 @@ Invoke on demand — `.claude/skills/`:
 
 | Skill | When |
 |---|---|
-| `adr-check` | before finalizing a pull request, or when a change touches a contract, an invariant, a floor or a policy. **Selects** the few relevant records from the index — never reads all 73 |
+| `adr-check` | before finalizing a pull request, or when a change touches a contract, an invariant, a floor or a policy. **Selects** the few relevant records from the index — never reads the base whole |
 | `open-pr` | preparing a pull request: title, template, honest testing claims |
 | `review-pr` | reviewing one: the Conventional Comments contract |
 | `review-feedback` | acting on review findings: the three routes, and when to escalate |

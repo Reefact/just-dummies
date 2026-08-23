@@ -675,10 +675,20 @@ public sealed class GuardBoundaryTests {
     ///         analyse an initializer argument — a region reported as unanalysable would refuse here, and
     ///         this row would fail rather than pass quietly.
     ///     </para>
+    ///     <para>
+    ///         The direct rows are a second question, not a second spelling of the first. Where the modifier
+    ///         sits <b>inside</b> the argument's expression the analysis covers it; where it belongs to the
+    ///         <b>argument</b>, the region analysed is the bare identifier under it and the compiler reports
+    ///         it read rather than written. <c>: this(ref value, true)</c> read
+    ///         <c>GreaterThanOrEqualTo(0)</c> over a delegation that had already replaced the drawn value,
+    ///         which is why the reading asks the invoked constructor what it receives by reference.
+    ///     </para>
     /// </remarks>
     [Theory(DisplayName = "A constructor initializer is unread only where it writes the parameter.")]
     [InlineData("Any.Int32()", true, "this(Normalize(ref value), true)")]
     [InlineData("Any.Int32()", true, "this(Normalize(out value), true)")]
+    [InlineData("Any.Int32()", true, "this(ref value, true)")]
+    [InlineData("Any.Int32()", true, "this(out value, \"\")")]
     [InlineData("Any.Int32().GreaterThanOrEqualTo(0)", false, "this(value, true)")]
     public void AnInitializerIsUnreadOnlyWhereItWritesTheParameter(string expected, bool unread, string initializer) {
         ScaffoldOutcome outcome = Subject.Scaffold($$"""
@@ -693,6 +703,10 @@ public sealed class GuardBoundaryTests {
                                                        }
 
                                                        private Subject(int seed, bool _) { kept = seed; }
+
+                                                       private Subject(ref int seed, bool _) { seed = 100 - seed; kept = seed; }
+
+                                                       private Subject(out int seed, string _) { seed = 42; kept = seed; }
 
                                                        private static int Normalize(ref int value) { value = 100 - value; return value; }
 
@@ -709,18 +723,24 @@ public sealed class GuardBoundaryTests {
 
     // `: base(…)` is the same rule and a different syntax node, so it is pinned rather than assumed to
     // follow: a base initializer may write a parameter through `ref` or `out` exactly as a `this` one may.
-    [Fact(DisplayName = "A base initializer that writes the parameter ends the reading too.")]
-    public void ABaseInitializerThatWritesEndsTheReading() {
-        ScaffoldOutcome outcome = Subject.Scaffold("""
+    // Both spellings, because they reach the answer by different routes — the nested one through data flow
+    // over the argument's expression, the direct one through the base constructor's own symbol.
+    [Theory(DisplayName = "A base initializer that writes the parameter ends the reading too.")]
+    [InlineData("base(Normalize(out value))")]
+    [InlineData("base(ref value)")]
+    public void ABaseInitializerThatWritesEndsTheReading(string initializer) {
+        ScaffoldOutcome outcome = Subject.Scaffold($$"""
                                                    public abstract class Root {
                                                        protected Root(int seed) { }
+
+                                                       protected Root(ref int seed) { seed = 100 - seed; }
                                                    }
 
                                                    public sealed class Subject : Root {
 
                                                        private readonly int kept;
 
-                                                       public Subject(int value) : base(Normalize(out value)) {
+                                                       public Subject(int value) : {{initializer}} {
                                                            if (value < 0) { throw new ArgumentOutOfRangeException(nameof(value)); }
 
                                                            kept = value;
@@ -737,15 +757,17 @@ public sealed class GuardBoundaryTests {
 
     // The initializer obeys the same scoping as every other write: it ends the reading of the parameter it
     // writes and of no other, so the constructor's remaining guards are untouched.
-    [Fact(DisplayName = "An initializer write ends the reading of its own parameter only.")]
-    public void AnInitializerWriteEndsTheReadingOfItsOwnParameterOnly() {
-        ScaffoldOutcome outcome = Subject.Scaffold("""
+    [Theory(DisplayName = "An initializer write ends the reading of its own parameter only.")]
+    [InlineData("this(Normalize(ref percent), label, true)")]
+    [InlineData("this(ref percent, label, true)")]
+    public void AnInitializerWriteEndsTheReadingOfItsOwnParameterOnly(string initializer) {
+        ScaffoldOutcome outcome = Subject.Scaffold($$"""
                                                    public sealed class Subject {
 
                                                        private readonly int percent;
                                                        private readonly string label;
 
-                                                       public Subject(int percent, string label) : this(Normalize(ref percent), label, true) {
+                                                       public Subject(int percent, string label) : {{initializer}} {
                                                            if (percent < 0) { throw new ArgumentOutOfRangeException(nameof(percent)); }
                                                            if (label.Length < 8) { throw new ArgumentException(nameof(label)); }
 
@@ -754,6 +776,8 @@ public sealed class GuardBoundaryTests {
                                                        }
 
                                                        private Subject(int seed, string text, bool _) { percent = seed; label = text; }
+
+                                                       private Subject(ref int seed, string text, bool _) { seed = 100 - seed; percent = seed; label = text; }
 
                                                        private static int Normalize(ref int value) { value = 100 - value; return value; }
 

@@ -1281,4 +1281,93 @@ public sealed class GuardBoundaryTests {
         Check.That(outcome.Plan.Parameters[0].Provenance.HasFlag(Provenance.NoSource)).IsTrue();
     }
 
+    /// <summary>
+    ///     A guard a statement above it can jump past states nothing about the drawn value, whichever
+    ///     spelling it is written in.
+    /// </summary>
+    /// <remarks>
+    ///     The other half of the question, and the half no ancestor of the guard can answer:
+    ///     <c>if (strict) { kept = value; return; }</c> encloses nothing at all, and yet
+    ///     <c>new Subject(strict: true, value: -5)</c> constructs happily while the reading emitted
+    ///     <c>GreaterThanOrEqualTo(0)</c> — inferred, with nothing to look at, over half a domain the
+    ///     constructor admits.
+    ///     <para>
+    ///         The third row is the one that decides where the fix belongs: the same <c>return</c> above an
+    ///         <c>if</c> guard reads exactly as wrongly, so the question is asked of the leading scan rather
+    ///         than of the call rule. The last is the shape a jump takes when it is not a <c>return</c> —
+    ///         <c>-1</c> is the one value that reaches the assignment without meeting the guard.
+    ///     </para>
+    /// </remarks>
+    [Theory(DisplayName = "A guard a jump above it can skip is unread, in either spelling.")]
+    [InlineData("""
+                        if (strict) { kept = value; return; }
+                        ArgumentOutOfRangeException.ThrowIfNegative(value);
+                """)]
+    [InlineData("""
+                        if (strict) return;
+                        ArgumentOutOfRangeException.ThrowIfNegative(value);
+                """)]
+    [InlineData("""
+                        if (strict) { kept = value; return; }
+                        if (value < 0) { throw new ArgumentOutOfRangeException(nameof(value)); }
+                """)]
+    [InlineData("""
+                        switch (strict) { case true: kept = value; return; default: break; }
+                        ArgumentOutOfRangeException.ThrowIfNegative(value);
+                """)]
+    [InlineData("""
+                        if (value == -1) { goto assign; }
+                        ArgumentOutOfRangeException.ThrowIfNegative(value);
+                        assign:
+                """)]
+    public void AGuardAJumpAboveItCanSkipIsUnread(string body) {
+        ScaffoldedParameter parameter = ConditionedSubject(body).Plan!.Parameters[1];
+
+        Check.That(parameter.Expression).IsEqualTo("Any.Int32()");
+        Check.That(parameter.Provenance.HasFlag(Provenance.UnreadGuards)).IsTrue();
+        Check.That(parameter.RequiresVerification).IsTrue();
+    }
+
+    // The rule is positional, not a refusal of any body that returns: a jump BELOW a guard cannot skip it,
+    // and refusing there would cost a constraint for nothing. This is the pair that keeps the rule honest —
+    // the same `return`, the same guard, and only their order differs.
+    [Fact(DisplayName = "A jump below a guard leaves it read.")]
+    public void AJumpBelowAGuardLeavesItRead() {
+        ScaffoldedParameter parameter = Subject.GuardedBy("int", """
+                                                                        ArgumentOutOfRangeException.ThrowIfNegative(value);
+
+                                                                        if (value == 7) { return; }
+                                                                """);
+
+        Check.That(parameter.Expression).IsEqualTo("Any.Int32().GreaterThanOrEqualTo(0)");
+        Check.That(parameter.Provenance.HasFlag(Provenance.UnreadGuards)).IsFalse();
+    }
+
+    /// <summary>
+    ///     A <c>return</c> inside a body the constructor merely declares leaves that constructor, not this
+    ///     one, so the guards below it still read.
+    /// </summary>
+    /// <remarks>
+    ///     The row that decided the mechanism. An ordinary helper declared among the leading statements
+    ///     nearly always carries a <c>return</c>, so a rule matching the spelling in the tree would have
+    ///     refused the guards under every one of them — a mark on constructors that carry no jump at all.
+    ///     The compiler's own control-flow analysis excludes both bodies from the region's exit points, and
+    ///     is asked instead.
+    /// </remarks>
+    [Theory(DisplayName = "A return inside a lambda or a local function is not the constructor's.")]
+    [InlineData("""
+                        static int Doubled(int candidate) { return candidate * 2; }
+                        ArgumentOutOfRangeException.ThrowIfNegative(value);
+                """)]
+    [InlineData("""
+                        Func<int, int> doubled = candidate => { return candidate * 2; };
+                        ArgumentOutOfRangeException.ThrowIfNegative(value);
+                """)]
+    public void AReturnInsideADeferredBodyIsNotTheConstructors(string body) {
+        ScaffoldedParameter parameter = Subject.GuardedBy("int", body);
+
+        Check.That(parameter.Expression).IsEqualTo("Any.Int32().GreaterThanOrEqualTo(0)");
+        Check.That(parameter.Provenance.HasFlag(Provenance.UnreadGuards)).IsFalse();
+    }
+
 }

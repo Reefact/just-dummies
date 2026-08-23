@@ -28,6 +28,16 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   `finally`. A helper inside an `else` still reads, because the branch above it throws
   unconditionally and every construction that survives went through that `else`.
 
+  A statement **above** a guard can decide the same thing, and that half is closed too. In
+  `if (lenient) { kept = value; return; } ThrowIfNegative(value);` nothing encloses the guard at all,
+  yet `new Subject(lenient: true, value: -5)` constructs happily while the tool wrote
+  `.GreaterThanOrEqualTo(0)` over half a domain the constructor admits. A leading statement that can
+  send execution past the ones below it — a `return`, a `goto` — now ends the reading of every guard
+  under it, in both spellings, since the same `return` above an `if` guard read exactly as wrongly.
+  Which statements can jump goes to the compiler's control-flow analysis, so a `return` inside a
+  lambda or a local function costs nothing (it leaves that body, not the constructor), a `throw` is
+  not a jump at all, and a jump *below* a guard leaves it read.
+
   **This narrows what compiles:** such a parameter is now marked `unread guards`, so its scaffold
   blocks compilation until its author confirms the generator, where before it compiled over a
   constraint that was wrong. The shape most likely to meet it is validate-what-is-present,

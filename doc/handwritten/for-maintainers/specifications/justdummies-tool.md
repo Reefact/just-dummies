@@ -612,7 +612,11 @@ nothing in the text says so.
 The price of asking entire is precision, and it is deliberate: a guard inside a `try`, a `switch` or
 a `using` whose construct writes the parameter only *after* that guard is refused although it was
 readable. Refusing a constraint costs an `unread guards` mark its author resolves once; emitting a
-wrong one costs a generator whose every draw the constructor rejects, reported as inferred.
+wrong one costs a generator whose every draw the constructor rejects, reported as inferred. Roslyn's
+own control-flow graph was evaluated for this question and not taken, because the direction of its
+default is the opposite one — an edge it does not carry reads as *no write ran*, where a construct
+this walk does not model reads as *ask about it entire*
+([ADR-0084](../adr/0084-place-a-guard-by-syntax-reach-not-a-control-flow-graph.md)).
 
 `ref` and `out` on the constructor's **own** parameters need no rule here — §5.1 already declines
 such a constructor, since the emitted factory could not call it.

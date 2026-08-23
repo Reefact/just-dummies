@@ -21,7 +21,7 @@ and the **Origin** column says how each one got here:
   but its record stays live in `Reefact/first-class-errors` too, because that
   repository still applies it. Both copies are now independent: either side can
   supersede its own without touching the other. 9 decisions.
-* **recorded here** — decided in this repository, on its own. 40 decisions.
+* **recorded here** — decided in this repository, on its own. 41 decisions.
 
 The numbers are this base's own, assigned in the order the decisions were
 recorded upstream ([ADR-0045](0045-renumber-the-decision-base.md)); every ADR
@@ -96,6 +96,16 @@ Seven of the decisions below each bound a surface or an effort; ADR-0046 is the 
 it is the default answer to *"should the generator handle this case too?"*. Read it before the
 others. Its number is late because [numbers here are stable handles, not a reading order](0045-renumber-the-decision-base.md)
 and it was decided on 2026-08-01 — the index carries the order, the numbering carries identity.
+
+## Considered, not adopted
+
+Some options are refused on purpose, and each refusal carries the condition that would reopen it.
+They are listed here so that a report from the field meets the record rather than a blank page — the
+failure mode of a "not now" is that nobody remembers the option existed on the day it would matter.
+
+| Option | Record | What would revive it |
+|---|---|---|
+| Roslyn's control-flow graph for guard placement | [ADR-0084](0084-place-a-guard-by-syntax-reach-not-a-control-flow-graph.md) | A constructor from a real codebase that the placement rule refuses and whose author minded, a second engine question needing the same graph, or exception-handler entry proving to be an ordinary edge at the Roslyn floor. The record carries the signature to match a report against. |
 
 ## Index
 
@@ -184,3 +194,4 @@ and it was decided on 2026-08-01 — the index carries the order, the numbering 
 | [ADR-0081](0081-declare-one-top-level-type-per-file.md) | Declare one top-level type per file, enforced by a third-party style analyzer | Accepted | recorded here |
 | [ADR-0082](0082-answer-for-the-finished-chain-not-each-constraint.md) | Answer for the finished chain, not for each constraint read | Accepted | recorded here |
 | [ADR-0083](0083-block-compilation-on-a-guard-the-engine-cannot-vouch-for.md) | Block compilation on a guard the engine cannot vouch for | Accepted | recorded here |
+| [ADR-0084](0084-place-a-guard-by-syntax-reach-not-a-control-flow-graph.md) | Place a guard by syntax reach, not by a control-flow graph | Accepted | recorded here |

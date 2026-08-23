@@ -22,7 +22,7 @@ n'existe, et la colonne **Origine** dit comment chacune est arrivée ici :
   aussi, car ce dépôt l'applique encore. Les deux copies sont désormais
   indépendantes : chaque côté peut remplacer la sienne sans toucher à l'autre.
   9 décisions.
-* **consigné ici** — décidé dans ce dépôt, de son propre chef. 40 décisions.
+* **consigné ici** — décidé dans ce dépôt, de son propre chef. 41 décisions.
 
 Les numéros appartiennent à cette base, attribués dans l'ordre où les décisions
 ont été consignées en amont
@@ -111,6 +111,17 @@ aussi ? »*. Lisez-la avant les autres. Son numéro est tardif parce que
 [les numéros sont ici des poignées stables, non un ordre de lecture](0045-renumber-the-decision-base.fr.md)
 et qu'elle a été décidée le 01/08/2026 — l'index porte l'ordre, la numérotation porte l'identité.
 
+## Envisagé, non retenu
+
+Certaines options sont refusées à dessein, et chaque refus porte la condition qui le rouvrirait.
+Elles sont listées ici pour qu'un signalement venu du terrain rencontre l'enregistrement plutôt
+qu'une page blanche — le mode de défaillance d'un « pas maintenant » est que personne ne se souvienne
+que l'option existait le jour où elle compterait.
+
+| Option | Enregistrement | Ce qui la rouvrirait |
+|---|---|---|
+| Le graphe de flot de contrôle de Roslyn pour le placement d'une garde | [ADR-0084](0084-place-a-guard-by-syntax-reach-not-a-control-flow-graph.fr.md) | Un constructeur issu d'un vrai code que la règle de placement refuse et dont l'auteur s'en est plaint, une seconde question du moteur ayant besoin du même graphe, ou l'entrée dans un gestionnaire d'exception s'avérant une arête ordinaire au plancher Roslyn. L'enregistrement porte la signature à laquelle confronter un signalement. |
+
 ## Index
 
 | ADR | Titre | Statut | Origine |
@@ -198,3 +209,4 @@ et qu'elle a été décidée le 01/08/2026 — l'index porte l'ordre, la numéro
 | [ADR-0081](0081-declare-one-top-level-type-per-file.fr.md) | Déclarer un seul type de premier niveau par fichier, via un analyseur de style tiers | Accepted | consigné ici |
 | [ADR-0082](0082-answer-for-the-finished-chain-not-each-constraint.fr.md) | Répondre de la chaîne finie, pas de chaque contrainte lue | Accepted | consigné ici |
 | [ADR-0083](0083-block-compilation-on-a-guard-the-engine-cannot-vouch-for.fr.md) | Bloquer la compilation sur une garde que le moteur ne peut pas cautionner | Accepted | consigné ici |
+| [ADR-0084](0084-place-a-guard-by-syntax-reach-not-a-control-flow-graph.fr.md) | Placer une garde par portée syntaxique, non par un graphe de flot de contrôle | Accepted | consigné ici |

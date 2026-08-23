@@ -1025,7 +1025,62 @@ internal static class Guards {
             // wherever it sits.
             if (deferred.Any(called => Written(called, parameter))) { return true; }
 
+            // A modifier on the argument sits outside the expression the data-flow question below analyses,
+            // so that question answers "read" for a parameter the delegation is free to replace.
+            if (HandedByReference(parameter)) { return true; }
+
             return (ordered ? Before(guard) : Everything()).Any(region => Written(region, parameter));
+        }
+
+        /// <summary>
+        ///     Whether the constructor initializer hands <paramref name="parameter" /> to the constructor it
+        ///     delegates to by reference, which is a write the region walk cannot see.
+        /// </summary>
+        /// <remarks>
+        ///     <c>: this(Normalise(ref value))</c> is answered by data flow like any other write — the
+        ///     modifier is inside an expression the analysis covers. <c>: this(ref value, true)</c> is not:
+        ///     the modifier belongs to the <b>argument</b>, and the region analysed is the bare identifier
+        ///     under it, which the compiler reports as read rather than written. Measured: the guard below
+        ///     such an initializer read <c>GreaterThanOrEqualTo(0)</c> over a constructor whose delegation
+        ///     had already replaced the drawn value, which is the shape a guard must never be read from.
+        ///     <para>
+        ///         Asked of the invoked symbol rather than of the <c>ref</c> and <c>out</c> keywords, for the
+        ///         same reason the write question goes to data flow at all: what the callee may write is a
+        ///         fact about the constructor being delegated to, not about how the call is spelled. A named
+        ///         argument is matched by name and every other by position.
+        ///     </para>
+        ///     <para>
+        ///         Anything but <see cref="RefKind.None" /> counts, <c>in</c> included, although <c>in</c>
+        ///         cannot write: naming the kinds that can would have to be right about every kind the
+        ///         language grows, and being wrong there costs a guard read about a value the constructor
+        ///         replaced. Being wrong the other way costs one confirmation on an initializer nobody
+        ///         writes.
+        ///     </para>
+        /// </remarks>
+        private bool HandedByReference(IParameterSymbol parameter) {
+            if (initializer is null || model.GetSymbolInfo(initializer).Symbol is not IMethodSymbol delegated) { return false; }
+
+            SeparatedSyntaxList<ArgumentSyntax> arguments = initializer.ArgumentList.Arguments;
+
+            for (int index = 0; index < arguments.Count; index++) {
+                if (Handed(delegated, arguments[index], index) is not { RefKind: not RefKind.None }) { continue; }
+
+                if (model.GetSymbolInfo(arguments[index].Expression).Symbol is IParameterSymbol handed
+                 && SymbolEqualityComparer.Default.Equals(handed, parameter)) { return true; }
+            }
+
+            return false;
+        }
+
+        /// <summary>The parameter of <paramref name="delegated" /> that <paramref name="argument" /> fills.</summary>
+        private static IParameterSymbol? Handed(IMethodSymbol delegated, ArgumentSyntax argument, int index) {
+            if (argument.NameColon is not null) {
+                string named = argument.NameColon.Name.Identifier.ValueText;
+
+                return delegated.Parameters.FirstOrDefault(parameter => parameter.Name == named);
+            }
+
+            return index < delegated.Parameters.Length ? delegated.Parameters[index] : null;
         }
 
         /// <summary>Every region the constructor runs, for when its order cannot be read at all.</summary>

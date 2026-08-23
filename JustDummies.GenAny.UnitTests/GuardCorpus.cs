@@ -202,6 +202,26 @@ internal static class GuardCorpus {
                                                                   }
                                                                   """, requiresVerification: true),
 
+        // ---- The guard the engine reads correctly, under a condition deciding whether it runs at all. Its
+        // ---- domain is every int a `strict: false` caller may pass, and reading the helper as a bound
+        // ---- narrowed the draw to zero and above — silently, since every draw still compiled and still
+        // ---- constructed. So the engine blocks compilation over the guard it cannot vouch for (ADR-0083)
+        // ---- rather than drawing under a recap claiming the parameter inferred.
+
+        new GuardedShape("conditioned-helper-guard", "Allowance", """
+                                                                  public sealed class Allowance {
+
+                                                                      private readonly int amount;
+
+                                                                      public Allowance(bool strict, int amount) {
+                                                                          if (strict) { ArgumentOutOfRangeException.ThrowIfNegative(amount); }
+
+                                                                          this.amount = amount;
+                                                                      }
+
+                                                                  }
+                                                                  """, requiresVerification: true),
+
         // ---- The one shape where the engine was confidently wrong rather than blind: it read the second
         // ---- guard correctly and attributed it to a value the constructor no longer holds. The domain is 0
         // ---- to 100, well within the library's reach — what the engine cannot see is which value the guard

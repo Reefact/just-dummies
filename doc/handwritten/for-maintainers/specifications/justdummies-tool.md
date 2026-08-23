@@ -1687,7 +1687,7 @@ exercised by §17.
 
 ### 14.6 Analyzer inventory
 
-32 diagnostic identifiers over 31 analyzer classes — `JD023` and `JD024` share one.
+33 diagnostic identifiers over 32 analyzer classes — `JD023` and `JD024` share one.
 
 | Range | Category | Severities |
 |---|---|---|
@@ -1709,6 +1709,7 @@ exercised by §17.
 | `JD027`–`JD028` | Composition | Warning |
 | `JD029`–`JD031` | Constraints | Info |
 | `JD032` | Constraints | Warning |
+| `JD033` | Constraints | Info |
 
 Three facts about them drive decisions in this document:
 

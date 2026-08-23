@@ -637,7 +637,10 @@ Le prix d'une interrogation entière, c'est la précision, et il est délibéré
 un `switch` ou un `using` dont la construction n'écrit le paramètre qu'*après* elle est refusée alors
 qu'elle était lisible. Refuser une contrainte coûte un marquage `unread guards` que son auteur lève une
 fois ; en émettre une fausse coûte un generator dont le constructeur rejette chaque tirage, rapporté
-comme inféré.
+comme inféré. Le graphe de flot de contrôle de Roslyn a été évalué pour cette question et n'a pas été
+retenu, parce que la direction de son défaut est l'inverse — une arête qu'il ne porte pas se lit
+*aucune écriture n'a tourné*, là où un construct que ce parcours ne modélise pas se lit *l'interroger
+entier* ([ADR-0084](../adr/0084-place-a-guard-by-syntax-reach-not-a-control-flow-graph.fr.md)).
 
 `ref` et `out` sur les paramètres **propres** du constructeur n'ont besoin d'aucune règle ici — le
 §5.1 décline déjà un tel constructeur, puisque la fabrique émise ne saurait l'appeler.

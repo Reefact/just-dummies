@@ -178,6 +178,28 @@ internal static class GuardCorpus {
                                                                  }
                                                                  """),
 
+        // ---- §5.1's second rule, driven through every oracle at once: no accessible constructor, so
+        // ---- Generate() calls the factory — whose own guards §5.3 reads. The draw is the proof the wiring
+        // ---- holds: two hundred values through Reference.Create, every one of them accepted.
+
+        new GuardedShape("factory-constructed", "Reference", """
+                                                             public sealed class Reference {
+
+                                                                 private readonly string value;
+
+                                                                 private Reference(string value) {
+                                                                     this.value = value;
+                                                                 }
+
+                                                                 public static Reference Create(string value) {
+                                                                     if (string.IsNullOrWhiteSpace(value)) { throw new ArgumentException(nameof(value)); }
+
+                                                                     return new Reference(value);
+                                                                 }
+
+                                                             }
+                                                             """),
+
         // ---- The bug report behind this reading path: validation delegated to a helper, no `if` at all for
         // ---- §5.3 to parse. Its own domain is satisfiable — a length of 8 to 20 is well within the library's
         // ---- reach — the engine just cannot see the guard, which is why it blocks compilation rather than

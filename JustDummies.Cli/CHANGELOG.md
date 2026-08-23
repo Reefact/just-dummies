@@ -8,6 +8,17 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ## [Unreleased]
 
+### Added
+
+- **A type with no accessible constructor scaffolds through its own factory.** §5.1 always said it:
+  a private constructor behind a public `Create` — the canonical validating value object — has
+  `Generate()` call the factory, whose own guards are read like a constructor's. The engine refused
+  such a type as not constructible; it now scaffolds it, the recap's signature line naming the call
+  the emitted file makes (`factory Email.Create(string)`) instead of a constructor. An abstract
+  type with a factory scaffolds too — `CS0144` is about `new`, which a factory call site never
+  writes — while a type whose *public* constructors are merely ineligible still ends unresolved,
+  exactly as §5.1.5 words it.
+
 ### Fixed
 
 - **A guard delegated to a throw helper is no longer read where a condition decides whether it runs.**

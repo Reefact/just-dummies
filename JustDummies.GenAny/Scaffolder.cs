@@ -81,36 +81,44 @@ public static class Scaffolder {
         if (library is null) { return ScaffoldOutcome.Refused(ScaffoldStatus.LibraryNotReferenced); }
 
         IMethodSymbol? constructor = ChosenConstructor(target);
+        IMethodSymbol? factory     = constructor is null ? ChosenFactory(target) : null;
 
-        if (constructor is null) { return ScaffoldOutcome.Refused(ScaffoldStatus.NoEligibleConstructor); }
+        if (constructor is null && factory is null) { return ScaffoldOutcome.Refused(ScaffoldStatus.NoEligibleConstructor); }
 
-        // Choosing a constructor is not the same question as whether the emitted file can name the type and
-        // call that constructor. Each of these three finds a public constructor and then fails the developer's
-        // own build, so the refusal has to come first — a file nobody can compile, written under a recap that
-        // says every parameter was inferred, is the one outcome §7 has no row for.
+        // Choosing a construction is not the same question as whether the emitted file can name the type and
+        // make that call. Each of these finds a public construction and then fails the developer's own build,
+        // so the refusal has to come first — a file nobody can compile, written under a recap that says every
+        // parameter was inferred, is the one outcome §7 has no row for. Only the generic refusal reaches the
+        // factory path: `CS0144` and `CS9035` are both about `new`, which a factory call site never writes.
         if (IsGeneric(target)) { return ScaffoldOutcome.Refused(ScaffoldStatus.TypeIsGeneric); }
-        if (target.IsAbstract) { return ScaffoldOutcome.Refused(ScaffoldStatus.TypeIsAbstract); }
-        if (LeavesRequiredMembersUnset(target, constructor)) {
-            return ScaffoldOutcome.Refused(ScaffoldStatus.RequiredMembersUnset);
+
+        if (constructor is not null) {
+            if (target.IsAbstract) { return ScaffoldOutcome.Refused(ScaffoldStatus.TypeIsAbstract); }
+            if (LeavesRequiredMembersUnset(target, constructor)) {
+                return ScaffoldOutcome.Refused(ScaffoldStatus.RequiredMembersUnset);
+            }
         }
+
+        IMethodSymbol chosen = constructor ?? factory!;
 
         string?      fileNamespace = options.NamespaceOverride ?? NamespaceOf(target);
         TypeNames    names         = new(fileNamespace);
         GeneratorFor generators    = new(library, names, compilation, options.Naming);
-        GuardReading guards        = Guards.Read(constructor, compilation, names);
+        GuardReading guards        = Guards.Read(chosen, compilation, names);
 
         string targetName = names.Of(target);
 
         List<ScaffoldedParameter> parameters = [];
 
-        foreach (IParameterSymbol parameter in constructor.Parameters) {
+        foreach (IParameterSymbol parameter in chosen.Parameters) {
             parameters.Add(Resolve(parameter, names, generators, guards));
         }
 
         ScaffoldPlan plan = new(new TargetType(targetName, fileNamespace, StyleOf(target, fileNamespace)),
                                 TypeNaming.GeneratorNameFor(target, options.Naming),
                                 names.Usings,
-                                parameters);
+                                parameters,
+                                factory is null ? null : targetName + "." + factory.Name);
 
         return ScaffoldOutcome.Scaffolded(plan,
                                           GeneratorEmitter.Emit(plan),
@@ -189,6 +197,29 @@ public static class Scaffolder {
         return constructor.GetAttributes()
                           .Any(attribute => attribute.AttributeClass?.ToDisplayString()
                                          == "System.Diagnostics.CodeAnalysis.SetsRequiredMembersAttribute");
+    }
+
+    /// <summary>
+    ///     The factory <c>Generate()</c> calls where the type has no accessible constructor at all (§5.1).
+    /// </summary>
+    /// <remarks>
+    ///     The canonical validating value object — a private constructor behind a public <c>Create</c> — is
+    ///     this rule's whole audience, and §5.4's conventions already say what qualifies: public static,
+    ///     returning the type, one parameter, one of the four recognised names, <c>Create</c> winning ties.
+    ///     <para>
+    ///         Only where <b>no</b> public instance constructor exists, because §5.1 words it that way on
+    ///         purpose: a type whose public constructors are all ineligible — a <c>ref</c> parameter, say —
+    ///         ends unresolved rather than routed around its own declared surface.
+    ///     </para>
+    /// </remarks>
+    private static IMethodSymbol? ChosenFactory(INamedTypeSymbol target) {
+        if (target.InstanceConstructors.Any(candidate => candidate.DeclaredAccessibility == Accessibility.Public)) {
+            return null;
+        }
+
+        IReadOnlyList<IMethodSymbol> qualifying = Composition.FactoriesFor(target);
+
+        return qualifying.Count == 1 ? qualifying[0] : null;
     }
 
     /// <summary>

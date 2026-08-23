@@ -154,6 +154,22 @@ public sealed class RecapTests {
         Check.That(rendered).Contains("  value  string  Any.String().NonEmpty()\n");
     }
 
+    // The chosen construction is always printed (§5.1), and for a type built through its own factory the
+    // construction Generate() makes is that factory call — so that is what the line names.
+    [Fact(DisplayName = "A factory-built target prints the factory it is built through.")]
+    public void AFactoryBuiltTargetPrintsItsFactory() {
+        ScaffoldPlan plan = new(new TargetType("Email", "Shop.Domain", NamespaceStyle.FileScoped),
+                                "AnyEmail",
+                                ["JustDummies"],
+                                [Inferred("value", "string", "Any.String().NonEmpty()", Provenance.Guard)],
+                                factory: "Email.Create");
+
+        string rendered = Rendered(plan);
+
+        Check.That(rendered).Contains("  factory Email.Create(string)");
+        Check.That(rendered).Not.Contains("constructor");
+    }
+
     private static ScaffoldPlan WorkedExample() {
         return new ScaffoldPlan(new TargetType("Order", "Shop.Domain", NamespaceStyle.FileScoped),
                                 "AnyOrder",

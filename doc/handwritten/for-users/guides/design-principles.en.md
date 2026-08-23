@@ -32,6 +32,8 @@ cannot be honoured. It is never a value produced by a mechanism nobody can reaso
 
 ```mermaid
 flowchart TD
+    accTitle: What the generator attempts, and where it refuses
+    accDescr: A declared specification is asked whether a value can be built to satisfy all of it. Yes builds it, giving a value satisfying every constraint. Not constructively goes to a bounded redraw, which reaches that same value within the attempt budget and raises an explicit, reproducible AnyGenerationException beyond it. Constraints that can never be satisfied together raise a ConflictingAnyConstraintException naming both sides.
     S["a declared specification"] --> Q{"can a value be built<br/>to satisfy all of it?"}
     Q -->|yes| B["build it"] --> V["a value satisfying<br/>every constraint"]
     Q -->|"not constructively"| R{"bounded redraw<br/>within the attempt budget?"}

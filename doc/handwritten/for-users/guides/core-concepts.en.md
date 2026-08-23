@@ -29,6 +29,8 @@ precisely because nothing else would have caught it.
 
 ```mermaid
 flowchart TD
+    accTitle: Why a generator is a recipe rather than a value
+    accDescr: Any.Int32() returns a generator of any int. Between(1, 100) returns a further generator, and MultipleOf(5) another again. Calling Generate() twice on that last generator yields two different values, 45 and 70.
     F["Any.Int32()"] -->|"returns"| G1["generator<br/><i>any int</i>"]
     G1 -->|".Between(1, 100)"| G2["generator<br/><i>any int in 1..100</i>"]
     G2 -->|".MultipleOf(5)"| G3["generator<br/><i>any multiple of 5 in 1..100</i>"]
@@ -147,6 +149,8 @@ looks like and how to react to it.
 
 ```mermaid
 flowchart LR
+    accTitle: Values are built to satisfy the constraints, never filtered
+    accDescr: The declared constraints are asked whether they admit a value. If they do not, a ConflictingAnyConstraintException names both sides. If they do, a value satisfying all of them is built, and that is the drawn value.
     D["declared constraints"] --> C{"do they admit<br/>a value?"}
     C -->|no| X["ConflictingAnyConstraintException<br/><i>naming both sides</i>"]
     C -->|yes| B["build a value<br/>satisfying all of them"]

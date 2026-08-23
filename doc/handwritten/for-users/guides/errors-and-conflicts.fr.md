@@ -11,6 +11,8 @@ message qui nomme les deux côtés d'une contradiction.
 
 ```mermaid
 flowchart TD
+    accTitle: La hiérarchie d'exceptions de la bibliothèque
+    accDescr: DummyException est abstraite et dérive d'Exception. Trois types concrets en dérivent. AnyGenerationException, quand un tirage n'a pas pu aboutir. ConflictingAnyConstraintException, quand les contraintes n'admettent aucune valeur. UnsupportedRegexException, quand le motif sort du sous-ensemble régulier.
     E["Exception"] --> D["DummyException<br/><i>abstraite — la racine de la bibliothèque</i>"]
     D --> A["AnyGenerationException<br/><i>un tirage n'a pas pu aboutir</i>"]
     D --> C["ConflictingAnyConstraintException<br/><i>les contraintes n'admettent aucune valeur</i>"]

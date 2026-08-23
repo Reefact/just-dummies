@@ -41,6 +41,8 @@ composeur :
 
 ```mermaid
 flowchart LR
+    accTitle: Comment Any.Combine compose deux générateurs en un seul
+    accDescr: Un générateur de decimal borné entre 0 et 1000 et un choix parmi EUR, USD et GBP sont composés en un seul IAny de Money, qui tire un Money tel que 412,75 EUR.
     A["Any.Decimal()<br/>Between(0, 1000)"] --> C{{"composer"}}
     B["Any.OneOf<br/>(EUR, USD, GBP)"] --> C
     C --> M["IAny&lt;Money&gt;"]

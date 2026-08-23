@@ -20,6 +20,8 @@ exactement.
 
 ```mermaid
 sequenceDiagram
+    accTitle: Ce qu'une portée de graine ambiante enregistre pendant un test qui échoue
+    accDescr: Le test ouvre une portée sur la graine 1743029518. Il demande à Any un int borné et reçoit 73, puis une chaîne de douze caractères et reçoit kQ8fnZ2xLmTa. Son assertion échoue, la portée rapporte la graine 1743029518, et le test ferme la portée.
     participant T as Test
     participant S as Portée de graine ambiante
     participant A as Any.*
@@ -82,6 +84,8 @@ La boucle de travail est courte, et la dernière étape compte autant que la pre
 
 ```mermaid
 flowchart LR
+    accTitle: Le chemin d'un test rouge jusqu'à un test qui varie de nouveau
+    accDescr: Un test passe au rouge. Lire la graine rapportée, l'épingler sur le test, déboguer sur les valeurs exactes, corriger le défaut, retirer l'épingle, et le test varie à nouveau.
     R["le test passe au rouge"] --> S["lire la graine rapportée"]
     S --> P["l'épingler sur le test"]
     P --> D["déboguer sur<br/>les valeurs exactes"]

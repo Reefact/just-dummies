@@ -61,6 +61,8 @@ français. Le lien d'aide d'un diagnostic pointe directement vers sa page.
 
 ```mermaid
 flowchart TD
+    accTitle: Comment la documentation utilisateur s'articule
+    accDescr: Démarrer mène aux Concepts fondamentaux, qui se ramifient vers Reproductibilité, Composition, Référence des générateurs, Erreurs et conflits, et Principes de conception. Composition mène aussi à la Référence des générateurs, Reproductibilité à JustDummies.Xunit, et Erreurs et conflits aux Règles des analyzers.
     S["Démarrer"] --> C["Concepts fondamentaux"]
     C --> R["Reproductibilité"]
     C --> K["Composition"]

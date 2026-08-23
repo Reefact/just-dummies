@@ -41,6 +41,8 @@ WebSocket URI — cannot even be written.
 
 ```mermaid
 flowchart TD
+    accTitle: The URI kinds Any.Uri() can draw
+    accDescr: Any.Uri() branches to Web for http and https, WebSocket for ws and wss, Ftp for ftp, Mailto for mailto, and Relative for a path such as /a/b/c.
     U["Any.Uri()"] --> W["Web()<br/><i>http, https</i>"]
     U --> S["WebSocket()<br/><i>ws, wss</i>"]
     U --> F["Ftp()<br/><i>ftp</i>"]

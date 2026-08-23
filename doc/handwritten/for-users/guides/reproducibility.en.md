@@ -18,6 +18,8 @@ failure and any run comes back exactly.
 
 ```mermaid
 sequenceDiagram
+    accTitle: What an ambient seed scope records during a failing test
+    accDescr: The test opens a scope on seed 1743029518. It asks Any for a bounded int and receives 73, then for a string of twelve characters and receives kQ8fnZ2xLmTa. Its assertion fails, the scope reports seed 1743029518, and the test closes the scope.
     participant T as Test
     participant S as Ambient seed scope
     participant A as Any.*
@@ -80,6 +82,8 @@ The working loop is short, and the last step matters as much as the first:
 
 ```mermaid
 flowchart LR
+    accTitle: The route from a red test back to a varying one
+    accDescr: A test goes red. Read the reported seed, pin it on the test, debug against the exact values, fix the defect, remove the pin, and the test varies again.
     R["test goes red"] --> S["read the reported seed"]
     S --> P["pin it on the test"]
     P --> D["debug against<br/>the exact values"]

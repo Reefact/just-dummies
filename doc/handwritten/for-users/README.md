@@ -61,6 +61,8 @@ diagnostic's help link points straight at its page.
 
 ```mermaid
 flowchart TD
+    accTitle: How the user documentation fits together
+    accDescr: Getting started leads to Core concepts, which branches to Reproducibility, Composition, the Generator reference, Errors and conflicts, and Design principles. Composition also leads to the Generator reference, Reproducibility to JustDummies.Xunit, and Errors and conflicts to the Analyzer rules.
     S["Getting started"] --> C["Core concepts"]
     C --> R["Reproducibility"]
     C --> K["Composition"]

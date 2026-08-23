@@ -33,6 +33,8 @@ personne ne peut raisonner.
 
 ```mermaid
 flowchart TD
+    accTitle: Ce que le générateur tente, et là où il refuse
+    accDescr: On demande à une spécification déclarée si une valeur peut être construite qui la satisfait entièrement. Oui la construit, donnant une valeur satisfaisant toutes les contraintes. Pas par construction passe par un retirage borné, qui atteint cette même valeur dans le budget de tentatives et lève une AnyGenerationException explicite et reproductible au-delà. Des contraintes qui ne peuvent jamais être satisfaites ensemble lèvent une ConflictingAnyConstraintException nommant les deux côtés.
     S["une spécification déclarée"] --> Q{"peut-on construire une valeur<br/>qui la satisfait entièrement ?"}
     Q -->|oui| B["la construire"] --> V["une valeur satisfaisant<br/>toutes les contraintes"]
     Q -->|"pas par construction"| R{"retirage borné dans<br/>le budget de tentatives ?"}

@@ -41,6 +41,8 @@ un port sur un `mailto:`, un fragment sur une URI WebSocket — ne peut même pa
 
 ```mermaid
 flowchart TD
+    accTitle: Les sortes d'URI que Any.Uri() sait tirer
+    accDescr: Any.Uri() se ramifie vers Web pour http et https, WebSocket pour ws et wss, Ftp pour ftp, Mailto pour mailto, et Relative pour un chemin tel que /a/b/c.
     U["Any.Uri()"] --> W["Web()<br/><i>http, https</i>"]
     U --> S["WebSocket()<br/><i>ws, wss</i>"]
     U --> F["Ftp()<br/><i>ftp</i>"]

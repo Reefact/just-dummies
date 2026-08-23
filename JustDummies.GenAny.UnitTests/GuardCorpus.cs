@@ -178,6 +178,79 @@ internal static class GuardCorpus {
                                                                  }
                                                                  """),
 
+        // ---- ADR-0086: the assigned guard-library idiom, the documented spelling of Ardalis.GuardClauses.
+        // ---- The first statement is an assignment to state, so before the record this constructor read as
+        // ---- two parameters nobody had constrained, under a recap that showed no doubt anywhere. Both rows
+        // ---- read now, against the REAL package: two hundred draws through the real Guard.Against.
+
+        new GuardedShape("ardalis-assigned", "Customer", """
+                                                         public sealed class Customer {
+
+                                                             public string Name { get; }
+
+                                                             public int Points { get; }
+
+                                                             public Customer(string name, int points) {
+                                                                 Name   = Guard.Against.NullOrWhiteSpace(name);
+                                                                 Points = Guard.Against.Negative(points);
+                                                             }
+
+                                                         }
+                                                         """, usings: "using Ardalis.GuardClauses;"),
+
+        // ---- ADR-0086's range row, pinned at the boundary: OutOfRange was MEASURED inclusive at both ends,
+        // ---- and a range this tight draws its boundaries constantly — a mapping wrong about either end
+        // ---- cannot survive the two hundred draws.
+
+        new GuardedShape("ardalis-range-assigned", "Percentage", """
+                                                                 public sealed class Percentage {
+
+                                                                     public int Value { get; }
+
+                                                                     public Percentage(int value) {
+                                                                         Value = Guard.Against.OutOfRange(value, nameof(value), 10, 11);
+                                                                     }
+
+                                                                 }
+                                                                 """, usings: "using Ardalis.GuardClauses;"),
+
+        // ---- The Toolkit's IsInRange was MEASURED half-open — the floor admitted, the ceiling rejected —
+        // ---- so this domain admits exactly one value, and a mapping that admitted the ceiling too would
+        // ---- throw on roughly half the draws.
+
+        new GuardedShape("toolkit-half-open", "Slot", """
+                                                      public sealed class Slot {
+
+                                                          private readonly int index;
+
+                                                          public Slot(int index) {
+                                                              Guard.IsInRange(index, 5, 6, nameof(index));
+                                                              this.index = index;
+                                                          }
+
+                                                      }
+                                                      """, usings: "using CommunityToolkit.Diagnostics;"),
+
+        // ---- A recognised library's method the table has no measured row for: declared validation the
+        // ---- engine cannot vouch for, so the parameter blocks (ADR-0083) with the base kept underneath —
+        // ---- while the mappable guard beside it still reads, which is the amplifier fixed: one unreadable
+        // ---- guard-assignment no longer hides every other parameter's guards.
+
+        new GuardedShape("guard-library-unmapped", "Reference", """
+                                                                public sealed class Reference {
+
+                                                                    public string Value { get; }
+
+                                                                    public int Weight { get; }
+
+                                                                    public Reference(string value, int weight) {
+                                                                        Value  = Guard.Against.InvalidFormat(value, nameof(value), "^[A-Z]{3}$");
+                                                                        Weight = Guard.Against.Negative(weight);
+                                                                    }
+
+                                                                }
+                                                                """, usings: "using Ardalis.GuardClauses;", requiresVerification: true),
+
         // ---- §5.1's second rule, driven through every oracle at once: no accessible constructor, so
         // ---- Generate() calls the factory — whose own guards §5.3 reads. The draw is the proof the wiring
         // ---- holds: two hundred values through Reference.Create, every one of them accepted.
@@ -306,13 +379,21 @@ internal static class GuardCorpus {
                               string declarations,
                               string? defect = null,
                               bool beyondTheEngine = false,
-                              bool requiresVerification = false) {
+                              bool requiresVerification = false,
+                              string? usings = null) {
             Name                 = name;
             Target               = target;
-            Domain               = Preamble + declarations;
+            Domain               = Preambled(usings) + declarations;
             Defect               = defect;
             BeyondTheEngine      = beyondTheEngine;
             RequiresVerification = requiresVerification;
+        }
+
+        /// <summary>The preamble, with the one extra using a guard-library shape opens (ADR-0086).</summary>
+        private static string Preambled(string? usings) {
+            return usings is null
+                       ? Preamble
+                       : Preamble.Replace("namespace Shop.Domain;", usings + "\n\nnamespace Shop.Domain;");
         }
 
         /// <summary>The row's name, which is what a failure names.</summary>

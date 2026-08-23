@@ -10,6 +10,21 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Added
 
+- **The guard helpers of Ardalis.GuardClauses and CommunityToolkit.Diagnostics are read, in both
+  their spellings.** `Name = Guard.Against.NullOrWhiteSpace(name);` is the documented usage of the
+  most-downloaded guard package in the segment this tool targets, and it was the engine's largest
+  silent surface: the first such line is an assignment to state, so the leading scan ended before
+  anything was read or marked — a five-parameter constructor guarded in that style scaffolded five
+  neutral generators under a recap showing no doubt anywhere, failing half the draws on a sign
+  guard and essentially all of them on a bounded percentage. The recognised helpers are read by
+  resolved symbol against the developer's own compilation, discarded or assigned to state alike,
+  and a recognised guard-assignment no longer ends the scan. Every mapped row's semantics was
+  measured against the pinned package — Ardalis's `OutOfRange` is inclusive at both ends where the
+  Toolkit's `IsInRange` rejects its upper bound — and a recognised library's method outside the
+  measured rows earns `unread guards` instead of silence, so it blocks the build for a one-line
+  confirmation rather than failing a later test run. (ADR-0086, first through ADR-0085's report
+  signature.)
+
 - **A type with no accessible constructor scaffolds through its own factory.** §5.1 always said it:
   a private constructor behind a public `Create` — the canonical validating value object — has
   `Generate()` call the factory, whose own guards are read like a constructor's. The engine refused

@@ -86,8 +86,12 @@ internal static class Guards {
 
         foreach (StatementSyntax statement in declaration.Body.Statements) {
             // "Leading" is what makes a guard a guard: past the first assignment to state, an `if` that throws
-            // is ordinary logic and says nothing about what the parameter may be.
-            if (AssignsState(statement, model)) { break; }
+            // is ordinary logic and says nothing about what the parameter may be. One assignment is exempt
+            // (ADR-0086): a guard-library helper assigned straight to a field or property — the documented
+            // spelling of the assigned guard idiom — both validates and stores, writes over no parameter, and
+            // so leaves everything below it exactly as leading as it was. The call itself is read by the
+            // marking pass below, through the same placement questions as any other.
+            if (AssignsState(statement, model) && !IsGuardAssignment(statement, model)) { break; }
 
             if (statement is IfStatementSyntax guard) {
                 ReadChain(guard, model, method, reading, names, writes, unskipped);
@@ -222,6 +226,14 @@ internal static class Guards {
     ///         mechanism ADR-0046 refuses. The cost is named in §9 — a guard helper that <i>returns</i> the
     ///         value it checked, <c>_name = Ensure.NotBlank(name);</c>, reads as production and is missed.
     ///     </para>
+    ///     <para>
+    ///         One family of used results crosses that rule (ADR-0086): a helper of a guard library the set
+    ///         knows by resolved symbol, whose documented contract is to return its validated input —
+    ///         <c>Name = Guard.Against.NullOrWhiteSpace(name);</c> <b>is</b> the documented spelling of those
+    ///         libraries, and reading it as production was the largest silent surface the engine had. The
+    ///         recognised call is handed to the same reading as a discarded one, placement questions and all;
+    ///         an assignment whose right side the set does not recognise stays exactly what it was.
+    ///     </para>
     /// </remarks>
     private static void MarkIfValidatedElsewhere(StatementSyntax statement,
                                                  SemanticModel model,
@@ -230,13 +242,39 @@ internal static class Guards {
                                                  ParameterWrites writes,
                                                  bool unskipped) {
         foreach (ExpressionStatementSyntax discarded in statement.DescendantNodesAndSelf().OfType<ExpressionStatementSyntax>()) {
-            if (discarded.Expression is not InvocationExpressionSyntax invocation || IsNameOf(invocation)) { continue; }
+            InvocationExpressionSyntax? invocation = discarded.Expression switch {
+                InvocationExpressionSyntax direct => direct,
+                AssignmentExpressionSyntax assignment when assignment.IsKind(SyntaxKind.SimpleAssignmentExpression)
+                                                        && Unwrapped(assignment.Right) is InvocationExpressionSyntax assigned
+                                                        && LibraryGuards.Recognises(assigned, model) => assigned,
+                _ => null
+            };
+
+            if (invocation is null || IsNameOf(invocation)) { continue; }
 
             // Asked once of the statement rather than of each parameter: whether the call runs at all is a
             // fact about where it sits, and the same for every parameter it names. Both halves of it — that
             // nothing encloses the call deciding it runs, and that nothing above the statement jumps past it.
             ReadCall(invocation, unskipped && RunsUnconditionally(discarded, statement), model, method, reading, writes);
         }
+    }
+
+    /// <summary>
+    ///     Whether a statement is a guard-library helper assigned straight to a field or a property — the one
+    ///     assignment to state that does not end the leading scan (ADR-0086).
+    /// </summary>
+    /// <remarks>
+    ///     The right side has to <b>be</b> the recognised call, bar parentheses: wrapped in any further
+    ///     expression it is an operand of ordinary production, and the scan ends as it always did. The write
+    ///     lands on state, never on a parameter, which is what keeps everything below as leading as it was —
+    ///     a right side that also wrote a parameter is caught by the placement questions the reading itself
+    ///     asks, not waved past here.
+    /// </remarks>
+    private static bool IsGuardAssignment(StatementSyntax statement, SemanticModel model) {
+        return statement is ExpressionStatementSyntax { Expression: AssignmentExpressionSyntax assignment }
+            && assignment.IsKind(SyntaxKind.SimpleAssignmentExpression)
+            && Unwrapped(assignment.Right) is InvocationExpressionSyntax invocation
+            && LibraryGuards.Recognises(invocation, model);
     }
 
     /// <summary>
@@ -276,15 +314,44 @@ internal static class Guards {
                 continue;
             }
 
-            if (!TryRecogniseThrowHelper(invocation, model, parameter, GeneratorFor.Sizes(parameter.Type),
-                                         out GuardConstraint? constraint)) {
+            if (TryRecogniseCall(invocation, model, parameter, out IReadOnlyList<GuardConstraint> read)) {
+                foreach (GuardConstraint constraint in read) { reading.Add(parameter.Name, constraint); }
+            } else {
                 reading.MarkUnread(parameter.Name);
-
-                continue;
             }
-
-            if (constraint is not null) { reading.Add(parameter.Name, constraint); }
         }
+    }
+
+    /// <summary>
+    ///     The whole closed set for the call spelling: the BCL throw helpers, then the two guard libraries
+    ///     read by resolved symbol (ADR-0086). True with no constraint still means understood, adding nothing.
+    /// </summary>
+    /// <remarks>
+    ///     A recognised library's method the table does not carry answers false — declared validation the
+    ///     engine cannot vouch for, which earns the mark exactly as an unrecognised call does.
+    /// </remarks>
+    private static bool TryRecogniseCall(InvocationExpressionSyntax invocation,
+                                         SemanticModel model,
+                                         IParameterSymbol parameter,
+                                         out IReadOnlyList<GuardConstraint> read) {
+        if (TryRecogniseThrowHelper(invocation, model, parameter, GeneratorFor.Sizes(parameter.Type),
+                                    out GuardConstraint? constraint)) {
+            read = constraint is null ? [] : [constraint];
+
+            return true;
+        }
+
+        if (LibraryGuards.TryRead(invocation, model, parameter, GeneratorFor.Sizes(parameter.Type),
+                                  out IReadOnlyList<GuardConstraint>? library)
+         && library is not null) {
+            read = library;
+
+            return true;
+        }
+
+        read = [];
+
+        return false;
     }
 
     /// <summary>
@@ -623,7 +690,7 @@ internal static class Guards {
     ///     types before it on disk, the rest absent, and the shell reporting a command line it had understood
     ///     perfectly well (§10.3).
     /// </remarks>
-    private static bool TryDecimal(object constant, out decimal value) {
+    internal static bool TryDecimal(object constant, out decimal value) {
         value = 0m;
 
         if (constant is double asDouble && (double.IsNaN(asDouble) || double.IsInfinity(asDouble))) { return false; }
@@ -649,7 +716,7 @@ internal static class Guards {
     ///     it is not the bound the guard states. The numeric branch has carried a type-aware literal since the
     ///     <c>decimal</c> case forced one; this is the same rule, for the family that had no equivalent.
     /// </remarks>
-    private static GuardConstraint? Sized(SyntaxKind @operator, decimal value, (bool ByCount, int Ceiling, int Floor) sizes) {
+    internal static GuardConstraint? Sized(SyntaxKind @operator, decimal value, (bool ByCount, int Ceiling, int Floor) sizes) {
         if (value != decimal.Truncate(value) || value < 0 || value > int.MaxValue) { return null; }
 
         string exact = sizes.ByCount ? "WithCount" : "WithLength";
@@ -678,7 +745,7 @@ internal static class Guards {
     ///     <c>Positive</c> would admit the values between zero and one that the guard rejects — a rare draw for
     ///     an otherwise unconstrained decimal, and a common one as soon as the parameter carries another bound.
     /// </remarks>
-    private static GuardConstraint? Numeric(SyntaxKind @operator, decimal value, ITypeSymbol type, string literal) {
+    internal static GuardConstraint? Numeric(SyntaxKind @operator, decimal value, ITypeSymbol type, string literal) {
         bool integral = IsIntegral(type);
 
         return @operator switch {
@@ -802,7 +869,7 @@ internal static class Guards {
         return IsParameter(expression, model, parameter) || IsSize(expression, parameter, model);
     }
 
-    private static bool IsParameter(ExpressionSyntax expression, SemanticModel model, IParameterSymbol parameter) {
+    internal static bool IsParameter(ExpressionSyntax expression, SemanticModel model, IParameterSymbol parameter) {
         ExpressionSyntax bare = Unwrapped(expression);
 
         return bare is IdentifierNameSyntax
@@ -1021,7 +1088,7 @@ internal static class Guards {
             && model.GetSymbolInfo(assignment.Left).Symbol is IFieldSymbol or IPropertySymbol;
     }
 
-    private static bool IsNumber(object value) {
+    internal static bool IsNumber(object value) {
         return value is sbyte or byte or short or ushort or int or uint or long or ulong or float or double or decimal;
     }
 
@@ -1032,7 +1099,7 @@ internal static class Guards {
     ///     One definition, because three readers have to agree on it: whether the type is integral, how its
     ///     literal is spelled, and which enum universe a guard may name.
     /// </remarks>
-    private static ITypeSymbol Underlying(ITypeSymbol type) {
+    internal static ITypeSymbol Underlying(ITypeSymbol type) {
         return type is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T } nullable
                    ? nullable.TypeArguments[0]
                    : type;
@@ -1070,7 +1137,7 @@ internal static class Guards {
     ///     A <c>decimal</c> bound written as <c>9.99</c> is a <c>double</c> literal, and there is no implicit
     ///     conversion — the emitted chain would not compile. The suffix is not decoration.
     /// </remarks>
-    private static string Literal(object value, ITypeSymbol type) {
+    internal static string Literal(object value, ITypeSymbol type) {
         ITypeSymbol underlying = Underlying(type);
 
         string written = Convert.ToString(value, CultureInfo.InvariantCulture) ?? "0";

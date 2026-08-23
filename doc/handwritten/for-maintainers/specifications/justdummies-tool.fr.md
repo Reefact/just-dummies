@@ -859,7 +859,10 @@ indépendant de l'ordre des instructions, ce qu'une règle comptant les résulta
 pas : deux paramètres normalisés sur des lignes consécutives se lisent pareil, quel que soit celui
 affecté en premier, là où le parcours s'arrêtait après la première affectation et épargnait le
 second. Le coût est le cas miroir, nommé au §9 : une garde-helper qui *retourne* la valeur
-vérifiée — `_name = Ensure.NotBlank(value);` — se lit comme une production et échappe au filet.
+vérifiée — `_name = Ensure.NotBlank(value);` — se lit comme une production et échappe au filet. Une
+famille franchit cette règle par la mesure plutôt que par la supposition — les aides des deux
+bibliothèques que le bloc suivant lit par symbole résolu, dont le contrat documenté est précisément
+de retourner leur entrée validée.
 
 **Les gardes que l'ensemble connaît déjà se lisent dans les deux orthographes.**
 `ArgumentNullException.ThrowIfNull(value)` et `if (value is null) { throw … }` énoncent un seul
@@ -881,6 +884,61 @@ lève sur `value <= 0`, ce qui *est* `Positive()`. Cela élargit l'ensemble clos
 reconnaître une seconde orthographe de ce qui s'y trouvait déjà, selon le suivi d'ADR-0082. La même
 discipline d'identité du sujet s'y applique, et le second argument d'un helper à deux arguments doit
 être une constante à la compilation, comme l'autre côté d'une comparaison.
+
+**Les aides de garde de deux bibliothèques nommées sont lues elles aussi, par symbole résolu
+(ADR-0086).** `Ardalis.GuardClauses` et `CommunityToolkit.Diagnostics` énoncent les mêmes invariants
+que l'ensemble clos lit déjà, depuis des méthodes dont la sémantique est documentée et — avant
+qu'aucune ligne n'entre dans cette table — **mesurée** contre le paquet épinglé que le corpus de test
+référence : quelles valeurs chaque aide rejette, l'inclusivité de chaque borne, et le fait que les
+aides d'Ardalis retournent leur entrée inchangée. Les lignes retenues sont exactement celles-ci :
+
+| Aide | Contrainte ajoutée |
+|---|---|
+| `Guard.Against.Null(p)` / `Guard.IsNotNull(p, …)` | aucune — le generator ne tire de toute façon jamais `null` |
+| `Guard.Against.NullOrEmpty(p)`, `NullOrWhiteSpace(p)` / `Guard.IsNotNullOrEmpty(p, …)`, `IsNotNullOrWhiteSpace(p, …)` | `.NonEmpty()` |
+| `Guard.Against.Negative(p)` | `.GreaterThanOrEqualTo(0)` |
+| `Guard.Against.NegativeOrZero(p)` | `.Positive()` |
+| `Guard.Against.Zero(p)` | `.NonZero()` |
+| `Guard.Against.OutOfRange(p, name, from, to)` — mesuré inclusif aux **deux** bouts | `.Between(from, to)` |
+| `Guard.Against.StringTooShort(p, min)`, `StringTooLong(p, max)`, `LengthOutOfRange(p, min, max)` | les lignes de taille correspondantes |
+| `Guard.Against.EnumOutOfRange(p)`, **où `p` est du type de l'enum lui-même** | aucune — membres déclarés seulement |
+| `Guard.Against.Default(p)` sur un `Guid` ; sur un nombre | `.NonEmpty()` ; `.NonZero()` |
+| `Guard.IsGreaterThan(p, min)` / `Guard.IsLessThan(p, max)` — stricts, mesurés | `.GreaterThan(min)` / `.LessThan(max)` |
+| `Guard.IsGreaterThanOrEqualTo(p, min)` / `Guard.IsLessThanOrEqualTo(p, max)` | `.GreaterThanOrEqualTo(min)` / `.LessThanOrEqualTo(max)` |
+| `Guard.IsInRange(p, min, max)` — mesuré **semi-ouvert** | `.GreaterThanOrEqualTo(min).LessThan(max)` |
+
+La discipline d'identité du sujet tient — le premier argument de valeur doit **être** le paramètre —
+et une borne doit être une constante à la compilation, comme l'autre côté de toute comparaison.
+**Une méthode d'une bibliothèque reconnue hors de ces lignes est marquée `unread guards`, jamais
+approximée** : une validation déclarée dont cette table n'a pas mesuré la sémantique —
+`InvalidFormat`, `Expression`, `IsBetween`, une borne qui n'est pas une constante, le `OutOfRange`
+sur énumérable qui borne les éléments plutôt que le paramètre — est une garde dont le moteur ne peut
+pas répondre, et le §5.6 dit ce que cela coûte. Les deux gardes de plage sont la raison pour laquelle
+la règle vaut sa brutalité : le `OutOfRange` d'Ardalis admet ses deux bornes tandis que l'`IsInRange`
+du Toolkit rejette sa borne haute, et une table écrite d'après ce que les noms suggèrent aurait été
+fausse avec assurance sur l'une des deux. La reconnaissance se résout contre la compilation du
+développeur lui-même (ADR-0063) : un projet qui ne référence aucune des deux bibliothèques ne paie
+rien, et un qui en référence une est lu contre l'assembly avec lequel il compile réellement. Ce n'est
+pas la liste de préfixes bénis refusée plus haut : rien ici ne devine ce qu'un nom veut dire — une
+ligne existe exactement là où une méthode documentée d'un paquet a été mesurée, et tout le reste
+garde la marque.
+
+**Une aide reconnue se lit aussi dans l'orthographe assignée — et cette affectation-là ne termine
+plus le parcours.** `Name = Guard.Against.NullOrWhiteSpace(name);` est l'usage documenté de ces
+bibliothèques, et c'était la plus grande surface silencieuse du moteur : la première ligne de ce
+genre est une affectation à l'état, donc le parcours se terminait avant que rien ne soit lu ou
+marqué, et un constructeur à cinq paramètres entièrement gardé dans ce style rapportait cinq
+paramètres que personne n'avait contraints, sous un récapitulatif n'affichant aucun doute nulle part.
+Une affectation simple à un champ ou une propriété dont le côté droit **est** un appel d'aide
+reconnu — nu, parenthèses mises à part — valide et range à la fois, n'écrit par-dessus aucun
+paramètre, et laisse donc tout ce qui suit exactement aussi en tête qu'avant : l'appel est lu à
+travers les mêmes questions de placement qu'un appel jeté, et le parcours continue. Tout le reste
+tient. Une affectation dont le côté droit n'est pas reconnu par l'ensemble termine le parcours
+exactement comme avant — `_name = value.Trim();` reste une production, et le faux positif que le
+suivi d'ADR-0083 a retiré reste retiré. Une aide reconnue assignée à **son propre paramètre** est une
+écriture au-delà de laquelle les règles de placement refusent de lire, et elle est marquée plutôt que
+lue — une confirmation là où le §9 était silencieux. Conditionnée, ou sous une écriture de son sujet,
+l'orthographe assignée gagne la marque exactement comme l'orthographe jetée.
 
 **Un helper n'est lu que là où rien ne décide s'il s'exécute.** L'orthographe en `if` a toujours exigé
 que la branche lève inconditionnellement avant que sa condition soit lue ; l'orthographe en appel avait
@@ -1290,7 +1348,9 @@ Nommés explicitement pour ne pas être pris pour des oublis.
   non lues — le tool n'y voit aucun rejet dont douter. Une garde-helper qui **retourne** la valeur
   vérifiée — `_name = Ensure.NotBlank(value);` — est indiscernable d'une normalisation, et la lire
   comme un doute reviendrait à lire `_name = value.Trim();` comme un doute aussi, ce qui bloque la
-  compilation de constructeurs ne portant aucune garde. Et une garde atteinte seulement par un
+  compilation de constructeurs ne portant aucune garde ; les aides des deux bibliothèques que le
+  §5.3 lit par symbole résolu (ADR-0086) sont l'exception mesurée, et tout autre validateur qui
+  retourne sa valeur garde cette réponse. Et une garde atteinte seulement par un
   niveau d'indirection que le tool ne suit pas — une copie locale du paramètre (`var v = value;
   Validate(v);`), un lambda qui le capture, un appel atteint via un membre plutôt que par le nom
   propre du paramètre. Dans les deux cas, le tool ne peut toujours pas distinguer ce paramètre d'un

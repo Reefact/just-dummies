@@ -3,7 +3,7 @@
 🌍 **Languages:**  
 🇬🇧 English (this file) | 🇫🇷 [Français](./justdummies.fr.md)
 
-The library itself: the `Any` entry point, every generator, the reproducibility scopes, and the 31
+The library itself: the `Any` entry point, every generator, the reproducibility scopes, and the 33
 rules that guard correct usage.
 
 ## Install
@@ -35,7 +35,7 @@ analyzer package to remember, and no version of one to keep in step
 
 They exist because the type system cannot reach where these mistakes live — a generator rendered as
 text, a constraint whose result is discarded, a seed pinned outside its scope, a chain admitting no
-value. See the [analyzer rules index](../analyzers/README.md) for all 28, and
+value. See the [analyzer rules index](../analyzers/README.md) for all 33, and
 [JD005](../analyzers/JD005.en.md) for the one that catches the most common slip.
 
 To tune a severity, use `.editorconfig`:

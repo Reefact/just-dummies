@@ -60,7 +60,7 @@ asserts. Contradictory constraints fail fast, with a message naming *both* sides
 dotnet add package JustDummies
 ```
 
-No runtime dependency, and the 31 analyzer rules come bundled inside — they start working on your next
+No runtime dependency, and the 33 analyzer rules come bundled inside — they start working on your next
 build.
 
 ## 🔁 Reproducible by construction

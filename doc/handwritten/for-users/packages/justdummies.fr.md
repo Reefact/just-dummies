@@ -36,7 +36,7 @@ pas de paquet d'analyzers compagnon à retenir, ni de version à maintenir en ph
 Ils existent parce que le système de types n'atteint pas l'endroit où vivent ces erreurs — un
 générateur rendu sous forme de texte, une contrainte dont le résultat est jeté, une graine épinglée
 hors de sa portée, une chaîne n'admettant aucune valeur. Voir
-l'[index des règles](../analyzers/README.fr.md) pour les 29, et
+l'[index des règles](../analyzers/README.fr.md) pour les 33, et
 [JD005](../analyzers/JD005.fr.md) pour celle qui attrape le faux pas le plus courant.
 
 Pour ajuster une sévérité, utilisez `.editorconfig` :

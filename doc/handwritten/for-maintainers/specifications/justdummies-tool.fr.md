@@ -1768,7 +1768,7 @@ exercé au §17.
 
 ### 14.6 Inventaire des analyzers
 
-32 identifiants de diagnostic sur 31 classes d'analyzer — `JD023` et `JD024` en partagent une.
+33 identifiants de diagnostic sur 32 classes d'analyzer — `JD023` et `JD024` en partagent une.
 
 | Plage | Catégorie | Sévérités |
 |---|---|---|
@@ -1790,6 +1790,7 @@ exercé au §17.
 | `JD027`–`JD028` | Composition | Warning |
 | `JD029`–`JD031` | Constraints | Info |
 | `JD032` | Constraints | Warning |
+| `JD033` | Constraints | Info |
 
 Trois faits à leur sujet pilotent des décisions de ce document :
 

@@ -45,7 +45,7 @@ because *that is what an order reference is* — and everything else about it is
 dotnet add package JustDummies
 ```
 
-That is the whole install. The package also carries its 29 analyzer rules inside it, so the guards on
+That is the whole install. The package also carries its 33 analyzer rules inside it, so the guards on
 correct usage start working on your next build with nothing further to configure.
 
 ## Your first dummy

@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
 using Microsoft.CodeAnalysis;
@@ -17,12 +16,14 @@ namespace JustDummies.GenAny;
 ///     loadable inside a Roslyn host (ADR-0065), and they are why this returns a model rather than writing a
 ///     file.
 ///     <para>
-///         What it does <b>not</b> do yet is read the constructor's guards (§5.3) or compose through a
-///         scaffolded generator or a static factory (§5.4). A parameter therefore gets the neutral generator
-///         for its type, or a TODO.
+///         What it assembles, in order: the constructor §5.1 chooses, the base table's generator for each
+///         parameter (§5.2) — composing through a scaffolded generator or a static factory where one
+///         qualifies (§5.4) — and the constraints §5.3 reads from that constructor's guards. The provenance
+///         each parameter carries is computed from the constraints actually <b>applied</b>, never from those
+///         read, which is what §6's recap reports and why a guard the generator has no member for tightens
+///         nothing however well it was understood.
 ///     </para>
 /// </remarks>
-[SuppressMessage(SonarRule.S1135.Category, SonarRule.S1135.Id, Justification = SuppressionJustification.S1135.DocumentsTheMarkerTheToolEmits)]
 public static class Scaffolder {
 
     /// <summary>

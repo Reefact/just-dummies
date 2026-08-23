@@ -884,7 +884,10 @@ function leaves *that* body rather than the constructor, so an ordinary helper d
 leading statements — which nearly always carries one — costs nothing. And a `throw` is not a jump at
 all: it refuses to build the object, which is what makes it a guard rather than a way around one, and
 counting it would refuse every guard written below another. A jump *below* a guard cannot skip it, and
-leaves it read.
+leaves it read. That is `SemanticModel.AnalyzeControlFlow`, the region query beside the data-flow one
+this section already leans on, and not the control-flow graph ADR-0084 declines for placement — and
+where it declines to answer, the statement counts as jumping, so its default points the same way
+asking a construct entire does.
 
 One residue is named rather than chased: a condition the compiler could prove constant —
 `if (true) { ThrowIfNegative(value); }` — is refused like any other, which costs the developer one

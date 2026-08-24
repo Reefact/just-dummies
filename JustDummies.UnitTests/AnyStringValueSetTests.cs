@@ -118,7 +118,7 @@ public sealed class AnyStringValueSetTests {
     [Fact(DisplayName = "A distinct set over OneOf is gated by the set's cardinality, both ways.")]
     public void CardinalityGatesDistinctCollections() {
         // Two distinct values cannot fill a set of three: caught eagerly, like any cardinality conflict.
-        Check.ThatCode(() => Any.SetOf(Any.String().OneOf("a", "b")).WithCount(3)).Throws<ConflictingAnyConstraintException>();
+        Check.ThatCode(() => Any.SetOf(Any.String().OneOf("a", "b")).WithCount(3).Generate()).Throws<ConflictingAnyConstraintException>();
 
         // Within the domain it fills the set with the requested distinct values.
         HashSet<string> set = Any.SetOf(Any.String().OneOf("a", "b", "c")).WithCount(3).Generate();
@@ -130,7 +130,7 @@ public sealed class AnyStringValueSetTests {
     public void CardinalityCountsTheSurvivingPool() {
         // Only "abc" and "xyz" are three characters long, so the domain a distinct set may draw from holds two
         // values — the shape narrowed the pool before the collection ever gated on it.
-        Check.ThatCode(() => Any.SetOf(Any.String().OneOf("abc", "de", "xyz").WithLength(3)).WithCount(3))
+        Check.ThatCode(() => Any.SetOf(Any.String().OneOf("abc", "de", "xyz").WithLength(3)).WithCount(3).Generate())
              .Throws<ConflictingAnyConstraintException>();
 
         HashSet<string> set = Any.SetOf(Any.String().OneOf("abc", "de", "xyz").WithLength(3)).WithCount(2).Generate();
@@ -141,7 +141,7 @@ public sealed class AnyStringValueSetTests {
     public void APinnedValueExtendsTheDomainOnlyWhenItIsOutside() {
         // "a" is one of the two values the generator can draw, so pinning it fills a slot the generator would have
         // filled anyway: the domain is still two, and a set of three cannot be filled.
-        Check.ThatCode(() => Any.SetOf(Any.String().OneOf("a", "b")).Containing("a").WithCount(3))
+        Check.ThatCode(() => Any.SetOf(Any.String().OneOf("a", "b")).Containing("a").WithCount(3).Generate())
              .Throws<ConflictingAnyConstraintException>();
 
         // "z" is a value the generator could never draw, so it occupies its own slot and the set of three fits.

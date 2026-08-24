@@ -245,24 +245,24 @@ public sealed class CollectionProperties {
             .QuickCheckThrowOnFailure();
     }
 
-    [Fact(DisplayName = "A distinct count beyond the element generator's advertised cardinality conflicts eagerly, and one within it generates.")]
-    public void DistinctCountBeyondTheAdvertisedCardinalityConflictsEagerly() {
+    [Fact(DisplayName = "A distinct count beyond the element generator's advertised cardinality conflicts before any element is drawn, and one within it generates.")]
+    public void DistinctCountBeyondTheAdvertisedCardinalityConflictsBeforeDrawing() {
         Prop.ForAll((from poolSize in Gen.Choose(1, 8)
                      from count in Generators.Count(12)
                      select (poolSize, count)).ToArbitrary(),
                     testCase => {
                         // Two generators over the very same domain {1..poolSize}, one bounded and one pooled: both
-                        // advertise a cardinality, so both must decide feasibility at declaration time. Quantifying
+                        // advertise a cardinality, so both must decide feasibility before drawing. Quantifying
                         // over the pool size AND the requested count walks the whole frontier between the two verdicts
                         // — an example can only ever stand on one side of it.
                         AnyInt32      bounded = Any.Int32().Between(1, testCase.poolSize);
                         AnyOneOf<int> pooled  = Any.OneOf(Pool(testCase.poolSize));
 
                         if (testCase.count > testCase.poolSize) {
-                            return Expect.Throws<ConflictingAnyConstraintException>(() => Any.SetOf(bounded).WithCount(testCase.count))
-                                   && Expect.Throws<ConflictingAnyConstraintException>(() => Any.SetOf(pooled).WithCount(testCase.count))
-                                   && Expect.Throws<ConflictingAnyConstraintException>(() => Any.ListOf(pooled).WithCount(testCase.count).Distinct())
-                                   && Expect.Throws<ConflictingAnyConstraintException>(() => Any.DictionaryOf(bounded, Any.Int32()).WithCount(testCase.count));
+                            return Expect.Throws<ConflictingAnyConstraintException>(() => Any.SetOf(bounded).WithCount(testCase.count).Generate())
+                                   && Expect.Throws<ConflictingAnyConstraintException>(() => Any.SetOf(pooled).WithCount(testCase.count).Generate())
+                                   && Expect.Throws<ConflictingAnyConstraintException>(() => Any.ListOf(pooled).WithCount(testCase.count).Distinct().Generate())
+                                   && Expect.Throws<ConflictingAnyConstraintException>(() => Any.DictionaryOf(bounded, Any.Int32()).WithCount(testCase.count).Generate());
                         }
 
                         return Expect.EveryDraw(Any.SetOf(bounded).WithCount(testCase.count),

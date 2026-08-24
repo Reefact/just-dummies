@@ -49,7 +49,7 @@ public static partial class Any {
     /// <summary>
     ///     Starts an arbitrary <see cref="HashSet{T}" /> generator over <paramref name="item" /> — distinct by nature.
     ///     When the count exceeds the number of distinct values <paramref name="item" /> can produce, the conflict is
-    ///     reported eagerly.
+    ///     reported deterministically, before any element is drawn, and whichever order the chain was written in.
     /// </summary>
     /// <param name="item">The generator each element is drawn from.</param>
     /// <typeparam name="T">The element type.</typeparam>

@@ -112,17 +112,17 @@ public sealed class AnyCollectionTests {
         }
     }
 
-    [Fact(DisplayName = "Distinct: a count beyond the element cardinality conflicts eagerly, naming the shortfall.")]
-    public void DistinctCardinalityConflictsEagerly() {
+    [Fact(DisplayName = "Distinct: a count beyond the element cardinality conflicts before any element is drawn, naming the shortfall.")]
+    public void DistinctCardinalityConflictsBeforeDrawing() {
         ConflictingAnyConstraintException fromBool = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.SetOf(Any.Boolean()).WithCount(3));
+            () => Any.SetOf(Any.Boolean()).WithCount(3).Generate());
         Check.That(fromBool.Message).Contains("2 distinct value");
 
-        Check.ThatCode(() => Any.SetOf(Any.Enum<Suit>()).WithMinCount(5)).Throws<ConflictingAnyConstraintException>();
-        Check.ThatCode(() => Any.SetOf(Any.Int32().Between(1, 3)).WithCount(5)).Throws<ConflictingAnyConstraintException>();
-        Check.ThatCode(() => Any.ListOf(Any.Int32().Between(1, 3)).WithCount(5).Distinct()).Throws<ConflictingAnyConstraintException>();
+        Check.ThatCode(() => Any.SetOf(Any.Enum<Suit>()).WithMinCount(5).Generate()).Throws<ConflictingAnyConstraintException>();
+        Check.ThatCode(() => Any.SetOf(Any.Int32().Between(1, 3)).WithCount(5).Generate()).Throws<ConflictingAnyConstraintException>();
+        Check.ThatCode(() => Any.ListOf(Any.Int32().Between(1, 3)).WithCount(5).Distinct().Generate()).Throws<ConflictingAnyConstraintException>();
         // Order-independent: turning distinct on after the count is set conflicts just the same.
-        Check.ThatCode(() => Any.ListOf(Any.Boolean()).WithCount(3).Distinct()).Throws<ConflictingAnyConstraintException>();
+        Check.ThatCode(() => Any.ListOf(Any.Boolean()).WithCount(3).Distinct().Generate()).Throws<ConflictingAnyConstraintException>();
     }
 
     [Fact(DisplayName = "Distinct: an unknowable small domain cannot be detected early, so a shortfall surfaces at generation.")]
@@ -182,7 +182,7 @@ public sealed class AnyCollectionTests {
         Check.ThatCode(() => Any.ListOf(Any.Int32()).WithCount(1).Containing(1).Containing(2)).Throws<ConflictingAnyConstraintException>();
 
         ConflictingAnyConstraintException duplicate = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.SetOf(Any.Int32()).Containing(7).Containing(7));
+            () => Any.SetOf(Any.Int32()).Containing(7).Containing(7).Generate());
         Check.That(duplicate.Message).Contains("more than once");
     }
 
@@ -220,14 +220,14 @@ public sealed class AnyCollectionTests {
     [Fact(DisplayName = "Containing: a value already inside the element domain does not inflate the cardinality, so an impossible count still conflicts.")]
     public void ContainingInsideDomainDoesNotInflate() {
         // 1 is already producible by the generator, so it adds no capacity: three distinct values over {1, 2} remain
-        // impossible and must still fail eagerly, naming the shortfall.
+        // impossible and must still be refused before any element is drawn, naming the shortfall.
         ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.SetOf(Any.Int32().OneOf(1, 2)).Containing(1).WithCount(3));
+            () => Any.SetOf(Any.Int32().OneOf(1, 2)).Containing(1).WithCount(3).Generate());
         Check.That(conflict.Message).Contains("2 distinct value");
 
         // Mixed: 1 is inside the domain, 5 is outside — effective capacity is 2 + 1 = 3. Four is over the top; three
         // is exactly reachable as {1, 2, 5}.
-        Check.ThatCode(() => Any.SetOf(Any.Int32().OneOf(1, 2)).Containing(1).Containing(5).WithCount(4)).Throws<ConflictingAnyConstraintException>();
+        Check.ThatCode(() => Any.SetOf(Any.Int32().OneOf(1, 2)).Containing(1).Containing(5).WithCount(4).Generate()).Throws<ConflictingAnyConstraintException>();
         for (int i = 0; i < SampleCount; i++) {
             HashSet<int> set = Any.SetOf(Any.Int32().OneOf(1, 2)).Containing(1).Containing(5).WithCount(3).Generate();
             Check.That(set).Contains(1, 2, 5);
@@ -245,9 +245,56 @@ public sealed class AnyCollectionTests {
         }
 
         // And rejected whatever the order, because the contained value is inside the domain.
-        Check.ThatCode(() => Any.ListOf(Any.Int32().OneOf(1, 2)).WithCount(3).Containing(1).Distinct()).Throws<ConflictingAnyConstraintException>();
-        Check.ThatCode(() => Any.ListOf(Any.Int32().OneOf(1, 2)).Distinct().Containing(1).WithCount(3)).Throws<ConflictingAnyConstraintException>();
-        Check.ThatCode(() => Any.ListOf(Any.Int32().OneOf(1, 2)).Containing(1).WithCount(3).Distinct()).Throws<ConflictingAnyConstraintException>();
+        Check.ThatCode(() => Any.ListOf(Any.Int32().OneOf(1, 2)).WithCount(3).Containing(1).Distinct().Generate()).Throws<ConflictingAnyConstraintException>();
+        Check.ThatCode(() => Any.ListOf(Any.Int32().OneOf(1, 2)).Distinct().Containing(1).WithCount(3).Generate()).Throws<ConflictingAnyConstraintException>();
+        Check.ThatCode(() => Any.ListOf(Any.Int32().OneOf(1, 2)).Containing(1).WithCount(3).Distinct().Generate()).Throws<ConflictingAnyConstraintException>();
+    }
+
+    [Fact(DisplayName = "Every widening constraint is honoured wherever in the chain it was declared.")]
+    public void AWideningConstraintIsHonouredWhereverItWasDeclared() {
+        // The shapes a sweep of the collection surface found order-sensitive. Three calls widen what a distinct
+        // collection can reach -- Containing with a value the element generator cannot produce, ContainingAny, and
+        // Distinct(comparer) with an equality finer than the default -- and each of them used to arrive too late
+        // when it was written after the count. The same constraint set was refused in one order and honoured in
+        // another; all of these draw.
+        for (int i = 0; i < SampleCount; i++) {
+            Check.That(Any.SetOf(Any.Int32().Between(1, 3)).WithCount(4).Containing(99).Generate()).Contains(99);
+            Check.That(Any.SetOf(Any.Int32().Between(1, 3)).WithCount(4).ContainingAny(Any.Int32().Between(50, 60)).Generate().Count).IsEqualTo(4);
+            Check.That(Any.ListOf(Any.Int32().Between(1, 2)).Distinct().WithCount(3).Containing(99).Generate()).Contains(99);
+            Check.That(Any.ListOf(Any.Int32().Between(1, 2)).WithCount(3).Distinct().Containing(99).Generate()).Contains(99);
+            Check.That(Any.ListOf(Any.Int32().Between(1, 2)).Distinct().WithCount(3).ContainingAny(Any.Int32().Between(50, 60)).Generate().Count).IsEqualTo(3);
+        }
+    }
+
+    [Fact(DisplayName = "A comparer finer than the default is honoured when it is declared last.")]
+    public void AFinerComparerIsHonouredWhenDeclaredLast() {
+        // Distinct(comparer) widens twice over: it raises the cardinality the count is measured against, and it
+        // tells apart two pinned values the default equality merges. Declared after the count and after the pins it
+        // used to arrive too late for both, so the chain was refused for a shortfall the comparer removes.
+        DateTimeOffset noon    = new(2020, 1, 1, 12, 0, 0, TimeSpan.Zero);
+        DateTimeOffset elsewhere = new(2020, 1, 1, 13, 0, 0, TimeSpan.FromHours(1));
+
+        Check.That(noon.EqualsExact(elsewhere)).IsFalse();    // two spellings...
+        Check.That(noon).IsEqualTo(elsewhere);                // ...of one instant
+
+        List<DateTimeOffset> pinned = Any.ListOf(Any.DateTimeOffset())
+                                         .Distinct()
+                                         .Containing(noon)
+                                         .Containing(elsewhere)
+                                         .Distinct(new BySpellingComparer())
+                                         .Generate();
+
+        Check.That(pinned).Contains(noon, elsewhere);
+
+        // And the same for the cardinality it raises: one instant across a ten-hour offset range is one value by
+        // default and many under the finer equality, so six of them fit.
+        DateTimeOffset start = new(2020, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        AnyDateTimeOffset ranged = Any.DateTimeOffset()
+                                      .Between(start, start.AddSeconds(2))
+                                      .WithGranularity(TimeSpan.FromSeconds(1))
+                                      .WithOffsetBetween(TimeSpan.Zero, TimeSpan.FromHours(10));
+
+        Check.That(Any.ListOf(ranged).Distinct().WithCount(6).Distinct(new BySpellingComparer()).Generate().Count).IsEqualTo(6);
     }
 
     [Fact(DisplayName = "Containing: a comparer stricter than the default one does not turn a satisfiable spec into a conflict.")]
@@ -283,7 +330,7 @@ public sealed class AnyCollectionTests {
         Tag pooled = new(1);
         Tag pinned = new(1);
 
-        Check.ThatCode(() => Any.ListOf(Any.OneOf(pooled)).Distinct().Containing(pinned).WithCount(2))
+        Check.ThatCode(() => Any.ListOf(Any.OneOf(pooled)).Distinct().Containing(pinned).WithCount(2).Generate())
              .Throws<ConflictingAnyConstraintException>();
     }
 
@@ -314,7 +361,7 @@ public sealed class AnyCollectionTests {
         DateTimeOffset   instant = new(2026, 1, 1, 12, 0, 0, TimeSpan.Zero);
         AnyDateTimeOffset ranged = Any.DateTimeOffset().Between(instant, instant).WithOffsetBetween(TimeSpan.FromHours(-2), TimeSpan.FromHours(2));
 
-        Check.ThatCode(() => Any.ListOf(ranged).Distinct().WithCount(3))
+        Check.ThatCode(() => Any.ListOf(ranged).Distinct().WithCount(3).Generate())
              .Throws<ConflictingAnyConstraintException>();
     }
 
@@ -329,7 +376,7 @@ public sealed class AnyCollectionTests {
 
         AnyDateTimeOffset pooled = Any.DateTimeOffset().OneOf(first, second).WithOffsetBetween(TimeSpan.FromHours(-2), TimeSpan.FromHours(2));
 
-        Check.ThatCode(() => Any.ListOf(pooled).Distinct(new BySpellingComparer()).WithCount(3))
+        Check.ThatCode(() => Any.ListOf(pooled).Distinct(new BySpellingComparer()).WithCount(3).Generate())
              .Throws<ConflictingAnyConstraintException>();
     }
 
@@ -383,11 +430,11 @@ public sealed class AnyCollectionTests {
         // A finite allow-list or a narrow range over decimal, double, single or Int128 now advertises its cardinality,
         // so a count beyond it conflicts at declaration — the same promise integers and enums already kept, held
         // across the whole knowable perimeter rather than only part of it.
-        Check.ThatCode(() => Any.SetOf(Any.Decimal().OneOf(1m, 2m)).WithCount(3)).Throws<ConflictingAnyConstraintException>();
-        Check.ThatCode(() => Any.SetOf(Any.Double().OneOf(1d, 2d)).WithCount(3)).Throws<ConflictingAnyConstraintException>();
-        Check.ThatCode(() => Any.SetOf(Any.Single().OneOf(1f, 2f)).WithCount(3)).Throws<ConflictingAnyConstraintException>();
+        Check.ThatCode(() => Any.SetOf(Any.Decimal().OneOf(1m, 2m)).WithCount(3).Generate()).Throws<ConflictingAnyConstraintException>();
+        Check.ThatCode(() => Any.SetOf(Any.Double().OneOf(1d, 2d)).WithCount(3).Generate()).Throws<ConflictingAnyConstraintException>();
+        Check.ThatCode(() => Any.SetOf(Any.Single().OneOf(1f, 2f)).WithCount(3).Generate()).Throws<ConflictingAnyConstraintException>();
 #if NET8_0_OR_GREATER
-        Check.ThatCode(() => Any.SetOf(Any.Int128().Between(1, 3)).WithCount(5)).Throws<ConflictingAnyConstraintException>();
+        Check.ThatCode(() => Any.SetOf(Any.Int128().Between(1, 3)).WithCount(5).Generate()).Throws<ConflictingAnyConstraintException>();
 #endif
 
         // Membership travels with cardinality: an out-of-domain contained value extends the effective domain...
@@ -397,17 +444,17 @@ public sealed class AnyCollectionTests {
         }
 
         // ...while a contained value already inside it does not, so an impossible count still conflicts eagerly.
-        Check.ThatCode(() => Any.SetOf(Any.Decimal().OneOf(1m, 2m)).Containing(1m).WithCount(3)).Throws<ConflictingAnyConstraintException>();
-        Check.ThatCode(() => Any.SetOf(Any.Double().OneOf(1d, 2d)).Containing(2d).WithCount(3)).Throws<ConflictingAnyConstraintException>();
+        Check.ThatCode(() => Any.SetOf(Any.Decimal().OneOf(1m, 2m)).Containing(1m).WithCount(3).Generate()).Throws<ConflictingAnyConstraintException>();
+        Check.ThatCode(() => Any.SetOf(Any.Double().OneOf(1d, 2d)).Containing(2d).WithCount(3).Generate()).Throws<ConflictingAnyConstraintException>();
     }
 
     [Fact(DisplayName = "A validated pin is a singleton domain: a distinct collection asking for more than one conflicts eagerly.")]
     public void SingletonScalarDomainsGateEagerly() {
         // Zero()/Between(x, x) pins the domain to a single value; asking a distinct collection for two is a fully
         // knowable contradiction, so it must fail at declaration, not only while drawing.
-        Check.ThatCode(() => Any.SetOf(Any.Decimal().Zero()).WithCount(2)).Throws<ConflictingAnyConstraintException>();
-        Check.ThatCode(() => Any.SetOf(Any.Double().Between(1d, 1d)).WithCount(2)).Throws<ConflictingAnyConstraintException>();
-        Check.ThatCode(() => Any.SetOf(Any.Single().Zero()).WithCount(2)).Throws<ConflictingAnyConstraintException>();
+        Check.ThatCode(() => Any.SetOf(Any.Decimal().Zero()).WithCount(2).Generate()).Throws<ConflictingAnyConstraintException>();
+        Check.ThatCode(() => Any.SetOf(Any.Double().Between(1d, 1d)).WithCount(2).Generate()).Throws<ConflictingAnyConstraintException>();
+        Check.ThatCode(() => Any.SetOf(Any.Single().Zero()).WithCount(2).Generate()).Throws<ConflictingAnyConstraintException>();
 
         // The singleton still generates at count one, and an out-of-domain contained value extends it as usual.
         for (int i = 0; i < SampleCount; i++) {
@@ -446,7 +493,7 @@ public sealed class AnyCollectionTests {
             Check.That(dictionary.Values).ContainsOnlyElementsThatMatch(value => value.Length > 0);
         }
 
-        Check.ThatCode(() => Any.DictionaryOf(Any.Boolean(), Any.Int32()).WithCount(3)).Throws<ConflictingAnyConstraintException>();
+        Check.ThatCode(() => Any.DictionaryOf(Any.Boolean(), Any.Int32()).WithCount(3).Generate()).Throws<ConflictingAnyConstraintException>();
         Check.ThatCode(() => Any.DictionaryOf<int, int>(null!, Any.Int32())).Throws<ArgumentNullException>();
     }
 
@@ -464,7 +511,7 @@ public sealed class AnyCollectionTests {
         }
     }
 
-    [Fact(DisplayName = "ContainingKey: a within-domain key is present, an out-of-capacity one still conflicts eagerly.")]
+    [Fact(DisplayName = "ContainingKey: a within-domain key is present, an out-of-capacity one is still refused before any entry is drawn.")]
     public void DictionaryContainingKeyInsideDomainDoesNotInflate() {
         // A within-domain fixed key is present and adds no capacity of its own.
         for (int i = 0; i < SampleCount; i++) {
@@ -474,10 +521,10 @@ public sealed class AnyCollectionTests {
             Check.That(dictionary.Count).IsEqualTo(5);
         }
 
-        // 1 is already producible, so three distinct keys over {1, 2} remain impossible and still fail eagerly,
-        // naming the shortfall — exactly as ContainingInsideDomainDoesNotInflate asserts for a set.
+        // 1 is already producible, so three distinct keys over {1, 2} remain impossible and are still refused before
+        // any entry is drawn, naming the shortfall — exactly as ContainingInsideDomainDoesNotInflate asserts for a set.
         ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.DictionaryOf(Any.Int32().OneOf(1, 2), Any.String().NonEmpty()).ContainingKey(1).WithCount(3));
+            () => Any.DictionaryOf(Any.Int32().OneOf(1, 2), Any.String().NonEmpty()).ContainingKey(1).WithCount(3).Generate());
         Check.That(conflict.Message).Contains("2 distinct value");
     }
 
@@ -512,10 +559,10 @@ public sealed class AnyCollectionTests {
 
     [Fact(DisplayName = "ContainingEntry: pinning the same key twice — or an entry and a ContainingKey — conflicts.")]
     public void DictionaryContainingEntryDuplicateKeyConflicts() {
-        Check.ThatCode(() => Any.DictionaryOf(Any.Int32(), Any.Int32()).ContainingEntry(1, 10).ContainingEntry(1, 20))
+        Check.ThatCode(() => Any.DictionaryOf(Any.Int32(), Any.Int32()).ContainingEntry(1, 10).ContainingEntry(1, 20).Generate())
              .Throws<ConflictingAnyConstraintException>();
 
-        Check.ThatCode(() => Any.DictionaryOf(Any.Int32(), Any.Int32()).ContainingKey(1).ContainingEntry(1, 20))
+        Check.ThatCode(() => Any.DictionaryOf(Any.Int32(), Any.Int32()).ContainingKey(1).ContainingEntry(1, 20).Generate())
              .Throws<ConflictingAnyConstraintException>();
     }
 

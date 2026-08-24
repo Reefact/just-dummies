@@ -30,6 +30,18 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Fixed
 
+- **A distinct collection is judged on the finished chain, so the order its constraints were written in no longer
+  decides the verdict.** Three calls *widen* what such a collection can reach — `Containing(...)` with a value the
+  element generator cannot produce, `ContainingAny(...)`, and `Distinct(comparer)` with an equality finer than the
+  default — and each of them arrived too late when it was written after the count, so
+  `Any.SetOf(Any.Int32().Between(1, 3)).WithCount(4).Containing(99)` was refused while
+  `Any.SetOf(Any.Int32().Between(1, 3)).Containing(99).WithCount(4)` produced `{99, 1, 2, 3}`. The same held for a
+  finer comparer telling apart two pinned values the default merges. Both distinctness checks — the cardinality
+  shortfall and the duplicate pin — now run once, on the whole specification. They still refuse **before any
+  element is drawn**, still name both sides, and now name `Distinct()` as the constraint that cannot be honoured
+  rather than whichever call the refusal happened to land on. The bounded dedup-draw and its replayable
+  `AnyGenerationException` are unchanged.
+
 - **`JD030` now counts the anchored literals when it names the interval a chain draws.** The rule's page has
   always promised "the interval the chain actually draws, not a constant", and for an anchored chain it did not
   deliver one: it read only `NonEmpty()` and `NotBlank()`, so `Any.String().StartingWith("hello")` was reported

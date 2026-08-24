@@ -77,6 +77,28 @@ public class Jd017EnumUniverseViolationTests {
     }
 
     [Fact]
+    public async Task Does_not_report_excluding_every_declared_member_once_AllowingCombinations_is_declared() {
+        // The universe is the OR-closure once combinations are allowed, so removing every declared member still
+        // leaves Read | Write to draw -- and the library does draw it. Reporting here refused at build time a chain
+        // the run time honours, whichever order the two constraints were written in.
+        string source = $$"""
+            using JustDummies;
+            {{Declarations}}
+
+            public static class Sample {
+                public static void M() {
+                    _ = Any.Enum<Perm>().AllowingCombinations().Except(Perm.None, Perm.Read, Perm.Write);
+                    _ = Any.Enum<Perm>().Except(Perm.None, Perm.Read, Perm.Write).AllowingCombinations();
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new EnumUniverseViolationAnalyzer(), source);
+
+        Check.That(diagnostics.Length).IsEqualTo(0);
+    }
+
+    [Fact]
     public async Task Does_not_report_a_combination_once_AllowingCombinations_is_declared() {
         string source = $$"""
             using JustDummies;

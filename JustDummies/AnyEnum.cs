@@ -22,7 +22,8 @@ namespace JustDummies;
 ///     declares. The declared-members default holds for those enums too — it is the only default valid for both enum
 ///     families, and switching on the attribute would make the draw depend on a type's metadata rather than on what
 ///     the test wrote. Opt in explicitly with <see cref="AllowingCombinations" /> to widen the draw to every
-///     combination.
+///     combination — <see cref="OneOf" /> asks for nothing so wide, since an allow-list is the pool itself, so
+///     naming a combination there needs no opt-in.
 /// </remarks>
 /// <typeparam name="TEnum">The enum type to draw values from.</typeparam>
 public sealed class AnyEnum<TEnum> : IAny<TEnum>, IHasRandomSource, ICardinalityHint<TEnum>, IPoolInspection<TEnum>
@@ -99,6 +100,32 @@ public sealed class AnyEnum<TEnum> : IAny<TEnum>, IHasRandomSource, ICardinality
 
     private static TEnum ToEnum(ulong bits) {
         return (TEnum)Enum.ToObject(typeof(TEnum), bits);
+    }
+
+    /// <summary>
+    ///     Whether <paramref name="value" /> can be obtained by OR-ing declared members of a
+    ///     <see cref="FlagsAttribute">[Flags]</see> enum — <c>Read | Write</c> yes, <c>(Access)99</c> no.
+    /// </summary>
+    /// <remarks>
+    ///     Decided arithmetically rather than by searching <see cref="Combinations" />: OR-ing every declared member
+    ///     whose bits the value already carries gives the largest reachable value within it, so the value is
+    ///     reachable exactly when that OR is the value itself. Linear in the declared members, which is what lets
+    ///     <see cref="OneOf" /> accept a combination on an enum too wide for the universe to be enumerated at all.
+    /// </remarks>
+    private static bool IsCombinationOfDeclaredMembers(TEnum value) {
+        if (!IsFlags) { return false; }
+
+        ulong bits = ToUInt64(value);
+        // The empty combination is a value only where the enum declares it, exactly as Combinations decides.
+        if (bits == 0UL) { return Declared.Any(member => ToUInt64(member) == 0UL); }
+
+        ulong reachable = 0UL;
+        foreach (TEnum member in Declared) {
+            ulong memberBits = ToUInt64(member);
+            if (memberBits != 0UL && (memberBits & bits) == memberBits) { reachable |= memberBits; }
+        }
+
+        return reachable == bits;
     }
 
     private static string V(TEnum value) {
@@ -195,9 +222,9 @@ public sealed class AnyEnum<TEnum> : IAny<TEnum>, IHasRandomSource, ICardinality
     ///     <para>
     ///         <see cref="Except" /> and <see cref="DifferentFrom" /> keep comparing by <b>equality</b>, here as
     ///         everywhere else: <c>Except(Read)</c> forbids the value <c>Read</c> and still allows
-    ///         <c>Read | Write</c>. Applied after <see cref="OneOf" />, this constraint changes nothing — an explicit
-    ///         allow-list is a terminal enumeration of exact values, so declare it before <c>OneOf</c> when the
-    ///         allow-list itself names combinations.
+    ///         <c>Read | Write</c>. Beside <see cref="OneOf" /> this constraint changes nothing, in either order —
+    ///         an explicit allow-list is a terminal enumeration of exact values, and a combination written in one is
+    ///         accepted on its own account.
     ///     </para>
     /// </remarks>
     /// <returns>A new generator drawing from the combination universe.</returns>
@@ -223,20 +250,27 @@ public sealed class AnyEnum<TEnum> : IAny<TEnum>, IHasRandomSource, ICardinality
 
     /// <summary>Requires the value to be one of the supplied members. Declared once per generator.</summary>
     /// <param name="values">
-    ///     The allowed values; duplicates are ignored. Every value must belong to the generator's universe — the
-    ///     declared members, or every combination of them once <see cref="AllowingCombinations" /> has been applied.
-    ///     The generator never yields a value outside that universe, not even an explicitly supplied one.
+    ///     The allowed values; duplicates are ignored. Every value must be one the type defines — a declared member,
+    ///     or, on a <see cref="FlagsAttribute">[Flags]</see> enum, any combination of declared members, with or
+    ///     without <see cref="AllowingCombinations" />. The generator never yields a value the type does not define,
+    ///     not even an explicitly supplied one.
     /// </param>
     /// <returns>A new generator carrying the added constraint.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="values" /> is <c>null</c>.</exception>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="values" /> is empty or contains a value outside the generator's universe.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="values" /> is empty or contains a value the type does not define.</exception>
     /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
     [SuppressMessage(SonarRule.S3267.Category, SonarRule.S3267.Id, Justification = SuppressionJustification.S3267.LoopNamesFirstOffender)]
     public AnyEnum<TEnum> OneOf(params TEnum[] values) {
         if (values is null) { throw new ArgumentNullException(nameof(values)); }
         if (values.Length == 0) { throw new ArgumentException("At least one value is required.", nameof(values)); }
         foreach (TEnum value in values) {
-            if (!_universe.Contains(value)) { throw new ArgumentException($"The value {value} {DescribeOutsideUniverse()}", nameof(values)); }
+            // Writing a combination IS asking for it, so the caller does not have to say so twice: on a [Flags] enum
+            // a value reachable by OR-ing declared members is accepted here whether or not AllowingCombinations()
+            // was declared. The universe is not widened to match — an allow-list is the pool, so nothing else ever
+            // reads it — which is why this costs no enumeration and cannot meet the combinable-members ceiling.
+            if (_universe.Contains(value) || IsCombinationOfDeclaredMembers(value)) { continue; }
+
+            throw new ArgumentException($"The value {value} {DescribeOutsideUniverse()}", nameof(values));
         }
 
         ConstraintCall constraint = ConstraintCall.Of(nameof(OneOf), Join(values));
@@ -286,14 +320,16 @@ public sealed class AnyEnum<TEnum> : IAny<TEnum>, IHasRandomSource, ICardinality
     }
 
     /// <summary>
-    ///     Why a supplied value is outside the universe — naming <see cref="AllowingCombinations" /> when the value is
-    ///     a flag combination, since that is the constraint the caller is missing rather than a mistyped member.
+    ///     Why a supplied value is one the type does not define, said in the terms that type gives: a
+    ///     <see cref="FlagsAttribute">[Flags]</see> enum defines its combinations too, so the sentence names both.
     /// </summary>
-    private string DescribeOutsideUniverse() {
-        string subject = $"is not a declared member of {typeof(TEnum).Name}: the generator only ever yields declared members.";
-        if (_combinable || !IsFlags) { return subject; }
-
-        return $"{subject} Apply AllowingCombinations() first to draw combinations of them.";
+    private static string DescribeOutsideUniverse() {
+        // No advice to give any more: a combination of declared members is accepted where it is written, so a value
+        // reaching this sentence is one no combination of them can produce, and AllowingCombinations() would not
+        // help. Naming what the type defines beats naming a call that cannot fix it.
+        return IsFlags
+                   ? $"is neither a declared member of {typeof(TEnum).Name} nor a combination of its declared members: the generator only ever yields values the type defines."
+                   : $"is not a declared member of {typeof(TEnum).Name}: the generator only ever yields declared members.";
     }
 
     private AnyEnum<TEnum> WithExcluded(TEnum[] values, ConstraintCall applying) {

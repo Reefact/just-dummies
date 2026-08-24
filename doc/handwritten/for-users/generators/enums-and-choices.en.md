@@ -26,7 +26,7 @@ Exclusions that empty the universe are refused by name, and the analyzer
 
 ## Flags enumerations
 
-For a `[Flags]` enum, a plain draw still yields **one declared member**. Combinations are opt-in:
+For a `[Flags]` enum, a plain draw still yields **one declared member**. Widening that draw is opt-in:
 
 ```csharp
 // One declared member: None, Read, Write or Delete.
@@ -34,6 +34,11 @@ Permissions single = Any.Enum<Permissions>().Generate();
 
 // Any combination of them: Read | Delete, Read | Write | Delete, ...
 Permissions combined = Any.Enum<Permissions>().AllowingCombinations().Generate();
+
+// One of two combinations you name: an allow-list is the pool itself, so it needs no opt-in.
+Permissions writable = Any.Enum<Permissions>()
+                          .OneOf(Permissions.Read | Permissions.Write, Permissions.Write | Permissions.Delete)
+                          .Generate();
 ```
 
 The opt-in is deliberate
@@ -43,8 +48,11 @@ generator that combined automatically would silently change what existing tests 
 adds the attribute. Asking for combinations is one call, and it says at the call site that
 combinations are part of what this test covers.
 
-Without the opt-in, naming a combination is a contradiction — it steps outside the declared members —
-and is reported by [JD017](../analyzers/JD017.en.md).
+What the opt-in settles is what a *plain* draw ranges over, and that is all it settles: naming a
+combination in `OneOf` needs none of it, since an allow-list is the pool itself and writing
+`Read | Write` there is asking for that exact value. A value no OR of declared members produces —
+`(Permissions)16` on the enum above — is refused either way, and reported by
+[JD017](../analyzers/JD017.en.md).
 
 ## Explicit pools
 

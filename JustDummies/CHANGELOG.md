@@ -38,6 +38,22 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   value is produced, and every message is the one it was: a chain that never allows combinations is refused
   exactly as before, naming the exclusion that emptied it.
 
+- **A flag combination named in `OneOf` is accepted where it is written, so the opt-in no longer has to come
+  first — or at all.** `Any.Enum<Permissions>().AllowingCombinations().OneOf(Read | Write)` was honoured while
+  `Any.Enum<Permissions>().OneOf(Read | Write).AllowingCombinations()` was refused: the argument was checked
+  against whatever universe the chain had reached rather than against what the type defines. `OneOf` now accepts
+  every value a `[Flags]` enum defines — a declared member, or an OR of declared members — in either order and
+  with no opt-in at all, because an allow-list **is** the pool: naming `Read | Write` there asks for that exact
+  value and widens nothing. What a *plain* draw ranges over is the other question, and `AllowingCombinations()`
+  still answers it alone
+  ([ADR-0020](../doc/handwritten/for-maintainers/adr/0020-draw-flag-enum-combinations-behind-an-opt-in.md) is
+  untouched, and a `[Flags]` enum still draws one declared member until it is asked). Membership is decided
+  arithmetically rather than by searching the universe, so it costs no enumeration and a combination is accepted
+  on an enum too wide for `AllowingCombinations()` to enumerate at all. A value no OR of declared members
+  produces — `(Permissions)16` — is refused as before, and a composite on an enum that is not `[Flags]` with it;
+  their message now names what the type defines instead of advising a call that could not have rescued them.
+  `JD017` follows on every count, and reads "Any.Enum draws only values the type defines".
+
 - **A distinct collection is judged on the finished chain, so the order its constraints were written in no longer
   decides the verdict.** Three calls *widen* what such a collection can reach — `Containing(...)` with a value the
   element generator cannot produce, `ContainingAny(...)`, and `Distinct(comparer)` with an equality finer than the

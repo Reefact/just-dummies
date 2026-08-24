@@ -111,24 +111,61 @@ public sealed class AnyEnumCombinationTests {
         Check.That(seen.Count).IsEqualTo(8);
     }
 
-    [Fact(DisplayName = "OneOf: a combination is refused before the opt-in, and the message names the missing one.")]
-    public void OneOfRefusesACombinationBeforeTheOptIn() {
-        ArgumentException error = Assert.Throws<ArgumentException>(
-            () => Any.Enum<Permissions>().OneOf(Permissions.Read | Permissions.Write));
-
-        Check.That(error.Message).Contains("AllowingCombinations()");
-    }
-
-    [Fact(DisplayName = "OneOf: a combination is accepted once combinations are allowed.")]
-    public void OneOfAcceptsACombinationAfterTheOptIn() {
-        AnyEnum<Permissions> generator = Any.Enum<Permissions>()
-                                            .AllowingCombinations()
-                                            .OneOf(Permissions.Read | Permissions.Write, Permissions.Exec);
+    [Fact(DisplayName = "OneOf: a combination is accepted with no opt-in — writing one is asking for it.")]
+    public void OneOfAcceptsACombinationWithoutTheOptIn() {
+        AnyEnum<Permissions> generator = Any.Enum<Permissions>().OneOf(Permissions.Read | Permissions.Write, Permissions.Exec);
 
         HashSet<Permissions> seen = [];
         for (int i = 0; i < SampleCount; i++) { seen.Add(generator.Generate()); }
 
+        // The allow-list IS the pool, so nothing here draws over the combination universe: the caller named two exact
+        // values and gets those two. AllowingCombinations() answers the other question — what a PLAIN draw ranges
+        // over — and the default it guards is untouched, as FlagsEnumDrawsDeclaredMembersByDefault still shows.
         Check.That(seen).IsOnlyMadeOf(Permissions.Read | Permissions.Write, Permissions.Exec);
+    }
+
+    [Fact(DisplayName = "OneOf: the opt-in beside it changes nothing, in either order.")]
+    public void OneOfAndTheOptInAgreeInEitherOrder() {
+        Permissions combination = Permissions.Read | Permissions.Write;
+
+        Check.That(Any.Enum<Permissions>().AllowingCombinations().OneOf(combination).Generate()).IsEqualTo(combination);
+        Check.That(Any.Enum<Permissions>().OneOf(combination).AllowingCombinations().Generate()).IsEqualTo(combination);
+        Check.That(Any.Enum<Permissions>().OneOf(combination).Generate()).IsEqualTo(combination);
+    }
+
+    [Fact(DisplayName = "OneOf: a value no combination of declared members produces is refused, naming both.")]
+    public void OneOfRefusesAValueTheTypeDoesNotDefine() {
+        // Bit 3 is declared nowhere, so 8 is neither a member nor an OR of members — the case the acceptance above
+        // must not swallow, since no constraint the caller could add would ever make it drawable.
+        ArgumentException error = Assert.Throws<ArgumentException>(() => Any.Enum<Permissions>().OneOf((Permissions)8));
+
+        Check.That(error.Message).Contains("neither a declared member of Permissions nor a combination of its declared members");
+        // The advice is gone with the refusal it belonged to: AllowingCombinations() cannot rescue this value.
+        Check.That(error.Message).Not.Contains("AllowingCombinations()");
+    }
+
+    [Fact(DisplayName = "OneOf: the empty combination is refused where the enum declares no zero member.")]
+    public void OneOfRefusesZeroWhereItIsNotDeclared() {
+        ArgumentException error = Assert.Throws<ArgumentException>(() => Any.Enum<Sides>().OneOf(default(Sides)));
+
+        Check.That(error.Message).Contains("neither a declared member of Sides nor a combination of its declared members");
+    }
+
+    [Fact(DisplayName = "OneOf: a non-[Flags] enum still admits only its declared members.")]
+    public void OneOfRefusesACompositeOnANonFlagsEnum() {
+        // Nothing about the acceptance leaks to the enums that never asked to be combined.
+        ArgumentException error = Assert.Throws<ArgumentException>(() => Any.Enum<OrderStatus>().OneOf((OrderStatus)7));
+
+        Check.That(error.Message).Contains("is not a declared member of OrderStatus");
+    }
+
+    [Fact(DisplayName = "OneOf: a combination is accepted on an enum too wide for the universe to be enumerated.")]
+    public void OneOfAcceptsACombinationBeyondTheCombinableCeiling() {
+        // What deciding membership arithmetically — rather than by searching the universe — buys: twenty-one non-zero
+        // members put AllowingCombinations() past its ceiling, and OneOf never has to go there.
+        AnyEnum<WideBits> generator = Any.Enum<WideBits>().OneOf(WideBits.B00 | WideBits.B20);
+
+        Check.That(generator.Generate()).IsEqualTo(WideBits.B00 | WideBits.B20);
     }
 
     [Fact(DisplayName = "Except: exclusions compare by equality, so a combination carrying an excluded bit survives.")]

@@ -51,6 +51,13 @@ matter — and that is the point.
   had no say in is what makes a passing test mean anything, and a short, tame one proves
   nothing about a `\r` or a 300-character input. Narrow it with the invariants your code
   actually has.
+- **A guard the floor does not cover**: `Any.String().NotBlank()` requires at least one
+  character that is not whitespace — what a constructor guarding with
+  `string.IsNullOrWhiteSpace` demands, which `NonEmpty()` does not give you: `"\n\r"` is
+  not empty. Interior whitespace stays legal, so `"a b"` is a value it admits. Whitespace
+  here is the BCL's own `char.IsWhiteSpace`, wider than the `Whitespaces` family, so the two
+  conflict naming each side where the filler must supply the non-blank character — an
+  anchored literal already carrying one settles it instead.
 - **Character families, and every one of them narrows**: `Printable`, `NonPrintable`,
   `Alpha`, `Numeric`, `AlphaNumeric`, `Punctuation` (POSIX `[:punct:]`), `Whitespaces`
   and `Hexadecimal` (RFC 4648) each occupy one slot, so a second one conflicts naming

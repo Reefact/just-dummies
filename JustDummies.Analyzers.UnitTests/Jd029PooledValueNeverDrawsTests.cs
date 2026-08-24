@@ -59,6 +59,16 @@ public class Jd029PooledValueNeverDrawsTests {
     }
 
     [Fact]
+    public async Task Reports_a_pooled_value_of_nothing_but_whitespace_under_NotBlank() {
+        // The value is not empty, so NonEmpty would admit it; NotBlank is what refuses it, and a pool holding one
+        // value that survives keeps this at the severity a still-working chain deserves.
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync("        _ = Any.String().OneOf(\"ok\", \"  \").NotBlank();");
+
+        Check.That(diagnostics.Length).IsEqualTo(1);
+        Check.That(diagnostics[0].GetMessage()).IsEqualTo("This value never draws: NotBlank() refuses it");
+    }
+
+    [Fact]
     public async Task Does_not_report_a_binary_floating_point_pool() {
         // Double and Single are out of scope on purpose: their constants have no exact decimal, and judging one
         // through decimal could refuse a value the run time admits. Under-reporting is the safe direction.

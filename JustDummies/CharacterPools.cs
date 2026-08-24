@@ -80,6 +80,24 @@ internal static class CharacterPools {
         return character is Space or Tab;
     }
 
+    /// <summary>
+    ///     Whether the character is one <see cref="string.IsNullOrWhiteSpace" /> would call blank.
+    /// </summary>
+    /// <remarks>
+    ///     Deliberately <b>wider</b> than <see cref="IsAsciiWhitespace" />, and the two are not interchangeable.
+    ///     <see cref="Whitespaces" /> is a <b>drawing pool</b>: the space and the tab, the readable pair a test can
+    ///     rely on seeing (ADR-0075). This is a <b>rejection test</b>, and it has to agree with the BCL predicate a
+    ///     domain actually guards with — <see cref="char.IsWhiteSpace(char)" />, which within ASCII accepts six
+    ///     characters, the four line and page breaks included. Measured on the difference: of the unconstrained
+    ///     draws a short ceiling makes blank, two in three are blank only by way of a character the family does not
+    ///     name, so a member built on the narrower pool would leave most of what it promises to reject in place.
+    ///     Unicode rather than ASCII for the same reason: a pooled value is the caller's own text, and a no-break
+    ///     space is blank to the guard that will judge it.
+    /// </remarks>
+    internal static bool IsBlank(char character) {
+        return char.IsWhiteSpace(character);
+    }
+
     internal static bool IsAsciiHexadecimal(char character) {
         return IsAsciiDigit(character) || character is >= 'A' and <= 'F' or >= 'a' and <= 'f';
     }

@@ -8,6 +8,26 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ## [Unreleased]
 
+### Added
+
+- **`NotBlank()` on `Any.String()`, for the guard a floor of one character never covered.** It requires at
+  least one character that is not whitespace — exactly what a constructor guarding with
+  `string.IsNullOrWhiteSpace` demands — and carries the same floor of one that `NonEmpty()` sets. The two are
+  not interchangeable: `"\n\r"` is not empty, and under a short ceiling an entirely blank draw is ordinary
+  rather than rare, so `NonEmpty()` was letting through the very values such a domain rejects. Interior
+  whitespace stays legal and only an entirely blank value is refused, so `"a b"` is admitted; punctuation stays
+  reachable, which is what separates this from `AlphaNumeric()`. It is built, never filtered, so the guarantee
+  costs no redraw, and an anchored prefix, suffix or fragment already carrying a non-blank character satisfies
+  it on its own, **wherever in the chain that anchor was written** — the constraint answers for the finished
+  specification, never for the prefix of it that happened to be declared first, so the same three calls in any
+  order reach the same verdict. Where no anchor carries one, and the filler is left only whitespace to draw —
+  `Whitespaces()`, `WithChars(" \t")` — or the anchors already fill the declared length, the chain conflicts
+  naming both sides. One caveat worth knowing: whitespace here is the BCL's `char.IsWhiteSpace`, six characters in ASCII,
+  while the `Whitespaces()` family remains the readable pair of space and tab — a test predicate and a drawing
+  alphabet, deliberately not the same set. `JD030` now reports the shifted interval for a chain carrying it,
+  `JD029` reports a pooled value it never draws, and `JD015` reports a value set it empties
+  ([ADR-0088](../doc/handwritten/for-maintainers/adr/0088-state-the-whitespace-guard-with-a-member-of-its-own.md)).
+
 ## [1.0.0-preview.4] - 2026-08-24
 
 ### Fixed

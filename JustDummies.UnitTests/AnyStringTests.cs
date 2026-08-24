@@ -44,6 +44,124 @@ public sealed class AnyStringTests {
         }
     }
 
+    [Fact(DisplayName = "NotBlank yields a value the guard behind IsNullOrWhiteSpace accepts.")]
+    public void NotBlankIsNeverAllWhitespace() {
+        foreach (string value in Samples(Any.String().NotBlank().WithMaxLength(4))) {
+            Check.That(string.IsNullOrWhiteSpace(value)).IsFalse();
+        }
+    }
+
+    /// <summary>
+    ///     The whole reason the member exists rather than <c>NonEmpty()</c> standing in for it: a short ceiling
+    ///     makes an all-whitespace draw ordinary, and the four line and page breaks the <c>Whitespaces</c> family
+    ///     does not name are two thirds of it.
+    /// </summary>
+    [Fact(DisplayName = "NonEmpty alone leaves the all-whitespace draw NotBlank rejects reachable.")]
+    public void NonEmptyDoesNotRejectWhitespace() {
+        HashSet<char> seen = [];
+        foreach (string value in Samples(Any.String().NonEmpty().WithMaxLength(4))) {
+            foreach (char character in value) { seen.Add(character); }
+        }
+
+        Check.That(seen.Any(character => CharacterPools.IsBlank(character) && !CharacterPools.IsAsciiWhitespace(character))).IsTrue();
+    }
+
+    [Fact(DisplayName = "NotBlank leaves interior whitespace legal — only an entirely blank value is refused.")]
+    public void NotBlankAdmitsInteriorWhitespace() {
+        Check.That(Samples(Any.String().NotBlank().WithLengthBetween(3, 8))
+                   .Any(value => value.Skip(1).Take(value.Length - 2).Any(char.IsWhiteSpace)))
+             .IsTrue();
+    }
+
+    [Fact(DisplayName = "NotBlank leans on an anchored literal that already carries a non-blank character.")]
+    public void NotBlankAcceptsANonBlankAnchor() {
+        foreach (string value in Samples(Any.String().StartingWith("A").NotBlank().WithLength(1))) {
+            Check.That(value).IsEqualTo("A");
+        }
+    }
+
+    [Fact(DisplayName = "NotBlank rescues a value whose every anchor is blank.")]
+    public void NotBlankRescuesABlankAnchor() {
+        foreach (string value in Samples(Any.String().StartingWith(" ").NotBlank().WithMaxLength(3))) {
+            Check.That(string.IsNullOrWhiteSpace(value)).IsFalse();
+        }
+    }
+
+    [Fact(DisplayName = "NotBlank names both sides when the declared family leaves only whitespace to draw.")]
+    public void NotBlankConflictsWithTheWhitespacesFamily() {
+        Check.ThatCode(() => Any.String().Whitespaces().NotBlank().Generate())
+             .Throws<ConflictingAnyConstraintException>()
+             .WithMessage("Cannot apply NotBlank() because Whitespaces() leaves only whitespace to draw.");
+    }
+
+    [Fact(DisplayName = "NotBlank names both sides when the anchors fill the declared length.")]
+    public void NotBlankConflictsWithAFullyAnchoredLength() {
+        Check.ThatCode(() => Any.String().StartingWith(" ").WithLength(1).NotBlank().Generate())
+             .Throws<ConflictingAnyConstraintException>()
+             .WithMessage("Cannot apply NotBlank() because the declared shape leaves no room for one.");
+    }
+
+    [Fact(DisplayName = "NotBlank blames the exhausted length rather than a family it never draws from.")]
+    public void NotBlankBlamesTheShapeBeforeTheFamily() {
+        // Both sides are unsatisfiable at once here. Dropping Whitespaces() would leave the chain just as refused,
+        // so naming it would send the caller to a constraint whose departure changes nothing.
+        Check.ThatCode(() => Any.String().StartingWith(" ").WithLength(1).Whitespaces().NotBlank().Generate())
+             .Throws<ConflictingAnyConstraintException>()
+             .WithMessage("Cannot apply NotBlank() because the declared shape leaves no room for one.");
+    }
+
+    [Fact(DisplayName = "A contradiction is answered for once, whichever order the same constraints were written in.")]
+    public void NotBlankRefusesAnEmptyAlphabetInEveryOrder() {
+        // The diagnosis belongs to the constraint set, so the sentence has to be the same sentence every time --
+        // not one message when the family came first and another when it came second.
+        Check.ThatCode(() => Any.String().Whitespaces().NotBlank().Generate())
+             .Throws<ConflictingAnyConstraintException>()
+             .WithMessage("Cannot apply NotBlank() because Whitespaces() leaves only whitespace to draw.");
+        Check.ThatCode(() => Any.String().NotBlank().Whitespaces().Generate())
+             .Throws<ConflictingAnyConstraintException>()
+             .WithMessage("Cannot apply NotBlank() because Whitespaces() leaves only whitespace to draw.");
+    }
+
+    [Theory(DisplayName = "An anchor satisfies NotBlank wherever in the chain it was declared.")]
+    [MemberData(nameof(AnchorRescuesNotBlankCases))]
+    public void AnchorRescuesNotBlankWhateverTheOrder(string because, Func<AnyString> chain, char anchored) {
+        // The six shapes an exhaustive permutation sweep of the string surface found order-sensitive: a filler
+        // alphabet holding no non-blank character, NotBlank(), and an anchor that carries one. Declared before the
+        // other two the anchor was honoured; declared after, the chain was refused -- the same constraint set,
+        // answered two ways. A specification is answered for once it is whole, so all of these draw.
+        foreach (string value in Samples(chain())) {
+            Check.WithCustomMessage(because).That(value).Contains(anchored.ToString());
+            Check.WithCustomMessage(because).That(value.Any(character => !char.IsWhiteSpace(character))).IsTrue();
+        }
+    }
+
+    public static TheoryData<string, Func<AnyString>, char> AnchorRescuesNotBlankCases() {
+        return new TheoryData<string, Func<AnyString>, char> {
+            { "Whitespaces + prefix", () => Any.String().Whitespaces().NotBlank().StartingWith("A"), 'A' },
+            { "Whitespaces + suffix", () => Any.String().Whitespaces().NotBlank().EndingWith("Z"), 'Z' },
+            { "Whitespaces + fragment", () => Any.String().Whitespaces().NotBlank().Containing("x"), 'x' },
+            { "WithChars + prefix", () => Any.String().WithChars(" \t").NotBlank().StartingWith("A"), 'A' },
+            { "WithChars + suffix", () => Any.String().WithChars(" \t").NotBlank().EndingWith("Z"), 'Z' },
+            { "WithChars + fragment", () => Any.String().WithChars(" \t").NotBlank().Containing("x"), 'x' },
+        };
+    }
+
+    [Fact(DisplayName = "NotBlank draws the same values whichever order its chain was written in.")]
+    public void NotBlankIsIndifferentToDeclarationOrder() {
+        // The three orders that reach a value must reach the SAME values, not merely all succeed: an anchor that
+        // arrives late has to constrain the draw exactly as one that arrived early.
+        foreach (Func<AnyString> chain in new Func<AnyString>[] {
+                     () => Any.String().StartingWith("A").Whitespaces().NotBlank(),
+                     () => Any.String().Whitespaces().StartingWith("A").NotBlank(),
+                     () => Any.String().Whitespaces().NotBlank().StartingWith("A"),
+                 }) {
+            foreach (string value in Samples(chain())) {
+                Check.That(value[0]).IsEqualTo('A');
+                Check.That(value.Skip(1).All(char.IsWhiteSpace)).IsTrue();
+            }
+        }
+    }
+
     [Fact(DisplayName = "WithLength yields exactly that many characters.")]
     public void WithLengthIsExact() {
         foreach (string value in Samples(Any.String().WithLength(10))) {

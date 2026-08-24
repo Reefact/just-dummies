@@ -148,6 +148,29 @@ public class Jd015StringConstraintsAdmitNoValueTests {
     }
 
     [Fact]
+    public async Task Reports_a_value_set_of_nothing_but_blanks_under_NotBlank() {
+        // Every value is non-empty, so NonEmpty would admit the whole pool; NotBlank empties it. The tab is the
+        // half of the difference the Whitespaces family does not name, which is why the test carries one.
+        const string source = """
+            using JustDummies;
+
+            public static class Sample {
+                public static string M() {
+                    return Any.String().NotBlank().OneOf("  ", "\t").Generate();
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new StringConstraintsAdmitNoValueAnalyzer(), source);
+
+        Check.That(diagnostics.Length).IsEqualTo(1);
+        Check.That(diagnostics[0].Id).IsEqualTo("JD015");
+        Check.That(diagnostics[0].Severity).IsEqualTo(DiagnosticSeverity.Warning);
+        Check.That(diagnostics[0].GetMessage()).Contains("NotBlank()");
+        Check.That(diagnostics[0].GetMessage()).Contains("allows none of the values");
+    }
+
+    [Fact]
     public async Task Does_not_report_a_value_set_one_value_survives() {
         // A narrowing rather than a contradiction: the chain draws "12345" happily, and JD029 names what went.
         const string source = """

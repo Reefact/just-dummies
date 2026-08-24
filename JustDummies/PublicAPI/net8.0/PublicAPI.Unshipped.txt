@@ -324,6 +324,7 @@ JustDummies.AnyString.InLowerCase() -> JustDummies.AnyString!
 JustDummies.AnyString.InUpperCase() -> JustDummies.AnyString!
 JustDummies.AnyString.NonEmpty() -> JustDummies.AnyString!
 JustDummies.AnyString.NonPrintable() -> JustDummies.AnyString!
+JustDummies.AnyString.NotBlank() -> JustDummies.AnyString!
 JustDummies.AnyString.Numeric() -> JustDummies.AnyString!
 JustDummies.AnyString.OneOf(params string![]! values) -> JustDummies.AnyString!
 JustDummies.AnyString.OneOf(System.Collections.Generic.IEnumerable<string!>! values) -> JustDummies.AnyString!

@@ -73,6 +73,17 @@ public class Jd030UndeclaredStringLengthTests {
     }
 
     [Fact]
+    public async Task Reports_a_chain_carrying_only_NotBlank() {
+        // NotBlank carries the same floor of one character as NonEmpty and leaves the ceiling alone, so it shifts
+        // the reported interval identically. A rule that knew only NonEmpty would report 0 to 1024 here, one short
+        // at both ends of what the library actually draws.
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync("        _ = Any.String().NotBlank().Generate();");
+
+        Check.That(diagnostics.Length).IsEqualTo(1);
+        Check.That(diagnostics[0].GetMessage()).IsEqualTo("This string dummy declares no length: it draws 1 to 1025 characters");
+    }
+
+    [Fact]
     public async Task Does_not_report_a_chain_written_as_a_negative_test() {
         // The guard the other rules share: a chain that is the sole body of a lambda ARGUMENT is being asserted
         // about, not written as arrange code.

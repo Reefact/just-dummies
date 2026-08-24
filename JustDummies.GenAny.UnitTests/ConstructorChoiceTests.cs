@@ -290,6 +290,43 @@ public sealed class ConstructorChoiceTests {
         Check.That(outcome.Status).IsEqualTo(ScaffoldStatus.NoEligibleConstructor);
     }
 
+    /// <summary>
+    ///     §5.1's second rule applies to a <c>struct</c> exactly as it does to a <c>class</c> — a private
+    ///     constructor behind a public <c>Create</c> is constructible through the factory either way.
+    /// </summary>
+    /// <remarks>
+    ///     A <c>struct</c> always carries a compiler-synthesized public parameterless constructor, which
+    ///     <see cref="Scaffolder.ChosenConstructor" /> must not mistake for one the developer wrote: that
+    ///     constructor bypasses the private constructor's own guard and the factory's alike, zero-initializing
+    ///     every field with nothing in the recap to say so.
+    /// </remarks>
+    [Fact(DisplayName = "A readonly struct with no accessible constructor scaffolds through its factory too.")]
+    public void AReadonlyStructWithNoAccessibleConstructorScaffoldsThroughItsFactoryToo() {
+        ScaffoldOutcome outcome = Subject.Scaffold("""
+                                                   public readonly struct Subject {
+
+                                                       private readonly decimal amount;
+
+                                                       private Subject(decimal amount) { this.amount = amount; }
+
+                                                       public static Subject Create(decimal amount) {
+                                                           if (amount <= 0) { throw new ArgumentOutOfRangeException(nameof(amount)); }
+
+                                                           return new Subject(amount);
+                                                       }
+
+                                                   }
+                                                   """);
+
+        Check.That(Names(outcome)).ContainsExactly("amount");
+
+        ScaffoldPlan plan = outcome.Plan!;
+
+        Check.That(plan.Factory).IsEqualTo("Subject.Create");
+        Check.That(plan.Parameters.Single().Expression).IsEqualTo("Any.Decimal().Positive()");
+        Check.That(outcome.File!.SourceText).Contains("return Subject.Create(");
+    }
+
     private static string[] Names(ScaffoldOutcome outcome) {
         Check.That(outcome.Status).IsEqualTo(ScaffoldStatus.Scaffolded);
 

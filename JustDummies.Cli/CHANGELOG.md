@@ -8,6 +8,15 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ## [Unreleased]
 
+### Fixed
+
+- **A `readonly struct` behind a private constructor and a public `Create` now scaffolds through its
+  factory, not a zero-initialized default.** Every `struct` carries a constructor the compiler
+  synthesizes rather than the developer writes, and the engine mistook it for an accessible one:
+  `Generate()` returned `new Money()` untouched by any guard, a constant value the type's own
+  factory would refuse, drawn the same way on every call. It now reads the factory exactly as it
+  already does for a `class` built the same way.
+
 ## [1.1.0-beta.3] - 2026-08-24
 
 ### Added

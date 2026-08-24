@@ -309,3 +309,9 @@ tools/justdummies-check/*.log
 # copies of the solution Stryker compiles the mutants in. The workflow writes under artifacts/ (already
 # ignored above); a local run defaults to StrykerOutput/ next to the config file.
 StrykerOutput/
+
+# Agent worktrees: a Claude Code workflow that isolates its agents gives each one a git worktree here,
+# so several can edit the tree at once without colliding. They are working copies of this repository —
+# transient, removed when the run ends, and never content. The rest of .claude/ IS tracked, which is why
+# this needs saying: without it the untracked worktrees read as changes waiting to be committed.
+.claude/worktrees/

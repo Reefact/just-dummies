@@ -1037,9 +1037,14 @@ compilation says plainly that it decided nothing.
 The console recap is not decoration: it is the mechanism that keeps the tool honest about what it
 inferred and what it guessed.
 
-The run below is the same `Order` as §4.1, but *before* `AnyCustomer` was scaffolded — which is why
-`customer` is the one parameter left open. Scaffolding `Customer` and re-running with `--force`
-closes it, and that two-step is the intended way through a graph of aggregates.
+The run below is the `Order` of §4.1. Its two composed parameters both read `AnyX`: each is drawn
+through the generator its own type owns (§5.4), which is where that type's recipe lives.
+
+The recap reads the same whether or not the compilation carries those two generators yet, and that
+is deliberate. Where one is missing the emitted file names it anyway and does not compile, so the
+developer meets `CS0246` at that line naming the type to scaffold — `dum generate OrderReference`,
+then re-run with `--force`, and that two-step is the intended way through a graph of aggregates. The
+recap does not duplicate the compiler here: a file that will not build is not a silence.
 
 The second line names the construction `Generate()` will make, and it is not always a constructor:
 a type built through §5.1's factory rule prints that call instead — `factory Email.Create(string)` —
@@ -1051,20 +1056,19 @@ $ dum generate Order
 Analyzing Shop.Domain.Order
   constructor Order(OrderReference, Customer, int, OrderStatus, IReadOnlyList<string>, DateTime)
 
-  reference  OrderReference         Any.String().NonEmpty().As(OrderReference.Create)  factory, guard
-  customer   Customer               —                                                  TODO
-  quantity   int                    Any.Int32().Positive()                             guard
+  reference  OrderReference         new AnyOrderReference()              AnyX
+  customer   Customer               new AnyCustomer()                    AnyX
+  quantity   int                    Any.Int32().Positive()               guard
   status     OrderStatus            Any.Enum<OrderStatus>()
   tags       IReadOnlyList<string>  Any.ListOf(Any.String().NonEmpty())
   placedAt   DateTime               Any.DateTime()
 
-✓ AnyOrder.cs — 5 of 6 parameters inferred, 1 TODO.
-  The file will not compile until you resolve it. That is deliberate.
+✓ AnyOrder.cs — 6 of 6 parameters inferred.
 ```
 
 The right-hand column carries the provenance of each expression: empty for the base table,
-`guard` when §5.3 tightened it, `factory` when §5.4 composed it, `AnyX` when a scaffolded
-generator was reused, `guards not combined` for the §5.3 conflict case, `no source` when the
+`guard` when §5.3 tightened it, `AnyX` when §5.4 named the generator the type owns,
+`guards not combined` for the §5.3 conflict case, `no source` when the
 constructor body was unavailable so no guard could be read, `unread guards` when a leading statement
 throws or calls in a way the recognised set did not match, or in a place the engine cannot vouch for —
 below a write to the parameter, or under something deciding whether it runs at all —,
@@ -1090,10 +1094,10 @@ generator was inferred there, and the count says so. Its row reads the same word
 since the row and the closing line describe the same parameter:
 
 ```console
-  customer   Customer   —                        TODO
-  name       string     Any.String().NonEmpty()  to verify, unread guards
+  crates  Crate<int>  —                        TODO
+  name    string      Any.String().NonEmpty()  to verify, unread guards
 
-✓ AnyOrder.cs — 5 of 6 parameters inferred, 1 TODO, 1 to verify.
+✓ AnyWarehouse.cs — 5 of 6 parameters inferred, 1 TODO, 1 to verify.
   The file will not compile until you resolve it. That is deliberate.
 ```
 

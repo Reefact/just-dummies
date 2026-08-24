@@ -41,7 +41,6 @@ internal static class Recap {
     /// <summary>The order the provenance column reads in, so two runs never word the same facts differently.</summary>
     private static readonly (GenAny.Provenance Flag, string Word)[] Words = [
         (GenAny.Provenance.Scaffolded, "AnyX"),
-        (GenAny.Provenance.Factory, "factory"),
         (GenAny.Provenance.Guard, "guard"),
         (GenAny.Provenance.GuardsNotCombined, "guards not combined"),
         (GenAny.Provenance.UnreadGuards, "unread guards"),
@@ -186,10 +185,6 @@ internal static class Recap {
 
         if (open > 0 || uncertain > 0) {
             Line(console, "  The file will not compile until you resolve it. That is deliberate.");
-
-            foreach (ScaffoldedParameter parameter in plan.Parameters.Where(p => p.Candidates.Count > 0)) {
-                Line(console, $"  {parameter.Name}: several factories qualify — {string.Join(", ", parameter.Candidates)}.");
-            }
         }
 
         EntryPoint(outcome, console);

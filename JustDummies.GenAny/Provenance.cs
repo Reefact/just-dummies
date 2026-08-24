@@ -26,9 +26,6 @@ public enum Provenance {
     /// <summary>A constructor or factory guard tightened it (§5.3).</summary>
     Guard = 1,
 
-    /// <summary>Composed through a recognised static factory (§5.4).</summary>
-    Factory = 2,
-
     /// <summary>Composed through a generator already scaffolded for the type (§5.4).</summary>
     Scaffolded = 4,
 

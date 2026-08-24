@@ -27,15 +27,14 @@ $ dum generate Order
 Analyzing Shop.Domain.Order
   constructor Order(OrderReference, Customer, int, OrderStatus, IReadOnlyList<string>, DateTime)
 
-  reference  OrderReference         Any.String().NonEmpty().As(OrderReference.Create)  factory, guard
-  customer   Customer               —                                                  TODO
-  quantity   int                    Any.Int32().Positive()                             guard
+  reference  OrderReference         new AnyOrderReference()              AnyX
+  customer   Customer               new AnyCustomer()                    AnyX
+  quantity   int                    Any.Int32().Positive()               guard
   status     OrderStatus            Any.Enum<OrderStatus>()
   tags       IReadOnlyList<string>  Any.ListOf(Any.String().NonEmpty())
   placedAt   DateTime               Any.DateTime()
 
-✓ AnyOrder.cs — 5 of 6 parameters inferred, 1 TODO.
-  The file will not compile until you resolve it. That is deliberate.
+✓ AnyOrder.cs — 6 of 6 parameters inferred.
 ```
 
 `AnyOrder.cs` est une `partial class` implémentant `IAny<Order>`, avec une méthode `With…` par
@@ -50,8 +49,7 @@ qui a été **deviné** :
 | --- | --- |
 | *(vide)* | directement issu de la table de base pour ce type |
 | `guard` | un guard du constructeur l'a resserré (`quantity <= 0` → `.Positive()`) |
-| `factory` | composé via une fabrique statique (`.As(OrderReference.Create)`) |
-| `AnyX` | un générateur que vous aviez déjà scaffoldé a été réutilisé |
+| `AnyX` | tiré par le generator que ce type possède |
 | `TODO` | rien n'a pu être inféré ; le fichier nomme ce qu'il reste à faire |
 | `to verify` | un générateur *a bien* été inféré, mais quelque chose près de ce paramètre n'a pas pu être lu — vérifiez-le |
 | `unread guards` | ce « quelque chose » : une garde que l'outil ne reconnaît pas, un helper dans lequel il ne voit pas, ou une garde qu'il lit sans pouvoir la situer — sous une écriture du paramètre, ou sous quelque chose qui décide si elle s'exécute |
@@ -72,7 +70,7 @@ travail et ajoute au-dessus une ligne qui ne compile pas :
 
 <!-- jd:skip -->
 ```csharp
-private static IAny<string> ValueFactory() {
+private static IAny<string> AnyValidValue() {
     // TODO(dum): 'string value' may be guarded by something dum could not read (§9).
     //   This is dum's best generator for the type; verify it honours the real invariant,
     //   or replace it, then delete the line below.
@@ -89,17 +87,28 @@ ultérieure — est l'échec qui coûte le plus cher, parce qu'il surgit loin de
 
 ## À travers un graphe d'agrégats
 
-`customer` est ouvert ci-dessus parce que `AnyCustomer` n'existe pas encore. Scaffoldez-le,
-recompilez, puis relancez :
+Un type de domaine est tiré par le generator qu'il possède — `new AnyOrderReference()` — là où vit
+la recette de ce type. Rien ne la redérive à chaque site qui le compose, donc aucun fichier ne porte
+sa propre copie d'un invariant susceptible de dériver du constructeur qu'il décrit
+([ADR-0089](../../for-maintainers/adr/0089-draw-a-composed-parameter-through-the-generator-its-type-owns.fr.md)).
+
+Ce nom est écrit **que vous l'ayez scaffoldé ou non**, si bien que scaffolder un agrégat d'abord
+vous donne un fichier qui nomme ce qui lui manque encore :
+
+```text
+error CS0246: The type or namespace name 'AnyOrderReference' could not be found
+```
+
+Soit la liste de travail, à la ligne qui en a besoin :
 
 ```bash
-dum generate Customer
-dotnet build
+dum generate OrderReference
 dum generate Order --force
 ```
 
-La ligne se referme sur `new AnyCustomer()`. Ce parcours en deux temps est la façon prévue de
-traverser un graphe d'agrégats : l'outil ne compose que ce qu'il voit déjà dans votre compilation.
+Le récapitulatif ne le répète pas — un fichier qui ne build pas n'est pas un silence. La seule forme
+composée qu'il laisse à un `TODO` est un type générique, parce que `AnyRepository` nommerait aussi
+mal `Repository<Order>` que `Repository<Line>`.
 
 ## L'atteindre comme `Any.Order()`
 

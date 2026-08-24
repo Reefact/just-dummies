@@ -18,15 +18,14 @@ $ dum generate Order
 Analyzing Shop.Domain.Order
   constructor Order(OrderReference, Customer, int, OrderStatus, IReadOnlyList<string>, DateTime)
 
-  reference  OrderReference         Any.String().NonEmpty().As(OrderReference.Create)  factory, guard
-  customer   Customer               —                                                  TODO
-  quantity   int                    Any.Int32().Positive()                             guard
+  reference  OrderReference         new AnyOrderReference()              AnyX
+  customer   Customer               new AnyCustomer()                    AnyX
+  quantity   int                    Any.Int32().Positive()               guard
   status     OrderStatus            Any.Enum<OrderStatus>()
   tags       IReadOnlyList<string>  Any.ListOf(Any.String().NonEmpty())
   placedAt   DateTime               Any.DateTime()
 
-✓ AnyOrder.cs — 5 of 6 parameters inferred, 1 TODO.
-  The file will not compile until you resolve it. That is deliberate.
+✓ AnyOrder.cs — 6 of 6 parameters inferred.
 ```
 
 `AnyOrder.cs` is a `partial class` implementing `IAny<Order>`, with a `With…`
@@ -42,14 +41,18 @@ what was **guessed**:
 | --- | --- |
 | *(empty)* | straight from the base table for that type |
 | `guard` | a constructor guard tightened it (`quantity <= 0` → `.Positive()`) |
-| `factory` | composed through a static factory (`.As(OrderReference.Create)`) |
-| `AnyX` | a generator you already scaffolded was reused |
+| `AnyX` | drawn through the generator that type owns |
 | `TODO` | nothing could be inferred; the file names what to do |
 | `unavailable` | the generator exists in JustDummies but not in the asset your project resolves |
 
-`customer` above is open because `AnyCustomer` does not exist yet. Scaffold it,
-rebuild, re-run with `--force`, and the line closes to `new AnyCustomer()`. That
-two-step is the intended way through a graph of aggregates.
+**`AnyX` reads the same whether that generator exists yet or not.** A domain
+type is drawn through the generator it owns — `new AnyOrderReference()` — which
+is where that type's recipe belongs, so no two files carry their own copy of it.
+Where you have not scaffolded it yet, the emitted file names it anyway and your
+build says `CS0246` at that line: run `dum generate OrderReference`, then re-run
+with `--force`. That two-step is the intended way through a graph of aggregates,
+and the recap does not duplicate the compiler — a file that will not build is
+not a silence.
 
 **A TODO is not a failure.** The tool emits an identifier that does not exist,
 so *your own build* reports what it could not infer, at the exact line, with the

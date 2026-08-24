@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.CodeAnalysis;
 
@@ -60,6 +61,7 @@ public sealed class ScaffolderTests {
     ///     worth leaving out now that composition names a generator for every plain type (ADR-0089): what is
     ///     left in this branch is largely the constructed ones.
     /// </remarks>
+    [SuppressMessage(SonarRule.S1135.Category, SonarRule.S1135.Id, Justification = "Names the marker the tool emits by design (§5.5), not unfinished work here.")]
     [Fact(DisplayName = "An open generic parameter is not told to run a command the tool refuses.")]
     public void AnOpenGenericParameterIsNotToldToRunARefusedCommand() {
         ScaffoldOutcome outcome = Subject.Scaffold("""

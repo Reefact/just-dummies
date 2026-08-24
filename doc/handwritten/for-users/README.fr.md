@@ -3,9 +3,14 @@
 🌍 **Langues :**  
 🇬🇧 [English](./README.md) | 🇫🇷 Français (ce fichier)
 
-JustDummies génère des valeurs de test **arbitraires mais valides**. Vous déclarez les invariants
-qu'une valeur doit satisfaire, la bibliothèque en tire une qui les satisfait, et toute exécution
-séquentielle se rejoue depuis la graine qu'elle rapporte.
+JustDummies génère les valeurs de test dont vous avez besoin et dont vous ne vous souciez pas — la
+référence que porte une commande, le nom que doit avoir un client — **arbitraires mais valides**.
+Vous déclarez les invariants qu'une telle valeur doit satisfaire, la bibliothèque en tire une qui
+les satisfait, et toute exécution séquentielle se rejoue depuis la graine qu'elle rapporte.
+
+La valeur dont un test *parle* n'en fait pas partie : elle reste un littéral. C'est sur cette ligne
+que la bibliothèque mérite son nom ; [Démarrer](./guides/getting-started.fr.md) la trace en dix
+minutes.
 
 ## Commencer ici
 

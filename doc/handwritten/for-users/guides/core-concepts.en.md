@@ -6,6 +6,10 @@
 Five ideas carry the whole library. Once they are in place, every generator in the reference reads
 the same way, and the surprises stop.
 
+All five stand on the definition [Getting started](./getting-started.en.md#what-is-a-dummy) opens
+with — a dummy is a value a test needs and does not care about. Everything below is how the library
+serves *that*; none of it makes a value a dummy that the test is about.
+
 ## A generator is a recipe, not a value
 
 `Any.Int32()` does not give you a number. It gives you an `AnyInt32` — an object describing which

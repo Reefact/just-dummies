@@ -95,76 +95,130 @@ variations from it without any of them interfering.
 
 ## A real test, before and after
 
-Here is an ordinary test for a discount rule. The rule is simple: applying a percentage discount to
-an amount must never produce a negative price.
+Here is an ordinary test for a discount rule: taking 20 % off an order leaves four fifths of it. An
+order cannot be built without a reference and a customer name, so the test has to supply both — and
+the discount rule consults neither.
 
-Written with literals, it checks exactly one arithmetic case:
+Written with literals, all four arguments look equally deliberate:
 
 <!-- jd:declarations -->
 ```csharp
-public sealed class DiscountTests {
+public sealed class OrderTests {
 
     [Fact]
-    public void A_discount_never_produces_a_negative_price() {
-        decimal amount     = 100m;
-        int     percentage = 20;
+    public void A_20_percent_discount_takes_a_fifth_off_the_order() {
+        // Arrange
+        Order order = new Order("ORD-12345678", "Alice", amount: 100m);
 
-        decimal discounted = Discount.Apply(amount, percentage);
+        // Act
+        order.ApplyDiscount(20);
 
-        Assert.Equal(80m, discounted);
-    }
-
-}
-
-internal static class Discount {
-
-    public static decimal Apply(decimal amount, int percentage) {
-        return amount - (amount * percentage / 100m);
+        // Assert
+        Assert.Equal(80m, order.Total);
     }
 
 }
 ```
 
-The test name promises something about *every* discount; the body delivers one. Nothing here would
-notice a rule that breaks at 100 %, or at an amount of zero.
+Nothing in that test is about Alice, and nothing is about order `12345678` — but the code does not
+say so. A reader has to open `Order` to find out whether the name is load-bearing, and the next
+maintainer will hesitate before touching either literal.
 
-Written with dummies, the body finally says what the name says:
+Written with dummies, the test states which values it does not care about:
 
 <!-- jd:declarations -->
 ```csharp
-public sealed class DiscountTests {
+public sealed class OrderTests {
 
     [Fact]
-    public void A_discount_never_produces_a_negative_price() {
-        // An order amount is non-negative and has two decimal places: that is the domain,
-        // not the assertion. A percentage runs from 0 to 100 for the same reason.
-        decimal amount     = Any.Decimal().Between(0m, 10_000m).WithScale(2).Generate();
-        int     percentage = Any.Int32().Between(0, 100).Generate();
+    public void A_20_percent_discount_takes_a_fifth_off_the_order() {
+        // Arrange
+        // Reference and customer must be well-formed for an Order to exist.
+        // Neither takes any part in the discount: that is what makes them dummies.
+        string anyReference = Any.String().StartingWith("ORD-").WithLength(12).Generate();
+        string anyCustomer  = Any.String().Alpha().WithLengthBetween(1, 50).Generate();
 
-        decimal discounted = Discount.Apply(amount, percentage);
+        Order order = new Order(anyReference, anyCustomer, amount: 100m);
 
-        Assert.InRange(discounted, 0m, amount);
-    }
+        // Act
+        order.ApplyDiscount(20);
 
-}
-
-internal static class Discount {
-
-    public static decimal Apply(decimal amount, int percentage) {
-        return amount - (amount * percentage / 100m);
+        // Assert
+        Assert.Equal(80m, order.Total);   // 100m and 20 are load-bearing — they stay literals
     }
 
 }
 ```
+
+Two conventions there are worth copying. Every drawn value is named **`anyXxxx`**, so a reader can
+tell a dummy from a chosen value at a glance, without tracing where it came from. And the body is
+split **Arrange / Act / Assert**, which is what makes the next observation impossible to miss.
+
+Because look at where the `any` names appear: in the Arrange, and nowhere else. That is a dummy in
+the strict sense — **a value the test needs and does not care about.** Neither draw reaches the
+assertion, and no draw can change the outcome. Meanwhile `100m` and `20` stayed literals precisely
+because the assertion *is* about them; generating them would have destroyed the test.
+
+Which raises a fair question: if a dummy cannot change the outcome, why draw it at all? Because the
+*test* not caring is not the same as *the code* not caring. `ApplyDiscount` has no business
+consulting a customer name, and a draw that comes back empty, fifty characters long, or full of
+punctuation is what demonstrates it does not. `"Alice"` can only ever demonstrate it for Alice. A
+dummy is where a wrong dependency on an irrelevant value comes to light — and when one does, the
+seed replays it exactly (see below).
 
 Read the comment in that sample again, because it is the single most important habit in this
 library:
 
 > **A constraint states an invariant of the domain. It never restates what the test asserts.**
 
-The amount is constrained to be non-negative because *amounts are non-negative*, not because the
-assertion would fail otherwise. If you ever find yourself adding a constraint to make an assertion
-pass, the constraint is in the wrong place — and usually the assertion has just found a real defect.
+The reference is constrained to `ORD-` and twelve characters because *that is what an order
+reference is*, not because `ApplyDiscount` would misbehave otherwise. If you ever find yourself
+adding a constraint to make an assertion pass, the constraint is in the wrong place — and usually
+the assertion has just found a real defect.
+
+## Where the line runs
+
+The habit is easier to keep once you have seen it broken. Here is the same rule, tested by
+generating the amount and the percentage as well:
+
+<!-- jd:declarations -->
+```csharp
+public sealed class OrderTests {
+
+    [Fact]
+    public void Applying_a_discount_keeps_the_total_between_zero_and_the_amount() {
+        // Arrange
+        string  anyReference  = Any.String().StartingWith("ORD-").WithLength(12).Generate();
+        string  anyCustomer   = Any.String().Alpha().WithLengthBetween(1, 50).Generate();
+        decimal anyAmount     = Any.Decimal().Between(0m, 10_000m).WithScale(2).Generate();
+        int     anyPercentage = Any.Int32().Between(0, 100).Generate();
+
+        Order order = new Order(anyReference, anyCustomer, anyAmount);
+
+        // Act
+        order.ApplyDiscount(anyPercentage);
+
+        // Assert
+        Assert.InRange(order.Total, 0m, anyAmount);   // ← an `any` name, in the assertion
+    }
+
+}
+```
+
+It compiles, it passes, and every constraint is an honest domain invariant. Two of those four draws
+are still dummies. The other two are not, and the naming convention makes it visible without any
+analysis: **`anyAmount` appears in the assertion.** This test cares a great deal which amount came
+back — it has simply phrased its expectation relative to whatever that was.
+
+> **If an `anyXxxx` reaches your assertion, it is not a dummy.** You have written a property, and
+> JustDummies is running it with a sample size of one.
+
+That is a real technique and nothing here stops you, but be clear about what you are holding. A
+property-based library states such a rule and then *attacks* it: many cases per run, biased toward
+the edges, shrinking any failure to a minimal counter-example. JustDummies draws one ordinary case
+and moves on. So name the test for what a single run can show — keep *never* and *always* out of it
+— and reach for [a property-based library](./faq.en.md#is-this-a-property-based-testing-library)
+when you need the claim genuinely defended.
 
 ## Making a failure reproducible
 
@@ -173,10 +227,14 @@ only acceptable if a failure can be replayed exactly. That is what `Any.Reproduc
 
 ```csharp
 Any.Reproducibly(() => {
-    decimal amount     = Any.Decimal().Between(0m, 10_000m).WithScale(2).Generate();
-    int     percentage = Any.Int32().Between(0, 100).Generate();
+    string anyReference = Any.String().StartingWith("ORD-").WithLength(12).Generate();
+    string anyCustomer  = Any.String().Alpha().WithLengthBetween(1, 50).Generate();
 
-    Assert.InRange(amount - (amount * percentage / 100m), 0m, amount);
+    Order order = new Order(anyReference, anyCustomer, amount: 100m);
+
+    order.ApplyDiscount(20);
+
+    Assert.Equal(80m, order.Total);
 });
 ```
 

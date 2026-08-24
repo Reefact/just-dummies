@@ -17,6 +17,25 @@ change its twin** — same headings, same code blocks, same markers, in the same
 C# samples in the user documentation on every build** (ADR-0055). A sample that does not
 compile fails the build, so keep samples real.
 
+## Writing a sample that uses the library
+
+Two conventions, because the user documentation teaches by example and a sample is read far
+more often than it is written:
+
+* **Name every drawn value `anyXxxx`** — `anyReference`, not `reference`. A reader then tells
+  a dummy from a chosen value at a glance, and the page's central rule becomes checkable by
+  eye: *an `anyXxxx` in an assertion is not a dummy, it is a property with a sample size of
+  one* (`getting-started`, "Where the line runs").
+* **Split the body Arrange / Act / Assert**, with those comments. It is what makes the `any`
+  names visibly confined to the Arrange.
+
+A value the assertion is *about* stays a literal — generating it does not make the test
+stronger, it makes it a property this library cannot defend.
+
+This governs **samples in `doc/handwritten/for-users/`**, not the repository's own suites:
+in `JustDummies.UnitTests` and `JustDummies.PropertyTests` the drawn value *is* the subject
+under test, so it is not a dummy and `value` is the right name for it.
+
 ## Two naming conventions, both correct
 
 * The decision base names its English pages **without a language suffix** — `NNNN-slug.md`

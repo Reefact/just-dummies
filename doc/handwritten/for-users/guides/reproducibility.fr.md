@@ -43,10 +43,14 @@ Enveloppez le corps d'un test et tout ce qui est tiré à l'intérieur provient 
 
 ```csharp
 Any.Reproducibly(() => {
-    decimal amount     = Any.Decimal().Between(0m, 10_000m).WithScale(2).Generate();
-    int     percentage = Any.Int32().Between(0, 100).Generate();
+    string anyReference = Any.String().StartingWith("ORD-").WithLength(12).Generate();
+    string anyCustomer  = Any.String().Alpha().WithLengthBetween(1, 50).Generate();
 
-    Assert.InRange(amount - (amount * percentage / 100m), 0m, amount);
+    Order order = new Order(anyReference, anyCustomer, amount: 100m);
+
+    order.ApplyDiscount(20);
+
+    Assert.Equal(80m, order.Total);
 });
 ```
 
@@ -73,10 +77,14 @@ pour valeur :
 
 ```csharp
 Any.Reproducibly(1743029518, () => {
-    decimal amount     = Any.Decimal().Between(0m, 10_000m).WithScale(2).Generate();
-    int     percentage = Any.Int32().Between(0, 100).Generate();
+    string anyReference = Any.String().StartingWith("ORD-").WithLength(12).Generate();
+    string anyCustomer  = Any.String().Alpha().WithLengthBetween(1, 50).Generate();
 
-    Assert.InRange(amount - (amount * percentage / 100m), 0m, amount);
+    Order order = new Order(anyReference, anyCustomer, amount: 100m);
+
+    order.ApplyDiscount(20);
+
+    Assert.Equal(80m, order.Total);
 });
 ```
 
@@ -180,14 +188,21 @@ l'enveloppe :
 
 <!-- jd:declarations -->
 ```csharp
-public sealed class DiscountTests {
+public sealed class OrderTests {
 
     [Fact, Reproducible]
-    public void A_discount_never_produces_a_negative_price() {
-        decimal amount     = Any.Decimal().Between(0m, 10_000m).WithScale(2).Generate();
-        int     percentage = Any.Int32().Between(0, 100).Generate();
+    public void A_20_percent_discount_takes_a_fifth_off_the_order() {
+        // Arrange
+        string anyReference = Any.String().StartingWith("ORD-").WithLength(12).Generate();
+        string anyCustomer  = Any.String().Alpha().WithLengthBetween(1, 50).Generate();
 
-        Assert.InRange(amount - (amount * percentage / 100m), 0m, amount);
+        Order order = new Order(anyReference, anyCustomer, amount: 100m);
+
+        // Act
+        order.ApplyDiscount(20);
+
+        // Assert
+        Assert.Equal(80m, order.Total);
     }
 
 }

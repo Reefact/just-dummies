@@ -78,6 +78,7 @@ the scope list wherever it is documented.
 
 ## Where each train stands
 
-`cli` has published up to `cli-v1.1.0-beta.1`. A tool takes no public-API baseline: what a
-version commits to there is the command line, not a set of types — which is why its 1.0.0 is a
-**beta** rather than a preview. Check `git tag` for the others rather than assuming.
+`git tag` is the record — read it rather than assuming, for every train. The one thing worth
+knowing before you look: `cli` takes no public-API baseline, what a version commits to there
+being the command line rather than a set of types, which is why its 1.0.0 is a **beta** rather
+than a preview.

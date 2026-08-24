@@ -53,8 +53,8 @@ alone passes on an empty dependency list. Do not weaken either assertion.
 The train's first release was **`cli-v1.0.0-beta.1`** — 1.0.0 because the tool implements its
 specification entire, and a beta rather than a preview because a tool takes no public-API
 baseline (§13.4): what a version commits to here is the command line, not a set of types. It
-has since published **`cli-v1.1.0-beta.1`**, which adds `--entry-point`,
-`--entry-point-namespace`, `--format json` and a `dum.json` of project defaults, all additive.
+has since gained `--entry-point`, `--entry-point-namespace`, `--format json` and a `dum.json`
+of project defaults, all additive; `git tag --list 'cli-v*'` is the record of what has shipped.
 
 Cutting a release is the `release-train` skill.
 

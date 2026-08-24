@@ -1346,12 +1346,13 @@ Named explicitly so they are not mistaken for oversights.
   otherwise state an invariant of the paths that reach it rather than of the parameter (§5.3).
   Two shapes still escape it, and both are silent rather than merely unread — the tool sees no
   rejection to be uncertain about. A guard helper that **returns** the value it checked — `_name =
-  Ensure.NotBlank(value);` — is indistinguishable from normalisation, and reading it as doubt would
+  Ensure.Valid(value);` — is indistinguishable from normalisation, and reading it as doubt would
   mean reading `_name = value.Trim();` as doubt too, which blocks the compilation of constructors
   carrying no guard at all; the helpers of the two libraries §5.3 reads by resolved symbol
-  (ADR-0086) are the measured exception, and every other returning validator keeps this answer. And a guard reached only through a level of indirection the tool does
-  not follow — a local copy of the parameter (`var v = value; Validate(v);`), a lambda closing over
-  it, a call reached through a member rather than the parameter's own name. In both the tool still
+  (ADR-0086) are the measured exception, and every other returning validator keeps this answer. And
+  a guard reached only through a level of indirection the tool does not follow — a local copy of the
+  parameter (`var v = value; Validate(v);`), a lambda closing over it, a call reached through a
+  member rather than the parameter's own name. In both the tool still
   cannot tell the parameter from an unconstrained one, and it does not guess — which is the residue
   this non-goal is about: not what happens once doubt is established, but the doubt the tool never
   sees.

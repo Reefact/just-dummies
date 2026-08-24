@@ -111,19 +111,39 @@ Assert.Equal(0m, Shipping.FeeFor(orderTotal));
 The test now proves nothing about the threshold — it proves the code agrees with the constraint the
 test itself invented. Worse, the day the threshold moves to 200, this test still passes.
 
-The honest version constrains what the domain actually says, and lets the assertion carry the rule:
+The reflex at this point is to loosen the constraint and compute the expectation from the drawn
+value. Do not: it fails in the same way, and adds one of its own.
 
 ```csharp
-// The domain says an order total is a non-negative amount of money. That is all it says.
+// Still wrong, in a way that looks careful.
 decimal orderTotal = Any.Decimal().Between(0m, 10_000m).WithScale(2).Generate();
 
-decimal expected = orderTotal > 100m ? 0m : 4.90m;
+decimal expected = orderTotal > 100m ? 0m : 4.90m;   // the rule, copied into the test
 
 Assert.Equal(expected, Shipping.FeeFor(orderTotal));
 ```
 
-If you cannot express the test without constraining the dummy to the assertion's shape, you usually
-want two tests — one on each side of the boundary — with the boundary written explicitly.
+That test asserts that `Shipping.FeeFor` agrees with a second copy of `Shipping.FeeFor` written in
+the test body, so it too survives the threshold moving to 200. And `orderTotal` was never a dummy to
+begin with: the fee is exactly what it decides, which makes it data taking part in what the test
+verifies.
+
+The honest version writes the boundary down, on both sides of it:
+
+```csharp
+// The threshold is what these tests are about, so it is spelled out rather than drawn.
+Assert.Equal(0m,    Shipping.FeeFor(150m));   // above: waived
+Assert.Equal(4.90m, Shipping.FeeFor(50m));    // below: charged
+```
+
+Notice what is *not* in that sample: a dummy. This test has none, and needs none — every value it
+handles is one it is about. A dummy would appear the moment the fee had to be computed for a whole
+order, whose reference and customer the rule never consults. **Reach for a dummy when a value must
+be there and must not matter; when the value is the point, write it as a literal.**
+
+Two tests rather than one is the shape to expect here: if you cannot express the test without
+constraining the drawn value to the assertion's shape, the value is not a dummy, and what you want
+is a literal on each side of the boundary.
 
 ## Values are built, not filtered
 

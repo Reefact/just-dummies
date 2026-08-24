@@ -51,6 +51,30 @@ public sealed class ScaffolderTests {
         Check.That(outcome.File.SourceText).Contains("TODO_supply_a_generator_for_one");
     }
 
+    /// <summary>
+    ///     The TODO names <c>dum generate</c> only where that command would take the name.
+    /// </summary>
+    /// <remarks>
+    ///     §3.2 refuses a generic target, so telling the developer to run it on one would be an instruction
+    ///     the tool itself declines — worse than no instruction. It costs nothing to leave out, and it is
+    ///     worth leaving out now that composition names a generator for every plain type (ADR-0089): what is
+    ///     left in this branch is largely the constructed ones.
+    /// </remarks>
+    [Fact(DisplayName = "An open generic parameter is not told to run a command the tool refuses.")]
+    public void AnOpenGenericParameterIsNotToldToRunARefusedCommand() {
+        ScaffoldOutcome outcome = Subject.Scaffold("""
+                                                   public sealed class Repository<T> { public Repository() { } }
+
+                                                   public sealed class Subject { public Subject(Repository<Customer> one) { } }
+                                                   """);
+
+        string emitted = outcome.File!.SourceText;
+
+        Check.That(emitted).Contains("no generator inferred for 'Repository<Customer> one'.");
+        Check.That(emitted).Not.Contains("dum generate Repository");
+        Check.That(emitted).Contains("Write one here, or replace it and always pass .WithOne(...) instead.");
+    }
+
     [Fact(DisplayName = "The file opens the namespaces its short names lean on, and no others.")]
     public void TheFileOpensTheNamespacesItsNamesLeanOn() {
         ScaffoldOutcome outcome = Subject.Scaffold("""

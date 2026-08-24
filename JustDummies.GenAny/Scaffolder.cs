@@ -213,7 +213,11 @@ public static class Scaffolder {
     ///     </para>
     /// </remarks>
     private static IMethodSymbol? ChosenFactory(INamedTypeSymbol target) {
-        if (target.InstanceConstructors.Any(candidate => candidate.DeclaredAccessibility == Accessibility.Public)) {
+        // A struct's synthesized public parameterless constructor is not "its own declared surface" this
+        // remark means — the developer wrote none, the compiler always adds one — so it does not gate the
+        // factory the way an ineligible constructor the developer actually wrote does.
+        if (target.InstanceConstructors.Any(candidate => candidate.DeclaredAccessibility == Accessibility.Public
+                                                       && !(target.TypeKind == TypeKind.Struct && candidate.IsImplicitlyDeclared))) {
             return null;
         }
 
@@ -241,6 +245,12 @@ public static class Scaffolder {
         return target.InstanceConstructors
                      .Where(candidate => candidate.DeclaredAccessibility == Accessibility.Public)
                      .Where(candidate => candidate.Parameters.All(parameter => parameter.RefKind is RefKind.None or RefKind.In))
+                     // A struct always carries this constructor, synthesized rather than written — accepting it
+                     // here routes straight past a private constructor and its factory, zero-initializing every
+                     // field under a recap that says nothing was left unread. A class's own implicit default
+                     // constructor is unaffected: it is the only one there is, not a bypass of one the developer
+                     // wrote.
+                     .Where(candidate => !(target.TypeKind == TypeKind.Struct && candidate.IsImplicitlyDeclared))
                      .OrderByDescending(candidate => candidate.Parameters.Length)
                      .FirstOrDefault();
     }

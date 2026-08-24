@@ -104,7 +104,7 @@ public sealed class AnyOneOfTests {
     [Fact(DisplayName = "A distinct set over OneOf is gated by the pool's cardinality, both ways.")]
     public void CardinalityGatesDistinctCollections() {
         // Two distinct values cannot fill a set of three: caught eagerly, like any cardinality conflict.
-        Check.ThatCode(() => Any.SetOf(Any.OneOf(1, 2)).WithCount(3)).Throws<ConflictingAnyConstraintException>();
+        Check.ThatCode(() => Any.SetOf(Any.OneOf(1, 2)).WithCount(3).Generate()).Throws<ConflictingAnyConstraintException>();
 
         // Within the domain it fills the set with the requested distinct values.
         HashSet<int> set = Any.SetOf(Any.OneOf(1, 2, 3)).WithCount(3).Generate();
@@ -275,7 +275,7 @@ public sealed class AnyOneOfTests {
     public void CardinalityFollowsTheFilteredPool() {
         // Three values minus one leaves two: a set of three no longer fits, a set of two does and holds exactly
         // the survivors.
-        Check.ThatCode(() => Any.SetOf(Any.OneOf(1, 2, 3).DifferentFrom(2)).WithCount(3)).Throws<ConflictingAnyConstraintException>();
+        Check.ThatCode(() => Any.SetOf(Any.OneOf(1, 2, 3).DifferentFrom(2)).WithCount(3).Generate()).Throws<ConflictingAnyConstraintException>();
 
         HashSet<int> set = Any.SetOf(Any.OneOf(1, 2, 3).DifferentFrom(2)).WithCount(2).Generate();
         Check.That(set).IsOnlyMadeOf(1, 3);

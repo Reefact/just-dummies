@@ -12,17 +12,20 @@ namespace JustDummies;
 ///     <see cref="AnyArray{T}" />, <see cref="AnySequence{T}" />, <see cref="AnySet{T}" /> and, for its keys,
 ///     <see cref="AnyDictionary{TKey,TValue}" />): the element generator, a shared <see cref="CountSpec" />, whether
 ///     the collection must be distinct, an optional equality comparer, and the values it must contain. Every mutation
-///     returns a new state and validates the whole eagerly — so a collection generator that exists can always
-///     produce, laid out directly rather than generated-then-filtered.
+///     returns a new state; a count bound that contradicts another count bound, or a required count the declared
+///     capacity cannot fit, is caught as it is declared — neither can ever be undone by a later call. Whether the
+///     distinctness the chain ends up asking for is buildable is a different question, answered once, on the
+///     finished specification (see <see cref="Materialize" />).
 /// </summary>
 /// <remarks>
 ///     Distinctness follows the two-layer contract the library commits to: when the element generator advertises a
 ///     small <see cref="ICardinalityHint{T}">cardinality</see> that the requested count would exceed — counting only
 ///     the elements that must be drawn from that generator, since values pinned with <c>Containing(...)</c> outside
 ///     its domain (see <see cref="ICardinalityHint{T}" />) are supplied directly and extend the effective domain —
-///     the conflict is caught at declaration time (<see cref="ConflictingAnyConstraintException" />); otherwise the
-///     count is drawn and the elements are filled by a bounded dedup-draw, and a genuine shortfall surfaces at
-///     generation as an <see cref="AnyGenerationException" /> naming the seed to replay.
+///     the conflict is caught deterministically, before any element is generated
+///     (<see cref="ConflictingAnyConstraintException" />); otherwise the count is drawn and the elements are filled
+///     by a bounded dedup-draw, and a genuine shortfall surfaces at generation as an
+///     <see cref="AnyGenerationException" /> naming the seed to replay.
 /// </remarks>
 /// <typeparam name="T">The element type.</typeparam>
 internal sealed class CollectionState<T> {
@@ -151,6 +154,10 @@ internal sealed class CollectionState<T> {
     internal List<T> Materialize(RandomSource source) {
         if (source is null) { throw new ArgumentNullException(nameof(source)); }
 
+        // The one satisfiability question later constraints could still have widened, so it is asked here — where the
+        // specification is whole — rather than on whatever prefix of it was declared first.
+        EnsureDistinctIsBuildable();
+
         SeededRandom random   = source.Current;
         int          required = _fixedContaining.Count + _generatedContaining.Count;
         int?         cap      = _distinct ? CardinalityCap() : null;
@@ -193,32 +200,59 @@ internal sealed class CollectionState<T> {
         return candidate;
     }
 
+    /// <summary>
+    ///     The one check a later call can only ever tighten, so declaring it is the moment to ask: the elements a
+    ///     collection is required to contain against the capacity it is allowed. Neither side can be loosened
+    ///     afterwards — a count bound only narrows, and a containment requirement only adds.
+    /// </summary>
     private void Validate(ConstraintCall applying) {
-        int required = _fixedContaining.Count + _generatedContaining.Count;
-        _count.EnsureFits(required, applying);
+        _count.EnsureFits(_fixedContaining.Count + _generatedContaining.Count, applying);
+    }
 
+    /// <summary>
+    ///     Refuses a distinct collection that cannot be built: one required to contain the same value twice, or
+    ///     asking for more values than its element generator, plus what the pinned values add, can supply.
+    /// </summary>
+    /// <remarks>
+    ///     <para>
+    ///         Asked on the finished specification rather than as each constraint arrives, because the calls that
+    ///         feed it <b>widen</b> what is reachable. <c>Containing</c> with a value outside the element domain and
+    ///         <c>ContainingAny</c> each fill a slot without drawing on the generator; <c>Distinct(comparer)</c> with
+    ///         an equality finer than the default both raises the cardinality and tells apart two pinned values the
+    ///         default merges.
+    ///     </para>
+    ///     <para>
+    ///         Asked mid-chain, the same constraints were refused in one order and honoured in another — a verdict
+    ///         belonging to the constraint set, read off whichever prefix of it happened to be declared first. Both
+    ///         sentences therefore name <c>Distinct()</c>, the constraint that cannot be honoured however the chain
+    ///         was written, rather than whichever call the refusal happened to land on.
+    ///     </para>
+    /// </remarks>
+    private void EnsureDistinctIsBuildable() {
         if (!_distinct) { return; }
 
-        IEqualityComparer<T> comparer = _comparer ?? EqualityComparer<T>.Default;
+        ConstraintCall       distinctness = ConstraintCall.Of("Distinct");
+        IEqualityComparer<T> comparer     = _comparer ?? EqualityComparer<T>.Default;
         for (int left = 0; left < _fixedContaining.Count; left++) {
             for (int right = left + 1; right < _fixedContaining.Count; right++) {
                 if (comparer.Equals(_fixedContaining[left], _fixedContaining[right])) {
-                    throw ConflictingAnyConstraintException.DuplicateInDistinctCollection(applying, AnyDerivation.Display(_fixedContaining[left]));
+                    throw ConflictingAnyConstraintException.DuplicateInDistinctCollection(distinctness, AnyDerivation.Display(_fixedContaining[left]));
                 }
             }
         }
 
-        if (_itemCardinality is long cardinality) {
-            // Only the elements that must be drawn from the generator count against its cardinality: values pinned
-            // outside its domain occupy their own slots, and each opaque ContainingAny draw is credited as if it
-            // could land outside too (conservative — an unprovable overlap defers to the bounded draw rather than
-            // a false conflict). The subtractive form keeps the left side within int, so a near-long.MaxValue
-            // domain never overflows the comparison.
-            int need          = Math.Max(_count.Floor, required);
-            int fromGenerator = need - FixedOutsideCount() - _generatedContaining.Count;
-            if (fromGenerator > cardinality) {
-                throw ConflictingAnyConstraintException.DistinctElementsExceedCardinality(applying, Elements(fromGenerator), cardinality.ToString(CultureInfo.InvariantCulture));
-            }
+        if (_itemCardinality is not long cardinality) { return; }
+
+        // Only the elements that must be drawn from the generator count against its cardinality: values pinned
+        // outside its domain occupy their own slots, and each opaque ContainingAny draw is credited as if it
+        // could land outside too (conservative — an unprovable overlap defers to the bounded draw rather than
+        // a false conflict). The subtractive form keeps the left side within int, so a near-long.MaxValue
+        // domain never overflows the comparison.
+        int required      = _fixedContaining.Count + _generatedContaining.Count;
+        int need          = Math.Max(_count.Floor, required);
+        int fromGenerator = need - FixedOutsideCount() - _generatedContaining.Count;
+        if (fromGenerator > cardinality) {
+            throw ConflictingAnyConstraintException.DistinctElementsExceedCardinality(distinctness, Elements(fromGenerator), cardinality.ToString(CultureInfo.InvariantCulture));
         }
     }
 

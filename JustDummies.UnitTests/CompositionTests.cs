@@ -276,7 +276,7 @@ public sealed class CompositionTests {
         Unrenderable value = new();
 
         ConflictingAnyConstraintException caught = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.ListOf(Any.ElementOf(new[] { value })).Distinct().Containing(value).Containing(value));
+            () => Any.ListOf(Any.ElementOf(new[] { value })).Distinct().Containing(value).Containing(value).Generate());
 
         Check.That(caught.Message).Contains(nameof(Unrenderable));
         Check.That(caught.Message).Not.Contains("ToString() exploded");

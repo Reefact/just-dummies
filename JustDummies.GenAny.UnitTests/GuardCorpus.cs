@@ -494,7 +494,7 @@ internal static class GuardCorpus {
                                                                                return new Rating(Guard.Against.OutOfRange(stars, nameof(stars), 1, 5));
                                                                            }
                                                                        }
-                                                                       """, defect: "a returning guard-library helper is recognised only as field = call;, never in return position", usings: "using Ardalis.GuardClauses;", requiresVerification: true),
+                                                                       """, usings: "using Ardalis.GuardClauses;", requiresVerification: true),
 
 
         // ---- Finding 6b. The same carve-out reaches `field = call;` only; `decimal net =
@@ -512,7 +512,7 @@ internal static class GuardCorpus {
                                                                                   Total = net;
                                                                               }
                                                                           }
-                                                                          """, defect: "a recognised guard-library helper is invisible in local-declaration position too", usings: "using Ardalis.GuardClauses;", requiresVerification: true),
+                                                                          """, usings: "using Ardalis.GuardClauses;", requiresVerification: true),
 
 
         // ---- Finding 7a. `LibraryGuards` folds `NullOrWhiteSpace` onto the same `.NonEmpty()` row as

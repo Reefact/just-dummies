@@ -653,6 +653,64 @@ public sealed class GuardReadingTests {
         Check.That(code.Provenance.HasFlag(Provenance.UnreadGuards)).IsTrue();
     }
 
+    /// <summary>
+    ///     ADR-0086's carve-out reaches <c>field = call;</c> only — a recognised library call whose result is
+    ///     RETURNED, rather than assigned to a field or property, is a shape <c>MarkIfValidatedElsewhere</c>
+    ///     did not scan for at all. Marked here, not read: reading it would mean trusting a used result the
+    ///     rest of the carve-out deliberately keeps narrow.
+    /// </summary>
+    [Fact(DisplayName = "A recognised library call handed to a return statement is marked, not silent.")]
+    public void ARecognisedLibraryCallHandedToAReturnStatementIsMarked() {
+        ScaffoldOutcome outcome = Subject.Scaffold("""
+                                                   using Ardalis.GuardClauses;
+
+                                                   namespace Shop.Domain;
+
+                                                   public sealed class Subject {
+
+                                                       private Subject(int stars) { Stars = stars; }
+
+                                                       public int Stars { get; }
+
+                                                       public static Subject Create(int stars) {
+                                                           return new Subject(Guard.Against.OutOfRange(stars, nameof(stars), 1, 5));
+                                                       }
+
+                                                   }
+                                                   """);
+
+        ScaffoldedParameter stars = outcome.Plan!.Parameters.Single();
+
+        Check.That(stars.Provenance.HasFlag(Provenance.UnreadGuards)).IsTrue();
+    }
+
+    /// <summary>
+    ///     The same gap, a third statement shape: a recognised call as a local declaration's own initializer.
+    /// </summary>
+    [Fact(DisplayName = "A recognised library call handed to a local declaration is marked, not silent.")]
+    public void ARecognisedLibraryCallHandedToALocalDeclarationIsMarked() {
+        ScaffoldOutcome outcome = Subject.Scaffold("""
+                                                   using Ardalis.GuardClauses;
+
+                                                   namespace Shop.Domain;
+
+                                                   public sealed class Subject {
+
+                                                       public decimal Total { get; }
+
+                                                       public Subject(decimal total) {
+                                                           decimal net = Guard.Against.NegativeOrZero(total);
+                                                           Total = net;
+                                                       }
+
+                                                   }
+                                                   """);
+
+        ScaffoldedParameter total = outcome.Plan!.Parameters.Single();
+
+        Check.That(total.Provenance.HasFlag(Provenance.UnreadGuards)).IsTrue();
+    }
+
     /// <summary>One parameter of a <c>Subject</c> guarded through a library's own spelling, using and all.</summary>
     private static ScaffoldedParameter LibraryGuarded(string parameterType, string body, string usings) {
         ScaffoldOutcome outcome = Subject.Scaffold($$"""

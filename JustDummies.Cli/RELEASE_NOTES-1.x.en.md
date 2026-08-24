@@ -2,6 +2,28 @@
 
 What changed for you, release by release, in the `cli` train. For the full technical record — every constraint, every edge case, every ADR — see [CHANGELOG.md](https://github.com/Reefact/just-dummies/blob/main/JustDummies.Cli/CHANGELOG.md).
 
+## 1.1.0-beta.3 — August 24, 2026
+
+_Guard reading gets wider and stricter at once — two named guard libraries and a factory-built type are read now, while three shapes where the tool was confidently wrong about a guard's reach are refused instead of guessed._
+
+### ⚠️ Breaking changes
+
+- **A guard the tool cannot place above every write to its parameter, or cannot prove runs on every construction, is now marked `unread guards`** — so a scaffold that used to compile can block your build until you confirm the generator. It used to emit a constraint the real constructor does not hold, which is the worse of the two failures: the file compiled, the recap reported nothing worth looking at, and the draw threw inside the constructor much later.
+
+### ✨ New
+
+- **The guard helpers of Ardalis.GuardClauses and CommunityToolkit.Diagnostics are read, in both their spellings** — `Name = Guard.Against.NullOrWhiteSpace(name);` no longer ends the scan before anything is read, so a constructor guarded in that style stops scaffolding neutral generators under a recap showing no doubt anywhere ([ADR-0086](https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-maintainers/adr/0086-read-the-guard-helpers-of-named-libraries.md)). A recognised library's method outside the measured rows earns `unread guards` rather than silence.
+- **A type with no accessible constructor now scaffolds through its own factory** — the canonical validating value object, a private constructor behind a public `Create`, has `Generate()` call the factory and its guards read like a constructor's, with the recap's signature line naming the call the emitted file makes (`factory Email.Create(string)`). An abstract type with a factory scaffolds too.
+
+### 🐛 Bug Fixes
+
+- **A guard is no longer read as a bound on a value the constructor had already replaced, or never reached** — a write to the parameter itself (`percent = 100 - percent`), a `: this(…)` or `: base(…)` initializer that runs entire before the body, a loop, `switch`, `using` or `finally` whose order the tool does not read, and a `return` or `goto` above the guard. Each is now placed correctly or refused.
+- **A sign guard on an unsigned parameter no longer loses its constraint** — `if (size <= 0)` on a `byte` or a `uint` read as `.Positive()`, a member the unsigned generators do not carry, so it was dropped silently and `Any.Byte()` still drew `0`; it now reads as `.NonZero()`, which is the same constraint rather than a looser one.
+- **The arithmetic `ArgumentOutOfRangeException` throw helpers are read as guards instead of blocking the build** — `ThrowIfNegative`, `ThrowIfNegativeOrZero`, `ThrowIfZero`, `ThrowIfLessThan`, `ThrowIfGreaterThan`, `ThrowIfLessThanOrEqual` and `ThrowIfGreaterThanOrEqual` now map to the same numeric rows a comparison already builds.
+- **A guard followed by an `else`, or an `else if` chain that throws throughout, is read rather than passed over** — reading stops at the first branch that does not throw unconditionally, and that branch, with everything after it, is marked `unread guards`.
+- **An enum exclusion guard is read as `AnyEnum<T>.DifferentFrom`** — `if (status == Status.None) { throw … }`, the commonest enum guard there is, used to read as `.NonZero()`, a member `AnyEnum<T>` does not carry, and was dropped silently.
+- **The recap no longer prints `guard` for a factory whose guards tightened nothing** — the word is computed from the constraints that reach the emitted chain, on the factory path as on every other.
+
 ## 1.1.0-beta.2 — August 22, 2026
 
 _Guard reading gets substantially more thorough — a helper-delegated or modern-spelled guard, and a guard that throws in a shape the tool couldn't parse before, are both read now — and a guard the tool still can't vouch for blocks compilation instead of compiling silently._

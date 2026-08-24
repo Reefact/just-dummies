@@ -14,15 +14,17 @@ internal static class Shapes {
 
     private static readonly IReadOnlyList<string> LibraryOnly = ["JustDummies"];
 
-    /// <summary>The §4.1 example, every parameter inferred, with <c>AnyCustomer</c> already scaffolded.</summary>
+    /// <summary>
+    ///     The §4.1 example, every parameter inferred, with both composed types already scaffolded.
+    /// </summary>
     internal static ScaffoldPlan Order() {
         return new ScaffoldPlan(new TargetType("Order", "Shop.Domain", NamespaceStyle.FileScoped),
                                 "AnyOrder",
                                 ["System", "System.Collections.Generic", "JustDummies"],
-                                OrderParameters(customer: ScaffoldedParameter.DrawnFrom("customer", "Customer", "new AnyCustomer()")));
+                                OrderParameters(customer: Composed("customer", "Customer", "new AnyCustomer()")));
     }
 
-    /// <summary>The same, before <c>Customer</c> was scaffolded: the one open parameter of §5.5.</summary>
+    /// <summary>The same with one parameter the engine will not name at all: the open parameter of §5.5.</summary>
     internal static ScaffoldPlan OrderWithTodo() {
         return new ScaffoldPlan(new TargetType("Order", "Shop.Domain", NamespaceStyle.FileScoped),
                                 "AnyOrder",
@@ -38,8 +40,8 @@ internal static class Shapes {
         return new ScaffoldPlan(new TargetType("Order", "Shop.Domain", NamespaceStyle.FileScoped),
                                 "AnyOrder",
                                 ["System", "System.Collections.Generic", "JustDummies"],
-                                OrderParameters(customer: ScaffoldedParameter.DrawnFrom("customer", "Customer", "new AnyCustomer()",
-                                                                                        Provenance.UnreadGuards)));
+                                OrderParameters(customer: Composed("customer", "Customer", "new AnyCustomer()",
+                                                                   Provenance.UnreadGuards)));
     }
 
     /// <summary>One parameter, and no <c>System</c> using — the group separator has nothing to separate.</summary>
@@ -94,9 +96,18 @@ internal static class Shapes {
                                 factory: "Email.Create");
     }
 
+    /// <summary>
+    ///     A parameter drawn through the generator its own type owns, which is every composed parameter
+    ///     (ADR-0089). Spelled here because the provenance is what decides the parameter has no method of its
+    ///     own, and a shape that left it off would pin the emitter against a plan the engine cannot produce.
+    /// </summary>
+    private static ScaffoldedParameter Composed(string name, string type, string expression, Provenance also = Provenance.None) {
+        return ScaffoldedParameter.DrawnFrom(name, type, expression, Provenance.Scaffolded | also);
+    }
+
     private static IReadOnlyList<ScaffoldedParameter> OrderParameters(ScaffoldedParameter customer) {
         return [
-            ScaffoldedParameter.DrawnFrom("reference", "OrderReference", "Any.String().NonEmpty().As(OrderReference.Create)"),
+            Composed("reference", "OrderReference", "new AnyOrderReference()"),
             customer,
             ScaffoldedParameter.DrawnFrom("quantity", "int", "Any.Int32().Positive()"),
             ScaffoldedParameter.DrawnFrom("status", "OrderStatus", "Any.Enum<OrderStatus>()"),

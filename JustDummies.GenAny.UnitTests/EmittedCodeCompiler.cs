@@ -57,9 +57,13 @@ internal static class EmittedCodeCompiler {
                                           public static Email Create(string value) { return new Email(); }
                                       }
 
-                                      // Already scaffolded, which is why AnyOrder composes it rather than leaving it open.
+                                      // Already scaffolded, which is why AnyOrder composes them rather than leaving them open.
                                       public sealed class AnyCustomer : JustDummies.IAny<Customer> {
                                           public Customer Generate() { return new Customer("name"); }
+                                      }
+
+                                      public sealed class AnyOrderReference : JustDummies.IAny<OrderReference> {
+                                          public OrderReference Generate() { return OrderReference.Create("R-1"); }
                                       }
 
                                   }

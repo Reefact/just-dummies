@@ -5,11 +5,16 @@ namespace JustDummies.GenAny.UnitTests;
 /// <summary>
 ///     How a type the base table has no row for is drawn anyway (§5.4).
 /// </summary>
+/// <remarks>
+///     One rule, since ADR-0089: through the generator that type owns. What the type's own factories look like
+///     no longer reaches this decision. A value object's recipe belongs to the generator scaffolded for it, so
+///     every site composing that type calls it rather than deriving a copy free to drift from the original.
+/// </remarks>
 public sealed class CompositionTests {
 
     /// <summary>
-    ///     A scaffolded generator wins, and that is how aggregates compose in cascade: scaffold
-    ///     <c>Customer</c>, re-run <c>--force</c> on <c>Order</c>, and the open parameter closes.
+    ///     A scaffolded generator is used, and that is how aggregates compose in cascade: scaffold
+    ///     <c>Customer</c>, re-run <c>--force</c> on <c>Order</c>, and the parameter closes.
     /// </summary>
     [Fact(DisplayName = "A generator already scaffolded for the type is used.")]
     public void AGeneratorAlreadyScaffoldedIsUsed() {
@@ -43,179 +48,73 @@ public sealed class CompositionTests {
         Check.That(parameter.Expression).IsEqualTo("new AnyEmail()");
     }
 
-    [Theory(DisplayName = "A one-parameter static factory is recognised by name.")]
-    [InlineData("Create")]
-    [InlineData("From")]
-    [InlineData("Of")]
-    [InlineData("Parse")]
-    public void AOneParameterStaticFactoryIsRecognisedByName(string factory) {
-        ScaffoldedParameter parameter = Composed($$"""
-                                                  public sealed class Email {
-                                                      public static Email {{factory}}(string value) { return new Email(); }
-                                                  }
-                                                  """,
-                                                  "Email");
-
-        Check.That(parameter.Expression).IsEqualTo($"Any.String().NonEmpty().As(Email.{factory})");
-        Check.That(parameter.Provenance.HasFlag(Provenance.Factory)).IsTrue();
-    }
-
     /// <summary>
-    ///     Guard reading is what makes factory composition correct rather than nominally present.
+    ///     The generator is named whether or not it exists yet, which is the whole of ADR-0089.
     /// </summary>
     /// <remarks>
-    ///     <c>OrderReference.Create</c> guards on <c>IsNullOrWhiteSpace</c>, so the emitted chain is
-    ///     <c>Any.String().NonEmpty().As(OrderReference.Create)</c>. Without the guard it would be
-    ///     <c>Any.String().As(OrderReference.Create)</c> — measured throwing <c>AnyGenerationException</c> 594
-    ///     times in 10 000 draws, about one in seventeen, which is what an unconstrained draw over the
-    ///     seventeen lengths 0 to 16 predicts.
+    ///     <c>CS0246</c> at that line is not a failure to resolve the parameter — it is the resolution, carried
+    ///     to the one place the developer cannot miss it, naming the type to scaffold. That is ADR-0060's
+    ///     mechanism, spelled as a type name rather than as an invented identifier, so the parameter is
+    ///     <b>not</b> open: nothing about it is left for §5.5 to answer.
     /// </remarks>
-    [Fact(DisplayName = "A factory's own guards tighten the generator for its parameter.")]
-    public void AFactorysOwnGuardsTightenItsParameter() {
-        ScaffoldedParameter parameter = Composed("""
-                                                 public sealed class OrderReference {
-
-                                                     public static OrderReference Create(string value) {
-                                                         if (string.IsNullOrWhiteSpace(value)) {
-                                                             throw new ArgumentException(nameof(value));
-                                                         }
-
-                                                         if (value.Length != 12) { throw new ArgumentException(nameof(value)); }
-
-                                                         return new OrderReference();
-                                                     }
-
-                                                 }
-                                                 """,
-                                                 "OrderReference");
-
-        Check.That(parameter.Expression).IsEqualTo("Any.String().WithLength(12).As(OrderReference.Create)");
-        Check.That(parameter.Provenance.HasFlag(Provenance.Factory)).IsTrue();
-        Check.That(parameter.Provenance.HasFlag(Provenance.Guard)).IsTrue();
-    }
-
-    /// <summary>
-    ///     The reported case, pinned: a bounded reference, spelled as the interval it is and nothing more.
-    /// </summary>
-    /// <remarks>
-    ///     Three guards, and the chain deduced from them used to carry two faults the tool's own package
-    ///     reports. <c>WithMinLength(8).WithMaxLength(20)</c> is the pair <c>JD031</c> names, so the scaffolded
-    ///     file was marked on its first run, before its author had touched it. And the <c>NonEmpty</c> read
-    ///     from <c>IsNullOrWhiteSpace</c> narrowed nothing beside a floor of eight, which absorbs it — one
-    ///     invariant stated twice.
-    ///     <para>
-    ///         Both come from the same absence, which is why one change answers both: the engine wrote whatever
-    ///         survived combination without ever asking what the finished chain said.
-    ///     </para>
-    /// </remarks>
-    [Fact(DisplayName = "A bounded factory parameter is emitted as the range it is, once.")]
-    public void ABoundedFactoryParameterIsEmittedAsTheRange() {
-        ScaffoldedParameter parameter = Composed("""
-                                                 public sealed class OrderReference {
-
-                                                     public static OrderReference Create(string value) {
-                                                         if (string.IsNullOrWhiteSpace(value)) { throw new ArgumentException(nameof(value)); }
-                                                         if (value.Length < 8) { throw new ArgumentException(nameof(value)); }
-                                                         if (value.Length > 20) { throw new ArgumentException(nameof(value)); }
-
-                                                         return new OrderReference();
-                                                     }
-
-                                                 }
-                                                 """,
-                                                 "OrderReference");
-
-        Check.That(parameter.Expression).IsEqualTo("Any.String().WithLengthBetween(8, 20).As(OrderReference.Create)");
-        Check.That(parameter.Provenance.HasFlag(Provenance.Guard)).IsTrue();
-        Check.That(parameter.Provenance.HasFlag(Provenance.GuardsNotCombined)).IsFalse();
-    }
-
-    /// <summary>
-    ///     §6 words the column <c>tightened</c>, so <c>guard</c> is computed from the constraints applied,
-    ///     never from those read — on the factory path exactly as on the constructor's.
-    /// </summary>
-    /// <remarks>
-    ///     Two factory guards that admit no value are read correctly and tighten nothing: the bounding
-    ///     constraints are all dropped and the recap says so. Reporting <c>guard</c> beside
-    ///     <c>guards not combined</c> claimed a tightening the chain does not carry — the flag came from the
-    ///     reading, where every other path computes it from the writing.
-    /// </remarks>
-    [Fact(DisplayName = "A factory whose guards admit no value reports the drop, not a tightening.")]
-    public void AFactoryWhoseGuardsAdmitNoValueReportsTheDropNotATightening() {
-        ScaffoldedParameter parameter = Composed("""
-                                                 public sealed class OrderReference {
-
-                                                     public static OrderReference Create(string value) {
-                                                         if (value.Length < 8) { throw new ArgumentException(nameof(value)); }
-                                                         if (value.Length > 5) { throw new ArgumentException(nameof(value)); }
-
-                                                         return new OrderReference();
-                                                     }
-
-                                                 }
-                                                 """,
-                                                 "OrderReference");
-
-        Check.That(parameter.Expression).IsEqualTo("Any.String().As(OrderReference.Create)");
-        Check.That(parameter.Provenance.HasFlag(Provenance.Factory)).IsTrue();
-        Check.That(parameter.Provenance.HasFlag(Provenance.GuardsNotCombined)).IsTrue();
-        Check.That(parameter.Provenance.HasFlag(Provenance.Guard)).IsFalse();
-    }
-
-    [Fact(DisplayName = "Create wins where several factories qualify.")]
-    public void CreateWinsWhereSeveralQualify() {
+    [Fact(DisplayName = "A type with no generator yet is named anyway, for the compiler to report.")]
+    public void ATypeWithNoGeneratorYetIsNamedAnyway() {
         ScaffoldedParameter parameter = Composed("""
                                                  public sealed class Email {
-                                                     public static Email Of(string value) { return new Email(); }
                                                      public static Email Create(string value) { return new Email(); }
                                                  }
                                                  """,
                                                  "Email");
 
-        Check.That(parameter.Expression).IsEqualTo("Any.String().NonEmpty().As(Email.Create)");
+        Check.That(parameter.Expression).IsEqualTo("new AnyEmail()");
+        Check.That(parameter.Provenance.HasFlag(Provenance.Scaffolded)).IsTrue();
+        Check.That(parameter.IsUnresolved).IsFalse();
     }
 
-    // Where several remain the parameter is left open rather than guessed at: which one the developer meant is
-    // theirs to say.
-    [Fact(DisplayName = "Several qualifying factories and no Create leaves the parameter open.")]
-    public void SeveralQualifyingFactoriesLeaveTheParameterOpen() {
-        ScaffoldedParameter parameter = Composed("""
-                                                 public sealed class Email {
-                                                     public static Email Of(string value) { return new Email(); }
-                                                     public static Email From(string value) { return new Email(); }
-                                                 }
-                                                 """,
-                                                 "Email");
-
-        Check.That(parameter.IsUnresolved).IsTrue();
-    }
-
-    [Theory(DisplayName = "A method that is not a one-parameter conversion does not qualify.")]
-    [InlineData("public static Email Create(string value, bool checked_) { return new Email(); }")]
-    [InlineData("public static string Create(string value) { return value; }")]
-    [InlineData("public Email Create(string value) { return new Email(); }")]
-    [InlineData("internal static Email Create(string value) { return new Email(); }")]
+    /// <summary>
+    ///     The shape of the type's own members stopped being a question here.
+    /// </summary>
+    /// <remarks>
+    ///     Every row below used to route somewhere different — recognised by name, <c>Create</c> winning a tie,
+    ///     several qualifying and the parameter left open, a factory taking its own type. They now share one
+    ///     answer, and the ones that used to be refusals are the point: a type whose factories the engine could
+    ///     not choose between was left open, and the developer met a sentinel instead of the generator they
+    ///     were going to have to write either way.
+    /// </remarks>
+    [Theory(DisplayName = "What the type's own factories look like no longer reaches the decision.")]
+    [InlineData("public static Email Create(string value) { return new Email(); }")]
+    [InlineData("public static Email Parse(string value) { return new Email(); }")]
+    [InlineData("public static Email Of(string value) { return new Email(); } public static Email From(string value) { return new Email(); }")]
     [InlineData("public static Email Build(string value) { return new Email(); }")]
-    public void AMethodThatIsNotAOneParameterConversionDoesNotQualify(string method) {
+    [InlineData("public static Email Create(Email value) { return value; }")]
+    [InlineData("")]
+    public void TheTypesOwnFactoriesNoLongerReachTheDecision(string members) {
         ScaffoldedParameter parameter = Composed($$"""
                                                   public sealed class Email {
-                                                      {{method}}
+                                                      {{members}}
                                                   }
                                                   """,
                                                   "Email");
 
-        Check.That(parameter.IsUnresolved).IsTrue();
+        Check.That(parameter.Expression).IsEqualTo("new AnyEmail()");
     }
 
-    // The guard §5.2 asks for, now that composition is what can make a type reach itself.
-    [Fact(DisplayName = "A factory taking its own type does not send the engine round in circles.")]
-    public void AFactoryTakingItsOwnTypeIsNotFollowedForever() {
+    /// <summary>
+    ///     A generic type is the one composed shape §5.5 still answers for.
+    /// </summary>
+    /// <remarks>
+    ///     The naming function works from <c>type.Name</c>, which drops the arguments: <c>Repository&lt;Order&gt;</c>
+    ///     and <c>Repository&lt;Line&gt;</c> would both be told to write <c>AnyRepository</c>, and neither is the
+    ///     name to write. A sentinel that says nothing beats a name that says the wrong thing.
+    /// </remarks>
+    [Fact(DisplayName = "A generic type comes back open: its name would drop its arguments.")]
+    public void AGenericTypeComesBackOpen() {
         ScaffoldedParameter parameter = Composed("""
-                                                 public sealed class Email {
-                                                     public static Email Create(Email value) { return value; }
-                                                 }
+                                                 public sealed class Repository<T> { public Repository() { } }
+
+                                                 public sealed class Email { public Email() { } }
                                                  """,
-                                                 "Email");
+                                                 "Repository<Email>");
 
         Check.That(parameter.IsUnresolved).IsTrue();
     }
@@ -229,7 +128,46 @@ public sealed class CompositionTests {
                                                  """,
                                                  "IReadOnlyList<Email>");
 
-        Check.That(parameter.Expression).IsEqualTo("Any.ListOf(Any.String().NonEmpty().As(Email.Create))");
+        Check.That(parameter.Expression).IsEqualTo("Any.ListOf(new AnyEmail())");
+    }
+
+    /// <summary>
+    ///     Where the recipe went, and the reason the trade is worth making.
+    /// </summary>
+    /// <remarks>
+    ///     The guards on <c>OrderReference.Create</c> used to be read at every site composing an
+    ///     <c>OrderReference</c>, once per site, each copy free to drift from the constructor it described.
+    ///     They are read once now, by the generator for the type that declares them — the same chain, at the
+    ///     one address that owns it. The reported case is pinned here rather than deleted with the path that
+    ///     used to carry it: <c>WithLengthBetween(8, 20)</c>, the interval spelled once, with the
+    ///     <c>NonEmpty</c> a floor of eight absorbs left out.
+    /// </remarks>
+    [Fact(DisplayName = "The recipe a factory's guards describe belongs to the value object's own generator.")]
+    public void TheRecipeAFactorysGuardsDescribeBelongsToTheValueObject() {
+        ScaffoldOutcome outcome = Subject.Scaffold("""
+                                                   public sealed class OrderReference {
+
+                                                       private OrderReference() { }
+
+                                                       public static OrderReference Create(string value) {
+                                                           if (string.IsNullOrWhiteSpace(value)) { throw new ArgumentException(nameof(value)); }
+                                                           if (value.Length < 8) { throw new ArgumentException(nameof(value)); }
+                                                           if (value.Length > 20) { throw new ArgumentException(nameof(value)); }
+
+                                                           return new OrderReference();
+                                                       }
+
+                                                   }
+                                                   """,
+                                                   metadataName: "Shop.Domain.OrderReference");
+
+        Check.That(outcome.Status).IsEqualTo(ScaffoldStatus.Scaffolded);
+
+        ScaffoldedParameter parameter = outcome.Plan!.Parameters[0];
+
+        Check.That(parameter.Expression).IsEqualTo("Any.String().WithLengthBetween(8, 20)");
+        Check.That(parameter.Provenance.HasFlag(Provenance.Guard)).IsTrue();
+        Check.That(parameter.Provenance.HasFlag(Provenance.GuardsNotCombined)).IsFalse();
     }
 
     /// <summary>Scaffolds a <c>Subject</c> whose single parameter is of <paramref name="parameterType" />.</summary>

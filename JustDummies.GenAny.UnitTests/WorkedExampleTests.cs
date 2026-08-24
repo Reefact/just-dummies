@@ -52,9 +52,13 @@ public sealed class WorkedExampleTests {
 
                                   }
 
-                                  // Already scaffolded, which is why the example composes it rather than leaving it open.
+                                  // Already scaffolded, which is why the example composes them rather than leaving them open.
                                   public sealed class AnyCustomer : IAny<Customer> {
                                       public Customer Generate() { return new Customer("name"); }
+                                  }
+
+                                  public sealed class AnyOrderReference : IAny<OrderReference> {
+                                      public OrderReference Generate() { return OrderReference.Create("R-1"); }
                                   }
                                   """;
 
@@ -63,7 +67,7 @@ public sealed class WorkedExampleTests {
         ScaffoldPlan plan = Scaffolded();
 
         Check.That(plan.Parameters.Select(parameter => parameter.Expression))
-             .ContainsExactly("Any.String().NonEmpty().As(OrderReference.Create)",
+             .ContainsExactly("new AnyOrderReference()",
                               "new AnyCustomer()",
                               "Any.Int32().Positive()",
                               "Any.Enum<OrderStatus>()",
@@ -71,13 +75,14 @@ public sealed class WorkedExampleTests {
                               "Any.DateTime()");
     }
 
-    // §6's own worked recap: `reference` is `factory, guard` — composed through OrderReference.Create, and
-    // tightened by the guard inside that factory's body. `quantity` is `guard`; `status` is neither.
+    // §6's own worked recap: `reference` and `customer` are both `AnyX`, each drawn through the generator its
+    // own type owns — the guards inside OrderReference.Create are that generator's business, not this one's
+    // (ADR-0089). `quantity` is `guard`; `status` is neither.
     [Fact(DisplayName = "The worked example reports where each expression came from.")]
     public void TheWorkedExampleReportsItsProvenance() {
         ScaffoldPlan plan = Scaffolded();
 
-        Check.That(plan.Parameters[0].Provenance).IsEqualTo(Provenance.Factory | Provenance.Guard);
+        Check.That(plan.Parameters[0].Provenance).IsEqualTo(Provenance.Scaffolded);
         Check.That(plan.Parameters[1].Provenance).IsEqualTo(Provenance.Scaffolded);
         Check.That(plan.Parameters[2].Provenance).IsEqualTo(Provenance.Guard);
         Check.That(plan.Parameters[3].Provenance).IsEqualTo(Provenance.None);

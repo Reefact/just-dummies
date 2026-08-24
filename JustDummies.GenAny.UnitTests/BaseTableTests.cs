@@ -78,7 +78,7 @@ public sealed class BaseTableTests {
     /// </remarks>
     [Theory(DisplayName = "A nullable reference type needs no hop; a nullable value type does.")]
     [InlineData("string?", "Any.String().NonEmpty()")]
-    [InlineData("Customer?", null)]
+    [InlineData("Customer?", "new AnyCustomer()")]
     [InlineData("int?", "Any.Int32().As(value => (int?)value)")]
     [InlineData("DateTime?", "Any.DateTime().As(value => (DateTime?)value)")]
     [InlineData("OrderStatus?", "Any.Enum<OrderStatus>().As(value => (OrderStatus?)value)")]
@@ -96,14 +96,14 @@ public sealed class BaseTableTests {
         Check.That(Subject.ExpressionFor(parameterType)).IsEqualTo(expected);
     }
 
-    // Until §5.4 composes through a scaffolded generator or a static factory, a domain type has no row. The
-    // parameter comes back open, and §5.5 turns that into a TODO the developer's own build reports.
-    [SuppressMessage(SonarRule.S1135.Category, SonarRule.S1135.Id, Justification = "Names the marker the tool emits by design (§5.5), not unfinished work here.")]
-    [Theory(DisplayName = "A type the table has no row for comes back open.")]
-    [InlineData("Customer")]
-    [InlineData("IReadOnlyList<Customer>")]
-    public void ATypeTheTableHasNoRowForComesBackOpen(string parameterType) {
-        Check.That(Subject.ExpressionFor(parameterType)).IsNull();
+    // A domain type has no row here, and does not need one: §5.4 draws it through the generator that type
+    // owns, named whether the compilation carries it yet or not (ADR-0089). Nested inside a collection or not
+    // makes no difference — the element goes through the same door.
+    [Theory(DisplayName = "A type the table has no row for is handed to composition, not left open.")]
+    [InlineData("Customer", "new AnyCustomer()")]
+    [InlineData("IReadOnlyList<Customer>", "Any.ListOf(new AnyCustomer())")]
+    public void ATypeTheTableHasNoRowForIsHandedToComposition(string parameterType, string expected) {
+        Check.That(Subject.ExpressionFor(parameterType)).IsEqualTo(expected);
     }
 
 }

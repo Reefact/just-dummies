@@ -38,7 +38,13 @@ public sealed class ScaffolderTests {
     // An open parameter is a success (§7): the file is written, and the developer's own build reports the rest.
     [Fact(DisplayName = "A parameter the table cannot resolve is still a scaffold.")]
     public void AnOpenParameterIsStillAScaffold() {
-        ScaffoldOutcome outcome = Subject.Scaffold("public sealed class Subject { public Subject(Customer one) { } }");
+        // A generic type, because that is what §5.5 still answers for once composition names every other one:
+        // its generator's name would drop the arguments that tell two instantiations apart (ADR-0089).
+        ScaffoldOutcome outcome = Subject.Scaffold("""
+                                                   public sealed class Repository<T> { public Repository() { } }
+
+                                                   public sealed class Subject { public Subject(Repository<Customer> one) { } }
+                                                   """);
 
         Check.That(outcome.Succeeded).IsTrue();
         Check.That(outcome.File!.ContainsTodo).IsTrue();

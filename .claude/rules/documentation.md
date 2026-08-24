@@ -19,6 +19,10 @@ compile fails the build, so keep samples real.
 
 ## Writing a sample that uses the library
 
+A sample answers to the two fundamentals in `CLAUDE.md` ("The two fundamentals"), never to
+whatever the surrounding page happens to assert. Do not restate the definition of a dummy
+here or on a page: a definition copied is a definition that drifts — cite it.
+
 Two conventions, because the user documentation teaches by example and a sample is read far
 more often than it is written:
 

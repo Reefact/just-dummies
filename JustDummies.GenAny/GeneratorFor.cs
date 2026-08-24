@@ -182,15 +182,50 @@ internal sealed class GeneratorFor {
 
         if (!distinct || named.TypeArguments.Length == 0) { return null; }
 
-        // A dictionary draws distinct KEYS, so it is the key row that is asked for them.
-        ITypeSymbol element = named.TypeArguments[0];
+        // A dictionary draws distinct KEYS, so it is the key row that is asked for them. Unwrapped, because
+        // `ISet<Span?>` draws the same three members `ISet<Span>` does — without this the nullable reads as
+        // an ordinary struct and the whole domain is lost.
+        ITypeSymbol element = Guards.Underlying(named.TypeArguments[0]);
 
-        if (element.SpecialType == SpecialType.System_Boolean) { return 2; }
-        if (element.TypeKind != TypeKind.Enum) { return null; }
+        if (element.TypeKind == TypeKind.Enum) {
+            // DISTINCT constant values, never declared members. `enum Grade { Low = 1, …, Min = 1 }` declares
+            // five names for three values, and a floor of five over it is one the element row can never reach.
+            int values = element.GetMembers()
+                                .OfType<IFieldSymbol>()
+                                .Where(field => field.HasConstantValue)
+                                .Select(field => field.ConstantValue)
+                                .Distinct()
+                                .Count();
 
-        int declared = element.GetMembers().OfType<IFieldSymbol>().Count(field => field.HasConstantValue);
+            return values > 0 ? values : null;
+        }
 
-        return declared > 0 ? declared : null;
+        return PrimitiveCardinality(element);
+    }
+
+    /// <summary>
+    ///     How many different values the library's unconstrained row for <paramref name="element" /> can
+    ///     draw, for the primitive families whose domain is small enough for a distinct count to exhaust.
+    /// </summary>
+    /// <remarks>
+    ///     A mirror, like <see cref="ProducibleSize" />: ADR-0063 keeps the engine from asking the library, so
+    ///     it carries the numbers — and <c>ElementCardinalityAgreementTests</c> is what stops them drifting,
+    ///     since a copy nothing compares is a copy that goes stale. Only the families a realistic floor can
+    ///     exhaust are here. A wider one is left unanswered rather than guessed: reading <c>null</c> as
+    ///     "unbounded" is safe for a domain nothing will exhaust, and was the whole defect for the ones it can.
+    ///     <para>
+    ///         The character row is the ASCII pool of ADR-0075 rather than the 16 bits a <c>char</c> holds:
+    ///         what the count has to survive is what the generator draws, not what the type could store.
+    ///     </para>
+    /// </remarks>
+    private static int? PrimitiveCardinality(ITypeSymbol element) {
+        return element.SpecialType switch {
+            SpecialType.System_Boolean => 2,
+            SpecialType.System_Char    => 128,
+            SpecialType.System_Byte    => 256,
+            SpecialType.System_SByte   => 256,
+            _                          => null
+        };
     }
 
     /// <summary>
@@ -280,11 +315,22 @@ internal sealed class GeneratorFor {
         return written;
     }
 
-    /// <summary>The complete expression for a type nothing further will constrain — an element, a key.</summary>
-    private string? Resolve(ITypeSymbol type, int remaining, IReadOnlyCollection<ITypeSymbol> underway) {
+    /// <summary>
+    ///     The complete expression for a type nothing further will constrain — an element, a key — together
+    ///     with the doubt that element carries.
+    /// </summary>
+    /// <remarks>
+    ///     The doubt travels because the collection around it is rebuilt from scratch: an element whose own
+    ///     factory holds a guard the engine cannot read earns the verification mark when it IS the parameter,
+    ///     and used to report clean the moment it sat behind a list. What the developer has to verify does not
+    ///     become less true for being one hop down.
+    /// </remarks>
+    private (string? Expression, Provenance Carried) Resolve(ITypeSymbol type, int remaining, IReadOnlyCollection<ITypeSymbol> underway) {
         DrawnGenerator drawn = Draw(type, remaining, underway);
 
-        return drawn.Resolved ? Chain(drawn, []).Expression : null;
+        if (!drawn.Resolved) { return (null, Provenance.None); }
+
+        return (Chain(drawn, []).Expression, drawn.Provenance & Provenance.UnreadGuards);
     }
 
     private DrawnGenerator Draw(ITypeSymbol type, int remaining, IReadOnlyCollection<ITypeSymbol> underway) {
@@ -427,11 +473,11 @@ internal sealed class GeneratorFor {
 
         if (generator is null) { return DrawnGenerator.Unresolved(); }
 
-        string? item = Resolve(element, remaining - 1, [.. underway, self]);
+        (string? item, Provenance carried) = Resolve(element, remaining - 1, [.. underway, self]);
 
         return item is null
                    ? DrawnGenerator.Unresolved()
-                   : DrawnGenerator.From($"Any.{factory}({item})", generator);
+                   : DrawnGenerator.From($"Any.{factory}({item})", generator, provenance: carried);
     }
 
     private DrawnGenerator Dictionary(INamedTypeSymbol type, int remaining, IReadOnlyCollection<ITypeSymbol> underway) {
@@ -439,12 +485,12 @@ internal sealed class GeneratorFor {
 
         if (generator is null) { return DrawnGenerator.Unresolved(); }
 
-        string? keys   = Resolve(type.TypeArguments[0], remaining - 1, [.. underway, type]);
-        string? values = Resolve(type.TypeArguments[1], remaining - 1, [.. underway, type]);
+        (string? keys, Provenance fromKeys)     = Resolve(type.TypeArguments[0], remaining - 1, [.. underway, type]);
+        (string? values, Provenance fromValues) = Resolve(type.TypeArguments[1], remaining - 1, [.. underway, type]);
 
         return keys is null || values is null
                    ? DrawnGenerator.Unresolved()
-                   : DrawnGenerator.From($"Any.DictionaryOf({keys}, {values})", generator);
+                   : DrawnGenerator.From($"Any.DictionaryOf({keys}, {values})", generator, provenance: fromKeys | fromValues);
     }
 
     /// <summary>

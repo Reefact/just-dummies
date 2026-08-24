@@ -86,6 +86,24 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   had something to say about it; and a delegated reading that could not be made at all no longer
   passes for one that found nothing.
 
+- **A distinct-collection floor is capped by what the element row can actually draw.** The engine knew the
+  domain of `bool` and of an enum and nothing else, so every other element type read as unbounded: a
+  constructor demanding 200 distinct `char` values earned `Any.SetOf(Any.Char()).WithMinCount(200)`, a clean
+  compile, no diagnostic at any severity, a recap saying `guard` — and a generator that threw the moment it
+  was constructed, because the unconstrained character row draws 128 values. The small primitive domains are
+  now carried (ADR-0063 keeps the engine from asking the library) and held to the library by an agreement
+  test that names the number on neither side, the way the producible cap already is. Two related
+  miscounts go with it: an enum is counted by its **distinct values** rather than its declared members, so
+  `enum Grade { Low = 1, …, Min = 1 }` is three and not five; and a nullable element is unwrapped before
+  being asked, so `ISet<Span?>` keeps the three-member domain `ISet<Span>` has. `JD016` gains the same
+  three answers, having been blind in exactly the same places.
+
+- **A composed element's doubt survives the collection built around it.** An element whose own factory holds
+  a guard the engine cannot read earns the verification mark when it *is* the parameter, and reported clean
+  the moment it sat behind a `IReadOnlyList<T>`: the collection generator was rebuilt from the element's
+  expression alone and its provenance was dropped on the floor. What the developer has to verify does not
+  become less true one hop down.
+
 - **An emptiness or blankness check is read only where its argument IS the parameter.**
   `if (string.IsNullOrEmpty(value.Trim()))` was read as a guard about `value` itself, because the
   recognition asked only which method was being called and never looked at the arguments. The chain then

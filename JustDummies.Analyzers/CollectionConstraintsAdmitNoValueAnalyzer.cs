@@ -24,6 +24,12 @@ public sealed class CollectionConstraintsAdmitNoValueAnalyzer : DiagnosticAnalyz
     /// </summary>
     private const int BooleanValueCount = 2;
 
+    /// <summary>How many characters the unconstrained character row draws — the ASCII pool of ADR-0075.</summary>
+    private const int AsciiValueCount = 128;
+
+    /// <summary>The whole of a byte, signed or not.</summary>
+    private const int ByteValueCount = 256;
+
     /// <inheritdoc />
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; } =
         ImmutableArray.Create(Descriptors.CollectionConstraintsAdmitNoValue);
@@ -160,10 +166,30 @@ public sealed class CollectionConstraintsAdmitNoValueAnalyzer : DiagnosticAnalyz
 
                 return true;
 
+            // DISTINCT constant values, never declared members: `enum Grade { Low = 1, …, Min = 1 }` declares five
+            // names for three values, and counting names would bless a floor the element row can never reach.
             case "Enum" when root.TargetMethod.TypeArguments.Length == 1 && root.TargetMethod.TypeArguments[0] is INamedTypeSymbol enumType:
-                cardinality = enumType.GetMembers().OfType<IFieldSymbol>().Count(field => field.HasConstantValue);
+                cardinality = enumType.GetMembers()
+                                      .OfType<IFieldSymbol>()
+                                      .Where(field => field.HasConstantValue)
+                                      .Select(field => field.ConstantValue)
+                                      .Distinct()
+                                      .Count();
 
                 return cardinality > 0;
+
+            // The small primitive rows. Their domains are settled and reachable by an ordinary floor — the
+            // unconstrained character row draws the ASCII pool of ADR-0075, not the 16 bits a `char` holds — so a
+            // count above them is provably unsatisfiable rather than merely large.
+            case "Char":
+                cardinality = AsciiValueCount;
+
+                return true;
+
+            case "Byte" or "SByte":
+                cardinality = ByteValueCount;
+
+                return true;
 
             case "OneOf" or "ElementOf":
                 return TryCountDistinctConstants(root, out cardinality);

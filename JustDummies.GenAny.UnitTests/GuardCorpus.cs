@@ -848,7 +848,7 @@ internal static class GuardCorpus {
 
                                                                 public ISet<char> Glyphs { get; }
                                                             }
-                                                            """, defect: "a distinct floor is written above what a char element row can draw"),
+                                                            """, requiresVerification: true),
 
 
         new GuardedShape("set-of-nullable-enum-count", "Roster", """
@@ -864,7 +864,7 @@ internal static class GuardCorpus {
 
                                                                         public ISet<Span?> Spans { get; }
                                                                     }
-                                                                    """, defect: "a nullable element hides its own domain from the distinct floor"),
+                                                                    """, requiresVerification: true),
 
 
         new GuardedShape("set-of-aliased-enum-count", "Band", """
@@ -880,7 +880,7 @@ internal static class GuardCorpus {
 
                                                                      public ISet<Grade> Grades { get; }
                                                                  }
-                                                                 """, defect: "aliased enum members are counted as distinct values"),
+                                                                 """, requiresVerification: true),
 
 
         new GuardedShape("element-unread-guard-behind-a-list", "Sheet", """
@@ -903,7 +903,7 @@ internal static class GuardCorpus {
 
                                                                                public IReadOnlyList<Tag> Tags { get; }
                                                                            }
-                                                                           """, defect: "a composed element's unread mark is discarded when the collection is rebuilt")
+                                                                           """, requiresVerification: true)
 
     ];
 

@@ -78,6 +78,8 @@ internal static class Guards {
         GuardReading    reading = GuardReading.FromSource();
         ParameterWrites writes  = new(declaration, declaration.Body, model);
 
+        MergeDelegatedConstructorGuards(declaration, model, method, compilation, names, writes, reading);
+
         // The other half of the question `RunsUnconditionally` asks. That one looks upward, at what encloses
         // a guard; this one looks along, at what precedes it — and a statement above that can jump past the
         // guards below it leaves every one of them unrun on some path the constructor still returns from.
@@ -112,6 +114,82 @@ internal static class Guards {
         }
 
         return reading;
+    }
+
+    /// <summary>
+    ///     A parameter the initializer hands unchanged to the constructor it delegates to is the same value
+    ///     there as it is here — a renamed copy, never a computed one — so a guard the delegated constructor
+    ///     reads over its own parameter is a guard over this one too.
+    /// </summary>
+    /// <remarks>
+    ///     Scoped as narrowly as ADR-0086's own call-spelling carve-out: the argument has to <b>be</b> the
+    ///     parameter, bar nothing. <c>this(percent + 1, ...)</c> hands the delegated constructor a value this
+    ///     one never draws, and merging its guard would state an invariant of the wrong value — precisely
+    ///     the defect class this file's own remarks already name for composition (§5.4). A parameter the
+    ///     initializer writes — by reference, or through a call in one of its own arguments —
+    ///     <see cref="ParameterWrites.WrittenByInitializer" /> already excludes from the body's own reading;
+    ///     this is additive to that answer, never a second opinion on it, so nothing here reopens a
+    ///     placement question <see cref="ParameterWrites" /> already settled.
+    ///     <para>
+    ///         Reads the delegated constructor through this same method — the mechanism composition and the
+    ///         factory path already use to read a different member's guards (ADR-0059's own precedent, one
+    ///         hop of it) — never a second, parallel reader. A chain of initializers folds every one of them
+    ///         in turn, and C# itself refuses a cycle (<c>CS0516</c>), so nothing here needs to guard against
+    ///         one.
+    ///     </para>
+    /// </remarks>
+    private static void MergeDelegatedConstructorGuards(BaseMethodDeclarationSyntax declaration,
+                                                         SemanticModel model,
+                                                         IMethodSymbol method,
+                                                         Compilation compilation,
+                                                         TypeNames names,
+                                                         ParameterWrites writes,
+                                                         GuardReading reading) {
+        if (declaration is not ConstructorDeclarationSyntax { Initializer: { } initializer }) { return; }
+        if (model.GetSymbolInfo(initializer).Symbol is not IMethodSymbol delegatedTo) { return; }
+
+        SeparatedSyntaxList<ArgumentSyntax> arguments = initializer.ArgumentList.Arguments;
+        GuardReading?                       delegatedReading = null;
+
+        for (int index = 0; index < arguments.Count; index++) {
+            ArgumentSyntax argument = arguments[index];
+
+            if (HandedFrom(argument, model, method) is not { } handedFrom || writes.WrittenByInitializer(handedFrom)) {
+                continue;
+            }
+
+            if (HandedTo(argument, index, delegatedTo) is not { } handedTo) { continue; }
+
+            delegatedReading ??= Read(delegatedTo, compilation, names);
+
+            foreach (GuardConstraint constraint in delegatedReading.For(handedTo.Name)) {
+                reading.Add(handedFrom.Name, constraint);
+            }
+        }
+    }
+
+    /// <summary>
+    ///     The outer constructor's own parameter a bare initializer argument names — never one it writes,
+    ///     wraps, or computes from, since only an unmodified identifier can carry the same value the
+    ///     delegated constructor's guard would be about.
+    /// </summary>
+    private static IParameterSymbol? HandedFrom(ArgumentSyntax argument, SemanticModel model, IMethodSymbol method) {
+        if (!argument.RefKindKeyword.IsKind(SyntaxKind.None)) { return null; }
+        if (argument.Expression is not IdentifierNameSyntax identifier) { return null; }
+        if (model.GetSymbolInfo(identifier).Symbol is not IParameterSymbol parameter) { return null; }
+
+        return method.Parameters.Contains(parameter, SymbolEqualityComparer.Default) ? parameter : null;
+    }
+
+    /// <summary>The delegated constructor's own parameter <paramref name="argument" /> fills.</summary>
+    private static IParameterSymbol? HandedTo(ArgumentSyntax argument, int index, IMethodSymbol delegatedTo) {
+        if (argument.NameColon is not null) {
+            string named = argument.NameColon.Name.Identifier.ValueText;
+
+            return delegatedTo.Parameters.FirstOrDefault(parameter => parameter.Name == named);
+        }
+
+        return index < delegatedTo.Parameters.Length ? delegatedTo.Parameters[index] : null;
     }
 
     /// <summary>

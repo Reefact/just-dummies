@@ -23,6 +23,13 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   guard exactly — approximating it is what ADR-0086's own rule refuses. `NullOrEmpty` and
   `IsNotNullOrEmpty`, which `.NonEmpty()` does state exactly, are unaffected.
 
+- **A guard reached through a null-conditional receiver (`policy?.Enforce(value);`) is now marked
+  `unread guards` instead of passed over in silence.** The placement questions that decide whether a
+  discarded call runs at all only recognised an invocation or a recognised-library assignment; a
+  `ConditionalAccessExpressionSyntax` was neither, so a receiver that can be null — a third way the
+  call can fail to run, beside the two already asked about — went unseen by both the rejection check
+  and the delegation mark.
+
 ## [1.1.0-beta.3] - 2026-08-24
 
 ### Added

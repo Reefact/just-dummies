@@ -242,11 +242,16 @@ internal static class Guards {
                                                  ParameterWrites writes,
                                                  bool unskipped) {
         foreach (ExpressionStatementSyntax discarded in statement.DescendantNodesAndSelf().OfType<ExpressionStatementSyntax>()) {
+            bool viaConditionalAccess = discarded.Expression is ConditionalAccessExpressionSyntax;
+
             InvocationExpressionSyntax? invocation = discarded.Expression switch {
                 InvocationExpressionSyntax direct => direct,
                 AssignmentExpressionSyntax assignment when assignment.IsKind(SyntaxKind.SimpleAssignmentExpression)
                                                         && Unwrapped(assignment.Right) is InvocationExpressionSyntax assigned
                                                         && LibraryGuards.Recognises(assigned, model) => assigned,
+                // `policy?.Enforce(value);` — a call the placement questions below cannot see runs at all: it
+                // is named here so ReadCall marks every parameter it mentions, never so it is read through.
+                ConditionalAccessExpressionSyntax { WhenNotNull: InvocationExpressionSyntax conditional } => conditional,
                 _ => null
             };
 
@@ -255,7 +260,11 @@ internal static class Guards {
             // Asked once of the statement rather than of each parameter: whether the call runs at all is a
             // fact about where it sits, and the same for every parameter it names. Both halves of it — that
             // nothing encloses the call deciding it runs, and that nothing above the statement jumps past it.
-            ReadCall(invocation, unskipped && RunsUnconditionally(discarded, statement), model, method, reading, writes);
+            // A null-conditional receiver is a third way the call can fail to run, which the mark answers the
+            // same as the other two rather than by proving the receiver is never null.
+            ReadCall(invocation,
+                    !viaConditionalAccess && unskipped && RunsUnconditionally(discarded, statement),
+                    model, method, reading, writes);
         }
     }
 

@@ -79,6 +79,15 @@ internal sealed class ParameterWrites {
     }
 
     /// <summary>
+    ///     Whether the constructor initializer writes <paramref name="parameter" /> — by reference, or
+    ///     through a call in one of its own arguments — which is the same question <see cref="Precede" />
+    ///     asks of the initializer's own regions, in isolation from where in the body a guard sits.
+    /// </summary>
+    internal bool WrittenByInitializer(IParameterSymbol parameter) {
+        return HandedByReference(parameter) || Initializer().Any(region => Written(region, parameter));
+    }
+
+    /// <summary>
     ///     Whether a write to <paramref name="parameter" /> can already have run when
     ///     <paramref name="guard" /> is evaluated.
     /// </summary>

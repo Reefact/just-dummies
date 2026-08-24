@@ -449,7 +449,7 @@ internal static class GuardCorpus {
                                                                                       if (percent > 100) { throw new ArgumentOutOfRangeException(nameof(percent)); }
                                                                                   }
                                                                               }
-                                                                              """, defect: "a constructor initializer is asked whether it writes the parameter, never whether it rejects it", requiresVerification: true),
+                                                                              """),
 
 
         // ---- Finding 5. `GeneratorFor.Composed` calls `Guards.Read(factory, ...)` — the factory's own body

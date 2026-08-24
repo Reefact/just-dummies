@@ -46,6 +46,14 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   read as a constraint — the field/property carve-out stays exactly as narrow as it always was — only
   marked.
 
+- **A guard the constructor a `: this(…)`/`: base(…)` initializer delegates to reads over its own
+  parameter now folds onto the parameter that hands it there unchanged.** The initializer was only
+  ever asked whether it *writes* a parameter — a fact `ParameterWrites` already answered correctly —
+  never whether the constructor it delegates to *rejects* one it merely passes through. A parameter
+  the initializer hands by reference, or computes from (`this(percent + 1, ...)`), is unaffected: only
+  a bare, unmodified argument — the same value there as here — folds the delegated constructor's own
+  guard in, exactly as a second guard in the same body already does.
+
 ## [1.1.0-beta.3] - 2026-08-24
 
 ### Added

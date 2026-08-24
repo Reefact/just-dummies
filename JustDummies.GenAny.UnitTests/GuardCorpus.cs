@@ -807,7 +807,28 @@ internal static class GuardCorpus {
 
                                                                                         public Marker(int value, bool _) : this(value) { }
                                                                                     }
-                                                                                    """, requiresVerification: true)
+                                                                                    """, requiresVerification: true),
+
+
+        // ---- AUDIT (second sweep). `IsCall` inspects only the containing type and the method name, never the
+        // ---- ARGUMENTS, so `string.IsNullOrEmpty(value.Trim())` reads as a guard about `value` itself. Every
+        // ---- other row of the closed set keeps the subject-identity discipline -- `TryRecogniseThrowHelper`
+        // ---- and `LibraryGuards.TryRead` both test it -- and both counterfactual spellings earn a mark.
+
+        new GuardedShape("emptiness-check-on-a-derived-value", "Slugged", """
+                                                                             public sealed class Slugged {
+
+                                                                                 public Slugged(string value) {
+                                                                                     if (string.IsNullOrEmpty(value.Trim())) { throw new ArgumentException("blank", nameof(value)); }
+                                                                                     if (value.Length > 4) { throw new ArgumentException("long", nameof(value)); }
+
+                                                                                     Value = value;
+                                                                                 }
+
+                                                                                 public string Value { get; }
+                                                                             }
+                                                                             """, defect: "an emptiness check is recognised without asking whether its argument is the parameter")
+
     ];
 
     /// <summary>The shape names, as the theory rows carry them.</summary>

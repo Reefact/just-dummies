@@ -828,6 +828,82 @@ internal static class GuardCorpus {
                                                                                  public string Value { get; }
                                                                              }
                                                                              """, requiresVerification: true)
+,
+
+
+        // ---- AUDIT (second sweep), GeneratorFor. Pre-existing on main rather than introduced here, and the
+        // ---- same signature: compile clean, zero diagnostics at ANY severity, recap `guard`, and then the
+        // ---- generator does not even construct. `DistinctElements` answers only for bool and enum, counts an
+        // ---- enum's DECLARED members rather than its distinct values, and never unwraps a nullable; and the
+        // ---- provenance of a composed element is dropped when the collection generator is rebuilt.
+
+        new GuardedShape("set-of-char-count", "Palette", """
+                                                            public sealed class Palette {
+
+                                                                public Palette(ISet<char> glyphs) {
+                                                                    if (glyphs.Count < 200) { throw new ArgumentException("too few", nameof(glyphs)); }
+
+                                                                    Glyphs = glyphs;
+                                                                }
+
+                                                                public ISet<char> Glyphs { get; }
+                                                            }
+                                                            """, defect: "a distinct floor is written above what a char element row can draw"),
+
+
+        new GuardedShape("set-of-nullable-enum-count", "Roster", """
+                                                                    public enum Span { Morning, Noon, Night }
+
+                                                                    public sealed class Roster {
+
+                                                                        public Roster(ISet<Span?> spans) {
+                                                                            if (spans.Count < 5) { throw new ArgumentException("too few", nameof(spans)); }
+
+                                                                            Spans = spans;
+                                                                        }
+
+                                                                        public ISet<Span?> Spans { get; }
+                                                                    }
+                                                                    """, defect: "a nullable element hides its own domain from the distinct floor"),
+
+
+        new GuardedShape("set-of-aliased-enum-count", "Band", """
+                                                                 public enum Grade { Low = 1, Medium = 2, High = 3, Min = 1, Max = 3 }
+
+                                                                 public sealed class Band {
+
+                                                                     public Band(ISet<Grade> grades) {
+                                                                         if (grades.Count < 5) { throw new ArgumentException("too few", nameof(grades)); }
+
+                                                                         Grades = grades;
+                                                                     }
+
+                                                                     public ISet<Grade> Grades { get; }
+                                                                 }
+                                                                 """, defect: "aliased enum members are counted as distinct values"),
+
+
+        new GuardedShape("element-unread-guard-behind-a-list", "Sheet", """
+                                                                           public sealed class Tag {
+
+                                                                               private Tag(string value) {
+                                                                                   if (!value.StartsWith("T-", StringComparison.Ordinal)) { throw new ArgumentException("prefix", nameof(value)); }
+
+                                                                                   Value = value;
+                                                                               }
+
+                                                                               public static Tag Create(string value) { return new Tag(value); }
+
+                                                                               public string Value { get; }
+                                                                           }
+
+                                                                           public sealed class Sheet {
+
+                                                                               public Sheet(IReadOnlyList<Tag> tags) { Tags = tags; }
+
+                                                                               public IReadOnlyList<Tag> Tags { get; }
+                                                                           }
+                                                                           """, defect: "a composed element's unread mark is discarded when the collection is rebuilt")
 
     ];
 

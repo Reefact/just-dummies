@@ -91,7 +91,15 @@ internal static class Guards {
             // spelling of the assigned guard idiom — both validates and stores, writes over no parameter, and
             // so leaves everything below it exactly as leading as it was. The call itself is read by the
             // marking pass below, through the same placement questions as any other.
-            if (AssignsState(statement, model) && !IsGuardAssignment(statement, model)) { break; }
+            if (AssignsState(statement, model) && !IsGuardAssignment(statement, model)) {
+                // The scan still ends here — everything below stays out of reach, exactly as before. But a
+                // throw carried inside the assignment's own right side (`Code = code.Length switch { < 8 =>
+                // throw ..., ... };`) is asked about before that happens: the statement rejects a value on
+                // some path, and the developer deserves the mark for that even though nothing reads past it.
+                MarkIfItRejects(statement, model, method, reading);
+
+                break;
+            }
 
             if (statement is IfStatementSyntax guard) {
                 ReadChain(guard, model, method, reading, names, writes, unskipped);

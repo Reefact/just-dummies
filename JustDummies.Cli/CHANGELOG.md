@@ -63,6 +63,12 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   call can fail to run, beside the two already asked about — went unseen by both the rejection check
   and the delegation mark.
 
+- **A `throw` carried inside the assignment that ends the leading scan is now marked `unread guards`
+  instead of passed over in silence.** `Code = code.Length switch { < 8 => throw ..., ... };` is an
+  assignment to state the closed set does not recognise, which still ends the scan exactly as it
+  always did — but the statement itself is now asked whether it rejects before that happens, so a
+  `throw` inside its own right side earns the mark it would earn anywhere else.
+
 ## [1.1.0-beta.3] - 2026-08-24
 
 ### Added

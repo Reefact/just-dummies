@@ -1354,14 +1354,14 @@ Nommés explicitement pour ne pas être pris pour des oublis.
   generator tire ; et il atteint une garde dont le moteur ne peut pas montrer qu'elle s'exécute sur
   tout chemin — parce que quelque chose l'entoure qui en décide, ou parce qu'une instruction au-dessus
   d'elle peut la sauter — et qui énoncerait sinon un invariant des chemins qui l'atteignent et non du
-  paramètre (§5.3). Deux formes lui échappent encore, et toutes deux sont silencieuses plutôt que simplement
-  non lues — le tool n'y voit aucun rejet dont douter. Une garde-helper qui **retourne** la valeur
-  vérifiée — `_name = Ensure.NotBlank(value);` — est indiscernable d'une normalisation, et la lire
-  comme un doute reviendrait à lire `_name = value.Trim();` comme un doute aussi, ce qui bloque la
-  compilation de constructeurs ne portant aucune garde ; les aides des deux bibliothèques que le
+  paramètre (§5.3). Deux formes lui échappent encore, et toutes deux sont silencieuses plutôt que
+  simplement non lues — le tool n'y voit aucun rejet dont douter. Une garde-helper qui **retourne**
+  la valeur vérifiée — `_name = Ensure.Valid(value);` — est indiscernable d'une normalisation, et la
+  lire comme un doute reviendrait à lire `_name = value.Trim();` comme un doute aussi, ce qui bloque
+  la compilation de constructeurs ne portant aucune garde ; les aides des deux bibliothèques que le
   §5.3 lit par symbole résolu (ADR-0086) sont l'exception mesurée, et tout autre validateur qui
-  retourne sa valeur garde cette réponse. Et une garde atteinte seulement par un
-  niveau d'indirection que le tool ne suit pas — une copie locale du paramètre (`var v = value;
+  retourne sa valeur garde cette réponse. Et une garde atteinte seulement par un niveau
+  d'indirection que le tool ne suit pas — une copie locale du paramètre (`var v = value;
   Validate(v);`), un lambda qui le capture, un appel atteint via un membre plutôt que par le nom
   propre du paramètre. Dans les deux cas, le tool ne peut toujours pas distinguer ce paramètre d'un
   paramètre non contraint, et il ne devine pas — c'est de ce résidu que parle ce non-objectif : non

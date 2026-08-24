@@ -27,6 +27,26 @@ public sealed class GuardReadingTests {
         Check.That(parameter.Provenance.HasFlag(Provenance.Guard)).IsTrue();
     }
 
+    /// <summary>
+    ///     An emptiness or blankness check whose argument is a DERIVED value is not a guard about the
+    ///     parameter, and is marked rather than read.
+    /// </summary>
+    /// <remarks>
+    ///     <c>IsNullOrEmpty(value.Trim())</c> constrains the trimmed value; stating it over the drawn one
+    ///     would claim an invariant the domain does not have — and the domain then rejects the draw. The
+    ///     throw-helper spelling and both guard libraries already answered this way over the same derived
+    ///     argument; this row is what brought the condition spelling into line with them.
+    /// </remarks>
+    [Theory(DisplayName = "An emptiness check on a derived value is marked, not read as one on the parameter.")]
+    [InlineData("if (string.IsNullOrEmpty(value.Trim())) { throw new ArgumentException(nameof(value)); }")]
+    [InlineData("if (string.IsNullOrWhiteSpace(value.Trim())) { throw new ArgumentException(nameof(value)); }")]
+    public void AnEmptinessCheckOnADerivedValueIsMarked(string guard) {
+        ScaffoldedParameter parameter = Subject.GuardedBy("string", guard);
+
+        Check.That(parameter.Provenance.HasFlag(Provenance.UnreadGuards)).IsTrue();
+        Check.That(parameter.RequiresVerification).IsTrue();
+    }
+
     [Theory(DisplayName = "A guard on a number is read into the numeric family.")]
     [InlineData("int", "if (value <= 0) { throw new ArgumentOutOfRangeException(nameof(value)); }", "Any.Int32().Positive()")]
     [InlineData("int", "if (value < 1) { throw new ArgumentOutOfRangeException(nameof(value)); }", "Any.Int32().Positive()")]

@@ -940,6 +940,13 @@ internal static class Guards {
         }
 
         if (condition is InvocationExpressionSyntax invocation) {
+            // The subject has to BE the parameter, exactly as every other row of the closed set demands.
+            // `IsCall` answers only "which method is this", so without this test `IsNullOrEmpty(value.Trim())`
+            // read as a guard about `value` — an invariant of the trimmed value stated over the drawn one,
+            // which the domain then rejects. The throw-helper row (`TryRecogniseThrowHelper`) and both guard
+            // libraries (`LibraryGuards.TryRead`) already test it; this was the one spelling that did not.
+            if (!IsCallOnTheParameter(invocation, model, parameter)) { return false; }
+
             if (IsCall(invocation, model, "System.String", BlanknessCheck)) {
                 constraint = Blankness();
 
@@ -1284,6 +1291,16 @@ internal static class Guards {
     private static bool IsEmptyGuid(ExpressionSyntax expression, SemanticModel model) {
         return expression is MemberAccessExpressionSyntax { Name.Identifier.Text: "Empty" } access
             && model.GetTypeInfo(access).Type?.ToDisplayString(ByNamespace) == "System.Guid";
+    }
+
+    /// <summary>
+    ///     Whether the invocation's first argument <b>is</b> <paramref name="parameter" /> — the
+    ///     subject-identity discipline, asked of a call written as a condition.
+    /// </summary>
+    private static bool IsCallOnTheParameter(InvocationExpressionSyntax invocation, SemanticModel model, IParameterSymbol parameter) {
+        SeparatedSyntaxList<ArgumentSyntax> arguments = invocation.ArgumentList.Arguments;
+
+        return arguments.Count > 0 && IsParameter(arguments[0].Expression, model, parameter);
     }
 
     private static bool IsCall(ExpressionSyntax expression, SemanticModel model, string containing, params string[] names) {

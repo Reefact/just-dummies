@@ -119,6 +119,14 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   had something to say about it; and a delegated reading that could not be made at all no longer
   passes for one that found nothing.
 
+- **An emptiness or blankness check is read only where its argument IS the parameter.**
+  `if (string.IsNullOrEmpty(value.Trim()))` was read as a guard about `value` itself, because the
+  recognition asked only which method was being called and never looked at the arguments. The chain then
+  claimed `NonEmpty()` over a parameter whose domain rejects a short run of spaces. Every other row of
+  the closed set already kept this discipline — the throw-helper spelling and both guard libraries each
+  earn `unread guards` over the same derived argument — so this was the one spelling out of line, and it
+  now answers as they do.
+
 - **The fold's fourth decline speaks, and its second doubt channel travels.** The commit that made three
   of the four declines speak left one mute and carried one of the two channels `GuardReading` holds. An
   argument that COMPUTES from a parameter — `new Offset(value + 1)` — lost the delegated constructor's

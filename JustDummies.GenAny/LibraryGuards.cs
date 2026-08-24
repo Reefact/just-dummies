@@ -92,8 +92,13 @@ internal static class LibraryGuards {
             case "Null": return [];
 
             case "NullOrEmpty":
-            case "NullOrWhiteSpace":
                 return [NonEmpty()];
+
+            // NullOrWhiteSpace also rejects an all-whitespace string, which NonEmpty — a floor of one
+            // character — does not. No member of this library rejects whitespace without also rejecting the
+            // punctuation an ordinary AlphaNumeric() domain would still admit, so the row stays unmapped
+            // rather than approximated (ADR-0086's own rule): unread guards until one does.
+            case "NullOrWhiteSpace": return null;
 
             case "Negative":       return One(Guards.Numeric(SyntaxKind.LessThanExpression, 0m, parameter.Type, Guards.Literal(0m, parameter.Type)));
             case "NegativeOrZero": return One(Guards.Numeric(SyntaxKind.LessThanOrEqualExpression, 0m, parameter.Type, Guards.Literal(0m, parameter.Type)));
@@ -156,8 +161,11 @@ internal static class LibraryGuards {
             case "IsNotNull": return [];
 
             case "IsNotNullOrEmpty":
-            case "IsNotNullOrWhiteSpace":
                 return [NonEmpty()];
+
+            // Same gap as Ardalis's NullOrWhiteSpace, in the Toolkit's spelling: rejecting an all-whitespace
+            // string is not NonEmpty, and no other member of this library carries it either.
+            case "IsNotNullOrWhiteSpace": return null;
 
             // The comparisons are strict where the name says so — measured: IsGreaterThan(5, 5) throws — and
             // the strict pair builds the general exclusive bound, exactly like the BCL's

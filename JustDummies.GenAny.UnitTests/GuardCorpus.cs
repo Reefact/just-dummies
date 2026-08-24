@@ -423,7 +423,7 @@ internal static class GuardCorpus {
                                                                                   if (candidate.Length < 8) { throw new ArgumentException("Too short.", nameof(candidate)); }
                                                                               }
                                                                           }
-                                                                          """, defect: "a guard delegated through a conditional-access receiver is invisible to the marking pass", requiresVerification: true),
+                                                                          """, requiresVerification: true),
 
 
         // ---- Finding 4. `Guards.Read` walks `declaration.Body.Statements` only, so a `: this(...)`

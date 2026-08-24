@@ -986,6 +986,43 @@ public sealed class GuardBoundaryTests {
     }
 
     /// <summary>
+    ///     A discarded call reached through a null-conditional receiver is unread, not read through and not
+    ///     silent — the same mark a call the closed set does not recognise earns, for a different reason: the
+    ///     placement questions cannot see it, because the shape they ask of is an invocation, and this
+    ///     statement's own expression is a <c>ConditionalAccessExpressionSyntax</c> instead.
+    /// </summary>
+    /// <remarks>
+    ///     Unread whether or not the delegated call happens to be one of the two named guard libraries
+    ///     (ADR-0086): the receiver being null is a third way the call can fail to run, beside the two
+    ///     placement already asks about, and the mark answers it the same way rather than by proving the
+    ///     receiver is never null.
+    /// </remarks>
+    [Fact(DisplayName = "A guard reached through a null-conditional receiver is unread, not read through.")]
+    public void AGuardReachedThroughANullConditionalReceiverIsUnread() {
+        ScaffoldOutcome outcome = Subject.Scaffold("""
+                                                   public sealed class Subject {
+
+                                                       private static readonly Policy? Rule = new Policy();
+
+                                                       public Subject(string value) {
+                                                           Rule?.Enforce(value);
+                                                       }
+
+                                                   }
+
+                                                   public sealed class Policy {
+                                                       public void Enforce(string candidate) {
+                                                           if (candidate.Length < 8) { throw new ArgumentException(nameof(candidate)); }
+                                                       }
+                                                   }
+                                                   """);
+
+        ScaffoldedParameter parameter = outcome.Plan!.Parameters.Single();
+
+        Check.That(parameter.Provenance.HasFlag(Provenance.UnreadGuards)).IsTrue();
+    }
+
+    /// <summary>
     ///     A guard the closed set already knows reads the same written as a throw helper as written as an
     ///     <c>if</c> — same expression, same provenance, and neither blocks the developer's build.
     /// </summary>

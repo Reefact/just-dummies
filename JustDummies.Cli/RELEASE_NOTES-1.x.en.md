@@ -24,6 +24,13 @@ _Guard reading gets wider and stricter at once — two named guard libraries and
 - **An enum exclusion guard is read as `AnyEnum<T>.DifferentFrom`** — `if (status == Status.None) { throw … }`, the commonest enum guard there is, used to read as `.NonZero()`, a member `AnyEnum<T>` does not carry, and was dropped silently.
 - **The recap no longer prints `guard` for a factory whose guards tightened nothing** — the word is computed from the constraints that reach the emitted chain, on the factory path as on every other.
 
+### 📝 Known limitations
+
+Measured after this release shipped, tracked for `cli-v1.1.0-beta.4`:
+
+- **The guard-library carve-out reaches a direct field or property assignment only.** `Guard.Against.NegativeOrZero(total)` read in return position, a local declaration, or a constructor initializer still ends the scan in silence, with nothing marking the loss.
+- **A guard one frame away from where the tool reads can still be lost.** A `: this(…)`/`: base(…)` initializer, a factory built over a guarded private constructor, and a factory a chosen constructor delegates to are none of them read yet; the recap can still say `guard` over a domain the emitted generator does not honour.
+
 ## 1.1.0-beta.2 — August 22, 2026
 
 _Guard reading gets substantially more thorough — a helper-delegated or modern-spelled guard, and a guard that throws in a shape the tool couldn't parse before, are both read now — and a guard the tool still can't vouch for blocks compilation instead of compiling silently._

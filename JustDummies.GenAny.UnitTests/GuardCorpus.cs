@@ -772,8 +772,42 @@ internal static class GuardCorpus {
                                                                                                  return new Trimmed(value);
                                                                                              }
                                                                                          }
-                                                                                         """, requiresVerification: true)
+                                                                                         """, requiresVerification: true),
 
+
+        // ---- AUDIT (second sweep). The fold speaks at three of its four declines, and carries one of the
+        // ---- TWO doubt channels GuardReading holds. The fourth decline -- an argument that is not a bare
+        // ---- identifier -- is a bare `continue`; and `SourceAvailable` never crosses the hop, so a
+        // ---- constructor whose body the engine cannot see at all is indistinguishable from one read clean.
+
+        new GuardedShape("factory-computed-argument-says-nothing", "Offset", """
+                                                                                public sealed class Offset {
+
+                                                                                    private readonly int value;
+
+                                                                                    private Offset(int value) {
+                                                                                        if (value < 0) { throw new ArgumentOutOfRangeException(nameof(value)); }
+
+                                                                                        this.value = value;
+                                                                                    }
+
+                                                                                    public static Offset Create(int value) {
+                                                                                        return new Offset(value + 1);
+                                                                                    }
+                                                                                }
+                                                                                """, defect: "the fold's fourth decline, a computed argument, is still silent"),
+
+
+        new GuardedShape("delegated-ctor-without-a-body-says-nothing", "Marker", """
+                                                                                    public sealed class Marker {
+
+                                                                                        private readonly int kept;
+
+                                                                                        private Marker(int value) => kept = value < 0 ? throw new ArgumentOutOfRangeException(nameof(value)) : value;
+
+                                                                                        public Marker(int value, bool _) : this(value) { }
+                                                                                    }
+                                                                                    """, defect: "a delegated reading with no source folds as a body read clean")
     ];
 
     /// <summary>The shape names, as the theory rows carry them.</summary>

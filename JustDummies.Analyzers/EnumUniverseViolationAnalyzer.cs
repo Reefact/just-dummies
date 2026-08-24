@@ -75,7 +75,10 @@ public sealed class EnumUniverseViolationAnalyzer : DiagnosticAnalyzer {
             return;
         }
 
-        if (excluded.Count == 0 || !declared.All(excluded.Contains)) { return; }
+        // Same reason the per-value check above stands down: once combinations are allowed the universe is the
+        // OR-closure of the declared members, so excluding every one of them still leaves every combination of two
+        // or more to draw. Reporting here would refuse at build time a chain the run time honours.
+        if (combinationsAllowed || excluded.Count == 0 || !declared.All(excluded.Contains)) { return; }
 
         context.ReportDiagnostic(Diagnostic.Create(
             Descriptors.EnumUniverseViolation, invocation.Syntax.GetLocation(),

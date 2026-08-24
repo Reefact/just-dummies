@@ -79,6 +79,7 @@ internal static class Guards {
         ParameterWrites writes  = new(declaration, declaration.Body, model);
 
         MergeDelegatedConstructorGuards(declaration, model, method, compilation, names, writes, reading);
+        MergeConstructedReturnGuards(declaration, model, method, compilation, names, writes, reading);
 
         // The other half of the question `RunsUnconditionally` asks. That one looks upward, at what encloses
         // a guard; this one looks along, at what precedes it — and a statement above that can jump past the
@@ -148,19 +149,36 @@ internal static class Guards {
         if (declaration is not ConstructorDeclarationSyntax { Initializer: { } initializer }) { return; }
         if (model.GetSymbolInfo(initializer).Symbol is not IMethodSymbol delegatedTo) { return; }
 
-        SeparatedSyntaxList<ArgumentSyntax> arguments = initializer.ArgumentList.Arguments;
+        FoldGuardsFromDelegatedConstructor(initializer.ArgumentList, model, method, delegatedTo, reading,
+                                           writes.WrittenByInitializer, target => Read(target, compilation, names));
+    }
+
+    /// <summary>
+    ///     Folds a constructor's own guards onto the outer parameters that hand it their values unchanged —
+    ///     the shared half of <see cref="MergeDelegatedConstructorGuards" /> and
+    ///     <see cref="MergeConstructedReturnGuards" />, which differ only in WHERE a hop of delegation is
+    ///     found and in what "written before reaching it" means there.
+    /// </summary>
+    private static void FoldGuardsFromDelegatedConstructor(ArgumentListSyntax argumentList,
+                                                            SemanticModel model,
+                                                            IMethodSymbol method,
+                                                            IMethodSymbol delegatedTo,
+                                                            GuardReading reading,
+                                                            Func<IParameterSymbol, bool> writtenBeforeHandoff,
+                                                            Func<IMethodSymbol, GuardReading> readDelegated) {
+        SeparatedSyntaxList<ArgumentSyntax> arguments        = argumentList.Arguments;
         GuardReading?                       delegatedReading = null;
 
         for (int index = 0; index < arguments.Count; index++) {
             ArgumentSyntax argument = arguments[index];
 
-            if (HandedFrom(argument, model, method) is not { } handedFrom || writes.WrittenByInitializer(handedFrom)) {
+            if (HandedFrom(argument, model, method) is not { } handedFrom || writtenBeforeHandoff(handedFrom)) {
                 continue;
             }
 
             if (HandedTo(argument, index, delegatedTo) is not { } handedTo) { continue; }
 
-            delegatedReading ??= Read(delegatedTo, compilation, names);
+            delegatedReading ??= readDelegated(delegatedTo);
 
             foreach (GuardConstraint constraint in delegatedReading.For(handedTo.Name)) {
                 reading.Add(handedFrom.Name, constraint);
@@ -190,6 +208,44 @@ internal static class Guards {
         }
 
         return index < delegatedTo.Parameters.Length ? delegatedTo.Parameters[index] : null;
+    }
+
+    /// <summary>
+    ///     A factory whose body constructs and returns the type through <c>new SomeType(args)</c> — §5.1's
+    ///     canonical shape, a private constructor behind a public <c>Create</c> — hands its own parameters to
+    ///     that constructor exactly as a <c>: this(...)</c> initializer delegates to one, and the same
+    ///     reasoning applies unchanged: a bare, unmodified argument carries the same value there as here, so
+    ///     the constructed type's own guard over it is a guard over this parameter too.
+    /// </summary>
+    /// <remarks>
+    ///     Scoped to the body's TOP-LEVEL statements — never one reached through a branch, a loop, or
+    ///     anything else the leading scan does not already vouch for running: a <c>return</c> the engine
+    ///     cannot show always executes says nothing certain about the value drawn, exactly the placement
+    ///     question <see cref="ParameterWrites.Precede" /> already answers for every other guard, asked here
+    ///     of the return statement itself rather than of an <c>if</c>. A parameter a leading statement writes
+    ///     before reaching that return — <c>value = value.Trim(); return new Reference(value);</c> — is
+    ///     excluded by the same check: what the constructed type is guarding is the trimmed value, not the
+    ///     one the generator draws.
+    /// </remarks>
+    private static void MergeConstructedReturnGuards(BaseMethodDeclarationSyntax declaration,
+                                                      SemanticModel model,
+                                                      IMethodSymbol method,
+                                                      Compilation compilation,
+                                                      TypeNames names,
+                                                      ParameterWrites writes,
+                                                      GuardReading reading) {
+        foreach (StatementSyntax statement in declaration.Body!.Statements) {
+            if (statement is not ReturnStatementSyntax { Expression: ObjectCreationExpressionSyntax creation }) {
+                continue;
+            }
+
+            if (creation.ArgumentList is not { } argumentList) { continue; }
+            if (model.GetSymbolInfo(creation).Symbol is not IMethodSymbol constructed) { continue; }
+
+            FoldGuardsFromDelegatedConstructor(argumentList, model, method, constructed, reading,
+                                               parameter => writes.Precede(parameter, statement),
+                                               target => Read(target, compilation, names));
+        }
     }
 
     /// <summary>

@@ -405,7 +405,7 @@ internal static class Guards {
             // A null-conditional receiver is a third way the call can fail to run, which the mark answers the
             // same as the other two rather than by proving the receiver is never null.
             ReadCall(invocation,
-                    !viaConditionalAccess && unskipped && RunsUnconditionally(discarded, statement),
+                    !viaConditionalAccess && unskipped && RunsUnconditionally(discarded, statement, model),
                     model, method, reading, writes);
         }
 
@@ -1185,19 +1185,48 @@ internal static class Guards {
     ///     </para>
     ///     <para>
     ///         This is one half of whether a guard runs, and <see cref="Jumps" /> is the other: a walk of
-    ///         ancestors can show what encloses a call, never what precedes the statement it sits in.
+    ///         ancestors can show what encloses a call, never what precedes the statement it sits in. So the
+    ///         walk asks it too, at every level it climbs through: the leading-statement loop already ends
+    ///         the reading of everything below a jump at the top level, and a block a <c>using</c> or a
+    ///         <c>lock</c> always runs is the same question one nesting level down —
+    ///         <c>lock (this) { if (lenient) { … return; } ThrowIfLessThan(value, 50); }</c> reaches the
+    ///         helper on no path the <c>return</c> took, and neither an ancestor of the helper nor a sibling
+    ///         of the <c>lock</c> can say so. Applying the rule the walk already claims, at the nesting
+    ///         levels it already covers.
     ///     </para>
     /// </remarks>
-    private static bool RunsUnconditionally(StatementSyntax carrier, StatementSyntax boundary) {
+    private static bool RunsUnconditionally(StatementSyntax carrier, StatementSyntax boundary, SemanticModel model) {
         SyntaxNode node = carrier;
 
         while (!ReferenceEquals(node, boundary)) {
             if (node.Parent is not SyntaxNode parent || !AlwaysRuns(parent, node)) { return false; }
+            if (SkippedByAPrecedingSibling(parent, node, model)) { return false; }
 
             node = parent;
         }
 
         return true;
+    }
+
+    /// <summary>
+    ///     Whether a statement written above <paramref name="child" /> in the block holding it can send
+    ///     execution past it.
+    /// </summary>
+    /// <remarks>
+    ///     A block is the one construct <see cref="AlwaysRuns" /> admits that holds more than one statement,
+    ///     so it is the only level where "always runs its child" needs the second half of the question. The
+    ///     others each scope a single body, and a <c>switch</c> section — the other multi-statement container
+    ///     — never reaches here, refused by <see cref="AlwaysRuns" /> before the walk can ask.
+    /// </remarks>
+    private static bool SkippedByAPrecedingSibling(SyntaxNode parent, SyntaxNode child, SemanticModel model) {
+        if (parent is not BlockSyntax block) { return false; }
+
+        foreach (StatementSyntax preceding in block.Statements) {
+            if (ReferenceEquals(preceding, child)) { return false; }
+            if (Jumps(preceding, model)) { return true; }
+        }
+
+        return false;
     }
 
     /// <summary>Whether <paramref name="parent" /> runs <paramref name="child" /> every time it runs itself.</summary>

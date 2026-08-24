@@ -1434,6 +1434,48 @@ public sealed class GuardBoundaryTests {
         Check.That(parameter.RequiresVerification).IsTrue();
     }
 
+    /// <summary>
+    ///     A jump written beside the guard, one level inside a construct that only scopes its body, skips it
+    ///     exactly as a top-level one does.
+    /// </summary>
+    /// <remarks>
+    ///     The theory above asks the question of the leading statements, and a construct that always runs its
+    ///     body carries the same question down with it: the ancestor walk shows the <c>lock</c> cannot skip
+    ///     the helper, and no ancestor of the helper is the <c>return</c> written above it inside that same
+    ///     block. Measured reading a floor of 50 while <c>new Bracket(lenient: true, value: 24)</c>
+    ///     constructed — and the ceiling of 10 the constructor really carries was lost with it.
+    ///     <para>
+    ///         The pair that keeps this honest is
+    ///         <see cref="AThrowHelperInsideAScopingConstructStillReads" />: the same <c>lock</c>, the same
+    ///         helper, no jump above it, and the constraint still reads.
+    ///     </para>
+    /// </remarks>
+    [Theory(DisplayName = "A jump beside a guard inside a scoping construct skips it too.")]
+    [InlineData("        lock (this) { if (strict) { kept = value; return; } ArgumentOutOfRangeException.ThrowIfNegative(value); }")]
+    [InlineData("        using (new System.IO.MemoryStream()) { if (strict) return; ArgumentOutOfRangeException.ThrowIfNegative(value); }")]
+    [InlineData("        checked { if (strict) { kept = value; return; } ArgumentOutOfRangeException.ThrowIfNegative(value); }")]
+    [InlineData("        lock (this) { { if (strict) return; } ArgumentOutOfRangeException.ThrowIfNegative(value); }")]
+    public void AJumpBesideAGuardInsideAScopingConstructSkipsIt(string scoped) {
+        ScaffoldedParameter parameter = ConditionedSubject(scoped).Plan!.Parameters[1];
+
+        Check.That(parameter.Expression).IsEqualTo("Any.Int32()");
+        Check.That(parameter.Provenance.HasFlag(Provenance.UnreadGuards)).IsTrue();
+        Check.That(parameter.RequiresVerification).IsTrue();
+    }
+
+    // Positional one level down as much as at the top: the same `lock`, the same guard, the same `return`,
+    // and only their order differs. A rule that refused the whole scoped body would have cost the constraint
+    // on every constructor that returns early after validating.
+    [Fact(DisplayName = "A jump below a guard inside a scoping construct leaves it read.")]
+    public void AJumpBelowAGuardInsideAScopingConstructLeavesItRead() {
+        ScaffoldedParameter parameter =
+            ConditionedSubject("        lock (this) { ArgumentOutOfRangeException.ThrowIfNegative(value); if (strict) { kept = value; return; } }")
+               .Plan!.Parameters[1];
+
+        Check.That(parameter.Expression).IsEqualTo("Any.Int32().GreaterThanOrEqualTo(0)");
+        Check.That(parameter.Provenance.HasFlag(Provenance.UnreadGuards)).IsFalse();
+    }
+
     // The rule is positional, not a refusal of any body that returns: a jump BELOW a guard cannot skip it,
     // and refusing there would cost a constraint for nothing. This is the pair that keeps the rule honest —
     // the same `return`, the same guard, and only their order differs.

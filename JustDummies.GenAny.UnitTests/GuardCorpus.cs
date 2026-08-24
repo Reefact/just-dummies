@@ -367,7 +367,7 @@ internal static class GuardCorpus {
 
                                                                                  public int Kept { get; }
                                                                              }
-                                                                             """, defect: "a sibling jump inside an always-running lock is seen by neither placement question", requiresVerification: true),
+                                                                             """, requiresVerification: true),
 
 
         // ---- Finding 2. `Guards.cs` breaks the scan on the first assignment to state

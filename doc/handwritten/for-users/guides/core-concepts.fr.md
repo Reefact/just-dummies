@@ -6,6 +6,10 @@
 Cinq idées portent toute la bibliothèque. Une fois acquises, chaque générateur de la référence se
 lit de la même façon, et les surprises cessent.
 
+Toutes les cinq reposent sur la définition qu'ouvre [Démarrer](./getting-started.fr.md#quest-ce-quun-dummy)
+— un dummy est une valeur dont un test a besoin et dont il ne se soucie pas. Tout ce qui suit décrit
+comment la bibliothèque sert *cela* ; rien n'y transforme en dummy une valeur dont le test parle.
+
 ## Un générateur est une recette, pas une valeur
 
 `Any.Int32()` ne donne pas un nombre. Il donne un `AnyInt32` — un objet décrivant quels nombres

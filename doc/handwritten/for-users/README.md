@@ -3,9 +3,13 @@
 🌍 **Languages:**  
 🇬🇧 English (this file) | 🇫🇷 [Français](./README.fr.md)
 
-JustDummies generates **arbitrary yet valid** test values. You declare the invariants a value must
-satisfy, the library draws one that satisfies them, and any sequential run replays from the seed it
-reports.
+JustDummies generates the test values you need and do not care about — the reference an order must
+carry, the name a customer must have — **arbitrary yet valid**. You declare the invariants such a
+value must satisfy, the library draws one that satisfies them, and any sequential run replays from
+the seed it reports.
+
+The value a test is *about* is not one of these, and stays a literal. That line is where the library
+earns its name; [Getting started](./guides/getting-started.en.md) draws it in ten minutes.
 
 ## Start here
 

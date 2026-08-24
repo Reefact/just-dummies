@@ -12,7 +12,9 @@ namespace JustDummies;
 ///     A fluent generator of arbitrary <typeparamref name="TEnum" /> values, drawn uniformly from the enum's
 ///     <b>declared</b> members — never from undeclared numeric values. Constraints narrow the pool
 ///     (<see cref="OneOf" />, <see cref="Except" />, <see cref="DifferentFrom" />), and a combination that empties it
-///     fails eagerly with a <see cref="ConflictingAnyConstraintException" /> naming both sides.
+///     fails with a <see cref="ConflictingAnyConstraintException" /> naming both sides — before any value is drawn,
+///     and whichever order the chain was written in, since <see cref="AllowingCombinations" /> widens the universe
+///     the pool is cut from wherever it appears.
 /// </summary>
 /// <remarks>
 ///     A <see cref="FlagsAttribute">[Flags]</see> enum declares bits meant to be combined, so its <b>valid</b> values
@@ -216,7 +218,7 @@ public sealed class AnyEnum<TEnum> : IAny<TEnum>, IHasRandomSource, ICardinality
             throw ConflictingAnyConstraintException.TooManyCombinableMembers(constraint, typeof(TEnum).Name, V(generators), V(MaxCombinableMembers));
         }
 
-        return Validated(new AnyEnum<TEnum>(_source, Combinations, true, _allowed, _allowedConstraint, _excluded, _exclusions), constraint);
+        return new AnyEnum<TEnum>(_source, Combinations, true, _allowed, _allowedConstraint, _excluded, _exclusions);
     }
 
     /// <summary>Requires the value to be one of the supplied members. Declared once per generator.</summary>
@@ -243,7 +245,7 @@ public sealed class AnyEnum<TEnum> : IAny<TEnum>, IHasRandomSource, ICardinality
         if (_allowedConstraint == constraint) { return this; }
         if (_allowedConstraint is not null) { throw ConflictingAnyConstraintException.AlreadyDefined(constraint, _allowedConstraint); }
 
-        return Validated(new AnyEnum<TEnum>(_source, _universe, _combinable, values.Distinct().ToArray(), constraint, _excluded, _exclusions), constraint);
+        return new AnyEnum<TEnum>(_source, _universe, _combinable, values.Distinct().ToArray(), constraint, _excluded, _exclusions);
     }
 
     /// <summary>
@@ -276,6 +278,10 @@ public sealed class AnyEnum<TEnum> : IAny<TEnum>, IHasRandomSource, ICardinality
 
     /// <inheritdoc />
     public TEnum Generate() {
+        // The one satisfiability question a later constraint could still have answered, asked here — where the
+        // specification is whole — rather than on whatever prefix of it was declared first.
+        EnsureAnyValueRemains();
+
         return _pool[_source.Current.Next(_pool.Count)];
     }
 
@@ -294,15 +300,29 @@ public sealed class AnyEnum<TEnum> : IAny<TEnum>, IHasRandomSource, ICardinality
         List<TEnum>                                            excluded   = [.. _excluded, .. values];
         List<(ConstraintCall Constraint, TEnum[] Values)>       exclusions = [.. _exclusions, (applying, values.ToArray())];
 
-        return Validated(new AnyEnum<TEnum>(_source, _universe, _combinable, _allowed, _allowedConstraint, excluded, exclusions), applying);
+        return new AnyEnum<TEnum>(_source, _universe, _combinable, _allowed, _allowedConstraint, excluded, exclusions);
     }
 
-    [SuppressMessage(NetAnalyzersRule.CA1822.Category, NetAnalyzersRule.CA1822.Id, Justification = SuppressionJustification.CA1822.UniformValidatedHook)]
-    [SuppressMessage(SonarRule.S2325.Category, SonarRule.S2325.Id, Justification = SuppressionJustification.S2325.UniformValidatedHook)]
-    private AnyEnum<TEnum> Validated(AnyEnum<TEnum> candidate, ConstraintCall applying) {
-        if (candidate._pool.Count > 0) { return candidate; }
+    /// <summary>
+    ///     Refuses a generator whose pool no exclusion left anything in.
+    /// </summary>
+    /// <remarks>
+    ///     Asked at the draw rather than as each constraint arrives, because <see cref="AllowingCombinations" />
+    ///     <b>widens</b> the universe the pool is cut from: <c>Except(Left, Right)</c> on a two-member flags enum
+    ///     empties the declared members, yet the combination <c>Left | Right</c> is still there to draw once
+    ///     combinations are allowed. Asked mid-chain, the same two constraints were refused in one order and
+    ///     honoured in the other — a verdict belonging to the constraint set, read off whichever prefix of it
+    ///     happened to be declared first.
+    /// </remarks>
+    private void EnsureAnyValueRemains() {
+        if (_pool.Count > 0) { return; }
 
-        throw ConflictingAnyConstraintException.NoValueRemains(applying, candidate.DescribeExhaustion(applying));
+        // The exclusion that emptied the pool is what the sentence names, whichever order the chain put it in — so
+        // the single-culprit case reads exactly as it did when the check fired on that very call.
+        IReadOnlyList<ConstraintCall> culprits = ExcludingConstraintsInEffect();
+        ConstraintCall                blamed   = culprits.Count > 0 ? culprits[0] : _allowedConstraint ?? ConstraintCall.Of(nameof(Generate));
+
+        throw ConflictingAnyConstraintException.NoValueRemains(blamed, DescribeExhaustion(blamed));
     }
 
     /// <summary>

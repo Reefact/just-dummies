@@ -138,7 +138,7 @@ public sealed class AnySetTypeTests {
         }
 
         ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.Enum<OrderStatus>().Except(OrderStatus.Draft, OrderStatus.Validated, OrderStatus.Cancelled));
+            () => Any.Enum<OrderStatus>().Except(OrderStatus.Draft, OrderStatus.Validated, OrderStatus.Cancelled).Generate());
         Check.That(conflict.Message).Contains("Except(");
     }
 

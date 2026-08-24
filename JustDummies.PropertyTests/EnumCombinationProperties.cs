@@ -48,7 +48,7 @@ public sealed class EnumCombinationProperties {
                         Permissions[] distinct = excluded.Distinct().ToArray();
                         if (distinct.Length == Universe.Length) {
                             return Expect.Throws<ConflictingAnyConstraintException>(
-                                () => Any.Enum<Permissions>().AllowingCombinations().Except(excluded));
+                                () => Any.Enum<Permissions>().AllowingCombinations().Except(excluded).Generate());
                         }
 
                         return Expect.EveryDraw(Any.Enum<Permissions>().AllowingCombinations().Except(excluded),

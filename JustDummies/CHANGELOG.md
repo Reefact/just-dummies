@@ -30,6 +30,14 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Fixed
 
+- **An enum pool emptied by an exclusion is judged on the finished chain, so `AllowingCombinations()` is honoured
+  wherever it was written.** `Any.Enum<Side>().Except(Left, Right)` empties the *declared* members of a two-member
+  flags enum, but the combination `Left | Right` is still there to draw once combinations are allowed — and the
+  opt-in used to arrive too late when it was written after the exclusion, so the same two calls were refused in one
+  order and honoured in the other. The emptiness check now runs once, at the draw. It still refuses before any
+  value is produced, and every message is the one it was: a chain that never allows combinations is refused
+  exactly as before, naming the exclusion that emptied it.
+
 - **A distinct collection is judged on the finished chain, so the order its constraints were written in no longer
   decides the verdict.** Three calls *widen* what such a collection can reach — `Containing(...)` with a value the
   element generator cannot produce, `ContainingAny(...)`, and `Distinct(comparer)` with an equality finer than the

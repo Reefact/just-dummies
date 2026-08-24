@@ -106,6 +106,26 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   a parameter a leading statement writes before reaching the `return` is excluded exactly as
   `ParameterWrites.Precede` already excludes it from every other guard.
 
+- **The delegated fold now carries the delegated constructor's DOUBT across the hop, not only its
+  constraints — and every path where it declines says so.** The two folds above shipped reading one
+  half of what the delegated constructor knows. Where that constructor carried a guard the engine
+  cannot read beside one it can, the readable half folded and the mark stayed behind: read directly
+  the body earned `unread guards` and a blocked file, read through `: this(value, false)` it reported
+  the parameter as `guard` with nothing to verify, over a domain that rejects the draw — the very
+  class of defect this release closes, reached by way of the fix for a different one. Three silences
+  went with it, now all four spoken: an argument filling an expanded `params` call is declined rather
+  than matched positionally, since a guard about the array is not about the element handed in; a
+  parameter rewritten before the hand-off is declined **with** a mark where the delegated constructor
+  had something to say about it; and a delegated reading that could not be made at all no longer
+  passes for one that found nothing.
+
+- **A `: this(…)` initializer that delegates to its own constructor no longer takes the tool down.**
+  The fold followed the hop without bounding it, so a self-calling initializer recursed until the
+  process died with a stack overflow. `CS0516` forbids writing one, which is why the first draft
+  skipped the guard — but the compiler's refusal only covers source that compiles, and the engine
+  reads whatever the developer currently has open. A hop already underway is now read once and
+  abandoned.
+
 - **A `.Count`/`.Length` guard on a parameter whose own type is neither a string nor a collection is
   now marked `unread guards` instead of silently misattributed.** `if (tags.Count < 3)` on a
   composed `Tags` parameter used to have its family chosen from `GeneratorFor.Sizes(parameter.Type)`,

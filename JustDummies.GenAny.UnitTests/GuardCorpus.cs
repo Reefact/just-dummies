@@ -336,7 +336,311 @@ internal static class GuardCorpus {
                                                                     }
 
                                                                 }
-                                                                """, requiresVerification: true)
+                                                                """, requiresVerification: true),
+
+
+        // ---- PROBES for the eleven silent misreads an adversarial audit reproduced against the running
+        // ---- engine (2026-08-24), each shape's own draw disagreeing with what the recap claimed. Every row
+        // ---- below stays `defect:`-marked until its fix lands; the mark comes off with the fix, never with
+        // ---- the test (ADR-0085's field-report signature — the audit's own measurement is the report).
+
+        // ---- Finding 1. `Jumps` is asked of top-level statements only (`unskipped &= !Jumps(...)`); a
+        // ---- `return` that is a SIBLING of the guard, nested one level inside an always-running `lock`, is
+        // ---- neither a top-level statement nor an ancestor of the guard, so neither placement question sees
+        // ---- it. The phantom floor of 50 destroys the real ceiling of 10 read above it, and a real draw
+        // ---- (`value: 24`) is accepted where the constructor's own ceiling would have refused it.
+
+        new GuardedShape("sibling-jump-destroys-a-real-bound", "Bracket", """
+                                                                             public sealed class Bracket {
+
+                                                                                 public Bracket(bool lenient, int value) {
+                                                                                     if (value > 10) { throw new ArgumentOutOfRangeException(nameof(value)); }
+
+                                                                                     lock (this) {
+                                                                                         if (lenient) { Kept = value; return; }
+
+                                                                                         ArgumentOutOfRangeException.ThrowIfLessThan(value, 50);
+                                                                                     }
+
+                                                                                     Kept = value;
+                                                                                 }
+
+                                                                                 public int Kept { get; }
+                                                                             }
+                                                                             """, defect: "a sibling jump inside an always-running lock is seen by neither placement question", requiresVerification: true),
+
+
+        // ---- Finding 2. `Guards.cs` breaks the scan on the first assignment to state
+        // ---- (`AssignsState(statement, model) && !IsGuardAssignment(...)`) BEFORE `MarkIfItRejects` runs, so
+        // ---- a `throw` carried inside that very assignment's own right side is never asked whether it
+        // ---- rejects. `code` reads as plain `inferred`, over a domain that rejects every string under 8 or
+        // ---- over 20 characters.
+
+        new GuardedShape("throw-inside-state-assignment", "Coupon", """
+                                                                       public sealed class Coupon {
+
+                                                                           public Coupon(string code, int uses) {
+                                                                               Code = code.Length switch {
+                                                                                   < 8  => throw new ArgumentException("Too short.", nameof(code)),
+                                                                                   > 20 => throw new ArgumentException("Too long.", nameof(code)),
+                                                                                   _    => code
+                                                                               };
+
+                                                                               if (uses < 1) { throw new ArgumentOutOfRangeException(nameof(uses)); }
+
+                                                                               Uses = uses;
+                                                                           }
+
+                                                                           public string Code { get; }
+
+                                                                           public int Uses { get; }
+                                                                       }
+                                                                       """, defect: "a throw inside the first assignment to state ends the scan before it is asked about", requiresVerification: true),
+
+
+        // ---- Finding 3. `MarkIfValidatedElsewhere` matches an `ExpressionStatementSyntax` whose expression is
+        // ---- the call itself, or a simple assignment of one. `Policy?.Enforce(code)` is a
+        // ---- `ConditionalAccessExpressionSyntax` — neither shape — so the statement is skipped by both the
+        // ---- rejection check and the delegation mark. `code` reads as plain `inferred` over a domain that
+        // ---- rejects every string under 8 characters.
+
+        new GuardedShape("guard-behind-conditional-access", "Voucher", """
+                                                                          public sealed class Voucher {
+
+                                                                              private static readonly CodePolicy? Policy = new CodePolicy();
+
+                                                                              public Voucher(string code) {
+                                                                                  Policy?.Enforce(code);
+
+                                                                                  Code = code;
+                                                                              }
+
+                                                                              public string Code { get; }
+                                                                          }
+
+                                                                          public sealed class CodePolicy {
+                                                                              public void Enforce(string candidate) {
+                                                                                  if (candidate.Length < 8) { throw new ArgumentException("Too short.", nameof(candidate)); }
+                                                                              }
+                                                                          }
+                                                                          """, defect: "a guard delegated through a conditional-access receiver is invisible to the marking pass", requiresVerification: true),
+
+
+        // ---- Finding 4. `Guards.Read` walks `declaration.Body.Statements` only, so a `: this(...)`
+        // ---- initializer never enters the reading loop; `ParameterWrites` sees it, but only through
+        // ---- `Initializer()` and `HandedByReference`, both asking whether the parameter was WRITTEN, never
+        // ---- whether the delegated constructor REJECTS it. The delegated `percent <= 0` guard is lost —
+        // ---- only the outer `percent > 100` reads — over a domain that rejects zero and negative values too.
+
+        new GuardedShape("guard-in-constructor-initializer", "Allocation", """
+                                                                              public sealed class Allocation {
+
+                                                                                  private readonly int percent;
+                                                                                  private readonly int other;
+
+                                                                                  private Allocation(int percent, int other, bool _) {
+                                                                                      if (percent <= 0) { throw new ArgumentOutOfRangeException(nameof(percent)); }
+
+                                                                                      this.percent = percent;
+                                                                                      this.other   = other;
+                                                                                  }
+
+                                                                                  public Allocation(int percent, int other) : this(percent, other, true) {
+                                                                                      if (percent > 100) { throw new ArgumentOutOfRangeException(nameof(percent)); }
+                                                                                  }
+                                                                              }
+                                                                              """, defect: "a constructor initializer is asked whether it writes the parameter, never whether it rejects it", requiresVerification: true),
+
+
+        // ---- Finding 5. `GeneratorFor.Composed` calls `Guards.Read(factory, ...)` — the factory's own body
+        // ---- only. `return new Coupon(number);` is a `ReturnStatementSyntax`; `MarkIfValidatedElsewhere`
+        // ---- iterates `ExpressionStatementSyntax` only, so it never sees it, and `MarkIfItRejects` finds no
+        // ---- `throw` in the factory either. The private constructor's `number <= 0` guard is read nowhere,
+        // ---- with nothing marking the loss, over a composed parameter the domain still rejects at zero.
+
+        new GuardedShape("factory-composed-over-guarded-ctor", "Holder", """
+                                                                            public sealed class Coupon {
+
+                                                                                private readonly int number;
+
+                                                                                private Coupon(int number) {
+                                                                                    if (number <= 0) { throw new ArgumentOutOfRangeException(nameof(number)); }
+
+                                                                                    this.number = number;
+                                                                                }
+
+                                                                                public static Coupon Create(int number) { return new Coupon(number); }
+                                                                            }
+
+                                                                            public sealed class Holder {
+                                                                                public Holder(Coupon coupon) { }
+                                                                            }
+                                                                            """, defect: "a factory composed over a guarded private constructor loses every guard, reported as guard", requiresVerification: true),
+
+
+        // ---- Finding 6a. ADR-0086's carve-out for a returning guard-library helper reaches
+        // ---- `field = call;` only. `return new Rating(Guard.Against.OutOfRange(...));` hands the same,
+        // ---- recognised call to a `ReturnStatementSyntax`, which `MarkIfValidatedElsewhere` does not scan —
+        // ---- `stars` reads as plain `inferred`, with no bound at all, over a domain confined to 1 through 5.
+
+        new GuardedShape("guard-library-return-position", "Rating", """
+                                                                       public sealed class Rating {
+
+                                                                           private Rating(int stars) { Stars = stars; }
+
+                                                                           public int Stars { get; }
+
+                                                                           public static Rating Create(int stars) {
+                                                                               return new Rating(Guard.Against.OutOfRange(stars, nameof(stars), 1, 5));
+                                                                           }
+                                                                       }
+                                                                       """, defect: "a returning guard-library helper is recognised only as field = call;, never in return position", usings: "using Ardalis.GuardClauses;", requiresVerification: true),
+
+
+        // ---- Finding 6b. The same carve-out reaches `field = call;` only; `decimal net =
+        // ---- Guard.Against.NegativeOrZero(total);` is a `LocalDeclarationStatementSyntax`, a third shape it
+        // ---- does not scan. `total` reads as plain `inferred` over a domain that rejects zero and negative
+        // ---- amounts.
+
+        new GuardedShape("guard-library-local-declaration", "Invoice", """
+                                                                          public sealed class Invoice {
+
+                                                                              public decimal Total { get; }
+
+                                                                              public Invoice(decimal total) {
+                                                                                  decimal net = Guard.Against.NegativeOrZero(total);
+                                                                                  Total = net;
+                                                                              }
+                                                                          }
+                                                                          """, defect: "a recognised guard-library helper is invisible in local-declaration position too", usings: "using Ardalis.GuardClauses;", requiresVerification: true),
+
+
+        // ---- Finding 7a. `LibraryGuards` folds `NullOrWhiteSpace` onto the same `.NonEmpty()` row as
+        // ---- `NullOrEmpty` — a floor of one character, not a rejection of whitespace. The premise the fold
+        // ---- rested on (an unconstrained `Any.String()` draws only ASCII letters and digits) was falsified by
+        // ---- ADR-0075/0076 and never revisited; a short ceiling like this one's four-character cap makes an
+        // ---- all-whitespace draw likely rather than rare.
+
+        new GuardedShape("guard-library-whitespace-ardalis", "CouponCode", """
+                                                                              public sealed class CouponCode {
+
+                                                                                  public CouponCode(string value) {
+                                                                                      Guard.Against.NullOrWhiteSpace(value);
+                                                                                      Guard.Against.StringTooLong(value, 4);
+                                                                                      Value = value;
+                                                                                  }
+
+                                                                                  public string Value { get; }
+                                                                              }
+                                                                              """, defect: "NullOrWhiteSpace folds onto NonEmpty, which admits an all-whitespace draw (Ardalis spelling)", usings: "using Ardalis.GuardClauses;", requiresVerification: true),
+
+
+        // ---- Finding 7b. The same fold, CommunityToolkit's spelling: `IsNotNullOrWhiteSpace` also reads as
+        // ---- `.NonEmpty()`, which does not reject an all-whitespace draw under this domain's four-character
+        // ---- ceiling.
+
+        new GuardedShape("guard-library-whitespace-toolkit", "Ticker", """
+                                                                          public sealed class Ticker {
+
+                                                                              private readonly string symbol;
+
+                                                                              public Ticker(string symbol) {
+                                                                                  Guard.IsNotNullOrWhiteSpace(symbol, nameof(symbol));
+                                                                                  if (symbol.Length > 4) { throw new ArgumentException("too long", nameof(symbol)); }
+
+                                                                                  this.symbol = symbol;
+                                                                              }
+                                                                          }
+                                                                          """, defect: "IsNotNullOrWhiteSpace folds onto NonEmpty, which admits an all-whitespace draw (CommunityToolkit spelling)", usings: "using CommunityToolkit.Diagnostics;", requiresVerification: true),
+
+
+        // ---- Finding 8. `Guards.IsSize` accepts `tags.Count` because the receiver IS the parameter, without
+        // ---- asking whether the parameter's TYPE is one the size family means. The family is then chosen
+        // ---- from the parameter's own type (not a collection), so `WithMinLength` lands on the factory's
+        // ---- inner `Any.String()` — legal there, understood there, and a complete non sequitur about `Tags`,
+        // ---- whose own domain rejects fewer than three comma-separated entries regardless of string length.
+
+        new GuardedShape("composed-count-as-length", "Article", """
+                                                                   public sealed class Tags {
+
+                                                                       private Tags(string csv) { Csv = csv; }
+
+                                                                       public static Tags Parse(string csv) {
+                                                                           if (string.IsNullOrWhiteSpace(csv)) { throw new ArgumentException("blank", nameof(csv)); }
+
+                                                                           return new Tags(csv);
+                                                                       }
+
+                                                                       public string Csv { get; }
+
+                                                                       public int Count { get { return Csv.Split(',').Length; } }
+                                                                   }
+
+                                                                   public sealed class Article {
+
+                                                                       public Article(Tags tags) {
+                                                                           if (tags.Count < 3) { throw new ArgumentException("three tags", nameof(tags)); }
+                                                                           Tags = tags;
+                                                                       }
+
+                                                                       public Tags Tags { get; }
+                                                                   }
+                                                                   """, defect: "a size guard on a composed parameter is written onto the factory's inner string generator", requiresVerification: true),
+
+
+        // ---- Finding 10. §5.1's target-path rule reads the chosen `Create` factory's own body
+        // ---- (`if (string.IsNullOrWhiteSpace(value))`) and stops there; the private constructor `Create`
+        // ---- delegates to, guarding `value.Length < 8`, is never read and nothing marks the loss. `value`
+        // ---- reads as `Any.String().NonEmpty()`, provenance `Guard`, over a domain that also rejects every
+        // ---- string under 8 characters.
+
+        new GuardedShape("factory-target-over-guarded-ctor", "Reference", """
+                                                                             public sealed class Reference {
+
+                                                                                 private readonly string value;
+
+                                                                                 private Reference(string value) {
+                                                                                     if (value.Length < 8) { throw new ArgumentException("too short", nameof(value)); }
+                                                                                     this.value = value;
+                                                                                 }
+
+                                                                                 public static Reference Create(string value) {
+                                                                                     if (string.IsNullOrWhiteSpace(value)) { throw new ArgumentException("blank", nameof(value)); }
+
+                                                                                     return new Reference(value);
+                                                                                 }
+                                                                             }
+                                                                             """, defect: "the guards of a constructor a recognised factory delegates to are neither read nor marked", requiresVerification: true),
+
+
+        // ---- Finding 11. Read correctly, about the wrong value — `Guards.cs`'s own remarks name this class
+        // ---- and mark only the ADR-0083 instance. `tags.Count` is read and its family chosen from `Tags`
+        // ---- (not a collection, so the length family), but `GeneratorFor.Chain` renders the constraint onto
+        // ---- `Any.String()`, the factory's SOURCE generator, before the `.As(Tags.Of)` hop — a value the
+        // ---- generator no longer draws once composed. The recap reports `guard` with full confidence.
+
+        new GuardedShape("composed-value-attributed-to-source-generator", "Bundle", """
+                                                                                       public sealed class Tags {
+
+                                                                                           private readonly IReadOnlyList<string> items;
+
+                                                                                           private Tags(IReadOnlyList<string> items) { this.items = items; }
+
+                                                                                           public static Tags Of(string csv) { return new Tags(csv.Split(',')); }
+
+                                                                                           public int Count { get { return items.Count; } }
+                                                                                       }
+
+                                                                                       public sealed class Bundle {
+
+                                                                                           private readonly Tags tags;
+
+                                                                                           public Bundle(Tags tags) {
+                                                                                               if (tags.Count < 3) { throw new ArgumentException("at least three tags", nameof(tags)); }
+                                                                                               this.tags = tags;
+                                                                                           }
+                                                                                       }
+                                                                                       """, defect: "a guard about a composed value is written onto the generator for the factory's source type", requiresVerification: true)
     ];
 
     /// <summary>The shape names, as the theory rows carry them.</summary>

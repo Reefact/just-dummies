@@ -50,6 +50,12 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   factory would refuse, drawn the same way on every call. It now reads the factory exactly as it
   already does for a `class` built the same way.
 
+- **`NullOrWhiteSpace` (Ardalis.GuardClauses) and `IsNotNullOrWhiteSpace` (CommunityToolkit.Diagnostics)
+  are marked `unread guards` rather than approximated as `.NonEmpty()`.** `.NonEmpty()` is a floor of
+  one character, not a rejection of whitespace, and no member either library carries states the
+  guard exactly — approximating it is what ADR-0086's own rule refuses. `NullOrEmpty` and
+  `IsNotNullOrEmpty`, which `.NonEmpty()` does state exactly, are unaffected.
+
 ## [1.1.0-beta.3] - 2026-08-24
 
 ### Added

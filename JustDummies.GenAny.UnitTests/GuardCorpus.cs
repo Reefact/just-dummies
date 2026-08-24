@@ -191,7 +191,7 @@ internal static class GuardCorpus {
                                                              public int Points { get; }
 
                                                              public Customer(string name, int points) {
-                                                                 Name   = Guard.Against.NullOrWhiteSpace(name);
+                                                                 Name   = Guard.Against.NullOrEmpty(name);
                                                                  Points = Guard.Against.Negative(points);
                                                              }
 
@@ -532,7 +532,7 @@ internal static class GuardCorpus {
 
                                                                                   public string Value { get; }
                                                                               }
-                                                                              """, defect: "NullOrWhiteSpace folds onto NonEmpty, which admits an all-whitespace draw (Ardalis spelling)", usings: "using Ardalis.GuardClauses;", requiresVerification: true),
+                                                                              """, usings: "using Ardalis.GuardClauses;", requiresVerification: true),
 
 
         // ---- Finding 7b. The same fold, CommunityToolkit's spelling: `IsNotNullOrWhiteSpace` also reads as
@@ -551,7 +551,7 @@ internal static class GuardCorpus {
                                                                                   this.symbol = symbol;
                                                                               }
                                                                           }
-                                                                          """, defect: "IsNotNullOrWhiteSpace folds onto NonEmpty, which admits an all-whitespace draw (CommunityToolkit spelling)", usings: "using CommunityToolkit.Diagnostics;", requiresVerification: true),
+                                                                          """, usings: "using CommunityToolkit.Diagnostics;", requiresVerification: true),
 
 
         // ---- Finding 8. `Guards.IsSize` accepts `tags.Count` because the receiver IS the parameter, without

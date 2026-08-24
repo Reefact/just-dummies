@@ -487,7 +487,6 @@ public sealed class GuardReadingTests {
     ///     comparisons build the exclusive bound, and <c>IsInRange</c> keeps its half-open ceiling.
     /// </summary>
     [Theory(DisplayName = "A CommunityToolkit guard is read into the closed set's own rows.")]
-    [InlineData("string", "Guard.IsNotNullOrWhiteSpace(value, nameof(value));", "Any.String().NonEmpty()")]
     [InlineData("string", "Guard.IsNotNullOrEmpty(value, nameof(value));", "Any.String().NonEmpty()")]
     [InlineData("int", "Guard.IsGreaterThan(value, 0, nameof(value));", "Any.Int32().GreaterThan(0)")]
     [InlineData("int", "Guard.IsGreaterThanOrEqualTo(value, 18, nameof(value));", "Any.Int32().GreaterThanOrEqualTo(18)")]
@@ -507,7 +506,6 @@ public sealed class GuardReadingTests {
     ///     <c>Negative</c>, both bounds pass <c>OutOfRange</c>, both boundary lengths pass the string pair.
     /// </summary>
     [Theory(DisplayName = "An Ardalis guard is read into the closed set's own rows.")]
-    [InlineData("string", "Guard.Against.NullOrWhiteSpace(value);", "Any.String().NonEmpty()")]
     [InlineData("string", "Guard.Against.NullOrEmpty(value);", "Any.String().NonEmpty()")]
     [InlineData("int", "Guard.Against.Negative(value);", "Any.Int32().GreaterThanOrEqualTo(0)")]
     [InlineData("int", "Guard.Against.NegativeOrZero(value);", "Any.Int32().Positive()")]
@@ -524,6 +522,22 @@ public sealed class GuardReadingTests {
         Check.That(parameter.Expression).IsEqualTo(expected);
         Check.That(parameter.Provenance.HasFlag(Provenance.Guard)).IsTrue();
         Check.That(parameter.RequiresVerification).IsFalse();
+    }
+
+    /// <summary>
+    ///     Neither library's whitespace rejection is a mapped row: <c>NonEmpty()</c> is a floor of one
+    ///     character, not a rejection of whitespace, and no other member of either library carries it.
+    ///     ADR-0086's own rule — "measured, or not in the table" — makes the recognised-but-unmapped answer
+    ///     the honest one, exactly as an unrecognised method of a recognised library earns it.
+    /// </summary>
+    [Theory(DisplayName = "A guard-library whitespace rejection is recognised but unmapped, and blocks compilation.")]
+    [InlineData("Guard.Against.NullOrWhiteSpace(value);", "using Ardalis.GuardClauses;")]
+    [InlineData("Guard.IsNotNullOrWhiteSpace(value, nameof(value));", "using CommunityToolkit.Diagnostics;")]
+    public void AGuardLibraryWhitespaceRejectionIsUnmappedAndBlocksCompilation(string guard, string usings) {
+        ScaffoldedParameter parameter = LibraryGuarded("string", guard, usings);
+
+        Check.That(parameter.Provenance.HasFlag(Provenance.UnreadGuards)).IsTrue();
+        Check.That(parameter.RequiresVerification).IsTrue();
     }
 
     /// <summary>
@@ -545,7 +559,7 @@ public sealed class GuardReadingTests {
                                                        public string Name { get; }
 
                                                        public Subject(string name, int quantity) {
-                                                           Name = Guard.Against.NullOrWhiteSpace(name);
+                                                           Name = Guard.Against.NullOrEmpty(name);
 
                                                            if (quantity <= 0) { throw new ArgumentOutOfRangeException(nameof(quantity)); }
 

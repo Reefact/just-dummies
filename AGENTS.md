@@ -16,7 +16,26 @@ that cannot read `.claude/` loses nothing by reading this file instead.
   invariants a value must satisfy, never what the test asserts. Targets netstandard2.0 (the floor) and
   net8.0; the supported .NET Framework floor is 4.7.2. Ships 33 Roslyn analyzers (`JD001`-`JD033`)
   inside the package.
-- **The name is the scope: *just* dummies** (ADR-0046). A dummy is arbitrary and valid for the
+- **The two fundamentals — what every other rule answers to.**
+  **1 — What is a dummy?** A value a test needs and does not care about. It must exist and be
+  well-formed for the code to run; its value never reaches the assertion and cannot change the
+  outcome. Two corollaries bind exactly as hard as the definition. **(a)** The value the assertion is
+  about is not a dummy: data that takes part in what the test is trying to verify is not a dummy —
+  generate it and the test becomes a property, which this library runs with a sample size of one and
+  cannot defend. **(b)** Why draw it rather than hard-code it? Because the *test* not caring is not
+  the *code* not caring; the draw puts that indifference to the test, and can reveal a wrong
+  dependency that a literal chosen once and for all may hide.
+  **2 — What does JustDummies solve?** Making a test say what it means, while staying replayable.
+  Hand-picked literals lie about what matters: every one of them looks as though it was chosen for a
+  reason, so nobody dares change one. JustDummies replaces the literal with the declaration of what
+  the value must satisfy — what is arbitrary becomes visibly arbitrary, what is significant stays a
+  literal, and a failure can be reproduced from its seed.
+  These two are the fixed point. When a page, a sample, a test name or a rule disagrees with them —
+  including one written earlier in this repository, by a human or by a model — the fundamentals win
+  and the other is the defect. Never check an example against the rule its own page states: a page
+  can be perfectly consistent with itself and wrong throughout. Check both against these.
+- **The name is the scope: *just* dummies** (ADR-0046). What the library guarantees about such a
+  value is narrow and exact: it is arbitrary and valid for the
   constraints declared at the call site — not a statistically ideal draw, not a universal generator, not
   a constraint solver. Correctness is never what gets bounded: a returned value satisfies every
   constraint declared.

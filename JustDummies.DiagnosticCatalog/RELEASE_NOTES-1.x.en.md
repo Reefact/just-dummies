@@ -2,6 +2,16 @@
 
 What changed for you, release by release, in the `catalog` train. A catalogue's version is its own — it does not describe `JustDummies` at the same number. For the full technical record, see [CHANGELOG.md](https://github.com/Reefact/just-dummies/blob/main/JustDummies.DiagnosticCatalog/CHANGELOG.md).
 
+## 1.0.0-preview.4 — August 24, 2026
+
+_The catalogue catches up with the rule set `JustDummies 1.0.0-preview.3` shipped: three rules join the constants, `JD031`, `JD032` and `JD033`._
+
+### ✨ New
+
+- **`JustDummiesRule.JD031`** — *Two inclusive bounds the library also names as one range*, category `JustDummies.Constraints`.
+- **`JustDummiesRule.JD032`** — *A bound declared twice, where only the tighter one survives*, category `JustDummies.Constraints`.
+- **`JustDummiesRule.JD033`** — *An anchored literal the declared characters cannot draw*, category `JustDummies.Constraints`.
+
 ## 1.0.0-preview.3 — August 18, 2026
 
 _The catalogue catches up with the rule set `JustDummies 1.0.0-preview.2` shipped: two rules join the constants, `JD029` and `JD030`._

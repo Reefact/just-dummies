@@ -53,16 +53,34 @@ L'attribut s'applique à trois niveaux, et le plus spécifique l'emporte pendant
 public sealed class OrderTests {
 
     [Fact]
-    public void An_order_reference_keeps_its_prefix() {
-        string reference = Any.String().StartingWith("ORD-").WithLength(12).Generate();
+    public void A_20_percent_discount_takes_a_fifth_off_the_order() {
+        // Arrange
+        string anyReference = Any.String().StartingWith("ORD-").WithLength(12).Generate();
+        string anyCustomer  = Any.String().Alpha().WithLengthBetween(1, 50).Generate();
 
-        Assert.StartsWith("ORD-", reference);
+        Order order = new Order(anyReference, anyCustomer, amount: 100m);
+
+        // Act
+        order.ApplyDiscount(20);
+
+        // Assert
+        Assert.Equal(80m, order.Total);
     }
 
     // Sur une méthode, pour rejouer une graine rapportée — le niveau extérieur est restauré ensuite.
     [Fact, Reproducible(Seed = 1743029518)]
-    public void A_quantity_stays_in_range() {
-        Assert.InRange(Any.Int32().Between(1, 100).Generate(), 1, 100);
+    public void A_100_percent_discount_clears_the_order() {
+        // Arrange
+        string anyReference = Any.String().StartingWith("ORD-").WithLength(12).Generate();
+        string anyCustomer  = Any.String().Alpha().WithLengthBetween(1, 50).Generate();
+
+        Order order = new Order(anyReference, anyCustomer, amount: 100m);
+
+        // Act
+        order.ApplyDiscount(100);
+
+        // Assert
+        Assert.Equal(0m, order.Total);
     }
 
 }

@@ -703,7 +703,7 @@ internal static class GuardCorpus {
 
                                                                                  public Reference(string value) : this(value, false) { }
                                                                              }
-                                                                             """, defect: "the delegated fold carries constraints across the hop and leaves the doubt behind"),
+                                                                             """, requiresVerification: true),
 
 
         // ---- AUDIT (lens 1). The same loss on the factory half of the fold: `Create` returns
@@ -725,7 +725,7 @@ internal static class GuardCorpus {
                                                                                         return new Token(value);
                                                                                     }
                                                                                 }
-                                                                                """, defect: "the same doubt is lost on the factory half of the fold"),
+                                                                                """, requiresVerification: true),
 
 
         // ---- AUDIT (lens 1). `HandedTo` maps an argument to `delegatedTo.Parameters[index]` without asking
@@ -748,7 +748,7 @@ internal static class GuardCorpus {
                                                                                                return new Blocks(group);
                                                                                            }
                                                                                        }
-                                                                                       """, defect: "the fold maps positionally through an expanded params call"),
+                                                                                       """, requiresVerification: true),
 
 
         // ---- AUDIT (lens 1). The fold's own skip path is silent. `value = value.Trim();` before the return
@@ -772,7 +772,7 @@ internal static class GuardCorpus {
                                                                                                  return new Trimmed(value);
                                                                                              }
                                                                                          }
-                                                                                         """, defect: "the fold declines a rewritten parameter without marking the decline")
+                                                                                         """, requiresVerification: true)
 
     ];
 

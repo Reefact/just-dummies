@@ -626,6 +626,98 @@ internal static class GuardCorpus {
         // ---- is pinned directly, cheaper and without a same-suite `AnyTags` to compile against, by
         // ---- `GuardReadingTests.ACountReadOffANonCollectionNonStringParameterIsUnread`.
 
+        // ---- AUDIT (lens 1). The delegated-guard fold this branch adds carries the delegated reading's
+        // ---- CONSTRAINTS across the hop and leaves its DOUBT behind. `Reference(string)` delegates to a
+        // ---- private constructor whose two guards are one the engine reads (`value.Length < 8`) and one it
+        // ---- cannot (`StartsWith`). Read directly the same body earns `UnreadGuards` and a sentinel; read
+        // ---- through `: this(value, false)` it earns `Guard`, requiresVerification=False, a clean compile
+        // ---- and a first-draw rejection.
+
+        new GuardedShape("delegated-ctor-drops-the-unread-mark", "Reference", """
+                                                                             public sealed class Reference {
+
+                                                                                 private readonly string value;
+                                                                                 private readonly bool trusted;
+
+                                                                                 private Reference(string value, bool trusted) {
+                                                                                     if (!value.StartsWith("REF-", StringComparison.Ordinal)) { throw new ArgumentException("prefix", nameof(value)); }
+                                                                                     if (value.Length < 8) { throw new ArgumentException("short", nameof(value)); }
+                                                                                     this.value = value;
+                                                                                     this.trusted = trusted;
+                                                                                 }
+
+                                                                                 public Reference(string value) : this(value, false) { }
+                                                                             }
+                                                                             """, defect: "the delegated fold carries constraints across the hop and leaves the doubt behind"),
+
+
+        // ---- AUDIT (lens 1). The same loss on the factory half of the fold: `Create` returns
+        // ---- `new Token(value)`, the constructed constructor's readable guard is folded onto `value`, and
+        // ---- the unread `StartsWith` guard beside it is dropped without a mark.
+
+        new GuardedShape("factory-returned-ctor-drops-the-unread-mark", "Token", """
+                                                                                public sealed class Token {
+
+                                                                                    private readonly string value;
+
+                                                                                    private Token(string value) {
+                                                                                        if (!value.StartsWith("T-", StringComparison.Ordinal)) { throw new ArgumentException("prefix", nameof(value)); }
+                                                                                        if (value.Length < 6) { throw new ArgumentException("short", nameof(value)); }
+                                                                                        this.value = value;
+                                                                                    }
+
+                                                                                    public static Token Create(string value) {
+                                                                                        return new Token(value);
+                                                                                    }
+                                                                                }
+                                                                                """, defect: "the same doubt is lost on the factory half of the fold"),
+
+
+        // ---- AUDIT (lens 1). `HandedTo` maps an argument to `delegatedTo.Parameters[index]` without asking
+        // ---- whether the call is in EXPANDED form. `new Blocks(group)` fills one ELEMENT of `params
+        // ---- IReadOnlyList<string>[] groups`, so the guard `groups.Length < 4` — four groups — is folded onto
+        // ---- `group` as a count of four ITEMS. The member resolves on a list generator, so nothing drops and
+        // ---- nothing is marked: a guard read correctly, about a value the generator does not draw.
+
+        new GuardedShape("params-expanded-fold-attributes-the-arrays-count", "Blocks", """
+                                                                                       public sealed class Blocks {
+
+                                                                                           private readonly IReadOnlyList<string> first;
+
+                                                                                           private Blocks(params IReadOnlyList<string>[] groups) {
+                                                                                               if (groups.Length < 4) { throw new ArgumentException("four groups", nameof(groups)); }
+                                                                                               this.first = groups[0];
+                                                                                           }
+
+                                                                                           public static Blocks Of(IReadOnlyList<string> group) {
+                                                                                               return new Blocks(group);
+                                                                                           }
+                                                                                       }
+                                                                                       """, defect: "the fold maps positionally through an expanded params call"),
+
+
+        // ---- AUDIT (lens 1). The fold's own skip path is silent. `value = value.Trim();` before the return
+        // ---- makes `writes.Precede` decline the fold — correctly, the constructed type guards the trimmed
+        // ---- value — but nothing marks the decline, so `value` reports as `inferred`, requiresVerification
+        // ---- False, over a constructor that rejects every draw the trim shortens below eight.
+
+        new GuardedShape("factory-that-rewrites-before-handoff-says-nothing", "Trimmed", """
+                                                                                         public sealed class Trimmed {
+
+                                                                                             private readonly string value;
+
+                                                                                             private Trimmed(string value) {
+                                                                                                 if (value.Length < 8) { throw new ArgumentException("short", nameof(value)); }
+                                                                                                 this.value = value;
+                                                                                             }
+
+                                                                                             public static Trimmed Create(string value) {
+                                                                                                 value = value.Trim();
+
+                                                                                                 return new Trimmed(value);
+                                                                                             }
+                                                                                         }
+                                                                                         """, defect: "the fold declines a rewritten parameter without marking the decline")
     ];
 
     /// <summary>The shape names, as the theory rows carry them.</summary>

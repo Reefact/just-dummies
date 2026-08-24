@@ -119,6 +119,28 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   had something to say about it; and a delegated reading that could not be made at all no longer
   passes for one that found nothing.
 
+- **The fold's fourth decline speaks, and its second doubt channel travels.** The commit that made three
+  of the four declines speak left one mute and carried one of the two channels `GuardReading` holds. An
+  argument that COMPUTES from a parameter — `new Offset(value + 1)` — lost the delegated constructor's
+  guard with nothing marked; and a delegated reading with **no source at all** (an expression-bodied
+  constructor, or the reading the cycle guard itself returns) was indistinguishable from a body read
+  clean, since it answers false and empty to both other questions. Both now mark. A decline still stays
+  silent where nothing is lost by it: an argument mentioning no parameter of the outer method, or a
+  hand-off the delegated constructor says nothing about, is declined without a word, because marking
+  those would refuse shapes that read perfectly.
+
+- **A `params` hand-off reads again in normal form, and is refused only in expanded form.** The previous
+  release refused both, on the ground that telling them apart was a question about the call rather than
+  about syntax reach. Measured, that cost a guard the engine reads correctly about exactly the value the
+  generator draws: `Of(string[] names)` handing its array straight to `Subject(params string[] names)`
+  now reads `WithMinCount(4)` again, while `Of(string name)` filling one element still earns
+  `unread guards`. The compiler already decided which form the call is, so nothing re-derives it.
+
+- **A null-forgiving hand-off folds the guard instead of dropping it.** `: this(value!, false)` passes
+  exactly what `value` holds — `!` is a compile-time annotation with no run-time effect — so the
+  delegated constructor's guard is a guard over this parameter too. A cast is deliberately not unwrapped
+  the same way: `(byte)value` hands over a different number.
+
 - **A `: this(…)` initializer that delegates to its own constructor no longer takes the tool down.**
   The fold followed the hop without bounding it, so a self-calling initializer recursed until the
   process died with a stack overflow. `CS0516` forbids writing one, which is why the first draft

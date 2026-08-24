@@ -11,8 +11,7 @@ internal sealed record ParameterReport(string Name,
                                        string? Expression,
                                        bool Resolved,
                                        bool RequiresVerification,
-                                       IReadOnlyList<string> Provenance,
-                                       IReadOnlyList<string> Candidates) {
+                                       IReadOnlyList<string> Provenance) {
 
     /// <summary>
     ///     A row states its own two outcomes, so the summary's counts can be checked against the rows.
@@ -30,8 +29,7 @@ internal sealed record ParameterReport(string Name,
                                    parameter.Expression,
                                    !parameter.IsUnresolved,
                                    parameter.RequiresVerification,
-                                   Recap.WordsFor(parameter.Provenance),
-                                   parameter.Candidates);
+                                   Recap.WordsFor(parameter.Provenance));
     }
 
 }

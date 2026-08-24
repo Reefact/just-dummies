@@ -1088,9 +1088,16 @@ bloquer la compilation dit clairement qu'il n'a rien décidé.
 Le récapitulatif console n'est pas décoratif : c'est le mécanisme qui maintient le tool honnête sur
 ce qu'il a inféré et ce qu'il a deviné.
 
-L'exécution ci-dessous porte sur le même `Order` qu'au §4.1, mais *avant* que `AnyCustomer` ne soit
-scaffoldé — d'où l'unique paramètre resté ouvert. Scaffolder `Customer` puis relancer avec `--force`
-le referme, et ce deux-temps est la façon prévue de traverser un graphe d'agrégats.
+L'exécution ci-dessous porte sur le `Order` du §4.1. Ses deux paramètres composés portent tous deux
+`AnyX` : chacun est tiré par le generator que son propre type possède (§5.4), là où vit la recette de
+ce type.
+
+Le récapitulatif se lit à l'identique, que la compilation porte déjà ces deux generators ou non, et
+c'est délibéré. Quand l'un manque, le fichier émis le nomme quand même et ne compile pas : le
+développeur rencontre `CS0246` à cette ligne, qui nomme le type à scaffolder — `dum generate
+OrderReference`, puis relancer avec `--force`, et ce deux-temps est la façon prévue de traverser un
+graphe d'agrégats. Le récapitulatif ne double pas le compilateur ici : un fichier qui ne build pas
+n'est pas un silence.
 
 La deuxième ligne nomme la construction que `Generate()` fera, et ce n'est pas toujours un
 constructeur : un type construit par la règle de factory du §5.1 imprime cet appel à la place —
@@ -1102,20 +1109,19 @@ $ dum generate Order
 Analyzing Shop.Domain.Order
   constructor Order(OrderReference, Customer, int, OrderStatus, IReadOnlyList<string>, DateTime)
 
-  reference  OrderReference         Any.String().NonEmpty().As(OrderReference.Create)  factory, guard
-  customer   Customer               —                                                  TODO
-  quantity   int                    Any.Int32().Positive()                             guard
+  reference  OrderReference         new AnyOrderReference()              AnyX
+  customer   Customer               new AnyCustomer()                    AnyX
+  quantity   int                    Any.Int32().Positive()               guard
   status     OrderStatus            Any.Enum<OrderStatus>()
   tags       IReadOnlyList<string>  Any.ListOf(Any.String().NonEmpty())
   placedAt   DateTime               Any.DateTime()
 
-✓ AnyOrder.cs — 5 of 6 parameters inferred, 1 TODO.
-  The file will not compile until you resolve it. That is deliberate.
+✓ AnyOrder.cs — 6 of 6 parameters inferred.
 ```
 
 La colonne de droite porte la provenance de chaque expression : vide pour la table de base, `guard`
-quand le §5.3 l'a resserrée, `factory` quand le §5.4 l'a composée, `AnyX` quand un generator
-scaffoldé a été réutilisé, `guards not combined` pour le cas de conflit du §5.3, `no source` quand le
+quand le §5.3 l'a resserrée, `AnyX` quand le §5.4 a nommé le generator que le type possède,
+`guards not combined` pour le cas de conflit du §5.3, `no source` quand le
 corps du constructeur était indisponible et qu'aucune garde n'a pu être lue, `unread guards` quand
 une instruction de tête lève ou appelle d'une façon que l'ensemble reconnu n'a pas appariée, ou à un
 endroit dont le moteur ne peut pas répondre — sous une écriture du paramètre, ou sous quelque chose qui
@@ -1142,10 +1148,10 @@ fichier ne compilera pas — mais compté séparément, comme *N* **to verify** 
 jamais `TODO`, puisque la ligne et la ligne de clôture décrivent le même paramètre :
 
 ```console
-  customer   Customer   —                        TODO
-  name       string     Any.String().NonEmpty()  to verify, unread guards
+  crates  Crate<int>  —                        TODO
+  name    string      Any.String().NonEmpty()  to verify, unread guards
 
-✓ AnyOrder.cs — 5 of 6 parameters inferred, 1 TODO, 1 to verify.
+✓ AnyWarehouse.cs — 5 of 6 parameters inferred, 1 TODO, 1 to verify.
   The file will not compile until you resolve it. That is deliberate.
 ```
 

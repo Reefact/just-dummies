@@ -20,22 +20,25 @@ namespace JustDummies.Cli.UnitTests;
 public sealed class RecapTests {
 
     /// <summary>
-    ///     §6's run, verbatim: the <c>Order</c> of §4.1 <b>before</b> <c>AnyCustomer</c> was scaffolded, which
-    ///     is why <c>customer</c> is the one parameter left open.
+    ///     §6's run, verbatim: the <c>Order</c> of §4.1, every parameter inferred.
     /// </summary>
+    /// <remarks>
+    ///     Both composed parameters read <c>AnyX</c>, and the recap says the same thing whether or not the
+    ///     compilation carries those two generators yet: the name is the answer either way, and where one is
+    ///     missing the developer's own build reports it (ADR-0089). Not a silence — the file does not compile.
+    /// </remarks>
     private const string Expected = """
                                     Analyzing Shop.Domain.Order
                                       constructor Order(OrderReference, Customer, int, OrderStatus, IReadOnlyList<string>, DateTime)
 
-                                      reference  OrderReference         Any.String().NonEmpty().As(OrderReference.Create)  factory, guard
-                                      customer   Customer               —                                                  TODO
-                                      quantity   int                    Any.Int32().Positive()                             guard
+                                      reference  OrderReference         new AnyOrderReference()              AnyX
+                                      customer   Customer               new AnyCustomer()                    AnyX
+                                      quantity   int                    Any.Int32().Positive()               guard
                                       status     OrderStatus            Any.Enum<OrderStatus>()
                                       tags       IReadOnlyList<string>  Any.ListOf(Any.String().NonEmpty())
                                       placedAt   DateTime               Any.DateTime()
 
-                                    ✓ AnyOrder.cs — 5 of 6 parameters inferred, 1 TODO.
-                                      The file will not compile until you resolve it. That is deliberate.
+                                    ✓ AnyOrder.cs — 6 of 6 parameters inferred.
                                     """;
 
     [Fact(DisplayName = "The recap is the one §6 writes out, to the space.")]
@@ -123,19 +126,8 @@ public sealed class RecapTests {
         Check.That(ExitCode.For(outcome)).IsEqualTo(0);
     }
 
-    // §5.4 leaves the parameter open where several factories qualify and names them here, because which one
-    // the developer meant is theirs to say.
-    [Fact(DisplayName = "Several qualifying factories are named in the recap.")]
-    public void SeveralQualifyingFactoriesAreNamed() {
-        ScaffoldedParameter open = ScaffoldedParameter.Unresolved("value", "Email", Provenance.None,
-                                                                  ["Email.Of", "Email.From"]);
-
-        Check.That(Rendered(Plan([open]))).Contains("value: several factories qualify — Email.Of, Email.From.");
-    }
-
     [Theory(DisplayName = "Every provenance the engine can report has a word in the column.")]
     [InlineData(Provenance.Guard, "guard")]
-    [InlineData(Provenance.Factory, "factory")]
     [InlineData(Provenance.Scaffolded, "AnyX")]
     [InlineData(Provenance.GuardsNotCombined, "guards not combined")]
     [InlineData(Provenance.UnreadGuards, "unread guards")]
@@ -175,10 +167,9 @@ public sealed class RecapTests {
                                 "AnyOrder",
                                 ["System", "System.Collections.Generic", "JustDummies"],
                                 [
-                                    Inferred("reference", "OrderReference",
-                                             "Any.String().NonEmpty().As(OrderReference.Create)",
-                                             Provenance.Factory | Provenance.Guard),
-                                    ScaffoldedParameter.Unresolved("customer", "Customer"),
+                                    Inferred("reference", "OrderReference", "new AnyOrderReference()",
+                                             Provenance.Scaffolded),
+                                    Inferred("customer", "Customer", "new AnyCustomer()", Provenance.Scaffolded),
                                     Inferred("quantity", "int", "Any.Int32().Positive()", Provenance.Guard),
                                     Inferred("status", "OrderStatus", "Any.Enum<OrderStatus>()"),
                                     Inferred("tags", "IReadOnlyList<string>", "Any.ListOf(Any.String().NonEmpty())"),

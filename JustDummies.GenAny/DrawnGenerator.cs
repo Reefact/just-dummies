@@ -78,15 +78,9 @@ internal sealed class DrawnGenerator {
         return new DrawnGenerator(core, builder, suffix, seeded ?? [], tightening: [], provenance);
     }
 
-    /// <summary>The factories that all qualified, when that is why nothing was drawn (§5.4).</summary>
-    internal IReadOnlyList<string> Candidates { get; private set; } = [];
-
     /// <summary>No row matched, and <paramref name="why" /> says what the recap should report.</summary>
-    internal static DrawnGenerator Unresolved(Provenance why = Provenance.None,
-                                              IReadOnlyList<string>? candidates = null) {
-        return new DrawnGenerator(core: null, builder: null, suffix: string.Empty, seeded: [], tightening: [], why) {
-            Candidates = candidates ?? []
-        };
+    internal static DrawnGenerator Unresolved(Provenance why = Provenance.None) {
+        return new DrawnGenerator(core: null, builder: null, suffix: string.Empty, seeded: [], tightening: [], why);
     }
 
     /// <summary>The same expression with one more hop after its constraints.</summary>

@@ -21,13 +21,11 @@ public sealed class ScaffoldedParameter {
     private ScaffoldedParameter(string name,
                                 string typeDisplay,
                                 string? expression,
-                                Provenance provenance,
-                                IReadOnlyList<string> candidates) {
+                                Provenance provenance) {
         Name        = name;
         TypeDisplay = typeDisplay;
         Expression  = expression;
         Provenance  = provenance;
-        Candidates  = candidates;
     }
 
     /// <summary>The parameter's name, exactly as the constructor declares it.</summary>
@@ -48,15 +46,6 @@ public sealed class ScaffoldedParameter {
     ///     and "guessed".
     /// </remarks>
     public Provenance Provenance { get; }
-
-    /// <summary>
-    ///     The factories that all qualified, when that is why the parameter is open (§5.4).
-    /// </summary>
-    /// <remarks>
-    ///     Which one the developer meant is theirs to say, so the engine names them rather than picking. Empty
-    ///     for every other outcome.
-    /// </remarks>
-    public IReadOnlyList<string> Candidates { get; }
 
     /// <summary>Whether the emitted file will carry a TODO for this parameter.</summary>
     [SuppressMessage(SonarRule.S1135.Category, SonarRule.S1135.Id, Justification = SuppressionJustification.S1135.DocumentsTheMarkerTheToolEmits)]
@@ -179,8 +168,7 @@ public sealed class ScaffoldedParameter {
         return new ScaffoldedParameter(Checked(name, nameof(name)),
                                        Checked(typeDisplay, nameof(typeDisplay)),
                                        expression,
-                                       provenance,
-                                       candidates: []);
+                                       provenance);
     }
 
     /// <summary>A parameter the engine inferred no generator for (§5.5).</summary>
@@ -188,13 +176,11 @@ public sealed class ScaffoldedParameter {
     /// <exception cref="ArgumentException"><paramref name="name" /> or <paramref name="typeDisplay" /> is blank.</exception>
     public static ScaffoldedParameter Unresolved(string name,
                                                  string typeDisplay,
-                                                 Provenance provenance = Provenance.None,
-                                                 IReadOnlyList<string>? candidates = null) {
+                                                 Provenance provenance = Provenance.None) {
         return new ScaffoldedParameter(Checked(name, nameof(name)),
                                        Checked(typeDisplay, nameof(typeDisplay)),
                                        expression: null,
-                                       provenance,
-                                       candidates ?? []);
+                                       provenance);
     }
 
     private static string Checked(string value, string parameterName) {

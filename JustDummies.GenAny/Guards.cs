@@ -38,10 +38,22 @@ namespace JustDummies.GenAny;
 /// </remarks>
 internal static class Guards {
 
-    private static readonly string[] EmptinessChecks = ["IsNullOrEmpty", "IsNullOrWhiteSpace"];
+    private const string EmptinessCheck = "IsNullOrEmpty";
 
-    /// <summary>The same two emptiness checks, spelled as the throw helper that performs them.</summary>
-    private static readonly string[] EmptinessThrowHelpers = ["ThrowIfNullOrEmpty", "ThrowIfNullOrWhiteSpace"];
+    /// <summary>
+    ///     The blankness check, which is <b>not</b> the emptiness one and no longer shares its row.
+    /// </summary>
+    /// <remarks>
+    ///     Both spellings sat in one table and folded onto <c>NonEmpty</c>, on a premise ADR-0075 falsified: a
+    ///     floor of one character does not reject the all-whitespace value this guard exists to refuse, and under
+    ///     a short ceiling that draw is ordinary rather than rare. <c>NotBlank</c> states it exactly (ADR-0088).
+    /// </remarks>
+    private const string BlanknessCheck = "IsNullOrWhiteSpace";
+
+    /// <summary>The same two checks, spelled as the throw helper that performs them.</summary>
+    private const string EmptinessThrowHelper = "ThrowIfNullOrEmpty";
+
+    private const string BlanknessThrowHelper = "ThrowIfNullOrWhiteSpace";
 
     /// <summary>
     ///     Names types by namespace, never by keyword.
@@ -569,8 +581,14 @@ internal static class Guards {
 
         if (IsCall(invocation, model, "System.ArgumentNullException", "ThrowIfNull")) { return true; }
 
-        if (IsCall(invocation, model, "System.ArgumentException", EmptinessThrowHelpers)) {
+        if (IsCall(invocation, model, "System.ArgumentException", EmptinessThrowHelper)) {
             constraint = Emptiness(sizes.ByCount);
+
+            return true;
+        }
+
+        if (IsCall(invocation, model, "System.ArgumentException", BlanknessThrowHelper)) {
+            constraint = Blankness();
 
             return true;
         }
@@ -783,7 +801,13 @@ internal static class Guards {
         }
 
         if (condition is InvocationExpressionSyntax invocation) {
-            if (!IsCall(invocation, model, "System.String", EmptinessChecks)) { return false; }
+            if (IsCall(invocation, model, "System.String", BlanknessCheck)) {
+                constraint = Blankness();
+
+                return true;
+            }
+
+            if (!IsCall(invocation, model, "System.String", EmptinessCheck)) { return false; }
 
             constraint = Emptiness(sizes.ByCount);
 
@@ -975,6 +999,14 @@ internal static class Guards {
         if (IsUnsigned(type)) { return null; }
 
         return new GuardConstraint("Negative", argument: null, Bound.Upper, value: 0m, exclusive: true);
+    }
+
+    /// <summary>
+    ///     The row <c>IsNullOrWhiteSpace</c> reads as. String-only by construction — neither spelling of the guard
+    ///     exists for a collection — so unlike <see cref="Emptiness" /> there is no size family to choose between.
+    /// </summary>
+    private static GuardConstraint Blankness() {
+        return new GuardConstraint("NotBlank", argument: null, Bound.Emptiness);
     }
 
     private static GuardConstraint Emptiness(bool byCount) {

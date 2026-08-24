@@ -34,7 +34,7 @@ public sealed partial class AnyOrder : IAny<Order> {
                placedAt:  PlacedAtFactory()) { }
 
     private static IAny<OrderReference> ReferenceFactory() {
-        return Any.String().NonEmpty().As(OrderReference.Create);
+        return Any.String().NotBlank().As(OrderReference.Create);
     }
 
     private static IAny<Customer> CustomerFactory() {

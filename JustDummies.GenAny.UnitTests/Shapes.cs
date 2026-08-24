@@ -96,7 +96,7 @@ internal static class Shapes {
 
     private static IReadOnlyList<ScaffoldedParameter> OrderParameters(ScaffoldedParameter customer) {
         return [
-            ScaffoldedParameter.DrawnFrom("reference", "OrderReference", "Any.String().NonEmpty().As(OrderReference.Create)"),
+            ScaffoldedParameter.DrawnFrom("reference", "OrderReference", "Any.String().NotBlank().As(OrderReference.Create)"),
             customer,
             ScaffoldedParameter.DrawnFrom("quantity", "int", "Any.Int32().Positive()"),
             ScaffoldedParameter.DrawnFrom("status", "OrderStatus", "Any.Enum<OrderStatus>()"),

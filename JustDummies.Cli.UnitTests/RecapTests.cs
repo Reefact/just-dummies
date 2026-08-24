@@ -27,7 +27,7 @@ public sealed class RecapTests {
                                     Analyzing Shop.Domain.Order
                                       constructor Order(OrderReference, Customer, int, OrderStatus, IReadOnlyList<string>, DateTime)
 
-                                      reference  OrderReference         Any.String().NonEmpty().As(OrderReference.Create)  factory, guard
+                                      reference  OrderReference         Any.String().NotBlank().As(OrderReference.Create)  factory, guard
                                       customer   Customer               —                                                  TODO
                                       quantity   int                    Any.Int32().Positive()                             guard
                                       status     OrderStatus            Any.Enum<OrderStatus>()
@@ -176,7 +176,7 @@ public sealed class RecapTests {
                                 ["System", "System.Collections.Generic", "JustDummies"],
                                 [
                                     Inferred("reference", "OrderReference",
-                                             "Any.String().NonEmpty().As(OrderReference.Create)",
+                                             "Any.String().NotBlank().As(OrderReference.Create)",
                                              Provenance.Factory | Provenance.Guard),
                                     ScaffoldedParameter.Unresolved("customer", "Customer"),
                                     Inferred("quantity", "int", "Any.Int32().Positive()", Provenance.Guard),

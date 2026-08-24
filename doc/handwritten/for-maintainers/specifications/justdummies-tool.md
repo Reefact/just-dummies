@@ -264,7 +264,7 @@ public sealed partial class AnyOrder : IAny<Order> {
                placedAt:  PlacedAtFactory()) { }
 
     private static IAny<OrderReference> ReferenceFactory() {
-        return Any.String().NonEmpty().As(OrderReference.Create);
+        return Any.String().NotBlank().As(OrderReference.Create);
     }
 
     private static IAny<Customer> CustomerFactory() {
@@ -636,7 +636,8 @@ The recognised set is closed:
 | Condition that throws | Constraint added |
 |---|---|
 | `p is null`, `p == null` | none — the generator never returns `null` anyway |
-| `string.IsNullOrEmpty(p)`, `string.IsNullOrWhiteSpace(p)`, `p.Length == 0`, `p.Length < 1` | `.NonEmpty()` |
+| `string.IsNullOrEmpty(p)`, `p.Length == 0`, `p.Length < 1` | `.NonEmpty()` |
+| `string.IsNullOrWhiteSpace(p)` | `.NotBlank()` |
 | `p.Length > N` | `.WithMaxLength(N)` |
 | `p.Length < N` | `.WithMinLength(N)` |
 | `p.Length != N` | `.WithLength(N)` |
@@ -650,9 +651,14 @@ The recognised set is closed:
 | `!Enum.IsDefined(typeof(E), p)`, `!Enum.IsDefined(p)` | none — `Any.Enum<E>()` already draws only declared members, **where `p` is of type `E`** |
 | `p == E.Member` | `.DifferentFrom(E.Member)`, **where `p` is of type `E`** |
 
-`.NonEmpty()` covers `IsNullOrWhiteSpace` as well as `IsNullOrEmpty`, because an unconstrained
-`Any.String()` draws only ASCII letters and digits, so a non-empty draw can never be whitespace
-(§14.5).
+**`.NonEmpty()` does not cover `IsNullOrWhiteSpace`, and the two rows are deliberately apart.** It
+once did, on the premise that an unconstrained `Any.String()` draws only ASCII letters and digits so
+a non-empty draw can never be whitespace. ADR-0075 falsified that premise — the filler is the whole
+of ASCII, whitespace included (§14.5) — and ADR-0076 made a declared maximum steer the draw, so under
+a short ceiling an entirely blank draw is ordinary rather than impossible. `.NotBlank()` states the
+guard exactly: at least one character `char.IsWhiteSpace` rejects, with the same floor of one
+(ADR-0088). Note it is wider than the `Whitespaces` family, which is the readable pair a draw may be
+narrowed *to* rather than the test a value must pass.
 
 **A sign is spelled in the member the parameter's own generator carries.** §14.3 gives the unsigned
 families the signed surface *less* `Positive` and `Negative`, so writing `.Positive()` for
@@ -771,7 +777,7 @@ survives casual testing.
 **Where the constraints attach.** A guard-derived constraint belongs to the generator for the
 parameter's own type, *before* any conversion or composition. An `int?` parameter guarded by
 `p <= 0` emits `Any.Int32().Positive().As(value => (int?)value)`, not the reverse; a factory
-parameter guarded inside the factory's body emits `Any.String().NonEmpty().As(OrderReference.Create)`.
+parameter guarded inside the factory's body emits `Any.String().NotBlank().As(OrderReference.Create)`.
 The `.As` hop always comes last, because it is the step that changes the type.
 
 Every constraint above is still subject to D4. `.Positive()` on a `uint` parameter does not
@@ -779,7 +785,7 @@ resolve (§14.3) and is skipped.
 
 Guard reading is also what makes factory composition correct rather than nominally present:
 `OrderReference.Create` guards on `IsNullOrWhiteSpace`, so the tool emits
-`Any.String().NonEmpty().As(OrderReference.Create)` — a chain that works — instead of
+`Any.String().NotBlank().As(OrderReference.Create)` — a chain that works — instead of
 `Any.String().As(OrderReference.Create)`, which was measured throwing `AnyGenerationException`
 **594 times in 10 000 draws**, and 557 on an independent re-run — about one in seventeen,
 which is what an unconstrained draw over the seventeen lengths 0 to 16 predicts (§17).
@@ -825,7 +831,8 @@ resolved symbol, whose documented contract is precisely to return their validate
 
 **The guards the set already knows are read in either spelling.** `ArgumentNullException.ThrowIfNull(value)`
 and `if (value is null) { throw … }` state one invariant, and so do
-`ArgumentException.ThrowIfNullOrEmpty(value)` / `ThrowIfNullOrWhiteSpace(value)` and the
+`ArgumentException.ThrowIfNullOrEmpty(value)` / `ThrowIfNullOrWhiteSpace(value)` — reading into the
+same two distinct rows their `if` spellings do — and the
 `string.IsNullOr…` conditions above. Only the older spelling was read, so the modern one fell to the
 call rule and blocked the developer's build — over a chain that was already exactly right, since a
 null check adds nothing (ADR-0064 draws no null) and an emptiness check is the row's own `NonEmpty`.
@@ -853,7 +860,8 @@ The mapped rows are exactly these:
 | Helper | Constraint added |
 |---|---|
 | `Guard.Against.Null(p)` / `Guard.IsNotNull(p, …)` | none — the generator never draws `null` anyway |
-| `Guard.Against.NullOrEmpty(p)`, `NullOrWhiteSpace(p)` / `Guard.IsNotNullOrEmpty(p, …)`, `IsNotNullOrWhiteSpace(p, …)` | `.NonEmpty()` |
+| `Guard.Against.NullOrEmpty(p)` / `Guard.IsNotNullOrEmpty(p, …)` | `.NonEmpty()` |
+| `Guard.Against.NullOrWhiteSpace(p)` / `Guard.IsNotNullOrWhiteSpace(p, …)` | `.NotBlank()` |
 | `Guard.Against.Negative(p)` | `.GreaterThanOrEqualTo(0)` |
 | `Guard.Against.NegativeOrZero(p)` | `.Positive()` |
 | `Guard.Against.Zero(p)` | `.NonZero()` |
@@ -977,7 +985,7 @@ other parameter's:
                ...) { }
 
     private static IAny<OrderReference> ReferenceFactory() {
-        return Any.String().NonEmpty().As(OrderReference.Create);
+        return Any.String().NotBlank().As(OrderReference.Create);
     }
 
     private static IAny<Customer> CustomerFactory() {
@@ -1051,7 +1059,7 @@ $ dum generate Order
 Analyzing Shop.Domain.Order
   constructor Order(OrderReference, Customer, int, OrderStatus, IReadOnlyList<string>, DateTime)
 
-  reference  OrderReference         Any.String().NonEmpty().As(OrderReference.Create)  factory, guard
+  reference  OrderReference         Any.String().NotBlank().As(OrderReference.Create)  factory, guard
   customer   Customer               —                                                  TODO
   quantity   int                    Any.Int32().Positive()                             guard
   status     OrderStatus            Any.Enum<OrderStatus>()

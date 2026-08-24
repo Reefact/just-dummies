@@ -65,7 +65,7 @@ public sealed class CompositionTests {
     /// </summary>
     /// <remarks>
     ///     <c>OrderReference.Create</c> guards on <c>IsNullOrWhiteSpace</c>, so the emitted chain is
-    ///     <c>Any.String().NonEmpty().As(OrderReference.Create)</c>. Without the guard it would be
+    ///     <c>Any.String().NotBlank().As(OrderReference.Create)</c>. Without the guard it would be
     ///     <c>Any.String().As(OrderReference.Create)</c> — measured throwing <c>AnyGenerationException</c> 594
     ///     times in 10 000 draws, about one in seventeen, which is what an unconstrained draw over the
     ///     seventeen lengths 0 to 16 predicts.
@@ -89,7 +89,7 @@ public sealed class CompositionTests {
                                                  """,
                                                  "OrderReference");
 
-        Check.That(parameter.Expression).IsEqualTo("Any.String().WithLength(12).As(OrderReference.Create)");
+        Check.That(parameter.Expression).IsEqualTo("Any.String().NotBlank().WithLength(12).As(OrderReference.Create)");
         Check.That(parameter.Provenance.HasFlag(Provenance.Factory)).IsTrue();
         Check.That(parameter.Provenance.HasFlag(Provenance.Guard)).IsTrue();
     }
@@ -155,7 +155,7 @@ public sealed class CompositionTests {
                                                  """,
                                                  "OrderReference");
 
-        Check.That(parameter.Expression).IsEqualTo("Any.String().WithLengthBetween(8, 20).As(OrderReference.Create)");
+        Check.That(parameter.Expression).IsEqualTo("Any.String().NotBlank().WithLengthBetween(8, 20).As(OrderReference.Create)");
         Check.That(parameter.Provenance.HasFlag(Provenance.Guard)).IsTrue();
         Check.That(parameter.Provenance.HasFlag(Provenance.GuardsNotCombined)).IsFalse();
     }

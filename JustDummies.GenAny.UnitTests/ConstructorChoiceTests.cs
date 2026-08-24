@@ -200,7 +200,7 @@ public sealed class ConstructorChoiceTests {
         ScaffoldPlan plan = outcome.Plan!;
 
         Check.That(plan.Factory).IsEqualTo("Subject.Create");
-        Check.That(plan.Parameters.Single().Expression).IsEqualTo("Any.String().NonEmpty()");
+        Check.That(plan.Parameters.Single().Expression).IsEqualTo("Any.String().NotBlank()");
         Check.That(outcome.File!.SourceText).Contains("return Subject.Create(");
     }
 
@@ -209,6 +209,10 @@ public sealed class ConstructorChoiceTests {
     ///     not restate — here, a floor the factory's <c>IsNullOrWhiteSpace</c> check does not cover — and it
     ///     folds onto the factory's own parameter exactly as a second guard in the same body already would.
     /// </summary>
+    /// <remarks>
+    ///     Both survive rather than one absorbing the other: the floor is the tighter of the two lengths, and
+    ///     <c>NotBlank</c> carries a refusal it says nothing about — eight characters may every one be a space.
+    /// </remarks>
     [Fact(DisplayName = "The guards of the constructor a factory delegates to fold onto its own parameter.")]
     public void TheGuardsOfTheConstructorAFactoryDelegatesToFoldOntoItsOwnParameter() {
         ScaffoldOutcome outcome = Subject.Scaffold("""
@@ -234,7 +238,7 @@ public sealed class ConstructorChoiceTests {
         ScaffoldPlan plan = outcome.Plan!;
 
         Check.That(plan.Factory).IsEqualTo("Subject.Create");
-        Check.That(plan.Parameters.Single().Expression).IsEqualTo("Any.String().WithMinLength(8)");
+        Check.That(plan.Parameters.Single().Expression).IsEqualTo("Any.String().WithMinLength(8).NotBlank()");
         Check.That(plan.Parameters.Single().Provenance.HasFlag(Provenance.UnreadGuards)).IsFalse();
     }
 

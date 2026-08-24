@@ -63,7 +63,7 @@ public sealed class WorkedExampleTests {
         ScaffoldPlan plan = Scaffolded();
 
         Check.That(plan.Parameters.Select(parameter => parameter.Expression))
-             .ContainsExactly("Any.String().NonEmpty().As(OrderReference.Create)",
+             .ContainsExactly("Any.String().NotBlank().As(OrderReference.Create)",
                               "new AnyCustomer()",
                               "Any.Int32().Positive()",
                               "Any.Enum<OrderStatus>()",

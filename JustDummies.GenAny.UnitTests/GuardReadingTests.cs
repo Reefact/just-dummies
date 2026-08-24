@@ -233,6 +233,57 @@ public sealed class GuardReadingTests {
         Check.That(Subject.GuardedBy(parameterType, guard).Expression).IsEqualTo(expected);
     }
 
+    /// <summary>
+    ///     A <c>.Count</c>/<c>.Length</c> read off a parameter whose own type is neither a string nor a
+    ///     collection is not a size guard the engine can vouch for — it is an arbitrary member the domain
+    ///     type happens to expose, and the engine has no way to know what it means.
+    /// </summary>
+    /// <remarks>
+    ///     Before this, the family was chosen from <c>GeneratorFor.Sizes(parameter.Type)</c>'s <c>ByCount</c>
+    ///     flag, false for any non-collection type, which fell to the length family unconditionally — not
+    ///     because the parameter's type <b>is</b> a string, but because that family was the only one left.
+    ///     On a composed parameter the constraint then landed on the factory's own string argument, which
+    ///     happens to carry a same-named member too — a silent misattribution rather than the drop this test
+    ///     now pins instead.
+    /// </remarks>
+    [Fact(DisplayName = "A .Count read off a non-collection, non-string parameter is unread, not misattributed.")]
+    public void ACountReadOffANonCollectionNonStringParameterIsUnread() {
+        ScaffoldOutcome outcome = Subject.Scaffold("""
+                                                   using System.Collections.Generic;
+
+                                                   namespace Shop.Domain;
+
+                                                   public sealed class Tags {
+
+                                                       private Tags(string csv) { Csv = csv; }
+
+                                                       public static Tags Parse(string csv) {
+                                                           if (string.IsNullOrWhiteSpace(csv)) { throw new System.ArgumentException("blank", nameof(csv)); }
+
+                                                           return new Tags(csv);
+                                                       }
+
+                                                       public string Csv { get; }
+
+                                                       public int Count { get { return Csv.Split(',').Length; } }
+
+                                                   }
+
+                                                   public sealed class Subject {
+
+                                                       public Subject(Tags tags) {
+                                                           if (tags.Count < 3) { throw new System.ArgumentException("three tags", nameof(tags)); }
+                                                       }
+
+                                                   }
+                                                   """);
+
+        ScaffoldedParameter tags = outcome.Plan!.Parameters.Single();
+
+        Check.That(tags.Expression).IsEqualTo("Any.String().NonEmpty().As(Tags.Parse)");
+        Check.That(tags.Provenance.HasFlag(Provenance.UnreadGuards)).IsTrue();
+    }
+
     [Theory(DisplayName = "A guard the generator already satisfies adds nothing.")]
     [InlineData("string", "if (value is null) { throw new ArgumentNullException(nameof(value)); }", "Any.String().NonEmpty()")]
     [InlineData("string", "if (value == null) { throw new ArgumentNullException(nameof(value)); }", "Any.String().NonEmpty()")]

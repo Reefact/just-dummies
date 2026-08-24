@@ -585,7 +585,7 @@ internal static class GuardCorpus {
 
                                                                        public Tags Tags { get; }
                                                                    }
-                                                                   """, defect: "a size guard on a composed parameter is written onto the factory's inner string generator", requiresVerification: true),
+                                                                   """, requiresVerification: true),
 
 
         // ---- Finding 10. §5.1's target-path rule reads the chosen `Create` factory's own body
@@ -640,7 +640,7 @@ internal static class GuardCorpus {
                                                                                                this.tags = tags;
                                                                                            }
                                                                                        }
-                                                                                       """, defect: "a guard about a composed value is written onto the generator for the factory's source type", requiresVerification: true)
+                                                                                       """, requiresVerification: true)
     ];
 
     /// <summary>The shape names, as the theory rows carry them.</summary>

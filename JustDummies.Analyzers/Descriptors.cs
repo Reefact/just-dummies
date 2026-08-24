@@ -177,11 +177,11 @@ internal static class Descriptors {
     public static readonly DiagnosticDescriptor EnumUniverseViolation = new(
         id: JustDummiesRule.JD017.Id,
         title: JustDummiesRule.JD017.Title,
-        messageFormat: "Any.Enum draws only declared members: {0}",
+        messageFormat: "Any.Enum draws only values the type defines: {0}",
         category: JustDummiesRule.JD017.Category,
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true,
-        description: "Any.Enum<T>() draws uniformly across T's declared members and never an undeclared numeric value. That is deliberate and surprising: on a [Flags] enum, writing a combination in OneOf is the natural thing to do and the generator refuses it unless AllowingCombinations() is declared. An exclusion that removes every declared member is the same category error from the other side.",
+        description: "Any.Enum<T>() only ever yields a value T defines: one of its declared members, or — on a [Flags] enum, where OneOf accepts a combination on its own account — an OR of them. It never yields an undeclared numeric value the CLR would still let you write, so naming one is not a narrowing that happens to be empty but a category error. An exclusion that removes every value left to draw is the same error from the other side.",
         helpLinkUri: JustDummiesRule.JD017.HelpLinkUri);
 
     public static readonly DiagnosticDescriptor NestedReproducibilityScope = new(

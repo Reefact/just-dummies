@@ -3,7 +3,7 @@
 🌍 **Langues :**  
 🇬🇧 [English](./getting-started.en.md) | 🇫🇷 Français (ce fichier)
 
-Dix minutes entre un projet de test vide et un test qui se lit mieux, couvre davantage, et indique
+Dix minutes entre un projet de test vide et un test qui se lit mieux, dissimule moins, et indique
 exactement comment le rejouer quand il passe au rouge. Aucune connaissance préalable des générateurs
 de dummies n'est supposée.
 

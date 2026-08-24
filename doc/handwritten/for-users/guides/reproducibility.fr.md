@@ -3,8 +3,8 @@
 🌍 **Langues :**  
 🇬🇧 [English](./reproducibility.en.md) | 🇫🇷 Français (ce fichier)
 
-Un test qui tire une valeur différente à chaque exécution trouve des défauts qu'un test figé ne
-trouverait jamais — et il ne vaut la peine que si un échec peut être rejoué à l'identique. Cette
+Un test qui tire une valeur différente à chaque exécution peut révéler une dépendance abusive qu'un
+test figé peut masquer — et il ne vaut la peine que si un échec peut être rejoué à l'identique. Cette
 page décrit le mécanisme qui rend cela vrai, et les quatre façons d'y accéder.
 
 ## Pourquoi des valeurs arbitraires ont besoin d'un bouton « rejouer »
@@ -15,7 +15,7 @@ l'équipe à appuyer sur « réessayer ».
 
 JustDummies y répond en rendant chaque exécution **rejouable à partir d'un seul entier**. Les
 tirages proviennent d'une source aléatoire ambiante épinglée à une graine. Faites varier la graine
-et la suite explore ; rapportez la graine en cas d'échec et n'importe quelle exécution revient
+et la suite varie avec elle ; rapportez la graine en cas d'échec et n'importe quelle exécution revient
 exactement.
 
 ```mermaid

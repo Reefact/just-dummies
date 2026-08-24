@@ -3,8 +3,8 @@
 🌍 **Languages:**  
 🇬🇧 English (this file) | 🇫🇷 [Français](./reproducibility.fr.md)
 
-A test that draws a different value every run finds defects a fixed test never would — and is only
-worth having if a failure can be replayed exactly. This page is about the mechanism that makes that
+A test that draws a different value every run can reveal a wrong dependency that a fixed test may
+hide — and is only worth having if a failure can be replayed exactly. This page is about the mechanism that makes that
 true, and about the four ways to reach it.
 
 ## Why arbitrary values need a replay button
@@ -13,7 +13,7 @@ The objection to random values in tests is a fair one: *a test that fails once a
 is worse than no test at all.* It wastes an afternoon and teaches the team to press "retry".
 
 JustDummies answers it by making every run **replayable from a single integer**. Draws come from an
-ambient random source pinned to a seed. Vary the seed and the suite explores; report the seed on
+ambient random source pinned to a seed. Vary the seed and the suite varies with it; report the seed on
 failure and any run comes back exactly.
 
 ```mermaid

@@ -157,6 +157,53 @@ public sealed class EmittedCodeCompilesTests {
     }
 
     /// <summary>
+    ///     A composed parameter whose generator does not exist yet fails the build the same way, and that is
+    ///     the whole of ADR-0089: the same mechanism as the open parameter above, spelled as the type name to
+    ///     scaffold rather than as an invented identifier.
+    /// </summary>
+    /// <remarks>
+    ///     The difference from §5.5 is what the developer reads. <c>TODO_supply_a_generator_for_reference</c>
+    ///     says something is missing; <c>AnyOrderReference</c> says which type to run <c>dum generate</c> on.
+    ///     So this file carries no sentinel and no comment — there is nothing left for one to add — and the
+    ///     recap does not flag it either, because a file that does not compile is not a silence.
+    /// </remarks>
+    [Fact(DisplayName = "A composed parameter with no generator yet fails the build, naming the type to scaffold.")]
+    public void AComposedParameterWithNoGeneratorYetFailsTheBuild() {
+        const string domain = """
+                              namespace Shop.Domain;
+
+                              public sealed class OrderReference {
+                                  public static OrderReference Create(string value) { return new OrderReference(); }
+                              }
+
+                              public sealed class Basket {
+                                  public Basket(OrderReference reference) { }
+                              }
+                              """;
+
+        ScaffoldOutcome outcome = Subject.ScaffoldByName("Basket", domain);
+
+        Check.That(outcome.Succeeded).IsTrue();
+
+        string emitted = outcome.File!.SourceText;
+
+        // Straight into the initializer, with no method wrapping one call and no sentinel above it.
+        Check.That(emitted).Contains("reference: new AnyOrderReference()");
+        Check.That(emitted).Not.Contains("AnyValidReference");
+        Check.That(outcome.File.ContainsTodo).IsFalse();
+
+        Diagnostic[] errors = EmittedCodeCompiler.CompileWith(emitted, domain)
+                                                 .GetDiagnostics(TestContext.Current.CancellationToken)
+                                                 .Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error)
+                                                 .ToArray();
+
+        // Exactly one, and about the name: a second error would mean the emitter broke something else while
+        // naming a generator the compilation does not carry.
+        Check.That(errors.Select(error => error.Id)).IsEquivalentTo("CS0246");
+        Check.That(errors.Single().GetMessage()).Contains("AnyOrderReference");
+    }
+
+    /// <summary>
     ///     A guard the engine cannot vouch for is not a defect of this file either: it is the same mechanism
     ///     as the open parameter above, applied where a generator WAS inferred — so it stays right underneath
     ///     the line that blocks it, once the developer deletes that line (§5.5, ADR-0082's follow-up).

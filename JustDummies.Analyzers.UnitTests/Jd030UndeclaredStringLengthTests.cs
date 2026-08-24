@@ -84,6 +84,93 @@ public class Jd030UndeclaredStringLengthTests {
     }
 
     [Fact]
+    public async Task Counts_an_anchored_literal_in_the_reported_interval() {
+        // An anchor occupies characters the draw cannot go below, so the whole interval shifts with it -- measured
+        // against the library, StartingWith("hello") draws 5 to 1029. Reporting 0 to 1024 here would name an
+        // interval containing lengths the chain can never produce.
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync("        _ = Any.String().StartingWith(\"hello\").Generate();");
+
+        Check.That(diagnostics.Length).IsEqualTo(1);
+        Check.That(diagnostics[0].GetMessage()).IsEqualTo("This string dummy declares no length: it draws 5 to 1029 characters");
+    }
+
+    [Fact]
+    public async Task Counts_every_anchor_and_keeps_the_higher_of_the_two_floors() {
+        // Three anchors sum to eight characters, which outranks the floor of one NonEmpty sets -- measured against
+        // the library, this draws 8 to 1032.
+        ImmutableArray<Diagnostic> diagnostics =
+            await AnalyzeAsync("        _ = Any.String().StartingWith(\"ORD-\").Containing(\"XY\").EndingWith(\"99\").NonEmpty().Generate();");
+
+        Check.That(diagnostics.Length).IsEqualTo(1);
+        Check.That(diagnostics[0].GetMessage()).IsEqualTo("This string dummy declares no length: it draws 8 to 1032 characters");
+    }
+
+    [Fact]
+    public async Task Adds_the_NotBlank_position_beside_an_anchor_that_is_entirely_blank() {
+        // The prefix carries no non-blank character, so NotBlank has to reserve a filler position of its own beside
+        // it -- measured against the library, this draws 2 to 1026.
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync("        _ = Any.String().StartingWith(\" \").NotBlank().Generate();");
+
+        Check.That(diagnostics.Length).IsEqualTo(1);
+        Check.That(diagnostics[0].GetMessage()).IsEqualTo("This string dummy declares no length: it draws 2 to 1026 characters");
+    }
+
+    [Fact]
+    public async Task Adds_no_NotBlank_position_beside_an_anchor_that_already_carries_one() {
+        // The prefix satisfies the guarantee on its own, so nothing is reserved beyond the character it occupies --
+        // measured against the library, this draws 1 to 1025. The same interval as a bare NotBlank, reached for a
+        // different reason.
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync("        _ = Any.String().StartingWith(\"A\").NotBlank().Generate();");
+
+        Check.That(diagnostics.Length).IsEqualTo(1);
+        Check.That(diagnostics[0].GetMessage()).IsEqualTo("This string dummy declares no length: it draws 1 to 1025 characters");
+    }
+
+    [Fact]
+    public async Task Counts_a_repeated_prefix_once_because_it_occupies_a_single_slot() {
+        // Re-declaring the same prefix is a no-op in the specification, so the second call adds no character --
+        // measured against the library, this draws 1 to 1025. Adding both would name an interval one too high at
+        // each end, which is the failure this rule exists to avoid.
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync("        _ = Any.String().StartingWith(\"A\").StartingWith(\"A\").Generate();");
+
+        Check.That(diagnostics.Length).IsEqualTo(1);
+        Check.That(diagnostics[0].GetMessage()).IsEqualTo("This string dummy declares no length: it draws 1 to 1025 characters");
+    }
+
+    [Fact]
+    public async Task Counts_a_repeated_suffix_once_as_well() {
+        // The suffix owns a single slot on the same terms as the prefix -- measured against the library, this draws
+        // 1 to 1025.
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync("        _ = Any.String().EndingWith(\"Z\").EndingWith(\"Z\").Generate();");
+
+        Check.That(diagnostics.Length).IsEqualTo(1);
+        Check.That(diagnostics[0].GetMessage()).IsEqualTo("This string dummy declares no length: it draws 1 to 1025 characters");
+    }
+
+    [Fact]
+    public async Task Counts_a_repeated_fragment_every_time_because_Containing_accumulates() {
+        // Containing does not own a slot: a second identical fragment is a second fragment the value must carry --
+        // measured against the library, this draws 4 to 1028. The counterpart to the two cases above, and the
+        // reason they cannot share one rule.
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync("        _ = Any.String().Containing(\"XY\").Containing(\"XY\").Generate();");
+
+        Check.That(diagnostics.Length).IsEqualTo(1);
+        Check.That(diagnostics[0].GetMessage()).IsEqualTo("This string dummy declares no length: it draws 4 to 1028 characters");
+    }
+
+    [Fact]
+    public async Task Leaves_an_anchor_it_cannot_resolve_out_of_the_sum() {
+        // A prefix the compiler cannot fold to a constant is invisible to the rule. Understating the floor is the
+        // safe direction and is what this rule did for every anchor before it counted any: the blindness that hides
+        // the length also keeps NotBlank's position from being added on top of it.
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(
+            "        string prefix = System.Environment.MachineName;\n        _ = Any.String().StartingWith(prefix).NotBlank().Generate();");
+
+        Check.That(diagnostics.Length).IsEqualTo(1);
+        Check.That(diagnostics[0].GetMessage()).IsEqualTo("This string dummy declares no length: it draws 1 to 1025 characters");
+    }
+
+    [Fact]
     public async Task Does_not_report_a_chain_written_as_a_negative_test() {
         // The guard the other rules share: a chain that is the sole body of a lambda ARGUMENT is being asserted
         // about, not written as arrange code.

@@ -28,6 +28,17 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   `JD029` reports a pooled value it never draws, and `JD015` reports a value set it empties
   ([ADR-0088](../doc/handwritten/for-maintainers/adr/0088-state-the-whitespace-guard-with-a-member-of-its-own.md)).
 
+### Fixed
+
+- **`JD030` now counts the anchored literals when it names the interval a chain draws.** The rule's page has
+  always promised "the interval the chain actually draws, not a constant", and for an anchored chain it did not
+  deliver one: it read only `NonEmpty()` and `NotBlank()`, so `Any.String().StartingWith("hello")` was reported
+  as drawing 0 to 1024 characters while it draws 5 to 1029 — an interval whose every value below five the chain
+  can never produce. `StartingWith`, `EndingWith` and `Containing` now enter the floor, and `NotBlank()` adds its
+  filler position only where none of those literals already carries a non-blank character, which is the same
+  arithmetic the generator performs. An anchor whose argument is not a compile-time constant stays out of the
+  sum: that understates the floor, as the rule already did for every anchor, and never overstates it.
+
 ## [1.0.0-preview.4] - 2026-08-24
 
 ### Fixed

@@ -94,10 +94,10 @@ public sealed class GenerateCommandTests : IDisposable {
         Run run = await Generate(Settings("Warehouse"), Compilation("""
                                                                     namespace Shop.Domain;
 
-                                                                    public sealed class Crate { public Crate(int n) { } }
+                                                                    public sealed class Crate<T> { public Crate() { } }
 
                                                                     public sealed class Warehouse {
-                                                                        public Warehouse(Crate crate) { }
+                                                                        public Warehouse(Crate<int> crate) { }
                                                                     }
                                                                     """));
 
@@ -293,10 +293,10 @@ public sealed class GenerateCommandTests : IDisposable {
         Run run = await Generate(settings, Compilation("""
                                                        namespace Shop.Domain;
 
-                                                       public sealed class Crate { public Crate(int n) { } }
+                                                       public sealed class Crate<T> { public Crate() { } }
 
                                                        public sealed class Warehouse {
-                                                           public Warehouse(Crate crate, string name) { }
+                                                           public Warehouse(Crate<int> crate, string name) { }
                                                        }
                                                        """));
 

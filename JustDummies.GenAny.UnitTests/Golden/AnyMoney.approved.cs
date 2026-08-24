@@ -18,9 +18,9 @@ public sealed partial class AnyMoney : IAny<Money> {
 
     /// <summary>Creates the generator with a default recipe for every constructor parameter.</summary>
     public AnyMoney()
-        : this(amount: AmountFactory()) { }
+        : this(amount: AnyValidAmount()) { }
 
-    private static IAny<decimal> AmountFactory() {
+    private static IAny<decimal> AnyValidAmount() {
         return Any.Decimal();
     }
 

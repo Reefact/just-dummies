@@ -119,11 +119,28 @@ public sealed class ScaffoldedParameter {
     ///     The name of the private static method that draws this parameter's generator (§4.2).
     /// </summary>
     /// <remarks>
-    ///     One method per parameter, called from the public constructor's initializer, rather than the chain
-    ///     built inline there: the constructor then reads as a list of names, and whatever a parameter has to
-    ///     say for itself is said inside the method that owns it.
+    ///     One method per parameter that needs one, called from the public constructor's initializer rather than
+    ///     the chain being built inline there: the constructor then reads as a list of names, and whatever a
+    ///     parameter has to say for itself is said inside the method that owns it.
+    ///     <para>
+    ///         Named for what it returns — a value the type's own constructor accepts — because that is the
+    ///         claim the method makes and the one a reader has to check.
+    ///     </para>
     /// </remarks>
-    public string FactoryMethodName => PascalCasedName + "Factory";
+    public string FactoryMethodName => "AnyValid" + PascalCasedName;
+
+    /// <summary>
+    ///     Whether this parameter is written straight into the initializer, with no method of its own (§4.2).
+    /// </summary>
+    /// <remarks>
+    ///     A composed parameter is one call to the generator that type owns — <c>new AnyOrderReference()</c> —
+    ///     and a method wrapping it would say nothing the call does not (ADR-0089). It keeps a method only when
+    ///     there is something to put in the body: the sentinel of §5.5 is a statement, and a statement needs
+    ///     somewhere to stand.
+    /// </remarks>
+    public bool DrawnInline => Provenance.HasFlag(GenAny.Provenance.Scaffolded)
+                            && !IsUnresolved
+                            && !RequiresVerification;
 
     /// <summary>The identifier §5.5 emits in place of a generator, which is deliberately undefined.</summary>
     public string TodoIdentifier => "TODO_supply_a_generator_for_" + Bare();

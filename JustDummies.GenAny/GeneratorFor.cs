@@ -318,7 +318,7 @@ internal sealed class GeneratorFor {
 
         DrawnGenerator scalar = Scalar(named);
 
-        return scalar.Resolved ? scalar : Composed(named, remaining, underway, scalar.Provenance);
+        return scalar.Resolved ? scalar : Composed(named, scalar.Provenance);
     }
 
     /// <summary>A type the table names directly, with the one constraint its row carries.</summary>
@@ -342,12 +342,16 @@ internal sealed class GeneratorFor {
     }
 
     /// <summary>
-    ///     A type the base table has no row for, drawn through the developer's own code instead (§5.4).
+    ///     A type the base table has no row for, drawn through the generator that type owns (§5.4).
     /// </summary>
-    private DrawnGenerator Composed(INamedTypeSymbol type,
-                                    int remaining,
-                                    IReadOnlyCollection<ITypeSymbol> underway,
-                                    Provenance refusal) {
+    /// <remarks>
+    ///     One name, whether or not it exists yet. A value object's recipe belongs to the generator scaffolded
+    ///     for that type, and deriving it again here — <c>Any.String().NonEmpty().As(OrderReference.Create)</c>
+    ///     — would write one copy of that recipe per site composing it, each free to drift from the type's own
+    ///     constructor. Where the generator is missing, <c>CS0246</c> at this line names what to scaffold, which
+    ///     is ADR-0060's mechanism spelled as a type name rather than as an invented identifier (ADR-0089).
+    /// </remarks>
+    private DrawnGenerator Composed(INamedTypeSymbol type, Provenance refusal) {
         if (refusal != Provenance.None) { return DrawnGenerator.Unresolved(refusal); }
 
         INamedTypeSymbol? scaffolded = Composition.ScaffoldedFor(type, compilation, naming);
@@ -358,32 +362,18 @@ internal sealed class GeneratorFor {
             return DrawnGenerator.From($"new {names.Of(scaffolded)}()", scaffolded, provenance: Provenance.Scaffolded);
         }
 
-        IReadOnlyList<IMethodSymbol> qualifying = Composition.FactoriesFor(type);
+        // A generic type's name drops its arguments, so Repository<Order> and Repository<Line> would both be
+        // told to write AnyRepository and neither would be the name to write. §5.5 still answers there.
+        if (type.IsGenericType) { return DrawnGenerator.Unresolved(); }
 
-        if (qualifying.Count != 1) {
-            return DrawnGenerator.Unresolved(candidates: [.. qualifying.Select(method => $"{names.Of(type)}.{method.Name}")]);
-        }
+        // Named anyway, and deliberately unresolvable: the developer's own build reports it at this line, in the
+        // IDE and in CI, the minute the file is written. No builder goes with it, so nothing is chained onto a
+        // type this compilation cannot see — and a guard that wanted to be is reported, not dropped (ADR-0059).
+        names.Open(NamespaceOf(type));
 
-        IMethodSymbol    factory = qualifying[0];
-        IParameterSymbol source  = factory.Parameters[0];
-        DrawnGenerator   inner  = Draw(source.Type, remaining - 1, [.. underway, type]);
-
-        if (!inner.Resolved) { return DrawnGenerator.Unresolved(); }
-
-        // Guard reading is what makes factory composition correct rather than nominally present:
-        // OrderReference.Create guards on IsNullOrWhiteSpace, so the chain becomes
-        // Any.String().NonEmpty().As(OrderReference.Create) — one measured throwing about one draw in
-        // seventeen without it.
-        GuardReading                   read       = Guards.Read(factory, compilation, names);
-        IReadOnlyList<GuardConstraint> tightening = read.For(source.Name);
-
-        // No Guard flag here, however much was read: §6 words that column `tightened`, and whether a read
-        // constraint tightened anything is settled by Chain — applied, not read — like everywhere else.
-        Provenance provenance = Provenance.Factory
-                              | (read.SourceAvailable ? Provenance.None : Provenance.NoSource)
-                              | (read.Unread(source.Name) ? Provenance.UnreadGuards : Provenance.None);
-
-        return inner.Then($".As({names.Of(type)}.{factory.Name})", provenance, tightening);
+        return DrawnGenerator.From($"new {TypeNaming.GeneratorNameFor(type, naming)}()",
+                                   builder: null,
+                                   provenance: Provenance.Scaffolded);
     }
 
     private static string NamespaceOf(INamedTypeSymbol type) {

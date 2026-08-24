@@ -158,8 +158,9 @@ public static class GeneratorEmitter {
 
     /// <summary>
     ///     Named arguments, aligned, so a reader maps each call to its parameter without counting (§4.2). Each
-    ///     one is a call to that parameter's own factory (§4.2) — never the chain itself, which is written
-    ///     once, in that factory's body.
+    ///     one is a call to that parameter's own factory — never the chain itself, which is written once, in
+    ///     that factory's body — except a composed parameter, whose whole recipe is the one call to the
+    ///     generator its type owns, and which is therefore written here (ADR-0089).
     /// </summary>
     private static void WritePublicConstructor(StringBuilder file, ScaffoldPlan plan, string indent) {
         Line(file, $"{indent}/// <summary>Creates the generator with a default recipe for every constructor parameter.</summary>");
@@ -173,7 +174,8 @@ public static class GeneratorEmitter {
             ScaffoldedParameter parameter = plan.Parameters[index];
             bool                last      = index == plan.Parameters.Count - 1;
             string              lead      = index == 0 ? opening : continuing;
-            string              argument  = $"{(parameter.Identifier + ":").PadRight(width)} {parameter.FactoryMethodName}()";
+            string              drawn     = parameter.DrawnInline ? parameter.Expression! : parameter.FactoryMethodName + "()";
+            string              argument  = $"{(parameter.Identifier + ":").PadRight(width)} {drawn}";
 
             Line(file, lead + argument + (last ? ") { }" : ","));
         }
@@ -182,13 +184,16 @@ public static class GeneratorEmitter {
     }
 
     /// <summary>
-    ///     One factory per parameter (§4.2): the method the public constructor calls, and the place a parameter
-    ///     with something to say for itself says it, right beside the chain it is about.
+    ///     One factory per parameter that has one (§4.2): the method the public constructor calls, and the place
+    ///     a parameter with something to say for itself says it, right beside the chain it is about. A parameter
+    ///     drawn inline has nothing to put in a body, so it gets no method (ADR-0089).
     /// </summary>
     private static void WriteFactories(StringBuilder file, ScaffoldPlan plan, string indent) {
         string body = indent + Indent;
 
         foreach (ScaffoldedParameter parameter in plan.Parameters) {
+            if (parameter.DrawnInline) { continue; }
+
             Line(file, $"{indent}private static IAny<{parameter.TypeDisplay}> {parameter.FactoryMethodName}() {{");
 
             if (parameter.IsUnresolved) {

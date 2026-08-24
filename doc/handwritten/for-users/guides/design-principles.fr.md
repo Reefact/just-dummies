@@ -11,16 +11,19 @@ pour vous — et pour que ses refus cessent de ressembler à des manques.
 ## « Just dummies » est un périmètre, pas un slogan
 
 Le nom est la spécification. Un dummy est **une valeur dont un test a besoin et dont il ne se soucie
-pas** — une valeur qu'il doit fournir pour que le code s'exécute, et qui n'atteint jamais son
-assertion. Ce que la bibliothèque garantit à son sujet est étroit et exact : elle est arbitraire, et
-elle est **valide pour les contraintes déclarées sur le site d'appel**. Ce n'est pas un tirage
-statistiquement idéal, ni un générateur universel, ni un solveur de contraintes.
+pas** : elle doit exister et être bien formée pour que le code s'exécute, et sa valeur n'atteint
+jamais l'assertion et ne peut pas changer le résultat. **Une donnée qui intervient dans ce que le
+test cherche à vérifier n'est pas un dummy** — qu'elle figure ou non dans l'assertion elle-même.
 
-Les deux moitiés de cette définition travaillent. Ôtez la seconde et un dummy devient inutilisable :
-une valeur qui viole le domaine échoue pour des raisons que le test n'a jamais voulu explorer. Ôtez
-la première et le périmètre devient discrètement autre chose : générez la valeur sur laquelle porte
-une assertion et vous avez écrit une propriété — que cette bibliothèque exécute avec un échantillon
-de taille un et ne peut pas défendre. Le [guide de démarrage](./getting-started.fr.md#où-passe-la-ligne)
+Ce que la bibliothèque garantit à propos d'une telle valeur est étroit et exact : elle est
+arbitraire, et elle est **valide pour les contraintes déclarées sur le site d'appel**. Ce n'est pas
+un tirage statistiquement idéal, ni un générateur universel, ni un solveur de contraintes.
+
+Les deux moitiés travaillent. Ôtez la garantie et un dummy devient inutilisable : une valeur qui
+viole le domaine échoue pour des raisons que le test n'a jamais voulu explorer. Ôtez la définition
+et le périmètre devient discrètement autre chose : générez une valeur dont dépend le résultat du
+test et vous avez écrit une propriété — que cette bibliothèque exécute avec un échantillon de taille
+un et ne peut pas défendre. Le [guide de démarrage](./getting-started.fr.md#où-passe-la-ligne)
 montre précisément où passe cette ligne.
 
 C'est plus étroit que ce que ce pourrait être, volontairement. Le travail de la bibliothèque est de

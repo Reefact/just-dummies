@@ -1078,18 +1078,32 @@ internal static class Guards {
     }
 
     /// <summary>
-    ///     How long, or how many — the parameter's own, never that of something read off it.
+    ///     How long, or how many — the parameter's own, never that of something read off it, and only where
+    ///     the engine's own size vocabulary means anything for the parameter's type at all.
     /// </summary>
     /// <remarks>
     ///     The receiver has to <b>be</b> the parameter. <c>p[0].Length</c>, <c>p.Split(',').Length</c> and
     ///     <c>p.Trim().Length</c> are the length of something else, and the family the constraint is written in
     ///     comes from the parameter's own type — so an element's length reads as the collection's count, a
     ///     different invariant emitted with a straight face.
+    ///     <para>
+    ///         <b>The parameter's type has to be one the engine's size families mean something for</b> — a
+    ///         string, or a type <see cref="GeneratorFor.SizedByCount" /> already recognises. <c>tags.Count</c>
+    ///         on a composed <c>Tags</c> parameter is neither: the family this guard would be written in is
+    ///         chosen from a fallback (§14.3's length family, the one every other size defaults to), not from
+    ///         anything the type actually is, and the composed generator that fallback lands on — the
+    ///         factory's own string argument, say — happens to carry a same-named member too, which is what
+    ///         let the misattribution through in silence rather than as a drop. Refused rather than guessed, on
+    ///         the same footing as the numeric family's arithmetic conditions §9 already names as out of reach:
+    ///         <see cref="IsParameter" /> alone answers false for it too, so it falls to the same unread mark
+    ///         a condition the closed set fails to recognise already earns.
+    ///     </para>
     /// </remarks>
     private static bool IsSize(ExpressionSyntax subject, IParameterSymbol parameter, SemanticModel model) {
         return Unwrapped(subject) is MemberAccessExpressionSyntax access
             && access.Name.Identifier.Text is "Length" or "Count"
-            && IsParameter(access.Expression, model, parameter);
+            && IsParameter(access.Expression, model, parameter)
+            && (parameter.Type.SpecialType == SpecialType.System_String || GeneratorFor.SizedByCount(parameter.Type));
     }
 
     private static bool IsNull(ExpressionSyntax expression) {

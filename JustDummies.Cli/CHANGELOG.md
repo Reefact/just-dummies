@@ -94,6 +94,15 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   a parameter a leading statement writes before reaching the `return` is excluded exactly as
   `ParameterWrites.Precede` already excludes it from every other guard.
 
+- **A `.Count`/`.Length` guard on a parameter whose own type is neither a string nor a collection is
+  now marked `unread guards` instead of silently misattributed.** `if (tags.Count < 3)` on a
+  composed `Tags` parameter used to have its family chosen from `GeneratorFor.Sizes(parameter.Type)`,
+  false for any non-collection type — which fell to the string family unconditionally, not because
+  the parameter's type is a string but because that family was the only one left. On a composed
+  parameter the resulting constraint then landed on the factory's own string argument, which happens
+  to expose a same-named member too: a wrong bound on the wrong generator, reported with the same
+  confidence as a correct one. A string or a recognised collection is unaffected.
+
 ## [1.1.0-beta.3] - 2026-08-24
 
 ### Added

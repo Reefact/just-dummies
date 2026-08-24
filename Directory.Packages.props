@@ -34,7 +34,7 @@
          input — was measured against exactly these versions, and the corpus draws against them. Bumping one
          means re-running those measurements, not just the restore. -->
     <PackageVersion Include="Ardalis.GuardClauses" Version="5.0.0" />
-    <PackageVersion Include="CommunityToolkit.Diagnostics" Version="8.4.0" />
+    <PackageVersion Include="CommunityToolkit.Diagnostics" Version="8.4.2" />
     <PackageVersion Include="coverlet.collector" Version="10.0.1" />
     <!-- The foundation. Referenced by JustDummies.DiagnosticCatalog WITHOUT PrivateAssets, deliberately: a
          package that PUBLISHES a catalogue must let the foundation reach its consumers, since it carries both the

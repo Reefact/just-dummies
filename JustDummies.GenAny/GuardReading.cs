@@ -98,6 +98,15 @@ internal sealed class GuardReading {
                                                           out bool dropped) {
         List<GuardConstraint> kept = [.. seeded.Concat(guards).Distinct(GuardConstraint.SameCall)];
 
+        // NotBlank is NonEmpty and more: the same floor of one character, plus a refusal of the all-whitespace
+        // value the floor admits. Both spell Bound.Emptiness and both sit at an edge of one, so the fold below
+        // would keep whichever floor it judged tightest and drop the other as redundant — and on a string, where
+        // the base row contributes NonEmpty and the guard contributes NotBlank, the one dropped is the stronger.
+        // Subsumption is therefore settled here, once, before anything is placed on a number line (ADR-0088).
+        if (kept.Any(constraint => constraint.Member == "NotBlank")) {
+            kept.RemoveAll(constraint => constraint.Member == "NonEmpty");
+        }
+
         List<GuardConstraint> bounding = [.. kept.Where(Bounds)];
 
         if (bounding.Count == 0) {
@@ -131,7 +140,13 @@ internal sealed class GuardReading {
         // Everything else bounded the same side more loosely, which is not a collision: two guards that both
         // throw are a conjunction, and the conjunction of two floors is the higher one. The library folds them
         // exactly this way and says nothing, so emitting both would write a call that provably does nothing.
-        return [.. kept.Where(constraint => !Bounds(constraint) || constraint == floor || constraint == ceiling)];
+        // NotBlank is the exception, and it is why the rule is stated as "provably does nothing": it carries a
+        // floor of one AND a refusal of the all-whitespace value, so a tighter floor absorbs only half of it.
+        // Dropping it beside WithMinLength(8) would leave eight characters that may every one be a space.
+        return [.. kept.Where(constraint => !Bounds(constraint)
+                                         || constraint == floor
+                                         || constraint == ceiling
+                                         || constraint.Member == "NotBlank")];
     }
 
     /// <summary>Whether a constraint says where the value may lie, rather than what shape it takes.</summary>

@@ -14,7 +14,7 @@ public sealed class GuardReadingTests {
 
     [Theory(DisplayName = "A guard on a string is read into the string family.")]
     [InlineData("if (string.IsNullOrEmpty(value)) { throw new ArgumentException(nameof(value)); }", "Any.String().NonEmpty()")]
-    [InlineData("if (string.IsNullOrWhiteSpace(value)) { throw new ArgumentException(nameof(value)); }", "Any.String().NonEmpty()")]
+    [InlineData("if (string.IsNullOrWhiteSpace(value)) { throw new ArgumentException(nameof(value)); }", "Any.String().NotBlank()")]
     [InlineData("if (value.Length == 0) { throw new ArgumentException(nameof(value)); }", "Any.String().NonEmpty()")]
     [InlineData("if (value.Length < 1) { throw new ArgumentException(nameof(value)); }", "Any.String().NonEmpty()")]
     [InlineData("if (value.Length > 10) { throw new ArgumentException(nameof(value)); }", "Any.String().NonEmpty().WithMaxLength(10)")]
@@ -344,14 +344,39 @@ public sealed class GuardReadingTests {
     }
 
     // The row's own refinement and a guard saying the same thing collapse, rather than colliding: a string row
-    // is already NonEmpty, and a constructor guarding on IsNullOrWhiteSpace agrees with it.
+    // is already NonEmpty, and a constructor guarding on IsNullOrEmpty agrees with it. IsNullOrWhiteSpace is
+    // deliberately not the example any more -- it reads as NotBlank, which strengthens the row instead of
+    // repeating it, and the case below covers that.
     [Fact(DisplayName = "A guard repeating the row's own constraint collapses into it.")]
     public void AGuardRepeatingTheRowsConstraintCollapses() {
-        string guard = "if (string.IsNullOrWhiteSpace(value)) { throw new ArgumentException(nameof(value)); }";
+        string guard = "if (string.IsNullOrEmpty(value)) { throw new ArgumentException(nameof(value)); }";
 
         ScaffoldedParameter parameter = Subject.GuardedBy("string", guard);
 
         Check.That(parameter.Expression).IsEqualTo("Any.String().NonEmpty()");
+        Check.That(parameter.Provenance.HasFlag(Provenance.GuardsNotCombined)).IsFalse();
+    }
+
+    /// <summary>
+    ///     A guard that STRENGTHENS the row rather than repeating it replaces the row's own constraint, and is
+    ///     never absorbed by a tighter floor beside it.
+    /// </summary>
+    /// <remarks>
+    ///     NotBlank and NonEmpty both spell an emptiness bound at an edge of one, so the ordinary
+    ///     tightest-floor fold would keep one and drop the other -- and a tighter numeric floor would drop both.
+    ///     Either outcome loses the half of NotBlank that is not a floor: eight characters every one of which
+    ///     may be a space is exactly what this domain rejects (ADR-0088).
+    /// </remarks>
+    [Fact(DisplayName = "A guard strengthening the row's own constraint replaces it, and survives a tighter floor.")]
+    public void AGuardStrengtheningTheRowsConstraintSurvives() {
+        string guard = """
+                       if (string.IsNullOrWhiteSpace(value)) { throw new ArgumentException(nameof(value)); }
+                               if (value.Length < 8) { throw new ArgumentException(nameof(value)); }
+                       """;
+
+        ScaffoldedParameter parameter = Subject.GuardedBy("string", guard);
+
+        Check.That(parameter.Expression).IsEqualTo("Any.String().NotBlank().WithMinLength(8)");
         Check.That(parameter.Provenance.HasFlag(Provenance.GuardsNotCombined)).IsFalse();
     }
 
@@ -577,19 +602,25 @@ public sealed class GuardReadingTests {
     }
 
     /// <summary>
-    ///     Neither library's whitespace rejection is a mapped row: <c>NonEmpty()</c> is a floor of one
-    ///     character, not a rejection of whitespace, and no other member of either library carries it.
-    ///     ADR-0086's own rule — "measured, or not in the table" — makes the recognised-but-unmapped answer
-    ///     the honest one, exactly as an unrecognised method of a recognised library earns it.
+    ///     Both libraries' whitespace rejection reads as <c>NotBlank()</c>, never as <c>NonEmpty()</c> — a floor
+    ///     of one character admits the all-whitespace value the guard exists to refuse.
     /// </summary>
-    [Theory(DisplayName = "A guard-library whitespace rejection is recognised but unmapped, and blocks compilation.")]
+    /// <remarks>
+    ///     Each row was recognised-but-unmapped until the member existed, which is what ADR-0086's own rule —
+    ///     "measured, or not in the table" — demands of semantics nothing spells exactly. ADR-0088 added the
+    ///     member, so the honest answer moved from a mark to a read, and the emitted chain carries no
+    ///     <c>NonEmpty()</c> beside it: the stronger constraint subsumes the string row's own.
+    /// </remarks>
+    [Theory(DisplayName = "A guard-library whitespace rejection reads as NotBlank.")]
     [InlineData("Guard.Against.NullOrWhiteSpace(value);", "using Ardalis.GuardClauses;")]
     [InlineData("Guard.IsNotNullOrWhiteSpace(value, nameof(value));", "using CommunityToolkit.Diagnostics;")]
-    public void AGuardLibraryWhitespaceRejectionIsUnmappedAndBlocksCompilation(string guard, string usings) {
+    public void AGuardLibraryWhitespaceRejectionReadsAsNotBlank(string guard, string usings) {
         ScaffoldedParameter parameter = LibraryGuarded("string", guard, usings);
 
-        Check.That(parameter.Provenance.HasFlag(Provenance.UnreadGuards)).IsTrue();
-        Check.That(parameter.RequiresVerification).IsTrue();
+        Check.That(parameter.Expression).IsEqualTo("Any.String().NotBlank()");
+        Check.That(parameter.Provenance.HasFlag(Provenance.Guard)).IsTrue();
+        Check.That(parameter.Provenance.HasFlag(Provenance.UnreadGuards)).IsFalse();
+        Check.That(parameter.RequiresVerification).IsFalse();
     }
 
     /// <summary>

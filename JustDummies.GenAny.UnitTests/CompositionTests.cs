@@ -139,8 +139,9 @@ public sealed class CompositionTests {
     ///     <c>OrderReference</c>, once per site, each copy free to drift from the constructor it described.
     ///     They are read once now, by the generator for the type that declares them — the same chain, at the
     ///     one address that owns it. The reported case is pinned here rather than deleted with the path that
-    ///     used to carry it: <c>WithLengthBetween(8, 20)</c>, the interval spelled once, with the
-    ///     <c>NonEmpty</c> a floor of eight absorbs left out.
+    ///     used to carry it: <c>WithLengthBetween(8, 20)</c>, the interval spelled once, with
+    ///     <c>NotBlank</c> kept beside it rather than absorbed — a floor of eight admits eight spaces, which
+    ///     <c>NotBlank</c> alone still refuses.
     /// </remarks>
     [Fact(DisplayName = "The recipe a factory's guards describe belongs to the value object's own generator.")]
     public void TheRecipeAFactorysGuardsDescribeBelongsToTheValueObject() {
@@ -165,7 +166,7 @@ public sealed class CompositionTests {
 
         ScaffoldedParameter parameter = outcome.Plan!.Parameters[0];
 
-        Check.That(parameter.Expression).IsEqualTo("Any.String().WithLengthBetween(8, 20)");
+        Check.That(parameter.Expression).IsEqualTo("Any.String().NotBlank().WithLengthBetween(8, 20)");
         Check.That(parameter.Provenance.HasFlag(Provenance.Guard)).IsTrue();
         Check.That(parameter.Provenance.HasFlag(Provenance.GuardsNotCombined)).IsFalse();
     }

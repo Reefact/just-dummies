@@ -30,7 +30,7 @@ se présente.
 Notez le sens de l'argument : le tirage est large parce que *votre code* pourrait s'en soucier à
 tort, jamais parce que le *test* s'en soucie. Dès l'instant où le test se soucie de la chaîne qui
 est revenue, la valeur a cessé d'être un dummy — voir
-[Démarrage](../guides/getting-started.fr.md#où-passe-la-ligne).
+[Démarrer](../guides/getting-started.fr.md#où-passe-la-ligne).
 
 Alors contraignez — avec les invariants que votre code exige réellement :
 

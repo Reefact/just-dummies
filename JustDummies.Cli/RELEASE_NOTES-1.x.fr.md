@@ -24,6 +24,13 @@ _La lecture des gardes devient à la fois plus large et plus stricte — deux bi
 - **Une garde d'exclusion d'énumération se lit `AnyEnum<T>.DifferentFrom`** — `if (status == Status.None) { throw … }`, la garde d'énumération la plus courante qui soit, se lisait `.NonZero()`, un membre qu'`AnyEnum<T>` ne porte pas, et était perdue en silence.
 - **Le résumé n'affiche plus `guard` pour une factory dont les gardes n'ont rien resserré** — le mot est calculé à partir des contraintes qui atteignent la chaîne émise, sur le chemin factory comme sur tous les autres.
 
+### 📝 Limites connues
+
+Mesurées après la sortie de cette version, suivies pour `cli-v1.1.0-beta.4` :
+
+- **La dérogation pour les bibliothèques de gardes n'atteint qu'une affectation directe à un champ ou une propriété.** `Guard.Against.NegativeOrZero(total)` lu en position de retour, dans une déclaration locale, ou dans un initialiseur de constructeur, met toujours fin au parcours en silence, sans que rien ne signale la perte.
+- **Une garde à une frame de distance de ce que l'outil lit peut encore être perdue.** Un initialiseur `: this(…)`/`: base(…)`, une factory construite sur un constructeur privé gardé, et une factory vers laquelle un constructeur choisi délègue, ne sont encore lus dans aucun des trois cas ; le résumé peut toujours afficher `guard` sur un domaine que le générateur émis ne respecte pas.
+
 ## 1.1.0-beta.2 — 22 août 2026
 
 _La lecture des gardes devient nettement plus complète — une garde déléguée à un helper ou écrite dans une graphie moderne, et une garde qui lève dans une forme que l'outil ne savait pas parser avant, sont maintenant lues toutes les deux — et une garde que l'outil ne peut toujours pas garantir bloque la compilation au lieu de compiler en silence._

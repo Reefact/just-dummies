@@ -50,12 +50,33 @@ string ranged    = Any.String().WithLengthBetween(3, 20).Generate();
 string atLeast   = Any.String().WithMinLength(8).Generate();
 string atMost    = Any.String().WithMaxLength(50).Generate();
 string withStuff = Any.String().NonEmpty().Generate();
+string realText  = Any.String().NotBlank().Generate();
 ```
 
 `NonEmpty()` is the odd one in that list: it raises the floor to one and leaves the ceiling where it
 was, so a chain carrying only it still draws the whole spread. The analyzer
 [JD030](../analyzers/JD030.en.md) says so at the call site, on that line and on every other chain
 that declares no length.
+
+`NotBlank()` is the stronger neighbour, and usually the one a domain means: it requires at least one
+character that is **not whitespace** — exactly what a constructor guarding with
+`string.IsNullOrWhiteSpace` demands — and carries the same floor of one character with it.
+`NonEmpty()` does not cover that guard. A draw of `"\n\r"` is not empty, and under a short ceiling it
+is ordinary rather than rare. Interior whitespace stays legal, so `"a b"` is a value `NotBlank()`
+admits; only an entirely blank one is refused
+([ADR-0088](../../for-maintainers/adr/0088-state-the-whitespace-guard-with-a-member-of-its-own.md)).
+
+Note that whitespace here is the BCL's own `char.IsWhiteSpace`, which is wider than the
+`Whitespaces()` family below: the family names the readable pair a draw may be narrowed **to**, while
+`NotBlank()` has to agree with the guard that will judge the value. The two contradict where the
+filler has to supply the non-blank character — `Any.String().Whitespaces().NotBlank()` names each
+side — while an anchored literal that already carries one settles the guarantee itself, which leaves
+`Any.String().StartingWith("A").Whitespaces().NotBlank()` legal.
+
+**And the order you write them in is yours to choose.** What is judged is the constraint set, not the
+call written so far, so `Whitespaces().NotBlank().StartingWith("A")` draws exactly what
+`StartingWith("A").Whitespaces().NotBlank()` draws — the anchor settles the guarantee whether it was
+declared before the pair or after it.
 
 **A declared bound is the bound you get.** `WithMaxLength(50)` draws across 0 to 50, and
 `WithLengthBetween(1000, 5000)` draws across the whole range — the two spellings of a range behave

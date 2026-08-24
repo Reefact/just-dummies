@@ -243,6 +243,31 @@ public sealed class StringShapeProperties {
             .QuickCheckThrowOnFailure();
     }
 
+    [Fact(DisplayName = "NotBlank never yields a value IsNullOrWhiteSpace rejects, under every maximum length that leaves room.")]
+    public void NotBlankNeverYieldsABlankValue() {
+        Prop.ForAll(Generators.Count(40).ToArbitrary(),
+                    maximum => {
+                        // NotBlank carries a floor of one character with it, so a ceiling of zero contradicts it at
+                        // declaration through the same bound NonEmpty sets — not at generation.
+                        if (maximum == 0) {
+                            return Expect.Throws<ConflictingAnyConstraintException>(() => Any.String().NotBlank().WithMaxLength(0));
+                        }
+
+                        return Expect.EveryDraw(Any.String().NotBlank().WithMaxLength(maximum),
+                                                value => !string.IsNullOrWhiteSpace(value) && value.Length <= maximum);
+                    })
+            .QuickCheckThrowOnFailure();
+    }
+
+    [Fact(DisplayName = "NotBlank holds behind any anchored prefix, blank or not.")]
+    public void NotBlankHoldsBehindAnyPrefix() {
+        Prop.ForAll(Affix(DefaultAlphabet, 8).ToArbitrary(),
+                    prefix => Expect.EveryDraw(Any.String().StartingWith(prefix).NotBlank(),
+                                               value => !string.IsNullOrWhiteSpace(value)
+                                                     && value.StartsWith(prefix, StringComparison.Ordinal)))
+            .QuickCheckThrowOnFailure();
+    }
+
     [Fact(DisplayName = "StartingWith anchors the prefix, whatever the prefix.")]
     public void StartingWithAnchorsThePrefix() {
         Prop.ForAll(Affix(DefaultAlphabet, 8).ToArbitrary(),

@@ -53,12 +53,33 @@ string ranged    = Any.String().WithLengthBetween(3, 20).Generate();
 string atLeast   = Any.String().WithMinLength(8).Generate();
 string atMost    = Any.String().WithMaxLength(50).Generate();
 string withStuff = Any.String().NonEmpty().Generate();
+string realText  = Any.String().NotBlank().Generate();
 ```
 
 `NonEmpty()` est l'intrus de cette liste : il relève le plancher à un et laisse le plafond là où il
 était, si bien qu'une chaîne qui ne porte que lui tire encore toute l'étendue. L'analyzer
 [JD030](../analyzers/JD030.fr.md) le dit au site d'appel, sur cette ligne comme sur toute autre chaîne
 qui ne déclare aucune longueur.
+
+`NotBlank()` est le voisin plus fort, et le plus souvent celui que le métier veut dire : il exige au
+moins un caractère qui **n'est pas un blanc** — exactement ce qu'exige un constructeur qui garde avec
+`string.IsNullOrWhiteSpace` — et il emporte avec lui le même plancher d'un caractère. `NonEmpty()` ne
+couvre pas cette garde. Un tirage de `"\n\r"` n'est pas vide, et sous un plafond court il est courant
+plutôt que rare. Les blancs intérieurs restent légaux, donc `"a b"` est une valeur que `NotBlank()`
+admet ; seule une valeur entièrement blanche est refusée
+([ADR-0088](../../for-maintainers/adr/0088-state-the-whitespace-guard-with-a-member-of-its-own.fr.md)).
+
+À noter que le blanc dont il s'agit ici est le `char.IsWhiteSpace` de la BCL, plus large que la
+famille `Whitespaces()` ci-dessous : la famille nomme la paire lisible **à** laquelle un tirage peut
+être restreint, tandis que `NotBlank()` doit s'accorder avec la garde qui jugera la valeur. Les deux
+se contredisent là où le remplissage doit fournir le caractère non blanc — `Any.String().Whitespaces().NotBlank()`
+nomme chaque côté — tandis qu'un littéral ancré qui en porte déjà un règle la garantie lui-même, ce
+qui laisse `Any.String().StartingWith("A").Whitespaces().NotBlank()` légal.
+
+**Et l'ordre dans lequel vous les écrivez vous appartient.** Ce qui est jugé, c'est le jeu de
+contraintes, non l'appel écrit jusqu'ici : `Whitespaces().NotBlank().StartingWith("A")` tire donc
+exactement ce que tire `StartingWith("A").Whitespaces().NotBlank()` — l'ancre règle la garantie
+qu'elle ait été déclarée avant la paire ou après elle.
 
 **Une borne déclarée est la borne obtenue.** `WithMaxLength(50)` tire entre 0 et 50, et
 `WithLengthBetween(1000, 5000)` tire sur tout l'intervalle — les deux écritures d'une plage se

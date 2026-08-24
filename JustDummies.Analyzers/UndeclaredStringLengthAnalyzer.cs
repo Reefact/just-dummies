@@ -34,8 +34,9 @@ namespace JustDummies.Analyzers;
 public sealed class UndeclaredStringLengthAnalyzer : DiagnosticAnalyzer {
 
     /// <summary>
-    ///     The constraints that settle a length. <c>NonEmpty</c> is deliberately absent: it sets a floor of one
-    ///     and leaves the ceiling where it was, so a chain carrying only it still draws the whole spread.
+    ///     The constraints that settle a length. <c>NonEmpty</c> and <c>NotBlank</c> are deliberately absent: each
+    ///     sets a floor of one and leaves the ceiling where it was, so a chain carrying only one of them still
+    ///     draws the whole spread.
     /// </summary>
     private static readonly ImmutableHashSet<string> LengthConstraints =
         ImmutableHashSet.Create("WithLength", "WithMinLength", "WithMaxLength", "WithLengthBetween", "OneOf");
@@ -77,8 +78,8 @@ public sealed class UndeclaredStringLengthAnalyzer : DiagnosticAnalyzer {
 
         // NonEmpty raises the floor to one and leaves the ceiling where it was, so it shifts the interval by one
         // instead of settling it. Reporting the interval it actually draws beats a constant that is off by one on
-        // the chain the scaffolder emits most.
-        int floor = constraints.Any(constraint => constraint.TargetMethod.Name == "NonEmpty") ? 1 : 0;
+        // the chain the scaffolder emits most. NotBlank carries the same floor with it, for the same reason.
+        int floor = constraints.Any(constraint => constraint.TargetMethod.Name is "NonEmpty" or "NotBlank") ? 1 : 0;
 
         // On the factory call itself: that is where the missing constraint would be written.
         context.ReportDiagnostic(Diagnostic.Create(

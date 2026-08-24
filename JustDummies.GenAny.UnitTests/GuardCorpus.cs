@@ -340,9 +340,11 @@ internal static class GuardCorpus {
 
 
         // ---- PROBES for the eleven silent misreads an adversarial audit reproduced against the running
-        // ---- engine (2026-08-24), each shape's own draw disagreeing with what the recap claimed. Every row
-        // ---- below stays `defect:`-marked until its fix lands; the mark comes off with the fix, never with
-        // ---- the test (ADR-0085's field-report signature — the audit's own measurement is the report).
+        // ---- engine (2026-08-24), each shape's own draw disagreeing with what the recap claimed. Each row
+        // ---- was added `defect:`-marked before its fix, per ADR-0085's field-report signature — the audit's
+        // ---- own measurement is the report — and the mark came off with the fix rather than with the test.
+        // ---- They are permanent now: what a row asserts is the answer its finding was closed with, so a
+        // ---- regression turns the row red rather than quietly restoring the silence it was written against.
 
         // ---- Finding 1. `Jumps` is asked of top-level statements only (`unskipped &= !Jumps(...)`); a
         // ---- `return` that is a SIBLING of the guard, nested one level inside an always-running `lock`, is

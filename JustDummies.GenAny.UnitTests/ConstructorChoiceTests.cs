@@ -243,6 +243,69 @@ public sealed class ConstructorChoiceTests {
     }
 
     /// <summary>
+    ///     A guard the delegated constructor could not read is a guard over the outer parameter too, so the
+    ///     doubt folds across the hop exactly as the constraints do.
+    /// </summary>
+    /// <remarks>
+    ///     The half the fold's first draft left behind. Read directly this body earns the verification mark;
+    ///     read through <c>: this(value, false)</c> it reported <c>guard</c> with nothing to verify, over a
+    ///     domain that rejects the draw — the defect class §5.3 exists to prevent, reached by way of the fix
+    ///     for a different one.
+    /// </remarks>
+    [Fact(DisplayName = "A guard the delegated constructor could not read marks the parameter that hands it over.")]
+    public void AnUnreadDelegatedGuardMarksTheHandingParameter() {
+        ScaffoldOutcome outcome = Subject.Scaffold("""
+                                                   public sealed class Subject {
+
+                                                       private readonly string value;
+
+                                                       private Subject(string value, bool trusted) {
+                                                           if (!value.StartsWith("REF-", StringComparison.Ordinal)) { throw new ArgumentException(nameof(value)); }
+                                                           if (value.Length < 8) { throw new ArgumentException(nameof(value)); }
+
+                                                           this.value = value;
+                                                       }
+
+                                                       public Subject(string value) : this(value, false) { }
+
+                                                   }
+                                                   """);
+
+        ScaffoldedParameter parameter = outcome.Plan!.Parameters.Single();
+
+        Check.That(parameter.Provenance.HasFlag(Provenance.UnreadGuards)).IsTrue();
+        Check.That(parameter.RequiresVerification).IsTrue();
+    }
+
+    /// <summary>
+    ///     An initializer that delegates to its own constructor is read once and abandoned, rather than
+    ///     followed forever.
+    /// </summary>
+    /// <remarks>
+    ///     <c>CS0516</c> forbids this, and the fold's first draft leaned on that to skip a cycle guard — but
+    ///     the compiler's refusal only covers source that COMPILES, and the engine reads whatever the
+    ///     developer currently has open. Measured before the guard: the process died with a stack overflow
+    ///     rather than scaffolding anything, which no <c>unread guards</c> mark can soften. The assertion is
+    ///     simply that this returns.
+    /// </remarks>
+    [Fact(DisplayName = "An initializer that delegates to its own constructor terminates.")]
+    public void AnInitializerThatDelegatesToItselfTerminates() {
+        ScaffoldOutcome outcome = Subject.Scaffold("""
+                                                   public sealed class Subject {
+
+                                                       private readonly int a;
+
+                                                       public Subject(int a, int b) : this(a, b) {
+                                                           this.a = a;
+                                                       }
+
+                                                   }
+                                                   """);
+
+        Check.That(outcome).IsNotNull();
+    }
+
+    /// <summary>
     ///     A computed argument hands the delegated constructor a value the factory's own parameter never
     ///     draws, so its guard is never folded — the same subject-identity discipline every row of §5.3
     ///     already keeps, applied one hop into the constructor a factory delegates to.

@@ -172,6 +172,7 @@ public sealed class PooledValueNeverDrawsAnalyzer : DiagnosticAnalyzer {
                     break;
 
                 case "NonEmpty":    tests.Add(("NonEmpty()", value => value.Length >= 1));               break;
+                case "NotBlank":    tests.Add(("NotBlank()", value => !string.IsNullOrWhiteSpace(value))); break;
                 case "InUpperCase": tests.Add(("InUpperCase()", value => !value.Any(char.IsLower)));      break;
                 case "InLowerCase": tests.Add(("InLowerCase()", value => !value.Any(char.IsUpper)));      break;
 

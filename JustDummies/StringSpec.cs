@@ -68,10 +68,26 @@ internal sealed class StringSpec {
     internal static readonly StringSpec Unconstrained = new(null, null, 0, null, null, null,
                                                             null, null, null, null, [],
                                                             null, null, null, null, null, [],
-                                                            [], null, null);
+                                                            [], null, null, null);
 
     private static string V(int value) {
         return value.ToString(CultureInfo.InvariantCulture);
+    }
+
+    /// <summary>
+    ///     Whether a prefix, a contained value or a suffix already puts a non-blank character in every draw — in
+    ///     which case <c>NotBlank()</c> asks nothing of the filler and judges no alphabet.
+    /// </summary>
+    private static bool AnchorsCarryNonBlank(string? prefix, string? suffix,
+                                             IReadOnlyList<(string Fragment, ConstraintCall Constraint)> fragments) {
+        static bool NonBlank(string text) {
+            return text.Any(character => !CharacterPools.IsBlank(character));
+        }
+
+        if (prefix is not null && NonBlank(prefix)) { return true; }
+        if (suffix is not null && NonBlank(suffix)) { return true; }
+
+        return fragments.Any(fragment => NonBlank(fragment.Fragment));
     }
 
     /// <summary>Whether the declared family, casing and subtractions all admit the character.</summary>
@@ -112,6 +128,11 @@ internal sealed class StringSpec {
     private readonly ConstraintCall?        _minConstraint;
     private readonly string?                _prefix;
     private readonly ConstraintCall?        _prefixConstraint;
+    private readonly ConstraintCall?        _notBlank;
+    private readonly bool                   _fillerMustCarryNonBlank;
+    // The filler alphabet with every blank character removed — settled once beside _fillerPool, drawn from
+    // only where NotBlank() has to place its guaranteed character.
+    private readonly string                 _nonBlankFillerPool;
     private readonly string?                _suffix;
     private readonly ConstraintCall?        _suffixConstraint;
 
@@ -128,7 +149,8 @@ internal sealed class StringSpec {
                        LetterCasing? casing,  ConstraintCall? casingConstraint,
                        IReadOnlyList<(ConstraintCall Constraint, string[] Values)> exclusions,
                        IReadOnlyList<(ConstraintCall Constraint, CharacterSet Removed)> subtractions,
-                       IReadOnlyList<string>? allowed, ConstraintCall? allowedConstraint) {
+                       IReadOnlyList<string>? allowed, ConstraintCall? allowedConstraint,
+                       ConstraintCall? notBlank) {
         _exactLength       = exactLength;
         _exactConstraint   = exactConstraint;
         _minLength         = minLength;
@@ -149,9 +171,14 @@ internal sealed class StringSpec {
         _subtractions      = subtractions;
         _allowed           = allowed;
         _allowedConstraint = allowedConstraint;
+        _notBlank          = notBlank;
         // "Constrain once, draw many": the filler alphabet is settled here, never per draw. The universe is the
         // whole of ASCII and the family, the casing and the subtractions narrow it (ADR-0075).
         _fillerPool = customPool ?? new string(CharacterPools.Ascii.Where(character => Admits(character, charset, casing, subtractions)).ToArray());
+        _nonBlankFillerPool = new string(_fillerPool.Where(character => !CharacterPools.IsBlank(character)).ToArray());
+        // Settled here rather than per draw: whether the guaranteed non-blank character has to come from the filler,
+        // or an anchored literal already supplies one.
+        _fillerMustCarryNonBlank = notBlank is not null && !AnchorsCarryNonBlank(prefix, suffix, fragments);
         // The flat, deduplicated value list drives the redraw and the exhaustion message; the provenance in
         // _exclusions is consulted only when a conflict message must name the excluding constraint. Materialized
         // once here — "constrain once, draw many" — in first-declared order.
@@ -172,7 +199,7 @@ internal sealed class StringSpec {
         StringSpec candidate = new(length, applying, _minLength, _minConstraint, _maxLength, _maxConstraint,
                                    _prefix, _prefixConstraint, _suffix, _suffixConstraint, _fragments,
                                    _charset, _charsetConstraint, _customPool, _casing, _casingConstraint, _exclusions,
-                                   _subtractions, _allowed, _allowedConstraint);
+                                   _subtractions, _allowed, _allowedConstraint, _notBlank);
 
         return candidate.Validated(applying, this);
     }
@@ -185,7 +212,7 @@ internal sealed class StringSpec {
         StringSpec candidate = new(_exactLength, _exactConstraint, length, applying, _maxLength, _maxConstraint,
                                    _prefix, _prefixConstraint, _suffix, _suffixConstraint, _fragments,
                                    _charset, _charsetConstraint, _customPool, _casing, _casingConstraint, _exclusions,
-                                   _subtractions, _allowed, _allowedConstraint);
+                                   _subtractions, _allowed, _allowedConstraint, _notBlank);
 
         return candidate.Validated(applying, this);
     }
@@ -198,7 +225,35 @@ internal sealed class StringSpec {
         StringSpec candidate = new(_exactLength, _exactConstraint, _minLength, _minConstraint, length, applying,
                                    _prefix, _prefixConstraint, _suffix, _suffixConstraint, _fragments,
                                    _charset, _charsetConstraint, _customPool, _casing, _casingConstraint, _exclusions,
-                                   _subtractions, _allowed, _allowedConstraint);
+                                   _subtractions, _allowed, _allowedConstraint, _notBlank);
+
+        return candidate.Validated(applying, this);
+    }
+
+    /// <summary>
+    ///     Demands at least one character the guard behind <see cref="string.IsNullOrWhiteSpace" /> would accept,
+    ///     and with it a floor of one character — two internal bounds under a single call, as
+    ///     <c>WithLengthBetween</c> already sets.
+    /// </summary>
+    /// <remarks>
+    ///     The floor rides on the same slot <c>NonEmpty()</c> uses, so a maximum of zero contradicts this call
+    ///     through <see cref="ValidateLengthBounds" /> and the message names both sides without a second rule. What
+    ///     needs its own check is the alphabet: a family or a custom pool offering nothing but blanks leaves the
+    ///     guarantee unbuildable, and that is <see cref="ValidateNotBlankIsBuildable" />.
+    /// </remarks>
+    internal StringSpec WithNotBlank(ConstraintCall applying) {
+        if (applying is null) { throw new ArgumentNullException(nameof(applying)); }
+        // Re-declaring the SAME constraint is not a contradiction, so it is a no-op rather than a
+        // conflict: the second declaration asks for exactly what the first already guarantees.
+        if (_notBlank == applying) { return this; }
+
+        int             floor           = Math.Max(_minLength, 1);
+        ConstraintCall? floorConstraint = floor > _minLength ? applying : _minConstraint;
+
+        StringSpec candidate = new(_exactLength, _exactConstraint, floor, floorConstraint, _maxLength, _maxConstraint,
+                                   _prefix, _prefixConstraint, _suffix, _suffixConstraint, _fragments,
+                                   _charset, _charsetConstraint, _customPool, _casing, _casingConstraint, _exclusions,
+                                   _subtractions, _allowed, _allowedConstraint, applying);
 
         return candidate.Validated(applying, this);
     }
@@ -215,7 +270,7 @@ internal sealed class StringSpec {
         StringSpec candidate = new(_exactLength, _exactConstraint, _minLength, _minConstraint, _maxLength, _maxConstraint,
                                    prefix, applying, _suffix, _suffixConstraint, _fragments,
                                    _charset, _charsetConstraint, _customPool, _casing, _casingConstraint, _exclusions,
-                                   _subtractions, _allowed, _allowedConstraint);
+                                   _subtractions, _allowed, _allowedConstraint, _notBlank);
 
         return candidate.Validated(applying, this);
     }
@@ -232,7 +287,7 @@ internal sealed class StringSpec {
         StringSpec candidate = new(_exactLength, _exactConstraint, _minLength, _minConstraint, _maxLength, _maxConstraint,
                                    _prefix, _prefixConstraint, suffix, applying, _fragments,
                                    _charset, _charsetConstraint, _customPool, _casing, _casingConstraint, _exclusions,
-                                   _subtractions, _allowed, _allowedConstraint);
+                                   _subtractions, _allowed, _allowedConstraint, _notBlank);
 
         return candidate.Validated(applying, this);
     }
@@ -246,7 +301,7 @@ internal sealed class StringSpec {
         StringSpec candidate = new(_exactLength, _exactConstraint, _minLength, _minConstraint, _maxLength, _maxConstraint,
                                    _prefix, _prefixConstraint, _suffix, _suffixConstraint, fragments,
                                    _charset, _charsetConstraint, _customPool, _casing, _casingConstraint, _exclusions,
-                                   _subtractions, _allowed, _allowedConstraint);
+                                   _subtractions, _allowed, _allowedConstraint, _notBlank);
 
         return candidate.Validated(applying, this);
     }
@@ -262,7 +317,7 @@ internal sealed class StringSpec {
         StringSpec candidate = new(_exactLength, _exactConstraint, _minLength, _minConstraint, _maxLength, _maxConstraint,
                                    _prefix, _prefixConstraint, _suffix, _suffixConstraint, _fragments,
                                    charset, applying, _customPool, _casing, _casingConstraint, _exclusions,
-                                   _subtractions, _allowed, _allowedConstraint);
+                                   _subtractions, _allowed, _allowedConstraint, _notBlank);
 
         return candidate.Validated(applying, this);
     }
@@ -288,7 +343,7 @@ internal sealed class StringSpec {
         StringSpec candidate = new(_exactLength, _exactConstraint, _minLength, _minConstraint, _maxLength, _maxConstraint,
                                    _prefix, _prefixConstraint, _suffix, _suffixConstraint, _fragments,
                                    _charset, applying, pool, _casing, _casingConstraint, _exclusions,
-                                   _subtractions, _allowed, _allowedConstraint);
+                                   _subtractions, _allowed, _allowedConstraint, _notBlank);
 
         return candidate.Validated(applying, this);
     }
@@ -305,7 +360,7 @@ internal sealed class StringSpec {
         StringSpec candidate = new(_exactLength, _exactConstraint, _minLength, _minConstraint, _maxLength, _maxConstraint,
                                    _prefix, _prefixConstraint, _suffix, _suffixConstraint, _fragments,
                                    _charset, _charsetConstraint, _customPool, _casing, _casingConstraint, _exclusions,
-                                   [.. _subtractions, (applying, removed)], _allowed, _allowedConstraint);
+                                   [.. _subtractions, (applying, removed)], _allowed, _allowedConstraint, _notBlank);
 
         return candidate.Validated(applying, this);
     }
@@ -323,7 +378,7 @@ internal sealed class StringSpec {
         StringSpec candidate = new(_exactLength, _exactConstraint, _minLength, _minConstraint, _maxLength, _maxConstraint,
                                    _prefix, _prefixConstraint, _suffix, _suffixConstraint, _fragments,
                                    _charset, _charsetConstraint, _customPool, casing, applying, _exclusions,
-                                   _subtractions, _allowed, _allowedConstraint);
+                                   _subtractions, _allowed, _allowedConstraint, _notBlank);
 
         return candidate.Validated(applying, this);
     }
@@ -341,7 +396,7 @@ internal sealed class StringSpec {
         StringSpec candidate = new(_exactLength, _exactConstraint, _minLength, _minConstraint, _maxLength, _maxConstraint,
                                    _prefix, _prefixConstraint, _suffix, _suffixConstraint, _fragments,
                                    _charset, _charsetConstraint, _customPool, _casing, _casingConstraint, exclusions,
-                                   _subtractions, _allowed, _allowedConstraint);
+                                   _subtractions, _allowed, _allowedConstraint, _notBlank);
 
         return candidate.Validated(applying, this);
     }
@@ -364,7 +419,7 @@ internal sealed class StringSpec {
         StringSpec candidate = new(_exactLength, _exactConstraint, _minLength, _minConstraint, _maxLength, _maxConstraint,
                                    _prefix, _prefixConstraint, _suffix, _suffixConstraint, _fragments,
                                    _charset, _charsetConstraint, _customPool, _casing, _casingConstraint, _exclusions,
-                                   _subtractions, distinct, applying);
+                                   _subtractions, distinct, applying, _notBlank);
 
         return candidate.Validated(applying, this);
     }
@@ -452,8 +507,11 @@ internal sealed class StringSpec {
     }
 
     private string BuildCandidate(SeededRandom random) {
-        int required     = RequiredLength();
-        int effectiveMin = Math.Max(_minLength, required);
+        int required = RequiredLength();
+        // A guarantee the anchors do not already carry needs a filler position of its own, so the floor rises one
+        // above what they occupy. Without it the shortest draw returns the anchors alone — every character blank,
+        // and the length bound satisfied while NotBlank() is not.
+        int effectiveMin = Math.Max(_minLength, _fillerMustCarryNonBlank ? required + 1 : required);
         // A declared maximum REPLACES the default spread (ADR-0076): the bound the caller wrote governs the value
         // they get, so a written range is the range drawn. Long arithmetic: a huge required length must saturate
         // instead of overflowing past int.MaxValue. The floor is honoured whatever the ceiling says — a maximum
@@ -467,11 +525,16 @@ internal sealed class StringSpec {
         int    before       = random.NextInt32Inclusive(0, fillerLength);
         int    after        = fillerLength - before;
 
+        // Which filler position carries the guaranteed non-blank character, or -1 where nothing has to. Drawn only
+        // when the guarantee is in force, so a specification without NotBlank() consumes exactly the draws it
+        // always consumed and every committed seed replays unchanged (ADR-0049).
+        int guaranteed = _fillerMustCarryNonBlank ? random.NextInt32Inclusive(0, fillerLength - 1) : -1;
+
         StringBuilder builder = new(length);
         if (_prefix is not null) { builder.Append(_prefix); }
-        AppendFiller(builder, random, pool, before);
+        AppendFiller(builder, random, pool, before, 0, guaranteed);
         foreach ((string fragment, ConstraintCall _) in _fragments) { builder.Append(fragment); }
-        AppendFiller(builder, random, pool, after);
+        AppendFiller(builder, random, pool, after, before, guaranteed);
         if (_suffix is not null) { builder.Append(_suffix); }
 
         return builder.ToString();
@@ -511,6 +574,7 @@ internal sealed class StringSpec {
         ValidateFillerAlphabet(applying);
         if (_allowed is null) {
             ValidateFragmentBudget(applying);
+            ValidateNotBlankIsBuildable(applying);
 
             return this;
         }
@@ -536,6 +600,36 @@ internal sealed class StringSpec {
                                                             ConstraintClaim.OfPhrase("the declared character family",
                                                                                      family is null ? "is left with no character at all" : $"{family} admits nothing once it is applied"),
                                                             ConstraintClaim.Of(culprit, "removes every character that remained"));
+    }
+
+    /// <summary>
+    ///     Refuses a shape whose non-blank character has nowhere to come from — <c>NotBlank().Whitespaces()</c>, or
+    ///     a length the anchors already fill when none of them carries one.
+    /// </summary>
+    /// <remarks>
+    ///     An anchored literal answers for itself: <c>StartingWith("A")</c> already puts a non-blank character in
+    ///     every value, so nothing more is demanded of the filler and no alphabet is judged. The literal is read,
+    ///     never rejected — a constraint governs what the generator draws, not the text it was handed (ADR-0079).
+    ///     Only where the anchors carry nothing does the filler have to supply the character, and only then do its
+    ///     alphabet and its room become a satisfiability question.
+    /// </remarks>
+    private void ValidateNotBlankIsBuildable(ConstraintCall applying) {
+        if (_notBlank is null || !_fillerMustCarryNonBlank) { return; }
+
+        int required = RequiredLength();
+        // The widest length this shape can reach. Anything at or below what the anchors already occupy leaves no
+        // filler position for the guaranteed character.
+        int ceiling = _exactLength ?? _maxLength ?? int.MaxValue;
+
+        if (ceiling > required && _nonBlankFillerPool.Length > 0) { return; }
+
+        ConstraintClaim blamed = _nonBlankFillerPool.Length == 0 && _charsetConstraint is not null
+                                     ? ConstraintClaim.Of(_charsetConstraint, "leaves only whitespace to draw")
+                                     : ConstraintClaim.OfPhrase("the declared shape", "leaves no room for one");
+
+        throw ConflictingAnyConstraintException.Contradicts(applying,
+                                                            ConstraintClaim.Of(_notBlank, "requires at least one character that is not whitespace"),
+                                                            blamed);
     }
 
     private void ValidateLengthBounds(ConstraintCall applying) {
@@ -682,6 +776,7 @@ internal sealed class StringSpec {
         foreach ((string fragment, ConstraintCall constraint) in _fragments) {
             yield return (constraint, value => value.IndexOf(fragment, StringComparison.Ordinal) >= 0);
         }
+        if (_notBlank is not null) { yield return (_notBlank, value => value.Any(character => !CharacterPools.IsBlank(character))); }
         if (_charsetConstraint is not null) { yield return (_charsetConstraint, value => value.All(AllowedByPool)); }
         foreach ((ConstraintCall constraint, CharacterSet removed) in _subtractions) {
             yield return (constraint, value => value.All(character => !CharacterPools.Belongs(character, removed)));
@@ -741,9 +836,20 @@ internal sealed class StringSpec {
         return null;
     }
 
-    private static void AppendFiller(StringBuilder builder, SeededRandom random, string pool, int count) {
+    /// <summary>
+    ///     Appends <paramref name="count" /> filler characters, drawing the one at absolute position
+    ///     <paramref name="guaranteed" /> from the non-blank alphabet instead of <paramref name="pool" />.
+    /// </summary>
+    /// <remarks>
+    ///     <paramref name="offset" /> is where this run starts among the value's filler positions, so the two runs
+    ///     either side of the anchored fragments share one numbering. A <paramref name="guaranteed" /> of -1 matches
+    ///     no position, which is what keeps a specification without <c>NotBlank()</c> on exactly the draws it made
+    ///     before: one per position, from the same pool, in the same order.
+    /// </remarks>
+    private void AppendFiller(StringBuilder builder, SeededRandom random, string pool, int count, int offset, int guaranteed) {
         for (int i = 0; i < count; i++) {
-            builder.Append(pool[random.Next(pool.Length)]);
+            string source = offset + i == guaranteed ? _nonBlankFillerPool : pool;
+            builder.Append(source[random.Next(source.Length)]);
         }
     }
 

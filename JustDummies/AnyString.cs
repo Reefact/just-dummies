@@ -127,6 +127,24 @@ public sealed class AnyString : IAny<string>, IHasRandomSource, ICardinalityHint
         return new AnyString(_source, _spec.WithMinLength(1, ConstraintCall.Of(nameof(NonEmpty))));
     }
 
+    /// <summary>
+    ///     Requires at least one character that is not whitespace — what a domain guarding with
+    ///     <see cref="string.IsNullOrWhiteSpace(string)" /> demands, and with it the floor of one character
+    ///     <see cref="NonEmpty" /> gives.
+    /// </summary>
+    /// <remarks>
+    ///     Stronger than <see cref="NonEmpty" />, which a string of spaces satisfies. Whitespace here is the BCL's
+    ///     own <see cref="char.IsWhiteSpace(char)" />, so the constraint states that guard exactly rather than
+    ///     approximating it; note that it is wider than the <see cref="Whitespaces" /> family, which names the
+    ///     readable pair a draw may be narrowed to. Interior whitespace stays legal — only an entirely blank value
+    ///     is refused — so <c>"a b"</c> is a value this admits.
+    /// </remarks>
+    /// <returns>A new generator carrying the added constraint.</returns>
+    /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
+    public AnyString NotBlank() {
+        return new AnyString(_source, _spec.WithNotBlank(ConstraintCall.Of(nameof(NotBlank))));
+    }
+
     /// <summary>Fixes the exact length. Declared once per generator.</summary>
     /// <param name="length">The exact number of characters.</param>
     /// <returns>A new generator carrying the added constraint.</returns>

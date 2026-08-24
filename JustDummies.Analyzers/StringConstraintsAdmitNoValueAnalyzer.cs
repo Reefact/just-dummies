@@ -168,6 +168,11 @@ public sealed class StringConstraintsAdmitNoValueAnalyzer : DiagnosticAnalyzer {
                 yield return ("InUpperCase()", value => !value.Any(char.IsLower));
             } else if (name == "InLowerCase") {
                 yield return ("InLowerCase()", value => !value.Any(char.IsUpper));
+            } else if (name == "NotBlank") {
+                // Judges the value rather than each of its characters — interior whitespace is legal, and only an
+                // entirely blank value is refused. It belongs here all the same: on the value-set path the supplied
+                // value IS the whole string, so this is the test it has to pass.
+                yield return ("NotBlank()", value => !string.IsNullOrWhiteSpace(value));
             }
         }
     }

@@ -44,6 +44,63 @@ public sealed class AnyStringTests {
         }
     }
 
+    [Fact(DisplayName = "NotBlank yields a value the guard behind IsNullOrWhiteSpace accepts.")]
+    public void NotBlankIsNeverAllWhitespace() {
+        foreach (string value in Samples(Any.String().NotBlank().WithMaxLength(4))) {
+            Check.That(string.IsNullOrWhiteSpace(value)).IsFalse();
+        }
+    }
+
+    /// <summary>
+    ///     The whole reason the member exists rather than <c>NonEmpty()</c> standing in for it: a short ceiling
+    ///     makes an all-whitespace draw ordinary, and the four line and page breaks the <c>Whitespaces</c> family
+    ///     does not name are two thirds of it.
+    /// </summary>
+    [Fact(DisplayName = "NonEmpty alone leaves the all-whitespace draw NotBlank rejects reachable.")]
+    public void NonEmptyDoesNotRejectWhitespace() {
+        HashSet<char> seen = [];
+        foreach (string value in Samples(Any.String().NonEmpty().WithMaxLength(4))) {
+            foreach (char character in value) { seen.Add(character); }
+        }
+
+        Check.That(seen.Any(character => CharacterPools.IsBlank(character) && !CharacterPools.IsAsciiWhitespace(character))).IsTrue();
+    }
+
+    [Fact(DisplayName = "NotBlank leaves interior whitespace legal — only an entirely blank value is refused.")]
+    public void NotBlankAdmitsInteriorWhitespace() {
+        Check.That(Samples(Any.String().NotBlank().WithLengthBetween(3, 8))
+                   .Any(value => value.Skip(1).Take(value.Length - 2).Any(char.IsWhiteSpace)))
+             .IsTrue();
+    }
+
+    [Fact(DisplayName = "NotBlank leans on an anchored literal that already carries a non-blank character.")]
+    public void NotBlankAcceptsANonBlankAnchor() {
+        foreach (string value in Samples(Any.String().StartingWith("A").NotBlank().WithLength(1))) {
+            Check.That(value).IsEqualTo("A");
+        }
+    }
+
+    [Fact(DisplayName = "NotBlank rescues a value whose every anchor is blank.")]
+    public void NotBlankRescuesABlankAnchor() {
+        foreach (string value in Samples(Any.String().StartingWith(" ").NotBlank().WithMaxLength(3))) {
+            Check.That(string.IsNullOrWhiteSpace(value)).IsFalse();
+        }
+    }
+
+    [Fact(DisplayName = "NotBlank names both sides when the declared family leaves only whitespace to draw.")]
+    public void NotBlankConflictsWithTheWhitespacesFamily() {
+        Check.ThatCode(() => Any.String().Whitespaces().NotBlank())
+             .Throws<ConflictingAnyConstraintException>()
+             .WithMessage("Cannot apply NotBlank() because Whitespaces() leaves only whitespace to draw.");
+    }
+
+    [Fact(DisplayName = "NotBlank names both sides when the anchors fill the declared length.")]
+    public void NotBlankConflictsWithAFullyAnchoredLength() {
+        Check.ThatCode(() => Any.String().StartingWith(" ").WithLength(1).NotBlank())
+             .Throws<ConflictingAnyConstraintException>()
+             .WithMessage("Cannot apply NotBlank() because the declared shape leaves no room for one.");
+    }
+
     [Fact(DisplayName = "WithLength yields exactly that many characters.")]
     public void WithLengthIsExact() {
         foreach (string value in Samples(Any.String().WithLength(10))) {

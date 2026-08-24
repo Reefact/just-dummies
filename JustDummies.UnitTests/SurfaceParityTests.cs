@@ -191,8 +191,11 @@ public sealed class SurfaceParityTests {
 
         // AnyString carries the exclusion pair Except/DifferentFrom (met by a bounded redraw, since strings are not
         // ordinal-mapped) and, like every other family, a composable OneOf that returns the builder itself.
+        // NotBlank has no AnyChar counterpart, and that is not the drift the row above warns about: it constrains
+        // the assembled string rather than the alphabet a character is drawn from, and a single character is either
+        // whitespace or it is not — which Whitespaces() and WithoutAlpha() already say there.
         data.Add(typeof(AnyString), new[] {
-            "NonEmpty", "WithLength", "WithMinLength", "WithMaxLength", "WithLengthBetween",
+            "NonEmpty", "NotBlank", "WithLength", "WithMinLength", "WithMaxLength", "WithLengthBetween",
             "StartingWith", "EndingWith", "Containing",
             "Alpha", "AlphaNumeric", "Numeric", "Punctuation", "Printable", "NonPrintable", "Whitespaces", "Hexadecimal",
             "WithoutAlpha", "WithoutNumeric", "WithChars", "InUpperCase", "InLowerCase",

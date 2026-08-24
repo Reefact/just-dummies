@@ -48,7 +48,7 @@
     <PackageVersion Include="FsCheck" Version="3.4.0" />
     <PackageVersion Include="JetBrains.Annotations" Version="2026.2.0" />
     <PackageVersion Include="Microsoft.CodeAnalysis.Analyzers" Version="5.9.0" />
-    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="5.6.0" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="5.9.0" />
     <PackageVersion Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" Version="5.6.0" />
     <!-- The dum tool's project loading (§11.1), JustDummies.Cli only. Workspaces.MSBuild is kept at the same
          version as Microsoft.CodeAnalysis.CSharp above: the two ship together and a workspace built against a
@@ -58,7 +58,7 @@
     <!-- The C# half of the workspace layer, and not optional: without it a workspace opens the project,
          reports no error, and then answers null when asked for its compilation — because the service that
          builds one is a LANGUAGE service, and Workspaces.MSBuild carries only the language-neutral ones. -->
-    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="5.6.0" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="5.9.0" />
     <PackageVersion Include="Microsoft.Build.Locator" Version="1.11.2" />
     <!-- Compiled against, never shipped beside the tool. Workspaces.MSBuild brings this one in as a runtime
          asset, and Microsoft.Build.Locator refuses that arrangement by design (MSBL001): a tool carrying its

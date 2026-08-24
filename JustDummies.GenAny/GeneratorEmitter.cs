@@ -219,8 +219,32 @@ public static class GeneratorEmitter {
     /// </summary>
     private static void WriteTodo(StringBuilder file, ScaffoldedParameter parameter, string indent) {
         Line(file, $"{indent}// TODO(dum): no generator inferred for '{parameter.TypeDisplay} {parameter.Name}'.");
-        Line(file, $"{indent}//   Scaffold one:  dum generate {parameter.TypeDisplay}");
-        Line(file, $"{indent}//   or write one here, or replace it and always pass .With{parameter.PascalCasedName}(...) instead.");
+
+        if (ScaffoldableByName(parameter.TypeDisplay)) {
+            Line(file, $"{indent}//   Scaffold one:  dum generate {parameter.TypeDisplay}");
+            Line(file, $"{indent}//   or write one here, or replace it and always pass .With{parameter.PascalCasedName}(...) instead.");
+
+            return;
+        }
+
+        Line(file, $"{indent}//   Write one here, or replace it and always pass .With{parameter.PascalCasedName}(...) instead.");
+    }
+
+    /// <summary>
+    ///     Whether <c>dum generate</c> would accept this type's name (§3.2).
+    /// </summary>
+    /// <remarks>
+    ///     It refuses a generic or constructed type, so naming one on the line above would send the developer
+    ///     at a command the tool itself declines — the kind of instruction that is worse than none. The check
+    ///     is on the spelling rather than on a symbol because a plan carries the display string alone, and the
+    ///     two spellings that matter both show in it: an angle bracket, or a bracket pair.
+    ///     <para>
+    ///         Cheap before ADR-0089 and worth doing after it: composition now names a generator for every
+    ///         plain type, so what is left in this branch is largely the constructed ones.
+    ///     </para>
+    /// </remarks>
+    private static bool ScaffoldableByName(string typeDisplay) {
+        return typeDisplay.IndexOf('<') < 0 && typeDisplay.IndexOf('[') < 0;
     }
 
     /// <summary>

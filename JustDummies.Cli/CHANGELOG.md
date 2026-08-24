@@ -8,6 +8,39 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ## [Unreleased]
 
+### Changed
+
+- **A composed parameter is drawn through the generator its own type owns, and nothing else.** The
+  engine had a second way: unwrap the type's one-parameter static factory, read the guards in its
+  body, and derive a recipe here — `Any.String().NonEmpty().As(OrderReference.Create)`. That wrote
+  one copy of the recipe per site composing the type, each free to drift from the constructor it
+  described, and each re-deriving what the generator for `OrderReference` already knows. Now the
+  emission is `new AnyOrderReference()` whether or not the compilation carries that type yet: where
+  it does not, `CS0246` at that line names what to scaffold, which is ADR-0060's mechanism spelled
+  as a type name rather than as an invented identifier. The recipe is not lost, it moves — read once,
+  by the generator for the type that declares those guards. A generic type is the one composed shape
+  §5.5 still answers for, because its generator's name would drop the arguments that tell two
+  instantiations apart. (ADR-0089.)
+
+- **The call goes into the constructor's initializer, and the remaining factories are renamed.** A
+  method wrapping one call says nothing the call does not, so a composed parameter gets none — it
+  keeps one only when there is something to put in the body, the sentinel of §5.5 being a statement
+  that needs somewhere to stand. What remains is named for what it returns, a value the type's own
+  constructor accepts: `AnyValidQuantity()` rather than `QuantityFactory()`.
+
+- **The TODO names `dum generate` only where that command would take the name.** §3.2 refuses a
+  generic target, so pointing a developer at it would be an instruction the tool itself declines.
+  Cheap before, and worth doing now that composition names a generator for every plain type: what
+  reaches that branch is largely the constructed ones.
+
+### Removed
+
+- **The `factory` provenance word, and `candidates` on a parameter in `--format json`.** Both
+  described the path above: a parameter is never left open over an ambiguous factory now, so the
+  list is always empty and the recap line naming them never prints. §6 says the recap exists to keep
+  the tool honest about what it inferred and what it guessed; a word it can no longer produce and a
+  field that is always `[]` are small versions of exactly what that column is for.
+
 ## [1.1.0-beta.3] - 2026-08-24
 
 ### Added

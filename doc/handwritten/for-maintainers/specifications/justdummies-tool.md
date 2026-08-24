@@ -225,7 +225,8 @@ public sealed class OrderReference {
 }
 ```
 
-`dum generate Order`, with `AnyCustomer` already scaffolded in the project, emits:
+`dum generate Order`, with `AnyOrderReference` and `AnyCustomer` already scaffolded in the
+project, emits:
 
 ```csharp
 // Scaffolded by dum (JustDummies). This file is yours: read it, edit it, commit it.
@@ -256,34 +257,26 @@ public sealed partial class AnyOrder : IAny<Order> {
 
     /// <summary>Creates the generator with a default recipe for every constructor parameter.</summary>
     public AnyOrder()
-        : this(reference: ReferenceFactory(),
-               customer:  CustomerFactory(),
-               quantity:  QuantityFactory(),
-               status:    StatusFactory(),
-               tags:      TagsFactory(),
-               placedAt:  PlacedAtFactory()) { }
+        : this(reference: new AnyOrderReference(),
+               customer:  new AnyCustomer(),
+               quantity:  AnyValidQuantity(),
+               status:    AnyValidStatus(),
+               tags:      AnyValidTags(),
+               placedAt:  AnyValidPlacedAt()) { }
 
-    private static IAny<OrderReference> ReferenceFactory() {
-        return Any.String().NonEmpty().As(OrderReference.Create);
-    }
-
-    private static IAny<Customer> CustomerFactory() {
-        return new AnyCustomer();
-    }
-
-    private static IAny<int> QuantityFactory() {
+    private static IAny<int> AnyValidQuantity() {
         return Any.Int32().Positive();
     }
 
-    private static IAny<OrderStatus> StatusFactory() {
+    private static IAny<OrderStatus> AnyValidStatus() {
         return Any.Enum<OrderStatus>();
     }
 
-    private static IAny<IReadOnlyList<string>> TagsFactory() {
+    private static IAny<IReadOnlyList<string>> AnyValidTags() {
         return Any.ListOf(Any.String().NonEmpty());
     }
 
-    private static IAny<DateTime> PlacedAtFactory() {
+    private static IAny<DateTime> AnyValidPlacedAt() {
         return Any.DateTime();
     }
 
@@ -311,7 +304,55 @@ public sealed partial class AnyOrder : IAny<Order> {
         return new AnyOrder(generator, _customer, _quantity, _status, _tags, _placedAt);
     }
 
-    // ... one such pair per parameter ...
+    /// <summary>Pins <c>customer</c> to a fixed value.</summary>
+    public AnyOrder WithCustomer(Customer value) {
+        return WithCustomer(new FixedValue<Customer>(value));
+    }
+
+    /// <summary>Draws <c>customer</c> from <paramref name="generator" />.</summary>
+    public AnyOrder WithCustomer(IAny<Customer> generator) {
+        return new AnyOrder(_reference, generator, _quantity, _status, _tags, _placedAt);
+    }
+
+    /// <summary>Pins <c>quantity</c> to a fixed value.</summary>
+    public AnyOrder WithQuantity(int value) {
+        return WithQuantity(new FixedValue<int>(value));
+    }
+
+    /// <summary>Draws <c>quantity</c> from <paramref name="generator" />.</summary>
+    public AnyOrder WithQuantity(IAny<int> generator) {
+        return new AnyOrder(_reference, _customer, generator, _status, _tags, _placedAt);
+    }
+
+    /// <summary>Pins <c>status</c> to a fixed value.</summary>
+    public AnyOrder WithStatus(OrderStatus value) {
+        return WithStatus(new FixedValue<OrderStatus>(value));
+    }
+
+    /// <summary>Draws <c>status</c> from <paramref name="generator" />.</summary>
+    public AnyOrder WithStatus(IAny<OrderStatus> generator) {
+        return new AnyOrder(_reference, _customer, _quantity, generator, _tags, _placedAt);
+    }
+
+    /// <summary>Pins <c>tags</c> to a fixed value.</summary>
+    public AnyOrder WithTags(IReadOnlyList<string> value) {
+        return WithTags(new FixedValue<IReadOnlyList<string>>(value));
+    }
+
+    /// <summary>Draws <c>tags</c> from <paramref name="generator" />.</summary>
+    public AnyOrder WithTags(IAny<IReadOnlyList<string>> generator) {
+        return new AnyOrder(_reference, _customer, _quantity, _status, generator, _placedAt);
+    }
+
+    /// <summary>Pins <c>placedAt</c> to a fixed value.</summary>
+    public AnyOrder WithPlacedAt(DateTime value) {
+        return WithPlacedAt(new FixedValue<DateTime>(value));
+    }
+
+    /// <summary>Draws <c>placedAt</c> from <paramref name="generator" />.</summary>
+    public AnyOrder WithPlacedAt(IAny<DateTime> generator) {
+        return new AnyOrder(_reference, _customer, _quantity, _status, _tags, generator);
+    }
 
     /// <summary>Produces one arbitrary <see cref="Order" />.</summary>
     public Order Generate() {
@@ -347,9 +388,14 @@ public sealed partial class AnyOrder : IAny<Order> {
 * One `private readonly IAny<TParam> _param;` per constructor parameter, in declaration order.
 * A **public parameterless constructor** carrying the inferred recipe, written with named
   arguments so the reader maps each call to its parameter without counting.
-* One **private static factory** per parameter — `{Param}Factory()` — housing its recipe. The
-  public constructor's initializer calls these by name instead of inlining each chain; an
-  unresolved parameter's TODO (§5.5) lives inside its own factory, not at the call site.
+* One **private static factory** per parameter that needs one — `AnyValid{Param}()` — housing its
+  recipe, and named for what it returns: a value the type's own constructor accepts. The public
+  constructor's initializer calls these by name instead of inlining each chain, and an unresolved
+  parameter's TODO (§5.5) lives inside its own factory rather than at the call site.
+  A **composed** parameter has no factory: its whole recipe is the one call to the generator its
+  type owns, written into the initializer, and a method wrapping it would say nothing the call does
+  not (§5.4). It keeps one only when there is something to put in the body — the sentinels of §5.5
+  and §5.6 are statements, and a statement needs somewhere to stand.
 * A **private all-arguments constructor** performing the copy.
 * Per parameter, **two** `With{Param}` overloads returning a new instance:
   `With{Param}(TParam value)` and `With{Param}(IAny<TParam> generator)`.
@@ -493,8 +539,7 @@ Every entry is subject to D4: the member is emitted only if it resolves in the c
 | `Dictionary<K,V>` `IDictionary<K,V>` `IReadOnlyDictionary<K,V>` | `Any.DictionaryOf(<K>, <V>)` |
 | `T?` where `T` is a reference type | the generator for `T` unchanged — **never** `.OrNull()` (D10) |
 | `T?` where `T` is a value type | `<generator for T>.As(value => (T?)value)` — **never** `.OrNull()` (D10) |
-| a type with a scaffolded `AnyT` in the compilation | `new AnyT()` (§5.4) |
-| a type with a recognised one-parameter static factory | `<param generator>.As(T.Create)` (§5.4) |
+| any other non-generic named type | `new AnyT()` (§5.4) — whether the compilation carries `AnyT` or not |
 | anything else | unresolved (§5.5) |
 
 Three notes on the table.
@@ -770,19 +815,20 @@ survives casual testing.
 
 **Where the constraints attach.** A guard-derived constraint belongs to the generator for the
 parameter's own type, *before* any conversion or composition. An `int?` parameter guarded by
-`p <= 0` emits `Any.Int32().Positive().As(value => (int?)value)`, not the reverse; a factory
-parameter guarded inside the factory's body emits `Any.String().NonEmpty().As(OrderReference.Create)`.
-The `.As` hop always comes last, because it is the step that changes the type.
+`p <= 0` emits `Any.Int32().Positive().As(value => (int?)value)`, not the reverse. The `.As` hop
+always comes last, because it is the step that changes the type.
 
 Every constraint above is still subject to D4. `.Positive()` on a `uint` parameter does not
 resolve (§14.3) and is skipped.
 
-Guard reading is also what makes factory composition correct rather than nominally present:
-`OrderReference.Create` guards on `IsNullOrWhiteSpace`, so the tool emits
-`Any.String().NonEmpty().As(OrderReference.Create)` — a chain that works — instead of
-`Any.String().As(OrderReference.Create)`, which was measured throwing `AnyGenerationException`
-**594 times in 10 000 draws**, and 557 on an independent re-run — about one in seventeen,
-which is what an unconstrained draw over the seventeen lengths 0 to 16 predicts (§17).
+Guard reading is also what makes a value object's own generator correct rather than nominally
+present, and that is where the measurement behind this section was taken. `OrderReference.Create`
+guards on `IsNullOrWhiteSpace`, so `AnyOrderReference` draws `Any.String().NonEmpty()` — a chain
+that works — instead of `Any.String()`, which was measured throwing `AnyGenerationException`
+**594 times in 10 000 draws**, and 557 on an independent re-run — about one in seventeen, which is
+what an unconstrained draw over the seventeen lengths 0 to 16 predicts (§17). The reading happens
+once, for the type that declares the guards; every parameter composing an `OrderReference` gets it
+by calling that generator (§5.4).
 
 That single measurement is why this section exists at all; D5 + D6 sets out the argument and the
 alternatives weighed against it.
@@ -954,11 +1000,18 @@ confirmation.
 aggregates compose in cascade, and it works whether that type was scaffolded earlier or written
 by hand.
 
-**Otherwise, a static factory.** A method qualifies when it is `public static`, returns the
-parameter's type, takes exactly one parameter, and is named `Create`, `From`, `Of` or `Parse`.
-If several qualify, `Create` wins; if several remain, the parameter is unresolved and the console
-names the candidates. The emission is `<generator for the factory's parameter>.As(T.Create)`,
-with §5.3 applied to the factory's own body.
+**And it emits that call whether the type is there or not.** A value object's recipe belongs to the
+generator scaffolded for it. Deriving one here instead — unwrapping `T`'s one-parameter static
+factory and reading its guards, to emit `<param generator>.As(T.Create)` — wrote one copy of that
+recipe per site composing `T`, each free to drift from the constructor it described. So where
+`Any{T}` is missing the engine names it anyway, and `CS0246` at that line is the instruction:
+`dum generate T`, or write one by hand. That is §5.5's mechanism spelled as a type name rather than
+as an invented identifier, so the parameter is **not** unresolved (ADR-0089).
+
+**A generic type is the one composed shape §5.5 still answers for.** The naming function (§11.3)
+works from the type's name, which drops its arguments, so `Repository<Order>` and `Repository<Line>`
+would both be told to write `AnyRepository` and neither is the name to write. A sentinel that says
+nothing beats a name that says the wrong thing.
 
 Convention, not attribute, not configuration: an attribute would mean touching the developer's
 production code to please a test tool, and a configuration file breaks design rule 2.
@@ -970,30 +1023,29 @@ would otherwise be — the call site in the public constructor stays a plain nam
 other parameter's:
 
 ```csharp
-    public AnyOrder()
-        : this(reference: ReferenceFactory(),
-               customer:  CustomerFactory(),
-               quantity:  QuantityFactory(),
+    public AnyWarehouse()
+        : this(reference: new AnyOrderReference(),
+               crates:    AnyValidCrates(),
                ...) { }
 
-    private static IAny<OrderReference> ReferenceFactory() {
-        return Any.String().NonEmpty().As(OrderReference.Create);
+    private static IAny<Crate<int>> AnyValidCrates() {
+        // TODO(dum): no generator inferred for 'Crate<int> crates'.
+        //   Write one here, or replace it and always pass .WithCrates(...) instead.
+        return TODO_supply_a_generator_for_crates;
     }
 
-    private static IAny<Customer> CustomerFactory() {
-        // TODO(dum): no generator inferred for 'Customer customer'.
-        //   Scaffold one:  dum generate Customer
-        //   or write one here, or replace it and always pass .WithCustomer(...) instead.
-        return TODO_supply_a_generator_for_customer;
-    }
-
-    // ... one factory per parameter ...
+    // ... one factory per parameter that needs one ...
 ```
 
 The file does not compile until the developer acts. That is the point (D6). The compiler's own
-message — *"The name 'TODO_supply_a_generator_for_customer' does not exist in the current
+message — *"The name 'TODO_supply_a_generator_for_crates' does not exist in the current
 context"* — is the instruction, and it appears in the IDE, in the error list, and in CI, at
-`CustomerFactory`'s own line.
+`AnyValidCrates`'s own line.
+
+The comment names `dum generate` only where that command would take the name. §3.2 refuses a
+generic target, so telling the developer to run it on one would be an instruction the tool itself
+declines — worse than none. That distinction earns its keep now that §5.4 names a generator for
+every plain type: what reaches this branch is largely the constructed ones.
 
 The two alternatives were rejected: a `throw` expression compiles and defers the failure to the
 first test run, and omitting the parameter makes `AnyOrder` quietly unusable without saying so.
@@ -1008,7 +1060,7 @@ difference: a generator **was** inferred here, and it stays as the factory's wor
 than being thrown away.
 
 ```csharp
-    private static IAny<string> NameFactory() {
+    private static IAny<string> AnyValidName() {
         // TODO(dum): 'string name' may be guarded by something dum could not read (§9).
         //   This is dum's best generator for the type; verify it honours the real invariant,
         //   or replace it, then delete the line below.
@@ -1320,7 +1372,7 @@ describes *behaviour* (§1); the project is named after what it *produces*.
 ### 10.2 The boundary
 
 **`JustDummies.GenAny` owns** the resolution table (§5.2), guard reading (§5.3), composition and
-factory recognition (§5.4), the emitter (§11.2), and the naming function (§11.3).
+the naming function that §5.4 leans on (§11.3), and the emitter (§11.2).
 It depends on `Microsoft.CodeAnalysis.CSharp` **only** — not `Workspaces`, which it does not need:
 guard reading wants a syntax tree and a semantic model, and emission is string building.
 
@@ -1408,7 +1460,8 @@ sweep. In v1.0 `NamingOptions` carries a single fixed pattern, `Any{Type}`.
 
 * **Resolver unit tests.** Build a `CSharpCompilation` in memory with a reference to the built
   `JustDummies.dll`, and assert the emitted expression string per parameter. Fast, no MSBuild.
-  Cover every row of §5.2, every row of §5.3, both §5.4 paths, and the §5.5 fallback. Include the
+  Cover every row of §5.2, every row of §5.3, §5.4 with and without the generator in the
+  compilation, and the §5.5 fallback. Include the
   unsigned case (`p <= 0` on a `uint`), the value-type nullable case, both composition outcomes of
   §5.3 (complementary bounds kept and folded to a range, same side folded to the tighter, bounds
   admitting no value dropped, a refinement yielding to a guard), a size guard on a **collection** parameter
@@ -1909,7 +1962,8 @@ version changes.
    and the build succeeds. That is D3's evidence.
 6. Run the assertions of §17.1. For the measurement, loop
    `Any.String().As(OrderReference.Create).Generate()` 10 000 times, counting
-   `AnyGenerationException`.
+   `AnyGenerationException` — that being the chain `AnyOrderReference` would draw if §5.3 read
+   nothing from `OrderReference.Create`.
 
 A note on running: if only a newer .NET runtime is installed, the `net8.0` output still runs under
 `DOTNET_ROLL_FORWARD=LatestMajor`.

@@ -452,30 +452,29 @@ internal static class GuardCorpus {
                                                                               """),
 
 
-        // ---- Finding 5. `GeneratorFor.Composed` calls `Guards.Read(factory, ...)` — the factory's own body
-        // ---- only. `return new Coupon(number);` is a `ReturnStatementSyntax`; `MarkIfValidatedElsewhere`
-        // ---- iterates `ExpressionStatementSyntax` only, so it never sees it, and `MarkIfItRejects` finds no
-        // ---- `throw` in the factory either. The private constructor's `number <= 0` guard is read nowhere,
-        // ---- with nothing marking the loss, over a composed parameter the domain still rejects at zero.
+        // ---- Finding 5, re-scoped by ADR-0089. A composed parameter no longer routes through
+        // ---- `GeneratorFor.Composed`'s factory-guard reading at all — `Holder(Coupon coupon)` now draws
+        // ---- `new AnyCoupon()`, and `Coupon`'s own guards are `AnyCoupon`'s business, not this row's. The
+        // ---- mechanism the original shape exercised — `MergeConstructedReturnGuards` reading a factory's
+        // ---- `return new T(args)` back onto the factory's own parameter — still applies wherever `Coupon`
+        // ---- is the scaffolded TARGET (§5.1's own factory path, `Scaffolder.ChosenFactory`), so this row now
+        // ---- scaffolds `Coupon` directly rather than through a composing `Holder`. Finding 10 covers the
+        // ---- same mechanism on a `string`; this keeps the `int` family distinct.
 
-        new GuardedShape("factory-composed-over-guarded-ctor", "Holder", """
-                                                                            public sealed class Coupon {
+        new GuardedShape("factory-target-over-guarded-ctor-int", "Coupon", """
+                                                                              public sealed class Coupon {
 
-                                                                                private readonly int number;
+                                                                                  private readonly int number;
 
-                                                                                private Coupon(int number) {
-                                                                                    if (number <= 0) { throw new ArgumentOutOfRangeException(nameof(number)); }
+                                                                                  private Coupon(int number) {
+                                                                                      if (number <= 0) { throw new ArgumentOutOfRangeException(nameof(number)); }
 
-                                                                                    this.number = number;
-                                                                                }
+                                                                                      this.number = number;
+                                                                                  }
 
-                                                                                public static Coupon Create(int number) { return new Coupon(number); }
-                                                                            }
-
-                                                                            public sealed class Holder {
-                                                                                public Holder(Coupon coupon) { }
-                                                                            }
-                                                                            """, defect: "a factory composed over a guarded private constructor loses every guard, reported as guard", requiresVerification: true),
+                                                                                  public static Coupon Create(int number) { return new Coupon(number); }
+                                                                              }
+                                                                              """),
 
 
         // ---- Finding 6a. ADR-0086's carve-out for a returning guard-library helper reaches
@@ -610,7 +609,7 @@ internal static class GuardCorpus {
                                                                                      return new Reference(value);
                                                                                  }
                                                                              }
-                                                                             """, defect: "the guards of a constructor a recognised factory delegates to are neither read nor marked", requiresVerification: true),
+                                                                             """),
 
 
         // ---- Finding 11. Read correctly, about the wrong value — `Guards.cs`'s own remarks name this class

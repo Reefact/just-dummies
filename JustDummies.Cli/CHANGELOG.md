@@ -8,6 +8,8 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ## [Unreleased]
 
+## [1.1.0-beta.3] - 2026-08-24
+
 ### Added
 
 - **The guard helpers of Ardalis.GuardClauses and CommunityToolkit.Diagnostics are read, in both
@@ -398,6 +400,8 @@ on the produced package — both that the nuspec declares no such dependency and
 bundled beside the tool, since a .NET tool ships its closure as files and the first check alone would pass
 on an empty dependency list.
 
-[Unreleased]: https://github.com/Reefact/just-dummies/compare/cli-v1.1.0-beta.1...HEAD
+[Unreleased]: https://github.com/Reefact/just-dummies/compare/cli-v1.1.0-beta.3...HEAD
+[1.1.0-beta.3]: https://github.com/Reefact/just-dummies/compare/cli-v1.1.0-beta.2...cli-v1.1.0-beta.3
+[1.1.0-beta.2]: https://github.com/Reefact/just-dummies/compare/cli-v1.1.0-beta.1...cli-v1.1.0-beta.2
 [1.1.0-beta.1]: https://github.com/Reefact/just-dummies/releases/tag/cli-v1.1.0-beta.1
 [1.0.0-beta.1]: https://github.com/Reefact/just-dummies/releases/tag/cli-v1.0.0-beta.1

@@ -2,6 +2,28 @@
 
 Ce qui a changé pour vous, version par version, sur le train `cli`. Pour le registre technique complet — chaque contrainte, chaque cas limite, chaque ADR — voir [CHANGELOG.md](https://github.com/Reefact/just-dummies/blob/main/JustDummies.Cli/CHANGELOG.md).
 
+## 1.1.0-beta.3 — 24 août 2026
+
+_La lecture des gardes devient à la fois plus large et plus stricte — deux bibliothèques de gardes nommées et un type construit par factory sont désormais lus, tandis que trois formes où l'outil se trompait avec assurance sur la portée d'une garde sont refusées au lieu d'être devinées._
+
+### ⚠️ Changements majeurs
+
+- **Une garde que l'outil ne peut pas placer au-dessus de chaque écriture de son paramètre, ou dont il ne peut pas prouver qu'elle s'exécute à chaque construction, est désormais marquée `unread guards`** — un scaffold qui compilait peut donc maintenant bloquer votre build jusqu'à ce que vous confirmiez le générateur. Il émettait auparavant une contrainte que le vrai constructeur ne tient pas, ce qui est la pire des deux défaillances : le fichier compilait, le résumé ne signalait rien à regarder, et le tirage levait dans le constructeur bien plus tard.
+
+### ✨ Nouveautés
+
+- **Les helpers de garde d'Ardalis.GuardClauses et de CommunityToolkit.Diagnostics sont lus, dans leurs deux graphies** — `Name = Guard.Against.NullOrWhiteSpace(name);` ne met plus fin au parcours avant que quoi que ce soit ait été lu, si bien qu'un constructeur gardé dans ce style cesse de produire des générateurs neutres sous un résumé n'affichant aucun doute nulle part ([ADR-0086](https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-maintainers/adr/0086-read-the-guard-helpers-of-named-libraries.md)). Une méthode d'une bibliothèque reconnue hors des lignes mesurées vaut `unread guards` plutôt que le silence.
+- **Un type sans constructeur accessible se scaffolde désormais via sa propre factory** — l'objet-valeur validant canonique, un constructeur privé derrière un `Create` public, voit `Generate()` appeler la factory et ses gardes lues comme celles d'un constructeur, la ligne de signature du résumé nommant l'appel que le fichier émis effectue (`factory Email.Create(string)`). Un type abstrait doté d'une factory se scaffolde également.
+
+### 🐛 Corrections de bugs
+
+- **Une garde n'est plus lue comme une borne sur une valeur que le constructeur avait déjà remplacée, ou qu'elle n'atteignait jamais** — une écriture sur le paramètre lui-même (`percent = 100 - percent`), un initialiseur `: this(…)` ou `: base(…)` qui s'exécute entier avant le corps, une boucle, un `switch`, un `using` ou un `finally` dont l'outil ne lit pas l'ordre, et un `return` ou un `goto` au-dessus de la garde. Chacun est désormais placé correctement ou refusé.
+- **Une garde de signe sur un paramètre non signé ne perd plus sa contrainte** — `if (size <= 0)` sur un `byte` ou un `uint` se lisait `.Positive()`, un membre que les générateurs non signés ne portent pas, si bien qu'elle était perdue en silence et qu'`Any.Byte()` tirait encore `0` ; elle se lit maintenant `.NonZero()`, ce qui est la même contrainte et non une plus lâche.
+- **Les throw helpers arithmétiques d'`ArgumentOutOfRangeException` sont lus comme des gardes au lieu de bloquer le build** — `ThrowIfNegative`, `ThrowIfNegativeOrZero`, `ThrowIfZero`, `ThrowIfLessThan`, `ThrowIfGreaterThan`, `ThrowIfLessThanOrEqual` et `ThrowIfGreaterThanOrEqual` correspondent désormais aux mêmes lignes numériques qu'une comparaison construit déjà.
+- **Une garde suivie d'un `else`, ou une chaîne `else if` qui lève de bout en bout, est lue au lieu d'être ignorée** — la lecture s'arrête à la première branche qui ne lève pas inconditionnellement, et cette branche, avec tout ce qui la suit, est marquée `unread guards`.
+- **Une garde d'exclusion d'énumération se lit `AnyEnum<T>.DifferentFrom`** — `if (status == Status.None) { throw … }`, la garde d'énumération la plus courante qui soit, se lisait `.NonZero()`, un membre qu'`AnyEnum<T>` ne porte pas, et était perdue en silence.
+- **Le résumé n'affiche plus `guard` pour une factory dont les gardes n'ont rien resserré** — le mot est calculé à partir des contraintes qui atteignent la chaîne émise, sur le chemin factory comme sur tous les autres.
+
 ## 1.1.0-beta.2 — 22 août 2026
 
 _La lecture des gardes devient nettement plus complète — une garde déléguée à un helper ou écrite dans une graphie moderne, et une garde qui lève dans une forme que l'outil ne savait pas parser avant, sont maintenant lues toutes les deux — et une garde que l'outil ne peut toujours pas garantir bloque la compilation au lieu de compiler en silence._

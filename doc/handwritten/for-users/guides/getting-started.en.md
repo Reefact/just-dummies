@@ -3,7 +3,7 @@
 🌍 **Languages:**  
 🇬🇧 English (this file) | 🇫🇷 [Français](./getting-started.fr.md)
 
-Ten minutes from an empty test project to a test that reads better, covers more, and tells you
+Ten minutes from an empty test project to a test that reads better, hides less, and tells you
 exactly how to reproduce itself when it goes red. No prior knowledge of dummy generators assumed.
 
 ## What is a dummy?

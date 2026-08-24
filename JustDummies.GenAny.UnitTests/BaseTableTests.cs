@@ -1,5 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
-
 using NFluent;
 
 namespace JustDummies.GenAny.UnitTests;

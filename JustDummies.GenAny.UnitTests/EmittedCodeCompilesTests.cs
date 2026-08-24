@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -22,6 +23,7 @@ namespace JustDummies.GenAny.UnitTests;
 ///     shows a violation being caught in the same harness — otherwise "no diagnostics" and "no analyzers" look
 ///     exactly alike (§17.2).
 /// </remarks>
+[SuppressMessage(SonarRule.S1135.Category, SonarRule.S1135.Id, Justification = "Names the markers the tool emits by design (§5.5), not unfinished work here.")]
 public sealed class EmittedCodeCompilesTests {
 
     /// <summary>The one approved file that must NOT compile, and the reason it exists.</summary>

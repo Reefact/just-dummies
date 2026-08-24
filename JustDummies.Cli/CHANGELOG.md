@@ -69,6 +69,16 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   always did — but the statement itself is now asked whether it rejects before that happens, so a
   `throw` inside its own right side earns the mark it would earn anywhere else.
 
+- **A recognised guard-library call whose result is returned, or handed to a local declaration's
+  initializer, is now marked `unread guards` instead of passed over in silence.**
+  `return new Rating(Guard.Against.OutOfRange(stars, ...));` and `decimal net =
+  Guard.Against.NegativeOrZero(total);` are both the documented "validate and return" contract of
+  these libraries, exactly as `Name = Guard.Against.NullOrWhiteSpace(name);` is — but the scan for a
+  recognised call only ever looked inside a discarded statement or an assignment to a field or
+  property, so a `return` statement and a local declaration were invisible to it. Neither position is
+  read as a constraint — the field/property carve-out stays exactly as narrow as it always was — only
+  marked.
+
 ## [1.1.0-beta.3] - 2026-08-24
 
 ### Added

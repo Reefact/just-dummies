@@ -274,6 +274,34 @@ internal static class Guards {
                     !viaConditionalAccess && unskipped && RunsUnconditionally(discarded, statement),
                     model, method, reading, writes);
         }
+
+        // A recognised library call whose result is USED — returned, or handed to a local declaration's own
+        // initializer, argument position included (`return new Rating(Guard.Against.OutOfRange(...));`) — is
+        // validation exactly as much as one discarded or assigned to a field (ADR-0086): the documented
+        // contract of these two libraries is to validate and return their input, wherever that value then
+        // goes. It is never READ here — the field/property carve-out above stays exactly as narrow as it
+        // always was — only marked, so the developer is told rather than left with a parameter that reads as
+        // though nothing constrained it.
+        foreach (ReturnStatementSyntax returned in statement.DescendantNodesAndSelf().OfType<ReturnStatementSyntax>()) {
+            MarkEveryRecognisedCallWithin(returned.Expression, model, method, reading);
+        }
+
+        foreach (LocalDeclarationStatementSyntax local in statement.DescendantNodesAndSelf().OfType<LocalDeclarationStatementSyntax>()) {
+            foreach (VariableDeclaratorSyntax declarator in local.Declaration.Variables) {
+                MarkEveryRecognisedCallWithin(declarator.Initializer?.Value, model, method, reading);
+            }
+        }
+    }
+
+    /// <summary>Marks every parameter a recognised library call anywhere under <paramref name="node" /> names.</summary>
+    private static void MarkEveryRecognisedCallWithin(SyntaxNode? node, SemanticModel model, IMethodSymbol method, GuardReading reading) {
+        if (node is null) { return; }
+
+        foreach (InvocationExpressionSyntax invocation in node.DescendantNodesAndSelf().OfType<InvocationExpressionSyntax>()) {
+            if (!LibraryGuards.Recognises(invocation, model)) { continue; }
+
+            foreach (IParameterSymbol parameter in Mentioned(invocation, model, method)) { reading.MarkUnread(parameter.Name); }
+        }
     }
 
     /// <summary>

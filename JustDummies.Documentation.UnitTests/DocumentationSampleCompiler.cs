@@ -21,7 +21,7 @@ namespace JustDummies.Documentation.UnitTests;
 ///     </para>
 ///     <para>
 ///         This assembly is referenced as well, for the one thing a page is allowed to assume: the illustrative domain
-///         in <see cref="Fixtures" /> (<c>OrderReference</c>, <c>Money</c>, <c>Customer</c>, <c>OrderStatus</c>,
+///         in <see cref="Fixtures" /> (<c>OrderReference</c>, <c>Money</c>, <c>Customer</c>, <c>Order</c>, <c>OrderStatus</c>,
 ///         <c>Permissions</c>). Every other symbol a sample names has to come from the packages.
 ///     </para>
 /// </remarks>

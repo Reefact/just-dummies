@@ -111,6 +111,40 @@ public sealed record Money {
 public sealed record Customer(Guid Id, string Name, string Email);
 
 /// <summary>
+///     An aggregate carrying both kinds of construction argument at once, so a page can show the difference in a
+///     single call: a reference and a customer name the discount rule never consults — the dummies — beside an amount
+///     it is entirely about, which therefore stays a literal.
+/// </summary>
+public sealed class Order {
+
+    /// <summary>Builds an order at its undiscounted amount.</summary>
+    /// <exception cref="ArgumentNullException">The reference or the customer name is <see langword="null" />.</exception>
+    public Order(string reference, string customerName, decimal amount) {
+        ArgumentNullException.ThrowIfNull(reference);
+        ArgumentNullException.ThrowIfNull(customerName);
+
+        Reference    = reference;
+        CustomerName = customerName;
+        Total        = amount;
+    }
+
+    /// <summary>The order's reference.</summary>
+    public string Reference { get; }
+
+    /// <summary>The name the order was placed under.</summary>
+    public string CustomerName { get; }
+
+    /// <summary>The amount currently owed, after whatever discounts have been applied.</summary>
+    public decimal Total { get; private set; }
+
+    /// <summary>Takes a percentage off the total.</summary>
+    public void ApplyDiscount(int percentage) {
+        Total -= Total * percentage / 100m;
+    }
+
+}
+
+/// <summary>
 ///     A rule with a threshold in it, so a page can show the difference between constraining a dummy to the shape of
 ///     an assertion — which proves nothing — and constraining it to the domain and letting the assertion carry the
 ///     rule.

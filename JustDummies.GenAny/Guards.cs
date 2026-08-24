@@ -6,6 +6,7 @@ using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Operations;
 
 namespace JustDummies.GenAny;
 
@@ -207,38 +208,38 @@ internal static class Guards {
             return delegatedReading ??= readDelegated(delegatedTo);
         }
 
+        // A call that fills a `params` target in expanded form hands over ELEMENTS, so no argument of it maps
+        // to the parameter a guard would be about. Asked once for the whole call rather than per argument.
+        bool expanded = FillsAnExpandedParams(argumentList.Parent!, model);
+
         for (int index = 0; index < arguments.Count; index++) {
             ArgumentSyntax argument = arguments[index];
 
-            if (HandedFrom(argument, model, method) is not { } handedFrom) { continue; }
+            IParameterSymbol? handedTo = HandedTo(argument, index, delegatedTo);
 
-            // Which parameter the argument fills could not be told — an expanded `params` call is the shape
-            // that does it, where a positional match would attribute a guard about the whole array to one
-            // element of it. The hop is real and now unread, so the doubt is the answer (ADR-0083).
-            if (HandedTo(argument, index, delegatedTo) is not { } handedTo) {
-                reading.MarkUnread(handedFrom.Name);
-
-                continue;
-            }
-
-            // A parameter rewritten before the handoff carries a value this generator never draws, so the
-            // delegated guards are about something else and must not fold. Declining is right; declining in
-            // SILENCE is what was wrong — but only where there was something to lose, since marking a
-            // hand-off the delegated constructor says nothing about would refuse a shape that is perfectly
-            // readable.
-            if (writtenBeforeHandoff(handedFrom)) {
-                if (Delegated().Unread(handedTo.Name) || Delegated().For(handedTo.Name).Count > 0) {
-                    reading.MarkUnread(handedFrom.Name);
-                }
+            // Not this method's parameter handed over bare. It may still COMPUTE from one — `value + 1`,
+            // `value.Trim()` — and then a real conjunct is lost across arithmetic the engine cannot follow.
+            // That is the fold's fourth decline, and the one that used to be silent.
+            if (HandedFrom(argument, model, method) is not { } handedFrom) {
+                MarkComputedHandoff(argument, model, method, handedTo, reading, Delegated);
 
                 continue;
             }
 
-            // Doubt travels with the constraints, and this is the half the first draft left behind: a guard
-            // the delegated constructor could not read is a guard over THIS parameter too. Folding only the
-            // half that resolved turned a body that earns a sentinel when read directly into one that
-            // reports `guard`, requiresVerification false, over a domain that rejects the draw.
-            if (Delegated().Unread(handedTo.Name)) { reading.MarkUnread(handedFrom.Name); }
+            // Declining is right wherever the value that reaches the delegated constructor is not the one
+            // this generator draws, or wherever the engine cannot tell. Declining in SILENCE is what was
+            // wrong: the mark goes on exactly when something is lost by the decline, and stays off when
+            // nothing is — marking a hand-off the delegated constructor is silent about would refuse shapes
+            // that read perfectly, which is the mirror defect.
+            if (Declines(expanded, handedTo, writtenBeforeHandoff(handedFrom), Delegated())) {
+                if (handedTo is null || SaysSomethingAbout(Delegated(), handedTo)) { reading.MarkUnread(handedFrom.Name); }
+
+                continue;
+            }
+
+            // Doubt travels with the constraints: a guard the delegated constructor could not read is a
+            // guard over THIS parameter too.
+            if (Delegated().Unread(handedTo!.Name)) { reading.MarkUnread(handedFrom.Name); }
 
             foreach (GuardConstraint constraint in Delegated().For(handedTo.Name)) {
                 reading.Add(handedFrom.Name, constraint);
@@ -253,10 +254,74 @@ internal static class Guards {
     /// </summary>
     private static IParameterSymbol? HandedFrom(ArgumentSyntax argument, SemanticModel model, IMethodSymbol method) {
         if (!argument.RefKindKeyword.IsKind(SyntaxKind.None)) { return null; }
-        if (argument.Expression is not IdentifierNameSyntax identifier) { return null; }
+        if (Unsuppressed(argument.Expression) is not IdentifierNameSyntax identifier) { return null; }
         if (model.GetSymbolInfo(identifier).Symbol is not IParameterSymbol parameter) { return null; }
 
         return method.Parameters.Contains(parameter, SymbolEqualityComparer.Default) ? parameter : null;
+    }
+
+    /// <summary>
+    ///     Whether the fold must decline this hand-off — the four shapes where the value the delegated
+    ///     constructor guards is not the one this generator draws, or where the engine cannot tell.
+    /// </summary>
+    /// <remarks>
+    ///     In order: the call fills a <c>params</c> target one element at a time, so a guard about the array
+    ///     is not about the argument; the target parameter could not be told at all; a leading statement
+    ///     rewrites the parameter before the hand-off; and the delegated reading has no source, which is a
+    ///     third state — not "no guards" and not "unread guards", but "there was nothing here to read". That
+    ///     last one is the channel the first fix left behind, and the cycle guard's own return arrives on it.
+    /// </remarks>
+    private static bool Declines(bool expanded, IParameterSymbol? handedTo, bool rewritten, GuardReading delegated) {
+        return expanded || handedTo is null || rewritten || !delegated.SourceAvailable;
+    }
+
+    /// <summary>
+    ///     Marks every parameter a declined argument computes from, where the delegated constructor had
+    ///     something to say about the position that argument fills.
+    /// </summary>
+    /// <remarks>
+    ///     A literal or another local mentions no parameter of ours and is declined in silence, which is
+    ///     right: the delegated guard over that position says nothing about anything this generator draws.
+    /// </remarks>
+    private static void MarkComputedHandoff(ArgumentSyntax argument,
+                                            SemanticModel model,
+                                            IMethodSymbol method,
+                                            IParameterSymbol? handedTo,
+                                            GuardReading reading,
+                                            Func<GuardReading> delegated) {
+        if (handedTo is null || !SaysSomethingAbout(delegated(), handedTo)) { return; }
+
+        foreach (IParameterSymbol mentioned in Mentioned(argument.Expression, model, method)) {
+            reading.MarkUnread(mentioned.Name);
+        }
+    }
+
+    /// <summary>
+    ///     Whether the delegated reading has anything to say about <paramref name="target" /> — a constraint,
+    ///     a mark, or the fact that its own source could not be read at all.
+    /// </summary>
+    /// <remarks>
+    ///     Asked wherever the fold DECLINES, so that a decline speaks exactly when something is lost by it
+    ///     and stays quiet when nothing is. Marking a hand-off the delegated constructor is silent about
+    ///     would refuse shapes that read perfectly, which is the mirror defect and costs real coverage.
+    /// </remarks>
+    private static bool SaysSomethingAbout(GuardReading delegated, IParameterSymbol target) {
+        return !delegated.SourceAvailable || delegated.Unread(target.Name) || delegated.For(target.Name).Count > 0;
+    }
+
+    /// <summary>
+    ///     The expression with a null-forgiving <c>!</c> stripped — <c>value!</c> hands over the value
+    ///     <c>value</c> holds, since the operator is a compile-time annotation with no run-time effect.
+    /// </summary>
+    /// <remarks>
+    ///     A cast is deliberately NOT unwrapped here even though it looks similar: <c>(byte)value</c> hands
+    ///     over a different number, and folding a guard across it would state an invariant of a value the
+    ///     generator never draws.
+    /// </remarks>
+    private static ExpressionSyntax Unsuppressed(ExpressionSyntax expression) {
+        return expression is PostfixUnaryExpressionSyntax { RawKind: (int)SyntaxKind.SuppressNullableWarningExpression } suppressed
+                   ? suppressed.Operand
+                   : expression;
     }
 
     /// <summary>The delegated constructor's own parameter <paramref name="argument" /> fills.</summary>
@@ -269,14 +334,32 @@ internal static class Guards {
 
         if (index >= delegatedTo.Parameters.Length) { return null; }
 
-        IParameterSymbol positional = delegatedTo.Parameters[index];
+        return delegatedTo.Parameters[index];
+    }
 
-        // A `params` target is declined rather than matched. In expanded form the argument fills one ELEMENT
-        // of the array, so a guard about the array — its length, its contents — is not about the value handed
-        // in, and a positional match states an invariant of the wrong thing. Normal form would be safe, but
-        // telling the two apart is a question about the call rather than about the syntax reach this walk
-        // answers (ADR-0084), so the whole row is bounded out and the caller marks it.
-        return positional.IsParams ? null : positional;
+    /// <summary>
+    ///     Whether the call fills a <c>params</c> target in its EXPANDED form, where the argument is one
+    ///     element of the array rather than the array itself.
+    /// </summary>
+    /// <remarks>
+    ///     A guard about the array — its length, its contents — is not about a single element handed in, so
+    ///     an expanded call must not fold. Normal form must still fold: measured, refusing it costs a guard
+    ///     the engine reads correctly about exactly the value the generator draws. The compiler already
+    ///     decided which form this is and says so on the bound operation, so nothing here re-derives it —
+    ///     and asking the semantic model how a call bound is not the control-flow graph ADR-0084 rules out.
+    /// </remarks>
+    private static bool FillsAnExpandedParams(SyntaxNode call, SemanticModel model) {
+        return model.GetOperation(call) is IInvocationOperation or IObjectCreationOperation
+            && model.GetOperation(call) is { } operation
+            && Arguments(operation).Any(argument => argument.ArgumentKind == ArgumentKind.ParamArray);
+    }
+
+    private static IEnumerable<IArgumentOperation> Arguments(IOperation operation) {
+        return operation switch {
+            IInvocationOperation invocation   => invocation.Arguments,
+            IObjectCreationOperation creation => creation.Arguments,
+            _                                 => Enumerable.Empty<IArgumentOperation>()
+        };
     }
 
     /// <summary>

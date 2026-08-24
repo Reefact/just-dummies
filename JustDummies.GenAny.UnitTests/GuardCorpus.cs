@@ -740,7 +740,7 @@ internal static class GuardCorpus {
                                                                                         return new Offset(value + 1);
                                                                                     }
                                                                                 }
-                                                                                """, defect: "the fold's fourth decline, a computed argument, is still silent"),
+                                                                                """, requiresVerification: true),
 
 
         new GuardedShape("delegated-ctor-without-a-body-says-nothing", "Marker", """
@@ -752,7 +752,7 @@ internal static class GuardCorpus {
 
                                                                                         public Marker(int value, bool _) : this(value) { }
                                                                                     }
-                                                                                    """, defect: "a delegated reading with no source folds as a body read clean")
+                                                                                    """, requiresVerification: true)
     ];
 
     /// <summary>The shape names, as the theory rows carry them.</summary>

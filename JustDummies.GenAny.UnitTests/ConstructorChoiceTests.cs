@@ -278,6 +278,89 @@ public sealed class ConstructorChoiceTests {
     }
 
     /// <summary>
+    ///     A <c>params</c> hand-off reads in NORMAL form and is refused in EXPANDED form, and the two are
+    ///     told apart by how the compiler bound the call rather than by guesswork.
+    /// </summary>
+    /// <remarks>
+    ///     Pinned as a pair, because the first attempt at this refused both: an expanded call fills one
+    ///     ELEMENT of the array, so a guard about the array's length is not about the argument, while a
+    ///     normal-form call hands over the array itself and the guard is exactly about it. Measured, refusing
+    ///     both cost a guard the engine reads correctly about the value the generator actually draws.
+    /// </remarks>
+    [Fact(DisplayName = "A params hand-off reads in normal form and is refused in expanded form.")]
+    public void AParamsHandoffReadsInNormalFormOnly() {
+        ScaffoldedParameter normal = Subject.Scaffold("""
+                                                      public sealed class Subject {
+
+                                                          private readonly string[] kept;
+
+                                                          private Subject(params string[] names) {
+                                                              if (names.Length < 4) { throw new ArgumentException("few", nameof(names)); }
+
+                                                              kept = names;
+                                                          }
+
+                                                          public static Subject Of(string[] names) {
+                                                              return new Subject(names);
+                                                          }
+                                                      }
+                                                      """).Plan!.Parameters.Single();
+
+        Check.That(normal.Expression).IsEqualTo("Any.ArrayOf(Any.String().NonEmpty()).WithMinCount(4)");
+        Check.That(normal.RequiresVerification).IsFalse();
+
+        ScaffoldedParameter expanded = Subject.Scaffold("""
+                                                        public sealed class Subject {
+
+                                                            private readonly string[] kept;
+
+                                                            private Subject(params string[] names) {
+                                                                if (names.Length < 4) { throw new ArgumentException("few", nameof(names)); }
+
+                                                                kept = names;
+                                                            }
+
+                                                            public static Subject Of(string name) {
+                                                                return new Subject(name);
+                                                            }
+                                                        }
+                                                        """).Plan!.Parameters.Single();
+
+        Check.That(expanded.Provenance.HasFlag(Provenance.UnreadGuards)).IsTrue();
+        Check.That(expanded.RequiresVerification).IsTrue();
+    }
+
+    /// <summary>
+    ///     A null-forgiving hand-off carries the same value, so the delegated guard folds through it.
+    /// </summary>
+    /// <remarks>
+    ///     <c>!</c> is a compile-time annotation with no run-time effect, so <c>this(value!, false)</c> hands
+    ///     over exactly what <c>value</c> holds. A cast is deliberately not unwrapped the same way: it can
+    ///     hand over a different number.
+    /// </remarks>
+    [Fact(DisplayName = "A null-forgiving hand-off folds the delegated guard rather than losing it.")]
+    public void ANullForgivingHandoffFolds() {
+        ScaffoldedParameter parameter = Subject.Scaffold("""
+                                                         public sealed class Subject {
+
+                                                             private readonly string value;
+
+                                                             private Subject(string value, bool _) {
+                                                                 if (value.Length < 8) { throw new ArgumentException(nameof(value)); }
+
+                                                                 this.value = value;
+                                                             }
+
+                                                             public Subject(string? value) : this(value!, false) { }
+
+                                                         }
+                                                         """).Plan!.Parameters.Single();
+
+        Check.That(parameter.Expression).IsEqualTo("Any.String().WithMinLength(8)");
+        Check.That(parameter.RequiresVerification).IsFalse();
+    }
+
+    /// <summary>
     ///     An initializer that delegates to its own constructor is read once and abandoned, rather than
     ///     followed forever.
     /// </summary>

@@ -827,7 +827,7 @@ internal static class GuardCorpus {
 
                                                                                  public string Value { get; }
                                                                              }
-                                                                             """, defect: "an emptiness check is recognised without asking whether its argument is the parameter")
+                                                                             """, requiresVerification: true)
 
     ];
 

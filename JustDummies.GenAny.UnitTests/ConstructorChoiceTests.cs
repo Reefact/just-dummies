@@ -205,6 +205,71 @@ public sealed class ConstructorChoiceTests {
     }
 
     /// <summary>
+    ///     The private constructor a factory delegates to can carry a guard the factory's own body does
+    ///     not restate — here, a floor the factory's <c>IsNullOrWhiteSpace</c> check does not cover — and it
+    ///     folds onto the factory's own parameter exactly as a second guard in the same body already would.
+    /// </summary>
+    [Fact(DisplayName = "The guards of the constructor a factory delegates to fold onto its own parameter.")]
+    public void TheGuardsOfTheConstructorAFactoryDelegatesToFoldOntoItsOwnParameter() {
+        ScaffoldOutcome outcome = Subject.Scaffold("""
+                                                   public sealed class Subject {
+
+                                                       private readonly string value;
+
+                                                       private Subject(string value) {
+                                                           if (value.Length < 8) { throw new ArgumentException("too short", nameof(value)); }
+
+                                                           this.value = value;
+                                                       }
+
+                                                       public static Subject Create(string value) {
+                                                           if (string.IsNullOrWhiteSpace(value)) { throw new ArgumentException("blank", nameof(value)); }
+
+                                                           return new Subject(value);
+                                                       }
+
+                                                   }
+                                                   """);
+
+        ScaffoldPlan plan = outcome.Plan!;
+
+        Check.That(plan.Factory).IsEqualTo("Subject.Create");
+        Check.That(plan.Parameters.Single().Expression).IsEqualTo("Any.String().WithMinLength(8)");
+        Check.That(plan.Parameters.Single().Provenance.HasFlag(Provenance.UnreadGuards)).IsFalse();
+    }
+
+    /// <summary>
+    ///     A computed argument hands the delegated constructor a value the factory's own parameter never
+    ///     draws, so its guard is never folded — the same subject-identity discipline every row of §5.3
+    ///     already keeps, applied one hop into the constructor a factory delegates to.
+    /// </summary>
+    [Fact(DisplayName = "A computed argument to the delegated constructor does not fold its guard.")]
+    public void AComputedArgumentToTheDelegatedConstructorDoesNotFoldItsGuard() {
+        ScaffoldOutcome outcome = Subject.Scaffold("""
+                                                   public sealed class Subject {
+
+                                                       private readonly int value;
+
+                                                       private Subject(int value) {
+                                                           if (value <= 0) { throw new ArgumentOutOfRangeException(nameof(value)); }
+
+                                                           this.value = value;
+                                                       }
+
+                                                       public static Subject Create(int value) {
+                                                           return new Subject(value + 1);
+                                                       }
+
+                                                   }
+                                                   """);
+
+        ScaffoldedParameter parameter = outcome.Plan!.Parameters.Single();
+
+        Check.That(parameter.Expression).IsEqualTo("Any.Int32()");
+        Check.That(parameter.Provenance.HasFlag(Provenance.Guard)).IsFalse();
+    }
+
+    /// <summary>
     ///     <c>CS0144</c> is about <c>new</c>, which a factory call site never writes — so the abstract refusal
     ///     of §5.1.6 does not reach a type built through its own factory.
     /// </summary>

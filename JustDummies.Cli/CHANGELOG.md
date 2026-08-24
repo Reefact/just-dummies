@@ -54,6 +54,13 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   a bare, unmodified argument — the same value there as here — folds the delegated constructor's own
   guard in, exactly as a second guard in the same body already does.
 
+- **A factory that constructs and returns through a guarded private constructor
+  (`return new Coupon(number);`) now folds that constructor's guard onto the factory's own
+  parameter, on the target path and the composed path alike.** The same shape as the initializer
+  fix above, one hop later in the call graph: only a bare, unmodified argument folds a guard in, and
+  a parameter a leading statement writes before reaching the `return` is excluded exactly as
+  `ParameterWrites.Precede` already excludes it from every other guard.
+
 ## [1.1.0-beta.3] - 2026-08-24
 
 ### Added

@@ -95,6 +95,36 @@ public sealed class CompositionTests {
     }
 
     /// <summary>
+    ///     A factory that constructs through a guarded private constructor — <c>return new
+    ///     Coupon(number);</c> — hands the factory's own parameter to that constructor unchanged, so the
+    ///     constructor's guard tightens the composed parameter exactly as the factory's own guard would.
+    /// </summary>
+    [Fact(DisplayName = "A factory composed over a guarded private constructor folds its guard too.")]
+    public void AFactoryComposedOverAGuardedPrivateConstructorFoldsItsGuardToo() {
+        ScaffoldedParameter parameter = Composed("""
+                                                 public sealed class Coupon {
+
+                                                     private readonly int number;
+
+                                                     private Coupon(int number) {
+                                                         if (number <= 0) { throw new ArgumentOutOfRangeException(nameof(number)); }
+
+                                                         this.number = number;
+                                                     }
+
+                                                     public static Coupon Create(int number) { return new Coupon(number); }
+
+                                                 }
+                                                 """,
+                                                 "Coupon");
+
+        Check.That(parameter.Expression).IsEqualTo("Any.Int32().Positive().As(Coupon.Create)");
+        Check.That(parameter.Provenance.HasFlag(Provenance.Factory)).IsTrue();
+        Check.That(parameter.Provenance.HasFlag(Provenance.Guard)).IsTrue();
+        Check.That(parameter.Provenance.HasFlag(Provenance.UnreadGuards)).IsFalse();
+    }
+
+    /// <summary>
     ///     The reported case, pinned: a bounded reference, spelled as the interval it is and nothing more.
     /// </summary>
     /// <remarks>

@@ -475,7 +475,7 @@ internal static class GuardCorpus {
                                                                             public sealed class Holder {
                                                                                 public Holder(Coupon coupon) { }
                                                                             }
-                                                                            """, defect: "a factory composed over a guarded private constructor loses every guard, reported as guard", requiresVerification: true),
+                                                                            """),
 
 
         // ---- Finding 6a. ADR-0086's carve-out for a returning guard-library helper reaches
@@ -610,7 +610,7 @@ internal static class GuardCorpus {
                                                                                      return new Reference(value);
                                                                                  }
                                                                              }
-                                                                             """, defect: "the guards of a constructor a recognised factory delegates to are neither read nor marked", requiresVerification: true),
+                                                                             """),
 
 
         // ---- Finding 11. Read correctly, about the wrong value — `Guards.cs`'s own remarks name this class

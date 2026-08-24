@@ -165,10 +165,30 @@ public sealed class AnyEnumCombinationTests {
         Permissions[] everything = Enumerable.Range(0, 8).Select(bits => (Permissions)bits).ToArray();
 
         ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.Enum<Permissions>().AllowingCombinations().Except(everything));
+            () => Any.Enum<Permissions>().AllowingCombinations().Except(everything).Generate());
 
         Check.That(conflict.Message).Contains("Except(");
         Check.That(conflict.Message).Contains("Permissions");
+    }
+
+    [Fact(DisplayName = "AllowingCombinations: it widens the universe wherever in the chain it was declared.")]
+    public void AllowingCombinationsIsHonouredWhereverItWasDeclared() {
+        // Excluding both declared members of a two-member flags enum empties the DECLARED universe, but the
+        // combination Left | Write is still there to draw once combinations are allowed. Declared after the
+        // exclusion it used to arrive too late, so the same two constraints were refused in one order and honoured
+        // in the other.
+        Check.That(Any.Enum<Sides>().Except(Sides.Left, Sides.Right).AllowingCombinations().Generate()).IsEqualTo(Sides.Left | Sides.Right);
+        Check.That(Any.Enum<Sides>().AllowingCombinations().Except(Sides.Left, Sides.Right).Generate()).IsEqualTo(Sides.Left | Sides.Right);
+    }
+
+    [Fact(DisplayName = "Excluding every declared member is still refused when no combination is allowed to rescue it.")]
+    public void ExcludingEveryDeclaredMemberWithoutCombinationsIsStillRefused() {
+        // The other side of the same guard: giving the widening constraint its chance must not relax the refusal
+        // when the caller never wrote it. The message is the one it always was.
+        ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
+            () => Any.Enum<Sides>().Except(Sides.Left, Sides.Right).Generate());
+
+        Check.That(conflict.Message).IsEqualTo("Cannot apply Except(Left, Right) because it forbids every declared Sides member.");
     }
 
     [Fact(DisplayName = "AllowingCombinations: an enum with too many members to enumerate is refused, naming the ceiling.")]

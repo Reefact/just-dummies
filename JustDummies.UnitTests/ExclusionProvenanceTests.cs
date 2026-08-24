@@ -44,7 +44,8 @@ public sealed class ExclusionProvenanceTests {
         ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
             () => Any.Enum<OrderStatus>()
                      .OneOf(OrderStatus.Draft, OrderStatus.Validated)
-                     .Except(OrderStatus.Draft, OrderStatus.Validated));
+                     .Except(OrderStatus.Draft, OrderStatus.Validated)
+                     .Generate());
 
         // "it", not "Except(...)": the culprit IS the constraint being applied, and the sentence already names it
         // before the "because".
@@ -59,7 +60,8 @@ public sealed class ExclusionProvenanceTests {
         ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
             () => Any.Enum<OrderStatus>()
                      .Except(OrderStatus.Draft, OrderStatus.Validated)
-                     .OneOf(OrderStatus.Draft, OrderStatus.Validated));
+                     .OneOf(OrderStatus.Draft, OrderStatus.Validated)
+                     .Generate());
 
         // Here the culprit is NOT the constraint being applied, so it is named in full rather than as "it".
         Check.That(conflict.Message).Contains("Except(");
@@ -72,7 +74,8 @@ public sealed class ExclusionProvenanceTests {
             () => Any.Enum<OrderStatus>()
                      .Except(OrderStatus.Draft)
                      .DifferentFrom(OrderStatus.Validated)
-                     .Except(OrderStatus.Cancelled));
+                     .Except(OrderStatus.Cancelled)
+                     .Generate());
 
         Check.That(conflict.Message).Contains("Except(");
         Check.That(conflict.Message).Contains("DifferentFrom(");
@@ -85,7 +88,8 @@ public sealed class ExclusionProvenanceTests {
             () => Any.Enum<OrderStatus>()
                      .Except(OrderStatus.Cancelled)          // outside the allow-list below: never removed anything
                      .OneOf(OrderStatus.Draft)
-                     .Except(OrderStatus.Draft));            // this one is the whole cause
+                     .Except(OrderStatus.Draft)              // this one is the whole cause
+                     .Generate());
 
         Check.That(conflict.Message).DoesNotContain("Cancelled");
         Check.That(conflict.Message).Contains("it forbids every value OneOf(");
@@ -96,7 +100,8 @@ public sealed class ExclusionProvenanceTests {
         ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
             () => Any.Enum<Permissions>()
                      .AllowingCombinations()
-                     .Except(Permissions.Read, Permissions.Write, Permissions.Read | Permissions.Write));
+                     .Except(Permissions.Read, Permissions.Write, Permissions.Read | Permissions.Write)
+                     .Generate());
 
         Check.That(conflict.Message).Contains("it forbids every Permissions combination");
     }

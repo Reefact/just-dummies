@@ -113,21 +113,40 @@ Assert.Equal(0m, Shipping.FeeFor(orderTotal));
 Le test ne prouve plus rien sur le seuil — il prouve que le code est d'accord avec la contrainte que
 le test a lui-même inventée. Pire : le jour où le seuil passe à 200, ce test passe toujours.
 
-La version honnête contraint ce que le domaine dit réellement, et laisse l'assertion porter la
-règle :
+Le réflexe, à ce stade, est de relâcher la contrainte et de calculer l'attendu à partir de la valeur
+tirée. N'en faites rien : cela échoue de la même façon, et y ajoute un défaut propre.
 
 ```csharp
-// Le domaine dit qu'un total de commande est un montant positif ou nul. C'est tout ce qu'il dit.
+// Toujours faux, d'une manière qui a l'air soigneuse.
 decimal orderTotal = Any.Decimal().Between(0m, 10_000m).WithScale(2).Generate();
 
-decimal expected = orderTotal > 100m ? 0m : 4.90m;
+decimal expected = orderTotal > 100m ? 0m : 4.90m;   // la règle, recopiée dans le test
 
 Assert.Equal(expected, Shipping.FeeFor(orderTotal));
 ```
 
-Si l'on ne parvient pas à écrire le test sans contraindre le dummy à la forme de l'assertion, c'est
-généralement qu'il faut deux tests — un de chaque côté de la frontière — avec la frontière écrite
-explicitement.
+Ce test affirme que `Shipping.FeeFor` est d'accord avec une seconde copie de `Shipping.FeeFor`
+écrite dans le corps du test : lui aussi survit donc au passage du seuil à 200. Et `orderTotal`
+n'a jamais été un dummy : les frais sont exactement ce qu'il décide, ce qui en fait une donnée
+qui intervient dans ce que le test vérifie.
+
+La version honnête écrit le seuil noir sur blanc, des deux côtés :
+
+```csharp
+// Le seuil est ce dont ces tests parlent : il est donc épelé plutôt que tiré.
+Assert.Equal(0m,    Shipping.FeeFor(150m));   // au-dessus : offerts
+Assert.Equal(4.90m, Shipping.FeeFor(50m));    // en dessous : facturés
+```
+
+Remarquez ce qui *ne figure pas* dans cet exemple : un dummy. Ce test n'en a aucun, et n'en a pas
+besoin — chaque valeur qu'il manipule est une valeur dont il parle. Un dummy apparaîtrait dès lors
+qu'il faudrait calculer les frais pour une commande entière, dont la règle ne consulte ni la
+référence ni le client. **Prenez un dummy quand une valeur doit être là et ne doit pas compter ;
+quand la valeur est le sujet, écrivez-la en littéral.**
+
+Deux tests plutôt qu'un, c'est la forme à attendre ici : si vous ne pouvez pas exprimer le test sans
+contraindre la valeur tirée à la forme de l'assertion, c'est que cette valeur n'est pas un dummy, et
+ce qu'il vous faut est un littéral de chaque côté de la frontière.
 
 ## Les valeurs sont construites, pas filtrées
 

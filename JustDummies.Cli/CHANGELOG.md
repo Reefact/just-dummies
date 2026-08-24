@@ -103,6 +103,15 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   to expose a same-named member too: a wrong bound on the wrong generator, reported with the same
   confidence as a correct one. A string or a recognised collection is unaffected.
 
+- **A guard a jump written beside it can skip is now marked `unread guards` one nesting level down,
+  not only at the top of the body.** Whether a statement above a guard can send execution past it
+  was asked of the constructor's own leading statements alone; inside a `using`, a `lock` or a
+  `checked` block — constructs that only scope the body they wrap, so the walk reads through them —
+  the same `return` beside the same guard was neither a leading statement nor an ancestor of the
+  guard, and no question saw it. `lock (this) { if (lenient) { … return; } ThrowIfLessThan(value,
+  50); }` was measured reading that floor as certain, and the real ceiling read above the `lock`
+  was lost with it. A jump written *below* a guard still cannot skip it, at either level.
+
 ## [1.1.0-beta.3] - 2026-08-24
 
 ### Added

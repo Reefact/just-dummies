@@ -19,10 +19,15 @@ An unconstrained draw yields **0 to 1024 characters drawn from the whole of ASCI
 characters, tabs and newlines included — so it can be empty, long, and full of things your code may
 not like.
 
-**That is the point, and it is deliberate.** A dummy is a value the code under test had no say in;
-restricting it in advance to short, tame text removes exactly the evidence the draw exists to
-produce. A test that passes with one of these has shown something. A test that passes with `abc123`
-has shown nothing about what happens at 300 characters, or when a `\r` arrives.
+**That is the point, and it is deliberate.** A dummy is a value your test does not care about — and
+the draw is there to put that indifference to the test, on code that may not share it. Restricting
+the value in advance to short, tame text removes exactly the evidence the draw exists to produce. A
+test that passes with one of these has shown something. A test that passes with `abc123` has shown
+nothing about what happens at 300 characters, or when a `\r` arrives.
+
+Note which way that argument runs: the draw is wide because *your code* might wrongly care, never
+because the *test* does. The moment the test cares which string came back, the value has stopped
+being a dummy — see [Getting started](../guides/getting-started.en.md#where-the-line-runs).
 
 So constrain it — with the invariants your code actually has:
 

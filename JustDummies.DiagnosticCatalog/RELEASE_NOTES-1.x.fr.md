@@ -2,6 +2,16 @@
 
 Ce qui a changé pour vous, version par version, sur le train `catalog`. La version d'un catalogue lui est propre — elle ne décrit pas `JustDummies` au même numéro. Pour le registre technique complet, voir [CHANGELOG.md](https://github.com/Reefact/just-dummies/blob/main/JustDummies.DiagnosticCatalog/CHANGELOG.md).
 
+## 1.0.0-preview.4 — 24 août 2026
+
+_Le catalogue rattrape le jeu de règles que `JustDummies 1.0.0-preview.3` a livré : trois règles rejoignent les constantes, `JD031`, `JD032` et `JD033`._
+
+### ✨ Nouveautés
+
+- **`JustDummiesRule.JD031`** — *Deux bornes inclusives que la bibliothèque nomme aussi comme un seul intervalle*, catégorie `JustDummies.Constraints`.
+- **`JustDummiesRule.JD032`** — *Une borne déclarée deux fois, dont seule la plus serrée survit*, catégorie `JustDummies.Constraints`.
+- **`JustDummiesRule.JD033`** — *Un littéral ancré que les caractères déclarés ne peuvent pas tirer*, catégorie `JustDummies.Constraints`.
+
 ## 1.0.0-preview.3 — 18 août 2026
 
 _Le catalogue rattrape le jeu de règles que `JustDummies 1.0.0-preview.2` a livré : deux règles rejoignent les constantes, `JD029` et `JD030`._

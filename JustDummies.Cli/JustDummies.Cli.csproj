@@ -21,8 +21,8 @@
     <ToolCommandName>dum</ToolCommandName>
 
     <!-- Version. A local/dev fallback only: the cli release train overrides it with -p:Version from the
-         Git tag (cli-v*, see tools/packaging/pack.sh). Nothing is ever published from this number — the
-         train's latest release is cli-v1.1.0-beta.1, and every release carries its tag's version. -->
+         Git tag (cli-v*, see tools/packaging/pack.sh). Nothing is ever published from this number — every
+         release carries its tag's version. -->
     <Version>0.1.0-dev</Version>
 
     <!-- NuGet identity -->

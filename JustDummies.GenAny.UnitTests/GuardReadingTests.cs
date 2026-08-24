@@ -616,6 +616,43 @@ public sealed class GuardReadingTests {
         Check.That(quantity.RequiresVerification).IsFalse();
     }
 
+    /// <summary>
+    ///     The statement that ends the scan is still asked whether it rejects, before it does — a `throw`
+    ///     carried inside the assignment's own right side is not the same silence as an ordinary one like
+    ///     <c>_name = value.Trim();</c>. Everything below still stays out of reach, exactly as
+    ///     <see cref="AnUnrecognisedAssignmentStillEndsTheScan" /> pins.
+    /// </summary>
+    [Fact(DisplayName = "A throw inside the ending assignment is marked before the scan ends.")]
+    public void AThrowInsideTheEndingAssignmentIsMarkedBeforeTheScanEnds() {
+        ScaffoldOutcome outcome = Subject.Scaffold("""
+                                                   public sealed class Subject {
+
+                                                       public string Code { get; }
+
+                                                       public int Uses { get; }
+
+                                                       public Subject(string code, int uses) {
+                                                           Code = code.Length switch {
+                                                               < 8  => throw new ArgumentException("Too short.", nameof(code)),
+                                                               > 20 => throw new ArgumentException("Too long.", nameof(code)),
+                                                               _    => code
+                                                           };
+
+                                                           if (uses < 1) { throw new ArgumentOutOfRangeException(nameof(uses)); }
+
+                                                           Uses = uses;
+                                                       }
+
+                                                   }
+                                                   """);
+
+        Check.That(outcome.Status).IsEqualTo(ScaffoldStatus.Scaffolded);
+
+        ScaffoldedParameter code = outcome.Plan!.Parameters[0];
+
+        Check.That(code.Provenance.HasFlag(Provenance.UnreadGuards)).IsTrue();
+    }
+
     /// <summary>One parameter of a <c>Subject</c> guarded through a library's own spelling, using and all.</summary>
     private static ScaffoldedParameter LibraryGuarded(string parameterType, string body, string usings) {
         ScaffoldOutcome outcome = Subject.Scaffold($$"""

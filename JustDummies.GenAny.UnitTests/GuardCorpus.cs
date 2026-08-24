@@ -395,7 +395,7 @@ internal static class GuardCorpus {
 
                                                                            public int Uses { get; }
                                                                        }
-                                                                       """, defect: "a throw inside the first assignment to state ends the scan before it is asked about", requiresVerification: true),
+                                                                       """, requiresVerification: true),
 
 
         // ---- Finding 3. `MarkIfValidatedElsewhere` matches an `ExpressionStatementSyntax` whose expression is

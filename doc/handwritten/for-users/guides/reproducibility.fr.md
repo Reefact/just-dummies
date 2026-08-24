@@ -116,11 +116,16 @@ Un corps `async` demande `ReproduciblyAsync`, et la tâche renvoyée **doit** ê
 
 ```csharp
 await Any.ReproduciblyAsync(async () => {
-    string reference = Any.String().StartingWith("ORD-").WithLength(12).Generate();
+    string anyReference = Any.String().StartingWith("ORD-").WithLength(12).Generate();
+    string anyCustomer  = Any.String().Alpha().WithLengthBetween(1, 50).Generate();
+
+    Order order = new Order(anyReference, anyCustomer, amount: 100m);
 
     await Task.Delay(1);
 
-    Assert.StartsWith("ORD-", reference);
+    order.ApplyDiscount(20);
+
+    Assert.Equal(80m, order.Total);
 });
 ```
 
@@ -137,9 +142,14 @@ Quand le code à épingler ne peut pas être enveloppé dans un délégué, ouvr
 
 ```csharp
 using (IDisposable scope = Any.UseSeed(1743029518)) {
-    int quantity = Any.Int32().Between(1, 100).Generate();
+    string anyReference = Any.String().StartingWith("ORD-").WithLength(12).Generate();
+    string anyCustomer  = Any.String().Alpha().WithLengthBetween(1, 50).Generate();
 
-    Assert.InRange(quantity, 1, 100);
+    Order order = new Order(anyReference, anyCustomer, amount: 100m);
+
+    order.ApplyDiscount(20);
+
+    Assert.Equal(80m, order.Total);
 }
 ```
 

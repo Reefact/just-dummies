@@ -57,7 +57,7 @@ These rules front-load, to build time, the subset of the library's run-time cons
 | [JD014 RejectedConstantArgument](JD014.en.md) | 🟠 Warning | on | A constraint argument is a compile-time constant the generator's own guard refuses, so the call throws every time it runs. |
 | [JD015 StringConstraintsAdmitNoValue](JD015.en.md) | 🟠 Warning | on | An AnyString chain's constant constraints admit no value — anchored fragments that cannot fit the declared length, or a character constraint that admits none of a value set's values. |
 | [JD016 CollectionConstraintsAdmitNoValue](JD016.en.md) | 🟠 Warning | on | A collection chain's count constraints cannot all hold, or it asks for more distinct elements than its element generator can produce. |
-| [JD017 EnumUniverseViolation](JD017.en.md) | 🟠 Warning | on | An enum constraint steps outside the declared members — a flag combination without AllowingCombinations(), or an exclusion that empties the universe. |
+| [JD017 EnumUniverseViolation](JD017.en.md) | 🟠 Warning | on | An enum constraint names a value the type does not define — an undeclared numeric value, or an exclusion that empties the universe. |
 | [JD023 ScalarChainAdmitsNoValue](JD023.en.md) | 🟠 Warning | on | An integer chain's constant constraints narrow the domain to nothing — bounds, lattice or allow-list. |
 | [JD024 ConstraintWithNoEffect](JD024.en.md) | 🔵 Info | on | A constraint narrows nothing: an exclusion of a value the domain could never produce, or a bound already implied. The only constraint family the run time never reports. |
 | [JD025 DuplicatePoolValue](JD025.en.md) | 🟠 Warning | on | The same constant is listed twice in a pool; duplicates collapse, so the pool is one value smaller than it reads and the duplicate weights nothing. |

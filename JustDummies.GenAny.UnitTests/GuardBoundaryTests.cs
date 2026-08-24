@@ -373,15 +373,15 @@ public sealed class GuardBoundaryTests {
     // normalises and guards nothing more reads exactly as it did before. This narrowing costs only the guards
     // that were being read wrong.
     [Theory(DisplayName = "A reassignment with no guard below it changes nothing.")]
-    [InlineData("        value = value.Trim();")]
+    [InlineData("        value = value.Trim();", "Any.String().NonEmpty()")]
     [InlineData("""
                         if (string.IsNullOrWhiteSpace(value)) { throw new ArgumentException(nameof(value)); }
                         value = value.Trim();
-                """)]
-    public void AReassignmentWithNoGuardBelowItChangesNothing(string body) {
+                """, "Any.String().NotBlank()")]
+    public void AReassignmentWithNoGuardBelowItChangesNothing(string body, string expected) {
         ScaffoldedParameter parameter = Subject.GuardedBy("string", body);
 
-        Check.That(parameter.Expression).IsEqualTo("Any.String().NonEmpty()");
+        Check.That(parameter.Expression).IsEqualTo(expected);
         Check.That(parameter.Provenance.HasFlag(Provenance.UnreadGuards)).IsFalse();
         Check.That(parameter.RequiresVerification).IsFalse();
     }

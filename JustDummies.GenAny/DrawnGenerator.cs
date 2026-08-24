@@ -48,7 +48,7 @@ internal sealed class DrawnGenerator {
     /// <remarks>
     ///     Carried here rather than baked into <see cref="Core" /> so a guard saying the same thing collapses
     ///     into it instead of colliding with it: a <c>string</c> row is already <c>.NonEmpty()</c>, and a
-    ///     constructor guarding on <c>IsNullOrWhiteSpace</c> must not turn that into a contradiction.
+    ///     constructor guarding on <c>IsNullOrEmpty</c> must not turn that into a contradiction.
     /// </remarks>
     internal IReadOnlyList<GuardConstraint> Seeded { get; }
 

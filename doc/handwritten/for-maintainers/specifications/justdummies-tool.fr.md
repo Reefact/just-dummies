@@ -706,7 +706,8 @@ L'ensemble reconnu est clos :
 | Condition qui lève | Contrainte ajoutée |
 |---|---|
 | `p is null`, `p == null` | aucune — le generator ne retourne jamais `null` de toute façon |
-| `string.IsNullOrEmpty(p)`, `string.IsNullOrWhiteSpace(p)`, `p.Length == 0`, `p.Length < 1` | `.NonEmpty()` |
+| `string.IsNullOrEmpty(p)`, `p.Length == 0`, `p.Length < 1` | `.NonEmpty()` |
+| `string.IsNullOrWhiteSpace(p)` | `.NotBlank()` |
 | `p.Length > N` | `.WithMaxLength(N)` |
 | `p.Length < N` | `.WithMinLength(N)` |
 | `p.Length != N` | `.WithLength(N)` |
@@ -720,9 +721,15 @@ L'ensemble reconnu est clos :
 | `!Enum.IsDefined(typeof(E), p)`, `!Enum.IsDefined(p)` | aucune — `Any.Enum<E>()` ne tire déjà que des membres déclarés, **là où `p` est de type `E`** |
 | `p == E.Member` | `.DifferentFrom(E.Member)`, **là où `p` est de type `E`** |
 
-`.NonEmpty()` couvre `IsNullOrWhiteSpace` aussi bien que `IsNullOrEmpty`, parce qu'un
-`Any.String()` non contraint ne tire que des lettres et chiffres ASCII : un tirage non vide ne peut
-jamais être blanc (§14.5).
+**`.NonEmpty()` ne couvre pas `IsNullOrWhiteSpace`, et les deux lignes sont délibérément séparées.**
+Il l'a couvert autrefois, sur la prémisse qu'un `Any.String()` non contraint ne tire que des lettres
+et chiffres ASCII, si bien qu'un tirage non vide ne peut jamais être blanc. ADR-0075 a falsifié cette
+prémisse — le remplissage est tout l'ASCII, blancs compris (§14.5) — et ADR-0076 a fait qu'un maximum
+déclaré pilote le tirage, si bien que sous un plafond court un tirage entièrement blanc est ordinaire
+plutôt qu'impossible. `.NotBlank()` énonce la garde exactement : au moins un caractère que
+`char.IsWhiteSpace` rejette, avec le même plancher d'un caractère (ADR-0088). À noter qu'il est plus
+large que la famille `Whitespaces`, qui est la paire lisible **à** laquelle un tirage peut être
+restreint plutôt que le test qu'une valeur doit passer.
 
 **Un signe s'écrit dans le membre que porte le generator propre au paramètre.** Le §14.3 donne aux
 familles non signées la surface signée *moins* `Positive` et `Negative` : écrire `.Positive()` pour
@@ -859,8 +866,9 @@ pas (§14.3) et est ignorée.
 
 La lecture des gardes est aussi ce qui rend correct plutôt que nominal le generator propre d'un
 value object, et c'est là qu'a été prise la mesure derrière cette section. `OrderReference.Create`
-garde sur `IsNullOrWhiteSpace`, donc `AnyOrderReference` tire `Any.String().NonEmpty()` — une chaîne
-qui fonctionne — au lieu de `Any.String()`, mesurée levant `AnyGenerationException` **594 fois sur
+garde sur `IsNullOrWhiteSpace`, donc `AnyOrderReference` tire `Any.String().NotBlank()` — une chaîne
+qui rejette la valeur tout-blanc que la garde rejette aussi — au lieu de `Any.String()`, mesurée
+levant `AnyGenerationException` **594 fois sur
 10 000 tirages**, et 557 lors d'une reprise indépendante — environ une fois sur dix-sept, ce que
 prédit un tirage non contraint sur les dix-sept longueurs de 0 à 16 (§17). La lecture a lieu une
 fois, pour le type qui déclare les gardes ; tout paramètre composant un `OrderReference` en hérite
@@ -913,7 +921,8 @@ de retourner leur entrée validée.
 **Les gardes que l'ensemble connaît déjà se lisent dans les deux orthographes.**
 `ArgumentNullException.ThrowIfNull(value)` et `if (value is null) { throw … }` énoncent un seul
 invariant, tout comme `ArgumentException.ThrowIfNullOrEmpty(value)` / `ThrowIfNullOrWhiteSpace(value)`
-et les conditions `string.IsNullOr…` ci-dessus. Seule l'orthographe ancienne était lue, si bien que
+— qui se lisent dans les deux mêmes lignes distinctes que leurs orthographes `if` — et les conditions
+`string.IsNullOr…` ci-dessus. Seule l'orthographe ancienne était lue, si bien que
 la moderne tombait sous la règle des appels et bloquait le build du développeur — au sujet d'une
 chaîne pourtant déjà exactement juste, puisqu'un contrôle de nullité n'ajoute rien (ADR-0064 ne tire
 jamais null) et qu'un contrôle de vacuité est le `NonEmpty` propre à la ligne. Lire une garde que
@@ -941,7 +950,8 @@ aides d'Ardalis retournent leur entrée inchangée. Les lignes retenues sont exa
 | Aide | Contrainte ajoutée |
 |---|---|
 | `Guard.Against.Null(p)` / `Guard.IsNotNull(p, …)` | aucune — le generator ne tire de toute façon jamais `null` |
-| `Guard.Against.NullOrEmpty(p)`, `NullOrWhiteSpace(p)` / `Guard.IsNotNullOrEmpty(p, …)`, `IsNotNullOrWhiteSpace(p, …)` | `.NonEmpty()` |
+| `Guard.Against.NullOrEmpty(p)` / `Guard.IsNotNullOrEmpty(p, …)` | `.NonEmpty()` |
+| `Guard.Against.NullOrWhiteSpace(p)` / `Guard.IsNotNullOrWhiteSpace(p, …)` | `.NotBlank()` |
 | `Guard.Against.Negative(p)` | `.GreaterThanOrEqualTo(0)` |
 | `Guard.Against.NegativeOrZero(p)` | `.Positive()` |
 | `Guard.Against.Zero(p)` | `.NonZero()` |

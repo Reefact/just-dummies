@@ -516,11 +516,12 @@ internal static class GuardCorpus {
                                                                           """, usings: "using Ardalis.GuardClauses;", requiresVerification: true),
 
 
-        // ---- Finding 7a. `LibraryGuards` folds `NullOrWhiteSpace` onto the same `.NonEmpty()` row as
+        // ---- Finding 7a. `LibraryGuards` folded `NullOrWhiteSpace` onto the same `.NonEmpty()` row as
         // ---- `NullOrEmpty` — a floor of one character, not a rejection of whitespace. The premise the fold
         // ---- rested on (an unconstrained `Any.String()` draws only ASCII letters and digits) was falsified by
         // ---- ADR-0075/0076 and never revisited; a short ceiling like this one's four-character cap makes an
-        // ---- all-whitespace draw likely rather than rare.
+        // ---- all-whitespace draw likely rather than rare. The row reads as `.NotBlank()` since ADR-0088,
+        // ---- so the shape holds outright rather than being marked.
 
         new GuardedShape("guard-library-whitespace-ardalis", "CouponCode", """
                                                                               public sealed class CouponCode {
@@ -533,12 +534,12 @@ internal static class GuardCorpus {
 
                                                                                   public string Value { get; }
                                                                               }
-                                                                              """, usings: "using Ardalis.GuardClauses;", requiresVerification: true),
+                                                                              """, usings: "using Ardalis.GuardClauses;"),
 
 
-        // ---- Finding 7b. The same fold, CommunityToolkit's spelling: `IsNotNullOrWhiteSpace` also reads as
+        // ---- Finding 7b. The same fold, CommunityToolkit's spelling: `IsNotNullOrWhiteSpace` also read as
         // ---- `.NonEmpty()`, which does not reject an all-whitespace draw under this domain's four-character
-        // ---- ceiling.
+        // ---- ceiling. Closed by the same member.
 
         new GuardedShape("guard-library-whitespace-toolkit", "Ticker", """
                                                                           public sealed class Ticker {
@@ -552,12 +553,11 @@ internal static class GuardCorpus {
                                                                                   this.symbol = symbol;
                                                                               }
                                                                           }
-                                                                          """, usings: "using CommunityToolkit.Diagnostics;", requiresVerification: true),
+                                                                          """, usings: "using CommunityToolkit.Diagnostics;"),
 
-        // ---- Finding 12. The same fold as 7a/7b, in the two spellings W3 did not touch: `Guards` keeps
-        // ---- `IsNullOrWhiteSpace` in the same `EmptinessChecks` table as `IsNullOrEmpty`, and
-        // ---- `ThrowIfNullOrWhiteSpace` in the same `EmptinessThrowHelpers` table as `ThrowIfNullOrEmpty`,
-        // ---- so both reach `Emptiness()` and read as `.NonEmpty()`. Six corpus rows already spell the BCL
+        // ---- Finding 12. The same fold as 7a/7b, in the two spellings the first fix did not touch: `Guards`
+        // ---- kept `IsNullOrWhiteSpace` in the same table as `IsNullOrEmpty`, and `ThrowIfNullOrWhiteSpace` in
+        // ---- the same table as `ThrowIfNullOrEmpty`, so both reached `Emptiness()` and read as `.NonEmpty()`. Six corpus rows already spell the BCL
         // ---- check and pass, because none of them caps the length: at the default 1024-character spread an
         // ---- all-whitespace draw is astronomically unlikely, and it is a short ceiling that makes it common.
 
@@ -573,7 +573,7 @@ internal static class GuardCorpus {
 
                                                                           public string Value { get; }
                                                                       }
-                                                                      """, defect: "the BCL spelling of the whitespace rejection still folds onto NonEmpty"),
+                                                                      """),
 
 
         new GuardedShape("guard-bcl-whitespace-throw-helper", "Handle", """
@@ -588,7 +588,7 @@ internal static class GuardCorpus {
                                                                                    this.name = name;
                                                                                }
                                                                            }
-                                                                           """, defect: "the BCL throw helper for whitespace still folds onto NonEmpty"),
+                                                                           """),
 
 
         // ---- Finding 10. §5.1's target-path rule reads the chosen `Create` factory's own body

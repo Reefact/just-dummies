@@ -50,11 +50,23 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   factory would refuse, drawn the same way on every call. It now reads the factory exactly as it
   already does for a `class` built the same way.
 
-- **`NullOrWhiteSpace` (Ardalis.GuardClauses) and `IsNotNullOrWhiteSpace` (CommunityToolkit.Diagnostics)
-  are marked `unread guards` rather than approximated as `.NonEmpty()`.** `.NonEmpty()` is a floor of
-  one character, not a rejection of whitespace, and no member either library carries states the
-  guard exactly — approximating it is what ADR-0086's own rule refuses. `NullOrEmpty` and
-  `IsNotNullOrEmpty`, which `.NonEmpty()` does state exactly, are unaffected.
+- **Every spelling of the whitespace rejection now reads as `.NotBlank()` instead of `.NonEmpty()`.**
+  `string.IsNullOrWhiteSpace(p)`, `ArgumentException.ThrowIfNullOrWhiteSpace(p)`,
+  `Guard.Against.NullOrWhiteSpace(p)` (Ardalis.GuardClauses) and `Guard.IsNotNullOrWhiteSpace(p, …)`
+  (CommunityToolkit.Diagnostics) all folded onto the same row as their `…OrEmpty` siblings — a floor
+  of one character, which an all-whitespace value satisfies and the guard rejects. The premise that
+  made the fold look safe, that an unconstrained `Any.String()` draws only letters and digits, was
+  falsified by ADR-0075 and never revisited: the filler is the whole of ASCII, and under the short
+  ceiling such a domain usually declares, an entirely blank draw is ordinary rather than rare. So a
+  scaffolded generator compiled, raised no rule, reported the parameter as inferred, and was rejected
+  by the constructor it was written for. `.NotBlank()` — new in the library, ADR-0088 — states the
+  guard exactly, so all four spellings are read rather than approximated or marked. It also survives
+  beside a tighter length: eight characters may every one be a space, so `.NotBlank().WithMinLength(8)`
+  keeps both. `NullOrEmpty`, `IsNotNullOrEmpty` and `ThrowIfNullOrEmpty`, which `.NonEmpty()` does
+  state exactly, are unaffected.
+
+  Note this needs the matching library release: a scaffolded file calling `.NotBlank()` compiles only
+  against a `JustDummies` that carries it.
 
 - **A guard reached through a null-conditional receiver (`policy?.Enforce(value);`) is now marked
   `unread guards` instead of passed over in silence.** The placement questions that decide whether a

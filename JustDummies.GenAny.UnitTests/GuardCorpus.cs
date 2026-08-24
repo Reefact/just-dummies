@@ -554,6 +554,42 @@ internal static class GuardCorpus {
                                                                           }
                                                                           """, usings: "using CommunityToolkit.Diagnostics;", requiresVerification: true),
 
+        // ---- Finding 12. The same fold as 7a/7b, in the two spellings W3 did not touch: `Guards` keeps
+        // ---- `IsNullOrWhiteSpace` in the same `EmptinessChecks` table as `IsNullOrEmpty`, and
+        // ---- `ThrowIfNullOrWhiteSpace` in the same `EmptinessThrowHelpers` table as `ThrowIfNullOrEmpty`,
+        // ---- so both reach `Emptiness()` and read as `.NonEmpty()`. Six corpus rows already spell the BCL
+        // ---- check and pass, because none of them caps the length: at the default 1024-character spread an
+        // ---- all-whitespace draw is astronomically unlikely, and it is a short ceiling that makes it common.
+
+        new GuardedShape("guard-bcl-whitespace-condition", "Slug", """
+                                                                      public sealed class Slug {
+
+                                                                          public Slug(string value) {
+                                                                              if (string.IsNullOrWhiteSpace(value)) { throw new ArgumentException("blank", nameof(value)); }
+                                                                              if (value.Length > 4) { throw new ArgumentException("too long", nameof(value)); }
+
+                                                                              Value = value;
+                                                                          }
+
+                                                                          public string Value { get; }
+                                                                      }
+                                                                      """, defect: "the BCL spelling of the whitespace rejection still folds onto NonEmpty"),
+
+
+        new GuardedShape("guard-bcl-whitespace-throw-helper", "Handle", """
+                                                                           public sealed class Handle {
+
+                                                                               private readonly string name;
+
+                                                                               public Handle(string name) {
+                                                                                   ArgumentException.ThrowIfNullOrWhiteSpace(name);
+                                                                                   if (name.Length > 4) { throw new ArgumentException("too long", nameof(name)); }
+
+                                                                                   this.name = name;
+                                                                               }
+                                                                           }
+                                                                           """, defect: "the BCL throw helper for whitespace still folds onto NonEmpty"),
+
 
         // ---- Finding 8. `Guards.IsSize` accepts `tags.Count` because the receiver IS the parameter, without
         // ---- asking whether the parameter's TYPE is one the size family means. The family is then chosen

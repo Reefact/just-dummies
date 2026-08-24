@@ -20,11 +20,17 @@ Un tirage non contraint produit **0 à 1024 caractères pris dans tout l'ASCII**
 contrôle, tabulations et retours à la ligne compris. Il peut donc être vide, long, et plein de choses
 que votre code n'aimera peut-être pas.
 
-**C'est le but, et c'est délibéré.** Un dummy est une valeur sur laquelle le code testé n'a pas eu son
-mot à dire ; la restreindre d'avance à du texte court et sage retire précisément la preuve que le
-tirage existe pour produire. Un test qui passe avec l'une de ces valeurs a montré quelque chose. Un
-test qui passe avec `abc123` n'a rien montré de ce qui arrive à 300 caractères, ou quand un `\r` se
-présente.
+**C'est le but, et c'est délibéré.** Un dummy est une valeur dont votre test ne se soucie pas — et le
+tirage est là pour mettre cette indifférence à l'épreuve, sur du code qui pourrait ne pas la
+partager. Restreindre la valeur d'avance à du texte court et sage retire précisément la preuve que
+le tirage existe pour produire. Un test qui passe avec l'une de ces valeurs a montré quelque chose.
+Un test qui passe avec `abc123` n'a rien montré de ce qui arrive à 300 caractères, ou quand un `\r`
+se présente.
+
+Notez le sens de l'argument : le tirage est large parce que *votre code* pourrait s'en soucier à
+tort, jamais parce que le *test* s'en soucie. Dès l'instant où le test se soucie de la chaîne qui
+est revenue, la valeur a cessé d'être un dummy — voir
+[Démarrage](../guides/getting-started.fr.md#où-passe-la-ligne).
 
 Alors contraignez — avec les invariants que votre code exige réellement :
 

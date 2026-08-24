@@ -2,6 +2,18 @@
 
 Ce qui a changé pour vous, version par version, sur le train `lib`. Pour le registre technique complet — chaque contrainte, chaque cas limite, chaque ADR — voir [CHANGELOG.md](https://github.com/Reefact/just-dummies/blob/main/JustDummies/CHANGELOG.md). Précédemment : [0.x](https://github.com/Reefact/just-dummies/blob/main/JustDummies/RELEASE_NOTES-0.x.fr.md).
 
+## 1.0.0-preview.4 — 24 août 2026
+
+_Un renommage qui se lit mieux, et un plafond de taille sur lequel l'analyseur et la bibliothèque s'accordent enfin._
+
+### ⚠️ Changements cassants
+
+- `AnyChar` et `AnyString` renomment `LowerCase()`/`UpperCase()` en `InLowerCase()`/`InUpperCase()` — les noms nus se lisaient comme un changement d'état plutôt qu'une qualité de la valeur tirée. Aucun changement de comportement ; seuls les deux noms changent.
+
+### 🐛 Corrections
+
+- JD014 signale désormais un plafond de taille au-dessus de la limite production : `WithMaxLength` et `WithMaxCount` étaient déclarés sans plafond alors que la bibliothèque les plafonne, si bien qu'un appel béni par l'analyseur pouvait être refusé à l'exécution sans rien pour le dire entre les deux.
+
 ## 1.0.0-preview.3 — 21 août 2026
 
 _Un format à préfixe fixe et alphabet restreint — `ORD-` suivi d'alphanumériques — est enfin une seule chaîne plutôt qu'un contournement._

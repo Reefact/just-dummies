@@ -8,6 +8,8 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ## [Unreleased]
 
+## [1.0.0-preview.4] - 2026-08-24
+
 ### Fixed
 
 - **JD014 now reports a size *ceiling* above the producible cap.** `WithMaxLength` and `WithMaxCount` were
@@ -329,7 +331,9 @@ in [ADR-0045](../doc/handwritten/for-maintainers/adr/0045-renumber-the-decision-
 migration record is under
 [`doc/handwritten/for-maintainers/migration/`](../doc/handwritten/for-maintainers/migration/).
 
-[Unreleased]: https://github.com/Reefact/just-dummies/compare/lib-v1.0.0-preview.2...HEAD
+[Unreleased]: https://github.com/Reefact/just-dummies/compare/lib-v1.0.0-preview.4...HEAD
+[1.0.0-preview.4]: https://github.com/Reefact/just-dummies/compare/lib-v1.0.0-preview.3...lib-v1.0.0-preview.4
+[1.0.0-preview.3]: https://github.com/Reefact/just-dummies/compare/lib-v1.0.0-preview.2...lib-v1.0.0-preview.3
 [1.0.0-preview.2]: https://github.com/Reefact/just-dummies/compare/lib-v1.0.0-preview.1...lib-v1.0.0-preview.2
 [1.0.0-preview.1]: https://github.com/Reefact/just-dummies/compare/lib-v0.1.0-preview.1...lib-v1.0.0-preview.1
 [0.1.0-preview.1]: https://github.com/Reefact/just-dummies/releases/tag/lib-v0.1.0-preview.1

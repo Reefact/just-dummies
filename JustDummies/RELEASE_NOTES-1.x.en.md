@@ -2,6 +2,18 @@
 
 What changed for you, release by release, in the `lib` train. For the full technical record — every constraint, every edge case, every ADR — see [CHANGELOG.md](https://github.com/Reefact/just-dummies/blob/main/JustDummies/CHANGELOG.md). Earlier: [0.x](https://github.com/Reefact/just-dummies/blob/main/JustDummies/RELEASE_NOTES-0.x.en.md).
 
+## 1.0.0-preview.4 — August 24, 2026
+
+_A rename that reads better, and a size ceiling analyzer and library now agree on._
+
+### ⚠️ Breaking changes
+
+- `AnyChar` and `AnyString` rename `LowerCase()`/`UpperCase()` to `InLowerCase()`/`InUpperCase()` — the bare names read like a state change, not a quality of the drawn value. No behaviour changes; only the two names do.
+
+### 🐛 Bug Fixes
+
+- JD014 now reports a size ceiling above the producible cap: `WithMaxLength` and `WithMaxCount` were declared uncapped while the library caps them, so a call the analyzer blessed could be refused at run time with nothing between the two to say so.
+
 ## 1.0.0-preview.3 — August 21, 2026
 
 _A fixed-prefix, restricted-alphabet format — `ORD-` followed by alphanumerics — is finally one chain instead of a workaround._

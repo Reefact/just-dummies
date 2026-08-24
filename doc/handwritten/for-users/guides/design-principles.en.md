@@ -10,16 +10,19 @@ like gaps.
 
 ## "Just dummies" is a scope, not a slogan
 
-The name is the specification. A dummy is **a value a test needs and does not care about** — one the
-test must supply for the code to run at all, and whose value never reaches its assertion. What the
-library guarantees about that value is narrow and exact: it is arbitrary, and it is **valid for the
-constraints declared at the call site**. It is not a statistically ideal draw, not a universal
-generator, and not a constraint solver.
+The name is the specification. A dummy is **a value a test needs and does not care about**: it must
+exist and be well-formed for the code to run, and its value never reaches the assertion and cannot
+change the outcome. **Data that takes part in what the test is trying to verify is not a dummy** —
+whether or not it appears in the assertion itself.
 
-Both halves of that definition do work. Drop the second and a dummy is unusable, because a value
-that violates the domain fails for reasons the test never meant to explore. Drop the first and the
-scope quietly becomes something else: generate the value an assertion is *about* and you have
-written a property, which this library runs with a sample size of one and cannot defend. The
+What the library guarantees about such a value is narrow and exact: it is arbitrary, and it is
+**valid for the constraints declared at the call site**. It is not a statistically ideal draw, not a
+universal generator, and not a constraint solver.
+
+Both halves do work. Drop the guarantee and a dummy is unusable, because a value that violates the
+domain fails for reasons the test never meant to explore. Drop the definition and the scope quietly
+becomes something else: generate a value the test's outcome depends on and you have written a
+property, which this library runs with a sample size of one and cannot defend. The
 [getting-started guide](./getting-started.en.md#where-the-line-runs) shows exactly where that line
 runs.
 

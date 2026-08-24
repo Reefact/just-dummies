@@ -790,6 +790,75 @@ public sealed class GuardBoundaryTests {
     }
 
     /// <summary>
+    ///     A parameter the initializer hands unchanged — never written, bar nothing — is the same value in
+    ///     the delegated constructor as it is here, so a guard read there folds onto this one exactly as a
+    ///     second guard in the same body would
+    ///     (<see cref="GuardReadingTests.AFoldedPairStillReportsTheGuard" />). The outer body's own guard and
+    ///     the delegated one narrow the SAME parameter from two different constructors; a parameter with no
+    ///     guard anywhere stays unconstrained, marked nowhere — nothing here invents a doubt that was never
+    ///     there.
+    /// </summary>
+    [Fact(DisplayName = "A guard the delegated constructor reads over its own parameter folds onto this one.")]
+    public void AGuardTheDelegatedConstructorReadsFoldsOntoThisOne() {
+        ScaffoldOutcome outcome = Subject.Scaffold("""
+                                                   public sealed class Subject {
+
+                                                       private readonly int percent;
+                                                       private readonly int other;
+
+                                                       private Subject(int percent, int other, bool _) {
+                                                           if (percent <= 0) { throw new ArgumentOutOfRangeException(nameof(percent)); }
+
+                                                           this.percent = percent;
+                                                           this.other   = other;
+                                                       }
+
+                                                       public Subject(int percent, int other) : this(percent, other, true) {
+                                                           if (percent > 100) { throw new ArgumentOutOfRangeException(nameof(percent)); }
+                                                       }
+
+                                                   }
+                                                   """);
+
+        ScaffoldedParameter percent = outcome.Plan!.Parameters[0];
+        ScaffoldedParameter other   = outcome.Plan.Parameters[1];
+
+        Check.That(percent.Expression).IsEqualTo("Any.Int32().Positive().LessThanOrEqualTo(100)");
+        Check.That(percent.Provenance.HasFlag(Provenance.UnreadGuards)).IsFalse();
+        Check.That(other.Expression).IsEqualTo("Any.Int32()");
+        Check.That(other.Provenance.HasFlag(Provenance.UnreadGuards)).IsFalse();
+    }
+
+    /// <summary>
+    ///     A computed argument hands the delegated constructor a value this one never draws, so its guard is
+    ///     never folded — the same subject-identity discipline every row of §5.3 already keeps, applied one
+    ///     hop along the delegation.
+    /// </summary>
+    [Fact(DisplayName = "A computed initializer argument does not fold the delegated constructor's guard.")]
+    public void AComputedInitializerArgumentDoesNotFoldTheDelegatedGuard() {
+        ScaffoldOutcome outcome = Subject.Scaffold("""
+                                                   public sealed class Subject {
+
+                                                       private readonly int percent;
+
+                                                       private Subject(int percent, bool _) {
+                                                           if (percent <= 0) { throw new ArgumentOutOfRangeException(nameof(percent)); }
+
+                                                           this.percent = percent;
+                                                       }
+
+                                                       public Subject(int percent) : this(percent + 1, true) { }
+
+                                                   }
+                                                   """);
+
+        ScaffoldedParameter percent = outcome.Plan!.Parameters.Single();
+
+        Check.That(percent.Expression).IsEqualTo("Any.Int32()");
+        Check.That(percent.Provenance.HasFlag(Provenance.Guard)).IsFalse();
+    }
+
+    /// <summary>
     ///     A constructor with no body of its own reads no guards at all, so the placement question never
     ///     arises for it.
     /// </summary>

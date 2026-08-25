@@ -116,6 +116,8 @@ public class Jd016CollectionConstraintsAdmitNoValueTests {
     [InlineData("Any.SetOf(Any.Char()).WithCount(200)", "only 128")]
     [InlineData("Any.SetOf(Any.Byte()).WithCount(300)", "only 256")]
     [InlineData("Any.SetOf(Any.SByte()).WithCount(300)", "only 256")]
+    [InlineData("Any.SetOf(Any.Int16()).WithCount(70000)", "only 65536")]
+    [InlineData("Any.SetOf(Any.UInt16()).WithCount(70000)", "only 65536")]
     public async Task Reports_a_set_asking_for_more_than_a_small_primitive_row_can_give(string expression, string expected) {
         string source = $$"""
             using JustDummies;

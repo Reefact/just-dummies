@@ -199,6 +199,13 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   refusal of a shape the engine can and already does read elsewhere, costing a real reading for no
   reason the two paths disagreed on.
 
+- **A distinct floor over an `Int16`/`UInt16` set is now marked `unread guards` past 65 536, instead
+  of written with confidence.** The element cardinality mirror answered `bool`, `char`, `byte` and
+  `sbyte`; an audit that walked every scalar row's true refusal edge by bisection found two more
+  finite domains it did not name. `ElementCardinalityAgreementTests` now covers all six, and its own
+  floor-of-one edge — rendered as `.NonEmpty()`, never as the literal text a bisection at a wider
+  ceiling can go looking for — is recognised rather than mistaken for a refusal.
+
 ## [1.1.0-beta.3] - 2026-08-24
 
 ### Added

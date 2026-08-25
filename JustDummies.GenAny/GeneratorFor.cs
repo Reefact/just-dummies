@@ -224,6 +224,8 @@ internal sealed class GeneratorFor {
             SpecialType.System_Char    => 128,
             SpecialType.System_Byte    => 256,
             SpecialType.System_SByte   => 256,
+            SpecialType.System_Int16   => 65536,
+            SpecialType.System_UInt16  => 65536,
             _                          => null
         };
     }

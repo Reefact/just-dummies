@@ -850,6 +850,22 @@ internal static class GuardCorpus {
                                                                                 """),
 
 
+
+        // ---- AUDIT. The true refusal edge of every scalar element row was measured by walking WithMinCount(n)
+        // ---- to the ceiling the engine still declares, and the mirror named only four of the six finite
+        // ---- domains that measurement found: Int16 and UInt16 slip through, both reading unbounded, so a
+        // ---- floor above 65 536 -- the whole of either type -- is written with confidence over a generator
+        // ---- that cannot construct it.
+
+        new GuardedShape("set-of-int16-count", "Batch", """
+                                                        public sealed class Batch {
+
+                                                            public Batch(ISet<short> codes) {
+                                                                if (codes.Count < 70000) { throw new ArgumentException("too few", nameof(codes)); }
+                                                            }
+                                                        }
+                                                        """, requiresVerification: true)
+
         // ---- Retired by ADR-0089, on the same footing as findings 8 and 11. The original shape pinned a
         // ---- composed ELEMENT's factory guard being read correctly and then losing its `unread guards` mark
         // ---- when the collection generator was rebuilt around it -- `Any.ListOf(...)` behind which the doubt

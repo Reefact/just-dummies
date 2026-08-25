@@ -118,6 +118,10 @@ public class Jd016CollectionConstraintsAdmitNoValueTests {
     [InlineData("Any.SetOf(Any.SByte()).WithCount(300)", "only 256")]
     [InlineData("Any.SetOf(Any.Int16()).WithCount(70000)", "only 65536")]
     [InlineData("Any.SetOf(Any.UInt16()).WithCount(70000)", "only 65536")]
+    // AnyChar.OneOf(...) reaches past ASCII on purpose — the pool is the caller's own — so walking through it
+    // to the Char() factory beneath and answering 128 would be too wide, not too narrow.
+    [InlineData("Any.SetOf(Any.Char().OneOf('a', 'b')).WithCount(5)", "only 2")]
+    [InlineData("Any.SetOf(Any.Char().OneOf('a', 'b', 'c')).WithCount(4)", "only 3")]
     public async Task Reports_a_set_asking_for_more_than_a_small_primitive_row_can_give(string expression, string expected) {
         string source = $$"""
             using JustDummies;
@@ -165,6 +169,12 @@ public class Jd016CollectionConstraintsAdmitNoValueTests {
     [InlineData("Any.SetOf(Any.Boolean()).WithCount(2)")]
     [InlineData("Any.SetOf(Any.Int32()).WithCount(500)")]
     [InlineData("Any.ListOf(Any.Int32()).WithCount(500)")]
+    // A narrowed char pool that still fits, and a different generator's own OneOf(...) wrapped by Containing(...)
+    // — which extends the effective domain past what OneOf alone draws (issue #188) — both stay silent. Scoping
+    // the fix to AnyChar specifically (not every OneOf(...) overload) is what this pins.
+    [InlineData("Any.SetOf(Any.Char().OneOf('a', 'b')).WithCount(2)")]
+    [InlineData("Any.SetOf(Any.Char().OneOf('a', 'b', 'c')).WithCount(3)")]
+    [InlineData("Any.SetOf(Any.Int32().OneOf(1, 2)).Containing(3).WithCount(3)")]
     public async Task Does_not_report_a_satisfiable_chain(string expression) {
         string source = $$"""
             using JustDummies;

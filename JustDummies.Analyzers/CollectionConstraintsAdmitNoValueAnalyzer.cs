@@ -156,9 +156,26 @@ public sealed class CollectionConstraintsAdmitNoValueAnalyzer : DiagnosticAnalyz
         // values for four flags — so counting declared members there would under-report the domain and condemn a legal
         // chain. An unprovable domain must never be treated as a small one, so the rule stands down instead of
         // computing the closure: a deliberate false negative, not an oversight.
+        //
+        // AnyChar.OneOf(...) is the opposite shape: the pool is the caller's own, reaching past ASCII on purpose
+        // (documented on the member itself), so walking through it to the Char() factory beneath and answering 128
+        // would be too WIDE rather than too narrow — a set of two accented letters would read as if it drew from
+        // the whole ASCII pool, and a floor of five over it would go unreported. Counted exactly instead, the same
+        // way the top-level Any.OneOf(...)/ElementOf(...) case already is.
         IInvocationOperation root = element;
         while (root.Instance is not null && GeneratorFacts.Unwrap(root.Instance) is IInvocationOperation inner) {
             if (root.TargetMethod.Name == "AllowingCombinations") { return false; }
+
+            // Scoped to AnyChar specifically, not every OneOf(...) overload: a numeric or string element's own
+            // OneOf(...) already resolves through the top-level switch below when it IS the element passed to
+            // SetOf/ListOf, and a chain such as Any.Int32().OneOf(1, 2).Containing(3) extends its own effective
+            // domain past what OneOf alone draws — counting here, one hop too early, would miss that extension
+            // and misfire on a chain #188 already made legal. AnyChar.OneOf(...) is never wrapped that way in
+            // the shapes this rule exists for, and its own pool is exactly what needs counting, in place of the
+            // 128 the Char() factory beneath it would otherwise answer with.
+            if (root.TargetMethod.Name == "OneOf" && root.TargetMethod.ContainingType?.Name == "AnyChar") {
+                return TryCountDistinctConstants(root, out cardinality);
+            }
 
             root = inner;
         }

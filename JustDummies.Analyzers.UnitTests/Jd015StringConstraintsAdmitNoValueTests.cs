@@ -171,6 +171,107 @@ public class Jd015StringConstraintsAdmitNoValueTests {
     }
 
     [Fact]
+    public async Task Reports_a_value_set_no_value_survives_two_constraints_at_once() {
+        // Neither constraint is at fault on its own -- WithoutNumeric() admits "A", InLowerCase() admits "1" -- so
+        // testing them one by one finds nothing. Measured: the library refuses this chain at declaration.
+        const string source = """
+            using JustDummies;
+
+            public static class Sample {
+                public static string M() {
+                    return Any.String().WithoutNumeric().InLowerCase().OneOf("1", "A").Generate();
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new StringConstraintsAdmitNoValueAnalyzer(), source);
+
+        Check.That(diagnostics.Length).IsEqualTo(1);
+        Check.That(diagnostics[0].GetMessage()).Contains("WithoutNumeric()");
+        Check.That(diagnostics[0].GetMessage()).Contains("InLowerCase()");
+        Check.That(diagnostics[0].GetMessage()).Contains("together");
+    }
+
+    [Fact]
+    public async Task Reports_a_value_set_no_value_survives_three_constraints_at_once() {
+        // One value falls to each: "1" to WithoutNumeric(), "A" to InLowerCase(), " " to NotBlank().
+        const string source = """
+            using JustDummies;
+
+            public static class Sample {
+                public static string M() {
+                    return Any.String().WithoutNumeric().InLowerCase().NotBlank().OneOf("1", "A", " ").Generate();
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new StringConstraintsAdmitNoValueAnalyzer(), source);
+
+        Check.That(diagnostics.Length).IsEqualTo(1);
+        Check.That(diagnostics[0].GetMessage()).Contains("WithoutNumeric(), InLowerCase() and NotBlank()");
+    }
+
+    [Fact]
+    public async Task Does_not_report_a_value_set_one_value_survives_every_constraint() {
+        // "a" passes both, so the pair is a narrowing rather than a contradiction -- the library draws it.
+        const string source = """
+            using JustDummies;
+
+            public static class Sample {
+                public static string M() {
+                    return Any.String().WithoutNumeric().InLowerCase().OneOf("1", "A", "a").Generate();
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new StringConstraintsAdmitNoValueAnalyzer(), source);
+
+        Check.That(diagnostics.Length).IsEqualTo(0);
+    }
+
+    [Fact]
+    public async Task Does_not_name_a_constraint_that_refuses_no_value() {
+        // NotBlank() admits both values, so it takes no part in emptying the pool: naming it would send the reader
+        // to a constraint whose removal changes nothing. Only the two that actually refuse a value are named.
+        const string source = """
+            using JustDummies;
+
+            public static class Sample {
+                public static string M() {
+                    return Any.String().NotBlank().WithoutNumeric().InLowerCase().OneOf("1", "A").Generate();
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new StringConstraintsAdmitNoValueAnalyzer(), source);
+
+        Check.That(diagnostics.Length).IsEqualTo(1);
+        Check.That(diagnostics[0].GetMessage()).Contains("WithoutNumeric() and InLowerCase()");
+        Check.That(diagnostics[0].GetMessage()).Not.Contains("NotBlank()");
+    }
+
+    [Fact]
+    public async Task Names_the_single_culprit_rather_than_the_conjunction_where_there_is_one() {
+        // The pass that finds one constraint answering for the whole pool runs first, and its sentence is the more
+        // actionable of the two: it names what to remove.
+        const string source = """
+            using JustDummies;
+
+            public static class Sample {
+                public static string M() {
+                    return Any.String().InLowerCase().NotBlank().OneOf("A", "B").Generate();
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new StringConstraintsAdmitNoValueAnalyzer(), source);
+
+        Check.That(diagnostics.Length).IsEqualTo(1);
+        Check.That(diagnostics[0].GetMessage()).Contains("InLowerCase() allows none of the values it offers");
+        Check.That(diagnostics[0].GetMessage()).Not.Contains("together");
+    }
+
+    [Fact]
     public async Task Does_not_report_a_value_set_one_value_survives() {
         // A narrowing rather than a contradiction: the chain draws "12345" happily, and JD029 names what went.
         const string source = """

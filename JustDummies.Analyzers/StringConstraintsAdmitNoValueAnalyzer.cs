@@ -138,7 +138,9 @@ public sealed class StringConstraintsAdmitNoValueAnalyzer : DiagnosticAnalyzer {
 
         if (values.Count == 0) { return; }
 
-        foreach ((string rendered, Func<string, bool> admits) in CharacterTests(constraints)) {
+        List<(string Rendered, Func<string, bool> Admits)> tests = CharacterTests(constraints).ToList();
+
+        foreach ((string rendered, Func<string, bool> admits) in tests) {
             if (values.Any(admits)) { continue; }
 
             context.ReportDiagnostic(Diagnostic.Create(
@@ -147,6 +149,47 @@ public sealed class StringConstraintsAdmitNoValueAnalyzer : DiagnosticAnalyzer {
 
             return;
         }
+
+        ReportEmptiedByTheirConjunction(context, valueSet, tests, values);
+    }
+
+    /// <summary>
+    ///     Reports a pool no value survives, where no single constraint is answerable for it.
+    /// </summary>
+    /// <remarks>
+    ///     <para>
+    ///         A value must satisfy every declared constraint, so the pool the generator draws from is the
+    ///         intersection — and an intersection can be empty while each set entering it is not.
+    ///         <c>WithoutNumeric().InLowerCase().OneOf("1", "A")</c> is the shape: the first admits <c>"A"</c>, the
+    ///         second admits <c>"1"</c>, and no value satisfies both, which the run time refuses at declaration.
+    ///         Asked one constraint at a time — as the pass above asks — nothing is wrong with either.
+    ///     </para>
+    ///     <para>
+    ///         Only the constraints that actually refuse a value are named. One every value passes takes no part in
+    ///         emptying the pool, so naming it would send the reader to a constraint whose removal changes nothing —
+    ///         the same discipline the exhaustion messages on the run-time side follow. Which of the survivors is the
+    ///         <i>smallest</i> set answering for it is a set cover, and this rule does not go there (ADR-0046): every
+    ///         constraint that refuses something is named, and the reader picks.
+    ///     </para>
+    /// </remarks>
+    private static void ReportEmptiedByTheirConjunction(OperationAnalysisContext context, IInvocationOperation valueSet,
+                                                        IReadOnlyList<(string Rendered, Func<string, bool> Admits)> tests, IReadOnlyList<string> values) {
+        // One constraint is what the pass above already answered for, and answered better: it names what to remove.
+        if (tests.Count < 2) { return; }
+        if (values.Any(value => tests.All(test => test.Admits(value)))) { return; }
+
+        List<string> culprits = tests.Where(test => !values.All(test.Admits)).Select(test => test.Rendered).ToList();
+
+        context.ReportDiagnostic(Diagnostic.Create(
+            Descriptors.StringConstraintsAdmitNoValue, valueSet.Syntax.GetLocation(),
+            $"{Conjoin(culprits)} together allow none of the values it offers"));
+    }
+
+    /// <summary>Renders a list of names as a reader would say it — <c>A and B</c>, <c>A, B and C</c>.</summary>
+    private static string Conjoin(IReadOnlyList<string> names) {
+        if (names.Count == 1) { return names[0]; }
+
+        return string.Join(", ", names.Take(names.Count - 1)) + " and " + names[names.Count - 1];
     }
 
     /// <summary>

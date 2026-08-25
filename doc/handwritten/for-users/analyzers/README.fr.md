@@ -57,7 +57,7 @@ Ces règles anticipent, à la compilation, le sous-ensemble des vérifications d
 | Règle | Sévérité | Défaut | Description |
 |-------|----------|--------|-------------|
 | [JD014 RejectedConstantArgument](JD014.fr.md) | 🟠 Avertissement | on | Un argument de contrainte est une constante que la garde du générateur refuse : l'appel lève à chaque exécution. |
-| [JD015 StringConstraintsAdmitNoValue](JD015.fr.md) | 🟠 Avertissement | on | Les contraintes constantes d'une chaîne `AnyString` n'admettent aucune valeur — une longueur déclarée dans laquelle la forme ne peut pas tenir, ou une contrainte de caractères qui n'admet aucune valeur d'un value set. |
+| [JD015 StringConstraintsAdmitNoValue](JD015.fr.md) | 🟠 Avertissement | on | Les contraintes constantes d'une chaîne `AnyString` n'admettent aucune valeur — une longueur déclarée dans laquelle la forme ne peut pas tenir, ou des contraintes de caractères qui, ensemble, n'admettent aucune valeur d'un value set. |
 | [JD016 CollectionConstraintsAdmitNoValue](JD016.fr.md) | 🟠 Avertissement | on | Les contraintes de cardinal d'une chaîne de collection ne peuvent pas toutes tenir, ou elle réclame plus d'éléments distincts que son générateur d'éléments ne peut en produire. |
 | [JD017 EnumUniverseViolation](JD017.fr.md) | 🟠 Avertissement | on | Une contrainte d'enum nomme une valeur que le type ne définit pas — une valeur numérique non déclarée, ou une exclusion qui vide l'univers. |
 | [JD023 ScalarChainAdmitsNoValue](JD023.fr.md) | 🟠 Avertissement | on | Les contraintes constantes d'une chaîne entière réduisent le domaine à rien — bornes, treillis ou liste d'autorisation. |

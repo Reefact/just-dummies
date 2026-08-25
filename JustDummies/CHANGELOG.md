@@ -32,6 +32,15 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Fixed
 
+- **`JD015` weighs a value set against the declared constraints together, not only one by one.** A value must
+  satisfy every constraint, so the pool is their intersection — and an intersection can be empty while no single
+  set entering it is. `Any.String().WithoutNumeric().InLowerCase().OneOf("1", "A")` is refused by the library,
+  because the first removes `"1"` and the second removes `"A"`, yet each on its own leaves a value standing and
+  the rule found nothing to report. It reports it now. Where one constraint *is* answerable for the whole pool it
+  is still named alone, in the sentence it always used, because that one says what to remove; otherwise every
+  constraint that refuses at least one value is named together, and one that refuses none is left out rather than
+  pointed at. Nothing changes for a pool one value survives — still a narrowing, still `JD029`'s to report.
+
 - **`JD015` now measures the length budget the way the generator lays a string out.** The rule refused
   `Any.String().StartingWith("ORD-").StartingWith("ORD-").WithLength(4)`, a chain that draws `ORD-`: a prefix and a
   suffix each own a single slot, so re-declaring the same literal is a no-op, and summing both declarations reported

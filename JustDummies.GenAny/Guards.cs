@@ -1233,13 +1233,29 @@ internal static class Guards {
             && SymbolEqualityComparer.Default.Equals(model.GetSymbolInfo(bare).Symbol, parameter);
     }
 
-    /// <summary>The expression itself, past the parentheses a writer is free to add around it.</summary>
+    /// <summary>
+    ///     The expression itself, past the parentheses a writer is free to add around it and the
+    ///     null-forgiving <c>!</c> a writer is free to add after it.
+    /// </summary>
+    /// <remarks>
+    ///     <c>!</c> is a compile-time annotation with no run-time effect, so <c>value!</c> and <c>value</c> are
+    ///     the same value at every call site this reads — exactly the reasoning <see cref="HandedFrom" />
+    ///     already applies one hop into a delegated constructor. Stripping it here reaches the same case where
+    ///     the guard is read directly: <c>string.IsNullOrEmpty(value!)</c> is a guard about <c>value</c>, not a
+    ///     shape the closed set declines to recognise.
+    /// </remarks>
     private static ExpressionSyntax Unwrapped(ExpressionSyntax expression) {
         ExpressionSyntax bare = expression;
 
-        while (bare is ParenthesizedExpressionSyntax parenthesised) { bare = parenthesised.Expression; }
-
-        return bare;
+        while (true) {
+            if (bare is ParenthesizedExpressionSyntax parenthesised) {
+                bare = parenthesised.Expression;
+            } else if (bare is PostfixUnaryExpressionSyntax { RawKind: (int)SyntaxKind.SuppressNullableWarningExpression } suppressed) {
+                bare = suppressed.Operand;
+            } else {
+                return bare;
+            }
+        }
     }
 
     /// <summary>Reads a comparison written the other way round as the one the table lists.</summary>

@@ -828,6 +828,28 @@ internal static class GuardCorpus {
                                                                  """, requiresVerification: true),
 
 
+        // ---- AUDIT (mirror direction). The delegated-guard fold already strips a null-forgiving `!` before
+        // ---- checking whether an argument IS the outer parameter (`Unsuppressed`) -- `!` is a compile-time
+        // ---- annotation with no run-time effect, so `value!` and `value` are the same value everywhere this
+        // ---- reads. The ordinary condition-parsing path never learned the same lesson: `string.IsNullOrEmpty
+        // ---- (value!)` in a ctor's own body was declined by `IsParameter`, which stripped parentheses but not
+        // ---- `!`, so the guard fell to `unread guards` -- not a lie, but a refusal of a shape the engine can
+        // ---- and already does read one hop over.
+
+        new GuardedShape("null-forgiving-blankness-read-directly", "Receipt", """
+                                                                                public sealed class Receipt {
+
+                                                                                    private readonly string value;
+
+                                                                                    public Receipt(string value) {
+                                                                                        if (string.IsNullOrEmpty(value!)) { throw new ArgumentException(nameof(value)); }
+
+                                                                                        this.value = value;
+                                                                                    }
+                                                                                }
+                                                                                """),
+
+
         // ---- Retired by ADR-0089, on the same footing as findings 8 and 11. The original shape pinned a
         // ---- composed ELEMENT's factory guard being read correctly and then losing its `unread guards` mark
         // ---- when the collection generator was rebuilt around it -- `Any.ListOf(...)` behind which the doubt

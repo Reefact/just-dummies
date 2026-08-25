@@ -190,6 +190,15 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   three other readers already share. `JD016` gains the same three answers, having been blind in
   the same places.
 
+- **A guard read directly through a null-forgiving suffix now reads exactly as the same guard read
+  through a delegated constructor already did.** `string.IsNullOrEmpty(value!)` in a constructor's
+  own body fell to `unread guards`, because the subject-identity check strips the parentheses a
+  writer is free to add around an argument but not the `!` one is equally free to add after it —
+  while the delegated-guard fold already treated `value!` and `value` as the same value one hop
+  over, since `!` is a compile-time annotation with no run-time effect. Not a lie either way, but a
+  refusal of a shape the engine can and already does read elsewhere, costing a real reading for no
+  reason the two paths disagreed on.
+
 ## [1.1.0-beta.3] - 2026-08-24
 
 ### Added

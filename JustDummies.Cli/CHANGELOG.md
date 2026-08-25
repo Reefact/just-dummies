@@ -206,6 +206,15 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   floor-of-one edge — rendered as `.NonEmpty()`, never as the literal text a bisection at a wider
   ceiling can go looking for — is recognised rather than mistaken for a refusal.
 
+- **An enum with no declared member is left open, instead of named with confidence.** The base
+  table's enum row emitted `Any.Enum<T>()` unconditionally, but the library draws only from an
+  enum's declared members and throws `EnumDeclaresNoMembers` the moment such a generator is
+  constructed — before `Generate()` is ever reached. A `public enum Empty { }` composed anywhere
+  compiled clean, raised no rule, reported the parameter as inferred, and then the scaffolded
+  generator's own parameterless constructor threw. The parameter is unresolved instead, exactly as
+  a generic type already is: naming a call the library itself refuses is worse than the open
+  parameter it leaves.
+
 ## [1.1.0-beta.3] - 2026-08-24
 
 ### Added

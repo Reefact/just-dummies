@@ -864,7 +864,7 @@ internal static class GuardCorpus {
                                                                 if (codes.Count < 70000) { throw new ArgumentException("too few", nameof(codes)); }
                                                             }
                                                         }
-                                                        """, requiresVerification: true)
+                                                        """, requiresVerification: true),
 
         // ---- Retired by ADR-0089, on the same footing as findings 8 and 11. The original shape pinned a
         // ---- composed ELEMENT's factory guard being read correctly and then losing its `unread guards` mark

@@ -437,7 +437,23 @@ internal sealed class GeneratorFor {
         };
     }
 
+    /// <summary>
+    ///     The base-table row for an enum type — <c>Any.Enum&lt;T&gt;()</c>, unless <paramref name="type" />
+    ///     declares no member at all.
+    /// </summary>
+    /// <remarks>
+    ///     The library draws only from an enum's declared members, never from an undeclared numeric value
+    ///     (§14.6), and a type with none throws <c>AnyGenerationException.EnumDeclaresNoMembers</c> the moment
+    ///     its generator is constructed — before <c>Generate()</c> is ever reached. Emitting the row anyway
+    ///     would compile clean, raise no rule and report the parameter as inferred, over a domain the library
+    ///     itself refuses to serve at all; left unresolved instead, exactly as any other type the base table
+    ///     cannot answer for.
+    /// </remarks>
     private DrawnGenerator Enum(INamedTypeSymbol type) {
+        if (!type.GetMembers().OfType<IFieldSymbol>().Any(field => field.HasConstantValue)) {
+            return DrawnGenerator.Unresolved();
+        }
+
         ITypeSymbol? generator = library.Returned("Enum", typeArguments: 1);
 
         return generator is null

@@ -53,6 +53,30 @@ public sealed class ScaffolderTests {
     }
 
     /// <summary>
+    ///     An enum with no declared member is the other shape the table cannot answer for, and for the same
+    ///     reason a generic type cannot: naming it anyway would name a call the library itself refuses.
+    /// </summary>
+    /// <remarks>
+    ///     The library draws only from an enum's declared members (§14.6), and throws
+    ///     <c>AnyGenerationException.EnumDeclaresNoMembers</c> the moment such a generator is constructed —
+    ///     before <c>Generate()</c> is ever reached. Emitting <c>Any.Enum&lt;Empty&gt;()</c> anyway would
+    ///     compile clean, raise no rule and report the parameter as inferred, over a call that cannot even
+    ///     construct — worse than the open parameter this leaves instead.
+    /// </remarks>
+    [Fact(DisplayName = "An enum with no declared member is left open, not named with confidence.")]
+    public void AnEnumWithNoDeclaredMemberIsLeftOpen() {
+        ScaffoldOutcome outcome = Subject.Scaffold("""
+                                                   public enum Empty { }
+
+                                                   public sealed class Subject { public Subject(Empty one) { } }
+                                                   """);
+
+        Check.That(outcome.Succeeded).IsTrue();
+        Check.That(outcome.File!.ContainsTodo).IsTrue();
+        Check.That(outcome.File.SourceText).Contains("TODO_supply_a_generator_for_one");
+    }
+
+    /// <summary>
     ///     The TODO names <c>dum generate</c> only where that command would take the name.
     /// </summary>
     /// <remarks>

@@ -27,13 +27,21 @@ public sealed class ElementCardinalityAgreementTests {
     ///     A hint for the search, not the answer — well above any of the small domains, and well below the
     ///     producible cap, so the two searches cannot meet and stop measuring.
     /// </summary>
-    private const int FarAboveEverySmallDomain = 4_096;
+    /// <remarks>
+    ///     Above 65 536 so the search still has room past <c>short</c>/<c>ushort</c>, the widest of the six
+    ///     domains this theory covers — the mirror named only four until an audit measured the true refusal
+    ///     edge of every scalar row and found two more it did not: a mirror checked in one direction only is
+    ///     not checked.
+    /// </remarks>
+    private const int FarAboveEverySmallDomain = 200_000;
 
     [Theory(DisplayName = "The engine stops declaring a distinct floor exactly where the element row stops producing values.")]
     [InlineData("char")]
     [InlineData("byte")]
     [InlineData("sbyte")]
     [InlineData("bool")]
+    [InlineData("short")]
+    [InlineData("ushort")]
     public void TheEngineStopsExactlyWhereTheElementRowDoes(string element) {
         int largest = LargestFloorTheEngineWillDeclare(element);
 
@@ -70,10 +78,12 @@ public sealed class ElementCardinalityAgreementTests {
 
     private static void Distinct(string element, int floor) {
         switch (element) {
-            case "char":  Any.SetOf(Any.Char()).WithMinCount(floor).Generate();    break;
-            case "byte":  Any.SetOf(Any.Byte()).WithMinCount(floor).Generate();    break;
-            case "sbyte": Any.SetOf(Any.SByte()).WithMinCount(floor).Generate();   break;
-            default:      Any.SetOf(Any.Boolean()).WithMinCount(floor).Generate(); break;
+            case "char":   Any.SetOf(Any.Char()).WithMinCount(floor).Generate();    break;
+            case "byte":   Any.SetOf(Any.Byte()).WithMinCount(floor).Generate();    break;
+            case "sbyte":  Any.SetOf(Any.SByte()).WithMinCount(floor).Generate();   break;
+            case "short":  Any.SetOf(Any.Int16()).WithMinCount(floor).Generate();   break;
+            case "ushort": Any.SetOf(Any.UInt16()).WithMinCount(floor).Generate();  break;
+            default:       Any.SetOf(Any.Boolean()).WithMinCount(floor).Generate(); break;
         }
     }
 
@@ -115,7 +125,16 @@ public sealed class ElementCardinalityAgreementTests {
                                                     }
                                                     """);
 
-        return outcome.Plan!.Parameters.Single().Expression?.Contains($"WithMinCount({floor})") == true;
+        // A floor of exactly one is the Emptiness edge and renders as `.NonEmpty()`, never as the literal
+        // text `WithMinCount(1)` — the same collapse GuardReading.Combine applies to every other size guard.
+        // A ceiling that is not a clean power of two (unlike the previous 4 096) makes the bisection probe
+        // this edge for real once a domain as small as `bool`'s is in range, so both spellings count as
+        // declared here.
+        string? expression = outcome.Plan!.Parameters.Single().Expression;
+
+        return floor == 1
+                   ? expression?.Contains("NonEmpty()") == true
+                   : expression?.Contains($"WithMinCount({floor})") == true;
     }
 
 }

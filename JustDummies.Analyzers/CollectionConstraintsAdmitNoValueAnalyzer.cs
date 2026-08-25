@@ -30,6 +30,9 @@ public sealed class CollectionConstraintsAdmitNoValueAnalyzer : DiagnosticAnalyz
     /// <summary>The whole of a byte, signed or not.</summary>
     private const int ByteValueCount = 256;
 
+    /// <summary>The whole of a 16-bit integer, signed or not.</summary>
+    private const int Int16ValueCount = 65536;
+
     /// <inheritdoc />
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; } =
         ImmutableArray.Create(Descriptors.CollectionConstraintsAdmitNoValue);
@@ -188,6 +191,11 @@ public sealed class CollectionConstraintsAdmitNoValueAnalyzer : DiagnosticAnalyz
 
             case "Byte" or "SByte":
                 cardinality = ByteValueCount;
+
+                return true;
+
+            case "Int16" or "UInt16":
+                cardinality = Int16ValueCount;
 
                 return true;
 

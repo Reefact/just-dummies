@@ -591,40 +591,6 @@ internal static class GuardCorpus {
                                                                            """, defect: "the BCL throw helper for whitespace still folds onto NonEmpty"),
 
 
-        // ---- Finding 8. `Guards.IsSize` accepts `tags.Count` because the receiver IS the parameter, without
-        // ---- asking whether the parameter's TYPE is one the size family means. The family is then chosen
-        // ---- from the parameter's own type (not a collection), so `WithMinLength` lands on the factory's
-        // ---- inner `Any.String()` — legal there, understood there, and a complete non sequitur about `Tags`,
-        // ---- whose own domain rejects fewer than three comma-separated entries regardless of string length.
-
-        new GuardedShape("composed-count-as-length", "Article", """
-                                                                   public sealed class Tags {
-
-                                                                       private Tags(string csv) { Csv = csv; }
-
-                                                                       public static Tags Parse(string csv) {
-                                                                           if (string.IsNullOrWhiteSpace(csv)) { throw new ArgumentException("blank", nameof(csv)); }
-
-                                                                           return new Tags(csv);
-                                                                       }
-
-                                                                       public string Csv { get; }
-
-                                                                       public int Count { get { return Csv.Split(',').Length; } }
-                                                                   }
-
-                                                                   public sealed class Article {
-
-                                                                       public Article(Tags tags) {
-                                                                           if (tags.Count < 3) { throw new ArgumentException("three tags", nameof(tags)); }
-                                                                           Tags = tags;
-                                                                       }
-
-                                                                       public Tags Tags { get; }
-                                                                   }
-                                                                   """, requiresVerification: true),
-
-
         // ---- Finding 10. §5.1's target-path rule reads the chosen `Create` factory's own body
         // ---- (`if (string.IsNullOrWhiteSpace(value))`) and stops there; the private constructor `Create`
         // ---- delegates to, guarding `value.Length < 8`, is never read and nothing marks the loss. `value`
@@ -650,34 +616,16 @@ internal static class GuardCorpus {
                                                                              """),
 
 
-        // ---- Finding 11. Read correctly, about the wrong value — `Guards.cs`'s own remarks name this class
-        // ---- and mark only the ADR-0083 instance. `tags.Count` is read and its family chosen from `Tags`
-        // ---- (not a collection, so the length family), but `GeneratorFor.Chain` renders the constraint onto
-        // ---- `Any.String()`, the factory's SOURCE generator, before the `.As(Tags.Of)` hop — a value the
-        // ---- generator no longer draws once composed. The recap reports `guard` with full confidence.
+        // ---- Findings 8 and 11, retired by ADR-0089. Both pinned a MISATTRIBUTION: a `.Count`/`.Length`
+        // ---- guard about a composed value landing on the generator composition used to DERIVE that value's
+        // ---- recipe (the factory's own inner string or list argument) rather than being dropped. Composition
+        // ---- no longer derives a recipe for anything — a composed parameter is `new AnyTags()`, with no
+        // ---- chain for a misattributed constraint to land on — so the failure mode these rows existed to
+        // ---- catch is now structurally impossible, not merely fixed. What survives of the underlying
+        // ---- question — does the `.Count` guard get marked `unread guards` rather than silently dropped? —
+        // ---- is pinned directly, cheaper and without a same-suite `AnyTags` to compile against, by
+        // ---- `GuardReadingTests.ACountReadOffANonCollectionNonStringParameterIsUnread`.
 
-        new GuardedShape("composed-value-attributed-to-source-generator", "Bundle", """
-                                                                                       public sealed class Tags {
-
-                                                                                           private readonly IReadOnlyList<string> items;
-
-                                                                                           private Tags(IReadOnlyList<string> items) { this.items = items; }
-
-                                                                                           public static Tags Of(string csv) { return new Tags(csv.Split(',')); }
-
-                                                                                           public int Count { get { return items.Count; } }
-                                                                                       }
-
-                                                                                       public sealed class Bundle {
-
-                                                                                           private readonly Tags tags;
-
-                                                                                           public Bundle(Tags tags) {
-                                                                                               if (tags.Count < 3) { throw new ArgumentException("at least three tags", nameof(tags)); }
-                                                                                               this.tags = tags;
-                                                                                           }
-                                                                                       }
-                                                                                       """, requiresVerification: true)
     ];
 
     /// <summary>The shape names, as the theory rows carry them.</summary>

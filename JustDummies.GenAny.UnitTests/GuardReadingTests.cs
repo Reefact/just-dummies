@@ -242,9 +242,10 @@ public sealed class GuardReadingTests {
     ///     Before this, the family was chosen from <c>GeneratorFor.Sizes(parameter.Type)</c>'s <c>ByCount</c>
     ///     flag, false for any non-collection type, which fell to the length family unconditionally — not
     ///     because the parameter's type <b>is</b> a string, but because that family was the only one left.
-    ///     On a composed parameter the constraint then landed on the factory's own string argument, which
-    ///     happens to carry a same-named member too — a silent misattribution rather than the drop this test
-    ///     now pins instead.
+    ///     On a composed parameter this used to land the constraint on the factory's own inner argument
+    ///     (§5.4's old derivation path); since ADR-0089 a composed parameter is <c>new AnyTags()</c> and
+    ///     nothing chains onto it at all — but the guard still has to be marked rather than dropped in
+    ///     silence, which is what this test pins.
     /// </remarks>
     [Fact(DisplayName = "A .Count read off a non-collection, non-string parameter is unread, not misattributed.")]
     public void ACountReadOffANonCollectionNonStringParameterIsUnread() {
@@ -280,7 +281,7 @@ public sealed class GuardReadingTests {
 
         ScaffoldedParameter tags = outcome.Plan!.Parameters.Single();
 
-        Check.That(tags.Expression).IsEqualTo("Any.String().NonEmpty().As(Tags.Parse)");
+        Check.That(tags.Expression).IsEqualTo("new AnyTags()");
         Check.That(tags.Provenance.HasFlag(Provenance.UnreadGuards)).IsTrue();
     }
 

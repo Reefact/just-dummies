@@ -2,6 +2,22 @@
 
 Ce qui a changé pour vous, version par version, sur le train `lib`. Pour le registre technique complet — chaque contrainte, chaque cas limite, chaque ADR — voir [CHANGELOG.md](https://github.com/Reefact/just-dummies/blob/main/JustDummies/CHANGELOG.md). Précédemment : [0.x](https://github.com/Reefact/just-dummies/blob/main/JustDummies/RELEASE_NOTES-0.x.fr.md).
 
+## 1.0.0-preview.5 — 25 août 2026
+
+_Une garde contre les chaînes vierges, et quatre corrections d'ordre de chaîne pour qu'une spécification se lise à l'identique quel que soit l'ordre dans lequel elle a été écrite._
+
+### ✨ Nouveautés
+
+- Nouveau `NotBlank()` sur `Any.String()` — exige au moins un caractère non blanc, la garde que `NonEmpty()` seul ne couvrait jamais puisqu'une chaîne entièrement blanche n'est pas vide ([ADR-0088](https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-maintainers/adr/0088-state-the-whitespace-guard-with-a-member-of-its-own.md)).
+
+### 🐛 Corrections
+
+- `JD015` mesure désormais le budget de longueur d'une chaîne comme le générateur la construit réellement, si bien qu'un préfixe redéclaré ou une position de remplissage de `NotBlank()` n'est plus compté deux fois ni oublié.
+- Un ensemble `Any.Enum<T>()` vidé par `Except(...)` honore désormais `AllowingCombinations()` quel que soit l'appel écrit en premier.
+- Une combinaison de drapeaux nommée dans `OneOf` est désormais acceptée où qu'elle soit écrite, sans besoin d'`AllowingCombinations()` du tout.
+- Une collection distincte (`Any.SetOf(...)` et semblables) est désormais jugée sur la chaîne entière et finie, si bien que `Containing`, `ContainingAny` et un `Distinct(comparer)` plus fin sont honorés quelle que soit la place de `WithCount` dans la chaîne.
+- `JD030` compte désormais chaque fragment ancré (`StartingWith`, `EndingWith`, `Containing`) lorsqu'il signale l'intervalle qu'une chaîne tire.
+
 ## 1.0.0-preview.4 — 24 août 2026
 
 _Un renommage qui se lit mieux, et un plafond de taille sur lequel l'analyseur et la bibliothèque s'accordent enfin._

@@ -101,10 +101,12 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 - **A factory that constructs and returns through a guarded private constructor
   (`return new Coupon(number);`) now folds that constructor's guard onto the factory's own
-  parameter, on the target path and the composed path alike.** The same shape as the initializer
-  fix above, one hop later in the call graph: only a bare, unmodified argument folds a guard in, and
-  a parameter a leading statement writes before reaching the `return` is excluded exactly as
-  `ParameterWrites.Precede` already excludes it from every other guard.
+  parameter.** The same shape as the initializer fix above, one hop later in the call graph: only a
+  bare, unmodified argument folds a guard in, and a parameter a leading statement writes before
+  reaching the `return` is excluded exactly as `ParameterWrites.Precede` already excludes it from
+  every other guard. Reaches the target path — a type with no accessible constructor, scaffolded
+  through its own factory (§5.1) — since composition stopped deriving a recipe from a factory's
+  guards at all (ADR-0089).
 
 - **The delegated fold now carries the delegated constructor's DOUBT across the hop, not only its
   constraints — and every path where it declines says so.** The two folds above shipped reading one
@@ -157,13 +159,13 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   abandoned.
 
 - **A `.Count`/`.Length` guard on a parameter whose own type is neither a string nor a collection is
-  now marked `unread guards` instead of silently misattributed.** `if (tags.Count < 3)` on a
-  composed `Tags` parameter used to have its family chosen from `GeneratorFor.Sizes(parameter.Type)`,
+  now marked `unread guards` instead of read against the wrong family.** `if (tags.Count < 3)` on a
+  `Tags`-typed parameter used to have its family chosen from `GeneratorFor.Sizes(parameter.Type)`,
   false for any non-collection type — which fell to the string family unconditionally, not because
-  the parameter's type is a string but because that family was the only one left. On a composed
-  parameter the resulting constraint then landed on the factory's own string argument, which happens
-  to expose a same-named member too: a wrong bound on the wrong generator, reported with the same
-  confidence as a correct one. A string or a recognised collection is unaffected.
+  the parameter's type is a string but because that family was the only one left, writing a bound
+  the composed `Tags` generator carries no member for and reporting it as `guard` with full
+  confidence regardless. `IsSize` now also requires the parameter's own type to be a string or a
+  recognised collection; a string or a recognised collection is unaffected.
 
 - **A guard a jump written beside it can skip is now marked `unread guards` one nesting level down,
   not only at the top of the body.** Whether a statement above a guard can send execution past it
@@ -173,6 +175,20 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   guard, and no question saw it. `lock (this) { if (lenient) { … return; } ThrowIfLessThan(value,
   50); }` was measured reading that floor as certain, and the real ceiling read above the `lock`
   was lost with it. A jump written *below* a guard still cannot skip it, at either level.
+
+- **A distinct floor over a `char`, `byte` or `sbyte` set — or one aliased or nullable enum's
+  domain — is now marked `unread guards` instead of written with confidence past what the element
+  can draw.** `DistinctElements` answered only for `bool` and an enum's declared member count, so
+  every other element type read as unbounded: a floor of 200 over `ISet<char>` earned
+  `WithMinCount(200)`, a clean compile, no diagnostic at any severity and a recap saying `guard` —
+  over a generator that threw the moment it was constructed, the unconstrained character row
+  drawing only 128 values. The small primitive domains are carried rather than asked (ADR-0063
+  keeps the engine off the library), held to the library's own numbers by
+  `ElementCardinalityAgreementTests`. Two miscounts went with it: an enum is now counted by its
+  distinct VALUES rather than its declared members, so an aliased member adds a name and not a
+  value; and a nullable element is unwrapped before being asked, through the same `Underlying`
+  three other readers already share. `JD016` gains the same three answers, having been blind in
+  the same places.
 
 ## [1.1.0-beta.3] - 2026-08-24
 

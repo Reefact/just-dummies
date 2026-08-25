@@ -793,7 +793,7 @@ internal static class GuardCorpus {
 
                                                                 public ISet<char> Glyphs { get; }
                                                             }
-                                                            """, defect: "a distinct floor is written above what a char element row can draw"),
+                                                            """, requiresVerification: true),
 
 
         new GuardedShape("set-of-nullable-enum-count", "Roster", """
@@ -809,7 +809,7 @@ internal static class GuardCorpus {
 
                                                                         public ISet<Span?> Spans { get; }
                                                                     }
-                                                                    """, defect: "a nullable element hides its own domain from the distinct floor"),
+                                                                    """, requiresVerification: true),
 
 
         new GuardedShape("set-of-aliased-enum-count", "Band", """
@@ -825,31 +825,17 @@ internal static class GuardCorpus {
 
                                                                      public ISet<Grade> Grades { get; }
                                                                  }
-                                                                 """, defect: "aliased enum members are counted as distinct values"),
+                                                                 """, requiresVerification: true),
 
 
-        new GuardedShape("element-unread-guard-behind-a-list", "Sheet", """
-                                                                           public sealed class Tag {
-
-                                                                               private Tag(string value) {
-                                                                                   if (!value.StartsWith("T-", StringComparison.Ordinal)) { throw new ArgumentException("prefix", nameof(value)); }
-
-                                                                                   Value = value;
-                                                                               }
-
-                                                                               public static Tag Create(string value) { return new Tag(value); }
-
-                                                                               public string Value { get; }
-                                                                           }
-
-                                                                           public sealed class Sheet {
-
-                                                                               public Sheet(IReadOnlyList<Tag> tags) { Tags = tags; }
-
-                                                                               public IReadOnlyList<Tag> Tags { get; }
-                                                                           }
-                                                                           """, defect: "a composed element's unread mark is discarded when the collection is rebuilt")
-
+        // ---- Retired by ADR-0089, on the same footing as findings 8 and 11. The original shape pinned a
+        // ---- composed ELEMENT's factory guard being read correctly and then losing its `unread guards` mark
+        // ---- when the collection generator was rebuilt around it -- `Any.ListOf(...)` behind which the doubt
+        // ---- about `Tag` disappeared. Composition no longer reads an element's factory guards at all: `Tag`
+        // ---- draws as `new AnyTag()`, exactly like a top-level composed parameter, and its own guards are
+        // ---- `AnyTag`'s business. Scaffolding `Sheet` without `AnyTag` in the compilation now fails with
+        // ---- `CS0246: AnyTag could not be found` -- measured directly, not left to this row's assumption that
+        // ---- a chain still gets built here to lose doubt about.
     ];
 
     /// <summary>The shape names, as the theory rows carry them.</summary>

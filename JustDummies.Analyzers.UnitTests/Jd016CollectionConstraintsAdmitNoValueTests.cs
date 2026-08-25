@@ -108,6 +108,54 @@ public class Jd016CollectionConstraintsAdmitNoValueTests {
         Check.That(diagnostics.Length).IsEqualTo(1);
     }
 
+    /// <summary>
+    ///     The small primitive rows are provable too, and were not read at all before: every element type but
+    ///     bool and enum answered "unbounded", so a floor of 200 over a set of char went unreported.
+    /// </summary>
+    [Theory]
+    [InlineData("Any.SetOf(Any.Char()).WithCount(200)", "only 128")]
+    [InlineData("Any.SetOf(Any.Byte()).WithCount(300)", "only 256")]
+    [InlineData("Any.SetOf(Any.SByte()).WithCount(300)", "only 256")]
+    public async Task Reports_a_set_asking_for_more_than_a_small_primitive_row_can_give(string expression, string expected) {
+        string source = $$"""
+            using JustDummies;
+
+            public static class Sample {
+                public static void M() {
+                    _ = {{expression}};
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new CollectionConstraintsAdmitNoValueAnalyzer(), source);
+
+        Check.That(diagnostics.Length).IsEqualTo(1);
+        Check.That(diagnostics[0].GetMessage()).Contains(expected);
+    }
+
+    /// <summary>
+    ///     An aliased enum declares more names than it has values, and the count that matters is the values.
+    /// </summary>
+    [Fact]
+    public async Task Reports_a_set_counting_an_aliased_enums_values_rather_than_its_names() {
+        const string source = """
+            using JustDummies;
+
+            public enum Grade { Low = 1, Medium = 2, High = 3, Min = 1, Max = 3 }
+
+            public static class Sample {
+                public static void M() {
+                    _ = Any.SetOf(Any.Enum<Grade>()).WithCount(4);
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new CollectionConstraintsAdmitNoValueAnalyzer(), source);
+
+        Check.That(diagnostics.Length).IsEqualTo(1);
+        Check.That(diagnostics[0].GetMessage()).Contains("only 3");
+    }
+
     [Theory]
     [InlineData("Any.ListOf(Any.Int32()).WithCountBetween(2, 10)")]
     [InlineData("Any.ListOf(Any.Int32()).NonEmpty().WithMaxCount(5)")]

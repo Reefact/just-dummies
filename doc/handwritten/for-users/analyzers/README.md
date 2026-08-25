@@ -55,7 +55,7 @@ These rules front-load, to build time, the subset of the library's run-time cons
 | Rule | Severity | Default | Description |
 |------|----------|---------|-------------|
 | [JD014 RejectedConstantArgument](JD014.en.md) | 🟠 Warning | on | A constraint argument is a compile-time constant the generator's own guard refuses, so the call throws every time it runs. |
-| [JD015 StringConstraintsAdmitNoValue](JD015.en.md) | 🟠 Warning | on | An AnyString chain's constant constraints admit no value — a declared length the shape cannot fit under, or a character constraint that admits none of a value set's values. |
+| [JD015 StringConstraintsAdmitNoValue](JD015.en.md) | 🟠 Warning | on | An AnyString chain's constant constraints admit no value — a declared length the shape cannot fit under, or character constraints that together admit none of a value set's values. |
 | [JD016 CollectionConstraintsAdmitNoValue](JD016.en.md) | 🟠 Warning | on | A collection chain's count constraints cannot all hold, or it asks for more distinct elements than its element generator can produce. |
 | [JD017 EnumUniverseViolation](JD017.en.md) | 🟠 Warning | on | An enum constraint names a value the type does not define — an undeclared numeric value, or an exclusion that empties the universe. |
 | [JD023 ScalarChainAdmitsNoValue](JD023.en.md) | 🟠 Warning | on | An integer chain's constant constraints narrow the domain to nothing — bounds, lattice or allow-list. |

@@ -215,6 +215,15 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   a generic type already is: naming a call the library itself refuses is worse than the open
   parameter it leaves.
 
+- **JD016 no longer treats `Any.Char().OneOf(...)` as if it still drew from the whole ASCII pool.**
+  The rule walks an element chain back to its own factory to bound a distinct collection's floor,
+  and answered 128 for `Char()` regardless of what narrowed the pool afterward — but `OneOf(...)`
+  on `AnyChar` reaches past ASCII on purpose, the pool being the caller's own. A set of two accented
+  letters read as if it drew from all 128 ASCII characters, so `WithCount(5)` over it went
+  unreported. The pool is counted exactly now, the same way the rule already counts a top-level
+  `Any.OneOf(...)`/`Any.ElementOf(...)` call — scoped to `AnyChar` specifically, so a different
+  generator's own `OneOf(...)` extended afterward by `Containing(...)` (issue #188) is unaffected.
+
 ## [1.1.0-beta.3] - 2026-08-24
 
 ### Added

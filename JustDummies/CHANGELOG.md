@@ -8,6 +8,8 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ## [Unreleased]
 
+## [1.0.0-preview.5] - 2026-08-25
+
 ### Added
 
 - **`NotBlank()` on `Any.String()`, for the guard a floor of one character never covered.** It requires at
@@ -410,7 +412,8 @@ in [ADR-0045](../doc/handwritten/for-maintainers/adr/0045-renumber-the-decision-
 migration record is under
 [`doc/handwritten/for-maintainers/migration/`](../doc/handwritten/for-maintainers/migration/).
 
-[Unreleased]: https://github.com/Reefact/just-dummies/compare/lib-v1.0.0-preview.4...HEAD
+[Unreleased]: https://github.com/Reefact/just-dummies/compare/lib-v1.0.0-preview.5...HEAD
+[1.0.0-preview.5]: https://github.com/Reefact/just-dummies/compare/lib-v1.0.0-preview.4...lib-v1.0.0-preview.5
 [1.0.0-preview.4]: https://github.com/Reefact/just-dummies/compare/lib-v1.0.0-preview.3...lib-v1.0.0-preview.4
 [1.0.0-preview.3]: https://github.com/Reefact/just-dummies/compare/lib-v1.0.0-preview.2...lib-v1.0.0-preview.3
 [1.0.0-preview.2]: https://github.com/Reefact/just-dummies/compare/lib-v1.0.0-preview.1...lib-v1.0.0-preview.2

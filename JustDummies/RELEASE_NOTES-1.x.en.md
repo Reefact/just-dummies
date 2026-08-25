@@ -2,6 +2,22 @@
 
 What changed for you, release by release, in the `lib` train. For the full technical record — every constraint, every edge case, every ADR — see [CHANGELOG.md](https://github.com/Reefact/just-dummies/blob/main/JustDummies/CHANGELOG.md). Earlier: [0.x](https://github.com/Reefact/just-dummies/blob/main/JustDummies/RELEASE_NOTES-0.x.en.md).
 
+## 1.0.0-preview.5 — August 25, 2026
+
+_A guard against blank strings, and four chain-ordering fixes so a specification reads the same regardless of the order it was written in._
+
+### ✨ New
+
+- New `NotBlank()` on `Any.String()` — requires at least one non-whitespace character, the guard `NonEmpty()` alone never covered since an entirely-whitespace string is not empty ([ADR-0088](https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-maintainers/adr/0088-state-the-whitespace-guard-with-a-member-of-its-own.md)).
+
+### 🐛 Bug Fixes
+
+- `JD015` now measures a string's length budget the way the generator actually lays it out, so a re-declared prefix or a `NotBlank()` filler position is no longer double-counted or missed.
+- An `Any.Enum<T>()` pool emptied by `Except(...)` now honours `AllowingCombinations()` regardless of which call was written first.
+- A flag combination named in `OneOf` is now accepted wherever it is written, with no need for `AllowingCombinations()` at all.
+- A distinct collection (`Any.SetOf(...)` and similar) is now judged on the whole finished chain, so `Containing`, `ContainingAny` and a finer `Distinct(comparer)` are honoured regardless of where `WithCount` sits in the chain.
+- `JD030` now counts every anchored literal (`StartingWith`, `EndingWith`, `Containing`) when it reports the interval a chain draws.
+
 ## 1.0.0-preview.4 — August 24, 2026
 
 _A rename that reads better, and a size ceiling analyzer and library now agree on._

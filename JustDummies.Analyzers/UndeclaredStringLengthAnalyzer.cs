@@ -76,61 +76,12 @@ public sealed class UndeclaredStringLengthAnalyzer : DiagnosticAnalyzer {
         if (NegativeTestGuard.IsSoleBodyOfLambdaArgument(invocation.Syntax)) { return; }
         if (constraints.Any(constraint => LengthConstraints.Contains(constraint.TargetMethod.Name))) { return; }
 
-        int floor = Floor(constraints);
+        int floor = StringShapeFacts.Floor(constraints);
 
         // On the factory call itself: that is where the missing constraint would be written.
         context.ReportDiagnostic(Diagnostic.Create(
             Descriptors.UndeclaredStringLength, factory.Syntax.GetLocation(),
             $"{floor} to {floor + DefaultLengthSpread}"));
-    }
-
-    /// <summary>
-    ///     The shortest value the chain can draw — the floor <c>StringSpec.BuildCandidate</c> computes, because this
-    ///     rule promises the interval a chain actually draws rather than a constant.
-    /// </summary>
-    /// <remarks>
-    ///     Three things raise it: an anchored literal occupies characters of its own, <c>NonEmpty</c> sets a minimum
-    ///     of one, and <c>NotBlank</c> needs a filler position beside the anchors only where none of them already
-    ///     carries a non-blank character.
-    /// </remarks>
-    private static int Floor(IReadOnlyList<IInvocationOperation> constraints) {
-        (int required, bool anchorsCarryNonBlank) = AnchorBudget(constraints);
-
-        int  minimum                 = constraints.Any(constraint => constraint.TargetMethod.Name == "NonEmpty") ? 1 : 0;
-        bool fillerMustCarryNonBlank = constraints.Any(constraint => constraint.TargetMethod.Name == "NotBlank") && !anchorsCarryNonBlank;
-
-        return System.Math.Max(minimum, fillerMustCarryNonBlank ? required + 1 : required);
-    }
-
-    /// <summary>
-    ///     The characters the anchored literals occupy, and whether any of them already carries a non-blank one.
-    /// </summary>
-    /// <remarks>
-    ///     An anchor the compiler cannot resolve to a constant is left out of both answers, and that direction is the
-    ///     safe one: the same blindness that hides its length also keeps <c>NotBlank</c>'s extra position from being
-    ///     added on top of it, so an unreadable anchor can only understate the floor — which is what this rule did
-    ///     for every anchor before it counted any — and never overstate it.
-    /// </remarks>
-    private static (int Required, bool CarryNonBlank) AnchorBudget(IReadOnlyList<IInvocationOperation> constraints) {
-        // A prefix and a suffix each own a single slot, so at most one of each ever reaches the draw: re-declaring
-        // the same literal is a no-op, and declaring a different one is refused outright. Taking one of each is
-        // therefore counting what the specification keeps, not sampling it. Containing accumulates instead, so every
-        // fragment it contributes is a fragment the value has to carry.
-        string anchored = string.Concat(Anchors(constraints, "StartingWith").Take(1))
-                        + string.Concat(Anchors(constraints, "EndingWith").Take(1))
-                        + string.Concat(Anchors(constraints, "Containing"));
-
-        return (anchored.Length, anchored.Any(character => !char.IsWhiteSpace(character)));
-    }
-
-    /// <summary>The compile-time literals a named anchoring constraint contributes, in the order it was declared.</summary>
-    private static IEnumerable<string> Anchors(IReadOnlyList<IInvocationOperation> constraints, string name) {
-        foreach (IInvocationOperation constraint in constraints) {
-            if (constraint.TargetMethod.Name != name) { continue; }
-            if (constraint.Arguments.Length != 1 || !ConstantFacts.TryGetString(constraint.Arguments[0].Value, out string fragment)) { continue; }
-
-            yield return fragment;
-        }
     }
 
 }

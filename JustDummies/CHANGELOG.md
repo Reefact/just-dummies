@@ -30,6 +30,18 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Fixed
 
+- **`JD015` now measures the length budget the way the generator lays a string out.** The rule refused
+  `Any.String().StartingWith("ORD-").StartingWith("ORD-").WithLength(4)`, a chain that draws `ORD-`: a prefix and a
+  suffix each own a single slot, so re-declaring the same literal is a no-op, and summing both declarations reported
+  at build time a chain the run time honours. `Containing` does accumulate, and still counts every fragment. In the
+  other direction the rule was silent where the library refuses: `NotBlank()` is owed a filler position of its own
+  wherever no anchored literal already carries a non-blank character, so `StartingWith(" ").WithLength(1).NotBlank()`
+  throws and drew no diagnostic — while `StartingWith("A").WithLength(1).NotBlank()` is legal and must keep drawing
+  none. `NonEmpty()` and `NotBlank()` also set a floor of one with no fragment at all, which the budget never looked
+  at, so `WithLength(0).NotBlank()` was silent too. That arithmetic now lives in one place, read by `JD015` and
+  `JD030` alike, so the interval one names and the budget the other enforces cannot disagree. No change to either
+  rule's id, severity, message format or firing conditions on anything it already judged.
+
 - **An enum pool emptied by an exclusion is judged on the finished chain, so `AllowingCombinations()` is honoured
   wherever it was written.** `Any.Enum<Side>().Except(Left, Right)` empties the *declared* members of a two-member
   flags enum, but the combination `Left | Right` is still there to draw once combinations are allowed — and the

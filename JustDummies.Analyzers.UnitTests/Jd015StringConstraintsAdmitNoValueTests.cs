@@ -277,6 +277,148 @@ public class Jd015StringConstraintsAdmitNoValueTests {
     }
 
     [Fact]
+    public async Task Reports_a_blank_anchor_that_leaves_NotBlank_no_room() {
+        // The anchor fills the declared length and carries no non-blank character, so the one NotBlank() requires has
+        // nowhere to come from. Measured: the library refuses this chain at declaration.
+        const string source = """
+            using JustDummies;
+
+            public static class Sample {
+                public static string M() {
+                    return Any.String().StartingWith(" ").WithLength(1).NotBlank().Generate();
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new StringConstraintsAdmitNoValueAnalyzer(), source);
+
+        Check.That(diagnostics.Length).IsEqualTo(1);
+        Check.That(diagnostics[0].GetMessage()).Contains("NotBlank()");
+        Check.That(diagnostics[0].GetMessage()).Contains("WithLength(1)");
+    }
+
+    [Fact]
+    public async Task Does_not_report_NotBlank_beside_an_anchor_that_already_carries_one() {
+        // The position is owed only where no anchor supplies the character. Adding it unconditionally would refuse
+        // this chain, which the library honours and draws as "A".
+        const string source = """
+            using JustDummies;
+
+            public static class Sample {
+                public static string M() {
+                    return Any.String().StartingWith("A").WithLength(1).NotBlank().Generate();
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new StringConstraintsAdmitNoValueAnalyzer(), source);
+
+        Check.That(diagnostics.Length).IsEqualTo(0);
+    }
+
+    [Fact]
+    public async Task Does_not_report_a_blank_anchor_the_declared_length_still_fits() {
+        // One character of filler is left, which is all NotBlank() asks for -- the library draws " ".
+        const string source = """
+            using JustDummies;
+
+            public static class Sample {
+                public static string M() {
+                    return Any.String().StartingWith(" ").WithLength(2).NotBlank().Generate();
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new StringConstraintsAdmitNoValueAnalyzer(), source);
+
+        Check.That(diagnostics.Length).IsEqualTo(0);
+    }
+
+    [Fact]
+    public async Task Reports_a_fixed_length_that_leaves_NotBlank_no_room_at_all() {
+        // No anchor, so the old budget bailed before it could look: the floor is owed by the constraint itself.
+        const string source = """
+            using JustDummies;
+
+            public static class Sample {
+                public static string M() {
+                    return Any.String().WithLength(0).NotBlank().Generate();
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new StringConstraintsAdmitNoValueAnalyzer(), source);
+
+        Check.That(diagnostics.Length).IsEqualTo(1);
+        Check.That(diagnostics[0].GetMessage()).Contains("NotBlank() needs at least 1 character");
+        Check.That(diagnostics[0].GetMessage()).Contains("WithLength(0)");
+    }
+
+    [Fact]
+    public async Task Reports_a_cap_that_leaves_NonEmpty_no_room_at_all() {
+        // The same floor from the other member, and the same silence before: NonEmpty() sets a minimum of one that
+        // WithMaxLength(0) cannot hold, and the library refuses it at declaration.
+        const string source = """
+            using JustDummies;
+
+            public static class Sample {
+                public static string M() {
+                    return Any.String().WithMaxLength(0).NonEmpty().Generate();
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new StringConstraintsAdmitNoValueAnalyzer(), source);
+
+        Check.That(diagnostics.Length).IsEqualTo(1);
+        Check.That(diagnostics[0].GetMessage()).Contains("NonEmpty() needs at least 1 character");
+        Check.That(diagnostics[0].GetMessage()).Contains("WithMaxLength(0)");
+    }
+
+    [Fact]
+    public async Task Does_not_report_a_repeated_affix_the_library_folds_into_one() {
+        // A prefix and a suffix each own a single slot, so re-declaring the same literal is a no-op: this chain draws
+        // "ORD-". Summing both declarations reported a chain the run time honours.
+        const string source = """
+            using JustDummies;
+
+            public static class Sample {
+                public static string M() {
+                    return Any.String().StartingWith("ORD-").StartingWith("ORD-").WithLength(4).Generate();
+                }
+
+                public static string N() {
+                    return Any.String().EndingWith("-EUR").EndingWith("-EUR").WithLength(4).Generate();
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new StringConstraintsAdmitNoValueAnalyzer(), source);
+
+        Check.That(diagnostics.Length).IsEqualTo(0);
+    }
+
+    [Fact]
+    public async Task Reports_a_repeated_fragment_that_genuinely_lengthens_the_value() {
+        // The counterpart the affix fix must not flatten: Containing accumulates, so two of the same fragment really
+        // do need four characters -- the library refuses this and draws "XYXY" at a length of four.
+        const string source = """
+            using JustDummies;
+
+            public static class Sample {
+                public static string M() {
+                    return Any.String().Containing("XY").Containing("XY").WithLength(2).Generate();
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new StringConstraintsAdmitNoValueAnalyzer(), source);
+
+        Check.That(diagnostics.Length).IsEqualTo(1);
+        Check.That(diagnostics[0].GetMessage()).Contains("at least 4 characters");
+    }
+
+    [Fact]
     public async Task Does_not_report_a_non_constant_fragment() {
         const string source = """
             using JustDummies;

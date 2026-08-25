@@ -59,7 +59,7 @@ public sealed class StringConstraintsAdmitNoValueAnalyzer : DiagnosticAnalyzer {
         if (factory is null || factory.TargetMethod.Name != "String") { return; }
         if (NegativeTestGuard.IsSoleBodyOfLambdaArgument(invocation.Syntax)) { return; }
 
-        AnalyzeConstraints(context, constraints);
+        AnalyzeConstraints(context, invocation, constraints);
     }
 
     /// <summary>
@@ -70,11 +70,11 @@ public sealed class StringConstraintsAdmitNoValueAnalyzer : DiagnosticAnalyzer {
     ///     Split from <see cref="Analyze" />, which answers a different question: whether this chain is one the rule
     ///     reasons about at all. Everything below assumes that answer is yes.
     /// </remarks>
-    private static void AnalyzeConstraints(OperationAnalysisContext context, IReadOnlyList<IInvocationOperation> constraints) {
-        IInvocationOperation?              valueSet    = null;
-        List<(string Text, IOperation At)> fragments   = [];
-        int?                               fixedLength = null;
-        int?                               maximum     = null;
+    private static void AnalyzeConstraints(OperationAnalysisContext context, IInvocationOperation invocation, IReadOnlyList<IInvocationOperation> constraints) {
+        IInvocationOperation? valueSet    = null;
+        IOperation?           lastAnchor  = null;
+        int?                  fixedLength = null;
+        int?                  maximum     = null;
 
         foreach (IInvocationOperation constraint in constraints) {
             switch (constraint.TargetMethod.Name) {
@@ -82,8 +82,8 @@ public sealed class StringConstraintsAdmitNoValueAnalyzer : DiagnosticAnalyzer {
                 // pooled values rather than laid out side by side, so the length budget below no longer applies.
                 case "OneOf": valueSet = constraint; break;
 
-                case "StartingWith" or "EndingWith" or "Containing" when constraint.Arguments.Length == 1 && ConstantFacts.TryGetString(constraint.Arguments[0].Value, out string fragment):
-                    fragments.Add((fragment, constraint.Arguments[0].Value));
+                case "StartingWith" or "EndingWith" or "Containing" when constraint.Arguments.Length == 1 && ConstantFacts.TryGetString(constraint.Arguments[0].Value, out string _):
+                    lastAnchor = constraint.Arguments[0].Value;
 
                     break;
 
@@ -105,7 +105,7 @@ public sealed class StringConstraintsAdmitNoValueAnalyzer : DiagnosticAnalyzer {
             return;
         }
 
-        ReportLengthBudget(context, fragments, fixedLength, maximum);
+        ReportLengthBudget(context, invocation, constraints, lastAnchor, fixedLength, maximum);
     }
 
     /// <summary>
@@ -177,18 +177,40 @@ public sealed class StringConstraintsAdmitNoValueAnalyzer : DiagnosticAnalyzer {
         }
     }
 
-    private static void ReportLengthBudget(OperationAnalysisContext context, List<(string Text, IOperation At)> fragments, int? fixedLength, int? maximum) {
-        if (fragments.Count == 0) { return; }
+    private static void ReportLengthBudget(OperationAnalysisContext context, IInvocationOperation invocation, IReadOnlyList<IInvocationOperation> constraints,
+                                           IOperation? lastAnchor, int? fixedLength, int? maximum) {
+        int? cap = fixedLength ?? maximum;
+        if (cap is null) { return; }
 
-        int required = fragments.Sum(fragment => fragment.Text.Length);
-        int? cap     = fixedLength ?? maximum;
-        if (cap is null || required <= cap.Value) { return; }
+        int required = StringShapeFacts.Floor(constraints);
+        if (required <= cap.Value) { return; }
 
         string capName = fixedLength is not null ? $"WithLength({fixedLength})" : $"WithMaxLength({maximum})";
 
+        // The last anchored literal is what the reader is most likely to shorten; with no anchor at all there is
+        // nothing in the chain more specific than the chain itself.
         context.ReportDiagnostic(Diagnostic.Create(
-            Descriptors.StringConstraintsAdmitNoValue, fragments[fragments.Count - 1].At.Syntax.GetLocation(),
-            $"the anchored fragments need at least {required} characters, which {capName} cannot hold"));
+            Descriptors.StringConstraintsAdmitNoValue, (lastAnchor ?? invocation).Syntax.GetLocation(),
+            $"{Claimant(constraints, lastAnchor is not null)} at least {Characters(required)}, which {capName} cannot hold"));
+    }
+
+    /// <summary>
+    ///     What the sentence names as demanding the length, and the verb it takes. A constraint owed a position of
+    ///     its own is named beside the anchors rather than folded into them, because it is the one the reader can
+    ///     remove.
+    /// </summary>
+    private static string Claimant(IReadOnlyList<IInvocationOperation> constraints, bool anchored) {
+        bool notBlankOwnsAPosition = StringShapeFacts.FillerMustCarryNonBlank(constraints);
+
+        if (anchored) {
+            return notBlankOwnsAPosition ? "the anchored fragments and NotBlank() need" : "the anchored fragments need";
+        }
+
+        return notBlankOwnsAPosition ? "NotBlank() needs" : "NonEmpty() needs";
+    }
+
+    private static string Characters(int count) {
+        return count == 1 ? "1 character" : $"{count} characters";
     }
 
 }

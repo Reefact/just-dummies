@@ -205,6 +205,17 @@ internal sealed class ContinuousIntervalSpec {
     }
 
     /// <summary>
+    ///     The declared interval, for the owner that knows how to count its own representable values — the
+    ///     type-specific concern <see cref="Cardinality" /> declines to carry. A 16-bit row holds few enough of them
+    ///     that the difference is observable; the wider rows dwarf every cap the collections apply, so only the
+    ///     narrow one asks.
+    /// </summary>
+    internal double Min => _min;
+
+    /// <inheritdoc cref="Min" />
+    internal double Max => _max;
+
+    /// <summary>
     ///     Whether <paramref name="value" /> is one the specification could produce — a member of the allow-list when
     ///     one is set, otherwise inside the interval and not excluded. Non-finite inputs fall outside the bounds and
     ///     so return <c>false</c>. Mirrors <see cref="Generate" />'s own domain.

@@ -56,6 +56,18 @@ public sealed class AnyHalf : IAny<Half>, IHasRandomSource, ICardinalityHint<Hal
         return Half.IsInfinity(next) ? double.PositiveInfinity : (double)next;
     }
 
+    /// <summary>
+    ///     The position of a finite half on a ladder running from the lowest to the highest. The two zeros share a
+    ///     rung because they compare equal, so the ladder counts what a <see cref="System.Collections.Generic.HashSet{T}" />
+    ///     of halves would keep apart rather than what the bit patterns would.
+    /// </summary>
+    private static long Rung(Half value) {
+        short bits      = BitConverter.HalfToInt16Bits(value);
+        int   magnitude = bits & 0x7FFF;
+
+        return bits < 0 ? -magnitude : magnitude;
+    }
+
     #endregion
 
     #region Fields declarations
@@ -72,7 +84,22 @@ public sealed class AnyHalf : IAny<Half>, IHasRandomSource, ICardinalityHint<Hal
 
     RandomSource? IHasRandomSource.Source => _source;
 
-    long? ICardinalityHint<Half>.DistinctCardinality => _spec.Cardinality;
+    /// <remarks>
+    ///     <para>
+    ///         The shared interval specification answers <c>null</c> for a floating-point range, counting representable
+    ///         values being a type-specific concern it does not carry — so this row carries it. Sixteen bits hold
+    ///         63 487 distinct finite values, which is under every cap the collections apply, so the count is
+    ///         observable here in a way it is not for <see cref="AnyDouble" /> or <see cref="AnySingle" />: without it
+    ///         a distinct set over halves accepts a floor no draw could ever reach, and only says so after exhausting
+    ///         a budget sized from the ask rather than from the domain.
+    ///     </para>
+    ///     <para>
+    ///         Exclusions are not subtracted. A cardinality is read as an upper bound — it bounds a redraw budget and
+    ///         refuses an impossible count — and both uses stay sound when the bound is generous, while an
+    ///         under-count would refuse a set the row can actually produce.
+    ///     </para>
+    /// </remarks>
+    long? ICardinalityHint<Half>.DistinctCardinality => _spec.Cardinality ?? FiniteValuesInSpan();
 
     // The allow-list holds the doubles the supplied halves widen to, so membership tests the same widening.
     bool ICardinalityHint<Half>.Contains(Half value) => _spec.Contains((double)value);
@@ -218,6 +245,24 @@ public sealed class AnyHalf : IAny<Half>, IHasRandomSource, ICardinalityHint<Hal
     /// <inheritdoc />
     public Half Generate() {
         return (Half)_spec.Generate(_source);
+    }
+
+    /// <summary>How many distinct finite halves the declared interval holds, counted on the ladder of <see cref="Rung" />.</summary>
+    private long FiniteValuesInSpan() {
+        double lower = Math.Max(_spec.Min, -(double)Half.MaxValue);
+        double upper = Math.Min(_spec.Max, (double)Half.MaxValue);
+
+        if (lower > upper) { return 0; }
+
+        // A bound lands between two halves as often as on one, and the conversion rounds to the nearest rather than
+        // inwards, so a single step on the type's own ladder puts an out-of-interval rounding back inside it.
+        Half first = (Half)lower;
+        if ((double)first < lower) { first = Half.BitIncrement(first); }
+
+        Half last = (Half)upper;
+        if ((double)last > upper) { last = Half.BitDecrement(last); }
+
+        return first > last ? 0 : Rung(last) - Rung(first) + 1;
     }
 
 }

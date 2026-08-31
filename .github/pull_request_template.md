@@ -64,3 +64,18 @@
 ## Related issues
 
 <!-- e.g. Closes #123 -->
+
+<!-- contributor-agreement:start -->
+## Contributor agreement
+
+<!--
+  Direct PRs authored by the Project Owner (@Reefact) do not require this section;
+  the validation workflow removes it automatically.
+
+  PRs from `claude/*` branches and all PRs from other contributors must keep and
+  check this acknowledgement. For external contributors, checking it constitutes
+  acceptance of the Contributor Agreement for this contribution.
+-->
+
+* [ ] I have read the [Contributor Agreement](https://github.com/Reefact/just-dummies/blob/main/CONTRIBUTOR_AGREEMENT.md) and, if I am not the Project Owner (@Reefact), I accept it for this contribution.
+<!-- contributor-agreement:end -->

@@ -7,6 +7,25 @@ JustDummies treats errors as first-class, documented, diagnosable
 concepts. The history of the repository should be as legible as the errors the
 library produces. This guide defines how commits are written here.
 
+## Ownership and contributor agreement
+
+JustDummies is owned by **Sylvain Aurat, acting in his personal capacity** (the "Project
+Owner"). The GitHub account [@Reefact](https://github.com/Reefact) is the Project Owner's
+personal account and is distinct from the REEFACT legal entity. REEFACT is a separate French
+SARL, authorized to operate and commercially exploit the project under the
+[REEFACT Exploitation License](REEFACT_EXPLOITATION_LICENSE.md) — that authorization does not
+transfer ownership. The full model is documented in
+[`PROJECT_OWNERSHIP.md`](PROJECT_OWNERSHIP.md).
+
+Anyone other than the Project Owner must accept the
+[JustDummies Contributor Agreement](CONTRIBUTOR_AGREEMENT.md) before a contribution can be
+accepted. The agreement gives the Project Owner the rights necessary to modify, distribute,
+relicense and commercially exploit a contribution, including through REEFACT — contributing
+does **not** give a veto over future licensing or business-model decisions. A pull request
+authored directly by `@Reefact` does not require it; a pull request produced through the
+Project Owner's Claude Code workflow (a `claude/*` branch) keeps and checks the acknowledgement
+regardless, per the pull request template.
+
 ## Building and testing
 
 * Target framework: **.NET Standard 2.0**.

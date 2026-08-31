@@ -8,6 +8,26 @@ documentés et diagnostiquables. L’historique du dépôt doit être aussi lisi
 les erreurs que la bibliothèque produit. Ce guide définit la façon dont les
 commits sont écrits ici.
 
+## Propriété et accord de contribution
+
+JustDummies appartient à **Sylvain Aurat, agissant à titre personnel** (le « Project
+Owner »). Le compte GitHub [@Reefact](https://github.com/Reefact) est son compte personnel,
+distinct de l'entité juridique REEFACT. REEFACT est une SARL française distincte, autorisée à
+exploiter et commercialiser le projet en vertu de la
+[REEFACT Exploitation License](../../../REEFACT_EXPLOITATION_LICENSE.md) — cette autorisation
+ne transfère pas la propriété. Le modèle complet est documenté dans
+[`PROJECT_OWNERSHIP.md`](../../../PROJECT_OWNERSHIP.md) (en anglais).
+
+Toute personne autre que le Project Owner doit accepter le
+[JustDummies Contributor Agreement](../../../CONTRIBUTOR_AGREEMENT.md) (en anglais) avant
+qu'une contribution puisse être acceptée. Cet accord donne au Project Owner les droits
+nécessaires pour modifier, distribuer, relicencier et exploiter commercialement une
+contribution, y compris via REEFACT — contribuer ne donne **pas** de droit de veto sur les
+décisions futures de licence ou de modèle économique. Une pull request soumise directement
+par `@Reefact` n'y est pas soumise ; une pull request produite par le workflow Claude Code du
+Project Owner (une branche `claude/*`) conserve et vérifie tout de même la case
+d'acquiescement, conformément au modèle de pull request.
+
 ## Compiler et tester
 
 * Framework cible : **.NET Standard 2.0**.

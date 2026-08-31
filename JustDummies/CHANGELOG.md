@@ -8,6 +8,21 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ## [Unreleased]
 
+### Changed
+
+- **JustDummies is licensed under [PolyForm Internal Use 1.0.0](../LICENSE), not Apache 2.0 —
+  source-available, not open source.** You may read, build, modify and run the library, and the
+  analyzers bundled in it, for your own or your company's internal business operations; you may not
+  distribute the software. The package metadata moves with it: the `Apache-2.0` SPDX expression is
+  replaced by the license file itself, packed inside the `.nupkg`, so the terms travel with the
+  artifact rather than being an identifier a resolver looks up elsewhere. The licensor is **Sylvain
+  Aurat, acting in his personal capacity** — `Company` and `Copyright` now read that instead of
+  `Reefact`, a leftover from Apache 2.0; REEFACT SARL is a distinct legal entity, separately
+  authorized to exploit the project, and [`PROJECT_OWNERSHIP.md`](../PROJECT_OWNERSHIP.md) states
+  who licenses what to whom. Versions already on NuGet are untouched — a published package is
+  immutable and carries the license it shipped with — so this governs releases from here on.
+  Contributions are governed by the [Contributor Agreement](../CONTRIBUTOR_AGREEMENT.md).
+
 ### Fixed
 
 - **`JD016` now proves the small element domains, and counts a character pool exactly.** The rule

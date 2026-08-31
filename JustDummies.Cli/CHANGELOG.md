@@ -219,6 +219,15 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   floor-of-one edge — rendered as `.NonEmpty()`, never as the literal text a bisection at a wider
   ceiling can go looking for — is recognised rather than mistaken for a refusal.
 
+- **A distinct floor over an `ISet<Half>` is marked too, past 63 487.** Enumerating the library's
+  cardinality-bearing rows against the mirror — the direction the audit above never checked, since it
+  only measured the rows the mirror already named — found the last one under the producible cap it
+  did not carry. `Half` has no `SpecialType`, so it is named by metadata; the count is the library's
+  own, now that the row states it rather than inheriting the "unbounded" answer every floating-point
+  range gives. It is a bound and not a reachable target — the row draws uniformly over its interval
+  and rounds, so the halves near zero are effectively never drawn — which is why the agreement test
+  pins the refusal edge here and not both, and says so.
+
 - **An enum with no declared member is left open, instead of named with confidence.** The base
   table's enum row emitted `Any.Enum<T>()` unconditionally, but the library draws only from an
   enum's declared members and throws `EnumDeclaresNoMembers` the moment such a generator is

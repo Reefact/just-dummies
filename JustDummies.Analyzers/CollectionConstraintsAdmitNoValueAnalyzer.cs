@@ -33,6 +33,9 @@ public sealed class CollectionConstraintsAdmitNoValueAnalyzer : DiagnosticAnalyz
     /// <summary>The whole of a 16-bit integer, signed or not.</summary>
     private const int Int16ValueCount = 65536;
 
+    /// <summary>The distinct finite halves, the two zeros counted once because they compare equal.</summary>
+    private const int HalfValueCount = 63487;
+
     /// <inheritdoc />
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; } =
         ImmutableArray.Create(Descriptors.CollectionConstraintsAdmitNoValue);
@@ -208,6 +211,16 @@ public sealed class CollectionConstraintsAdmitNoValueAnalyzer : DiagnosticAnalyz
 
             case "Byte" or "SByte":
                 cardinality = ByteValueCount;
+
+                return true;
+
+            // The one floating-point row narrow enough to matter. `Half` holds this many distinct finite values --
+            // the two zeros compare equal, so a set keeps one of them -- and the row states the count itself
+            // rather than inheriting the "unbounded" answer a floating-point range otherwise gives. It is a
+            // bound rather than a reachable target, which is the right side to err on: a count above it is
+            // provably unsatisfiable, and one below it is left to the draw.
+            case "Half":
+                cardinality = HalfValueCount;
 
                 return true;
 

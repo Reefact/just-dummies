@@ -42,7 +42,8 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   unbounded, so `Any.SetOf(Any.Char()).WithCount(200)` compiled clean over a generator that draws 128
   values and threw the moment it was constructed. `Char` (128, the ASCII pool of
   [ADR-0075](../doc/handwritten/for-maintainers/adr/0075-draw-characters-from-the-whole-of-ascii.md)),
-  `Byte`/`SByte` (256) and `Int16`/`UInt16` (65 536) are now proven, and an enum is counted by its
+  `Byte`/`SByte` (256), `Int16`/`UInt16` (65 536) and `Half` (63 487, the count the row itself now
+  states) are now proven, and an enum is counted by its
   **distinct values** rather than its declared names, so an alias adds a name and not a value.
   `Any.Char().OneOf(...)` is counted exactly instead of through the factory beneath it: that pool is
   the caller's own and reaches past ASCII on purpose, so answering 128 for a set of two accented

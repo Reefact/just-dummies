@@ -118,6 +118,8 @@ public class Jd016CollectionConstraintsAdmitNoValueTests {
     [InlineData("Any.SetOf(Any.SByte()).WithCount(300)", "only 256")]
     [InlineData("Any.SetOf(Any.Int16()).WithCount(70000)", "only 65536")]
     [InlineData("Any.SetOf(Any.UInt16()).WithCount(70000)", "only 65536")]
+    // The one floating-point row narrow enough to prove: the two zeros compare equal, so a set keeps one.
+    [InlineData("Any.SetOf(Any.Half()).WithCount(70000)", "only 63487")]
     // AnyChar.OneOf(...) reaches past ASCII on purpose — the pool is the caller's own — so walking through it
     // to the Char() factory beneath and answering 128 would be too wide, not too narrow.
     [InlineData("Any.SetOf(Any.Char().OneOf('a', 'b')).WithCount(5)", "only 2")]
@@ -174,6 +176,7 @@ public class Jd016CollectionConstraintsAdmitNoValueTests {
     // the fix to AnyChar specifically (not every OneOf(...) overload) is what this pins.
     [InlineData("Any.SetOf(Any.Char().OneOf('a', 'b')).WithCount(2)")]
     [InlineData("Any.SetOf(Any.Char().OneOf('a', 'b', 'c')).WithCount(3)")]
+    [InlineData("Any.SetOf(Any.Half()).WithCount(100)")]
     [InlineData("Any.SetOf(Any.Int32().OneOf(1, 2)).Containing(3).WithCount(3)")]
     public async Task Does_not_report_a_satisfiable_chain(string expression) {
         string source = $$"""

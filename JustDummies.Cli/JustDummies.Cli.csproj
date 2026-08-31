@@ -37,7 +37,7 @@
 
     <!-- Metadata -->
     <PackageTags>testing;test-data;dummies;scaffolding;dotnet-tool;cli;code-generation</PackageTags>
-    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
 
     <!-- Links -->
@@ -59,6 +59,7 @@
          since a nuget.org listing renders it at 128 px. Icon by Magnific, from Flaticon; the attribution is
          in this package's README. -->
     <None Include="..\icon.png" Pack="true" PackagePath="icon.png" />
+    <None Include="..\LICENSE" Pack="true" PackagePath="/" />
     <None Include="README.nuget.md" Pack="true" PackagePath="readme.md" />
   </ItemGroup>
 

@@ -180,4 +180,7 @@ to `Reefact/first-class-errors`.** The full record is in
 [`doc/handwritten/for-maintainers/migration/`](doc/handwritten/for-maintainers/migration/); the
 decision is [ADR-0044](doc/handwritten/for-maintainers/adr/0044-extract-justdummies-into-its-own-repository.md).
 
-Licensed under [Apache 2.0](LICENSE).
+Licensed under [PolyForm Internal Use 1.0.0](LICENSE) — source-available, not open source: free to
+read, build, modify and use for your own or your company's internal business operations; you may
+not distribute the software. See [`PROJECT_OWNERSHIP.md`](PROJECT_OWNERSHIP.md) for who licenses it
+and how it reaches you as a published package.

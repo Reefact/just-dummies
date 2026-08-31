@@ -41,7 +41,7 @@
 
     <!-- Metadata -->
     <PackageTags>testing;test-data;dummies;arbitrary;anonymous-values;fluent;deterministic;seed;value-objects;constraints</PackageTags>
-    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
 
     <!-- Links -->
@@ -64,6 +64,7 @@
 
   <ItemGroup>
     <None Include="..\icon.png" Pack="true" PackagePath="/" />
+    <None Include="..\LICENSE" Pack="true" PackagePath="/" />
     <None Include="README.nuget.md" Pack="true" PackagePath="readme.md" />
   </ItemGroup>
 

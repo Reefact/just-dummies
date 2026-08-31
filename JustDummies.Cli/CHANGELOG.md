@@ -224,9 +224,11 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   only measured the rows the mirror already named — found the last one under the producible cap it
   did not carry. `Half` has no `SpecialType`, so it is named by metadata; the count is the library's
   own, now that the row states it rather than inheriting the "unbounded" answer every floating-point
-  range gives. It is a bound and not a reachable target — the row draws uniformly over its interval
-  and rounds, so the halves near zero are effectively never drawn — which is why the agreement test
-  pins the refusal edge here and not both, and says so.
+  range gives. The agreement test pins both edges for it, as it does for the six rows before it: the
+  largest floor the engine declares is one the library draws, and the next is refused. That only
+  became askable once the row drew over the values it can represent
+  ([ADR-0091](../doc/handwritten/for-maintainers/adr/0091-draw-a-half-from-the-values-it-can-represent.md));
+  until then 63 487 was a bound the draw could not reach, and the test could pin the refusal edge alone.
 
 - **An enum with no declared member is left open, instead of named with confidence.** The base
   table's enum row emitted `Any.Enum<T>()` unconditionally, but the library draws only from an

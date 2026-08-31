@@ -1,0 +1,87 @@
+name: Contributor agreement
+
+on:
+  pull_request_target:
+    types: [opened, edited, reopened, synchronize]
+
+# pull_request_target is intentional here. The workflow never checks out or executes
+# pull-request code. Write access is used only to remove the CLA section from direct
+# Project Owner PRs.
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  contributor-agreement:
+    name: Contributor agreement
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Validate contributor agreement
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const ownerLogin = 'reefact';
+            const clause = 'I have read the [Contributor Agreement](https://github.com/Reefact/just-dummies/blob/main/CONTRIBUTOR_AGREEMENT.md) and, if I am not the Project Owner (@Reefact), I accept it for this contribution.';
+            const startMarker = '<!-- contributor-agreement:start -->';
+            const endMarker = '<!-- contributor-agreement:end -->';
+
+            let body = pr.body ?? '';
+            const login = pr.user.login.toLowerCase();
+            const headRef = pr.head.ref.toLowerCase();
+            const isProjectOwner = login === ownerLogin;
+            const isClaudeBranch = headRef.startsWith('claude/');
+            const isDirectOwnerPr = isProjectOwner && !isClaudeBranch;
+
+            if (isDirectOwnerPr) {
+              const start = body.indexOf(startMarker);
+              const end = body.indexOf(endMarker);
+
+              if (start >= 0 && end >= start) {
+                const before = body.slice(0, start).trimEnd();
+                const after = body.slice(end + endMarker.length).trimStart();
+                body = after.length > 0 ? `${before}\n\n${after}` : `${before}\n`;
+
+                await github.rest.pulls.update({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  pull_number: pr.number,
+                  body,
+                });
+
+                core.notice('Contributor Agreement section removed from direct Project Owner PR.');
+              } else {
+                core.info('Direct Project Owner PR: no Contributor Agreement acceptance required.');
+              }
+
+              return;
+            }
+
+            const checkedLines = [
+              `* [x] ${clause}`,
+              `* [X] ${clause}`,
+              `- [x] ${clause}`,
+              `- [X] ${clause}`,
+            ];
+
+            const lines = body.split(/\r?\n/).map(line => line.trim());
+            const isChecked = lines.some(line => checkedLines.includes(line));
+
+            if (!isChecked) {
+              const source = isProjectOwner && isClaudeBranch
+                ? 'Claude Code PR'
+                : `external PR from @${pr.user.login}`;
+
+              core.setFailed(
+                `Contributor Agreement acknowledgement is required for this ${source}. ` +
+                'Read the agreement and check the corresponding box in the pull request description.'
+              );
+              return;
+            }
+
+            if (isProjectOwner && isClaudeBranch) {
+              core.info('Claude Code PR acknowledgement is present.');
+            } else {
+              core.info(`Contributor Agreement accepted for this contribution by @${pr.user.login}.`);
+            }

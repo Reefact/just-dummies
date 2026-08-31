@@ -21,7 +21,7 @@ and the **Origin** column says how each one got here:
   but its record stays live in `Reefact/first-class-errors` too, because that
   repository still applies it. Both copies are now independent: either side can
   supersede its own without touching the other. 9 decisions.
-* **recorded here** — decided in this repository, on its own. 46 decisions.
+* **recorded here** — decided in this repository, on its own. 47 decisions.
 
 The numbers are this base's own, assigned in the order the decisions were
 recorded upstream ([ADR-0045](0045-renumber-the-decision-base.md)); every ADR
@@ -200,3 +200,4 @@ failure mode of a "not now" is that nobody remembers the option existed on the d
 | [ADR-0087](0087-check-a-documented-count-against-its-source-not-its-translation.md) | Check a documented count against its source, not against its translation | Accepted | recorded here |
 | [ADR-0088](0088-state-the-whitespace-guard-with-a-member-of-its-own.md) | State the whitespace guard with a member of its own | Accepted | recorded here |
 | [ADR-0089](0089-draw-a-composed-parameter-through-the-generator-its-type-owns.md) | Draw a composed parameter through the generator its type owns | Accepted | recorded here |
+| [ADR-0090](0090-exempt-dependabot-from-the-contributor-agreement.md) | Exempt Dependabot from the contributor agreement, only at its own signed commit | Accepted | recorded here |

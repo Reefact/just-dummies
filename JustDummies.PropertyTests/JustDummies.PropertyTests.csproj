@@ -6,6 +6,9 @@
        are proven against the netstandard2.0 asset that .NET Framework consumers actually load. -->
   <Import Project="..\build\Net472TestFloor.props" />
 
+  <!-- Coverage wiring: the coverlet.MTP collector and the testconfig.json that configures it. -->
+  <Import Project="..\build\TestCoverage.props" />
+
   <PropertyGroup>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
@@ -13,10 +16,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="coverlet.collector">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
     <!-- FsCheck drives the property-based (fuzzing-style) tests. The bare `using FsCheck;` in each test file
          is also what OpenSSF Scorecard's Fuzzing check looks for to credit C# property-based testing. -->
     <PackageReference Include="FsCheck" />

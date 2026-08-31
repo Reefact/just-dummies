@@ -36,9 +36,24 @@ public sealed class AnyModernTypeTests {
         // changes nothing — the rule narrows where a type is extravagant and stays silent where it is not. It lives
         // in this file rather than beside the other continuous examples because Half is a .NET 5+ type, absent from
         // the .NET Framework 4.7.2 floor leg this file is excluded from.
+        //
+        // Still true, and it was long read as saying more than it does: being inside the window never made the
+        // magnitudes inside it reachable. That was a separate defect, closed by drawing over the representable
+        // values (ADR-0091), and the window remains a no-op here either way — which is what this pins.
         for (int i = 0; i < SampleCount; i++) {
             Check.That((double)Any.Half().Generate()).IsStrictlyLessThan(65_505d);
         }
+    }
+
+    [Fact(DisplayName = "Half reaches the ordinary magnitudes inside its domain, not only the widest gaps.")]
+    public void HalfReachesTheMagnitudesInsideItsDomain() {
+        // The defect ADR-0091 closed, stated as the test that would have caught it: drawing uniformly over the real
+        // interval and rounding produced NOTHING below 1 in 200 000 draws, because the halves near zero have
+        // rounding intervals too narrow to land in. One below 1 and one at or above it, over a modest sample.
+        double[] drawn = Enumerable.Range(0, SampleCount).Select(_ => (double)Any.Half().Generate()).ToArray();
+
+        Check.That(drawn.Any(value => Math.Abs(value) < 1d)).IsTrue();
+        Check.That(drawn.Any(value => Math.Abs(value) >= 1d)).IsTrue();
     }
 
     [Fact(DisplayName = "DateOnly: Between is inclusive and reached; After/Before are exclusive; conflicts surface.")]

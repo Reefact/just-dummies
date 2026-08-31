@@ -37,13 +37,23 @@ internal sealed class ContinuousIntervalSpec {
 
     #region Statics members declarations
 
-    internal static ContinuousIntervalSpec Unconstrained(string typeName, Func<double, string> render, Func<double, double> quantize, Func<double, double> nextUp, double domainMin, double domainMax) {
+    /// <summary>
+    ///     An unconstrained specification over <c>[domainMin, domainMax]</c>.
+    /// </summary>
+    /// <remarks>
+    ///     The last argument is how the row picks a value in <c>[lower, upper]</c> from one unit sample, for a row
+    ///     where uniformity over the reals is the wrong question — a narrow type whose representable values are
+    ///     spaced geometrically. Omitted, which is the ordinary case, the draw stays uniform over the interval and
+    ///     nothing about it changes.
+    /// </remarks>
+    internal static ContinuousIntervalSpec Unconstrained(string typeName, Func<double, string> render, Func<double, double> quantize, Func<double, double> nextUp, double domainMin, double domainMax,
+                                                         Func<double, double, double, double>? laddered = null) {
         if (typeName is null) { throw new ArgumentNullException(nameof(typeName)); }
         if (render is null) { throw new ArgumentNullException(nameof(render)); }
         if (quantize is null) { throw new ArgumentNullException(nameof(quantize)); }
         if (nextUp is null) { throw new ArgumentNullException(nameof(nextUp)); }
 
-        return new ContinuousIntervalSpec(typeName, render, quantize, nextUp, domainMin, null, domainMax, null, null, null, []);
+        return new ContinuousIntervalSpec(typeName, render, quantize, nextUp, domainMin, null, domainMax, null, null, null, [], laddered);
     }
 
     /// <summary>
@@ -83,6 +93,7 @@ internal sealed class ContinuousIntervalSpec {
     private readonly List<double>?          _effectiveAllowed;
     private readonly IReadOnlyList<double>  _excluded;
     private readonly IReadOnlyList<(ConstraintCall Constraint, double[] Ordinals)> _exclusions;
+    private readonly Func<double, double, double, double>? _laddered;
     private readonly Func<double, double>   _nextUp;
     private readonly double                 _max;
     private readonly ConstraintCall?        _maxConstraint;
@@ -99,11 +110,13 @@ internal sealed class ContinuousIntervalSpec {
                                    double  min,      ConstraintCall? minConstraint,
                                    double  max,      ConstraintCall? maxConstraint,
                                    IReadOnlyList<double>? allowed, ConstraintCall? allowedConstraint,
-                                   IReadOnlyList<(ConstraintCall Constraint, double[] Ordinals)> exclusions) {
+                                   IReadOnlyList<(ConstraintCall Constraint, double[] Ordinals)> exclusions,
+                                   Func<double, double, double, double>? laddered) {
         _typeName          = typeName;
         _render            = render;
         _quantize          = quantize;
         _nextUp            = nextUp;
+        _laddered          = laddered;
         _min               = min;
         _minConstraint     = minConstraint;
         _max               = max;
@@ -129,7 +142,7 @@ internal sealed class ContinuousIntervalSpec {
             throw ConflictingAnyConstraintException.AlreadyBoundedAbove(applying, _maxConstraint, _render(_max));
         }
 
-        return Validated(new ContinuousIntervalSpec(_typeName, _render, _quantize, _nextUp, minimum, applying, _max, _maxConstraint, _allowed, _allowedConstraint, _exclusions), applying);
+        return Validated(new ContinuousIntervalSpec(_typeName, _render, _quantize, _nextUp, minimum, applying, _max, _maxConstraint, _allowed, _allowedConstraint, _exclusions, _laddered), applying);
     }
 
     /// <summary>Tightens the upper bound; a looser bound than the current one is a no-op.</summary>
@@ -144,7 +157,7 @@ internal sealed class ContinuousIntervalSpec {
             throw ConflictingAnyConstraintException.AlreadyBoundedBelow(applying, _minConstraint, _render(_min));
         }
 
-        return Validated(new ContinuousIntervalSpec(_typeName, _render, _quantize, _nextUp, _min, _minConstraint, maximum, applying, _allowed, _allowedConstraint, _exclusions), applying);
+        return Validated(new ContinuousIntervalSpec(_typeName, _render, _quantize, _nextUp, _min, _minConstraint, maximum, applying, _allowed, _allowedConstraint, _exclusions, _laddered), applying);
     }
 
     /// <summary>Tightens the lower bound to strictly above <paramref name="bound" /> — via the type's next representable value.</summary>
@@ -172,7 +185,7 @@ internal sealed class ContinuousIntervalSpec {
 
         double[] distinct = values.Distinct().ToArray();
 
-        return Validated(new ContinuousIntervalSpec(_typeName, _render, _quantize, _nextUp, _min, _minConstraint, _max, _maxConstraint, distinct, applying, _exclusions), applying);
+        return Validated(new ContinuousIntervalSpec(_typeName, _render, _quantize, _nextUp, _min, _minConstraint, _max, _maxConstraint, distinct, applying, _exclusions, _laddered), applying);
     }
 
     /// <summary>Adds values the generator must never produce.</summary>
@@ -184,7 +197,7 @@ internal sealed class ContinuousIntervalSpec {
         // that actually emptied the domain rather than a bound that merely happens to border it.
         List<(ConstraintCall Constraint, double[] Ordinals)> exclusions = [.. _exclusions, (applying, values)];
 
-        return Validated(new ContinuousIntervalSpec(_typeName, _render, _quantize, _nextUp, _min, _minConstraint, _max, _maxConstraint, _allowed, _allowedConstraint, exclusions), applying);
+        return Validated(new ContinuousIntervalSpec(_typeName, _render, _quantize, _nextUp, _min, _minConstraint, _max, _maxConstraint, _allowed, _allowedConstraint, exclusions, _laddered), applying);
     }
 
     /// <summary>
@@ -319,10 +332,15 @@ internal sealed class ContinuousIntervalSpec {
             upper = _max;
         }
 
+        // One unit sample either way, so the two paths consume the seed identically and only the VALUE a laddered
+        // row produces differs from what it would have produced uniformly (ADR-0049 pins draws consumed as well as
+        // values, and a row switching path must not shift what follows it in the same scope).
+        double unit = random.NextDouble();
+
         // Sample around the midpoint so the span (max - min) never overflows to infinity on wide ranges.
         double mid       = lower / 2 + upper / 2;
         double half      = upper / 2 - lower / 2;
-        double candidate = Quantized(mid + (2 * random.NextDouble() - 1) * half);
+        double candidate = Quantized(_laddered is null ? mid + (2 * unit - 1) * half : _laddered(lower, upper, unit));
 
         // A draw colliding with an excluded point (a measure-zero event) is nudged to the nearest
         // non-excluded representable neighbour: ascending first, then descending from the original draw

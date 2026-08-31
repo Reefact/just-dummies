@@ -23,6 +23,21 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   immutable and carries the license it shipped with — so this governs releases from here on.
   Contributions are governed by the [Contributor Agreement](../CONTRIBUTOR_AGREEMENT.md).
 
+- **`Any.Half()` draws from the values a half can represent, and the values it draws change.** It drew
+  uniformly over its interval and rounded, which sounds neutral and is not: halves are spaced
+  geometrically, so a uniform draw over the reals lands almost entirely in the widest gaps. Measured over
+  200 000 draws, the unconstrained row reached 14 143 of its 63 487 values and produced **nothing below
+  1 at all** — 98.5 % of draws were 1000 or larger. A generator that cannot produce `0.5` certifies
+  nothing about the code paths where a half is a fraction. It now draws uniformly over the values the
+  declared interval holds: 60 728 distinct values over the same 200 000 draws, 43 % of them between
+  1e-4 and 1. This is the defect
+  [ADR-0031](../doc/handwritten/for-maintainers/adr/0031-draw-arbitrary-numbers-within-an-ordinary-magnitude.md)
+  was written to remove, finished for the one type whose window clipped nothing
+  ([ADR-0091](../doc/handwritten/for-maintainers/adr/0091-draw-a-half-from-the-values-it-can-represent.md)).
+  **A seeded test drawing a `Half` replays a different value**; the draw sequence is not a versioned
+  contract below 1.0. `Any.Double()` and `Any.Single()` are untouched, and no other generator's values
+  move.
+
 ### Fixed
 
 - **`Any.Half()` states how many distinct values it holds, so a distinct set beyond them is refused

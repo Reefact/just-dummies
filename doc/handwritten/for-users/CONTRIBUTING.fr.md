@@ -26,7 +26,11 @@ contribution, y compris via REEFACT — contribuer ne donne **pas** de droit de 
 décisions futures de licence ou de modèle économique. Une pull request soumise directement
 par `@Reefact` n'y est pas soumise ; une pull request produite par le workflow Claude Code du
 Project Owner (une branche `claude/*`) conserve et vérifie tout de même la case
-d'acquiescement, conformément au modèle de pull request.
+d'acquiescement, conformément au modèle de pull request. Une pull request ouverte par
+Dependabot n'y est pas soumise non plus, tant que sa tête est le propre commit signé de
+Dependabot : il ne détient aucun droit à céder, et ce qu'il soumet est la configuration de
+dépendances de ce dépôt répondant à une publication amont
+([ADR-0090](../for-maintainers/adr/0090-exempt-dependabot-from-the-contributor-agreement.fr.md)).
 
 ## Compiler et tester
 

@@ -58,6 +58,55 @@ jobs:
               return;
             }
 
+            // Dependabot is not a person and holds nothing to assign: it can make none of the
+            // representations the agreement asks for, and there are no economic rights in a version
+            // number this repository's own dependency configuration asked for. The gate collects an
+            // assignment; naming who it never could bind does not weaken it.
+            //
+            // Waiving an acknowledgement is the RISKY direction, so it takes the strong proof rather
+            // than the convenient one — the same asymmetry `dependabot-automerge.yml` applies when it
+            // arms auto-merge. Two things must hold, and someone with push access can claim neither:
+            //   - Dependabot OPENED the pull request. `[` and `]` are illegal in GitHub user names,
+            //     so `dependabot[bot]` is unregistrable.
+            //   - The head is still Dependabot's own GitHub-signed commit. Opening a pull request is
+            //     not what puts content in it: anyone with push access can append to a Dependabot
+            //     branch, and what they append is a Contribution like any other. Commit author NAMES
+            //     are `git config` values and forge freely; GitHub's signature does not, which is why
+            //     the signature is the load-bearing half.
+            // A `dependabot-autofix` repair keeps Dependabot as the author but drops that signature,
+            // so an autofixed pull request asks for the acknowledgement again — which is already what
+            // the model says about anything the Project Owner's Claude Code workflow produced.
+            // Fail closed: an unreadable head answers "not exempt", which only ever asks for the box.
+            if (login === 'dependabot[bot]') {
+              let tip = '';
+
+              try {
+                const head = await github.rest.repos.getCommit({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  ref: pr.head.sha,
+                });
+
+                tip = `${head.data.author?.login ?? ''}|${head.data.commit.verification?.verified === true}`;
+              } catch (error) {
+                core.info(`Head commit unreadable (${error.message}); the acknowledgement stays required.`);
+              }
+
+              if (tip === 'dependabot[bot]|true') {
+                core.info('Dependabot pull request at its own signed head: no acknowledgement required.');
+
+                return;
+              }
+
+              core.setFailed(
+                'Contributor Agreement acknowledgement is required: this Dependabot pull request no longer carries ' +
+                "Dependabot's own signed commit at its head, so it carries someone else's contribution. " +
+                'Read the agreement and check the corresponding box in the pull request description.'
+              );
+
+              return;
+            }
+
             const checkedLines = [
               `* [x] ${clause}`,
               `* [X] ${clause}`,

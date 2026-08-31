@@ -24,7 +24,11 @@ relicense and commercially exploit a contribution, including through REEFACT —
 does **not** give a veto over future licensing or business-model decisions. A pull request
 authored directly by `@Reefact` does not require it; a pull request produced through the
 Project Owner's Claude Code workflow (a `claude/*` branch) keeps and checks the acknowledgement
-regardless, per the pull request template.
+regardless, per the pull request template. A pull request opened by Dependabot does not require
+it either, for as long as its head is Dependabot's own signed commit: it holds no rights to
+assign, and what it submits is this repository's own dependency configuration answering an
+upstream release
+([ADR-0090](doc/handwritten/for-maintainers/adr/0090-exempt-dependabot-from-the-contributor-agreement.md)).
 
 ## Building and testing
 

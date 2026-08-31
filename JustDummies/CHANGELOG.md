@@ -10,6 +10,21 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Fixed
 
+- **`JD016` now proves the small element domains, and counts a character pool exactly.** The rule
+  refuses a distinct collection asking for more elements than its element generator can produce, and
+  until now it could prove only `Any.Boolean()` and an enum's members: every other row read as
+  unbounded, so `Any.SetOf(Any.Char()).WithCount(200)` compiled clean over a generator that draws 128
+  values and threw the moment it was constructed. `Char` (128, the ASCII pool of
+  [ADR-0075](../doc/handwritten/for-maintainers/adr/0075-draw-characters-from-the-whole-of-ascii.md)),
+  `Byte`/`SByte` (256) and `Int16`/`UInt16` (65 536) are now proven, and an enum is counted by its
+  **distinct values** rather than its declared names, so an alias adds a name and not a value.
+  `Any.Char().OneOf(...)` is counted exactly instead of through the factory beneath it: that pool is
+  the caller's own and reaches past ASCII on purpose, so answering 128 for a set of two accented
+  letters left `WithCount(5)` over it unreported. The carve-out is scoped to `AnyChar`, so a chain
+  such as `Any.Int32().OneOf(1, 2).Containing(3)`, which extends its own domain past what `OneOf`
+  alone draws, is unaffected. A domain the rule still cannot prove is reported as nothing, as before —
+  an unprovable domain must never be treated as a small one.
+
 - **`JD015` weighs a value set against the declared constraints together, not only one by one.** A value must
   satisfy every constraint, so the pool is their intersection — and an intersection can be empty while no single
   set entering it is. `Any.String().WithoutNumeric().InLowerCase().OneOf("1", "A")` is refused by the library,

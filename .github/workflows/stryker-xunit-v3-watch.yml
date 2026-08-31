@@ -15,8 +15,16 @@ name: stryker-xunit-v3-watch
 #   - whether a `dotnet-stryker` version newer than the one pinned in
 #     `.config/dotnet-tools.json` has shipped, and whether its recent CHANGELOG entries
 #     mention xUnit v3 or the issue number.
-# Either signal opens ONE tracking issue in this repository, deduplicated by title so a
-# standing fix does not reopen a new issue every week.
+# Either signal flips PR #148's own `on-hold` label to `ready-to-verify` and leaves one
+# comment with the diagnosis. Everything about #148's readiness then lives ON #148, which is
+# also what makes this idempotent for free: the next fire finds `on-hold` already gone and
+# does nothing, no separate tracking object or title search needed.
+#
+# Deliberately does NOT reopen #148 or touch its state: detecting the upstream fix does not by
+# itself make the pull request green again — `.config/dotnet-tools.json` on that branch still
+# pins the old `dotnet-stryker`, so nothing there has actually changed yet. Reopening would
+# re-fire the whole CI matrix on an inference (a changelog grep) that could be a false
+# positive; flipping a label costs nothing and is trivially undone if it is.
 #
 # No checkout: every read here is either a public GitHub/NuGet API call or this repository's
 # own `.config/dotnet-tools.json` fetched over `raw.githubusercontent.com`, so the job never
@@ -44,7 +52,10 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: read
-      issues: write # only to open the one tracking issue when the upstream fix lands
+      # Labels, comments and the label's own definition all live under the Issues API for a
+      # pull request too (a PR IS an issue in GitHub's data model) — no pull-requests: write
+      # needed, since #148's STATE is deliberately never touched (see the header).
+      issues: write
     steps:
       - name: Check the upstream issue and the latest dotnet-stryker release
         id: probe
@@ -93,40 +104,50 @@ jobs:
             echo "latest=$latest"
           } >> "$GITHUB_OUTPUT"
 
-      - name: Open the one tracking issue, if not already open
+      - name: Flip PR #148 from on-hold to ready-to-verify, if not already done
         if: steps.probe.outputs.fixed == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           REASON: ${{ steps.probe.outputs.reason }}
           LATEST: ${{ steps.probe.outputs.latest }}
+          PR_NUMBER: "148"
         run: |
           set -eu
 
-          # Deduplicated by TITLE rather than a label: the repository defines no label
-          # taxonomy yet (checked), and inventing one for a single workflow is not this
-          # workflow's call to make.
-          existing="$(gh issue list --state open \
-            --search 'in:title "Stryker may have fixed xUnit v3"' \
-            --json number --jq '.[0].number // empty')"
-          if [ -n "$existing" ]; then
-            echo "Tracking issue #$existing is already open; nothing to do."
+          # Idempotent on the PR's OWN label rather than a separate search: if `on-hold` is
+          # gone, either this already fired on an earlier run or a human already cleared it —
+          # nothing to do either way, and re-commenting weekly would just be noise.
+          current_labels="$(gh pr view "$PR_NUMBER" --json labels --jq '[.labels[].name] | join(",")')"
+          case ",$current_labels," in
+            *,on-hold,*) ;;
+            *) echo "PR #$PR_NUMBER no longer carries on-hold; nothing to do."; exit 0 ;;
+          esac
+
+          state="$(gh pr view "$PR_NUMBER" --json state --jq '.state')"
+          if [ "$state" != "OPEN" ]; then
+            echo "PR #$PR_NUMBER is $state, not open; nothing to flag."
             exit 0
           fi
 
-          gh issue create \
-            --title "Stryker may have fixed xUnit v3 test discovery — revisit PR #148 / ADR-0090" \
-            --body "$(cat <<BODY
+          # --force makes this idempotent across every future fire too, not just the first —
+          # a label deleted by hand between runs is simply recreated rather than failing the job.
+          gh label create ready-to-verify --color 0e8a16 \
+            --description "Upstream fix detected — bump dotnet-stryker on this PR and re-verify the mutation leg." \
+            --force
+
+          gh pr edit "$PR_NUMBER" --remove-label on-hold --add-label ready-to-verify
+
+          gh pr comment "$PR_NUMBER" --body "$(cat <<BODY
           ${REASON} (latest \`dotnet-stryker\` on NuGet: ${LATEST}).
 
-          This is the signal \`.github/workflows/stryker-xunit-v3-watch.yml\` exists to catch: Stryker
-          4.16.0 could not run its initial test run against \`JustDummies.Analyzers.UnitTests\` under
-          Microsoft.Testing.Platform (it counted every test in the solution instead of the 428 the
-          project declares, tripping its own >50%-failing-tests guard before testing a single mutant).
-          \`Mutate the diff (justdummies-analyzers)\` has been advisory-red since PR #148 as a result —
-          see that PR's comment thread and ADR-0090 for the full diagnosis.
+          This PR's \`on-hold\` label just became \`ready-to-verify\`: Stryker 4.16.0 could not run its
+          initial test run against \`JustDummies.Analyzers.UnitTests\` under Microsoft.Testing.Platform
+          (it counted every test in the solution instead of the 428 the project declares, tripping its
+          own >50%-failing-tests guard before testing a single mutant), which is why \`Mutate the diff
+          (justdummies-analyzers)\` has run advisory-red here — see ADR-0090 for the full diagnosis.
 
-          Next step: bump \`dotnet-stryker\` in \`.config/dotnet-tools.json\`, re-run the leg, and if it
-          is green, close this issue and drop this workflow.
+          Next step: bump \`dotnet-stryker\` in \`.config/dotnet-tools.json\` on this branch, re-run the
+          leg, and if it is green, this label (and this comment) have done their job.
           BODY
           )"

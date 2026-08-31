@@ -13,6 +13,23 @@ public sealed class AnyModernTypeTests {
     private static readonly DateOnly AnchorDate = new(2026, 1, 1);
     private static readonly TimeOnly AnchorTime = new(12, 0, 0);
 
+    [Fact(DisplayName = "Distinct: the half row counts its own representable values, so a floor beyond them conflicts rather than exhausting.")]
+    public void DistinctOverHalvesConflictsBeforeDrawing() {
+        // Lives here rather than beside the other collection cases: this file is the one the .NET Framework
+        // 4.7.2 floor leg excludes, and Half does not exist on that floor.
+        // Sixteen bits hold 63 487 distinct finite values -- the two zeros compare equal, so a set keeps one of them.
+        // The shared interval specification answers null for a floating-point range and AnyHalf carries the count
+        // itself; without it this floor was accepted, then failed only after a redraw budget sized from the ask
+        // (64 x 200 000) rather than from the domain.
+        ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
+            () => Any.SetOf(Any.Half()).WithMinCount(200_000).Generate());
+
+        Check.That(conflict.Message).Contains("63487");
+
+        // A floor the domain does hold is still drawn, so the count refuses nothing it can satisfy.
+        Check.ThatCode(() => Any.SetOf(Any.Half()).WithCount(64).Generate()).DoesNotThrow();
+    }
+
     [Fact(DisplayName = "Half is untouched by the ordinary-magnitude window: its whole domain is already ordinary.")]
     public void HalfIsUnaffectedByTheOrdinaryWindow() {
         // ADR-0031. Half stops at 65 504, well inside the window, so clipping to a window wider than the domain

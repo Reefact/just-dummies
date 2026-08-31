@@ -25,6 +25,17 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Fixed
 
+- **`Any.Half()` states how many distinct values it holds, so a distinct set beyond them is refused
+  instead of exhausted.** The shared interval specification answers "unbounded" for a floating-point
+  range — counting representable values is a type-specific concern it does not carry — and every row
+  built on it inherited that answer. It is right for `Any.Double()` and `Any.Single()`, whose domains
+  dwarf every cap a collection applies, and wrong for a sixteen-bit one: `Half` holds 63 487 distinct
+  finite values (the two zeros compare equal, so a set keeps one), which is well under those caps. So
+  `Any.SetOf(Any.Half()).WithMinCount(200_000)` was accepted, and reported the impossibility only
+  after exhausting a redraw budget sized from the **ask** rather than from the domain — 12.8 million
+  draws for that floor. It now conflicts before the first element is drawn, naming the shortfall like
+  every other bounded row. A floor the domain does hold is unaffected.
+
 - **`JD016` now proves the small element domains, and counts a character pool exactly.** The rule
   refuses a distinct collection asking for more elements than its element generator can produce, and
   until now it could prove only `Any.Boolean()` and an enum's members: every other row read as

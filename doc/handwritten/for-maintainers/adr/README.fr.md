@@ -22,7 +22,7 @@ n'existe, et la colonne **Origine** dit comment chacune est arrivée ici :
   aussi, car ce dépôt l'applique encore. Les deux copies sont désormais
   indépendantes : chaque côté peut remplacer la sienne sans toucher à l'autre.
   9 décisions.
-* **consigné ici** — décidé dans ce dépôt, de son propre chef. 46 décisions.
+* **consigné ici** — décidé dans ce dépôt, de son propre chef. 47 décisions.
 
 Les numéros appartiennent à cette base, attribués dans l'ordre où les décisions
 ont été consignées en amont
@@ -215,3 +215,4 @@ que l'option existait le jour où elle compterait.
 | [ADR-0087](0087-check-a-documented-count-against-its-source-not-its-translation.fr.md) | Vérifier un décompte documenté contre sa source, non contre sa traduction | Accepted | consigné ici |
 | [ADR-0088](0088-state-the-whitespace-guard-with-a-member-of-its-own.fr.md) | Énoncer la garde de blancheur avec un membre à elle | Accepted | consigné ici |
 | [ADR-0089](0089-draw-a-composed-parameter-through-the-generator-its-type-owns.fr.md) | Tirer un paramètre composé par le generator que son type possède | Accepted | consigné ici |
+| [ADR-0090](0090-exempt-dependabot-from-the-contributor-agreement.fr.md) | Exempter Dependabot de l'accord de contribution, uniquement sur son propre commit signé | Accepted | consigné ici |

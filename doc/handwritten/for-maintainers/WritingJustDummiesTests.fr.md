@@ -127,7 +127,7 @@ Les règles qui gardent une propriété honnête :
 
 ## Avant de pousser
 
-* `dotnet test JustDummies.PropertyTests` et `dotnet test JustDummies.UnitTests`.
+* `dotnet test --project JustDummies.PropertyTests` et `dotnet test --project JustDummies.UnitTests`.
 * Les segments du plancher, que la CI exécute et qu'un `dotnet test` ordinaire ignore :
   `dotnet build JustDummies.PropertyTests -c Release -f net472 -p:EnableNet472Floor=true`.
   Tout ce qui utilise une API .NET 8+ appartient à `ModernTypeInvariantProperties.cs`,

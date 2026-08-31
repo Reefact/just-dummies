@@ -30,8 +30,8 @@ regardless, per the pull request template.
 
 * Target framework: **.NET Standard 2.0**.
 * Build: `dotnet build JustDummies.sln`
-* Test: `dotnet test JustDummies.sln`
-* Analyzer tests, when touching analyzers: `dotnet test JustDummies.Analyzers.UnitTests`
+* Test: `dotnet test --solution JustDummies.sln`
+* Analyzer tests, when touching analyzers: `dotnet test --project JustDummies.Analyzers.UnitTests`
 * `JustDummies` tests are split across two suites — properties for invariants that
   hold for every constraint argument, examples for specific named cases. See
   [Writing JustDummies tests](doc/handwritten/for-maintainers/WritingJustDummiesTests.en.md)

@@ -1,5 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
+  <!-- Coverage wiring: the coverlet.MTP collector and the testconfig.json that configures it. -->
+  <Import Project="..\build\TestCoverage.props" />
+
   <!-- net10.0 while the tool it exercises targets net8.0: the shell is a modern-only .NET tool, so the
        net472 support floor has nothing to say about it (ADR-0007 scopes that leg to the suites carrying the
        library's own contract). -->
@@ -11,10 +14,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="coverlet.collector">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
     <!-- The compilation the command reads. Every step of `generate` except the first is exercised against one
          built in memory here: the project loading of §11.1 is the shell's one dependency on MSBuild, a disk
          and a restored project, and it is handed over as a delegate so the rows of §7 can be checked without

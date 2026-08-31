@@ -117,7 +117,7 @@ Rules that keep a property honest:
 
 ## Before you push
 
-* `dotnet test JustDummies.PropertyTests` and `dotnet test JustDummies.UnitTests`.
+* `dotnet test --project JustDummies.PropertyTests` and `dotnet test --project JustDummies.UnitTests`.
 * The floor legs, which CI runs and a plain `dotnet test` does not:
   `dotnet build JustDummies.PropertyTests -c Release -f net472 -p:EnableNet472Floor=true`.
   Anything using .NET 8+ API belongs in `ModernTypeInvariantProperties.cs`, which the

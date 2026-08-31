@@ -86,4 +86,4 @@ the **SonarQube Cloud GitHub App**, not by this workflow's token, so no
 ## Related
 
 - [`ci`](../../../../.github/workflows/ci.yml) — produces the same OpenCover coverage shape via the shared
-  `coverage.runsettings`, and is where the warning ratchet is actually enforced.
+  `testconfig.json`, and is where the warning ratchet is actually enforced.

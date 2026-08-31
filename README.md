@@ -163,7 +163,7 @@ conventions and the test-bed rules, and [`SECURITY.md`](SECURITY.md) to report a
 
 ```bash
 dotnet build JustDummies.sln -c Release
-dotnet test  JustDummies.sln -c Release
+dotnet test  --solution JustDummies.sln -c Release
 ```
 
 The repository targets the .NET 10 SDK (pinned in `global.json`). Maintainer material — architecture

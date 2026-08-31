@@ -1,5 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
+  <!-- Coverage wiring: the coverlet.MTP collector and the testconfig.json that configures it. -->
+  <Import Project="..\build\TestCoverage.props" />
+
   <!-- net10.0 only, like JustDummies.Analyzers.UnitTests: this project builds compilations with Roslyn,
        and Microsoft.CodeAnalysis.CSharp does not load on the net472 support floor. Nothing here exercises
        the netstandard2.0 asset, so that floor has nothing to say about it (ADR-0007). -->
@@ -17,10 +20,6 @@
          here, not in a consumer's suite. The engine itself references neither (ADR-0063). -->
     <PackageReference Include="Ardalis.GuardClauses" />
     <PackageReference Include="CommunityToolkit.Diagnostics" />
-    <PackageReference Include="coverlet.collector">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
     <!-- The CURRENT Roslyn, deliberately not the floor the engine is pinned to: the suite plays the part of
          a host handing a Compilation down, which is the direction §13.2 supports. -->
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />

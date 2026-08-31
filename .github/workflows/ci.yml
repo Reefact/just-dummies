@@ -53,21 +53,24 @@ jobs:
         run: dotnet build JustDummies.sln -c Release --no-restore
 
       - name: Test
-        # Collect OpenCover coverage via coverlet.collector (configured in coverage.runsettings).
-        # Reports land under artifacts/coverage/<guid>/coverage.opencover.xml, ready for a Sonar scan.
+        # Collect OpenCover coverage via coverlet.MTP (configured in testconfig.json, which
+        # build/TestCoverage.props copies beside each test application). Reports land as
+        # artifacts/coverage/coverage.opencover.<timestamp>.xml, ready for a Sonar scan.
+        # `--solution`, `--coverlet` and `--output` are the Microsoft.Testing.Platform spellings of what used to
+        # be a bare path, `--collect:"XPlat Code Coverage" --settings`, and `--logger` (ADR-0090).
         run: >-
-          dotnet test JustDummies.sln -c Release --no-build
-          --collect:"XPlat Code Coverage"
-          --settings coverage.runsettings
+          dotnet test --solution JustDummies.sln -c Release --no-build
+          --coverlet
           --results-directory artifacts/coverage
-          --logger "console;verbosity=normal"
+          --output Detailed
 
       - name: Upload coverage report
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           # Per-OS name so the two matrix legs do not clash when uploading.
           name: coverage-${{ matrix.os }}
-          path: artifacts/coverage/**/coverage.opencover.xml
+          # coverlet.MTP timestamps each report, so the seven suites can share one results directory.
+          path: artifacts/coverage/coverage.opencover.*.xml
           if-no-files-found: error
 
   # build-test above runs the suite on the LATEST .NET (10). This job proves the LIBRARY's OTHER supported
@@ -113,7 +116,7 @@ jobs:
             JustDummies.PropertyTests \
             JustDummies.Xunit.UnitTests ; do
             echo "::group::$proj (net472)"
-            dotnet test "$proj/$proj.csproj" -c Release -f net472 -p:EnableNet472Floor=true \
-              --logger "console;verbosity=normal"
+            dotnet test --project "$proj/$proj.csproj" -c Release -f net472 -p:EnableNet472Floor=true \
+              --output Detailed
             echo "::endgroup::"
           done

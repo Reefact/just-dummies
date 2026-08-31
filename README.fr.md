@@ -189,4 +189,8 @@ dans [`doc/handwritten/for-maintainers/migration/`](doc/handwritten/for-maintain
 décision est
 [ADR-0044](doc/handwritten/for-maintainers/adr/0044-extract-justdummies-into-its-own-repository.fr.md).
 
-Distribué sous licence [Apache 2.0](LICENSE).
+Distribué sous licence [PolyForm Internal Use 1.0.0](LICENSE) — à code source visible, mais pas open
+source : libre à lire, compiler, modifier et utiliser pour vos propres opérations internes ou
+celles de votre entreprise ; toute redistribution du logiciel est exclue. Voir
+[`PROJECT_OWNERSHIP.md`](PROJECT_OWNERSHIP.md) (en anglais) pour savoir qui en détient la licence et
+comment il vous parvient malgré tout sous forme de paquet publié.

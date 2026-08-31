@@ -68,7 +68,7 @@ ready-made catalogues for SonarAnalyzer, the .NET `CA` rules, StyleCop, xUnit an
 * [Repository](https://github.com/Reefact/just-dummies)
 * [The analyzer rules, one page each](https://github.com/Reefact/just-dummies/tree/main/doc/handwritten/for-users/analyzers)
 * [Changelog](https://github.com/Reefact/just-dummies/blob/main/JustDummies.DiagnosticCatalog/CHANGELOG.md)
-* [License](https://github.com/Reefact/just-dummies/blob/main/LICENSE) — Apache-2.0
+* [License](https://github.com/Reefact/just-dummies/blob/main/LICENSE) — PolyForm Internal Use 1.0.0
 
 ## Credits
 

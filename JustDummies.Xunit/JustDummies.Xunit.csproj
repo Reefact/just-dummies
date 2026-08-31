@@ -34,7 +34,7 @@
 
     <!-- Metadata -->
     <PackageTags>testing;test-data;dummies;arbitrary;xunit;xunit-v3;deterministic;seed;reproducible</PackageTags>
-    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
 
     <!-- Links -->
@@ -55,6 +55,7 @@
          and one mark repeated is what makes the three read as one product. Icon by Magnific, from
          Flaticon — the attribution is in this package's README. -->
     <None Include="..\icon.png" Pack="true" PackagePath="icon.png" />
+    <None Include="..\LICENSE" Pack="true" PackagePath="/" />
     <None Include="README.nuget.md" Pack="true" PackagePath="readme.md" />
   </ItemGroup>
 

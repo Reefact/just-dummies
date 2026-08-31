@@ -8,6 +8,18 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ## [Unreleased]
 
+### Fixed
+
+- **An element generator that admits nothing now names its own constraint, even inside a distinct collection.**
+  `Any.SetOf(Any.Enum<Sides>().Except(Left, Right)).WithCount(1)` reported *"Cannot apply `Distinct()` because 1
+  element required to be distinct exceed the 0 distinct value(s) the element generator can produce"* — naming a
+  constraint the caller never wrote, and whose removal changes nothing, for a domain emptied by one they did. It
+  now reads *"Cannot apply `Except(Left, Right)` because it forbids every declared `Sides` member."*, which is the
+  sentence the same shape already produced without `Distinct()`. A generator with nothing left is not a collection
+  asking for too many values, so the element is what speaks. Where the element domain is genuinely non-empty and
+  the collection asks for more distinct values than it holds, `Distinct()` is still named, in the sentence it
+  always used.
+
 ## [1.0.0-preview.5] - 2026-08-25
 
 ### Added

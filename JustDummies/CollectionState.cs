@@ -252,6 +252,17 @@ internal sealed class CollectionState<T> {
         int need          = Math.Max(_count.Floor, required);
         int fromGenerator = need - FixedOutsideCount() - _generatedContaining.Count;
         if (fromGenerator > cardinality) {
+            // A generator that admits NOTHING is not a collection asking for too many distinct values: the fault is
+            // in the element's own constraint set, and the element is what can name it. Let it speak, so this shape
+            // reads the same sentence whether or not the collection is distinct — the non-distinct path reaches that
+            // refusal by drawing, and blaming Distinct() here named a constraint the caller never wrote and whose
+            // removal changes nothing.
+            //
+            // No element is produced either way, and nothing is consumed: a generator with no value left refuses
+            // before it draws. Should one return anyway, misreporting its own cardinality, the value is dropped and
+            // the sentence below is the honest one — so that fallback is exactly the behaviour this always had.
+            if (cardinality == 0) { _item.Generate(); }
+
             throw ConflictingAnyConstraintException.DistinctElementsExceedCardinality(distinctness, Elements(fromGenerator), cardinality.ToString(CultureInfo.InvariantCulture));
         }
     }

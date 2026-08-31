@@ -1,0 +1,132 @@
+name: stryker-xunit-v3-watch
+
+# Weekly watch for whether Stryker.NET has fixed its xUnit v3 / Microsoft.Testing.Platform test
+# discovery bug (stryker-mutator/stryker-net#3117), which is why `Mutate the diff
+# (justdummies-analyzers)` has run advisory-red since the move to Microsoft.Testing.Platform
+# (ADR-0090, PR #148). Stryker 4.16.0's initial test run counts every test the solution has —
+# not just the 428 `JustDummies.Analyzers.UnitTests` declares — which trips its own
+# >50%-failing-tests guard before a single mutant is tested. The mutation gate stays green
+# regardless (ADR-0025: the per-pull-request mutation check is advisory), so nothing here is a
+# merge gate. It exists purely to flag the moment upstream fixes it, since nothing else in this
+# repository would ever notice on its own — the leg fails the same way, silently, every run.
+#
+# What it checks, each run:
+#   - the upstream issue's state (closed = likely fixed);
+#   - whether a `dotnet-stryker` version newer than the one pinned in
+#     `.config/dotnet-tools.json` has shipped, and whether its recent CHANGELOG entries
+#     mention xUnit v3 or the issue number.
+# Either signal opens ONE tracking issue in this repository, deduplicated by title so a
+# standing fix does not reopen a new issue every week.
+#
+# No checkout: every read here is either a public GitHub/NuGet API call or this repository's
+# own `.config/dotnet-tools.json` fetched over `raw.githubusercontent.com`, so the job never
+# needs the tree on disk.
+
+on:
+  schedule:
+    # Weekly, clear of the other Monday slots this repository already runs (03:23/03:47
+    # mutation, 05:23 Scorecard, 05:47 sonar-profile, 06:17 CodeQL) — see
+    # doc/handwritten/for-maintainers/workflows/README.md for the full Monday timetable.
+    - cron: '37 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: stryker-xunit-v3-watch
+  cancel-in-progress: true
+
+jobs:
+  watch:
+    name: Check whether Stryker fixed xUnit v3 discovery
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write # only to open the one tracking issue when the upstream fix lands
+    steps:
+      - name: Check the upstream issue and the latest dotnet-stryker release
+        id: probe
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -eu
+
+          # The upstream ticket this whole workflow exists to watch. A public repo would read
+          # unauthenticated too, but GH_TOKEN raises the rate limit from 60/hr to 5000/hr —
+          # cheap insurance against a transient failure reading as "still open".
+          issue_state="$(gh api repos/stryker-mutator/stryker-net/issues/3117 --jq '.state')"
+          echo "Upstream issue #3117 state: $issue_state"
+
+          # The version this repository currently pins, read from the default branch rather
+          # than a local checkout (this job takes none — see the workflow header).
+          pinned="$(curl -sSf "https://raw.githubusercontent.com/${REPO}/main/.config/dotnet-tools.json" \
+            | jq -r '.tools["dotnet-stryker"].version')"
+          echo "Pinned dotnet-stryker version: $pinned"
+
+          latest="$(curl -sSf "https://api.nuget.org/v3-flatcontainer/dotnet-stryker/index.json" \
+            | jq -r '[.versions[] | select(contains("-") | not)] | sort_by(split(".") | map(tonumber)) | last')"
+          echo "Latest stable dotnet-stryker on NuGet: $latest"
+
+          fixed="false"
+          reason=""
+
+          if [ "$issue_state" = "closed" ]; then
+            fixed="true"
+            reason="stryker-mutator/stryker-net#3117 is closed"
+          elif [ -n "$latest" ] && [ "$latest" != "$pinned" ]; then
+            # A newer stable release exists. A version bump alone proves nothing — it can ship
+            # for any number of unrelated reasons — so this also greps the changelog's recent
+            # entries (bounded, so an old unrelated match far down the file cannot false-positive).
+            changelog_head="$(curl -sSf "https://raw.githubusercontent.com/stryker-mutator/stryker-net/master/CHANGELOG.md" | head -c 20000)"
+            if printf '%s' "$changelog_head" | grep -qiE 'xunit\.?v?3|xunit v3|#3117|initial test ?run'; then
+              fixed="true"
+              reason="a newer dotnet-stryker ($latest) shipped and its recent changelog mentions xUnit v3 / #3117"
+            fi
+          fi
+
+          {
+            echo "fixed=$fixed"
+            echo "reason=$reason"
+            echo "latest=$latest"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Open the one tracking issue, if not already open
+        if: steps.probe.outputs.fixed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          REASON: ${{ steps.probe.outputs.reason }}
+          LATEST: ${{ steps.probe.outputs.latest }}
+        run: |
+          set -eu
+
+          # Deduplicated by TITLE rather than a label: the repository defines no label
+          # taxonomy yet (checked), and inventing one for a single workflow is not this
+          # workflow's call to make.
+          existing="$(gh issue list --state open \
+            --search 'in:title "Stryker may have fixed xUnit v3"' \
+            --json number --jq '.[0].number // empty')"
+          if [ -n "$existing" ]; then
+            echo "Tracking issue #$existing is already open; nothing to do."
+            exit 0
+          fi
+
+          gh issue create \
+            --title "Stryker may have fixed xUnit v3 test discovery — revisit PR #148 / ADR-0090" \
+            --body "$(cat <<BODY
+          ${REASON} (latest \`dotnet-stryker\` on NuGet: ${LATEST}).
+
+          This is the signal \`.github/workflows/stryker-xunit-v3-watch.yml\` exists to catch: Stryker
+          4.16.0 could not run its initial test run against \`JustDummies.Analyzers.UnitTests\` under
+          Microsoft.Testing.Platform (it counted every test in the solution instead of the 428 the
+          project declares, tripping its own >50%-failing-tests guard before testing a single mutant).
+          \`Mutate the diff (justdummies-analyzers)\` has been advisory-red since PR #148 as a result —
+          see that PR's comment thread and ADR-0090 for the full diagnosis.
+
+          Next step: bump \`dotnet-stryker\` in \`.config/dotnet-tools.json\`, re-run the leg, and if it
+          is green, close this issue and drop this workflow.
+          BODY
+          )"

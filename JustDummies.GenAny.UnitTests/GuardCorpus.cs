@@ -866,6 +866,21 @@ internal static class GuardCorpus {
                                                         }
                                                         """, requiresVerification: true),
 
+        // ---- AUDIT (mirror completeness). The row above closed Int16/UInt16 by hand. Enumerating the
+        // ---- library's cardinality-bearing rows afterwards found one more the mirror never named: `Half`.
+        // ---- Both sides answer "unbounded" for different reasons -- the engine because `Half` is not in
+        // ---- its switch, the library because a floating-point range is a continuum its shared spec
+        // ---- declines to count -- so a floor of 200 000 over `ISet<Half>` is declared with confidence
+        // ---- over a type that holds 63 488 finite values at all.
+        new GuardedShape("set-of-half-count", "Reading", """
+                                                        public sealed class Reading {
+
+                                                            public Reading(ISet<Half> samples) {
+                                                                if (samples.Count < 200000) { throw new ArgumentException("too few", nameof(samples)); }
+                                                            }
+                                                        }
+                                                        """, requiresVerification: true, defect: "Half is absent from the element-cardinality mirror, so the floor is declared rather than marked"),
+
         // ---- Retired by ADR-0089, on the same footing as findings 8 and 11. The original shape pinned a
         // ---- composed ELEMENT's factory guard being read correctly and then losing its `unread guards` mark
         // ---- when the collection generator was rebuilt around it -- `Any.ListOf(...)` behind which the doubt

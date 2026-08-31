@@ -28,7 +28,7 @@
     <!-- NuGet identity -->
     <PackageId>JustDummies.Cli</PackageId>
     <Authors>Sylvain AURAT</Authors>
-    <Company>Reefact</Company>
+    <Company>Sylvain Aurat</Company>
 
     <!-- Description -->
     <Description>
@@ -45,7 +45,7 @@
     <RepositoryUrl>https://github.com/Reefact/just-dummies.git</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
 
-    <Copyright>© Reefact 2026</Copyright>
+    <Copyright>© Sylvain Aurat 2026</Copyright>
 
     <!-- Package assets. The readme is not decoration on a tool: without PackageReadmeFile the pack emits
          NU5133, and the CI ratchet turns that into an error — which is the right pressure, since a tool

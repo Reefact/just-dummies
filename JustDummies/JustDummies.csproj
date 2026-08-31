@@ -32,7 +32,7 @@
     <!-- NuGet identity -->
     <PackageId>JustDummies</PackageId>
     <Authors>Sylvain AURAT</Authors>
-    <Company>Reefact</Company>
+    <Company>Sylvain Aurat</Company>
 
     <!-- Description -->
     <Description>
@@ -49,7 +49,7 @@
     <RepositoryUrl>https://github.com/Reefact/just-dummies.git</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
 
-    <Copyright>© Reefact 2026</Copyright>
+    <Copyright>© Sylvain Aurat 2026</Copyright>
 
     <!-- Package assets -->
     <PackageIcon>icon.png</PackageIcon>

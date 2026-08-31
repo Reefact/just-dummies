@@ -217,8 +217,16 @@ internal sealed class GeneratorFor {
     ///         The character row is the ASCII pool of ADR-0075 rather than the 16 bits a <c>char</c> holds:
     ///         what the count has to survive is what the generator draws, not what the type could store.
     ///     </para>
+    ///     <para>
+    ///         <c>Half</c> has no <see cref="SpecialType" /> and is named by metadata instead. It is the one
+    ///         floating-point row narrow enough to matter — 63 487 distinct finite values, the two zeros
+    ///         comparing equal — and the library states that count itself rather than inheriting the "unbounded"
+    ///         answer its shared interval specification gives every floating-point range.
+    ///     </para>
     /// </remarks>
     private static int? PrimitiveCardinality(ITypeSymbol element) {
+        if (element.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) == "global::System.Half") { return 63487; }
+
         return element.SpecialType switch {
             SpecialType.System_Boolean => 2,
             SpecialType.System_Char    => 128,

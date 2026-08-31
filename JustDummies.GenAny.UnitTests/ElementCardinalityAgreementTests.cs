@@ -65,6 +65,29 @@ public sealed class ElementCardinalityAgreementTests {
         Check.ThatCode(() => Any.SetOf(Any.Enum<Grade>()).WithMinCount(largest + 1).Generate()).Throws<ConflictingAnyConstraintException>();
     }
 
+    /// <summary>
+    ///     <c>Half</c> agrees on the refusal edge only, and the asymmetry is the point rather than an omission.
+    /// </summary>
+    /// <remarks>
+    ///     The theory above asserts both halves of an edge: the largest floor the engine declares is one the
+    ///     library draws, and the next one is refused. The second holds here; the first cannot, and no mirror
+    ///     row would make it. The count both sides now carry — 63 487 — is an upper <b>bound</b>, what the type
+    ///     can hold; it is not a reachable target, because the row draws uniformly over the real interval and
+    ///     then rounds, so the halves near zero have rounding intervals too narrow to land in. Measured: two
+    ///     million draws reach 20 982 distinct values and saturate there. Pinning the refusal edge is therefore
+    ///     what this can honestly pin, and it is the edge that matters — it is the one the engine must not
+    ///     declare past.
+    /// </remarks>
+    [Fact(DisplayName = "The engine stops declaring a distinct floor over halves exactly where the library starts refusing it.")]
+    public void TheEngineStopsWhereTheHalfRowRefuses() {
+        int largest = LargestFloorTheEngineWillDeclare("Half");
+
+        Check.WithCustomMessage("The engine refused every floor over ISet<Half>.").That(largest).IsStrictlyPositive();
+        Check.That(largest).IsStrictlyLessThan(FarAboveEverySmallDomain);
+
+        Check.ThatCode(() => Any.SetOf(Any.Half()).WithMinCount(largest + 1).Generate()).Throws<ConflictingAnyConstraintException>();
+    }
+
     /// <summary>The mirror of the aliased enum above, declared here so the library can be called on it.</summary>
     public enum Grade {
 

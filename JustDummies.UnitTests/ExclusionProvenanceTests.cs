@@ -1,5 +1,7 @@
 #region Usings declarations
 
+using System.Diagnostics.CodeAnalysis;
+
 using NFluent;
 
 #endregion
@@ -135,6 +137,36 @@ public sealed class ExclusionProvenanceTests {
             () => Any.Guid().NonEmpty().Empty());
 
         Check.That(conflict.Message).Contains("NonEmpty() forbids it");
+    }
+
+    [Fact(DisplayName = "An element generator admitting nothing names its own exclusion, not the collection's Distinct().")]
+    [SuppressMessage(JustDummiesRule.JD017.Category, JustDummiesRule.JD017.Id, Justification = "The emptied enum IS the subject: this pins which constraint the sentence names when such a generator is the element of a collection. NegativeTestGuard cannot reach it, and is right not to — the chain is nested inside Any.SetOf/Any.ListOf rather than being the whole lambda body.")]
+    public void EmptyElementGeneratorNamesItsOwnExclusion() {
+        // Same fault, same sentence, whether or not the collection is distinct. The non-distinct path reaches the
+        // element's own refusal by drawing; the distinct path asks the cardinality gate first, and used to answer
+        // "Cannot apply Distinct() because 1 element required to be distinct exceed the 0 distinct value(s) the
+        // element generator can produce" -- naming a constraint the caller never wrote, over a domain emptied by
+        // one they did. An exhausted element generator is not a collection asking for too many values.
+        ConflictingAnyConstraintException distinct = Assert.Throws<ConflictingAnyConstraintException>(
+            () => Any.SetOf(Any.Enum<OrderStatus>().Except(OrderStatus.Draft, OrderStatus.Validated, OrderStatus.Cancelled)).WithCount(1).Generate());
+
+        ConflictingAnyConstraintException plain = Assert.Throws<ConflictingAnyConstraintException>(
+            () => Any.ListOf(Any.Enum<OrderStatus>().Except(OrderStatus.Draft, OrderStatus.Validated, OrderStatus.Cancelled)).WithCount(1).Generate());
+
+        Check.That(distinct.Message).IsEqualTo("Cannot apply Except(Draft, Validated, Cancelled) because it forbids every declared OrderStatus member.");
+        Check.That(distinct.Message).IsEqualTo(plain.Message);
+    }
+
+    [Fact(DisplayName = "A distinct collection asking for more than a NON-empty domain still names Distinct().")]
+    public void DistinctBeyondANonEmptyDomainStillNamesDistinct() {
+        // The other side of the same guard: where the element generator does admit values and the collection asks
+        // for more distinct ones than exist, Distinct() IS the constraint that cannot be honoured, and the
+        // cardinality sentence is the right one. Letting an exhausted generator speak must not relax that.
+        ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
+            () => Any.SetOf(Any.Enum<OrderStatus>()).WithCount(5).Generate());
+
+        Check.That(conflict.Message).Contains("Distinct()");
+        Check.That(conflict.Message).Contains("5");
     }
 
 }

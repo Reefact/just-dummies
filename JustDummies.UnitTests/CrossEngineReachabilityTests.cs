@@ -143,7 +143,8 @@ public sealed class CrossEngineReachabilityTests {
                    (c, lo, hi) => c.Half().Between(lo, hi),
                    (c, lo, hi, x) => c.Half().Between(lo, hi).DifferentFrom(x),
                    (c, allow, except) => c.Half().OneOf(allow).Except(except),
-                   v => (double)v, Half.MinValue, Half.MaxValue, (Half)(-1000), (Half)1000, HLo, HMid, HHi),
+                   v => (double)v, Half.MinValue, Half.MaxValue, (Half)(-1000), (Half)1000, HLo, HMid, HHi,
+                   laddered: true),
         Case<decimal>("Decimal", false,
                       c => c.Decimal(),
                       (c, lo, hi) => c.Decimal().Between(lo, hi),
@@ -203,9 +204,10 @@ public sealed class CrossEngineReachabilityTests {
                                            Func<AnyContext, T, T, T, IAny<T>> betweenDifferentFrom,
                                            Func<AnyContext, T[], T[], IAny<T>> oneOfExcept,
                                            Func<T, double>                 scale,
-                                           T domainMin, T domainMax, T wideLo, T wideHi, T na, T nb, T nc) {
+                                           T domainMin, T domainMax, T wideLo, T wideHi, T na, T nb, T nc,
+                                           bool laddered = false) {
         return new IntervalCase<T>(name, exact, full, between, betweenDifferentFrom, oneOfExcept, scale,
-                                   domainMin, domainMax, wideLo, wideHi, na, nb, nc);
+                                   domainMin, domainMax, wideLo, wideHi, na, nb, nc, laddered);
     }
 
     private static Half NextHalf(Half value) {
@@ -303,6 +305,7 @@ internal sealed class IntervalCase<T> : ReachabilityCase {
     private readonly T                                    _nb;
     private readonly T                                    _nc;
     private readonly Func<AnyContext, T[], T[], IAny<T>>  _oneOfExcept;
+    private readonly bool                                 _laddered;
     private readonly Func<T, double>                      _scale;
     private readonly T                                    _wideHi;
     private readonly T                                    _wideLo;
@@ -315,9 +318,11 @@ internal sealed class IntervalCase<T> : ReachabilityCase {
                         Func<AnyContext, T, T, T, IAny<T>> betweenDifferentFrom,
                         Func<AnyContext, T[], T[], IAny<T>> oneOfExcept,
                         Func<T, double>                    scale,
-                        T domainMin, T domainMax, T wideLo, T wideHi, T na, T nb, T nc)
+                        T domainMin, T domainMax, T wideLo, T wideHi, T na, T nb, T nc,
+                        bool laddered = false)
         : base(name) {
         _endpointsExact       = endpointsExact;
+        _laddered             = laddered;
         _full                 = full;
         _between              = between;
         _betweenDifferentFrom = betweenDifferentFrom;
@@ -368,6 +373,18 @@ internal sealed class IntervalCase<T> : ReachabilityCase {
         double lo    = _scale(_wideLo);
         double hi    = _scale(_wideHi);
         double range = hi - lo;
+
+        if (_laddered) {
+            // A laddered row draws uniformly over the values its type can represent, which are spaced geometrically,
+            // so a band measured as a percentage of the REAL range is not the question to ask of it: measured over
+            // 200 seeds, `Half` reaches the top 1% of [-1000, 1000] on 182 of them. Passing on the one pinned seed
+            // would be passing by luck. What #206 is actually about — a generator that never leaves the small end of
+            // what was declared — is asked here as the outermost decade, which the ladder reaches on every seed.
+            Check.That(max).IsStrictlyGreaterThan(hi / 10d);
+            Check.That(min).IsStrictlyLessThan(lo / 10d);
+
+            return;
+        }
 
         Check.That(max).IsStrictlyGreaterThan(hi - range * 0.01d);
         Check.That(min).IsStrictlyLessThan(lo + range * 0.01d);

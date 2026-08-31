@@ -10,6 +10,15 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Fixed
 
+- **`JD015` weighs a value set against the declared constraints together, not only one by one.** A value must
+  satisfy every constraint, so the pool is their intersection — and an intersection can be empty while no single
+  set entering it is. `Any.String().WithoutNumeric().InLowerCase().OneOf("1", "A")` is refused by the library,
+  because the first removes `"1"` and the second removes `"A"`, yet each on its own leaves a value standing and
+  the rule found nothing to report. It reports it now. Where one constraint *is* answerable for the whole pool it
+  is still named alone, in the sentence it always used, because that one says what to remove; otherwise every
+  constraint that refuses at least one value is named together, and one that refuses none is left out rather than
+  pointed at. Nothing changes for a pool one value survives — still a narrowing, still `JD029`'s to report.
+
 - **An element generator that admits nothing now names its own constraint, even inside a distinct collection.**
   `Any.SetOf(Any.Enum<Sides>().Except(Left, Right)).WithCount(1)` reported *"Cannot apply `Distinct()` because 1
   element required to be distinct exceed the 0 distinct value(s) the element generator can produce"* — naming a
@@ -43,15 +52,6 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   ([ADR-0088](../doc/handwritten/for-maintainers/adr/0088-state-the-whitespace-guard-with-a-member-of-its-own.md)).
 
 ### Fixed
-
-- **`JD015` weighs a value set against the declared constraints together, not only one by one.** A value must
-  satisfy every constraint, so the pool is their intersection — and an intersection can be empty while no single
-  set entering it is. `Any.String().WithoutNumeric().InLowerCase().OneOf("1", "A")` is refused by the library,
-  because the first removes `"1"` and the second removes `"A"`, yet each on its own leaves a value standing and
-  the rule found nothing to report. It reports it now. Where one constraint *is* answerable for the whole pool it
-  is still named alone, in the sentence it always used, because that one says what to remove; otherwise every
-  constraint that refuses at least one value is named together, and one that refuses none is left out rather than
-  pointed at. Nothing changes for a pool one value survives — still a narrowing, still `JD029`'s to report.
 
 - **`JD015` now measures the length budget the way the generator lays a string out.** The rule refused
   `Any.String().StartingWith("ORD-").StartingWith("ORD-").WithLength(4)`, a chain that draws `ORD-`: a prefix and a

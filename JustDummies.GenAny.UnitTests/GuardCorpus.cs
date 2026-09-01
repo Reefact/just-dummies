@@ -1143,6 +1143,129 @@ internal static class GuardCorpus {
                                                                   }
                                                                   """, usings: "using Ardalis.GuardClauses;", idioms: ["`Guard.Against.NegativeOrZero(p)`"]),
 
+
+        // ---- The exclusive edge again, on the two paths `LibraryGuards` does not cover. `Admits` reads
+        // ---- `Exclusive` in exactly one place — where a floor and a ceiling meet at the SAME number — so a
+        // ---- row that quietly lost its strictness reads identically everywhere else. Four rows carry the
+        // ---- flag here: the two BCL throw helpers whose names say "or equal", and the two sign rows. Each
+        // ---- shape below admits nothing, and admits exactly one value if the flag goes.
+
+        new GuardedShape("bcl-strict-floor-meets-ceiling", "Cadence", """
+                                                                      public sealed class Cadence {
+
+                                                                          private readonly int beats;
+
+                                                                          public Cadence(int beats) {
+                                                                              ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(beats, 5);
+                                                                              if (beats > 5) { throw new ArgumentOutOfRangeException(nameof(beats)); }
+                                                                              this.beats = beats;
+                                                                          }
+
+                                                                      }
+                                                                      """, beyondTheEngine: true),
+
+        new GuardedShape("bcl-strict-ceiling-meets-floor", "Grade", """
+                                                                    public sealed class Grade {
+
+                                                                        private readonly int score;
+
+                                                                        public Grade(int score) {
+                                                                            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(score, 7);
+                                                                            if (score < 7) { throw new ArgumentOutOfRangeException(nameof(score)); }
+                                                                            this.score = score;
+                                                                        }
+
+                                                                    }
+                                                                    """, beyondTheEngine: true),
+
+        new GuardedShape("positive-meets-a-ceiling-at-zero", "Weight", """
+                                                                       public sealed class Weight {
+
+                                                                           private readonly int grams;
+
+                                                                           public Weight(int grams) {
+                                                                               if (grams <= 0) { throw new ArgumentOutOfRangeException(nameof(grams)); }
+                                                                               if (grams > 0) { throw new ArgumentOutOfRangeException(nameof(grams)); }
+                                                                               this.grams = grams;
+                                                                           }
+
+                                                                       }
+                                                                       """, beyondTheEngine: true),
+
+        new GuardedShape("negative-meets-a-floor-at-zero", "Delta", """
+                                                                    public sealed class Delta {
+
+                                                                        private readonly int change;
+
+                                                                        public Delta(int change) {
+                                                                            if (change >= 0) { throw new ArgumentOutOfRangeException(nameof(change)); }
+                                                                            if (change < 0) { throw new ArgumentOutOfRangeException(nameof(change)); }
+                                                                            this.change = change;
+                                                                        }
+
+                                                                    }
+                                                                    """, beyondTheEngine: true),
+
+        // ---- The comparison written the other way round — the parameter on the RIGHT. The reader has a whole
+        // ---- path for it (it records that the sides are flipped, and flips the operator back), and until this
+        // ---- shape nothing in the corpus took that path. A reader that forgot to flip would read a ceiling as
+        // ---- a floor, which is not a lost constraint but an inverted one.
+
+        new GuardedShape("flipped-comparison", "Tempo", """
+                                                        public sealed class Tempo {
+
+                                                            private readonly int beats;
+
+                                                            public Tempo(int beats) {
+                                                                if (200 < beats) { throw new ArgumentOutOfRangeException(nameof(beats)); }
+                                                                this.beats = beats;
+                                                            }
+
+                                                        }
+                                                        """),
+
+        // ---- An unsigned parameter carrying the sign guard that cannot be honoured on it. `p >= 0` says
+        // ---- "must be negative", and no unsigned value is: the row has no member to write and no draw would
+        // ---- satisfy it, so the engine must refuse rather than emit a Negative the generator would drop
+        // ---- (ADR-0046). No corpus shape had an unsigned parameter at all.
+
+        new GuardedShape("unsigned-cannot-be-negative", "Counter", """
+                                                                   public sealed class Counter {
+
+                                                                       private readonly uint ticks;
+
+                                                                       public Counter(uint ticks) {
+                                                                           if (ticks >= 0) { throw new ArgumentOutOfRangeException(nameof(ticks)); }
+                                                                           this.ticks = ticks;
+                                                                       }
+
+                                                                   }
+                                                                   """, requiresVerification: true),
+
+        // ---- A bound that is a floating-point constant with no place on the number line. `TryDecimal` refuses
+        // ---- NaN and the infinities in its first two lines, before any conversion, and nothing had ever handed
+        // ---- it one: the guard must read as unvouched-for rather than as a bound at zero. Two parameters,
+        // ---- because those are two separate lines — one asks it of a `double` constant, one of a `float`.
+        // ---- Compared as `less than` on purpose. The first draft compared the other way, and nothing is above
+        // ---- an infinity, so both guards were vacuous: the kept base drew two hundred values its own
+        // ---- constructor accepted, and this row's own pin caught it. These reject every finite value.
+
+        new GuardedShape("bound-that-is-not-on-the-number-line", "Ratio", """
+                                                                          public sealed class Ratio {
+
+                                                                              private readonly double factor;
+
+                                                                              private readonly float scale;
+
+                                                                              public Ratio(double factor, float scale) {
+                                                                                  if (factor < double.PositiveInfinity) { throw new ArgumentOutOfRangeException(nameof(factor)); }
+                                                                                  if (scale < float.PositiveInfinity) { throw new ArgumentOutOfRangeException(nameof(scale)); }
+                                                                                  this.factor = factor;
+                                                                                  this.scale  = scale;
+                                                                              }
+
+                                                                          }
+                                                                          """, requiresVerification: true),
     ];
 
     /// <summary>The shape names, as the theory rows carry them.</summary>

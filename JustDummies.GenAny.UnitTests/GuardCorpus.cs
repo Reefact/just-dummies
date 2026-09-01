@@ -39,7 +39,7 @@ internal static class GuardCorpus {
                                                              if (quantity <= 0) { throw new ArgumentOutOfRangeException(nameof(quantity)); }
                                                          }
                                                      }
-                                                     """),
+                                                     """, idioms: ["`p <= 0`; or `p < 1` on an **integral** type"]),
 
         new GuardedShape("sound-non-empty", "Label", """
                                                      public sealed class Label {
@@ -47,7 +47,7 @@ internal static class GuardCorpus {
                                                              if (string.IsNullOrWhiteSpace(text)) { throw new ArgumentException(nameof(text)); }
                                                          }
                                                      }
-                                                     """),
+                                                     """, idioms: ["`string.IsNullOrWhiteSpace(p)`"]),
 
         new GuardedShape("sound-min-count", "Batch", """
                                                      public sealed class Batch {
@@ -63,7 +63,7 @@ internal static class GuardCorpus {
                                                                  if (value < 10) { throw new ArgumentOutOfRangeException(nameof(value)); }
                                                              }
                                                          }
-                                                         """),
+                                                         """, idioms: ["`p < N`"]),
 
         // ---- D16: both bounds of a range declared separately, in all three families. ----
 
@@ -75,7 +75,7 @@ internal static class GuardCorpus {
                                                               if (value.Length > 20) { throw new ArgumentException(nameof(value)); }
                                                           }
                                                       }
-                                                      """),
+                                                      """, idioms: ["`p.Length > N`", "`p.Length < N`"]),
 
         new GuardedShape("range-numeric", "Score", """
                                                    public sealed class Score {
@@ -84,7 +84,7 @@ internal static class GuardCorpus {
                                                            if (value > 100) { throw new ArgumentOutOfRangeException(nameof(value)); }
                                                        }
                                                    }
-                                                   """),
+                                                   """, idioms: ["`p < 0`", "`p > N`"]),
 
         new GuardedShape("range-count", "Page", """
                                                 public sealed class Page {
@@ -176,7 +176,7 @@ internal static class GuardCorpus {
                                                                          if (slot == Slot.None) { throw new ArgumentOutOfRangeException(nameof(slot)); }
                                                                      }
                                                                  }
-                                                                 """),
+                                                                 """, idioms: ["`p == E.Member`"]),
 
         // ---- ADR-0086: the assigned guard-library idiom, the documented spelling of Ardalis.GuardClauses.
         // ---- The first statement is an assignment to state, so before the record this constructor read as
@@ -196,7 +196,7 @@ internal static class GuardCorpus {
                                                              }
 
                                                          }
-                                                         """, usings: "using Ardalis.GuardClauses;"),
+                                                         """, usings: "using Ardalis.GuardClauses;", idioms: ["`Guard.Against.NullOrEmpty(p)` / `Guard.IsNotNullOrEmpty(p, …)`", "`Guard.Against.Negative(p)`"]),
 
         // ---- ADR-0086's range row, pinned at the boundary: OutOfRange was MEASURED inclusive at both ends,
         // ---- and a range this tight draws its boundaries constantly — a mapping wrong about either end
@@ -212,7 +212,7 @@ internal static class GuardCorpus {
                                                                      }
 
                                                                  }
-                                                                 """, usings: "using Ardalis.GuardClauses;"),
+                                                                 """, usings: "using Ardalis.GuardClauses;", idioms: ["`Guard.Against.OutOfRange(p, name, from, to)` — measured inclusive at **both** ends"]),
 
         // ---- The Toolkit's IsInRange was MEASURED half-open — the floor admitted, the ceiling rejected —
         // ---- so this domain admits exactly one value, and a mapping that admitted the ceiling too would
@@ -229,7 +229,7 @@ internal static class GuardCorpus {
                                                           }
 
                                                       }
-                                                      """, usings: "using CommunityToolkit.Diagnostics;"),
+                                                      """, usings: "using CommunityToolkit.Diagnostics;", idioms: ["`Guard.IsInRange(p, min, max)` — measured **half-open**"]),
 
         // ---- A recognised library's method the table has no measured row for: declared validation the
         // ---- engine cannot vouch for, so the parameter blocks (ADR-0083) with the base kept underneath —
@@ -534,7 +534,7 @@ internal static class GuardCorpus {
 
                                                                                   public string Value { get; }
                                                                               }
-                                                                              """, usings: "using Ardalis.GuardClauses;"),
+                                                                              """, usings: "using Ardalis.GuardClauses;", idioms: ["`Guard.Against.NullOrWhiteSpace(p)` / `Guard.IsNotNullOrWhiteSpace(p, …)`", "`Guard.Against.StringTooShort(p, min)`, `StringTooLong(p, max)`, `LengthOutOfRange(p, min, max)`"]),
 
 
         // ---- Finding 7b. The same fold, CommunityToolkit's spelling: `IsNotNullOrWhiteSpace` also read as
@@ -847,7 +847,7 @@ internal static class GuardCorpus {
                                                                                         this.value = value;
                                                                                     }
                                                                                 }
-                                                                                """),
+                                                                                """, idioms: ["`string.IsNullOrEmpty(p)`, `p.Length == 0`, `p.Length < 1`"]),
 
 
 
@@ -889,12 +889,10 @@ internal static class GuardCorpus {
         // ---- `AnyTag`'s business. Scaffolding `Sheet` without `AnyTag` in the compilation now fails with
         // ---- `CS0246: AnyTag could not be found` -- measured directly, not left to this row's assumption that
         // ---- a chain still gets built here to lose doubt about.
+
     ];
 
     /// <summary>The shape names, as the theory rows carry them.</summary>
-    internal static IEnumerable<string> Names() {
-        return All.Select(shape => shape.Name);
-    }
 
     /// <summary>
     ///     The shapes whose domain a generator of this library can satisfy, and whose chain the engine vouches
@@ -932,13 +930,15 @@ internal static class GuardCorpus {
                               string? defect = null,
                               bool beyondTheEngine = false,
                               bool requiresVerification = false,
-                              string? usings = null) {
+                              string? usings = null,
+                              IReadOnlyList<string>? idioms = null) {
             Name                 = name;
             Target               = target;
             Domain               = Preambled(usings) + declarations;
             Defect               = defect;
             BeyondTheEngine      = beyondTheEngine;
             RequiresVerification = requiresVerification;
+            Idioms               = idioms ?? [];
         }
 
         /// <summary>The preamble, with the one extra using a guard-library shape opens (ADR-0086).</summary>
@@ -959,6 +959,18 @@ internal static class GuardCorpus {
 
         /// <summary>The defect this shape reproduces today, or null when the engine gets it right.</summary>
         internal string? Defect { get; }
+
+        /// <summary>
+        ///     The rows of the specification's closed idiom tables (§5.3) this shape exercises, each named by
+        ///     the verbatim text of the row's first column.
+        /// </summary>
+        /// <remarks>
+        ///     A claim, read by <c>RecognisedIdiomCoverageTests</c>: a table row nothing claims is a cell of
+        ///     the closed surface no one has been to, which is where every defect of the guard-reading
+        ///     campaign was found. Keying on the row's own text rather than an invented identifier is
+        ///     deliberate — reword the row and the claim breaks, which is the moment to re-read it.
+        /// </remarks>
+        internal IReadOnlyList<string> Idioms { get; }
 
         /// <summary>
         ///     Whether the domain declares something no generator of this library can draw.

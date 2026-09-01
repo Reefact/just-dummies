@@ -140,6 +140,13 @@ jobs:
         # half — file, line and the kind of rewrite that went unnoticed — in the run summary, so a
         # failing gate can be diagnosed without downloading the artifact. `if: always()` because the
         # interesting case is the failing one.
+        #
+        # It publishes COUNTS BY STATUS, never a percentage, and never the sentence "all mutants were
+        # killed". Stryker scores a `Timeout` as a kill, and on 2026-09-01 the library's first sweep
+        # ever carried to completion reported 100 % with 2505 of its 4575 judged mutants ending in a
+        # timeout rather than in a failing test: half the component was never judged and the number
+        # said the opposite. A timeout is a mutant nobody has an answer for, so it is counted as its
+        # own status beside the ones a test actually caught.
         if: always()
         run: |
           set -euo pipefail
@@ -153,24 +160,58 @@ jobs:
           # put to the test, i.e. neither filtered out nor rejected by the compiler.
           tested=$(jq '[.files[].mutants[]
             | select(.status != "Ignored" and .status != "CompileError")] | length' "$report")
+          killed=$(jq '[.files[].mutants[] | select(.status == "Killed")] | length' "$report")
+          timedout=$(jq '[.files[].mutants[] | select(.status == "Timeout")] | length' "$report")
+          # Every status the report carries, whatever it is — a status this repository has never seen
+          # still gets counted rather than silently dropped into "the rest".
+          counts=$(jq -r '[.files[].mutants[].status] | group_by(.)
+            | sort_by(-length)[] | "| \(.[0]) | \(length) |"' "$report")
           rows=$(jq -r --arg ws "$GITHUB_WORKSPACE/" '
             .files | to_entries[] | .key as $f | .value.mutants[]
-            | select(.status == "Survived" or .status == "Timeout" or .status == "NoCoverage")
+            | select(.status == "Survived" or .status == "NoCoverage")
             | "| \(.status) | \($f | ltrimstr($ws)):\(.location.start.line) | \(.mutatorName) |"
+          ' "$report")
+          # Timeouts are counted per file rather than listed per mutant. A survivor is a behaviour to
+          # read one by one; a timeout is a mutant the clock answered for, and there can be thousands
+          # — 2505 on 2026-09-01, which line by line would have buried the survivors this table exists
+          # to show. Per file says where the budget ran out; the artifact carries the rest.
+          timeouts=$(jq -r --arg ws "$GITHUB_WORKSPACE/" '
+            [ .files | to_entries[]
+              | { file: (.key | ltrimstr($ws)), n: ([.value.mutants[] | select(.status == "Timeout")] | length) }
+              | select(.n > 0) ]
+            | sort_by(-.n)[] | "| \(.file) | \(.n) |"
           ' "$report")
           {
             echo "### Mutation — ${{ matrix.name }}"
             echo
             if [ "$tested" -eq 0 ]; then
               echo "This pull request changed nothing this library is mutated from."
-            elif [ -z "$rows" ]; then
-              echo "All $tested mutants were killed."
             else
-              echo "| Status | Location | Mutation |"
-              echo "| --- | --- | --- |"
-              echo "$rows"
+              echo "| Status | Mutants |"
+              echo "| --- | --- |"
+              echo "$counts"
+              echo
+              echo "**$killed of $tested judged mutants were killed by a failing test.**"
+              if [ "$timedout" -gt 0 ]; then
+                echo
+                echo "$timedout ended in a **timeout** instead. Stryker scores those as killed; they are not"
+                echo "evidence that anything noticed the change, so read them as unjudged."
+                echo
+                echo "| Timed out in | Mutants |"
+                echo "| --- | --- |"
+                echo "$timeouts"
+              fi
+              if [ -n "$rows" ]; then
+                echo
+                echo "| Status | Location | Mutation |"
+                echo "| --- | --- | --- |"
+                echo "$rows"
+              fi
             fi
           } | tee -a "$GITHUB_STEP_SUMMARY"
+          if [ "$timedout" -gt 0 ]; then
+            echo "::warning::${{ matrix.name }}: $timedout of $tested judged mutants ended in a timeout, which Stryker scores as killed — that many were not judged"
+          fi
 
       - name: Upload the mutation report
         # Always: the report is most useful precisely when the run failed the threshold — the HTML
@@ -274,8 +315,10 @@ jobs:
           --output ../artifacts/mutation/${{ matrix.name }}
 
       - name: Summarise the surviving mutants
-        # Same table as the gate legs produce. On the sweep it is the deliverable, not a diagnosis
-        # aid: this is the list of behaviours nothing in the suite asserts, library by library.
+        # Same table as the gate legs produce, and the same refusal to publish a percentage: counts by
+        # status, and never "all mutants were killed". On the sweep it is the deliverable rather than
+        # a diagnosis aid — this is the list of behaviours nothing in the suite asserts, library by
+        # library, and the count of those nothing had time to answer for.
         if: always()
         run: |
           set -euo pipefail
@@ -289,24 +332,58 @@ jobs:
           # put to the test, i.e. neither filtered out nor rejected by the compiler.
           tested=$(jq '[.files[].mutants[]
             | select(.status != "Ignored" and .status != "CompileError")] | length' "$report")
+          killed=$(jq '[.files[].mutants[] | select(.status == "Killed")] | length' "$report")
+          timedout=$(jq '[.files[].mutants[] | select(.status == "Timeout")] | length' "$report")
+          # Every status the report carries, whatever it is — a status this repository has never seen
+          # still gets counted rather than silently dropped into "the rest".
+          counts=$(jq -r '[.files[].mutants[].status] | group_by(.)
+            | sort_by(-length)[] | "| \(.[0]) | \(length) |"' "$report")
           rows=$(jq -r --arg ws "$GITHUB_WORKSPACE/" '
             .files | to_entries[] | .key as $f | .value.mutants[]
-            | select(.status == "Survived" or .status == "Timeout" or .status == "NoCoverage")
+            | select(.status == "Survived" or .status == "NoCoverage")
             | "| \(.status) | \($f | ltrimstr($ws)):\(.location.start.line) | \(.mutatorName) |"
+          ' "$report")
+          # Timeouts are counted per file rather than listed per mutant. A survivor is a behaviour to
+          # read one by one; a timeout is a mutant the clock answered for, and there can be thousands
+          # — 2505 on 2026-09-01, which line by line would have buried the survivors this table exists
+          # to show. Per file says where the budget ran out; the artifact carries the rest.
+          timeouts=$(jq -r --arg ws "$GITHUB_WORKSPACE/" '
+            [ .files | to_entries[]
+              | { file: (.key | ltrimstr($ws)), n: ([.value.mutants[] | select(.status == "Timeout")] | length) }
+              | select(.n > 0) ]
+            | sort_by(-.n)[] | "| \(.file) | \(.n) |"
           ' "$report")
           {
             echo "### Mutation sweep — ${{ matrix.name }}"
             echo
             if [ "$tested" -eq 0 ]; then
               echo "No mutant was selected — check the run's Stryker output."
-            elif [ -z "$rows" ]; then
-              echo "All $tested mutants were killed."
             else
-              echo "| Status | Location | Mutation |"
-              echo "| --- | --- | --- |"
-              echo "$rows"
+              echo "| Status | Mutants |"
+              echo "| --- | --- |"
+              echo "$counts"
+              echo
+              echo "**$killed of $tested judged mutants were killed by a failing test.**"
+              if [ "$timedout" -gt 0 ]; then
+                echo
+                echo "$timedout ended in a **timeout** instead. Stryker scores those as killed; they are not"
+                echo "evidence that anything noticed the change, so read them as unjudged."
+                echo
+                echo "| Timed out in | Mutants |"
+                echo "| --- | --- |"
+                echo "$timeouts"
+              fi
+              if [ -n "$rows" ]; then
+                echo
+                echo "| Status | Location | Mutation |"
+                echo "| --- | --- | --- |"
+                echo "$rows"
+              fi
             fi
           } | tee -a "$GITHUB_STEP_SUMMARY"
+          if [ "$timedout" -gt 0 ]; then
+            echo "::warning::${{ matrix.name }}: $timedout of $tested judged mutants ended in a timeout, which Stryker scores as killed — that many were not judged"
+          fi
 
       - name: Upload the mutation report
         if: always()

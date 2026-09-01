@@ -272,9 +272,22 @@ chiffre, [`justdummies.json`](../../../../build/stryker/justdummies.json) met
 C'est délibéré et c'est temporaire. La patte s'exécute toujours, échoue toujours
 sur un build cassé ou une suite en échec, et liste toujours ses mutants survivants
 dans le résumé du run ; ce qu'elle ne fait pas encore, c'est refuser une pull
-request sur un score. **Le premier balayage hebdomadaire publie le chiffre sur
-toute la bibliothèque** — c'est ce run que ce seuil attend. Lisez-le, et fixez
-`break` à partir de là, exactement comme les autres barres l'ont été.
+request sur un score.
+
+**Le premier balayage mené à terme est arrivé le 2026-09-01, et son chiffre est
+inutilisable.** Il a duré trois heures vingt-cinq et a annoncé **100 %** : sur
+4 575 mutants jugés, 2 070 ont été tués par un test en échec et **2 505 se sont
+terminés en timeout**, que Stryker compte comme un kill. Rien n'a survécu parce
+que plus de la moitié du composant n'a jamais été jugée. Fixer `break` à partir de
+ce nombre reviendrait à caler le cliquet sur un artefact — la seule chose que la
+méthode de cette section interdit, puisque toutes les autres barres viennent d'un
+score réellement mesuré.
+
+Le seuil attend donc toujours, et sur autre chose qu'avant : non plus qu'un
+balayage aille au bout, mais qu'il en aille un dont les timeouts soient un résidu
+plutôt que la majorité. L'étape de résumé publie les comptes par statut
+précisément pour que le prochain lecteur voie cette distinction sans avoir à la
+recalculer.
 
 `JustDummies.Xunit` n'appelle pas cette réserve : elle est assez petite pour que
 sa barre vienne d'un balayage complet comme les autres, et elle barre normalement.
@@ -366,20 +379,44 @@ mode d'emploi qui occupait cette place le décrivait au futur :
 
 ## L'exécuter en local
 
+**Depuis le répertoire du projet muté, jamais depuis la racine du dépôt**, pour la
+raison que donne « Le répertoire de travail est ce qui rend l'oracle réel »
+ci-dessus : les `project` et `test-projects` d'une configuration se résolvent par
+rapport au répertoire de travail, et la racine du dépôt les résout donc sur rien.
+
 ```bash
 dotnet tool restore
-dotnet stryker --config-file build/stryker/justdummies.json
+cd JustDummies && dotnet stryker --config-file ../build/stryker/justdummies.json
 ```
 
-C'est le balayage complet du plus gros composant et cela prend un moment. Pour
+C'est le balayage complet du plus gros composant et cela prend des heures. Pour
 reproduire ce que fait le barrage sur une branche :
 
 ```bash
-dotnet stryker --config-file build/stryker/justdummies.json --since:$(git merge-base origin/main HEAD)
+cd JustDummies && dotnet stryker --config-file ../build/stryker/justdummies.json --since:$(git merge-base origin/main HEAD)
 ```
 
-Les rapports atterrissent dans `StrykerOutput/` (ignoré par git) ; ouvrez
-`reports/mutation-report.html`.
+Les rapports atterrissent là où `--output` le dit, sinon dans `StrykerOutput/`
+(ignoré par git) ; ouvrez `reports/mutation-report.html`.
+
+### Un rapport local et celui de la CI peuvent diverger
+
+Mesuré le 2026-09-01 sur `JustDummies.GenAny/Guards.cs` — même commit, même
+configuration, et le même oracle déclaré de 495 tests lu dans les deux journaux.
+Le runner a annoncé 38 survivants ; un conteneur Linux en a annoncé 52.
+**Dix-sept mutants que le runner dit tués survivent dans le conteneur**, et pour
+l'un d'eux — le `exclusive: true` de `Positive` — appliquer la mutation à la main
+laisse toute la suite verte, sous les deux versions de SDK impliquées.
+
+Neuf explications ont été éliminées par la mesure, dont la concurrence de l'outil
+et la différence de SDK. **Aucune n'en rend compte, et la cause est ouverte.**
+Deux exécutions locales identiques s'accordent à deux mutants sur 623, donc le
+côté local est au moins stable.
+
+Lisez donc un rapport local comme un second avis sur le même code, pas comme la
+reproduction de la même mesure. Là où les deux divergent sur un mutant qui
+compte, l'arbitre n'est ni l'un ni l'autre : appliquez la mutation au source à la
+main et lancez la suite.
 
 ## Voir aussi
 

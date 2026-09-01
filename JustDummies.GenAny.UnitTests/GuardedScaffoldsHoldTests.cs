@@ -51,8 +51,6 @@ public sealed class GuardedScaffoldsHoldTests {
     /// </remarks>
     private static readonly ImmutableHashSet<string> Assumed = ImmutableHashSet.Create("JD030");
 
-    public static TheoryData<string> Corpus => Rows(GuardCorpus.Names());
-
     public static TheoryData<string> Satisfiable => Rows(GuardCorpus.SatisfiableNames());
 
     public static TheoryData<string> BeyondTheEngine => Rows(GuardCorpus.BeyondTheEngineNames());

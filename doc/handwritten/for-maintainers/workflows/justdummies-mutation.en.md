@@ -255,10 +255,20 @@ Rather than invent a number,
 
 That is deliberate and it is temporary. The leg still runs, still fails on a
 broken build or a failing suite, and still lists its surviving mutants in the run
-summary; what it does not yet do is refuse a pull request over a score. **The
-first weekly sweep publishes the library-wide figure** — that is the run this
-threshold is waiting on. Read it, and set `break` from it exactly as the other
-bars were set.
+summary; what it does not yet do is refuse a pull request over a score.
+
+**The first sweep carried to completion arrived on 2026-09-01, and its figure
+cannot be used.** It ran for three hours and twenty-five minutes and reported
+**100 %**: of 4575 judged mutants, 2070 were killed by a failing test and **2505
+ended in a timeout**, which Stryker scores as a kill. Nothing survived because
+more than half the component was never judged. Setting `break` from that number
+would pin the ratchet to an artefact — the one thing this section's own method
+forbids, since every other bar came from a score that was measured.
+
+So the threshold is still waiting, and on a different thing than it was: not on a
+sweep reaching the end, but on one whose timeouts are a residue rather than the
+majority. The summary step publishes the counts by status precisely so the next
+reader sees that distinction without recomputing it.
 
 `JustDummies.Xunit` needs no such caveat: it is small enough that its bar came
 from a full sweep like the rest, and it gates normally.
@@ -344,19 +354,44 @@ used to sit here described it in the future tense:
 
 ## Running it locally
 
+**From the mutated project's own directory, never the repository root**, for the
+reason "The working directory is what makes the oracle real" gives above: a
+configuration's `project` and `test-projects` are resolved against the working
+directory, so the repository root resolves them to nothing.
+
 ```bash
 dotnet tool restore
-dotnet stryker --config-file build/stryker/justdummies.json
+cd JustDummies && dotnet stryker --config-file ../build/stryker/justdummies.json
 ```
 
-That is the full sweep of the largest component and it takes a while. To reproduce
+That is the full sweep of the largest component and it takes hours. To reproduce
 what the gate does on a branch:
 
 ```bash
-dotnet stryker --config-file build/stryker/justdummies.json --since:$(git merge-base origin/main HEAD)
+cd JustDummies && dotnet stryker --config-file ../build/stryker/justdummies.json --since:$(git merge-base origin/main HEAD)
 ```
 
-Reports land in `StrykerOutput/` (git-ignored); open `reports/mutation-report.html`.
+Reports land where `--output` says, or in `StrykerOutput/` (git-ignored); open
+`reports/mutation-report.html`.
+
+### A local report and the CI report can disagree
+
+Measured on 2026-09-01 on `JustDummies.GenAny/Guards.cs` — same commit, same
+configuration, and the same declared oracle of 495 tests read from both logs. The
+runner reported 38 survivors; a Linux container reported 52. **Seventeen mutants
+the runner called killed survive in the container**, and for one of them — the
+`exclusive: true` of `Positive` — applying the mutation by hand leaves the whole
+suite green, under both SDK versions involved.
+
+Nine explanations were eliminated by measurement, the tool's own concurrency and
+the SDK difference among them. **None of them accounts for it, and the cause is
+open.** Two identical local runs agree to two mutants out of 623, so the local
+side is at least stable.
+
+Read a local report as a second opinion on the same code, then, not as a
+reproduction of the same measurement. Where the two disagree on a mutant that
+matters, the arbiter is neither report: apply the mutation to the source by hand
+and run the suite.
 
 ## Related
 

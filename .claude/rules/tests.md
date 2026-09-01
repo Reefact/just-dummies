@@ -62,6 +62,13 @@ cd <the mutated project> && dotnet stryker --config-file ../build/stryker/<proje
 configuration that names a solution has its `test-projects` list discovered away, and every suite
 referencing the assembly judges the mutants instead of the declared one.
 
+Two things a local report will not tell you. **A `Timeout` is not a survivor and not a kill
+either** — Stryker scores it as killed, and on 2026-09-01 the library's first completed sweep
+came back at 100 % with 2505 of its 4575 judged mutants ending there. And **a local report can
+disagree with CI on the same commit**: seventeen mutants of `Guards.cs` that the runner called
+killed survive in a container, cause unknown. Where a verdict matters, the arbiter is neither
+report — apply the mutation to the source by hand and run the suite.
+
 The configurations and the reasons behind them are in
 [`justdummies-mutation.en.md`](../../doc/handwritten/for-maintainers/workflows/justdummies-mutation.en.md).
 

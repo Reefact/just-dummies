@@ -202,21 +202,25 @@ internal static class Subject {
     ///     The <c>netstandard2.0</c> asset of the same build — the one a project below .NET 8 resolves.
     /// </summary>
     /// <remarks>
-    ///     Its path comes from MSBuild rather than from the referenced assembly's location, because what lands
-    ///     beside this project's output is the net8.0 leg, copied: there is no second asset to find there. It is
-    ///     what makes ADR-0059 checkable — the same parameter, two assets, two answers.
+    ///     It sits INSIDE this project's own output, put there by the build: what lands beside the output by
+    ///     itself is the net8.0 leg, copied, so there is no second asset to find there. Reading a sibling's
+    ///     <c>bin</c> instead is what this replaces — a build of this project alone leaves that directory
+    ///     holding whatever some earlier build put there, and a mutation run that rebuilds only the test
+    ///     project empties it. It is what makes ADR-0059 checkable — the same parameter, two assets, two
+    ///     answers — from state this project produced.
     /// </remarks>
     private static string DownlevelAsset {
         get {
-            AssemblyMetadataAttribute path = typeof(Subject).Assembly
-                                                            .GetCustomAttributes<AssemblyMetadataAttribute>()
-                                                            .Single(metadata => metadata.Key == "DownlevelLibrary");
+            AssemblyMetadataAttribute relative = typeof(Subject).Assembly
+                                                                .GetCustomAttributes<AssemblyMetadataAttribute>()
+                                                                .Single(metadata => metadata.Key == "DownlevelLibrary");
+            string path = Path.Combine(AppContext.BaseDirectory, relative.Value!);
 
-            Check.WithCustomMessage($"The netstandard2.0 asset is missing, at {path.Value}. "
-                                  + "Build the solution rather than this project alone.")
-                 .That(File.Exists(path.Value)).IsTrue();
+            Check.WithCustomMessage($"The netstandard2.0 asset is missing, at {path}. "
+                                  + "The build copies it there from the library's netstandard2.0 leg; a clean rebuild should restore it.")
+                 .That(File.Exists(path)).IsTrue();
 
-            return path.Value!;
+            return path;
         }
     }
 

@@ -22,7 +22,7 @@ n'existe, et la colonne **Origine** dit comment chacune est arrivée ici :
   aussi, car ce dépôt l'applique encore. Les deux copies sont désormais
   indépendantes : chaque côté peut remplacer la sienne sans toucher à l'autre.
   9 décisions.
-* **consigné ici** — décidé dans ce dépôt, de son propre chef. 49 décisions.
+* **consigné ici** — décidé dans ce dépôt, de son propre chef. 50 décisions.
 
 Les numéros appartiennent à cette base, attribués dans l'ordre où les décisions
 ont été consignées en amont
@@ -218,3 +218,4 @@ que l'option existait le jour où elle compterait.
 | [ADR-0090](0090-exempt-dependabot-from-the-contributor-agreement.fr.md) | Exempter Dependabot de l'accord de contribution, uniquement sur son propre commit signé | Accepted | consigné ici |
 | [ADR-0091](0091-draw-a-half-from-the-values-it-can-represent.fr.md) | Tirer un `Half` parmi les valeurs qu'il sait représenter | Accepted | consigné ici |
 | [ADR-0092](0092-run-every-mutation-leg-from-its-own-source-project.fr.md) | Lancer chaque jambe de mutation depuis son propre projet source | Proposed | consigné ici |
+| [ADR-0093](0093-publish-mutation-statuses-not-a-score.fr.md) | Publier des statuts de mutation, pas un score | Proposed | consigné ici |

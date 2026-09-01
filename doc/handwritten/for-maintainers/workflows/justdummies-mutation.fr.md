@@ -289,6 +289,25 @@ plutôt que la majorité. L'étape de résumé publie les comptes par statut
 précisément pour que le prochain lecteur voie cette distinction sans avoir à la
 recalculer.
 
+**Élargir le budget de temps a été mesuré, pas supposé, et aucun réglage n'est bon
+marché.** Sur `Any.Combine.cs` — 205 mutants, dont 169 en timeout lors du balayage
+— le budget par défaut se reproduit en local à 173 timeouts contre 32 kills. Dix
+secondes de plus ne changent strictement rien : 174 et 31. Trente secondes de plus
+transforment **112 de ces timeouts en vrais kills** — 61 et 144 — et coûtent
+**2,8× le temps d'horloge**. Le composant est mieux testé que son rapport ne
+pouvait le dire ; le budget n'a simplement jamais laissé ces mutants finir de le
+dire.
+
+C'est aussi pourquoi aucune valeur n'est écrite dans
+[`justdummies.json`](../../../../build/stryker/justdummies.json). Le réglage qui
+marche projette cette jambe de trois heures et demie à quelque chose autour de
+neuf, contre le plafond de job de cinq heures cinquante. Le levier qui rendrait le
+budget honnête est de **découper la jambe entre plusieurs jobs** — du parallélisme
+entre runners plutôt qu'un nombre plus grand dans un seul — et c'est un chantier à
+part entière
+([ADR-0093](../adr/0093-publish-mutation-statuses-not-a-score.fr.md), Actions de
+suivi).
+
 `JustDummies.Xunit` n'appelle pas cette réserve : elle est assez petite pour que
 sa barre vienne d'un balayage complet comme les autres, et elle barre normalement.
 

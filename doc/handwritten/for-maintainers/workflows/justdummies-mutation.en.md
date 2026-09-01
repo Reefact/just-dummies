@@ -270,6 +270,22 @@ sweep reaching the end, but on one whose timeouts are a residue rather than the
 majority. The summary step publishes the counts by status precisely so the next
 reader sees that distinction without recomputing it.
 
+**Widening the time budget was measured, not assumed, and there is no cheap
+setting.** On `Any.Combine.cs` — 205 mutants, 169 of them timed out in the sweep
+— the default budget reproduces locally at 173 timeouts against 32 kills. Ten
+extra seconds changes nothing at all: 174 and 31. Thirty extra seconds turns
+**112 of those timeouts into real kills** — 61 and 144 — and costs **2.8× the
+wall clock**. The component is better tested than its report could say; the
+budget simply never let those mutants finish saying so.
+
+That is also why no value is written into
+[`justdummies.json`](../../../../build/stryker/justdummies.json). The setting
+that works projects this leg from three and a half hours to somewhere near nine,
+against the job cap of five hours fifty. The lever that would make the budget
+honest is **splitting the leg across jobs** — parallelism between runners rather
+than a larger number inside one — and that is a change of its own
+([ADR-0093](../adr/0093-publish-mutation-statuses-not-a-score.md), Follow-up).
+
 `JustDummies.Xunit` needs no such caveat: it is small enough that its bar came
 from a full sweep like the rest, and it gates normally.
 

@@ -4,8 +4,17 @@ name: justdummies-mutation
 # more legs of `mutation.yml`. JustDummies is destined for a repository of its own (it is already a
 # standalone, error-agnostic package — ADR-0003), and this file is written so that the move is a
 # FILE MOVE, not an edit: take this workflow, `build/stryker/justdummies*.json`,
-# `.config/dotnet-tools.json` and the reference page, then repoint the `solution` field in the two
-# configs at this repository's solution. Nothing here refers to a FirstClassErrors project.
+# `.config/dotnet-tools.json` and the reference page, and nothing needs repointing — the configs name
+# no solution. Nothing here refers to a FirstClassErrors project.
+#
+# EVERY LEG RUNS FROM ITS OWN SOURCE PROJECT, never from the repository root, and no config carries a
+# `solution` field. That is not a style: a config that names a solution has its `test-projects` list
+# DISCOVERED AWAY. Stryker then judges each mutant with every project in the solution that references
+# the mutated assembly, silently. Measured on the pinned 4.16.0 — the library's oracle was 2119 tests,
+# the whole repository, where its config named one suite of 790. `--test-project` does not override
+# it, `test-case-filter` is accepted and ignored under the MTP runner, and a `.slnf` makes Stryker
+# abort. Running from the project directory is what makes the declared oracle the real one, and
+# `MutationOracleConventionTests` fails the build if a `solution` field comes back.
 #
 # The mechanism is identical to `mutation.yml`; keep the two in step when you change one.
 
@@ -70,8 +79,10 @@ jobs:
         # `mutate` patterns select nothing at all. The weekly `full` sweep below still measures it.
         include:
           - name: justdummies-xunit
+            project: JustDummies.Xunit
             config: build/stryker/justdummies-xunit.json
           - name: justdummies-analyzers
+            project: JustDummies.Analyzers
             config: build/stryker/justdummies-analyzers.json
     steps:
       - name: Checkout
@@ -113,10 +124,15 @@ jobs:
         #
         # Stryker exits 0 — "unable to calculate a mutation score" — when the diff touches none of
         # this library's sources, which is the common case for a leg nobody is working on.
+        #
+        # `working-directory` is what confines the oracle to the config's `test-projects` (see the
+        # header). `dotnet stryker` still resolves through the repository's tool manifest, which is
+        # found by walking up; `--since` still reads the same git history, from the same clone.
+        working-directory: ${{ matrix.project }}
         run: >-
-          dotnet stryker --config-file ${{ matrix.config }}
+          dotnet stryker --config-file ../${{ matrix.config }}
           --since:${{ steps.base.outputs.sha }}
-          --output artifacts/mutation/${{ matrix.name }}
+          --output ../artifacts/mutation/${{ matrix.name }}
 
       - name: Summarise the surviving mutants
         # The score alone does not say what to fix. This turns the JSON report into the actionable
@@ -219,10 +235,13 @@ jobs:
       matrix:
         include:
           - name: justdummies
+            project: JustDummies
             config: build/stryker/justdummies.json
           - name: justdummies-xunit
+            project: JustDummies.Xunit
             config: build/stryker/justdummies-xunit.json
           - name: justdummies-analyzers
+            project: JustDummies.Analyzers
             config: build/stryker/justdummies-analyzers.json
     steps:
       - name: Checkout
@@ -237,10 +256,13 @@ jobs:
         run: dotnet tool restore
 
       - name: Mutate everything
+        # From the source project, for the same reason the diff legs are: it is what makes the
+        # config's `test-projects` the oracle that actually runs (see the header).
+        working-directory: ${{ matrix.project }}
         run: >-
-          dotnet stryker --config-file ${{ matrix.config }}
+          dotnet stryker --config-file ../${{ matrix.config }}
           --break-at 0
-          --output artifacts/mutation/${{ matrix.name }}
+          --output ../artifacts/mutation/${{ matrix.name }}
 
       - name: Summarise the surviving mutants
         # Same table as the gate legs produce. On the sweep it is the deliverable, not a diagnosis

@@ -1,9 +1,8 @@
 {
   "stryker-config": {
-    "solution": "JustDummies.sln",
     "project": "JustDummies.Xunit.csproj",
     "test-projects": [
-      "JustDummies.Xunit.UnitTests/JustDummies.Xunit.UnitTests.csproj"
+      "../JustDummies.Xunit.UnitTests/JustDummies.Xunit.UnitTests.csproj"
     ],
     "test-runner": "mtp",
     "coverage-analysis": "off",

@@ -310,6 +310,13 @@ tools/justdummies-check/*.log
 # ignored above); a local run defaults to StrykerOutput/ next to the config file.
 StrykerOutput/
 
+# The other half of what a mutation run leaves behind. GoldenFile writes `<name>.received.cs` beside the
+# approved file on a mismatch and removes it on a match, so a normal red test leaves exactly one for the
+# author to read. A sweep of the scaffolder's engine turns that into churn: every KILLED mutant is a
+# golden test failing, so these appear and vanish by the dozen for as long as the run lasts. They are
+# never content — accepting a change means copying one over its approved file, deliberately.
+*.received.cs
+
 # Agent worktrees: a Claude Code workflow that isolates its agents gives each one a git worktree here,
 # so several can edit the tree at once without colliding. They are working copies of this repository —
 # transient, removed when the run ends, and never content. The rest of .claude/ IS tracked, which is why

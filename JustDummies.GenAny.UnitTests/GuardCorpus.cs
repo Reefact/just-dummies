@@ -890,6 +890,158 @@ internal static class GuardCorpus {
         // ---- `CS0246: AnyTag could not be found` -- measured directly, not left to this row's assumption that
         // ---- a chain still gets built here to lose doubt about.
 
+        // ---- Cells of the closed table of §5.3 that no shape had ever exercised. RecognisedIdiomCoverageTests
+        // ---- found eleven of twenty-eight in that state -- not defects, but the state every defect of this
+        // ---- campaign was found in. One shape per cell, each minimal, so a failure names the cell.
+
+        new GuardedShape("bcl-null-check", "Recipient", """
+                                                        public sealed class Recipient {
+                                                            public Recipient(string address) {
+                                                                if (address is null) { throw new ArgumentNullException(nameof(address)); }
+                                                            }
+                                                        }
+                                                        """, idioms: ["`p is null`, `p == null`"]),
+
+        new GuardedShape("bcl-negative-only", "Drawdown", """
+                                                          public sealed class Drawdown {
+                                                              public Drawdown(int delta) {
+                                                                  if (delta >= 0) { throw new ArgumentOutOfRangeException(nameof(delta)); }
+                                                              }
+                                                          }
+                                                          """, idioms: ["`p >= 0`"]),
+
+        new GuardedShape("bcl-non-zero", "Stride", """
+                                                   public sealed class Stride {
+                                                       public Stride(int step) {
+                                                           if (step == 0) { throw new ArgumentOutOfRangeException(nameof(step)); }
+                                                       }
+                                                   }
+                                                   """, idioms: ["`p == 0`"]),
+
+        new GuardedShape("bcl-guid-non-empty", "Correlation", """
+                                                              public sealed class Correlation {
+                                                                  public Correlation(Guid id) {
+                                                                      if (id == Guid.Empty) { throw new ArgumentException(nameof(id)); }
+                                                                  }
+                                                              }
+                                                              """, idioms: ["`p == Guid.Empty`"]),
+
+        new GuardedShape("bcl-enum-defined", "Assignment", """
+                                                           public enum Shift { Morning, Evening }
+
+                                                           public sealed class Assignment {
+                                                               public Assignment(Shift shift) {
+                                                                   if (!Enum.IsDefined(typeof(Shift), shift)) { throw new ArgumentOutOfRangeException(nameof(shift)); }
+                                                               }
+                                                           }
+                                                           """, idioms: ["`!Enum.IsDefined(typeof(E), p)`, `!Enum.IsDefined(p)`"]),
+
+        new GuardedShape("ardalis-null", "Envelope", """
+                                                     public sealed class Envelope {
+
+                                                         public string Body { get; }
+
+                                                         public Envelope(string body) {
+                                                             Body = Guard.Against.Null(body);
+                                                         }
+
+                                                     }
+                                                     """, usings: "using Ardalis.GuardClauses;", idioms: ["`Guard.Against.Null(p)` / `Guard.IsNotNull(p, …)`"]),
+
+        new GuardedShape("ardalis-zero", "Divisor", """
+                                                    public sealed class Divisor {
+
+                                                        public int Value { get; }
+
+                                                        public Divisor(int value) {
+                                                            Value = Guard.Against.Zero(value);
+                                                        }
+
+                                                    }
+                                                    """, usings: "using Ardalis.GuardClauses;", idioms: ["`Guard.Against.Zero(p)`"]),
+
+        new GuardedShape("ardalis-enum-out-of-range", "Booking", """
+                                                                 public enum Cabin { Economy, Business }
+
+                                                                 public sealed class Booking {
+
+                                                                     public Cabin Cabin { get; }
+
+                                                                     public Booking(Cabin cabin) {
+                                                                         Cabin = Guard.Against.EnumOutOfRange(cabin);
+                                                                     }
+
+                                                                 }
+                                                                 """, usings: "using Ardalis.GuardClauses;", idioms: ["`Guard.Against.EnumOutOfRange(p)`, **where `p` is of the enum's own type**"]),
+
+        new GuardedShape("ardalis-default", "Shipment", """
+                                                       public sealed class Shipment {
+
+                                                           public Guid Id { get; }
+
+                                                           public int Weight { get; }
+
+                                                           public Shipment(Guid id, int weight) {
+                                                               Id     = Guard.Against.Default(id);
+                                                               Weight = Guard.Against.Default(weight);
+                                                           }
+
+                                                       }
+                                                       """, usings: "using Ardalis.GuardClauses;", idioms: ["`Guard.Against.Default(p)` on a `Guid`; on a number"]),
+
+        new GuardedShape("toolkit-strict-bounds", "Reading2", """
+                                                              public sealed class Reading2 {
+
+                                                                  private readonly int celsius;
+
+                                                                  public Reading2(int celsius) {
+                                                                      Guard.IsGreaterThan(celsius, 0);
+                                                                      Guard.IsLessThan(celsius, 100);
+                                                                      this.celsius = celsius;
+                                                                  }
+
+                                                              }
+                                                              """, usings: "using CommunityToolkit.Diagnostics;", idioms: ["`Guard.IsGreaterThan(p, min)` / `Guard.IsLessThan(p, max)` — strict, measured"]),
+
+        new GuardedShape("toolkit-inclusive-bounds", "Level", """
+                                                             public sealed class Level {
+
+                                                                 private readonly int value;
+
+                                                                 public Level(int value) {
+                                                                     Guard.IsGreaterThanOrEqualTo(value, 1);
+                                                                     Guard.IsLessThanOrEqualTo(value, 9);
+                                                                     this.value = value;
+                                                                 }
+
+                                                             }
+                                                             """, usings: "using CommunityToolkit.Diagnostics;", idioms: ["`Guard.IsGreaterThanOrEqualTo(p, min)` / `Guard.IsLessThanOrEqualTo(p, max)`"]),
+
+
+        // ---- Two idioms whose only shapes were shapes that deliberately do not read them: one beyond the
+        // ---- engine, one at a position the engine cannot vouch for. Each gets a shape that does read it,
+        // ---- so the claim rests on a scaffold the engine actually constrains.
+
+        new GuardedShape("bcl-exact-length", "Code", """
+                                                     public sealed class Code {
+                                                         public Code(string value) {
+                                                             if (value.Length != 6) { throw new ArgumentException(nameof(value)); }
+                                                         }
+                                                     }
+                                                     """, idioms: ["`p.Length != N`"]),
+
+        new GuardedShape("ardalis-negative-or-zero", "Allowance", """
+                                                                  public sealed class Allowance {
+
+                                                                      public decimal Amount { get; }
+
+                                                                      public Allowance(decimal amount) {
+                                                                          Amount = Guard.Against.NegativeOrZero(amount);
+                                                                      }
+
+                                                                  }
+                                                                  """, usings: "using Ardalis.GuardClauses;", idioms: ["`Guard.Against.NegativeOrZero(p)`"]),
+
     ];
 
     /// <summary>The shape names, as the theory rows carry them.</summary>

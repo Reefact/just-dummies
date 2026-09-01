@@ -65,9 +65,15 @@ le niveau imposé est le balayage complet hebdomadaire.
 Chaque composant muté a sa propre configuration Stryker sous
 [`build/stryker/`](../../../../build/stryker/) : le projet à muter, les projets de
 tests qui doivent tuer ses mutants, et les seuils. Rien de la politique
-d'exécution ne vit uniquement dans le YAML, si bien que `dotnet stryker
---config-file build/stryker/justdummies.json` sur la machine d'un mainteneur barre
-exactement comme la CI. Les trois sont
+d'exécution ne vit uniquement dans le YAML, si bien que la même commande sur la
+machine d'un mainteneur barre exactement comme la CI — **lancée depuis le
+répertoire du projet muté** :
+
+```
+cd JustDummies && dotnet stryker --config-file ../build/stryker/justdummies.json
+```
+
+Les trois sont
 [`justdummies.json`](../../../../build/stryker/justdummies.json),
 [`justdummies-xunit.json`](../../../../build/stryker/justdummies-xunit.json) et
 [`justdummies-analyzers.json`](../../../../build/stryker/justdummies-analyzers.json).
@@ -76,6 +82,34 @@ Le moteur lui-même est épinglé dans
 [`.config/dotnet-tools.json`](../../../../.config/dotnet-tools.json) et restauré
 par `dotnet tool restore`. Cet épinglage est porteur : un Stryker plus récent
 invente de nouveaux mutants, ce qui déplace tous les scores à lui seul.
+
+### Le répertoire de travail est ce qui rend l'oracle réel
+
+Lancer depuis le répertoire du projet n'est pas un confort, et aucune
+configuration ici ne nomme de solution. Une configuration qui en nomme une voit
+sa liste `test-projects` **découverte à sa place** : Stryker juge alors chaque
+mutant avec tout projet de la solution référençant l'assembly mutée, et ne lit
+jamais la liste. Rien n'avertit.
+
+Mesuré le 2026-08-31 contre le moteur épinglé, l'exécution de la bibliothèque a
+rapporté **2 119 tests** — toutes les suites du dépôt, la suite de propriétés
+FsCheck comprise — là où sa configuration en nomme une de **790**. C'est ainsi
+que l'[ADR-0026](../adr/0026-measure-justdummies-mutation-against-the-unit-suite-only.fr.md)
+a pu être consignée sans être appliquée : le commit retirant la suite de
+propriétés de la liste a atterri le jour même où la configuration a été créée,
+sur un fichier nommant déjà la solution ; il n'a donc rien retiré — la décision
+n'a jamais été en vigueur pour une seule exécution, et l'oracle dépendant de la
+graine qu'elle existe pour supprimer juge depuis lors chaque mutant de la
+bibliothèque.
+
+Rien d'autre ne le restreint. Le `--test-project` en ligne de commande laisse le
+compte inchangé ; `test-case-filter` est accepté puis silencieusement ignoré sous
+le runner MTP, un filtre ne correspondant à aucun test obtenant encore le même
+score sur les mêmes mutants ; et un fichier de filtre de solution, que MSBuild
+construit sans broncher, fait abandonner Stryker. La décision est
+l'[ADR-0092](../adr/0092-run-every-mutation-leg-from-its-own-source-project.fr.md),
+et `MutationOracleConventionTests`, dans la suite d'exemples, fait échouer la
+construction si un champ `solution` revient.
 
 ### `changed` — le diff, sur chaque pull request
 

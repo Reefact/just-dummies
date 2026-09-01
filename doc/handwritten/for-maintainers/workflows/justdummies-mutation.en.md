@@ -63,9 +63,14 @@ the enforced bar is the weekly full sweep.
 Each mutated component has its own Stryker configuration under
 [`build/stryker/`](../../../../build/stryker/): the project to mutate, the test
 projects that must kill its mutants, and the thresholds. Nothing about the run
-policy lives only in the YAML, so `dotnet stryker --config-file
-build/stryker/justdummies.json` on a maintainer's machine gates exactly like CI
-does. The three are
+policy lives only in the YAML, so the same command on a maintainer's machine
+gates exactly like CI does — **run from the mutated project's own directory**:
+
+```
+cd JustDummies && dotnet stryker --config-file ../build/stryker/justdummies.json
+```
+
+The three are
 [`justdummies.json`](../../../../build/stryker/justdummies.json),
 [`justdummies-xunit.json`](../../../../build/stryker/justdummies-xunit.json) and
 [`justdummies-analyzers.json`](../../../../build/stryker/justdummies-analyzers.json).
@@ -74,6 +79,33 @@ The engine itself is pinned in
 [`.config/dotnet-tools.json`](../../../../.config/dotnet-tools.json) and restored
 with `dotnet tool restore`. That pin is load-bearing: a newer Stryker invents new
 mutants, which moves every score on its own.
+
+### The working directory is what makes the oracle real
+
+Running from the project directory is not a convenience, and no configuration
+here names a solution. A configuration that names one has its `test-projects`
+list **discovered away**: Stryker judges each mutant with every project in the
+solution that references the mutated assembly, and never reads the list. Nothing
+warns.
+
+Measured on 2026-08-31 against the pinned engine, the library's run reported
+**2119 tests** — every suite in the repository, the FsCheck property suite
+included — where its configuration names one of **790**. That is how
+[ADR-0026](../adr/0026-measure-justdummies-mutation-against-the-unit-suite-only.md)
+came to be recorded and not applied: the commit removing the property suite from
+the list landed the same day the configuration was created, on a file that
+already named the solution, so it removed nothing — the decision was never in
+force for a single run, and the seed-dependent oracle it exists to remove has
+judged every library mutant since.
+
+Nothing else narrows it. The command-line `--test-project` leaves the count
+unchanged; `test-case-filter` is accepted and silently ignored under the MTP
+runner, a filter matching no test at all still scoring the same on the same
+mutants; and a solution filter file, which MSBuild builds without complaint,
+makes Stryker abort. The decision is
+[ADR-0092](../adr/0092-run-every-mutation-leg-from-its-own-source-project.md),
+and `MutationOracleConventionTests` in the example suite fails the build if a
+`solution` field comes back.
 
 ### `changed` — the diff, on every pull request
 

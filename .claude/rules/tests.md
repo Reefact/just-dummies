@@ -55,8 +55,12 @@ with
 
 ```
 dotnet tool restore
-dotnet stryker --config-file build/stryker/<project>.json --since:$(git merge-base origin/main HEAD)
+cd <the mutated project> && dotnet stryker --config-file ../build/stryker/<project>.json --since:$(git merge-base origin/main HEAD)
 ```
+
+**From the mutated project's own directory, never the repository root** (ADR-0092): a Stryker
+configuration that names a solution has its `test-projects` list discovered away, and every suite
+referencing the assembly judges the mutants instead of the declared one.
 
 The configurations and the reasons behind them are in
 [`justdummies-mutation.en.md`](../../doc/handwritten/for-maintainers/workflows/justdummies-mutation.en.md).

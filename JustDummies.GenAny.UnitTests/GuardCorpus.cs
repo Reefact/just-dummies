@@ -1017,6 +1017,107 @@ internal static class GuardCorpus {
                                                              }
                                                              """, usings: "using CommunityToolkit.Diagnostics;", idioms: ["`Guard.IsGreaterThanOrEqualTo(p, min)` / `Guard.IsLessThanOrEqualTo(p, max)`"]),
 
+        // ---- The exclusive edge of a library bound is observable in exactly ONE place: where a floor and
+        // ---- a ceiling meet at the SAME number, which is the only case `Admits` reads `Exclusive` in.
+        // ---- Anywhere else `> 5` and `>= 5` leave a generator the same values to draw, so a row that quietly
+        // ---- lost its strictness would read identically and every shape above would stay green. One shape
+        // ---- per row that carries the flag, each admitting nothing — and each admitting exactly one value if
+        // ---- the flag goes.
+
+        new GuardedShape("toolkit-strict-floor-meets-ceiling", "Aperture", """
+                                                                           public sealed class Aperture {
+
+                                                                               private readonly int stop;
+
+                                                                               public Aperture(int stop) {
+                                                                                   Guard.IsGreaterThan(stop, 5);
+                                                                                   Guard.IsLessThanOrEqualTo(stop, 5);
+                                                                                   this.stop = stop;
+                                                                               }
+
+                                                                           }
+                                                                           """, usings: "using CommunityToolkit.Diagnostics;", beyondTheEngine: true),
+
+        new GuardedShape("toolkit-inclusive-floor-meets-strict-ceiling", "Notch", """
+                                                                                  public sealed class Notch {
+
+                                                                                      private readonly int depth;
+
+                                                                                      public Notch(int depth) {
+                                                                                          Guard.IsGreaterThanOrEqualTo(depth, 7);
+                                                                                          Guard.IsLessThan(depth, 7);
+                                                                                          this.depth = depth;
+                                                                                      }
+
+                                                                                  }
+                                                                                  """, usings: "using CommunityToolkit.Diagnostics;", beyondTheEngine: true),
+
+        new GuardedShape("toolkit-range-whose-ends-meet", "Cursor", """
+                                                                    public sealed class Cursor {
+
+                                                                        private readonly int position;
+
+                                                                        public Cursor(int position) {
+                                                                            Guard.IsInRange(position, 5, 5, nameof(position));
+                                                                            this.position = position;
+                                                                        }
+
+                                                                    }
+                                                                    """, usings: "using CommunityToolkit.Diagnostics;", beyondTheEngine: true),
+
+        // ---- A named argument, written OUT of its positional order — which is what makes the name do the
+        // ---- work. Written in order the name and the position agree, and slotting cannot be caught getting
+        // ---- it wrong; here they disagree, so ignoring the name lands the bounds crossed and the domain
+        // ---- admits nothing. `TryBound`'s own remark claims a named argument reads the same as a positional
+        // ---- one, and until this shape no row passed one at all.
+
+        new GuardedShape("toolkit-named-bounds-out-of-order", "Window", """
+                                                                        public sealed class Window {
+
+                                                                            private readonly int width;
+
+                                                                            public Window(int width) {
+                                                                                Guard.IsInRange(width, maximum: 20, minimum: 10);
+                                                                                this.width = width;
+                                                                            }
+
+                                                                        }
+                                                                        """, usings: "using CommunityToolkit.Diagnostics;"),
+
+        // ---- The two bounds §5.3 cannot carry, both documented on `TryRead` and neither exercised: a
+        // ---- constant that is not a number, and an expression that is not a constant. Each must leave the
+        // ---- guard UNREAD rather than read as something else, so each blocks compilation (§5.6). The first
+        // ---- bound is deliberately one no value satisfies, which makes the pin these rows carry — that the
+        // ---- base kept underneath is rejected by the real constructor — a fact here rather than a
+        // ---- probability.
+
+        new GuardedShape("toolkit-bound-that-is-not-a-number", "Sku", """
+                                                                      public sealed class Sku {
+
+                                                                          private readonly string code;
+
+                                                                          public Sku(string code) {
+                                                                              Guard.IsLessThan(code, "");
+                                                                              this.code = code;
+                                                                          }
+
+                                                                      }
+                                                                      """, usings: "using CommunityToolkit.Diagnostics;", requiresVerification: true),
+
+        new GuardedShape("toolkit-bound-that-is-not-a-constant", "Quota", """
+                                                                          public sealed class Quota {
+
+                                                                              private static readonly int Floor = 10;
+
+                                                                              private readonly int amount;
+
+                                                                              public Quota(int amount) {
+                                                                                  Guard.IsGreaterThan(amount, Floor);
+                                                                                  this.amount = amount;
+                                                                              }
+
+                                                                          }
+                                                                          """, usings: "using CommunityToolkit.Diagnostics;", requiresVerification: true),
 
         // ---- Two idioms whose only shapes were shapes that deliberately do not read them: one beyond the
         // ---- engine, one at a position the engine cannot vouch for. Each gets a shape that does read it,

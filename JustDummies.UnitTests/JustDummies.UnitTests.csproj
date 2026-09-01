@@ -107,6 +107,10 @@
     <!-- Uses System.Reflection nullability metadata (NullabilityInfoContext, .NET 6+) to read parameter annotations,
          which the net472 floor does not carry; the null-argument guards it enforces are themselves netstandard2.0. -->
     <Compile Remove="NullArgumentGuardConventionTests.cs" />
+    <!-- Reads build/stryker/*.json with System.Text.Json, which the net472 floor does not carry and which this
+         project references from nowhere else. What it holds is a CI configuration convention, so the floor has
+         nothing to say about it: measuring it once, on net10, measures it everywhere. -->
+    <Compile Remove="MutationOracleConventionTests.cs" />
   </ItemGroup>
 
 </Project>

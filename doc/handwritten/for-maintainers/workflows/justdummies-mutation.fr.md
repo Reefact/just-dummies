@@ -20,13 +20,14 @@ rebuilde, et relance la suite de tests contre chaque réécriture. Un **mutant**
 lequel la suite passe encore est un **survivant** : un comportement que le code a
 et que rien n'affirme. Un mutant tué, c'est un test qui fait son travail.
 
-Ce workflow rend ce contrôle automatique pour les **trois composants
+Ce workflow rend ce contrôle automatique pour les **quatre composants
 JustDummies** : `JustDummies`, son adaptateur xUnit v3 `JustDummies.Xunit`
 ([ADR-0018](../adr/0018-adapt-dummies-to-xunit-v3-through-a-companion-package.fr.md)),
-et les analyseurs livrés dans le package
-([ADR-0023](../adr/0023-ship-justdummies-analyzers.fr.md)). Sur une pull request,
-il ne mute que les fichiers modifiés par celle-ci, pour l'adaptateur et les
-analyseurs ; le générateur est mesuré par le seul balayage hebdomadaire
+les analyseurs livrés dans le package
+([ADR-0023](../adr/0023-ship-justdummies-analyzers.fr.md)), et `JustDummies.GenAny`,
+le moteur de lecture de gardes sur lequel repose le scaffolder `dum`. Sur une pull
+request, il ne mute que les fichiers modifiés par celle-ci, pour l'adaptateur et les
+analyseurs ; le générateur et le moteur sont mesurés par le seul balayage hebdomadaire
 ([ADR-0028](../adr/0028-drop-the-justdummies-generator-from-the-per-pull-request-mutation-matrix.fr.md)).
 Le score est rapporté **sans bloquer le merge** — consultatif depuis
 l'[ADR-0025](../adr/0025-make-the-per-pull-request-mutation-gate-advisory.fr.md),
@@ -152,15 +153,15 @@ hebdomadaire, pas ce check.
 
 ### `full` — le balayage hebdomadaire
 
-Les mêmes composants sans le filtre `--since`, et le générateur réintégré : tous
-les mutants de tous les composants. Il est **consultatif par construction** —
-`--break-at 0` désactive le seuil — parce que son travail est de publier une
-tendance, pas de faire virer `main` au rouge un lundi matin sur du code que
-personne n'a touché. Lisez-le dans le rapport HTML téléversé.
+Les mêmes composants sans le filtre `--since`, le générateur et le moteur
+réintégrés : tous les mutants de tous les composants. Il est **consultatif par
+construction** — `--break-at 0` désactive le seuil — parce que son travail est de
+publier une tendance, pas de faire virer `main` au rouge un lundi matin sur du code
+que personne n'a touché. Lisez-le dans le rapport HTML téléversé.
 
 **Le seul point où ce workflow diffère d'un barrage à matrice pleine : la matrice
-par PR compte deux pattes, pas trois.** Le générateur est balayé chaque semaine
-mais **n'est pas** muté par pull request
+par PR compte deux pattes, pas quatre.** Le générateur et le moteur du scaffolder
+sont balayés chaque semaine mais **ne sont pas** mutés par pull request
 ([ADR-0028](../adr/0028-drop-the-justdummies-generator-from-the-per-pull-request-mutation-matrix.fr.md)).
 Comme `--since` sélectionne par **fichier** changé et non par ligne changée, un
 diff d'une centaine de lignes touchant l'une des grosses sources du générateur
@@ -168,9 +169,11 @@ entraîne ce fichier entier : mesuré à 844 mutants, encore en cours après une
 heure, sans produire aucun score. Ce n'est pas un défaut de réglage — chaque
 levier exposé par Stryker plafonne vers −36 % là où une telle patte aurait besoin
 de −95 %, le sharding ne peut pas descendre sous un fichier, et les motifs
-`mutate` limités aux lignes ne sélectionnent rien. L'adaptateur et les analyseurs
-sont petits, terminent en quatre-vingt-dix secondes environ, et gardent leur
-patte.
+`mutate` limités aux lignes ne sélectionnent rien. Le moteur est absent sur la même
+arithmétique plutôt que sur un second argument : `Guards.cs` fait à lui seul
+1580 lignes des 1616 mutants que sa patte teste, et une pull request ici touche
+d'ordinaire le lecteur de gardes. L'adaptateur et les analyseurs sont petits,
+terminent en quatre-vingt-dix secondes environ, et gardent leur patte.
 
 ## Deux réglages qui n'en sont pas
 

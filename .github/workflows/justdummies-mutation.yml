@@ -68,15 +68,16 @@ jobs:
       fail-fast: false
       matrix:
         # The JustDummies packages' xUnit v3 adapter (ADR-0018) and the analyzers packed inside the
-        # generator package (ADR-0023). This repository ships no other mutation-tested library.
-        # See ADR-0022.
+        # generator package (ADR-0023). See ADR-0022.
         #
-        # The GENERATOR is deliberately absent (ADR-0028) — it is the only leg this matrix cannot
-        # afford. Stryker selects per changed FILE, not per changed line, so a diff of ~100 lines
-        # touching one of its bigger sources pulls in that whole file: measured at 844 mutants, still
-        # running after an hour, no score. Every in-tool lever tops out around -36% against the -95%
-        # such a leg would need, sharding is floored by the largest changed file, and line-scoped
-        # `mutate` patterns select nothing at all. The weekly `full` sweep below still measures it.
+        # TWO components are deliberately absent, and for one reason: Stryker selects per changed FILE,
+        # not per changed line, so a diff pulls in whole sources. The GENERATOR (ADR-0028) measured 844
+        # mutants on a ~100-line diff, still running after an hour, no score; every in-tool lever tops
+        # out around -36% against the -95% such a leg would need, sharding is floored by the largest
+        # changed file, and line-scoped `mutate` patterns select nothing at all. The SCAFFOLDER'S ENGINE
+        # is absent on the same arithmetic: `Guards.cs` alone is 1580 lines of its 1616 tested mutants,
+        # and a pull request here usually touches the guard reader. The weekly `full` sweep below
+        # measures both.
         include:
           - name: justdummies-xunit
             project: JustDummies.Xunit
@@ -243,6 +244,14 @@ jobs:
           - name: justdummies-analyzers
             project: JustDummies.Analyzers
             config: build/stryker/justdummies-analyzers.json
+          # The scaffolder's engine, swept weekly and NEVER per pull request, for the reason ADR-0028
+          # gave the generator: `--since` selects per changed FILE, and `Guards.cs` alone is 1580 lines
+          # of the 1616 mutants this leg tests. Any pull request touching the guard reader — which is
+          # most of them here — would pull that whole file in, against the forty-five mutants a two-to-
+          # three minute leg affords.
+          - name: justdummies-genany
+            project: JustDummies.GenAny
+            config: build/stryker/justdummies-genany.json
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7

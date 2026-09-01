@@ -20,13 +20,14 @@ suite against each rewrite. A **mutant** the suite still passes on is a
 **survivor**: a behaviour the code has and nothing asserts. A killed mutant is a
 test doing its job.
 
-This workflow makes that check automatic for the **three JustDummies
+This workflow makes that check automatic for the **four JustDummies
 components** — `JustDummies`, its xUnit v3 adapter `JustDummies.Xunit`
 ([ADR-0018](../adr/0018-adapt-dummies-to-xunit-v3-through-a-companion-package.md)),
-and the analyzers that ship inside the package
-([ADR-0023](../adr/0023-ship-justdummies-analyzers.md)). On a pull request it
+the analyzers that ship inside the package
+([ADR-0023](../adr/0023-ship-justdummies-analyzers.md)), and `JustDummies.GenAny`,
+the guard-reading engine the `dum` scaffolder is built on. On a pull request it
 mutates only the files the pull request changed, for the adapter and the
-analyzers; the generator is measured by the weekly sweep alone
+analyzers; the generator and the engine are measured by the weekly sweep alone
 ([ADR-0028](../adr/0028-drop-the-justdummies-generator-from-the-per-pull-request-mutation-matrix.md)).
 The score is reported **without blocking the merge** — advisory since
 [ADR-0025](../adr/0025-make-the-per-pull-request-mutation-gate-advisory.md),
@@ -70,10 +71,11 @@ gates exactly like CI does — **run from the mutated project's own directory**:
 cd JustDummies && dotnet stryker --config-file ../build/stryker/justdummies.json
 ```
 
-The three are
+The four are
 [`justdummies.json`](../../../../build/stryker/justdummies.json),
-[`justdummies-xunit.json`](../../../../build/stryker/justdummies-xunit.json) and
-[`justdummies-analyzers.json`](../../../../build/stryker/justdummies-analyzers.json).
+[`justdummies-xunit.json`](../../../../build/stryker/justdummies-xunit.json),
+[`justdummies-analyzers.json`](../../../../build/stryker/justdummies-analyzers.json) and
+[`justdummies-genany.json`](../../../../build/stryker/justdummies-genany.json).
 
 The engine itself is pinned in
 [`.config/dotnet-tools.json`](../../../../.config/dotnet-tools.json) and restored
@@ -143,23 +145,26 @@ skipped. The enforced bar is the weekly `full` sweep, not this check.
 
 ### `full` — the weekly sweep
 
-The same components with the `--since` filter removed, and the generator added
-back: every mutant of every component. It is **advisory by construction** —
-`--break-at 0` disables the threshold — because its job is to publish a trend,
-not to turn `main` red on a Monday morning over code nobody changed. Read it from
-the uploaded HTML report.
+The same components with the `--since` filter removed, and the generator and the
+engine added back: every mutant of every component. It is **advisory by
+construction** — `--break-at 0` disables the threshold — because its job is to
+publish a trend, not to turn `main` red on a Monday morning over code nobody
+changed. Read it from the uploaded HTML report.
 
 **The one place this workflow differs from a plain full-matrix gate: the per-PR
-matrix is two legs, not three.** The generator is swept weekly but is **not**
-mutated per pull request
+matrix is two legs, not four.** The generator and the scaffolder's engine are
+swept weekly but are **not** mutated per pull request
 ([ADR-0028](../adr/0028-drop-the-justdummies-generator-from-the-per-pull-request-mutation-matrix.md)).
 Because `--since` selects per changed **file** rather than per changed line, a
 hundred-line diff touching one of the generator's larger sources pulls in that
 whole file: measured at 844 mutants, still running after an hour, producing no
 score at all. That is not a tuning gap — every lever Stryker exposes tops out
 around −36 % where such a leg would need −95 %, sharding cannot go below one
-file, and line-scoped `mutate` patterns select nothing. The adapter and the
-analyzers are small, finish in about ninety seconds, and keep their leg.
+file, and line-scoped `mutate` patterns select nothing. The engine is absent on
+the same arithmetic rather than a second argument: `Guards.cs` alone is 1580
+lines of the 1616 mutants its leg tests, and a pull request here usually touches
+the guard reader. The adapter and the analyzers are small, finish in about ninety
+seconds, and keep their leg.
 
 ## Two settings that are not tuning knobs
 

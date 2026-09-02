@@ -88,14 +88,18 @@ first. The lambda binds to `Func<T>`, so the generator is never converted to `ob
 recipe-as-value shape `JD011` exists to catch, and has to exempt when `Assert.Throws<T>` takes it
 through its `Func<object>` overload.
 
-`Assert.Throws` stays where the exception **instance** is the subject, and nowhere else:
+`Assert.Throws` stays only where the exception must be **captured** explicitly, or where xUnit's
+**exact-type** semantics are part of the assertion:
 
 * a **base** exception type is named — `ArgumentException`, `InvalidOperationException`. xUnit
   matches the exact type there and that exactness is the assertion; NFluent's `Throws<T>` admits a
   derived type and would weaken it.
 * **two** thrown exceptions are compared to one another.
-* the throw sits inside a scope the assertions sit outside of, or one test asserts two unrelated
-  members — a message *and* an `InnerException`. A chain ends at one member.
+* the throw sits inside a scope the assertions sit outside of.
+* one test asserts the message **and** an `InnerException`. `WhichMember` ends the chain on the
+  member it opens, and `DueTo<T>()` switches the check to the inner exception with no `.And` back
+  to the outer one; `WithProperty` is the one that chains on, which is why
+  `.WithProperty(e => e.Seed, 1234).And.WhichMember(e => e.Message)` reaches both.
 
 ## Conventions that are already enforced
 

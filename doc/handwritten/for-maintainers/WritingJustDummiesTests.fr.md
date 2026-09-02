@@ -107,16 +107,18 @@ converti en `object` — la forme recette-comme-valeur que
 [JD011](../for-users/analyzers/JD011.fr.md) existe pour attraper, et doit exempter quand
 `Assert.Throws<T>` la prend par sa surcharge `Func<object>`.
 
-`Assert.Throws` reste là où l'*instance* de l'exception est le sujet, et nulle part
-ailleurs :
+`Assert.Throws` ne reste que là où l'exception doit être *capturée* explicitement, ou là
+où la sémantique de *type exact* de xUnit fait partie de l'affirmation :
 
 * un type d'exception **de base** est nommé — `ArgumentException`,
   `InvalidOperationException`. xUnit y exige le type exact et cette exactitude est
   l'affirmation ; le `Throws<T>` de NFluent admet un type dérivé et l'affaiblirait.
 * **deux** exceptions levées sont comparées l'une à l'autre.
-* la levée a lieu dans une portée dont les affirmations sortent, ou un test affirme deux
-  membres sans rapport — un message *et* une `InnerException`. Une chaîne s'arrête à un
-  membre.
+* la levée a lieu dans une portée dont les affirmations sortent.
+* un même test affirme le message **et** une `InnerException`. `WhichMember` termine la
+  chaîne sur le membre qu'il ouvre, et `DueTo<T>()` bascule la vérification sur l'exception
+  interne sans `.And` pour revenir à l'externe ; `WithProperty` est celui qui enchaîne, d'où
+  `.WithProperty(e => e.Seed, 1234).And.WhichMember(e => e.Message)` qui atteint les deux.
 
 ## Écrire la propriété
 

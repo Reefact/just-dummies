@@ -2,6 +2,29 @@
 
 What changed for you, release by release, in the `lib` train. For the full technical record — every constraint, every edge case, every ADR — see [CHANGELOG.md](https://github.com/Reefact/just-dummies/blob/main/JustDummies/CHANGELOG.md). Earlier: [0.x](https://github.com/Reefact/just-dummies/blob/main/JustDummies/RELEASE_NOTES-0.x.en.md).
 
+## 1.0.0-preview.6 — September 2, 2026
+
+_A license change every consumer should read, a nullable-widening generator, and a fairer draw for `Half`._
+
+### ⚠️ Breaking changes
+
+- **JustDummies is now licensed under [PolyForm Internal Use 1.0.0](https://github.com/Reefact/just-dummies/blob/main/LICENSE), not Apache 2.0 — source-available, not open source.** You may read, build, modify and run the library (and its bundled analyzers) for your own or your company's internal business operations; you may not distribute the software. Versions already published on NuGet are untouched and keep the license they shipped with. Contributions are now governed by a [Contributor Agreement](https://github.com/Reefact/just-dummies/blob/main/CONTRIBUTOR_AGREEMENT.md).
+
+### ✨ New
+
+- New `generator.AsNullable()` — widens a generator's type to nullable without ever drawing an absent value, the opposite of `.OrNull()`. It keeps the wrapped generator's known value count, so `Any.SetOf(Any.Enum<T>().AsNullable())` sizes correctly against the enum's members ([ADR-0094](https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-maintainers/adr/0094-lift-a-nullable-value-type-rather-than-deriving-it.md)).
+
+### 🙌 Improvements
+
+- **`Any.Half()` now draws uniformly over the values a half can actually represent**, instead of over the reals and rounding — which produced almost nothing below 1. A seeded test drawing a `Half` will replay a different value than before ([ADR-0091](https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-maintainers/adr/0091-draw-a-half-from-the-values-it-can-represent.md)).
+
+### 🐛 Bug Fixes
+
+- `Any.Half()` now states how many distinct values it holds, so `Any.SetOf(Any.Half())` beyond that count is refused instead of exhausting a redraw budget.
+- `JD016` now proves several more small element domains exactly (`Char`, `Byte`/`SByte`, `Int16`/`UInt16`, `Half`, and an enum's distinct values), and counts a caller-supplied `Any.Char().OneOf(...)` pool exactly.
+- `JD015` now weighs a value set against every declared constraint together, so a chain refused only by the intersection of several constraints is reported.
+- An element generator that admits nothing now names its own emptying constraint, even inside a distinct collection like `Any.SetOf(...)`.
+
 ## 1.0.0-preview.5 — August 25, 2026
 
 _A guard against blank strings, and four chain-ordering fixes so a specification reads the same regardless of the order it was written in._

@@ -8,6 +8,8 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ## [Unreleased]
 
+## [1.0.0-preview.6] - 2026-09-02
+
 ### Added
 
 - **`generator.AsNullable()` — a nullable type, never an absent value.** The sibling of `.OrNull()`
@@ -500,7 +502,8 @@ in [ADR-0045](../doc/handwritten/for-maintainers/adr/0045-renumber-the-decision-
 migration record is under
 [`doc/handwritten/for-maintainers/migration/`](../doc/handwritten/for-maintainers/migration/).
 
-[Unreleased]: https://github.com/Reefact/just-dummies/compare/lib-v1.0.0-preview.5...HEAD
+[Unreleased]: https://github.com/Reefact/just-dummies/compare/lib-v1.0.0-preview.6...HEAD
+[1.0.0-preview.6]: https://github.com/Reefact/just-dummies/compare/lib-v1.0.0-preview.5...lib-v1.0.0-preview.6
 [1.0.0-preview.5]: https://github.com/Reefact/just-dummies/compare/lib-v1.0.0-preview.4...lib-v1.0.0-preview.5
 [1.0.0-preview.4]: https://github.com/Reefact/just-dummies/compare/lib-v1.0.0-preview.3...lib-v1.0.0-preview.4
 [1.0.0-preview.3]: https://github.com/Reefact/just-dummies/compare/lib-v1.0.0-preview.2...lib-v1.0.0-preview.3

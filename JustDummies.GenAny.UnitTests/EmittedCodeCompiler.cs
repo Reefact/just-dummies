@@ -87,6 +87,22 @@ internal static class EmittedCodeCompiler {
     /// <summary>Every JustDummies analyzer, instantiated, exactly as a consumer's build loads them.</summary>
     internal static ImmutableArray<DiagnosticAnalyzer> Analyzers { get; } = LoadAnalyzers();
 
+    /// <summary>
+    ///     The informational rules the engine stands behind on its own output.
+    /// </summary>
+    /// <remarks>
+    ///     One entry, and it earns its place: <c>JD030</c> reports a string whose length nobody has declared,
+    ///     and nobody has — the domain says nothing about it and the engine will not invent a bound to quieten
+    ///     a rule. Every other <c>Info</c> reports something the engine chose, and a choice it cannot defend is
+    ///     one it should not have made: <c>JD031</c> means it wrote two bounds where it meant a range, and
+    ///     <c>JD024</c> means it wrote a constraint that narrows nothing.
+    ///     <para>
+    ///         Declared beside the analyzers rather than inside one suite because two benches now hold output
+    ///         to it — the named corpus and the generative sweep — and a rule copied is a rule that drifts.
+    ///     </para>
+    /// </remarks>
+    internal static ImmutableHashSet<string> Assumed { get; } = ImmutableHashSet.Create("JD030");
+
     /// <summary>Compiles <paramref name="emitted" /> together with the domain it names.</summary>
     internal static CSharpCompilation Compile(string emitted) {
         return CompileWith(emitted, Domain);
@@ -115,9 +131,21 @@ internal static class EmittedCodeCompiler {
     ///     compilation is one the engine produced end to end rather than one written by hand.
     /// </remarks>
     internal static CSharpCompilation CompileWith(string emitted, string domain) {
+        return CompileAllWith([emitted], domain);
+    }
+
+    /// <summary>
+    ///     Compiles several emitted files against <paramref name="domain" /> rather than the fixture one.
+    /// </summary>
+    /// <remarks>
+    ///     What the generative sweep needs: a composed parameter draws through the generator its own type owns
+    ///     (ADR-0089), so a scaffolded file routinely names one or more others, and what lands in a
+    ///     developer's project is the set rather than the file.
+    /// </remarks>
+    internal static CSharpCompilation CompileAllWith(IEnumerable<string> emitted, string domain) {
         return CSharpCompilation.Create(
             assemblyName: "JustDummies.GenAny.Emitted",
-            syntaxTrees: [Parse(emitted), Parse(domain)],
+            syntaxTrees: [.. emitted.Select(Parse), Parse(domain)],
             references: References,
             options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
     }

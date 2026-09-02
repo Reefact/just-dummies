@@ -317,6 +317,11 @@ StrykerOutput/
 # never content — accepting a change means copying one over its approved file, deliberately.
 *.received.cs
 
+# The generative sweep's counts, written the same way and for the same reason: SweepReport leaves this
+# beside the committed baseline when the two disagree, and removes it when they agree. Accepting a change
+# means moving it over `sweep-baseline.tsv`, deliberately, once you can say why the counts moved.
+*.received.tsv
+
 # Agent worktrees: a Claude Code workflow that isolates its agents gives each one a git worktree here,
 # so several can edit the tree at once without colliding. They are working copies of this repository —
 # transient, removed when the run ends, and never content. The rest of .claude/ IS tracked, which is why

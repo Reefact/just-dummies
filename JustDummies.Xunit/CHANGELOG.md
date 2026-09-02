@@ -8,6 +8,8 @@ Releases are cut from the `xunit` train (see [CONTRIBUTING.md](../CONTRIBUTING.m
 
 ## [Unreleased]
 
+## [1.0.0-preview.2] - 2026-09-02
+
 ### Changed
 
 - **JustDummies.Xunit is licensed under [PolyForm Internal Use 1.0.0](../LICENSE), not Apache 2.0 —
@@ -60,5 +62,6 @@ Also developed inside [`Reefact/first-class-errors`](https://github.com/Reefact/
 and [extracted into this repository](../doc/handwritten/for-maintainers/adr/0044-extract-justdummies-into-its-own-repository.md)
 with its history on 2026-07-31.
 
-[Unreleased]: https://github.com/Reefact/just-dummies/compare/xunit-v1.0.0-preview.1...HEAD
+[Unreleased]: https://github.com/Reefact/just-dummies/compare/xunit-v1.0.0-preview.2...HEAD
+[1.0.0-preview.2]: https://github.com/Reefact/just-dummies/compare/xunit-v1.0.0-preview.1...xunit-v1.0.0-preview.2
 [1.0.0-preview.1]: https://github.com/Reefact/just-dummies/releases/tag/xunit-v1.0.0-preview.1

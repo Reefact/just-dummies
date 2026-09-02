@@ -609,6 +609,31 @@ public sealed class ConstructorChoiceTests {
         Check.That(outcome.Candidates).ContainsExactly("Shop.Domain.Subject.From(string)", "Shop.Domain.Subject.Parse(string)");
     }
 
+    /// <summary>
+    ///     A name §5.1.2 already ranks below <c>Create</c> is not part of the tie <c>Create</c> could not
+    ///     settle.
+    /// </summary>
+    /// <remarks>
+    ///     The preference is a rule, not a hint: with two <c>Create</c> overloads beside a <c>From</c>, the
+    ///     question the developer has to answer is which <c>Create</c>, and naming <c>From</c> under a
+    ///     sentence about what the tool "does not pick between" would contradict the rule the same paragraph
+    ///     states. It stopped being invisible when the set became the refusal's own candidates.
+    /// </remarks>
+    [Fact(DisplayName = "A tie among Create overloads names only them, not the lower-ranked names beside them.")]
+    public void ATieAmongCreateOverloadsNamesOnlyThem() {
+        ScaffoldOutcome outcome = Subject.Scaffold("""
+                                                   public sealed class Subject {
+                                                       private Subject() { }
+                                                       public static Subject Create(string value) { return null!; }
+                                                       public static Subject Create(int value) { return null!; }
+                                                       public static Subject From(string value) { return null!; }
+                                                   }
+                                                   """);
+
+        Check.That(outcome.Status).IsEqualTo(ScaffoldStatus.NoEligibleConstructor);
+        Check.That(outcome.Candidates).ContainsExactly("Shop.Domain.Subject.Create(int)", "Shop.Domain.Subject.Create(string)");
+    }
+
     /// <summary>A type with nothing to call at all carries no candidate, so the sentence stays the short one.</summary>
     [Fact(DisplayName = "A type with no factory at all is refused with nothing to list.")]
     public void ATypeWithNoFactoryAtAllIsRefusedWithNothingToList() {

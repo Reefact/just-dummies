@@ -21,7 +21,7 @@ and the **Origin** column says how each one got here:
   but its record stays live in `Reefact/first-class-errors` too, because that
   repository still applies it. Both copies are now independent: either side can
   supersede its own without touching the other. 9 decisions.
-* **recorded here** — decided in this repository, on its own. 50 decisions.
+* **recorded here** — decided in this repository, on its own. 51 decisions.
 
 The numbers are this base's own, assigned in the order the decisions were
 recorded upstream ([ADR-0045](0045-renumber-the-decision-base.md)); every ADR
@@ -204,3 +204,4 @@ failure mode of a "not now" is that nobody remembers the option existed on the d
 | [ADR-0091](0091-draw-a-half-from-the-values-it-can-represent.md) | Draw a `Half` from the values it can represent | Accepted | recorded here |
 | [ADR-0092](0092-run-every-mutation-leg-from-its-own-source-project.md) | Run every mutation leg from its own source project | Proposed | recorded here |
 | [ADR-0093](0093-publish-mutation-statuses-not-a-score.md) | Publish mutation statuses, not a score | Proposed | recorded here |
+| [ADR-0094](0094-lift-a-nullable-value-type-rather-than-deriving-it.md) | Lift a nullable value type rather than deriving it | Proposed | recorded here |

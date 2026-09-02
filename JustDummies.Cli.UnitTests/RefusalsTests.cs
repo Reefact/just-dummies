@@ -84,6 +84,22 @@ public sealed class RefusalsTests : IDisposable {
         Check.That(said).Contains("Create/From/Of/Parse");
     }
 
+    /// <summary>
+    ///     And where the engine offered no candidate, the sentence stays the short one.
+    /// </summary>
+    /// <remarks>
+    ///     Which is what a public but ineligible constructor produces: §5.1.2 holds the factory route shut
+    ///     there however many factories the type declares, so "leave one" would be advice that changes
+    ///     nothing. The engine says so by carrying no candidate, and this is the sentence that follows.
+    /// </remarks>
+    [Fact(DisplayName = "A refusal carrying no candidate does not offer to pick between factories.")]
+    public void ARefusalCarryingNoCandidateDoesNotOfferToPickBetweenFactories() {
+        string said = Rendered(ScaffoldOutcome.Refused(ScaffoldStatus.NoEligibleConstructor));
+
+        Check.That(said).Contains("nothing here constructs it");
+        Check.That(said).Not.Contains("several static factories");
+    }
+
     // Two names and no pick: §5.1.2 leaves the choice with the developer, so the sentence stops at saying
     // which two it was between.
     [Fact(DisplayName = "Several qualifying factories are named, under the refusal that will not pick.")]

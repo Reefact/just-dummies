@@ -518,7 +518,10 @@ le paramètre non résolu.
    plusieurs subsistent, le type est refusé (§7) en les nommant toutes, parce que laquelle énonce
    la forme du type est la réponse de l'auteur et non celle de l'outil. Le §5.4 portait cette règle
    jusqu'à ce qu'ADR-0089 en détache la composition, et le §5.1 est désormais le seul à la demander
-   — elle est donc énoncée ici.
+   — elle est donc énoncée ici. **Un constructeur public appartenant au type ferme entièrement cette
+   route**, fût-il jugé inéligible par la règle 5 : la fabrique n'est alors jamais atteinte, donc ni
+   choisie ni nommée, et le type finit comme la règle 5 le dit. La proposer serait offrir un remède
+   sur lequel le lecteur ne peut rien.
 3. Un constructeur sans paramètre donne un `AnyOrder` valide et trivial, sans méthode `With`.
 4. Les records positionnels fonctionnent sans traitement particulier — leur constructeur primaire
    est un constructeur public ordinaire. Les membres `init` et `required` sont **hors périmètre**
@@ -1300,7 +1303,7 @@ réponses.
 | Aucun / plusieurs projets trouvés | `1` | Candidats listés, `--project` suggéré. |
 | Le projet ne charge pas ou n'est pas restauré | `1` | Le diagnostic MSBuild, tel quel. |
 | Le projet ne référence pas JustDummies | `1` | Rien ne peut être résolu (D4) ; le dit et suggère le package. |
-| Rien ne construit le type cible (§5.1) | `1` | Nomme les deux portes qu'ouvre le §5.1 : un constructeur d'instance public passant tous ses paramètres par valeur, ou une fabrique statique reconnue. Quand plusieurs fabriques sont ex æquo, ce sont elles qui sont listées. |
+| Rien ne construit le type cible (§5.1) | `1` | Nomme les deux portes qu'ouvre le §5.1 : un constructeur d'instance public passant tous ses paramètres par valeur, ou une fabrique statique reconnue. Quand plusieurs fabriques **éligibles** sont ex æquo — le type ne déclarant aucun constructeur public qui ferme cette route — ce sont elles qui sont listées. |
 | Le type cible est abstrait | `1` | Refusé qu'il déclare ou non un constructeur à lui — le type abstrait ordinaire déclare les siens `protected` et s'entendrait sinon répondre la ligne du dessus, dont le remède est le mauvais. Une fabrique reconnue qui l'atteint est l'exception : `CS0144` porte sur `new`. Suggère un type concret qui en dérive. |
 | Le type cible est générique, ou imbriqué dans un générique | `1` | Rien n'en fournit l'argument de type, donc le fichier émis ne pourrait pas le nommer. |
 | Les membres `required` du type cible ne sont pas assignés par le constructeur retenu | `1` | Reporté au §16 ; nomme `[SetsRequiredMembers]`, scaffoldé comme n'importe quel autre constructeur. |

@@ -52,9 +52,22 @@ public sealed class ScaffoldOutcome {
     public IReadOnlyList<ScaffoldWarning> Warnings { get; }
 
     /// <summary>
-    ///     The names the console offers when the target could not be settled: the closest ones when nothing
-    ///     matched, the full ones when several did (§3.2). Empty otherwise.
+    ///     The alternatives the engine will not choose between, or offers as near misses — read by the
+    ///     <see cref="Status" /> that produced them.
     /// </summary>
+    /// <remarks>
+    ///     Type names under <see cref="ScaffoldStatus.TypeNotFound" /> (the closest ones) and
+    ///     <see cref="ScaffoldStatus.TypeAmbiguous" /> (the full ones), both §3.2; static factory signatures
+    ///     under <see cref="ScaffoldStatus.NoEligibleConstructor" /> where several qualify and §5.1.2's tie
+    ///     rule left them tied. Empty otherwise — including that same status where nothing tied, so an empty
+    ///     list is never a fourth meaning.
+    ///     <para>
+    ///         One property rather than one per producer, because they answer one question: what the
+    ///         developer has to settle before the tool can proceed. The console renders all three through the
+    ///         same list, and a caller reading the machine report reads <see cref="Status" /> first, which
+    ///         says which kind of name it is holding.
+    ///     </para>
+    /// </remarks>
     public IReadOnlyList<string> Candidates { get; }
 
     /// <summary>Whether a file was produced. It may still carry TODOs, which is a success (§7).</summary>

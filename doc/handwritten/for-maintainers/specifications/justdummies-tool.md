@@ -503,6 +503,9 @@ marks the parameter unresolved.
    remain the type is refused (§7) with all of them named, because which one states the type's
    shape is the author's answer and not the tool's. §5.4 carried this rule until ADR-0089 moved
    composition off it, and §5.1 is now the only one that asks — so it is stated here.
+   **A public constructor of the type's own closes this route entirely**, even one rule 5 finds
+   ineligible: the factory is then never reached, so it is neither chosen nor named, and the type
+   ends as rule 5 says it does. Offering it would be a remedy the reader could not act on.
 3. A parameterless constructor yields a valid, trivial `AnyOrder` with no `With` methods.
 4. Positional records work with no special handling — their primary constructor is an ordinary
    public constructor. `init` and `required` members are **out of scope** (§16) — and out of scope
@@ -1237,7 +1240,7 @@ The provenance words are the recap's own (§6), read from one table rather than 
 | No project / several projects found | `1` | Candidates listed, `--project` suggested. |
 | Project fails to load or restore | `1` | The MSBuild diagnostic, verbatim. |
 | The project does not reference JustDummies | `1` | Nothing can be resolved (D4); says so and suggests the package. |
-| Nothing constructs the target (§5.1) | `1` | Names both doors §5.1 opens: a public instance constructor passing every parameter by value, or one recognised static factory. Where several factories tie, they are listed instead. |
+| Nothing constructs the target (§5.1) | `1` | Names both doors §5.1 opens: a public instance constructor passing every parameter by value, or one recognised static factory. Where several **eligible** factories tie — the type declaring no public constructor to close that route — they are listed instead. |
 | The target is abstract | `1` | Refused whether or not it declares a constructor of its own — the ordinary abstract type declares `protected` ones and would otherwise hear the row above, whose remedy is the wrong one. A recognised factory reaching it is the exception: `CS0144` is about `new`. Suggests a concrete type that derives from it. |
 | The target is generic, or nested in a generic type | `1` | Nothing supplies the type argument, so the emitted file could not name it. |
 | The target's `required` members are unset by the chosen constructor | `1` | Deferred to §16; names `[SetsRequiredMembers]`, which is scaffolded like any other constructor. |

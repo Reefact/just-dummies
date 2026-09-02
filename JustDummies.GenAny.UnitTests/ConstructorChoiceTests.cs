@@ -555,6 +555,60 @@ public sealed class ConstructorChoiceTests {
         Check.That(outcome.Candidates).ContainsExactly("Shop.Domain.Subject.From(string)", "Shop.Domain.Subject.Parse(string)");
     }
 
+    /// <summary>
+    ///     A factory the engine would never choose is not a remedy, and is not offered as one.
+    /// </summary>
+    /// <remarks>
+    ///     §5.1.2 gates on <b>no accessible constructor</b>, so a type declaring a public one whose
+    ///     parameters are <c>ref</c> keeps the refusal §5.1.5 gives it: unresolved, rather than routed around
+    ///     the surface it declared. Naming its factories under that refusal would advertise a door the engine
+    ///     holds shut — and with two of them the sentence would say to leave one, which changes nothing at
+    ///     all, since the constructor closes the route either way.
+    /// </remarks>
+    [Theory(DisplayName = "A factory behind a public but ineligible constructor is not offered as a way out.")]
+    [InlineData("""
+                public sealed class Subject {
+                    public Subject(ref int one) { }
+                    public static Subject From(string value) { return null!; }
+                }
+                """)]
+    [InlineData("""
+                public sealed class Subject {
+                    public Subject(ref int one) { }
+                    public static Subject From(string value) { return null!; }
+                    public static Subject Parse(string value) { return null!; }
+                }
+                """)]
+    public void AFactoryBehindAPublicButIneligibleConstructorIsNotOffered(string declaration) {
+        ScaffoldOutcome outcome = Subject.Scaffold(declaration);
+
+        Check.That(outcome.Status).IsEqualTo(ScaffoldStatus.NoEligibleConstructor);
+        Check.That(outcome.Candidates).IsEmpty();
+    }
+
+    /// <summary>
+    ///     Where the tie is what stops an abstract type, the tie is what the refusal names.
+    /// </summary>
+    /// <remarks>
+    ///     Abstractness would be the wrong answer here and a demonstrably wrong one: deleting either factory
+    ///     leaves the same abstract type scaffolding through the other. So the refusal a developer can act on
+    ///     is the ambiguity, and reporting <c>TypeIsAbstract</c> would send them to write a derived type they
+    ///     do not need.
+    /// </remarks>
+    [Fact(DisplayName = "An abstract type stopped by tied factories is refused for the tie, not for being abstract.")]
+    public void AnAbstractTypeStoppedByTiedFactoriesIsRefusedForTheTie() {
+        ScaffoldOutcome outcome = Subject.Scaffold("""
+                                                   public abstract class Subject {
+                                                       protected Subject(string value) { }
+                                                       public static Subject From(string value) { return null!; }
+                                                       public static Subject Parse(string value) { return null!; }
+                                                   }
+                                                   """);
+
+        Check.That(outcome.Status).IsEqualTo(ScaffoldStatus.NoEligibleConstructor);
+        Check.That(outcome.Candidates).ContainsExactly("Shop.Domain.Subject.From(string)", "Shop.Domain.Subject.Parse(string)");
+    }
+
     /// <summary>A type with nothing to call at all carries no candidate, so the sentence stays the short one.</summary>
     [Fact(DisplayName = "A type with no factory at all is refused with nothing to list.")]
     public void ATypeWithNoFactoryAtAllIsRefusedWithNothingToList() {

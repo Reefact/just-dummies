@@ -23,8 +23,11 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 - **The same refusal now names the static-factory route, not only the constructor.** §5.1 opens two doors
   and the sentence named one, so the author of a validating value object — a private constructor behind a
   public `Create`, the design that rule exists to serve — was advised to add the very constructor their
-  type withholds. Where several factories qualify and `Create` does not break the tie, both are now listed
-  under a refusal that says it will not pick between them.
+  type withholds. Where several **eligible** factories qualify and `Create` does not break the tie, both are
+  now listed under a refusal that says it will not pick between them — and a type that declares a public
+  constructor of its own, even one `dum` finds ineligible, keeps the constructor-only sentence, since a
+  public constructor closes the factory route entirely and naming a factory there would advise a change
+  that cannot help.
 
 - **A guard written in a project on another target framework is read again.** A type reached through
   a project reference — which is where the type a developer scaffolds normally is, `dum` being run

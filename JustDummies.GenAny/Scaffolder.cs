@@ -81,8 +81,9 @@ public static class Scaffolder {
 
         if (library is null) { return ScaffoldOutcome.Refused(ScaffoldStatus.LibraryNotReferenced); }
 
-        IMethodSymbol? constructor = ChosenConstructor(target);
-        IMethodSymbol? factory     = constructor is null ? ChosenFactory(target) : null;
+        IMethodSymbol?               constructor = ChosenConstructor(target);
+        IReadOnlyList<IMethodSymbol> factories   = EligibleFactories(target);
+        IMethodSymbol?               factory     = factories.Count == 1 ? factories[0] : null;
 
         // Choosing a construction is not the same question as whether the emitted file can name the type and
         // make that call. Each of these finds a public construction and then fails the developer's own build,
@@ -99,14 +100,22 @@ public static class Scaffolder {
         // Only the generic refusal reaches the factory path: `CS0144` and `CS9035` are both about `new`,
         // which a factory call site never writes, so an abstract type behind a recognised factory is
         // scaffolded through it — the very design §5.1.2 exists to serve.
+        // Before abstractness, because a tie is the only one of the two the developer can act on: delete
+        // either factory and the same abstract type scaffolds through the other, so `TypeIsAbstract` here
+        // would send them to write a derived type they do not need. Unreachable while a public constructor
+        // exists — the route is shut then and this set is empty — so it cannot divert a type that scaffolds.
+        if (factories.Count > 1) {
+            return ScaffoldOutcome.Refused(ScaffoldStatus.NoEligibleConstructor,
+                                           [.. factories.Select(candidate => candidate.ToDisplayString())
+                                                        .OrderBy(name => name, StringComparer.Ordinal)]);
+        }
+
         if (factory is null && target.IsAbstract) { return ScaffoldOutcome.Refused(ScaffoldStatus.TypeIsAbstract); }
 
-        if (constructor is null && factory is null) {
-            return ScaffoldOutcome.Refused(ScaffoldStatus.NoEligibleConstructor,
-                                           [.. Composition.FactoriesFor(target)
-                                                          .Select(candidate => candidate.ToDisplayString())
-                                                          .OrderBy(name => name, StringComparer.Ordinal)]);
-        }
+        // No candidates: what is left here is a type with nothing to call and no factory the engine would
+        // ever reach for. Naming one it holds shut — the public `ref` constructor of §5.1.5 keeps the route
+        // closed however many factories sit beside it — would offer a remedy that changes nothing.
+        if (constructor is null && factory is null) { return ScaffoldOutcome.Refused(ScaffoldStatus.NoEligibleConstructor); }
 
         if (constructor is not null && LeavesRequiredMembersUnset(target, constructor)) {
             return ScaffoldOutcome.Refused(ScaffoldStatus.RequiredMembersUnset);
@@ -213,7 +222,7 @@ public static class Scaffolder {
     }
 
     /// <summary>
-    ///     The factory <c>Generate()</c> calls where the type has no accessible constructor at all (§5.1).
+    ///     The factories §5.1.2 would choose between, where the type has no accessible constructor at all.
     /// </summary>
     /// <remarks>
     ///     The canonical validating value object — a private constructor behind a public <c>Create</c> — is
@@ -224,19 +233,24 @@ public static class Scaffolder {
     ///         purpose: a type whose public constructors are all ineligible — a <c>ref</c> parameter, say —
     ///         ends unresolved rather than routed around its own declared surface.
     ///     </para>
+    ///     <para>
+    ///         The <b>set</b> rather than the pick, because the caller has two questions to ask of it and one
+    ///         answer cannot serve both: which factory to call, and — when several tie — which names the
+    ///         refusal has to print. A single nullable answer said "closed" and "ambiguous" with the same
+    ///         <c>null</c>, and a caller reading it as the first offered a way out of the second that does
+    ///         not exist.
+    ///     </para>
     /// </remarks>
-    private static IMethodSymbol? ChosenFactory(INamedTypeSymbol target) {
+    private static IReadOnlyList<IMethodSymbol> EligibleFactories(INamedTypeSymbol target) {
         // A struct's synthesized public parameterless constructor is not "its own declared surface" this
         // remark means — the developer wrote none, the compiler always adds one — so it does not gate the
         // factory the way an ineligible constructor the developer actually wrote does.
         if (target.InstanceConstructors.Any(candidate => candidate.DeclaredAccessibility == Accessibility.Public
                                                        && !(target.TypeKind == TypeKind.Struct && candidate.IsImplicitlyDeclared))) {
-            return null;
+            return [];
         }
 
-        IReadOnlyList<IMethodSymbol> qualifying = Composition.FactoriesFor(target);
-
-        return qualifying.Count == 1 ? qualifying[0] : null;
+        return Composition.FactoriesFor(target);
     }
 
     /// <summary>

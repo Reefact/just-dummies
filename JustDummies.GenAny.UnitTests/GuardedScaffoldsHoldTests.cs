@@ -25,8 +25,8 @@ namespace JustDummies.GenAny.UnitTests;
 ///     <para>
 ///         Informational rules are a third case, and are neither ignored nor obeyed. A scaffold knows what it
 ///         meant to write, so an <c>Info</c> on emitted output is a review of that intention rather than a
-///         verdict on it: <see cref="Assumed" /> lists the ones the engine stands behind, and anything else
-///         fails until someone decides which it is.
+///         verdict on it: <see cref="EmittedCodeCompiler.Assumed" /> lists the ones the engine stands
+///         behind, and anything else fails until someone decides which it is.
 ///     </para>
 /// </remarks>
 public sealed class GuardedScaffoldsHoldTests {
@@ -38,18 +38,6 @@ public sealed class GuardedScaffoldsHoldTests {
     ///     corpus fails on the first draw or at construction.
     /// </remarks>
     private const int Draws = 200;
-
-    /// <summary>
-    ///     The informational rules the engine stands behind on its own output.
-    /// </summary>
-    /// <remarks>
-    ///     One entry, and it earns its place: <c>JD030</c> reports a string whose length nobody has declared,
-    ///     and nobody has — the domain says nothing about it and the engine will not invent a bound to quieten
-    ///     a rule. Every other <c>Info</c> reports something the engine chose, and a choice it cannot defend is
-    ///     one it should not have made: <c>JD031</c> means it wrote two bounds where it meant a range, and
-    ///     <c>JD024</c> means it wrote a constraint that narrows nothing.
-    /// </remarks>
-    private static readonly ImmutableHashSet<string> Assumed = ImmutableHashSet.Create("JD030");
 
     public static TheoryData<string> Satisfiable => Rows(GuardCorpus.SatisfiableNames());
 
@@ -86,7 +74,7 @@ public sealed class GuardedScaffoldsHoldTests {
                                                                    TestContext.Current.CancellationToken);
 
         Check.That(raised.Where(diagnostic => diagnostic.Severity >= DiagnosticSeverity.Warning).Select(Render)).IsEmpty();
-        Check.That(raised.Where(diagnostic => !Assumed.Contains(diagnostic.Id)).Select(Render)).IsEmpty();
+        Check.That(raised.Where(diagnostic => !EmittedCodeCompiler.Assumed.Contains(diagnostic.Id)).Select(Render)).IsEmpty();
     }
 
     [Theory(DisplayName = "A guarded scaffold draws values its own domain accepts.")]
@@ -171,7 +159,7 @@ public sealed class GuardedScaffoldsHoldTests {
              .That(EmittedCodeCompiler.ErrorsIn(Compiled(outcome, shape)))
              .Not.IsEmpty();
 
-        CSharpCompilation resolved = EmittedCodeCompiler.CompileWith(WithoutVerifySentinel(outcome.File!.SourceText), shape.Domain);
+        CSharpCompilation resolved = EmittedCodeCompiler.CompileWith(VerifySentinel.StrippedFrom(outcome.File!.SourceText), shape.Domain);
 
         Check.WithCustomMessage($"Any{shape.Target}, with the blocking line deleted, still does not compile.")
              .That(EmittedCodeCompiler.ErrorsIn(resolved))
@@ -190,33 +178,6 @@ public sealed class GuardedScaffoldsHoldTests {
                               + "turned out sound, which this shape was chosen to show is not guaranteed.")
              .That(failure)
              .Not.IsNull();
-    }
-
-    /// <summary>
-    ///     What a developer does per §5.6's own instruction: delete the sentinel statement, and the blank line
-    ///     the emitter puts after it — nothing else, so what compiled before compiles the same way now.
-    /// </summary>
-    private static string WithoutVerifySentinel(string source) {
-        List<string> kept        = [];
-        bool         skipNext    = false;
-
-        foreach (string line in source.Split('\n')) {
-            if (skipNext) {
-                skipNext = false; // the blank line WriteFactories emits right after the sentinel.
-
-                continue;
-            }
-
-            if (line.TrimStart().StartsWith("_ = TODO_verify_the_generator_for_", System.StringComparison.Ordinal)) {
-                skipNext = true;
-
-                continue;
-            }
-
-            kept.Add(line);
-        }
-
-        return string.Join('\n', kept);
     }
 
     /// <summary>The shape scaffolded, and its generator compiled beside the domain it names.</summary>

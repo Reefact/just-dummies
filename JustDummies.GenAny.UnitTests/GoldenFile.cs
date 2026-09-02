@@ -83,7 +83,8 @@ internal static class GoldenFile {
 
     private static string Folder => Path.Combine(RepositoryRoot, "JustDummies.GenAny.UnitTests", "Golden");
 
-    private static string RepositoryRoot {
+    /// <summary>The working tree, for the suites whose fixtures live in it rather than in an assembly.</summary>
+    internal static string RepositoryRoot {
         get {
             AssemblyMetadataAttribute root = typeof(GoldenFile).Assembly
                                                                .GetCustomAttributes<AssemblyMetadataAttribute>()

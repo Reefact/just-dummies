@@ -2,6 +2,29 @@
 
 Ce qui a changé pour vous, version par version, sur le train `lib`. Pour le registre technique complet — chaque contrainte, chaque cas limite, chaque ADR — voir [CHANGELOG.md](https://github.com/Reefact/just-dummies/blob/main/JustDummies/CHANGELOG.md). Précédemment : [0.x](https://github.com/Reefact/just-dummies/blob/main/JustDummies/RELEASE_NOTES-0.x.fr.md).
 
+## 1.0.0-preview.6 — 2 septembre 2026
+
+_Un changement de licence que chaque consommateur devrait lire, un générateur qui élargit vers le nullable, et un tirage plus équitable pour `Half`._
+
+### ⚠️ Changements cassants
+
+- **JustDummies est désormais sous licence [PolyForm Internal Use 1.0.0](https://github.com/Reefact/just-dummies/blob/main/LICENSE), et non plus Apache 2.0 — source disponible, pas open source.** Vous pouvez lire, construire, modifier et exécuter la bibliothèque (et les analyseurs qu'elle embarque) pour vos propres opérations internes ou celles de votre entreprise ; vous ne pouvez pas redistribuer le logiciel. Les versions déjà publiées sur NuGet ne sont pas concernées et conservent la licence sous laquelle elles ont été livrées. Les contributions sont désormais régies par un [Contributor Agreement](https://github.com/Reefact/just-dummies/blob/main/CONTRIBUTOR_AGREEMENT.md).
+
+### ✨ Nouveautés
+
+- Nouveau `generator.AsNullable()` — élargit le type d'un générateur vers le nullable sans jamais tirer une valeur absente, l'opposé de `.OrNull()`. Il conserve le nombre de valeurs connu du générateur enveloppé, si bien que `Any.SetOf(Any.Enum<T>().AsNullable())` dimensionne correctement par rapport aux membres de l'énumération ([ADR-0094](https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-maintainers/adr/0094-lift-a-nullable-value-type-rather-than-deriving-it.md)).
+
+### 🙌 Améliorations
+
+- **`Any.Half()` tire désormais uniformément parmi les valeurs qu'un half peut réellement représenter**, plutôt que parmi les réels avec arrondi — ce qui ne produisait presque rien en dessous de 1. Un test à seed fixe tirant un `Half` rejouera une valeur différente d'avant ([ADR-0091](https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-maintainers/adr/0091-draw-a-half-from-the-values-it-can-represent.md)).
+
+### 🐛 Corrections
+
+- `Any.Half()` indique désormais combien de valeurs distinctes il détient, si bien qu'`Any.SetOf(Any.Half())` au-delà de ce compte est refusé plutôt que d'épuiser un budget de nouveaux tirages.
+- `JD016` prouve désormais exactement plusieurs domaines d'éléments supplémentaires (`Char`, `Byte`/`SByte`, `Int16`/`UInt16`, `Half`, et les valeurs distinctes d'une énumération), et compte exactement un ensemble `Any.Char().OneOf(...)` fourni par l'appelant.
+- `JD015` pèse désormais un ensemble de valeurs face à toutes les contraintes déclarées ensemble, si bien qu'une chaîne refusée seulement par l'intersection de plusieurs contraintes est signalée.
+- Un générateur d'élément qui n'admet plus rien nomme désormais sa propre contrainte responsable, même à l'intérieur d'une collection distincte comme `Any.SetOf(...)`.
+
 ## 1.0.0-preview.5 — 25 août 2026
 
 _Une garde contre les chaînes vierges, et quatre corrections d'ordre de chaîne pour qu'une spécification se lise à l'identique quel que soit l'ordre dans lequel elle a été écrite._

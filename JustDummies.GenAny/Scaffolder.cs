@@ -100,9 +100,10 @@ public static class Scaffolder {
         // Only the generic refusal reaches the factory path: `CS0144` and `CS9035` are both about `new`,
         // which a factory call site never writes, so an abstract type behind a recognised factory is
         // scaffolded through it — the very design §5.1.2 exists to serve.
-        // Before abstractness, because a tie is the only one of the two the developer can act on: delete
-        // either factory and the same abstract type scaffolds through the other, so `TypeIsAbstract` here
-        // would send them to write a derived type they do not need. Unreachable while a public constructor
+        // Before abstractness, because a tie is the only one of the two the developer can act on: bring
+        // the qualifying set down to exactly one — from two or from five — and the same abstract type
+        // scaffolds through it, so `TypeIsAbstract` here would send them to write a derived type they do
+        // not need. Unreachable while a public constructor
         // exists — the route is shut then and this set is empty — so it cannot divert a type that scaffolds.
         if (factories.Count > 1) {
             return ScaffoldOutcome.Refused(ScaffoldStatus.NoEligibleConstructor,

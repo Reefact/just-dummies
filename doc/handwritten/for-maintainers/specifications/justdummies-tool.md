@@ -1256,8 +1256,9 @@ The provenance words are the recap's own (§6), read from one table rather than 
 is decided in this order, which is a rule rather than a pipeline's accident:
 
 1. **generic** — nothing supplies the type argument, so neither a constructor nor a factory rescues it;
-2. **a tie between recognised factories** — deleting either one leaves the same type scaffolding
-   through the other, so the tie is the change the developer can make;
+2. **a tie between recognised factories** — bringing the qualifying set down to exactly one makes
+   the same type scaffold through that one, whether two tied or five did, so the tie is the change
+   the developer can make;
 3. **abstract**, where no single factory reaches it;
 4. **nothing constructs it**, which is a fact about what §5.1's search found rather than about the
    type;

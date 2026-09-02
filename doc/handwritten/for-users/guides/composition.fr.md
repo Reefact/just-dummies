@@ -140,6 +140,31 @@ La décision « null ou valeur » tire du même contexte aléatoire que le gén�
 exécution graînée la rejoue donc exactement. Un tirage `null` ne consomme pas de valeur du
 générateur enveloppé.
 
+## `.AsNullable()` : un type nullable, jamais une valeur absente
+
+L'opposé de `.OrNull()`, et celui dont vous avez besoin bien plus souvent que le nom ne le laisse
+croire. Un paramètre écrit `OrderStatus?` doit quand même recevoir une valeur ; si le test se moque
+de laquelle, le dummy qui lui convient n'est *pas* parfois-absent — un dummy absent exerce une
+branche que le test n'a jamais demandée. `.AsNullable()` élargit le type et laisse les valeurs
+tranquilles :
+
+```csharp
+OrderStatus? status = Any.Enum<OrderStatus>().AsNullable().Generate();   // jamais null
+int?         units  = Any.Int32().Between(1, 10).AsNullable().Generate();
+```
+
+Ça compte surtout à l'intérieur d'une collection **distincte**. `.As(value => (OrderStatus?)value)`
+dirait la même chose du type et rien du tout du domaine : un ensemble ne saurait donc pas dans
+combien de valeurs distinctes il a le droit de puiser, et en demanderait plus qu'il n'en existe.
+
+```csharp
+// L'énum a un nombre de membres fixe, donc un ensemble en contient au plus autant — et ceci le sait.
+ISet<OrderStatus?> statuses = Any.SetOf(Any.Enum<OrderStatus>().AsNullable()).NonEmpty().Generate();
+```
+
+Un générateur scaffoldé par `dum` écrit `.AsNullable()` pour chaque paramètre nullable de type
+valeur, exactement pour cette raison.
+
 ## Construire un agrégat entier
 
 En rassemblant tout, voici un dummy pour un enregistrement à trois champs, dont aucun n'est un

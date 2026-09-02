@@ -79,7 +79,8 @@ These do not draw a new kind of value; they build a generator out of other gener
 | `Any.Combine(…, compose)` | `IAny<TResult>` from 2 to 8 generators | [Composition](../guides/composition.en.md) |
 | `Any.PairOf(first, second)` | `IAny<(T1, T2)>` | [Composition](../guides/composition.en.md) |
 | `Any.TripleOf(first, second, third)` | `IAny<(T1, T2, T3)>` | [Composition](../guides/composition.en.md) |
-| `generator.OrNull()` | `IAny<T?>` | [Composition](../guides/composition.en.md) |
+| `generator.OrNull()` | `IAny<T?>`, `null` about half the time | [Composition](../guides/composition.en.md) |
+| `generator.AsNullable()` | `IAny<T?>`, never `null` | [Composition](../guides/composition.en.md) |
 
 ## Reproducibility
 

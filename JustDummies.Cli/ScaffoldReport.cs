@@ -18,7 +18,10 @@ internal sealed record ScaffoldReport(string Argument,
                                       IReadOnlyList<WarningReport> Warnings,
                                       IReadOnlyList<string> Candidates) {
 
-    /// <summary>An argument that produced nothing, carrying the engine's reason and its candidates (§3.2).</summary>
+    /// <summary>
+    ///     An argument that produced nothing, carrying the engine's reason and whatever that reason leaves
+    ///     the developer to settle — type names for §3.2, tied static factories for §5.1.2.
+    /// </summary>
     internal static ScaffoldReport Refused(string argument, ScaffoldOutcome outcome) {
         return new ScaffoldReport(argument,
                                   outcome.Status.ToString(),

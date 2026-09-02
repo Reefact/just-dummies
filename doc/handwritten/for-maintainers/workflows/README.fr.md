@@ -20,7 +20,7 @@ s'exécute, et la poignée de choses à ne pas changer sans avoir compris pourqu
 Lisez la page d'un workflow avant d'y toucher. Quand la page et le YAML sont en
 désaccord, c'est le YAML qui gagne — et la page qu'il faut corriger.
 
-**Cinq workflows ont une page pour l'instant**, et le tableau ci-dessous dit
+**Sept workflows ont une page pour l'instant**, et le tableau ci-dessous dit
 lequel. Les autres y figurent quand même : un index qui les omettrait laisserait
 croire qu'ils n'existent pas. Leurs commentaires YAML sont, pour l'heure, toute
 la documentation qu'ils ont.
@@ -35,7 +35,8 @@ les workflows tels qu'ils sont, pas reprise sur parole :
   `@v4` peut être déplacé par son propriétaire vers du nouveau code ; un SHA de 40
   caractères, non. Chaque `uses:` épingle donc un SHA, avec le tag lisible en
   commentaire de fin de ligne (`# v4`). Quand vous montez une action, changez **les
-  deux**. Compté : 44 `uses:` épinglés par SHA, zéro par tag.
+  deux**. Compté : 47 `uses:` épinglés par SHA, et un qui ne l'est pas —
+  `contributor-agreement` épingle `actions/github-script@v9` par tag.
 - **Les `permissions:` partent en lecture seule et s'élargissent par job.** Le
   bloc au niveau du workflow est le moindre privilège dont il a besoin
   (généralement `contents: read`) ; un job qui doit écrire quelque chose (téléverser
@@ -45,9 +46,9 @@ les workflows tels qu'ils sont, pas reprise sur parole :
   l'inverse : il déclare `permissions: {}` — le mapping vide explicite, puisqu'un
   `permissions:` nu est un null et non une map vide.
 - **Chaque job pose un `timeout-minutes`.** Le défaut GitHub est de six heures ;
-  une étape bloquée retiendrait un runner tout ce temps. Compté : 21 jobs, 21 avec
-  un plafond. Chacun est réglé à quelques fois la durée observée, avec un
-  commentaire à côté.
+  une étape bloquée retiendrait un runner tout ce temps. Compté : 24 jobs, 23 avec
+  un plafond — tous sauf celui de `contributor-agreement`, qui n'en pose aucun.
+  Chacun est réglé à quelques fois la durée observée, avec un commentaire à côté.
 - **`concurrency` annule les runs supplantés.** Pousser deux fois sur la même
   branche ou la même PR annule le run en vol. La seule exception est `release`, qui
   met `cancel-in-progress: false` — on ne veut jamais annuler une publication à
@@ -73,7 +74,9 @@ les workflows tels qu'ils sont, pas reprise sur parole :
 | --- | --- |
 | `ci` | Build et tests de la solution sur Linux et Windows, avec couverture, plus la patte du plancher .NET Framework 4.7.2. Le barrage principal. |
 | `justdummies` | Prouve que les assets `netstandard2.0` et `net8.0` packagés se comportent bien sur les runtimes qui les chargent réellement — la patte que le projet de tests net10 ne peut pas exercer. |
-| [`justdummies-mutation`](justdummies-mutation.fr.md) | Tests de mutation des trois composants avec Stryker.NET — un check consultatif sur ce qu'une PR change, plus le balayage complet hebdomadaire qui est le niveau imposé. |
+| [`justdummies-mutation`](justdummies-mutation.fr.md) | Tests de mutation des trois composants avec Stryker.NET — un check consultatif sur ce qu'une PR change, plus le balayage complet hebdomadaire. Publie des comptes par statut, jamais un score (ADR-0093). |
+| [`genany-sweep`](genany-sweep.fr.md) | Hebdomadaire : le balayage génératif du moteur de scaffolding — ~3 600 domaines gardés issus d'un produit d'axes déclaré, chacun scaffoldé, compilé, analysé et tiré. L'instrument qui trouve des défauts ; une tranche couvrante tourne à chaque build. |
+| `stryker-xunit-v3-watch` | Hebdomadaire : signale le moment où Stryker.NET corrige son bug de découverte de tests xUnit v3, que rien d'autre ici ne remarquerait jamais. Rapporte sur la PR #148 ; ne merge et ne rouvre rien. |
 | [`analyzers`](analyzers.fr.md) | Charge les analyseurs embarqués depuis l'artefact packagé sous le plus vieux compilateur supporté (Roslyn 4.8), ce qu'un build ordinaire ne fait jamais. |
 | [`sonar`](sonar.fr.md) | Analyse SonarQube Cloud — quality gate et remontée de couverture. |
 | [`sonar-profile`](sonar-profile.fr.md) | Hebdomadaire : échoue quand la liste de règles Sonar C# commitée a dérivé du quality profile SonarCloud. Rapporte, ne répare jamais. |

@@ -58,7 +58,7 @@ of `JustDummies.sln`.
 
 ## Workflows
 
-18 workflows; six have a dedicated page under
+21 workflows; seven have a dedicated page under
 [`doc/handwritten/for-maintainers/workflows/`](../../doc/handwritten/for-maintainers/workflows/README.md),
 the rest one table row each. Shell scripts and workflow YAML are linted by the `lint`
 workflow (shellcheck + actionlint) — run `shellcheck` on any script you touch.

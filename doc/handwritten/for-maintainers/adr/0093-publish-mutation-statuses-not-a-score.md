@@ -2,8 +2,9 @@
 
 🌍 🇬🇧 English (this file) · 🇫🇷 [Français](0093-publish-mutation-statuses-not-a-score.fr.md)
 
-**Status:** Proposed
+**Status:** Accepted
 **Proposed:** 2026-09-01
+**Accepted:** 2026-09-02
 **Decision Makers:** Reefact
 
 ## Context

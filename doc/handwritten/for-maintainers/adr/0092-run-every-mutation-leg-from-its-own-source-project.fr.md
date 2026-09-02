@@ -2,8 +2,9 @@
 
 🌍 🇫🇷 Français (ce fichier) · 🇬🇧 [English](0092-run-every-mutation-leg-from-its-own-source-project.md)
 
-**Statut :** Proposed
+**Statut :** Accepted
 **Proposé :** 2026-08-31
+**Accepté :** 2026-09-02
 **Décideurs :** Reefact
 
 ## Contexte

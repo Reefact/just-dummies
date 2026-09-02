@@ -202,6 +202,6 @@ failure mode of a "not now" is that nobody remembers the option existed on the d
 | [ADR-0089](0089-draw-a-composed-parameter-through-the-generator-its-type-owns.md) | Draw a composed parameter through the generator its type owns | Accepted | recorded here |
 | [ADR-0090](0090-exempt-dependabot-from-the-contributor-agreement.md) | Exempt Dependabot from the contributor agreement, only at its own signed commit | Accepted | recorded here |
 | [ADR-0091](0091-draw-a-half-from-the-values-it-can-represent.md) | Draw a `Half` from the values it can represent | Accepted | recorded here |
-| [ADR-0092](0092-run-every-mutation-leg-from-its-own-source-project.md) | Run every mutation leg from its own source project | Proposed | recorded here |
-| [ADR-0093](0093-publish-mutation-statuses-not-a-score.md) | Publish mutation statuses, not a score | Proposed | recorded here |
-| [ADR-0094](0094-lift-a-nullable-value-type-rather-than-deriving-it.md) | Lift a nullable value type rather than deriving it | Proposed | recorded here |
+| [ADR-0092](0092-run-every-mutation-leg-from-its-own-source-project.md) | Run every mutation leg from its own source project | Accepted | recorded here |
+| [ADR-0093](0093-publish-mutation-statuses-not-a-score.md) | Publish mutation statuses, not a score | Accepted | recorded here |
+| [ADR-0094](0094-lift-a-nullable-value-type-rather-than-deriving-it.md) | Lift a nullable value type rather than deriving it | Accepted | recorded here |

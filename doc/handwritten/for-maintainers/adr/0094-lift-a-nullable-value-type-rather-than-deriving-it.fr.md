@@ -2,8 +2,9 @@
 
 🌍 🇫🇷 Français (ce fichier) · 🇬🇧 [English](0094-lift-a-nullable-value-type-rather-than-deriving-it.md)
 
-**Statut :** Proposed
+**Statut :** Accepted
 **Proposé :** 2026-09-02
+**Accepté :** 2026-09-02
 **Décideurs :** Reefact
 
 ## Contexte

@@ -10,6 +10,22 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Fixed
 
+- **A guard written in a project on another target framework is read again.** A type reached through
+  a project reference — which is where the type a developer scaffolds normally is, `dum` being run
+  from the test project — had its constructor's guards silently ignored whenever the two projects did
+  not bind the same references. That is the ordinary arrangement, not an exotic one: a library on
+  `netstandard2.0` under a test project on `net8.0`. Roslyn substitutes a *view* of the referenced
+  assembly there, whose parameters are not the ones a semantic model over the declaring project
+  returns, so every guard looked as though it named no parameter — and a condition naming none is
+  ordinary logic, not a guard. The recap reported every parameter inferred, the generator drew values
+  the constructor rejects, and nothing pointed at it. Measured on two real projects:
+  `ErrorDescription` in `Reefact/first-class-errors` went from `Any.String().NonEmpty()` unmarked to
+  `Any.String().NotBlank()` marked `guard`, and this repository's own `ScaffoldPlan` went from
+  nothing to `unread guards` on three of its five parameters, which now blocks compilation until they
+  are verified (§5.6). Two compilations bound to the same references — every shape the generative
+  sweep draws, and the suite's own referenced-assembly case — were never affected, which is why this
+  took pointing `dum` at real repositories to find.
+
 - **A collection of interface-typed collections no longer emits a file that does not compile.**
   `Any.SetOf(...)` is typed `IAny<HashSet<T>>` and `Any.ListOf(...)` `IAny<List<T>>`, so a collection
   *of* one of those carried the concrete type where the parameter declared the interface. A covariant

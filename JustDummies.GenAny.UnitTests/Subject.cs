@@ -106,12 +106,48 @@ internal static class Subject {
     internal static ScaffoldOutcome ScaffoldByNameReferencing(string referencedSource,
                                                               string typeArgument,
                                                               params string[] sources) {
+        return ScaffoldReferencing(referencedSource, Referenced(downlevel: false, withLibrary: true),
+                                   typeArgument, sources);
+    }
+
+    /// <summary>
+    ///     The same, with the referenced project bound to a reference set of its <b>own</b> — which is what a
+    ///     project on another target framework is.
+    /// </summary>
+    /// <remarks>
+    ///     A library on <c>netstandard2.0</c> under a test project on <c>net8.0</c> is the ordinary shape of a
+    ///     .NET repository, this one included, and it is not the same case as the one above: two compilations
+    ///     that bind the same references share their symbols outright, and Roslyn hands the referencing one a
+    ///     <b>view</b> of the referenced assembly the moment they do not — a view whose parameters are not the
+    ///     ones a semantic model over the declaring compilation returns. A reading that mixes the two then
+    ///     recognises none of them.
+    ///     <para>
+    ///         The narrower set below stands in for the framework difference rather than reproducing it: what
+    ///         produces the view is that the two sets differ at all, so binding the referenced source against
+    ///         the corlib alone is the same condition, without this suite resolving a reference pack.
+    ///     </para>
+    /// </remarks>
+    internal static ScaffoldOutcome ScaffoldByNameReferencingAcrossFrameworks(string referencedSource,
+                                                                             string typeArgument,
+                                                                             params string[] sources) {
+        return ScaffoldReferencing(referencedSource, ItsOwnReferenceSet(), typeArgument, sources);
+    }
+
+    private static ScaffoldOutcome ScaffoldReferencing(string referencedSource,
+                                                       ImmutableArray<MetadataReference> referencedAgainst,
+                                                       string typeArgument,
+                                                       IEnumerable<string> sources) {
         CSharpCompilation referenced = CSharpCompilation.Create(
             "Referenced",
             [Parse(referencedSource)],
-            Referenced(downlevel: false, withLibrary: true),
+            referencedAgainst,
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary,
                                          nullableContextOptions: NullableContextOptions.Enable));
+
+        Check.WithCustomMessage("The referenced source does not compile on its own.")
+             .That(referenced.GetDiagnostics().Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error)
+                             .Select(diagnostic => diagnostic.GetMessage()))
+             .IsEmpty();
 
         CSharpCompilation compilation = CSharpCompilation.Create(
             "Subject",
@@ -121,6 +157,24 @@ internal static class Subject {
                                          nullableContextOptions: NullableContextOptions.Enable));
 
         return Scaffolder.Scaffold(compilation, typeArgument, ScaffoldOptions.Default);
+    }
+
+    /// <summary>
+    ///     Enough to bind a domain type, and not what the analysed compilation binds — which is the whole of
+    ///     the condition, whichever entries the two sets happen to differ by.
+    /// </summary>
+    private static ImmutableArray<MetadataReference> ItsOwnReferenceSet() {
+        List<MetadataReference> references = [MetadataReference.CreateFromFile(typeof(object).Assembly.Location)];
+
+        string trusted = AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES") as string ?? string.Empty;
+
+        foreach (string path in trusted.Split(Path.PathSeparator)) {
+            if (Path.GetFileName(path) is "System.Runtime.dll" or "netstandard.dll") {
+                references.Add(MetadataReference.CreateFromFile(path));
+            }
+        }
+
+        return [.. references];
     }
 
     /// <summary>Scaffolds <c>Shop.Domain.Subject</c>, declared by <paramref name="declarations" />.</summary>

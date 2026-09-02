@@ -2,6 +2,35 @@
 
 What changed for you, release by release, in the `cli` train. For the full technical record — every constraint, every edge case, every ADR — see [CHANGELOG.md](https://github.com/Reefact/just-dummies/blob/main/JustDummies.Cli/CHANGELOG.md).
 
+## 1.1.0-beta.4 — September 2, 2026
+
+_A license change every consumer should read, a composed parameter now drawn through its own generator, and a long list of guard-reading fixes — several of them closing the known limitations 1.1.0-beta.3 shipped with._
+
+### ⚠️ Breaking changes
+
+- **JustDummies is now licensed under [PolyForm Internal Use 1.0.0](https://github.com/Reefact/just-dummies/blob/main/LICENSE), not Apache 2.0 — source-available, not open source.** You may read, build, modify and run the tool for your own or your company's internal business operations; you may not distribute the software. Versions already published on NuGet are untouched and keep the license they shipped with. Contributions are now governed by a [Contributor Agreement](https://github.com/Reefact/just-dummies/blob/main/CONTRIBUTOR_AGREEMENT.md).
+- **A composed parameter is now scaffolded as `new AnyOrderReference()` — the generator its own type owns — instead of a recipe derived from its factory's guards and inlined at every call site.** Where the target compilation does not carry that generator yet, `CS0246` at that line names what to scaffold ([ADR-0089](https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-maintainers/adr/0089-draw-a-composed-parameter-through-the-generator-its-type-owns.md)).
+- **The call for a composed parameter now goes straight into the constructor's initializer, and any remaining factory method is renamed to what it returns** — `AnyValidQuantity()` rather than `QuantityFactory()`.
+- **A nullable value-type parameter is now scaffolded as `.AsNullable()`, not `.As(value => (T?)value)`** — needs a `JustDummies` release carrying `AsNullable()` ([ADR-0094](https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-maintainers/adr/0094-lift-a-nullable-value-type-rather-than-deriving-it.md)); a project on an older package still gets the previous hop.
+- **The `factory` provenance word, and `candidates` on a parameter, are gone from `--format json`** — a parameter is never left open over an ambiguous factory anymore, so both always read empty.
+
+### 🐛 Bug Fixes
+
+- A type refused for being abstract or generic now says so (`TypeIsAbstract`/`TypeIsGeneric`) instead of being reported as having no constructor, and the same refusal now also names the static-factory route where several eligible factories tie.
+- A guard written in a project on another target framework (a `netstandard2.0` library under a `net8.0` test project, say) is read again instead of silently ignored.
+- A collection of interface-typed collections (`List<HashSet<T>>` for a `List<ISet<T>>` parameter) no longer emits a file that fails to compile.
+- A `readonly struct` behind a private constructor and a public `Create` now scaffolds through its factory instead of a zero-initialized default.
+- **Every spelling of the whitespace rejection now reads as `.NotBlank()` instead of `.NonEmpty()`** — needs the matching `JustDummies` release carrying `NotBlank()`.
+- A guard reached through a null-conditional receiver, a `throw` inside a `switch` assignment, or a guard-library call in return position or a local declaration's initializer is now marked `unread guards` instead of passed over in silence.
+- A guard a `: this(…)`/`: base(…)` initializer, or a factory built over a guarded private constructor, merely delegates to is now folded onto the parameter that hands it there — closing several shapes 1.1.0-beta.3 read silently wrong or not at all.
+- A `params` hand-off in normal form is read again; only the expanded form is refused.
+- A null-forgiving hand-off (`value!`) folds the guard instead of dropping it, read directly or through a delegated constructor.
+- A self-delegating `: this(…)` initializer no longer overflows the stack.
+- A `.Count`/`.Length` guard on a parameter that is neither a string nor a collection is now marked `unread guards` instead of read against the wrong family.
+- A guard a jump can skip from inside a `using`, `lock` or `checked` block is now marked `unread guards`, not only at the top of the body.
+- A distinct floor over `char`, `byte`, `sbyte`, `Int16`/`UInt16`, `Half`, or an enum's domain is now marked `unread guards` past what the element can actually produce, instead of written with confidence.
+- An enum with no declared member now leaves the parameter open instead of scaffolding a call the library itself refuses.
+
 ## 1.1.0-beta.3 — August 24, 2026
 
 _Guard reading gets wider and stricter at once — two named guard libraries and a factory-built type are read now, while three shapes where the tool was confidently wrong about a guard's reach are refused instead of guessed._

@@ -2,6 +2,35 @@
 
 Ce qui a changé pour vous, version par version, sur le train `cli`. Pour le registre technique complet — chaque contrainte, chaque cas limite, chaque ADR — voir [CHANGELOG.md](https://github.com/Reefact/just-dummies/blob/main/JustDummies.Cli/CHANGELOG.md).
 
+## 1.1.0-beta.4 — 2 septembre 2026
+
+_Un changement de licence que chaque consommateur devrait lire, un paramètre composé désormais tiré via son propre générateur, et une longue liste de corrections de lecture de gardes — plusieurs d'entre elles closant les limitations connues livrées avec 1.1.0-beta.3._
+
+### ⚠️ Changements majeurs
+
+- **JustDummies est désormais sous licence [PolyForm Internal Use 1.0.0](https://github.com/Reefact/just-dummies/blob/main/LICENSE), et non plus Apache 2.0 — source disponible, pas open source.** Vous pouvez lire, construire, modifier et exécuter l'outil pour vos propres opérations internes ou celles de votre entreprise ; vous ne pouvez pas redistribuer le logiciel. Les versions déjà publiées sur NuGet ne sont pas concernées et conservent la licence sous laquelle elles ont été livrées. Les contributions sont désormais régies par un [Contributor Agreement](https://github.com/Reefact/just-dummies/blob/main/CONTRIBUTOR_AGREEMENT.md).
+- **Un paramètre composé est désormais généré comme `new AnyOrderReference()` — le générateur que son propre type possède — au lieu d'une recette dérivée des gardes de sa factory et recopiée à chaque site d'appel.** Là où la compilation cible ne porte pas encore ce générateur, `CS0246` à cette ligne nomme ce qu'il faut générer ([ADR-0089](https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-maintainers/adr/0089-draw-a-composed-parameter-through-the-generator-its-type-owns.md)).
+- **L'appel pour un paramètre composé va désormais directement dans l'initialiseur du constructeur, et toute factory restante est renommée d'après ce qu'elle retourne** — `AnyValidQuantity()` plutôt que `QuantityFactory()`.
+- **Un paramètre de type valeur nullable est désormais généré comme `.AsNullable()`, et non plus `.As(value => (T?)value)`** — nécessite une version de `JustDummies` portant `AsNullable()` ([ADR-0094](https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-maintainers/adr/0094-lift-a-nullable-value-type-rather-than-deriving-it.md)) ; un projet sur un package plus ancien garde l'ancien détour.
+- **Le mot de provenance `factory`, et `candidates` sur un paramètre, disparaissent de `--format json`** — un paramètre n'est plus jamais laissé ouvert sur une factory ambiguë désormais, si bien que les deux sont toujours vides.
+
+### 🐛 Corrections
+
+- Un type refusé pour être abstrait ou générique le dit désormais (`TypeIsAbstract`/`TypeIsGeneric`) au lieu d'être signalé comme n'ayant pas de constructeur, et le même refus nomme désormais aussi la voie de la factory statique lorsque plusieurs factories éligibles sont à égalité.
+- Une garde écrite dans un projet sur un autre framework cible (une bibliothèque `netstandard2.0` sous un projet de test `net8.0`, par exemple) est de nouveau lue au lieu d'être ignorée silencieusement.
+- Une collection de collections typées par interface (`List<HashSet<T>>` pour un paramètre `List<ISet<T>>`) n'émet plus un fichier qui ne compile pas.
+- Un `readonly struct` derrière un constructeur privé et un `Create` public est désormais généré via sa factory au lieu d'un défaut initialisé à zéro.
+- **Chaque orthographe du rejet des espaces blancs se lit désormais `.NotBlank()` au lieu de `.NonEmpty()`** — nécessite la version correspondante de `JustDummies` portant `NotBlank()`.
+- Une garde atteinte via un récepteur à accès conditionnel nul, un `throw` à l'intérieur d'une affectation `switch`, ou un appel à une bibliothèque de gardes en position de retour ou dans l'initialiseur d'une déclaration locale, est désormais marquée `unread guards` au lieu d'être passée sous silence.
+- Une garde qu'un initialiseur `: this(…)`/`: base(…)`, ou une factory construite sur un constructeur privé gardé, se contente de déléguer est désormais repliée sur le paramètre qui la transmet là — clôturant plusieurs formes que 1.1.0-beta.3 lisait silencieusement de travers ou pas du tout.
+- Une transmission `params` en forme normale est de nouveau lue ; seule la forme développée est refusée.
+- Une transmission avec suppression de nullabilité (`value!`) replie la garde au lieu de la perdre, lue directement ou via un constructeur délégué.
+- Un initialiseur `: this(…)` qui se délègue à lui-même ne fait plus déborder la pile.
+- Une garde `.Count`/`.Length` sur un paramètre qui n'est ni une chaîne ni une collection est désormais marquée `unread guards` au lieu d'être lue avec la mauvaise famille.
+- Une garde qu'un saut peut sauter depuis l'intérieur d'un bloc `using`, `lock` ou `checked` est désormais marquée `unread guards`, pas seulement en haut du corps.
+- Un plancher de distinction sur `char`, `byte`, `sbyte`, `Int16`/`UInt16`, `Half`, ou le domaine d'une énumération, est désormais marqué `unread guards` au-delà de ce que l'élément peut réellement produire, au lieu d'être écrit avec assurance.
+- Une énumération sans membre déclaré laisse désormais le paramètre ouvert au lieu de générer un appel que la bibliothèque elle-même refuse.
+
 ## 1.1.0-beta.3 — 24 août 2026
 
 _La lecture des gardes devient à la fois plus large et plus stricte — deux bibliothèques de gardes nommées et un type construit par factory sont désormais lus, tandis que trois formes où l'outil se trompait avec assurance sur la portée d'une garde sont refusées au lieu d'être devinées._

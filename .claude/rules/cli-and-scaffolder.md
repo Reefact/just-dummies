@@ -43,6 +43,23 @@ Other decisions that govern this area: emit only members resolved in the target 
 type's namespace (ADR-0062), never draw null for a nullable parameter (ADR-0064), emit an
 entry point on request as a file of its own (ADR-0070).
 
+## Two benches, and they do not overlap
+
+* **The named corpus** — `GuardCorpus.cs` and `GuardedScaffoldsHoldTests`, run on every build. A person
+  chose each domain because it asks a question, and each row claims the rows of §5.3 it exercises
+  (`RecognisedIdiomCoverageTests` is the judge of that claim). This is the bench ADR-0085 means.
+* **The generative sweep** — `Sweep/` and `GenerativeSweepTests`, ~3600 domains from a declared axis
+  product, weekly (`genany-sweep`), with a covering slice of ~95 shapes on every build. Nobody chose any
+  of them, it claims no idiom row, and it holds shapes to seven rules that are true whatever the engine
+  does. **Rule 0 is that the generated domain compiles on its own** — a failure there is the sweep's own
+  bug and is never reported as a finding, which is the lesson of an earlier survey that published 208 of
+  its own broken domains as engine defects.
+
+Neither replaces the other, and a defect the sweep finds is **marked and reported, not fixed in the
+change that found it**: `SweepDefects.cs` carries the open ones, and an entry comes off with the fix
+rather than with the test. The page is
+[`genany-sweep.en.md`](../../doc/handwritten/for-maintainers/workflows/genany-sweep.en.md).
+
 ## The `cli` release train
 
 `tools/packaging/pack.sh` packs the tool and **asserts ADR-0063 on the produced package

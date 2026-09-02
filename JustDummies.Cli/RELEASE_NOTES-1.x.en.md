@@ -2,6 +2,15 @@
 
 What changed for you, release by release, in the `cli` train. For the full technical record — every constraint, every edge case, every ADR — see [CHANGELOG.md](https://github.com/Reefact/just-dummies/blob/main/JustDummies.Cli/CHANGELOG.md).
 
+## 1.1.0-beta.5 — September 2, 2026
+
+_A same-named type that could not actually serve as a generator was still being proposed as one — this closes that gap._
+
+### 🐛 Bug Fixes
+
+- A same-named type that is not usable as a generator — `static`, missing `IAny<T>`, `abstract`, or missing a public parameterless constructor — is no longer proposed as a parameter's `AnyX`. Composing through it collided with the real declaration and failed your build on whatever it actually was (`CS0712` for a static class, among others), under a recap that still claimed `AnyX` inferred it, often with no `using` for its namespace either. The parameter is now left open instead, exactly as if nothing answered to that name.
+- Where two or more types named `AnyX` each qualify as a parameter's generator, `dum` no longer picks one silently — it lists every one of them under the parameter's `TODO`, the same discipline already held for a tied static factory.
+
 ## 1.1.0-beta.4 — September 2, 2026
 
 _A license change every consumer should read, a composed parameter now drawn through its own generator, and a long list of guard-reading fixes — several of them closing the known limitations 1.1.0-beta.3 shipped with._

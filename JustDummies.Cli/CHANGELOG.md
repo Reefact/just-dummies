@@ -8,7 +8,26 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ## [Unreleased]
 
+### Fixed
+
+- **A collection of interface-typed collections no longer emits a file that does not compile.**
+  `Any.SetOf(...)` is typed `IAny<HashSet<T>>` and `Any.ListOf(...)` `IAny<List<T>>`, so a collection
+  *of* one of those carried the concrete type where the parameter declared the interface. A covariant
+  outer type still bound — which is why `IReadOnlyList<ISet<Slot>>` always worked — and an invariant
+  one could not: `List<HashSet<Slot>>` is not a `List<ISet<Slot>>`, and the scaffolded file failed on
+  a plain `CS0029` with no sentinel over it. `dum` now writes the conversion where the position needs
+  it, asking the compilation about the outer type's variance rather than assuming. A covariant
+  position is untouched, so nothing that compiled before gets noisier. `List<IReadOnlyList<string>>`
+  is an ordinary domain and was affected.
+
 ### Changed
+
+- **A nullable value-type parameter is scaffolded as `.AsNullable()`, not `.As(value => (T?)value)`.**
+  The general hop produced a derived generator, which advertises nothing about how many distinct
+  values it can produce — so a scaffolded set or dictionary keyed by a nullable enum or bool drew a
+  size its domain could not fill and threw on the first draw, on a domain asking for one element. The
+  lift keeps that count (ADR-0094). A project on a package that predates the lift gets the hop it
+  always got, since `dum` emits only what the target compilation resolves (ADR-0059).
 
 - **`dum` is licensed under [PolyForm Internal Use 1.0.0](../LICENSE), not Apache 2.0 —
   source-available, not open source.** You may read, build, modify and run the tool for your own or

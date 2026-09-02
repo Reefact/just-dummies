@@ -89,10 +89,18 @@ internal sealed class GeneratorFor {
     ///     The collection rows, as element-generator factories keyed by the collection's own metadata name.
     /// </summary>
     /// <remarks>
-    ///     The interface rows need no adapter: <c>IAny&lt;out T&gt;</c> is covariant, so the
-    ///     <c>IAny&lt;List&lt;T&gt;&gt;</c> that <c>Any.ListOf(…)</c> produces is already an
-    ///     <c>IAny&lt;IReadOnlyList&lt;T&gt;&gt;</c> (§14.5). Variance across reference conversions is also
-    ///     exactly why the value-type nullable row below cannot do the same.
+    ///     An interface row needs no adapter <b>where the whole generator is what binds</b>: <c>IAny&lt;out T&gt;</c>
+    ///     is covariant, so the <c>IAny&lt;List&lt;T&gt;&gt;</c> that <c>Any.ListOf(…)</c> produces is already an
+    ///     <c>IAny&lt;IReadOnlyList&lt;T&gt;&gt;</c> (§14.5). Variance across reference conversions is also exactly
+    ///     why the value-type nullable row below cannot do the same.
+    ///     <para>
+    ///         That argument stops at the top level, and <see cref="NeedARow" /> is where it stops. Covariance
+    ///         converts <c>IAny&lt;X&gt;</c> to <c>IAny&lt;Y&gt;</c> when <c>X</c> converts to <c>Y</c>; it says
+    ///         nothing about <c>List&lt;X&gt;</c> converting to <c>List&lt;Y&gt;</c>, which it never does. So an
+    ///         interface row reached as an <b>element</b> hands the outer factory a concrete type where the
+    ///         parameter declared the interface, and an invariant outer type — <c>List</c>, <c>ICollection</c>,
+    ///         <c>ISet</c>, a dictionary — then refuses the assignment outright.
+    ///     </para>
     /// </remarks>
     private static readonly Dictionary<string, string> ByCollection = new(StringComparer.Ordinal) {
         ["System.Collections.Generic.List`1"]                = ListOf,
@@ -103,6 +111,26 @@ internal sealed class GeneratorFor {
         ["System.Collections.Generic.IEnumerable`1"]         = "SequenceOf",
         ["System.Collections.Generic.HashSet`1"]             = "SetOf",
         ["System.Collections.Generic.ISet`1"]                = "SetOf"
+    };
+
+    /// <summary>
+    ///     The rows whose factory produces a concrete collection where the parameter declared an interface.
+    /// </summary>
+    /// <remarks>
+    ///     <c>Any.ListOf</c> produces a <c>List&lt;T&gt;</c>, <c>Any.SetOf</c> a <c>HashSet&lt;T&gt;</c> and
+    ///     <c>Any.DictionaryOf</c> a <c>Dictionary&lt;K,V&gt;</c>; <c>Any.SequenceOf</c> produces the very
+    ///     <c>IEnumerable&lt;T&gt;</c> that row declares, which is why it is absent here. Reached as an element,
+    ///     each of the rows below therefore needs the same explicit hop the nullable row needs, and for the same
+    ///     reason: a conversion the compiler will not make on its own has to be written.
+    /// </remarks>
+    private static readonly HashSet<string> NeedARow = new(StringComparer.Ordinal) {
+        "System.Collections.Generic.IList`1",
+        "System.Collections.Generic.IReadOnlyList`1",
+        "System.Collections.Generic.ICollection`1",
+        "System.Collections.Generic.IReadOnlyCollection`1",
+        "System.Collections.Generic.ISet`1",
+        "System.Collections.Generic.IDictionary`2",
+        "System.Collections.Generic.IReadOnlyDictionary`2"
     };
 
     private static readonly string[] Dictionaries = [
@@ -478,11 +506,53 @@ internal sealed class GeneratorFor {
 
         if (generator is null) { return DrawnGenerator.Unresolved(); }
 
-        string? item = Resolve(element, remaining - 1, [.. underway, self]);
+        string? item = AsDeclared(element,
+                                  ConvertsOnItsOwn(self, index: 0),
+                                  Resolve(element, remaining - 1, [.. underway, self]));
 
         return item is null
                    ? DrawnGenerator.Unresolved()
                    : DrawnGenerator.From($"Any.{factory}({item})", generator);
+    }
+
+    /// <summary>
+    ///     The element expression, converted to the type the parameter declared — where the position needs it.
+    /// </summary>
+    /// <remarks>
+    ///     Two conditions, and both are necessary. The row must be one whose factory produces a concrete
+    ///     collection where an interface was declared (<see cref="NeedARow" />), and the position it lands in
+    ///     must be one the compiler will not convert for itself.
+    ///     <para>
+    ///         The second is asked of the compilation rather than answered from a table here: an outer type
+    ///         declaring its parameter <c>out</c> converts <c>List&lt;HashSet&lt;T&gt;&gt;</c> to
+    ///         <c>IReadOnlyList&lt;ISet&lt;T&gt;&gt;</c> on its own, and writing the hop there would only make a
+    ///         file the developer reads and owns harder to read — three nested read-only lists would each carry
+    ///         a cast that changes nothing. Where the parameter is invariant no conversion exists at all, and
+    ///         the hop is the difference between a file that compiles and one that does not.
+    ///     </para>
+    /// </remarks>
+    private string? AsDeclared(ITypeSymbol declared, bool covariant, string? expression) {
+        if (expression is null || covariant) { return expression; }
+
+        if (declared is not INamedTypeSymbol named || Definition(named) is not { } definition || !NeedARow.Contains(definition)) {
+            return expression;
+        }
+
+        // Same refusal the nullable row makes: without `As` on the resolved asset there is no hop to write,
+        // and a chain that does not compile is not an improvement on one that says it could not be built.
+        return library.CarriesAs() ? $"{expression}.As(value => ({names.Of(declared)})value)" : null;
+    }
+
+    /// <summary>
+    ///     Whether the compiler converts an element on its own at position <paramref name="index" /> of
+    ///     <paramref name="outer" /> — an <c>out</c> type parameter, or an array of a reference type.
+    /// </summary>
+    private static bool ConvertsOnItsOwn(ITypeSymbol outer, int index) {
+        if (outer is IArrayTypeSymbol array) { return array.ElementType.IsReferenceType; }
+
+        return outer is INamedTypeSymbol named
+            && index < named.OriginalDefinition.TypeParameters.Length
+            && named.OriginalDefinition.TypeParameters[index].Variance == VarianceKind.Out;
     }
 
     private DrawnGenerator Dictionary(INamedTypeSymbol type, int remaining, IReadOnlyCollection<ITypeSymbol> underway) {
@@ -490,8 +560,12 @@ internal sealed class GeneratorFor {
 
         if (generator is null) { return DrawnGenerator.Unresolved(); }
 
-        string? keys   = Resolve(type.TypeArguments[0], remaining - 1, [.. underway, type]);
-        string? values = Resolve(type.TypeArguments[1], remaining - 1, [.. underway, type]);
+        string? keys = AsDeclared(type.TypeArguments[0],
+                                  ConvertsOnItsOwn(type, index: 0),
+                                  Resolve(type.TypeArguments[0], remaining - 1, [.. underway, type]));
+        string? values = AsDeclared(type.TypeArguments[1],
+                                    ConvertsOnItsOwn(type, index: 1),
+                                    Resolve(type.TypeArguments[1], remaining - 1, [.. underway, type]));
 
         return keys is null || values is null
                    ? DrawnGenerator.Unresolved()
@@ -506,14 +580,24 @@ internal sealed class GeneratorFor {
     ///     <c>IAny&lt;string?&gt;</c> and needs nothing; <c>IAny&lt;int&gt;</c> is <b>not</b> an
     ///     <c>IAny&lt;int?&gt;</c>, so the conversion has to be written. Never <c>.OrNull()</c>: the emitted
     ///     generator does not draw null (ADR-0064).
+    ///     <para>
+    ///         <c>AsNullable()</c> where the asset carries it, and the difference is not cosmetic. The general
+    ///         <c>As</c> hop yields a derived generator, which advertises nothing about how many distinct values
+    ///         it can produce — so a <b>distinct</b> collection over it draws a count the element domain cannot
+    ///         fill and dies on the bounded redraw, on a domain that plainly admits values. The lift keeps that
+    ///         count. An older asset without it still gets the hop that always worked.
+    ///     </para>
     /// </remarks>
     private DrawnGenerator NullableValue(INamedTypeSymbol type, int remaining, IReadOnlyCollection<ITypeSymbol> underway) {
-        if (!library.CarriesAs()) { return DrawnGenerator.Unresolved(); }
+        bool lift = library.CarriesAsNullable();
+
+        if (!lift && !library.CarriesAs()) { return DrawnGenerator.Unresolved(); }
 
         DrawnGenerator inner = Draw(type.TypeArguments[0], remaining, [.. underway, type]);
+        string         hop   = lift ? ".AsNullable()" : $".As(value => ({names.Of(type)})value)";
 
         return inner.Resolved
-                   ? inner.Then($".As(value => ({names.Of(type)})value)", Provenance.None)
+                   ? inner.Then(hop, Provenance.None)
                    : DrawnGenerator.Unresolved(inner.Provenance);
     }
 

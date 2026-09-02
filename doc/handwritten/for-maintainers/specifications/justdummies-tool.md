@@ -538,7 +538,7 @@ Every entry is subject to D4: the member is emitted only if it resolves in the c
 | `HashSet<T>` `ISet<T>` | `Any.SetOf(<T>)` |
 | `Dictionary<K,V>` `IDictionary<K,V>` `IReadOnlyDictionary<K,V>` | `Any.DictionaryOf(<K>, <V>)` |
 | `T?` where `T` is a reference type | the generator for `T` unchanged — **never** `.OrNull()` (D10) |
-| `T?` where `T` is a value type | `<generator for T>.As(value => (T?)value)` — **never** `.OrNull()` (D10) |
+| `T?` where `T` is a value type | `<generator for T>.AsNullable()`, or `.As(value => (T?)value)` where the asset carries no lift — **never** `.OrNull()` (D10) |
 | any other non-generic named type | `new AnyT()` (§5.4) — whether the compilation carries `AnyT` or not |
 | anything else | unresolved (§5.5) |
 
@@ -558,7 +558,7 @@ for `HashSet<T>`/`ISet<T>` and `Dictionary<K,V>`/`IReadOnlyDictionary<K,V>`.
 
 Variance in C# applies only across **reference** conversions, which is why the two nullable rows
 differ. `IAny<string>` is an `IAny<string?>` and needs nothing; `IAny<int>` is **not** an
-`IAny<int?>`, so an `int?` parameter needs the explicit `.As(value => (int?)value)` hop. Getting
+`IAny<int?>`, so an `int?` parameter needs the explicit `.AsNullable()` hop. Getting
 this wrong is the most likely way an implementer produces a table that does not compile — the
 `net8.0`-only rows are all value types too.
 
@@ -821,7 +821,7 @@ survives casual testing.
 
 **Where the constraints attach.** A guard-derived constraint belongs to the generator for the
 parameter's own type, *before* any conversion or composition. An `int?` parameter guarded by
-`p <= 0` emits `Any.Int32().Positive().As(value => (int?)value)`, not the reverse. The `.As` hop
+`p <= 0` emits `Any.Int32().Positive().AsNullable()`, not the reverse. The conversion hop
 always comes last, because it is the step that changes the type.
 
 Every constraint above is still subject to D4. `.Positive()` on a `uint` parameter does not
@@ -1928,7 +1928,7 @@ in. The results below are what the harness printed.
 | The guard-derived chain never throws | §5.3 | 500 draws through `OrderReference.Create`, no `AnyGenerationException` |
 | The chain **without** guard reading throws intermittently | §5.3 | **594 / 10 000** draws threw, and **557 / 10 000** on a re-run against a later library — about 1 in 17, matching the 588 predicted by seventeen equiprobable lengths |
 | Collection covariance needs no adapter | §5.2, §14.5 | `Any.ListOf(...)` assigned to `IAny<IReadOnlyList<string>>` |
-| A value-type nullable **does** need the `.As` hop | §5.2 | `IAny<int>` is not an `IAny<int?>`; `.As(value => (int?)value)` compiles |
+| A value-type nullable **does** need a conversion hop | §5.2 | `IAny<int>` is not an `IAny<int?>`; `.AsNullable()` compiles, and keeps the domain's size where the general `.As` hop lost it |
 | Complementary bounds compose | §5.3 | `.GreaterThanOrEqualTo(0).LessThanOrEqualTo(100)` and `.NonEmpty().WithMaxLength(10)` both draw |
 | Contradictory bounds are rejected twice over | §5.3 | `ConflictingAnyConstraintException` at run time, and `JD023` at **compile** time |
 | A pattern generator admits no other string constraint | §5.3 | `Any.StringMatching(...).NonEmpty()` fails to compile — `CS1061`, `AnyPattern` has only `DifferentFrom`/`Except` |

@@ -1252,6 +1252,25 @@ The provenance words are the recap's own (§6), read from one table rather than 
 | `dum.json` unreadable, or setting a key that is not read | `2` | Names the key, and the ones that are read. |
 | `Any{Type}` shadows a `JustDummies.Any*` type | `0` | **Warning**, then generate. |
 
+**Several rows can describe one type at once, and the most actionable of them answers.** The refusal
+is decided in this order, which is a rule rather than a pipeline's accident:
+
+1. **generic** — nothing supplies the type argument, so neither a constructor nor a factory rescues it;
+2. **a tie between recognised factories** — deleting either one leaves the same type scaffolding
+   through the other, so the tie is the change the developer can make;
+3. **abstract**, where no single factory reaches it;
+4. **nothing constructs it**, which is a fact about what §5.1's search found rather than about the
+   type;
+5. **`required` members unset**, which only arises once a constructor has been chosen.
+
+The order matters because 4 is the cheapest to compute and the least useful to hear: an abstract type
+declares its constructors `protected`, so deciding 4 first told every one of them to add a public
+constructor — the single change that does not help. Measured over seven repositories, 12 of 55 such
+refusals were really 1 or 3
+([audit](../audit/2026-09-02-dum-first-field-measurement.md)). A status added later takes its place
+in this list by the same test: does it name something the developer can act on, or something the
+engine happened to notice first?
+
 That last row deserves its own note, and the check behind it is narrower than it first looks. The
 library declares 40 public `Any*` type names, but **8 of them are generic** — `AnyList<T>`,
 `AnySet<T>`, `AnyArray<T>`, `AnySequence<T>`, `AnyDictionary<K,V>`, `AnyOneOf<T>`, `AnyEnum<T>`,

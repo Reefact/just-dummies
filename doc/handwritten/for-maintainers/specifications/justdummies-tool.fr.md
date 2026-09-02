@@ -1315,6 +1315,26 @@ réponses.
 | `dum.json` illisible, ou fixant une clé non lue | `2` | Nomme la clé, et celles qui sont lues. |
 | `Any{Type}` masque un type `JustDummies.Any*` | `0` | **Avertissement**, puis génération. |
 
+**Plusieurs lignes peuvent décrire un même type à la fois, et c'est la plus actionnable qui répond.**
+Le refus est décidé dans cet ordre, qui est une règle et non un accident de tuyauterie :
+
+1. **générique** — rien ne fournit l'argument de type, donc ni un constructeur ni une fabrique ne le
+   rattrape ;
+2. **une égalité entre fabriques reconnues** — supprimer l'une des deux laisse ce même type se
+   scaffolder par l'autre, donc l'égalité est le changement que le développeur peut faire ;
+3. **abstrait**, quand aucune fabrique unique ne l'atteint ;
+4. **rien ne le construit**, qui est un fait sur ce que la recherche de §5.1 a trouvé, pas sur le
+   type ;
+5. **membres `required` non assignés**, qui ne se pose qu'une fois un constructeur retenu.
+
+L'ordre compte parce que le 4 est le moins coûteux à calculer et le moins utile à entendre : un type
+abstrait déclare ses constructeurs `protected`, donc décider le 4 d'abord revenait à dire à chacun
+d'eux d'ajouter un constructeur public — le seul changement qui n'aide pas. Mesuré sur sept dépôts,
+12 des 55 refus de ce genre relevaient en réalité du 1 ou du 3
+([audit](../audit/2026-09-02-dum-first-field-measurement.fr.md)). Un statut ajouté plus tard prend sa
+place dans cette liste au même test : nomme-t-il quelque chose sur quoi le développeur peut agir, ou
+quelque chose que le moteur a remarqué en premier ?
+
 Cette dernière ligne mérite sa note, et le contrôle derrière est plus étroit qu'il n'y paraît. La
 bibliothèque déclare 40 noms de types publics `Any*`, mais **8 sont génériques** — `AnyList<T>`,
 `AnySet<T>`, `AnyArray<T>`, `AnySequence<T>`, `AnyDictionary<K,V>`, `AnyOneOf<T>`, `AnyEnum<T>`,

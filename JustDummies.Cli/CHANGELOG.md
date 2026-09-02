@@ -55,60 +55,6 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   position is untouched, so nothing that compiled before gets noisier. `List<IReadOnlyList<string>>`
   is an ordinary domain and was affected.
 
-### Changed
-
-- **A nullable value-type parameter is scaffolded as `.AsNullable()`, not `.As(value => (T?)value)`.**
-  The general hop produced a derived generator, which advertises nothing about how many distinct
-  values it can produce — so a scaffolded set or dictionary keyed by a nullable enum or bool drew a
-  size its domain could not fill and threw on the first draw, on a domain asking for one element. The
-  lift keeps that count (ADR-0094). A project on a package that predates the lift gets the hop it
-  always got, since `dum` emits only what the target compilation resolves (ADR-0059).
-
-- **`dum` is licensed under [PolyForm Internal Use 1.0.0](../LICENSE), not Apache 2.0 —
-  source-available, not open source.** You may read, build, modify and run the tool for your own or
-  your company's internal business operations; you may not distribute the software. The package
-  metadata moves with it: the `Apache-2.0` SPDX expression is replaced by the license file itself,
-  packed inside the `.nupkg`, so the terms travel with the artifact rather than being an identifier
-  a resolver looks up elsewhere. The licensor is **Sylvain Aurat, acting in his personal capacity**
-  — `Company` and `Copyright` now read that instead of `Reefact`, a leftover from Apache 2.0;
-  REEFACT SARL is a distinct legal entity, separately authorized to exploit the project, and
-  [`PROJECT_OWNERSHIP.md`](../PROJECT_OWNERSHIP.md) states who licenses what to whom. Versions
-  already on NuGet are untouched — a published package is immutable and carries the license it
-  shipped with — so this governs releases from here on. Contributions are governed by the
-  [Contributor Agreement](../CONTRIBUTOR_AGREEMENT.md).
-
-- **A composed parameter is drawn through the generator its own type owns, and nothing else.** The
-  engine had a second way: unwrap the type's one-parameter static factory, read the guards in its
-  body, and derive a recipe here — `Any.String().NonEmpty().As(OrderReference.Create)`. That wrote
-  one copy of the recipe per site composing the type, each free to drift from the constructor it
-  described, and each re-deriving what the generator for `OrderReference` already knows. Now the
-  emission is `new AnyOrderReference()` whether or not the compilation carries that type yet: where
-  it does not, `CS0246` at that line names what to scaffold, which is ADR-0060's mechanism spelled
-  as a type name rather than as an invented identifier. The recipe is not lost, it moves — read once,
-  by the generator for the type that declares those guards. A generic type is the one composed shape
-  §5.5 still answers for, because its generator's name would drop the arguments that tell two
-  instantiations apart. (ADR-0089.)
-
-- **The call goes into the constructor's initializer, and the remaining factories are renamed.** A
-  method wrapping one call says nothing the call does not, so a composed parameter gets none — it
-  keeps one only when there is something to put in the body, the sentinel of §5.5 being a statement
-  that needs somewhere to stand. What remains is named for what it returns, a value the type's own
-  constructor accepts: `AnyValidQuantity()` rather than `QuantityFactory()`.
-
-- **The TODO names `dum generate` only where that command would take the name.** §3.2 refuses a
-  generic target, so pointing a developer at it would be an instruction the tool itself declines.
-  Cheap before, and worth doing now that composition names a generator for every plain type: what
-  reaches that branch is largely the constructed ones.
-
-### Removed
-
-- **The `factory` provenance word, and `candidates` on a parameter in `--format json`.** Both
-  described the path above: a parameter is never left open over an ambiguous factory now, so the
-  list is always empty and the recap line naming them never prints. §6 says the recap exists to keep
-  the tool honest about what it inferred and what it guessed; a word it can no longer produce and a
-  field that is always `[]` are small versions of exactly what that column is for.
-
-### Fixed
 
 - **A `readonly struct` behind a private constructor and a public `Create` now scaffolds through its
   factory, not a zero-initialized default.** Every `struct` carries a constructor the compiler
@@ -292,6 +238,59 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   generator's own parameterless constructor threw. The parameter is unresolved instead, exactly as
   a generic type already is: naming a call the library itself refuses is worse than the open
   parameter it leaves.
+
+### Changed
+
+- **A nullable value-type parameter is scaffolded as `.AsNullable()`, not `.As(value => (T?)value)`.**
+  The general hop produced a derived generator, which advertises nothing about how many distinct
+  values it can produce — so a scaffolded set or dictionary keyed by a nullable enum or bool drew a
+  size its domain could not fill and threw on the first draw, on a domain asking for one element. The
+  lift keeps that count (ADR-0094). A project on a package that predates the lift gets the hop it
+  always got, since `dum` emits only what the target compilation resolves (ADR-0059).
+
+- **`dum` is licensed under [PolyForm Internal Use 1.0.0](../LICENSE), not Apache 2.0 —
+  source-available, not open source.** You may read, build, modify and run the tool for your own or
+  your company's internal business operations; you may not distribute the software. The package
+  metadata moves with it: the `Apache-2.0` SPDX expression is replaced by the license file itself,
+  packed inside the `.nupkg`, so the terms travel with the artifact rather than being an identifier
+  a resolver looks up elsewhere. The licensor is **Sylvain Aurat, acting in his personal capacity**
+  — `Company` and `Copyright` now read that instead of `Reefact`, a leftover from Apache 2.0;
+  REEFACT SARL is a distinct legal entity, separately authorized to exploit the project, and
+  [`PROJECT_OWNERSHIP.md`](../PROJECT_OWNERSHIP.md) states who licenses what to whom. Versions
+  already on NuGet are untouched — a published package is immutable and carries the license it
+  shipped with — so this governs releases from here on. Contributions are governed by the
+  [Contributor Agreement](../CONTRIBUTOR_AGREEMENT.md).
+
+- **A composed parameter is drawn through the generator its own type owns, and nothing else.** The
+  engine had a second way: unwrap the type's one-parameter static factory, read the guards in its
+  body, and derive a recipe here — `Any.String().NonEmpty().As(OrderReference.Create)`. That wrote
+  one copy of the recipe per site composing the type, each free to drift from the constructor it
+  described, and each re-deriving what the generator for `OrderReference` already knows. Now the
+  emission is `new AnyOrderReference()` whether or not the compilation carries that type yet: where
+  it does not, `CS0246` at that line names what to scaffold, which is ADR-0060's mechanism spelled
+  as a type name rather than as an invented identifier. The recipe is not lost, it moves — read once,
+  by the generator for the type that declares those guards. A generic type is the one composed shape
+  §5.5 still answers for, because its generator's name would drop the arguments that tell two
+  instantiations apart. (ADR-0089.)
+
+- **The call goes into the constructor's initializer, and the remaining factories are renamed.** A
+  method wrapping one call says nothing the call does not, so a composed parameter gets none — it
+  keeps one only when there is something to put in the body, the sentinel of §5.5 being a statement
+  that needs somewhere to stand. What remains is named for what it returns, a value the type's own
+  constructor accepts: `AnyValidQuantity()` rather than `QuantityFactory()`.
+
+- **The TODO names `dum generate` only where that command would take the name.** §3.2 refuses a
+  generic target, so pointing a developer at it would be an instruction the tool itself declines.
+  Cheap before, and worth doing now that composition names a generator for every plain type: what
+  reaches that branch is largely the constructed ones.
+
+### Removed
+
+- **The `factory` provenance word, and `candidates` on a parameter in `--format json`.** Both
+  described the path above: a parameter is never left open over an ambiguous factory now, so the
+  list is always empty and the recap line naming them never prints. §6 says the recap exists to keep
+  the tool honest about what it inferred and what it guessed; a word it can no longer produce and a
+  field that is always `[]` are small versions of exactly what that column is for.
 
 ## [1.1.0-beta.3] - 2026-08-24
 

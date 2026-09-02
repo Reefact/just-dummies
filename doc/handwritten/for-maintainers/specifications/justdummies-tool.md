@@ -1011,18 +1011,31 @@ confirmation.
 
 ### 5.4 Composition
 
-**A scaffolded generator wins.** If the compilation contains a type named `Any{T}` implementing
-`IAny<T>` with a public parameterless constructor, the engine emits `new Any{T}()`. This is how
-aggregates compose in cascade, and it works whether that type was scaffolded earlier or written
-by hand.
+**A scaffolded generator wins.** If the compilation contains a type named `Any{T}` that **qualifies** —
+`public`, not `static`, not `abstract`, implementing `IAny<T>` for this exact `T`, and instantiable
+through a public parameterless constructor — the engine emits `new Any{T}()`. This is how aggregates
+compose in cascade, and it works whether that type was scaffolded earlier or written by hand.
 
-**And it emits that call whether the type is there or not.** A value object's recipe belongs to the
-generator scaffolded for it. Deriving one here instead — unwrapping `T`'s one-parameter static
-factory and reading its guards, to emit `<param generator>.As(T.Create)` — wrote one copy of that
-recipe per site composing `T`, each free to drift from the constructor it described. So where
-`Any{T}` is missing the engine names it anyway, and `CS0246` at that line is the instruction:
-`dum generate T`, or write one by hand. That is §5.5's mechanism spelled as a type name rather than
-as an invented identifier, so the parameter is **not** unresolved (ADR-0089).
+**A type that merely shares the name is not a candidate.** A `static class`, one that does not
+implement `IAny<T>`, an `abstract` one, or one with no public parameterless constructor fails at
+least one of the checks above, and is read exactly as though nothing answered to that name — never
+proposed, and never named the way a genuinely missing generator is (below). Treating a disqualified
+type as the answer would still compile the call site down to a name that exists, only for the
+developer's build to fail on whatever the real shape produces instead — `CS0712` for a `static`
+class, a missing interface member for another — under a recap that claims `AnyX` inferred it.
+
+**And where nothing answers to the name at all, it emits the call anyway.** A value object's recipe
+belongs to the generator scaffolded for it. Deriving one here instead — unwrapping `T`'s
+one-parameter static factory and reading its guards, to emit `<param generator>.As(T.Create)` — wrote
+one copy of that recipe per site composing `T`, each free to drift from the constructor it described.
+So where `Any{T}` is missing outright the engine names it anyway, and `CS0246` at that line is the
+instruction: `dum generate T`, or write one by hand. That is §5.5's mechanism spelled as a type name
+rather than as an invented identifier, so the parameter is **not** unresolved (ADR-0089).
+
+**Two or more qualifying types are not settled by guessing either.** Where several types named
+`Any{T}` each qualify, which one is meant is the author's answer, not the tool's — the same rule
+§5.1.2 already holds a tied static factory to. The parameter is left unresolved, and its `TODO`
+lists every qualifying type by its full name rather than picking one.
 
 **A generic type is the one composed shape §5.5 still answers for.** The naming function (§11.3)
 works from the type's name, which drops its arguments, so `Repository<Order>` and `Repository<Line>`

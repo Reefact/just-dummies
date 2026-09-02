@@ -1063,19 +1063,35 @@ au développeur.
 
 ### 5.4 Composition
 
-**Un generator scaffoldé l'emporte.** Si la compilation contient un type nommé `Any{T}` implémentant
-`IAny<T>` avec un constructeur public sans paramètre, le moteur émet `new Any{T}()`. C'est ainsi que
-les agrégats se composent en cascade, et cela fonctionne que ce type ait été scaffoldé plus tôt ou
-écrit à la main.
+**Un generator scaffoldé l'emporte.** Si la compilation contient un type nommé `Any{T}` qui
+**convient** — `public`, ni `static` ni `abstract`, implémentant `IAny<T>` pour ce `T` exact, et
+instanciable via un constructeur public sans paramètre —, le moteur émet `new Any{T}()`. C'est ainsi
+que les agrégats se composent en cascade, et cela fonctionne que ce type ait été scaffoldé plus tôt
+ou écrit à la main.
 
-**Et il émet cet appel que le type soit là ou non.** La recette d'un value object appartient au
-generator scaffoldé pour lui. En dériver une ici à la place — déplier la fabrique statique à un
-paramètre de `T` et lire ses gardes, pour émettre `<generator du paramètre>.As(T.Create)` — écrivait
-une copie de cette recette par site composant `T`, chacune libre de dériver du constructeur qu'elle
-décrivait. Donc là où `Any{T}` manque, le moteur le nomme quand même, et `CS0246` à cette ligne est
-l'instruction : `dum generate T`, ou en écrire un à la main. C'est le mécanisme du §5.5 épelé comme
-un nom de type plutôt que comme un identifiant inventé, si bien que le paramètre n'est **pas** non
-résolu (ADR-0089).
+**Un type qui ne fait que partager le nom n'est pas un candidat.** Une `static class`, un type qui
+n'implémente pas `IAny<T>`, un type `abstract`, ou un type sans constructeur public sans paramètre
+échoue à au moins l'une de ces vérifications, et est lu exactement comme si rien ne répondait à ce
+nom — jamais proposé, et jamais nommé de la façon dont un generator réellement manquant l'est
+(ci-dessous). Traiter un candidat disqualifié comme la réponse compilerait quand même l'appel vers un
+nom qui existe, pour que le build du développeur échoue ensuite sur la forme réelle du type —
+`CS0712` pour une classe `static`, un membre d'interface manquant pour un autre — sous un récapitulatif
+qui prétend que `AnyX` l'a inféré.
+
+**Et là où rien ne répond au nom du tout, il émet l'appel quand même.** La recette d'un value object
+appartient au generator scaffoldé pour lui. En dériver une ici à la place — déplier la fabrique
+statique à un paramètre de `T` et lire ses gardes, pour émettre `<generator du paramètre>.As(T.Create)`
+— écrivait une copie de cette recette par site composant `T`, chacune libre de dériver du constructeur
+qu'elle décrivait. Donc là où `Any{T}` manque vraiment, le moteur le nomme quand même, et `CS0246` à
+cette ligne est l'instruction : `dum generate T`, ou en écrire un à la main. C'est le mécanisme du
+§5.5 épelé comme un nom de type plutôt que comme un identifiant inventé, si bien que le paramètre
+n'est **pas** non résolu (ADR-0089).
+
+**Deux candidats qui conviennent tous les deux ne se règlent pas non plus en devinant.** Là où
+plusieurs types nommés `Any{T}` conviennent chacun, lequel est visé est la réponse de l'auteur, pas
+celle de l'outil — la même règle que le §5.1.2 applique déjà à une fabrique statique liée à égalité.
+Le paramètre reste non résolu, et son `TODO` liste chaque type qui convient par son nom complet
+plutôt que d'en choisir un.
 
 **Un type générique est la seule forme composée à laquelle le §5.5 répond encore.** La fonction de
 nommage (§11.3) travaille depuis le nom du type, qui perd ses arguments : `Repository<Order>` et

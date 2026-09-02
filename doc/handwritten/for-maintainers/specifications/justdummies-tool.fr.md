@@ -1320,8 +1320,9 @@ Le refus est décidé dans cet ordre, qui est une règle et non un accident de t
 
 1. **générique** — rien ne fournit l'argument de type, donc ni un constructeur ni une fabrique ne le
    rattrape ;
-2. **une égalité entre fabriques reconnues** — supprimer l'une des deux laisse ce même type se
-   scaffolder par l'autre, donc l'égalité est le changement que le développeur peut faire ;
+2. **une égalité entre fabriques reconnues** — ramener l'ensemble qualifiant à exactement une fait
+   que ce même type se scaffolde par celle-là, qu'elles aient été deux ou cinq à être ex æquo, donc
+   l'égalité est le changement que le développeur peut faire ;
 3. **abstrait**, quand aucune fabrique unique ne l'atteint ;
 4. **rien ne le construit**, qui est un fait sur ce que la recherche de §5.1 a trouvé, pas sur le
    type ;

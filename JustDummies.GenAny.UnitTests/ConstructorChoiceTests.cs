@@ -590,10 +590,11 @@ public sealed class ConstructorChoiceTests {
     ///     Where the tie is what stops an abstract type, the tie is what the refusal names.
     /// </summary>
     /// <remarks>
-    ///     Abstractness would be the wrong answer here and a demonstrably wrong one: deleting either factory
-    ///     leaves the same abstract type scaffolding through the other. So the refusal a developer can act on
-    ///     is the ambiguity, and reporting <c>TypeIsAbstract</c> would send them to write a derived type they
-    ///     do not need.
+    ///     Abstractness would be the wrong answer here and a demonstrably wrong one: bringing the qualifying
+    ///     set down to exactly one makes the same abstract type scaffold through that one. So the refusal a
+    ///     developer can act on is the ambiguity, and reporting <c>TypeIsAbstract</c> would send them to write
+    ///     a derived type they do not need. Two is this case's arity, not the rule's — three tied factories
+    ///     leave an ambiguity after one is removed, and are still refused.
     /// </remarks>
     [Fact(DisplayName = "An abstract type stopped by tied factories is refused for the tie, not for being abstract.")]
     public void AnAbstractTypeStoppedByTiedFactoriesIsRefusedForTheTie() {

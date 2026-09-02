@@ -72,6 +72,31 @@ report — apply the mutation to the source by hand and run the suite.
 The configurations and the reasons behind them are in
 [`justdummies-mutation.en.md`](../../doc/handwritten/for-maintainers/workflows/justdummies-mutation.en.md).
 
+## Asserting a refusal
+
+A refusal is stated with NFluent, in one expression:
+
+```csharp
+Check.ThatCode(() => Any.Int32().Positive().Negative())
+     .Throws<ConflictingAnyConstraintException>()
+     .WhichMember(conflict => conflict.Message).Contains("Negative()", "Positive()");
+```
+
+`.WithMessage(...)` pins the whole sentence, `.WhichMember(e => e.Message)` opens it to
+`Contains` and `Not.Contains`, and `.WithProperty(e => e.Seed, 1234).And` reaches another member
+first. The lambda binds to `Func<T>`, so the generator is never converted to `object` — the
+recipe-as-value shape `JD011` exists to catch, and has to exempt when `Assert.Throws<T>` takes it
+through its `Func<object>` overload.
+
+`Assert.Throws` stays where the exception **instance** is the subject, and nowhere else:
+
+* a **base** exception type is named — `ArgumentException`, `InvalidOperationException`. xUnit
+  matches the exact type there and that exactness is the assertion; NFluent's `Throws<T>` admits a
+  derived type and would weaken it.
+* **two** thrown exceptions are compared to one another.
+* the throw sits inside a scope the assertions sit outside of, or one test asserts two unrelated
+  members — a message *and* an `InnerException`. A chain ends at one member.
+
 ## Conventions that are already enforced
 
 `*Tests/**.cs` declines five analyzer rules in `.editorconfig` (`CA1861`, `S1244`, `S107`,

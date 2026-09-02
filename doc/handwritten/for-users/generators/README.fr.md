@@ -81,7 +81,8 @@ d'autres générateurs.
 | `Any.Combine(…, compose)` | `IAny<TResult>` à partir de 2 à 8 générateurs | [Composition](../guides/composition.fr.md) |
 | `Any.PairOf(first, second)` | `IAny<(T1, T2)>` | [Composition](../guides/composition.fr.md) |
 | `Any.TripleOf(first, second, third)` | `IAny<(T1, T2, T3)>` | [Composition](../guides/composition.fr.md) |
-| `generator.OrNull()` | `IAny<T?>` | [Composition](../guides/composition.fr.md) |
+| `generator.OrNull()` | `IAny<T?>`, `null` une fois sur deux environ | [Composition](../guides/composition.fr.md) |
+| `generator.AsNullable()` | `IAny<T?>`, jamais `null` | [Composition](../guides/composition.fr.md) |
 
 ## Reproductibilité
 

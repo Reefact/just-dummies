@@ -1,10 +1,12 @@
 namespace JustDummies;
 
 /// <summary>
-///     Makes a value-type generator optionally <c>null</c>: <see cref="OrNull{T}" /> turns an
-///     <see cref="IAny{T}" /> into an <see cref="IAny{T}" /> of <see cref="Nullable{T}" /> that yields
-///     <c>null</c> on an even coin flip and, otherwise, a value satisfying the constraints declared upstream — the
-///     dummy for an optional value-type field (<c>int?</c>, <c>DateTime?</c>, <c>Guid?</c>, an enum, ...).
+///     The two ways a value-type generator becomes a generator of <see cref="Nullable{T}" />, and they are not the
+///     same thing. <see cref="OrNull{T}" /> yields <c>null</c> on an even coin flip and, otherwise, a value
+///     satisfying the constraints declared upstream — the dummy for an optional value-type field (<c>int?</c>,
+///     <c>DateTime?</c>, <c>Guid?</c>, an enum, ...). <see cref="AsNullable{T}" /> never yields <c>null</c>: it
+///     widens the type and leaves the values alone, for a parameter that is spelled nullable and still has to be
+///     given one.
 /// </summary>
 public static class NullableExtensions {
 
@@ -48,6 +50,40 @@ public static class NullableExtensions {
 
             return working.Current.Next(NullDrawOutcomes) == 0 ? (T?)null : generator.Generate();
         });
+    }
+
+    /// <summary>
+    ///     Widens <paramref name="generator" /> to <see cref="Nullable{T}" /> without changing what it draws — the
+    ///     same values, the wider type, and never <c>null</c>.
+    /// </summary>
+    /// <remarks>
+    ///     <para>
+    ///         The sibling of <see cref="OrNull{T}" /> and its opposite: <c>OrNull</c> is for a value that may be
+    ///         absent, this is for one that is merely spelled nullable. It is what a scaffolded generator writes
+    ///         for a nullable parameter, since a dummy the code under test needs is never absent (ADR-0064).
+    ///     </para>
+    ///     <para>
+    ///         Unlike the general <c>As(value =&gt; (T?)value)</c> this replaces, the result keeps whatever the
+    ///         wrapped generator knows about how many distinct values it can produce. A distinct collection —
+    ///         <c>Any.SetOf(...)</c>, a dictionary's keys — therefore gates its size on the underlying domain
+    ///         instead of drawing a count that domain cannot fill: <c>Any.SetOf(Any.Enum&lt;Slot&gt;().AsNullable())</c>
+    ///         behaves exactly as <c>Any.SetOf(Any.Enum&lt;Slot&gt;())</c> does.
+    ///     </para>
+    ///     <example>
+    ///         <code>
+    ///         ISet&lt;Slot?&gt; slots = Any.SetOf(Any.Enum&lt;Slot&gt;().AsNullable()).NonEmpty().Generate();
+    ///         </code>
+    ///     </example>
+    /// </remarks>
+    /// <param name="generator">The generator of the values.</param>
+    /// <typeparam name="T">The underlying value type.</typeparam>
+    /// <returns>A generator of <see cref="Nullable{T}" /> that never yields <c>null</c>.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="generator" /> is <c>null</c>.</exception>
+    public static IAny<T?> AsNullable<T>(this IAny<T> generator)
+        where T : struct {
+        if (generator is null) { throw new ArgumentNullException(nameof(generator)); }
+
+        return new NullableAny<T>(generator);
     }
 
 }

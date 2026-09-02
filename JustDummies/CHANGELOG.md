@@ -8,6 +8,18 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ## [Unreleased]
 
+### Added
+
+- **`generator.AsNullable()` — a nullable type, never an absent value.** The sibling of `.OrNull()`
+  and its opposite: `OrNull` draws `null` about half the time, this draws the same values the wrapped
+  generator draws and widens only the type. A parameter merely spelled `int?` still has to be given a
+  value, and generating an absent one there exercises a branch the test never asked about.
+  It also keeps what the wrapped generator knows about how many distinct values it can produce, which
+  the general `As(value => (T?)value)` hop could not: `Any.SetOf(Any.Enum<Slot>().AsNullable())` gates
+  its size on the enum's members, where the old spelling drew a size the domain could not fill and
+  failed on the bounded redraw — on a domain asking for one element. Every scaffolded set or
+  dictionary keyed by a nullable enum or bool was in that position (ADR-0094).
+
 ### Changed
 
 - **JustDummies is licensed under [PolyForm Internal Use 1.0.0](../LICENSE), not Apache 2.0 —

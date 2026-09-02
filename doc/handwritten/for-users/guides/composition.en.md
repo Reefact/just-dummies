@@ -134,6 +134,30 @@ you are generating.
 The null-versus-value decision draws from the same random context as the wrapped generator, so a
 seeded run replays it exactly. A `null` draw does not consume a value from the wrapped generator.
 
+## `.AsNullable()`: a nullable type, never an absent value
+
+The opposite of `.OrNull()`, and the one you want far more often than the name suggests. A parameter
+spelled `OrderStatus?` still has to be given a value; if the test does not care which, the dummy for it is
+*not* sometimes-absent — an absent one exercises a branch the test never asked about.
+`.AsNullable()` widens the type and leaves the values alone:
+
+```csharp
+OrderStatus? status = Any.Enum<OrderStatus>().AsNullable().Generate();   // never null
+int?         units  = Any.Int32().Between(1, 10).AsNullable().Generate();
+```
+
+It matters most inside a **distinct** collection. `.As(value => (OrderStatus?)value)` would say the same
+thing about the type and nothing at all about the domain, so a set could not tell how many distinct
+values it had to draw from and would ask for more than exist:
+
+```csharp
+// The enum has a fixed number of members, so a set of them holds at most that many — and this knows it.
+ISet<OrderStatus?> statuses = Any.SetOf(Any.Enum<OrderStatus>().AsNullable()).NonEmpty().Generate();
+```
+
+A generator scaffolded by `dum` writes `.AsNullable()` for every nullable value-type parameter, for
+exactly that reason.
+
 ## Building a whole aggregate
 
 Putting it together, here is a dummy for a record with three fields, none of which is a bare

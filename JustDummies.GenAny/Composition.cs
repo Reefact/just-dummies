@@ -56,8 +56,9 @@ internal static class Composition {
     /// <remarks>
     ///     A method qualifies when it is <c>public static</c>, returns the type, takes exactly one parameter,
     ///     and is named <c>Create</c>, <c>From</c>, <c>Of</c> or <c>Parse</c>. <c>Create</c> wins where several
-    ///     do; where several still remain the parameter is left unresolved rather than guessed at. §5.1.2
-    ///     states that rule — §5.4 carried it until ADR-0089 moved composition off it.
+    ///     do — so where any <c>Create</c> qualifies, what comes back is the <c>Create</c> overloads alone —
+    ///     and where several still remain the target is refused naming them, rather than one being guessed at.
+    ///     §5.1.2 states that rule; §5.4 carried it until ADR-0089 moved composition off it.
     /// </remarks>
     internal static IReadOnlyList<IMethodSymbol> FactoriesFor(INamedTypeSymbol type) {
         IMethodSymbol[] qualifying = type.GetMembers()
@@ -73,9 +74,13 @@ internal static class Composition {
 
         IMethodSymbol[] preferred = qualifying.Where(method => method.Name == Recognised[0]).ToArray();
 
-        // Create wins where several qualify; where several still remain, the caller reports all of them and
-        // leaves the parameter open rather than picking one on the developer's behalf.
-        return preferred.Length == 1 ? preferred : qualifying;
+        // `Create` wins whenever there is one at all — the preference is a rule, so a name ranked below it
+        // is not part of a tie it could not settle. Where several `Create` overloads remain, those are the
+        // tie, and the caller refuses the target naming them rather than picking one on the developer's
+        // behalf (§5.1.2). Returning every qualifying name there was invisible while the caller only asked
+        // whether the set held exactly one; it stopped being invisible when the set became what the refusal
+        // prints.
+        return preferred.Length > 0 ? preferred : qualifying;
     }
 
     private static bool Qualifies(INamedTypeSymbol? candidate, INamedTypeSymbol type) {

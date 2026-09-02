@@ -21,11 +21,13 @@ public sealed class ScaffoldedParameter {
     private ScaffoldedParameter(string name,
                                 string typeDisplay,
                                 string? expression,
-                                Provenance provenance) {
-        Name        = name;
-        TypeDisplay = typeDisplay;
-        Expression  = expression;
-        Provenance  = provenance;
+                                Provenance provenance,
+                                IReadOnlyList<string> ambiguousGeneratorCandidates) {
+        Name                         = name;
+        TypeDisplay                  = typeDisplay;
+        Expression                   = expression;
+        Provenance                   = provenance;
+        AmbiguousGeneratorCandidates = ambiguousGeneratorCandidates;
     }
 
     /// <summary>The parameter's name, exactly as the constructor declares it.</summary>
@@ -46,6 +48,12 @@ public sealed class ScaffoldedParameter {
     ///     and "guessed".
     /// </remarks>
     public Provenance Provenance { get; }
+
+    /// <summary>
+    ///     The full names of every generator composition (§5.4) found equally usable for this parameter's type,
+    ///     when it would not choose between them. Empty otherwise, including for every other open parameter.
+    /// </summary>
+    public IReadOnlyList<string> AmbiguousGeneratorCandidates { get; }
 
     /// <summary>Whether the emitted file will carry a TODO for this parameter.</summary>
     [SuppressMessage(SonarRule.S1135.Category, SonarRule.S1135.Id, Justification = SuppressionJustification.S1135.DocumentsTheMarkerTheToolEmits)]
@@ -168,7 +176,8 @@ public sealed class ScaffoldedParameter {
         return new ScaffoldedParameter(Checked(name, nameof(name)),
                                        Checked(typeDisplay, nameof(typeDisplay)),
                                        expression,
-                                       provenance);
+                                       provenance,
+                                       ambiguousGeneratorCandidates: []);
     }
 
     /// <summary>A parameter the engine inferred no generator for (§5.5).</summary>
@@ -176,11 +185,13 @@ public sealed class ScaffoldedParameter {
     /// <exception cref="ArgumentException"><paramref name="name" /> or <paramref name="typeDisplay" /> is blank.</exception>
     public static ScaffoldedParameter Unresolved(string name,
                                                  string typeDisplay,
-                                                 Provenance provenance = Provenance.None) {
+                                                 Provenance provenance = Provenance.None,
+                                                 IReadOnlyList<string>? ambiguousGeneratorCandidates = null) {
         return new ScaffoldedParameter(Checked(name, nameof(name)),
                                        Checked(typeDisplay, nameof(typeDisplay)),
                                        expression: null,
-                                       provenance);
+                                       provenance,
+                                       ambiguousGeneratorCandidates ?? []);
     }
 
     private static string Checked(string value, string parameterName) {

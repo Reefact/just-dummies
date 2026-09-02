@@ -22,13 +22,18 @@ internal static class Composition {
     private static readonly string[] Recognised = ["Create", "From", "Of", "Parse"];
 
     /// <summary>
-    ///     The generator already scaffolded for <paramref name="type" />, if the compilation has one.
+    ///     Every type named <c>Any{T}</c> the compilation carries for <paramref name="type" />, split into what
+    ///     the engine may use and what it may not.
     /// </summary>
     /// <remarks>
     ///     A scaffolded generator <b>wins</b> over a factory: it is the developer's own answer to the question,
     ///     and it is how aggregates compose in cascade — scaffold <c>Customer</c>, re-run <c>--force</c> on
     ///     <c>Order</c>, and the open parameter closes. It works whether that type was scaffolded earlier or
-    ///     written by hand.
+    ///     written by hand — but only for a type that could actually serve as one: public, instantiable through
+    ///     a public parameterless constructor, and an <c>IAny&lt;T&gt;</c> for this exact <c>T</c>. A same-named
+    ///     type that fails one of those tests is not a candidate (<see cref="Qualifies" />), and treating it as
+    ///     one anyway would collide with a real declaration and blame the wrong file when the developer's build
+    ///     fails.
     ///     <para>
     ///         Looked up in the type's own namespace first, because that is where ADR-0062 puts it, then among
     ///         the compilation's source types. Not by walking every referenced assembly: a generator a
@@ -36,18 +41,24 @@ internal static class Composition {
     ///         every parameter of every run.
     ///     </para>
     /// </remarks>
-    internal static INamedTypeSymbol? ScaffoldedFor(INamedTypeSymbol type, Compilation compilation, NamingOptions naming) {
-        string     name      = TypeNaming.GeneratorNameFor(type, naming);
-        string     @namespace = type.ContainingNamespace?.ToDisplayString() ?? string.Empty;
-        string     qualified = @namespace.Length == 0 ? name : @namespace + "." + name;
+    internal static GeneratorCandidates CandidatesFor(INamedTypeSymbol type, Compilation compilation, NamingOptions naming) {
+        string @namespace = type.ContainingNamespace?.ToDisplayString() ?? string.Empty;
+        string name       = TypeNaming.GeneratorNameFor(type, naming);
+        string qualified  = @namespace.Length == 0 ? name : @namespace + "." + name;
 
         INamedTypeSymbol? beside = compilation.GetTypeByMetadataName(qualified);
 
-        if (Qualifies(beside, type)) { return beside; }
+        List<INamedTypeSymbol> named = beside is null ? [] : [beside];
 
-        return compilation.GetSymbolsWithName(candidate => candidate == name, SymbolFilter.Type)
-                          .OfType<INamedTypeSymbol>()
-                          .FirstOrDefault(candidate => Qualifies(candidate, type));
+        named.AddRange(compilation.GetSymbolsWithName(candidate => candidate == name, SymbolFilter.Type)
+                                  .OfType<INamedTypeSymbol>()
+                                  .Where(candidate => !SymbolEqualityComparer.Default.Equals(candidate, beside)));
+
+        INamedTypeSymbol[] qualifying = [.. named.Where(candidate => Qualifies(candidate, type))];
+
+        return new GeneratorCandidates(qualifying.Length == 1 ? qualifying[0] : null,
+                                       qualifying.Length > 1 ? qualifying : [],
+                                       named.Count > 0);
     }
 
     /// <summary>

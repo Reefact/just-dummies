@@ -22,13 +22,15 @@ internal sealed class DrawnGenerator {
                            string suffix,
                            IReadOnlyList<GuardConstraint> seeded,
                            IReadOnlyList<GuardConstraint> tightening,
-                           Provenance provenance) {
-        Core       = core;
-        Builder    = builder;
-        Suffix     = suffix;
-        Seeded     = seeded;
-        Tightening = tightening;
-        Provenance = provenance;
+                           Provenance provenance,
+                           IReadOnlyList<string> ambiguousGenerators) {
+        Core                = core;
+        Builder             = builder;
+        Suffix              = suffix;
+        Seeded              = seeded;
+        Tightening          = tightening;
+        Provenance          = provenance;
+        AmbiguousGenerators = ambiguousGenerators;
     }
 
     /// <summary>The expression before any constraint — <c>Any.Int32()</c>.</summary>
@@ -67,6 +69,12 @@ internal sealed class DrawnGenerator {
     /// <summary>Where this came from, as the recap will report it.</summary>
     internal Provenance Provenance { get; }
 
+    /// <summary>
+    ///     The full names of every generator that named the parameter's type equally well, when composition
+    ///     (§5.4) found more than one and would not choose between them. Empty otherwise.
+    /// </summary>
+    internal IReadOnlyList<string> AmbiguousGenerators { get; }
+
     /// <summary>Whether the table had an answer at all.</summary>
     internal bool Resolved => Core is not null;
 
@@ -75,12 +83,22 @@ internal sealed class DrawnGenerator {
                                         IReadOnlyList<GuardConstraint>? seeded = null,
                                         string suffix = "",
                                         Provenance provenance = Provenance.None) {
-        return new DrawnGenerator(core, builder, suffix, seeded ?? [], tightening: [], provenance);
+        return new DrawnGenerator(core, builder, suffix, seeded ?? [], tightening: [], provenance, ambiguousGenerators: []);
     }
 
     /// <summary>No row matched, and <paramref name="why" /> says what the recap should report.</summary>
     internal static DrawnGenerator Unresolved(Provenance why = Provenance.None) {
-        return new DrawnGenerator(core: null, builder: null, suffix: string.Empty, seeded: [], tightening: [], why);
+        return new DrawnGenerator(core: null, builder: null, suffix: string.Empty, seeded: [], tightening: [], why,
+                                  ambiguousGenerators: []);
+    }
+
+    /// <summary>
+    ///     No row matched because several generators named <paramref name="candidates" /> would each have
+    ///     served — and none of them was the tool's to pick (§5.4).
+    /// </summary>
+    internal static DrawnGenerator Ambiguous(IReadOnlyList<string> candidates) {
+        return new DrawnGenerator(core: null, builder: null, suffix: string.Empty, seeded: [], tightening: [],
+                                  Provenance.None, candidates);
     }
 
     /// <summary>The same expression with one more hop after its constraints.</summary>
@@ -89,7 +107,7 @@ internal sealed class DrawnGenerator {
 
         if (more is not null) { tightening.AddRange(more); }
 
-        return new DrawnGenerator(Core, Builder, Suffix + suffix, Seeded, tightening, Provenance | added);
+        return new DrawnGenerator(Core, Builder, Suffix + suffix, Seeded, tightening, Provenance | added, AmbiguousGenerators);
     }
 
 }

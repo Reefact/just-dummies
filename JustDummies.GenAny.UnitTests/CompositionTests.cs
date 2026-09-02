@@ -171,6 +171,125 @@ public sealed class CompositionTests {
         Check.That(parameter.Provenance.HasFlag(Provenance.GuardsNotCombined)).IsFalse();
     }
 
+    /// <summary>
+    ///     The four ways a same-named type fails to be a usable <c>AnyX</c> — static, not <c>IAny&lt;T&gt;</c>,
+    ///     abstract, and missing a public parameterless constructor — and the nominal case that must keep
+    ///     working: a single <c>AnyX : IAny&lt;X&gt;</c> that qualifies on every count.
+    /// </summary>
+    /// <remarks>
+    ///     Every disqualified row is treated as though nothing named <c>AnyEmail</c> existed at all: composed
+    ///     as an open parameter, never as <c>new AnyEmail()</c> — which would collide with the very declaration
+    ///     that failed to qualify and send the developer chasing a compiler error at the wrong culprit.
+    /// </remarks>
+    [Theory(DisplayName = "A same-named type that is not usable as a generator is not a candidate.")]
+    [InlineData("public static class AnyEmail { public static Email Generate() { return new Email(); } }")]
+    [InlineData("public sealed class AnyEmail { public Email Generate() { return new Email(); } }")]
+    [InlineData("public abstract class AnyEmail : IAny<Email> { public Email Generate() { return new Email(); } }")]
+    [InlineData("public sealed class AnyEmail : IAny<Email> { public AnyEmail(int seed) { } public Email Generate() { return new Email(); } }")]
+    public void ASameNamedTypeThatIsNotUsableIsNotACandidate(string anyEmail) {
+        ScaffoldedParameter parameter = Composed($$"""
+                                                  public sealed class Email { public Email() { } }
+
+                                                  {{anyEmail}}
+                                                  """,
+                                                  "Email");
+
+        Check.That(parameter.IsUnresolved).IsTrue();
+        Check.That(parameter.Provenance.HasFlag(Provenance.Scaffolded)).IsFalse();
+        Check.That(parameter.AmbiguousGeneratorCandidates).IsEmpty();
+    }
+
+    /// <summary>
+    ///     The nominal case a disqualified same-named type must never be confused with: exactly one usable
+    ///     generator, reached from another namespace, whose namespace the emitted file therefore has to open.
+    /// </summary>
+    [Fact(DisplayName = "A single usable generator in another namespace is used, and its namespace is opened.")]
+    public void ASingleUsableGeneratorInAnotherNamespaceIsUsedAndItsNamespaceIsOpened() {
+        ScaffoldOutcome outcome = Subject.Scaffold("""
+                                                   namespace Shop.Domain {
+
+                                                       public sealed class Email { public Email() { } }
+
+                                                       public sealed class Subject {
+                                                           public Subject(Email value) { }
+                                                       }
+
+                                                   }
+
+                                                   namespace Shop.Generators {
+
+                                                       using JustDummies;
+                                                       using Shop.Domain;
+
+                                                       public sealed class AnyEmail : IAny<Email> {
+                                                           public Email Generate() { return new Email(); }
+                                                       }
+
+                                                   }
+                                                   """);
+
+        Check.That(outcome.Status).IsEqualTo(ScaffoldStatus.Scaffolded);
+
+        ScaffoldedParameter parameter = outcome.Plan!.Parameters[0];
+
+        Check.That(parameter.Expression).IsEqualTo("new AnyEmail()");
+        Check.That(outcome.File!.SourceText).Contains("using Shop.Generators;");
+    }
+
+    /// <summary>
+    ///     Two usable generators answer to the same name, in two different namespaces: the discipline §5.1.2
+    ///     already holds a tied static factory to — list them, choose neither.
+    /// </summary>
+    [Fact(DisplayName = "Two usable generators in two namespaces are listed, and neither is chosen.")]
+    public void TwoUsableGeneratorsInTwoNamespacesAreListedAndNeitherIsChosen() {
+        ScaffoldOutcome outcome = Subject.Scaffold("""
+                                                   namespace Shop.Domain {
+
+                                                       public sealed class Email { public Email() { } }
+
+                                                       public sealed class Subject {
+                                                           public Subject(Email value) { }
+                                                       }
+
+                                                   }
+
+                                                   namespace Shop.GeneratorsOne {
+
+                                                       using JustDummies;
+                                                       using Shop.Domain;
+
+                                                       public sealed class AnyEmail : IAny<Email> {
+                                                           public Email Generate() { return new Email(); }
+                                                       }
+
+                                                   }
+
+                                                   namespace Shop.GeneratorsTwo {
+
+                                                       using JustDummies;
+                                                       using Shop.Domain;
+
+                                                       public sealed class AnyEmail : IAny<Email> {
+                                                           public Email Generate() { return new Email(); }
+                                                       }
+
+                                                   }
+                                                   """);
+
+        Check.That(outcome.Status).IsEqualTo(ScaffoldStatus.Scaffolded);
+
+        ScaffoldedParameter parameter = outcome.Plan!.Parameters[0];
+
+        Check.That(parameter.IsUnresolved).IsTrue();
+        Check.That(parameter.AmbiguousGeneratorCandidates)
+             .ContainsExactly("Shop.GeneratorsOne.AnyEmail", "Shop.GeneratorsTwo.AnyEmail");
+
+        string sourceText = outcome.File!.SourceText;
+
+        Check.That(sourceText).Contains("Shop.GeneratorsOne.AnyEmail");
+        Check.That(sourceText).Contains("Shop.GeneratorsTwo.AnyEmail");
+    }
+
     /// <summary>Scaffolds a <c>Subject</c> whose single parameter is of <paramref name="parameterType" />.</summary>
     private static ScaffoldedParameter Composed(string declarations, string parameterType) {
         ScaffoldOutcome outcome = Subject.Scaffold($$"""

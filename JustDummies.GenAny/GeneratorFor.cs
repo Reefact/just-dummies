@@ -427,17 +427,32 @@ internal sealed class GeneratorFor {
     private DrawnGenerator Composed(INamedTypeSymbol type, Provenance refusal) {
         if (refusal != Provenance.None) { return DrawnGenerator.Unresolved(refusal); }
 
-        INamedTypeSymbol? scaffolded = Composition.ScaffoldedFor(type, compilation, naming);
+        GeneratorCandidates candidates = Composition.CandidatesFor(type, compilation, naming);
 
-        if (scaffolded is not null) {
+        if (candidates.Unique is { } scaffolded) {
             names.Open(NamespaceOf(scaffolded));
 
             return DrawnGenerator.From($"new {names.Of(scaffolded)}()", scaffolded, provenance: Provenance.Scaffolded);
         }
 
+        // Two or more equally usable generators answer to the same name, and picking one on the developer's
+        // behalf would be exactly the guess §5.1.2 already refuses for a tied static factory. Named here rather
+        // than chosen, in full, so the parameter stays open until the developer settles it themselves.
+        if (candidates.Tied.Count > 1) {
+            return DrawnGenerator.Ambiguous([.. candidates.Tied.Select(candidate => candidate.ToDisplayString())
+                                                            .OrderBy(displayString => displayString, StringComparer.Ordinal)]);
+        }
+
         // A generic type's name drops its arguments, so Repository<Order> and Repository<Line> would both be
         // told to write AnyRepository and neither would be the name to write. §5.5 still answers there.
         if (type.IsGenericType) { return DrawnGenerator.Unresolved(); }
+
+        // A type already answers to this exact name and is not usable as a generator — static, abstract,
+        // missing the interface, or missing the public parameterless constructor. Naming it anyway, as though
+        // nothing were there yet, would collide with that declaration and send the developer chasing a CS0712
+        // or similar under a recap that still claims AnyX inferred it. Left open instead, exactly as a type
+        // with no candidate under any name would be.
+        if (candidates.AnyNamed) { return DrawnGenerator.Unresolved(); }
 
         // Named anyway, and deliberately unresolvable: the developer's own build reports it at this line, in the
         // IDE and in CI, the minute the file is written. No builder goes with it, so nothing is chained onto a

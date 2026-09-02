@@ -8,6 +8,24 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ## [Unreleased]
 
+### Fixed
+
+- **A type that merely shares an `AnyX` name is no longer proposed as its generator.** §5.4 composes
+  through `new AnyOrderReference()` whenever the compilation carries a type named that way — and used
+  to reach for it whether or not the type could actually serve: a `static class`, one that does not
+  implement `IAny<T>`, an `abstract` one, or one with no public parameterless constructor all read as a
+  hit. `dum` then wrote the same call it writes for a type that scaffolds cleanly, and the developer's
+  build failed on whatever the real shape happened to produce — `CS0712` for a static class, a missing
+  interface member for another — under a recap that still said `AnyX`, and often with no `using` at all,
+  since the sentinel this used to fall through to opens the *target* type's namespace, not the disqualified
+  candidate's. A same-named type that fails any of the four checks is no longer a candidate: the parameter
+  is left open instead, exactly as if nothing answered to that name.
+
+- **Two equally usable `AnyX` types no longer have one of them picked silently.** Where two or more types
+  named after the parameter's type each qualify as its generator, `dum` now lists every one of them under
+  the parameter's own `TODO` rather than choosing — the same discipline §5.1.2 already holds a tied static
+  factory to. Which one is meant is the author's call.
+
 ## [1.1.0-beta.4] - 2026-09-02
 
 ### Fixed

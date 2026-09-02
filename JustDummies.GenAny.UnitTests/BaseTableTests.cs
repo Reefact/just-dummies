@@ -118,6 +118,39 @@ public sealed class BaseTableTests {
         Check.That(outcome.Plan!.Parameters.Single().Expression).IsEqualTo("Any.Int32().As(value => (int?)value)");
     }
 
+    /// <summary>
+    ///     A member of the right name and arity, and of the wrong shape, is not the lift.
+    /// </summary>
+    /// <remarks>
+    ///     The version-skew invariant read the other way round. The row asks the compilation whether
+    ///     <c>AsNullable</c> resolves <b>for an <c>IAny&lt;T&gt;</c></b>, and a check reading only the name, the
+    ///     visibility and the parameter count would answer yes to anything that happened to be spelled that way —
+    ///     then emit a call the developer's own build rejects. ADR-0059 is not "a member of that name exists"; it
+    ///     is "this expression resolves here".
+    ///     <para>
+    ///         The decoy below is deliberately plausible rather than absurd: static, public, one parameter, an
+    ///         extension method, the exact name. Only its receiver is wrong.
+    ///     </para>
+    /// </remarks>
+    [Fact(DisplayName = "A member named AsNullable that does not take an IAny is not the lift.")]
+    public void AMemberOfTheRightNameAndTheWrongShapeIsNotTheLift() {
+        ScaffoldOutcome outcome = Subject.Scaffold($$"""
+                                                   {{StubbedLibrary}}
+
+                                                   {{DecoyLift}}
+
+                                                   namespace Shop.Domain {
+                                                       public sealed class Subject {
+                                                           public Subject(int? value) { }
+                                                       }
+                                                   }
+                                                   """,
+                                                   withLibrary: false);
+
+        Check.That(outcome.Status).IsEqualTo(ScaffoldStatus.Scaffolded);
+        Check.That(outcome.Plan!.Parameters.Single().Expression).IsEqualTo("Any.Int32().As(value => (int?)value)");
+    }
+
     /// <summary>Just enough of the library for §5.2 to answer: the façade, the recipe, and the general hop.</summary>
     private const string StubbedLibrary = """
                                           namespace JustDummies {
@@ -139,6 +172,17 @@ public sealed class BaseTableTests {
 
                                           }
                                           """;
+
+    /// <summary>An <c>AsNullable</c> the emitted call could not bind to, in the place the real one lives.</summary>
+    private const string DecoyLift = """
+                                     namespace JustDummies {
+
+                                         public static class NullableExtensions {
+                                             public static string AsNullable(this string value) { return value; }
+                                         }
+
+                                     }
+                                     """;
 
     /// <summary>
     ///     An element the outer type will not convert on its own carries the conversion; one it will, does not.

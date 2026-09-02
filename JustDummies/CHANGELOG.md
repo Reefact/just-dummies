@@ -214,14 +214,6 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   generator held under a name, and there that is soundness rather than scope: a generator is an immutable recipe, so
   a named intermediate still draws and its bound is not dead.
 
-### Changed
-
-- **JD024 no longer reports a bound already implied by a bound of the same name** — that shape is JD032's now, in
-  both writing orders and in every generator family, so one mistake draws one diagnostic. JD024 keeps what its
-  message describes: an inert `Except`/`DifferentFrom`, a bound implied by a *different* one such as `Positive()`
-  after `GreaterThan(5)`, and a range declared twice to no effect. Its pages state the boundary.
-
-### Added
 
 - **JD031 — *Two inclusive bounds the library also names as one range*** (category `JustDummies.Constraints`,
   🔵 Info, on by default). A chain that declares both inclusive bounds separately — `WithMinLength(8).WithMaxLength(20)`,
@@ -239,6 +231,12 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   therefore move every later value on a seeded run.
 
 ### Changed
+
+- **JD024 no longer reports a bound already implied by a bound of the same name** — that shape is JD032's now, in
+  both writing orders and in every generator family, so one mistake draws one diagnostic. JD024 keeps what its
+  message describes: an inert `Except`/`DifferentFrom`, a bound implied by a *different* one such as `Positive()`
+  after `GreaterThan(5)`, and a range declared twice to no effect. Its pages state the boundary.
+
 
 - **A character constraint now governs what is drawn, not the literals you wrote.** `Alpha()`, `Numeric()`,
   `AlphaNumeric()`, `Punctuation()`, `Printable()`, `NonPrintable()`, `Whitespaces()`, `Hexadecimal()`,

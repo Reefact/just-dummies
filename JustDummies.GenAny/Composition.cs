@@ -7,8 +7,9 @@ using Microsoft.CodeAnalysis;
 namespace JustDummies.GenAny;
 
 /// <summary>
-///     How a type the base table has no row for is still drawn: through a generator already scaffolded for it,
-///     or through its own static factory (§5.4).
+///     Two conventions read by name rather than declared: the generator a type owns, through which a parameter
+///     the base table has no row for is drawn (§5.4), and the static factory a type is built through where it
+///     declares no constructor to call (§5.1.2).
 /// </summary>
 /// <remarks>
 ///     Convention, not attribute and not configuration. An attribute would mean touching the developer's
@@ -55,7 +56,8 @@ internal static class Composition {
     /// <remarks>
     ///     A method qualifies when it is <c>public static</c>, returns the type, takes exactly one parameter,
     ///     and is named <c>Create</c>, <c>From</c>, <c>Of</c> or <c>Parse</c>. <c>Create</c> wins where several
-    ///     do; where several still remain the parameter is left unresolved rather than guessed at.
+    ///     do; where several still remain the parameter is left unresolved rather than guessed at. §5.1.2
+    ///     states that rule — §5.4 carried it until ADR-0089 moved composition off it.
     /// </remarks>
     internal static IReadOnlyList<IMethodSymbol> FactoriesFor(INamedTypeSymbol type) {
         IMethodSymbol[] qualifying = type.GetMembers()

@@ -496,8 +496,13 @@ marks the parameter unresolved.
 
 1. Public instance constructors, most parameters first; ties broken by source order. The chosen
    signature is always printed (§6).
-2. If the type has **no** accessible constructor but exposes a recognised static factory (§5.4)
-   returning itself, that factory is used instead and `Generate()` calls it.
+2. If the type has **no** accessible constructor but exposes a **recognised static factory**
+   returning itself, that factory is used instead and `Generate()` calls it. Recognised is a
+   closed rule: `public static`, returning the type, taking **exactly one** parameter, and named
+   `Create`, `From`, `Of` or `Parse`. `Create` wins where several qualify; where several still
+   remain the type is refused (§7) with all of them named, because which one states the type's
+   shape is the author's answer and not the tool's. §5.4 carried this rule until ADR-0089 moved
+   composition off it, and §5.1 is now the only one that asks — so it is stated here.
 3. A parameterless constructor yields a valid, trivial `AnyOrder` with no `With` methods.
 4. Positional records work with no special handling — their primary constructor is an ordinary
    public constructor. `init` and `required` members are **out of scope** (§16) — and out of scope
@@ -1232,8 +1237,8 @@ The provenance words are the recap's own (§6), read from one table rather than 
 | No project / several projects found | `1` | Candidates listed, `--project` suggested. |
 | Project fails to load or restore | `1` | The MSBuild diagnostic, verbatim. |
 | The project does not reference JustDummies | `1` | Nothing can be resolved (D4); says so and suggests the package. |
-| Nothing constructs the target (§5.1) | `1` | Names what `Generate()` needs: a public instance constructor passing every parameter by value. |
-| The target is abstract | `1` | It has constructors and cannot be instantiated; suggests a concrete type that derives from it. |
+| Nothing constructs the target (§5.1) | `1` | Names both doors §5.1 opens: a public instance constructor passing every parameter by value, or one recognised static factory. Where several factories tie, they are listed instead. |
+| The target is abstract | `1` | Refused whether or not it declares a constructor of its own — the ordinary abstract type declares `protected` ones and would otherwise hear the row above, whose remedy is the wrong one. A recognised factory reaching it is the exception: `CS0144` is about `new`. Suggests a concrete type that derives from it. |
 | The target is generic, or nested in a generic type | `1` | Nothing supplies the type argument, so the emitted file could not name it. |
 | The target's `required` members are unset by the chosen constructor | `1` | Deferred to §16; names `[SetsRequiredMembers]`, which is scaffolded like any other constructor. |
 | `--entry-point any`, project below C# 14 | `1` | Names the version the project resolved, and `static:<Name>`. |

@@ -12,6 +12,8 @@ retired, a category changed — which is not when the library or the adapter mov
 
 ## [Unreleased]
 
+## [1.0.0-preview.5] - 2026-09-02
+
 ### Changed
 
 - **JustDummies.DiagnosticCatalog is licensed under [PolyForm Internal Use 1.0.0](../LICENSE), not
@@ -84,7 +86,8 @@ there is no `CatalogSource` attribute here: nothing upstream is being snapshotte
 a consumer's assembly at their compile time; removing one breaks their build with a message that names
 nothing they wrote. A rule retired from the product is carried forward as `[Obsolete]` instead.
 
-[Unreleased]: https://github.com/Reefact/just-dummies/compare/catalog-v1.0.0-preview.4...HEAD
+[Unreleased]: https://github.com/Reefact/just-dummies/compare/catalog-v1.0.0-preview.5...HEAD
+[1.0.0-preview.5]: https://github.com/Reefact/just-dummies/compare/catalog-v1.0.0-preview.4...catalog-v1.0.0-preview.5
 [1.0.0-preview.4]: https://github.com/Reefact/just-dummies/compare/catalog-v1.0.0-preview.3...catalog-v1.0.0-preview.4
 [1.0.0-preview.3]: https://github.com/Reefact/just-dummies/compare/catalog-v1.0.0-preview.2...catalog-v1.0.0-preview.3
 [1.0.0-preview.2]: https://github.com/Reefact/just-dummies/releases/tag/catalog-v1.0.0-preview.2

@@ -2,6 +2,14 @@
 
 What changed for you, release by release, in the `xunit` train. For the full technical record — every constraint, every edge case, every ADR — see [CHANGELOG.md](https://github.com/Reefact/just-dummies/blob/main/JustDummies.Xunit/CHANGELOG.md).
 
+## 1.0.0-preview.2 — September 2, 2026
+
+_A license change every consumer should read._
+
+### ⚠️ Breaking changes
+
+- **JustDummies.Xunit is now licensed under [PolyForm Internal Use 1.0.0](https://github.com/Reefact/just-dummies/blob/main/LICENSE), not Apache 2.0 — source-available, not open source.** You may read, build, modify and run the adapter for your own or your company's internal business operations; you may not distribute the software. Versions already published on NuGet are untouched and keep the license they shipped with. Contributions are now governed by a [Contributor Agreement](https://github.com/Reefact/just-dummies/blob/main/CONTRIBUTOR_AGREEMENT.md).
+
 ## 1.0.0-preview.1 — August 7, 2026
 
 _First published version — the xUnit v3 adapter reaches nuget.org for the first time, at the library's own number rather than at `0.1.0`: this is the adapter offered for JustDummies 1.0, not an earlier sketch of one._

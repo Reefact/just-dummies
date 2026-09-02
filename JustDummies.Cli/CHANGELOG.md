@@ -10,6 +10,22 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Fixed
 
+- **A type refused for being abstract or generic now says so, instead of being reported as having no
+  constructor.** `dum` decided *nothing constructs it* before asking what the type was, and an abstract
+  class declares its constructors `protected` — so the ordinary abstract type heard *"`Generate()` needs a
+  public instance constructor"*, whose remedy is the one change that would not help: adding a public
+  constructor to an abstract type still leaves nothing to instantiate. Same for a generic type with no
+  eligible constructor. Measured over seven repositories, **12 of 55 such refusals were really one of those
+  two**, and now report `TypeIsAbstract` or `TypeIsGeneric`. An abstract type reached through a recognised
+  static factory is still scaffolded through it — `CS0144` is about `new`, which a factory call site never
+  writes. No exit code moves: §7 gives every one of these refusals `1`.
+
+- **The same refusal now names the static-factory route, not only the constructor.** §5.1 opens two doors
+  and the sentence named one, so the author of a validating value object — a private constructor behind a
+  public `Create`, the design that rule exists to serve — was advised to add the very constructor their
+  type withholds. Where several factories qualify and `Create` does not break the tie, both are now listed
+  under a refusal that says it will not pick between them.
+
 - **A guard written in a project on another target framework is read again.** A type reached through
   a project reference — which is where the type a developer scaffolds normally is, `dum` being run
   from the test project — had its constructor's guards silently ignored whenever the two projects did

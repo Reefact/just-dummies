@@ -110,6 +110,70 @@ public sealed class ConstructorChoiceTests {
         Check.That(outcome.File).IsNull();
     }
 
+    /// <summary>
+    ///     The same three questions, asked of a type that declares no public constructor at all.
+    /// </summary>
+    /// <remarks>
+    ///     Which is the ordinary shape of an abstract type — its constructors are <c>protected</c> — and one
+    ///     of the two commonest shapes of a generic one. The theory above only ever reached
+    ///     <c>TypeIsAbstract</c> and <c>TypeIsGeneric</c> through a public constructor, so §5.1.6's refusals
+    ///     sat behind a question §5.1.1 answers first, and every such type heard "Generate() needs a public
+    ///     instance constructor" instead. The remedy that answer sends the developer to is the wrong one:
+    ///     adding a public constructor to an abstract type changes nothing about instantiating it. Measured
+    ///     over seven repositories, 12 of 55 <c>NoEligibleConstructor</c> refusals were really one of these
+    ///     two (<c>audit/2026-09-02-dum-first-field-measurement.md</c>).
+    /// </remarks>
+    [Theory(DisplayName = "A type refused for what it is says so, even when it also has no constructor to choose.")]
+    [InlineData("public abstract class Subject { protected Subject(int one) { } }",
+                "Shop.Domain.Subject",
+                ScaffoldStatus.TypeIsAbstract)]
+    [InlineData("public abstract class Subject { }",
+                "Shop.Domain.Subject",
+                ScaffoldStatus.TypeIsAbstract)]
+    [InlineData("public sealed class Subject<TPayload> { private Subject(int one) { } }",
+                "Shop.Domain.Subject`1",
+                ScaffoldStatus.TypeIsGeneric)]
+    public void ATypeRefusedForWhatItIsSaysSoWithoutAConstructorToChoose(string declaration,
+                                                                         string metadataName,
+                                                                         ScaffoldStatus expected) {
+        ScaffoldOutcome outcome = Subject.Scaffold(declaration, metadataName: metadataName);
+
+        Check.That(outcome.Status).IsEqualTo(expected);
+        Check.That(outcome.File).IsNull();
+    }
+
+    /// <summary>
+    ///     And an abstract type reached through a factory is still scaffolded, which is why the abstract
+    ///     refusal asks about the factory rather than about the constructor.
+    /// </summary>
+    /// <remarks>
+    ///     <c>CS0144</c> is about <c>new</c>, and a factory call site never writes one: <c>T.Create(…)</c>
+    ///     compiles and returns whatever concrete type the author decided on. Refusing here would take a
+    ///     working generator away from the one design — a private constructor behind a public factory —
+    ///     that §5.1.2 exists to serve.
+    /// </remarks>
+    [Fact(DisplayName = "An abstract type behind a recognised factory scaffolds through it.")]
+    public void AnAbstractTypeBehindARecognisedFactoryScaffolds() {
+        ScaffoldOutcome outcome = Subject.Scaffold("""
+                                                   public abstract class Subject {
+
+                                                       protected Subject(string name) { }
+
+                                                       public static Subject Create(string name) {
+                                                           return new Concrete(name);
+                                                       }
+
+                                                   }
+
+                                                   public sealed class Concrete : Subject {
+                                                       public Concrete(string name) : base(name) { }
+                                                   }
+                                                   """);
+
+        Check.That(outcome.Status).IsEqualTo(ScaffoldStatus.Scaffolded);
+        Check.That(outcome.Plan!.Factory).IsEqualTo("Subject.Create");
+    }
+
     /// <summary>A required member the constructor does set is not a refusal — the bar is the call site.</summary>
     [Fact(DisplayName = "A constructor marked SetsRequiredMembers scaffolds despite the required member.")]
     public void AConstructorMarkedSetsRequiredMembersScaffolds() {
@@ -473,10 +537,11 @@ public sealed class ConstructorChoiceTests {
     }
 
     /// <summary>
-    ///     §5.4's tie rule, applied to the target itself: <c>Create</c> wins, and where several still remain
-    ///     nothing is picked on the developer's behalf.
+    ///     §5.1.2's tie rule: <c>Create</c> wins, and where several still remain nothing is picked on the
+    ///     developer's behalf — but the refusal carries the ones that tied, so it can say what it was
+    ///     between.
     /// </summary>
-    [Fact(DisplayName = "Two factories neither named Create refuse rather than guess.")]
+    [Fact(DisplayName = "Two factories neither named Create refuse rather than guess, and name both.")]
     public void TwoFactoriesNeitherNamedCreateRefuse() {
         ScaffoldOutcome outcome = Subject.Scaffold("""
                                                    public sealed class Subject {
@@ -487,6 +552,16 @@ public sealed class ConstructorChoiceTests {
                                                    """);
 
         Check.That(outcome.Status).IsEqualTo(ScaffoldStatus.NoEligibleConstructor);
+        Check.That(outcome.Candidates).ContainsExactly("Shop.Domain.Subject.From(string)", "Shop.Domain.Subject.Parse(string)");
+    }
+
+    /// <summary>A type with nothing to call at all carries no candidate, so the sentence stays the short one.</summary>
+    [Fact(DisplayName = "A type with no factory at all is refused with nothing to list.")]
+    public void ATypeWithNoFactoryAtAllIsRefusedWithNothingToList() {
+        ScaffoldOutcome outcome = Subject.Scaffold("public sealed class Subject { private Subject(int one) { } }");
+
+        Check.That(outcome.Status).IsEqualTo(ScaffoldStatus.NoEligibleConstructor);
+        Check.That(outcome.Candidates).IsEmpty();
     }
 
     /// <summary>

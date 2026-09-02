@@ -69,6 +69,32 @@ public sealed class RefusalsTests : IDisposable {
         Check.That(said).Contains("in full");
     }
 
+    /// <summary>
+    ///     §5.1 opens two doors, and the sentence names both.
+    /// </summary>
+    /// <remarks>
+    ///     Naming only the constructor tells the author of a validating value object to add the one thing
+    ///     their design exists to withhold. The factory is the door their type already uses.
+    /// </remarks>
+    [Fact(DisplayName = "A type nothing constructs is answered with the factory route as well.")]
+    public void ATypeNothingConstructsIsAnsweredWithTheFactoryRouteToo() {
+        string said = Rendered(ScaffoldOutcome.Refused(ScaffoldStatus.NoEligibleConstructor));
+
+        Check.That(said).Contains("public instance constructor");
+        Check.That(said).Contains("Create/From/Of/Parse");
+    }
+
+    // Two names and no pick: §5.1.2 leaves the choice with the developer, so the sentence stops at saying
+    // which two it was between.
+    [Fact(DisplayName = "Several qualifying factories are named, under the refusal that will not pick.")]
+    public void SeveralQualifyingFactoriesAreNamed() {
+        string said = Rendered(ScaffoldOutcome.Refused(ScaffoldStatus.NoEligibleConstructor,
+                                                       ["Shop.Sales.Order.From(string)", "Shop.Sales.Order.Parse(string)"]));
+
+        Check.That(said).Contains("  Shop.Sales.Order.From(string)\n  Shop.Sales.Order.Parse(string)\n");
+        Check.That(said).Contains("does not pick");
+    }
+
     // Nothing can be resolved without the package (ADR-0059), so the answer is the one command that changes
     // it.
     [Fact(DisplayName = "A project without the library is answered with the package to add.")]

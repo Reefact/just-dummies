@@ -117,7 +117,7 @@ internal static class Refusals {
             ScaffoldStatus.TypeNotFound          => NotFound(typeArgument, outcome.Candidates),
             ScaffoldStatus.TypeAmbiguous         => Ambiguous(typeArgument, outcome.Candidates),
             ScaffoldStatus.LibraryNotReferenced  => NotReferenced(typeArgument),
-            ScaffoldStatus.NoEligibleConstructor => NotConstructible(typeArgument),
+            ScaffoldStatus.NoEligibleConstructor => NotConstructible(typeArgument, outcome.Candidates),
             ScaffoldStatus.TypeIsAbstract        => Abstract(typeArgument),
             ScaffoldStatus.TypeIsGeneric         => Generic(typeArgument),
             ScaffoldStatus.RequiredMembersUnset  => RequiredMembers(typeArgument),
@@ -171,10 +171,31 @@ internal static class Refusals {
     ///     Nothing the emitted <c>Generate()</c> could call — which is a fact about the type, and one only its
     ///     author can change (§5.1).
     /// </summary>
-    private static IReadOnlyList<string> NotConstructible(string typeArgument) {
+    /// <remarks>
+    ///     §5.1 opens two doors and this sentence used to name one. The author of a validating value object —
+    ///     a private constructor behind a public <c>Create</c>, which is the design §5.1.2 exists to serve —
+    ///     was told to add a public constructor, the one change that would undo their own invariant. Naming
+    ///     the factory costs a clause and answers the case the tool is most likely to meet.
+    ///     <para>
+    ///         Where several factories tie, they are the answer: the developer reads two names and knows why
+    ///         nothing was picked. §5.1.2 leaves the choice with them on purpose, so the sentence stops at
+    ///         saying which two it was between.
+    ///     </para>
+    /// </remarks>
+    private static IReadOnlyList<string> NotConstructible(string typeArgument, IReadOnlyList<string> factories) {
+        if (factories.Count > 1) {
+            List<string> tied = [Mark + $"{typeArgument}: no constructor to call, and several static factories qualify."];
+
+            tied.AddRange(Listed(factories));
+            tied.Add("  dum does not pick between them; leave one, or write the generator by hand.");
+
+            return tied;
+        }
+
         return [
             Mark + $"{typeArgument}: nothing here constructs it.",
-            "  Generate() needs a public instance constructor whose parameters are all passed by value."
+            "  Generate() needs a public instance constructor whose parameters are all passed by value,",
+            "  or one public static Create/From/Of/Parse taking a single argument and returning the type."
         ];
     }
 

@@ -16,9 +16,10 @@ namespace JustDummies.GenAny;
 ///     loadable inside a Roslyn host (ADR-0065), and they are why this returns a model rather than writing a
 ///     file.
 ///     <para>
-///         What it assembles, in order: the constructor §5.1 chooses, the base table's generator for each
-///         parameter (§5.2) — composing through a scaffolded generator or a static factory where one
-///         qualifies (§5.4) — and the constraints §5.3 reads from that constructor's guards. The provenance
+///         What it assembles, in order: the constructor §5.1 chooses — or the static factory §5.1.2
+///         recognises, where the type declares none to call — the base table's generator for each parameter
+///         (§5.2), composing through the generator a type owns where the table has no row (§5.4), and the
+///         constraints §5.3 reads from that constructor's guards. The provenance
 ///         each parameter carries is computed from the constraints actually <b>applied</b>, never from those
 ///         read, which is what §6's recap reports and why a guard the generator has no member for tightens
 ///         nothing however well it was understood.
@@ -83,20 +84,32 @@ public static class Scaffolder {
         IMethodSymbol? constructor = ChosenConstructor(target);
         IMethodSymbol? factory     = constructor is null ? ChosenFactory(target) : null;
 
-        if (constructor is null && factory is null) { return ScaffoldOutcome.Refused(ScaffoldStatus.NoEligibleConstructor); }
-
         // Choosing a construction is not the same question as whether the emitted file can name the type and
         // make that call. Each of these finds a public construction and then fails the developer's own build,
         // so the refusal has to come first — a file nobody can compile, written under a recap that says every
-        // parameter was inferred, is the one outcome §7 has no row for. Only the generic refusal reaches the
-        // factory path: `CS0144` and `CS9035` are both about `new`, which a factory call site never writes.
+        // parameter was inferred, is the one outcome §7 has no row for.
+        //
+        // And it comes before `NoEligibleConstructor` too, which is a fact about §5.1.1's search rather than
+        // about the type: an abstract class declares its constructors `protected`, so the search finds none
+        // and the coarser refusal used to win — sending the developer to add a public constructor, which
+        // changes nothing about instantiating an abstract type. Measured over seven repositories, 12 of 55
+        // such refusals were really one of these two (`audit/2026-09-02-dum-first-field-measurement.md`).
         if (IsGeneric(target)) { return ScaffoldOutcome.Refused(ScaffoldStatus.TypeIsGeneric); }
 
-        if (constructor is not null) {
-            if (target.IsAbstract) { return ScaffoldOutcome.Refused(ScaffoldStatus.TypeIsAbstract); }
-            if (LeavesRequiredMembersUnset(target, constructor)) {
-                return ScaffoldOutcome.Refused(ScaffoldStatus.RequiredMembersUnset);
-            }
+        // Only the generic refusal reaches the factory path: `CS0144` and `CS9035` are both about `new`,
+        // which a factory call site never writes, so an abstract type behind a recognised factory is
+        // scaffolded through it — the very design §5.1.2 exists to serve.
+        if (factory is null && target.IsAbstract) { return ScaffoldOutcome.Refused(ScaffoldStatus.TypeIsAbstract); }
+
+        if (constructor is null && factory is null) {
+            return ScaffoldOutcome.Refused(ScaffoldStatus.NoEligibleConstructor,
+                                           [.. Composition.FactoriesFor(target)
+                                                          .Select(candidate => candidate.ToDisplayString())
+                                                          .OrderBy(name => name, StringComparer.Ordinal)]);
+        }
+
+        if (constructor is not null && LeavesRequiredMembersUnset(target, constructor)) {
+            return ScaffoldOutcome.Refused(ScaffoldStatus.RequiredMembersUnset);
         }
 
         IMethodSymbol chosen = constructor ?? factory!;
@@ -204,8 +217,8 @@ public static class Scaffolder {
     /// </summary>
     /// <remarks>
     ///     The canonical validating value object — a private constructor behind a public <c>Create</c> — is
-    ///     this rule's whole audience, and §5.4's conventions already say what qualifies: public static,
-    ///     returning the type, one parameter, one of the four recognised names, <c>Create</c> winning ties.
+    ///     this rule's whole audience, and §5.1.2 already says what qualifies: public static, returning the
+    ///     type, one parameter, one of the four recognised names, <c>Create</c> winning ties.
     ///     <para>
     ///         Only where <b>no</b> public instance constructor exists, because §5.1 words it that way on
     ///         purpose: a type whose public constructors are all ineligible — a <c>ref</c> parameter, say —

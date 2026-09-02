@@ -69,6 +69,7 @@ paraît arbitraire tant qu'on ignore ce à quoi elle réagissait.
 | | |
 | --- | --- |
 | [Audit d'architecture et de conception](./audit/2026-07-20-dummies-architecture-and-design-audit.fr.md) | une évaluation datée, 2026-07-20 — un instantané, pas une règle |
+| [`dum` — première mesure de terrain](./audit/2026-09-02-dum-first-field-measurement.fr.md) | sept dépôts qui ne sont pas celui-ci, 2026-09-02 — ce que l'outil a fait à du code que personne n'a écrit pour lui |
 | [Relevé d'extraction](./migration/README.fr.md) | comment ce dépôt a été détaché de `Reefact/first-class-errors`, avec la carte des commits |
 
 ## Les conventions en un coup d'œil

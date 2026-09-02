@@ -24,6 +24,8 @@ internal sealed class LibrarySurface {
 
     private readonly Compilation compilation;
 
+    private bool? carriesAs;
+
     private bool? carriesAsNullable;
 
     private LibrarySurface(Compilation compilation, INamedTypeSymbol any, INamedTypeSymbol anyOfT, INamedTypeSymbol extensions) {
@@ -115,18 +117,71 @@ internal sealed class LibrarySurface {
         return carriesAsNullable ??= compilation.GetTypeByMetadataName("JustDummies.NullableExtensions")
                                                 ?.GetMembers("AsNullable")
                                                  .OfType<IMethodSymbol>()
-                                                 .Any(candidate => candidate.IsStatic
-                                                                && candidate.DeclaredAccessibility == Accessibility.Public
-                                                                && candidate.Parameters.Length == 1) == true;
+                                                 .Any(Lifts) == true;
+    }
+
+    /// <summary>Whether the candidate is <c>AsNullable&lt;T&gt;(this IAny&lt;T&gt;) -&gt; IAny&lt;T?&gt;</c>.</summary>
+    private bool Lifts(IMethodSymbol candidate) {
+        return Hop(candidate, typeParameters: 1, parameters: 1)
+            && candidate.TypeParameters[0].HasValueTypeConstraint
+            && Draws(candidate.Parameters[0].Type, candidate.TypeParameters[0])
+            && DrawsTheNullableOf(candidate.ReturnType, candidate.TypeParameters[0]);
     }
 
     /// <summary>Whether <c>As</c> resolves, which the two conversion rows of §5.2 depend on.</summary>
     internal bool CarriesAs() {
-        return Extensions.GetMembers("As")
-                         .OfType<IMethodSymbol>()
-                         .Any(candidate => candidate.IsStatic
-                                        && candidate.DeclaredAccessibility == Accessibility.Public
-                                        && candidate.Parameters.Length == 2);
+        return carriesAs ??= Extensions.GetMembers("As").OfType<IMethodSymbol>().Any(Converts);
+    }
+
+    /// <summary>
+    ///     Whether the candidate is
+    ///     <c>As&lt;TSource, TResult&gt;(this IAny&lt;TSource&gt;, Func&lt;TSource, TResult&gt;) -&gt; IAny&lt;TResult&gt;</c>.
+    /// </summary>
+    private bool Converts(IMethodSymbol candidate) {
+        return Hop(candidate, typeParameters: 2, parameters: 2)
+            && Draws(candidate.Parameters[0].Type, candidate.TypeParameters[0])
+            && Produces(candidate.Parameters[1].Type, candidate.TypeParameters[0], candidate.TypeParameters[1])
+            && Draws(candidate.ReturnType, candidate.TypeParameters[1]);
+    }
+
+    /// <summary>
+    ///     The shape common to both conversion rows: a public static extension of that arity.
+    /// </summary>
+    /// <remarks>
+    ///     <c>IsExtensionMethod</c> is part of it rather than incidental. The emitted expression reads
+    ///     <c>expr.As(…)</c>, not <c>AnyExtensions.As(expr, …)</c>, so a static method of the right name and
+    ///     arity that is not an extension would resolve here and not there.
+    /// </remarks>
+    private static bool Hop(IMethodSymbol candidate, int typeParameters, int parameters) {
+        return candidate.IsStatic
+            && candidate.IsExtensionMethod
+            && candidate.DeclaredAccessibility == Accessibility.Public
+            && candidate.TypeParameters.Length == typeParameters
+            && candidate.Parameters.Length == parameters;
+    }
+
+    /// <summary>Whether <paramref name="type" /> is <c>IAny&lt;<paramref name="argument" />&gt;</c>.</summary>
+    private bool Draws(ITypeSymbol type, ITypeSymbol argument) {
+        return type is INamedTypeSymbol named
+            && SymbolEqualityComparer.Default.Equals(named.OriginalDefinition, AnyOfT)
+            && SymbolEqualityComparer.Default.Equals(named.TypeArguments[0], argument);
+    }
+
+    /// <summary>Whether <paramref name="type" /> is <c>IAny&lt;<paramref name="argument" />?&gt;</c>.</summary>
+    private bool DrawsTheNullableOf(ITypeSymbol type, ITypeSymbol argument) {
+        return type is INamedTypeSymbol named
+            && SymbolEqualityComparer.Default.Equals(named.OriginalDefinition, AnyOfT)
+            && named.TypeArguments[0] is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T } nullable
+            && SymbolEqualityComparer.Default.Equals(nullable.TypeArguments[0], argument);
+    }
+
+    /// <summary>Whether <paramref name="type" /> is <c>Func&lt;TSource, TResult&gt;</c> over those two.</summary>
+    private bool Produces(ITypeSymbol type, ITypeSymbol source, ITypeSymbol result) {
+        return compilation.GetTypeByMetadataName("System.Func`2") is { } func
+            && type is INamedTypeSymbol named
+            && SymbolEqualityComparer.Default.Equals(named.OriginalDefinition, func)
+            && SymbolEqualityComparer.Default.Equals(named.TypeArguments[0], source)
+            && SymbolEqualityComparer.Default.Equals(named.TypeArguments[1], result);
     }
 
 }

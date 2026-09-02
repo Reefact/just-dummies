@@ -43,69 +43,68 @@ public sealed class ExclusionProvenanceTests {
 
     [Fact(DisplayName = "AnyEnum: an exclusion that empties an allow-list is named, and the allow-list is not blamed.")]
     public void EnumExclusionEmptyingAnAllowListIsNamed() {
-        ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.Enum<OrderStatus>()
-                     .OneOf(OrderStatus.Draft, OrderStatus.Validated)
-                     .Except(OrderStatus.Draft, OrderStatus.Validated)
-                     .Generate());
-
-        // "it", not "Except(...)": the culprit IS the constraint being applied, and the sentence already names it
-        // before the "because".
-        Check.That(conflict.Message).Contains("it forbids every value OneOf(");
-        // The defect this pins: the old message read "no value OneOf(...) allows remains available", which named
-        // the victim and left the reader to guess the cause.
-        Check.That(conflict.Message).DoesNotContain("remains available");
+        Check.ThatCode(() => Any.Enum<OrderStatus>()
+                                .OneOf(OrderStatus.Draft, OrderStatus.Validated)
+                                .Except(OrderStatus.Draft, OrderStatus.Validated)
+                                .Generate())
+             .Throws<ConflictingAnyConstraintException>()
+             .WhichMember(conflict => conflict.Message)
+             // "it", not "Except(...)": the culprit IS the constraint being applied, and the sentence already names it
+             // before the "because".
+             .Contains("it forbids every value OneOf(")
+             // The defect this pins: the old message read "no value OneOf(...) allows remains available", which named
+             // the victim and left the reader to guess the cause.
+             .And.DoesNotContain("remains available");
     }
 
     [Fact(DisplayName = "AnyEnum: an earlier exclusion is named when a later constraint completes the exhaustion.")]
     public void EnumEarlierExclusionIsNamed() {
-        ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.Enum<OrderStatus>()
-                     .Except(OrderStatus.Draft, OrderStatus.Validated)
-                     .OneOf(OrderStatus.Draft, OrderStatus.Validated)
-                     .Generate());
-
-        // Here the culprit is NOT the constraint being applied, so it is named in full rather than as "it".
-        Check.That(conflict.Message).Contains("Except(");
-        Check.That(conflict.Message).Contains("forbids every value OneOf(");
+        Check.ThatCode(() => Any.Enum<OrderStatus>()
+                                .Except(OrderStatus.Draft, OrderStatus.Validated)
+                                .OneOf(OrderStatus.Draft, OrderStatus.Validated)
+                                .Generate())
+             .Throws<ConflictingAnyConstraintException>()
+             .WhichMember(conflict => conflict.Message)
+             // Here the culprit is NOT the constraint being applied, so it is named in full rather than as "it".
+             .Contains("Except(")
+             .And.Contains("forbids every value OneOf(");
     }
 
     [Fact(DisplayName = "AnyEnum: two exclusions that both bit are both named, and the verb agrees.")]
     public void EnumSeveralExclusionsAreAllNamed() {
-        ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.Enum<OrderStatus>()
-                     .Except(OrderStatus.Draft)
-                     .DifferentFrom(OrderStatus.Validated)
-                     .Except(OrderStatus.Cancelled)
-                     .Generate());
-
-        Check.That(conflict.Message).Contains("Except(");
-        Check.That(conflict.Message).Contains("DifferentFrom(");
-        Check.That(conflict.Message).Contains("forbid every declared OrderStatus member");
+        Check.ThatCode(() => Any.Enum<OrderStatus>()
+                                .Except(OrderStatus.Draft)
+                                .DifferentFrom(OrderStatus.Validated)
+                                .Except(OrderStatus.Cancelled)
+                                .Generate())
+             .Throws<ConflictingAnyConstraintException>()
+             .WhichMember(conflict => conflict.Message)
+             .Contains("Except(")
+             .And.Contains("DifferentFrom(")
+             .And.Contains("forbid every declared OrderStatus member");
     }
 
     [Fact(DisplayName = "AnyEnum: an exclusion outside the allow-list never bit, so it is not named.")]
     public void EnumExclusionThatNeverBitIsNotNamed() {
-        ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.Enum<OrderStatus>()
-                     .Except(OrderStatus.Cancelled)          // outside the allow-list below: never removed anything
-                     .OneOf(OrderStatus.Draft)
-                     .Except(OrderStatus.Draft)              // this one is the whole cause
-                     .Generate());
-
-        Check.That(conflict.Message).DoesNotContain("Cancelled");
-        Check.That(conflict.Message).Contains("it forbids every value OneOf(");
+        Check.ThatCode(() => Any.Enum<OrderStatus>()
+                                .Except(OrderStatus.Cancelled)          // outside the allow-list below: never removed anything
+                                .OneOf(OrderStatus.Draft)
+                                .Except(OrderStatus.Draft)              // this one is the whole cause
+                                .Generate())
+             .Throws<ConflictingAnyConstraintException>()
+             .WhichMember(conflict => conflict.Message)
+             .DoesNotContain("Cancelled")
+             .And.Contains("it forbids every value OneOf(");
     }
 
     [Fact(DisplayName = "AnyEnum: exhausting a flags universe names the exclusions and calls them combinations.")]
     public void EnumCombinationExhaustionNamesTheExclusions() {
-        ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.Enum<Permissions>()
-                     .AllowingCombinations()
-                     .Except(Permissions.Read, Permissions.Write, Permissions.Read | Permissions.Write)
-                     .Generate());
-
-        Check.That(conflict.Message).Contains("it forbids every Permissions combination");
+        Check.ThatCode(() => Any.Enum<Permissions>()
+                                .AllowingCombinations()
+                                .Except(Permissions.Read, Permissions.Write, Permissions.Read | Permissions.Write)
+                                .Generate())
+             .Throws<ConflictingAnyConstraintException>()
+             .WhichMember(conflict => conflict.Message).Contains("it forbids every Permissions combination");
     }
 
     [Fact(DisplayName = "AnyGuid: an exclusion that empties an allow-list is named, and the allow-list is not blamed.")]
@@ -113,30 +112,29 @@ public sealed class ExclusionProvenanceTests {
         Guid first  = Guid.NewGuid();
         Guid second = Guid.NewGuid();
 
-        ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.Guid().OneOf(first, second).Except(first, second));
-
-        Check.That(conflict.Message).Contains("it forbids every value OneOf(");
-        Check.That(conflict.Message).DoesNotContain("remains available");
+        Check.ThatCode(() => Any.Guid().OneOf(first, second).Except(first, second))
+             .Throws<ConflictingAnyConstraintException>()
+             .WhichMember(conflict => conflict.Message)
+             .Contains("it forbids every value OneOf(")
+             .And.DoesNotContain("remains available");
     }
 
     [Fact(DisplayName = "AnyGuid: excluding a pinned value names the exclusion, not 'the exclusions'.")]
     public void GuidExcludingThePinNamesTheExclusion() {
-        ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.Guid().Empty().Except(Guid.Empty));
-
-        Check.That(conflict.Message).Contains("Empty() already pins the value to");
-        Check.That(conflict.Message).Contains("and it forbids it");
-        // The defect this pins: a generic plural that named no exclusion at all.
-        Check.That(conflict.Message).DoesNotContain("which the exclusions forbid");
+        Check.ThatCode(() => Any.Guid().Empty().Except(Guid.Empty))
+             .Throws<ConflictingAnyConstraintException>()
+             .WhichMember(conflict => conflict.Message)
+             .Contains("Empty() already pins the value to")
+             .And.Contains("and it forbids it")
+             // The defect this pins: a generic plural that named no exclusion at all.
+             .And.DoesNotContain("which the exclusions forbid");
     }
 
     [Fact(DisplayName = "AnyGuid: pinning onto an earlier exclusion names that exclusion in full.")]
     public void GuidPinningOntoAnEarlierExclusionNamesIt() {
-        ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.Guid().NonEmpty().Empty());
-
-        Check.That(conflict.Message).Contains("NonEmpty() forbids it");
+        Check.ThatCode(() => Any.Guid().NonEmpty().Empty())
+             .Throws<ConflictingAnyConstraintException>()
+             .WhichMember(conflict => conflict.Message).Contains("NonEmpty() forbids it");
     }
 
     [Fact(DisplayName = "An element generator admitting nothing names its own exclusion, not the collection's Distinct().")]
@@ -162,11 +160,9 @@ public sealed class ExclusionProvenanceTests {
         // The other side of the same guard: where the element generator does admit values and the collection asks
         // for more distinct ones than exist, Distinct() IS the constraint that cannot be honoured, and the
         // cardinality sentence is the right one. Letting an exhausted generator speak must not relax that.
-        ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.SetOf(Any.Enum<OrderStatus>()).WithCount(5).Generate());
-
-        Check.That(conflict.Message).Contains("Distinct()");
-        Check.That(conflict.Message).Contains("5");
+        Check.ThatCode(() => Any.SetOf(Any.Enum<OrderStatus>()).WithCount(5).Generate())
+             .Throws<ConflictingAnyConstraintException>()
+             .WhichMember(conflict => conflict.Message).Contains("Distinct()", "5");
     }
 
 }

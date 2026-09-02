@@ -56,9 +56,9 @@ public sealed class AnyCollectionTests {
 
     [Fact(DisplayName = "ListOf: contradictory count constraints fail eagerly naming both sides.")]
     public void ListOfCountConflicts() {
-        ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.ListOf(Any.Int32()).WithCount(3).WithMinCount(5));
-        Check.That(conflict.Message).Contains("WithCount(3)");
+        Check.ThatCode(() => Any.ListOf(Any.Int32()).WithCount(3).WithMinCount(5))
+             .Throws<ConflictingAnyConstraintException>()
+             .WhichMember(conflict => conflict.Message).Contains("WithCount(3)");
 
         Check.ThatCode(() => Any.ListOf(Any.Int32()).WithMinCount(5).WithMaxCount(3)).Throws<ConflictingAnyConstraintException>();
         Check.ThatCode(() => Any.ListOf(Any.Int32()).WithCount(2).WithCount(3)).Throws<ConflictingAnyConstraintException>();
@@ -114,9 +114,9 @@ public sealed class AnyCollectionTests {
 
     [Fact(DisplayName = "Distinct: a count beyond the element cardinality conflicts before any element is drawn, naming the shortfall.")]
     public void DistinctCardinalityConflictsBeforeDrawing() {
-        ConflictingAnyConstraintException fromBool = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.SetOf(Any.Boolean()).WithCount(3).Generate());
-        Check.That(fromBool.Message).Contains("2 distinct value");
+        Check.ThatCode(() => Any.SetOf(Any.Boolean()).WithCount(3).Generate())
+             .Throws<ConflictingAnyConstraintException>()
+             .WhichMember(fromBool => fromBool.Message).Contains("2 distinct value");
 
         Check.ThatCode(() => Any.SetOf(Any.Enum<Suit>()).WithMinCount(5).Generate()).Throws<ConflictingAnyConstraintException>();
         Check.ThatCode(() => Any.SetOf(Any.Int32().Between(1, 3)).WithCount(5).Generate()).Throws<ConflictingAnyConstraintException>();
@@ -181,9 +181,9 @@ public sealed class AnyCollectionTests {
 
         Check.ThatCode(() => Any.ListOf(Any.Int32()).WithCount(1).Containing(1).Containing(2)).Throws<ConflictingAnyConstraintException>();
 
-        ConflictingAnyConstraintException duplicate = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.SetOf(Any.Int32()).Containing(7).Containing(7).Generate());
-        Check.That(duplicate.Message).Contains("more than once");
+        Check.ThatCode(() => Any.SetOf(Any.Int32()).Containing(7).Containing(7).Generate())
+             .Throws<ConflictingAnyConstraintException>()
+             .WhichMember(duplicate => duplicate.Message).Contains("more than once");
     }
 
     [Fact(DisplayName = "Containing: a value drawn from a generator is forced into the collection.")]
@@ -221,9 +221,9 @@ public sealed class AnyCollectionTests {
     public void ContainingInsideDomainDoesNotInflate() {
         // 1 is already producible by the generator, so it adds no capacity: three distinct values over {1, 2} remain
         // impossible and must still be refused before any element is drawn, naming the shortfall.
-        ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.SetOf(Any.Int32().OneOf(1, 2)).Containing(1).WithCount(3).Generate());
-        Check.That(conflict.Message).Contains("2 distinct value");
+        Check.ThatCode(() => Any.SetOf(Any.Int32().OneOf(1, 2)).Containing(1).WithCount(3).Generate())
+             .Throws<ConflictingAnyConstraintException>()
+             .WhichMember(conflict => conflict.Message).Contains("2 distinct value");
 
         // Mixed: 1 is inside the domain, 5 is outside — effective capacity is 2 + 1 = 3. Four is over the top; three
         // is exactly reachable as {1, 2, 5}.
@@ -523,9 +523,9 @@ public sealed class AnyCollectionTests {
 
         // 1 is already producible, so three distinct keys over {1, 2} remain impossible and are still refused before
         // any entry is drawn, naming the shortfall — exactly as ContainingInsideDomainDoesNotInflate asserts for a set.
-        ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.DictionaryOf(Any.Int32().OneOf(1, 2), Any.String().NonEmpty()).ContainingKey(1).WithCount(3).Generate());
-        Check.That(conflict.Message).Contains("2 distinct value");
+        Check.ThatCode(() => Any.DictionaryOf(Any.Int32().OneOf(1, 2), Any.String().NonEmpty()).ContainingKey(1).WithCount(3).Generate())
+             .Throws<ConflictingAnyConstraintException>()
+             .WhichMember(conflict => conflict.Message).Contains("2 distinct value");
     }
 
     [Fact(DisplayName = "ContainingAnyKey: a key drawn from a generator is forced into the dictionary; null is rejected (issue #287).")]
@@ -606,15 +606,15 @@ public sealed class AnyCollectionTests {
         // A foreign IAny carries no IHasRandomSource, so the collection falls back to the ambient source for its count
         // and layout while the foreign generator's own draws ignore that seed. The reported seed therefore cannot
         // replay the elements, and the message must not claim it can.
-        AnyGenerationException caught = Assert.Throws<AnyGenerationException>(
-            () => Any.Reproducibly(2026, () => Any.SetOf(new ForeignPair()).WithCount(5).Generate(), _ => { }));
-
-        Check.That(caught.Seed).IsEqualTo(2026);
-        Check.That(caught.Message).Contains("the element generator");
-        Check.That(caught.Message).Contains("not reproducible from this seed alone");
-        Check.That(caught.Message).Contains("Any.Reproducibly(2026");
-        // The faithful full-replay sentence must be gone — it is the false promise this fix removes.
-        Check.That(caught.Message).Not.Contains("The arbitrary values were seeded with");
+        Check.ThatCode(() => Any.Reproducibly(2026, () => Any.SetOf(new ForeignPair()).WithCount(5).Generate(), _ => { }))
+             .Throws<AnyGenerationException>()
+             .WithProperty(caught => caught.Seed, 2026)
+             .And.WhichMember(caught => caught.Message)
+             .Contains("the element generator")
+             .And.Contains("not reproducible from this seed alone")
+             .And.Contains("Any.Reproducibly(2026")
+             // The faithful full-replay sentence must be gone — it is the false promise this fix removes.
+             .And.Not.Contains("The arbitrary values were seeded with");
     }
 
     [Fact(DisplayName = "A derivation built over a foreign generator is qualified too: the discriminator is a null source, not the IHasRandomSource type.")]
@@ -624,11 +624,11 @@ public sealed class AnyCollectionTests {
         // source would misclassify this as faithful and keep over-promising.
         IAny<int> derivedOverForeign = new ForeignPair().As(value => value);
 
-        AnyGenerationException caught = Assert.Throws<AnyGenerationException>(
-            () => Any.SetOf(derivedOverForeign).WithCount(5).Generate());
-
-        Check.That(caught.Message).Contains("not reproducible from this seed alone");
-        Check.That(caught.Message).Not.Contains("The arbitrary values were seeded with");
+        Check.ThatCode(() => Any.SetOf(derivedOverForeign).WithCount(5).Generate())
+             .Throws<AnyGenerationException>()
+             .WhichMember(caught => caught.Message)
+             .Contains("not reproducible from this seed alone")
+             .And.Not.Contains("The arbitrary values were seeded with");
     }
 
     [Fact(DisplayName = "A foreign ContainingAny generator is qualified at its own site, and a fixed source is named as Any.WithSeed rather than Any.Reproducibly.")]
@@ -638,14 +638,14 @@ public sealed class AnyCollectionTests {
         // the collection's source is fixed, name Any.WithSeed, never the inapplicable Any.Reproducibly.
         AnyContext seeded = Any.WithSeed(4242);
 
-        AnyGenerationException caught = Assert.Throws<AnyGenerationException>(
-            () => Any.SetOf(seeded.Int32()).Containing(0).Containing(1).ContainingAny(new ForeignPair()).Generate());
-
-        Check.That(caught.Seed).IsEqualTo(4242);
-        Check.That(caught.Message).Contains("a ContainingAny(...) generator");
-        Check.That(caught.Message).Contains("Any.WithSeed(4242)");
-        Check.That(caught.Message).Contains("not reproducible from this seed alone");
-        Check.That(caught.Message).Not.Contains("Any.Reproducibly(");
+        Check.ThatCode(() => Any.SetOf(seeded.Int32()).Containing(0).Containing(1).ContainingAny(new ForeignPair()).Generate())
+             .Throws<AnyGenerationException>()
+             .WithProperty(caught => caught.Seed, 4242)
+             .And.WhichMember(caught => caught.Message)
+             .Contains("a ContainingAny(...) generator")
+             .And.Contains("Any.WithSeed(4242)")
+             .And.Contains("not reproducible from this seed alone")
+             .And.Not.Contains("Any.Reproducibly(");
     }
 
     [Fact(DisplayName = "Exhaustion over a library element generator keeps the faithful full-replay hint unchanged.")]
@@ -655,13 +655,13 @@ public sealed class AnyCollectionTests {
         // touches the genuinely-foreign case.
         IEqualityComparer<int> modTen = new ModuloComparer(10);
 
-        AnyGenerationException caught = Assert.Throws<AnyGenerationException>(
-            () => Any.Reproducibly(1234, () => Any.SetOf(Any.Int32().Between(0, 999), modTen).WithCount(20).Generate(), _ => { }));
-
-        Check.That(caught.Seed).IsEqualTo(1234);
-        Check.That(caught.Message).Contains("The arbitrary values were seeded with 1234");
-        Check.That(caught.Message).Contains("Any.Reproducibly(1234");
-        Check.That(caught.Message).Not.Contains("not reproducible from this seed alone");
+        Check.ThatCode(() => Any.Reproducibly(1234, () => Any.SetOf(Any.Int32().Between(0, 999), modTen).WithCount(20).Generate(), _ => { }))
+             .Throws<AnyGenerationException>()
+             .WithProperty(caught => caught.Seed, 1234)
+             .And.WhichMember(caught => caught.Message)
+             .Contains("The arbitrary values were seeded with 1234")
+             .And.Contains("Any.Reproducibly(1234")
+             .And.Not.Contains("not reproducible from this seed alone");
     }
 
     [Fact(DisplayName = "Exhaustion over a Combine that mixes a foreign operand is qualified, even though a library operand supplies a non-null source.")]
@@ -671,12 +671,12 @@ public sealed class AnyCollectionTests {
         // discriminator is full reproducibility, not merely a non-null source.
         IAny<int> mixed = Any.Combine(new ForeignPair(), Any.Int32(), (foreign, _) => foreign);
 
-        AnyGenerationException caught = Assert.Throws<AnyGenerationException>(
-            () => Any.Reproducibly(777, () => Any.SetOf(mixed).WithCount(5).Generate(), _ => { }));
-
-        Check.That(caught.Seed).IsEqualTo(777);
-        Check.That(caught.Message).Contains("not reproducible from this seed alone");
-        Check.That(caught.Message).Not.Contains("The arbitrary values were seeded with");
+        Check.ThatCode(() => Any.Reproducibly(777, () => Any.SetOf(mixed).WithCount(5).Generate(), _ => { }))
+             .Throws<AnyGenerationException>()
+             .WithProperty(caught => caught.Seed, 777)
+             .And.WhichMember(caught => caught.Message)
+             .Contains("not reproducible from this seed alone")
+             .And.Not.Contains("The arbitrary values were seeded with");
     }
 
     #region Nested types

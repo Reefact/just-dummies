@@ -17,10 +17,9 @@ public sealed class AnySignedIntegerTests {
             Check.That(Any.SByte().Negative().Generate()).IsStrictlyLessThan((sbyte)0);
         }
 
-        ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.SByte().Positive().Negative());
-        Check.That(conflict.Message).Contains("Negative()");
-        Check.That(conflict.Message).Contains("Positive()");
+        Check.ThatCode(() => Any.SByte().Positive().Negative())
+             .Throws<ConflictingAnyConstraintException>()
+             .WhichMember(conflict => conflict.Message).Contains("Negative()", "Positive()");
     }
 
     [Fact(DisplayName = "SByte: Between is inclusive and reaches both bounds; extremes are generable.")]
@@ -58,10 +57,9 @@ public sealed class AnySignedIntegerTests {
         for (int i = 0; i < SampleCount; i++) { seen.Add(Any.Int64().Generate()); }
         Check.That(seen.Count).IsStrictlyGreaterThan(1);
 
-        ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.Int64().GreaterThan(100L).LessThan(10L));
-        Check.That(conflict.Message).Contains("LessThan(10)");
-        Check.That(conflict.Message).Contains("GreaterThan(100)");
+        Check.ThatCode(() => Any.Int64().GreaterThan(100L).LessThan(10L))
+             .Throws<ConflictingAnyConstraintException>()
+             .WhichMember(conflict => conflict.Message).Contains("LessThan(10)", "GreaterThan(100)");
     }
 
     [Fact(DisplayName = "Int64: OneOf stays within the supplied values and Except never yields an excluded one.")]

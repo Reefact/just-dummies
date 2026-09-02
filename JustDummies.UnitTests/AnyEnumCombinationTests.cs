@@ -92,12 +92,9 @@ public sealed class AnyEnumCombinationTests {
 
     [Fact(DisplayName = "AllowingCombinations: applying it to an enum that is not [Flags] conflicts, naming why.")]
     public void CombinationsRequireAFlagsEnum() {
-        ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.Enum<OrderStatus>().AllowingCombinations());
-
-        Check.That(conflict.Message).Contains("AllowingCombinations()");
-        Check.That(conflict.Message).Contains("OrderStatus");
-        Check.That(conflict.Message).Contains("[Flags]");
+        Check.ThatCode(() => Any.Enum<OrderStatus>().AllowingCombinations())
+             .Throws<ConflictingAnyConstraintException>()
+             .WhichMember(conflict => conflict.Message).Contains("AllowingCombinations()", "OrderStatus", "[Flags]");
     }
 
     [Fact(DisplayName = "AllowingCombinations: applying it twice is a no-op, not a conflict.")]
@@ -188,24 +185,22 @@ public sealed class AnyEnumCombinationTests {
         HashSet<Permissions> eight = Any.SetOf(Any.Enum<Permissions>().AllowingCombinations()).WithCount(8).Generate();
         Check.That(eight.Count).IsEqualTo(8);
 
-        ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.SetOf(Any.Enum<Permissions>().AllowingCombinations()).WithCount(9).Generate());
-        Check.That(conflict.Message).Contains("9");
+        Check.ThatCode(() => Any.SetOf(Any.Enum<Permissions>().AllowingCombinations()).WithCount(9).Generate())
+             .Throws<ConflictingAnyConstraintException>()
+             .WhichMember(conflict => conflict.Message).Contains("9");
 
-        ConflictingAnyConstraintException capped = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.SetOf(Any.Enum<Permissions>()).WithCount(5).Generate());
-        Check.That(capped.Message).Contains("5");
+        Check.ThatCode(() => Any.SetOf(Any.Enum<Permissions>()).WithCount(5).Generate())
+             .Throws<ConflictingAnyConstraintException>()
+             .WhichMember(capped => capped.Message).Contains("5");
     }
 
     [Fact(DisplayName = "AllowingCombinations: excluding the whole universe conflicts, naming both sides.")]
     public void ExcludingTheWholeUniverseConflicts() {
         Permissions[] everything = Enumerable.Range(0, 8).Select(bits => (Permissions)bits).ToArray();
 
-        ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.Enum<Permissions>().AllowingCombinations().Except(everything).Generate());
-
-        Check.That(conflict.Message).Contains("Except(");
-        Check.That(conflict.Message).Contains("Permissions");
+        Check.ThatCode(() => Any.Enum<Permissions>().AllowingCombinations().Except(everything).Generate())
+             .Throws<ConflictingAnyConstraintException>()
+             .WhichMember(conflict => conflict.Message).Contains("Except(", "Permissions");
     }
 
     [Fact(DisplayName = "AllowingCombinations: it widens the universe wherever in the chain it was declared.")]
@@ -222,21 +217,16 @@ public sealed class AnyEnumCombinationTests {
     public void ExcludingEveryDeclaredMemberWithoutCombinationsIsStillRefused() {
         // The other side of the same guard: giving the widening constraint its chance must not relax the refusal
         // when the caller never wrote it. The message is the one it always was.
-        ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.Enum<Sides>().Except(Sides.Left, Sides.Right).Generate());
-
-        Check.That(conflict.Message).IsEqualTo("Cannot apply Except(Left, Right) because it forbids every declared Sides member.");
+        Check.ThatCode(() => Any.Enum<Sides>().Except(Sides.Left, Sides.Right).Generate())
+             .Throws<ConflictingAnyConstraintException>()
+             .WithMessage("Cannot apply Except(Left, Right) because it forbids every declared Sides member.");
     }
 
     [Fact(DisplayName = "AllowingCombinations: an enum with too many members to enumerate is refused, naming the ceiling.")]
     public void TooManyMembersIsRefused() {
-        ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.Enum<WideBits>().AllowingCombinations());
-
-        Check.That(conflict.Message).Contains("AllowingCombinations()");
-        Check.That(conflict.Message).Contains("21");
-        Check.That(conflict.Message).Contains("20");
-        Check.That(conflict.Message).Contains("OneOf");
+        Check.ThatCode(() => Any.Enum<WideBits>().AllowingCombinations())
+             .Throws<ConflictingAnyConstraintException>()
+             .WhichMember(conflict => conflict.Message).Contains("AllowingCombinations()", "21", "20", "OneOf");
     }
 
     [Fact(DisplayName = "AllowingCombinations: a seeded context replays the same combinations.")]

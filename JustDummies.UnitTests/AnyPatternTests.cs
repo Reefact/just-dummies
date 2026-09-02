@@ -199,8 +199,9 @@ public sealed class AnyPatternTests {
         AnyPattern generator = Any.StringMatching("a{2147483647,}");
 
         for (int i = 0; i < 40; i++) {
-            AnyGenerationException caught = Assert.Throws<AnyGenerationException>(() => generator.Generate());
-            Check.That(caught.Message).Contains("generation limit");
+            Check.ThatCode(() => generator.Generate())
+                 .Throws<AnyGenerationException>()
+                 .WhichMember(caught => caught.Message).Contains("generation limit");
         }
     }
 
@@ -215,7 +216,7 @@ public sealed class AnyPatternTests {
         AnyPattern generator = Any.WithSeed(1).StringMatching($"a{{{minimum},}}");
 
         for (int i = 0; i < 12; i++) {
-            Assert.Throws<AnyGenerationException>(() => generator.Generate());
+            Check.ThatCode(() => generator.Generate()).Throws<AnyGenerationException>();
         }
     }
 
@@ -226,10 +227,12 @@ public sealed class AnyPatternTests {
         // conflict); generation is what overruns the limit, and the message must not blame a quantifier that is absent.
         AnyPattern generator = Any.StringMatching(@"(a{1000}){1000}");
 
-        AnyGenerationException caught = Assert.Throws<AnyGenerationException>(() => generator.Generate());
-        Check.That(caught.Message).Contains("generation limit");
-        Check.That(caught.Message).Contains("bounded quantifiers");             // the real cause is offered
-        Check.That(caught.Message).Not.Contains("is expanding without bound");  // the old, false assertion is gone
+        Check.ThatCode(() => generator.Generate())
+             .Throws<AnyGenerationException>()
+             .WhichMember(caught => caught.Message)
+             .Contains("generation limit")
+             .And.Contains("bounded quantifiers")  // the real cause is offered
+             .And.Not.Contains("is expanding without bound");  // the old, false assertion is gone
     }
 
     [Fact(DisplayName = "A negated class that excludes the whole printable universe is refused as unsupported, not malformed.")]
@@ -240,8 +243,9 @@ public sealed class AnyPatternTests {
         Check.ThatCode(() => Any.StringMatching(@"[^\x20-\x7E]")).Throws<UnsupportedRegexException>();
         Check.ThatCode(() => Any.StringMatching(@"[^\s\S]")).Throws<UnsupportedRegexException>();
 
-        UnsupportedRegexException caught = Assert.Throws<UnsupportedRegexException>(() => Any.StringMatching(@"[^\x20-\x7E]"));
-        Check.That(caught.Message).Contains("printable ASCII");
+        Check.ThatCode(() => Any.StringMatching(@"[^\x20-\x7E]"))
+             .Throws<UnsupportedRegexException>()
+             .WhichMember(caught => caught.Message).Contains("printable ASCII");
     }
 
     [Theory(DisplayName = "A pattern the real .NET engine accepts is never rejected as malformed — it generates, or is refused as unsupported.")]
@@ -347,33 +351,30 @@ public sealed class AnyPatternTests {
     public void AnExhaustedExclusionBudgetReportsTheBudget() {
         // "^[ab]$" really is a two-word language and both words are excluded — yet the generator only ever built
         // and rejected candidates, so the message may claim the spent budget and nothing stronger.
-        AnyGenerationException error = Assert.Throws<AnyGenerationException>(
-            () => Any.WithSeed(20260728).StringMatching("^[ab]$").Except("a", "b").Generate());
-
-        Check.That(error.Message).Contains("10000 draws");
-        Check.That(error.Message).Contains("exhausted budget rather than a proof");
-        Check.That(error.Message).Not.Contains("the pattern has no other value");
-        Check.That(error.Message).Contains("Loosen the exclusions or widen the pattern");
+        Check.ThatCode(() => Any.WithSeed(20260728).StringMatching("^[ab]$").Except("a", "b").Generate())
+             .Throws<AnyGenerationException>()
+             .WhichMember(error => error.Message)
+             .Contains("10000 draws")
+             .And.Contains("exhausted budget rather than a proof")
+             .And.Not.Contains("the pattern has no other value")
+             .And.Contains("Loosen the exclusions or widen the pattern");
     }
 
     [Fact(DisplayName = "The exhaustion names the pattern, the excluded values and the seed that replays the run.")]
     public void TheExhaustionCarriesTheSeed() {
-        AnyGenerationException error = Assert.Throws<AnyGenerationException>(
-            () => Any.WithSeed(20260728).StringMatching("^[ab]$").Except("a", "b").Generate());
-
-        Check.That(error.Message).Contains("\"^[ab]$\"");
-        Check.That(error.Message).Contains("\"a\", \"b\"");
-        Check.That(error.Message).Contains("Any.WithSeed(20260728)");
-        Check.That(error.Seed).IsEqualTo(20260728);
+        Check.ThatCode(() => Any.WithSeed(20260728).StringMatching("^[ab]$").Except("a", "b").Generate())
+             .Throws<AnyGenerationException>()
+             .WithProperty(error => error.Seed, 20260728)
+             .And.WhichMember(error => error.Message).Contains("\"^[ab]$\"", "\"a\", \"b\"", "Any.WithSeed(20260728)");
     }
 
     [Fact(DisplayName = "A value excluded twice is listed once: the exclusions collapse rather than accumulate.")]
     public void RepeatedExclusionsCollapse() {
-        AnyGenerationException error = Assert.Throws<AnyGenerationException>(
-            () => Any.WithSeed(20260728).StringMatching("^[ab]$").Except("a").DifferentFrom("a").Except("a", "b").Generate());
-
-        Check.That(error.Message).Contains("excluding \"a\", \"b\":");
-        Check.That(error.Message).Not.Contains("\"a\", \"a\"");
+        Check.ThatCode(() => Any.WithSeed(20260728).StringMatching("^[ab]$").Except("a").DifferentFrom("a").Except("a", "b").Generate())
+             .Throws<AnyGenerationException>()
+             .WhichMember(error => error.Message)
+             .Contains("excluding \"a\", \"b\":")
+             .And.Not.Contains("\"a\", \"a\"");
     }
 
     [Fact(DisplayName = "A shape constraint stays refused: only the rejective pair is offered.")]
@@ -408,8 +409,9 @@ public sealed class AnyPatternTests {
         Check.ThatCode(() => Any.StringMatching(@"(\w+)\s\1")).Throws<UnsupportedRegexException>();
         Check.ThatCode(() => Any.StringMatching(@"\p{L}+")).Throws<UnsupportedRegexException>();
 
-        UnsupportedRegexException caught = Assert.Throws<UnsupportedRegexException>(() => Any.StringMatching(@"a(?=b)"));
-        Check.That(caught.Message).Contains("lookahead");
+        Check.ThatCode(() => Any.StringMatching(@"a(?=b)"))
+             .Throws<UnsupportedRegexException>()
+             .WhichMember(caught => caught.Message).Contains("lookahead");
     }
 
     [Fact(DisplayName = "Constructs whose language a plain walk cannot honour are refused, never mis-generated.")]
@@ -454,8 +456,9 @@ public sealed class AnyPatternTests {
         Check.ThatCode(() => Any.StringMatching(@"(?'-a'x)")).Throws<UnsupportedRegexException>();          // quote form
         Check.ThatCode(() => Any.StringMatching(@"(?<x-y>z)")).Throws<UnsupportedRegexException>();         // name1-name2 form
 
-        UnsupportedRegexException caught = Assert.Throws<UnsupportedRegexException>(() => Any.StringMatching(@"(?<a>y)?(?<-a>x)"));
-        Check.That(caught.Message).Contains("balancing group");
+        Check.ThatCode(() => Any.StringMatching(@"(?<a>y)?(?<-a>x)"))
+             .Throws<UnsupportedRegexException>()
+             .WhichMember(caught => caught.Message).Contains("balancing group");
     }
 
     [Fact(DisplayName = "Malformed patterns raise ArgumentException; a null pattern raises ArgumentNullException.")]

@@ -180,20 +180,16 @@ public sealed class AnyUriTests {
 
     [Fact(DisplayName = "A second scheme pin conflicts, naming both sides.")]
     public void SecondSchemePinConflicts() {
-        ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.Uri().Web().UsingHttp().UsingHttps());
-
-        Check.That(conflict.Message).Contains("UsingHttps()");
-        Check.That(conflict.Message).Contains("UsingHttp()");
+        Check.ThatCode(() => Any.Uri().Web().UsingHttp().UsingHttps())
+             .Throws<ConflictingAnyConstraintException>()
+             .WhichMember(conflict => conflict.Message).Contains("UsingHttps()", "UsingHttp()");
     }
 
     [Fact(DisplayName = "A second path constraint conflicts, naming both sides.")]
     public void SecondPathConstraintConflicts() {
-        ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.Uri().Web().WithoutPath().WithPathSegments(2));
-
-        Check.That(conflict.Message).Contains("WithPathSegments(2)");
-        Check.That(conflict.Message).Contains("WithoutPath()");
+        Check.ThatCode(() => Any.Uri().Web().WithoutPath().WithPathSegments(2))
+             .Throws<ConflictingAnyConstraintException>()
+             .WhichMember(conflict => conflict.Message).Contains("WithPathSegments(2)", "WithoutPath()");
     }
 
     [Fact(DisplayName = "WithHost rejects a non-ASCII (IDN) host, pointing to punycode.")]
@@ -224,10 +220,10 @@ public sealed class AnyUriTests {
 
     [Fact(DisplayName = "A relative URI with an explicit 0 segments and nothing else fails at generation with a seed.")]
     public void EmptyRelativeFailsAtGeneration() {
-        AnyGenerationException error = Assert.Throws<AnyGenerationException>(
-            () => Any.WithSeed(20260723).Uri().Relative().WithPathSegments(0).Generate());
-
-        Check.That(error.Seed).IsEqualTo(20260723);
+        Check.ThatCode(() => Any.WithSeed(20260723).Uri().Relative().WithPathSegments(0).Generate())
+             .Throws<AnyGenerationException>()
+             .WithProperty(error => error.Seed, 20260723)
+             .And.WhichMember(error => error.Message).Contains();
     }
 
     [Fact(DisplayName = "A relative URI with 0 segments still generates when it carries a query.")]

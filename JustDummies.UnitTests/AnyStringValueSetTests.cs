@@ -208,46 +208,41 @@ public sealed class AnyStringValueSetTests {
 
     [Fact(DisplayName = "A constraint no supplied value satisfies names the value set and itself, and nothing else.")]
     public void AnEmptyingConstraintNamesBothSides() {
-        ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.String().OneOf("abc", "de").WithLength(9));
-
-        Check.That(conflict.Message).IsEqualTo("Cannot apply WithLength(9) because no value OneOf(\"abc\", \"de\") allows satisfies it.");
+        Check.ThatCode(() => Any.String().OneOf("abc", "de").WithLength(9))
+             .Throws<ConflictingAnyConstraintException>()
+             .WithMessage("Cannot apply WithLength(9) because no value OneOf(\"abc\", \"de\") allows satisfies it.");
     }
 
     [Fact(DisplayName = "A value set no declared constraint admits names that constraint and itself, and nothing else.")]
     public void AnEmptyValueSetNamesTheConstraintThatRefusedIt() {
-        ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.String().WithLength(9).OneOf("abc", "de"));
-
-        Check.That(conflict.Message).IsEqualTo("Cannot apply OneOf(\"abc\", \"de\") because WithLength(9) allows none of its values.");
+        Check.ThatCode(() => Any.String().WithLength(9).OneOf("abc", "de"))
+             .Throws<ConflictingAnyConstraintException>()
+             .WithMessage("Cannot apply OneOf(\"abc\", \"de\") because WithLength(9) allows none of its values.");
     }
 
     [Fact(DisplayName = "Several constraints that each refuse every value are all named.")]
     public void EveryConstraintRefusingEveryValueIsNamed() {
-        ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.String().WithLength(9).Numeric().OneOf("abc"));
-
-        Check.That(conflict.Message).IsEqualTo("Cannot apply OneOf(\"abc\") because WithLength(9), Numeric() allow none of its values.");
+        Check.ThatCode(() => Any.String().WithLength(9).Numeric().OneOf("abc"))
+             .Throws<ConflictingAnyConstraintException>()
+             .WithMessage("Cannot apply OneOf(\"abc\") because WithLength(9), Numeric() allow none of its values.");
     }
 
     [Fact(DisplayName = "When only the combination empties the set, no single constraint is blamed for it.")]
     public void ACombinationBlamesNoSingleConstraint() {
         // WithLength(3) admits "abc" and StartingWith("z") admits "zz": neither refuses every value, so naming
         // either one would blame a constraint the caller could loosen without changing the verdict.
-        ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.String().WithLength(3).StartingWith("z").OneOf("abc", "zz"));
-
-        Check.That(conflict.Message).IsEqualTo("Cannot apply OneOf(\"abc\", \"zz\") because no value it offers satisfies the constraints already declared.");
+        Check.ThatCode(() => Any.String().WithLength(3).StartingWith("z").OneOf("abc", "zz"))
+             .Throws<ConflictingAnyConstraintException>()
+             .WithMessage("Cannot apply OneOf(\"abc\", \"zz\") because no value it offers satisfies the constraints already declared.");
     }
 
     [Fact(DisplayName = "A constraint that would have accepted a value the others removed qualifies its claim.")]
     public void AConstraintTheOthersOutranQualifiesItsClaim() {
         // Numeric() does accept "12" — WithLength(3) is what took it away. Claiming that no value the set offers
         // satisfies Numeric() would be false, so the message says only that nothing the other constraints left does.
-        ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.String().OneOf("abc", "12").WithLength(3).Numeric());
-
-        Check.That(conflict.Message).IsEqualTo("Cannot apply Numeric() because no value OneOf(\"abc\", \"12\") allows that the other constraints leave satisfies it.");
+        Check.ThatCode(() => Any.String().OneOf("abc", "12").WithLength(3).Numeric())
+             .Throws<ConflictingAnyConstraintException>()
+             .WithMessage("Cannot apply Numeric() because no value OneOf(\"abc\", \"12\") allows that the other constraints leave satisfies it.");
     }
 
     [Fact(DisplayName = "A constraint that refuses every supplied value is not qualified away, whatever narrowed the set first.")]
@@ -303,18 +298,16 @@ public sealed class AnyStringValueSetTests {
 
     [Fact(DisplayName = "An exclusion that empties the value set conflicts at declaration, naming both sides.")]
     public void AnExclusionEmptyingTheSetConflicts() {
-        ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.String().OneOf("a", "b").Except("a", "b"));
-
-        Check.That(conflict.Message).IsEqualTo("Cannot apply Except(\"a\", \"b\") because no value OneOf(\"a\", \"b\") allows satisfies it.");
+        Check.ThatCode(() => Any.String().OneOf("a", "b").Except("a", "b"))
+             .Throws<ConflictingAnyConstraintException>()
+             .WithMessage("Cannot apply Except(\"a\", \"b\") because no value OneOf(\"a\", \"b\") allows satisfies it.");
     }
 
     [Fact(DisplayName = "A value set every exclusion covers conflicts, naming the exclusion that refused it.")]
     public void AValueSetTheExclusionsRefuseNamesThem() {
-        ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.String().DifferentFrom("x").OneOf("x"));
-
-        Check.That(conflict.Message).IsEqualTo("Cannot apply OneOf(\"x\") because DifferentFrom(\"x\") allows none of its values.");
+        Check.ThatCode(() => Any.String().DifferentFrom("x").OneOf("x"))
+             .Throws<ConflictingAnyConstraintException>()
+             .WithMessage("Cannot apply OneOf(\"x\") because DifferentFrom(\"x\") allows none of its values.");
     }
 
     [Fact(DisplayName = "An exclusion on a value set never defers to a redraw: the surviving pool is drawn directly.")]
@@ -328,10 +321,9 @@ public sealed class AnyStringValueSetTests {
     public void RedeclaringTheValueSet() {
         Check.ThatCode(() => Any.String().OneOf("a", "b").OneOf("a", "b")).DoesNotThrow();
 
-        ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.String().OneOf("a", "b").OneOf("b", "c"));
-
-        Check.That(conflict.Message).IsEqualTo("Cannot apply OneOf(\"b\", \"c\") because OneOf(\"a\", \"b\") is already defined.");
+        Check.ThatCode(() => Any.String().OneOf("a", "b").OneOf("b", "c"))
+             .Throws<ConflictingAnyConstraintException>()
+             .WithMessage("Cannot apply OneOf(\"b\", \"c\") because OneOf(\"a\", \"b\") is already defined.");
     }
 
     [Fact(DisplayName = "OneOf rejects null, empty, or null-containing value lists as arguments.")]

@@ -222,10 +222,9 @@ public sealed class AnyOneOfTests {
 
     [Fact(DisplayName = "An exclusion that empties the pool conflicts at declaration, naming both sides.")]
     public void AnExclusionEmptyingThePoolConflicts() {
-        ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.OneOf(1, 2).Except(1, 2));
-
-        Check.That(conflict.Message).IsEqualTo("Cannot apply Except(...) because it forbids every value OneOf(...) allows.");
+        Check.ThatCode(() => Any.OneOf(1, 2).Except(1, 2))
+             .Throws<ConflictingAnyConstraintException>()
+             .WithMessage("Cannot apply Except(...) because it forbids every value OneOf(...) allows.");
     }
 
     [Fact(DisplayName = "The emptying conflict names the factory that declared the pool, on every entry point.")]
@@ -252,10 +251,9 @@ public sealed class AnyOneOfTests {
     public void AnExclusionLeavingADeclaredValueQualifiesItsClaim() {
         // DifferentFrom(2) does not forbid 1 — the first exclusion took that one — so it does not forbid *every*
         // value the pool was declared with, only what the first one left. The message says exactly that.
-        ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.OneOf(1, 2).DifferentFrom(1).DifferentFrom(2));
-
-        Check.That(conflict.Message).IsEqualTo("Cannot apply DifferentFrom(...) because it forbids every value OneOf(...) allows that the exclusions already declared leave.");
+        Check.ThatCode(() => Any.OneOf(1, 2).DifferentFrom(1).DifferentFrom(2))
+             .Throws<ConflictingAnyConstraintException>()
+             .WithMessage("Cannot apply DifferentFrom(...) because it forbids every value OneOf(...) allows that the exclusions already declared leave.");
     }
 
     [Fact(DisplayName = "An exclusion covering the whole declared pool is not qualified away by an earlier one.")]

@@ -76,15 +76,15 @@ public sealed class ContinuousExclusionNudgeTests {
         Half min = (Half)1f;
         Half max = (Half)1.001f;   // exactly two representable Half values in [min, max]
 
-        AnyGenerationException thrown = Assert.Throws<AnyGenerationException>(
-            () => Any.WithSeed(207).Half().Between(min, max).Except(min, max).Generate());
-
-        Check.That(thrown.Seed).IsEqualTo(207);
-        Check.That(thrown.Message).Contains("207");
-        // The draw came from Any.WithSeed(207) — a fixed context that replays by itself — so the hint must name it,
-        // not the ambient Any.Reproducibly(...) instruction, which would not reproduce this run.
-        Check.That(thrown.Message).Contains("Any.WithSeed(207)");
-        Check.That(thrown.Message).Not.Contains("Any.Reproducibly(");
+        Check.ThatCode(() => Any.WithSeed(207).Half().Between(min, max).Except(min, max).Generate())
+             .Throws<AnyGenerationException>()
+             .WithProperty(thrown => thrown.Seed, 207)
+             .And.WhichMember(thrown => thrown.Message)
+             .Contains("207")
+             // The draw came from Any.WithSeed(207) — a fixed context that replays by itself — so the hint must name it,
+             // not the ambient Any.Reproducibly(...) instruction, which would not reproduce this run.
+             .And.Contains("Any.WithSeed(207)")
+             .And.Not.Contains("Any.Reproducibly(");
     }
 
     [Fact(DisplayName = "An exhausted nudge reports a local search, never a claim that the range holds no free value.")]

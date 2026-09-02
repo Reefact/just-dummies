@@ -44,11 +44,9 @@ public sealed class AnyBooleanTests {
 
     [Fact(DisplayName = "A contradictory pin names both sides.")]
     public void AContradictoryPinNamesBothSides() {
-        ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.Boolean().True().False());
-
-        Check.That(conflict.Message).Contains("True()");
-        Check.That(conflict.Message).Contains("False()");
+        Check.ThatCode(() => Any.Boolean().True().False())
+             .Throws<ConflictingAnyConstraintException>()
+             .WhichMember(conflict => conflict.Message).Contains("True()", "False()");
     }
 
 }

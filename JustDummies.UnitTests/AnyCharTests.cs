@@ -40,20 +40,16 @@ public sealed class AnyCharTests {
 
     [Fact(DisplayName = "A second character family conflict names both sides.")]
     public void ASecondFamilyConflictNamesBothSides() {
-        ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.Char().Alpha().Numeric());
-
-        Check.That(conflict.Message).Contains("Alpha()");
-        Check.That(conflict.Message).Contains("Numeric()");
+        Check.ThatCode(() => Any.Char().Alpha().Numeric())
+             .Throws<ConflictingAnyConstraintException>()
+             .WhichMember(conflict => conflict.Message).Contains("Alpha()", "Numeric()");
     }
 
     [Fact(DisplayName = "A second casing conflict names both sides.")]
     public void ASecondCasingConflictNamesBothSides() {
-        ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.Char().InLowerCase().InUpperCase());
-
-        Check.That(conflict.Message).Contains("InLowerCase()");
-        Check.That(conflict.Message).Contains("InUpperCase()");
+        Check.ThatCode(() => Any.Char().InLowerCase().InUpperCase())
+             .Throws<ConflictingAnyConstraintException>()
+             .WhichMember(conflict => conflict.Message).Contains("InLowerCase()", "InUpperCase()");
     }
 
 }

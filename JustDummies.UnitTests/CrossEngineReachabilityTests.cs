@@ -420,11 +420,9 @@ internal sealed class IntervalCase<T> : ReachabilityCase {
     public override void ContradictoryConstraintsNameBothSides() {
         // OneOf(na).Except(na) empties the allow-list; the message must name both the allow-list and the exclusion.
         // Asserting the method-name tokens keeps this independent of how each type renders its values.
-        ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
-            () => _oneOfExcept(Any.WithSeed(Seed), [_na], [_na]));
-
-        Check.That(conflict.Message).Contains("OneOf(");
-        Check.That(conflict.Message).Contains("Except(");
+        Check.ThatCode(() => _oneOfExcept(Any.WithSeed(Seed), [_na], [_na]))
+             .Throws<ConflictingAnyConstraintException>()
+             .WhichMember(conflict => conflict.Message).Contains("OneOf(", "Except(");
     }
 
     private (double Min, double Max, HashSet<T> Seen) Sample(IAny<T> generator, int count) {

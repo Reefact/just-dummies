@@ -88,10 +88,9 @@ public sealed class AnyContinuousTests {
             Check.That(Any.Double().GreaterThan(1d).LessThanOrEqualTo(2d).Generate()).IsStrictlyGreaterThan(1d);
         }
 
-        ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.Double().GreaterThan(100d).LessThan(10d));
-        Check.That(conflict.Message).Contains("LessThan(10)");
-        Check.That(conflict.Message).Contains("GreaterThan(100)");
+        Check.ThatCode(() => Any.Double().GreaterThan(100d).LessThan(10d))
+             .Throws<ConflictingAnyConstraintException>()
+             .WhichMember(conflict => conflict.Message).Contains("LessThan(10)", "GreaterThan(100)");
         Check.ThatCode(() => Any.Double().GreaterThan(double.MaxValue)).Throws<ConflictingAnyConstraintException>();
     }
 
@@ -139,10 +138,9 @@ public sealed class AnyContinuousTests {
         Check.ThatCode(() => Any.Decimal().Zero().NonZero()).Throws<ConflictingAnyConstraintException>();
         Check.ThatCode(() => Any.Decimal().Between(10m, 1m)).Throws<ArgumentException>();
 
-        ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.Decimal().GreaterThan(100m).LessThan(10m));
-        Check.That(conflict.Message).Contains("LessThan(10)");
-        Check.That(conflict.Message).Contains("GreaterThan(100)");
+        Check.ThatCode(() => Any.Decimal().GreaterThan(100m).LessThan(10m))
+             .Throws<ConflictingAnyConstraintException>()
+             .WhichMember(conflict => conflict.Message).Contains("LessThan(10)", "GreaterThan(100)");
     }
 
     [Fact(DisplayName = "Decimal: Between reaches both halves of a range, up to near the inclusive maximum.")]

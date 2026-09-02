@@ -81,9 +81,9 @@ public sealed class AnyLatticeConstraintTests {
 
     [Fact(DisplayName = "MultipleOf: an empty grid inside the range conflicts eagerly, naming the step.")]
     public void MultipleOfEmptyGridConflicts() {
-        ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.Int32().Between(1, 9).MultipleOf(10));
-        Check.That(conflict.Message).Contains("MultipleOf(10)");
+        Check.ThatCode(() => Any.Int32().Between(1, 9).MultipleOf(10))
+             .Throws<ConflictingAnyConstraintException>()
+             .WhichMember(conflict => conflict.Message).Contains("MultipleOf(10)");
 
         // The same emptiness, whichever order the two constraints arrive in.
         Check.ThatCode(() => Any.Int32().MultipleOf(10).Between(1, 9)).Throws<ConflictingAnyConstraintException>();
@@ -153,9 +153,9 @@ public sealed class AnyLatticeConstraintTests {
 
     [Fact(DisplayName = "WithScale: a range containing no grid point conflicts eagerly.")]
     public void WithScaleEmptyGridConflicts() {
-        ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.Decimal().Between(0.001m, 0.009m).WithScale(2));
-        Check.That(conflict.Message).Contains("WithScale(2)");
+        Check.ThatCode(() => Any.Decimal().Between(0.001m, 0.009m).WithScale(2))
+             .Throws<ConflictingAnyConstraintException>()
+             .WhichMember(conflict => conflict.Message).Contains("WithScale(2)");
     }
 
     #endregion

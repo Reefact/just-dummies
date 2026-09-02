@@ -135,7 +135,7 @@ internal static class SuppressionJustification {
 
         /// <summary>
         ///     Each theory is one line of dispatch to the per-type adapter; the NFluent <c>Check.That</c> and
-        ///     <c>Assert.Throws</c> calls live in the <c>IntervalCase&lt;T&gt;</c> overrides. The rule does follow
+        ///     <c>Check.ThatCode</c> calls live in the <c>IntervalCase&lt;T&gt;</c> overrides. The rule does follow
         ///     assertions into concrete helpers, but this call resolves statically to the abstract
         ///     <c>ReachabilityCase</c> declaration, which has no body, so it cannot see past the virtual dispatch. Lifting
         ///     the assertions into the test bodies would flatten the one-row-per-builder design and reduce the per-draw

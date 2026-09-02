@@ -21,10 +21,9 @@ public sealed class AnyModernTypeTests {
         // The shared interval specification answers null for a floating-point range and AnyHalf carries the count
         // itself; without it this floor was accepted, then failed only after a redraw budget sized from the ask
         // (64 x 200 000) rather than from the domain.
-        ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.SetOf(Any.Half()).WithMinCount(200_000).Generate());
-
-        Check.That(conflict.Message).Contains("63487");
+        Check.ThatCode(() => Any.SetOf(Any.Half()).WithMinCount(200_000).Generate())
+             .Throws<ConflictingAnyConstraintException>()
+             .WhichMember(conflict => conflict.Message).Contains("63487");
 
         // A floor the domain does hold is still drawn, so the count refuses nothing it can satisfy.
         Check.ThatCode(() => Any.SetOf(Any.Half()).WithCount(64).Generate()).DoesNotThrow();

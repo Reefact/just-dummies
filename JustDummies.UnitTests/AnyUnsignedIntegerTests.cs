@@ -43,10 +43,9 @@ public sealed class AnyUnsignedIntegerTests {
             Check.That(Any.UInt32().LessThan(10u).GreaterThanOrEqualTo(8u).Generate()).IsLessOrEqualThan(9u);
         }
 
-        ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.UInt32().GreaterThan(100u).LessThan(10u));
-        Check.That(conflict.Message).Contains("LessThan(10)");
-        Check.That(conflict.Message).Contains("GreaterThan(100)");
+        Check.ThatCode(() => Any.UInt32().GreaterThan(100u).LessThan(10u))
+             .Throws<ConflictingAnyConstraintException>()
+             .WhichMember(conflict => conflict.Message).Contains("LessThan(10)", "GreaterThan(100)");
     }
 
     [Fact(DisplayName = "UInt64: the full-width sampling path yields varied values and honors exclusions.")]

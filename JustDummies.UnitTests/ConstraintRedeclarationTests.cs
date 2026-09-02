@@ -144,19 +144,17 @@ public sealed class ConstraintRedeclarationTests {
         // first and the first vanished without a word, while WithPathSegments in the very same generator raised a
         // conflict. A URI has one host, one port and one user-info, so a second declaration can never be honoured
         // alongside the first; dropping it silently discards a constraint the caller wrote.
-        ConflictingAnyConstraintException host = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.Uri().Web().WithHost("first.example").WithHost("second.example"));
-
-        Check.That(host.Message).Contains("WithHost(\"second.example\")");
-        Check.That(host.Message).Contains("WithHost(\"first.example\")");
+        Check.ThatCode(() => Any.Uri().Web().WithHost("first.example").WithHost("second.example"))
+             .Throws<ConflictingAnyConstraintException>()
+             .WhichMember(host => host.Message).Contains("WithHost(\"second.example\")", "WithHost(\"first.example\")");
 
         // The message names the PUBLIC call, so a mailto's WithDomain reads as WithDomain and not as the host setter
         // it shares with the web families.
-        ConflictingAnyConstraintException domain = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.Uri().Mailto().WithDomain("a.example").WithDomain("b.example"));
-
-        Check.That(domain.Message).Contains("WithDomain(\"b.example\")");
-        Check.That(domain.Message).Not.Contains("WithHost");
+        Check.ThatCode(() => Any.Uri().Mailto().WithDomain("a.example").WithDomain("b.example"))
+             .Throws<ConflictingAnyConstraintException>()
+             .WhichMember(domain => domain.Message)
+             .Contains("WithDomain(\"b.example\")")
+             .And.Not.Contains("WithHost");
     }
 
     [Fact(DisplayName = "A second, different Distinct comparer conflicts; the same one again is a no-op.")]

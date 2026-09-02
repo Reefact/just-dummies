@@ -49,8 +49,7 @@ public sealed class CompositionTests {
         IAny<Percentage> tooWeaklyConstrained = Any.Int32().Between(200, 300).As(Percentage.Create);
 
         AnyGenerationException? caught = null;
-        Assert.Throws<AnyGenerationException>(
-            () => Any.Reproducibly(9876, () => {
+        Check.ThatCode(() => Any.Reproducibly(9876, () => {
                 try {
                     tooWeaklyConstrained.Generate();
                 } catch (AnyGenerationException exception) {
@@ -58,7 +57,8 @@ public sealed class CompositionTests {
 
                     throw;
                 }
-            }, _ => { }));
+            }, _ => { }))
+             .Throws<AnyGenerationException>();
 
         Check.That(caught).IsNotNull();
         Check.That(caught!.Seed).IsEqualTo(9876);
@@ -113,12 +113,12 @@ public sealed class CompositionTests {
             Any.Int32().Between(4, 6),
             (first, second) => throw new InvalidOperationException($"rejected {first}/{second}"));
 
-        AnyGenerationException caught = Assert.Throws<AnyGenerationException>(
-            () => Any.Reproducibly(31415, () => generator.Generate(), _ => { }));
-
-        Check.That(caught.Seed).IsEqualTo(31415);
-        Check.That(caught.Message).Contains("Any.Reproducibly(31415");
-        Check.That(caught.Message).Not.Contains("Any.WithSeed(");
+        Check.ThatCode(() => Any.Reproducibly(31415, () => generator.Generate(), _ => { }))
+             .Throws<AnyGenerationException>()
+             .WithProperty(caught => caught.Seed, 31415)
+             .And.WhichMember(caught => caught.Message)
+             .Contains("Any.Reproducibly(31415")
+             .And.Not.Contains("Any.WithSeed(");
     }
 
     [Fact(DisplayName = "A composer failure over an Any.WithSeed(...) context reports the WithSeed replay hint, not the inapplicable Any.Reproducibly instruction.")]
@@ -130,12 +130,13 @@ public sealed class CompositionTests {
             seeded.Int32().Between(4, 6),
             (first, second) => throw new InvalidOperationException($"rejected {first}/{second}"));
 
-        AnyGenerationException caught = Assert.Throws<AnyGenerationException>(() => generator.Generate());
-
-        Check.That(caught.Seed).IsEqualTo(4242);
-        Check.That(caught.Message).Contains("Combine(...)");
-        Check.That(caught.Message).Contains("Any.WithSeed(4242)");
-        Check.That(caught.Message).Not.Contains("Any.Reproducibly(");
+        Check.ThatCode(() => generator.Generate())
+             .Throws<AnyGenerationException>()
+             .WithProperty(caught => caught.Seed, 4242)
+             .And.WhichMember(caught => caught.Message)
+             .Contains("Combine(...)")
+             .And.Contains("Any.WithSeed(4242)")
+             .And.Not.Contains("Any.Reproducibly(");
     }
 
     [Fact(DisplayName = "A composer failure over a Combine mixing a foreign operand qualifies the replay hint, though a library operand supplies a nameable source.")]
@@ -148,13 +149,13 @@ public sealed class CompositionTests {
             Any.Int32().Between(1, 3),
             (first, second) => throw new InvalidOperationException($"rejected {first}/{second}"));
 
-        AnyGenerationException caught = Assert.Throws<AnyGenerationException>(
-            () => Any.Reproducibly(31415, () => generator.Generate(), _ => { }));
-
-        Check.That(caught.Seed).IsEqualTo(31415);
-        Check.That(caught.Message).Contains("Combine(...)");
-        Check.That(caught.Message).Contains("not reproducible from this seed alone");
-        Check.That(caught.Message).Not.Contains("The arbitrary values were seeded with");
+        Check.ThatCode(() => Any.Reproducibly(31415, () => generator.Generate(), _ => { }))
+             .Throws<AnyGenerationException>()
+             .WithProperty(caught => caught.Seed, 31415)
+             .And.WhichMember(caught => caught.Message)
+             .Contains("Combine(...)")
+             .And.Contains("not reproducible from this seed alone")
+             .And.Not.Contains("The arbitrary values were seeded with");
     }
 
     [Fact(DisplayName = "A composer failure over a Combine mixing two different seeded sources does not promise a full replay from one seed.")]
@@ -275,11 +276,11 @@ public sealed class CompositionTests {
         // The same guard has to hold there: the caller must read the conflict, not the renderer's accident.
         Unrenderable value = new();
 
-        ConflictingAnyConstraintException caught = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.ListOf(Any.ElementOf(new[] { value })).Distinct().Containing(value).Containing(value).Generate());
-
-        Check.That(caught.Message).Contains(nameof(Unrenderable));
-        Check.That(caught.Message).Not.Contains("ToString() exploded");
+        Check.ThatCode(() => Any.ListOf(Any.ElementOf(new[] { value })).Distinct().Containing(value).Containing(value).Generate())
+             .Throws<ConflictingAnyConstraintException>()
+             .WhichMember(caught => caught.Message)
+             .Contains(nameof(Unrenderable))
+             .And.Not.Contains("ToString() exploded");
     }
 
     [Fact(DisplayName = "Generic inference flows through IAny<T> without relying on implicit conversions.")]

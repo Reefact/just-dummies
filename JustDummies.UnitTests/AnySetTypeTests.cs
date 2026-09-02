@@ -32,10 +32,9 @@ public sealed class AnySetTypeTests {
             Check.That(Any.Boolean().DifferentFrom(true).Generate()).IsFalse();
         }
 
-        ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.Boolean().True().False());
-        Check.That(conflict.Message).Contains("False()");
-        Check.That(conflict.Message).Contains("True()");
+        Check.ThatCode(() => Any.Boolean().True().False())
+             .Throws<ConflictingAnyConstraintException>()
+             .WhichMember(conflict => conflict.Message).Contains("False()", "True()");
 
         bool value = Any.Boolean().True().Generate();
         Check.That(value).IsTrue();
@@ -137,9 +136,9 @@ public sealed class AnySetTypeTests {
             Check.That(Any.Enum<OrderStatus>().OneOf(OrderStatus.Draft, OrderStatus.Validated).DifferentFrom(OrderStatus.Draft).Generate()).IsEqualTo(OrderStatus.Validated);
         }
 
-        ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.Enum<OrderStatus>().Except(OrderStatus.Draft, OrderStatus.Validated, OrderStatus.Cancelled).Generate());
-        Check.That(conflict.Message).Contains("Except(");
+        Check.ThatCode(() => Any.Enum<OrderStatus>().Except(OrderStatus.Draft, OrderStatus.Validated, OrderStatus.Cancelled).Generate())
+             .Throws<ConflictingAnyConstraintException>()
+             .WhichMember(conflict => conflict.Message).Contains("Except(");
     }
 
     [Fact(DisplayName = "Enum: OneOf rejects undeclared numeric values — the declared-members-only contract holds.")]

@@ -111,11 +111,11 @@ public sealed class AnyDateTimeOffsetOffsetTests {
         DateTimeOffset kept    = new(2026, 6, 2, 13, 0, 0, TimeSpan.FromHours(1));
         DateTimeOffset refused = new(2026, 6, 1, 12, 0, 0, TimeSpan.Zero);
 
-        ConflictingAnyConstraintException caught = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.DateTimeOffset().Before(kept).WithOffset(TimeSpan.FromHours(1)).OneOf(refused, kept));
-
-        Check.That(caught.Message).StartsWith("Cannot apply OneOf(");
-        Check.That(caught.Message).Contains("WithOffset(01:00:00)");
+        Check.ThatCode(() => Any.DateTimeOffset().Before(kept).WithOffset(TimeSpan.FromHours(1)).OneOf(refused, kept))
+             .Throws<ConflictingAnyConstraintException>()
+             .WhichMember(caught => caught.Message)
+             .StartsWith("Cannot apply OneOf(")
+             .And.Contains("WithOffset(01:00:00)");
     }
 
     [Fact(DisplayName = "Without an offset constraint, OneOf still returns every pooled value with its own offset.")]

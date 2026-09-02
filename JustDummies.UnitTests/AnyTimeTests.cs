@@ -19,10 +19,9 @@ public sealed class AnyTimeTests {
             Check.That(Any.TimeSpan().Negative().Generate() < TimeSpan.Zero).IsTrue();
         }
 
-        ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.TimeSpan().Positive().Negative());
-        Check.That(conflict.Message).Contains("Negative()");
-        Check.That(conflict.Message).Contains("Positive()");
+        Check.ThatCode(() => Any.TimeSpan().Positive().Negative())
+             .Throws<ConflictingAnyConstraintException>()
+             .WhichMember(conflict => conflict.Message).Contains("Negative()", "Positive()");
     }
 
     [Fact(DisplayName = "TimeSpan: Zero pins, Between is inclusive over a tiny tick window, GreaterThan is exclusive.")]
@@ -60,10 +59,9 @@ public sealed class AnyTimeTests {
 
     [Fact(DisplayName = "DateTime: an impossible After/Before pair conflicts naming both sides; crossed Between is an argument error.")]
     public void DateTimeConflicts() {
-        ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.DateTime().After(Anchor).Before(Anchor));
-        Check.That(conflict.Message).Contains("Before(");
-        Check.That(conflict.Message).Contains("After(");
+        Check.ThatCode(() => Any.DateTime().After(Anchor).Before(Anchor))
+             .Throws<ConflictingAnyConstraintException>()
+             .WhichMember(conflict => conflict.Message).Contains("Before(", "After(");
 
         Check.ThatCode(() => Any.DateTime().Between(Anchor.AddDays(1), Anchor)).Throws<ArgumentException>();
         Check.ThatCode(() => Any.DateTime().After(DateTime.MaxValue)).Throws<ConflictingAnyConstraintException>();

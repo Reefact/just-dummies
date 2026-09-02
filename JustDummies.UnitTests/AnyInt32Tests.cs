@@ -84,29 +84,23 @@ public sealed class AnyInt32Tests {
 
     [Fact(DisplayName = "Positive then Negative conflicts, naming both constraints.")]
     public void PositiveThenNegativeConflicts() {
-        ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.Int32().Positive().Negative());
-
-        Check.That(conflict.Message).Contains("Negative()");
-        Check.That(conflict.Message).Contains("Positive()");
+        Check.ThatCode(() => Any.Int32().Positive().Negative())
+             .Throws<ConflictingAnyConstraintException>()
+             .WhichMember(conflict => conflict.Message).Contains("Negative()", "Positive()");
     }
 
     [Fact(DisplayName = "GreaterThan then an impossible LessThan conflicts, naming both constraints.")]
     public void CrossedBoundsConflict() {
-        ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.Int32().GreaterThan(100).LessThan(10));
-
-        Check.That(conflict.Message).Contains("LessThan(10)");
-        Check.That(conflict.Message).Contains("GreaterThan(100)");
+        Check.ThatCode(() => Any.Int32().GreaterThan(100).LessThan(10))
+             .Throws<ConflictingAnyConstraintException>()
+             .WhichMember(conflict => conflict.Message).Contains("LessThan(10)", "GreaterThan(100)");
     }
 
     [Fact(DisplayName = "Zero then NonZero conflicts: the pinned value is excluded.")]
     public void ZeroThenNonZeroConflicts() {
-        ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.Int32().Zero().NonZero());
-
-        Check.That(conflict.Message).Contains("NonZero()");
-        Check.That(conflict.Message).Contains("Zero()");
+        Check.ThatCode(() => Any.Int32().Zero().NonZero())
+             .Throws<ConflictingAnyConstraintException>()
+             .WhichMember(conflict => conflict.Message).Contains("NonZero()", "Zero()");
     }
 
     [Fact(DisplayName = "GreaterThan int.MaxValue conflicts: no Int32 satisfies it.")]
@@ -116,11 +110,9 @@ public sealed class AnyInt32Tests {
 
     [Fact(DisplayName = "OneOf then a bound excluding every allowed value conflicts.")]
     public void OneOfEmptiedByABoundConflicts() {
-        ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.Int32().OneOf(1, 2).GreaterThan(5));
-
-        Check.That(conflict.Message).Contains("GreaterThan(5)");
-        Check.That(conflict.Message).Contains("OneOf(1, 2)");
+        Check.ThatCode(() => Any.Int32().OneOf(1, 2).GreaterThan(5))
+             .Throws<ConflictingAnyConstraintException>()
+             .WhichMember(conflict => conflict.Message).Contains("GreaterThan(5)", "OneOf(1, 2)");
     }
 
     [Fact(DisplayName = "A second OneOf conflicts: the allow-list is declared once.")]

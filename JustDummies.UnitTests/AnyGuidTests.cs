@@ -41,11 +41,9 @@ public sealed class AnyGuidTests {
 
     [Fact(DisplayName = "NonEmpty and Empty contradict each other, and the conflict names both sides.")]
     public void NonEmptyAndEmptyContradictEachOther() {
-        ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.Guid().NonEmpty().Empty());
-
-        Check.That(conflict.Message).Contains("NonEmpty()");
-        Check.That(conflict.Message).Contains("Empty()");
+        Check.ThatCode(() => Any.Guid().NonEmpty().Empty())
+             .Throws<ConflictingAnyConstraintException>()
+             .WhichMember(conflict => conflict.Message).Contains("NonEmpty()", "Empty()");
     }
 
 }

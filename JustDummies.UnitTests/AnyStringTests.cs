@@ -364,31 +364,23 @@ public sealed class AnyStringTests {
 
     [Fact(DisplayName = "A second WithLength conflicts: the exact length is declared once.")]
     public void SecondWithLengthConflicts() {
-        ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.String().WithLength(3).WithLength(5));
-
-        Check.That(conflict.Message).Contains("WithLength(5)");
-        Check.That(conflict.Message).Contains("WithLength(3)");
+        Check.ThatCode(() => Any.String().WithLength(3).WithLength(5))
+             .Throws<ConflictingAnyConstraintException>()
+             .WhichMember(conflict => conflict.Message).Contains("WithLength(5)", "WithLength(3)");
     }
 
     [Fact(DisplayName = "A prefix longer than the exact length conflicts, naming both sides.")]
     public void PrefixLongerThanExactLengthConflicts() {
-        ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.String().WithLength(3).StartingWith("ORD-"));
-
-        Check.That(conflict.Message).Contains("StartingWith(\"ORD-\")");
-        Check.That(conflict.Message).Contains("WithLength(3)");
-        Check.That(conflict.Message).Contains("4");
+        Check.ThatCode(() => Any.String().WithLength(3).StartingWith("ORD-"))
+             .Throws<ConflictingAnyConstraintException>()
+             .WhichMember(conflict => conflict.Message).Contains("StartingWith(\"ORD-\")", "WithLength(3)", "4");
     }
 
     [Fact(DisplayName = "An exact length shorter than an already declared prefix conflicts, naming both sides.")]
     public void ExactLengthShorterThanPrefixConflicts() {
-        ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.String().StartingWith("ORD-").WithLength(3));
-
-        Check.That(conflict.Message).Contains("WithLength(3)");
-        Check.That(conflict.Message).Contains("ORD-");
-        Check.That(conflict.Message).Contains("4");
+        Check.ThatCode(() => Any.String().StartingWith("ORD-").WithLength(3))
+             .Throws<ConflictingAnyConstraintException>()
+             .WhichMember(conflict => conflict.Message).Contains("WithLength(3)", "ORD-", "4");
     }
 
     [Fact(DisplayName = "A numeric string anchors a non-numeric prefix: the family governs the draw, not the literal.")]
@@ -403,10 +395,9 @@ public sealed class AnyStringTests {
     // so it is also the one whose name a message can lose without any other assertion noticing.
     [Fact(DisplayName = "An allow-list that offers no value carrying the fragment names Containing as the culprit.")]
     public void AllowListRejectedByAFragmentNamesContaining() {
-        ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.String().Containing("ABC").OneOf("x", "y"));
-
-        Check.That(conflict.Message).Contains("Containing(\"ABC\")");
+        Check.ThatCode(() => Any.String().Containing("ABC").OneOf("x", "y"))
+             .Throws<ConflictingAnyConstraintException>()
+             .WhichMember(conflict => conflict.Message).Contains("Containing(\"ABC\")");
     }
 
     [Fact(DisplayName = "Declaring the charset after the prefix exempts it too: order does not matter.")]
@@ -419,11 +410,9 @@ public sealed class AnyStringTests {
 
     [Fact(DisplayName = "A minimum length above the maximum conflicts.")]
     public void MinAboveMaxConflicts() {
-        ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.String().WithMinLength(10).WithMaxLength(3));
-
-        Check.That(conflict.Message).Contains("WithMaxLength(3)");
-        Check.That(conflict.Message).Contains("WithMinLength(10)");
+        Check.ThatCode(() => Any.String().WithMinLength(10).WithMaxLength(3))
+             .Throws<ConflictingAnyConstraintException>()
+             .WhichMember(conflict => conflict.Message).Contains("WithMaxLength(3)", "WithMinLength(10)");
     }
 
     [Fact(DisplayName = "An exact length above an already declared maximum conflicts.")]
@@ -433,11 +422,9 @@ public sealed class AnyStringTests {
 
     [Fact(DisplayName = "InLowerCase then InUpperCase conflicts: one casing per generator.")]
     public void LowerThenUpperCaseConflicts() {
-        ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.String().InLowerCase().InUpperCase());
-
-        Check.That(conflict.Message).Contains("InUpperCase()");
-        Check.That(conflict.Message).Contains("InLowerCase()");
+        Check.ThatCode(() => Any.String().InLowerCase().InUpperCase())
+             .Throws<ConflictingAnyConstraintException>()
+             .WhichMember(conflict => conflict.Message).Contains("InUpperCase()", "InLowerCase()");
     }
 
     [Fact(DisplayName = "Alpha then Numeric conflicts: one character family per generator.")]
@@ -460,11 +447,9 @@ public sealed class AnyStringTests {
 
     [Fact(DisplayName = "Fragments exceeding the maximum length conflict.")]
     public void FragmentsExceedingMaxLengthConflict() {
-        ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.String().WithMaxLength(5).StartingWith("ORD-").EndingWith("-FR"));
-
-        Check.That(conflict.Message).Contains("EndingWith(\"-FR\")");
-        Check.That(conflict.Message).Contains("7");
+        Check.ThatCode(() => Any.String().WithMaxLength(5).StartingWith("ORD-").EndingWith("-FR"))
+             .Throws<ConflictingAnyConstraintException>()
+             .WhichMember(conflict => conflict.Message).Contains("EndingWith(\"-FR\")", "7");
     }
 
     [Fact(DisplayName = "Length arguments are validated as arguments, not as conflicts.")]
@@ -553,11 +538,10 @@ public sealed class AnyStringTests {
     public void OverTightExclusionThrowsSeedBearingGenerationException() {
         string[] everyLetter = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz".Select(letter => letter.ToString()).ToArray();
 
-        AnyGenerationException error = Assert.Throws<AnyGenerationException>(
-            () => Any.WithSeed(20260721).String().WithLength(1).Alpha().Except(everyLetter).Generate());
-
-        Check.That(error.Seed).IsEqualTo(20260721);
-        Check.That(error.Message).Contains("Any.WithSeed(20260721)");
+        Check.ThatCode(() => Any.WithSeed(20260721).String().WithLength(1).Alpha().Except(everyLetter).Generate())
+             .Throws<AnyGenerationException>()
+             .WithProperty(error => error.Seed, 20260721)
+             .And.WhichMember(error => error.Message).Contains("Any.WithSeed(20260721)");
     }
 
     [Fact(DisplayName = "An exhausted exclusion budget reports the budget, never a claim that the shape is unsatisfiable.")]
@@ -569,14 +553,14 @@ public sealed class AnyStringTests {
         // case deterministic — but the message must state what was established, the budget, not a proof it never ran.
         string[] everyLetter = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz".Select(letter => letter.ToString()).ToArray();
 
-        AnyGenerationException error = Assert.Throws<AnyGenerationException>(
-            () => Any.WithSeed(20260721).String().WithLength(1).Alpha().Except(everyLetter).Generate());
-
-        Check.That(error.Message).Contains("10000 draws");
-        Check.That(error.Message).Contains("exhausted budget rather than a proof");
-        Check.That(error.Message).Not.Contains("so the exclusions leave the shape unsatisfiable");
-        // The actionable half stays: the caller still learns what to change.
-        Check.That(error.Message).Contains("Loosen the exclusions or widen the shape");
+        Check.ThatCode(() => Any.WithSeed(20260721).String().WithLength(1).Alpha().Except(everyLetter).Generate())
+             .Throws<AnyGenerationException>()
+             .WhichMember(error => error.Message)
+             .Contains("10000 draws")
+             .And.Contains("exhausted budget rather than a proof")
+             .And.Not.Contains("so the exclusions leave the shape unsatisfiable")
+             // The actionable half stays: the caller still learns what to change.
+             .And.Contains("Loosen the exclusions or widen the shape");
     }
 
     [Fact(DisplayName = "A seeded exclusion is reproducible: the same seed yields the same value.")]
@@ -658,38 +642,30 @@ public sealed class AnyStringTests {
 
     [Fact(DisplayName = "WithChars then a named charset conflicts: one character family per generator.")]
     public void WithCharsThenNamedCharsetConflicts() {
-        ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.String().WithChars("abc").Numeric());
-
-        Check.That(conflict.Message).Contains("Numeric()");
-        Check.That(conflict.Message).Contains("WithChars(\"abc\")");
+        Check.ThatCode(() => Any.String().WithChars("abc").Numeric())
+             .Throws<ConflictingAnyConstraintException>()
+             .WhichMember(conflict => conflict.Message).Contains("Numeric()", "WithChars(\"abc\")");
     }
 
     [Fact(DisplayName = "A named charset then WithChars conflicts: order does not matter.")]
     public void NamedCharsetThenWithCharsConflicts() {
-        ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.String().Alpha().WithChars("абвгд"));
-
-        Check.That(conflict.Message).Contains("WithChars(\"абвгд\")");
-        Check.That(conflict.Message).Contains("Alpha()");
+        Check.ThatCode(() => Any.String().Alpha().WithChars("абвгд"))
+             .Throws<ConflictingAnyConstraintException>()
+             .WhichMember(conflict => conflict.Message).Contains("WithChars(\"абвгд\")", "Alpha()");
     }
 
     [Fact(DisplayName = "WithChars then a casing conflicts: the pool is the whole character definition.")]
     public void WithCharsThenCasingConflicts() {
-        ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.String().WithChars("abc").InLowerCase());
-
-        Check.That(conflict.Message).Contains("InLowerCase()");
-        Check.That(conflict.Message).Contains("WithChars(\"abc\")");
+        Check.ThatCode(() => Any.String().WithChars("abc").InLowerCase())
+             .Throws<ConflictingAnyConstraintException>()
+             .WhichMember(conflict => conflict.Message).Contains("InLowerCase()", "WithChars(\"abc\")");
     }
 
     [Fact(DisplayName = "A casing then WithChars conflicts: order does not matter.")]
     public void CasingThenWithCharsConflicts() {
-        ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
-            () => Any.String().InUpperCase().WithChars("abc"));
-
-        Check.That(conflict.Message).Contains("WithChars(\"abc\")");
-        Check.That(conflict.Message).Contains("InUpperCase()");
+        Check.ThatCode(() => Any.String().InUpperCase().WithChars("abc"))
+             .Throws<ConflictingAnyConstraintException>()
+             .WhichMember(conflict => conflict.Message).Contains("WithChars(\"abc\")", "InUpperCase()");
     }
 
     [Fact(DisplayName = "A WithChars pool anchors a prefix its pool cannot draw, and keeps drawing from the pool alone.")]

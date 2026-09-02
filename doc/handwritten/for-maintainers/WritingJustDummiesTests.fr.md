@@ -90,6 +90,34 @@ C'est toute la règle. Tout ce qui suit n'en est que l'application.
 3. Les deux atterrissent. La régression prouve le cas exact ; la propriété prouve la
    classe.
 
+## Affirmer un refus
+
+Un exemple qui fige un refus l'affirme avec NFluent, en une seule expression :
+
+```csharp
+Check.ThatCode(() => Any.Int32().Positive().Negative())
+     .Throws<ConflictingAnyConstraintException>()
+     .WhichMember(conflict => conflict.Message).Contains("Negative()", "Positive()");
+```
+
+`.WithMessage(...)` fige la phrase entière ; `.WhichMember(e => e.Message)` l'ouvre à
+`Contains` et `Not.Contains` ; `.WithProperty(e => e.Seed, 1234).And` atteint un autre
+membre avant le message. La lambda se lie à `Func<T>`, donc le générateur n'est jamais
+converti en `object` — la forme recette-comme-valeur que
+[JD011](../for-users/analyzers/JD011.fr.md) existe pour attraper, et doit exempter quand
+`Assert.Throws<T>` la prend par sa surcharge `Func<object>`.
+
+`Assert.Throws` reste là où l'*instance* de l'exception est le sujet, et nulle part
+ailleurs :
+
+* un type d'exception **de base** est nommé — `ArgumentException`,
+  `InvalidOperationException`. xUnit y exige le type exact et cette exactitude est
+  l'affirmation ; le `Throws<T>` de NFluent admet un type dérivé et l'affaiblirait.
+* **deux** exceptions levées sont comparées l'une à l'autre.
+* la levée a lieu dans une portée dont les affirmations sortent, ou un test affirme deux
+  membres sans rapport — un message *et* une `InnerException`. Une chaîne s'arrête à un
+  membre.
+
 ## Écrire la propriété
 
 Utilisez les helpers partagés de `PropertyTestSupport.cs` :

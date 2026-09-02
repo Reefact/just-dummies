@@ -10,10 +10,10 @@ namespace JustDummies.GenAny;
 /// <remarks>
 ///     §5.3 is precise about where a constraint belongs: with the generator for the parameter's <b>own</b> type,
 ///     before any conversion or composition. An <c>int?</c> guarded by <c>p &lt;= 0</c> emits
-///     <c>Any.Int32().Positive().As(value =&gt; (int?)value)</c>, not the reverse, and a factory parameter
-///     guarded inside the factory's body emits <c>Any.String().NonEmpty().As(OrderReference.Create)</c>. The
-///     <c>.As</c> hop always comes last, because it is the step that changes the type — which is exactly why the
-///     expression cannot be built as one string and patched afterwards.
+///     <c>Any.Int32().Positive().AsNullable()</c>, not the reverse, and a factory parameter guarded inside the
+///     factory's body emits <c>Any.String().NonEmpty().As(OrderReference.Create)</c>. The conversion hop always
+///     comes last, because it is the step that changes the type — which is exactly why the expression cannot be
+///     built as one string and patched afterwards.
 /// </remarks>
 internal sealed class DrawnGenerator {
 

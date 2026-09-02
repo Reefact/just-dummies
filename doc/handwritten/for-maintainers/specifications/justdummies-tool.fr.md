@@ -555,7 +555,7 @@ Chaque entrée est soumise à D4 : le membre n'est émis que s'il se résout dan
 | `HashSet<T>` `ISet<T>` | `Any.SetOf(<T>)` |
 | `Dictionary<K,V>` `IDictionary<K,V>` `IReadOnlyDictionary<K,V>` | `Any.DictionaryOf(<K>, <V>)` |
 | `T?` où `T` est un type référence | le generator de `T` inchangé — **jamais** `.OrNull()` (D10) |
-| `T?` où `T` est un type valeur | `<generator de T>.As(value => (T?)value)` — **jamais** `.OrNull()` (D10) |
+| `T?` où `T` est un type valeur | `<generator de T>.AsNullable()`, ou `.As(value => (T?)value)` quand l'asset ne porte pas le lift — **jamais** `.OrNull()` (D10) |
 | tout autre type nommé non générique | `new AnyT()` (§5.4) — que la compilation porte `AnyT` ou non |
 | tout le reste | non résolu (§5.5) |
 
@@ -576,7 +576,7 @@ il en va de même pour `HashSet<T>`/`ISet<T>` et `Dictionary<K,V>`/`IReadOnlyDic
 La variance en C# ne s'applique qu'aux conversions de **référence**, d'où la différence entre les
 deux lignes nullables. `IAny<string>` est un `IAny<string?>` et ne demande rien ; `IAny<int>`
 n'est **pas** un `IAny<int?>`, donc un paramètre `int?` exige le saut explicite
-`.As(value => (int?)value)`. S'y tromper est la façon la plus probable de produire une table qui ne
+`.AsNullable()`. S'y tromper est la façon la plus probable de produire une table qui ne
 compile pas — les lignes réservées à `net8.0` sont elles aussi des types valeur.
 
 **Les generators d'éléments récursent.** `IReadOnlyList<OrderLine>` résout son élément par cette
@@ -858,7 +858,7 @@ défaut qui survit à un test superficiel.
 
 **Où les contraintes s'attachent.** Une contrainte dérivée d'une garde appartient au generator du
 type propre du paramètre, *avant* toute conversion ou composition. Un paramètre `int?` gardé par
-`p <= 0` émet `Any.Int32().Positive().As(value => (int?)value)`, pas l'inverse. Le saut `.As` vient
+`p <= 0` émet `Any.Int32().Positive().AsNullable()`, pas l'inverse. Le saut de conversion vient
 toujours en dernier, parce que c'est l'étape qui change le type.
 
 Chaque contrainte ci-dessus reste soumise à D4. `.Positive()` sur un paramètre `uint` ne se résout
@@ -2016,7 +2016,7 @@ branchés. Les résultats ci-dessous sont ce que le harnais a affiché.
 | La chaîne dérivée des gardes ne lève jamais | §5.3 | 500 tirages à travers `OrderReference.Create`, aucune `AnyGenerationException` |
 | La chaîne **sans** lecture des gardes lève par intermittence | §5.3 | **594 / 10 000** tirages ont levé, et **557 / 10 000** à la reprise contre une bibliothèque plus récente — environ 1 sur 17, conforme aux 588 que prédisent dix-sept longueurs équiprobables |
 | La covariance des collections ne demande aucun adaptateur | §5.2, §14.5 | `Any.ListOf(...)` affecté à `IAny<IReadOnlyList<string>>` |
-| Un nullable de type valeur **exige** bien le saut `.As` | §5.2 | `IAny<int>` n'est pas un `IAny<int?>` ; `.As(value => (int?)value)` compile |
+| Un nullable de type valeur **exige** bien un saut de conversion | §5.2 | `IAny<int>` n'est pas un `IAny<int?>` ; `.AsNullable()` compile, et garde la taille du domaine que le saut `.As` général perdait |
 | Les bornes complémentaires se composent | §5.3 | `.GreaterThanOrEqualTo(0).LessThanOrEqualTo(100)` et `.NonEmpty().WithMaxLength(10)` tirent tous deux |
 | Les bornes contradictoires sont rejetées deux fois | §5.3 | `ConflictingAnyConstraintException` à l'exécution, et `JD023` à la **compilation** |
 | Un generator de motif n'admet aucune autre contrainte de chaîne | §5.3 | `Any.StringMatching(...).NonEmpty()` ne compile pas — `CS1061`, `AnyPattern` n'a que `DifferentFrom`/`Except` |

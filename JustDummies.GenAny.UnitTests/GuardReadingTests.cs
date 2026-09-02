@@ -345,7 +345,7 @@ public sealed class GuardReadingTests {
         ScaffoldedParameter parameter = Subject.GuardedBy("OrderStatus?", guard);
 
         Check.That(parameter.Expression)
-             .IsEqualTo("Any.Enum<OrderStatus>().DifferentFrom(OrderStatus.Draft).As(value => (OrderStatus?)value)");
+             .IsEqualTo("Any.Enum<OrderStatus>().DifferentFrom(OrderStatus.Draft).AsNullable()");
     }
 
     /// <summary>
@@ -570,13 +570,13 @@ public sealed class GuardReadingTests {
     }
 
     // §5.3: the constraint belongs to the generator for the parameter's own type, BEFORE the conversion. The
-    // .As hop always comes last, because it is the step that changes the type.
+    // conversion always comes last, because it is the step that changes the type.
     [Fact(DisplayName = "A guard on a nullable value type is read before the conversion, not after.")]
     public void AGuardOnANullableIsReadBeforeTheConversion() {
         string guard = "if (value <= 0) { throw new ArgumentOutOfRangeException(nameof(value)); }";
 
         Check.That(Subject.GuardedBy("int?", guard).Expression)
-             .IsEqualTo("Any.Int32().Positive().As(value => (int?)value)");
+             .IsEqualTo("Any.Int32().Positive().AsNullable()");
     }
 
     /// <summary>

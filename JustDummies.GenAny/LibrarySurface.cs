@@ -22,10 +22,15 @@ internal sealed class LibrarySurface {
 
     private readonly Dictionary<string, ITypeSymbol?> factories = [];
 
-    private LibrarySurface(INamedTypeSymbol any, INamedTypeSymbol anyOfT, INamedTypeSymbol extensions) {
-        Any        = any;
-        AnyOfT     = anyOfT;
-        Extensions = extensions;
+    private readonly Compilation compilation;
+
+    private bool? carriesAsNullable;
+
+    private LibrarySurface(Compilation compilation, INamedTypeSymbol any, INamedTypeSymbol anyOfT, INamedTypeSymbol extensions) {
+        this.compilation = compilation;
+        Any              = any;
+        AnyOfT           = anyOfT;
+        Extensions       = extensions;
     }
 
     /// <summary>The static façade every emitted expression starts from.</summary>
@@ -52,7 +57,7 @@ internal sealed class LibrarySurface {
 
         if (any is null || anyOfT is null || extensions is null) { return null; }
 
-        return new LibrarySurface(any, anyOfT, extensions);
+        return new LibrarySurface(compilation, any, anyOfT, extensions);
     }
 
     /// <summary>
@@ -95,6 +100,24 @@ internal sealed class LibrarySurface {
         }
 
         return false;
+    }
+
+    /// <summary>
+    ///     Whether <c>AsNullable</c> resolves, which the value-type nullable row of §5.2 prefers.
+    /// </summary>
+    /// <remarks>
+    ///     Asked rather than assumed, and answered <c>false</c> without complaint on an asset that predates it:
+    ///     the row then writes the general <c>As</c> hop it always wrote, which still compiles and still draws.
+    ///     ADR-0059 in its ordinary form — the tool holds no opinion about which members exist, it asks the
+    ///     compilation in front of it.
+    /// </remarks>
+    internal bool CarriesAsNullable() {
+        return carriesAsNullable ??= compilation.GetTypeByMetadataName("JustDummies.NullableExtensions")
+                                                ?.GetMembers("AsNullable")
+                                                 .OfType<IMethodSymbol>()
+                                                 .Any(candidate => candidate.IsStatic
+                                                                && candidate.DeclaredAccessibility == Accessibility.Public
+                                                                && candidate.Parameters.Length == 1) == true;
     }
 
     /// <summary>Whether <c>As</c> resolves, which the two conversion rows of §5.2 depend on.</summary>

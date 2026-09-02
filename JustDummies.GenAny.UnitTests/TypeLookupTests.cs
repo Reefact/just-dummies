@@ -146,6 +146,33 @@ public sealed class TypeLookupTests {
         Check.That(size.Provenance).IsEqualTo(Provenance.Guard);
     }
 
+    /// <summary>
+    ///     And the referenced project is normally on another target framework, which is a harder case.
+    /// </summary>
+    /// <remarks>
+    ///     The case above is the same shape with the two compilations bound to identical references, and that
+    ///     identity is what made it pass: they share their symbols outright, so a guard read through the
+    ///     declaring compilation's semantic model names parameters the analysed compilation recognises. A
+    ///     library on <c>netstandard2.0</c> under a test project on <c>net8.0</c> — this repository's own
+    ///     arrangement, and most others' — has no such luck, and the reading came back empty: not a wrong
+    ///     constraint, no constraint at all, and no <c>unread guards</c> either, since a guard naming no
+    ///     parameter is indistinguishable from ordinary logic. A recap reporting every parameter inferred over
+    ///     an invariant nobody honoured is the silent failure ADR-0083 exists to stop, and it took pointing
+    ///     <c>dum</c> at real repositories to find it: every shape the generative sweep draws lives in one
+    ///     compilation, so no number of them can reach this.
+    /// </remarks>
+    [Fact(DisplayName = "A type in a referenced assembly built on another framework has its guards read too.")]
+    public void ATypeFromAReferencedAssemblyOnAnotherFrameworkIsRead() {
+        ScaffoldOutcome outcome = Subject.ScaffoldByNameReferencingAcrossFrameworks(NextDoor, "Warehouse", Nearby);
+
+        Check.That(outcome.Status).IsEqualTo(ScaffoldStatus.Scaffolded);
+
+        ScaffoldedParameter size = outcome.Plan!.Parameters.Single();
+
+        Check.That(size.Expression).IsEqualTo("Any.Int32().Positive()");
+        Check.That(size.Provenance).IsEqualTo(Provenance.Guard);
+    }
+
     // The other half of the same rule: widening happens only when the developer's own types have nothing to
     // say. A domain type sharing a name with a referenced one is the one they meant, not an ambiguity.
     [Fact(DisplayName = "A type in source wins over one of the same name in a reference.")]

@@ -105,17 +105,33 @@ internal static class Guards {
 
         if (declaring is null) { return GuardReading.WithoutSource(); }
 
-        SemanticModel   model   = declaring.GetSemanticModel(declaration.SyntaxTree);
+        SemanticModel model = declaring.GetSemanticModel(declaration.SyntaxTree);
+
+        // Every symbol a reading compares has to come from one compilation, and `method` is the analysed
+        // compilation's view of a constructor declared next door. Roslyn hands over the referenced
+        // compilation's own symbols only while both bind identical references; the moment they differ — a
+        // library on netstandard2.0 under a test project on net8.0, this repository's own arrangement and
+        // most others' — it substitutes a view, whose parameters are not the ones a semantic model over the
+        // declaring compilation returns. Read through that pair and every guard names a parameter this
+        // method does not recognise: no constraint, and no `unread guards` either, a guard naming nothing
+        // being indistinguishable from ordinary logic. Resolving the declaration here is what keeps the two
+        // sides comparable at every depth — `Mentioned`, `ParameterWrites`, both merges, and the
+        // resolved-symbol reads of ADR-0086 — rather than at the one comparison that happened to be looked
+        // at. Nothing leaves this file on it: `GuardReading` is keyed by parameter name.
+        if (model.GetDeclaredSymbol(declaration) is not IMethodSymbol declared) { return GuardReading.WithoutSource(); }
+
         GuardReading    reading = GuardReading.FromSource();
         ParameterWrites writes  = new(declaration, declaration.Body, model);
 
         // The hops already underway travel with the closure rather than as three more parameters, which is
-        // also what keeps both merge methods inside the argument count the profile allows.
-        IReadOnlyCollection<IMethodSymbol> hops          = [.. underway, method];
-        Func<IMethodSymbol, GuardReading>  readDelegated = target => Read(target, compilation, names, hops);
+        // also what keeps both merge methods inside the argument count the profile allows. A delegated
+        // constructor is resolved through the model above, so the compilation that owns it is the one that
+        // travels too — a `base(...)` reaching a third project resolves from there, never from here.
+        IReadOnlyCollection<IMethodSymbol> hops          = [.. underway, declared];
+        Func<IMethodSymbol, GuardReading>  readDelegated = target => Read(target, declaring, names, hops);
 
-        MergeDelegatedConstructorGuards(declaration, model, method, writes, reading, readDelegated);
-        MergeConstructedReturnGuards(declaration, model, method, writes, reading, readDelegated);
+        MergeDelegatedConstructorGuards(declaration, model, declared, writes, reading, readDelegated);
+        MergeConstructedReturnGuards(declaration, model, declared, writes, reading, readDelegated);
 
         // The other half of the question `RunsUnconditionally` asks. That one looks upward, at what encloses
         // a guard; this one looks along, at what precedes it — and a statement above that can jump past the
@@ -135,16 +151,16 @@ internal static class Guards {
                 // throw carried inside the assignment's own right side (`Code = code.Length switch { < 8 =>
                 // throw ..., ... };`) is asked about before that happens: the statement rejects a value on
                 // some path, and the developer deserves the mark for that even though nothing reads past it.
-                MarkIfItRejects(statement, model, method, reading);
+                MarkIfItRejects(statement, model, declared, reading);
 
                 break;
             }
 
             if (statement is IfStatementSyntax guard) {
-                ReadChain(guard, model, method, reading, names, writes, unskipped);
+                ReadChain(guard, model, declared, reading, names, writes, unskipped);
             } else {
-                MarkIfItRejects(statement, model, method, reading);
-                MarkIfValidatedElsewhere(statement, model, method, reading, writes, unskipped);
+                MarkIfItRejects(statement, model, declared, reading);
+                MarkIfValidatedElsewhere(statement, model, declared, reading, writes, unskipped);
             }
 
             unskipped &= !Jumps(statement, model);

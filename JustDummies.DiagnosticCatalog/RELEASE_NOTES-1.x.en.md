@@ -2,6 +2,14 @@
 
 What changed for you, release by release, in the `catalog` train. A catalogue's version is its own — it does not describe `JustDummies` at the same number. For the full technical record, see [CHANGELOG.md](https://github.com/Reefact/just-dummies/blob/main/JustDummies.DiagnosticCatalog/CHANGELOG.md).
 
+## 1.0.0-preview.5 — September 2, 2026
+
+_A license change every consumer should read._
+
+### ⚠️ Breaking changes
+
+- **JustDummies.DiagnosticCatalog is now licensed under [PolyForm Internal Use 1.0.0](https://github.com/Reefact/just-dummies/blob/main/LICENSE), not Apache 2.0 — source-available, not open source.** You may read, build, modify and run the package for your own or your company's internal business operations; you may not distribute the software. Versions already published on NuGet are untouched and keep the license they shipped with. Contributions are now governed by a [Contributor Agreement](https://github.com/Reefact/just-dummies/blob/main/CONTRIBUTOR_AGREEMENT.md).
+
 ## 1.0.0-preview.4 — August 24, 2026
 
 _The catalogue catches up with the rule set `JustDummies 1.0.0-preview.3` shipped: three rules join the constants, `JD031`, `JD032` and `JD033`._

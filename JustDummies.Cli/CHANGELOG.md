@@ -8,6 +8,8 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ## [Unreleased]
 
+## [1.1.0-beta.5] - 2026-09-02
+
 ### Fixed
 
 - **A type that merely shares an `AnyX` name is no longer proposed as its generator.** §5.4 composes
@@ -704,7 +706,8 @@ on the produced package — both that the nuspec declares no such dependency and
 bundled beside the tool, since a .NET tool ships its closure as files and the first check alone would pass
 on an empty dependency list.
 
-[Unreleased]: https://github.com/Reefact/just-dummies/compare/cli-v1.1.0-beta.4...HEAD
+[Unreleased]: https://github.com/Reefact/just-dummies/compare/cli-v1.1.0-beta.5...HEAD
+[1.1.0-beta.5]: https://github.com/Reefact/just-dummies/compare/cli-v1.1.0-beta.4...cli-v1.1.0-beta.5
 [1.1.0-beta.4]: https://github.com/Reefact/just-dummies/compare/cli-v1.1.0-beta.3...cli-v1.1.0-beta.4
 [1.1.0-beta.3]: https://github.com/Reefact/just-dummies/compare/cli-v1.1.0-beta.2...cli-v1.1.0-beta.3
 [1.1.0-beta.2]: https://github.com/Reefact/just-dummies/compare/cli-v1.1.0-beta.1...cli-v1.1.0-beta.2

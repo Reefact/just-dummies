@@ -2,6 +2,15 @@
 
 Ce qui a changé pour vous, version par version, sur le train `cli`. Pour le registre technique complet — chaque contrainte, chaque cas limite, chaque ADR — voir [CHANGELOG.md](https://github.com/Reefact/just-dummies/blob/main/JustDummies.Cli/CHANGELOG.md).
 
+## 1.1.0-beta.5 — 2 septembre 2026
+
+_Un type qui ne faisait que partager le nom d'un générateur était encore proposé comme tel — cette version comble l'écart._
+
+### 🐛 Corrections
+
+- Un type qui partage un nom mais n'est pas utilisable comme générateur — `static`, sans `IAny<T>`, `abstract`, ou sans constructeur public sans paramètre — n'est plus proposé comme `AnyX` d'un paramètre. Le générer entrait en collision avec la déclaration réelle et faisait échouer votre build sur ce qu'elle était réellement (`CS0712` pour une classe statique, entre autres), sous un récapitulatif qui prétendait encore que `AnyX` l'avait inféré, souvent sans même le `using` de son espace de noms. Le paramètre reste désormais ouvert, exactement comme si rien ne répondait à ce nom.
+- Là où deux types nommés `AnyX` ou plus conviennent chacun comme générateur d'un paramètre, `dum` ne choisit plus silencieusement l'un d'eux — il les liste tous sous le `TODO` du paramètre, la même discipline déjà appliquée à une factory statique liée à égalité.
+
 ## 1.1.0-beta.4 — 2 septembre 2026
 
 _Un changement de licence que chaque consommateur devrait lire, un paramètre composé désormais tiré via son propre générateur, et une longue liste de corrections de lecture de gardes — plusieurs d'entre elles closant les limitations connues livrées avec 1.1.0-beta.3._

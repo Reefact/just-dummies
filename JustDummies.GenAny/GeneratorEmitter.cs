@@ -218,12 +218,6 @@ public static class GeneratorEmitter {
     ///     build reports it at this line, in the IDE and in CI, the minute the file is written.
     /// </summary>
     private static void WriteTodo(StringBuilder file, ScaffoldedParameter parameter, string indent) {
-        if (parameter.AmbiguousGeneratorCandidates.Count > 0) {
-            WriteAmbiguousTodo(file, parameter, indent);
-
-            return;
-        }
-
         Line(file, $"{indent}// TODO(dum): no generator inferred for '{parameter.TypeDisplay} {parameter.Name}'.");
 
         if (ScaffoldableByName(parameter.TypeDisplay)) {
@@ -234,19 +228,6 @@ public static class GeneratorEmitter {
         }
 
         Line(file, $"{indent}//   Write one here, or replace it and always pass .With{parameter.PascalCasedName}(...) instead.");
-    }
-
-    /// <summary>
-    ///     Several generators would each have served this parameter's type equally well (§5.4), and which one
-    ///     is meant is the developer's call, not a guess the tool makes for them — the same discipline §5.1.2
-    ///     already holds a tied static factory to.
-    /// </summary>
-    private static void WriteAmbiguousTodo(StringBuilder file, ScaffoldedParameter parameter, string indent) {
-        Line(file, $"{indent}// TODO(dum): several generators answer to '{parameter.TypeDisplay} {parameter.Name}'; dum will not choose (§5.4):");
-
-        foreach (string candidate in parameter.AmbiguousGeneratorCandidates) { Line(file, $"{indent}//   {candidate}"); }
-
-        Line(file, $"{indent}//   Rename all but one, or write .With{parameter.PascalCasedName}(...) yourself.");
     }
 
     /// <summary>

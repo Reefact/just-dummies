@@ -146,15 +146,12 @@ internal sealed class GeneratorFor {
 
     private readonly TypeNames names;
 
-    private readonly Compilation compilation;
-
     private readonly NamingOptions naming;
 
-    internal GeneratorFor(LibrarySurface library, TypeNames names, Compilation compilation, NamingOptions naming) {
-        this.library     = library;
-        this.names       = names;
-        this.compilation = compilation;
-        this.naming      = naming;
+    internal GeneratorFor(LibrarySurface library, TypeNames names, NamingOptions naming) {
+        this.library = library;
+        this.names   = names;
+        this.naming  = naming;
     }
 
     /// <summary>Whether a size guard on this type reads against the count family rather than the length one.</summary>
@@ -418,41 +415,26 @@ internal sealed class GeneratorFor {
     ///     A type the base table has no row for, drawn through the generator that type owns (§5.4).
     /// </summary>
     /// <remarks>
-    ///     One name, whether or not it exists yet. A value object's recipe belongs to the generator scaffolded
-    ///     for that type, and deriving it again here — <c>Any.String().NonEmpty().As(OrderReference.Create)</c>
-    ///     — would write one copy of that recipe per site composing it, each free to drift from the type's own
-    ///     constructor. Where the generator is missing, <c>CS0246</c> at this line names what to scaffold, which
-    ///     is ADR-0060's mechanism spelled as a type name rather than as an invented identifier (ADR-0089).
+    ///     One name, unconditionally — a blind code-generation convention, not a lookup. Composition never asks
+    ///     the compilation whether a type of that name exists, qualifies, or is ambiguous: it always writes
+    ///     <c>new AnyX()</c> and opens the composed type's own namespace (ADR-0062, and the only namespace ever
+    ///     opened here — deterministic from the type being composed, never from what the compilation happens to
+    ///     contain). Whether the call resolves is the developer's own compiler's verdict, not this method's: a
+    ///     value object's recipe belongs to the generator scaffolded for that type, and deriving one here
+    ///     instead — <c>Any.String().NonEmpty().As(OrderReference.Create)</c> — would write one copy of that
+    ///     recipe per site composing it, each free to drift from the type's own constructor. Missing, disqualified,
+    ///     ambiguous, only convertible through variance — every shape is named exactly the same way, and
+    ///     <c>CS0246</c>, <c>CS0712</c>, or whatever the real shape produces at that line is the instruction: fix
+    ///     the type, add a <c>using</c> by hand, or write the parameter's own recipe. That is ADR-0060's
+    ///     mechanism spelled as a type name rather than as an invented identifier (ADR-0089), so the parameter
+    ///     is <b>not</b> unresolved.
     /// </remarks>
     private DrawnGenerator Composed(INamedTypeSymbol type, Provenance refusal) {
         if (refusal != Provenance.None) { return DrawnGenerator.Unresolved(refusal); }
 
-        GeneratorCandidates candidates = Composition.CandidatesFor(type, compilation, naming);
-
-        if (candidates.Unique is { } scaffolded) {
-            names.Open(NamespaceOf(scaffolded));
-
-            return DrawnGenerator.From($"new {names.Of(scaffolded)}()", scaffolded, provenance: Provenance.Scaffolded);
-        }
-
-        // Two or more equally usable generators answer to the same name, and picking one on the developer's
-        // behalf would be exactly the guess §5.1.2 already refuses for a tied static factory. Named here rather
-        // than chosen, in full, so the parameter stays open until the developer settles it themselves.
-        if (candidates.Tied.Count > 1) {
-            return DrawnGenerator.Ambiguous([.. candidates.Tied.Select(candidate => candidate.ToDisplayString())
-                                                            .OrderBy(displayString => displayString, StringComparer.Ordinal)]);
-        }
-
         // A generic type's name drops its arguments, so Repository<Order> and Repository<Line> would both be
         // told to write AnyRepository and neither would be the name to write. §5.5 still answers there.
         if (type.IsGenericType) { return DrawnGenerator.Unresolved(); }
-
-        // A type already answers to this exact name and is not usable as a generator — static, abstract,
-        // missing the interface, or missing the public parameterless constructor. Naming it anyway, as though
-        // nothing were there yet, would collide with that declaration and send the developer chasing a CS0712
-        // or similar under a recap that still claims AnyX inferred it. Left open instead, exactly as a type
-        // with no candidate under any name would be.
-        if (candidates.AnyNamed) { return DrawnGenerator.Unresolved(); }
 
         // Named anyway, and deliberately unresolvable: the developer's own build reports it at this line, in the
         // IDE and in CI, the minute the file is written. No builder goes with it, so nothing is chained onto a

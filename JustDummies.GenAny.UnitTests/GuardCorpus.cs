@@ -900,7 +900,23 @@ internal static class GuardCorpus {
                                                                 if (address is null) { throw new ArgumentNullException(nameof(address)); }
                                                             }
                                                         }
-                                                        """, idioms: ["`p is null`, `p == null`"]),
+                                                        """, idioms: ["`p is null`, `p == null`, or the assigned `f = p ?? throw new ArgumentNullException(nameof(p));`"]),
+
+        // ---- The assigned spelling of the same null-check, fused into the write rather than standing before
+        // ---- it (§5.3) -- and two parameters guarded that way in sequence, since the shape's whole point is
+        // ---- that the second one is still read rather than silently skipped once the first ends up looking
+        // ---- like an ordinary write to state.
+        new GuardedShape("bcl-assigned-null-check", "Parcel", """
+                                                              public sealed class Parcel {
+                                                                  public Parcel(string sender, string recipient) {
+                                                                      Sender    = sender ?? throw new ArgumentNullException(nameof(sender));
+                                                                      Recipient = recipient ?? throw new ArgumentNullException(nameof(recipient));
+                                                                  }
+
+                                                                  public string Sender    { get; }
+                                                                  public string Recipient { get; }
+                                                              }
+                                                              """, idioms: ["`p is null`, `p == null`, or the assigned `f = p ?? throw new ArgumentNullException(nameof(p));`"]),
 
         new GuardedShape("bcl-negative-only", "Drawdown", """
                                                           public sealed class Drawdown {

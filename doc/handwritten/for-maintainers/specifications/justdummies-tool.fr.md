@@ -714,7 +714,7 @@ L'ensemble reconnu est clos :
 
 | Condition qui lève | Contrainte ajoutée |
 |---|---|
-| `p is null`, `p == null` | aucune — le generator ne retourne jamais `null` de toute façon |
+| `p is null`, `p == null`, ou l'assignation `f = p ?? throw new ArgumentNullException(nameof(p));` | aucune — le generator ne retourne jamais `null` de toute façon |
 | `string.IsNullOrEmpty(p)`, `p.Length == 0`, `p.Length < 1` | `.NonEmpty()` |
 | `string.IsNullOrWhiteSpace(p)` | `.NotBlank()` |
 | `p.Length > N` | `.WithMaxLength(N)` |
@@ -729,6 +729,17 @@ L'ensemble reconnu est clos :
 | `p == Guid.Empty` | `.NonEmpty()` |
 | `!Enum.IsDefined(typeof(E), p)`, `!Enum.IsDefined(p)` | aucune — `Any.Enum<E>()` ne tire déjà que des membres déclarés, **là où `p` est de type `E`** |
 | `p == E.Member` | `.DifferentFrom(E.Member)`, **là où `p` est de type `E`** |
+
+**Le null-check assigné ne termine pas le scan des instructions en tête, contrairement à une
+écriture ordinaire sur l'état.** `f = p ?? throw new ArgumentNullException(nameof(p));` valide et
+stocke à la fois, en une seule instruction — la forme qu'un constructeur avec plusieurs lignes de ce
+genre écrit une fois par paramètre, et pour laquelle ADR-0086 taille déjà une exception, étendue ici
+à un second idiome plutôt qu'à un second helper. Lue comme une assignation ordinaire, elle
+terminerait le scan au premier paramètre qu'elle garde, et tout paramètre suivant — gardé de la même
+façon, deux lignes plus bas — se lirait comme si rien n'avait jamais été demandé de lui. Une
+exception différente levée depuis la même forme énonce un invariant que cette ligne ne sait pas
+nommer, et est laissée à la lecture ordinaire « rejette, et le moteur ne sait pas pourquoi », comme
+pour un `if` non reconnu.
 
 **`.NonEmpty()` ne couvre pas `IsNullOrWhiteSpace`, et les deux lignes sont délibérément séparées.**
 Il l'a couvert autrefois, sur la prémisse qu'un `Any.String()` non contraint ne tire que des lettres

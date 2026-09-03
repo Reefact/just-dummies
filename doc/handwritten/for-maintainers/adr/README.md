@@ -21,7 +21,7 @@ and the **Origin** column says how each one got here:
   but its record stays live in `Reefact/first-class-errors` too, because that
   repository still applies it. Both copies are now independent: either side can
   supersede its own without touching the other. 9 decisions.
-* **recorded here** — decided in this repository, on its own. 51 decisions.
+* **recorded here** — decided in this repository, on its own. 53 decisions.
 
 The numbers are this base's own, assigned in the order the decisions were
 recorded upstream ([ADR-0045](0045-renumber-the-decision-base.md)); every ADR
@@ -205,3 +205,5 @@ failure mode of a "not now" is that nobody remembers the option existed on the d
 | [ADR-0092](0092-run-every-mutation-leg-from-its-own-source-project.md) | Run every mutation leg from its own source project | Accepted | recorded here |
 | [ADR-0093](0093-publish-mutation-statuses-not-a-score.md) | Publish mutation statuses, not a score | Accepted | recorded here |
 | [ADR-0094](0094-lift-a-nullable-value-type-rather-than-deriving-it.md) | Lift a nullable value type rather than deriving it | Accepted | recorded here |
+| [ADR-0095](0095-read-the-assigned-null-check-as-a-guard-idiom-too.md) | Read the assigned null-check as a guard idiom too | Accepted | recorded here |
+| [ADR-0096](0096-emit-a-parameter-inline-whenever-it-has-nothing-to-report.md) | Emit a parameter inline whenever it has nothing to report | Accepted | recorded here |

@@ -8,6 +8,32 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ## [Unreleased]
 
+### Fixed
+
+- **A null-check fused into an assignment — `Field = value ?? throw new ArgumentNullException(nameof(value));`
+  — is now read as the same guard `ArgumentNullException.ThrowIfNull(value)` and `if (value is null) { throw
+  … }` already were, and reading it no longer stops at the first parameter guarded that way.** The leading-guard
+  scan (§5.3) treated this shape as an ordinary write to state and gave up on every parameter after it — a
+  constructor validating several parameters this way, one line each, had only the first one read; every later
+  one looked exactly like a parameter with no guard at all, with no `unread guards` mark to say otherwise. Both
+  halves are fixed: the third spelling is recognised (ADR-0095), and — like the assigned guard-library idiom
+  already exempted (ADR-0086) — it does not end the scan. Measured on
+  `Order(OrderReference reference, CustomerId customerId, Money total, OrderStatus status)`, a constructor
+  validating three of its four parameters this way: only `reference` was ever read before this fix.
+
+### Changed
+
+- **A parameter with nothing to report — resolved, no verification pending, no guard combined into it — is now
+  written inline, with no factory method, whether it composes through its own type's generator or reads
+  straight off the base table (ADR-0096).** Previously only a composed parameter earned this: a guard-free
+  primitive always went through a private factory returning exactly the base table's own call, tightened by
+  nothing. The fix above made the gap visible on a composed parameter too — a null-check now read as satisfied
+  routed through a factory anyway, purely to hold a verification marker that, once resolved, left a method
+  wrapping one call and saying nothing it did not. Both shapes are now the same: `status: Any.Enum<OrderStatus>()`
+  reads exactly like `customerId: new AnyCustomerId()`, right beside each other in the same constructor. A
+  parameter that still has something to say — a guard tightened its chain, or one of the two blocking markers of
+  §5.5/§5.6 applies — keeps its factory exactly as before.
+
 ## [1.1.0-beta.6] - 2026-09-03
 
 ### Fixed

@@ -140,6 +140,19 @@ internal static class Guards {
         bool unskipped = true;
 
         foreach (StatementSyntax statement in declaration.Body.Statements) {
+            // A second assignment is exempt for the same reason as ADR-0086's: `Field = param ?? throw new
+            // ArgumentNullException(nameof(param));` states the same null-check `ArgumentNullException
+            // .ThrowIfNull(param)` and `if (param is null) { throw … }` already read (§5.3) — a third
+            // spelling of one invariant, fused into the write rather than standing before it. It is read here
+            // rather than falling to the marking pass below, because that pass cannot tell "understood, and
+            // satisfied by construction" from "rejects, and the engine does not know why" — both syntactically
+            // contain a `throw`, and only the recognised shape is the former.
+            if (TryRecogniseCoalesceThrowNullCheck(statement, model, declared, out _)) {
+                unskipped &= !Jumps(statement, model);
+
+                continue;
+            }
+
             // "Leading" is what makes a guard a guard: past the first assignment to state, an `if` that throws
             // is ordinary logic and says nothing about what the parameter may be. One assignment is exempt
             // (ADR-0086): a guard-library helper assigned straight to a field or property — the documented
@@ -621,6 +634,52 @@ internal static class Guards {
             && assignment.IsKind(SyntaxKind.SimpleAssignmentExpression)
             && Unwrapped(assignment.Right) is InvocationExpressionSyntax invocation
             && LibraryGuards.Recognises(invocation, model);
+    }
+
+    /// <summary>
+    ///     Whether a statement is <c>Field = param ?? throw new ArgumentNullException(nameof(param));</c> — the
+    ///     null-check idiom fused into an assignment, a third spelling of what <c>ArgumentNullException
+    ///     .ThrowIfNull(param)</c> and <c>if (param is null) { throw … }</c> already read.
+    /// </summary>
+    /// <remarks>
+    ///     The coalesce's left side has to <b>be</b> a parameter, bar parentheses — the same subject-identity
+    ///     discipline every other row of the closed set keeps — and the thrown expression's type has to resolve
+    ///     to exactly <see cref="ArgumentNullException" />: a different exception thrown from the same shape
+    ///     states an invariant this method does not know how to name, and is left to the ordinary "rejects, and
+    ///     the engine cannot tell why" reading below, exactly as an unrecognised <c>if</c> is.
+    /// </remarks>
+    private static bool TryRecogniseCoalesceThrowNullCheck(StatementSyntax statement,
+                                                            SemanticModel model,
+                                                            IMethodSymbol method,
+                                                            out IParameterSymbol? parameter) {
+        parameter = null;
+
+        if (statement is not ExpressionStatementSyntax { Expression: AssignmentExpressionSyntax assignment }
+         || !assignment.IsKind(SyntaxKind.SimpleAssignmentExpression)
+         || model.GetSymbolInfo(assignment.Left).Symbol is not (IFieldSymbol or IPropertySymbol)) {
+            return false;
+        }
+
+        if (Unwrapped(assignment.Right) is not BinaryExpressionSyntax { RawKind: (int)SyntaxKind.CoalesceExpression } coalesce) {
+            return false;
+        }
+
+        if (coalesce.Right is not ThrowExpressionSyntax @throw) { return false; }
+
+        if (Unwrapped(coalesce.Left) is not IdentifierNameSyntax identifier
+         || model.GetSymbolInfo(identifier).Symbol is not IParameterSymbol candidate
+         || !method.Parameters.Contains(candidate, SymbolEqualityComparer.Default)) {
+            return false;
+        }
+
+        if (model.GetTypeInfo(@throw.Expression).Type is not { } exceptionType
+         || exceptionType.ToDisplayString(ByNamespace) != "System.ArgumentNullException") {
+            return false;
+        }
+
+        parameter = candidate;
+
+        return true;
     }
 
     /// <summary>

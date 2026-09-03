@@ -29,9 +29,9 @@ public sealed partial class AnyOrder : IAny<Order> {
         : this(reference: new AnyOrderReference(),
                customer:  AnyValidCustomer(),
                quantity:  AnyValidQuantity(),
-               status:    AnyValidStatus(),
-               tags:      AnyValidTags(),
-               placedAt:  AnyValidPlacedAt()) { }
+               status:    Any.Enum<OrderStatus>(),
+               tags:      Any.ListOf(Any.String().NonEmpty()),
+               placedAt:  Any.DateTime()) { }
 
     private static IAny<Customer> AnyValidCustomer() {
         // TODO(dum): 'Customer customer' may be guarded by something dum could not read (§9).
@@ -44,18 +44,6 @@ public sealed partial class AnyOrder : IAny<Order> {
 
     private static IAny<int> AnyValidQuantity() {
         return Any.Int32().Positive();
-    }
-
-    private static IAny<OrderStatus> AnyValidStatus() {
-        return Any.Enum<OrderStatus>();
-    }
-
-    private static IAny<IReadOnlyList<string>> AnyValidTags() {
-        return Any.ListOf(Any.String().NonEmpty());
-    }
-
-    private static IAny<DateTime> AnyValidPlacedAt() {
-        return Any.DateTime();
     }
 
     private AnyOrder(IAny<OrderReference>        reference,

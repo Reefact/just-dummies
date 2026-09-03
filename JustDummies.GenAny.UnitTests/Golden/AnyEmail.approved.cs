@@ -18,11 +18,7 @@ public sealed partial class AnyEmail : IAny<Email> {
 
     /// <summary>Creates the generator with a default recipe for every constructor parameter.</summary>
     public AnyEmail()
-        : this(value: AnyValidValue()) { }
-
-    private static IAny<string> AnyValidValue() {
-        return Any.String().NonEmpty();
-    }
+        : this(value: Any.String().NonEmpty()) { }
 
     private AnyEmail(IAny<string> value) {
         _value = value;

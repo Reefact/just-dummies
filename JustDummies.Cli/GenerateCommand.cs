@@ -5,7 +5,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-using JustDummies.GenAny;
+using JustDummies.GenDummy;
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -140,7 +140,7 @@ internal sealed class GenerateCommand : AsyncCommand<GenerateSettings> {
     private static bool CanCompileEntryPoint(Compilation compilation, EntryPointArgument entryPoint, out string languageVersion) {
         languageVersion = string.Empty;
 
-        if (entryPoint.Options.Kind != EntryPointKind.Any) { return true; }
+        if (entryPoint.Options.Kind != EntryPointKind.Dummy) { return true; }
         if (compilation is not CSharpCompilation csharp) { return true; }
 
         languageVersion = csharp.LanguageVersion.ToDisplayString();

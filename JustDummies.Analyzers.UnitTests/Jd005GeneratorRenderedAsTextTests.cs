@@ -15,7 +15,7 @@ public class Jd005GeneratorRenderedAsTextTests {
 
             public static class Sample {
                 public static string M() {
-                    return $"order {Any.String().NonEmpty()}";
+                    return $"order {Dummy.String().NonEmpty()}";
                 }
             }
             """;
@@ -25,7 +25,7 @@ public class Jd005GeneratorRenderedAsTextTests {
         Check.That(diagnostics.Length).IsEqualTo(1);
         Check.That(diagnostics[0].Id).IsEqualTo("JD005");
         Check.That(diagnostics[0].GetMessage()).Contains("Generate()");
-        Check.That(diagnostics[0].GetMessage()).Contains("AnyString");
+        Check.That(diagnostics[0].GetMessage()).Contains("DummyString");
     }
 
     [Fact]
@@ -35,7 +35,7 @@ public class Jd005GeneratorRenderedAsTextTests {
 
             public static class Sample {
                 public static string M() {
-                    return "order " + Any.String().NonEmpty();
+                    return "order " + Dummy.String().NonEmpty();
                 }
             }
             """;
@@ -53,7 +53,7 @@ public class Jd005GeneratorRenderedAsTextTests {
 
             public static class Sample {
                 public static string M() {
-                    return Any.Int32().Positive().ToString();
+                    return Dummy.Int32().Positive().ToString();
                 }
             }
             """;
@@ -62,18 +62,18 @@ public class Jd005GeneratorRenderedAsTextTests {
 
         Check.That(diagnostics.Length).IsEqualTo(1);
         Check.That(diagnostics[0].Id).IsEqualTo("JD005");
-        Check.That(diagnostics[0].GetMessage()).Contains("AnyInt32");
+        Check.That(diagnostics[0].GetMessage()).Contains("DummyInt32");
     }
 
     [Fact]
     public async Task Reports_a_generator_held_behind_the_IAny_interface() {
-        // The rule keys on IAny<T>, not on a list of concrete builders, so As(...) and Combine(...) results are covered.
+        // The rule keys on IDummy<T>, not on a list of concrete builders, so As(...) and Combine(...) results are covered.
         const string source = """
             using JustDummies;
 
             public static class Sample {
                 public static string M() {
-                    IAny<string> generator = Any.String().NonEmpty();
+                    IDummy<string> generator = Dummy.String().NonEmpty();
 
                     return $"{generator}";
                 }
@@ -93,8 +93,8 @@ public class Jd005GeneratorRenderedAsTextTests {
 
             public static class Sample {
                 public static string M() {
-                    return $"order {Any.String().NonEmpty().Generate()}"
-                         + Any.Int32().Positive().Generate().ToString();
+                    return $"order {Dummy.String().NonEmpty().Generate()}"
+                         + Dummy.Int32().Positive().Generate().ToString();
                 }
             }
             """;
@@ -130,7 +130,7 @@ public class Jd005GeneratorRenderedAsTextTests {
 
             public static class Sample {
                 public static string M() {
-                    return Any.Int32().Positive().Generate().ToString("D");
+                    return Dummy.Int32().Positive().Generate().ToString("D");
                 }
             }
             """;
@@ -148,7 +148,7 @@ public class Jd005GeneratorRenderedAsTextTests {
 
             public static class Sample {
                 public static int M() {
-                    return Any.Int32().Positive().Generate() + 1;
+                    return Dummy.Int32().Positive().Generate() + 1;
                 }
             }
             """;

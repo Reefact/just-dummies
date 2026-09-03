@@ -43,12 +43,12 @@ Canonical example:
 ```text
 issue (correctness): The redraw loop can exit without satisfying the declared exclusion.
 
-`AnyString.Excluding` redraws while the candidate is excluded, but the bounded-redraw guard
+`DummyString.Excluding` redraws while the candidate is excluded, but the bounded-redraw guard
 returns the last candidate when the budget runs out instead of throwing. A generator that
 cannot honour its constraint must fail loudly (ADR-0012), not hand back a value that violates
 the invariant the caller declared.
 
-Raise `AnyGenerationException` when the budget is exhausted, as the collection path does.
+Raise `DummyGenerationException` when the budget is exhausted, as the collection path does.
 ```
 
 ## Labels (one per comment)

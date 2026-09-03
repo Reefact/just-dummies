@@ -7,7 +7,7 @@ using Microsoft.CodeAnalysis.Operations;
 namespace JustDummies.Analyzers;
 
 /// <summary>
-///     JD021 — reports a blank replay snippet handed to <c>Any.UseSeed(int, string)</c>. The guard rejects it at run
+///     JD021 — reports a blank replay snippet handed to <c>Dummy.UseSeed(int, string)</c>. The guard rejects it at run
 ///     time, and because that scope is normally opened from a test-framework adapter's hook, the throw surfaces as an
 ///     infrastructure failure on <b>every test in the suite</b> rather than as one failing assertion — a
 ///     disproportionately expensive way to learn about a typo the compiler can already see.
@@ -28,9 +28,9 @@ public sealed class BlankReplaySnippetAnalyzer : DiagnosticAnalyzer {
 
     private static void OnCompilationStart(CompilationStartAnalysisContext context) {
         KnownSymbols symbols = KnownSymbols.From(context.Compilation);
-        if (symbols.Any is null) { return; }
+        if (symbols.Dummy is null) { return; }
 
-        INamedTypeSymbol any = symbols.Any;
+        INamedTypeSymbol any = symbols.Dummy;
 
         context.RegisterOperationAction(operationContext => Analyze(operationContext, any), OperationKind.Invocation);
     }

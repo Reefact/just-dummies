@@ -27,7 +27,7 @@ public sealed class AsNullableTests {
 
     [Fact(DisplayName = "AsNullable never yields null, and every value honours the inner constraints.")]
     public void AsNullableNeverYieldsNull() {
-        IAny<int?> generator = Any.Int32().Between(1, 100).AsNullable();
+        IDummy<int?> generator = Dummy.Int32().Between(1, 100).AsNullable();
 
         for (int drawn = 0; drawn < SampleCount; drawn++) {
             int? value = generator.Generate();
@@ -47,7 +47,7 @@ public sealed class AsNullableTests {
     /// </remarks>
     [Fact(DisplayName = "A distinct collection over a lifted generator draws, where one over a derived generator refused.")]
     public void ADistinctCollectionOverALiftedGeneratorDraws() {
-        IAny<ISet<Slot?>> generator = Any.SetOf(Any.Enum<Slot>().AsNullable()).NonEmpty();
+        IDummy<ISet<Slot?>> generator = Dummy.SetOf(Dummy.Enum<Slot>().AsNullable()).NonEmpty();
 
         for (int drawn = 0; drawn < SampleCount; drawn++) {
             ISet<Slot?> slots = generator.Generate();
@@ -68,13 +68,13 @@ public sealed class AsNullableTests {
     /// </remarks>
     [Fact(DisplayName = "A set over the lift answers exactly as a set over the underlying generator.")]
     public void TheLiftedDomainIsCountedExactly() {
-        Check.That(Any.SetOf(Any.Enum<Slot>().AsNullable()).WithCount(3).Generate()).HasSize(3);
-        Check.That(Any.SetOf(Any.Enum<Slot>()).WithCount(3).Generate()).HasSize(3);
+        Check.That(Dummy.SetOf(Dummy.Enum<Slot>().AsNullable()).WithCount(3).Generate()).HasSize(3);
+        Check.That(Dummy.SetOf(Dummy.Enum<Slot>()).WithCount(3).Generate()).HasSize(3);
 
-        Check.ThatCode(() => Any.SetOf(Any.Enum<Slot>().AsNullable()).WithCount(4).Generate())
-             .Throws<ConflictingAnyConstraintException>();
-        Check.ThatCode(() => Any.SetOf(Any.Enum<Slot>()).WithCount(4).Generate())
-             .Throws<ConflictingAnyConstraintException>();
+        Check.ThatCode(() => Dummy.SetOf(Dummy.Enum<Slot>().AsNullable()).WithCount(4).Generate())
+             .Throws<ConflictingDummyConstraintException>();
+        Check.ThatCode(() => Dummy.SetOf(Dummy.Enum<Slot>()).WithCount(4).Generate())
+             .Throws<ConflictingDummyConstraintException>();
     }
 
     /// <summary>
@@ -87,7 +87,7 @@ public sealed class AsNullableTests {
     /// </remarks>
     [Fact(DisplayName = "A null pinned into a distinct collection extends the lifted domain.")]
     public void APinnedNullExtendsTheDomain() {
-        ISet<Slot?> slots = Any.SetOf(Any.Enum<Slot>().AsNullable()).Containing(null).WithCount(4).Generate();
+        ISet<Slot?> slots = Dummy.SetOf(Dummy.Enum<Slot>().AsNullable()).Containing(null).WithCount(4).Generate();
 
         Check.That(slots).HasSize(4);
         Check.That(slots).Contains((Slot?)null);
@@ -95,7 +95,7 @@ public sealed class AsNullableTests {
 
     [Fact(DisplayName = "AsNullable refuses a null generator.")]
     public void AsNullableRefusesANullGenerator() {
-        Check.ThatCode(() => ((IAny<int>)null!).AsNullable()).Throws<System.ArgumentNullException>();
+        Check.ThatCode(() => ((IDummy<int>)null!).AsNullable()).Throws<System.ArgumentNullException>();
     }
 
     /// <summary>The values replay from the seed, exactly as the wrapped generator's do.</summary>
@@ -110,9 +110,9 @@ public sealed class AsNullableTests {
     }
 
     private static List<int?> Drawn(int seed) {
-        using IDisposable scope = Any.UseSeed(seed);
+        using IDisposable scope = Dummy.UseSeed(seed);
 
-        IAny<int?>  generator = Any.Int32().Between(1, 1000).AsNullable();
+        IDummy<int?>  generator = Dummy.Int32().Between(1, 1000).AsNullable();
         List<int?>  values    = [];
 
         for (int drawn = 0; drawn < 20; drawn++) { values.Add(generator.Generate()); }

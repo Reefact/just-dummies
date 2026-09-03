@@ -29,7 +29,7 @@
 
     <!-- Description -->
     <Description>
-      The xUnit v3 companion of JustDummies: mark a test, a class or an assembly [Reproducible] and its arbitrary values are drawn from a pinned seed, reported only when the test fails. Removes the per-test Any.Reproducibly ceremony without changing how values are generated.
+      The xUnit v3 companion of JustDummies: mark a test, a class or an assembly [Reproducible] and its arbitrary values are drawn from a pinned seed, reported only when the test fails. Removes the per-test Dummy.Reproducibly ceremony without changing how values are generated.
     </Description>
 
     <!-- Metadata -->

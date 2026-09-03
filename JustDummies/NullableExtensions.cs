@@ -25,12 +25,12 @@ public static class NullableExtensions {
     /// <remarks>
     ///     <para>
     ///         The null-versus-value decision draws from the same random context as the wrapped generator, so an
-    ///         <c>Any.Reproducibly(...)</c> run replays it exactly. A <c>null</c> draw does not consume a value from
+    ///         <c>Dummy.Reproducibly(...)</c> run replays it exactly. A <c>null</c> draw does not consume a value from
     ///         the wrapped generator.
     ///     </para>
     ///     <example>
     ///         <code>
-    ///         int? discount = Any.Int32().Between(0, 100).OrNull().Generate();
+    ///         int? discount = Dummy.Int32().Between(0, 100).OrNull().Generate();
     ///         </code>
     ///     </example>
     /// </remarks>
@@ -38,14 +38,14 @@ public static class NullableExtensions {
     /// <typeparam name="T">The underlying value type.</typeparam>
     /// <returns>A generator of <see cref="Nullable{T}" />.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="generator" /> is <c>null</c>.</exception>
-    public static IAny<T?> OrNull<T>(this IAny<T> generator)
+    public static IDummy<T?> OrNull<T>(this IDummy<T> generator)
         where T : struct {
         if (generator is null) { throw new ArgumentNullException(nameof(generator)); }
 
-        RandomSource? source       = AnyDerivation.SourceOf(generator);
-        bool          reproducible = AnyDerivation.IsReproducible(generator);
+        RandomSource? source       = DummyDerivation.SourceOf(generator);
+        bool          reproducible = DummyDerivation.IsReproducible(generator);
 
-        return new DerivedAny<T?>(source, reproducible, () => {
+        return new DerivedDummy<T?>(source, reproducible, () => {
             RandomSource working = source ?? AmbientRandomSource.Instance;
 
             return working.Current.Next(NullDrawOutcomes) == 0 ? (T?)null : generator.Generate();
@@ -65,13 +65,13 @@ public static class NullableExtensions {
     ///     <para>
     ///         Unlike the general <c>As(value =&gt; (T?)value)</c> this replaces, the result keeps whatever the
     ///         wrapped generator knows about how many distinct values it can produce. A distinct collection —
-    ///         <c>Any.SetOf(...)</c>, a dictionary's keys — therefore gates its size on the underlying domain
-    ///         instead of drawing a count that domain cannot fill: <c>Any.SetOf(Any.Enum&lt;Slot&gt;().AsNullable())</c>
-    ///         behaves exactly as <c>Any.SetOf(Any.Enum&lt;Slot&gt;())</c> does.
+    ///         <c>Dummy.SetOf(...)</c>, a dictionary's keys — therefore gates its size on the underlying domain
+    ///         instead of drawing a count that domain cannot fill: <c>Dummy.SetOf(Dummy.Enum&lt;Slot&gt;().AsNullable())</c>
+    ///         behaves exactly as <c>Dummy.SetOf(Dummy.Enum&lt;Slot&gt;())</c> does.
     ///     </para>
     ///     <example>
     ///         <code>
-    ///         ISet&lt;Slot?&gt; slots = Any.SetOf(Any.Enum&lt;Slot&gt;().AsNullable()).NonEmpty().Generate();
+    ///         ISet&lt;Slot?&gt; slots = Dummy.SetOf(Dummy.Enum&lt;Slot&gt;().AsNullable()).NonEmpty().Generate();
     ///         </code>
     ///     </example>
     /// </remarks>
@@ -79,11 +79,11 @@ public static class NullableExtensions {
     /// <typeparam name="T">The underlying value type.</typeparam>
     /// <returns>A generator of <see cref="Nullable{T}" /> that never yields <c>null</c>.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="generator" /> is <c>null</c>.</exception>
-    public static IAny<T?> AsNullable<T>(this IAny<T> generator)
+    public static IDummy<T?> AsNullable<T>(this IDummy<T> generator)
         where T : struct {
         if (generator is null) { throw new ArgumentNullException(nameof(generator)); }
 
-        return new NullableAny<T>(generator);
+        return new NullableDummy<T>(generator);
     }
 
 }

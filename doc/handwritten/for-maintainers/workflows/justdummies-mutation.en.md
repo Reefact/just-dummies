@@ -24,7 +24,7 @@ This workflow makes that check automatic for the **four JustDummies
 components** — `JustDummies`, its xUnit v3 adapter `JustDummies.Xunit`
 ([ADR-0018](../adr/0018-adapt-dummies-to-xunit-v3-through-a-companion-package.md)),
 the analyzers that ship inside the package
-([ADR-0023](../adr/0023-ship-justdummies-analyzers.md)), and `JustDummies.GenAny`,
+([ADR-0023](../adr/0023-ship-justdummies-analyzers.md)), and `JustDummies.GenDummy`,
 the guard-reading engine the `dum` scaffolder is built on. On a pull request it
 mutates only the files the pull request changed, for the adapter and the
 analyzers; the generator and the engine are measured by the weekly sweep alone
@@ -75,7 +75,7 @@ The four are
 [`justdummies.json`](../../../../build/stryker/justdummies.json),
 [`justdummies-xunit.json`](../../../../build/stryker/justdummies-xunit.json),
 [`justdummies-analyzers.json`](../../../../build/stryker/justdummies-analyzers.json) and
-[`justdummies-genany.json`](../../../../build/stryker/justdummies-genany.json).
+[`justdummies-gendummy.json`](../../../../build/stryker/justdummies-gendummy.json).
 
 The engine itself is pinned in
 [`.config/dotnet-tools.json`](../../../../.config/dotnet-tools.json) and restored
@@ -271,7 +271,7 @@ majority. The summary step publishes the counts by status precisely so the next
 reader sees that distinction without recomputing it.
 
 **Widening the time budget was measured, not assumed, and there is no cheap
-setting.** On `Any.Combine.cs` — 205 mutants, 169 of them timed out in the sweep
+setting.** On `Dummy.Combine.cs` — 205 mutants, 169 of them timed out in the sweep
 — the default budget reproduces locally at 173 timeouts against 32 kills. Ten
 extra seconds changes nothing at all: 174 and 31. Thirty extra seconds turns
 **112 of those timeouts into real kills** — 61 and 144 — and costs **2.8× the
@@ -392,7 +392,7 @@ Reports land where `--output` says, or in `StrykerOutput/` (git-ignored); open
 
 ### A local report and the CI report can disagree
 
-Measured on 2026-09-01 on `JustDummies.GenAny/Guards.cs` — same commit, same
+Measured on 2026-09-01 on `JustDummies.GenDummy/Guards.cs` — same commit, same
 configuration, and the same declared oracle of 495 tests read from both logs. The
 runner reported 38 survivors; a Linux container reported 52. **Seventeen mutants
 the runner called killed survive in the container**, and for one of them — the

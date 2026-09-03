@@ -33,7 +33,7 @@ public sealed class ScalarChainAdmitsNoValueAnalyzer : DiagnosticAnalyzer {
 
     private static void OnCompilationStart(CompilationStartAnalysisContext context) {
         KnownSymbols symbols = KnownSymbols.From(context.Compilation);
-        if (symbols.Any is null || symbols.IAny is null) { return; }
+        if (symbols.Dummy is null || symbols.IDummy is null) { return; }
 
         context.RegisterOperationAction(operationContext => Analyze(operationContext, symbols), OperationKind.Invocation);
     }
@@ -42,7 +42,7 @@ public sealed class ScalarChainAdmitsNoValueAnalyzer : DiagnosticAnalyzer {
         IInvocationOperation invocation = (IInvocationOperation)context.Operation;
 
         if (invocation.Parent is IInvocationOperation) { return; }
-        if (!AnyChainFacts.TryGetChain(invocation, symbols, out IReadOnlyList<IInvocationOperation> constraints, out IInvocationOperation? factory)) { return; }
+        if (!DummyChainFacts.TryGetChain(invocation, symbols, out IReadOnlyList<IInvocationOperation> constraints, out IInvocationOperation? factory)) { return; }
         if (factory is null || !IsIntegerFactory(factory.TargetMethod.Name)) { return; }
         if (NegativeTestGuard.IsSoleBodyOfLambdaArgument(invocation.Syntax)) { return; }
 
@@ -151,7 +151,7 @@ public sealed class ScalarChainAdmitsNoValueAnalyzer : DiagnosticAnalyzer {
             case byte b:  value = b;   return true;
             case sbyte sb: value = sb; return true;
             // The unsigned trio IsIntegerFactory declares. Without them the verdict turned on how the caller
-            // spelled the literal rather than on anything documented: Any.UInt32().GreaterThan(5) was judged
+            // spelled the literal rather than on anything documented: Dummy.UInt32().GreaterThan(5) was judged
             // because Unwrap strips the implicit conversion and hands back an int, while GreaterThan(5u) arrives
             // as a uint, fails to read, and abandons the whole chain.
             case ushort us: value = us; return true;

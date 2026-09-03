@@ -11,17 +11,17 @@ namespace JustDummies.UnitTests;
 /// <summary>
 ///     The scope form of reproducibility: a handle a caller opens and disposes itself, for a test-framework adapter
 ///     that observes a test through before/after hooks and therefore has no delegate to wrap (ADR-0014). The seed
-///     behaviour must match <c>Any.Reproducibly</c>; what the scope adds is the replay snippet a
+///     behaviour must match <c>Dummy.Reproducibly</c>; what the scope adds is the replay snippet a
 ///     generation-failure diagnostic names, so a run pinned from outside the test body never advertises a call the
 ///     test does not contain.
 /// </summary>
-[TestSubject(typeof(Any))]
+[TestSubject(typeof(Dummy))]
 public sealed class AmbientSeedScopeTests {
 
     #region Statics members declarations
 
     private static (int, string) Batch() {
-        return (Any.Int32().Generate(), Any.String().NonEmpty().Generate());
+        return (Dummy.Int32().Generate(), Dummy.String().NonEmpty().Generate());
     }
 
     #endregion
@@ -31,8 +31,8 @@ public sealed class AmbientSeedScopeTests {
         (int, string) first;
         (int, string) second;
 
-        using (Any.UseSeed(1234)) { first = Batch(); }
-        using (Any.UseSeed(1234)) { second = Batch(); }
+        using (Dummy.UseSeed(1234)) { first = Batch(); }
+        using (Dummy.UseSeed(1234)) { second = Batch(); }
 
         Check.That(second).IsEqualTo(first);
     }
@@ -42,8 +42,8 @@ public sealed class AmbientSeedScopeTests {
         (int, string) fromOne;
         (int, string) fromTwo;
 
-        using (Any.UseSeed(1)) { fromOne = Batch(); }
-        using (Any.UseSeed(2)) { fromTwo = Batch(); }
+        using (Dummy.UseSeed(1)) { fromOne = Batch(); }
+        using (Dummy.UseSeed(2)) { fromTwo = Batch(); }
 
         Check.That(fromTwo).IsNotEqualTo(fromOne);
     }
@@ -53,8 +53,8 @@ public sealed class AmbientSeedScopeTests {
         (int, string) fromScope;
         (int, string) fromRunner = default;
 
-        using (Any.UseSeed(4242)) { fromScope = Batch(); }
-        Any.Reproducibly(4242, () => { fromRunner = Batch(); });
+        using (Dummy.UseSeed(4242)) { fromScope = Batch(); }
+        Dummy.Reproducibly(4242, () => { fromRunner = Batch(); });
 
         Check.That(fromScope).IsEqualTo(fromRunner);
     }
@@ -66,16 +66,16 @@ public sealed class AmbientSeedScopeTests {
         (int, string) restoredFirst;
         (int, string) restoredSecond;
 
-        using (Any.UseSeed(7)) {
+        using (Dummy.UseSeed(7)) {
             first  = Batch();
             second = Batch();
         }
 
-        using (Any.UseSeed(7)) {
+        using (Dummy.UseSeed(7)) {
             restoredFirst = Batch();
             // A nested scope draws from its own generator; the outer one must neither be consumed nor reset by
             // it, so the outer sequence resumes exactly where it was interrupted.
-            using (Any.UseSeed(99)) { Batch(); }
+            using (Dummy.UseSeed(99)) { Batch(); }
             restoredSecond = Batch();
         }
 
@@ -88,10 +88,10 @@ public sealed class AmbientSeedScopeTests {
         (int, string) standalone;
         (int, string) nested;
 
-        using (Any.UseSeed(555)) { standalone = Batch(); }
+        using (Dummy.UseSeed(555)) { standalone = Batch(); }
 
-        using (Any.UseSeed(111)) {
-            using (Any.UseSeed(555)) { nested = Batch(); }
+        using (Dummy.UseSeed(111)) {
+            using (Dummy.UseSeed(555)) { nested = Batch(); }
         }
 
         Check.That(nested).IsEqualTo(standalone);
@@ -99,7 +99,7 @@ public sealed class AmbientSeedScopeTests {
 
     [Fact(DisplayName = "Disposing the scope twice is harmless.")]
     public void DisposingTwiceIsHarmless() {
-        IDisposable scope = Any.UseSeed(31);
+        IDisposable scope = Dummy.UseSeed(31);
 
         scope.Dispose();
 
@@ -110,13 +110,13 @@ public sealed class AmbientSeedScopeTests {
     public void OutOfOrderDisposalKeepsTheInnerScopePinned() {
         // Reference: what seed 2 yields as the sole, top-of-stack scope.
         (int, string) reference;
-        using (Any.UseSeed(2)) { reference = Batch(); }
+        using (Dummy.UseSeed(2)) { reference = Batch(); }
 
         // Open two scopes, then dispose the OUTER first — the inner (seed 2) is still open, so the ambient
         // context must still be pinned to seed 2. A blind restore-the-previous unpins it instead, leaving the
         // still-open inner scope drawing from a fresh unseeded generator.
-        IDisposable outer = Any.UseSeed(1);
-        IDisposable inner = Any.UseSeed(2);
+        IDisposable outer = Dummy.UseSeed(1);
+        IDisposable inner = Dummy.UseSeed(2);
         outer.Dispose();
         (int, string) whileInnerStillOpen = Batch();
         inner.Dispose();
@@ -128,12 +128,12 @@ public sealed class AmbientSeedScopeTests {
     public void OutOfOrderDisposalDoesNotLeakASeed() {
         // Reference: seed 1's sequence, to prove it is NOT what a later, unseeded draw replays.
         (int, string) seedOneSequence;
-        using (Any.UseSeed(1)) { seedOneSequence = Batch(); }
+        using (Dummy.UseSeed(1)) { seedOneSequence = Batch(); }
 
         // Dispose the outer first, then the inner: a blind restore-the-previous now reinstates seed 1's frame,
         // stranding it as the ambient context for whatever runs next.
-        IDisposable outer = Any.UseSeed(1);
-        IDisposable inner = Any.UseSeed(2);
+        IDisposable outer = Dummy.UseSeed(1);
+        IDisposable inner = Dummy.UseSeed(2);
         outer.Dispose();
         inner.Dispose();
 
@@ -146,13 +146,13 @@ public sealed class AmbientSeedScopeTests {
     [Fact(DisplayName = "Disposing a middle scope out of order leaves the top scope and its live ancestors intact.")]
     public void OutOfOrderMiddleDisposalPreservesTheStack() {
         (int, string) seedThree;
-        using (Any.UseSeed(3)) { seedThree = Batch(); }
+        using (Dummy.UseSeed(3)) { seedThree = Batch(); }
         (int, string) seedOne;
-        using (Any.UseSeed(1)) { seedOne = Batch(); }
+        using (Dummy.UseSeed(1)) { seedOne = Batch(); }
 
-        IDisposable bottom = Any.UseSeed(1);
-        IDisposable middle = Any.UseSeed(2);
-        IDisposable top    = Any.UseSeed(3);
+        IDisposable bottom = Dummy.UseSeed(1);
+        IDisposable middle = Dummy.UseSeed(2);
+        IDisposable top    = Dummy.UseSeed(3);
 
         // Dispose the middle scope early: the top (seed 3) is untouched and stays pinned.
         middle.Dispose();
@@ -173,7 +173,7 @@ public sealed class AmbientSeedScopeTests {
         (int, string) inside;
         (int, string) outside = default;
 
-        using (Any.UseSeed(2026)) {
+        using (Dummy.UseSeed(2026)) {
             inside = Batch();
 
             // A task started inside the scope inherits it, so run the probe on a context that never saw it.
@@ -185,80 +185,80 @@ public sealed class AmbientSeedScopeTests {
         Check.That(outside).IsNotEqualTo(inside);
     }
 
-    [Fact(DisplayName = "Without a replay snippet, a generation failure names Any.Reproducibly.")]
+    [Fact(DisplayName = "Without a replay snippet, a generation failure names Dummy.Reproducibly.")]
     public void WithoutAnInstructionTheFailureNamesTheDelegateRunner() {
-        AnyGenerationException caught;
+        DummyGenerationException caught;
 
-        using (Any.UseSeed(1234)) {
-            caught = Assert.Throws<AnyGenerationException>(
-                () => Any.Int32().As<int, int>(_ => throw new InvalidOperationException("rejected")).Generate());
+        using (Dummy.UseSeed(1234)) {
+            caught = Assert.Throws<DummyGenerationException>(
+                () => Dummy.Int32().As<int, int>(_ => throw new InvalidOperationException("rejected")).Generate());
         }
 
         Check.That(caught.Seed).IsEqualTo(1234);
         Check.That(caught.Message).Contains("The arbitrary values were seeded with 1234");
-        Check.That(caught.Message).Contains("Any.Reproducibly(1234, ...)");
+        Check.That(caught.Message).Contains("Dummy.Reproducibly(1234, ...)");
     }
 
-    [Fact(DisplayName = "With a replay snippet, a generation failure names it instead of Any.Reproducibly.")]
+    [Fact(DisplayName = "With a replay snippet, a generation failure names it instead of Dummy.Reproducibly.")]
     public void WithAnInstructionTheFailureNamesIt() {
-        AnyGenerationException caught;
+        DummyGenerationException caught;
 
-        using (Any.UseSeed(1234, "[Reproducible(Seed = 1234)]")) {
-            caught = Assert.Throws<AnyGenerationException>(
-                () => Any.Int32().As<int, int>(_ => throw new InvalidOperationException("rejected")).Generate());
+        using (Dummy.UseSeed(1234, "[Reproducible(Seed = 1234)]")) {
+            caught = Assert.Throws<DummyGenerationException>(
+                () => Dummy.Int32().As<int, int>(_ => throw new InvalidOperationException("rejected")).Generate());
         }
 
         Check.That(caught.Message).Contains("The arbitrary values were seeded with 1234");
         Check.That(caught.Message).Contains("[Reproducible(Seed = 1234)]");
         // The whole point: the reader is never pointed at a call their test does not contain.
-        Check.That(caught.Message).Not.Contains("Any.Reproducibly");
+        Check.That(caught.Message).Not.Contains("Dummy.Reproducibly");
     }
 
     [Fact(DisplayName = "The replay snippet also reaches the partial-replay guidance.")]
     public void TheInstructionReachesThePartialReplayGuidance() {
-        AnyGenerationException caught;
+        DummyGenerationException caught;
 
-        using (Any.UseSeed(777, "[Reproducible(Seed = 777)]")) {
-            IAny<int> foreign = new ForeignAny();
-            caught = Assert.Throws<AnyGenerationException>(
-                () => Any.Combine<int, int, int>(Any.Int32(), foreign, (_, _) => throw new InvalidOperationException("rejected")).Generate());
+        using (Dummy.UseSeed(777, "[Reproducible(Seed = 777)]")) {
+            IDummy<int> foreign = new ForeignAny();
+            caught = Assert.Throws<DummyGenerationException>(
+                () => Dummy.Combine<int, int, int>(Dummy.Int32(), foreign, (_, _) => throw new InvalidOperationException("rejected")).Generate());
         }
 
         Check.That(caught.Message).Contains("not reproducible from this seed alone");
         Check.That(caught.Message).Contains("[Reproducible(Seed = 777)]");
-        Check.That(caught.Message).Not.Contains("Any.Reproducibly");
+        Check.That(caught.Message).Not.Contains("Dummy.Reproducibly");
     }
 
     [Fact(DisplayName = "The replay snippet is scoped: it does not outlive the scope that supplied it.")]
     public void TheInstructionDoesNotOutliveItsScope() {
-        using (Any.UseSeed(1, "[Reproducible(Seed = 1)]")) { }
+        using (Dummy.UseSeed(1, "[Reproducible(Seed = 1)]")) { }
 
-        AnyGenerationException caught;
-        using (Any.UseSeed(2)) {
-            caught = Assert.Throws<AnyGenerationException>(
-                () => Any.Int32().As<int, int>(_ => throw new InvalidOperationException("rejected")).Generate());
+        DummyGenerationException caught;
+        using (Dummy.UseSeed(2)) {
+            caught = Assert.Throws<DummyGenerationException>(
+                () => Dummy.Int32().As<int, int>(_ => throw new InvalidOperationException("rejected")).Generate());
         }
 
-        Check.That(caught.Message).Contains("Any.Reproducibly(2, ...)");
+        Check.That(caught.Message).Contains("Dummy.Reproducibly(2, ...)");
         Check.That(caught.Message).Not.Contains("[Reproducible");
     }
 
     [Fact(DisplayName = "UseSeed rejects a null replay snippet.")]
     public void UseSeedRejectsANullInstruction() {
-        Check.ThatCode(() => Any.UseSeed(1, null!)).Throws<ArgumentNullException>();
+        Check.ThatCode(() => Dummy.UseSeed(1, null!)).Throws<ArgumentNullException>();
     }
 
     [Theory(DisplayName = "UseSeed rejects a blank replay snippet.")]
     [InlineData("")]
     [InlineData("   ")]
     public void UseSeedRejectsABlankInstruction(string instruction) {
-        Check.ThatCode(() => Any.UseSeed(1, instruction)).Throws<ArgumentException>();
+        Check.ThatCode(() => Dummy.UseSeed(1, instruction)).Throws<ArgumentException>();
     }
 
     #region Nested types
 
     /// <summary>A generator carrying no random source, so a derivation over it cannot promise a full replay.</summary>
-    private sealed class ForeignAny : IAny<int> {
+    private sealed class ForeignAny : IDummy<int> {
 
         public int Generate() {
             return 42;

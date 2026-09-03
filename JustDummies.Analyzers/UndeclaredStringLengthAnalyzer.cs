@@ -9,7 +9,7 @@ using Microsoft.CodeAnalysis.Operations;
 namespace JustDummies.Analyzers;
 
 /// <summary>
-///     JD030 — reports an <c>Any.String()</c> chain that declares no length, so it draws the whole default
+///     JD030 — reports an <c>Dummy.String()</c> chain that declares no length, so it draws the whole default
 ///     spread: 0 to 1024 characters.
 /// </summary>
 /// <remarks>
@@ -61,7 +61,7 @@ public sealed class UndeclaredStringLengthAnalyzer : DiagnosticAnalyzer {
 
     private static void OnCompilationStart(CompilationStartAnalysisContext context) {
         KnownSymbols symbols = KnownSymbols.From(context.Compilation);
-        if (symbols.Any is null || symbols.IAny is null) { return; }
+        if (symbols.Dummy is null || symbols.IDummy is null) { return; }
 
         context.RegisterOperationAction(operationContext => Analyze(operationContext, symbols), OperationKind.Invocation);
     }
@@ -71,7 +71,7 @@ public sealed class UndeclaredStringLengthAnalyzer : DiagnosticAnalyzer {
 
         // Analyse each chain once, from its outermost call — the only point where every constraint is in hand.
         if (invocation.Parent is IInvocationOperation) { return; }
-        if (!AnyChainFacts.TryGetChain(invocation, symbols, out IReadOnlyList<IInvocationOperation> constraints, out IInvocationOperation? factory)) { return; }
+        if (!DummyChainFacts.TryGetChain(invocation, symbols, out IReadOnlyList<IInvocationOperation> constraints, out IInvocationOperation? factory)) { return; }
         if (factory is null || factory.TargetMethod.Name != "String") { return; }
         if (NegativeTestGuard.IsSoleBodyOfLambdaArgument(invocation.Syntax)) { return; }
         if (constraints.Any(constraint => LengthConstraints.Contains(constraint.TargetMethod.Name))) { return; }

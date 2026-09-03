@@ -11,8 +11,8 @@ to replay while a green one stays silent.
 
     [Fact]
     public void Order_reference_is_accepted() {
-        Any.Reproducibly(() => {
-            string reference = Any.String().StartingWith("ORD-").WithLength(12).Generate();
+        Dummy.Reproducibly(() => {
+            string reference = Dummy.String().StartingWith("ORD-").WithLength(12).Generate();
             // ... act, assert ...
         });
     }
@@ -22,7 +22,7 @@ removes the ceremony for xUnit v3:
 
     [Fact, Reproducible]
     public void Order_reference_is_accepted() {
-        string reference = Any.String().StartingWith("ORD-").WithLength(12).Generate();
+        string reference = Dummy.String().StartingWith("ORD-").WithLength(12).Generate();
         // ... act, assert ...
     }
 
@@ -58,13 +58,13 @@ replays a particular seed.
 
 ## Notes
 
-- Values drawn from an explicit `Any.WithSeed(...)` context are unaffected: that
+- Values drawn from an explicit `Dummy.WithSeed(...)` context are unaffected: that
   context is isolated by design and does not draw from the ambient source this
   attribute pins.
-- The seed is pinned through `Any.UseSeed(...)`, a public handle any test-framework
+- The seed is pinned through `Dummy.UseSeed(...)`, a public handle any test-framework
   adapter can use — this package holds no privileged access to `JustDummies`.
 - xUnit v3 only. On xUnit v2, NUnit, MSTest or anything else, use
-  `Any.Reproducibly(...)`: it is unaffected by this package and works everywhere.
+  `Dummy.Reproducibly(...)`: it is unaffected by this package and works everywhere.
 
 ## Links
 

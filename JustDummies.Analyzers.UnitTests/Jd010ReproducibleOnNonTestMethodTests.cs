@@ -16,7 +16,7 @@ public class Jd010ReproducibleOnNonTestMethodTests {
 
             public class Sample {
                 [Reproducible]
-                private string Arrange() => Any.String().NonEmpty().Generate();
+                private string Arrange() => Dummy.String().NonEmpty().Generate();
             }
             """;
 
@@ -38,7 +38,7 @@ public class Jd010ReproducibleOnNonTestMethodTests {
                 [Fact]
                 [Reproducible]
                 public void T() {
-                    string reference = Any.String().NonEmpty().Generate();
+                    string reference = Dummy.String().NonEmpty().Generate();
                 }
             }
             """;
@@ -92,7 +92,7 @@ public class Jd010ReproducibleOnNonTestMethodTests {
             using JustDummies;
 
             public class Sample {
-                private string Arrange() => Any.String().NonEmpty().Generate();
+                private string Arrange() => Dummy.String().NonEmpty().Generate();
             }
             """;
 

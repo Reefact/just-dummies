@@ -41,7 +41,7 @@ Mesuré sur la ligne non contrainte, 200 000 tirages :
 | 100 ≤ \|x\| < 1000 | 1,32 % | 10,95 % |
 | \|x\| ≥ 1000 | **98,53 %** | 19,34 % |
 
-`Any.Half()` ne tire pas de valeur inférieure à 1. Pas rarement — pas une seule fois sur deux cent
+`Dummy.Half()` ne tire pas de valeur inférieure à 1. Pas rarement — pas une seule fois sur deux cent
 mille tirages. Un générateur incapable de produire `0.5` ne certifie rien des chemins de code où un
 `Half` est une fraction, c'est-à-dire de la plus grande partie du code qui a une raison d'en utiliser un.
 

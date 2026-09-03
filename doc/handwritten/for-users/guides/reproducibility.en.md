@@ -19,14 +19,14 @@ failure and any run comes back exactly.
 ```mermaid
 sequenceDiagram
     accTitle: What an ambient seed scope records during a failing test
-    accDescr: The test opens a scope on seed 1743029518. It asks Any for a bounded int and receives 73, then for a string of twelve characters and receives kQ8fnZ2xLmTa. Its assertion fails, the scope reports seed 1743029518, and the test closes the scope.
+    accDescr: The test opens a scope on seed 1743029518. It asks Dummy for a bounded int and receives 73, then for a string of twelve characters and receives kQ8fnZ2xLmTa. Its assertion fails, the scope reports seed 1743029518, and the test closes the scope.
     participant T as Test
     participant S as Ambient seed scope
-    participant A as Any.*
+    participant A as Dummy.*
     T->>S: open scope (seed = 1743029518)
-    T->>A: Any.Int32().Between(1, 100).Generate()
+    T->>A: Dummy.Int32().Between(1, 100).Generate()
     A-->>T: 73
-    T->>A: Any.String().WithLength(12).Generate()
+    T->>A: Dummy.String().WithLength(12).Generate()
     A-->>T: "kQ8fnZ2xLmTa"
     T->>T: assertion fails ✗
     S-->>T: report seed 1743029518
@@ -35,14 +35,14 @@ sequenceDiagram
 
 The seed is reported **only when the run fails**. A green suite stays silent.
 
-## `Any.Reproducibly`: one pinned scope per test
+## `Dummy.Reproducibly`: one pinned scope per test
 
 Wrap the body of a test and everything drawn inside it comes from one seed:
 
 ```csharp
-Any.Reproducibly(() => {
-    string anyReference = Any.String().StartingWith("ORD-").WithLength(12).Generate();
-    string anyCustomer  = Any.String().Alpha().WithLengthBetween(1, 50).Generate();
+Dummy.Reproducibly(() => {
+    string anyReference = Dummy.String().StartingWith("ORD-").WithLength(12).Generate();
+    string anyCustomer  = Dummy.String().Alpha().WithLengthBetween(1, 50).Generate();
 
     Order order = new Order(anyReference, anyCustomer, amount: 100m);
 
@@ -56,15 +56,15 @@ If the body throws, the seed is written out and the original exception propagate
 failure you see is still your assertion's, with the seed added beside it:
 
 ```text
-[JustDummies] These arbitrary values were seeded with 1743029518. Reproduce this run with Any.Reproducibly(1743029518, ...).
+[JustDummies] These arbitrary values were seeded with 1743029518. Reproduce this run with Dummy.Reproducibly(1743029518, ...).
 ```
 
 By default the report goes to `Console.Error`. Pass a second argument to send it somewhere else —
 a test framework's output sink, for instance:
 
 ```csharp
-Any.Reproducibly(
-    () => Assert.True(Any.Int32().Positive().Generate() > 0),
+Dummy.Reproducibly(
+    () => Assert.True(Dummy.Int32().Positive().Generate() > 0),
     report: message => Console.Out.WriteLine(message));
 ```
 
@@ -74,9 +74,9 @@ Take the number from the report, pass it to the seeded overload, and the run com
 value:
 
 ```csharp
-Any.Reproducibly(1743029518, () => {
-    string anyReference = Any.String().StartingWith("ORD-").WithLength(12).Generate();
-    string anyCustomer  = Any.String().Alpha().WithLengthBetween(1, 50).Generate();
+Dummy.Reproducibly(1743029518, () => {
+    string anyReference = Dummy.String().StartingWith("ORD-").WithLength(12).Generate();
+    string anyCustomer  = Dummy.String().Alpha().WithLengthBetween(1, 50).Generate();
 
     Order order = new Order(anyReference, anyCustomer, amount: 100m);
 
@@ -112,9 +112,9 @@ code; enable it in `.editorconfig` if pins tend to survive review in your team.
 An `async` body needs `ReproduciblyAsync`, and the returned task **must** be awaited:
 
 ```csharp
-await Any.ReproduciblyAsync(async () => {
-    string anyReference = Any.String().StartingWith("ORD-").WithLength(12).Generate();
-    string anyCustomer  = Any.String().Alpha().WithLengthBetween(1, 50).Generate();
+await Dummy.ReproduciblyAsync(async () => {
+    string anyReference = Dummy.String().StartingWith("ORD-").WithLength(12).Generate();
+    string anyCustomer  = Dummy.String().Alpha().WithLengthBetween(1, 50).Generate();
 
     Order order = new Order(anyReference, anyCustomer, amount: 100m);
 
@@ -127,18 +127,18 @@ await Any.ReproduciblyAsync(async () => {
 ```
 
 Getting this wrong is silent in the worst way, so two analyzers guard it as **errors**: passing an
-`async` lambda to the synchronous `Any.Reproducibly` is [JD001](../analyzers/JD001.en.md) — bound to
+`async` lambda to the synchronous `Dummy.Reproducibly` is [JD001](../analyzers/JD001.en.md) — bound to
 an `Action` it becomes `async void` and its assertion failures never reach the runner — and
 discarding the task returned by `ReproduciblyAsync` is [JD002](../analyzers/JD002.en.md).
 
-## `Any.UseSeed`: the scope form
+## `Dummy.UseSeed`: the scope form
 
 When the code to pin cannot be wrapped in a delegate, open a scope instead and dispose it when done:
 
 ```csharp
-using (IDisposable scope = Any.UseSeed(1743029518)) {
-    string anyReference = Any.String().StartingWith("ORD-").WithLength(12).Generate();
-    string anyCustomer  = Any.String().Alpha().WithLengthBetween(1, 50).Generate();
+using (IDisposable scope = Dummy.UseSeed(1743029518)) {
+    string anyReference = Dummy.String().StartingWith("ORD-").WithLength(12).Generate();
+    string anyCustomer  = Dummy.String().Alpha().WithLengthBetween(1, 50).Generate();
 
     Order order = new Order(anyReference, anyCustomer, amount: 100m);
 
@@ -158,19 +158,19 @@ adapter wants embedded in failure guidance, so the message names the code a read
 change:
 
 ```csharp
-using (IDisposable scope = Any.UseSeed(1743029518, "[Reproducible(Seed = 1743029518)]")) {
-    Assert.True(Any.Int32().Positive().Generate() > 0);
+using (IDisposable scope = Dummy.UseSeed(1743029518, "[Reproducible(Seed = 1743029518)]")) {
+    Assert.True(Dummy.Int32().Positive().Generate() > 0);
 }
 ```
 
-## `Any.WithSeed`: an isolated context
+## `Dummy.WithSeed`: an isolated context
 
-`Any.WithSeed(seed)` pins nothing ambient. It returns an `AnyContext` — a self-contained world with
+`Dummy.WithSeed(seed)` pins nothing ambient. It returns an `DummyContext` — a self-contained world with
 the same factories on it — which is what you want to build deterministic data *outside* a test body,
 such as a fixture or a benchmark:
 
 ```csharp
-AnyContext context = Any.WithSeed(1743029518);
+DummyContext context = Dummy.WithSeed(1743029518);
 
 int      quantity  = context.Int32().Between(1, 100).Generate();
 string   reference = context.String().StartingWith("ORD-").WithLength(12).Generate();
@@ -180,9 +180,9 @@ int      seed      = context.Seed;
 ```
 
 Because the context is isolated, values drawn from it are unaffected by any ambient scope — and a
-`[Reproducible]` attribute or an enclosing `Any.Reproducibly` does not govern them.
+`[Reproducible]` attribute or an enclosing `Dummy.Reproducibly` does not govern them.
 
-Holding an `AnyContext` in a **static** field is a trap worth naming: interleaved draws from several
+Holding an `DummyContext` in a **static** field is a trap worth naming: interleaved draws from several
 tests make neither the sequence nor the multiset stable, which is diagnostic
 [JD020](../analyzers/JD020.en.md).
 
@@ -198,8 +198,8 @@ public sealed class OrderTests {
     [Fact, Reproducible]
     public void A_20_percent_discount_takes_a_fifth_off_the_order() {
         // Arrange
-        string anyReference = Any.String().StartingWith("ORD-").WithLength(12).Generate();
-        string anyCustomer  = Any.String().Alpha().WithLengthBetween(1, 50).Generate();
+        string anyReference = Dummy.String().StartingWith("ORD-").WithLength(12).Generate();
+        string anyCustomer  = Dummy.String().Alpha().WithLengthBetween(1, 50).Generate();
 
         Order order = new Order(anyReference, anyCustomer, amount: 100m);
 

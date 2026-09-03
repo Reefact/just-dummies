@@ -1,4 +1,4 @@
-using JustDummies.GenAny;
+using JustDummies.GenDummy;
 
 using NFluent;
 
@@ -52,7 +52,7 @@ public sealed class ExitCodeTests {
 
     private static ScaffoldPlan Plan(ScaffoldedParameter parameter) {
         return new ScaffoldPlan(new TargetType("Order", "Shop.Domain", NamespaceStyle.FileScoped),
-                                "AnyOrder",
+                                "DummyOrder",
                                 ["JustDummies"],
                                 [parameter]);
     }

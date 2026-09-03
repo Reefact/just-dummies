@@ -55,7 +55,7 @@ sur le jeu de méthodes de contrainte de chaque famille.
 
 Cet agencement est la décision qui façonne le plus les entrailles de la bibliothèque, et il contraint la
 façon dont tout futur générateur discret ou numérique sera ajouté. Son raisonnement ne vit que dans la
-documentation XML interne, alors que des décisions plus petites — le plafond d'arité d'`Any.Combine`
+documentation XML interne, alors que des décisions plus petites — le plafond d'arité d'`Dummy.Combine`
 (ADR-0005) — portent des enregistrements.
 
 ## Décision
@@ -207,7 +207,7 @@ les pas de `decimal` doivent par conséquent s'exprimer dans sa propre arithmét
   l'intérieur de laquelle se place cette architecture interne.
 * ADR-0004 — Verrouiller les collections distinctes par cardinalité, sinon par tirage borné : le
   raisonnement de cardinalité que sert le comptage du moteur partagé.
-* ADR-0005 — Plafonner `Any.Combine` à l'arité huit : la décision plus petite dont l'enregistrement
+* ADR-0005 — Plafonner `Dummy.Combine` à l'arité huit : la décision plus petite dont l'enregistrement
   existant rendait l'absence de celle-ci frappante.
 * ADR-0007 — Fixer le plancher de support .NET Framework de la bibliothèque à 4.7.2 : la cible plancher qui
   supprime l'alternative de l'arithmétique générique.

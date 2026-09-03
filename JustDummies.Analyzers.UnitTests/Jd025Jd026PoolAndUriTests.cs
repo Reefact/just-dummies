@@ -9,10 +9,10 @@ namespace JustDummies.Analyzers.UnitTests;
 public class Jd025DuplicatePoolValueTests {
 
     [Theory]
-    [InlineData("Any.OneOf(1, 2, 1)")]
-    [InlineData("Any.OneOf(\"EUR\", \"USD\", \"EUR\")")]
-    [InlineData("Any.Int32().OneOf(3, 3)")]
-    [InlineData("Any.OneOf(true, false, true)")]
+    [InlineData("Dummy.OneOf(1, 2, 1)")]
+    [InlineData("Dummy.OneOf(\"EUR\", \"USD\", \"EUR\")")]
+    [InlineData("Dummy.Int32().OneOf(3, 3)")]
+    [InlineData("Dummy.OneOf(true, false, true)")]
     public async Task Reports_a_value_listed_twice(string expression) {
         string source = $$"""
             using JustDummies;
@@ -31,9 +31,9 @@ public class Jd025DuplicatePoolValueTests {
     }
 
     [Theory]
-    [InlineData("Any.OneOf(1, 2, 3)")]
-    [InlineData("Any.OneOf(\"a\", \"A\")")]
-    [InlineData("Any.Int32().OneOf(3, 4)")]
+    [InlineData("Dummy.OneOf(1, 2, 3)")]
+    [InlineData("Dummy.OneOf(\"a\", \"A\")")]
+    [InlineData("Dummy.Int32().OneOf(3, 4)")]
     public async Task Does_not_report_a_pool_of_distinct_values(string expression) {
         string source = $$"""
             using JustDummies;
@@ -59,7 +59,7 @@ public class Jd025DuplicatePoolValueTests {
 
             public static class Sample {
                 public static void M() {
-                    _ = Any.OneOf(Status.Active, Status.Pending, Status.Active);
+                    _ = Dummy.OneOf(Status.Active, Status.Pending, Status.Active);
                 }
             }
             """;
@@ -79,7 +79,7 @@ public class Jd025DuplicatePoolValueTests {
 
             public static class Sample {
                 public static void M(int supplied) {
-                    _ = Any.OneOf(1, supplied, 1);
+                    _ = Dummy.OneOf(1, supplied, 1);
                 }
             }
             """;
@@ -97,7 +97,7 @@ public class Jd025DuplicatePoolValueTests {
 
             public static class Sample {
                 public static void M(IReadOnlyList<int> pool) {
-                    _ = Any.ElementOf(pool);
+                    _ = Dummy.ElementOf(pool);
                 }
             }
             """;
@@ -115,7 +115,7 @@ public class Jd025DuplicatePoolValueTests {
 
             public static class Sample {
                 public static void M() {
-                    Run(() => Any.OneOf(1, 1));
+                    Run(() => Dummy.OneOf(1, 1));
                 }
 
                 private static void Run(Func<object> body) { }
@@ -138,7 +138,7 @@ public class Jd026EmptyRelativeUriTests {
 
             public static class Sample {
                 public static void M() {
-                    _ = Any.Uri().Relative().WithPathSegments(0);
+                    _ = Dummy.Uri().Relative().WithPathSegments(0);
                 }
             }
             """;
@@ -150,13 +150,13 @@ public class Jd026EmptyRelativeUriTests {
     }
 
     [Theory]
-    [InlineData("Any.Uri().Relative().WithPathSegments(0).WithQuery()")]
-    [InlineData("Any.Uri().Relative().WithPathSegments(0).WithFragment()")]
-    [InlineData("Any.Uri().Relative().Rooted().WithPathSegments(0)")]
-    [InlineData("Any.Uri().Relative().WithPathSegments(1)")]
-    [InlineData("Any.Uri().Relative()")]
-    [InlineData("Any.Uri().Web().WithPathSegments(0)")]
-    [InlineData("Any.Uri().Ftp().WithPathSegments(0)")]
+    [InlineData("Dummy.Uri().Relative().WithPathSegments(0).WithQuery()")]
+    [InlineData("Dummy.Uri().Relative().WithPathSegments(0).WithFragment()")]
+    [InlineData("Dummy.Uri().Relative().Rooted().WithPathSegments(0)")]
+    [InlineData("Dummy.Uri().Relative().WithPathSegments(1)")]
+    [InlineData("Dummy.Uri().Relative()")]
+    [InlineData("Dummy.Uri().Web().WithPathSegments(0)")]
+    [InlineData("Dummy.Uri().Ftp().WithPathSegments(0)")]
     public async Task Does_not_report_a_reference_that_can_render(string expression) {
         string source = $$"""
             using JustDummies;
@@ -180,7 +180,7 @@ public class Jd026EmptyRelativeUriTests {
 
             public static class Sample {
                 public static void M(int segments) {
-                    _ = Any.Uri().Relative().WithPathSegments(segments);
+                    _ = Dummy.Uri().Relative().WithPathSegments(segments);
                 }
             }
             """;
@@ -198,7 +198,7 @@ public class Jd026EmptyRelativeUriTests {
 
             public static class Sample {
                 public static void M() {
-                    Run(() => Any.Uri().Relative().WithPathSegments(0));
+                    Run(() => Dummy.Uri().Relative().WithPathSegments(0));
                 }
 
                 private static void Run(Func<object> body) { }

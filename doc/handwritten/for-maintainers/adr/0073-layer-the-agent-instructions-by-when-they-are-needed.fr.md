@@ -27,7 +27,7 @@ réduit la constance avec laquelle les instructions sont suivies.
 
 Le contenu n'est pas uniformément utile. La procédure ADR sert au moment de finaliser une pull
 request, la procédure de release au moment de couper un train, les conventions CLI quand
-`JustDummies.Cli` ou `JustDummies.GenAny` est touché, la règle des cinq éléments en phase quand
+`JustDummies.Cli` ou `JustDummies.GenDummy` est touché, la règle des cinq éléments en phase quand
 une règle `JDxxx` bouge. Une modification d'un seul test paie pour toutes.
 
 Une partie du contenu n'a pas à être de la prose du tout, parce qu'un outil refuse déjà l'erreur.

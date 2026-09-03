@@ -35,7 +35,7 @@ namespace JustDummies.UnitTests;
 /// </remarks>
 public sealed class NullArgumentGuardConventionTests {
 
-    private static readonly Assembly              LibraryAssembly = typeof(Any).Assembly;
+    private static readonly Assembly              LibraryAssembly = typeof(Dummy).Assembly;
     private static readonly NullabilityInfoContext Nullability     = new();
     private static readonly List<object>          Samples         = HarvestSamples();
 
@@ -49,7 +49,7 @@ public sealed class NullArgumentGuardConventionTests {
 
             Type type = declared;
             if (declared.IsGenericTypeDefinition) {
-                if (declared.IsAbstract) { continue; } // an abstract base (e.g. AnyCollection`3): covered through its concrete subclasses
+                if (declared.IsAbstract) { continue; } // an abstract base (e.g. DummyCollection`3): covered through its concrete subclasses
                 if (!TryClose(declared, out type!)) {
                     uncovered.Add($"type {declared.Name}: could not close generic definition");
                     continue;
@@ -304,7 +304,7 @@ public sealed class NullArgumentGuardConventionTests {
             Type   definition = type.GetGenericTypeDefinition();
             Type[] arguments  = type.GetGenericArguments();
 
-            if (definition == typeof(IAny<>)) { return CreateAny(arguments[0]); }
+            if (definition == typeof(IDummy<>)) { return CreateAny(arguments[0]); }
 
             if (definition == typeof(IEnumerable<>) || definition == typeof(IReadOnlyList<>) || definition == typeof(IReadOnlyCollection<>)
              || definition == typeof(IList<>) || definition == typeof(ICollection<>) || definition == typeof(List<>)) {
@@ -337,7 +337,7 @@ public sealed class NullArgumentGuardConventionTests {
     }
 
     private static object CreateAny(Type valueType) {
-        MethodInfo oneOf = typeof(Any).GetMethods(BindingFlags.Public | BindingFlags.Static)
+        MethodInfo oneOf = typeof(Dummy).GetMethods(BindingFlags.Public | BindingFlags.Static)
                                       .First(method => method is { Name: "OneOf", IsGenericMethodDefinition: true }
                                                     && method.GetParameters() is [{ ParameterType.IsArray: true }])
                                       .MakeGenericMethod(valueType);
@@ -380,45 +380,45 @@ public sealed class NullArgumentGuardConventionTests {
         return WalkReachableObjects(frontier, Seed);
     }
 
-    // The context itself, the two random sources, and every parameterless generator AnyContext exposes.
+    // The context itself, the two random sources, and every parameterless generator DummyContext exposes.
     private static void SeedContextRoots(Action<object?> seed) {
-        AnyContext context = new(0);
+        DummyContext context = new(0);
         seed(context);
         seed(new FixedRandomSource(0));
         seed(new SeededRandom(0));
 
-        foreach (MethodInfo factory in typeof(AnyContext).GetMethods(BindingFlags.Public | BindingFlags.Instance)) {
+        foreach (MethodInfo factory in typeof(DummyContext).GetMethods(BindingFlags.Public | BindingFlags.Instance)) {
             if (factory.DeclaringType == typeof(object)) { continue; }
             if (factory.IsSpecialName || factory.GetParameters().Length != 0) { continue; }
-            if (factory.ReturnType == typeof(void) || factory.ReturnType == typeof(AnyContext) || factory.IsGenericMethodDefinition) { continue; }
+            if (factory.ReturnType == typeof(void) || factory.ReturnType == typeof(DummyContext) || factory.IsGenericMethodDefinition) { continue; }
             try { seed(factory.Invoke(context, null)); } catch { /* best effort */ }
         }
     }
 
-    // The shapes AnyContext's parameterless factories cannot reach: everything that needs an element generator, a
+    // The shapes DummyContext's parameterless factories cannot reach: everything that needs an element generator, a
     // type argument or a pattern to exist at all.
     private static void SeedRepresentativeGenerators(Action<object?> seed) {
-        IAny<string> strings = Any.String();
+        IDummy<string> strings = Dummy.String();
         void Try(Func<object?> build) {
             try { seed(build()); } catch { /* best effort */ }
         }
 
         // Collections closed on the representative element type the harness uses (string), plus a dictionary and an enum.
-        Try(() => Any.ListOf(strings));
-        Try(() => Any.SetOf(strings));
-        Try(() => Any.SequenceOf(strings));
-        Try(() => Any.ArrayOf(strings));
-        Try(() => Any.DictionaryOf(strings, strings));
-        Try(() => Any.OneOf("a", "b", "c"));
-        Try(() => Any.Enum<DayOfWeek>());
+        Try(() => Dummy.ListOf(strings));
+        Try(() => Dummy.SetOf(strings));
+        Try(() => Dummy.SequenceOf(strings));
+        Try(() => Dummy.ArrayOf(strings));
+        Try(() => Dummy.DictionaryOf(strings, strings));
+        Try(() => Dummy.OneOf("a", "b", "c"));
+        Try(() => Dummy.Enum<DayOfWeek>());
         Try(() => strings.As(value => value.Length));
         Try(() => strings.OrNull());
 
-        // One pattern per regex-node shape, so every RegexNode subtype is reachable through AnyPattern's tree.
-        Try(() => Any.StringMatching("abc"));    // sequence
-        Try(() => Any.StringMatching("a|b|c"));  // alternation
-        Try(() => Any.StringMatching("a{2,3}")); // repeat
-        Try(() => Any.StringMatching("[a-z]"));  // characters
+        // One pattern per regex-node shape, so every RegexNode subtype is reachable through DummyPattern's tree.
+        Try(() => Dummy.StringMatching("abc"));    // sequence
+        Try(() => Dummy.StringMatching("a|b|c"));  // alternation
+        Try(() => Dummy.StringMatching("a{2,3}")); // repeat
+        Try(() => Dummy.StringMatching("[a-z]"));  // characters
     }
 
     // Breadth-first over what the seeded roots can reach, bounded by a budget so a cyclic or unexpectedly wide graph
@@ -447,7 +447,7 @@ public sealed class NullArgumentGuardConventionTests {
     }
 
     // Follow parameterless generator-producing steps too, so a sibling generator reachable only through a
-    // fluent call (e.g. the concrete URI generators returned by AnyUri) still enters the pool.
+    // fluent call (e.g. the concrete URI generators returned by DummyUri) still enters the pool.
     private static void SeedParameterlessSteps(object current, Action<object?> seed) {
         if (current.GetType().Assembly != LibraryAssembly) { return; }
 

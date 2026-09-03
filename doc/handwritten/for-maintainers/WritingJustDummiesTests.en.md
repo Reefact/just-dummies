@@ -57,7 +57,7 @@ That is the whole rule. Everything below is it applied.
   specific coordinate, cheaper and clearer pinned than quantified.
 * **Reachability.** That a bounded range is actually reached, that both branches of
   a coin flip are observed. These are statistical, not universal — pin a seed.
-* **Structural conventions.** The `Any` ↔ `AnyContext` mirror, factory naming, the
+* **Structural conventions.** The `Dummy` ↔ `DummyContext` mirror, factory naming, the
   standalone assembly boundary. Reflection over a fixed expectation table; there is
   no input to generate.
 * **Dated regressions.** A defect that actually occurred, pinned at the coordinates
@@ -88,8 +88,8 @@ That is the whole rule. Everything below is it applied.
 An example that pins a refusal states it with NFluent, in one expression:
 
 ```csharp
-Check.ThatCode(() => Any.Int32().Positive().Negative())
-     .Throws<ConflictingAnyConstraintException>()
+Check.ThatCode(() => Dummy.Int32().Positive().Negative())
+     .Throws<ConflictingDummyConstraintException>()
      .WhichMember(conflict => conflict.Message).Contains("Negative()", "Positive()");
 ```
 

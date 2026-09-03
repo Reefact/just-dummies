@@ -76,7 +76,7 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   **distinct values** rather than its declared names, so an alias adds a name and not a value.
   `Any.Char().OneOf(...)` is counted exactly instead of through the factory beneath it: that pool is
   the caller's own and reaches past ASCII on purpose, so answering 128 for a set of two accented
-  letters left `WithCount(5)` over it unreported. The carve-out is scoped to `AnyChar`, so a chain
+  letters left `WithCount(5)` over it unreported. The carve-out is scoped to `DummyChar`, so a chain
   such as `Any.Int32().OneOf(1, 2).Containing(3)`, which extends its own domain past what `OneOf`
   alone draws, is unaffected. A domain the rule still cannot prove is reported as nothing, as before —
   an unprovable domain must never be treated as a small one.
@@ -170,7 +170,7 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   shortfall and the duplicate pin — now run once, on the whole specification. They still refuse **before any
   element is drawn**, still name both sides, and now name `Distinct()` as the constraint that cannot be honoured
   rather than whichever call the refusal happened to land on. The bounded dedup-draw and its replayable
-  `AnyGenerationException` are unchanged.
+  `DummyGenerationException` are unchanged.
 
 - **`JD030` now counts the anchored literals when it names the interval a chain draws.** The rule's page has
   always promised "the interval the chain actually draws, not a constant", and for an anchored chain it did not
@@ -194,7 +194,7 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Changed
 
-- **BREAKING — `AnyChar` and `AnyString` rename `LowerCase()`/`UpperCase()` to `InLowerCase()`/`InUpperCase()`.**
+- **BREAKING — `DummyChar` and `DummyString` rename `LowerCase()`/`UpperCase()` to `InLowerCase()`/`InUpperCase()`.**
   The bare names read like a state change rather than a quality of the drawn value — unlike `Alpha()`, `Numeric()`
   or `Hexadecimal()`, which are adjectives on their own. The new names read as a chained clause instead:
   `Any.String().AlphaNumeric().InUpperCase()`. No behaviour changes; only the two names do.

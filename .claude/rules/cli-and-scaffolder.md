@@ -2,8 +2,8 @@
 paths:
   - "JustDummies.Cli/**"
   - "JustDummies.Cli.UnitTests/**"
-  - "JustDummies.GenAny/**"
-  - "JustDummies.GenAny.UnitTests/**"
+  - "JustDummies.GenDummy/**"
+  - "JustDummies.GenDummy.UnitTests/**"
   - "tools/packaging/**"
 ---
 
@@ -11,7 +11,7 @@ paths:
 
 Two projects, and the constraints that shape them are not incidental.
 
-* **`JustDummies.GenAny`** — the scaffolding engine. **netstandard2.0 on the Roslyn floor**
+* **`JustDummies.GenDummy`** — the scaffolding engine. **netstandard2.0 on the Roslyn floor**
   so a compiler host can load it (ADR-0065); it **references no JustDummies assembly**
   (ADR-0063) and knows nothing of MSBuild or the console.
 * **`JustDummies.Cli`** — the `dum` tool itself, the shell around that engine.
@@ -24,7 +24,7 @@ It is long; read the section you need, not the file.
 
 * **§3** — the Spectre command line, parsed in full, including §3.1 `.csproj` discovery,
   §3.2 type lookup and §3.3 project defaults.
-* **§4** — the emitter, pinned by approved files under `JustDummies.GenAny.UnitTests/Golden/`
+* **§4** — the emitter, pinned by approved files under `JustDummies.GenDummy.UnitTests/Golden/`
   and compiled against the library with the analyzers wired (ADR-0058). The worked example of
   §4.1 is reproduced from its own source byte for byte. **Changing an emitted byte means
   updating a golden file** — do that deliberately, never to make a test pass.
@@ -49,7 +49,7 @@ entry point on request as a file of its own (ADR-0070).
   chose each domain because it asks a question, and each row claims the rows of §5.3 it exercises
   (`RecognisedIdiomCoverageTests` is the judge of that claim). This is the bench ADR-0085 means.
 * **The generative sweep** — `Sweep/` and `GenerativeSweepTests`, ~3600 domains from a declared axis
-  product, weekly (`genany-sweep`), with a covering slice of ~95 shapes on every build. Nobody chose any
+  product, weekly (`gendummy-sweep`), with a covering slice of ~95 shapes on every build. Nobody chose any
   of them, it claims no idiom row, and it holds shapes to seven rules that are true whatever the engine
   does. **Rule 0 is that the generated domain compiles on its own** — a failure there is the sweep's own
   bug and is never reported as a finding, which is the lesson of an earlier survey that published 208 of
@@ -58,7 +58,7 @@ entry point on request as a file of its own (ADR-0070).
 Neither replaces the other, and a defect the sweep finds is **marked and reported, not fixed in the
 change that found it**: `SweepDefects.cs` carries the open ones, and an entry comes off with the fix
 rather than with the test. The page is
-[`genany-sweep.en.md`](../../doc/handwritten/for-maintainers/workflows/genany-sweep.en.md).
+[`gendummy-sweep.en.md`](../../doc/handwritten/for-maintainers/workflows/gendummy-sweep.en.md).
 
 ## The `cli` release train
 

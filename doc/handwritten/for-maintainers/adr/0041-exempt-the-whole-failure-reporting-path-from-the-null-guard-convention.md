@@ -28,7 +28,7 @@ a small type, `ConstraintClaim`. It is built at the throw site, as an argument t
 factory:
 
 ```csharp
-throw ConflictingAnyConstraintException.Contradicts(applying,
+throw ConflictingDummyConstraintException.Contradicts(applying,
                                                     ConstraintClaim.Of(_exactConstraint!, $"already fixes the count at {V(exact)}"),
                                                     ConstraintClaim.Of(_minConstraint!,   $"already requires at least {Elements(_min)}"));
 ```

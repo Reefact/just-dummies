@@ -89,7 +89,7 @@ relevant command, say so explicitly.
 | `JustDummies.Analyzers` | Roslyn analyzers, bundled inside the library package (+ `.UnitTests`) |
 | `JustDummies.DiagnosticCatalog` | the constants a `[SuppressMessage]` names its rule with; its own `catalog` train |
 | `JustDummies.Xunit` | xUnit v3 adapter (+ `.UnitTests`) |
-| `JustDummies.GenAny` | the `dum` scaffolding engine, pinned to the Roslyn floor (+ `.UnitTests`) |
+| `JustDummies.GenDummy` | the `dum` scaffolding engine, pinned to the Roslyn floor (+ `.UnitTests`) |
 | `JustDummies.Cli` | the `dum` tool itself, the shell around that engine (+ `.UnitTests`) |
 | `JustDummies.Documentation.UnitTests` | compiles the documentation's C# samples, checks link and EN/FR parity |
 | `build/`, `tools/` | shared MSBuild props, the Sonar profile, packaging and lint scripts |

@@ -16,9 +16,9 @@ as an admission criterion in design discussions, and it has never been written d
 It is not a slogan. It is enforced in code, as an **input** guard rather than only as an output property:
 
 * Every floating-point entry point that takes a `double`, `float` or `Half` — bounds, allow-list entries,
-  exclusions — rejects a non-finite argument. `Any.Double().Except(double.NaN)` throws. The library refuses to
+  exclusions — rejects a non-finite argument. `Dummy.Double().Except(double.NaN)` throws. The library refuses to
   discuss NaN at all, on either side.
-* `Any.Enum<T>().OneOf(...)` rejects a numeric value the enum does not declare.
+* `Dummy.Enum<T>().OneOf(...)` rejects a numeric value the enum does not declare.
 
 It has also been used to **refuse features**. `Index` and `Range` were kept out of the surface on the ground
 that their validity is contextual, so "arbitrary yet valid" cannot hold for them standalone. That is a design
@@ -27,8 +27,8 @@ filter applied from an unwritten rule.
 **The rule is not a global invariant, and this is the part an unqualified statement would get wrong.** The
 generic entry points carry no such guarantee, by construction:
 
-* `Any.OneOf(...)` and `Any.ElementOf(...)` validate that the pool is non-empty and holds no `null`. Nothing
-  else. `Any.OneOf(double.NaN, 1.0)` compiles and yields `NaN` today.
+* `Dummy.OneOf(...)` and `Dummy.ElementOf(...)` validate that the pool is non-empty and holds no `null`. Nothing
+  else. `Dummy.OneOf(double.NaN, 1.0)` compiles and yields `NaN` today.
 * `.As(...)` projects to whatever the caller returns.
 
 That asymmetry is correct — `T` is opaque and the library cannot judge the semantics of a type it knows
@@ -36,15 +36,15 @@ nothing about — but it means an ADR claiming a library-wide invariant would be
 
 Three costs are already observable:
 
-1. **The rule cannot be cited.** A proposal for `Any.Double().WithNaN()`, `Any.Enum<T>().Undeclared()` or
-   `Any.String().NotMatching(regex)` contradicts no accepted decision. The refusal is re-derived from scratch
+1. **The rule cannot be cited.** A proposal for `Dummy.Double().WithNaN()`, `Dummy.Enum<T>().Undeclared()` or
+   `Dummy.String().NotMatching(regex)` contradicts no accepted decision. The refusal is re-derived from scratch
    each time it is needed, which is how a rule eventually loses an argument it should win.
 2. **A legitimate neighbour looks identical to the refused ones.** A `[Flags]` combination such as
    `Read | Write` is *undeclared and perfectly valid*: it passes the criterion. An "undeclared enum member"
    generator does not. Without the criterion written down, `AllowingCombinations()` and `Undeclared()` read as
    the same request.
 3. **The escape hatch is invisible.** The legitimate shape of the need — a domain where `NaN` genuinely means
-   "missing measurement" — is already served by `Any.OneOf(...)`. Until recently nothing said so, and a user
+   "missing measurement" — is already served by `Dummy.OneOf(...)`. Until recently nothing said so, and a user
    met the wall and concluded the library lacked a feature. [ADR-0031](0031-draw-arbitrary-numbers-within-an-ordinary-magnitude.md)
    settles a neighbouring question — which finite values are drawn — and not this one.
 
@@ -91,14 +91,14 @@ library to have an opinion about types it has never seen, and would close the on
 legitimate need passes.
 
 **Stating the boundary is what makes the exemption a design and not a hole.** Today a reader who notices that
-`Any.OneOf(double.NaN, 1.0)` works where `Any.Double().Except(double.NaN)` throws has no way to tell whether
+`Dummy.OneOf(double.NaN, 1.0)` works where `Dummy.Double().Except(double.NaN)` throws has no way to tell whether
 they found the escape hatch or a bug. Naming the level at which the rule holds answers that in one sentence.
 
 ## Alternatives Considered
 
 ### Record it as a library-wide invariant
 
-The simplest sentence: *JustDummies only ever produces valid values*. Rejected because it is false. `Any.OneOf`
+The simplest sentence: *JustDummies only ever produces valid values*. Rejected because it is false. `Dummy.OneOf`
 and `.As` produce whatever the caller supplies, and always have. An ADR whose first claim is contradicted by
 the code teaches a reader to distrust the ADR base.
 
@@ -112,7 +112,7 @@ with a plausible use case. The point of the record is to be citable *before* it 
 
 `WithNaN()`, `Undeclared()`, `NotMatching(...)`. This is the request the rule refuses, and it is not
 unreasonable on its face: the need behind it is real. Rejected because the need is already served by
-`Any.OneOf` and by a literal, and because the API would make the seed-dependent test — the one that covers a
+`Dummy.OneOf` and by a literal, and because the API would make the seed-dependent test — the one that covers a
 path only sometimes — the comfortable thing to write. On floating point it would additionally require the
 interval engine to represent a value it cannot compare.
 
@@ -130,12 +130,12 @@ where the failure would surface as a wrong value rather than a refused argument.
   rather than only refusing.
 * `[Flags]` combinations are visibly *inside* the criterion — a combined value is undeclared and valid — so
   `AllowingCombinations()` is not weighed against an `Undeclared()` proposal by mistake.
-* A reader who finds `Any.OneOf` accepting what a typed builder refuses can tell it is the design.
+* A reader who finds `Dummy.OneOf` accepting what a typed builder refuses can tell it is the design.
 
 ### Negative
 
 * Two levels to explain instead of one. A user who learns "only valid values" meets an exception to it the
-  first time they use `Any.OneOf`, and the readme has to carry the boundary rather than the slogan.
+  first time they use `Dummy.OneOf`, and the readme has to carry the boundary rather than the slogan.
 * The rule constrains future API design: a generator whose values are valid only in a context the library
   cannot see does not belong on a typed builder, however convenient it would be.
 
@@ -144,7 +144,7 @@ where the failure would surface as a wrong value rather than a refused argument.
 * **The boundary is a judgement at the edges.** "Valid for the domain the builder represents" is clear for a
   non-finite double and an undeclared enum member; it is arguable for a string whose format is contextual. The
   record names the criterion, not every future case, and the cases it cannot settle will still need a decision.
-* **`decimal` invites a false symmetry.** `System.Decimal` has no non-finite representation, so `Any.Decimal()`
+* **`decimal` invites a false symmetry.** `System.Decimal` has no non-finite representation, so `Dummy.Decimal()`
   has nothing to guard. A reader who reads the rule and goes looking for the matching guard will not find one
   and may file it as a gap; the readme states this explicitly for that reason.
 

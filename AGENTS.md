@@ -40,7 +40,7 @@ that cannot read `.claude/` loses nothing by reading this file instead.
   a constraint solver. Correctness is never what gets bounded: a returned value satisfies every
   constraint declared.
   The decision base repeats one move: bound the surface, bound the effort, refuse loudly at the edge —
-  `Any.Combine` stops at arity eight (ADR-0005); `Any.StringMatching` covers the regular subset with the
+  `Dummy.Combine` stops at arity eight (ADR-0005); `Dummy.StringMatching` covers the regular subset with the
   library's own parser and refuses the rest by name rather than taking a dependency (ADR-0008); distinct
   collections, string exclusions and regex matching use a bounded redraw that fails explicitly
   (ADR-0004, ADR-0012, ADR-0027); sizes are capped at a million (ADR-0076, superseding ADR-0029) and float draws stay within an
@@ -222,12 +222,12 @@ Canonical example:
 ```text
 issue (correctness): The redraw loop can exit without satisfying the declared exclusion.
 
-`AnyString.Excluding` redraws while the candidate is excluded, but the bounded-redraw guard
+`DummyString.Excluding` redraws while the candidate is excluded, but the bounded-redraw guard
 returns the last candidate when the budget runs out instead of throwing. A generator that
 cannot honour its constraint must fail loudly (ADR-0012), not hand back a value that violates
 the invariant the caller declared.
 
-Raise `AnyGenerationException` when the budget is exhausted, as the collection path does.
+Raise `DummyGenerationException` when the budget is exhausted, as the collection path does.
 ```
 
 ### Labels (one per comment)

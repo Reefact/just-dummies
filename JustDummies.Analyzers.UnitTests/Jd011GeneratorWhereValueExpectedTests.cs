@@ -20,7 +20,7 @@ public class Jd011GeneratorWhereValueExpectedTests {
 
             public static class Sample {
                 public static void M() {
-                    Assert.NotNull(Any.String().NonEmpty());
+                    Assert.NotNull(Dummy.String().NonEmpty());
                 }
             }
             """;
@@ -39,7 +39,7 @@ public class Jd011GeneratorWhereValueExpectedTests {
 
             public static class Sample {
                 public static object[] Row() {
-                    return new object[] { Any.Int32().Positive(), 1 };
+                    return new object[] { Dummy.Int32().Positive(), 1 };
                 }
             }
             """;
@@ -57,7 +57,7 @@ public class Jd011GeneratorWhereValueExpectedTests {
 
             public static class Sample {
                 public static object M() {
-                    object boxed = Any.Int32().Positive();
+                    object boxed = Dummy.Int32().Positive();
 
                     return boxed;
                 }
@@ -77,7 +77,7 @@ public class Jd011GeneratorWhereValueExpectedTests {
 
             public static class Sample {
                 public static bool M(string expected) {
-                    return Any.String().NonEmpty().Equals(expected);
+                    return Dummy.String().NonEmpty().Equals(expected);
                 }
             }
             """;
@@ -97,8 +97,8 @@ public class Jd011GeneratorWhereValueExpectedTests {
 
             public static class Sample {
                 public static bool M() {
-                    AnyInt32 original = Any.Int32().Between(1, 10);
-                    AnyInt32 narrowed = original.GreaterThanOrEqualTo(10);
+                    DummyInt32 original = Dummy.Int32().Between(1, 10);
+                    DummyInt32 narrowed = original.GreaterThanOrEqualTo(10);
 
                     return !ReferenceEquals(original, narrowed);
                 }
@@ -117,8 +117,8 @@ public class Jd011GeneratorWhereValueExpectedTests {
 
             public static class Sample {
                 public static bool M() {
-                    AnyInt32 first  = Any.Int32();
-                    AnyInt32 second = Any.Int32();
+                    DummyInt32 first  = Dummy.Int32();
+                    DummyInt32 second = Dummy.Int32();
 
                     return first.Equals(second);
                 }
@@ -144,7 +144,7 @@ public class Jd011GeneratorWhereValueExpectedTests {
 
             public static class Sample {
                 public static void M() {
-                    Assert.Throws<ArgumentException>(() => Any.String().WithLength(3).StartingWith("ORD-"));
+                    Assert.Throws<ArgumentException>(() => Dummy.String().WithLength(3).StartingWith("ORD-"));
                 }
             }
             """;
@@ -165,7 +165,7 @@ public class Jd011GeneratorWhereValueExpectedTests {
 
             public static class Sample {
                 public static void M() {
-                    Assert.NotNull(Any.String().NonEmpty().Generate());
+                    Assert.NotNull(Dummy.String().NonEmpty().Generate());
                 }
             }
             """;

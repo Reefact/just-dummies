@@ -9,8 +9,8 @@ using System.Globalization;
 namespace JustDummies;
 
 /// <summary>
-///     The shared immutable engine behind the binary floating-point generators (<see cref="AnyDouble" />,
-///     <see cref="AnySingle" />, and <c>Half</c> on modern targets): an inclusive interval of finite doubles, an
+///     The shared immutable engine behind the binary floating-point generators (<see cref="DummyDouble" />,
+///     <see cref="DummySingle" />, and <c>Half</c> on modern targets): an inclusive interval of finite doubles, an
 ///     optional allow-list, and point exclusions — each bound remembering the constraint that set it, so a conflict
 ///     message can name both sides. NaN and the infinities are never generated nor accepted: arbitrary test values
 ///     should cross invariants, not sabotage arithmetic.
@@ -26,7 +26,7 @@ namespace JustDummies;
 ///         still guarantees the constraint: a colliding draw is nudged to the nearest non-excluded representable
 ///         value — a bounded deterministic walk along the type's own ladder, ascending then descending from the
 ///         original draw, not a retry loop. When neither walk finds a free value within its budget the generation
-///         fails with an <see cref="AnyGenerationException" /> naming the seed. That is an exhausted <i>local</i>
+///         fails with an <see cref="DummyGenerationException" /> naming the seed. That is an exhausted <i>local</i>
 ///         search, not a proof that the range holds no free value, and the message says so: free values further than
 ///         the budget from the drawn candidate are never examined.
 ///     </para>
@@ -66,7 +66,7 @@ internal sealed class ContinuousIntervalSpec {
         if (parameterName is null) { throw new ArgumentNullException(nameof(parameterName)); }
         if (double.IsNaN(value) || double.IsInfinity(value)) {
             throw new ArgumentException("The value must be finite: NaN and infinities are never generated, and never accepted as arguments. " +
-                                        "To draw a non-finite value that genuinely belongs to your domain, use an explicit pool: Any.OneOf(double.NaN, ...).",
+                                        "To draw a non-finite value that genuinely belongs to your domain, use an explicit pool: Dummy.OneOf(double.NaN, ...).",
                                         parameterName);
         }
     }
@@ -133,13 +133,13 @@ internal sealed class ContinuousIntervalSpec {
     /// <summary>Tightens the lower bound; a looser bound than the current one is a no-op.</summary>
     internal ContinuousIntervalSpec WithMinimum(double minimum, ConstraintCall applying) {
         if (applying is null) { throw new ArgumentNullException(nameof(applying)); }
-        if (double.IsInfinity(minimum)) { throw ConflictingAnyConstraintException.NoValueSatisfies(applying, _typeName); }
+        if (double.IsInfinity(minimum)) { throw ConflictingDummyConstraintException.NoValueSatisfies(applying, _typeName); }
         if (minimum <= _min) { return this; }
 
         if (minimum > _max) {
-            if (_maxConstraint is null) { throw ConflictingAnyConstraintException.NoValueSatisfies(applying, _typeName); }
+            if (_maxConstraint is null) { throw ConflictingDummyConstraintException.NoValueSatisfies(applying, _typeName); }
 
-            throw ConflictingAnyConstraintException.AlreadyBoundedAbove(applying, _maxConstraint, _render(_max));
+            throw ConflictingDummyConstraintException.AlreadyBoundedAbove(applying, _maxConstraint, _render(_max));
         }
 
         return Validated(new ContinuousIntervalSpec(_typeName, _render, _quantize, _nextUp, minimum, applying, _max, _maxConstraint, _allowed, _allowedConstraint, _exclusions, _laddered), applying);
@@ -148,13 +148,13 @@ internal sealed class ContinuousIntervalSpec {
     /// <summary>Tightens the upper bound; a looser bound than the current one is a no-op.</summary>
     internal ContinuousIntervalSpec WithMaximum(double maximum, ConstraintCall applying) {
         if (applying is null) { throw new ArgumentNullException(nameof(applying)); }
-        if (double.IsInfinity(maximum)) { throw ConflictingAnyConstraintException.NoValueSatisfies(applying, _typeName); }
+        if (double.IsInfinity(maximum)) { throw ConflictingDummyConstraintException.NoValueSatisfies(applying, _typeName); }
         if (maximum >= _max) { return this; }
 
         if (maximum < _min) {
-            if (_minConstraint is null) { throw ConflictingAnyConstraintException.NoValueSatisfies(applying, _typeName); }
+            if (_minConstraint is null) { throw ConflictingDummyConstraintException.NoValueSatisfies(applying, _typeName); }
 
-            throw ConflictingAnyConstraintException.AlreadyBoundedBelow(applying, _minConstraint, _render(_min));
+            throw ConflictingDummyConstraintException.AlreadyBoundedBelow(applying, _minConstraint, _render(_min));
         }
 
         return Validated(new ContinuousIntervalSpec(_typeName, _render, _quantize, _nextUp, _min, _minConstraint, maximum, applying, _allowed, _allowedConstraint, _exclusions, _laddered), applying);
@@ -181,7 +181,7 @@ internal sealed class ContinuousIntervalSpec {
         // Re-declaring the SAME constraint is not a contradiction, so it is a no-op rather than a
         // conflict: the second declaration asks for exactly what the first already guarantees.
         if (_allowedConstraint == applying) { return this; }
-        if (_allowedConstraint is not null) { throw ConflictingAnyConstraintException.AlreadyDefined(applying, _allowedConstraint); }
+        if (_allowedConstraint is not null) { throw ConflictingDummyConstraintException.AlreadyDefined(applying, _allowedConstraint); }
 
         double[] distinct = values.Distinct().ToArray();
 
@@ -354,7 +354,7 @@ internal sealed class ContinuousIntervalSpec {
             // examined. Reporting the stronger claim would send a caller looking for a contradiction that may not
             // exist, and the shape that reaches this line (a wide range whose free values sit further than the
             // budget from the draw) is precisely the one where it would not.
-            throw AnyGenerationException.LocalSearchExhausted(_typeName, Replay.Of(source, random.Seed), NudgeBudget);
+            throw DummyGenerationException.LocalSearchExhausted(_typeName, Replay.Of(source, random.Seed), NudgeBudget);
         }
 
         return free.Value;
@@ -399,7 +399,7 @@ internal sealed class ContinuousIntervalSpec {
     private ContinuousIntervalSpec Validated(ContinuousIntervalSpec candidate, ConstraintCall applying) {
         if (candidate.IsSatisfiable()) { return candidate; }
 
-        throw ConflictingAnyConstraintException.NoValueRemains(applying, candidate.DescribeExhaustion(applying));
+        throw ConflictingDummyConstraintException.NoValueRemains(applying, candidate.DescribeExhaustion(applying));
     }
 
     private bool IsSatisfiable() {

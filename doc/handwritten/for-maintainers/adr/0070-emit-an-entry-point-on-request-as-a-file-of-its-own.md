@@ -11,20 +11,20 @@
 
 ## Context
 
-A scaffolded generator is reached with `new AnyOrder()`. The library's own generators are reached
-through a static façade — `Any.Int32()`, `Any.String()` — so the two halves of the same arrange
+A scaffolded generator is reached with `new DummyOrder()`. The library's own generators are reached
+through a static façade — `Dummy.Int32()`, `Dummy.String()` — so the two halves of the same arrange
 block are written in two different shapes.
 
-`JustDummies.Any` is declared `partial`, but only to split one type across sibling files inside one
+`JustDummies.Dummy` is declared `partial`, but only to split one type across sibling files inside one
 assembly. A partial declaration does not cross an assembly boundary.
 
 C# resolves a simple type name in the enclosing namespace before any `using` directive
-([ADR-0062](0062-emit-the-generator-into-the-target-types-namespace.md)). A static class named `Any`
+([ADR-0062](0062-emit-the-generator-into-the-target-types-namespace.md)). A static class named `Dummy`
 declared in the developer's own project therefore hides the library's rather than adding to it, and
-`Any.Int32()` stops compiling with `CS0117` — verified.
+`Dummy.Int32()` stops compiling with `CS0117` — verified.
 
 C# 14 static extension members can take a static class as their receiver, which reaches
-`Any.Order()` without declaring a second `Any`. They compile for a `netstandard2.0` target as
+`Dummy.Order()` without declaring a second `Dummy`. They compile for a `netstandard2.0` target as
 readily as for `net10.0` — verified — so what they require is the project's **language version**,
 not its target framework. Below C# 14 the construct does not parse.
 
@@ -41,20 +41,20 @@ published one release, `cli-v1.0.0-beta.1`.
 The CLI hosts a current Roslyn and holds the compilation; the engine is pinned to the Roslyn floor
 (§13.2), which has no name for C# 14.
 
-The generator's recipe draws from the ambient façade, so a generator reached from an `AnyContext`
+The generator's recipe draws from the ambient façade, so a generator reached from an `DummyContext`
 would ignore the context it was given ([ADR-0061](0061-draw-from-the-ambient-context-and-hold-no-state.md)).
 
 ## Decision
 
 The tool emits an entry point only when asked for, always as a second file of its own, and reaches
-the `Any.` spelling through a C# 14 extension member rather than through a type named `Any` in the
+the `Dummy.` spelling through a C# 14 extension member rather than through a type named `Dummy` in the
 developer's project.
 
 ## Rationale
 
 **Additive is what keeps every existing guarantee.** The generator file is byte-identical whether an
 entry point was asked for or not, so §4.4's language floor stays a property of the generator rather
-than of the run, `new AnyOrder()` keeps working, and the published command line only gains an
+than of the run, `new DummyOrder()` keeps working, and the published command line only gains an
 option with its previous behaviour as the default. Nothing that already shipped changes meaning.
 
 **A file of its own is what keeps §8.1 and ADR-0056.** A single root gathering one member per
@@ -64,10 +64,10 @@ yours" would become "scaffold once, and the tool edits it afterwards". A `partia
 part per scaffold reaches the same call site with none of that — the parts never meet on disk.
 
 **An extension member is the only mechanism that adds the spelling without removing one.** The
-alternative a reader reaches for first — declaring `Any` in the developer's project — does not
-extend the façade, it hides it, and it costs `Any.Int32()`. That is not a trade-off worth offering.
+alternative a reader reaches for first — declaring `Dummy` in the developer's project — does not
+extend the façade, it hides it, and it costs `Dummy.Int32()`. That is not a trade-off worth offering.
 
-**Refusing below C# 14 beats downgrading.** A developer who asked for `Any.Order()` and silently
+**Refusing below C# 14 beats downgrading.** A developer who asked for `Dummy.Order()` and silently
 received `Dummies.Order()` would discover it at the call site, in a file the tool did not write. The
 refusal names the language version the project resolved and the option that needs no C# 14, which is
 the same shape every other refusal takes: what could not be done, then what to do instead. It
@@ -81,22 +81,22 @@ several bounded contexts, which is worth one import; what it must not buy is mov
 which every call site names. Keeping the two overrides separate is what lets one move without the
 other.
 
-**The seeded context stays out of it.** `Any.WithSeed(...)` yields a context whose generators must
+**The seeded context stays out of it.** `Dummy.WithSeed(...)` yields a context whose generators must
 be passed in parameter by parameter, because the emitted recipe draws from the ambient façade
-(ADR-0061). An entry point on `AnyContext` would look symmetrical and quietly ignore the context it
+(ADR-0061). An entry point on `DummyContext` would look symmetrical and quietly ignore the context it
 was handed. Making the emitted generator context-aware is a decision of its own; an ergonomics
 option must not carry it in.
 
 ## Alternatives Considered
 
-##### A partial `Any` contributed from the developer's project
+##### A partial `Dummy` contributed from the developer's project
 
-The spelling the name suggests: `Any` is already `partial`, so a part declared in the test project
+The spelling the name suggests: `Dummy` is already `partial`, so a part declared in the test project
 would appear to complete it.
 
 Rejected because partial declarations do not cross an assembly boundary. The part declares a second,
-unrelated `Any` in the developer's assembly, which wins name resolution against the imported one and
-hides it for its whole namespace — `Any.Order()` compiles and `Any.Int32()` does not (`CS0117`,
+unrelated `Dummy` in the developer's assembly, which wins name resolution against the imported one and
+hides it for its whole namespace — `Dummy.Order()` compiles and `Dummy.Int32()` does not (`CS0117`,
 verified). It removes exactly what made the spelling worth having.
 
 ##### One shared root file, rewritten as types are scaffolded
@@ -108,7 +108,7 @@ Rejected because writing it means reading it first. That makes the emitted bytes
 working tree rather than on the analyzed type (§8.1), and turns each scaffold into an edit of a file
 the developer owns (ADR-0056). The partial root reaches the same call site and needs neither.
 
-##### Making the `Any.` spelling the default shape
+##### Making the `Dummy.` spelling the default shape
 
 Considered because it is the shape the library itself uses, and a default nobody has to discover.
 
@@ -128,9 +128,9 @@ carry ([ADR-0065](0065-keep-the-scaffolding-engine-loadable-by-a-roslyn-host.md)
 reason ADR-0062 rejected the namespace implied by the output folder. An explicit override reaches the
 same layout without guessing.
 
-##### Emitting a matching entry point on `AnyContext`
+##### Emitting a matching entry point on `DummyContext`
 
-Considered for symmetry: the library mirrors its façade onto `AnyContext`, so a developer who has
+Considered for symmetry: the library mirrors its façade onto `DummyContext`, so a developer who has
 learned one expects the other.
 
 Rejected because it would be a lie. The emitted recipe draws from the ambient façade, so a generator

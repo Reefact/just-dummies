@@ -11,10 +11,10 @@
 ## Contexte
 
 * `JustDummies` est une bibliothèque de support de test : toute sa valeur tient à ce qu'un arrangement cassé
-  *échoue*. `Any.Reproducibly` exécute un corps de test sous une graine épinglée et la rapporte en cas d'échec. Elle
+  *échoue*. `Dummy.Reproducibly` exécute un corps de test sous une graine épinglée et la rapporte en cas d'échec. Elle
   surchargeait sur un seul nom une `Action` synchrone et un `Func<Task>` asynchrone.
 * Ce jeu de surcharges cachait un piège à échec silencieux. Une lambda `async` est une meilleure conversion vers
-  `Func<Task>` que vers `Action`, donc `Any.Reproducibly(async () => { ... })` se liait à la surcharge asynchrone, qui
+  `Func<Task>` que vers `Action`, donc `Dummy.Reproducibly(async () => { ... })` se liait à la surcharge asynchrone, qui
   retournait un `Task`. Une méthode de test est en général un `void` synchrone : le `Task` retourné était jeté ; les
   assertions du corps s'exécutaient sur une continuation après le retour de la méthode, et l'échec ne surgissait — au
   mieux — que plus tard sous forme d'`UnobservedTaskException`. **Le test passait au vert.** Le `CS4014` natif du
@@ -43,9 +43,9 @@ empaqueté dans le package NuGet `JustDummies` (`analyzers/dotnet/cs`), agnostiq
 `FirstClassErrors`, sous un schéma d'identifiants de diagnostic propre à JustDummies (`JDxxx`, en miroir de `FCExxx`).
 
 La première application rend la surface asynchrone reproductible non-abusable : le point d'entrée asynchrone est
-`Any.ReproduciblyAsync(Func<Task>)` (nommé TAP, retourne un `Task` que l'on `await`), le synchrone reste
-`Any.Reproducibly(Action)`, et deux analyseurs de sévérité *error* ferment ce que les types ne peuvent pas — **JD001**,
-une lambda `async` passée à `Any.Reproducibly`, et **JD002**, un `Task` de `Any.ReproduciblyAsync` jeté.
+`Dummy.ReproduciblyAsync(Func<Task>)` (nommé TAP, retourne un `Task` que l'on `await`), le synchrone reste
+`Dummy.Reproducibly(Action)`, et deux analyseurs de sévérité *error* ferment ce que les types ne peuvent pas — **JD001**,
+une lambda `async` passée à `Dummy.Reproducibly`, et **JD002**, un `Task` de `Dummy.ReproduciblyAsync` jeté.
 
 ## Justification
 
@@ -98,8 +98,8 @@ JustDummies par la bibliothèque d'erreurs casse la frontière d'autonomie que g
 
 ### Positives
 
-* Le piège du vert-silencieux devient une erreur de compilation : `Any.Reproducibly(async …)` (JD001) et un
-  `Any.ReproduciblyAsync(…)` jeté (JD002) font tous deux échouer la build, avec un message pointant vers la correction.
+* Le piège du vert-silencieux devient une erreur de compilation : `Dummy.Reproducibly(async …)` (JD001) et un
+  `Dummy.ReproduciblyAsync(…)` jeté (JD002) font tous deux échouer la build, avec un message pointant vers la correction.
 * Le point d'entrée asynchrone est nommé TAP (`ReproduciblyAsync`), donc il se lit correctement et `CS4014` couvre
   gratuitement le cas `await`-dans-une-méthode-async.
 * JustDummies acquiert une histoire d'analyseurs de première partie extensible à de futures règles, dans son propre
@@ -118,7 +118,7 @@ JustDummies par la bibliothèque d'erreurs casse la frontière d'autonomie que g
 * Le contrat de chargement de `JustDummies.Analyzers` doit rester épinglé au plancher Roslyn, comme
   `FirstClassErrors.Analyzers`, sinon l'analyseur échoue silencieusement à se charger (CS8032) sur des SDK plus
   anciens ; atténué en épinglant `Microsoft.CodeAnalysis.CSharp` à `$(RoslynFloorVersion)`.
-* JD001/JD002 détectent l'invocation par le nom de métadonnées `JustDummies.Any` et le nom de méthode ; un futur
+* JD001/JD002 détectent l'invocation par le nom de métadonnées `JustDummies.Dummy` et le nom de méthode ; un futur
   renommage de ces membres désactiverait silencieusement les règles, donc leurs noms font désormais partie du contrat
   de diagnostic.
 
@@ -126,7 +126,7 @@ JustDummies par la bibliothèque d'erreurs casse la frontière d'autonomie que g
 
 * Aucune requise pour la surface reproductible. Appliquer le même patron d'analyseur de première partie quand une
   future erreur JustDummies n'est exprimable qu'à la compilation.
-* La provenance des messages de conflit d'`AnyEnum` / `AnyGuid` (issue #314) est sans rapport et non affectée.
+* La provenance des messages de conflit d'`DummyEnum` / `DummyGuid` (issue #314) est sans rapport et non affectée.
 
 ## Références
 

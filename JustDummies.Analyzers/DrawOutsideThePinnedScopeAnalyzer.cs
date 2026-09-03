@@ -30,7 +30,7 @@ public sealed class DrawOutsideThePinnedScopeAnalyzer : DiagnosticAnalyzer {
 
     private static void OnCompilationStart(CompilationStartAnalysisContext context) {
         KnownSymbols symbols = KnownSymbols.From(context.Compilation);
-        if (symbols.Any is null || symbols.IAny is null || symbols.ReproducibleAttribute is null) { return; }
+        if (symbols.Dummy is null || symbols.IDummy is null || symbols.ReproducibleAttribute is null) { return; }
 
         context.RegisterOperationAction(operationContext => Analyze(operationContext, symbols), OperationKind.Invocation);
     }
@@ -38,8 +38,8 @@ public sealed class DrawOutsideThePinnedScopeAnalyzer : DiagnosticAnalyzer {
     private static void Analyze(OperationAnalysisContext context, KnownSymbols symbols) {
         IInvocationOperation invocation = (IInvocationOperation)context.Operation;
 
-        if (!GeneratorFacts.IsGenerateCall(invocation, symbols.IAny!)) { return; }
-        if (!GeneratorFacts.RootsAtAmbientAny(invocation, symbols.Any!)) { return; }
+        if (!GeneratorFacts.IsGenerateCall(invocation, symbols.IDummy!)) { return; }
+        if (!GeneratorFacts.RootsAtAmbientAny(invocation, symbols.Dummy!)) { return; }
 
         ISymbol containing = context.ContainingSymbol;
         if (!RunsBeforeTheScopeOpens(containing, out string? phase)) { return; }

@@ -24,7 +24,7 @@ proche de la frontière : ce qu'elle signale est légal, délibéré sur certain
 chaîne tire bien cette étendue — et elle le signale parce que l'auteur ne le sait probablement pas.
 
 La bibliothèque livre des paires d'écritures équivalentes **par construction**, non par coïncidence.
-`AnyString.WithLengthBetween` est implémentée comme les deux bornes qu'elle remplace, et sa documentation
+`DummyString.WithLengthBetween` est implémentée comme les deux bornes qu'elle remplace, et sa documentation
 énonce que les deux formes se comportent à l'identique, ce qui est précisément ce qui garde l'intervalle
 décomposable. La même paire existe pour les générateurs de collections, et dix-neuf surcharges de `Between`
 couvrent les numériques, `TimeSpan` et les temporels. À côté d'elles, la bibliothèque livre des alias exacts
@@ -99,7 +99,7 @@ sources d'un générateur règlent JD032 et tout ce qui suivra sans seconde lect
 pour laquelle l'ADR-0046 existe au lieu de sept décisions de bornage séparées.
 
 **Le critère admet délibérément davantage que le cas qui l'a provoqué.**
-`Any.String().WithMinLength(1)` possède une forme nommée plus courte implémentée exactement comme cette
+`Dummy.String().WithMinLength(1)` possède une forme nommée plus courte implémentée exactement comme cette
 contrainte : elle satisfait les trois conditions. Un critère assez étroit pour n'admettre qu'une seule règle
 ne serait pas un critère, et le coût des candidats supplémentaires est borné — chacun doit encore mériter
 une issue, un identifiant et deux pages de documentation.

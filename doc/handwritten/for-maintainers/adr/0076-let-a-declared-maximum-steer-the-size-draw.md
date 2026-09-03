@@ -21,11 +21,11 @@ Measured on the current `main`, the resulting behaviour is:
 
 | declaration | drawn length |
 | --- | --- |
-| `Any.String()` | 0..16 |
-| `Any.String().WithMaxLength(50)` | 0..16 |
-| `Any.String().WithMaxLength(100000)` | 0..16 |
-| `Any.String().WithLengthBetween(1000, 5000)` | 1000..1016 |
-| `Any.String().WithMinLength(1000).WithMaxLength(5000)` | 1000..1016 |
+| `Dummy.String()` | 0..16 |
+| `Dummy.String().WithMaxLength(50)` | 0..16 |
+| `Dummy.String().WithMaxLength(100000)` | 0..16 |
+| `Dummy.String().WithLengthBetween(1000, 5000)` | 1000..1016 |
+| `Dummy.String().WithMinLength(1000).WithMaxLength(5000)` | 1000..1016 |
 
 ADR-0029 anticipated the reaction to the third row, in its own *Negative* consequences, and with the same
 number: *"`WithMaxLength(100000)` returning 0-to-16-character strings is the intended new behaviour, and it
@@ -38,7 +38,7 @@ Three further facts bear on the choice.
 
 **A declared maximum is often not written by hand.** The `dum` scaffolder reads constructor guards
 (ADR-0060) and emits the constraint they imply: a guard `if (value.Length > 255) throw` produces
-`Any.String().NonEmpty().WithMaxLength(255)`. That maximum is not a caller "expressing a limit" — it is the
+`Dummy.String().NonEmpty().WithMaxLength(255)`. That maximum is not a caller "expressing a limit" — it is the
 domain's own invariant, read off the type. The engine then draws 1..17 from it, honouring 6 % of the
 declared domain.
 
@@ -89,7 +89,7 @@ uniformity ADR-0029 considered and set aside: one sentence, no exception to reme
 **The default spread is raised because being explicit must be the easy path.** At 16, a dummy string is
 short enough that no code ever meets a long one, so a length invariant is never exercised unless a test
 states it — and stating it is exactly what a test rarely bothers to do when the default is comfortable. At
-1024, an unconstrained `Any.String()` is inconvenient enough that declaring the real bound becomes the
+1024, an unconstrained `Dummy.String()` is inconvenient enough that declaring the real bound becomes the
 obvious move, and the declaration is then honoured rather than ignored. The two halves of this decision
 work together: raising the spread without a steering maximum would only make dummies larger, and a steering
 maximum without a raised spread would leave the unconstrained call as comfortable as before.
@@ -97,7 +97,7 @@ maximum without a raised spread would leave the unconstrained call as comfortabl
 **The remedy has to point at itself, which a size cannot.** An inconvenient default teaches only if the
 reader can tell what to write instead, and a wall of characters in a failure message does not say
 `WithMaxLength`. The analyzer set is this repository's instrument for exactly that (ADR-0038): an
-informational rule reporting an `Any.String()` chain that declares no length names the remedy at the call
+informational rule reporting an `Dummy.String()` chain that declares no length names the remedy at the call
 site, costs no draw and no version, and can be suppressed where a length genuinely does not matter. It is
 part of this decision rather than a separate one, because without it the raised default is a penalty rather
 than a nudge.
@@ -133,7 +133,7 @@ Considered as the other half, and the more conservative one: it fixes the incohe
 unconstrained draw alone.
 
 Rejected as insufficient rather than wrong. It is a real improvement, and it would stand on its own. But it
-leaves `Any.String()` comfortable enough to be used unconstrained by default, which is what keeps length
+leaves `Dummy.String()` comfortable enough to be used unconstrained by default, which is what keeps length
 invariants unexercised — and this cycle is already paying for a major version, so the moment to move the
 default is now rather than at the next one.
 
@@ -155,7 +155,7 @@ The uniform reading costs a ceiling and buys a rule with no cases in it.
 * A declared interval is the interval drawn, under every spelling, and a scaffolded `WithMaxLength(255)`
   exercises the range its constructor guard declares.
 * One rule for every size argument: refused above 1 000 000, no exception to remember.
-* An unconstrained `Any.String()` is uncomfortable enough that declaring the real bound is the path of
+* An unconstrained `Dummy.String()` is uncomfortable enough that declaring the real bound is the path of
   least resistance, and the new analyzer names that bound at the call site.
 * ADR-0029's four measured pathologies stay fixed: the ceiling now covers the maxima that used to be exempt
   because they did not steer.

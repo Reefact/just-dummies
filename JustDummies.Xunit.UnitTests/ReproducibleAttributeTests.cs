@@ -28,7 +28,7 @@ public sealed class ReproducibleAttributeTests {
     private static readonly ConcurrentDictionary<int, (int, string)> DrawnByCase = new();
 
     internal static (int, string) Batch() {
-        return (Any.Int32().Generate(), Any.String().NonEmpty().Generate());
+        return (Dummy.Int32().Generate(), Dummy.String().NonEmpty().Generate());
     }
 
     #endregion
@@ -40,8 +40,8 @@ public sealed class ReproducibleAttributeTests {
 
         (int, string) expected;
         // The attribute pinned 1234 for this test; an explicit scope over the same seed must agree, which is
-        // only true if the attribute really pinned the ambient source the static Any entry points draw from.
-        using (Any.UseSeed(1234)) { expected = Batch(); }
+        // only true if the attribute really pinned the ambient source the static Dummy entry points draw from.
+        using (Dummy.UseSeed(1234)) { expected = Batch(); }
 
         Check.That(drawn).IsEqualTo(expected);
     }
@@ -52,7 +52,7 @@ public sealed class ReproducibleAttributeTests {
         (int, string) drawn = Batch();
 
         (int, string) expected;
-        using (Any.UseSeed(0)) { expected = Batch(); }
+        using (Dummy.UseSeed(0)) { expected = Batch(); }
 
         Check.That(drawn).IsEqualTo(expected);
     }
@@ -77,13 +77,13 @@ public sealed class ReproducibleAttributeTests {
     public void TheAttributeSeedSurvivesANestedScope() {
         (int, string) first = Batch();
 
-        using (Any.UseSeed(11)) { Batch(); }
+        using (Dummy.UseSeed(11)) { Batch(); }
 
         (int, string) afterNesting = Batch();
 
         (int, string) expectedFirst;
         (int, string) expectedSecond;
-        using (Any.UseSeed(99)) {
+        using (Dummy.UseSeed(99)) {
             expectedFirst  = Batch();
             expectedSecond = Batch();
         }
@@ -95,14 +95,14 @@ public sealed class ReproducibleAttributeTests {
     [Fact(DisplayName = "A generation failure names the attribute, not the delegate runner.")]
     [Reproducible(Seed = 2026)]
     public void AGenerationFailureNamesTheAttribute() {
-        AnyGenerationException caught = Assert.Throws<AnyGenerationException>(
-            () => Any.Int32().As<int, int>(_ => throw new InvalidOperationException("rejected")).Generate());
+        DummyGenerationException caught = Assert.Throws<DummyGenerationException>(
+            () => Dummy.Int32().As<int, int>(_ => throw new InvalidOperationException("rejected")).Generate());
 
         Check.That(caught.Seed).IsEqualTo(2026);
         Check.That(caught.Message).Contains("[Reproducible(Seed = 2026)]");
-        // The whole point of the replay snippet: this test contains no Any.Reproducibly call, so naming
+        // The whole point of the replay snippet: this test contains no Dummy.Reproducibly call, so naming
         // one would send the reader to a call that is not there.
-        Check.That(caught.Message).Not.Contains("Any.Reproducibly");
+        Check.That(caught.Message).Not.Contains("Dummy.Reproducibly");
     }
 
     [Fact(DisplayName = "A failing test is told its seed and how to replay it.")]
@@ -112,7 +112,7 @@ public sealed class ReproducibleAttributeTests {
         Check.That(report).IsNotNull();
         Check.That(report).Contains("seeded with 1234");
         Check.That(report).Contains("[Reproducible(Seed = 1234)]");
-        Check.That(report).Not.Contains("Any.Reproducibly");
+        Check.That(report).Not.Contains("Dummy.Reproducibly");
     }
 
     [Fact(DisplayName = "A passing test is told nothing.")]
@@ -165,7 +165,7 @@ public sealed class ClassLevelReproducibleTests {
         (int, string) drawn = ReproducibleAttributeTests.Batch();
 
         (int, string) expected;
-        using (Any.UseSeed(7)) { expected = ReproducibleAttributeTests.Batch(); }
+        using (Dummy.UseSeed(7)) { expected = ReproducibleAttributeTests.Batch(); }
 
         Check.That(drawn).IsEqualTo(expected);
     }
@@ -176,7 +176,7 @@ public sealed class ClassLevelReproducibleTests {
         (int, string) drawn = ReproducibleAttributeTests.Batch();
 
         (int, string) expected;
-        using (Any.UseSeed(4242)) { expected = ReproducibleAttributeTests.Batch(); }
+        using (Dummy.UseSeed(4242)) { expected = ReproducibleAttributeTests.Batch(); }
 
         Check.That(drawn).IsEqualTo(expected);
     }

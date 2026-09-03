@@ -18,9 +18,9 @@ Ce n'est pas un slogan. C'est appliqué dans le code, comme un garde **d'entrée
 propriété de sortie :
 
 * Tout point d'entrée flottant qui prend un `double`, un `float` ou un `Half` — bornes, valeurs autorisées,
-  exclusions — rejette un argument non fini. `Any.Double().Except(double.NaN)` lève. La bibliothèque refuse de
+  exclusions — rejette un argument non fini. `Dummy.Double().Except(double.NaN)` lève. La bibliothèque refuse de
   discuter de `NaN`, des deux côtés.
-* `Any.Enum<T>().OneOf(...)` rejette une valeur numérique que l'énumération ne déclare pas.
+* `Dummy.Enum<T>().OneOf(...)` rejette une valeur numérique que l'énumération ne déclare pas.
 
 La règle a aussi servi à **refuser des fonctionnalités**. `Index` et `Range` ont été tenus hors de la surface au
 motif que leur validité est contextuelle, donc que « arbitraire mais valide » ne peut pas tenir pour eux de
@@ -29,8 +29,8 @@ façon autonome. C'est un filtre de conception appliqué depuis une règle non �
 **La règle n'est pas un invariant global, et c'est le point qu'un énoncé sans nuance manquerait.** Les points
 d'entrée génériques ne la portent pas, par construction :
 
-* `Any.OneOf(...)` et `Any.ElementOf(...)` vérifient que le pool est non vide et ne contient pas de `null`.
-  Rien d'autre. `Any.OneOf(double.NaN, 1.0)` compile et rend `NaN` aujourd'hui.
+* `Dummy.OneOf(...)` et `Dummy.ElementOf(...)` vérifient que le pool est non vide et ne contient pas de `null`.
+  Rien d'autre. `Dummy.OneOf(double.NaN, 1.0)` compile et rend `NaN` aujourd'hui.
 * `.As(...)` projette vers ce que l'appelant retourne.
 
 Cette asymétrie est correcte — `T` est opaque et la bibliothèque ne peut pas juger la sémantique d'un type
@@ -39,15 +39,15 @@ jour de sa rédaction.
 
 Trois coûts sont déjà observables :
 
-1. **La règle ne peut pas être citée.** Une proposition `Any.Double().WithNaN()`, `Any.Enum<T>().Undeclared()`
-   ou `Any.String().NotMatching(regex)` ne contredit aucune décision acceptée. Le refus est re-dérivé de zéro à
+1. **La règle ne peut pas être citée.** Une proposition `Dummy.Double().WithNaN()`, `Dummy.Enum<T>().Undeclared()`
+   ou `Dummy.String().NotMatching(regex)` ne contredit aucune décision acceptée. Le refus est re-dérivé de zéro à
    chaque fois, ce qui est la façon dont une règle finit par perdre un débat qu'elle devrait gagner.
 2. **Un voisin légitime ressemble exactement aux cas refusés.** Une combinaison `[Flags]` comme `Read | Write`
    est *non déclarée et parfaitement valide* : elle passe le critère. Un générateur de « membre d'énumération
    non déclaré », non. Sans le critère écrit, `AllowingCombinations()` et `Undeclared()` se lisent comme la
    même demande.
 3. **La porte de sortie est invisible.** La forme légitime du besoin — un domaine où `NaN` signifie vraiment
-   « mesure manquante » — est déjà servie par `Any.OneOf(...)`. Jusqu'à récemment rien ne le disait, et un
+   « mesure manquante » — est déjà servie par `Dummy.OneOf(...)`. Jusqu'à récemment rien ne le disait, et un
    utilisateur se cognait au mur en concluant qu'il manquait une fonctionnalité.
    [ADR-0031](0031-draw-arbitrary-numbers-within-an-ordinary-magnitude.fr.md) tranche une question voisine —
    quelles valeurs finies sont tirées — et pas celle-ci.
@@ -97,7 +97,7 @@ spécification entière et ne refuse que ce qu'elle peut réellement savoir faux
 seule porte par laquelle passe le besoin légitime.
 
 **Énoncer la frontière est ce qui fait de l'exemption une conception et non un trou.** Aujourd'hui, un lecteur
-qui remarque que `Any.OneOf(double.NaN, 1.0)` fonctionne là où `Any.Double().Except(double.NaN)` lève n'a aucun
+qui remarque que `Dummy.OneOf(double.NaN, 1.0)` fonctionne là où `Dummy.Double().Except(double.NaN)` lève n'a aucun
 moyen de savoir s'il a trouvé la porte de sortie ou un bug. Nommer le niveau auquel la règle tient répond à ça
 en une phrase.
 
@@ -106,7 +106,7 @@ en une phrase.
 ### L'enregistrer comme un invariant valable partout
 
 La phrase la plus simple : *JustDummies ne produit jamais que des valeurs valides*. Rejetée parce qu'elle est
-fausse. `Any.OneOf` et `.As` produisent ce que l'appelant fournit, et l'ont toujours fait. Un ADR dont la
+fausse. `Dummy.OneOf` et `.As` produisent ce que l'appelant fournit, et l'ont toujours fait. Un ADR dont la
 première affirmation est contredite par le code apprend au lecteur à se méfier du corpus d'ADR.
 
 ### Ne rien écrire
@@ -119,7 +119,7 @@ d'être contesté.
 ### Ajouter les générateurs et laisser l'appelant décider
 
 `WithNaN()`, `Undeclared()`, `NotMatching(...)`. C'est la demande que la règle refuse, et elle n'est pas
-déraisonnable en soi : le besoin derrière est réel. Rejetée parce que ce besoin est déjà servi par `Any.OneOf`
+déraisonnable en soi : le besoin derrière est réel. Rejetée parce que ce besoin est déjà servi par `Dummy.OneOf`
 et par un littéral, et parce que l'API rendrait confortable l'écriture du test dépendant de la graine — celui
 qui ne couvre un chemin que parfois. Sur les flottants, elle exigerait en plus que le moteur d'intervalle
 représente une valeur qu'il ne peut pas comparer.
@@ -139,12 +139,12 @@ refusé.
   l'alternative au lieu de seulement refuser.
 * Les combinaisons `[Flags]` sont visiblement *à l'intérieur* du critère — une valeur combinée est non déclarée
   et valide — donc `AllowingCombinations()` n'est pas pesé par erreur à l'aune d'une proposition `Undeclared()`.
-* Un lecteur qui voit `Any.OneOf` accepter ce qu'un builder typé refuse peut savoir que c'est la conception.
+* Un lecteur qui voit `Dummy.OneOf` accepter ce qu'un builder typé refuse peut savoir que c'est la conception.
 
 ### Négatives
 
 * Deux niveaux à expliquer au lieu d'un. Un utilisateur qui apprend « uniquement des valeurs valides » rencontre
-  l'exception à la règle dès son premier `Any.OneOf`, et le readme doit porter la frontière plutôt que le
+  l'exception à la règle dès son premier `Dummy.OneOf`, et le readme doit porter la frontière plutôt que le
   slogan.
 * La règle contraint la conception d'API future : un générateur dont les valeurs ne sont valides que dans un
   contexte que la bibliothèque ne voit pas n'a pas sa place sur un builder typé, aussi commode soit-il.
@@ -156,7 +156,7 @@ refusé.
   chaîne dont le format est contextuel. L'enregistrement nomme le critère, pas chaque cas futur, et ceux qu'il
   ne tranche pas demanderont encore une décision.
 * **`decimal` invite à une fausse symétrie.** `System.Decimal` n'a aucune représentation non finie, donc
-  `Any.Decimal()` n'a rien à garder. Un lecteur qui lit la règle et part chercher le garde correspondant ne le
+  `Dummy.Decimal()` n'a rien à garder. Un lecteur qui lit la règle et part chercher le garde correspondant ne le
   trouvera pas et pourrait le signaler comme une lacune ; le readme le dit explicitement pour cette raison.
 
 ## Actions de suivi

@@ -1,7 +1,7 @@
 namespace JustDummies;
 
 /// <summary>
-///     Thrown when a pattern passed to <see cref="Any.StringMatching(string)" /> is well-formed but uses a construct
+///     Thrown when a pattern passed to <see cref="Dummy.StringMatching(string)" /> is well-formed but uses a construct
 ///     outside the <b>regular</b> subset the library generates from — a lookahead or lookbehind, a backreference, a
 ///     balancing group, a Unicode category, a word boundary. These constructs are either not regular (so no finite generator can honour
 ///     them) or deliberately out of scope; the library refuses to guess rather than silently emit a value that does

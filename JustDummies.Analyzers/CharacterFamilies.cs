@@ -4,7 +4,7 @@ using System.Linq;
 namespace JustDummies.Analyzers;
 
 /// <summary>
-///     The alphabets the <c>AnyString</c> and <c>AnyChar</c> character families draw from, mirrored from
+///     The alphabets the <c>DummyString</c> and <c>DummyChar</c> character families draw from, mirrored from
 ///     <c>JustDummies/CharacterPools.cs</c>. An analyzer references no JustDummies assembly and cannot call it, so
 ///     the definition is duplicated — but only once, and it stays the single mirror: JD029 reads it from here, and any
 ///     further rule needing a family must too, because two rules disagreeing about what a family admits would be worse

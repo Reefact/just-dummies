@@ -11,7 +11,7 @@ namespace JustDummies.Analyzers;
 /// <remarks>
 ///     Deliberately framework-agnostic: it names no assertion library, so it covers the ones this repository uses and
 ///     the ones a consumer brings. It is also deliberately narrow — the expression must be the whole lambda body, so
-///     arrange code inside <c>Any.Reproducibly(() =&gt; { ... })</c> stays reported, the call there being one statement
+///     arrange code inside <c>Dummy.Reproducibly(() =&gt; { ... })</c> stays reported, the call there being one statement
 ///     of a block rather than the body itself.
 /// </remarks>
 internal static class NegativeTestGuard {

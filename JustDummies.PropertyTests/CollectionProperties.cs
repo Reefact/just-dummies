@@ -12,8 +12,8 @@ using JetBrains.Annotations;
 namespace JustDummies.PropertyTests;
 
 /// <summary>
-///     Property-based tests for the collection generators — <see cref="AnyList{T}" />, <see cref="AnyArray{T}" />,
-///     <see cref="AnySequence{T}" />, <see cref="AnySet{T}" /> and <see cref="AnyDictionary{TKey,TValue}" />. The
+///     Property-based tests for the collection generators — <see cref="DummyList{T}" />, <see cref="DummyArray{T}" />,
+///     <see cref="DummySequence{T}" />, <see cref="DummySet{T}" /> and <see cref="DummyDictionary{TKey,TValue}" />. The
 ///     example-based suite pins a handful of hand-picked sizes (<c>WithCount(5)</c>, <c>WithCountBetween(4, 6)</c>)
 ///     and can only prove the count algebra right for those; these quantify over the counts themselves — every size
 ///     from empty to thirty, every ordered bound pair, every pool size against every requested count — so a count
@@ -27,7 +27,7 @@ namespace JustDummies.PropertyTests;
 ///     decide that at declaration time rather than while drawing. A property that fixed either side would only ever
 ///     visit one side of that frontier.
 /// </remarks>
-[TestSubject(typeof(AnyList<int>))]
+[TestSubject(typeof(DummyList<int>))]
 public sealed class CollectionProperties {
 
     #region Statics members declarations
@@ -50,7 +50,7 @@ public sealed class CollectionProperties {
         return Generators.WithEdges(Gen.Choose(-30, -1), int.MinValue, int.MinValue + 1, -1);
     }
 
-    /// <summary>The pool <c>1..size</c> — the same domain as <c>Any.Int32().Between(1, size)</c>, held as an explicit set of values.</summary>
+    /// <summary>The pool <c>1..size</c> — the same domain as <c>Dummy.Int32().Between(1, size)</c>, held as an explicit set of values.</summary>
     private static int[] Pool(int size) {
         return Enumerable.Range(1, size).ToArray();
     }
@@ -71,8 +71,8 @@ public sealed class CollectionProperties {
     ///     Requires each of <paramref name="values" /> in turn, so a property can quantify over <i>how many</i> values
     ///     a collection is required to contain rather than pinning that number in the test.
     /// </summary>
-    private static AnyList<int> RequiringAll(AnyList<int> generator, int[] values) {
-        AnyList<int> required = generator;
+    private static DummyList<int> RequiringAll(DummyList<int> generator, int[] values) {
+        DummyList<int> required = generator;
         foreach (int value in values) { required = required.Containing(value); }
 
         return required;
@@ -86,38 +86,38 @@ public sealed class CollectionProperties {
         // is unchanged for collections — that record moves the policy, not the magnitude, every extra element being
         // itself a generated value.
         Prop.ForAll(Generators.WithEdges(Generators.Count(200), 0, 1, DefaultCountSpread, DefaultCountSpread + 1, 200).ToArbitrary(),
-                    maximum => Expect.EveryDraw(Any.ListOf(Any.Int32()).WithMaxCount(maximum), list => list.Count <= maximum, DrawsPerShape)
-                               && Expect.EveryDraw(Any.ArrayOf(Any.Int32()).WithMaxCount(maximum), array => array.Length <= maximum, DrawsPerShape)
-                               && Expect.EveryDraw(Any.DictionaryOf(Any.Int32(), Any.Int32()).WithMaxCount(maximum), map => map.Count <= maximum, DrawsPerShape))
+                    maximum => Expect.EveryDraw(Dummy.ListOf(Dummy.Int32()).WithMaxCount(maximum), list => list.Count <= maximum, DrawsPerShape)
+                               && Expect.EveryDraw(Dummy.ArrayOf(Dummy.Int32()).WithMaxCount(maximum), array => array.Length <= maximum, DrawsPerShape)
+                               && Expect.EveryDraw(Dummy.DictionaryOf(Dummy.Int32(), Dummy.Int32()).WithMaxCount(maximum), map => map.Count <= maximum, DrawsPerShape))
             .QuickCheckThrowOnFailure();
     }
 
     [Fact(DisplayName = "WithCount fixes the size exactly, for every count and every collection shape.")]
     public void WithCountFixesTheSize() {
         Prop.ForAll(Generators.Count(30).ToArbitrary(),
-                    count => Expect.EveryDraw(Any.ListOf(Any.Int32()).WithCount(count), list => list.Count == count, DrawsPerShape)
-                             && Expect.EveryDraw(Any.ArrayOf(Any.Int32()).WithCount(count), array => array.Length == count, DrawsPerShape)
-                             && Expect.EveryDraw(Any.SequenceOf(Any.Int32()).WithCount(count), sequence => sequence.Count() == count, DrawsPerShape)
-                             && Expect.EveryDraw(Any.SetOf(Any.Int32()).WithCount(count), set => set.Count == count, DrawsPerShape)
-                             && Expect.EveryDraw(Any.DictionaryOf(Any.Int32(), Any.Int32()).WithCount(count), map => map.Count == count, DrawsPerShape))
+                    count => Expect.EveryDraw(Dummy.ListOf(Dummy.Int32()).WithCount(count), list => list.Count == count, DrawsPerShape)
+                             && Expect.EveryDraw(Dummy.ArrayOf(Dummy.Int32()).WithCount(count), array => array.Length == count, DrawsPerShape)
+                             && Expect.EveryDraw(Dummy.SequenceOf(Dummy.Int32()).WithCount(count), sequence => sequence.Count() == count, DrawsPerShape)
+                             && Expect.EveryDraw(Dummy.SetOf(Dummy.Int32()).WithCount(count), set => set.Count == count, DrawsPerShape)
+                             && Expect.EveryDraw(Dummy.DictionaryOf(Dummy.Int32(), Dummy.Int32()).WithCount(count), map => map.Count == count, DrawsPerShape))
             .QuickCheckThrowOnFailure();
     }
 
     [Fact(DisplayName = "WithMinCount floors the size, for every minimum.")]
     public void WithMinCountFloorsTheSize() {
         Prop.ForAll(Generators.Count(30).ToArbitrary(),
-                    minimum => Expect.EveryDraw(Any.ListOf(Any.Int32()).WithMinCount(minimum), list => list.Count >= minimum, DrawsPerShape)
-                               && Expect.EveryDraw(Any.SetOf(Any.Int32()).WithMinCount(minimum), set => set.Count >= minimum, DrawsPerShape)
-                               && Expect.EveryDraw(Any.DictionaryOf(Any.Int32(), Any.Int32()).WithMinCount(minimum), map => map.Count >= minimum, DrawsPerShape))
+                    minimum => Expect.EveryDraw(Dummy.ListOf(Dummy.Int32()).WithMinCount(minimum), list => list.Count >= minimum, DrawsPerShape)
+                               && Expect.EveryDraw(Dummy.SetOf(Dummy.Int32()).WithMinCount(minimum), set => set.Count >= minimum, DrawsPerShape)
+                               && Expect.EveryDraw(Dummy.DictionaryOf(Dummy.Int32(), Dummy.Int32()).WithMinCount(minimum), map => map.Count >= minimum, DrawsPerShape))
             .QuickCheckThrowOnFailure();
     }
 
     [Fact(DisplayName = "WithMaxCount caps the size, for every maximum — including zero.")]
     public void WithMaxCountCapsTheSize() {
         Prop.ForAll(Generators.Count(30).ToArbitrary(),
-                    maximum => Expect.EveryDraw(Any.ArrayOf(Any.Int32()).WithMaxCount(maximum), array => array.Length <= maximum, DrawsPerShape)
-                               && Expect.EveryDraw(Any.SequenceOf(Any.Int32()).WithMaxCount(maximum), sequence => sequence.Count() <= maximum, DrawsPerShape)
-                               && Expect.EveryDraw(Any.SetOf(Any.Int32()).WithMaxCount(maximum), set => set.Count <= maximum, DrawsPerShape))
+                    maximum => Expect.EveryDraw(Dummy.ArrayOf(Dummy.Int32()).WithMaxCount(maximum), array => array.Length <= maximum, DrawsPerShape)
+                               && Expect.EveryDraw(Dummy.SequenceOf(Dummy.Int32()).WithMaxCount(maximum), sequence => sequence.Count() <= maximum, DrawsPerShape)
+                               && Expect.EveryDraw(Dummy.SetOf(Dummy.Int32()).WithMaxCount(maximum), set => set.Count <= maximum, DrawsPerShape))
             .QuickCheckThrowOnFailure();
     }
 
@@ -126,9 +126,9 @@ public sealed class CollectionProperties {
         // Degenerate pairs (min == max) are deliberately kept: a range that pins the count is the corner where a
         // range resolved as half-open would show up as an off-by-one.
         Prop.ForAll(Generators.OrderedPair(Generators.Count(30)).ToArbitrary(),
-                    bounds => Expect.EveryDraw(Any.ListOf(Any.Int32()).WithCountBetween(bounds.Min, bounds.Max),
+                    bounds => Expect.EveryDraw(Dummy.ListOf(Dummy.Int32()).WithCountBetween(bounds.Min, bounds.Max),
                                                list => list.Count >= bounds.Min && list.Count <= bounds.Max, DrawsPerShape)
-                              && Expect.EveryDraw(Any.DictionaryOf(Any.Int32(), Any.Int32()).WithCountBetween(bounds.Min, bounds.Max),
+                              && Expect.EveryDraw(Dummy.DictionaryOf(Dummy.Int32(), Dummy.Int32()).WithCountBetween(bounds.Min, bounds.Max),
                                                   map => map.Count >= bounds.Min && map.Count <= bounds.Max, DrawsPerShape))
             .QuickCheckThrowOnFailure();
     }
@@ -137,7 +137,7 @@ public sealed class CollectionProperties {
     public void CrossedCountBoundsAreAnArgumentError() {
         Prop.ForAll(Generators.OrderedPair(Generators.Count(30)).ToArbitrary(),
                     bounds => bounds.Min == bounds.Max
-                              || Expect.Throws<ArgumentException>(() => Any.ListOf(Any.Int32()).WithCountBetween(bounds.Max, bounds.Min)))
+                              || Expect.Throws<ArgumentException>(() => Dummy.ListOf(Dummy.Int32()).WithCountBetween(bounds.Max, bounds.Min)))
             .QuickCheckThrowOnFailure();
     }
 
@@ -146,10 +146,10 @@ public sealed class CollectionProperties {
         // Argument validation precedes conflict checking, so these must be ArgumentOutOfRangeException whatever else
         // the generator already carries — a negative count is never a "contradiction with a declared constraint".
         Prop.ForAll(NegativeCount().ToArbitrary(),
-                    count => Expect.Throws<ArgumentOutOfRangeException>(() => Any.ListOf(Any.Int32()).WithCount(count))
-                             && Expect.Throws<ArgumentOutOfRangeException>(() => Any.SetOf(Any.Int32()).WithMinCount(count))
-                             && Expect.Throws<ArgumentOutOfRangeException>(() => Any.ArrayOf(Any.Int32()).WithMaxCount(count))
-                             && Expect.Throws<ArgumentOutOfRangeException>(() => Any.DictionaryOf(Any.Int32(), Any.Int32()).WithCountBetween(count, 0)))
+                    count => Expect.Throws<ArgumentOutOfRangeException>(() => Dummy.ListOf(Dummy.Int32()).WithCount(count))
+                             && Expect.Throws<ArgumentOutOfRangeException>(() => Dummy.SetOf(Dummy.Int32()).WithMinCount(count))
+                             && Expect.Throws<ArgumentOutOfRangeException>(() => Dummy.ArrayOf(Dummy.Int32()).WithMaxCount(count))
+                             && Expect.Throws<ArgumentOutOfRangeException>(() => Dummy.DictionaryOf(Dummy.Int32(), Dummy.Int32()).WithCountBetween(count, 0)))
             .QuickCheckThrowOnFailure();
     }
 
@@ -160,16 +160,16 @@ public sealed class CollectionProperties {
                         // A pinned element domain (Min == Max) is the corner that matters here: NonEmpty() must still
                         // resolve a count a distinct collection can fill, which for a single-value domain is exactly
                         // one element — not a conflict, and not an empty draw.
-                        AnyInt32 element = Any.Int32().Between(bounds.Min, bounds.Max);
+                        DummyInt32 element = Dummy.Int32().Between(bounds.Min, bounds.Max);
 
-                        return Expect.EveryDraw(Any.ListOf(element).Empty(), list => list.Count == 0, DrawsPerShape)
-                               && Expect.EveryDraw(Any.SetOf(element).Empty(), set => set.Count == 0, DrawsPerShape)
-                               && Expect.EveryDraw(Any.DictionaryOf(element, Any.Int32()).Empty(), map => map.Count == 0, DrawsPerShape)
-                               && Expect.EveryDraw(Any.ListOf(element).NonEmpty(), list => list.Count > 0, DrawsPerShape)
-                               && Expect.EveryDraw(Any.ArrayOf(element).NonEmpty(), array => array.Length > 0, DrawsPerShape)
-                               && Expect.EveryDraw(Any.SequenceOf(element).NonEmpty(), sequence => sequence.Any(), DrawsPerShape)
-                               && Expect.EveryDraw(Any.SetOf(element).NonEmpty(), set => set.Count > 0, DrawsPerShape)
-                               && Expect.EveryDraw(Any.DictionaryOf(element, Any.Int32()).NonEmpty(), map => map.Count > 0, DrawsPerShape);
+                        return Expect.EveryDraw(Dummy.ListOf(element).Empty(), list => list.Count == 0, DrawsPerShape)
+                               && Expect.EveryDraw(Dummy.SetOf(element).Empty(), set => set.Count == 0, DrawsPerShape)
+                               && Expect.EveryDraw(Dummy.DictionaryOf(element, Dummy.Int32()).Empty(), map => map.Count == 0, DrawsPerShape)
+                               && Expect.EveryDraw(Dummy.ListOf(element).NonEmpty(), list => list.Count > 0, DrawsPerShape)
+                               && Expect.EveryDraw(Dummy.ArrayOf(element).NonEmpty(), array => array.Length > 0, DrawsPerShape)
+                               && Expect.EveryDraw(Dummy.SequenceOf(element).NonEmpty(), sequence => sequence.Any(), DrawsPerShape)
+                               && Expect.EveryDraw(Dummy.SetOf(element).NonEmpty(), set => set.Count > 0, DrawsPerShape)
+                               && Expect.EveryDraw(Dummy.DictionaryOf(element, Dummy.Int32()).NonEmpty(), map => map.Count > 0, DrawsPerShape);
                     })
             .QuickCheckThrowOnFailure();
     }
@@ -179,13 +179,13 @@ public sealed class CollectionProperties {
         Prop.ForAll((from value in Generators.Int32()
                      from count in Gen.Choose(1, 12)
                      select (value, count)).ToArbitrary(),
-                    testCase => Expect.EveryDraw(Any.ListOf(Any.Int32()).WithCount(testCase.count).Containing(testCase.value),
+                    testCase => Expect.EveryDraw(Dummy.ListOf(Dummy.Int32()).WithCount(testCase.count).Containing(testCase.value),
                                                  list => list.Count == testCase.count && list.Contains(testCase.value), DrawsPerShape)
-                                && Expect.EveryDraw(Any.ArrayOf(Any.Int32()).WithCount(testCase.count).Containing(testCase.value),
+                                && Expect.EveryDraw(Dummy.ArrayOf(Dummy.Int32()).WithCount(testCase.count).Containing(testCase.value),
                                                     array => array.Length == testCase.count && array.Contains(testCase.value), DrawsPerShape)
-                                && Expect.EveryDraw(Any.SequenceOf(Any.Int32()).WithCount(testCase.count).Containing(testCase.value),
+                                && Expect.EveryDraw(Dummy.SequenceOf(Dummy.Int32()).WithCount(testCase.count).Containing(testCase.value),
                                                     sequence => sequence.Count() == testCase.count && sequence.Contains(testCase.value), DrawsPerShape)
-                                && Expect.EveryDraw(Any.SetOf(Any.Int32()).WithCount(testCase.count).Containing(testCase.value),
+                                && Expect.EveryDraw(Dummy.SetOf(Dummy.Int32()).WithCount(testCase.count).Containing(testCase.value),
                                                     set => set.Count == testCase.count && set.Contains(testCase.value), DrawsPerShape))
             .QuickCheckThrowOnFailure();
     }
@@ -196,9 +196,9 @@ public sealed class CollectionProperties {
                      from value in Generators.Int32()
                      from count in Gen.Choose(1, 12)
                      select (key, value, count)).ToArbitrary(),
-                    testCase => Expect.EveryDraw(Any.DictionaryOf(Any.Int32(), Any.Int32()).WithCount(testCase.count).ContainingKey(testCase.key),
+                    testCase => Expect.EveryDraw(Dummy.DictionaryOf(Dummy.Int32(), Dummy.Int32()).WithCount(testCase.count).ContainingKey(testCase.key),
                                                  map => map.Count == testCase.count && map.ContainsKey(testCase.key), DrawsPerShape)
-                                && Expect.EveryDraw(Any.DictionaryOf(Any.Int32(), Any.Int32()).WithCount(testCase.count).ContainingEntry(testCase.key, testCase.value),
+                                && Expect.EveryDraw(Dummy.DictionaryOf(Dummy.Int32(), Dummy.Int32()).WithCount(testCase.count).ContainingEntry(testCase.key, testCase.value),
                                                     map => map.Count == testCase.count
                                                            && map.ContainsKey(testCase.key)
                                                            && map[testCase.key] == testCase.value, DrawsPerShape))
@@ -214,13 +214,13 @@ public sealed class CollectionProperties {
                         // The domain is at its narrowest exactly one value wider than the request, so the count always
                         // fits — this property is about the dedup-draw filling it, not about the eager gate below. The
                         // tightest fits are where a fill that gave up early, or one that let a duplicate through, shows.
-                        AnyInt32 element = Any.Int32().Between(1, testCase.count + testCase.slack + 1);
+                        DummyInt32 element = Dummy.Int32().Between(1, testCase.count + testCase.slack + 1);
 
-                        return Expect.EveryDraw(Any.ListOf(element).WithCount(testCase.count).Distinct(),
+                        return Expect.EveryDraw(Dummy.ListOf(element).WithCount(testCase.count).Distinct(),
                                                 list => list.Count == testCase.count && new HashSet<int>(list).Count == testCase.count, DrawsPerShape)
-                               && Expect.EveryDraw(Any.ArrayOf(element).WithCount(testCase.count).Distinct(),
+                               && Expect.EveryDraw(Dummy.ArrayOf(element).WithCount(testCase.count).Distinct(),
                                                    array => array.Length == testCase.count && new HashSet<int>(array).Count == testCase.count, DrawsPerShape)
-                               && Expect.EveryDraw(Any.SequenceOf(element).WithCount(testCase.count).Distinct(),
+                               && Expect.EveryDraw(Dummy.SequenceOf(element).WithCount(testCase.count).Distinct(),
                                                    sequence => sequence.Count() == testCase.count && new HashSet<int>(sequence).Count == testCase.count, DrawsPerShape);
                     })
             .QuickCheckThrowOnFailure();
@@ -232,14 +232,14 @@ public sealed class CollectionProperties {
                      from slack in Generators.Count(16)
                      select (count, slack)).ToArbitrary(),
                     testCase => {
-                        AnyInt32 element = Any.Int32().Between(1, testCase.count + testCase.slack + 1);
+                        DummyInt32 element = Dummy.Int32().Between(1, testCase.count + testCase.slack + 1);
 
                         // A HashSet collapses a repeated element silently and a Dictionary a repeated key, so a size
                         // equal to the request IS the distinctness assertion: a duplicate could only surface as a
                         // collection one element short of what was asked for.
-                        return Expect.EveryDraw(Any.SetOf(element).WithCount(testCase.count),
+                        return Expect.EveryDraw(Dummy.SetOf(element).WithCount(testCase.count),
                                                 set => set.Count == testCase.count, DrawsPerShape)
-                               && Expect.EveryDraw(Any.DictionaryOf(element, Any.Int32()).WithCount(testCase.count),
+                               && Expect.EveryDraw(Dummy.DictionaryOf(element, Dummy.Int32()).WithCount(testCase.count),
                                                    map => map.Count == testCase.count, DrawsPerShape);
                     })
             .QuickCheckThrowOnFailure();
@@ -255,23 +255,23 @@ public sealed class CollectionProperties {
                         // advertise a cardinality, so both must decide feasibility before drawing. Quantifying
                         // over the pool size AND the requested count walks the whole frontier between the two verdicts
                         // — an example can only ever stand on one side of it.
-                        AnyInt32      bounded = Any.Int32().Between(1, testCase.poolSize);
-                        AnyOneOf<int> pooled  = Any.OneOf(Pool(testCase.poolSize));
+                        DummyInt32      bounded = Dummy.Int32().Between(1, testCase.poolSize);
+                        DummyOneOf<int> pooled  = Dummy.OneOf(Pool(testCase.poolSize));
 
                         if (testCase.count > testCase.poolSize) {
-                            return Expect.Throws<ConflictingAnyConstraintException>(() => Any.SetOf(bounded).WithCount(testCase.count).Generate())
-                                   && Expect.Throws<ConflictingAnyConstraintException>(() => Any.SetOf(pooled).WithCount(testCase.count).Generate())
-                                   && Expect.Throws<ConflictingAnyConstraintException>(() => Any.ListOf(pooled).WithCount(testCase.count).Distinct().Generate())
-                                   && Expect.Throws<ConflictingAnyConstraintException>(() => Any.DictionaryOf(bounded, Any.Int32()).WithCount(testCase.count).Generate());
+                            return Expect.Throws<ConflictingDummyConstraintException>(() => Dummy.SetOf(bounded).WithCount(testCase.count).Generate())
+                                   && Expect.Throws<ConflictingDummyConstraintException>(() => Dummy.SetOf(pooled).WithCount(testCase.count).Generate())
+                                   && Expect.Throws<ConflictingDummyConstraintException>(() => Dummy.ListOf(pooled).WithCount(testCase.count).Distinct().Generate())
+                                   && Expect.Throws<ConflictingDummyConstraintException>(() => Dummy.DictionaryOf(bounded, Dummy.Int32()).WithCount(testCase.count).Generate());
                         }
 
-                        return Expect.EveryDraw(Any.SetOf(bounded).WithCount(testCase.count),
+                        return Expect.EveryDraw(Dummy.SetOf(bounded).WithCount(testCase.count),
                                                 set => set.Count == testCase.count && set.All(value => value >= 1 && value <= testCase.poolSize), DrawsPerShape)
-                               && Expect.EveryDraw(Any.SetOf(pooled).WithCount(testCase.count),
+                               && Expect.EveryDraw(Dummy.SetOf(pooled).WithCount(testCase.count),
                                                    set => set.Count == testCase.count && set.All(value => value >= 1 && value <= testCase.poolSize), DrawsPerShape)
-                               && Expect.EveryDraw(Any.ListOf(pooled).WithCount(testCase.count).Distinct(),
+                               && Expect.EveryDraw(Dummy.ListOf(pooled).WithCount(testCase.count).Distinct(),
                                                    list => list.Count == testCase.count && new HashSet<int>(list).Count == testCase.count, DrawsPerShape)
-                               && Expect.EveryDraw(Any.DictionaryOf(bounded, Any.Int32()).WithCount(testCase.count),
+                               && Expect.EveryDraw(Dummy.DictionaryOf(bounded, Dummy.Int32()).WithCount(testCase.count),
                                                    map => map.Count == testCase.count, DrawsPerShape);
                     })
             .QuickCheckThrowOnFailure();
@@ -289,11 +289,11 @@ public sealed class CollectionProperties {
                         // comparison — and the property holds it over every (how many, how big a cap) pair rather than
                         // over the one pair an example would pin.
                         if (testCase.values.Length > testCase.maximum) {
-                            return Expect.Throws<ConflictingAnyConstraintException>(
-                                () => RequiringAll(Any.ListOf(Any.Int32()).WithMaxCount(testCase.maximum), testCase.values));
+                            return Expect.Throws<ConflictingDummyConstraintException>(
+                                () => RequiringAll(Dummy.ListOf(Dummy.Int32()).WithMaxCount(testCase.maximum), testCase.values));
                         }
 
-                        return Expect.EveryDraw(RequiringAll(Any.ListOf(Any.Int32()).WithMaxCount(testCase.maximum), testCase.values),
+                        return Expect.EveryDraw(RequiringAll(Dummy.ListOf(Dummy.Int32()).WithMaxCount(testCase.maximum), testCase.values),
                                                 list => list.Count <= testCase.maximum
                                                         && testCase.values.All(value => list.Contains(value)));
                     })
@@ -309,7 +309,7 @@ public sealed class CollectionProperties {
 
         Prop.ForAll(cases.ToArbitrary(),
                     testCase => {
-                        // The pool holds Tag(0)..Tag(pool-1) — distinct by value, so AnyOneOf keeps all of them (it
+                        // The pool holds Tag(0)..Tag(pool-1) — distinct by value, so DummyOneOf keeps all of them (it
                         // deduplicates under the DEFAULT comparer, which is why the pool cannot itself carry
                         // reference-distinct twins). The pinned values are fresh instances of the SAME values, so
                         // each is value-equal to a pool member and reference-distinct from it. Under ReferenceComparer
@@ -319,7 +319,7 @@ public sealed class CollectionProperties {
                         Tag[] pooled = Enumerable.Range(0, testCase.Pool).Select(value => new Tag(value)).ToArray();
                         Tag[] pinned = Enumerable.Range(0, testCase.Pinned).Select(value => new Tag(value % testCase.Pool)).ToArray();
 
-                        AnyList<Tag> generator = Any.ListOf(Any.OneOf(pooled)).Distinct(new ReferenceComparer());
+                        DummyList<Tag> generator = Dummy.ListOf(Dummy.OneOf(pooled)).Distinct(new ReferenceComparer());
                         foreach (Tag value in pinned) { generator = generator.Containing(value); }
 
                         List<Tag> list = generator.WithCount(testCase.Pool + testCase.Pinned).Generate();
@@ -337,7 +337,7 @@ public sealed class CollectionProperties {
     public void SequenceIsFullyMaterialized() {
         Prop.ForAll(Generators.Count(30).ToArbitrary(),
                     count => {
-                        IEnumerable<int> sequence = Any.SequenceOf(Any.Int32()).WithCount(count).Generate();
+                        IEnumerable<int> sequence = Dummy.SequenceOf(Dummy.Int32()).WithCount(count).Generate();
 
                         List<int> first  = sequence.ToList();
                         List<int> second = sequence.ToList();
@@ -359,11 +359,11 @@ public sealed class CollectionProperties {
                     testCase => {
                         DateTimeOffset instant = new(2026, 1, 1, 12, 0, 0, TimeSpan.Zero);
 
-                        AnyDateTimeOffset ranged = Any.DateTimeOffset()
+                        DummyDateTimeOffset ranged = Dummy.DateTimeOffset()
                                                       .Between(instant, instant)
                                                       .WithOffsetBetween(TimeSpan.FromMinutes(-testCase.HalfWidthMinutes), TimeSpan.FromMinutes(testCase.HalfWidthMinutes));
 
-                        List<DateTimeOffset> list = Any.ListOf(ranged).Distinct(new BySpellingComparer()).WithCount(testCase.Count).Generate();
+                        List<DateTimeOffset> list = Dummy.ListOf(ranged).Distinct(new BySpellingComparer()).WithCount(testCase.Count).Generate();
 
                         // Reachable and reached: the count is honoured, every element differs in spelling, and the
                         // instant never moved -- so the offsets alone carried the distinctness.

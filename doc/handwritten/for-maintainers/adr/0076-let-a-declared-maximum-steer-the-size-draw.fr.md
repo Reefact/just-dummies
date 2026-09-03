@@ -22,11 +22,11 @@ Mesuré sur le `main` actuel, le comportement obtenu est :
 
 | déclaration | longueur tirée |
 | --- | --- |
-| `Any.String()` | 0..16 |
-| `Any.String().WithMaxLength(50)` | 0..16 |
-| `Any.String().WithMaxLength(100000)` | 0..16 |
-| `Any.String().WithLengthBetween(1000, 5000)` | 1000..1016 |
-| `Any.String().WithMinLength(1000).WithMaxLength(5000)` | 1000..1016 |
+| `Dummy.String()` | 0..16 |
+| `Dummy.String().WithMaxLength(50)` | 0..16 |
+| `Dummy.String().WithMaxLength(100000)` | 0..16 |
+| `Dummy.String().WithLengthBetween(1000, 5000)` | 1000..1016 |
+| `Dummy.String().WithMinLength(1000).WithMaxLength(5000)` | 1000..1016 |
 
 L'ADR-0029 avait anticipé la réaction à la troisième ligne, dans ses propres conséquences *négatives*, et
 avec le même nombre : *« `WithMaxLength(100000)` returning 0-to-16-character strings is the intended new
@@ -39,7 +39,7 @@ Trois autres faits pèsent sur le choix.
 
 **Un maximum déclaré n'est souvent pas écrit à la main.** Le scaffolder `dum` lit les gardes de constructeur
 (ADR-0060) et émet la contrainte qu'elles impliquent : une garde `if (value.Length > 255) throw` produit
-`Any.String().NonEmpty().WithMaxLength(255)`. Ce maximum n'est pas un appelant « qui exprime une limite » :
+`Dummy.String().NonEmpty().WithMaxLength(255)`. Ce maximum n'est pas un appelant « qui exprime une limite » :
 c'est l'invariant du domaine lui-même, lu sur le type. Le moteur en tire ensuite 1..17, honorant 6 % du
 domaine déclaré.
 
@@ -94,7 +94,7 @@ retenir.
 **L'étendue par défaut est relevée parce que l'explicite doit être le chemin facile.** À 16, un dummy de
 chaîne est assez court pour qu'aucun code ne rencontre jamais une chaîne longue : un invariant de longueur
 n'est donc jamais exercé si un test ne l'énonce pas — et l'énoncer est précisément ce qu'un test se donne
-rarement la peine de faire quand le défaut est confortable. À 1024, un `Any.String()` non contraint est
+rarement la peine de faire quand le défaut est confortable. À 1024, un `Dummy.String()` non contraint est
 assez inconfortable pour que déclarer la vraie borne devienne le geste évident, et la déclaration est alors
 honorée au lieu d'être ignorée. Les deux moitiés de cette décision travaillent ensemble : relever l'étendue
 sans maximum pilotant ne ferait que grossir les dummies, et un maximum pilotant sans étendue relevée
@@ -103,7 +103,7 @@ laisserait l'appel non contraint aussi confortable qu'avant.
 **Le remède doit se désigner lui-même, ce qu'une taille ne sait pas faire.** Un défaut inconfortable
 n'enseigne que si le lecteur peut deviner quoi écrire à la place, et un mur de caractères dans un message
 d'échec ne dit pas `WithMaxLength`. Le jeu d'analyzers est l'instrument de ce dépôt pour exactement cela
-(ADR-0038) : une règle informative signalant une chaîne `Any.String()` qui ne déclare aucune longueur nomme
+(ADR-0038) : une règle informative signalant une chaîne `Dummy.String()` qui ne déclare aucune longueur nomme
 le remède au site d'appel, ne coûte ni tirage ni version, et se supprime là où la longueur n'importe
 réellement pas. Elle fait partie de cette décision plutôt que d'une autre, car sans elle le défaut relevé
 est une punition et non une incitation.
@@ -140,7 +140,7 @@ Envisagée comme l'autre moitié, et la plus conservatrice : elle corrige les li
 tirage non contraint tranquille.
 
 Rejetée comme insuffisante plutôt que fausse. C'est une vraie amélioration, et elle tiendrait seule. Mais
-elle laisse `Any.String()` assez confortable pour être employé non contraint par défaut, ce qui est ce qui
+elle laisse `Dummy.String()` assez confortable pour être employé non contraint par défaut, ce qui est ce qui
 laisse les invariants de longueur inexercés — et ce cycle paie déjà une version majeure, donc le moment de
 déplacer le défaut est maintenant plutôt qu'à la suivante.
 
@@ -162,7 +162,7 @@ compte pas. La lecture uniforme coûte un plafond et achète une règle sans cas
 * Un intervalle déclaré est l'intervalle tiré, sous toutes les écritures, et un `WithMaxLength(255)`
   scaffoldé exerce la plage que sa garde de constructeur déclare.
 * Une seule règle pour tout argument de taille : refusé au-delà de 1 000 000, aucune exception à retenir.
-* Un `Any.String()` non contraint est assez inconfortable pour que déclarer la vraie borne soit le chemin
+* Un `Dummy.String()` non contraint est assez inconfortable pour que déclarer la vraie borne soit le chemin
   de moindre résistance, et le nouvel analyzer nomme cette borne au site d'appel.
 * Les quatre pathologies mesurées par l'ADR-0029 restent corrigées : le plafond couvre désormais les maxima
   qui en étaient dispensés parce qu'ils ne pilotaient pas.

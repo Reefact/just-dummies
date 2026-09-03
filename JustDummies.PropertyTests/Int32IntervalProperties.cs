@@ -10,18 +10,18 @@ using JetBrains.Annotations;
 namespace JustDummies.PropertyTests;
 
 /// <summary>
-///     Property-based tests for <see cref="AnyInt32" />'s interval algebra. Where the example-based suite pins a few
+///     Property-based tests for <see cref="DummyInt32" />'s interval algebra. Where the example-based suite pins a few
 ///     hand-picked intervals, these quantify over the whole bound space — <c>[int.MinValue, int.MaxValue]</c>,
 ///     degenerate intervals, and the off-by-one edges around them — so a bound that overflows or truncates for one
 ///     interval in a million is found and shrunk to its minimal counter-example rather than missed.
 /// </summary>
-[TestSubject(typeof(AnyInt32))]
+[TestSubject(typeof(DummyInt32))]
 public sealed class Int32IntervalProperties {
 
     [Fact(DisplayName = "Between contains: every draw falls within the declared inclusive bounds.")]
     public void BetweenContainsEveryDraw() {
         Prop.ForAll(Generators.OrderedPair(Generators.Int32()).ToArbitrary(),
-                    bounds => Expect.EveryDraw(Any.Int32().Between(bounds.Min, bounds.Max),
+                    bounds => Expect.EveryDraw(Dummy.Int32().Between(bounds.Min, bounds.Max),
                                                value => value >= bounds.Min && value <= bounds.Max))
             .QuickCheckThrowOnFailure();
     }
@@ -29,21 +29,21 @@ public sealed class Int32IntervalProperties {
     [Fact(DisplayName = "Between with equal bounds pins the value, for every value.")]
     public void BetweenWithEqualBoundsPins() {
         Prop.ForAll(Generators.Int32().ToArbitrary(),
-                    value => Expect.EveryDraw(Any.Int32().Between(value, value), drawn => drawn == value))
+                    value => Expect.EveryDraw(Dummy.Int32().Between(value, value), drawn => drawn == value))
             .QuickCheckThrowOnFailure();
     }
 
     [Fact(DisplayName = "GreaterThanOrEqualTo is inclusive: every draw is at least the bound.")]
     public void GreaterThanOrEqualToIsInclusive() {
         Prop.ForAll(Generators.Int32().ToArbitrary(),
-                    bound => Expect.EveryDraw(Any.Int32().GreaterThanOrEqualTo(bound), value => value >= bound))
+                    bound => Expect.EveryDraw(Dummy.Int32().GreaterThanOrEqualTo(bound), value => value >= bound))
             .QuickCheckThrowOnFailure();
     }
 
     [Fact(DisplayName = "LessThanOrEqualTo is inclusive: every draw is at most the bound.")]
     public void LessThanOrEqualToIsInclusive() {
         Prop.ForAll(Generators.Int32().ToArbitrary(),
-                    bound => Expect.EveryDraw(Any.Int32().LessThanOrEqualTo(bound), value => value <= bound))
+                    bound => Expect.EveryDraw(Dummy.Int32().LessThanOrEqualTo(bound), value => value <= bound))
             .QuickCheckThrowOnFailure();
     }
 
@@ -51,8 +51,8 @@ public sealed class Int32IntervalProperties {
     public void GreaterThanIsStrictAndConflictsAtTheCeiling() {
         Prop.ForAll(Generators.Int32().ToArbitrary(),
                     bound => bound == int.MaxValue
-                                 ? Expect.Throws<ConflictingAnyConstraintException>(() => Any.Int32().GreaterThan(bound))
-                                 : Expect.EveryDraw(Any.Int32().GreaterThan(bound), value => value > bound))
+                                 ? Expect.Throws<ConflictingDummyConstraintException>(() => Dummy.Int32().GreaterThan(bound))
+                                 : Expect.EveryDraw(Dummy.Int32().GreaterThan(bound), value => value > bound))
             .QuickCheckThrowOnFailure();
     }
 
@@ -60,8 +60,8 @@ public sealed class Int32IntervalProperties {
     public void LessThanIsStrictAndConflictsAtTheFloor() {
         Prop.ForAll(Generators.Int32().ToArbitrary(),
                     bound => bound == int.MinValue
-                                 ? Expect.Throws<ConflictingAnyConstraintException>(() => Any.Int32().LessThan(bound))
-                                 : Expect.EveryDraw(Any.Int32().LessThan(bound), value => value < bound))
+                                 ? Expect.Throws<ConflictingDummyConstraintException>(() => Dummy.Int32().LessThan(bound))
+                                 : Expect.EveryDraw(Dummy.Int32().LessThan(bound), value => value < bound))
             .QuickCheckThrowOnFailure();
     }
 
@@ -75,11 +75,11 @@ public sealed class Int32IntervalProperties {
                     testCase => {
                         // Excluding the single value of a pinned interval empties it: that is a conflict, not a draw.
                         if (testCase.bounds.Min == testCase.bounds.Max) {
-                            return Expect.Throws<ConflictingAnyConstraintException>(
-                                () => Any.Int32().Between(testCase.bounds.Min, testCase.bounds.Max).Except(testCase.excluded));
+                            return Expect.Throws<ConflictingDummyConstraintException>(
+                                () => Dummy.Int32().Between(testCase.bounds.Min, testCase.bounds.Max).Except(testCase.excluded));
                         }
 
-                        return Expect.EveryDraw(Any.Int32().Between(testCase.bounds.Min, testCase.bounds.Max).Except(testCase.excluded),
+                        return Expect.EveryDraw(Dummy.Int32().Between(testCase.bounds.Min, testCase.bounds.Max).Except(testCase.excluded),
                                                 value => value != testCase.excluded
                                                          && value >= testCase.bounds.Min
                                                          && value <= testCase.bounds.Max);
@@ -92,7 +92,7 @@ public sealed class Int32IntervalProperties {
         Gen<int[]> pools = Gen.NonEmptyListOf(Generators.Int32()).Select(values => values.Distinct().ToArray());
 
         Prop.ForAll(pools.ToArbitrary(),
-                    pool => Expect.EveryDraw(Any.Int32().OneOf(pool), value => pool.Contains(value)))
+                    pool => Expect.EveryDraw(Dummy.Int32().OneOf(pool), value => pool.Contains(value)))
             .QuickCheckThrowOnFailure();
     }
 
@@ -100,7 +100,7 @@ public sealed class Int32IntervalProperties {
     public void CrossedBoundsAreAnArgumentError() {
         Prop.ForAll(Generators.OrderedPair(Generators.Int32()).ToArbitrary(),
                     bounds => bounds.Min == bounds.Max
-                              || Expect.Throws<ArgumentException>(() => Any.Int32().Between(bounds.Max, bounds.Min)))
+                              || Expect.Throws<ArgumentException>(() => Dummy.Int32().Between(bounds.Max, bounds.Min)))
             .QuickCheckThrowOnFailure();
     }
 
@@ -108,8 +108,8 @@ public sealed class Int32IntervalProperties {
     public void ImpossibleBoundPairsConflict() {
         Prop.ForAll(Generators.OrderedPair(Generators.Int32()).ToArbitrary(),
                     bounds => bounds.Min == bounds.Max
-                              || Expect.Throws<ConflictingAnyConstraintException>(
-                                  () => Any.Int32().GreaterThan(bounds.Max).LessThan(bounds.Min)))
+                              || Expect.Throws<ConflictingDummyConstraintException>(
+                                  () => Dummy.Int32().GreaterThan(bounds.Max).LessThan(bounds.Min)))
             .QuickCheckThrowOnFailure();
     }
 
@@ -117,8 +117,8 @@ public sealed class Int32IntervalProperties {
     public void ConstrainingNeverMutatesTheOriginal() {
         Prop.ForAll(Generators.OrderedPair(Generators.Count(60)).ToArbitrary(),
                     bounds => {
-                        AnyInt32 original = Any.Int32().Between(bounds.Min, bounds.Max);
-                        AnyInt32 narrowed = original.GreaterThanOrEqualTo(bounds.Max);
+                        DummyInt32 original = Dummy.Int32().Between(bounds.Min, bounds.Max);
+                        DummyInt32 narrowed = original.GreaterThanOrEqualTo(bounds.Max);
 
                         return !ReferenceEquals(original, narrowed)
                                && Expect.EveryDraw(original, value => value >= bounds.Min && value <= bounds.Max)

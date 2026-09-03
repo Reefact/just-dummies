@@ -16,7 +16,7 @@ public class Jd013HeldCollectionPassedToOneOfTests {
 
             public static class Sample {
                 public static void M(List<string> references) {
-                    IAny<List<string>> pool = Any.OneOf(references);
+                    IDummy<List<string>> pool = Dummy.OneOf(references);
                 }
             }
             """;
@@ -30,14 +30,14 @@ public class Jd013HeldCollectionPassedToOneOfTests {
 
     [Fact]
     public async Task Does_not_report_an_explicit_type_argument() {
-        // Any.OneOf<List<string>>(references) states the intent: a pool whose single element is that collection.
+        // Dummy.OneOf<List<string>>(references) states the intent: a pool whose single element is that collection.
         const string source = """
             using System.Collections.Generic;
             using JustDummies;
 
             public static class Sample {
                 public static void M(List<string> references) {
-                    IAny<List<string>> pool = Any.OneOf<List<string>>(references);
+                    IDummy<List<string>> pool = Dummy.OneOf<List<string>>(references);
                 }
             }
             """;
@@ -55,7 +55,7 @@ public class Jd013HeldCollectionPassedToOneOfTests {
 
             public static class Sample {
                 public static void M() {
-                    IAny<string> pool = Any.OneOf("EUR");
+                    IDummy<string> pool = Dummy.OneOf("EUR");
                 }
             }
             """;
@@ -72,7 +72,7 @@ public class Jd013HeldCollectionPassedToOneOfTests {
 
             public static class Sample {
                 public static void M() {
-                    IAny<string> pool = Any.OneOf("EUR", "USD");
+                    IDummy<string> pool = Dummy.OneOf("EUR", "USD");
                 }
             }
             """;
@@ -90,7 +90,7 @@ public class Jd013HeldCollectionPassedToOneOfTests {
 
             public static class Sample {
                 public static void M(List<string> references) {
-                    IAny<string> pool = Any.ElementOf(references);
+                    IDummy<string> pool = Dummy.ElementOf(references);
                 }
             }
             """;
@@ -108,7 +108,7 @@ public class Jd013HeldCollectionPassedToOneOfTests {
 
             public static class Sample {
                 public static void M(string[] references) {
-                    IAny<string> pool = Any.OneOf(references);
+                    IDummy<string> pool = Dummy.OneOf(references);
                 }
             }
             """;

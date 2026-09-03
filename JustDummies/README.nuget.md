@@ -13,7 +13,7 @@ quantity, a label. A hand-picked literal reads as significant even when it is no
 an invariant (a value object, a contract precondition), the constraints express *that
 invariant*, never what the test asserts:
 
-    string code = Any.String()
+    string code = Dummy.String()
         .NonEmpty()
         .WithMaxLength(50)
         .StartingWith("ORD-")
@@ -24,7 +24,7 @@ matter — and that is the point.
 
 ## What's inside
 
-- **Fluent, typed generators** implementing `IAny<T>`, materialized through
+- **Fluent, typed generators** implementing `IDummy<T>`, materialized through
   `.Generate()`, across the .NET simple types: `String`, `Char`, every integer
   width (`SByte`/`Byte`/`Int16`/`UInt16`/`Int32`/`UInt32`/`Int64`/`UInt64`),
   `Double`/`Single`/`Decimal` (finite values only — never NaN or infinities, and
@@ -37,21 +37,21 @@ matter — and that is the point.
   `netstandard2.0` and runs on **.NET Framework 4.7.2+**, .NET Core 2.0+ and .NET 5+
   for the widest reach — with the .NET Framework 4.7.2 floor exercised in CI, not
   merely advertised.
-- **Strings from a regex**: `Any.StringMatching(pattern)` generates arbitrary strings
+- **Strings from a regex**: `Dummy.StringMatching(pattern)` generates arbitrary strings
   that match a regular expression — the dummy for a format-validated value object.
   Home-grown (zero dependencies) over the regular subset of the pattern language; a
   non-regular construct (a lookaround, a backreference) is refused with a clear error
   rather than a silently non-matching value. The pattern is the whole shape — express a
   length or a prefix inside it, since building a value in the intersection of two regular
   languages is not something the library does — but the exclusion pair is there:
-  `Any.StringMatching(@"^ORD-\d{8}$").DifferentFrom(existing)` never yields `existing`.
-- **A default that certifies something**: an unconstrained `Any.String()` draws 0 to
+  `Dummy.StringMatching(@"^ORD-\d{8}$").DifferentFrom(existing)` never yields `existing`.
+- **A default that certifies something**: an unconstrained `Dummy.String()` draws 0 to
   1024 characters from the **whole of ASCII**, control characters included, and
-  `Any.Char()` the same. That is deliberately inconvenient — a dummy the code under test
+  `Dummy.Char()` the same. That is deliberately inconvenient — a dummy the code under test
   had no say in is what makes a passing test mean anything, and a short, tame one proves
   nothing about a `\r` or a 300-character input. Narrow it with the invariants your code
   actually has.
-- **A guard the floor does not cover**: `Any.String().NotBlank()` requires at least one
+- **A guard the floor does not cover**: `Dummy.String().NotBlank()` requires at least one
   character that is not whitespace — what a constructor guarding with
   `string.IsNullOrWhiteSpace` demands, which `NonEmpty()` does not give you: `"\n\r"` is
   not empty. Interior whitespace stays legal, so `"a b"` is a value it admits. Whitespace
@@ -62,13 +62,13 @@ matter — and that is the point.
   `Alpha`, `Numeric`, `AlphaNumeric`, `Punctuation` (POSIX `[:punct:]`), `Whitespaces`
   and `Hexadecimal` (RFC 4648) each occupy one slot, so a second one conflicts naming
   both sides; `WithoutAlpha` and `WithoutNumeric` subtract instead and accumulate. On
-  `Any.String()` and `Any.Char()` alike, since the two carry the same families. Nothing
+  `Dummy.String()` and `Dummy.Char()` alike, since the two carry the same families. Nothing
   named reaches past ASCII: a pool following the runtime's Unicode version would draw
   differently on two target frameworks.
 - **A declared bound is the bound you get**: `WithMaxLength(50)` draws across 0 to 50 and
   `WithLengthBetween(1000, 5000)` across the whole range. Every size argument is refused
   above one million, maxima included.
-- **Custom alphabets**: `Any.String().WithChars("αβγδε")` draws the string from an
+- **Custom alphabets**: `Dummy.String().WithChars("αβγδε")` draws the string from an
   explicit character pool — the general form of the named sets, and the way to reach
   non-ASCII text (accents, Greek, Cyrillic, CJK) without a `StringMatching` literal. It stays within the Basic Multilingual Plane
   and rejects a surrogate: an emoji or other astral character is an atomic grapheme, not
@@ -76,16 +76,16 @@ matter — and that is the point.
   Anchored fragments are exempt: a pool is what the generator draws from, so a prefix,
   a suffix or a contained value you wrote is kept as written even when the pool could
   not produce it.
-- **Strings from an explicit set**: `Any.String().OneOf("EUR", "USD", "GBP")` draws from
+- **Strings from an explicit set**: `Dummy.String().OneOf("EUR", "USD", "GBP")` draws from
   a fixed, closed list — the dummy for a value whose domain is a short enumeration (a
   currency code, a well-known name). Composable like every other family's `OneOf`: the
   other constraints narrow the set rather than shape a string, so
-  `Any.String().OneOf("abc", "de").WithLength(3)` yields `"abc"` and a constraint no
+  `Dummy.String().OneOf("abc", "de").WithLength(3)` yields `"abc"` and a constraint no
   supplied value satisfies is a conflict naming both sides, whichever order the two were
   declared in. Duplicates collapse, and the draw is uniform and reproducible under a
   seed.
-- **Any value from an explicit pool**: `Any.OneOf(eur, usd, gbp)` draws one value from a
-  caller-supplied set of arbitrary values or domain objects, and `Any.ElementOf(orders)`
+- **Any value from an explicit pool**: `Dummy.OneOf(eur, usd, gbp)` draws one value from a
+  caller-supplied set of arbitrary values or domain objects, and `Dummy.ElementOf(orders)`
   does the same from a collection already held (a list, a LINQ result). This is the
   seed-aware answer to "any of these" — replacing a hand-rolled
   `pool[new Random().Next(...)]` that would ignore the seed and break `Reproducibly`.
@@ -93,14 +93,14 @@ matter — and that is the point.
   distinct count gates distinct collections, and a `null` element is refused — make the
   whole draw optional with `.OrNull()` instead. The element type is opaque to the
   library, so the pool is the whole shape of the specification; what it does offer is the
-  exclusion pair, and `Any.ElementOf(orders).DifferentFrom(theOneAlreadyUsed)` is the
+  exclusion pair, and `Dummy.ElementOf(orders).DifferentFrom(theOneAlreadyUsed)` is the
   idiom for drawing *another* element of a fixture.
-- **URIs by family**: `Any.Uri()` yields an arbitrary yet valid `System.Uri` — an
+- **URIs by family**: `Dummy.Uri()` yields an arbitrary yet valid `System.Uri` — an
   absolute web (`http`/`https`), WebSocket (`ws`/`wss`), FTP or mailto URI, or a relative
   reference. Narrow it to a family and each returns a builder exposing only that family's
   valid components, so an impossible combination cannot even be written (`Mailto()` has no
   `WithPort`, `WebSocket()` no `WithUserInfo`):
-  `Any.Uri().Web().UsingHttps().WithHost("api.example.com")`. Every part is drawn from
+  `Dummy.Uri().Web().UsingHttps().WithHost("api.example.com")`. Every part is drawn from
   ASCII-unreserved characters, so a value is valid by construction and reproducible across
   frameworks; internationalized (IDN) hosts and the `file` scheme stay out of the default
   draw to keep that determinism.
@@ -109,7 +109,7 @@ matter — and that is the point.
   identities with `NonEmpty`/`DifferentFrom` — and deliberately no clock-relative
   constraints: a reproducible test pins its reference instants explicitly.
 - **Values on a grid**: a quantity that must be a whole number of some unit takes
-  `MultipleOf` — `Any.Int32().Between(0, 100_000).MultipleOf(100)` for an amount in whole
+  `MultipleOf` — `Dummy.Int32().Between(0, 100_000).MultipleOf(100)` for an amount in whole
   euros held as cents — drawn *on* the grid so the declared range keeps its meaning,
   instead of an `As(x => x * 100)` projection that silently distorts it. `Decimal` takes
   `WithScale(n)`, a value expressible in `n` decimal places (`WithScale(2)` for a currency
@@ -118,7 +118,7 @@ matter — and that is the point.
   (`WithGranularity(TimeSpan.FromMinutes(15))`) — so tick-precision values never surprise a
   serialization round-trip. Each is built in one draw, composes with the bounds and
   exclusions, and conflicts eagerly when the range holds no grid point.
-- **Offset-aware `DateTimeOffset`**: unconstrained, `Any.DateTimeOffset()` carries offset
+- **Offset-aware `DateTimeOffset`**: unconstrained, `Dummy.DateTimeOffset()` carries offset
   `TimeSpan.Zero` (UTC); `WithOffset(TimeSpan)` pins a whole-minute offset (±14:00) and
   `WithOffsetBetween(min, max)` draws a bounded one, so offset-sensitive code (local
   rendering, offset arithmetic, "same instant, different offset") is actually exercised. The
@@ -128,19 +128,19 @@ matter — and that is the point.
   conflict, whichever of the two is declared first.
 - **Values built to satisfy the constraints** — a scalar is constructed directly,
   never generated-then-filtered. The one exception is excluding values from a string or a
-  pattern (`Any.String().DifferentFrom(...)`/`Except(...)`,
-  `Any.StringMatching(p).DifferentFrom(...)`): neither has an ordinal mapping to build the
+  pattern (`Dummy.String().DifferentFrom(...)`/`Except(...)`,
+  `Dummy.StringMatching(p).DifferentFrom(...)`): neither has an ordinal mapping to build the
   exclusion into, so it is met by a **bounded** redraw — the same escape a *distinct*
   collection uses to skip a duplicate, never an unbounded retry loop. An exclusion tight
   enough to leave nothing surfaces at generation as a seed-bearing
-  `AnyGenerationException`, whose message reports the budget it spent rather than claiming
+  `DummyGenerationException`, whose message reports the budget it spent rather than claiming
   no value remains — the search is bounded, so it never established that. An exclusion on
   an explicit value set needs no redraw at all: the domain is finite, so the values are
   removed at declaration and emptying it is a conflict there.
 - **Conflicting constraints fail fast** with a clear, actionable
-  `ConflictingAnyConstraintException` at the moment the conflicting constraint is
-  declared — for example `Any.String().WithLength(3).StartingWith("ORD-")`.
-- **Dummies stay ordinary unless you ask for more.** An unconstrained `Any.Double()`,
+  `ConflictingDummyConstraintException` at the moment the conflicting constraint is
+  declared — for example `Dummy.String().WithLength(3).StartingWith("ORD-")`.
+- **Dummies stay ordinary unless you ask for more.** An unconstrained `Dummy.Double()`,
   `Single()` or `Decimal()` draws within a magnitude of a million, not across the type's
   whole domain — so arithmetic on a dummy stays finite, `WithScale(2)` still has decimal
   places to constrain, and the value sits where rounding and formatting defects actually
@@ -150,7 +150,7 @@ matter — and that is the point.
   generators deliberately keep their full range — a large `int` is an ordinary `int`.
 - **Dummies stay small unless you ask for more.** A bound is a permission, not a
   request: `WithMaxLength`/`WithMaxCount` only ever *narrow* a draw, so
-  `Any.String().WithMaxLength(100_000)` still yields the short unconstrained string
+  `Dummy.String().WithMaxLength(100_000)` still yields the short unconstrained string
   rather than one sized after the cap. Only a minimum, an exact size or a required
   fragment enlarges a value — `WithMinLength(90_000)` is how you ask for a large one.
   `WithLengthBetween(a, b)` is exactly its two bounds declared separately, so a range
@@ -161,28 +161,28 @@ matter — and that is the point.
   exhausting memory. A pure maximum is never capped — mirror a four-million-character
   column limit if you like; it costs nothing to honour.
 - **Composition without reflection**: `.As(factory)` turns a constrained primitive
-  into a domain value object; `Any.Combine(...)` assembles larger objects through
+  into a domain value object; `Dummy.Combine(...)` assembles larger objects through
   constructor lambdas — from two up to eight constrained parts.
-- **Collections over any element generator**: `Any.ListOf(item)`, `ArrayOf`,
+- **Collections over any element generator**: `Dummy.ListOf(item)`, `ArrayOf`,
   `SequenceOf`, `SetOf` and `DictionaryOf`, constrained with
   `WithCount`/`NonEmpty`/`Distinct`/`Containing`. Ask a distinct collection for more
   distinct elements than its effective domain — the element generator plus any values
   pinned outside it with `Containing` — can supply, and it fails fast, just like any
   other conflict, wherever that domain is countable; where it is not, the same
-  shortfall instead surfaces at generation as an `AnyGenerationException` naming the
-  seed to replay. `Any.PairOf`/`TripleOf` pair generators into value tuples.
+  shortfall instead surfaces at generation as an `DummyGenerationException` naming the
+  seed to replay. `Dummy.PairOf`/`TripleOf` pair generators into value tuples.
 - **Optional values**: `.OrNull()` turns any generator into one that is `null` about
   half the time and otherwise a constrained value — the dummy for an optional field,
   for value types (`int?`, `Guid?`, ...) and reference types alike.
-- **Reproducible runs**: wrap a test in `Any.Reproducibly(...)` and a failing run
-  reports the seed to replay; `Any.WithSeed(seed)` gives an isolated, deterministic
-  context; `Any.UseSeed(seed)` pins the ambient one until the handle is disposed, for
+- **Reproducible runs**: wrap a test in `Dummy.Reproducibly(...)` and a failing run
+  reports the seed to replay; `Dummy.WithSeed(seed)` gives an isolated, deterministic
+  context; `Dummy.UseSeed(seed)` pins the ambient one until the handle is disposed, for
   a caller that has no body to wrap — a test-framework adapter driving the seed from
   before/after hooks. Its second overload names what the reader must write to replay,
   so a run pinned from outside the test body never points at a call the test does not
   contain. Drawing from several threads at once is safe — values stay arbitrary and
   well-formed — but concurrent draws interleave, so a seed replays a run only while its
-  draws are taken one at a time; open an `Any.UseSeed(...)` scope per unit of work to
+  draws are taken one at a time; open an `Dummy.UseSeed(...)` scope per unit of work to
   keep a parallel run reproducible. A seed keeps its meaning across upgrades: within a
   major version, it draws the same values in every patch and minor, so a pinned seed
   committed today still covers the case it was pinned for after an upgrade. The mapping
@@ -192,7 +192,7 @@ matter — and that is the point.
 
     using JustDummies;
 
-    OrderReference reference = Any.String()
+    OrderReference reference = Dummy.String()
         .StartingWith("ORD-")
         .WithLength(12)
         .As(OrderReference.Create)
@@ -200,8 +200,8 @@ matter — and that is the point.
 
 ## NaN and the infinities
 
-`Any.Double()`, `Any.Single()` and `Any.Half()` never draw a non-finite value, and they
-**also refuse one as an argument** — so `Any.Double().Except(double.NaN)` throws rather
+`Dummy.Double()`, `Dummy.Single()` and `Dummy.Half()` never draw a non-finite value, and they
+**also refuse one as an argument** — so `Dummy.Double().Except(double.NaN)` throws rather
 than doing something sensible. That surprises people, so here is the whole rule and the
 way out.
 
@@ -211,8 +211,8 @@ the test never meant to exercise fails an assertion nobody wrote. Refusing it as
 argument too is the same decision applied one step earlier: a bound or an exclusion that
 cannot be compared is not a constraint.
 
-**The way out — `Any.OneOf`.** The generic entry points carry no finiteness rule, by
-construction: `Any.OneOf(...)` takes your pool as the whole specification, and `.As(...)`
+**The way out — `Dummy.OneOf`.** The generic entry points carry no finiteness rule, by
+construction: `Dummy.OneOf(...)` takes your pool as the whole specification, and `.As(...)`
 projects to whatever you return. The library judges the domains it knows; it does not
 judge yours.
 
@@ -222,7 +222,7 @@ judge yours.
   `double.NaN` as a literal. It is the subject of the test, so it belongs at the call
   site in plain sight, not behind a generator.
 - **A non-finite value is a real value of your domain** — `NaN` meaning "missing
-  measurement" in a scientific pipeline. Then `Any.OneOf(double.NaN, 1.0, 2.0)` is
+  measurement" in a scientific pipeline. Then `Dummy.OneOf(double.NaN, 1.0, 2.0)` is
   right: it really is a dummy, drawn from the domain's real value set.
 - **Avoid the middle ground.** A mixed pool added "so the NaN path gets covered too"
   exercises that path on some seeds and not others, and the run does not tell you which
@@ -233,16 +233,16 @@ is `true` while `NaN == NaN` is `false`. A `NaN` flowing through `Distinct()` �
 comparer-based collection — therefore deduplicates, while your own `==` sees two
 different values.
 
-**Where the rule stops.** A *typed* builder — `Any.Double()`, `Any.Enum<T>()`, `Any.String()` — draws, and
+**Where the rule stops.** A *typed* builder — `Dummy.Double()`, `Dummy.Enum<T>()`, `Dummy.String()` — draws, and
 accepts as an argument, only valid values of the domain it represents. The generic entry points do not, and
-that is deliberate: `Any.OneOf(...)`, `Any.ElementOf(...)` and `.As(...)` take your pool or your projection as
+that is deliberate: `Dummy.OneOf(...)`, `Dummy.ElementOf(...)` and `.As(...)` take your pool or your projection as
 the whole specification, because the library cannot judge the semantics of a type it knows nothing about. So
-`Any.OneOf` accepting what `Any.Double()` refuses is the design, not an oversight — it is the door the
+`Dummy.OneOf` accepting what `Dummy.Double()` refuses is the design, not an oversight — it is the door the
 paragraphs above send you through.
 
 **`decimal` is not part of this subject.** `System.Decimal` has no `NaN` and no infinity
-to begin with, so `Any.Decimal()` has nothing to refuse and carries no such guard. If you
-went looking for the symmetry with `Any.Double()`, that is why you did not find it.
+to begin with, so `Dummy.Decimal()` has nothing to refuse and carries no such guard. If you
+went looking for the symmetry with `Dummy.Double()`, that is why you did not find it.
 
 ## What it is not
 
@@ -253,7 +253,7 @@ And not a source of security material. Every draw comes from a seeded `System.Ra
 because a dummy is only worth generating if the seed a failing run reports replays it —
 the very property that makes the sequence predictable to anyone who learns the seed.
 Never draw a password, token, key, salt, nonce, or any identifier that has to be
-unguessable from `Any.*`; reach for
+unguessable from `Dummy.*`; reach for
 `System.Security.Cryptography.RandomNumberGenerator` for those.
 
 ## Documentation

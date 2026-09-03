@@ -17,7 +17,7 @@ public class Jd033AnchoredLiteralOutsideCharacterFamilyTests {
 
             public static class Sample {
                 public static string M() {
-                    return Any.String().AlphaNumeric().StartingWith("ORD-").WithLength(12).Generate();
+                    return Dummy.String().AlphaNumeric().StartingWith("ORD-").WithLength(12).Generate();
                 }
             }
             """;
@@ -39,7 +39,7 @@ public class Jd033AnchoredLiteralOutsideCharacterFamilyTests {
 
             public static class Sample {
                 public static string M() {
-                    return Any.String().Numeric().StartingWith("123").WithLength(12).Generate();
+                    return Dummy.String().Numeric().StartingWith("123").WithLength(12).Generate();
                 }
             }
             """;
@@ -57,7 +57,7 @@ public class Jd033AnchoredLiteralOutsideCharacterFamilyTests {
 
             public static class Sample {
                 public static string M() {
-                    return Any.String().StartingWith("ORD-").WithLength(12).Generate();
+                    return Dummy.String().StartingWith("ORD-").WithLength(12).Generate();
                 }
             }
             """;
@@ -74,7 +74,7 @@ public class Jd033AnchoredLiteralOutsideCharacterFamilyTests {
 
             public static class Sample {
                 public static string M() {
-                    return Any.String().WithoutNumeric().StartingWith("ORD-1").WithLength(12).Generate();
+                    return Dummy.String().WithoutNumeric().StartingWith("ORD-1").WithLength(12).Generate();
                 }
             }
             """;
@@ -93,7 +93,7 @@ public class Jd033AnchoredLiteralOutsideCharacterFamilyTests {
 
             public static class Sample {
                 public static string M() {
-                    return Any.String().InUpperCase().StartingWith("ord-").WithLength(12).Generate();
+                    return Dummy.String().InUpperCase().StartingWith("ord-").WithLength(12).Generate();
                 }
             }
             """;
@@ -114,7 +114,7 @@ public class Jd033AnchoredLiteralOutsideCharacterFamilyTests {
 
             public static class Sample {
                 public static string M() {
-                    return Any.String().InUpperCase().StartingWith("ORD-").WithLength(12).Generate();
+                    return Dummy.String().InUpperCase().StartingWith("ORD-").WithLength(12).Generate();
                 }
             }
             """;
@@ -131,7 +131,7 @@ public class Jd033AnchoredLiteralOutsideCharacterFamilyTests {
 
             public static class Sample {
                 public static string M() {
-                    return Any.String().Alpha().EndingWith("-42").WithLength(12).Generate();
+                    return Dummy.String().Alpha().EndingWith("-42").WithLength(12).Generate();
                 }
             }
             """;
@@ -149,7 +149,7 @@ public class Jd033AnchoredLiteralOutsideCharacterFamilyTests {
 
             public static class Sample {
                 public static string M() {
-                    return Any.String().WithChars("0123456789").Containing("-OK-").WithLength(12).Generate();
+                    return Dummy.String().WithChars("0123456789").Containing("-OK-").WithLength(12).Generate();
                 }
             }
             """;
@@ -169,7 +169,7 @@ public class Jd033AnchoredLiteralOutsideCharacterFamilyTests {
 
             public static class Sample {
                 public static string M() {
-                    return Any.String().AlphaNumeric().OneOf("ORD-1", "ORD-2").Generate();
+                    return Dummy.String().AlphaNumeric().OneOf("ORD-1", "ORD-2").Generate();
                 }
             }
             """;
@@ -186,7 +186,7 @@ public class Jd033AnchoredLiteralOutsideCharacterFamilyTests {
 
             public static class Sample {
                 public static string M(string prefix) {
-                    return Any.String().AlphaNumeric().StartingWith(prefix).WithLength(12).Generate();
+                    return Dummy.String().AlphaNumeric().StartingWith(prefix).WithLength(12).Generate();
                 }
             }
             """;
@@ -203,7 +203,7 @@ public class Jd033AnchoredLiteralOutsideCharacterFamilyTests {
 
             public static class Sample {
                 public static string M() {
-                    AnyString generator = Any.String().AlphaNumeric();
+                    DummyString generator = Dummy.String().AlphaNumeric();
 
                     return generator.StartingWith("ORD-").WithLength(12).Generate();
                 }

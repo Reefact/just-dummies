@@ -92,7 +92,7 @@ public sealed class ProjectDefaultsTests : IDisposable {
     [Fact(DisplayName = "The naming key §16 reserves is refused while it configures nothing.")]
     public void TheReservedNamingKeyIsRefused() {
         Written("""
-                { "naming": "Any{Type}" }
+                { "naming": "Dummy{Type}" }
                 """);
 
         Check.That(ProjectDefaults.Beside(Project()).Understood).IsFalse();

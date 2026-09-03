@@ -2,7 +2,7 @@
 
 🌍 🇬🇧 English (this file) · 🇫🇷 [Français](justdummies-tool.fr.md)
 
-**Status:** specification, implemented. `JustDummies.GenAny` and `JustDummies.Cli` exist and carry the
+**Status:** specification, implemented. `JustDummies.GenDummy` and `JustDummies.Cli` exist and carry the
 project-level constraints of §10 and §13. Written: §3, the command line, and §3.2's type resolution; §4, the
 emitted file; **all of §5** — constructor choice, the base table, the guard clauses, composition and the open
 parameter — together with the provenance §6 reports; §6, the console recap; §7's exit codes and shadowing
@@ -53,11 +53,11 @@ developer: they read it, edit it, commit it, and never run the tool on it again.
 ```console
 $ cd Shop.Tests
 $ dum generate Order
-✓ AnyOrder.cs
+✓ DummyOrder.cs
 ```
 
 ```csharp
-Order order = new AnyOrder()
+Order order = new DummyOrder()
     .WithStatus(OrderStatus.Pending)
     .Generate();
 ```
@@ -82,7 +82,7 @@ The value proposition stays distinct from the library's: the **library** makes v
    use.
 3. **Generate as much as can be generated, and no more.** Where the tool cannot know, it says so
    in the file and in the console, and hands the skeleton back.
-4. **Naming is fixed in v1.0.** `Order` becomes `AnyOrder`, full stop. Renaming
+4. **Naming is fixed in v1.0.** `Order` becomes `DummyOrder`, full stop. Renaming
    (`OrderFactory`, a custom prefix) is v1.1+ and §16 reserves its shape so v1.0 does not block
    it.
 
@@ -97,7 +97,7 @@ index; it holds no argument of its own.
 | # | Decision | Why, in one line |
 |---|---|---|
 | **D1** | Scaffold once; the file belongs to the developer. | Kills drift, `check`, and the source-generator question in one move. |
-| **D2** | The emitted type implements `IAny<T>` and is **immutable**. | Composability, and it re-arms the `JustDummies.Usage` analyzers on the emitted type. |
+| **D2** | The emitted type implements `IDummy<T>` and is **immutable**. | Composability, and it re-arms the `JustDummies.Usage` analyzers on the emitted type. |
 | **D3** | The emitted file is **not** marked as generated code. | All 33 analyzers exempt generated code; marking it would blind the file. |
 | **D4** | Never emit a member not resolved in the target compilation. | One rule covers the TFM split, the public-API baseline, version skew and unsigned arithmetic. |
 | **D5** | Read constructor guard clauses to seed each generator. | Without it the emitted code produces values the constructor rejects. |
@@ -107,7 +107,7 @@ index; it holds no argument of its own.
 | **D9** | The tool takes **no dependency on the JustDummies package**. | Resolution by metadata name, exactly like the analyzers — version skew becomes structurally impossible. |
 | **D10** | Never emit `.OrNull()`. | A dummy that is randomly `null` is the flakiness the library exists to remove. |
 | **D11** | The scaffolding **engine is a separate library** at the Roslyn floor; the CLI is a shell. | The engine's plausible second consumer is an IDE refactoring, which is not a CLI and cannot load a `net8.0` assembly. |
-| **D12** *(v1.1)* | An entry point is **opt-in**, emitted as a file of its own. | The generator file never changes, so §4.4's floor stays its property and `new Any{Type}()` keeps working. |
+| **D12** *(v1.1)* | An entry point is **opt-in**, emitted as a file of its own. | The generator file never changes, so §4.4's floor stays its property and `new Dummy{Type}()` keeps working. |
 
 ---
 
@@ -141,7 +141,7 @@ lists what is deliberately deferred. There **is** a config file since v1.1, and 
 
 From the **test project**, because that is where the file belongs. The test project references
 the production project, so `Order` is reachable from its compilation, and `--output`'s default
-puts `AnyOrder.cs` next to the tests that use it.
+puts `DummyOrder.cs` next to the tests that use it.
 
 `--project` resolution: if exactly one `*.csproj` sits in the current directory, use it; if none
 or several, fail with a message naming the candidates and pointing at `--project`.
@@ -243,20 +243,20 @@ namespace Shop.Domain;
 /// <summary>
 ///     A generator of arbitrary <see cref="Order" /> values. It draws from the ambient random
 ///     context, so a reproducibility scope pins it; to draw from an isolated
-///     <c>Any.WithSeed(...)</c> context, pass that context's generators through the
+///     <c>Dummy.WithSeed(...)</c> context, pass that context's generators through the
 ///     <c>With…</c> overloads.
 /// </summary>
-public sealed partial class AnyOrder : IAny<Order> {
+public sealed partial class DummyOrder : IDummy<Order> {
 
-    private readonly IAny<OrderReference>        _reference;
-    private readonly IAny<Customer>              _customer;
-    private readonly IAny<int>                   _quantity;
-    private readonly IAny<OrderStatus>           _status;
-    private readonly IAny<IReadOnlyList<string>> _tags;
-    private readonly IAny<DateTime>              _placedAt;
+    private readonly IDummy<OrderReference>        _reference;
+    private readonly IDummy<Customer>              _customer;
+    private readonly IDummy<int>                   _quantity;
+    private readonly IDummy<OrderStatus>           _status;
+    private readonly IDummy<IReadOnlyList<string>> _tags;
+    private readonly IDummy<DateTime>              _placedAt;
 
     /// <summary>Creates the generator with a default recipe for every constructor parameter.</summary>
-    public AnyOrder()
+    public DummyOrder()
         : this(reference: new AnyOrderReference(),
                customer:  new AnyCustomer(),
                quantity:  AnyValidQuantity(),
@@ -264,28 +264,28 @@ public sealed partial class AnyOrder : IAny<Order> {
                tags:      AnyValidTags(),
                placedAt:  AnyValidPlacedAt()) { }
 
-    private static IAny<int> AnyValidQuantity() {
-        return Any.Int32().Positive();
+    private static IDummy<int> AnyValidQuantity() {
+        return Dummy.Int32().Positive();
     }
 
-    private static IAny<OrderStatus> AnyValidStatus() {
-        return Any.Enum<OrderStatus>();
+    private static IDummy<OrderStatus> AnyValidStatus() {
+        return Dummy.Enum<OrderStatus>();
     }
 
-    private static IAny<IReadOnlyList<string>> AnyValidTags() {
-        return Any.ListOf(Any.String().NonEmpty());
+    private static IDummy<IReadOnlyList<string>> AnyValidTags() {
+        return Dummy.ListOf(Dummy.String().NonEmpty());
     }
 
-    private static IAny<DateTime> AnyValidPlacedAt() {
-        return Any.DateTime();
+    private static IDummy<DateTime> AnyValidPlacedAt() {
+        return Dummy.DateTime();
     }
 
-    private AnyOrder(IAny<OrderReference>        reference,
-                     IAny<Customer>              customer,
-                     IAny<int>                   quantity,
-                     IAny<OrderStatus>           status,
-                     IAny<IReadOnlyList<string>> tags,
-                     IAny<DateTime>              placedAt) {
+    private DummyOrder(IDummy<OrderReference>        reference,
+                     IDummy<Customer>              customer,
+                     IDummy<int>                   quantity,
+                     IDummy<OrderStatus>           status,
+                     IDummy<IReadOnlyList<string>> tags,
+                     IDummy<DateTime>              placedAt) {
         _reference = reference;
         _customer  = customer;
         _quantity  = quantity;
@@ -295,63 +295,63 @@ public sealed partial class AnyOrder : IAny<Order> {
     }
 
     /// <summary>Pins <c>reference</c> to a fixed value.</summary>
-    public AnyOrder WithReference(OrderReference value) {
+    public DummyOrder WithReference(OrderReference value) {
         return WithReference(new FixedValue<OrderReference>(value));
     }
 
     /// <summary>Draws <c>reference</c> from <paramref name="generator" />.</summary>
-    public AnyOrder WithReference(IAny<OrderReference> generator) {
-        return new AnyOrder(generator, _customer, _quantity, _status, _tags, _placedAt);
+    public DummyOrder WithReference(IDummy<OrderReference> generator) {
+        return new DummyOrder(generator, _customer, _quantity, _status, _tags, _placedAt);
     }
 
     /// <summary>Pins <c>customer</c> to a fixed value.</summary>
-    public AnyOrder WithCustomer(Customer value) {
+    public DummyOrder WithCustomer(Customer value) {
         return WithCustomer(new FixedValue<Customer>(value));
     }
 
     /// <summary>Draws <c>customer</c> from <paramref name="generator" />.</summary>
-    public AnyOrder WithCustomer(IAny<Customer> generator) {
-        return new AnyOrder(_reference, generator, _quantity, _status, _tags, _placedAt);
+    public DummyOrder WithCustomer(IDummy<Customer> generator) {
+        return new DummyOrder(_reference, generator, _quantity, _status, _tags, _placedAt);
     }
 
     /// <summary>Pins <c>quantity</c> to a fixed value.</summary>
-    public AnyOrder WithQuantity(int value) {
+    public DummyOrder WithQuantity(int value) {
         return WithQuantity(new FixedValue<int>(value));
     }
 
     /// <summary>Draws <c>quantity</c> from <paramref name="generator" />.</summary>
-    public AnyOrder WithQuantity(IAny<int> generator) {
-        return new AnyOrder(_reference, _customer, generator, _status, _tags, _placedAt);
+    public DummyOrder WithQuantity(IDummy<int> generator) {
+        return new DummyOrder(_reference, _customer, generator, _status, _tags, _placedAt);
     }
 
     /// <summary>Pins <c>status</c> to a fixed value.</summary>
-    public AnyOrder WithStatus(OrderStatus value) {
+    public DummyOrder WithStatus(OrderStatus value) {
         return WithStatus(new FixedValue<OrderStatus>(value));
     }
 
     /// <summary>Draws <c>status</c> from <paramref name="generator" />.</summary>
-    public AnyOrder WithStatus(IAny<OrderStatus> generator) {
-        return new AnyOrder(_reference, _customer, _quantity, generator, _tags, _placedAt);
+    public DummyOrder WithStatus(IDummy<OrderStatus> generator) {
+        return new DummyOrder(_reference, _customer, _quantity, generator, _tags, _placedAt);
     }
 
     /// <summary>Pins <c>tags</c> to a fixed value.</summary>
-    public AnyOrder WithTags(IReadOnlyList<string> value) {
+    public DummyOrder WithTags(IReadOnlyList<string> value) {
         return WithTags(new FixedValue<IReadOnlyList<string>>(value));
     }
 
     /// <summary>Draws <c>tags</c> from <paramref name="generator" />.</summary>
-    public AnyOrder WithTags(IAny<IReadOnlyList<string>> generator) {
-        return new AnyOrder(_reference, _customer, _quantity, _status, generator, _placedAt);
+    public DummyOrder WithTags(IDummy<IReadOnlyList<string>> generator) {
+        return new DummyOrder(_reference, _customer, _quantity, _status, generator, _placedAt);
     }
 
     /// <summary>Pins <c>placedAt</c> to a fixed value.</summary>
-    public AnyOrder WithPlacedAt(DateTime value) {
+    public DummyOrder WithPlacedAt(DateTime value) {
         return WithPlacedAt(new FixedValue<DateTime>(value));
     }
 
     /// <summary>Draws <c>placedAt</c> from <paramref name="generator" />.</summary>
-    public AnyOrder WithPlacedAt(IAny<DateTime> generator) {
-        return new AnyOrder(_reference, _customer, _quantity, _status, _tags, generator);
+    public DummyOrder WithPlacedAt(IDummy<DateTime> generator) {
+        return new DummyOrder(_reference, _customer, _quantity, _status, _tags, generator);
     }
 
     /// <summary>Produces one arbitrary <see cref="Order" />.</summary>
@@ -364,7 +364,7 @@ public sealed partial class AnyOrder : IAny<Order> {
                          _placedAt.Generate());
     }
 
-    private sealed class FixedValue<TValue> : IAny<TValue> {
+    private sealed class FixedValue<TValue> : IDummy<TValue> {
 
         private readonly TValue _value;
 
@@ -383,9 +383,9 @@ public sealed partial class AnyOrder : IAny<Order> {
 
 ### 4.2 Shape rules
 
-* `public sealed partial class Any{Type} : IAny<{Type}>`. `partial` so the developer's own
+* `public sealed partial class Dummy{Type} : IDummy<{Type}>`. `partial` so the developer's own
   members live in a neighbouring file and survive a `--force`.
-* One `private readonly IAny<TParam> _param;` per constructor parameter, in declaration order.
+* One `private readonly IDummy<TParam> _param;` per constructor parameter, in declaration order.
 * A **public parameterless constructor** carrying the inferred recipe, written with named
   arguments so the reader maps each call to its parameter without counting.
 * One **private static factory** per parameter that needs one — `AnyValid{Param}()` — housing its
@@ -398,15 +398,15 @@ public sealed partial class AnyOrder : IAny<Order> {
   and §5.6 are statements, and a statement needs somewhere to stand.
 * A **private all-arguments constructor** performing the copy.
 * Per parameter, **two** `With{Param}` overloads returning a new instance:
-  `With{Param}(TParam value)` and `With{Param}(IAny<TParam> generator)`.
+  `With{Param}(TParam value)` and `With{Param}(IDummy<TParam> generator)`.
   The value overload is the ergonomic one; the generator overload is what keeps composition
-  possible and is why passing `Any.String().StartingWith("ORD-")` does not become a `JD011`/`JD012`
+  possible and is why passing `Dummy.String().StartingWith("ORD-")` does not become a `JD011`/`JD012`
   mistake.
 * `public {Type} Generate()` calling the constructor with each field's `Generate()`.
 * The private nested `FixedValue<TValue>` helper. Rationale: it accepts `null` (which
-  `Any.OneOf(value)` rejects) and consumes no draw from the ambient source, so pinning a
+  `Dummy.OneOf(value)` rejects) and consumes no draw from the ambient source, so pinning a
   parameter does not shift the values drawn for the others (§14.5). It is nested and private, so
-  any number of scaffolded files coexist. *(If `Any.Fixed<T>(value)` is ever added to the
+  any number of scaffolded files coexist. *(If `Dummy.Fixed<T>(value)` is ever added to the
   library, the helper can be dropped — see §15.)*
 * `With{Param}` casing: the parameter name, first letter upper-cased, invariant culture. A
   parameter named `_id` or `@class` is normalised by stripping the leading `_`/`@`.
@@ -415,8 +415,8 @@ public sealed partial class AnyOrder : IAny<Order> {
 the above: one public parameterless constructor, no fields, no private constructor, no `With`
 methods, no `FixedValue` helper, and `Generate()` returning `new {Type}()`. Emitting the two
 constructors unconditionally would give them the same signature and fail with `CS0111` — verified.
-The result is still worth generating: `Any{Type}` is an `IAny<T>`, so it composes into
-`Any.ListOf(...)`, `Any.Combine(...)` and the rest, which a bare `new {Type}()` does not.
+The result is still worth generating: `Dummy{Type}` is an `IDummy<T>`, so it composes into
+`Dummy.ListOf(...)`, `Dummy.Combine(...)` and the rest, which a bare `new {Type}()` does not.
 
 ### 4.3 Header rules
 
@@ -440,20 +440,20 @@ not move.
 
 ### 4.5 The entry-point file *(v1.1)*
 
-`new AnyOrder()` is how a scaffolded generator is reached, and it stays so. `--entry-point` asks for
+`new DummyOrder()` is how a scaffolded generator is reached, and it stays so. `--entry-point` asks for
 a **second** file beside it, carrying one factory, so the generator can also be reached the way the
-library's own are — `Any.Int32()` on one line and `Any.Order()` on the next. Decision:
+library's own are — `Dummy.Int32()` on one line and `Dummy.Order()` on the next. Decision:
 [ADR-0070](../adr/0070-emit-an-entry-point-on-request-as-a-file-of-its-own.md).
 
 | Value | What is emitted | Written |
 |---|---|---|
 | `none` *(default)* | nothing | — |
 | `static:<Name>` | `public static partial class <Name>` with one factory | `Dummies.Order()` |
-| `any` | `extension(Any)` carrying one static factory | `Any.Order()` |
+| `any` | `extension(Dummy)` carrying one static factory | `Dummy.Order()` |
 
-**The generator file does not change.** `Any{Type}.cs` is byte-identical under all three values, so
-`new Any{Type}()` keeps working and §4.4's floor is untouched. What is added is added beside it, in
-`Any{Type}.Entry.cs`.
+**The generator file does not change.** `Dummy{Type}.cs` is byte-identical under all three values, so
+`new Dummy{Type}()` keeps working and §4.4's floor is untouched. What is added is added beside it, in
+`Dummy{Type}.Entry.cs`.
 
 **One part per scaffold, never a shared file.** The static root is `partial`, and each scaffold
 writes its own part. Nothing is read to be rewritten, so §8.1 holds and D1 is not quietly reversed:
@@ -464,9 +464,9 @@ twice.
 member compiles for a `netstandard2.0` target as readily as for `net10.0`; what it needs is the
 project's `LangVersion`. A project below C# 14 is refused, not downgraded (§7).
 
-**`static:Any` is refused.** C# resolves a simple type name in the enclosing namespace before any
-`using`, so a static class named `Any` in the developer's project hides `JustDummies.Any` rather than
-extending it, and `Any.Int32()` stops compiling (`CS0117`). That is what `any` is for, and it is a
+**`static:Dummy` is refused.** C# resolves a simple type name in the enclosing namespace before any
+`using`, so a static class named `Dummy` in the developer's project hides `JustDummies.Dummy` rather than
+extending it, and `Dummy.Int32()` stops compiling (`CS0117`). That is what `any` is for, and it is a
 different mechanism.
 
 **The entry point may move on its own.** `--entry-point-namespace` places the entry-point file and
@@ -478,7 +478,7 @@ takes the entry point with it unless this option says otherwise.
 **Shape rules.** Three header comment lines like §4.3's, naming the option that wrote the file. One
 public static factory named after the target type alone — `Order.Line` scaffolds `AnyLine` and is
 reached as `Line()`. It returns the generator, never a value: constraining it through `With…` and
-calling `Generate()` are the developer's, exactly as with `new Any{Type}()`. The `static:<Name>` file
+calling `Generate()` are the developer's, exactly as with `new Dummy{Type}()`. The `static:<Name>` file
 uses no construct newer than C# 7.3; the `any` file needs C# 14 and nothing more.
 
 A target type whose own name is the chosen root name emits a member named like its enclosing class,
@@ -489,7 +489,7 @@ and the remedy is another root name.
 
 ## 5. Resolution — how a parameter becomes a generator
 
-For each parameter, the engine produces an expression of type `IAny<TParam>`, or fails to and
+For each parameter, the engine produces an expression of type `IDummy<TParam>`, or fails to and
 marks the parameter unresolved.
 
 ### 5.1 Choosing the constructor
@@ -506,7 +506,7 @@ marks the parameter unresolved.
    **A public constructor of the type's own closes this route entirely**, even one rule 5 finds
    ineligible: the factory is then never reached, so it is neither chosen nor named, and the type
    ends as rule 5 says it does. Offering it would be a remedy the reader could not act on.
-3. A parameterless constructor yields a valid, trivial `AnyOrder` with no `With` methods.
+3. A parameterless constructor yields a valid, trivial `DummyOrder` with no `With` methods.
 4. Positional records work with no special handling — their primary constructor is an ordinary
    public constructor. `init` and `required` members are **out of scope** (§16) — and out of scope
    is a **refusal**, never a silence: a type whose chosen constructor leaves a `required` member
@@ -530,21 +530,21 @@ Every entry is subject to D4: the member is emitted only if it resolves in the c
 
 | Parameter type | Emitted |
 |---|---|
-| `string` | `Any.String().NonEmpty()` |
-| `bool` | `Any.Boolean()` |
-| `sbyte` `byte` `short` `ushort` `int` `uint` `long` `ulong` | `Any.SByte()` … `Any.UInt64()` |
-| `float` `double` `decimal` | `Any.Single()` / `Any.Double()` / `Any.Decimal()` |
-| `char` | `Any.Char()` |
-| `Guid` | `Any.Guid().NonEmpty()` |
-| `DateTime` `DateTimeOffset` `TimeSpan` | `Any.DateTime()` / `Any.DateTimeOffset()` / `Any.TimeSpan()` |
+| `string` | `Dummy.String().NonEmpty()` |
+| `bool` | `Dummy.Boolean()` |
+| `sbyte` `byte` `short` `ushort` `int` `uint` `long` `ulong` | `Dummy.SByte()` … `Dummy.UInt64()` |
+| `float` `double` `decimal` | `Dummy.Single()` / `Dummy.Double()` / `Dummy.Decimal()` |
+| `char` | `Dummy.Char()` |
+| `Guid` | `Dummy.Guid().NonEmpty()` |
+| `DateTime` `DateTimeOffset` `TimeSpan` | `Dummy.DateTime()` / `Dummy.DateTimeOffset()` / `Dummy.TimeSpan()` |
 | `DateOnly` `TimeOnly` `Int128` `UInt128` `Half` | the matching factory — **`net8.0` asset only**, D4 decides |
-| any `enum E` | `Any.Enum<E>()` |
-| `Uri` | `Any.Uri().Web()` |
-| `T[]` | `Any.ArrayOf(<T>)` |
-| `List<T>` `IReadOnlyList<T>` `IList<T>` `ICollection<T>` `IReadOnlyCollection<T>` | `Any.ListOf(<T>)` |
-| `IEnumerable<T>` | `Any.SequenceOf(<T>)` |
-| `HashSet<T>` `ISet<T>` | `Any.SetOf(<T>)` |
-| `Dictionary<K,V>` `IDictionary<K,V>` `IReadOnlyDictionary<K,V>` | `Any.DictionaryOf(<K>, <V>)` |
+| any `enum E` | `Dummy.Enum<E>()` |
+| `Uri` | `Dummy.Uri().Web()` |
+| `T[]` | `Dummy.ArrayOf(<T>)` |
+| `List<T>` `IReadOnlyList<T>` `IList<T>` `ICollection<T>` `IReadOnlyCollection<T>` | `Dummy.ListOf(<T>)` |
+| `IEnumerable<T>` | `Dummy.SequenceOf(<T>)` |
+| `HashSet<T>` `ISet<T>` | `Dummy.SetOf(<T>)` |
+| `Dictionary<K,V>` `IDictionary<K,V>` `IReadOnlyDictionary<K,V>` | `Dummy.DictionaryOf(<K>, <V>)` |
 | `T?` where `T` is a reference type | the generator for `T` unchanged — **never** `.OrNull()` (D10) |
 | `T?` where `T` is a value type | `<generator for T>.AsNullable()`, or `.As(value => (T?)value)` where the asset carries no lift — **never** `.OrNull()` (D10) |
 | any other non-generic named type | `new AnyT()` (§5.4) — whether the compilation carries `AnyT` or not |
@@ -552,26 +552,26 @@ Every entry is subject to D4: the member is emitted only if it resolves in the c
 
 Three notes on the table.
 
-**`Any.String().NonEmpty()`, not `Any.String()`.** Unconstrained, `Any.String()` can return the
+**`Dummy.String().NonEmpty()`, not `Dummy.String()`.** Unconstrained, `Dummy.String()` can return the
 empty string (§14.5). A constructor parameter of type `string` in a domain type is overwhelmingly
 required non-empty, and a default that fails intermittently — roughly one call in seventeen when
 §17 measured it, one in a thousand under the wider spread ADR-0076 later set — is exactly the
 flakiness the library exists to remove. The rate moved; the defect did not. Same reasoning for
-`Any.Guid().NonEmpty()`.
+`Dummy.Guid().NonEmpty()`.
 
-**Collections rely on covariance — and value types do not.** `IAny<out T>` is covariant, so
-`Any.ListOf(...)`, whose type is `IAny<List<T>>`, is directly assignable to a field of type
-`IAny<IReadOnlyList<T>>`; no adapter is needed for any of the interface rows, and the same holds
+**Collections rely on covariance — and value types do not.** `IDummy<out T>` is covariant, so
+`Dummy.ListOf(...)`, whose type is `IDummy<List<T>>`, is directly assignable to a field of type
+`IDummy<IReadOnlyList<T>>`; no adapter is needed for any of the interface rows, and the same holds
 for `HashSet<T>`/`ISet<T>` and `Dictionary<K,V>`/`IReadOnlyDictionary<K,V>`.
 
 Variance in C# applies only across **reference** conversions, which is why the two nullable rows
-differ. `IAny<string>` is an `IAny<string?>` and needs nothing; `IAny<int>` is **not** an
-`IAny<int?>`, so an `int?` parameter needs the explicit `.AsNullable()` hop. Getting
+differ. `IDummy<string>` is an `IDummy<string?>` and needs nothing; `IDummy<int>` is **not** an
+`IDummy<int?>`, so an `int?` parameter needs the explicit `.AsNullable()` hop. Getting
 this wrong is the most likely way an implementer produces a table that does not compile — the
 `net8.0`-only rows are all value types too.
 
 **Element generators recurse.** `IReadOnlyList<OrderLine>` resolves its element through this same
-table, so it becomes `Any.ListOf(new AnyOrderLine())` when `AnyOrderLine` exists. Recursion is
+table, so it becomes `Dummy.ListOf(new AnyOrderLine())` when `AnyOrderLine` exists. Recursion is
 depth-limited to 3 and cycle-guarded; exceeding either makes the parameter unresolved.
 
 ### 5.3 Guard clauses
@@ -701,7 +701,7 @@ The recognised set is closed:
 | `p > N` | `.LessThanOrEqualTo(N)` |
 | `p < N` | `.GreaterThanOrEqualTo(N)` |
 | `p == Guid.Empty` | `.NonEmpty()` |
-| `!Enum.IsDefined(typeof(E), p)`, `!Enum.IsDefined(p)` | none — `Any.Enum<E>()` already draws only declared members, **where `p` is of type `E`** |
+| `!Enum.IsDefined(typeof(E), p)`, `!Enum.IsDefined(p)` | none — `Dummy.Enum<E>()` already draws only declared members, **where `p` is of type `E`** |
 | `p == E.Member` | `.DifferentFrom(E.Member)`, **where `p` is of type `E`** |
 
 **The assigned null-check does not end the leading scan, unlike an ordinary write to state.** `f =
@@ -715,7 +715,7 @@ left to the ordinary "rejects, and the engine cannot tell why" reading, exactly 
 `if` is.
 
 **`.NonEmpty()` does not cover `IsNullOrWhiteSpace`, and the two rows are deliberately apart.** It
-once did, on the premise that an unconstrained `Any.String()` draws only ASCII letters and digits so
+once did, on the premise that an unconstrained `Dummy.String()` draws only ASCII letters and digits so
 a non-empty draw can never be whitespace. ADR-0075 falsified that premise — the filler is the whole
 of ASCII, whitespace included (§14.5) — and ADR-0076 made a declared maximum steer the draw, so under
 a short ceiling an entirely blank draw is ordinary rather than impossible. `.NotBlank()` states the
@@ -735,7 +735,7 @@ parameter is marked `unread guards`, which is the refusal such a domain deserves
 **An enum exclusion guard is read too, and it is the commonest enum guard there is** —
 `if (status == Status.None) { throw … }`. Roslyn reports a zero-valued enum member as a plain
 **integer** constant, so without this row the condition fell into the numeric family's own
-`p == 0` row and read as `.NonZero()` — a member `AnyEnum<T>` does not carry, so the member lookup
+`p == 0` row and read as `.NonZero()` — a member `DummyEnum<T>` does not carry, so the member lookup
 (§5.2) dropped it and the parameter reported `constraint unavailable` over a draw nothing narrowed.
 A **non-zero** member matched no numeric row at all, so it was marked `unread guards` and blocked
 the developer's build — the loud outcome, and the one this row converts into a read constraint.
@@ -781,7 +781,7 @@ write a call `JD032` reports as dead.
 
 Bounds that leave **no value at all** are irreconcilable: all of them are dropped and the parameter
 is reported as `guards not combined`. The library rejects such a chain with
-`ConflictingAnyConstraintException`, and `JD016`, `JD023` and their siblings report it at compile
+`ConflictingDummyConstraintException`, and `JD016`, `JD023` and their siblings report it at compile
 time (§17), but the engine must not emit it in the first place — which guard the developer meant is
 not its guess to make. This is interval arithmetic over the whole of the constraint's `Bound`, and
 being only that is the point (ADR-0046): a lower bound above an upper one, an **exact** size beside
@@ -806,7 +806,7 @@ up before it is written, like all the rest (§13.1).
 No recognised guard produces a charset or a pattern constraint, so those axes never arise.
 
 **Regex guards are deliberately not read.** `!Regex.IsMatch(p, "…")` looks like the ideal guard to
-translate: the library has `Any.StringMatching(...)`, and the pattern sits right there as a
+translate: the library has `Dummy.StringMatching(...)`, and the pattern sits right there as a
 literal. It is out of the set for v1.0, for a reason that generalises.
 
 The library builds values from the *regular* subset of the pattern language — lookarounds,
@@ -816,7 +816,7 @@ it were rejected (§17); lookaheads and word boundaries are the ordinary vocabul
 hand-written validator.
 
 Worse, the rejection happens at **construction**, not at `Generate()`. The emitted parameterless
-constructor runs the whole recipe in its initialiser, so `new AnyOrder()` would throw before any
+constructor runs the whole recipe in its initialiser, so `new DummyOrder()` would throw before any
 `.WithReference(...)` could override it. The generated type would be unusable rather than merely
 imprecise, and no call the developer could write would rescue it — verified (§17).
 
@@ -839,7 +839,7 @@ survives casual testing.
 
 **Where the constraints attach.** A guard-derived constraint belongs to the generator for the
 parameter's own type, *before* any conversion or composition. An `int?` parameter guarded by
-`p <= 0` emits `Any.Int32().Positive().AsNullable()`, not the reverse. The conversion hop
+`p <= 0` emits `Dummy.Int32().Positive().AsNullable()`, not the reverse. The conversion hop
 always comes last, because it is the step that changes the type.
 
 Every constraint above is still subject to D4. `.Positive()` on a `uint` parameter does not
@@ -847,9 +847,9 @@ resolve (§14.3) and is skipped.
 
 Guard reading is also what makes a value object's own generator correct rather than nominally
 present, and that is where the measurement behind this section was taken. `OrderReference.Create`
-guards on `IsNullOrWhiteSpace`, so `AnyOrderReference` draws `Any.String().NotBlank()` — a chain
-that rejects the all-whitespace value the guard also rejects — instead of `Any.String()`, which was
-measured throwing `AnyGenerationException` **594 times in 10 000 draws**, and 557 on an independent
+guards on `IsNullOrWhiteSpace`, so `AnyOrderReference` draws `Dummy.String().NotBlank()` — a chain
+that rejects the all-whitespace value the guard also rejects — instead of `Dummy.String()`, which was
+measured throwing `DummyGenerationException` **594 times in 10 000 draws**, and 557 on an independent
 re-run — about one in seventeen, which is what an unconstrained draw over the seventeen lengths 0 to
 16 predicts (§17). The reading happens once, for the type that declares the guards; every parameter
 composing an `OrderReference` gets it by calling that generator (§5.4).
@@ -1022,14 +1022,14 @@ confirmation.
 ### 5.4 Composition
 
 **The call is written blind.** A composed parameter of type `T` is drawn through
-`new Any{T}()`, in `T`'s own namespace (ADR-0062) — always, unconditionally, and without the
+`new Dummy{T}()`, in `T`'s own namespace (ADR-0062) — always, unconditionally, and without the
 engine ever inspecting the compilation to decide whether that call would resolve. This is how
 aggregates compose in cascade, and it is the literal reading of ADR-0089: the parameter is
 drawn through the generator its type owns, "named whether or not the compilation carries that
 generator yet."
 
 **No lookup, so no arbitration.** A same-named type that exists but cannot serve — a
-`static class`, one that does not implement `IAny<T>`, an `abstract` one, one with no public
+`static class`, one that does not implement `IDummy<T>`, an `abstract` one, one with no public
 parameterless constructor — changes nothing about the call: `dum` never inspected it and never
 will. Two or more types that could each serve as `T`'s generator change nothing either — there
 is no tie to notice, because there is no search that could find one. Whether the call resolves,
@@ -1038,7 +1038,7 @@ line of hand-written C# is: by the developer's own build, in the IDE and in CI, 
 line the call sits on.
 
 **Nothing is looked up, so nothing is guessed either.** The engine never reads a same-named
-type's declaration, never asks whether it implements `IAny<T>`, never opens a `using` for it.
+type's declaration, never asks whether it implements `IDummy<T>`, never opens a `using` for it.
 Composing does not read the compilation for `T`'s generator at all — it writes the one name
 ADR-0062 already fixes, in the one namespace ADR-0062 already fixes, and stops. A value object's
 recipe belongs to the generator scaffolded for it, never re-derived here: unwrapping `T`'s own
@@ -1047,7 +1047,7 @@ the same reason §5.5 rejects leaving the parameter open — it would write one 
 per call site, each free to drift from the constructor it describes.
 
 **The parameter is never left unresolved for a composed type.** Whatever the compilation does or
-does not carry under that name, `new Any{T}()` is what gets written — never a `TODO` naming
+does not carry under that name, `new Dummy{T}()` is what gets written — never a `TODO` naming
 candidates, never a value reasoned about at compose time. A missing generator, a disqualified
 same-named type, a genuine tie between two valid ones, and a real, unique, correctly-implemented
 generator are handled identically: the same call, and `CS0246` — or a clean build — is the only
@@ -1073,7 +1073,7 @@ other parameter's:
                crates:    AnyValidCrates(),
                ...) { }
 
-    private static IAny<Crate<int>> AnyValidCrates() {
+    private static IDummy<Crate<int>> AnyValidCrates() {
         // TODO(dum): no generator inferred for 'Crate<int> crates'.
         //   Write one here, or replace it and always pass .WithCrates(...) instead.
         return TODO_supply_a_generator_for_crates;
@@ -1093,7 +1093,7 @@ declines — worse than none. That distinction earns its keep now that §5.4 nam
 every plain type: what reaches this branch is largely the constructed ones.
 
 The two alternatives were rejected: a `throw` expression compiles and defers the failure to the
-first test run, and omitting the parameter makes `AnyOrder` quietly unusable without saying so.
+first test run, and omitting the parameter makes `DummyOrder` quietly unusable without saying so.
 The developer runs the tool and opens the file in the same minute; a red squiggle at the exact
 line costs them ten seconds, and a runtime failure a week later costs far more.
 
@@ -1105,13 +1105,13 @@ difference: a generator **was** inferred here, and it stays as the factory's wor
 than being thrown away.
 
 ```csharp
-    private static IAny<string> AnyValidName() {
+    private static IDummy<string> AnyValidName() {
         // TODO(dum): 'string name' may be guarded by something dum could not read (§9).
         //   This is dum's best generator for the type; verify it honours the real invariant,
         //   or replace it, then delete the line below.
         _ = TODO_verify_the_generator_for_name;
 
-        return Any.String().NonEmpty();
+        return Dummy.String().NonEmpty();
     }
 ```
 
@@ -1155,12 +1155,12 @@ Analyzing Shop.Domain.Order
 
   reference  OrderReference         new AnyOrderReference()              AnyX
   customer   Customer               new AnyCustomer()                    AnyX
-  quantity   int                    Any.Int32().Positive()               guard
-  status     OrderStatus            Any.Enum<OrderStatus>()
-  tags       IReadOnlyList<string>  Any.ListOf(Any.String().NonEmpty())
-  placedAt   DateTime               Any.DateTime()
+  quantity   int                    Dummy.Int32().Positive()               guard
+  status     OrderStatus            Dummy.Enum<OrderStatus>()
+  tags       IReadOnlyList<string>  Dummy.ListOf(Dummy.String().NonEmpty())
+  placedAt   DateTime               Dummy.DateTime()
 
-✓ AnyOrder.cs — 6 of 6 parameters inferred.
+✓ DummyOrder.cs — 6 of 6 parameters inferred.
 ```
 
 The right-hand column carries the provenance of each expression: empty for the base table,
@@ -1182,7 +1182,7 @@ exactly right and one constraint cannot be expressed on it.
 
 That last value matters more than it looks. Without it, D4's degradation is indistinguishable from
 the tool simply not knowing: a `DateOnly` parameter on a downlevel project would read as "not
-inferred", when the truth is "inferred, but `Any.DateOnly()` does not exist here — retarget, or
+inferred", when the truth is "inferred, but `Dummy.DateOnly()` does not exist here — retarget, or
 write it yourself". One word turns a dead end into an instruction.
 
 A parameter requiring verification (§5.6) closes the recap the same way an open one does — the
@@ -1192,7 +1192,7 @@ since the row and the closing line describe the same parameter:
 
 ```console
   crates  Crate<int>  —                        TODO
-  name    string      Any.String().NonEmpty()  to verify, unread guards
+  name    string      Dummy.String().NonEmpty()  to verify, unread guards
 
 ✓ AnyWarehouse.cs — 5 of 6 parameters inferred, 1 TODO, 1 to verify.
   The file will not compile until you resolve it. That is deliberate.
@@ -1208,8 +1208,8 @@ possible — the same rule again, since the call comes from the result model rat
 assembled by the console:
 
 ```console
-✓ AnyOrder.cs       — 6 of 6 parameters inferred.
-✓ AnyOrder.Entry.cs — entry point Dummies.Order()
+✓ DummyOrder.cs       — 6 of 6 parameters inferred.
+✓ DummyOrder.Entry.cs — entry point Dummies.Order()
 ```
 
 `--dry-run` prints the same recap to stderr and the file to stdout. With an entry point there are
@@ -1274,12 +1274,12 @@ The provenance words are the recap's own (§6), read from one table rather than 
 | The target is generic, or nested in a generic type | `1` | Nothing supplies the type argument, so the emitted file could not name it. |
 | The target's `required` members are unset by the chosen constructor | `1` | Deferred to §16; names `[SetsRequiredMembers]`, which is scaffolded like any other constructor. |
 | `--entry-point any`, project below C# 14 | `1` | Names the version the project resolved, and `static:<Name>`. |
-| `--entry-point static:Any` | `2` | Names what would stop compiling, and points at `--entry-point any`. |
+| `--entry-point static:Dummy` | `2` | Names what would stop compiling, and points at `--entry-point any`. |
 | `--entry-point` given a value that is not one of the three | `2` | Lists the three. |
 | `--entry-point-namespace` with no entry point to place | `2` | Says which option is missing. |
 | `--format` given a value that is neither `human` nor `json` | `2` | Names both. |
 | `dum.json` unreadable, or setting a key that is not read | `2` | Names the key, and the ones that are read. |
-| `Any{Type}` shadows a `JustDummies.Any*` type | `0` | **Warning**, then generate. |
+| `Dummy{Type}` shadows a `JustDummies.Dummy*` type | `0` | **Warning**, then generate. |
 
 **Several rows can describe one type at once, and the most actionable of them answers.** The refusal
 is decided in this order, which is a rule rather than a pipeline's accident:
@@ -1302,14 +1302,14 @@ in this list by the same test: does it name something the developer can act on, 
 engine happened to notice first?
 
 That last row deserves its own note, and the check behind it is narrower than it first looks. The
-library declares 40 public `Any*` type names, but **8 of them are generic** — `AnyList<T>`,
-`AnySet<T>`, `AnyArray<T>`, `AnySequence<T>`, `AnyDictionary<K,V>`, `AnyOneOf<T>`, `AnyEnum<T>`,
-`AnyCollection<…>`. Arity is part of a type's identity in C#, so a scaffolded `AnySet` (arity 0)
-and the library's `AnySet<T>` **coexist without shadowing anything** — verified. A domain type
+library declares 40 public `Dummy*` type names, but **8 of them are generic** — `DummyList<T>`,
+`DummySet<T>`, `DummyArray<T>`, `DummySequence<T>`, `DummyDictionary<K,V>`, `DummyOneOf<T>`, `DummyEnum<T>`,
+`DummyCollection<…>`. Arity is part of a type's identity in C#, so a scaffolded `DummySet` (arity 0)
+and the library's `DummySet<T>` **coexist without shadowing anything** — verified. A domain type
 named `Set`, `List` or `Sequence` is a false alarm.
 
-The real collision set is the **32 non-generic** names (§14.2): `AnyString`, `AnyGuid`, `AnyUri`,
-`AnyPattern`, `AnyChar`, `AnyBoolean`, `AnyDateTime`, `AnyContext`, `AnyDecimal`, `AnyInt32`, …
+The real collision set is the **32 non-generic** names (§14.2): `DummyString`, `DummyGuid`, `DummyUri`,
+`DummyPattern`, `DummyChar`, `DummyBoolean`, `DummyDateTime`, `DummyContext`, `DummyDecimal`, `DummyInt32`, …
 A domain type named `Pattern`, `Context` or `Uri` scaffolds to a name that, inside its own
 namespace, **silently shadows the library's type** for every file in that namespace: C# resolves
 the enclosing namespace before any `using`. It compiles; it is just wrong later — verified. The
@@ -1326,8 +1326,8 @@ running, which is `2`. The first is also asked **once per run** rather than once
 is a fact about the project — `dum generate Order Customer Invoice` prints it once and stops.
 
 One scaffold is one unit of work on disk. Where an entry point was asked for, its file is checked for
-existence together with the generator's before either is written, so `Any{Type}.Entry.cs` already
-being there refuses the whole scaffold rather than leaving `Any{Type}.cs` behind it. `--force`
+existence together with the generator's before either is written, so `Dummy{Type}.Entry.cs` already
+being there refuses the whole scaffold rather than leaving `Dummy{Type}.cs` behind it. `--force`
 covers both, and loses a developer's edits to either by the same sentence.
 
 Multiple type arguments (`dum generate Order Customer Invoice`) are processed independently; the
@@ -1349,12 +1349,12 @@ This matters even without a `check` verb: it is what makes a re-scaffold reviewa
 ### 8.2 Reproducibility
 
 The emitted generator draws from the **ambient** random context, because every expression it
-emits comes from the static `Any` façade, and the ambient source resolves the current `AsyncLocal`
+emits comes from the static `Dummy` façade, and the ambient source resolves the current `AsyncLocal`
 frame **at draw time**, not at construction time (§14.5). Therefore:
 
 ```csharp
-AnyOrder recipe = new AnyOrder();          // built outside the scope
-Any.Reproducibly(() => {
+DummyOrder recipe = new DummyOrder();          // built outside the scope
+Dummy.Reproducibly(() => {
     Order order = recipe.Generate();       // still pinned by the scope's seed
 });
 ```
@@ -1362,10 +1362,10 @@ Any.Reproducibly(() => {
 is reproducible, and so is the ordinary case where both happen inside the scope. This was
 verified (§17).
 
-**`Any.WithSeed(seed)` is out of scope (D7).** An `AnyContext` carries its own fixed random source
-and is unaffected by the ambient scope, so a generator built from `Any.*` cannot draw from it. A
+**`Dummy.WithSeed(seed)` is out of scope (D7).** An `DummyContext` carries its own fixed random source
+and is unaffected by the ambient scope, so a generator built from `Dummy.*` cannot draw from it. A
 developer on `WithSeed` supplies that context's generators parameter by parameter through the
-`.With{Param}(IAny<TParam>)` overload, and the emitted XML doc says so in one sentence (§4.1). The
+`.With{Param}(IDummy<TParam>)` overload, and the emitted XML doc says so in one sentence (§4.1). The
 reasoning, and the alternatives weighed against it, are in D7.
 
 The emitter never produces static state, so `JD009` and `JD020` have nothing to fire on.
@@ -1387,7 +1387,7 @@ Named explicitly so they are not mistaken for oversights.
 
 * **Realistic data.** The tool inherits the library's scope: arbitrary-but-valid, never plausible.
   No names, no emails, no addresses.
-* **Object-graph auto-filling.** Composition is one hop through `Any{T}` or a one-parameter
+* **Object-graph auto-filling.** Composition is one hop through `Dummy{T}` or a one-parameter
   factory, depth-limited to 3. Beyond that the developer writes it.
 * **Invariants the tool cannot see.** §5.3 reads a closed set of guard idioms. Where the constructor
   throws in a way the set does not match — a cross-parameter rule, an arithmetic condition, a regex
@@ -1425,19 +1425,19 @@ Named explicitly so they are not mistaken for oversights.
 
 | Project | TFM | Role |
 |---|---|---|
-| `JustDummies.GenAny` | `netstandard2.0`, pinned to the Roslyn floor (§13.2) | The engine. Resolution, guard reading, composition, emission. |
+| `JustDummies.GenDummy` | `netstandard2.0`, pinned to the Roslyn floor (§13.2) | The engine. Resolution, guard reading, composition, emission. |
 | `JustDummies.Cli` | `net8.0`, `RollForward=Major` | The shell. Commands, project loading, file IO, console. |
 
 On the name: the repository's existing engine for the sibling tool is called `GenDoc` — a
-**function** name, not a pattern name (`GenDoc` generates documentation). `GenAny` follows it
-exactly: it generates the `AnyX` types, and `Any` is the library's central noun (`Any.String()`,
-`IAny<T>`, `AnyOrder`). "Scaffolder" was rejected as a project name — it names a generic role
+**function** name, not a pattern name (`GenDoc` generates documentation). `GenDummy` follows it
+exactly: it generates the `AnyX` types, and `Dummy` is the library's central noun (`Dummy.String()`,
+`IDummy<T>`, `DummyOrder`). "Scaffolder" was rejected as a project name — it names a generic role
 rather than a product, and every framework has one. The word survives in the prose, where it
 describes *behaviour* (§1); the project is named after what it *produces*.
 
 ### 10.2 The boundary
 
-**`JustDummies.GenAny` owns** the resolution table (§5.2), guard reading (§5.3), composition and
+**`JustDummies.GenDummy` owns** the resolution table (§5.2), guard reading (§5.3), composition and
 the naming function that §5.4 leans on (§11.3), and the emitter (§11.2).
 It depends on `Microsoft.CodeAnalysis.CSharp` **only** — not `Workspaces`, which it does not need:
 guard reading wants a syntax tree and a semantic model, and emission is string building.
@@ -1459,7 +1459,7 @@ One entry point, shaped so the future IDE consumer can call it unchanged:
   * the file name and the full source text;
   * per-parameter rows: name, type display string, emitted expression (or none), and provenance
     (§6);
-  * warnings, such as the `Any*` shadowing case of §7;
+  * warnings, such as the `Dummy*` shadowing case of §7;
   * a flag for "contains at least one TODO";
   * **failure as data, not as an exception** — a target type resolving to nothing or to several
     candidates comes back as an outcome carrying that candidate list, so the CLI maps it to the
@@ -1472,7 +1472,7 @@ Nothing in the model is a console string.
 ### 10.4 Packaging
 
 `JustDummies.Cli` is packed as the .NET tool (`PackAsTool`, `ToolCommandName=dum`,
-`PackageId=JustDummies.Cli`). `JustDummies.GenAny` is **not published as its own package** in
+`PackageId=JustDummies.Cli`). `JustDummies.GenDummy` is **not published as its own package** in
 v1.0: it travels inside the tool package as an ordinary managed dependency, which is exactly how
 the sibling repository ships its `GenDoc` engine. Publishing it later, when an IDE consumer
 exists, is a purely additive decision.
@@ -1496,8 +1496,8 @@ impossible, and the tool package must declare no `JustDummies` dependency (§13.
    `Microsoft.Build` that names nothing useful. (CLI only.)
 2. `MSBuildWorkspace.Create()`, open the project, take its `Compilation`. Workspace diagnostics
    are surfaced, not swallowed. (CLI only.)
-3. Hand the `Compilation` to the engine. Everything from here is `JustDummies.GenAny`.
-4. Resolve `JustDummies.Any`, ``JustDummies.IAny`1`` and `JustDummies.AnyExtensions` by metadata
+3. Hand the `Compilation` to the engine. Everything from here is `JustDummies.GenDummy`.
+4. Resolve `JustDummies.Dummy`, ``JustDummies.IDummy`1`` and `JustDummies.DummyExtensions` by metadata
    name. Absent → the engine reports it and the CLI exits `1` (§7).
 5. Resolve the target type (§3.2), pick the constructor (§5.1).
 6. Per parameter: base table (§5.2) → guards (§5.3) → composition (§5.4) → unresolved (§5.5).
@@ -1516,13 +1516,13 @@ golden-file tests (§12), the fragility argument for a syntax API does not apply
 
 Route the emitted type name through **one** function, `TypeNaming.GeneratorNameFor(ITypeSymbol,
 NamingOptions)`. v1.1 (§16) is then a change to that function plus an options binding, not a
-sweep. In v1.0 `NamingOptions` carries a single fixed pattern, `Any{Type}`.
+sweep. In v1.0 `NamingOptions` carries a single fixed pattern, `Dummy{Type}`.
 
 ---
 
 ## 12. Test plan
 
-**Engine — `JustDummies.GenAny.UnitTests`** (the bulk):
+**Engine — `JustDummies.GenDummy.UnitTests`** (the bulk):
 
 * **Resolver unit tests.** Build a `CSharpCompilation` in memory with a reference to the built
   `JustDummies.dll`, and assert the emitted expression string per parameter. Fast, no MSBuild.
@@ -1585,7 +1585,7 @@ sweep. In v1.0 `NamingOptions` carries a single fixed pattern, `Any{Type}`.
   In a repository without such types, use any validating value object with a static factory.
 * **Asset-selection test.** Scaffold against a `netstandard2.0`-asset consumer and a `net8.0`-asset
   consumer for a type with a `DateOnly` parameter, and assert the first produces a TODO **marked
-  `unavailable`** — not merely a TODO — and the second `Any.DateOnly()`. This is the executable
+  `unavailable`** — not merely a TODO — and the second `Dummy.DateOnly()`. This is the executable
   proof of D4 (§13.8).
 
 **Shell — `JustDummies.Cli.UnitTests`:** project discovery, option handling, exit codes of §7,
@@ -1623,7 +1623,7 @@ puts the command definitions in the shell and forbids them in the engine.
 
 ### 13.2 A Roslyn floor property
 
-`JustDummies.GenAny` must compile against the **same minimum
+`JustDummies.GenDummy` must compile against the **same minimum
 Roslyn version as the analyzer package**, and must not float above it — an assembly loaded by a
 consumer's compiler fails silently (`CS8032`) on an older host if it was built against a newer
 Roslyn. *Current realization: `RoslynFloorVersion` = `4.8.0`, set once in `Directory.Build.props`
@@ -1643,7 +1643,7 @@ has been missed and fixed after the fact several times; check it every time a `.
 
 ### 13.4 Public-API baseline exclusion
 
-Neither `JustDummies.GenAny` nor `JustDummies.Cli` opts
+Neither `JustDummies.GenDummy` nor `JustDummies.Cli` opts
 into the public-API baseline: tools carry no compatibility promise, and the analyzer would flag
 their entire surface as undeclared. *Current realization: only the shipping libraries import
 `build/PublicApiBaseline.props`.*
@@ -1719,7 +1719,7 @@ load-bearing. §14.7 gives the command to re-derive each block.
 
 ### 14.2 Entry points
 
-`JustDummies.Any` is a static façade, split across partial files by family. The complete set of
+`JustDummies.Dummy` is a static façade, split across partial files by family. The complete set of
 factories, all drawing from the ambient random context:
 
 * **Primitives** — `String()`, `Boolean()`, `Char()`, `Guid()`,
@@ -1739,33 +1739,33 @@ factories, all drawing from the ambient random context:
 * **Reproducibility** — `WithSeed(int)`, `UseSeed(int)`, `UseSeed(int, string)`,
   `Reproducibly(...)`, `ReproduciblyAsync(...)`.
 
-Note the naming traps: it is **`Any.Boolean()`**, not `Any.Bool()`; and `double` maps to
-**`Any.Double()`**, not `Any.Decimal()`.
+Note the naming traps: it is **`Dummy.Boolean()`**, not `Dummy.Bool()`; and `double` maps to
+**`Dummy.Double()`**, not `Dummy.Decimal()`.
 
-`AnyContext`, returned by `Any.WithSeed(int)`, mirrors the primitives, the pattern, the URI and
+`DummyContext`, returned by `Dummy.WithSeed(int)`, mirrors the primitives, the pattern, the URI and
 the choice entry points as **instance** methods drawing from its own fixed source. It does **not**
 mirror the collection or composition entry points. D7 puts it out of scope.
 
-The library declares **40 public `Any*` type names** — 38 generators plus `AnyContext` and
-`AnyGenerationException`. **8 are generic and 32 are not**, and only the non-generic ones can be
-shadowed by a scaffolded `Any{Type}`; that 32-name set is what the warning of §7 checks against.
-(`AnyCollection<…>`, the abstract base of the collection generators, is easy to miss when counting:
+The library declares **40 public `Dummy*` type names** — 38 generators plus `DummyContext` and
+`DummyGenerationException`. **8 are generic and 32 are not**, and only the non-generic ones can be
+shadowed by a scaffolded `Dummy{Type}`; that 32-name set is what the warning of §7 checks against.
+(`DummyCollection<…>`, the abstract base of the collection generators, is easy to miss when counting:
 it is declared `public abstract class`, not `public sealed class`.)
 
 ### 14.3 Constraint surfaces the emitter uses
 
 | Generator family | Constraint surface available to the emitter |
 |---|---|
-| `AnyString` | `NonEmpty`, `WithMinLength`, `WithMaxLength`, `WithLength`, `WithLengthBetween`, `StartingWith`, `EndingWith`, `Containing`, `Alpha`, `Numeric`, `AlphaNumeric`, `Punctuation`, `Printable`, `InUpperCase`, `InLowerCase`, `WithChars`, `OneOf`, `Except`, `DifferentFrom` |
+| `DummyString` | `NonEmpty`, `WithMinLength`, `WithMaxLength`, `WithLength`, `WithLengthBetween`, `StartingWith`, `EndingWith`, `Containing`, `Alpha`, `Numeric`, `AlphaNumeric`, `Punctuation`, `Printable`, `InUpperCase`, `InLowerCase`, `WithChars`, `OneOf`, `Except`, `DifferentFrom` |
 | Signed integers (`SByte`, `Int16`, `Int32`, `Int64`) | `Positive`, `Negative`, `NonZero`, `Zero`, `Between`, `GreaterThan(OrEqualTo)`, `LessThan(OrEqualTo)`, `MultipleOf`, `OneOf`, `Except`, `DifferentFrom` |
 | **Unsigned integers** (`Byte`, `UInt16`, `UInt32`, `UInt64`) | the same **less `Positive` and `Negative`**, which an unsigned type cannot express |
-| `AnyDouble`, `AnySingle` | as signed integers, less `MultipleOf` |
-| `AnyDecimal` | as signed integers, less `MultipleOf`, plus `WithScale` |
-| `AnyGuid` | `NonEmpty`, `Empty`, `OneOf`, `Except`, `DifferentFrom` |
-| `AnyBoolean` | `True`, `False`, `DifferentFrom` |
-| `AnyEnum` | `AllowingCombinations`, `OneOf`, `Except`, `DifferentFrom` |
+| `DummyDouble`, `DummySingle` | as signed integers, less `MultipleOf` |
+| `DummyDecimal` | as signed integers, less `MultipleOf`, plus `WithScale` |
+| `DummyGuid` | `NonEmpty`, `Empty`, `OneOf`, `Except`, `DifferentFrom` |
+| `DummyBoolean` | `True`, `False`, `DifferentFrom` |
+| `DummyEnum` | `AllowingCombinations`, `OneOf`, `Except`, `DifferentFrom` |
 | Temporal (`DateTime`, `DateTimeOffset`, `DateOnly`, `TimeOnly`) | `After(OrEqualTo)`, `Before(OrEqualTo)`, `Between`, `WithGranularity`, `OneOf`, `Except`, `DifferentFrom` |
-| `AnyTimeSpan` | temporal-style plus `Positive`, `Negative`, `NonZero`, `Zero` |
+| `DummyTimeSpan` | temporal-style plus `Positive`, `Negative`, `NonZero`, `Zero` |
 | Collections | `Empty`, `NonEmpty`, `WithCount`, `WithCountBetween`, `WithMinCount`, `WithMaxCount`, `Containing`, `ContainingAny` |
 
 Two rows bite. The **unsigned** one is why D4 must gate `.Positive()` rather than let the emitter
@@ -1778,11 +1778,11 @@ listed because §16 may reach for them, not because the emitter uses them today.
 
 ### 14.4 Composition seams
 
-* `AnyExtensions.As<TSource,TResult>(this IAny<TSource>, Func<TSource,TResult>)` → `IAny<TResult>`.
+* `DummyExtensions.As<TSource,TResult>(this IDummy<TSource>, Func<TSource,TResult>)` → `IDummy<TResult>`.
   A method group such as `OrderReference.Create` binds directly. When the factory rejects the
-  generated value, the call throws `AnyGenerationException`.
-* `Any.Combine` (arities 2–8) → `IAny<TResult>`.
-* Collection generators derive from a common base implementing `IAny<TCollection>`:
+  generated value, the call throws `DummyGenerationException`.
+* `Dummy.Combine` (arities 2–8) → `IDummy<TResult>`.
+* Collection generators derive from a common base implementing `IDummy<TCollection>`:
   `ListOf` → `List<T>`, `ArrayOf` → `T[]`, `SequenceOf` → `IEnumerable<T>`, `SetOf` →
   `HashSet<T>`, `DictionaryOf` → `Dictionary<TKey,TValue>`.
 * `NullableExtensions.OrNull<T>()` exists in two forms, one for value types and one for annotated
@@ -1793,19 +1793,19 @@ listed because §16 may reach for them, not because the emitter uses them today.
 These five are the ones that would silently break the emitted code if they changed. Each is
 exercised by §17.
 
-1. **The ambient source resolves at draw time.** Every `Any.*` factory captures a singleton
+1. **The ambient source resolves at draw time.** Every `Dummy.*` factory captures a singleton
    ambient source, and that source reads the current `AsyncLocal` frame inside `Generate()`, not
    at construction. This is why a recipe built outside a reproducibility scope still replays
    inside it (§8.2).
-2. **`IAny<out T>` is covariant.** Which is why the collection interface rows of §5.2 need no
+2. **`IDummy<out T>` is covariant.** Which is why the collection interface rows of §5.2 need no
    adapter — and why the value-type nullable row does.
 3. **Generators are immutable recipes.** Every fluent constraint returns a new instance. D2
    inherits this.
-4. **`Any.String()` unconstrained draws 0 to 1024 characters from the whole of ASCII**
+4. **`Dummy.String()` unconstrained draws 0 to 1024 characters from the whole of ASCII**
    (ADR-0075, ADR-0076). It can return the empty string, and it can return whitespace and control
    characters. The first half is what §5.2 and §5.3 rest on; the measurements in §17 were taken
    before those two records, when the draw was 0 to 16 letters and digits.
-5. **`Any.OneOf(value)` requires at least one value, rejects `null` elements, and consumes a
+5. **`Dummy.OneOf(value)` requires at least one value, rejects `null` elements, and consumes a
    draw.** All three are why §4.2 emits a private `FixedValue<TValue>` instead.
 
 ### 14.6 Analyzer inventory
@@ -1837,11 +1837,11 @@ exercised by §17.
 Three facts about them drive decisions in this document:
 
 * **All 32 call `ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None)`** — hence D3.
-* **The `Usage` rules match any type implementing `IAny<T>`**, not a list of built-in generators —
+* **The `Usage` rules match any type implementing `IDummy<T>`**, not a list of built-in generators —
   hence D2's second benefit.
-* **The `Reproducibility` rules match chains rooted at the static `Any` façade**, deliberately
+* **The `Reproducibility` rules match chains rooted at the static `Dummy` façade**, deliberately
   answering "no" for a generator reached through a local, a field or a parameter. `new
-  AnyOrder().Generate()` is therefore invisible to them; that is a known and accepted limit, not
+  DummyOrder().Generate()` is therefore invisible to them; that is a known and accepted limit, not
   a defect the tool can fix.
 
 ### 14.7 How to re-derive these facts
@@ -1851,26 +1851,26 @@ From the library's repository root:
 ```console
 # 14.1  package identity and the TFM split
 grep -n "TargetFrameworks\|PackageId\|analyzers/dotnet/cs" JustDummies/JustDummies.csproj
-grep -n "#if NET8_0_OR_GREATER" JustDummies/Any.Primitive.cs
+grep -n "#if NET8_0_OR_GREATER" JustDummies/Dummy.Primitive.cs
 
-# 14.2  entry points, and the AnyContext mirror
-grep -hn "public static" JustDummies/Any.*.cs
-grep -n "public " JustDummies/AnyContext.cs
-# Type names WITH their arity. `abstract` matters — AnyCollection is not sealed, and a pattern
+# 14.2  entry points, and the DummyContext mirror
+grep -hn "public static" JustDummies/Dummy.*.cs
+grep -n "public " JustDummies/DummyContext.cs
+# Type names WITH their arity. `abstract` matters — DummyCollection is not sealed, and a pattern
 # that only allows `sealed` under-counts by one. The arity is what §7's shadowing check needs:
-# 8 generic names cannot collide with a scaffolded Any{Type}, the other 32 can.
+# 8 generic names cannot collide with a scaffolded Dummy{Type}, the other 32 can.
 grep -rhoP "^public (?:sealed |abstract )?class \KAny\w+(?:<[^>]*>)?" JustDummies/*.cs | sort -u
 
 # 14.3  constraint surfaces
-grep -oP "public AnyInt32 \K\w+(?=\()" JustDummies/AnyInt32.cs | sort -u
-grep -oP "public AnyUInt32 \K\w+(?=\()" JustDummies/AnyUInt32.cs | sort -u   # note: no Positive/Negative
+grep -oP "public DummyInt32 \K\w+(?=\()" JustDummies/DummyInt32.cs | sort -u
+grep -oP "public DummyUInt32 \K\w+(?=\()" JustDummies/DummyUInt32.cs | sort -u   # note: no Positive/Negative
 
 # 14.4  composition seams
-grep -n "public static" JustDummies/AnyExtensions.cs JustDummies/NullableExtensions.cs
+grep -n "public static" JustDummies/DummyExtensions.cs JustDummies/NullableExtensions.cs
 
 # 14.5  invariants — read the XML docs, they state all five
-sed -n '1,60p' JustDummies/IAny.cs
-grep -n "AmbientRandomSource.Instance" JustDummies/Any.Primitive.cs | head -3
+sed -n '1,60p' JustDummies/IDummy.cs
+grep -n "AmbientRandomSource.Instance" JustDummies/Dummy.Primitive.cs | head -3
 
 # 14.6  analyzer inventory and the generated-code exemption
 cat JustDummies.Analyzers/AnalyzerReleases.Unshipped.md
@@ -1896,7 +1896,7 @@ exists — it is this one — and the records have been entered into its ADR bas
 | Decision | Record |
 |---|---|
 | **D1** | [ADR-0056](../adr/0056-scaffold-the-generator-once-and-hand-the-file-to-the-developer.md) — Scaffold the generator once and hand the file to the developer |
-| **D2** | [ADR-0057](../adr/0057-make-the-emitted-generator-a-first-class-iany.md) — Make the emitted generator a first-class `IAny<T>` |
+| **D2** | [ADR-0057](../adr/0057-make-the-emitted-generator-a-first-class-iany.md) — Make the emitted generator a first-class `IDummy<T>` |
 | **D3** | [ADR-0058](../adr/0058-leave-the-scaffolded-file-open-to-the-analyzers.md) — Leave the scaffolded file open to the JustDummies analyzers |
 | **D4** | [ADR-0059](../adr/0059-emit-only-members-resolved-in-the-target-compilation.md) — Emit only members resolved in the target compilation |
 | **D5 + D6** | [ADR-0060](../adr/0060-seed-generators-from-constructor-guards.md) — Seed generators from constructor guards, and leave the rest as a compile error |
@@ -1923,8 +1923,8 @@ and none of those three consequences is self-explanatory in the section where it
 
 ### A library follow-up, not a decision record
 
-`Any.Fixed<T>(value)` — an `IAny<T>` returning a constant — would let the emitter drop the nested
-`FixedValue<TValue>` helper of §4.2. `Any.OneOf(value)` almost fills the role but rejects `null`
+`Dummy.Fixed<T>(value)` — an `IDummy<T>` returning a constant — would let the emitter drop the nested
+`FixedValue<TValue>` helper of §4.2. `Dummy.OneOf(value)` almost fills the role but rejects `null`
 and consumes a draw (§14.5). This is an addition to the library's public API rather than a decision
 about the tool, so it belongs to the library's own decision base and is **not** required for v1.0.
 
@@ -1934,7 +1934,7 @@ about the tool, so it belongs to the library's own decision base and is **not** 
 
 v1.0 must not paint these into a corner; §11.3 is the constraint that keeps the first one cheap.
 
-**Naming.** `AnyOrder` → `OrderFactory`, or any other pattern. Shape:
+**Naming.** `DummyOrder` → `OrderFactory`, or any other pattern. Shape:
 
 ```console
 dum generate Order --name OrderFactory        # this type only
@@ -1944,10 +1944,10 @@ dum generate Order --pattern "{Type}Factory"  # this run
 plus an optional `dum.json` at the project root for a project-wide default:
 
 ```json
-{ "naming": { "pattern": "Any{Type}" } }
+{ "naming": { "pattern": "Dummy{Type}" } }
 ```
 
-`{Type}` is the only placeholder. The default pattern stays `Any{Type}`, so an existing project
+`{Type}` is the only placeholder. The default pattern stays `Dummy{Type}`, so an existing project
 sees no change. This is also the answer to the shadowing warning of §7.
 
 **Reading regex guards.** Left out of §5.3 for v1.0 because the library generates from the regular
@@ -1957,8 +1957,8 @@ first: either the engine validates a pattern without referencing the library (wh
 today), or the library offers a way to ask.
 
 **Other deferred items.** `--all`; `init` / `required` members and property-only construction;
-`AnyContext` support (D7); an `--ctor` selector when several constructors compete; extending §5.3
-to a `Guard.Against`-style helper library; publishing `JustDummies.GenAny` as its own package once
+`DummyContext` support (D7); an `--ctor` selector when several constructors compete; extending §5.3
+to a `Guard.Against`-style helper library; publishing `JustDummies.GenDummy` as its own package once
 an IDE consumer exists; the IDE code refactoring itself.
 
 Deliberately **not** deferred — dropped: a `check` verb, a source-generator mode, and any form of
@@ -1979,29 +1979,29 @@ in. The results below are what the harness printed.
 |---|---|---|
 | The specified skeleton compiles as written | §4.1 | compiles, 0 warnings |
 | `.WithX` chaining works and does not disturb a shared base | D2, §4.2 | two `.WithStatus` calls off one base stay independent |
-| `AnyOrder` is accepted by the library's composition seams | D2, §15 | `Any.ListOf`, `Any.PairOf` and `.As` all accept it |
-| `.WithX(IAny<T>)` keeps constrained composition open | §4.2 | `.WithReference(Any.String().StartingWith("ORD-").As(...))` yields `ORD-x9vDEd2` |
-| A recipe built **outside** a scope still replays inside it | §8.2, §14.5 | two `Any.Reproducibly(20260730, …)` runs produced identical values |
-| The guard-derived chain never throws | §5.3 | 500 draws through `OrderReference.Create`, no `AnyGenerationException` |
+| `DummyOrder` is accepted by the library's composition seams | D2, §15 | `Dummy.ListOf`, `Dummy.PairOf` and `.As` all accept it |
+| `.WithX(IDummy<T>)` keeps constrained composition open | §4.2 | `.WithReference(Dummy.String().StartingWith("ORD-").As(...))` yields `ORD-x9vDEd2` |
+| A recipe built **outside** a scope still replays inside it | §8.2, §14.5 | two `Dummy.Reproducibly(20260730, …)` runs produced identical values |
+| The guard-derived chain never throws | §5.3 | 500 draws through `OrderReference.Create`, no `DummyGenerationException` |
 | The chain **without** guard reading throws intermittently | §5.3 | **594 / 10 000** draws threw, and **557 / 10 000** on a re-run against a later library — about 1 in 17, matching the 588 predicted by seventeen equiprobable lengths |
-| Collection covariance needs no adapter | §5.2, §14.5 | `Any.ListOf(...)` assigned to `IAny<IReadOnlyList<string>>` |
-| A value-type nullable **does** need a conversion hop | §5.2 | `IAny<int>` is not an `IAny<int?>`; `.AsNullable()` compiles, and keeps the domain's size where the general `.As` hop lost it |
+| Collection covariance needs no adapter | §5.2, §14.5 | `Dummy.ListOf(...)` assigned to `IDummy<IReadOnlyList<string>>` |
+| A value-type nullable **does** need a conversion hop | §5.2 | `IDummy<int>` is not an `IDummy<int?>`; `.AsNullable()` compiles, and keeps the domain's size where the general `.As` hop lost it |
 | Complementary bounds compose | §5.3 | `.GreaterThanOrEqualTo(0).LessThanOrEqualTo(100)` and `.NonEmpty().WithMaxLength(10)` both draw |
-| Contradictory bounds are rejected twice over | §5.3 | `ConflictingAnyConstraintException` at run time, and `JD023` at **compile** time |
-| A pattern generator admits no other string constraint | §5.3 | `Any.StringMatching(...).NonEmpty()` fails to compile — `CS1061`, `AnyPattern` has only `DifferentFrom`/`Except` |
+| Contradictory bounds are rejected twice over | §5.3 | `ConflictingDummyConstraintException` at run time, and `JD023` at **compile** time |
+| A pattern generator admits no other string constraint | §5.3 | `Dummy.StringMatching(...).NonEmpty()` fails to compile — `CS1061`, `DummyPattern` has only `DifferentFrom`/`Except` |
 | Realistic validation regexes fall outside the supported subset | §5.3 | 4 of 5 rejected: lookahead, word boundary, backreference, Unicode category |
 | An unsupported pattern throws at **construction**, not at `Generate()` | §5.3 | so the emitted parameterless constructor would throw before any `With…` could override it |
-| Collection generators carry no length constraint | §5.3 | `AnyList<T>` exposes `WithCount`, `WithCountBetween`, `WithMinCount`, `WithMaxCount` — no `WithLength` |
-| **Every row of §5.2 compiles** | §5.2 | 40 declarations, each assigning the emitted expression to the parameter's own `IAny<T>` — 0 errors, 0 warnings, nullable on, warnings-as-errors |
+| Collection generators carry no length constraint | §5.3 | `DummyList<T>` exposes `WithCount`, `WithCountBetween`, `WithMinCount`, `WithMaxCount` — no `WithLength` |
+| **Every row of §5.2 compiles** | §5.2 | 40 declarations, each assigning the emitted expression to the parameter's own `IDummy<T>` — 0 errors, 0 warnings, nullable on, warnings-as-errors |
 | **Every row of §5.2 keeps its promise** | §5.2 | 3 000 draws per scalar row: `NonEmpty` never empty, `Guid` never `Empty`, `Enum` only declared members, `Uri().Web()` absolute http(s) |
 | **Every guard mapping of §5.3 is sound** | §5.3 | 17 mappings × 4 000 draws: every value drawn is one the original guard would accept |
 | **Every §14 fact re-derived against a later library** | §14 | 29 upstream commits later — reworked exceptions, refactored regex parser — the counts, the analyzer inventory and the regex subset all still hold |
 | The record, static-factory and odd-name shapes work | §4.2, §5.1 | positional record, a type with only a private constructor plus `Create`, and `_id` / `@class` parameters all compile and generate |
 | A zero-parameter constructor breaks the standard shape | §4.2 | emitting both constructors gives them one signature — `CS0111` |
-| A generic library name cannot be shadowed | §7 | a scaffolded `AnySet` and `JustDummies.AnySet<T>` coexist; arity is part of the identity |
-| A non-generic one is | §7 | `AnyPattern` in the target's namespace resolves to the scaffolded type, not the library's |
+| A generic library name cannot be shadowed | §7 | a scaffolded `DummySet` and `JustDummies.DummySet<T>` coexist; arity is part of the identity |
+| A non-generic one is | §7 | `DummyPattern` in the target's namespace resolves to the scaffolded type, not the library's |
 | `ref` / `out` constructor parameters break the call site | §5.1 | `CS1620`; `in` binds a value argument without complaint |
-| `FixedValue` accepts what `Any.OneOf` refuses | §4.2 | `FixedValue<string?>(null)` yields null; `Any.OneOf<string>(null)` throws `ArgumentException` |
+| `FixedValue` accepts what `Dummy.OneOf` refuses | §4.2 | `FixedValue<string?>(null)` yields null; `Dummy.OneOf<string>(null)` throws `ArgumentException` |
 | `.Positive()` is unsound for a `p < 1` guard on a decimal | §5.3 | 1 draw in 5 000 fell below 1 unconstrained; ~1 in 5 once another bound narrows the range |
 | The scaffolded output raises no JD warning | D3, §12 | 0 warning-or-above diagnostics on the emitted files |
 | The analyzers were genuinely loaded | D3 | a control file raised `JD006` and `JD005` in the same build |
@@ -2018,17 +2018,17 @@ version changes.
    `<HintPath>`, and the built analyzer with
    `<Analyzer Include="…/JustDummies.Analyzers.dll" />`.
 3. Add the domain of §4.1 (`Order`, `OrderReference` with its guarding `Create`, `Customer`,
-   `OrderStatus`) and the scaffolded `AnyOrder.cs` / `AnyCustomer.cs` exactly as §4.1 specifies.
+   `OrderStatus`) and the scaffolded `DummyOrder.cs` / `AnyCustomer.cs` exactly as §4.1 specifies.
 4. Add a **control file** with two known violations — a discarded constraint
-   (`Any.String().NonEmpty();` as a statement, `JD006`) and a generator in an interpolated string
-   (`$"{Any.Int32()}"`, `JD005`). Build, and confirm **both fire**. Without this step, "no
+   (`Dummy.String().NonEmpty();` as a statement, `JD006`) and a generator in an interpolated string
+   (`$"{Dummy.Int32()}"`, `JD005`). Build, and confirm **both fire**. Without this step, "no
    diagnostics on the scaffolded file" is indistinguishable from "the analyzer never loaded" — a
    trap this verification fell into on the first attempt.
 5. Prepend `// <auto-generated/>` to that same control file and rebuild: both diagnostics vanish
    and the build succeeds. That is D3's evidence.
 6. Run the assertions of §17.1. For the measurement, loop
-   `Any.String().As(OrderReference.Create).Generate()` 10 000 times, counting
-   `AnyGenerationException` — that being the chain `AnyOrderReference` would draw if §5.3 read
+   `Dummy.String().As(OrderReference.Create).Generate()` 10 000 times, counting
+   `DummyGenerationException` — that being the chain `AnyOrderReference` would draw if §5.3 read
    nothing from `OrderReference.Create`.
 
 A note on running: if only a newer .NET runtime is installed, the `net8.0` output still runs under

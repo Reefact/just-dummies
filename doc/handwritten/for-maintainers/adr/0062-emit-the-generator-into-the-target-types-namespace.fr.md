@@ -19,7 +19,7 @@ Un test qui utilise `Order` importe déjà le namespace d'`Order`.
 C# résout un nom de type simple dans le **namespace englobant avant toute directive `using`**, donc
 un type déclaré dans un namespace l'emporte sur un type importé de même nom et de même arité.
 
-La bibliothèque déclare 32 noms de types publics `Any*` non génériques (§14.2) ; un generator
+La bibliothèque déclare 32 noms de types publics `Dummy*` non génériques (§14.2) ; un generator
 scaffoldé dont le nom correspond à l'un d'eux, dans un namespace où la bibliothèque est importée, le
 masque.
 
@@ -37,7 +37,7 @@ Le generator émis est déclaré dans le namespace du type qu'il génère, sauf 
 ## Justification
 
 C'est le seul choix qui ne coûte rien au site d'appel. Un test important déjà le namespace métier
-écrit `new AnyOrder()` et s'arrête là ; tout autre namespace ajoute un import à chaque fichier de
+écrit `new DummyOrder()` et s'arrête là ; tout autre namespace ajoute un import à chaque fichier de
 test qui touche au generator. C'est une friction payée à chaque usage, et la règle de conception 2 la
 tarife cher — un outil trop pénible à chaque appel ne vaut pas d'être adopté.
 

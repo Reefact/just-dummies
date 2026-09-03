@@ -14,7 +14,7 @@ contenu. Le scaffolder lit cette garde, et émettait jusqu'ici `.NonEmpty()` pou
 caractère. Les deux ne sont pas la même chose : une valeur d'un seul espace satisfait le plancher et la garde
 la rejette.
 
-Le repli reposait sur une prémisse inscrite dans la spécification : qu'un `Any.String()` non contraint ne tire
+Le repli reposait sur une prémisse inscrite dans la spécification : qu'un `Dummy.String()` non contraint ne tire
 que des lettres et des chiffres ASCII, ce qui rend un tirage tout-blanc impossible.
 [ADR-0075](0075-draw-characters-from-the-whole-of-ascii.fr.md) l'a falsifiée — le remplissage est tout l'ASCII,
 blancs compris — et [ADR-0076](0076-let-a-declared-maximum-steer-the-size-draw.fr.md) a fait qu'un maximum
@@ -52,7 +52,7 @@ un commentaire nommant le membre manquant.
 
 ## Décision
 
-`Any.String()` gagne `NotBlank()`, une contrainte constructive exigeant au moins un caractère que le
+`Dummy.String()` gagne `NotBlank()`, une contrainte constructive exigeant au moins un caractère que le
 `char.IsWhiteSpace` de la BCL rejette, et le scaffolder lit chaque orthographe de la garde de blancheur comme ce
 membre plutôt que comme `NonEmpty()`.
 
@@ -178,7 +178,7 @@ réelle mais elle sépare un alphabet d'un test, deux choses différentes qui pa
   lui — la baseline d'API publique, les analyzers qui lisent une chaîne, et la documentation. Un coût récurrent
   par membre, pas un coût ponctuel.
 * La bibliothèque porte deux notions du blanc, et la documentation est la seule chose qui les tient distinctes.
-* `NotBlank()` n'a pas de contrepartie sur `Any.Char()`, donc les deux surfaces ne sont plus symétriques —
+* `NotBlank()` n'a pas de contrepartie sur `Dummy.Char()`, donc les deux surfaces ne sont plus symétriques —
   délibérément, puisqu'un caractère unique est blanc ou ne l'est pas, ce que les familles existantes disent déjà.
 
 ### Risques

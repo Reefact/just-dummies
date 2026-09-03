@@ -24,18 +24,18 @@ Ces règles empêchent un corps de test asynchrone d'avaler silencieusement ses 
 
 | Règle | Sévérité | Défaut | Description |
 |-------|----------|--------|-------------|
-| [JD001 AsyncBodyPassedToReproducibly](JD001.fr.md) | 🔴 Erreur | on | Une lambda async est passée à `Any.Reproducibly(Action)` synchrone ; liée à une Action elle devient async void et ses échecs ne font jamais échouer le test. Utilisez `Any.ReproduciblyAsync` et faites `await`. |
-| [JD002 DiscardedReproduciblyAsyncResult](JD002.fr.md) | 🔴 Erreur | on | Le `Task` retourné par `Any.ReproduciblyAsync` est jeté (instruction isolée ou `_ =`) ; les échecs du corps sont perdus. Faites `await`. |
-| [JD003 AwaitableBodyPassedToReproducibly](JD003.fr.md) | 🔴 Erreur | on | Une lambda synchrone dont le corps abandonne une tâche, ou un groupe de méthodes `async void`, atteint `Any.Reproducibly` ; la portée retourne avant l'exécution des assertions, et `CS4014` ne se déclenche pas. |
-| [JD004 DiscardedSeedingResult](JD004.fr.md) | 🔴 Erreur | on | La poignée retournée par `Any.UseSeed` est jetée, laissant la graine épinglée pour la suite — ou `Any.WithSeed` est appelé pour son effet, alors qu'il n'épingle rien. |
+| [JD001 AsyncBodyPassedToReproducibly](JD001.fr.md) | 🔴 Erreur | on | Une lambda async est passée à `Dummy.Reproducibly(Action)` synchrone ; liée à une Action elle devient async void et ses échecs ne font jamais échouer le test. Utilisez `Dummy.ReproduciblyAsync` et faites `await`. |
+| [JD002 DiscardedReproduciblyAsyncResult](JD002.fr.md) | 🔴 Erreur | on | Le `Task` retourné par `Dummy.ReproduciblyAsync` est jeté (instruction isolée ou `_ =`) ; les échecs du corps sont perdus. Faites `await`. |
+| [JD003 AwaitableBodyPassedToReproducibly](JD003.fr.md) | 🔴 Erreur | on | Une lambda synchrone dont le corps abandonne une tâche, ou un groupe de méthodes `async void`, atteint `Dummy.Reproducibly` ; la portée retourne avant l'exécution des assertions, et `CS4014` ne se déclenche pas. |
+| [JD004 DiscardedSeedingResult](JD004.fr.md) | 🔴 Erreur | on | La poignée retournée par `Dummy.UseSeed` est jetée, laissant la graine épinglée pour la suite — ou `Dummy.WithSeed` est appelé pour son effet, alors qu'il n'épingle rien. |
 | [JD007 DrawOutsideThePinnedScope](JD007.fr.md) | 🟠 Avertissement | on | Une valeur est tirée pendant la construction d'une classe de test `[Reproducible]`, qu'xUnit exécute avant l'ouverture de la portée de graine ; la graine rapportée ne la rejoue pas. |
 | [JD008 ArbitraryValueInTheoryData](JD008.fr.md) | 🟠 Avertissement | on | Le fournisseur de données d'une théorie tire une valeur à la découverte, avant tout épinglage ; tous les cas partagent cette unique valeur. |
 | [JD009 DrawInStaticInitializer](JD009.fr.md) | 🟠 Avertissement | on | Un initialiseur statique tire une seule fois pour toute la suite, sous le premier test exécuté, rendant les tests dépendants de l'ordre et rejouables depuis aucune graine. |
 | [JD010 ReproducibleOnNonTestMethod](JD010.fr.md) | 🟠 Avertissement | on | `[Reproducible]` sur une méthode qu'xUnit ne traite jamais comme un test ; il n'épingle rien, et ressemble exactement à la forme active. |
 | [JD018 NestedReproducibilityScope](JD018.fr.md) | 🟠 Avertissement | on | Une portée de reproductibilité imbriquée dans une autre ; l'interne tire une graine neuve, donc la graine rapportée par l'externe ne rejoue rien. |
-| [JD021 BlankReplaySnippet](JD021.fr.md) | 🟠 Avertissement | on | `Any.UseSeed` reçoit un snippet de rejeu vide, que la garde rejette — depuis un hook d'adaptateur, faisant échouer toute la suite. |
+| [JD021 BlankReplaySnippet](JD021.fr.md) | 🟠 Avertissement | on | `Dummy.UseSeed` reçoit un snippet de rejeu vide, que la garde rejette — depuis un hook d'adaptateur, faisant échouer toute la suite. |
 | [JD019 CommittedReplaySeed](JD019.fr.md) | 🔵 Info | opt-in | Une graine de rejeu constante est épinglée dans du code committé : le test cesse de varier d'une exécution à l'autre. |
-| [JD020 SharedStaticAnyContext](JD020.fr.md) | 🔵 Info | on | Un `AnyContext` tenu dans un champ statique ; les tirages entrelacés ne rendent stables ni la séquence ni le multiensemble. |
+| [JD020 SharedStaticDummyContext](JD020.fr.md) | 🔵 Info | on | Un `DummyContext` tenu dans un champ statique ; les tirages entrelacés ne rendent stables ni la séquence ni le multiensemble. |
 | [JD022 ParallelDrawWithoutPerItemSeed](JD022.fr.md) | 🔵 Info | on | Une unité de travail parallèle tire sans sa propre portée de graine : les tirages s'entrelacent et l'exécution ne rejoue rien. |
 
 ## Usage
@@ -47,8 +47,8 @@ Un générateur est une *recette* immuable, et `Generate()` est la seule chose q
 | [JD005 GeneratorRenderedAsText](JD005.fr.md) | 🔴 Erreur | on | Un générateur est interpolé, concaténé ou passé à `ToString()` au lieu d'être généré ; aucun générateur ne surcharge `ToString()`, donc le texte obtenu est le nom de type du constructeur. |
 | [JD006 DiscardedGeneratorResult](JD006.fr.md) | 🟠 Avertissement | on | Le générateur retourné par une contrainte est jeté en instruction isolée ; les générateurs étant immuables, l'invariant déclaré est silencieusement perdu. |
 | [JD011 GeneratorWhereValueExpected](JD011.fr.md) | 🟠 Avertissement | opt-in | Un générateur atteint une position `object`, `dynamic` ou `params object[]` : c'est la recette qui est stockée, comparée ou assérée, pas la valeur. |
-| [JD012 GeneratorPooledAsValue](JD012.fr.md) | 🟠 Avertissement | on | `Any.OneOf` reçoit des générateurs et infère un ensemble de recettes ; y tirer produit une recette plutôt qu'une valeur. |
-| [JD013 HeldCollectionPassedToOneOf](JD013.fr.md) | 🟠 Avertissement | on | Une collection tenue passée à `Any.OneOf` lie `T` au type de la collection, formant un ensemble d'un seul élément ; `Any.ElementOf` tire parmi ses éléments. |
+| [JD012 GeneratorPooledAsValue](JD012.fr.md) | 🟠 Avertissement | on | `Dummy.OneOf` reçoit des générateurs et infère un ensemble de recettes ; y tirer produit une recette plutôt qu'une valeur. |
+| [JD013 HeldCollectionPassedToOneOf](JD013.fr.md) | 🟠 Avertissement | on | Une collection tenue passée à `Dummy.OneOf` lie `T` au type de la collection, formant un ensemble d'un seul élément ; `Dummy.ElementOf` tire parmi ses éléments. |
 
 ## Contraintes
 
@@ -57,7 +57,7 @@ Ces règles anticipent, à la compilation, le sous-ensemble des vérifications d
 | Règle | Sévérité | Défaut | Description |
 |-------|----------|--------|-------------|
 | [JD014 RejectedConstantArgument](JD014.fr.md) | 🟠 Avertissement | on | Un argument de contrainte est une constante que la garde du générateur refuse : l'appel lève à chaque exécution. |
-| [JD015 StringConstraintsAdmitNoValue](JD015.fr.md) | 🟠 Avertissement | on | Les contraintes constantes d'une chaîne `AnyString` n'admettent aucune valeur — une longueur déclarée dans laquelle la forme ne peut pas tenir, ou des contraintes de caractères qui, ensemble, n'admettent aucune valeur d'un value set. |
+| [JD015 StringConstraintsAdmitNoValue](JD015.fr.md) | 🟠 Avertissement | on | Les contraintes constantes d'une chaîne `DummyString` n'admettent aucune valeur — une longueur déclarée dans laquelle la forme ne peut pas tenir, ou des contraintes de caractères qui, ensemble, n'admettent aucune valeur d'un value set. |
 | [JD016 CollectionConstraintsAdmitNoValue](JD016.fr.md) | 🟠 Avertissement | on | Les contraintes de cardinal d'une chaîne de collection ne peuvent pas toutes tenir, ou elle réclame plus d'éléments distincts que son générateur d'éléments ne peut en produire. |
 | [JD017 EnumUniverseViolation](JD017.fr.md) | 🟠 Avertissement | on | Une contrainte d'enum nomme une valeur que le type ne définit pas — une valeur numérique non déclarée, ou une exclusion qui vide l'univers. |
 | [JD023 ScalarChainAdmitsNoValue](JD023.fr.md) | 🟠 Avertissement | on | Les contraintes constantes d'une chaîne entière réduisent le domaine à rien — bornes, treillis ou liste d'autorisation. |
@@ -65,7 +65,7 @@ Ces règles anticipent, à la compilation, le sous-ensemble des vérifications d
 | [JD025 DuplicatePoolValue](JD025.fr.md) | 🟠 Avertissement | on | La même constante figure deux fois dans un réservoir ; les doublons sont écrasés, donc le réservoir est plus petit d'une valeur qu'il n'y paraît et le doublon ne pondère rien. |
 | [JD026 EmptyRelativeUri](JD026.fr.md) | 🟠 Avertissement | on | Une URI relative à zéro segment, sans requête, fragment ni racine est la référence vide — la seule chaîne dont l'échec atterrit au moment de l'act plutôt que sur la ligne d'arrange. |
 | [JD029 PooledValueNeverDraws](JD029.fr.md) | 🔵 Info | on | Une valeur écrite dans un value set de chaîne ou numérique qu'une contrainte de la même chaîne refuse : aucun tirage ne peut la rendre. Le dual de JD024, et elle ne voit que ce qui est écrit à l'appel. |
-| [JD030 UndeclaredStringLength](JD030.fr.md) | 🔵 Info | on | Une chaîne `Any.String()` qui ne déclare aucune longueur : elle tire toute l'étendue par défaut — 0 à 1024 caractères. Nomme le remède là où vous pouvez agir. |
+| [JD030 UndeclaredStringLength](JD030.fr.md) | 🔵 Info | on | Une chaîne `Dummy.String()` qui ne déclare aucune longueur : elle tire toute l'étendue par défaut — 0 à 1024 caractères. Nomme le remède là où vous pouvez agir. |
 | [JD031 PairedBoundsHaveARangeForm](JD031.fr.md) | 🔵 Info | on | Une chaîne déclare séparément les deux bornes inclusives d'un intervalle, alors que le même générateur nomme cet intervalle en un seul appel. Rien n'est faux — elle comble un manque de découvrabilité. Paires inclusives uniquement : une paire stricte n'a pas de forme intervalle exacte. |
 | [JD032 BoundDeclaredTwice](JD032.fr.md) | 🟠 Warning | on | Une chaîne déclare deux fois la même borne ; les bornes se replient silencieusement, donc seule la plus serrée survit et l'appel le plus lâche est mort. Appariée sur le nom, donc les alias restent muets, et une borne détenue sous un nom n'est jamais suivie. |
 | [JD033 AnchoredLiteralOutsideCharacterFamily](JD033.fr.md) | 🔵 Info | on | Un littéral ancré porte un caractère que la famille, la soustraction ou la casse déclarée ne peut pas tirer. Légal et délibéré dans un format à préfixe fixe : la règle rapporte donc la conséquence — ce caractère n'apparaît que là où vous l'avez écrit. |

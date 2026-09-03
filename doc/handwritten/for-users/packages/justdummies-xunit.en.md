@@ -4,7 +4,7 @@
 🇬🇧 English (this file) | 🇫🇷 [Français](./justdummies-xunit.fr.md)
 
 The xUnit **v3** adapter. It contributes exactly one thing — a `[Reproducible]` attribute — and that
-one thing removes the need to wrap any test body in `Any.Reproducibly`.
+one thing removes the need to wrap any test body in `Dummy.Reproducibly`.
 
 ## Install
 
@@ -29,8 +29,8 @@ public sealed class OrderTests {
     [Fact, Reproducible]
     public void A_20_percent_discount_takes_a_fifth_off_the_order() {
         // Arrange
-        string anyReference = Any.String().StartingWith("ORD-").WithLength(12).Generate();
-        string anyCustomer  = Any.String().Alpha().WithLengthBetween(1, 50).Generate();
+        string anyReference = Dummy.String().StartingWith("ORD-").WithLength(12).Generate();
+        string anyCustomer  = Dummy.String().Alpha().WithLengthBetween(1, 50).Generate();
 
         Order order = new Order(anyReference, anyCustomer, amount: 100m);
 
@@ -55,8 +55,8 @@ public sealed class OrderTests {
     [Fact]
     public void A_20_percent_discount_takes_a_fifth_off_the_order() {
         // Arrange
-        string anyReference = Any.String().StartingWith("ORD-").WithLength(12).Generate();
-        string anyCustomer  = Any.String().Alpha().WithLengthBetween(1, 50).Generate();
+        string anyReference = Dummy.String().StartingWith("ORD-").WithLength(12).Generate();
+        string anyCustomer  = Dummy.String().Alpha().WithLengthBetween(1, 50).Generate();
 
         Order order = new Order(anyReference, anyCustomer, amount: 100m);
 
@@ -71,8 +71,8 @@ public sealed class OrderTests {
     [Fact, Reproducible(Seed = 1743029518)]
     public void A_100_percent_discount_clears_the_order() {
         // Arrange
-        string anyReference = Any.String().StartingWith("ORD-").WithLength(12).Generate();
-        string anyCustomer  = Any.String().Alpha().WithLengthBetween(1, 50).Generate();
+        string anyReference = Dummy.String().StartingWith("ORD-").WithLength(12).Generate();
+        string anyCustomer  = Dummy.String().Alpha().WithLengthBetween(1, 50).Generate();
 
         Order order = new Order(anyReference, anyCustomer, amount: 100m);
 
@@ -98,16 +98,16 @@ or type declaration:
 ## What it does, precisely
 
 Before each test **case**, the attribute opens the same ambient seed scope
-`Any.Reproducibly` uses, pinning a fresh seed — or the one you set on `Seed`. After the test, it
+`Dummy.Reproducibly` uses, pinning a fresh seed — or the one you set on `Seed`. After the test, it
 closes the scope and, **only if the test failed**, writes the seed to the test's output:
 
 ```text
 [JustDummies] These arbitrary values were seeded with 1743029518. Reproduce this run with [Reproducible(Seed = 1743029518)].
 ```
 
-Notice that the message names the **attribute**, not `Any.Reproducibly(seed, ...)`. A test pinned
+Notice that the message names the **attribute**, not `Dummy.Reproducibly(seed, ...)`. A test pinned
 from outside its own body contains no such call, so naming it would send the reader looking for code
-that is not there. The adapter supplies its own replay snippet through the second `Any.UseSeed`
+that is not there. The adapter supplies its own replay snippet through the second `Dummy.UseSeed`
 overload — the reason that overload exists
 ([ADR-0017](../../for-maintainers/adr/0017-open-the-ambient-seed-scope-to-adapters.md)).
 
@@ -115,7 +115,7 @@ Three consequences worth knowing:
 
 * **One seed per test case**, so each case of a `[Theory]` gets its own rather than sharing one.
 * **A green test stays silent.** The seed is a diagnostic aid, not output.
-* **`Any.WithSeed(...)` contexts are unaffected.** That context is isolated by design and does not
+* **`Dummy.WithSeed(...)` contexts are unaffected.** That context is isolated by design and does not
   draw from the ambient source this attribute pins.
 
 ## Replaying a failure
@@ -134,7 +134,7 @@ one-case test.
 
 ## If you use xUnit v2
 
-This adapter targets **v3** only. On v2, use `Any.Reproducibly(() => { ... })` inside the test body —
+This adapter targets **v3** only. On v2, use `Dummy.Reproducibly(() => { ... })` inside the test body —
 it gives you the same pinned scope and the same seed report, at the cost of one wrapping lambda. See
 [Reproducibility](../guides/reproducibility.en.md).
 

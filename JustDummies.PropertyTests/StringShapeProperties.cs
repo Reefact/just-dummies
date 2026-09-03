@@ -12,7 +12,7 @@ using JetBrains.Annotations;
 namespace JustDummies.PropertyTests;
 
 /// <summary>
-///     Property-based tests for <see cref="AnyString" />'s shape algebra — lengths, anchored affixes, character
+///     Property-based tests for <see cref="DummyString" />'s shape algebra — lengths, anchored affixes, character
 ///     families, casing and exclusions. The example-based suite pins one length and one affix per invariant
 ///     (<c>WithLength(10)</c>, <c>StartingWith("ORD-")</c>) and can only prove the layout right for those; these
 ///     quantify over the lengths <b>and</b> over the affix values themselves, so a filler budget that miscounts for
@@ -34,7 +34,7 @@ namespace JustDummies.PropertyTests;
 ///         would test the wording instead of the algebra.
 ///     </para>
 /// </remarks>
-[TestSubject(typeof(AnyString))]
+[TestSubject(typeof(DummyString))]
 public sealed class StringShapeProperties {
 
     /// <summary>
@@ -71,7 +71,7 @@ public sealed class StringShapeProperties {
                select new string(characters.Take(length).ToArray());
     }
 
-    /// <summary>A non-empty, duplicate-free character pool for <see cref="AnyString.WithChars" />.</summary>
+    /// <summary>A non-empty, duplicate-free character pool for <see cref="DummyString.WithChars" />.</summary>
     private static Gen<string> CharacterPool() {
         return Gen.NonEmptyListOf(Gen.Elements(PoolAlphabet.ToCharArray()))
                   .Select(characters => new string(characters.Distinct().Take(12).ToArray()));
@@ -83,7 +83,7 @@ public sealed class StringShapeProperties {
     ///     <c>Whitespaces</c>, 7 <c>Hexadecimal</c>, 8 <c>WithChars</c> — so a property can quantify over the family
     ///     itself instead of restating the same invariant nine times over.
     /// </summary>
-    private static AnyString ApplyCharacterFamily(AnyString generator, int family, string pool) {
+    private static DummyString ApplyCharacterFamily(DummyString generator, int family, string pool) {
         return family switch {
             0 => generator.Alpha(),
             1 => generator.Numeric(),
@@ -113,12 +113,12 @@ public sealed class StringShapeProperties {
     }
 
     /// <summary>Applies one of the two casings, so a property can quantify over the casing itself.</summary>
-    private static AnyString ApplyCasing(AnyString generator, bool upper) {
+    private static DummyString ApplyCasing(DummyString generator, bool upper) {
         return upper ? generator.InUpperCase() : generator.InLowerCase();
     }
 
     /// <summary>Anchors <paramref name="affix" /> at one end or the other, so a property can quantify over the end.</summary>
-    private static AnyString ApplyAffix(AnyString generator, bool asSuffix, string affix) {
+    private static DummyString ApplyAffix(DummyString generator, bool asSuffix, string affix) {
         return asSuffix ? generator.EndingWith(affix) : generator.StartingWith(affix);
     }
 
@@ -172,21 +172,21 @@ public sealed class StringShapeProperties {
     [Fact(DisplayName = "WithLength fixes the length exactly, for every length.")]
     public void WithLengthFixesTheLengthExactly() {
         Prop.ForAll(Generators.Count(40).ToArbitrary(),
-                    length => Expect.EveryDraw(Any.String().WithLength(length), value => value.Length == length))
+                    length => Expect.EveryDraw(Dummy.String().WithLength(length), value => value.Length == length))
             .QuickCheckThrowOnFailure();
     }
 
     [Fact(DisplayName = "WithMinLength is an inclusive floor: every draw is at least that long.")]
     public void WithMinLengthIsAnInclusiveFloor() {
         Prop.ForAll(Generators.Count(40).ToArbitrary(),
-                    minimum => Expect.EveryDraw(Any.String().WithMinLength(minimum), value => value.Length >= minimum))
+                    minimum => Expect.EveryDraw(Dummy.String().WithMinLength(minimum), value => value.Length >= minimum))
             .QuickCheckThrowOnFailure();
     }
 
     [Fact(DisplayName = "WithMaxLength is an inclusive ceiling: every draw is at most that long.")]
     public void WithMaxLengthIsAnInclusiveCeiling() {
         Prop.ForAll(Generators.Count(40).ToArbitrary(),
-                    maximum => Expect.EveryDraw(Any.String().WithMaxLength(maximum), value => value.Length <= maximum))
+                    maximum => Expect.EveryDraw(Dummy.String().WithMaxLength(maximum), value => value.Length <= maximum))
             .QuickCheckThrowOnFailure();
     }
 
@@ -196,7 +196,7 @@ public sealed class StringShapeProperties {
         // caller wrote governs the value they get. The maxima generated here straddle the spread on both sides —
         // that is where this behaviour and the superseded "a maximum only caps" one disagree.
         Prop.ForAll(Generators.WithEdges(Generators.Count(200), 0, 1, DefaultLengthSpread, DefaultLengthSpread + 1, 200).ToArbitrary(),
-                    maximum => Expect.EveryDraw(Any.String().WithMaxLength(maximum),
+                    maximum => Expect.EveryDraw(Dummy.String().WithMaxLength(maximum),
                                                 value => value.Length <= maximum))
             .QuickCheckThrowOnFailure();
     }
@@ -206,7 +206,7 @@ public sealed class StringShapeProperties {
         // The counterpart of the property above: with no maximum beside it, a minimum reaches the default spread
         // above itself and no further, so asking for large strings costs what was asked for and nothing more.
         Prop.ForAll(Generators.WithEdges(Generators.Count(200), 0, 1, 200).ToArbitrary(),
-                    minimum => Expect.EveryDraw(Any.String().WithMinLength(minimum),
+                    minimum => Expect.EveryDraw(Dummy.String().WithMinLength(minimum),
                                                 value => value.Length >= minimum && value.Length <= minimum + DefaultLengthSpread))
             .QuickCheckThrowOnFailure();
     }
@@ -214,7 +214,7 @@ public sealed class StringShapeProperties {
     [Fact(DisplayName = "WithLengthBetween bounds the length inclusively, for every bound pair.")]
     public void WithLengthBetweenIsAnInclusiveRange() {
         Prop.ForAll(Generators.OrderedPair(Generators.Count(40)).ToArbitrary(),
-                    bounds => Expect.EveryDraw(Any.String().WithLengthBetween(bounds.Min, bounds.Max),
+                    bounds => Expect.EveryDraw(Dummy.String().WithLengthBetween(bounds.Min, bounds.Max),
                                                value => value.Length >= bounds.Min && value.Length <= bounds.Max))
             .QuickCheckThrowOnFailure();
     }
@@ -223,7 +223,7 @@ public sealed class StringShapeProperties {
     public void CrossedLengthBoundsAreAnArgumentError() {
         Prop.ForAll(Generators.OrderedPair(Generators.Count(40)).ToArbitrary(),
                     bounds => bounds.Min == bounds.Max
-                              || Expect.Throws<ArgumentException>(() => Any.String().WithLengthBetween(bounds.Max, bounds.Min)))
+                              || Expect.Throws<ArgumentException>(() => Dummy.String().WithLengthBetween(bounds.Max, bounds.Min)))
             .QuickCheckThrowOnFailure();
     }
 
@@ -234,10 +234,10 @@ public sealed class StringShapeProperties {
                         // NonEmpty is a minimum of one character, so capping the length at zero leaves nothing to
                         // draw: the pair is rejected at declaration, not at generation.
                         if (maximum == 0) {
-                            return Expect.Throws<ConflictingAnyConstraintException>(() => Any.String().NonEmpty().WithMaxLength(0));
+                            return Expect.Throws<ConflictingDummyConstraintException>(() => Dummy.String().NonEmpty().WithMaxLength(0));
                         }
 
-                        return Expect.EveryDraw(Any.String().NonEmpty().WithMaxLength(maximum),
+                        return Expect.EveryDraw(Dummy.String().NonEmpty().WithMaxLength(maximum),
                                                 value => value.Length >= 1 && value.Length <= maximum);
                     })
             .QuickCheckThrowOnFailure();
@@ -250,10 +250,10 @@ public sealed class StringShapeProperties {
                         // NotBlank carries a floor of one character with it, so a ceiling of zero contradicts it at
                         // declaration through the same bound NonEmpty sets — not at generation.
                         if (maximum == 0) {
-                            return Expect.Throws<ConflictingAnyConstraintException>(() => Any.String().NotBlank().WithMaxLength(0));
+                            return Expect.Throws<ConflictingDummyConstraintException>(() => Dummy.String().NotBlank().WithMaxLength(0));
                         }
 
-                        return Expect.EveryDraw(Any.String().NotBlank().WithMaxLength(maximum),
+                        return Expect.EveryDraw(Dummy.String().NotBlank().WithMaxLength(maximum),
                                                 value => !string.IsNullOrWhiteSpace(value) && value.Length <= maximum);
                     })
             .QuickCheckThrowOnFailure();
@@ -262,7 +262,7 @@ public sealed class StringShapeProperties {
     [Fact(DisplayName = "NotBlank holds behind any anchored prefix, blank or not.")]
     public void NotBlankHoldsBehindAnyPrefix() {
         Prop.ForAll(Affix(DefaultAlphabet, 8).ToArbitrary(),
-                    prefix => Expect.EveryDraw(Any.String().StartingWith(prefix).NotBlank(),
+                    prefix => Expect.EveryDraw(Dummy.String().StartingWith(prefix).NotBlank(),
                                                value => !string.IsNullOrWhiteSpace(value)
                                                      && value.StartsWith(prefix, StringComparison.Ordinal)))
             .QuickCheckThrowOnFailure();
@@ -271,7 +271,7 @@ public sealed class StringShapeProperties {
     [Fact(DisplayName = "StartingWith anchors the prefix, whatever the prefix.")]
     public void StartingWithAnchorsThePrefix() {
         Prop.ForAll(Affix(DefaultAlphabet, 8).ToArbitrary(),
-                    prefix => Expect.EveryDraw(Any.String().StartingWith(prefix),
+                    prefix => Expect.EveryDraw(Dummy.String().StartingWith(prefix),
                                                value => value.StartsWith(prefix, StringComparison.Ordinal)))
             .QuickCheckThrowOnFailure();
     }
@@ -279,7 +279,7 @@ public sealed class StringShapeProperties {
     [Fact(DisplayName = "EndingWith anchors the suffix, whatever the suffix.")]
     public void EndingWithAnchorsTheSuffix() {
         Prop.ForAll(Affix(DefaultAlphabet, 8).ToArbitrary(),
-                    suffix => Expect.EveryDraw(Any.String().EndingWith(suffix),
+                    suffix => Expect.EveryDraw(Dummy.String().EndingWith(suffix),
                                                value => value.EndsWith(suffix, StringComparison.Ordinal)))
             .QuickCheckThrowOnFailure();
     }
@@ -288,7 +288,7 @@ public sealed class StringShapeProperties {
     [SuppressMessage(NetAnalyzersRule.CA2249.Category, NetAnalyzersRule.CA2249.Id, Justification = SuppressionJustification.CA2249.NoContainsWithComparisonDownlevel)]
     public void ContainingEmbedsTheValue() {
         Prop.ForAll(Affix(DefaultAlphabet, 8).ToArbitrary(),
-                    fragment => Expect.EveryDraw(Any.String().Containing(fragment),
+                    fragment => Expect.EveryDraw(Dummy.String().Containing(fragment),
                                                  // string.Contains(string, StringComparison) is not on the netstandard2.0
                                                  // floor; IndexOf carries the same ordinal comparison.
                                                  value => value.IndexOf(fragment, StringComparison.Ordinal) >= 0))
@@ -304,7 +304,7 @@ public sealed class StringShapeProperties {
             select (Family: family, Pool: pool, Length: length);
 
         Prop.ForAll(cases.ToArbitrary(),
-                    testCase => Expect.EveryDraw(ApplyCharacterFamily(Any.String(), testCase.Family, testCase.Pool).WithLength(testCase.Length),
+                    testCase => Expect.EveryDraw(ApplyCharacterFamily(Dummy.String(), testCase.Family, testCase.Pool).WithLength(testCase.Length),
                                                  value => value.All(character => AllowedByFamily(character, testCase.Family, testCase.Pool))))
             .QuickCheckThrowOnFailure();
     }
@@ -318,7 +318,7 @@ public sealed class StringShapeProperties {
 
         Prop.ForAll(cases.ToArbitrary(),
                     // A casing constrains the letters only: digits stay drawable under either of them.
-                    testCase => Expect.EveryDraw(ApplyCasing(Any.String(), testCase.Upper).WithLength(testCase.Length),
+                    testCase => Expect.EveryDraw(ApplyCasing(Dummy.String(), testCase.Upper).WithLength(testCase.Length),
                                                  value => value.All(character => testCase.Upper
                                                                                      ? !(character is >= 'a' and <= 'z')
                                                                                      : !(character is >= 'A' and <= 'Z'))))
@@ -338,11 +338,11 @@ public sealed class StringShapeProperties {
                         // declaration-time conflict, at it and above it the pair is generable — same call shape,
                         // legality decided by the argument values.
                         if (testCase.Length < testCase.Prefix.Length) {
-                            return Expect.Throws<ConflictingAnyConstraintException>(
-                                () => Any.String().WithLength(testCase.Length).StartingWith(testCase.Prefix));
+                            return Expect.Throws<ConflictingDummyConstraintException>(
+                                () => Dummy.String().WithLength(testCase.Length).StartingWith(testCase.Prefix));
                         }
 
-                        return Expect.EveryDraw(Any.String().WithLength(testCase.Length).StartingWith(testCase.Prefix),
+                        return Expect.EveryDraw(Dummy.String().WithLength(testCase.Length).StartingWith(testCase.Prefix),
                                                 value => value.Length == testCase.Length
                                                          && value.StartsWith(testCase.Prefix, StringComparison.Ordinal));
                     })
@@ -365,7 +365,7 @@ public sealed class StringShapeProperties {
             select (Family: family, Pool: pool, Affix: affix, AsSuffix: asSuffix, Drawn: drawn);
 
         Prop.ForAll(cases.ToArbitrary(),
-                    testCase => Expect.EveryDraw(ApplyAffix(ApplyCharacterFamily(Any.String(), testCase.Family, testCase.Pool), testCase.AsSuffix, testCase.Affix)
+                    testCase => Expect.EveryDraw(ApplyAffix(ApplyCharacterFamily(Dummy.String(), testCase.Family, testCase.Pool), testCase.AsSuffix, testCase.Affix)
                                                      .WithLength(testCase.Affix.Length + testCase.Drawn),
                                                  value => Anchors(value, testCase.Affix, testCase.AsSuffix)
                                                        && Drawn(value, testCase.Affix, testCase.AsSuffix)
@@ -385,7 +385,7 @@ public sealed class StringShapeProperties {
             select (Upper: upper, Affix: affix, AsSuffix: asSuffix, Drawn: drawn);
 
         Prop.ForAll(cases.ToArbitrary(),
-                    testCase => Expect.EveryDraw(ApplyAffix(ApplyCasing(Any.String(), testCase.Upper), testCase.AsSuffix, testCase.Affix)
+                    testCase => Expect.EveryDraw(ApplyAffix(ApplyCasing(Dummy.String(), testCase.Upper), testCase.AsSuffix, testCase.Affix)
                                                      .WithLength(testCase.Affix.Length + testCase.Drawn),
                                                  value => Anchors(value, testCase.Affix, testCase.AsSuffix)
                                                        && Drawn(value, testCase.Affix, testCase.AsSuffix)
@@ -402,10 +402,10 @@ public sealed class StringShapeProperties {
                         // The excluded values are drawn from the very generator they are then excluded from, so the
                         // exclusion is never vacuous. Three letters already allow 52^3 candidates, so removing a
                         // handful leaves the shape amply satisfiable: the redraw budget is not what is under test.
-                        AnyString shaped   = Any.String().Alpha().WithLength(length);
+                        DummyString shaped   = Dummy.String().Alpha().WithLength(length);
                         string[]  excluded = Expect.Draws(shaped, 3).Distinct().ToArray();
                         string    banned   = shaped.Generate();
-                        AnyString narrowed = shaped.Except(excluded).DifferentFrom(banned);
+                        DummyString narrowed = shaped.Except(excluded).DifferentFrom(banned);
 
                         return Expect.EveryDraw(narrowed,
                                                 value => value.Length == length
@@ -429,11 +429,11 @@ public sealed class StringShapeProperties {
                     // it is a no-op and the alphabet still holds; naming a different family contradicts it. Both halves
                     // in one property, because the verdict follows the argument and not the call shape.
                     testCase => testCase.First == testCase.Second
-                                    ? Expect.EveryDraw(ApplyCharacterFamily(ApplyCharacterFamily(Any.String(), testCase.First, testCase.Pool),
+                                    ? Expect.EveryDraw(ApplyCharacterFamily(ApplyCharacterFamily(Dummy.String(), testCase.First, testCase.Pool),
                                                                             testCase.Second, testCase.Pool).NonEmpty(),
                                                        value => value.All(character => AllowedByFamily(character, testCase.First, testCase.Pool)))
-                                    : Expect.Throws<ConflictingAnyConstraintException>(
-                                        () => ApplyCharacterFamily(ApplyCharacterFamily(Any.String(), testCase.First, testCase.Pool),
+                                    : Expect.Throws<ConflictingDummyConstraintException>(
+                                        () => ApplyCharacterFamily(ApplyCharacterFamily(Dummy.String(), testCase.First, testCase.Pool),
                                                                    testCase.Second, testCase.Pool)))
             .QuickCheckThrowOnFailure();
     }
@@ -450,10 +450,10 @@ public sealed class StringShapeProperties {
                     // the property branches on the value rather than on the call shape. Re-declaring the same casing
                     // asks for exactly the domain already in force; asking for the other one contradicts it.
                     testCase => testCase.First == testCase.Second
-                                    ? Expect.EveryDraw(ApplyCasing(ApplyCasing(Any.String(), testCase.First), testCase.Second).NonEmpty(),
+                                    ? Expect.EveryDraw(ApplyCasing(ApplyCasing(Dummy.String(), testCase.First), testCase.Second).NonEmpty(),
                                                        value => value.All(character => testCase.First ? !char.IsLower(character) : !char.IsUpper(character)))
-                                    : Expect.Throws<ConflictingAnyConstraintException>(
-                                        () => ApplyCasing(ApplyCasing(Any.String(), testCase.First), testCase.Second)))
+                                    : Expect.Throws<ConflictingDummyConstraintException>(
+                                        () => ApplyCasing(ApplyCasing(Dummy.String(), testCase.First), testCase.Second)))
             .QuickCheckThrowOnFailure();
     }
 
@@ -468,10 +468,10 @@ public sealed class StringShapeProperties {
                     // Repeating the same length is not a contradiction — the domain asked for is the one already in
                     // force — so it is a no-op, and the generator still produces exactly that length.
                     testCase => testCase.First == testCase.Second
-                                    ? Expect.EveryDraw(Any.String().WithLength(testCase.First).WithLength(testCase.Second),
+                                    ? Expect.EveryDraw(Dummy.String().WithLength(testCase.First).WithLength(testCase.Second),
                                                        value => value.Length == testCase.First)
-                                    : Expect.Throws<ConflictingAnyConstraintException>(
-                                        () => Any.String().WithLength(testCase.First).WithLength(testCase.Second)))
+                                    : Expect.Throws<ConflictingDummyConstraintException>(
+                                        () => Dummy.String().WithLength(testCase.First).WithLength(testCase.Second)))
             .QuickCheckThrowOnFailure();
     }
 
@@ -487,12 +487,12 @@ public sealed class StringShapeProperties {
                     // Same rule, on the two affix slots: an identical re-declaration is a no-op and the affix still
                     // holds; a different value for the same slot is the contradiction.
                     testCase => testCase.First == testCase.Second
-                                    ? Expect.EveryDraw(ApplyAffix(ApplyAffix(Any.String(), testCase.AsSuffix, testCase.First),
+                                    ? Expect.EveryDraw(ApplyAffix(ApplyAffix(Dummy.String(), testCase.AsSuffix, testCase.First),
                                                                   testCase.AsSuffix, testCase.Second),
                                                        value => testCase.AsSuffix ? value.EndsWith(testCase.First, StringComparison.Ordinal)
                                                                                   : value.StartsWith(testCase.First, StringComparison.Ordinal))
-                                    : Expect.Throws<ConflictingAnyConstraintException>(
-                                        () => ApplyAffix(ApplyAffix(Any.String(), testCase.AsSuffix, testCase.First),
+                                    : Expect.Throws<ConflictingDummyConstraintException>(
+                                        () => ApplyAffix(ApplyAffix(Dummy.String(), testCase.AsSuffix, testCase.First),
                                                          testCase.AsSuffix, testCase.Second)))
             .QuickCheckThrowOnFailure();
     }
@@ -514,9 +514,9 @@ public sealed class StringShapeProperties {
                         string[] surviving = testCase.Pool.Where(value => value.Length == testCase.Length).ToArray();
 
                         return surviving.Length == 0
-                                   ? Expect.Throws<ConflictingAnyConstraintException>(
-                                       () => Any.String().WithLength(testCase.Length).OneOf(testCase.Pool))
-                                   : Expect.EveryDraw(Any.String().WithLength(testCase.Length).OneOf(testCase.Pool),
+                                   ? Expect.Throws<ConflictingDummyConstraintException>(
+                                       () => Dummy.String().WithLength(testCase.Length).OneOf(testCase.Pool))
+                                   : Expect.EveryDraw(Dummy.String().WithLength(testCase.Length).OneOf(testCase.Pool),
                                                       value => surviving.Contains(value));
                     })
             .QuickCheckThrowOnFailure();
@@ -545,10 +545,10 @@ public sealed class StringShapeProperties {
                         string[] surviving = testCase.Pool.Where(value => value.Length == testCase.Length).ToArray();
 
                         return surviving.Length == 0
-                                   ? Expect.Throws<ConflictingAnyConstraintException>(() => Any.String().OneOf(testCase.Pool).WithLength(testCase.Length))
-                                     && Expect.Throws<ConflictingAnyConstraintException>(() => Any.String().WithLength(testCase.Length).OneOf(testCase.Pool))
-                                   : Expect.EveryDraw(Any.String().OneOf(testCase.Pool).WithLength(testCase.Length), value => surviving.Contains(value))
-                                     && Expect.EveryDraw(Any.String().WithLength(testCase.Length).OneOf(testCase.Pool), value => surviving.Contains(value));
+                                   ? Expect.Throws<ConflictingDummyConstraintException>(() => Dummy.String().OneOf(testCase.Pool).WithLength(testCase.Length))
+                                     && Expect.Throws<ConflictingDummyConstraintException>(() => Dummy.String().WithLength(testCase.Length).OneOf(testCase.Pool))
+                                   : Expect.EveryDraw(Dummy.String().OneOf(testCase.Pool).WithLength(testCase.Length), value => surviving.Contains(value))
+                                     && Expect.EveryDraw(Dummy.String().WithLength(testCase.Length).OneOf(testCase.Pool), value => surviving.Contains(value));
                     })
             .QuickCheckThrowOnFailure();
     }

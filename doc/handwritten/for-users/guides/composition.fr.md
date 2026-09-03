@@ -17,7 +17,7 @@ primitif pour qu'il satisfasse la fabrique, puis passez la fabrique à `.As(...)
 // OrderReference.Create exige le préfixe « ORD- » et une longueur de 12. Les contraintes
 // sont choisies pour que toute chaîne tirée franchisse cette barre — jamais pour faire
 // passer une assertion.
-IAny<OrderReference> anyReference = Any.String()
+IDummy<OrderReference> anyReference = Dummy.String()
                                        .StartingWith("ORD-")
                                        .WithLength(12)
                                        .As(OrderReference.Create);
@@ -25,7 +25,7 @@ IAny<OrderReference> anyReference = Any.String()
 OrderReference reference = anyReference.Generate();
 ```
 
-`.As(...)` prend un `IAny<TSource>` et un `Func<TSource, TResult>` et renvoie un `IAny<TResult>` —
+`.As(...)` prend un `IDummy<TSource>` et un `Func<TSource, TResult>` et renvoie un `IDummy<TResult>` —
 un générateur comme un autre, que l'on peut stocker, faire circuler, placer dans une collection ou
 rendre nullable.
 
@@ -34,27 +34,27 @@ nommée : la fabrique est la vraie. Si les contraintes sont trop lâches, la fab
 exception, et vous l'apprenez immédiatement au lieu de livrer un dummy qui n'aurait jamais pu
 exister en production.
 
-## `Any.Combine` : plusieurs générateurs en un seul
+## `Dummy.Combine` : plusieurs générateurs en un seul
 
-Quand un type demande plus d'une entrée, `Any.Combine` tire de chaque générateur et alimente un
+Quand un type demande plus d'une entrée, `Dummy.Combine` tire de chaque générateur et alimente un
 composeur :
 
 ```mermaid
 flowchart LR
-    accTitle: Comment Any.Combine compose deux générateurs en un seul
-    accDescr: Un générateur de decimal borné entre 0 et 1000 et un choix parmi EUR, USD et GBP sont composés en un seul IAny de Money, qui tire un Money tel que 412,75 EUR.
-    A["Any.Decimal()<br/>Between(0, 1000)"] --> C{{"composer"}}
-    B["Any.OneOf<br/>(EUR, USD, GBP)"] --> C
-    C --> M["IAny&lt;Money&gt;"]
+    accTitle: Comment Dummy.Combine compose deux générateurs en un seul
+    accDescr: Un générateur de decimal borné entre 0 et 1000 et un choix parmi EUR, USD et GBP sont composés en un seul IDummy de Money, qui tire un Money tel que 412,75 EUR.
+    A["Dummy.Decimal()<br/>Between(0, 1000)"] --> C{{"composer"}}
+    B["Dummy.OneOf<br/>(EUR, USD, GBP)"] --> C
+    C --> M["IDummy&lt;Money&gt;"]
     M --> V["Money<br/><i>412,75 EUR</i>"]
     style M fill:#e8eaf6,stroke:#3f51b5,color:#1a237e
     style V fill:#e8f5e9,stroke:#43a047,color:#1b5e20
 ```
 
 ```csharp
-IAny<Money> anyMoney = Any.Combine(
-    Any.Decimal().Between(0m, 1_000m).WithScale(2),
-    Any.OneOf("EUR", "USD", "GBP"),
+IDummy<Money> anyMoney = Dummy.Combine(
+    Dummy.Decimal().Between(0m, 1_000m).WithScale(2),
+    Dummy.OneOf("EUR", "USD", "GBP"),
     Money.Create);
 
 Money price = anyMoney.Generate();
@@ -77,39 +77,39 @@ cette structure est à la fois le contournement et la meilleure conception :
 
 ```csharp
 // Composez d'abord les parties...
-IAny<Money>          anyPrice     = Any.Combine(Any.Decimal().Between(0m, 1_000m).WithScale(2),
-                                                Any.OneOf("EUR", "USD", "GBP"),
+IDummy<Money>          anyPrice     = Dummy.Combine(Dummy.Decimal().Between(0m, 1_000m).WithScale(2),
+                                                Dummy.OneOf("EUR", "USD", "GBP"),
                                                 Money.Create);
-IAny<OrderReference> anyReference = Any.String().StartingWith("ORD-").WithLength(12).As(OrderReference.Create);
+IDummy<OrderReference> anyReference = Dummy.String().StartingWith("ORD-").WithLength(12).As(OrderReference.Create);
 
 // ...puis combinez les parties, non les primitifs.
-IAny<string> anySummary = Any.Combine(
+IDummy<string> anySummary = Dummy.Combine(
     anyReference,
     anyPrice,
-    Any.Enum<OrderStatus>(),
+    Dummy.Enum<OrderStatus>(),
     (orderRef, price, status) => $"{orderRef} — {price} — {status}");
 ```
 
-Un générateur composé est un `IAny<T>` ordinaire : il alimente un autre `Combine`, une collection ou
+Un générateur composé est un `IDummy<T>` ordinaire : il alimente un autre `Combine`, une collection ou
 un `.As(...)` exactement comme un générateur primitif. C'est ce qui fait du plafond une contrainte
 de forme plutôt qu'une limite.
 
-## `Any.PairOf` et `Any.TripleOf`
+## `Dummy.PairOf` et `Dummy.TripleOf`
 
 Quand seul le tuple vous intéresse et qu'aucun composeur n'apporterait quoi que ce soit, deux
 raccourcis existent :
 
 ```csharp
-IAny<(int Quantity, decimal UnitPrice)> anyLine = Any.PairOf(
-    Any.Int32().Between(1, 100),
-    Any.Decimal().Between(0.01m, 500m).WithScale(2));
+IDummy<(int Quantity, decimal UnitPrice)> anyLine = Dummy.PairOf(
+    Dummy.Int32().Between(1, 100),
+    Dummy.Decimal().Between(0.01m, 500m).WithScale(2));
 
 (int quantity, decimal unitPrice) = anyLine.Generate();
 
-IAny<(Guid, string, OrderStatus)> anyRow = Any.TripleOf(
-    Any.Guid().NonEmpty(),
-    Any.String().Alpha().WithLengthBetween(3, 20),
-    Any.Enum<OrderStatus>());
+IDummy<(Guid, string, OrderStatus)> anyRow = Dummy.TripleOf(
+    Dummy.Guid().NonEmpty(),
+    Dummy.String().Alpha().WithLengthBetween(3, 20),
+    Dummy.Enum<OrderStatus>());
 ```
 
 ## `.OrNull()` : les valeurs optionnelles
@@ -120,12 +120,12 @@ a été déclaré en amont :
 
 ```csharp
 // Types valeur : int?, DateTime?, Guid?, une énumération...
-int?      discount  = Any.Int32().Between(0, 100).OrNull().Generate();
-DateTime? cancelled = Any.DateTime().Before(new DateTime(2030, 1, 1)).OrNull().Generate();
+int?      discount  = Dummy.Int32().Between(0, 100).OrNull().Generate();
+DateTime? cancelled = Dummy.DateTime().Before(new DateTime(2030, 1, 1)).OrNull().Generate();
 
 // Types référence : une chaîne nullable, ou un objet-valeur construit via .As(...)
-string?         note      = Any.String().Alpha().WithLengthBetween(1, 40).OrNull().Generate();
-OrderReference? reference = Any.String().StartingWith("ORD-").WithLength(12)
+string?         note      = Dummy.String().Alpha().WithLengthBetween(1, 40).OrNull().Generate();
+OrderReference? reference = Dummy.String().StartingWith("ORD-").WithLength(12)
                                .As(OrderReference.Create)
                                .OrNull()
                                .Generate();
@@ -149,8 +149,8 @@ branche que le test n'a jamais demandée. `.AsNullable()` élargit le type et la
 tranquilles :
 
 ```csharp
-OrderStatus? status = Any.Enum<OrderStatus>().AsNullable().Generate();   // jamais null
-int?         units  = Any.Int32().Between(1, 10).AsNullable().Generate();
+OrderStatus? status = Dummy.Enum<OrderStatus>().AsNullable().Generate();   // jamais null
+int?         units  = Dummy.Int32().Between(1, 10).AsNullable().Generate();
 ```
 
 Ça compte surtout à l'intérieur d'une collection **distincte**. `.As(value => (OrderStatus?)value)`
@@ -159,7 +159,7 @@ combien de valeurs distinctes il a le droit de puiser, et en demanderait plus qu
 
 ```csharp
 // L'énum a un nombre de membres fixe, donc un ensemble en contient au plus autant — et ceci le sait.
-ISet<OrderStatus?> statuses = Any.SetOf(Any.Enum<OrderStatus>().AsNullable()).NonEmpty().Generate();
+ISet<OrderStatus?> statuses = Dummy.SetOf(Dummy.Enum<OrderStatus>().AsNullable()).NonEmpty().Generate();
 ```
 
 Un générateur scaffoldé par `dum` écrit `.AsNullable()` pour chaque paramètre nullable de type
@@ -171,16 +171,16 @@ En rassemblant tout, voici un dummy pour un enregistrement à trois champs, dont
 primitif nu sur le site d'appel :
 
 ```csharp
-IAny<Customer> anyCustomer = Any.Combine(
-    Any.Guid().NonEmpty(),
-    Any.String().Alpha().WithLengthBetween(3, 20),
-    Any.String().Alpha().InLowerCase().WithLengthBetween(3, 12),
+IDummy<Customer> anyCustomer = Dummy.Combine(
+    Dummy.Guid().NonEmpty(),
+    Dummy.String().Alpha().WithLengthBetween(3, 20),
+    Dummy.String().Alpha().InLowerCase().WithLengthBetween(3, 12),
     (id, name, localPart) => new Customer(id, name, $"{localPart}@example.test"));
 
 Customer customer = anyCustomer.Generate();
 
 // Un générateur est une recette : le même produit donc toute une liste de clients distincts.
-List<Customer> customers = Any.ListOf(anyCustomer).WithCountBetween(2, 5).Generate();
+List<Customer> customers = Dummy.ListOf(anyCustomer).WithCountBetween(2, 5).Generate();
 ```
 
 Conservez un tel générateur dans un champ `static readonly` de votre classe de test et chaque test

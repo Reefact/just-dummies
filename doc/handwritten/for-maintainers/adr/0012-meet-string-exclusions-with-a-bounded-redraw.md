@@ -14,15 +14,15 @@ JustDummies builds a scalar directly to satisfy its constraints — never genera
 
 Every scalar builder but one exposes an exclusion trio (`OneOf`/`Except`/`DifferentFrom`). For the ordinal-mapped types (integers, temporal types, `char`, `Guid`) an exclusion is built into construction: the draw is mapped onto the k-th non-excluded value of the domain in one pass, and whether the exclusions leave the domain non-empty is counted cheaply at declaration.
 
-Strings have no ordinal mapping. An `AnyString` is assembled by layout — prefix, filler, contained values, suffix — over an effectively unbounded domain. An excluded value cannot be projected out of that domain by construction, and whether a set of exclusions leaves a shape satisfiable is not cheaply decidable in general: it is trivial for a fixed one-character length, but grows combinatorially with length and character set.
+Strings have no ordinal mapping. An `DummyString` is assembled by layout — prefix, filler, contained values, suffix — over an effectively unbounded domain. An excluded value cannot be projected out of that domain by construction, and whether a set of exclusions leaves a shape satisfiable is not cheaply decidable in general: it is trivial for a fixed one-character length, but grows combinatorially with length and character set.
 
-`AnyString` was the only scalar builder with no exclusion constraints, even though "a value different from the one I already hold" — testing an inequality path with a string identifier while keeping its format — is a common dummy-string need (issue #224). Hand-rolling it with a retry loop typically forgets the seeded source and breaks reproducibility, the exact trap the library exists to prevent.
+`DummyString` was the only scalar builder with no exclusion constraints, even though "a value different from the one I already hold" — testing an inequality path with a string identifier while keeping its format — is a common dummy-string need (issue #224). Hand-rolling it with a retry loop typically forgets the seeded source and breaks reproducibility, the exact trap the library exists to prevent.
 
-The library already accepts one place where a value that a caller declared may still fail to materialize: a distinct collection over an uncountable domain draws-and-deduplicates under a bounded budget and fails at generation, reproducibly, when it cannot (ADR-0004). `AnyString.OneOf` is a separate, terminal generator that does not combine with other constraints (ADR-0009).
+The library already accepts one place where a value that a caller declared may still fail to materialize: a distinct collection over an uncountable domain draws-and-deduplicates under a bounded budget and fails at generation, reproducibly, when it cannot (ADR-0004). `DummyString.OneOf` is a separate, terminal generator that does not combine with other constraints (ADR-0009).
 
 ## Decision
 
-`AnyString.DifferentFrom`/`Except` are satisfied by a bounded redraw of the constructive layout, and an exclusion that leaves the shape unsatisfiable fails at generation with a reproducible, seed-bearing error rather than eagerly at declaration.
+`DummyString.DifferentFrom`/`Except` are satisfied by a bounded redraw of the constructive layout, and an exclusion that leaves the shape unsatisfiable fails at generation with a reproducible, seed-bearing error rather than eagerly at declaration.
 
 ## Rationale
 
@@ -36,7 +36,7 @@ The redraw budget, the exception payload, and the seed propagation are implement
 
 ## Alternatives Considered
 
-### Leave `AnyString` without exclusion constraints
+### Leave `DummyString` without exclusion constraints
 
 Considered because it preserved the pure constructive rule for scalars and needed no new failure channel. Rejected because it left the most-used builder the only scalar that cannot express exclusion, forcing hand-rolled retry loops that silently break seeding.
 
@@ -62,7 +62,7 @@ Considered because constructing the string to dodge the excluded set would keep 
 
 ### Negative
 
-* "An `AnyString` that exists can always generate" no longer holds unconditionally: an over-tight exclusion is the one case deferred to generation.
+* "An `DummyString` that exists can always generate" no longer holds unconditionally: an over-tight exclusion is the one case deferred to generation.
 * Failure timing for an unsatisfiable string exclusion differs from the eager, declaration-time diagnosis the ordinal builders give.
 
 ### Risks
@@ -79,7 +79,7 @@ Considered because constructing the string to dodge the excluded set would keep 
 ## References
 
 * [ADR-0004](0004-gate-distinct-collections-by-cardinality-else-bounded-draw.md) — the sibling bounded-draw-with-deferred-failure channel.
-* [ADR-0009](0009-draw-arbitrary-strings-from-an-explicit-terminal-set.md) — `AnyString.OneOf` stays terminal and does not combine with exclusions.
+* [ADR-0009](0009-draw-arbitrary-strings-from-an-explicit-terminal-set.md) — `DummyString.OneOf` stays terminal and does not combine with exclusions.
 * [ADR-0006](0006-materialize-dummies-only-through-generate.md) — dummies materialize only through `Generate()`.
-* `StringSpec` and `AnyString` in the `JustDummies` project; the JustDummies NuGet readme.
+* `StringSpec` and `DummyString` in the `JustDummies` project; the JustDummies NuGet readme.
 * Issue [#224](https://github.com/Reefact/first-class-errors/issues/224).

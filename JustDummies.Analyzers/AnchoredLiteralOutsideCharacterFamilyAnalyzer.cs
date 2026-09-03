@@ -43,7 +43,7 @@ public sealed class AnchoredLiteralOutsideCharacterFamilyAnalyzer : DiagnosticAn
 
     private static void OnCompilationStart(CompilationStartAnalysisContext context) {
         KnownSymbols symbols = KnownSymbols.From(context.Compilation);
-        if (symbols.Any is null || symbols.IAny is null) { return; }
+        if (symbols.Dummy is null || symbols.IDummy is null) { return; }
 
         context.RegisterOperationAction(operationContext => Analyze(operationContext, symbols), OperationKind.Invocation);
     }
@@ -53,7 +53,7 @@ public sealed class AnchoredLiteralOutsideCharacterFamilyAnalyzer : DiagnosticAn
 
         // Analyse each chain once, from its outermost call.
         if (invocation.Parent is IInvocationOperation) { return; }
-        if (!AnyChainFacts.TryGetChain(invocation, symbols, out IReadOnlyList<IInvocationOperation> constraints, out IInvocationOperation? factory)) { return; }
+        if (!DummyChainFacts.TryGetChain(invocation, symbols, out IReadOnlyList<IInvocationOperation> constraints, out IInvocationOperation? factory)) { return; }
         if (factory is null || factory.TargetMethod.Name != "String") { return; }
         if (NegativeTestGuard.IsSoleBodyOfLambdaArgument(invocation.Syntax)) { return; }
 

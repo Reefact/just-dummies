@@ -47,8 +47,8 @@ La bibliothèque possède déjà une taxonomie d'exceptions. Une erreur d'appela
 remonte en exception d'argument du BCL — `UnsupportedRegexException` le documente pour un pattern mal
 formé, et l'ADR-0024 l'a fixé pour `null` sur toute la surface, avec un test de convention par réflexion
 pour l'appliquer. Une contradiction *entre* contraintes déclarées lève une
-`ConflictingAnyConstraintException` à la déclaration. Une génération qui échoue malgré des contraintes
-acceptées lève une `AnyGenerationException`.
+`ConflictingDummyConstraintException` à la déclaration. Une génération qui échoue malgré des contraintes
+acceptées lève une `DummyGenerationException`.
 
 Les grandes tailles ont des usages légitimes : les tests qui exercent une limite métier (« refuse un
 libellé de plus de 255 caractères », « le lot se découpe au-delà de 1 000 éléments »). Ces tailles sont
@@ -114,7 +114,7 @@ faux positifs.
 
 ### Lever le dépassement de plafond comme une exception de la bibliothèque
 
-Considérée : une `ConflictingAnyConstraintException`, ou un nouveau membre de la hiérarchie propre à la
+Considérée : une `ConflictingDummyConstraintException`, ou un nouveau membre de la hiérarchie propre à la
 bibliothèque, pour que toute la surface d'échec s'attrape en une clause. Rejetée parce qu'elle contredit
 la taxonomie consignée ailleurs dans la bibliothèque : un argument isolément inutilisable est une erreur
 d'appelant, pas une interaction de contraintes, et le faire correspondre à un conflit ferait dire deux

@@ -1,11 +1,11 @@
 namespace JustDummies;
 
 /// <summary>
-///     The default random context behind the static <see cref="Any" /> entry points. The state is stored in an
+///     The default random context behind the static <see cref="Dummy" /> entry points. The state is stored in an
 ///     <see cref="AsyncLocal{T}" />, so it flows with the current execution context and never leaks across tests
 ///     running in parallel. Outside an <see cref="UseSeed(int)" /> scope it lazily seeds itself with a fresh seed — every
 ///     run differs, which surfaces a test that secretly depends on a value — and that seed is remembered, so a
-///     generation failure can still report it. Inside a scope (how <c>Any.Reproducibly(...)</c> pins a run) it is
+///     generation failure can still report it. Inside a scope (how <c>Dummy.Reproducibly(...)</c> pins a run) it is
 ///     deterministic.
 /// </summary>
 internal sealed class AmbientRandomSource : RandomSource {
@@ -62,7 +62,7 @@ internal sealed class AmbientRandomSource : RandomSource {
     ///     and each is replayed differently.
     /// </summary>
     private static string ReplaySnippet(int seed) {
-        return State.Value?.Snippet ?? $"Any.Reproducibly({seed}, ...)";
+        return State.Value?.Snippet ?? $"Dummy.Reproducibly({seed}, ...)";
     }
 
     #region Nested types

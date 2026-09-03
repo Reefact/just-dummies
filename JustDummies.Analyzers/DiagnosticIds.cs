@@ -38,7 +38,7 @@ internal static class DiagnosticIds {
     // Category: Reproducibility — the seeding long tail
     public const string NestedReproducibilityScope = JustDummiesRule.JD018.Id;
     public const string CommittedReplaySeed = JustDummiesRule.JD019.Id;
-    public const string SharedStaticAnyContext = JustDummiesRule.JD020.Id;
+    public const string SharedStaticDummyContext = JustDummiesRule.JD020.Id;
     public const string BlankReplaySnippet = JustDummiesRule.JD021.Id;
     public const string ParallelDrawWithoutPerItemSeed = JustDummiesRule.JD022.Id;
 

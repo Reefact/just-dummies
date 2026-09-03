@@ -15,7 +15,7 @@ public class Jd008ArbitraryValueInTheoryDataTests {
             using Xunit;
 
             public class Sample {
-                public static TheoryData<string> Cases => new() { Any.String().NonEmpty().Generate() };
+                public static TheoryData<string> Cases => new() { Dummy.String().NonEmpty().Generate() };
 
                 [Theory]
                 [MemberData(nameof(Cases))]
@@ -39,7 +39,7 @@ public class Jd008ArbitraryValueInTheoryDataTests {
 
             public class Sample {
                 public static IEnumerable<object[]> Cases() {
-                    yield return new object[] { Any.Int32().Positive().Generate() };
+                    yield return new object[] { Dummy.Int32().Positive().Generate() };
                 }
 
                 [Theory]
@@ -64,7 +64,7 @@ public class Jd008ArbitraryValueInTheoryDataTests {
 
             public class Cases : IEnumerable<object[]> {
                 public IEnumerator<object[]> GetEnumerator() {
-                    yield return new object[] { Any.Int32().Positive().Generate() };
+                    yield return new object[] { Dummy.Int32().Positive().Generate() };
                 }
 
                 IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
@@ -91,11 +91,11 @@ public class Jd008ArbitraryValueInTheoryDataTests {
             using Xunit;
 
             public class Sample {
-                public static TheoryData<IAny<string>> Cases => new() { Any.String().NonEmpty() };
+                public static TheoryData<IDummy<string>> Cases => new() { Dummy.String().NonEmpty() };
 
                 [Theory]
                 [MemberData(nameof(Cases))]
-                public void T(IAny<string> reference) {
+                public void T(IDummy<string> reference) {
                     string value = reference.Generate();
                 }
             }
@@ -115,7 +115,7 @@ public class Jd008ArbitraryValueInTheoryDataTests {
             public class Sample {
                 [Fact]
                 public void T() {
-                    string reference = Any.String().NonEmpty().Generate();
+                    string reference = Dummy.String().NonEmpty().Generate();
                 }
             }
             """;
@@ -136,7 +136,7 @@ public class Jd008ArbitraryValueInTheoryDataTests {
 
             public class Sample {
                 public static List<string> Values() {
-                    return new List<string> { Any.String().NonEmpty().Generate() };
+                    return new List<string> { Dummy.String().NonEmpty().Generate() };
                 }
             }
             """;

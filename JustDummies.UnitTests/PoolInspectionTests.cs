@@ -24,7 +24,7 @@ public sealed class PoolInspectionTests {
 
     #region Statics members declarations
 
-    private static IPoolInspection<string> Inspect(AnyString generator) {
+    private static IPoolInspection<string> Inspect(DummyString generator) {
         return generator;
     }
 
@@ -39,9 +39,9 @@ public sealed class PoolInspectionTests {
     public void EveryPooledGeneratorCarriesTheInspection() {
         // Reflection rather than a hand-kept list: the drift this pins is a family that gains OneOf — or a whole new
         // family — without the inspection, which would leave the surface asymmetric for no stated reason.
-        List<string> missing = typeof(Any).Assembly
+        List<string> missing = typeof(Dummy).Assembly
                                           .GetTypes()
-                                          .Where(type => type.IsPublic && Implements(type, typeof(IAny<>)))
+                                          .Where(type => type.IsPublic && Implements(type, typeof(IDummy<>)))
                                           .Where(type => type.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
                                                              .Any(method => method.Name == "OneOf"))
                                           .Where(type => !Implements(type, typeof(IPoolInspection<>)))
@@ -59,8 +59,8 @@ public sealed class PoolInspectionTests {
         // The interface is optional by decision, so the cast is written as a test rather than assumed. A pattern
         // builds its value from a language, and a boolean has a two-value universe nobody supplied: neither has a
         // pool of the caller's to report on, so neither answers here — not even with an empty report.
-        Check.That(Implements(typeof(AnyPattern), typeof(IPoolInspection<>))).IsFalse();
-        Check.That(Implements(typeof(AnyBoolean), typeof(IPoolInspection<>))).IsFalse();
+        Check.That(Implements(typeof(DummyPattern), typeof(IPoolInspection<>))).IsFalse();
+        Check.That(Implements(typeof(DummyBoolean), typeof(IPoolInspection<>))).IsFalse();
     }
 
     [Fact(DisplayName = "A scalar interval is not a pool, however countable it is.")]
@@ -68,7 +68,7 @@ public sealed class PoolInspectionTests {
         // The trap this pins: a bounded integer range HAS a cardinality, so wiring IsPooled to "the domain is
         // countable" would compile and then try to enumerate a range nobody supplied. The inspection reports on a
         // pool the CALLER handed over, never on the generator's own domain.
-        IPoolInspection<int> inspection = Any.Int32().Between(1, 1_000_000);
+        IPoolInspection<int> inspection = Dummy.Int32().Between(1, 1_000_000);
 
         Check.That(inspection.IsPooled).IsFalse();
         Check.That(inspection.GetSurvivors()).IsEmpty();
@@ -77,7 +77,7 @@ public sealed class PoolInspectionTests {
 
     [Fact(DisplayName = "On an integer pool the bound that removed a value is the one the rejection names.")]
     public void AnIntegerPoolNamesTheBoundThatRefusedTheValue() {
-        IPoolInspection<int> inspection = Any.Int32().OneOf(1, 5, 42).Between(1, 10);
+        IPoolInspection<int> inspection = Dummy.Int32().OneOf(1, 5, 42).Between(1, 10);
 
         Check.That(inspection.GetSurvivors()).ContainsExactly(1, 5);
         Check.That(inspection.GetRejections().Single().Value).IsEqualTo(42);
@@ -88,7 +88,7 @@ public sealed class PoolInspectionTests {
     public void ATwoBoundCallIsNamedOnce() {
         // Between sets a minimum and a maximum under one name, and the caller can only loosen the call. Naming a
         // half would point at something they cannot edit on its own.
-        IPoolInspection<int> inspection = Any.Int32().OneOf(0, 15, 50).Between(10, 20);
+        IPoolInspection<int> inspection = Dummy.Int32().OneOf(0, 15, 50).Between(10, 20);
 
         Check.That(inspection.GetSurvivors()).ContainsExactly(15);
         Check.That(inspection.GetRejections().Select(rejection => rejection.Value)).ContainsExactly(0, 50);
@@ -101,7 +101,7 @@ public sealed class PoolInspectionTests {
         DateTime kept    = new(2026, 3, 1, 0, 0, 0, DateTimeKind.Unspecified);
         DateTime refused = new(2020, 3, 1, 0, 0, 0, DateTimeKind.Unspecified);
 
-        IPoolInspection<DateTime> inspection = Any.DateTime().OneOf(kept, refused).After(new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Unspecified));
+        IPoolInspection<DateTime> inspection = Dummy.DateTime().OneOf(kept, refused).After(new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Unspecified));
 
         Check.That(inspection.GetSurvivors()).ContainsExactly(kept);
         Check.That(inspection.GetRejections().Single().Value).IsEqualTo(refused);
@@ -109,7 +109,7 @@ public sealed class PoolInspectionTests {
 
     [Fact(DisplayName = "A decimal pool names the scale that refused a value.")]
     public void ADecimalPoolNamesTheScaleThatRefusedTheValue() {
-        IPoolInspection<decimal> inspection = Any.Decimal().OneOf(1.5m, 2.25m).WithScale(1);
+        IPoolInspection<decimal> inspection = Dummy.Decimal().OneOf(1.5m, 2.25m).WithScale(1);
 
         Check.That(inspection.GetSurvivors()).ContainsExactly(1.5m);
         Check.That(inspection.GetRejections().Single().Value).IsEqualTo(2.25m);
@@ -117,7 +117,7 @@ public sealed class PoolInspectionTests {
 
     [Fact(DisplayName = "A character pool names the character family that refused a value.")]
     public void ACharacterPoolNamesTheFamilyThatRefusedTheValue() {
-        IPoolInspection<char> inspection = Any.Char().OneOf('a', '3').Numeric();
+        IPoolInspection<char> inspection = Dummy.Char().OneOf('a', '3').Numeric();
 
         Check.That(inspection.GetSurvivors()).ContainsExactly('3');
         Check.That(inspection.GetRejections().Single().Value).IsEqualTo('a');
@@ -129,7 +129,7 @@ public sealed class PoolInspectionTests {
         Guid kept    = Guid.NewGuid();
         Guid removed = Guid.NewGuid();
 
-        IPoolInspection<Guid> inspection = Any.Guid().OneOf(kept, removed).Except(removed);
+        IPoolInspection<Guid> inspection = Dummy.Guid().OneOf(kept, removed).Except(removed);
 
         Check.That(inspection.GetSurvivors()).ContainsExactly(kept);
         Check.That(inspection.GetRejections().Single().Value).IsEqualTo(removed);
@@ -138,8 +138,8 @@ public sealed class PoolInspectionTests {
 
     [Fact(DisplayName = "An enum without OneOf is not pooled: its universe is the declaration's, not the caller's.")]
     public void AnEnumUniverseIsNotAPool() {
-        Check.That(((IPoolInspection<Priority>)Any.Enum<Priority>()).IsPooled).IsFalse();
-        Check.That(((IPoolInspection<Priority>)Any.Enum<Priority>().OneOf(Priority.Low, Priority.High)).IsPooled).IsTrue();
+        Check.That(((IPoolInspection<Priority>)Dummy.Enum<Priority>()).IsPooled).IsFalse();
+        Check.That(((IPoolInspection<Priority>)Dummy.Enum<Priority>().OneOf(Priority.Low, Priority.High)).IsPooled).IsTrue();
     }
 
     [Fact(DisplayName = "A pin dominates the report, because it dominates the draw.")]
@@ -148,7 +148,7 @@ public sealed class PoolInspectionTests {
         // undrawable. Reporting them as survivors would name values no draw can yield.
         Guid other = Guid.NewGuid();
 
-        IPoolInspection<Guid> inspection = Any.Guid().Empty().OneOf(Guid.Empty, other);
+        IPoolInspection<Guid> inspection = Dummy.Guid().Empty().OneOf(Guid.Empty, other);
 
         Check.That(inspection.GetSurvivors()).ContainsExactly(Guid.Empty);
         Check.That(inspection.GetRejections().Single().Value).IsEqualTo(other);
@@ -159,7 +159,7 @@ public sealed class PoolInspectionTests {
     public void ATopLevelPoolNamesEveryRefusingExclusion() {
         // The second exclusion finds the value already gone, but it refuses it just the same. A reader told to
         // loosen only the first would find the value still absent.
-        IPoolInspection<string> inspection = (IPoolInspection<string>)Any.OneOf("a", "b").Except("a").DifferentFrom("a");
+        IPoolInspection<string> inspection = (IPoolInspection<string>)Dummy.OneOf("a", "b").Except("a").DifferentFrom("a");
 
         Check.That(inspection.GetRejections().Single().Value).IsEqualTo("a");
         Check.That(inspection.GetRejections().Single().RejectedBy.Select(constraint => constraint.Name))
@@ -172,7 +172,7 @@ public sealed class PoolInspectionTests {
         // Local — a survivor that does not equal what comes out of Generate().
         DateTime local = new(2026, 3, 1, 0, 0, 0, DateTimeKind.Local);
 
-        IPoolInspection<DateTime> inspection = Any.DateTime().OneOf(local);
+        IPoolInspection<DateTime> inspection = Dummy.DateTime().OneOf(local);
 
         Check.That(inspection.GetSurvivors().Single().Kind).IsEqualTo(DateTimeKind.Local);
         Check.That(inspection.GetSurvivors().Single()).IsEqualTo(local);
@@ -185,7 +185,7 @@ public sealed class PoolInspectionTests {
         DateTimeOffset kept    = new(2026, 3, 1, 0, 0, 0, TimeSpan.Zero);
         DateTimeOffset refused = new(2026, 3, 1, 0, 0, 0, TimeSpan.FromHours(2));
 
-        IPoolInspection<DateTimeOffset> inspection = Any.DateTimeOffset().OneOf(kept, refused).WithOffset(TimeSpan.Zero);
+        IPoolInspection<DateTimeOffset> inspection = Dummy.DateTimeOffset().OneOf(kept, refused).WithOffset(TimeSpan.Zero);
 
         Check.That(inspection.GetSurvivors()).ContainsExactly(kept);
         Check.That(inspection.GetSurvivors().Single().Offset).IsEqualTo(TimeSpan.Zero);
@@ -200,7 +200,7 @@ public sealed class PoolInspectionTests {
         // found it still absent. The same rule the top-level pool obeys must hold with a pin in force.
         Guid excluded = Guid.NewGuid();
 
-        IPoolInspection<Guid> inspection = Any.Guid().OneOf(Guid.Empty, excluded).Except(excluded).Empty();
+        IPoolInspection<Guid> inspection = Dummy.Guid().OneOf(Guid.Empty, excluded).Except(excluded).Empty();
 
         Check.That(inspection.GetSurvivors()).ContainsExactly(Guid.Empty);
         Check.That(inspection.GetRejections().Single().Value).IsEqualTo(excluded);
@@ -216,7 +216,7 @@ public sealed class PoolInspectionTests {
         DateTimeOffset early = new(2019, 1, 1, 0, 0, 0, TimeSpan.FromHours(3));
         DateTimeOffset kept  = new(2022, 1, 1, 0, 0, 0, TimeSpan.Zero);
 
-        IPoolInspection<DateTimeOffset> inspection = Any.DateTimeOffset()
+        IPoolInspection<DateTimeOffset> inspection = Dummy.DateTimeOffset()
                                                        .OneOf(early, kept)
                                                        .After(new DateTimeOffset(2020, 1, 1, 0, 0, 0, TimeSpan.Zero))
                                                        .WithOffset(TimeSpan.Zero);
@@ -244,9 +244,9 @@ public sealed class PoolInspectionTests {
 
         DateTimeOffset[] venues = frankfurtFirst ? [frankfurt, london, newYork] : [london, frankfurt, newYork];
 
-        AnyDateTimeOffset generator = offsetFirst
-                                          ? Any.DateTimeOffset().WithOffset(TimeSpan.FromHours(1)).OneOf(venues)
-                                          : Any.DateTimeOffset().OneOf(venues).WithOffset(TimeSpan.FromHours(1));
+        DummyDateTimeOffset generator = offsetFirst
+                                          ? Dummy.DateTimeOffset().WithOffset(TimeSpan.FromHours(1)).OneOf(venues)
+                                          : Dummy.DateTimeOffset().OneOf(venues).WithOffset(TimeSpan.FromHours(1));
 
         IPoolInspection<DateTimeOffset> inspection = generator;
 
@@ -265,7 +265,7 @@ public sealed class PoolInspectionTests {
         DateTimeOffset kept    = new(2026, 3, 1, 0, 0, 0, TimeSpan.FromHours(2));
         DateTimeOffset refused = new(2026, 3, 2, 0, 0, 0, TimeSpan.Zero);
 
-        IPoolInspection<DateTimeOffset> inspection = Any.DateTimeOffset().WithOffset(TimeSpan.FromHours(2)).OneOf(kept, refused, refused);
+        IPoolInspection<DateTimeOffset> inspection = Dummy.DateTimeOffset().WithOffset(TimeSpan.FromHours(2)).OneOf(kept, refused, refused);
 
         Check.That(inspection.GetSurvivors()).ContainsExactly(kept);
         Check.That(inspection.GetRejections()).HasSize(1);
@@ -279,7 +279,7 @@ public sealed class PoolInspectionTests {
         DateTimeOffset kept    = new(2026, 3, 1, 0, 0, 0, TimeSpan.FromHours(2));
         DateTimeOffset refused = new(2026, 3, 2, 0, 0, 0, TimeSpan.Zero);
 
-        AnyDateTimeOffset generator = Any.DateTimeOffset().WithOffset(TimeSpan.FromHours(2)).OneOf(kept, refused);
+        DummyDateTimeOffset generator = Dummy.DateTimeOffset().WithOffset(TimeSpan.FromHours(2)).OneOf(kept, refused);
 
         Check.That(((IPoolInspection<DateTimeOffset>)generator.OneOf(kept, refused)).GetRejections()).HasSize(1);
         Check.That(((IPoolInspection<DateTimeOffset>)generator.OneOf(kept, refused).OneOf(kept, refused)).GetRejections()).HasSize(1);
@@ -291,7 +291,7 @@ public sealed class PoolInspectionTests {
         // make the report accuse a value the generator actually draws.
         char[] excluded = ['a'];
 
-        IPoolInspection<char> inspection = Any.Char().OneOf('a', 'b').Except(excluded);
+        IPoolInspection<char> inspection = Dummy.Char().OneOf('a', 'b').Except(excluded);
         excluded[0] = 'b';
 
         Check.That(inspection.GetSurvivors()).ContainsExactly('b');
@@ -303,7 +303,7 @@ public sealed class PoolInspectionTests {
     public void AShapedStringReportsNothing() {
         // Answering "no value set here" is the honest answer to the question, not a reason to refuse it: a caller
         // who inspects a generator built by shaping gets an empty report rather than an exception.
-        IPoolInspection<string> inspection = Inspect(Any.String().WithLengthBetween(1, 64).Alpha());
+        IPoolInspection<string> inspection = Inspect(Dummy.String().WithLengthBetween(1, 64).Alpha());
 
         Check.That(inspection.IsPooled).IsFalse();
         Check.That(inspection.GetSurvivors()).IsEmpty();
@@ -312,7 +312,7 @@ public sealed class PoolInspectionTests {
 
     [Fact(DisplayName = "The survivors are the exact domain the draw picks from, in the order they were supplied.")]
     public void SurvivorsAreTheDomainTheDrawPicksFrom() {
-        IPoolInspection<string> inspection = Inspect(Any.String().OneOf("Camille", "X", "Ada").WithMinLength(2));
+        IPoolInspection<string> inspection = Inspect(Dummy.String().OneOf("Camille", "X", "Ada").WithMinLength(2));
 
         Check.That(inspection.IsPooled).IsTrue();
         Check.That(inspection.GetSurvivors()).ContainsExactly("Camille", "Ada");
@@ -320,7 +320,7 @@ public sealed class PoolInspectionTests {
 
     [Fact(DisplayName = "A rejection names the constraint that refused the value.")]
     public void ARejectionNamesTheConstraintThatRefusedTheValue() {
-        IReadOnlyList<PoolRejection<string>> rejections = Inspect(Any.String().OneOf("abc", "de").WithLength(3)).GetRejections();
+        IReadOnlyList<PoolRejection<string>> rejections = Inspect(Dummy.String().OneOf("abc", "de").WithLength(3)).GetRejections();
 
         Check.That(rejections).HasSize(1);
         Check.That(rejections[0].Value).IsEqualTo("de");
@@ -331,7 +331,7 @@ public sealed class PoolInspectionTests {
     public void ARejectionNamesEveryConstraintThatRefusesTheValue() {
         // "abcd" misses on both counts. Naming only one would send a reader at a constraint they could loosen
         // without changing the verdict — the value would still be rejected by the other.
-        IReadOnlyList<PoolRejection<string>> rejections = Inspect(Any.String().OneOf("12", "abcd", "123").WithMaxLength(3).Numeric()).GetRejections();
+        IReadOnlyList<PoolRejection<string>> rejections = Inspect(Dummy.String().OneOf("12", "abcd", "123").WithMaxLength(3).Numeric()).GetRejections();
 
         Check.That(rejections).HasSize(1);
         Check.That(rejections[0].Value).IsEqualTo("abcd");
@@ -340,7 +340,7 @@ public sealed class PoolInspectionTests {
 
     [Fact(DisplayName = "A declared constraint carries its name and its rendered arguments apart, not one string to parse.")]
     public void ADeclaredConstraintKeepsItsNameAndArgumentsApart() {
-        DeclaredConstraint constraint = Inspect(Any.String().OneOf("abc", "de").WithLength(3)).GetRejections()[0].RejectedBy[0];
+        DeclaredConstraint constraint = Inspect(Dummy.String().OneOf("abc", "de").WithLength(3)).GetRejections()[0].RejectedBy[0];
 
         Check.That(constraint.Name).IsEqualTo("WithLength");
         Check.That(constraint.Arguments).IsEqualTo("3");
@@ -349,7 +349,7 @@ public sealed class PoolInspectionTests {
 
     [Fact(DisplayName = "A pool in step with its constraints reports no rejection at all.")]
     public void APoolInStepWithItsConstraintsReportsNothing() {
-        Check.That(Inspect(Any.String().OneOf("EUR", "USD", "GBP").WithLength(3)).GetRejections()).IsEmpty();
+        Check.That(Inspect(Dummy.String().OneOf("EUR", "USD", "GBP").WithLength(3)).GetRejections()).IsEmpty();
     }
 
     [Fact(DisplayName = "A duplicate collapses without being reported as a rejection.")]
@@ -357,7 +357,7 @@ public sealed class PoolInspectionTests {
     public void ADuplicateCollapsesWithoutBeingRejected() {
         // The second "Ada" is the same value, not a refused one: it is absent from the survivors because it is
         // already there, which is not a reason to blame a constraint for it.
-        IPoolInspection<string> inspection = Inspect(Any.String().OneOf("Ada", "Ada", "Camille"));
+        IPoolInspection<string> inspection = Inspect(Dummy.String().OneOf("Ada", "Ada", "Camille"));
 
         Check.That(inspection.GetSurvivors()).ContainsExactly("Ada", "Camille");
         Check.That(inspection.GetRejections()).IsEmpty();
@@ -365,7 +365,7 @@ public sealed class PoolInspectionTests {
 
     [Fact(DisplayName = "On a top-level pool the exclusion that removed a value is the one the rejection names.")]
     public void AnExclusionOnATopLevelPoolNamesItself() {
-        IPoolInspection<string> inspection = (IPoolInspection<string>)Any.OneOf("a", "b", "c").DifferentFrom("b");
+        IPoolInspection<string> inspection = (IPoolInspection<string>)Dummy.OneOf("a", "b", "c").DifferentFrom("b");
 
         Check.That(inspection.IsPooled).IsTrue();
         Check.That(inspection.GetSurvivors()).ContainsExactly("a", "c");
@@ -376,7 +376,7 @@ public sealed class PoolInspectionTests {
     [Fact(DisplayName = "A top-level pool renders its arguments elided, because the element type is the caller's.")]
     public void ATopLevelPoolRendersItsArgumentsElided() {
         // T is opaque, so its ToString belongs to the caller and could be anything; the library must not quote it.
-        DeclaredConstraint constraint = ((IPoolInspection<string>)Any.OneOf("a", "b").Except("b")).GetRejections()[0].RejectedBy[0];
+        DeclaredConstraint constraint = ((IPoolInspection<string>)Dummy.OneOf("a", "b").Except("b")).GetRejections()[0].RejectedBy[0];
 
         Check.That(constraint.Arguments).IsEqualTo("...");
         Check.That(constraint.ToString()).IsEqualTo("Except(...)");
@@ -384,14 +384,14 @@ public sealed class PoolInspectionTests {
 
     [Fact(DisplayName = "An exclusion naming a value the pool never held reports no rejection.")]
     public void AnExclusionOfAnAbsentValueReportsNothing() {
-        Check.That(((IPoolInspection<string>)Any.OneOf("a", "b").Except("z")).GetRejections()).IsEmpty();
+        Check.That(((IPoolInspection<string>)Dummy.OneOf("a", "b").Except("z")).GetRejections()).IsEmpty();
     }
 
     [Fact(DisplayName = "The reported lists cannot be cast back to something mutable.")]
     public void TheReportedListsAreNotAMutableHandle() {
         // A report a caller can edit is a report about nothing. The survivors in particular are the live domain the
         // draw samples, so handing the inner list out would let a caller change what the generator produces.
-        IPoolInspection<string> inspection = Inspect(Any.String().OneOf("abc", "de").WithLength(3));
+        IPoolInspection<string> inspection = Inspect(Dummy.String().OneOf("abc", "de").WithLength(3));
 
         Check.That(inspection.GetSurvivors() as List<string>).IsNull();
         Check.That(inspection.GetRejections() as List<PoolRejection<string>>).IsNull();

@@ -75,10 +75,10 @@ public sealed class PoolInspectionProperties {
                select (pool, pool[index % pool.Length].Offset);
     }
 
-    private static AnyDateTimeOffset Build(DateTimeOffset[] pool, TimeSpan offset, bool poolFirst) {
+    private static DummyDateTimeOffset Build(DateTimeOffset[] pool, TimeSpan offset, bool poolFirst) {
         return poolFirst
-                   ? Any.WithSeed(1).DateTimeOffset().OneOf(pool).WithOffset(offset)
-                   : Any.WithSeed(1).DateTimeOffset().WithOffset(offset).OneOf(pool);
+                   ? Dummy.WithSeed(1).DateTimeOffset().OneOf(pool).WithOffset(offset)
+                   : Dummy.WithSeed(1).DateTimeOffset().WithOffset(offset).OneOf(pool);
     }
 
     /// <summary>
@@ -88,8 +88,8 @@ public sealed class PoolInspectionProperties {
     ///     <i>content</i> that must not move.
     /// </summary>
     private static string Report(DateTimeOffset[] pool, TimeSpan offset, bool poolFirst) {
-        AnyDateTimeOffset generator;
-        try { generator = Build(pool, offset, poolFirst); } catch (ConflictingAnyConstraintException caught) { return $"CONFLICT {caught.Message}"; }
+        DummyDateTimeOffset generator;
+        try { generator = Build(pool, offset, poolFirst); } catch (ConflictingDummyConstraintException caught) { return $"CONFLICT {caught.Message}"; }
 
         IPoolInspection<DateTimeOffset> inspection = generator;
 
@@ -105,8 +105,8 @@ public sealed class PoolInspectionProperties {
     ///     representative is the first of those spellings, which reordering legitimately changes.
     /// </summary>
     private static string ReportByInstant(DateTimeOffset[] pool, TimeSpan offset, bool poolFirst) {
-        AnyDateTimeOffset generator;
-        try { generator = Build(pool, offset, poolFirst); } catch (ConflictingAnyConstraintException caught) { return $"CONFLICT {caught.Message}"; }
+        DummyDateTimeOffset generator;
+        try { generator = Build(pool, offset, poolFirst); } catch (ConflictingDummyConstraintException caught) { return $"CONFLICT {caught.Message}"; }
 
         IPoolInspection<DateTimeOffset> inspection = generator;
 
@@ -120,8 +120,8 @@ public sealed class PoolInspectionProperties {
     ///     seeded sequence is expected to differ there.
     /// </summary>
     private static string Draws(DateTimeOffset[] pool, TimeSpan offset, bool poolFirst) {
-        AnyDateTimeOffset generator;
-        try { generator = Build(pool, offset, poolFirst); } catch (ConflictingAnyConstraintException caught) { return $"CONFLICT {caught.Message}"; }
+        DummyDateTimeOffset generator;
+        try { generator = Build(pool, offset, poolFirst); } catch (ConflictingDummyConstraintException caught) { return $"CONFLICT {caught.Message}"; }
 
         return string.Join(";", Enumerable.Range(0, 8).Select(_ => Spelling(generator.Generate())));
     }
@@ -163,7 +163,7 @@ public sealed class PoolInspectionProperties {
             .QuickCheckThrowOnFailure();
     }
 
-    // The string property above cannot see a pool that fails to add up, because Any.String()'s pool is already
+    // The string property above cannot see a pool that fails to add up, because Dummy.String()'s pool is already
     // distinct before the report is built. This one quantifies over the family whose pool is filtered on TWO
     // dimensions -- the instant, inside the engine, and the offset, outside it -- where a value can go missing from
     // both lists or be counted twice, and where both of those actually happened.
@@ -171,7 +171,7 @@ public sealed class PoolInspectionProperties {
     public void ADatePoolPartitionsAcrossBothOfItsDimensions() {
         Prop.ForAll(DatePoolAndSatisfiableOffset().ToArbitrary(),
                     testCase => {
-                        IPoolInspection<DateTimeOffset> inspection = Any.DateTimeOffset().OneOf(testCase.Pool).WithOffset(testCase.Offset);
+                        IPoolInspection<DateTimeOffset> inspection = Dummy.DateTimeOffset().OneOf(testCase.Pool).WithOffset(testCase.Offset);
 
                         List<DateTimeOffset> reported = [..inspection.GetSurvivors(), ..inspection.GetRejections().Select(rejection => rejection.Value)];
 
@@ -186,7 +186,7 @@ public sealed class PoolInspectionProperties {
     public void SurvivorsAndRejectionsPartitionTheSuppliedPool() {
         Prop.ForAll(PoolAndSatisfiableMaximum().ToArbitrary(),
                     testCase => {
-                        IPoolInspection<string> inspection = Any.String().OneOf(testCase.Pool).WithMaxLength(testCase.Maximum);
+                        IPoolInspection<string> inspection = Dummy.String().OneOf(testCase.Pool).WithMaxLength(testCase.Maximum);
 
                         List<string> reported = [..inspection.GetSurvivors(), ..inspection.GetRejections().Select(rejection => rejection.Value)];
 
@@ -201,7 +201,7 @@ public sealed class PoolInspectionProperties {
     public void TheSplitFollowsTheDeclaredConstraint() {
         Prop.ForAll(PoolAndSatisfiableMaximum().ToArbitrary(),
                     testCase => {
-                        IPoolInspection<string> inspection = Any.String().OneOf(testCase.Pool).WithMaxLength(testCase.Maximum);
+                        IPoolInspection<string> inspection = Dummy.String().OneOf(testCase.Pool).WithMaxLength(testCase.Maximum);
 
                         return inspection.GetSurvivors().All(value => value.Length <= testCase.Maximum)
                             && inspection.GetRejections().All(rejection => rejection.Value.Length > testCase.Maximum);
@@ -213,7 +213,7 @@ public sealed class PoolInspectionProperties {
     public void EveryRejectionBlamesADeclaredConstraint() {
         Prop.ForAll(PoolAndSatisfiableMaximum().ToArbitrary(),
                     testCase => {
-                        IPoolInspection<string> inspection = Any.String().OneOf(testCase.Pool).WithMaxLength(testCase.Maximum);
+                        IPoolInspection<string> inspection = Dummy.String().OneOf(testCase.Pool).WithMaxLength(testCase.Maximum);
 
                         // Only WithMaxLength can refuse anything here, so it is the only name the report may carry:
                         // a rejection blaming a constraint nobody declared would be a reason a reader cannot act on.
@@ -229,7 +229,7 @@ public sealed class PoolInspectionProperties {
     public void EveryDrawLandsInTheReportedSurvivors() {
         Prop.ForAll(PoolAndSatisfiableMaximum().ToArbitrary(),
                     testCase => {
-                        AnyString               generator  = Any.String().OneOf(testCase.Pool).WithMaxLength(testCase.Maximum);
+                        DummyString               generator  = Dummy.String().OneOf(testCase.Pool).WithMaxLength(testCase.Maximum);
                         IPoolInspection<string> inspection = generator;
                         IReadOnlyList<string>   survivors  = inspection.GetSurvivors();
 
@@ -255,8 +255,8 @@ public sealed class PoolInspectionProperties {
     #region Draw helper
 
     private static List<string> Draw((string[] Pool, int Maximum) testCase, int seed, bool inspect) {
-        AnyContext context   = Any.WithSeed(seed);
-        AnyString  generator = context.String().OneOf(testCase.Pool).WithMaxLength(testCase.Maximum);
+        DummyContext context   = Dummy.WithSeed(seed);
+        DummyString  generator = context.String().OneOf(testCase.Pool).WithMaxLength(testCase.Maximum);
 
         List<string> drawn = [];
         for (int index = 0; index < 4; index++) {

@@ -13,7 +13,7 @@ namespace JustDummies.UnitTests;
 
 /// <summary>
 ///     Drawing from one seeded source on several threads at once. The ambient source flows with the execution
-///     context, so it reaches every thread a test spawns; a context from <see cref="Any.WithSeed" /> is shared by
+///     context, so it reaches every thread a test spawns; a context from <see cref="Dummy.WithSeed" /> is shared by
 ///     whoever holds it. Both therefore hand the same source to concurrent callers, and the source must survive it.
 /// </summary>
 /// <remarks>
@@ -31,7 +31,7 @@ namespace JustDummies.UnitTests;
 ///         deliberately oversubscribed relative to the core count to make the contention reliable.
 ///     </para>
 /// </remarks>
-[TestSubject(typeof(Any))]
+[TestSubject(typeof(Dummy))]
 public sealed class ConcurrentDrawTests {
 
     #region Statics members declarations
@@ -62,7 +62,7 @@ public sealed class ConcurrentDrawTests {
     public void ConcurrentAmbientDrawsDoNotCollapse() {
         List<int> drawn = [];
 
-        Any.Reproducibly(310, () => drawn = Storm(() => Any.Int32().Generate()));
+        Dummy.Reproducibly(310, () => drawn = Storm(() => Dummy.Int32().Generate()));
 
         // A tenth of the draws sharing one value cannot happen by chance over the full Int32 range; it is the
         // signature of a source that stopped generating. Far below what the defect produced (62% to 91%).
@@ -75,12 +75,12 @@ public sealed class ConcurrentDrawTests {
     public void ASeededSourceSurvivesAConcurrentBurst() {
         List<int> afterwards = [];
 
-        Any.Reproducibly(310, () => {
-            Storm(() => Any.Int32().Generate());
+        Dummy.Reproducibly(310, () => {
+            Storm(() => Dummy.Int32().Generate());
 
             // The heart of the regression: the defect was permanent. Once the indices had converged, every later
             // draw on that source returned int.MinValue — including these, taken on one thread with no contention.
-            afterwards = Enumerable.Range(0, 20).Select(_ => Any.Int32().Generate()).ToList();
+            afterwards = Enumerable.Range(0, 20).Select(_ => Dummy.Int32().Generate()).ToList();
         });
 
         Check.WithCustomMessage($"Sequential draws after the burst were all {afterwards[0]}; the source stayed dead.")
@@ -93,13 +93,13 @@ public sealed class ConcurrentDrawTests {
         string text  = string.Empty;
         Guid   guid  = Guid.Empty;
 
-        Any.Reproducibly(310, () => {
-            Storm(() => Any.Int32().Generate());
+        Dummy.Reproducibly(310, () => {
+            Storm(() => Dummy.Int32().Generate());
 
             // The corruption lives in the source, not in the generator that triggered it, so unrelated generators
             // resolved from it afterwards collapsed too — a string to "" and a Guid to Guid.Empty.
-            text = Any.String().NonEmpty().Generate();
-            guid = Any.Guid().Generate();
+            text = Dummy.String().NonEmpty().Generate();
+            guid = Dummy.Guid().Generate();
         });
 
         Check.WithCustomMessage("A non-empty string generator returned an empty string after a concurrent burst.")
@@ -114,7 +114,7 @@ public sealed class ConcurrentDrawTests {
 
         // A bounded range makes the failure mode legible: a dead source does not return a random value inside the
         // interval, it returns the interval's minimum, which reads like a plausible dummy.
-        Any.Reproducibly(310, () => drawn = Storm(() => Any.Int32().Between(1_000, 9_999).Generate()));
+        Dummy.Reproducibly(310, () => drawn = Storm(() => Dummy.Int32().Between(1_000, 9_999).Generate()));
 
         int atTheBound = drawn.Count(value => value == 1_000);
 
@@ -125,7 +125,7 @@ public sealed class ConcurrentDrawTests {
 
     [Fact(DisplayName = "A context shared across threads stays usable after concurrent draws.")]
     public void ASharedContextSurvivesConcurrentDraws() {
-        AnyContext context = Any.WithSeed(310);
+        DummyContext context = Dummy.WithSeed(310);
 
         List<int> drawn      = Storm(() => context.Int32().Generate());
         List<int> afterwards = Enumerable.Range(0, 20).Select(_ => context.Int32().Generate()).ToList();
@@ -146,7 +146,7 @@ public sealed class ConcurrentDrawTests {
     // dedup-draw loops, and the regex context. Each collapses in its own way if the source dies, so each asserts
     // the shape of its own non-collapse — and each was confirmed red before the fix by stripping the lock (#310).
     //
-    // Paths whose per-draw work is a single light sample — OrNull's null/value coin, a bare Any.Double() — are
+    // Paths whose per-draw work is a single light sample — OrNull's null/value coin, a bare Dummy.Double() — are
     // deliberately absent. Corruption is reliably provoked only by NextBytes-heavy draws (an eight-byte ordinal
     // fill, a regex drawing one choice per character); a lone Next(2) or NextDouble() never builds enough
     // contention to corrupt the source within a bounded run, so a lock-stripped mutant does not make such a test
@@ -158,7 +158,7 @@ public sealed class ConcurrentDrawTests {
     public void ConcurrentCombineDrawsDoNotCollapse() {
         List<(int First, int Second)> drawn = [];
 
-        Any.Reproducibly(310, () => drawn = Storm(() => Any.Combine(Any.Int32(), Any.Int32(), (first, second) => (first, second)).Generate()));
+        Dummy.Reproducibly(310, () => drawn = Storm(() => Dummy.Combine(Dummy.Int32(), Dummy.Int32(), (first, second) => (first, second)).Generate()));
 
         Check.WithCustomMessage($"Combine's first operand collapsed: {MostFrequent(drawn.Select(pair => pair.First))} of {TotalDraws} identical.")
              .That(MostFrequent(drawn.Select(pair => pair.First)))
@@ -171,10 +171,10 @@ public sealed class ConcurrentDrawTests {
     [Fact(DisplayName = "Concurrent draws through As keep the underlying draw healthy.")]
     public void ConcurrentAsDrawsStayHealthy() {
         // A pure projection carries no shared state, so any degeneration here is the library's own serialized draw
-        // collapsing, not a user-side race — the latter is the caller's responsibility, per the IAny<T> contract.
+        // collapsing, not a user-side race — the latter is the caller's responsibility, per the IDummy<T> contract.
         List<long> drawn = [];
 
-        Any.Reproducibly(310, () => drawn = Storm(() => Any.Int32().As(value => (long)value * 2).Generate()));
+        Dummy.Reproducibly(310, () => drawn = Storm(() => Dummy.Int32().As(value => (long)value * 2).Generate()));
 
         Check.WithCustomMessage($"{MostFrequent(drawn)} of {TotalDraws} As-projected values were identical; the underlying draw collapsed.")
              .That(MostFrequent(drawn))
@@ -185,7 +185,7 @@ public sealed class ConcurrentDrawTests {
     public void ConcurrentListDrawsDoNotCollapse() {
         List<List<int>> drawn = [];
 
-        Any.Reproducibly(310, () => drawn = Storm(() => Any.ListOf(Any.Int32()).WithCount(4).Generate()));
+        Dummy.Reproducibly(310, () => drawn = Storm(() => Dummy.ListOf(Dummy.Int32()).WithCount(4).Generate()));
 
         List<int> elements = drawn.SelectMany(list => list).ToList();
 
@@ -202,7 +202,7 @@ public sealed class ConcurrentDrawTests {
         // to a dead source, which cannot supply the fresh values it needs and fails loudly rather than collapsing.
         List<HashSet<int>> drawn = [];
 
-        Any.Reproducibly(310, () => drawn = Storm(() => Any.SetOf(Any.Int32().Between(0, 100_000)).WithCount(5).Generate()));
+        Dummy.Reproducibly(310, () => drawn = Storm(() => Dummy.SetOf(Dummy.Int32().Between(0, 100_000)).WithCount(5).Generate()));
 
         Check.WithCustomMessage("A distinct set came back the wrong size under concurrency.")
              .That(drawn.All(set => set.Count == 5)).IsTrue();
@@ -218,7 +218,7 @@ public sealed class ConcurrentDrawTests {
         Regex        pattern = new("^[A-Z]{3}-[0-9]{4}$");
         List<string> drawn   = [];
 
-        Any.Reproducibly(310, () => drawn = Storm(() => Any.StringMatching("^[A-Z]{3}-[0-9]{4}$").Generate()));
+        Dummy.Reproducibly(310, () => drawn = Storm(() => Dummy.StringMatching("^[A-Z]{3}-[0-9]{4}$").Generate()));
 
         Check.WithCustomMessage($"A pattern draw did not match under concurrency, e.g. \"{drawn.FirstOrDefault(value => !pattern.IsMatch(value))}\".")
              .That(drawn.All(value => pattern.IsMatch(value))).IsTrue();

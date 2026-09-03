@@ -15,7 +15,7 @@ public class Jd012GeneratorPooledAsValueTests {
 
             public static class Sample {
                 public static void M() {
-                    IAny<AnyInt32> pool = Any.OneOf(Any.Int32().Positive(), Any.Int32().Negative());
+                    IDummy<DummyInt32> pool = Dummy.OneOf(Dummy.Int32().Positive(), Dummy.Int32().Negative());
                 }
             }
             """;
@@ -29,14 +29,14 @@ public class Jd012GeneratorPooledAsValueTests {
 
     [Fact]
     public async Task Reports_a_pool_of_generators_on_a_seeded_context() {
-        // OneOf and ElementOf are mirrored on AnyContext; a rule keyed on Any alone would miss half the surface.
+        // OneOf and ElementOf are mirrored on DummyContext; a rule keyed on Dummy alone would miss half the surface.
         const string source = """
             using JustDummies;
 
             public static class Sample {
                 public static void M() {
-                    AnyContext context = Any.WithSeed(1234);
-                    IAny<AnyInt32> pool = context.OneOf(context.Int32(), context.Int32());
+                    DummyContext context = Dummy.WithSeed(1234);
+                    IDummy<DummyInt32> pool = context.OneOf(context.Int32(), context.Int32());
                 }
             }
             """;
@@ -54,7 +54,7 @@ public class Jd012GeneratorPooledAsValueTests {
 
             public static class Sample {
                 public static void M() {
-                    IAny<int> pool = Any.OneOf(1, 2, 3);
+                    IDummy<int> pool = Dummy.OneOf(1, 2, 3);
                 }
             }
             """;
@@ -71,7 +71,7 @@ public class Jd012GeneratorPooledAsValueTests {
 
             public static class Sample {
                 public static void M() {
-                    IAny<int> pool = Any.OneOf(Any.Int32().Positive().Generate(), Any.Int32().Negative().Generate());
+                    IDummy<int> pool = Dummy.OneOf(Dummy.Int32().Positive().Generate(), Dummy.Int32().Negative().Generate());
                 }
             }
             """;
@@ -92,7 +92,7 @@ public class Jd012GeneratorPooledAsValueTests {
 
             public static class Sample {
                 public static void M() {
-                    AnyInt32 chosen = Other.OneOf(Any.Int32(), Any.Int32());
+                    DummyInt32 chosen = Other.OneOf(Dummy.Int32(), Dummy.Int32());
                 }
             }
             """;

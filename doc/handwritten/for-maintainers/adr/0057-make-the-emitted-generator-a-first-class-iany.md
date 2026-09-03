@@ -1,4 +1,4 @@
-# ADR-0057 | Make the emitted generator a first-class `IAny<T>`
+# ADR-0057 | Make the emitted generator a first-class `IDummy<T>`
 
 🌍 🇬🇧 English (this file) · 🇫🇷 [Français](0057-make-the-emitted-generator-a-first-class-iany.fr.md)
 
@@ -11,13 +11,13 @@
 
 ## Context
 
-`IAny<T>` is the library's composition seam: `As`, `Combine`, the collection generators and the
+`IDummy<T>` is the library's composition seam: `As`, `Combine`, the collection generators and the
 choice generators all consume and produce it (§14.4).
 
 The interface is documented as an immutable recipe, and every generator in the library honours
 that — each fluent constraint returns a new instance (§14.5).
 
-The analyzers' `Usage` category recognises a generator as the `IAny<T>` interface itself or any
+The analyzers' `Usage` category recognises a generator as the `IDummy<T>` interface itself or any
 type implementing it, rather than as a fixed list of built-in types (§14.6).
 
 The emitted type exposes one fluent method per constructor parameter, which gives it the shape of a
@@ -25,7 +25,7 @@ builder. Builders in the wider ecosystem conventionally mutate and return `this`
 
 ## Decision
 
-The emitted type implements `IAny<T>` and is immutable, every `With` method returning a new
+The emitted type implements `IDummy<T>` and is immutable, every `With` method returning a new
 instance.
 
 ## Rationale
@@ -53,7 +53,7 @@ Considered because it is the conventional builder shape and allocates less.
 Rejected because it contradicts the documented contract of the interface it would implement, and
 because deriving two generators from a shared base would silently corrupt both.
 
-##### A plain type exposing `Generate`, not implementing `IAny<T>`
+##### A plain type exposing `Generate`, not implementing `IDummy<T>`
 
 Considered because it keeps the emitted file free of any library interface.
 

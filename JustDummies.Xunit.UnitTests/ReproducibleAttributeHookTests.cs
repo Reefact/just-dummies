@@ -29,7 +29,7 @@ public sealed class ReproducibleAttributeHookTests {
     #region Statics members declarations
 
     private static (int, string) Batch() {
-        return (Any.Int32().Generate(), Any.String().NonEmpty().Generate());
+        return (Dummy.Int32().Generate(), Dummy.String().NonEmpty().Generate());
     }
 
     #endregion
@@ -62,7 +62,7 @@ public sealed class ReproducibleAttributeHookTests {
         // What seed 555 produces on its second draw. If the scope were left open, the draw after the hook would
         // continue that sequence and match; a closed scope hands the ambient source back and it will not.
         (int, string) secondOfTheSeededRun;
-        using (Any.UseSeed(555)) {
+        using (Dummy.UseSeed(555)) {
             Batch();
             secondOfTheSeededRun = Batch();
         }
@@ -83,7 +83,7 @@ public sealed class ReproducibleAttributeHookTests {
         ReproducibleAttribute inner = new() { Seed = 222 };
 
         (int, string) expectedSecondOfOuter;
-        using (Any.UseSeed(111)) {
+        using (Dummy.UseSeed(111)) {
             Batch();
             expectedSecondOfOuter = Batch();
         }

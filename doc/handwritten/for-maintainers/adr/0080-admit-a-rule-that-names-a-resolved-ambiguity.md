@@ -20,8 +20,8 @@ JD031 is that instance.
 
 [ADR-0079](0079-constrain-what-a-dummy-draws-never-the-literals-it-was-given.md) produced a second, of a
 different shape. A character family, a custom pool, a subtraction and a casing govern the characters
-`Any.String()` **draws**; an anchored literal is not drawn and is kept as written. So
-`Any.String().AlphaNumeric().StartingWith("ORD-")` is legal and is the simple way to write a fixed separator.
+`Dummy.String()` **draws**; an anchored literal is not drawn and is kept as written. So
+`Dummy.String().AlphaNumeric().StartingWith("ORD-")` is legal and is the simple way to write a fixed separator.
 Read on its own, that chain says two things about its characters: only alphanumerics, and then a hyphen. The
 declarations conflict; ADR-0079 settles which governs. Nothing about the call site is wrong, and which of the
 two readings applies is not visible from the chain — it is visible only from a decision record, or from

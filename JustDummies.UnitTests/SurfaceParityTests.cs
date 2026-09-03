@@ -14,8 +14,8 @@ namespace JustDummies.UnitTests;
 ///     per-builder maintenance beyond the expectation table encoded here:
 ///     <list type="number">
 ///         <item>
-///             <b>Mirror parity.</b> Every scalar factory on the static <see cref="Any" /> entry point has an
-///             identical instance counterpart on <see cref="AnyContext" />. A scalar factory added to one surface and
+///             <b>Mirror parity.</b> Every scalar factory on the static <see cref="Dummy" /> entry point has an
+///             identical instance counterpart on <see cref="DummyContext" />. A scalar factory added to one surface and
 ///             forgotten on the other would compile and pass every behavioral test, silently shipping a hole in the
 ///             deterministic surface.
 ///         </item>
@@ -26,54 +26,54 @@ namespace JustDummies.UnitTests;
 ///         </item>
 ///     </list>
 ///     Composition and collection factories (<c>Combine</c>, <c>ListOf</c>, <c>DictionaryOf</c>, ...) are deliberately
-///     <b>not</b> mirrored onto <see cref="AnyContext" />: they inherit the context through their operand sources, so
-///     the mirror guard excludes them by construction (they take an <see cref="IAny{T}" /> operand).
+///     <b>not</b> mirrored onto <see cref="DummyContext" />: they inherit the context through their operand sources, so
+///     the mirror guard excludes them by construction (they take an <see cref="IDummy{T}" /> operand).
 /// </summary>
 public sealed class SurfaceParityTests {
 
-    #region Mirror parity: Any <-> AnyContext
+    #region Mirror parity: Dummy <-> DummyContext
 
-    [Fact(DisplayName = "Every Any scalar factory has an identical AnyContext counterpart.")]
+    [Fact(DisplayName = "Every Dummy scalar factory has an identical DummyContext counterpart.")]
     public void AnyAndAnyContextExposeTheSameScalarFactories() {
-        HashSet<string> onAny = typeof(Any)
+        HashSet<string> onDummy = typeof(Dummy)
                                 .GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly)
                                 .Where(IsScalarFactory)
                                 .Select(Signature)
                                 .ToHashSet();
 
-        HashSet<string> onContext = typeof(AnyContext)
+        HashSet<string> onContext = typeof(DummyContext)
                                     .GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
                                     .Where(method => !method.IsSpecialName) // drops the Seed property getter
                                     .Select(Signature)
                                     .ToHashSet();
 
-        string[] onlyOnAny     = onAny.Except(onContext).OrderBy(signature => signature, StringComparer.Ordinal).ToArray();
-        string[] onlyOnContext = onContext.Except(onAny).OrderBy(signature => signature, StringComparer.Ordinal).ToArray();
+        string[] onlyOnDummy     = onDummy.Except(onContext).OrderBy(signature => signature, StringComparer.Ordinal).ToArray();
+        string[] onlyOnContext = onContext.Except(onDummy).OrderBy(signature => signature, StringComparer.Ordinal).ToArray();
 
-        Check.WithCustomMessage($"Scalar factories only on Any: [{string.Join(", ", onlyOnAny)}]; only on AnyContext: [{string.Join(", ", onlyOnContext)}].")
-             .That(onlyOnAny.Length + onlyOnContext.Length)
+        Check.WithCustomMessage($"Scalar factories only on Dummy: [{string.Join(", ", onlyOnDummy)}]; only on DummyContext: [{string.Join(", ", onlyOnContext)}].")
+             .That(onlyOnDummy.Length + onlyOnContext.Length)
              .IsEqualTo(0);
     }
 
     // A scalar factory produces a generator from the context's own source: it returns a builder and takes no
-    // IAny<> operand. That excludes the composition/collection factories that live only on Any (Combine, ListOf,
+    // IDummy<> operand. That excludes the composition/collection factories that live only on Dummy (Combine, ListOf,
     // SetOf, DictionaryOf, PairOf, ...), as well as the three ways to control seeding — WithSeed (returns
-    // AnyContext), Reproducibly (returns void/Task) and UseSeed (returns IDisposable). None of those is a
-    // generator factory, and AnyContext is not meant to mirror them: it already *is* an explicit deterministic
+    // DummyContext), Reproducibly (returns void/Task) and UseSeed (returns IDisposable). None of those is a
+    // generator factory, and DummyContext is not meant to mirror them: it already *is* an explicit deterministic
     // context, so pinning a seed on one would be meaningless.
     private static bool IsScalarFactory(MethodInfo method) {
-        if (method.GetParameters().Any(parameter => IsAny(parameter.ParameterType))) { return false; }
+        if (method.GetParameters().Any(parameter => IsDummyOperand(parameter.ParameterType))) { return false; }
 
         Type returnType = method.ReturnType;
 
-        return returnType != typeof(AnyContext)
+        return returnType != typeof(DummyContext)
             && returnType != typeof(void)
             && returnType != typeof(IDisposable)
             && !typeof(Task).IsAssignableFrom(returnType);
     }
 
-    private static bool IsAny(Type type) {
-        return type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IAny<>);
+    private static bool IsDummyOperand(Type type) {
+        return type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IDummy<>);
     }
 
     // Name + generic arity + parameter types + return type, ignoring the static/instance distinction so the two
@@ -131,7 +131,7 @@ public sealed class SurfaceParityTests {
 
     // Instant-like builders rename the bound family to domain vocabulary, with identical inclusive/exclusive
     // semantics, and carry no Positive/Negative/Zero (an instant has no sign). Conditioned like its only
-    // consumer — AnyDateOnly exists on .NET 8 and later — so the net472 leg does not carry a field it cannot use.
+    // consumer — DummyDateOnly exists on .NET 8 and later — so the net472 leg does not carry a field it cannot use.
 #if NET8_0_OR_GREATER
     private static readonly string[] InstantAlgebra = [
         "After", "AfterOrEqualTo", "Before", "BeforeOrEqualTo",
@@ -146,7 +146,7 @@ public sealed class SurfaceParityTests {
         "Between", "OneOf", "Except", "DifferentFrom", "WithGranularity"
     ];
 
-    // AnyDateTimeOffset additionally exposes the offset dimension (WithOffset/WithOffsetBetween) — the only instant
+    // DummyDateTimeOffset additionally exposes the offset dimension (WithOffset/WithOffsetBetween) — the only instant
     // type carrying a second, offset dimension on top of the instant.
     private static readonly string[] InstantWithGranularityAndOffsetAlgebra = [
         "After", "AfterOrEqualTo", "Before", "BeforeOrEqualTo",
@@ -158,43 +158,43 @@ public sealed class SurfaceParityTests {
 
         // Signed integers carry MultipleOf; the binary floats do not; Decimal carries WithScale; TimeSpan (a signed
         // magnitude) carries WithGranularity — the lattice constraint is what forks the former shared signed family.
-        data.Add(typeof(AnyInt32), SignedIntegerAlgebra);
-        data.Add(typeof(AnySByte), SignedIntegerAlgebra);
-        data.Add(typeof(AnyInt16), SignedIntegerAlgebra);
-        data.Add(typeof(AnyInt64), SignedIntegerAlgebra);
-        data.Add(typeof(AnyDouble), FloatingPointAlgebra);
-        data.Add(typeof(AnySingle), FloatingPointAlgebra);
-        data.Add(typeof(AnyDecimal), DecimalAlgebra);
-        data.Add(typeof(AnyTimeSpan), TimeSpanAlgebra);
+        data.Add(typeof(DummyInt32), SignedIntegerAlgebra);
+        data.Add(typeof(DummySByte), SignedIntegerAlgebra);
+        data.Add(typeof(DummyInt16), SignedIntegerAlgebra);
+        data.Add(typeof(DummyInt64), SignedIntegerAlgebra);
+        data.Add(typeof(DummyDouble), FloatingPointAlgebra);
+        data.Add(typeof(DummySingle), FloatingPointAlgebra);
+        data.Add(typeof(DummyDecimal), DecimalAlgebra);
+        data.Add(typeof(DummyTimeSpan), TimeSpanAlgebra);
 
-        data.Add(typeof(AnyByte), UnsignedIntegerAlgebra);
-        data.Add(typeof(AnyUInt16), UnsignedIntegerAlgebra);
-        data.Add(typeof(AnyUInt32), UnsignedIntegerAlgebra);
-        data.Add(typeof(AnyUInt64), UnsignedIntegerAlgebra);
+        data.Add(typeof(DummyByte), UnsignedIntegerAlgebra);
+        data.Add(typeof(DummyUInt16), UnsignedIntegerAlgebra);
+        data.Add(typeof(DummyUInt32), UnsignedIntegerAlgebra);
+        data.Add(typeof(DummyUInt64), UnsignedIntegerAlgebra);
 
-        data.Add(typeof(AnyDateTime), InstantWithGranularityAlgebra);
-        data.Add(typeof(AnyDateTimeOffset), InstantWithGranularityAndOffsetAlgebra);
+        data.Add(typeof(DummyDateTime), InstantWithGranularityAlgebra);
+        data.Add(typeof(DummyDateTimeOffset), InstantWithGranularityAndOffsetAlgebra);
 
         // The remaining scalar builders each carry their own deliberate set.
-        data.Add(typeof(AnyBoolean), new[] { "True", "False", "DifferentFrom" });
-        data.Add(typeof(AnyGuid), new[] { "NonEmpty", "Empty", "OneOf", "Except", "DifferentFrom" });
-        // AnyEnum adds AllowingCombinations, the opt-in widening the draw from the declared members to their
+        data.Add(typeof(DummyBoolean), new[] { "True", "False", "DifferentFrom" });
+        data.Add(typeof(DummyGuid), new[] { "NonEmpty", "Empty", "OneOf", "Except", "DifferentFrom" });
+        // DummyEnum adds AllowingCombinations, the opt-in widening the draw from the declared members to their
         // combinations — meaningful only for a [Flags] enum, hence a constraint rather than a second factory.
-        data.Add(typeof(AnyEnum<DayOfWeek>), new[] { "AllowingCombinations", "OneOf", "Except", "DifferentFrom" });
-        // AnyChar mirrors AnyString's character families exactly, minus the shape constraints a single character
+        data.Add(typeof(DummyEnum<DayOfWeek>), new[] { "AllowingCombinations", "OneOf", "Except", "DifferentFrom" });
+        // DummyChar mirrors DummyString's character families exactly, minus the shape constraints a single character
         // has no room for and minus WithChars, whose general form here is OneOf. A family added to one surface and
         // forgotten on the other is the drift this pair of rows exists to catch.
-        data.Add(typeof(AnyChar), new[] {
+        data.Add(typeof(DummyChar), new[] {
             "Alpha", "AlphaNumeric", "Numeric", "Punctuation", "Printable", "NonPrintable", "Whitespaces", "Hexadecimal",
             "WithoutAlpha", "WithoutNumeric", "InUpperCase", "InLowerCase", "OneOf", "Except", "DifferentFrom"
         });
 
-        // AnyString carries the exclusion pair Except/DifferentFrom (met by a bounded redraw, since strings are not
+        // DummyString carries the exclusion pair Except/DifferentFrom (met by a bounded redraw, since strings are not
         // ordinal-mapped) and, like every other family, a composable OneOf that returns the builder itself.
-        // NotBlank has no AnyChar counterpart, and that is not the drift the row above warns about: it constrains
+        // NotBlank has no DummyChar counterpart, and that is not the drift the row above warns about: it constrains
         // the assembled string rather than the alphabet a character is drawn from, and a single character is either
         // whitespace or it is not — which Whitespaces() and WithoutAlpha() already say there.
-        data.Add(typeof(AnyString), new[] {
+        data.Add(typeof(DummyString), new[] {
             "NonEmpty", "NotBlank", "WithLength", "WithMinLength", "WithMaxLength", "WithLengthBetween",
             "StartingWith", "EndingWith", "Containing",
             "Alpha", "AlphaNumeric", "Numeric", "Punctuation", "Printable", "NonPrintable", "Whitespaces", "Hexadecimal",
@@ -203,11 +203,11 @@ public sealed class SurfaceParityTests {
         });
 
 #if NET8_0_OR_GREATER
-        data.Add(typeof(AnyInt128), SignedIntegerAlgebra);
-        data.Add(typeof(AnyHalf), FloatingPointAlgebra);
-        data.Add(typeof(AnyUInt128), UnsignedIntegerAlgebra);
-        data.Add(typeof(AnyDateOnly), InstantAlgebra);
-        data.Add(typeof(AnyTimeOnly), InstantWithGranularityAlgebra);
+        data.Add(typeof(DummyInt128), SignedIntegerAlgebra);
+        data.Add(typeof(DummyHalf), FloatingPointAlgebra);
+        data.Add(typeof(DummyUInt128), UnsignedIntegerAlgebra);
+        data.Add(typeof(DummyDateOnly), InstantAlgebra);
+        data.Add(typeof(DummyTimeOnly), InstantWithGranularityAlgebra);
 #endif
 
         return data;

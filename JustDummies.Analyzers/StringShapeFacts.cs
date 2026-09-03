@@ -6,7 +6,7 @@ using Microsoft.CodeAnalysis.Operations;
 namespace JustDummies.Analyzers;
 
 /// <summary>
-///     What an <c>Any.String()</c> chain says about the length of the values it draws, read from the constants at
+///     What an <c>Dummy.String()</c> chain says about the length of the values it draws, read from the constants at
 ///     the call site.
 /// </summary>
 /// <remarks>

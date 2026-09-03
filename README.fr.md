@@ -31,20 +31,20 @@ défaut réclamant une autre forme d'entrée est un défaut que ce test ne trouv
 Dites ce que la valeur doit **satisfaire**, et laissez la bibliothèque en tirer une qui convient :
 
 ```csharp
-string reference = Any.String().StartingWith("ORD-").WithLength(12).Generate();
-int    quantity  = Any.Int32().Between(1, 100).Generate();
-Guid   id        = Any.Guid().NonEmpty().Generate();
+string reference = Dummy.String().StartingWith("ORD-").WithLength(12).Generate();
+int    quantity  = Dummy.Int32().Between(1, 100).Generate();
+Guid   id        = Dummy.Guid().NonEmpty().Generate();
 ```
 
 Le test énonce désormais ses hypothèses. Tout le reste varie d'une exécution à l'autre, et c'est ce
 qui lui fait trouver des choses.
 
-Un appel `Any.*` renvoie un **générateur** — une recette immuable — et `.Generate()` en tire une
+Un appel `Dummy.*` renvoie un **générateur** — une recette immuable — et `.Generate()` en tire une
 valeur. Un objet-valeur au contrat plus strict se construit en transformant un primitif contraint via
 sa vraie fabrique :
 
 ```csharp
-OrderReference orderRef = Any.String()
+OrderReference orderRef = Dummy.String()
     .StartingWith("ORD-")
     .WithLength(12)
     .As(OrderReference.Create)
@@ -70,8 +70,8 @@ Des valeurs aléatoires dans les tests ne sont acceptables que si un échec peut
 Enveloppez le corps du test :
 
 ```csharp
-Any.Reproducibly(() => {
-    decimal orderTotal = Any.Decimal().Between(0m, 10_000m).WithScale(2).Generate();
+Dummy.Reproducibly(() => {
+    decimal orderTotal = Dummy.Decimal().Between(0m, 10_000m).WithScale(2).Generate();
 
     Assert.InRange(Shipping.FeeFor(orderTotal), 0m, 4.90m);
 });
@@ -80,14 +80,14 @@ Any.Reproducibly(() => {
 Quand il passe au rouge — et seulement alors — la graine qui a produit l'exécution est rapportée :
 
 ```text
-[JustDummies] These arbitrary values were seeded with 1743029518. Reproduce this run with Any.Reproducibly(1743029518, ...).
+[JustDummies] These arbitrary values were seeded with 1743029518. Reproduce this run with Dummy.Reproducibly(1743029518, ...).
 ```
 
 Recopiez ce nombre devant le corps. Même test, un argument de plus, et l'exécution exacte revient —
 valeur pour valeur :
 
 ```csharp
-Any.Reproducibly(1743029518, () => {
+Dummy.Reproducibly(1743029518, () => {
     // le même corps que ci-dessus ; seule la graine a été ajoutée
 });
 ```
@@ -102,7 +102,7 @@ garanti par un golden master
 
 ## 🛠 En scaffolder un pour vos propres types
 
-Écrire un `IAny<T>` à la main pour chacun de vos types métier, c'est la partie fastidieuse. `dum` en
+Écrire un `IDummy<T>` à la main pour chacun de vos types métier, c'est la partie fastidieuse. `dum` en
 écrit le premier jet :
 
 ```bash
@@ -111,11 +111,11 @@ dum generate Order
 ```
 
 ```text
-  reference  OrderReference  Any.String().NonEmpty().As(OrderReference.Create)  factory, guard
+  reference  OrderReference  Dummy.String().NonEmpty().As(OrderReference.Create)  factory, guard
   customer   Customer        —                                                  TODO
-  quantity   int             Any.Int32().Positive()                             guard
+  quantity   int             Dummy.Int32().Positive()                             guard
 
-✓ AnyOrder.cs — 5 of 6 parameters inferred, 1 TODO.
+✓ DummyOrder.cs — 5 of 6 parameters inferred, 1 TODO.
 ```
 
 Il lit votre compilation, resserre ce que les guards du constructeur lui disent
@@ -134,7 +134,7 @@ dos.
 | --- | --- |
 | [Sommaire de la documentation](doc/handwritten/for-users/README.fr.md) | tout, organisé, en anglais et en français |
 | [Concepts fondamentaux](doc/handwritten/for-users/guides/core-concepts.fr.md) | recette contre valeur, et la règle d'or |
-| [Référence des générateurs](doc/handwritten/for-users/generators/README.fr.md) | chaque fabrique `Any.*` et ses contraintes |
+| [Référence des générateurs](doc/handwritten/for-users/generators/README.fr.md) | chaque fabrique `Dummy.*` et ses contraintes |
 | [Reproductibilité](doc/handwritten/for-users/guides/reproducibility.fr.md) | graines, portées et rejeu |
 | [Composition](doc/handwritten/for-users/guides/composition.fr.md) | des dummies pour vos propres types |
 | [Règles des analyzers](doc/handwritten/for-users/analyzers/README.fr.md) | une page par diagnostic |

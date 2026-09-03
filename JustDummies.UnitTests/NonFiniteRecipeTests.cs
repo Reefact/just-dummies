@@ -26,14 +26,14 @@ public sealed class NonFiniteRecipeTests {
     ///     then says WHICH entry point stopped refusing rather than that one of eight did.
     /// </summary>
     private static readonly Dictionary<string, Func<object>> Declarations = new() {
-        ["Any.Double().Except(double.NaN)"]                     = () => Any.Double().Except(double.NaN),
-        ["Any.Double().DifferentFrom(double.PositiveInfinity)"] = () => Any.Double().DifferentFrom(double.PositiveInfinity),
-        ["Any.Double().GreaterThan(double.NegativeInfinity)"]   = () => Any.Double().GreaterThan(double.NegativeInfinity),
-        ["Any.Double().LessThan(double.NaN)"]                   = () => Any.Double().LessThan(double.NaN),
-        ["Any.Double().OneOf(1.0, double.NaN)"]                 = () => Any.Double().OneOf(1.0, double.NaN),
-        ["Any.Single().Except(float.NaN)"]                      = () => Any.Single().Except(float.NaN),
-        ["Any.Single().GreaterThan(float.NegativeInfinity)"]    = () => Any.Single().GreaterThan(float.NegativeInfinity),
-        ["Any.Single().OneOf(1.0f, float.PositiveInfinity)"]    = () => Any.Single().OneOf(1.0f, float.PositiveInfinity),
+        ["Dummy.Double().Except(double.NaN)"]                     = () => Dummy.Double().Except(double.NaN),
+        ["Dummy.Double().DifferentFrom(double.PositiveInfinity)"] = () => Dummy.Double().DifferentFrom(double.PositiveInfinity),
+        ["Dummy.Double().GreaterThan(double.NegativeInfinity)"]   = () => Dummy.Double().GreaterThan(double.NegativeInfinity),
+        ["Dummy.Double().LessThan(double.NaN)"]                   = () => Dummy.Double().LessThan(double.NaN),
+        ["Dummy.Double().OneOf(1.0, double.NaN)"]                 = () => Dummy.Double().OneOf(1.0, double.NaN),
+        ["Dummy.Single().Except(float.NaN)"]                      = () => Dummy.Single().Except(float.NaN),
+        ["Dummy.Single().GreaterThan(float.NegativeInfinity)"]    = () => Dummy.Single().GreaterThan(float.NegativeInfinity),
+        ["Dummy.Single().OneOf(1.0f, float.PositiveInfinity)"]    = () => Dummy.Single().OneOf(1.0f, float.PositiveInfinity),
     };
 
     public static TheoryData<string> GuardedEntryPoints => [.. Declarations.Keys];
@@ -46,19 +46,19 @@ public sealed class NonFiniteRecipeTests {
 
     [Fact(DisplayName = "The refusal names the way out, so the wall explains its own exit.")]
     public void TheRefusalNamesTheWayOut() {
-        ArgumentException refusal = Assert.Throws<ArgumentException>(() => Any.Double().Except(double.NaN));
+        ArgumentException refusal = Assert.Throws<ArgumentException>(() => Dummy.Double().Except(double.NaN));
 
         Check.That(refusal.Message).Contains("must be finite");
         // The half the recipe is about: a message that states the rule and stops leaves the reader concluding the
         // library is missing a feature it deliberately does not have.
-        Check.That(refusal.Message).Contains("Any.OneOf");
+        Check.That(refusal.Message).Contains("Dummy.OneOf");
     }
 
     [Fact(DisplayName = "An explicit pool is the documented exit, and it really does yield the non-finite values.")]
     public void AnExplicitPoolYieldsNonFiniteValues() {
         HashSet<double> seen = [];
         for (int i = 0; i < SampleCount; i++) {
-            seen.Add(Any.OneOf(double.NaN, double.PositiveInfinity, 1.0).Generate());
+            seen.Add(Dummy.OneOf(double.NaN, double.PositiveInfinity, 1.0).Generate());
         }
 
         // NaN does not compare equal to itself, so membership is asserted through the predicate rather than Contains.
@@ -67,10 +67,10 @@ public sealed class NonFiniteRecipeTests {
         Check.That(seen).Contains(1.0);
     }
 
-    [Fact(DisplayName = "Any.Double() never draws a non-finite value.")]
+    [Fact(DisplayName = "Dummy.Double() never draws a non-finite value.")]
     public void UnconstrainedDrawsStayFinite() {
         for (int i = 0; i < SampleCount; i++) {
-            double value = Any.Double().Generate();
+            double value = Dummy.Double().Generate();
             Check.That(double.IsNaN(value) || double.IsInfinity(value)).IsFalse();
         }
     }
@@ -78,13 +78,13 @@ public sealed class NonFiniteRecipeTests {
     [Fact(DisplayName = "Decimal has nothing to guard: the type carries no NaN and no infinity to begin with.")]
     public void DecimalIsOutsideTheSubject() {
         // Pinned because the recipe makes a claim about the BCL, not about this library: a reader who went looking for
-        // the symmetry with Any.Double() is told the reason it does not exist. If decimal ever gained a non-finite
+        // the symmetry with Dummy.Double() is told the reason it does not exist. If decimal ever gained a non-finite
         // representation, that paragraph would become false and this test is what would say so.
         Check.That(typeof(decimal).GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)
                                   .Select(field => field.Name))
              .Not.Contains("NaN");
 
-        for (int i = 0; i < SampleCount; i++) { Check.ThatCode(() => Any.Decimal().Generate()).DoesNotThrow(); }
+        for (int i = 0; i < SampleCount; i++) { Check.ThatCode(() => Dummy.Decimal().Generate()).DoesNotThrow(); }
     }
 
     [SuppressMessage(NetAnalyzersRule.CA2242.Category, NetAnalyzersRule.CA2242.Id, Justification = SuppressionJustification.CA2242.ComparisonIsTheAssertion)]

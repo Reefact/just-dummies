@@ -19,15 +19,15 @@ namespace JustDummies.UnitTests;
 ///             A predefined type is written with its C# keyword (<c>string</c>, <c>int</c>), never with its CLR
 ///             name (<c>String</c>, <c>Int32</c>). Both bind to the same documentation ID, so the generated XML
 ///             is identical either way and the deviation drifts in unnoticed. It costs the source, not the
-///             package: inside <see cref="Any" /> a generic argument written <c>Action{String}</c> reads as the
-///             <see cref="Any.String" /> factory rather than as the CLR string.
+///             package: inside <see cref="Dummy" /> a generic argument written <c>Action{String}</c> reads as the
+///             <see cref="Dummy.String" /> factory rather than as the CLR string.
 ///         </item>
 ///         <item>
 ///             Inside the two types that host the type-named factories, a cref meaning the BCL type is qualified
 ///             with its namespace. A cref carrying no parameter list accepts a method as a target, so a bare
 ///             <c>DateTime</c> written there binds to the factory instead of the type. Unlike the first rule this
 ///             one is not cosmetic: the wrong target ships resolved in the package XML, and every reader follows
-///             it. Write <c>Any.DateTime</c> when the factory really is what is meant.
+///             it. Write <c>Dummy.DateTime</c> when the factory really is what is meant.
 ///         </item>
 ///     </list>
 /// </summary>
@@ -63,9 +63,9 @@ public sealed class XmlDocCrefConventionTests {
     private static readonly Regex CrefAttribute = new("cref=\"([^\"]*)\"", RegexOptions.Compiled);
     private static readonly Regex Identifier    = new("[A-Za-z_][A-Za-z0-9_]*", RegexOptions.Compiled);
 
-    // Any is partial across several files, so the hosts are found by what they declare rather than by name. The
-    // word boundary keeps AnyString, AnyContextTests and their like out.
-    private static readonly Regex FactoryHostDeclaration = new(@"\bclass\s+(Any|AnyContext)\b", RegexOptions.Compiled);
+    // Dummy is partial across several files, so the hosts are found by what they declare rather than by name. The
+    // word boundary keeps DummyString, AnyContextTests and their like out.
+    private static readonly Regex FactoryHostDeclaration = new(@"\bclass\s+(Dummy|DummyContext)\b", RegexOptions.Compiled);
 
     [Fact(DisplayName = "Every cref spells a predefined type with its C# keyword, not its CLR name.")]
     public void CrefsSpellPredefinedTypesWithTheirCSharpKeyword() {
@@ -99,7 +99,7 @@ public sealed class XmlDocCrefConventionTests {
              .That(offenders).IsEmpty();
     }
 
-    [Fact(DisplayName = "No cref inside Any or AnyContext is captured by a type-named factory.")]
+    [Fact(DisplayName = "No cref inside Dummy or DummyContext is captured by a type-named factory.")]
     public void CrefsInsideTheFactoryHostsNameTheTypeAndNotTheFactory() {
         HashSet<string> factories = TypeNamedFactories();
         List<string>    hosts     = SourceFiles().Where(DeclaresAFactoryHost).ToList();
@@ -107,9 +107,9 @@ public sealed class XmlDocCrefConventionTests {
         // Guard the two queries: an empty factory set or a lost host would make the loop below assert nothing.
         // The floors sit under the real counts — 24 factories on net10, 19 on the netstandard2.0 asset the net472
         // floor loads (the modern generators are absent there), and six declaring files.
-        Check.WithCustomMessage($"Only {factories.Count} type-named factories found on Any; the reflection lost its target.")
+        Check.WithCustomMessage($"Only {factories.Count} type-named factories found on Dummy; the reflection lost its target.")
              .That(factories.Count).IsStrictlyGreaterThan(15);
-        Check.WithCustomMessage($"Only {hosts.Count} file(s) declare Any or AnyContext; the scan lost its target.")
+        Check.WithCustomMessage($"Only {hosts.Count} file(s) declare Dummy or DummyContext; the scan lost its target.")
              .That(hosts.Count).IsStrictlyGreaterThan(4);
 
         List<string> offenders = [];
@@ -120,7 +120,7 @@ public sealed class XmlDocCrefConventionTests {
                 string head      = MemberPath(reference).Split('.')[0];
 
                 if (factories.Contains(head)) {
-                    offenders.Add($"{Path.GetFileName(host)}: cref \"{reference}\" binds to the Any.{head}() factory, not to the type it names; qualify it (System.{head}), or write Any.{head} when the factory is what is meant.");
+                    offenders.Add($"{Path.GetFileName(host)}: cref \"{reference}\" binds to the Dummy.{head}() factory, not to the type it names; qualify it (System.{head}), or write Dummy.{head} when the factory is what is meant.");
                 }
             }
         }
@@ -129,16 +129,16 @@ public sealed class XmlDocCrefConventionTests {
              .That(offenders).IsEmpty();
     }
 
-    // Read off the surface rather than listed by hand: Any's public, static, non-generic, parameterless methods
+    // Read off the surface rather than listed by hand: Dummy's public, static, non-generic, parameterless methods
     // returning a builder. It is the same query FactoryNamingConventionTests uses to prove each one is named
     // after the CLR type it produces — which is precisely what makes them collide with it here.
     private static HashSet<string> TypeNamedFactories() {
-        IEnumerable<string> names = typeof(Any)
+        IEnumerable<string> names = typeof(Dummy)
                                    .GetMethods(BindingFlags.Public | BindingFlags.Static)
                                    .Where(method => !method.IsGenericMethod
                                                  && method.GetParameters().Length == 0
                                                  && method.ReturnType.GetInterfaces().Any(candidate => candidate.IsGenericType
-                                                                                                    && candidate.GetGenericTypeDefinition() == typeof(IAny<>)))
+                                                                                                    && candidate.GetGenericTypeDefinition() == typeof(IDummy<>)))
                                    .Select(method => method.Name);
 
         return new HashSet<string>(names, StringComparer.Ordinal);
@@ -156,7 +156,7 @@ public sealed class XmlDocCrefConventionTests {
             if (KeywordFor.ContainsKey(identifier.Value)) { yield return identifier.Value; }
         }
 
-        // Elsewhere only the LEADING segment of the member path is a type. Any.String is the factory method and
+        // Elsewhere only the LEADING segment of the member path is a type. Dummy.String is the factory method and
         // must not be reported; String.Empty and System.String.Empty must.
         string[] path = MemberPath(cref).Split('.');
         if (path.Length > 0 && KeywordFor.ContainsKey(path[0])) { yield return path[0]; }

@@ -62,7 +62,7 @@ public sealed class ConstraintCallTests {
 
     [Fact(DisplayName = "The declaring method's name reaches the rendering as written.")]
     public void CarriesTheNameItWasGiven() {
-        ConstraintCall call = ConstraintCall.Of(nameof(Any.ElementOf));
+        ConstraintCall call = ConstraintCall.Of(nameof(Dummy.ElementOf));
 
         Check.That(call.ToString()).IsEqualTo("ElementOf()");
     }

@@ -134,13 +134,13 @@ internal static class SuppressionJustification {
         ///     S2245 is right that this generator is predictable; that predictability is the type's contract. A dummy is
         ///     worth generating only if the seed a failing run reports replays it, and a seeded <c>System.Random</c> is the
         ///     one BCL generator whose sequence a recorded seed reproduces. <c>RandomNumberGenerator</c> is seedless by
-        ///     design, so adopting it would delete <c>Any.Reproducibly</c>, <c>Any.WithSeed</c> and <c>Any.UseSeed</c>
+        ///     design, so adopting it would delete <c>Dummy.Reproducibly</c>, <c>Dummy.WithSeed</c> and <c>Dummy.UseSeed</c>
         ///     outright, along with the seed every generation failure reports. It would also break a checked contract:
         ///     <c>justdummies.yml</c> compares the SEEDBATCH banner that <c>tools/justdummies-check</c> draws from
         ///     <c>CrossTfmSeed</c> byte-for-byte between the lib/netstandard2.0 and lib/net8.0 assets. No draw in this
         ///     solution is security material: <c>SeededRandom</c> is internal and reachable only through the
-        ///     <c>Any.*</c> test-data generators, and <c>README.nuget.md</c> tells consumers never to draw a secret, key,
-        ///     token or nonce from <c>Any.*</c>.
+        ///     <c>Dummy.*</c> test-data generators, and <c>README.nuget.md</c> tells consumers never to draw a secret, key,
+        ///     token or nonce from <c>Dummy.*</c>.
         /// </summary>
         internal const string PredictabilityIsTheContract = "The predictability IS the contract: only a seeded System.Random replays the seed a failing run reports, and no draw here is security material. See the constant's summary.";
 
@@ -170,7 +170,7 @@ internal static class SuppressionJustification {
         /// <summary>
         ///     <c>TItem</c> and <c>TResult</c> are the element type and the collection type they build; <c>TSelf</c> is the
         ///     CRTP self-type that lets every fluent method return the concrete generator instead of this base. Dropping it
-        ///     would make each chained call return <c>AnyCollection</c> and force a cast at every step.
+        ///     would make each chained call return <c>DummyCollection</c> and force a cast at every step.
         /// </summary>
         internal const string CrtpSelfTypeKeepsTheChainConcrete = "TSelf is the CRTP self-type that keeps every chained call returning the concrete generator instead of this base. See the constant's summary.";
 
@@ -206,12 +206,12 @@ internal static class SuppressionJustification {
     internal static class S3928 {
 
         /// <summary>
-        ///     <c>pattern</c> is the public parameter the consumer passed to <c>Any.Pattern(...)</c>; this private factory
+        ///     <c>pattern</c> is the public parameter the consumer passed to <c>Dummy.Pattern(...)</c>; this private factory
         ///     only assembles the exception the parser throws on its behalf. Its own <c>reason</c> parameter names the
         ///     diagnosis, not the argument at fault, so pointing the exception at it would send the caller to the wrong
         ///     place. <see cref="CA2208" /> flags the same fact through the .NET analyzers' eyes and shares this text.
         /// </summary>
-        internal const string PatternIsTheCallersArgument = "pattern is the parameter the consumer passed to Any.Pattern(...); this private factory only assembles the exception on the parser's behalf. See the constant's summary.";
+        internal const string PatternIsTheCallersArgument = "pattern is the parameter the consumer passed to Dummy.Pattern(...); this private factory only assembles the exception on the parser's behalf. See the constant's summary.";
 
     }
 

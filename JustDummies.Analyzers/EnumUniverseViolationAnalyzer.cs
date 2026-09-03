@@ -9,7 +9,7 @@ using Microsoft.CodeAnalysis.Operations;
 namespace JustDummies.Analyzers;
 
 /// <summary>
-///     JD017 — reports an enum constraint naming a value the type does not define. <c>Any.Enum&lt;T&gt;()</c> yields
+///     JD017 — reports an enum constraint naming a value the type does not define. <c>Dummy.Enum&lt;T&gt;()</c> yields
 ///     a <b>declared</b> member, or on a <c>[Flags]</c> enum a combination of declared members where <c>OneOf</c>
 ///     names one; an undeclared numeric value the CLR would still let you write is never among them.
 /// </summary>
@@ -34,7 +34,7 @@ public sealed class EnumUniverseViolationAnalyzer : DiagnosticAnalyzer {
 
     private static void OnCompilationStart(CompilationStartAnalysisContext context) {
         KnownSymbols symbols = KnownSymbols.From(context.Compilation);
-        if (symbols.Any is null || symbols.IAny is null) { return; }
+        if (symbols.Dummy is null || symbols.IDummy is null) { return; }
 
         context.RegisterOperationAction(operationContext => Analyze(operationContext, symbols), OperationKind.Invocation);
     }
@@ -43,7 +43,7 @@ public sealed class EnumUniverseViolationAnalyzer : DiagnosticAnalyzer {
         IInvocationOperation invocation = (IInvocationOperation)context.Operation;
 
         if (invocation.Parent is IInvocationOperation) { return; }
-        if (!AnyChainFacts.TryGetChain(invocation, symbols, out IReadOnlyList<IInvocationOperation> constraints, out IInvocationOperation? factory)) { return; }
+        if (!DummyChainFacts.TryGetChain(invocation, symbols, out IReadOnlyList<IInvocationOperation> constraints, out IInvocationOperation? factory)) { return; }
         if (factory is null || factory.TargetMethod.Name != "Enum") { return; }
         if (factory.TargetMethod.TypeArguments.Length != 1 || factory.TargetMethod.TypeArguments[0] is not INamedTypeSymbol enumType) { return; }
         if (NegativeTestGuard.IsSoleBodyOfLambdaArgument(invocation.Syntax)) { return; }
@@ -138,7 +138,7 @@ public sealed class EnumUniverseViolationAnalyzer : DiagnosticAnalyzer {
 
     /// <summary>
     ///     Whether <paramref name="constant" /> can be obtained by OR-ing declared members — <c>Read | Write</c> yes,
-    ///     <c>99</c> no. Mirrors <c>AnyEnum.IsCombinationOfDeclaredMembers</c>, which is what the generator applies.
+    ///     <c>99</c> no. Mirrors <c>DummyEnum.IsCombinationOfDeclaredMembers</c>, which is what the generator applies.
     /// </summary>
     /// <remarks>
     ///     Decided arithmetically rather than by enumerating the closure: OR-ing every declared member whose bits the

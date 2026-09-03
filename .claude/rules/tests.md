@@ -5,7 +5,7 @@ paths:
   - "JustDummies.Analyzers.UnitTests/**/*.cs"
   - "JustDummies.Xunit.UnitTests/**/*.cs"
   - "JustDummies.Cli.UnitTests/**/*.cs"
-  - "JustDummies.GenAny.UnitTests/**/*.cs"
+  - "JustDummies.GenDummy.UnitTests/**/*.cs"
   - "JustDummies.Documentation.UnitTests/**/*.cs"
   - "build/stryker/*.json"
 ---
@@ -77,8 +77,8 @@ The configurations and the reasons behind them are in
 A refusal is stated with NFluent, in one expression:
 
 ```csharp
-Check.ThatCode(() => Any.Int32().Positive().Negative())
-     .Throws<ConflictingAnyConstraintException>()
+Check.ThatCode(() => Dummy.Int32().Positive().Negative())
+     .Throws<ConflictingDummyConstraintException>()
      .WhichMember(conflict => conflict.Message).Contains("Negative()", "Positive()");
 ```
 

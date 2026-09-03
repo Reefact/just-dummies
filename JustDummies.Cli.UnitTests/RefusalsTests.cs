@@ -2,7 +2,7 @@ using System;
 using System.IO;
 using System.Linq;
 
-using JustDummies.GenAny;
+using JustDummies.GenDummy;
 
 using NFluent;
 
@@ -121,9 +121,9 @@ public sealed class RefusalsTests : IDisposable {
 
     [Fact(DisplayName = "An existing file is named, with --force and what it costs.")]
     public void AnExistingFileIsNamedWithWhatForceCosts() {
-        string said = Say(console => Refusals.FileExists("/tests/AnyOrder.cs", console));
+        string said = Say(console => Refusals.FileExists("/tests/DummyOrder.cs", console));
 
-        Check.That(said).Contains("/tests/AnyOrder.cs");
+        Check.That(said).Contains("/tests/DummyOrder.cs");
         Check.That(said).Contains("--force");
         Check.That(said).Contains("lost");
     }

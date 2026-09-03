@@ -15,8 +15,8 @@
   utilisateur qui omet `.Generate()` obtient « une erreur de compilation avec un message actionnable ..., **jamais
   une valeur silencieusement fausse** ». Ses *Actions de suivi* concluaient : « Ne pas poursuivre l'analyseur
   optionnel suggéré par l'issue #190 ; la suppression le rend inutile. »
-* Cette évaluation tient partout où la position cible est typée par la **valeur générée**. `int x = Any.Int32()`
-  est un `CS0029`, `Any.Int32() == 5` un `CS0019`, et `Assert.Equal(Any.Int32(), value)` un `CS0411`. Là,
+* Cette évaluation tient partout où la position cible est typée par la **valeur générée**. `int x = Dummy.Int32()`
+  est un `CS0029`, `Dummy.Int32() == 5` un `CS0019`, et `Assert.Equal(Dummy.Int32(), value)` un `CS0411`. Là,
   supprimer la conversion a bien transformé une substitution silencieuse en erreur de compilation.
 * Elle ne tient pas partout où la position cible accepte le **type statique propre** du générateur. Les
   générateurs sont des types référence : aucune conversion n'est nécessaire et il n'y en avait donc aucune à
@@ -24,11 +24,11 @@
   d'interpolation, un opérande de concaténation `string`, ainsi que les `object.ToString()` / `object.Equals`
   hérités acceptent tous un générateur tel quel.
 * Aucun générateur JustDummies ne surcharge `ToString()`. Le rendre sous forme de texte produit donc le nom de
-  type CLR du constructeur — `$"{Any.String()}"` donne littéralement la chaîne `"JustDummies.AnyString"`. Vérifié
+  type CLR du constructeur — `$"{Dummy.String()}"` donne littéralement la chaîne `"JustDummies.DummyString"`. Vérifié
   par compilation : chacune des formes ci-dessus compile sans le moindre diagnostic.
 * La valeur obtenue est non vide, plausible et identique à chaque exécution. Elle atteint le code sous test comme
   s'il s'agissait d'une valeur arbitraire : le test passe au vert tout en exerçant une constante — précisément le
-  résultat qu'`Any` existe pour empêcher, et celui que l'ADR-0006 avait consigné comme impossible.
+  résultat qu'`Dummy` existe pour empêcher, et celui que l'ADR-0006 avait consigné comme impossible.
 * Une seconde forme voisine est silencieuse pour la même raison structurelle. Les générateurs étant des recettes
   immuables, une contrainte retourne un nouveau générateur ; un appel dont le résultat est jeté
   (`numbers.NonEmpty();`) se lit comme une mutation et perd l'invariant déclaré. Vérifié : aucun diagnostic
@@ -99,7 +99,7 @@ pas.
 ### Rendre les générateurs étanches au rendu textuel en surchargeant `ToString()`
 
 Considérée parce qu'une surcharge retournant la valeur tirée, ou une chaîne délibérément alarmante, rendrait
-`$"{Any.String()}"` inoffensif ou manifestement faux au premier coup d'œil, sans aucun analyseur.
+`$"{Dummy.String()}"` inoffensif ou manifestement faux au premier coup d'œil, sans aucun analyseur.
 
 Rejetée dans les deux lectures. Retourner une valeur tirée fait de `ToString()` un tirage effectuant et non
 idempotent — la conversion implicite à nouveau, sous un autre nom. Retourner une chaîne d'alarme améliore le
@@ -150,7 +150,7 @@ que si un humain lit la valeur.
   il corrige l'affirmation de risque résiduel.
 * ADR-0023 — fournir des analyseurs JustDummies de première partie ; le motif que la présente décision applique, et
   la source du grain de sévérité (« un vert silencieux mérite de faire échouer la compilation »).
-* ADR-0014 — appliquer les conflits `Any` structurels à la compilation, ceux dépendant des valeurs à l'exécution ;
+* ADR-0014 — appliquer les conflits `Dummy` structurels à la compilation, ceux dépendant des valeurs à l'exécution ;
   le même raisonnement « l'application suit ce que le mécanisme peut savoir », appliqué à la surface de
   contraintes.
 * Issue #190 — définir et documenter le contrat des conversions implicites de générateurs ; l'origine de

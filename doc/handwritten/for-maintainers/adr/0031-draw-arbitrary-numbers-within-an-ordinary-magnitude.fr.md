@@ -19,24 +19,24 @@ décades du maximum du type. Mesuré sur 5 000 tirages :
 
 | mesure                                              | résultat     |
 | --------------------------------------------------- | ------------ |
-| `Any.Double()` — `\|v\| < 1e6`                        | 0 / 5000     |
-| `Any.Single()` — `\|v\| < 1e34`                       | 0 / 5000     |
-| `Any.Decimal()` — `\|v\| < 1e24`                      | 0 / 5000     |
-| `Any.Double().Positive()` × 1,2 → `Infinity`         | 16,1 %       |
-| `Any.Decimal()` × 1,2m → `OverflowException`          | 17,1 %       |
+| `Dummy.Double()` — `\|v\| < 1e6`                        | 0 / 5000     |
+| `Dummy.Single()` — `\|v\| < 1e34`                       | 0 / 5000     |
+| `Dummy.Decimal()` — `\|v\| < 1e24`                      | 0 / 5000     |
+| `Dummy.Double().Positive()` × 1,2 → `Infinity`         | 16,1 %       |
+| `Dummy.Decimal()` × 1,2m → `OverflowException`          | 17,1 %       |
 | `x + 1 == x` sur un tirage `Positive()`              | vrai         |
 
 À ces magnitudes, un type flottant cesse de se comporter comme de l'arithmétique : une multiplication
 supplémentaire déborde — en `Infinity` pour les types binaires, contagieux et produisant des `NaN` en
 aval, et en `OverflowException` levée pour `decimal`. La précision est épuisée, d'où `x + 1 == x`. Une
-contrainte d'échelle n'a plus de chiffre décimal sur lequel agir : `Any.Decimal().WithScale(2)` était
+contrainte d'échelle n'a plus de chiffre décimal sur lequel agir : `Dummy.Decimal().WithScale(2)` était
 satisfaite par 5 000 tirages sur 5 000, tous des entiers à 29 chiffres — vraie et vide à la fois.
 
 Les magnitudes où s'exécute le code ordinaire, et où vivent les défauts d'arrondi, de comparaison et de
 formatage, ne sont jamais visitées.
 
-Les générateurs entiers partagent la même distribution — `Any.Int32()` tire sous 1e6 dans 0,06 % des cas,
-`Any.Int64()` dans 0 cas sur 5 000 — mais pas la même conséquence : un grand entier reste un entier
+Les générateurs entiers partagent la même distribution — `Dummy.Int32()` tire sous 1e6 dans 0,06 % des cas,
+`Dummy.Int64()` dans 0 cas sur 5 000 — mais pas la même conséquence : un grand entier reste un entier
 ordinaire, l'arithmétique entière C# wrappe silencieusement au lieu de saturer ou de lever, `x + 1 != x`
 tient toujours, et un débordement d'entier dans le code testé est fréquemment un vrai défaut. Les builders
 entiers reposent en outre sur le moteur ordinal partagé, dont quatre familles de builders dépendent.

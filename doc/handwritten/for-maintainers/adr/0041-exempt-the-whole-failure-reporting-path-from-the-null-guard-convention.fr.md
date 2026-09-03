@@ -28,7 +28,7 @@ devenue un petit type, `ConstraintClaim`. Il est construit au site de levée, en
 factory :
 
 ```csharp
-throw ConflictingAnyConstraintException.Contradicts(applying,
+throw ConflictingDummyConstraintException.Contradicts(applying,
                                                     ConstraintClaim.Of(_exactConstraint!, $"already fixes the count at {V(exact)}"),
                                                     ConstraintClaim.Of(_minConstraint!,   $"already requires at least {Elements(_min)}"));
 ```

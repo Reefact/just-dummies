@@ -12,10 +12,10 @@ message qui nomme les deux côtés d'une contradiction.
 ```mermaid
 flowchart TD
     accTitle: La hiérarchie d'exceptions de la bibliothèque
-    accDescr: DummyException est abstraite et dérive d'Exception. Trois types concrets en dérivent. AnyGenerationException, quand un tirage n'a pas pu aboutir. ConflictingAnyConstraintException, quand les contraintes n'admettent aucune valeur. UnsupportedRegexException, quand le motif sort du sous-ensemble régulier.
+    accDescr: DummyException est abstraite et dérive d'Exception. Trois types concrets en dérivent. DummyGenerationException, quand un tirage n'a pas pu aboutir. ConflictingDummyConstraintException, quand les contraintes n'admettent aucune valeur. UnsupportedRegexException, quand le motif sort du sous-ensemble régulier.
     E["Exception"] --> D["DummyException<br/><i>abstraite — la racine de la bibliothèque</i>"]
-    D --> A["AnyGenerationException<br/><i>un tirage n'a pas pu aboutir</i>"]
-    D --> C["ConflictingAnyConstraintException<br/><i>les contraintes n'admettent aucune valeur</i>"]
+    D --> A["DummyGenerationException<br/><i>un tirage n'a pas pu aboutir</i>"]
+    D --> C["ConflictingDummyConstraintException<br/><i>les contraintes n'admettent aucune valeur</i>"]
     D --> U["UnsupportedRegexException<br/><i>le motif sort du sous-ensemble régulier</i>"]
     style D fill:#e8eaf6,stroke:#3f51b5,color:#1a237e
     style A fill:#fff8e1,stroke:#f9a825,color:#e65100
@@ -29,7 +29,7 @@ rien d'autre :
 <!-- jd:allow=JD023 -->
 ```csharp
 try {
-    int impossible = Any.Int32().Between(1, 10).MultipleOf(50).Generate();
+    int impossible = Dummy.Int32().Between(1, 10).MultipleOf(50).Generate();
 } catch (DummyException exception) {
     Console.Error.WriteLine(exception.Message);
 }
@@ -40,7 +40,7 @@ générateur est attendu, ou une longueur négative, lève les habituelles `Argu
 `ArgumentException` — ce sont des bogues du code appelant, pas des affirmations sur un jeu de
 contraintes.
 
-## `ConflictingAnyConstraintException` : aucune valeur possible
+## `ConflictingDummyConstraintException` : aucune valeur possible
 
 C'est celle que vous rencontrerez le plus, et c'est une fonctionnalité, non un défaut. Parce que les
 valeurs sont construites pour satisfaire toute la spécification au lieu d'être tirées puis filtrées,
@@ -49,7 +49,7 @@ une spécification qui ne satisfait rien est détectée au lieu d'être parcouru
 <!-- jd:allow=JD023 -->
 ```csharp
 // Aucun entier n'est à la fois supérieur à 100 et inférieur à 10.
-int impossible = Any.Int32().GreaterThan(100).LessThan(10).Generate();
+int impossible = Dummy.Int32().GreaterThan(100).LessThan(10).Generate();
 ```
 
 **Le message nomme les deux côtés du conflit.** C'est une garantie du produit, non un hasard de
@@ -62,7 +62,7 @@ Les conflits prennent quelques formes reconnaissables :
 | --- | --- |
 | bornes qui se croisent | `.GreaterThan(100).LessThan(10)` |
 | un treillis sans point dans l'intervalle | `.Between(1, 10).MultipleOf(50)` |
-| des exclusions qui vident le domaine | `Any.Boolean().Except(true, false)` |
+| des exclusions qui vident le domaine | `Dummy.Boolean().Except(true, false)` |
 | une longueur trop courte pour les fragments | `.StartingWith("ORDER-").WithLength(3)` |
 | un effectif qu'aucun vivier ne peut remplir | 100 valeurs distinctes depuis un vivier de trois |
 
@@ -84,7 +84,7 @@ différence entre un build rouge et un test rouge à trois heures du matin :
 Les vérifications à l'exécution restent en place dans tous les cas : elles couvrent tout argument
 qu'un analyzer ne peut pas voir — calculé, lu dans un champ, ou reçu en paramètre.
 
-## `AnyGenerationException` : un tirage qui n'a pas abouti
+## `DummyGenerationException` : un tirage qui n'a pas abouti
 
 Quelques contraintes ne peuvent pas être honorées par construction. Exclure des valeurs d'un
 intervalle continu, satisfaire une expression régulière et remplir une collection d'éléments
@@ -99,14 +99,14 @@ tentatives, puis un refus :
 decimal[] excluded = Enumerable.Range(0, 100).Select(index => index / 100m).ToArray();
 
 try {
-    decimal awkward = Any.Decimal().Between(0m, 1m).WithScale(2).Except(excluded).Generate();
-} catch (AnyGenerationException exception) {
+    decimal awkward = Dummy.Decimal().Between(0m, 1m).WithScale(2).Except(excluded).Generate();
+} catch (DummyGenerationException exception) {
     // exception.Seed porte la graine de l'exécution, si une graine était épinglée — l'échec se rejoue donc.
     Console.Error.WriteLine($"{exception.Message} (seed: {exception.Seed})");
 }
 ```
 
-`AnyGenerationException` porte une propriété `Seed` nullable. Quand le tirage a eu lieu dans une
+`DummyGenerationException` porte une propriété `Seed` nullable. Quand le tirage a eu lieu dans une
 portée reproductible, la graine qui l'a produit figure sur l'exception : un échec de retirage borné
 est donc aussi rejouable que n'importe quel autre échec.
 
@@ -116,14 +116,14 @@ d'éléments distincts.
 
 ## `UnsupportedRegexException` : hors du sous-ensemble régulier
 
-`Any.StringMatching` construit une valeur à partir du motif au lieu de tester des candidats contre
+`Dummy.StringMatching` construit une valeur à partir du motif au lieu de tester des candidats contre
 lui, et c'est pourquoi il peut garantir la correspondance. Construire exige que le motif soit
 **régulier**, et la bibliothèque le dit plutôt que de deviner :
 
 ```csharp
 try {
     // Une référence arrière n'est pas une construction régulière : aucun automate fini ne la porte.
-    string impossible = Any.StringMatching(@"(\w+)\s\1").Generate();
+    string impossible = Dummy.StringMatching(@"(\w+)\s\1").Generate();
 } catch (UnsupportedRegexException exception) {
     Console.Error.WriteLine(exception.Message);
 }
@@ -139,11 +139,11 @@ d'expressions régulières pour élargir la couverture, est
 
 | Symptôme | Cause probable | Remède |
 | --- | --- | --- |
-| `ConflictingAnyConstraintException` à la ligne d'arrangement | deux contraintes se contredisent | lisez le message — il nomme les deux — et retirez celle qui n'est pas un invariant du domaine |
-| `AnyGenerationException` après une pause | un retirage borné a épuisé ses tentatives | élargissez le domaine, ou demandez moins de valeurs distinctes |
-| `UnsupportedRegexException` | le motif utilise une construction non régulière | réécrivez-le dans le sous-ensemble régulier, ou construisez la chaîne avec les contraintes d'`Any.String()` |
+| `ConflictingDummyConstraintException` à la ligne d'arrangement | deux contraintes se contredisent | lisez le message — il nomme les deux — et retirez celle qui n'est pas un invariant du domaine |
+| `DummyGenerationException` après une pause | un retirage borné a épuisé ses tentatives | élargissez le domaine, ou demandez moins de valeurs distinctes |
+| `UnsupportedRegexException` | le motif utilise une construction non régulière | réécrivez-le dans le sous-ensemble régulier, ou construisez la chaîne avec les contraintes d'`Dummy.String()` |
 | une valeur que votre fabrique refuse | les contraintes sont plus lâches que la fabrique | resserrez les contraintes jusqu'à ce qu'elles impliquent le contrat de la fabrique |
-| un test qui passe à la relance | les valeurs en échec ont disparu | enveloppez le corps dans `Any.Reproducibly` pour que le prochain échec nomme sa graine |
+| un test qui passe à la relance | les valeurs en échec ont disparu | enveloppez le corps dans `Dummy.Reproducibly` pour que le prochain échec nomme sa graine |
 | un avertissement de build `JD0NN` | une erreur décidable à la compilation | ouvrez la page de règle liée depuis le diagnostic |
 
 ---

@@ -290,9 +290,9 @@ jobs:
           # of the 1616 mutants this leg tests. Any pull request touching the guard reader — which is
           # most of them here — would pull that whole file in, against the forty-five mutants a two-to-
           # three minute leg affords.
-          - name: justdummies-genany
-            project: JustDummies.GenAny
-            config: build/stryker/justdummies-genany.json
+          - name: justdummies-gendummy
+            project: JustDummies.GenDummy
+            config: build/stryker/justdummies-gendummy.json
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7

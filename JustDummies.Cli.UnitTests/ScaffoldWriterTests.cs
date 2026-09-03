@@ -2,7 +2,7 @@ using System;
 using System.IO;
 using System.Text;
 
-using JustDummies.GenAny;
+using JustDummies.GenDummy;
 
 using NFluent;
 
@@ -27,7 +27,7 @@ public sealed class ScaffoldWriterTests : IDisposable {
         WriteOutcome written = ScaffoldWriter.Write(file, directory, force: false);
 
         Check.That(written.Succeeded).IsTrue();
-        Check.That(written.Path).IsEqualTo(Path.Combine(directory, "AnySubject.cs"));
+        Check.That(written.Path).IsEqualTo(Path.Combine(directory, "DummySubject.cs"));
         Check.That(File.ReadAllText(written.Path)).IsEqualTo(file.SourceText);
     }
 
@@ -53,7 +53,7 @@ public sealed class ScaffoldWriterTests : IDisposable {
     // once.
     [Fact(DisplayName = "An existing file is refused, and left exactly as it was.")]
     public void AnExistingFileIsRefused() {
-        string path = Path.Combine(directory, "AnySubject.cs");
+        string path = Path.Combine(directory, "DummySubject.cs");
 
         File.WriteAllText(path, "// mine");
 
@@ -68,7 +68,7 @@ public sealed class ScaffoldWriterTests : IDisposable {
     public void ForceOverwritesIt() {
         ScaffoldedFile file = Emitted();
 
-        File.WriteAllText(Path.Combine(directory, "AnySubject.cs"), "// mine");
+        File.WriteAllText(Path.Combine(directory, "DummySubject.cs"), "// mine");
 
         WriteOutcome written = ScaffoldWriter.Write(file, directory, force: true);
 
@@ -85,16 +85,16 @@ public sealed class ScaffoldWriterTests : IDisposable {
         WriteOutcome written = ScaffoldWriter.Write(Emitted(), below, force: false);
 
         Check.That(written.Succeeded).IsTrue();
-        Check.That(File.Exists(Path.Combine(below, "AnySubject.cs"))).IsTrue();
+        Check.That(File.Exists(Path.Combine(below, "DummySubject.cs"))).IsTrue();
     }
 
     private static ScaffoldedFile Emitted() {
         return GeneratorEmitter.Emit(new ScaffoldPlan(new TargetType("Subject", "Shop.Domain", NamespaceStyle.FileScoped),
-                                                      "AnySubject",
+                                                      "DummySubject",
                                                       ["JustDummies"],
                                                       [
                                                           ScaffoldedParameter.DrawnFrom("value", "string",
-                                                                                        "Any.String().NonEmpty()",
+                                                                                        "Dummy.String().NonEmpty()",
                                                                                         Provenance.None)
                                                       ]));
     }

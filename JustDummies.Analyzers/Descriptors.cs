@@ -12,41 +12,41 @@ internal static class Descriptors {
     public static readonly DiagnosticDescriptor AsyncBodyPassedToReproducibly = new(
         id: JustDummiesRule.JD001.Id,
         title: JustDummiesRule.JD001.Title,
-        messageFormat: "Pass the asynchronous body to Any.ReproduciblyAsync and await it: Any.Reproducibly takes an Action, so an async lambda runs as 'async void' and its failures never reach the test",
+        messageFormat: "Pass the asynchronous body to Dummy.ReproduciblyAsync and await it: Dummy.Reproducibly takes an Action, so an async lambda runs as 'async void' and its failures never reach the test",
         category: JustDummiesRule.JD001.Category,
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true,
-        description: "Any.Reproducibly takes a synchronous Action. An async lambda bound to it becomes 'async void', whose exceptions escape the reproducible scope entirely and never fail the test. Use Any.ReproduciblyAsync(Func<Task>) and await it.",
+        description: "Dummy.Reproducibly takes a synchronous Action. An async lambda bound to it becomes 'async void', whose exceptions escape the reproducible scope entirely and never fail the test. Use Dummy.ReproduciblyAsync(Func<Task>) and await it.",
         helpLinkUri: JustDummiesRule.JD001.HelpLinkUri);
 
     public static readonly DiagnosticDescriptor DiscardedReproduciblyAsyncResult = new(
         id: JustDummiesRule.JD002.Id,
         title: JustDummiesRule.JD002.Title,
-        messageFormat: "Await the task returned by Any.ReproduciblyAsync; discarding it silently drops the body's failures",
+        messageFormat: "Await the task returned by Dummy.ReproduciblyAsync; discarding it silently drops the body's failures",
         category: JustDummiesRule.JD002.Category,
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true,
-        description: "Any.ReproduciblyAsync returns a Task that faults with the body's exception. Discarding it (as a bare statement or via '_ =') lets a failing test pass green. Await it.",
+        description: "Dummy.ReproduciblyAsync returns a Task that faults with the body's exception. Discarding it (as a bare statement or via '_ =') lets a failing test pass green. Await it.",
         helpLinkUri: JustDummiesRule.JD002.HelpLinkUri);
 
     public static readonly DiagnosticDescriptor AwaitableBodyPassedToReproducibly = new(
         id: JustDummiesRule.JD003.Id,
         title: JustDummiesRule.JD003.Title,
-        messageFormat: "Pass the asynchronous body to Any.ReproduciblyAsync and await it: bound to Any.Reproducibly's Action the body is never awaited, so the scope returns before the assertions run and their failures never reach the test",
+        messageFormat: "Pass the asynchronous body to Dummy.ReproduciblyAsync and await it: bound to Dummy.Reproducibly's Action the body is never awaited, so the scope returns before the assertions run and their failures never reach the test",
         category: JustDummiesRule.JD003.Category,
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true,
-        description: "Any.Reproducibly takes a synchronous Action. A synchronous lambda whose body produces a task drops that task, and an 'async void' method group bound to the Action raises its failures outside the scope entirely. Neither is reported by the compiler — CS4014 does not fire when the enclosing lambda is not itself async. Use Any.ReproduciblyAsync(Func<Task>) and await it.",
+        description: "Dummy.Reproducibly takes a synchronous Action. A synchronous lambda whose body produces a task drops that task, and an 'async void' method group bound to the Action raises its failures outside the scope entirely. Neither is reported by the compiler — CS4014 does not fire when the enclosing lambda is not itself async. Use Dummy.ReproduciblyAsync(Func<Task>) and await it.",
         helpLinkUri: JustDummiesRule.JD003.HelpLinkUri);
 
     public static readonly DiagnosticDescriptor DiscardedSeedingResult = new(
         id: JustDummiesRule.JD004.Id,
         title: JustDummiesRule.JD004.Title,
-        messageFormat: "Do not discard the result of Any.{0}: {1}",
+        messageFormat: "Do not discard the result of Dummy.{0}: {1}",
         category: JustDummiesRule.JD004.Category,
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true,
-        description: "Any.UseSeed returns the handle that closes the scope it opened; dropping it leaves the seed pinned for whatever runs next in the same execution context, silently making later tests replay one fixed sequence. Any.WithSeed returns an isolated context and pins nothing, so discarding it is dead code at a call site that reads as if the run had been seeded.",
+        description: "Dummy.UseSeed returns the handle that closes the scope it opened; dropping it leaves the seed pinned for whatever runs next in the same execution context, silently making later tests replay one fixed sequence. Dummy.WithSeed returns an isolated context and pins nothing, so discarding it is dead code at a call site that reads as if the run had been seeded.",
         helpLinkUri: JustDummiesRule.JD004.HelpLinkUri);
 
     public static readonly DiagnosticDescriptor GeneratorRenderedAsText = new(
@@ -121,27 +121,27 @@ internal static class Descriptors {
         // mistake this rule exists to catch, so it cannot be narrowed away. The rule earns its keep in a consumer
         // suite, where object-typed assertion helpers are common and reflection over generators is not.
         isEnabledByDefault: false,
-        description: "Generators are reference types, so an object, dynamic or params object[] position accepts one with no conversion — the residue the removal of the implicit conversions could not close. An assertion helper taking object then inspects the recipe (Assert.NotNull(Any.String()) is green for ever), a theory row carries the recipe into the code under test, and Equals against a value is false for every run and every seed. Opt-in: a suite that manipulates generators as objects on purpose would see this fire on legitimate code.",
+        description: "Generators are reference types, so an object, dynamic or params object[] position accepts one with no conversion — the residue the removal of the implicit conversions could not close. An assertion helper taking object then inspects the recipe (Assert.NotNull(Dummy.String()) is green for ever), a theory row carries the recipe into the code under test, and Equals against a value is false for every run and every seed. Opt-in: a suite that manipulates generators as objects on purpose would see this fire on legitimate code.",
         helpLinkUri: JustDummiesRule.JD011.HelpLinkUri);
 
     public static readonly DiagnosticDescriptor GeneratorPooledAsValue = new(
         id: JustDummiesRule.JD012.Id,
         title: JustDummiesRule.JD012.Title,
-        messageFormat: "Call Generate() on each pooled generator: Any.{0} inferred a pool of recipes, so drawing from it yields a recipe rather than a value",
+        messageFormat: "Call Generate() on each pooled generator: Dummy.{0} inferred a pool of recipes, so drawing from it yields a recipe rather than a value",
         category: JustDummiesRule.JD012.Category,
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true,
-        description: "Any.OneOf(Any.Int32(), Any.Int32()) compiles and infers the builder type as the pool's element type, so the pool holds recipes. What makes this a trap rather than an obvious mistake is that the surface is inconsistent about it: pooling generators of different types fails type inference and the compiler catches it, while two of the same type bind cleanly.",
+        description: "Dummy.OneOf(Dummy.Int32(), Dummy.Int32()) compiles and infers the builder type as the pool's element type, so the pool holds recipes. What makes this a trap rather than an obvious mistake is that the surface is inconsistent about it: pooling generators of different types fails type inference and the compiler catches it, while two of the same type bind cleanly.",
         helpLinkUri: JustDummiesRule.JD012.HelpLinkUri);
 
     public static readonly DiagnosticDescriptor HeldCollectionPassedToOneOf = new(
         id: JustDummiesRule.JD013.Id,
         title: JustDummiesRule.JD013.Title,
-        messageFormat: "Use Any.ElementOf to draw from the collection's elements: passed to OneOf it binds T to {0}, so the pool holds one item and every draw returns the same one",
+        messageFormat: "Use Dummy.ElementOf to draw from the collection's elements: passed to OneOf it binds T to {0}, so the pool holds one item and every draw returns the same one",
         category: JustDummiesRule.JD013.Category,
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true,
-        description: "Any.OneOf takes params T[], so a single collection argument binds T to the collection type itself rather than to its elements. The call compiles, draws succeed, and every one of them returns the same collection — the arbitrary choice the test claims to make never varies. Any.ElementOf is the entry point that draws from a collection's elements; an explicit type argument states the opposite intent and is left alone.",
+        description: "Dummy.OneOf takes params T[], so a single collection argument binds T to the collection type itself rather than to its elements. The call compiles, draws succeed, and every one of them returns the same collection — the arbitrary choice the test claims to make never varies. Dummy.ElementOf is the entry point that draws from a collection's elements; an explicit type argument states the opposite intent and is left alone.",
         helpLinkUri: JustDummiesRule.JD013.HelpLinkUri);
 
     public static readonly DiagnosticDescriptor RejectedConstantArgument = new(
@@ -161,7 +161,7 @@ internal static class Descriptors {
         category: JustDummiesRule.JD015.Category,
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true,
-        description: "The constants written at the call site admit no value, so the chain throws a ConflictingAnyConstraintException the moment the arrange line runs: the shape cannot fit the declared length, or the declared character constraints admit -- alone or between them, since a value must satisfy every one of them -- none of the values a OneOf(...) supplies. There being no filler beside a value set, such a constraint governs nothing of its own and simply empties the pool, so the remedy is to drop it. This is the case ADR-0014 names as the one an analyzer should carry: WithLength(3).StartingWith(\"ORD-\") conflicts while WithLength(12).StartingWith(\"ORD-\") does not, from identical call sites and identical static types — only the argument value tells them apart. A character family is not checked against a fragment: it governs what the generator draws, never a literal the caller wrote (ADR-0079).",
+        description: "The constants written at the call site admit no value, so the chain throws a ConflictingDummyConstraintException the moment the arrange line runs: the shape cannot fit the declared length, or the declared character constraints admit -- alone or between them, since a value must satisfy every one of them -- none of the values a OneOf(...) supplies. There being no filler beside a value set, such a constraint governs nothing of its own and simply empties the pool, so the remedy is to drop it. This is the case ADR-0014 names as the one an analyzer should carry: WithLength(3).StartingWith(\"ORD-\") conflicts while WithLength(12).StartingWith(\"ORD-\") does not, from identical call sites and identical static types — only the argument value tells them apart. A character family is not checked against a fragment: it governs what the generator draws, never a literal the caller wrote (ADR-0079).",
         helpLinkUri: JustDummiesRule.JD015.HelpLinkUri);
 
     public static readonly DiagnosticDescriptor CollectionConstraintsAdmitNoValue = new(
@@ -177,21 +177,21 @@ internal static class Descriptors {
     public static readonly DiagnosticDescriptor EnumUniverseViolation = new(
         id: JustDummiesRule.JD017.Id,
         title: JustDummiesRule.JD017.Title,
-        messageFormat: "Any.Enum draws only values the type defines: {0}",
+        messageFormat: "Dummy.Enum draws only values the type defines: {0}",
         category: JustDummiesRule.JD017.Category,
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true,
-        description: "Any.Enum<T>() only ever yields a value T defines: one of its declared members, or — on a [Flags] enum, where OneOf accepts a combination on its own account — an OR of them. It never yields an undeclared numeric value the CLR would still let you write, so naming one is not a narrowing that happens to be empty but a category error. An exclusion that removes every value left to draw is the same error from the other side.",
+        description: "Dummy.Enum<T>() only ever yields a value T defines: one of its declared members, or — on a [Flags] enum, where OneOf accepts a combination on its own account — an OR of them. It never yields an undeclared numeric value the CLR would still let you write, so naming one is not a narrowing that happens to be empty but a category error. An exclusion that removes every value left to draw is the same error from the other side.",
         helpLinkUri: JustDummiesRule.JD017.HelpLinkUri);
 
     public static readonly DiagnosticDescriptor NestedReproducibilityScope = new(
         id: JustDummiesRule.JD018.Id,
         title: JustDummiesRule.JD018.Title,
-        messageFormat: "This Any.Reproducibly runs inside {0}, whose reported seed then replays nothing: the inner scope draws a fresh seed on every run",
+        messageFormat: "This Dummy.Reproducibly runs inside {0}, whose reported seed then replays nothing: the inner scope draws a fresh seed on every run",
         category: JustDummiesRule.JD018.Category,
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true,
-        description: "Any.Reproducibly takes its seed from Guid.NewGuid().GetHashCode(), not from the ambient source, so an inner scope ignores whatever the outer one pinned and draws afresh every run. The outer mechanism still reports its own seed, so the failure names a seed that reproduces nothing — a wrong instruction rather than a wrong result. The seeded overload is left alone: pinning a chosen seed inside is deliberate.",
+        description: "Dummy.Reproducibly takes its seed from Guid.NewGuid().GetHashCode(), not from the ambient source, so an inner scope ignores whatever the outer one pinned and draws afresh every run. The outer mechanism still reports its own seed, so the failure names a seed that reproduces nothing — a wrong instruction rather than a wrong result. The seeded overload is left alone: pinning a chosen seed inside is deliberate.",
         helpLinkUri: JustDummiesRule.JD018.HelpLinkUri);
 
     public static readonly DiagnosticDescriptor CommittedReplaySeed = new(
@@ -206,14 +206,14 @@ internal static class Descriptors {
         description: "The seeded overloads exist to replay a run a failure reported — correct while reproducing, wrong once committed, because the test then draws the same values for ever and stops surfacing the coupling the library exists to reveal. Opt-in: a statistical test legitimately pins a seed, and this repository's maintainer guide says so, which makes the rule a pre-release sweep rather than a standing check.",
         helpLinkUri: JustDummiesRule.JD019.HelpLinkUri);
 
-    public static readonly DiagnosticDescriptor SharedStaticAnyContext = new(
+    public static readonly DiagnosticDescriptor SharedStaticDummyContext = new(
         id: JustDummiesRule.JD020.Id,
         title: JustDummiesRule.JD020.Title,
         messageFormat: "Give each unit of work its own context: '{0}' is shared, and interleaved draws make neither the sequence nor the multiset stable across runs",
         category: JustDummiesRule.JD020.Category,
         defaultSeverity: DiagnosticSeverity.Info,
         isEnabledByDefault: true,
-        description: "AnyContext's own documentation states the hazard: a context is safe to draw from concurrently, but sharing one across threads costs the replay rather than the values. A static context looks maximally deterministic — a literal seed, right there in the source — while a parallel suite gets a different value per test per run from it.",
+        description: "DummyContext's own documentation states the hazard: a context is safe to draw from concurrently, but sharing one across threads costs the replay rather than the values. A static context looks maximally deterministic — a literal seed, right there in the source — while a parallel suite gets a different value per test per run from it.",
         helpLinkUri: JustDummiesRule.JD020.HelpLinkUri);
 
     public static readonly DiagnosticDescriptor BlankReplaySnippet = new(
@@ -223,13 +223,13 @@ internal static class Descriptors {
         category: JustDummiesRule.JD021.Category,
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true,
-        description: "Any.UseSeed(int, string) rejects a blank snippet. Because that scope is normally opened from a test-framework adapter's hook, the throw surfaces as an infrastructure failure on every test in the suite rather than as one failing assertion — a disproportionately expensive way to learn about a typo the compiler can already see.",
+        description: "Dummy.UseSeed(int, string) rejects a blank snippet. Because that scope is normally opened from a test-framework adapter's hook, the throw surfaces as an infrastructure failure on every test in the suite rather than as one failing assertion — a disproportionately expensive way to learn about a typo the compiler can already see.",
         helpLinkUri: JustDummiesRule.JD021.HelpLinkUri);
 
     public static readonly DiagnosticDescriptor ParallelDrawWithoutPerItemSeed = new(
         id: JustDummiesRule.JD022.Id,
         title: JustDummiesRule.JD022.Title,
-        messageFormat: "Open an Any.UseSeed scope inside the work item: the ambient scope reaches every worker, so the draws interleave and the run replays nothing",
+        messageFormat: "Open an Dummy.UseSeed scope inside the work item: the ambient scope reaches every worker, so the draws interleave and the run replays nothing",
         category: JustDummiesRule.JD022.Category,
         defaultSeverity: DiagnosticSeverity.Info,
         isEnabledByDefault: true,
@@ -243,7 +243,7 @@ internal static class Descriptors {
         category: JustDummiesRule.JD023.Category,
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true,
-        description: "The constant constraints narrow the domain to nothing, so the chain throws a ConflictingAnyConstraintException the moment the arrange line runs. The library computes this with one emptiness test over bounds, lattice and allow-list; this rule runs the same test over the constants written at the call site, and stays silent for every argument it cannot fold.",
+        description: "The constant constraints narrow the domain to nothing, so the chain throws a ConflictingDummyConstraintException the moment the arrange line runs. The library computes this with one emptiness test over bounds, lattice and allow-list; this rule runs the same test over the constants written at the call site, and stays silent for every argument it cannot fold.",
         helpLinkUri: JustDummiesRule.JD023.HelpLinkUri);
 
     public static readonly DiagnosticDescriptor ConstraintWithNoEffect = new(
@@ -283,7 +283,7 @@ internal static class Descriptors {
         category: JustDummiesRule.JD030.Category,
         defaultSeverity: DiagnosticSeverity.Info,
         isEnabledByDefault: true,
-        description: "An unconstrained Any.String() draws 0 to 1024 characters from the whole of ASCII, and NonEmpty() alone only moves that to 1 to 1025 -- it raises the floor and leaves the ceiling where it was. That default is deliberately inconvenient (ADR-0076), because a dummy short enough to be comfortable is one no length invariant is ever exercised against -- but an inconvenient default only teaches when something names the remedy, and a wall of characters in a failure message does not say WithMaxLength. This rule says it, at the call site. Declare the length the surrounding code actually allows: a column width, a contract bound, an exact size. Reported as information, not as a warning: a length a test genuinely does not care about is a legitimate thing to leave unsaid, so this is a fact to weigh, never a verdict.",
+        description: "An unconstrained Dummy.String() draws 0 to 1024 characters from the whole of ASCII, and NonEmpty() alone only moves that to 1 to 1025 -- it raises the floor and leaves the ceiling where it was. That default is deliberately inconvenient (ADR-0076), because a dummy short enough to be comfortable is one no length invariant is ever exercised against -- but an inconvenient default only teaches when something names the remedy, and a wall of characters in a failure message does not say WithMaxLength. This rule says it, at the call site. Declare the length the surrounding code actually allows: a column width, a contract bound, an exact size. Reported as information, not as a warning: a length a test genuinely does not care about is a legitimate thing to leave unsaid, so this is a fact to weigh, never a verdict.",
         helpLinkUri: JustDummiesRule.JD030.HelpLinkUri);
 
     public static readonly DiagnosticDescriptor PairedBoundsHaveARangeForm = new(

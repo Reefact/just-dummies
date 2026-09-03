@@ -4,7 +4,7 @@
 🇬🇧 [English](./justdummies-xunit.en.md) | 🇫🇷 Français (ce fichier)
 
 L'adaptateur xUnit **v3**. Il n'apporte qu'une seule chose — un attribut `[Reproducible]` — et cette
-seule chose supprime le besoin d'envelopper le moindre corps de test dans `Any.Reproducibly`.
+seule chose supprime le besoin d'envelopper le moindre corps de test dans `Dummy.Reproducibly`.
 
 ## Installation
 
@@ -29,8 +29,8 @@ public sealed class OrderTests {
     [Fact, Reproducible]
     public void A_20_percent_discount_takes_a_fifth_off_the_order() {
         // Arrange
-        string anyReference = Any.String().StartingWith("ORD-").WithLength(12).Generate();
-        string anyCustomer  = Any.String().Alpha().WithLengthBetween(1, 50).Generate();
+        string anyReference = Dummy.String().StartingWith("ORD-").WithLength(12).Generate();
+        string anyCustomer  = Dummy.String().Alpha().WithLengthBetween(1, 50).Generate();
 
         Order order = new Order(anyReference, anyCustomer, amount: 100m);
 
@@ -55,8 +55,8 @@ public sealed class OrderTests {
     [Fact]
     public void A_20_percent_discount_takes_a_fifth_off_the_order() {
         // Arrange
-        string anyReference = Any.String().StartingWith("ORD-").WithLength(12).Generate();
-        string anyCustomer  = Any.String().Alpha().WithLengthBetween(1, 50).Generate();
+        string anyReference = Dummy.String().StartingWith("ORD-").WithLength(12).Generate();
+        string anyCustomer  = Dummy.String().Alpha().WithLengthBetween(1, 50).Generate();
 
         Order order = new Order(anyReference, anyCustomer, amount: 100m);
 
@@ -71,8 +71,8 @@ public sealed class OrderTests {
     [Fact, Reproducible(Seed = 1743029518)]
     public void A_100_percent_discount_clears_the_order() {
         // Arrange
-        string anyReference = Any.String().StartingWith("ORD-").WithLength(12).Generate();
-        string anyCustomer  = Any.String().Alpha().WithLengthBetween(1, 50).Generate();
+        string anyReference = Dummy.String().StartingWith("ORD-").WithLength(12).Generate();
+        string anyCustomer  = Dummy.String().Alpha().WithLengthBetween(1, 50).Generate();
 
         Order order = new Order(anyReference, anyCustomer, amount: 100m);
 
@@ -98,7 +98,7 @@ déclaration de namespace ou de type :
 ## Ce qu'il fait, précisément
 
 Avant chaque **cas** de test, l'attribut ouvre la même portée de graine ambiante qu'utilise
-`Any.Reproducibly`, en épinglant une graine fraîche — ou celle que vous avez fixée sur `Seed`. Après
+`Dummy.Reproducibly`, en épinglant une graine fraîche — ou celle que vous avez fixée sur `Seed`. Après
 le test, il ferme la portée et, **uniquement si le test a échoué**, écrit la graine dans la sortie du
 test :
 
@@ -106,10 +106,10 @@ test :
 [JustDummies] These arbitrary values were seeded with 1743029518. Reproduce this run with [Reproducible(Seed = 1743029518)].
 ```
 
-Remarquez que le message nomme l'**attribut**, et non `Any.Reproducibly(seed, ...)`. Un test épinglé
+Remarquez que le message nomme l'**attribut**, et non `Dummy.Reproducibly(seed, ...)`. Un test épinglé
 depuis l'extérieur de son propre corps ne contient aucun appel de ce genre : le nommer enverrait le
 lecteur chercher du code qui n'existe pas. L'adaptateur fournit son propre fragment de rejeu via la
-seconde surcharge d'`Any.UseSeed` — la raison d'être de cette surcharge
+seconde surcharge d'`Dummy.UseSeed` — la raison d'être de cette surcharge
 ([ADR-0017](../../for-maintainers/adr/0017-open-the-ambient-seed-scope-to-adapters.fr.md)).
 
 Trois conséquences méritent d'être connues :
@@ -117,7 +117,7 @@ Trois conséquences méritent d'être connues :
 * **Une graine par cas de test**, si bien que chaque cas d'une `[Theory]` a la sienne au lieu d'en
   partager une.
 * **Un test vert reste silencieux.** La graine est une aide au diagnostic, pas une sortie.
-* **Les contextes `Any.WithSeed(...)` ne sont pas affectés.** Ce contexte est isolé par conception et
+* **Les contextes `Dummy.WithSeed(...)` ne sont pas affectés.** Ce contexte est isolé par conception et
   ne tire pas de la source ambiante que cet attribut épingle.
 
 ## Rejouer un échec
@@ -136,7 +136,7 @@ test variable en test à un seul cas.
 
 ## Si vous utilisez xUnit v2
 
-Cet adaptateur ne cible que la **v3**. En v2, utilisez `Any.Reproducibly(() => { ... })` dans le
+Cet adaptateur ne cible que la **v3**. En v2, utilisez `Dummy.Reproducibly(() => { ... })` dans le
 corps du test : vous obtenez la même portée épinglée et le même rapport de graine, au prix d'une
 lambda d'enveloppe. Voir [Reproductibilité](../guides/reproducibility.fr.md).
 

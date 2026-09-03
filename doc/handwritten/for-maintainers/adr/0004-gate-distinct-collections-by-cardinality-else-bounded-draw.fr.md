@@ -14,7 +14,7 @@ JustDummies traite les contraintes contradictoires comme des erreurs d'arrangeme
 
 Une collection distincte de `N` éléments n'est satisfaisable que si au moins `N` valeurs distinctes peuvent être assemblées depuis son domaine effectif : le domaine propre du générateur d'éléments, élargi par les valeurs fixées en dehors de celui-ci et par les valeurs opaques fournies de l'extérieur que le générateur lui-même ne pourrait jamais tirer. La cardinalité propre du générateur ne borne donc que les éléments qui doivent venir de lui, non la demande entière.
 
-Certains générateurs exposent un domaine que la bibliothèque sait compter à bas coût — un petit ensemble fixe, ou une valeur fixée sur l'un de ses membres. D'autres ne peuvent pas annoncer honnêtement la taille de leur domaine, soit parce que la compter est disproportionnément coûteux (une plage flottante, par exemple), soit parce qu'il est véritablement non borné ou inconnaissable, notamment les implémentations externes de `IAny<T>` et les générateurs composés.
+Certains générateurs exposent un domaine que la bibliothèque sait compter à bas coût — un petit ensemble fixe, ou une valeur fixée sur l'un de ses membres. D'autres ne peuvent pas annoncer honnêtement la taille de leur domaine, soit parce que la compter est disproportionnément coûteux (une plage flottante, par exemple), soit parce qu'il est véritablement non borné ou inconnaissable, notamment les implémentations externes de `IDummy<T>` et les générateurs composés.
 
 Un comparateur d'égalité personnalisé peut réduire le nombre de classes d'équivalence effectives même lorsque le domaine nominal du générateur est plus grand.
 

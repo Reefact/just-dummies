@@ -15,7 +15,7 @@ namespace JustDummies;
 ///     <para>
 ///         <see cref="Random" /> is not thread-safe, and a source reaches several threads by two ordinary routes: the
 ///         ambient state flows with the execution context into every task a test spawns, and an
-///         <see cref="AnyContext" /> is shared by whoever holds it. Left unsynchronized, concurrent draws converge the
+///         <see cref="DummyContext" /> is shared by whoever holds it. Left unsynchronized, concurrent draws converge the
 ///         generator's two internal indices and it returns zero <b>for ever</b> — so every generator settles on the
 ///         minimum of its declared range (<c>0</c>, <c>""</c>, <see cref="Guid.Empty" />) and the source never
 ///         recovers. Silent, and exactly the values most likely to make an assertion pass for the wrong reason.
@@ -30,7 +30,7 @@ namespace JustDummies;
 ///         What this does <b>not</b> buy is a value-level guarantee across threads: the lock is per primitive draw, so
 ///         two threads interleave inside a multi-draw generation (a string consumes one draw per character). Neither
 ///         the sequence nor the multiset of generated values is stable under parallelism — see
-///         <see cref="Any.UseSeed(int)" /> for the per-work-item scope that is.
+///         <see cref="Dummy.UseSeed(int)" /> for the per-work-item scope that is.
 ///     </para>
 /// </remarks>
 internal sealed class SeededRandom {

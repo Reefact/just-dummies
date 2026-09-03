@@ -18,17 +18,17 @@ $ dum generate Order
 Analyzing Shop.Domain.Order
   constructor Order(OrderReference, Customer, int, OrderStatus, IReadOnlyList<string>, DateTime)
 
-  reference  OrderReference         new AnyOrderReference()              AnyX
-  customer   Customer               new AnyCustomer()                    AnyX
-  quantity   int                    Any.Int32().Positive()               guard
-  status     OrderStatus            Any.Enum<OrderStatus>()
-  tags       IReadOnlyList<string>  Any.ListOf(Any.String().NonEmpty())
-  placedAt   DateTime               Any.DateTime()
+  reference  OrderReference         new DummyOrderReference()                DummyX
+  customer   Customer               new DummyCustomer()                      DummyX
+  quantity   int                    Dummy.Int32().Positive()                 guard
+  status     OrderStatus            Dummy.Enum<OrderStatus>()
+  tags       IReadOnlyList<string>  Dummy.ListOf(Dummy.String().NonEmpty())
+  placedAt   DateTime               Dummy.DateTime()
 
-✓ AnyOrder.cs — 6 of 6 parameters inferred.
+✓ DummyOrder.cs — 6 of 6 parameters inferred.
 ```
 
-`AnyOrder.cs` is a `partial class` implementing `IAny<Order>`, with a `With…`
+`DummyOrder.cs` is a `partial class` implementing `IDummy<Order>`, with a `With…`
 method per constructor parameter. It is yours from that moment: read it, edit
 it, commit it. Re-running with `--force` overwrites it.
 
@@ -41,12 +41,12 @@ what was **guessed**:
 | --- | --- |
 | *(empty)* | straight from the base table for that type |
 | `guard` | a constructor guard tightened it (`quantity <= 0` → `.Positive()`) |
-| `AnyX` | drawn through the generator that type owns |
+| `DummyX` | drawn through the generator that type owns |
 | `TODO` | nothing could be inferred; the file names what to do |
 | `unavailable` | the generator exists in JustDummies but not in the asset your project resolves |
 
-**`AnyX` reads the same whether that generator exists yet or not.** A domain
-type is drawn through the generator it owns — `new AnyOrderReference()` — which
+**`DummyX` reads the same whether that generator exists yet or not.** A domain
+type is drawn through the generator it owns — `new DummyOrderReference()` — which
 is where that type's recipe belongs, so no two files carry their own copy of it.
 Where you have not scaffolded it yet, the emitted file names it anyway and your
 build says `CS0246` at that line: run `dum generate OrderReference`, then re-run
@@ -59,16 +59,16 @@ so *your own build* reports what it could not infer, at the exact line, with the
 type in hand. A generator that quietly drew a plausible value there would be far
 worse.
 
-## Reaching it as `Any.Order()`
+## Reaching it as `Dummy.Order()`
 
-`new AnyOrder()` always works. If you would rather the arrange block read alike
-throughout — `Any.Int32()` on one line and `Any.Order()` on the next — ask for an
+`new DummyOrder()` always works. If you would rather the arrange block read alike
+throughout — `Dummy.Int32()` on one line and `Dummy.Order()` on the next — ask for an
 entry point, and a second file lands beside the generator:
 
-    dum generate Order --entry-point any               # Any.Order()      needs C# 14
+    dum generate Order --entry-point any               # Dummy.Order()      needs C# 14
     dum generate Order --entry-point static:Dummies    # Dummies.Order()  needs nothing
 
-`AnyOrder.cs` is byte-identical either way, so nothing about the generator
+`DummyOrder.cs` is byte-identical either way, so nothing about the generator
 changes. Below C# 14 the first form is refused rather than quietly swapped for
 the second.
 

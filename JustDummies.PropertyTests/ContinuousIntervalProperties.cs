@@ -10,8 +10,8 @@ using JetBrains.Annotations;
 namespace JustDummies.PropertyTests;
 
 /// <summary>
-///     Property-based tests for the continuous interval algebra — <see cref="AnyDouble" />, <see cref="AnySingle" />
-///     and <see cref="AnyDecimal" />. Where the example-based suite pins a couple of hand-picked ranges
+///     Property-based tests for the continuous interval algebra — <see cref="DummyDouble" />, <see cref="DummySingle" />
+///     and <see cref="DummyDecimal" />. Where the example-based suite pins a couple of hand-picked ranges
 ///     (<c>Between(1, 2)</c>), these quantify over the whole bound space: the finite ends of each domain, the
 ///     off-by-one representable neighbours around them, degenerate pinned intervals, and the non-finite arguments the
 ///     binary floating-point generators must refuse rather than propagate.
@@ -24,7 +24,7 @@ namespace JustDummies.PropertyTests;
 ///     left its range but that half of every range was silently unreachable, which only a property over the interval
 ///     itself, not over a fixed one, can rule out across the constraint space.
 /// </remarks>
-[TestSubject(typeof(AnyDouble))]
+[TestSubject(typeof(DummyDouble))]
 public sealed class ContinuousIntervalProperties {
 
     #region Statics members declarations
@@ -127,7 +127,7 @@ public sealed class ContinuousIntervalProperties {
     public void UnconstrainedDrawsAreAlwaysFinite() {
         Prop.ForAll(Generators.Seed().ToArbitrary(),
                     seed => {
-                        AnyContext any = Any.WithSeed(seed);
+                        DummyContext any = Dummy.WithSeed(seed);
 
                         return Expect.EveryDraw(any.Double(), value => !double.IsNaN(value) && !double.IsInfinity(value))
                                && Expect.EveryDraw(any.Single(), value => !float.IsNaN(value) && !float.IsInfinity(value));
@@ -138,7 +138,7 @@ public sealed class ContinuousIntervalProperties {
     [Fact(DisplayName = "Double: Between contains — every draw falls within the declared inclusive bounds.")]
     public void DoubleBetweenContainsEveryDraw() {
         Prop.ForAll(Generators.OrderedPair(Generators.Double()).ToArbitrary(),
-                    bounds => Expect.EveryDraw(Any.Double().Between(bounds.Min, bounds.Max),
+                    bounds => Expect.EveryDraw(Dummy.Double().Between(bounds.Min, bounds.Max),
                                                value => value >= bounds.Min && value <= bounds.Max))
             .QuickCheckThrowOnFailure();
     }
@@ -146,7 +146,7 @@ public sealed class ContinuousIntervalProperties {
     [Fact(DisplayName = "Single: Between contains — the quantized draw never escapes the bounds it was narrowed to.")]
     public void SingleBetweenContainsEveryDraw() {
         Prop.ForAll(Generators.OrderedPair(Singles()).ToArbitrary(),
-                    bounds => Expect.EveryDraw(Any.Single().Between(bounds.Min, bounds.Max),
+                    bounds => Expect.EveryDraw(Dummy.Single().Between(bounds.Min, bounds.Max),
                                                value => value >= bounds.Min && value <= bounds.Max))
             .QuickCheckThrowOnFailure();
     }
@@ -154,7 +154,7 @@ public sealed class ContinuousIntervalProperties {
     [Fact(DisplayName = "Decimal: Between contains, across the whole decimal range.")]
     public void DecimalBetweenContainsEveryDraw() {
         Prop.ForAll(Generators.OrderedPair(Generators.Decimal()).ToArbitrary(),
-                    bounds => Expect.EveryDraw(Any.Decimal().Between(bounds.Min, bounds.Max),
+                    bounds => Expect.EveryDraw(Dummy.Decimal().Between(bounds.Min, bounds.Max),
                                                value => value >= bounds.Min && value <= bounds.Max))
             .QuickCheckThrowOnFailure();
     }
@@ -162,45 +162,45 @@ public sealed class ContinuousIntervalProperties {
     [Fact(DisplayName = "Double: Between with equal bounds pins the value, for every value.")]
     public void DoubleBetweenWithEqualBoundsPins() {
         Prop.ForAll(Generators.Double().ToArbitrary(),
-                    value => Expect.EveryDraw(Any.Double().Between(value, value), drawn => drawn == value))
+                    value => Expect.EveryDraw(Dummy.Double().Between(value, value), drawn => drawn == value))
             .QuickCheckThrowOnFailure();
     }
 
     [Fact(DisplayName = "Single: Between with equal bounds pins the value, for every value.")]
     public void SingleBetweenWithEqualBoundsPins() {
         Prop.ForAll(Singles().ToArbitrary(),
-                    value => Expect.EveryDraw(Any.Single().Between(value, value), drawn => drawn == value))
+                    value => Expect.EveryDraw(Dummy.Single().Between(value, value), drawn => drawn == value))
             .QuickCheckThrowOnFailure();
     }
 
     [Fact(DisplayName = "Decimal: Between with equal bounds pins the value, for every value.")]
     public void DecimalBetweenWithEqualBoundsPins() {
         Prop.ForAll(Generators.Decimal().ToArbitrary(),
-                    value => Expect.EveryDraw(Any.Decimal().Between(value, value), drawn => drawn == value))
+                    value => Expect.EveryDraw(Dummy.Decimal().Between(value, value), drawn => drawn == value))
             .QuickCheckThrowOnFailure();
     }
 
     [Fact(DisplayName = "Double: GreaterThanOrEqualTo and LessThanOrEqualTo are inclusive — the bound itself stays legal.")]
     public void DoubleInclusiveBoundsAreInclusive() {
         Prop.ForAll(Generators.Double().ToArbitrary(),
-                    bound => Expect.EveryDraw(Any.Double().GreaterThanOrEqualTo(bound), value => value >= bound)
-                             && Expect.EveryDraw(Any.Double().LessThanOrEqualTo(bound), value => value <= bound))
+                    bound => Expect.EveryDraw(Dummy.Double().GreaterThanOrEqualTo(bound), value => value >= bound)
+                             && Expect.EveryDraw(Dummy.Double().LessThanOrEqualTo(bound), value => value <= bound))
             .QuickCheckThrowOnFailure();
     }
 
     [Fact(DisplayName = "Single: GreaterThanOrEqualTo and LessThanOrEqualTo are inclusive — the bound itself stays legal.")]
     public void SingleInclusiveBoundsAreInclusive() {
         Prop.ForAll(Singles().ToArbitrary(),
-                    bound => Expect.EveryDraw(Any.Single().GreaterThanOrEqualTo(bound), value => value >= bound)
-                             && Expect.EveryDraw(Any.Single().LessThanOrEqualTo(bound), value => value <= bound))
+                    bound => Expect.EveryDraw(Dummy.Single().GreaterThanOrEqualTo(bound), value => value >= bound)
+                             && Expect.EveryDraw(Dummy.Single().LessThanOrEqualTo(bound), value => value <= bound))
             .QuickCheckThrowOnFailure();
     }
 
     [Fact(DisplayName = "Decimal: GreaterThanOrEqualTo and LessThanOrEqualTo are inclusive — the bound itself stays legal.")]
     public void DecimalInclusiveBoundsAreInclusive() {
         Prop.ForAll(Generators.Decimal().ToArbitrary(),
-                    bound => Expect.EveryDraw(Any.Decimal().GreaterThanOrEqualTo(bound), value => value >= bound)
-                             && Expect.EveryDraw(Any.Decimal().LessThanOrEqualTo(bound), value => value <= bound))
+                    bound => Expect.EveryDraw(Dummy.Decimal().GreaterThanOrEqualTo(bound), value => value >= bound)
+                             && Expect.EveryDraw(Dummy.Decimal().LessThanOrEqualTo(bound), value => value <= bound))
             .QuickCheckThrowOnFailure();
     }
 
@@ -211,11 +211,11 @@ public sealed class ContinuousIntervalProperties {
                         // Nothing representable lies above double.MaxValue or below double.MinValue, so the exclusive
                         // bound has no value left to name: a conflict at declaration, not an empty draw at generation.
                         bool above = bound == double.MaxValue
-                                         ? Expect.Throws<ConflictingAnyConstraintException>(() => Any.Double().GreaterThan(bound))
-                                         : Expect.EveryDraw(Any.Double().GreaterThan(bound), value => value > bound);
+                                         ? Expect.Throws<ConflictingDummyConstraintException>(() => Dummy.Double().GreaterThan(bound))
+                                         : Expect.EveryDraw(Dummy.Double().GreaterThan(bound), value => value > bound);
                         bool below = bound == double.MinValue
-                                         ? Expect.Throws<ConflictingAnyConstraintException>(() => Any.Double().LessThan(bound))
-                                         : Expect.EveryDraw(Any.Double().LessThan(bound), value => value < bound);
+                                         ? Expect.Throws<ConflictingDummyConstraintException>(() => Dummy.Double().LessThan(bound))
+                                         : Expect.EveryDraw(Dummy.Double().LessThan(bound), value => value < bound);
 
                         return above && below;
                     })
@@ -229,11 +229,11 @@ public sealed class ContinuousIntervalProperties {
                         // The step is taken on the float ladder, not the double one: a sub-ulp double step would
                         // re-quantize onto the same float and stall the strictness this asserts.
                         bool above = bound == float.MaxValue
-                                         ? Expect.Throws<ConflictingAnyConstraintException>(() => Any.Single().GreaterThan(bound))
-                                         : Expect.EveryDraw(Any.Single().GreaterThan(bound), value => value > bound);
+                                         ? Expect.Throws<ConflictingDummyConstraintException>(() => Dummy.Single().GreaterThan(bound))
+                                         : Expect.EveryDraw(Dummy.Single().GreaterThan(bound), value => value > bound);
                         bool below = bound == float.MinValue
-                                         ? Expect.Throws<ConflictingAnyConstraintException>(() => Any.Single().LessThan(bound))
-                                         : Expect.EveryDraw(Any.Single().LessThan(bound), value => value < bound);
+                                         ? Expect.Throws<ConflictingDummyConstraintException>(() => Dummy.Single().LessThan(bound))
+                                         : Expect.EveryDraw(Dummy.Single().LessThan(bound), value => value < bound);
 
                         return above && below;
                     })
@@ -243,8 +243,8 @@ public sealed class ContinuousIntervalProperties {
     [Fact(DisplayName = "Decimal: GreaterThan and LessThan are strict — the inclusive bound plus a point exclusion.")]
     public void DecimalStrictBoundsAreStrict() {
         Prop.ForAll(ModerateDecimals().ToArbitrary(),
-                    bound => Expect.EveryDraw(Any.Decimal().GreaterThan(bound), value => value > bound)
-                             && Expect.EveryDraw(Any.Decimal().LessThan(bound), value => value < bound))
+                    bound => Expect.EveryDraw(Dummy.Decimal().GreaterThan(bound), value => value > bound)
+                             && Expect.EveryDraw(Dummy.Decimal().LessThan(bound), value => value < bound))
             .QuickCheckThrowOnFailure();
     }
 
@@ -252,7 +252,7 @@ public sealed class ContinuousIntervalProperties {
     public void SignConstraintsHoldForEverySeed() {
         Prop.ForAll(Generators.Seed().ToArbitrary(),
                     seed => {
-                        AnyContext any = Any.WithSeed(seed);
+                        DummyContext any = Dummy.WithSeed(seed);
 
                         return Expect.EveryDraw(any.Double().Positive(), value => value > 0d)
                                && Expect.EveryDraw(any.Double().Negative(), value => value < 0d)
@@ -275,15 +275,15 @@ public sealed class ContinuousIntervalProperties {
         Prop.ForAll((from finite in Generators.Double()
                      from nonFinite in NonFiniteDoubles()
                      select (finite, nonFinite)).ToArbitrary(),
-                    testCase => Expect.Throws<ArgumentException>(() => Any.Double().GreaterThan(testCase.nonFinite))
-                                && Expect.Throws<ArgumentException>(() => Any.Double().GreaterThanOrEqualTo(testCase.nonFinite))
-                                && Expect.Throws<ArgumentException>(() => Any.Double().LessThan(testCase.nonFinite))
-                                && Expect.Throws<ArgumentException>(() => Any.Double().LessThanOrEqualTo(testCase.nonFinite))
-                                && Expect.Throws<ArgumentException>(() => Any.Double().Between(testCase.nonFinite, testCase.finite))
-                                && Expect.Throws<ArgumentException>(() => Any.Double().Between(testCase.finite, testCase.nonFinite))
-                                && Expect.Throws<ArgumentException>(() => Any.Double().OneOf(testCase.finite, testCase.nonFinite))
-                                && Expect.Throws<ArgumentException>(() => Any.Double().Except(testCase.nonFinite))
-                                && Expect.Throws<ArgumentException>(() => Any.Double().DifferentFrom(testCase.nonFinite)))
+                    testCase => Expect.Throws<ArgumentException>(() => Dummy.Double().GreaterThan(testCase.nonFinite))
+                                && Expect.Throws<ArgumentException>(() => Dummy.Double().GreaterThanOrEqualTo(testCase.nonFinite))
+                                && Expect.Throws<ArgumentException>(() => Dummy.Double().LessThan(testCase.nonFinite))
+                                && Expect.Throws<ArgumentException>(() => Dummy.Double().LessThanOrEqualTo(testCase.nonFinite))
+                                && Expect.Throws<ArgumentException>(() => Dummy.Double().Between(testCase.nonFinite, testCase.finite))
+                                && Expect.Throws<ArgumentException>(() => Dummy.Double().Between(testCase.finite, testCase.nonFinite))
+                                && Expect.Throws<ArgumentException>(() => Dummy.Double().OneOf(testCase.finite, testCase.nonFinite))
+                                && Expect.Throws<ArgumentException>(() => Dummy.Double().Except(testCase.nonFinite))
+                                && Expect.Throws<ArgumentException>(() => Dummy.Double().DifferentFrom(testCase.nonFinite)))
             .QuickCheckThrowOnFailure();
     }
 
@@ -292,15 +292,15 @@ public sealed class ContinuousIntervalProperties {
         Prop.ForAll((from finite in Singles()
                      from nonFinite in NonFiniteSingles()
                      select (finite, nonFinite)).ToArbitrary(),
-                    testCase => Expect.Throws<ArgumentException>(() => Any.Single().GreaterThan(testCase.nonFinite))
-                                && Expect.Throws<ArgumentException>(() => Any.Single().GreaterThanOrEqualTo(testCase.nonFinite))
-                                && Expect.Throws<ArgumentException>(() => Any.Single().LessThan(testCase.nonFinite))
-                                && Expect.Throws<ArgumentException>(() => Any.Single().LessThanOrEqualTo(testCase.nonFinite))
-                                && Expect.Throws<ArgumentException>(() => Any.Single().Between(testCase.nonFinite, testCase.finite))
-                                && Expect.Throws<ArgumentException>(() => Any.Single().Between(testCase.finite, testCase.nonFinite))
-                                && Expect.Throws<ArgumentException>(() => Any.Single().OneOf(testCase.finite, testCase.nonFinite))
-                                && Expect.Throws<ArgumentException>(() => Any.Single().Except(testCase.nonFinite))
-                                && Expect.Throws<ArgumentException>(() => Any.Single().DifferentFrom(testCase.nonFinite)))
+                    testCase => Expect.Throws<ArgumentException>(() => Dummy.Single().GreaterThan(testCase.nonFinite))
+                                && Expect.Throws<ArgumentException>(() => Dummy.Single().GreaterThanOrEqualTo(testCase.nonFinite))
+                                && Expect.Throws<ArgumentException>(() => Dummy.Single().LessThan(testCase.nonFinite))
+                                && Expect.Throws<ArgumentException>(() => Dummy.Single().LessThanOrEqualTo(testCase.nonFinite))
+                                && Expect.Throws<ArgumentException>(() => Dummy.Single().Between(testCase.nonFinite, testCase.finite))
+                                && Expect.Throws<ArgumentException>(() => Dummy.Single().Between(testCase.finite, testCase.nonFinite))
+                                && Expect.Throws<ArgumentException>(() => Dummy.Single().OneOf(testCase.finite, testCase.nonFinite))
+                                && Expect.Throws<ArgumentException>(() => Dummy.Single().Except(testCase.nonFinite))
+                                && Expect.Throws<ArgumentException>(() => Dummy.Single().DifferentFrom(testCase.nonFinite)))
             .QuickCheckThrowOnFailure();
     }
 
@@ -308,7 +308,7 @@ public sealed class ContinuousIntervalProperties {
     public void DoubleCrossedBoundsAreAnArgumentError() {
         Prop.ForAll(Generators.OrderedPair(Generators.Double()).ToArbitrary(),
                     bounds => bounds.Min == bounds.Max
-                              || Expect.Throws<ArgumentException>(() => Any.Double().Between(bounds.Max, bounds.Min)))
+                              || Expect.Throws<ArgumentException>(() => Dummy.Double().Between(bounds.Max, bounds.Min)))
             .QuickCheckThrowOnFailure();
     }
 
@@ -316,7 +316,7 @@ public sealed class ContinuousIntervalProperties {
     public void SingleCrossedBoundsAreAnArgumentError() {
         Prop.ForAll(Generators.OrderedPair(Singles()).ToArbitrary(),
                     bounds => bounds.Min == bounds.Max
-                              || Expect.Throws<ArgumentException>(() => Any.Single().Between(bounds.Max, bounds.Min)))
+                              || Expect.Throws<ArgumentException>(() => Dummy.Single().Between(bounds.Max, bounds.Min)))
             .QuickCheckThrowOnFailure();
     }
 
@@ -324,7 +324,7 @@ public sealed class ContinuousIntervalProperties {
     public void DecimalCrossedBoundsAreAnArgumentError() {
         Prop.ForAll(Generators.OrderedPair(Generators.Decimal()).ToArbitrary(),
                     bounds => bounds.Min == bounds.Max
-                              || Expect.Throws<ArgumentException>(() => Any.Decimal().Between(bounds.Max, bounds.Min)))
+                              || Expect.Throws<ArgumentException>(() => Dummy.Decimal().Between(bounds.Max, bounds.Min)))
             .QuickCheckThrowOnFailure();
     }
 
@@ -333,7 +333,7 @@ public sealed class ContinuousIntervalProperties {
         Gen<double[]> pools = Gen.NonEmptyListOf(Generators.Double()).Select(values => values.Distinct().ToArray());
 
         Prop.ForAll(pools.ToArbitrary(),
-                    pool => Expect.EveryDraw(Any.Double().OneOf(pool), value => pool.Contains(value)))
+                    pool => Expect.EveryDraw(Dummy.Double().OneOf(pool), value => pool.Contains(value)))
             .QuickCheckThrowOnFailure();
     }
 
@@ -342,7 +342,7 @@ public sealed class ContinuousIntervalProperties {
         Gen<float[]> pools = Gen.NonEmptyListOf(Singles()).Select(values => values.Distinct().ToArray());
 
         Prop.ForAll(pools.ToArbitrary(),
-                    pool => Expect.EveryDraw(Any.Single().OneOf(pool), value => pool.Contains(value)))
+                    pool => Expect.EveryDraw(Dummy.Single().OneOf(pool), value => pool.Contains(value)))
             .QuickCheckThrowOnFailure();
     }
 
@@ -351,7 +351,7 @@ public sealed class ContinuousIntervalProperties {
         Gen<decimal[]> pools = Gen.NonEmptyListOf(Generators.Decimal()).Select(values => values.Distinct().ToArray());
 
         Prop.ForAll(pools.ToArbitrary(),
-                    pool => Expect.EveryDraw(Any.Decimal().OneOf(pool), value => pool.Contains(value)))
+                    pool => Expect.EveryDraw(Dummy.Decimal().OneOf(pool), value => pool.Contains(value)))
             .QuickCheckThrowOnFailure();
     }
 
@@ -362,7 +362,7 @@ public sealed class ContinuousIntervalProperties {
         // a single multiplication, and the decimal equivalent threw OverflowException.
         Prop.ForAll(Generators.Seed().ToArbitrary(),
                     seed => {
-                        AnyContext any = Any.WithSeed(seed);
+                        DummyContext any = Dummy.WithSeed(seed);
 
                         return Expect.EveryDraw(any.Double(), value => IsFinite(value * 1.2d))
                             && Expect.EveryDraw(any.Double().Positive(), value => IsFinite(value * 1.2d) && value > 0d)
@@ -374,13 +374,13 @@ public sealed class ContinuousIntervalProperties {
 
     [Fact(DisplayName = "An interval that merely permits large values still yields ordinary ones, for every upper bound.")]
     public void PermittingALargeValueIsNotRequestingOne() {
-        // The heart of ADR-0031: a bound is a permission, not a request. Any.Double().LessThan(huge) says what the
+        // The heart of ADR-0031: a bound is a permission, not a request. Dummy.Double().LessThan(huge) says what the
         // value may not exceed, so widening that bound must not enlarge the draw. A string's WithMaxLength no
         // longer shares this rule (ADR-0076 lets it steer the draw instead) -- this test is about the numeric
         // window only, which ADR-0076 left untouched.
         Prop.ForAll(Gen.Elements(1e7d, 1e50d, 1e200d, 1e308d, double.MaxValue).ToArbitrary(),
-                    permitted => Expect.EveryDraw(Any.Double().Between(0d, permitted), value => value <= OrdinaryMagnitude)
-                              && Expect.EveryDraw(Any.Double().LessThan(permitted), value => Math.Abs(value) <= OrdinaryMagnitude))
+                    permitted => Expect.EveryDraw(Dummy.Double().Between(0d, permitted), value => value <= OrdinaryMagnitude)
+                              && Expect.EveryDraw(Dummy.Double().LessThan(permitted), value => Math.Abs(value) <= OrdinaryMagnitude))
             .QuickCheckThrowOnFailure();
     }
 
@@ -390,7 +390,7 @@ public sealed class ContinuousIntervalProperties {
         // magnitude gets that magnitude. Without this the window would not clip the draw, it would break the bound.
         Prop.ForAll(Generators.OrderedPair(Gen.Elements(1e7d, 1e20d, 1e100d, 1e250d, 1e307d)).ToArbitrary(),
                     bounds => bounds.Min == bounds.Max
-                           || Expect.EveryDraw(Any.Double().Between(bounds.Min, bounds.Max),
+                           || Expect.EveryDraw(Dummy.Double().Between(bounds.Min, bounds.Max),
                                                value => value >= bounds.Min && value <= bounds.Max))
             .QuickCheckThrowOnFailure();
     }
@@ -406,7 +406,7 @@ public sealed class ContinuousIntervalProperties {
                         (decimal Min, decimal Max) drawn = DrawnFrom(interval.Min, interval.Max);
                         decimal midpoint = drawn.Min / 2m + drawn.Max / 2m;
 
-                        List<decimal> values = Expect.Draws(Any.WithSeed(interval.Seed).Decimal().Between(interval.Min, interval.Max),
+                        List<decimal> values = Expect.Draws(Dummy.WithSeed(interval.Seed).Decimal().Between(interval.Min, interval.Max),
                                                             ReachabilityDrawCount);
 
                         return values.Min() < midpoint && values.Max() > midpoint;
@@ -423,7 +423,7 @@ public sealed class ContinuousIntervalProperties {
                         (double Min, double Max) drawn = DrawnFrom(interval.Min, interval.Max);
                         double midpoint = drawn.Min / 2d + drawn.Max / 2d;
 
-                        List<double> values = Expect.Draws(Any.WithSeed(interval.Seed).Double().Between(interval.Min, interval.Max),
+                        List<double> values = Expect.Draws(Dummy.WithSeed(interval.Seed).Double().Between(interval.Min, interval.Max),
                                                            ReachabilityDrawCount);
 
                         return values.Min() < midpoint && values.Max() > midpoint;

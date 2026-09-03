@@ -1,0 +1,51 @@
+namespace JustDummies;
+
+/// <summary>
+///     A generator of arbitrary <c>mailto</c> URIs — <c>mailto:local@domain</c>, optionally with headers. The
+///     local-part and domain are drawn from ASCII characters, so the value is an arbitrary well-formed address, never
+///     a realistic one (this library does not fabricate plausible data). A mailto URI is not authority-based, so this
+///     builder exposes no host/port/user-info in the authority sense — only the address parts and headers.
+/// </summary>
+public sealed class DummyMailtoUri : IDummy<Uri>, IHasRandomSource {
+
+    #region Fields declarations
+
+    private readonly RandomSource _source;
+    private readonly UriSpec      _spec;
+
+    #endregion
+
+    internal DummyMailtoUri(RandomSource source, UriSpec spec) {
+        if (source is null) { throw new ArgumentNullException(nameof(source)); }
+        if (spec is null) { throw new ArgumentNullException(nameof(spec)); }
+        _source = source;
+        _spec   = spec;
+    }
+
+    RandomSource? IHasRandomSource.Source => _source;
+
+    /// <summary>Pins the local-part (the text before <c>@</c>).</summary>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="localPart" /> is <c>null</c>.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="localPart" /> contains a non-unreserved character.</exception>
+    public DummyMailtoUri WithLocalPart(string localPart) {
+        return new DummyMailtoUri(_source, _spec.WithUserInfo(UriSpec.RequireUserInfoPart(localPart, nameof(localPart)), null, UriSpec.Label(nameof(WithLocalPart), localPart)));
+    }
+
+    /// <summary>Pins the domain (the text after <c>@</c>). Must be an ASCII host name.</summary>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="domain" /> is <c>null</c>.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="domain" /> is empty, non-ASCII or not a valid host name.</exception>
+    public DummyMailtoUri WithDomain(string domain) {
+        return new DummyMailtoUri(_source, _spec.WithHost(UriSpec.RequireHost(domain, nameof(domain)), UriSpec.Label(nameof(WithDomain), domain)));
+    }
+
+    /// <summary>Includes an arbitrary header (e.g. <c>?subject=...</c>).</summary>
+    public DummyMailtoUri WithHeaders() {
+        return new DummyMailtoUri(_source, _spec.WithQuery());
+    }
+
+    /// <inheritdoc />
+    public Uri Generate() {
+        return _spec.Generate(_source);
+    }
+
+}

@@ -37,9 +37,9 @@ Look-up material, organised by the type you need.
 
 | Page | Covers |
 | --- | --- |
-| [Index of every factory](./generators/README.md) | every `Any.*` call mapped to its page |
+| [Index of every factory](./generators/README.md) | every `Dummy.*` call mapped to its page |
 | [Numbers](./generators/numbers.en.md) | all fourteen numeric types, bounds, sign, multiples, scale |
-| [Strings and patterns](./generators/strings.en.md) | length, alphabets, prefixes, and `Any.StringMatching` |
+| [Strings and patterns](./generators/strings.en.md) | length, alphabets, prefixes, and `Dummy.StringMatching` |
 | [Dates and times](./generators/dates-and-times.en.md) | instants, durations, granularity, the offset dimension |
 | [Collections](./generators/collections.en.md) | arrays, lists, sequences, sets, dictionaries, distinctness |
 | [Enums and choices](./generators/enums-and-choices.en.md) | enumerations, flags, pools, `ElementOf`, booleans |

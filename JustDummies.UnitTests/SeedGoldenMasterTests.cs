@@ -30,15 +30,15 @@ namespace JustDummies.UnitTests;
 ///         unnecessary.
 ///     </para>
 ///     <para>
-///         Each case runs in its OWN fresh <see cref="Any.UseSeed(int)" /> scope. Sharing one scope would make the
+///         Each case runs in its OWN fresh <see cref="Dummy.UseSeed(int)" /> scope. Sharing one scope would make the
 ///         suite report a single change in an early factory as a change in every case after it — the cascade that
 ///         makes a golden master unreadable and eventually ignored.
 ///     </para>
 ///     <para>
-///         The AMBIENT source is what the cases draw from, not an <see cref="Any.WithSeed" /> context. Both reach the
-///         same generators, and the ambient path is both the one a user pins (<c>Any.Reproducibly</c>,
-///         <c>[Reproducible]</c>) and the only one the pool factories — <see cref="Any.OneOf{T}(T[])" />,
-///         <see cref="Any.Enum{TEnum}" /> — can be reached through at all, since they bind to the ambient source by
+///         The AMBIENT source is what the cases draw from, not an <see cref="Dummy.WithSeed" /> context. Both reach the
+///         same generators, and the ambient path is both the one a user pins (<c>Dummy.Reproducibly</c>,
+///         <c>[Reproducible]</c>) and the only one the pool factories — <see cref="Dummy.OneOf{T}(T[])" />,
+///         <see cref="Dummy.Enum{TEnum}" /> — can be reached through at all, since they bind to the ambient source by
 ///         construction.
 ///     </para>
 ///     <para>
@@ -54,7 +54,7 @@ namespace JustDummies.UnitTests;
 ///         file to refresh: update the reference only as part of a deliberate major, never to make a build green.
 ///     </para>
 /// </remarks>
-[TestSubject(typeof(Any))]
+[TestSubject(typeof(Dummy))]
 public sealed class SeedGoldenMasterTests {
 
     #region Statics members declarations
@@ -74,76 +74,76 @@ public sealed class SeedGoldenMasterTests {
     /// </summary>
     private static IEnumerable<(string Name, Func<string> Draw)> Cases() {
         // Scalars, unconstrained: the plainest draw each factory makes.
-        yield return ("Boolean", () => Any.Boolean().Generate().ToString());
-        yield return ("Byte", () => Render(Any.Byte().Generate()));
-        yield return ("SByte", () => Render(Any.SByte().Generate()));
-        yield return ("Int16", () => Render(Any.Int16().Generate()));
-        yield return ("UInt16", () => Render(Any.UInt16().Generate()));
-        yield return ("Int32", () => Render(Any.Int32().Generate()));
-        yield return ("UInt32", () => Render(Any.UInt32().Generate()));
-        yield return ("Int64", () => Render(Any.Int64().Generate()));
-        yield return ("UInt64", () => Any.UInt64().Generate().ToString(CultureInfo.InvariantCulture));
-        yield return ("Single", () => Bits(Any.Single().Generate()));
-        yield return ("Double", () => Bits(Any.Double().Generate()));
-        yield return ("Decimal", () => Any.Decimal().Generate().ToString(CultureInfo.InvariantCulture));
-        yield return ("Char", () => Escape(Any.Char().Generate().ToString()));
-        yield return ("Guid", () => Any.Guid().Generate().ToString());
-        yield return ("TimeSpan", () => Render(Any.TimeSpan().Generate().Ticks));
-        yield return ("DateTime", () => Render(Any.DateTime().Generate().Ticks));
-        yield return ("String", () => Escape(Any.String().Generate()));
-        yield return ("Uri", () => Any.Uri().Generate().ToString());
+        yield return ("Boolean", () => Dummy.Boolean().Generate().ToString());
+        yield return ("Byte", () => Render(Dummy.Byte().Generate()));
+        yield return ("SByte", () => Render(Dummy.SByte().Generate()));
+        yield return ("Int16", () => Render(Dummy.Int16().Generate()));
+        yield return ("UInt16", () => Render(Dummy.UInt16().Generate()));
+        yield return ("Int32", () => Render(Dummy.Int32().Generate()));
+        yield return ("UInt32", () => Render(Dummy.UInt32().Generate()));
+        yield return ("Int64", () => Render(Dummy.Int64().Generate()));
+        yield return ("UInt64", () => Dummy.UInt64().Generate().ToString(CultureInfo.InvariantCulture));
+        yield return ("Single", () => Bits(Dummy.Single().Generate()));
+        yield return ("Double", () => Bits(Dummy.Double().Generate()));
+        yield return ("Decimal", () => Dummy.Decimal().Generate().ToString(CultureInfo.InvariantCulture));
+        yield return ("Char", () => Escape(Dummy.Char().Generate().ToString()));
+        yield return ("Guid", () => Dummy.Guid().Generate().ToString());
+        yield return ("TimeSpan", () => Render(Dummy.TimeSpan().Generate().Ticks));
+        yield return ("DateTime", () => Render(Dummy.DateTime().Generate().Ticks));
+        yield return ("String", () => Escape(Dummy.String().Generate()));
+        yield return ("Uri", () => Dummy.Uri().Generate().ToString());
 
         // Both dimensions of one draw, from a single generated value: the instant and the offset are chosen
         // separately (ADR-0030), so rendering only the instant would leave half the draw unwatched.
         yield return ("DateTimeOffset", () => {
-            DateTimeOffset drawn = Any.DateTimeOffset().Generate();
+            DateTimeOffset drawn = Dummy.DateTimeOffset().Generate();
 
             return Render(drawn.Ticks) + "+" + Render(drawn.Offset.Ticks);
         });
 
         // Constrained scalars: a constraint can take a different draw path from the unconstrained factory, so
         // pinning only the plain form would leave the constrained ones unwatched.
-        yield return ("Int32.Between", () => Render(Any.Int32().Between(1, 1000).Generate()));
-        yield return ("Int64.Between", () => Render(Any.Int64().Between(-500L, 500L).Generate()));
-        yield return ("Double.Between", () => Bits(Any.Double().Between(0d, 1000d).Generate()));
-        yield return ("Decimal.Between", () => Any.Decimal().Between(0m, 1000m).Generate().ToString(CultureInfo.InvariantCulture));
-        yield return ("String.NonEmpty.WithMaxLength", () => Escape(Any.String().NonEmpty().WithMaxLength(50).Generate()));
-        yield return ("StringMatching", () => Escape(Any.StringMatching("[a-z]{3}-[0-9]{4}").Generate()));
+        yield return ("Int32.Between", () => Render(Dummy.Int32().Between(1, 1000).Generate()));
+        yield return ("Int64.Between", () => Render(Dummy.Int64().Between(-500L, 500L).Generate()));
+        yield return ("Double.Between", () => Bits(Dummy.Double().Between(0d, 1000d).Generate()));
+        yield return ("Decimal.Between", () => Dummy.Decimal().Between(0m, 1000m).Generate().ToString(CultureInfo.InvariantCulture));
+        yield return ("String.NonEmpty.WithMaxLength", () => Escape(Dummy.String().NonEmpty().WithMaxLength(50).Generate()));
+        yield return ("StringMatching", () => Escape(Dummy.StringMatching("[a-z]{3}-[0-9]{4}").Generate()));
 
         // The nullable wrapper: a draw of its own, on top of the operand's. A null renders as a marker no drawn
         // value can produce, so "the draw was null" and "the draw was the text of the marker" stay distinguishable.
         // Under this seed both take the null branch, so the reference pins the NULL DECISION and its single draw
         // rather than an operand value — which is the part specific to OrNull. The operand's own mapping is pinned
         // by its own case above, so nothing is left unwatched by the branch these two happen to land on.
-        yield return ("Int32.OrNull", () => Any.Int32().Between(0, 100).OrNull().Generate() is int value ? Render(value) : NullMarker);
-        yield return ("String.OrNull", () => Any.String().NonEmpty().WithMaxLength(8).OrNull().Generate() is string text ? Escape(text) : NullMarker);
+        yield return ("Int32.OrNull", () => Dummy.Int32().Between(0, 100).OrNull().Generate() is int value ? Render(value) : NullMarker);
+        yield return ("String.OrNull", () => Dummy.String().NonEmpty().WithMaxLength(8).OrNull().Generate() is string text ? Escape(text) : NullMarker);
 
         // Pool factories. They bind to the ambient source by construction, which is why this suite pins the ambient
         // path: reached through a context they would not be seeded at all.
-        yield return ("OneOf", () => Any.OneOf("alpha", "beta", "gamma", "delta").Generate());
-        yield return ("Enum", () => Any.Enum<GoldenSuit>().Generate().ToString());
+        yield return ("OneOf", () => Dummy.OneOf("alpha", "beta", "gamma", "delta").Generate());
+        yield return ("Enum", () => Dummy.Enum<GoldenSuit>().Generate().ToString());
 
         // Combinators. They inherit the seeded source through their operand, which is what makes them reproducible
         // at all — so a change to how they order or count their operand draws belongs here.
-        yield return ("ArrayOf", () => Join(Any.ArrayOf(Any.Int32().Between(0, 9)).WithCount(3).Generate().Select(value => Render(value))));
-        yield return ("ListOf", () => Join(Any.ListOf(Any.Int32().Between(0, 9)).WithCount(3).Generate().Select(value => Render(value))));
-        yield return ("SequenceOf", () => Join(Any.SequenceOf(Any.Int32().Between(0, 9)).WithCount(2).Generate().Select(value => Render(value))));
+        yield return ("ArrayOf", () => Join(Dummy.ArrayOf(Dummy.Int32().Between(0, 9)).WithCount(3).Generate().Select(value => Render(value))));
+        yield return ("ListOf", () => Join(Dummy.ListOf(Dummy.Int32().Between(0, 9)).WithCount(3).Generate().Select(value => Render(value))));
+        yield return ("SequenceOf", () => Join(Dummy.SequenceOf(Dummy.Int32().Between(0, 9)).WithCount(2).Generate().Select(value => Render(value))));
         // Sorted, unlike the ordered containers above. A HashSet's and a Dictionary's enumeration order is not
         // contractual — it can differ between .NET Framework and modern .NET, and between .NET versions — so
         // pinning it would make this suite red on the net472 floor over a detail JustDummies does not decide.
         // What the library does decide is WHICH values are drawn, and sorting pins exactly that; the draw count
         // beside it still pins the order they were drawn in.
-        yield return ("SetOf", () => JoinSorted(Any.SetOf(Any.Int32().Between(0, 99)).WithCount(3).Generate().Select(value => Render(value))));
-        yield return ("DictionaryOf", () => JoinSorted(Any.DictionaryOf(Any.Int32().Between(0, 99), Any.Char()).WithCount(2).Generate().Select(entry => Render(entry.Key) + "=" + Escape(entry.Value.ToString()))));
+        yield return ("SetOf", () => JoinSorted(Dummy.SetOf(Dummy.Int32().Between(0, 99)).WithCount(3).Generate().Select(value => Render(value))));
+        yield return ("DictionaryOf", () => JoinSorted(Dummy.DictionaryOf(Dummy.Int32().Between(0, 99), Dummy.Char()).WithCount(2).Generate().Select(entry => Render(entry.Key) + "=" + Escape(entry.Value.ToString()))));
 
         yield return ("PairOf", () => {
-            (int First, char Second) pair = Any.PairOf(Any.Int32().Between(1, 9), Any.Char()).Generate();
+            (int First, char Second) pair = Dummy.PairOf(Dummy.Int32().Between(1, 9), Dummy.Char()).Generate();
 
             return Render(pair.First) + "," + Escape(pair.Second.ToString());
         });
 
         yield return ("TripleOf", () => {
-            (int First, char Second, bool Third) triple = Any.TripleOf(Any.Int32().Between(1, 9), Any.Char(), Any.Boolean()).Generate();
+            (int First, char Second, bool Third) triple = Dummy.TripleOf(Dummy.Int32().Between(1, 9), Dummy.Char(), Dummy.Boolean()).Generate();
 
             return Render(triple.First) + "," + Escape(triple.Second.ToString()) + "," + triple.Third;
         });
@@ -234,7 +234,7 @@ public sealed class SeedGoldenMasterTests {
     private static string[] DrawAll() {
         List<string> lines = [];
         foreach ((string Name, Func<string> Draw) item in Cases()) {
-            using (Any.UseSeed(GoldenSeed)) {
+            using (Dummy.UseSeed(GoldenSeed)) {
                 string value = item.Draw();
 
                 lines.Add(Line(item.Name, AmbientDraws(), value));

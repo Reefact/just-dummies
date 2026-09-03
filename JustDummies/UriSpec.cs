@@ -9,11 +9,11 @@ using System.Text;
 namespace JustDummies;
 
 /// <summary>
-///     The immutable specification behind every <c>AnyUri</c> family builder. It records the constrained family and
+///     The immutable specification behind every <c>DummyUri</c> family builder. It records the constrained family and
 ///     scheme plus the per-component pins, and assembles a <see cref="Uri" /> <b>directly</b> — every component is
 ///     drawn from ASCII-unreserved characters, so a generated URI is valid by construction (never a throw, never a
 ///     retry) and reproducible under a seed on every target framework. Contradictory constraints fail eagerly with a
-///     <see cref="ConflictingAnyConstraintException" /> naming both sides; an invalid pinned component fails as an
+///     <see cref="ConflictingDummyConstraintException" /> naming both sides; an invalid pinned component fails as an
 ///     argument at the call site.
 /// </summary>
 internal sealed class UriSpec {
@@ -205,7 +205,7 @@ internal sealed class UriSpec {
         // Re-declaring the SAME constraint is not a contradiction, so it is a no-op rather than a
         // conflict: the second declaration asks for exactly what the first already guarantees.
         if (_schemeConstraint == applying) { return this; }
-        if (_schemeConstraint is not null) { throw ConflictingAnyConstraintException.AlreadyDefined(applying, _schemeConstraint); }
+        if (_schemeConstraint is not null) { throw ConflictingDummyConstraintException.AlreadyDefined(applying, _schemeConstraint); }
 
         return new UriSpec(_family, scheme, applying, _host, _hasUserInfo, _user, _password,
                            _hasPort, _port, _pathMode, _pathSegments, _hasQuery, _hasFragment, _rooted, _pathConstraint, _hostConstraint, _userInfoConstraint, _portConstraint);
@@ -223,7 +223,7 @@ internal sealed class UriSpec {
         if (host is null) { throw new ArgumentNullException(nameof(host)); }
         if (applying is null) { throw new ArgumentNullException(nameof(applying)); }
         if (_hostConstraint == applying) { return this; }
-        if (_hostConstraint is not null) { throw ConflictingAnyConstraintException.AlreadyDefined(applying, _hostConstraint); }
+        if (_hostConstraint is not null) { throw ConflictingDummyConstraintException.AlreadyDefined(applying, _hostConstraint); }
 
         return new UriSpec(_family, _scheme, _schemeConstraint, host, _hasUserInfo, _user, _password,
                            _hasPort, _port, _pathMode, _pathSegments, _hasQuery, _hasFragment, _rooted, _pathConstraint, applying, _userInfoConstraint, _portConstraint);
@@ -232,7 +232,7 @@ internal sealed class UriSpec {
     internal UriSpec WithUserInfo(string? user, string? password, ConstraintCall applying) {
         if (applying is null) { throw new ArgumentNullException(nameof(applying)); }
         if (_userInfoConstraint == applying) { return this; }
-        if (_userInfoConstraint is not null) { throw ConflictingAnyConstraintException.AlreadyDefined(applying, _userInfoConstraint); }
+        if (_userInfoConstraint is not null) { throw ConflictingDummyConstraintException.AlreadyDefined(applying, _userInfoConstraint); }
 
         return new UriSpec(_family, _scheme, _schemeConstraint, _host, true, user, password,
                            _hasPort, _port, _pathMode, _pathSegments, _hasQuery, _hasFragment, _rooted, _pathConstraint, _hostConstraint, applying, _portConstraint);
@@ -241,7 +241,7 @@ internal sealed class UriSpec {
     internal UriSpec WithPort(int? port, ConstraintCall applying) {
         if (applying is null) { throw new ArgumentNullException(nameof(applying)); }
         if (_portConstraint == applying) { return this; }
-        if (_portConstraint is not null) { throw ConflictingAnyConstraintException.AlreadyDefined(applying, _portConstraint); }
+        if (_portConstraint is not null) { throw ConflictingDummyConstraintException.AlreadyDefined(applying, _portConstraint); }
 
         return new UriSpec(_family, _scheme, _schemeConstraint, _host, _hasUserInfo, _user, _password,
                            true, port, _pathMode, _pathSegments, _hasQuery, _hasFragment, _rooted, _pathConstraint, _hostConstraint, _userInfoConstraint, applying);
@@ -252,7 +252,7 @@ internal sealed class UriSpec {
         // Re-declaring the SAME constraint is not a contradiction, so it is a no-op rather than a
         // conflict: the second declaration asks for exactly what the first already guarantees.
         if (_pathConstraint == applying) { return this; }
-        if (_pathConstraint is not null) { throw ConflictingAnyConstraintException.AlreadyDefined(applying, _pathConstraint); }
+        if (_pathConstraint is not null) { throw ConflictingDummyConstraintException.AlreadyDefined(applying, _pathConstraint); }
 
         return new UriSpec(_family, _scheme, _schemeConstraint, _host, _hasUserInfo, _user, _password,
                            _hasPort, _port, mode, segments, _hasQuery, _hasFragment, _rooted, applying, _hostConstraint, _userInfoConstraint, _portConstraint);
@@ -333,7 +333,7 @@ internal sealed class UriSpec {
         // root asked for the empty reference, which cannot generate: surface it with the seed to replay, like the
         // library's other unsatisfiable specs.
         if (_pathMode == UriPathMode.Exact) {
-            throw AnyGenerationException.EmptyRelativeReference(Replay.Of(source));
+            throw DummyGenerationException.EmptyRelativeReference(Replay.Of(source));
         }
 
         return Draw(random, LowerAlphaNum, MinTokenLength, MaxTokenLength);

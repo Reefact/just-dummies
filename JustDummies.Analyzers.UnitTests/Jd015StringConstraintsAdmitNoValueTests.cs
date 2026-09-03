@@ -18,7 +18,7 @@ public class Jd015StringConstraintsAdmitNoValueTests {
 
             public static class Sample {
                 public static string M() {
-                    return Any.String().Numeric().StartingWith("ORD-").Generate();
+                    return Dummy.String().Numeric().StartingWith("ORD-").Generate();
                 }
             }
             """;
@@ -37,7 +37,7 @@ public class Jd015StringConstraintsAdmitNoValueTests {
 
             public static class Sample {
                 public static string M() {
-                    return Any.String().Printable().Containing("café").Generate();
+                    return Dummy.String().Printable().Containing("café").Generate();
                 }
             }
             """;
@@ -56,7 +56,7 @@ public class Jd015StringConstraintsAdmitNoValueTests {
 
             public static class Sample {
                 public static string M() {
-                    return Any.String().WithoutNumeric().StartingWith("ORD-1").Generate();
+                    return Dummy.String().WithoutNumeric().StartingWith("ORD-1").Generate();
                 }
             }
             """;
@@ -75,7 +75,7 @@ public class Jd015StringConstraintsAdmitNoValueTests {
 
             public static class Sample {
                 public static string M() {
-                    return Any.String().InLowerCase().StartingWith("ABC").Generate();
+                    return Dummy.String().InLowerCase().StartingWith("ABC").Generate();
                 }
             }
             """;
@@ -94,7 +94,7 @@ public class Jd015StringConstraintsAdmitNoValueTests {
 
             public static class Sample {
                 public static string M() {
-                    return Any.String().OneOf("aba").WithMaxLength(3).Containing("ab").Containing("ba").Generate();
+                    return Dummy.String().OneOf("aba").WithMaxLength(3).Containing("ab").Containing("ba").Generate();
                 }
             }
             """;
@@ -113,7 +113,7 @@ public class Jd015StringConstraintsAdmitNoValueTests {
 
             public static class Sample {
                 public static string M() {
-                    return Any.String().StartingWith("ORD-").Numeric().Generate();
+                    return Dummy.String().StartingWith("ORD-").Numeric().Generate();
                 }
             }
             """;
@@ -133,7 +133,7 @@ public class Jd015StringConstraintsAdmitNoValueTests {
 
             public static class Sample {
                 public static string M() {
-                    return Any.String().AlphaNumeric().OneOf("ORD-1", "ORD-2").Generate();
+                    return Dummy.String().AlphaNumeric().OneOf("ORD-1", "ORD-2").Generate();
                 }
             }
             """;
@@ -156,7 +156,7 @@ public class Jd015StringConstraintsAdmitNoValueTests {
 
             public static class Sample {
                 public static string M() {
-                    return Any.String().NotBlank().OneOf("  ", "\t").Generate();
+                    return Dummy.String().NotBlank().OneOf("  ", "\t").Generate();
                 }
             }
             """;
@@ -179,7 +179,7 @@ public class Jd015StringConstraintsAdmitNoValueTests {
 
             public static class Sample {
                 public static string M() {
-                    return Any.String().WithoutNumeric().InLowerCase().OneOf("1", "A").Generate();
+                    return Dummy.String().WithoutNumeric().InLowerCase().OneOf("1", "A").Generate();
                 }
             }
             """;
@@ -200,7 +200,7 @@ public class Jd015StringConstraintsAdmitNoValueTests {
 
             public static class Sample {
                 public static string M() {
-                    return Any.String().WithoutNumeric().InLowerCase().NotBlank().OneOf("1", "A", " ").Generate();
+                    return Dummy.String().WithoutNumeric().InLowerCase().NotBlank().OneOf("1", "A", " ").Generate();
                 }
             }
             """;
@@ -219,7 +219,7 @@ public class Jd015StringConstraintsAdmitNoValueTests {
 
             public static class Sample {
                 public static string M() {
-                    return Any.String().WithoutNumeric().InLowerCase().OneOf("1", "A", "a").Generate();
+                    return Dummy.String().WithoutNumeric().InLowerCase().OneOf("1", "A", "a").Generate();
                 }
             }
             """;
@@ -238,7 +238,7 @@ public class Jd015StringConstraintsAdmitNoValueTests {
 
             public static class Sample {
                 public static string M() {
-                    return Any.String().NotBlank().WithoutNumeric().InLowerCase().OneOf("1", "A").Generate();
+                    return Dummy.String().NotBlank().WithoutNumeric().InLowerCase().OneOf("1", "A").Generate();
                 }
             }
             """;
@@ -259,7 +259,7 @@ public class Jd015StringConstraintsAdmitNoValueTests {
 
             public static class Sample {
                 public static string M() {
-                    return Any.String().InLowerCase().NotBlank().OneOf("A", "B").Generate();
+                    return Dummy.String().InLowerCase().NotBlank().OneOf("A", "B").Generate();
                 }
             }
             """;
@@ -279,7 +279,7 @@ public class Jd015StringConstraintsAdmitNoValueTests {
 
             public static class Sample {
                 public static string M() {
-                    return Any.String().AlphaNumeric().OneOf("ORD-1", "12345").Generate();
+                    return Dummy.String().AlphaNumeric().OneOf("ORD-1", "12345").Generate();
                 }
             }
             """;
@@ -296,7 +296,7 @@ public class Jd015StringConstraintsAdmitNoValueTests {
 
             public static class Sample {
                 public static string M() {
-                    return Any.String().OneOf("abc", "def").InUpperCase().Generate();
+                    return Dummy.String().OneOf("abc", "def").InUpperCase().Generate();
                 }
             }
             """;
@@ -314,7 +314,7 @@ public class Jd015StringConstraintsAdmitNoValueTests {
 
             public static class Sample {
                 public static string M(string code) {
-                    return Any.String().AlphaNumeric().OneOf("ORD-1", code).Generate();
+                    return Dummy.String().AlphaNumeric().OneOf("ORD-1", code).Generate();
                 }
             }
             """;
@@ -331,7 +331,7 @@ public class Jd015StringConstraintsAdmitNoValueTests {
 
             public static class Sample {
                 public static string M() {
-                    return Any.String().WithLength(3).StartingWith("ORD-").Generate();
+                    return Dummy.String().WithLength(3).StartingWith("ORD-").Generate();
                 }
             }
             """;
@@ -349,7 +349,7 @@ public class Jd015StringConstraintsAdmitNoValueTests {
 
             public static class Sample {
                 public static string M() {
-                    return Any.String().WithMaxLength(6).StartingWith("SKU-").EndingWith("-EUR").Generate();
+                    return Dummy.String().WithMaxLength(6).StartingWith("SKU-").EndingWith("-EUR").Generate();
                 }
             }
             """;
@@ -367,7 +367,7 @@ public class Jd015StringConstraintsAdmitNoValueTests {
 
             public static class Sample {
                 public static string M() {
-                    return Any.String().WithLength(8).StartingWith("SKU-").EndingWith("-EUR").Generate();
+                    return Dummy.String().WithLength(8).StartingWith("SKU-").EndingWith("-EUR").Generate();
                 }
             }
             """;
@@ -386,7 +386,7 @@ public class Jd015StringConstraintsAdmitNoValueTests {
 
             public static class Sample {
                 public static string M() {
-                    return Any.String().StartingWith(" ").WithLength(1).NotBlank().Generate();
+                    return Dummy.String().StartingWith(" ").WithLength(1).NotBlank().Generate();
                 }
             }
             """;
@@ -407,7 +407,7 @@ public class Jd015StringConstraintsAdmitNoValueTests {
 
             public static class Sample {
                 public static string M() {
-                    return Any.String().StartingWith("A").WithLength(1).NotBlank().Generate();
+                    return Dummy.String().StartingWith("A").WithLength(1).NotBlank().Generate();
                 }
             }
             """;
@@ -425,7 +425,7 @@ public class Jd015StringConstraintsAdmitNoValueTests {
 
             public static class Sample {
                 public static string M() {
-                    return Any.String().StartingWith(" ").WithLength(2).NotBlank().Generate();
+                    return Dummy.String().StartingWith(" ").WithLength(2).NotBlank().Generate();
                 }
             }
             """;
@@ -443,7 +443,7 @@ public class Jd015StringConstraintsAdmitNoValueTests {
 
             public static class Sample {
                 public static string M() {
-                    return Any.String().WithLength(0).NotBlank().Generate();
+                    return Dummy.String().WithLength(0).NotBlank().Generate();
                 }
             }
             """;
@@ -464,7 +464,7 @@ public class Jd015StringConstraintsAdmitNoValueTests {
 
             public static class Sample {
                 public static string M() {
-                    return Any.String().WithMaxLength(0).NonEmpty().Generate();
+                    return Dummy.String().WithMaxLength(0).NonEmpty().Generate();
                 }
             }
             """;
@@ -485,11 +485,11 @@ public class Jd015StringConstraintsAdmitNoValueTests {
 
             public static class Sample {
                 public static string M() {
-                    return Any.String().StartingWith("ORD-").StartingWith("ORD-").WithLength(4).Generate();
+                    return Dummy.String().StartingWith("ORD-").StartingWith("ORD-").WithLength(4).Generate();
                 }
 
                 public static string N() {
-                    return Any.String().EndingWith("-EUR").EndingWith("-EUR").WithLength(4).Generate();
+                    return Dummy.String().EndingWith("-EUR").EndingWith("-EUR").WithLength(4).Generate();
                 }
             }
             """;
@@ -508,7 +508,7 @@ public class Jd015StringConstraintsAdmitNoValueTests {
 
             public static class Sample {
                 public static string M() {
-                    return Any.String().Containing("XY").Containing("XY").WithLength(2).Generate();
+                    return Dummy.String().Containing("XY").Containing("XY").WithLength(2).Generate();
                 }
             }
             """;
@@ -526,7 +526,7 @@ public class Jd015StringConstraintsAdmitNoValueTests {
 
             public static class Sample {
                 public static string M(string prefix) {
-                    return Any.String().WithLength(3).StartingWith(prefix).Generate();
+                    return Dummy.String().WithLength(3).StartingWith(prefix).Generate();
                 }
             }
             """;
@@ -545,7 +545,7 @@ public class Jd015StringConstraintsAdmitNoValueTests {
 
             public static class Sample {
                 public static string M() {
-                    AnyString generator = Any.String().WithLength(3);
+                    DummyString generator = Dummy.String().WithLength(3);
 
                     return generator.StartingWith("ORD-").Generate();
                 }
@@ -569,7 +569,7 @@ public class Jd015StringConstraintsAdmitNoValueTests {
 
             public static class Sample {
                 public static void M() {
-                    Check2.ThatCode(() => Any.String().WithLength(3).StartingWith("ORD-"));
+                    Check2.ThatCode(() => Dummy.String().WithLength(3).StartingWith("ORD-"));
                 }
             }
             """;

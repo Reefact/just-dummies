@@ -12,12 +12,12 @@ comment la bibliothèque sert *cela* ; rien n'y transforme en dummy une valeur d
 
 ## Un générateur est une recette, pas une valeur
 
-`Any.Int32()` ne donne pas un nombre. Il donne un `AnyInt32` — un objet décrivant quels nombres
+`Dummy.Int32()` ne donne pas un nombre. Il donne un `DummyInt32` — un objet décrivant quels nombres
 seraient acceptables. Rien n'est tiré tant que `Generate()` n'est pas appelé, et chaque appel tire à
 nouveau :
 
 ```csharp
-AnyInt32 anyQuantity = Any.Int32().Between(1, 100);
+DummyInt32 anyQuantity = Dummy.Int32().Between(1, 100);
 
 int first  = anyQuantity.Generate();
 int second = anyQuantity.Generate();
@@ -27,16 +27,16 @@ int second = anyQuantity.Generate();
 
 C'est la distinction sur laquelle repose toute l'API, et la raison pour laquelle le paquet embarque
 des analyzers : une recette et une valeur satisfont beaucoup des mêmes signatures, le compilateur ne
-peut donc pas signaler qu'on les a confondues. Écrire `$"{Any.Int32()}"` compile parfaitement et
-produit la chaîne `"JustDummies.AnyInt32"`. C'est le diagnostic
+peut donc pas signaler qu'on les a confondues. Écrire `$"{Dummy.Int32()}"` compile parfaitement et
+produit la chaîne `"JustDummies.DummyInt32"`. C'est le diagnostic
 [JD005](../analyzers/JD005.fr.md), et il existe précisément parce que rien d'autre ne l'aurait
 attrapé.
 
 ```mermaid
 flowchart TD
     accTitle: Pourquoi un générateur est une recette et non une valeur
-    accDescr: Any.Int32() renvoie un générateur d'un int quelconque. Between(1, 100) en renvoie un nouveau, et MultipleOf(5) encore un autre. Appeler Generate() deux fois sur ce dernier générateur donne deux valeurs différentes, 45 et 70.
-    F["Any.Int32()"] -->|"renvoie"| G1["générateur<br/><i>un int quelconque</i>"]
+    accDescr: Dummy.Int32() renvoie un générateur d'un int quelconque. Between(1, 100) en renvoie un nouveau, et MultipleOf(5) encore un autre. Appeler Generate() deux fois sur ce dernier générateur donne deux valeurs différentes, 45 et 70.
+    F["Dummy.Int32()"] -->|"renvoie"| G1["générateur<br/><i>un int quelconque</i>"]
     G1 -->|".Between(1, 100)"| G2["générateur<br/><i>un int dans 1..100</i>"]
     G2 -->|".MultipleOf(5)"| G3["générateur<br/><i>un multiple de 5 dans 1..100</i>"]
     G3 -->|".Generate()"| V["45"]
@@ -54,8 +54,8 @@ Une contrainte ne modifie jamais le générateur sur lequel elle est appelée. E
 **nouveau**, porteur d'une exigence de plus, et laisse l'original exactement tel qu'il était :
 
 ```csharp
-AnyString anyCode     = Any.String().Alpha().WithLength(8);
-AnyString anyUpperCode = anyCode.InUpperCase();
+DummyString anyCode     = Dummy.String().Alpha().WithLength(8);
+DummyString anyUpperCode = anyCode.InUpperCase();
 
 string mixed = anyCode.Generate();      // 8 lettres, casse quelconque
 string upper = anyUpperCode.Generate(); // 8 lettres, majuscules
@@ -73,30 +73,30 @@ commettre quand une chaîne est répartie sur plusieurs lignes ; elle a donc son
 
 <!-- jd:allow=JD006 -->
 ```csharp
-AnyString anyReference = Any.String().WithLength(12);
+DummyString anyReference = Dummy.String().WithLength(12);
 
 anyReference.StartingWith("ORD-"); // JD006 : le résultat est jeté, le préfixe est donc perdu
 
 string reference = anyReference.Generate(); // 12 caractères, sans préfixe
 ```
 
-## `IAny<T>` est la couture sur laquelle tout se compose
+## `IDummy<T>` est la couture sur laquelle tout se compose
 
-Tout générateur implémente `IAny<T>`, dont l'unique membre est `Generate()`. Cette seule interface
+Tout générateur implémente `IDummy<T>`, dont l'unique membre est `Generate()`. Cette seule interface
 permet de faire circuler, de stocker et de combiner des générateurs sans que le code receveur ait à
 savoir quel type concret les a produits :
 
 ```csharp
-static List<T> ThreeOf<T>(IAny<T> generator) {
+static List<T> ThreeOf<T>(IDummy<T> generator) {
     return [generator.Generate(), generator.Generate(), generator.Generate()];
 }
 
-List<int>    quantities = ThreeOf(Any.Int32().Between(1, 100));
-List<string> references = ThreeOf(Any.String().StartingWith("ORD-").WithLength(12));
+List<int>    quantities = ThreeOf(Dummy.Int32().Between(1, 100));
+List<string> references = ThreeOf(Dummy.String().StartingWith("ORD-").WithLength(12));
 ```
 
-C'est aussi la monnaie d'échange de l'API de composition : `Any.ListOf`, `Any.Combine`, `.As(...)`
-et `.OrNull()` prennent et renvoient tous des `IAny<T>`. Voir
+C'est aussi la monnaie d'échange de l'API de composition : `Dummy.ListOf`, `Dummy.Combine`, `.As(...)`
+et `.OrNull()` prennent et renvoient tous des `IDummy<T>`. Voir
 [Composition](./composition.fr.md) pour ce que cela permet.
 
 ## Une contrainte énonce un invariant, jamais une assertion
@@ -109,7 +109,7 @@ port sont offerts au-delà d'un seuil :
 
 ```csharp
 // Anti-patron : la contrainte a été choisie pour rendre l'assertion vraie.
-decimal orderTotal = Any.Decimal().GreaterThan(100m).Generate();
+decimal orderTotal = Dummy.Decimal().GreaterThan(100m).Generate();
 
 Assert.Equal(0m, Shipping.FeeFor(orderTotal));
 ```
@@ -122,7 +122,7 @@ tirée. N'en faites rien : cela échoue de la même façon, et y ajoute un défa
 
 ```csharp
 // Toujours faux, d'une manière qui a l'air soigneuse.
-decimal orderTotal = Any.Decimal().Between(0m, 10_000m).WithScale(2).Generate();
+decimal orderTotal = Dummy.Decimal().Between(0m, 10_000m).WithScale(2).Generate();
 
 decimal expected = orderTotal > 100m ? 0m : 4.90m;   // la règle, recopiée dans le test
 
@@ -156,7 +156,7 @@ ce qu'il vous faut est un littéral de chaque côté de la frontière.
 
 Quand une chaîne déclare plusieurs contraintes, JustDummies ne tire **pas** au hasard en
 recommençant jusqu'à ce que quelque chose convienne. Il construit une valeur qui satisfait toute la
-spécification par construction. Une exécution de `Any.Int32().Between(1, 100).MultipleOf(7)` choisit
+spécification par construction. Une exécution de `Dummy.Int32().Between(1, 100).MultipleOf(7)` choisit
 parmi les multiples de sept de cet intervalle ; elle ne lance pas les dés en espérant tomber dessus.
 
 C'est pourquoi des contraintes contradictoires ne bouclent pas. Elles sont refusées, avec un message
@@ -164,8 +164,8 @@ nommant **les deux** côtés du conflit :
 
 <!-- jd:allow=JD023 -->
 ```csharp
-// Lève ConflictingAnyConstraintException — le message nomme les deux bornes.
-int impossible = Any.Int32().GreaterThan(100).LessThan(10).Generate();
+// Lève ConflictingDummyConstraintException — le message nomme les deux bornes.
+int impossible = Dummy.Int32().GreaterThan(100).LessThan(10).Generate();
 ```
 
 Quelques contraintes ne peuvent pas être honorées par construction : exclure des valeurs d'un
@@ -178,9 +178,9 @@ réagir.
 ```mermaid
 flowchart LR
     accTitle: Les valeurs sont construites pour satisfaire les contraintes, jamais filtrées
-    accDescr: On demande aux contraintes déclarées si elles admettent une valeur. Sinon, une ConflictingAnyConstraintException nomme les deux côtés. Si oui, une valeur qui les satisfait toutes est construite, et c'est la valeur tirée.
+    accDescr: On demande aux contraintes déclarées si elles admettent une valeur. Sinon, une ConflictingDummyConstraintException nomme les deux côtés. Si oui, une valeur qui les satisfait toutes est construite, et c'est la valeur tirée.
     D["contraintes déclarées"] --> C{"admettent-elles<br/>une valeur ?"}
-    C -->|non| X["ConflictingAnyConstraintException<br/><i>nommant les deux côtés</i>"]
+    C -->|non| X["ConflictingDummyConstraintException<br/><i>nommant les deux côtés</i>"]
     C -->|oui| B["construire une valeur<br/>qui les satisfait toutes"]
     B --> V["la valeur tirée"]
     style X fill:#ffebee,stroke:#e53935,color:#b71c1c
@@ -199,7 +199,7 @@ rend prévisible.
 * **Aucun rétrécissement (*shrinking*).** Ce n'est pas une bibliothèque de test à base de
   propriétés. Un échec se rejoue exactement via sa graine, il n'est pas réduit à un contre-exemple
   minimal.
-* **Aucun graphe d'objet complet.** Il n'existe pas d'`Any.Object<T>()` qui réfléchirait sur votre
+* **Aucun graphe d'objet complet.** Il n'existe pas d'`Dummy.Object<T>()` qui réfléchirait sur votre
   type pour le remplir. C'est vous qui composez la valeur, et c'est ce qui la garde valide selon vos
   règles plutôt que selon une convention devinée par la bibliothèque.
 * **Une valeur par `Generate()`.** La couverture vient de l'exécution fréquente de la suite avec des

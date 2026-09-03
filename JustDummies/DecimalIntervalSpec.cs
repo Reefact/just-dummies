@@ -8,7 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 namespace JustDummies;
 
 /// <summary>
-///     The immutable engine behind <see cref="AnyDecimal" /> — the same algebra as
+///     The immutable engine behind <see cref="DummyDecimal" /> — the same algebra as
 ///     <see cref="ContinuousIntervalSpec" /> in <see cref="decimal" /> arithmetic. <see cref="decimal" /> has no
 ///     next-representable-value ladder, so exclusive bounds are expressed as an inclusive bound plus a point
 ///     exclusion, and a colliding draw is nudged by the smallest decimal increment within a bounded budget. An
@@ -120,9 +120,9 @@ internal sealed class DecimalIntervalSpec {
         if (minimum <= _min) { return this; }
 
         if (minimum > _max) {
-            if (_maxConstraint is null) { throw ConflictingAnyConstraintException.NoValueSatisfies(applying, _typeName); }
+            if (_maxConstraint is null) { throw ConflictingDummyConstraintException.NoValueSatisfies(applying, _typeName); }
 
-            throw ConflictingAnyConstraintException.AlreadyBoundedAbove(applying, _maxConstraint, _render(_max));
+            throw ConflictingDummyConstraintException.AlreadyBoundedAbove(applying, _maxConstraint, _render(_max));
         }
 
         return Validated(new DecimalIntervalSpec(_typeName, _render, minimum, applying, _max, _maxConstraint, _allowed, _allowedConstraint, _exclusions, _scale, _scaleConstraint), applying);
@@ -134,9 +134,9 @@ internal sealed class DecimalIntervalSpec {
         if (maximum >= _max) { return this; }
 
         if (maximum < _min) {
-            if (_minConstraint is null) { throw ConflictingAnyConstraintException.NoValueSatisfies(applying, _typeName); }
+            if (_minConstraint is null) { throw ConflictingDummyConstraintException.NoValueSatisfies(applying, _typeName); }
 
-            throw ConflictingAnyConstraintException.AlreadyBoundedBelow(applying, _minConstraint, _render(_min));
+            throw ConflictingDummyConstraintException.AlreadyBoundedBelow(applying, _minConstraint, _render(_min));
         }
 
         return Validated(new DecimalIntervalSpec(_typeName, _render, _min, _minConstraint, maximum, applying, _allowed, _allowedConstraint, _exclusions, _scale, _scaleConstraint), applying);
@@ -163,7 +163,7 @@ internal sealed class DecimalIntervalSpec {
         // Re-declaring the SAME constraint is not a contradiction, so it is a no-op rather than a
         // conflict: the second declaration asks for exactly what the first already guarantees.
         if (_allowedConstraint == applying) { return this; }
-        if (_allowedConstraint is not null) { throw ConflictingAnyConstraintException.AlreadyDefined(applying, _allowedConstraint); }
+        if (_allowedConstraint is not null) { throw ConflictingDummyConstraintException.AlreadyDefined(applying, _allowedConstraint); }
 
         decimal[] distinct = values.Distinct().ToArray();
 
@@ -194,7 +194,7 @@ internal sealed class DecimalIntervalSpec {
 
             // _scale and _scaleConstraint are written as a pair by the constructor and rethreaded as a pair by every
             // rebuild, so a declared scale always carries the name of the constraint that declared it.
-            throw ConflictingAnyConstraintException.AlreadyDefined(applying, _scaleConstraint!);
+            throw ConflictingDummyConstraintException.AlreadyDefined(applying, _scaleConstraint!);
         }
 
         return Validated(new DecimalIntervalSpec(_typeName, _render, _min, _minConstraint, _max, _maxConstraint, _allowed, _allowedConstraint, _exclusions, scale, applying), applying);
@@ -329,7 +329,7 @@ internal sealed class DecimalIntervalSpec {
         // Interpolate as a convex combination: min*(1 - fraction) + max*fraction stays within [min, max] for
         // fraction in [0, 1], and no intermediate ever leaves the decimal range. The earlier midpoint form
         // (mid ± half) overflowed on the full domain — it is symmetric, so max/2 rounds up and half = max/2 - min/2
-        // doubles to just past decimal.MaxValue, throwing on an unconstrained Any.Decimal().Generate().
+        // doubles to just past decimal.MaxValue, throwing on an unconstrained Dummy.Decimal().Generate().
         // Draw from the ordinary window rather than the declared interval (ADR-0031): the window only ever clips,
         // and it steps aside entirely when it would leave the declared interval empty. Without it an unconstrained
         // decimal lands within a few decades of decimal.MaxValue, where a further multiplication throws
@@ -352,7 +352,7 @@ internal sealed class DecimalIntervalSpec {
 
             decimal? free = NudgeOnGrid(snapped, true) ?? NudgeOnGrid(snapped, false);
             if (free is null) {
-                throw AnyGenerationException.GridNudgeExhausted(_typeName, Replay.Of(source, random.Seed));
+                throw DummyGenerationException.GridNudgeExhausted(_typeName, Replay.Of(source, random.Seed));
             }
 
             return free.Value;
@@ -365,7 +365,7 @@ internal sealed class DecimalIntervalSpec {
         while (IsExcluded(candidate)) {
             decimal next = Clamped(candidate + SmallestStep);
             if (next == candidate || budget-- == 0) {
-                throw AnyGenerationException.ExclusionNudgeExhausted(_typeName, Replay.Of(source, random.Seed));
+                throw DummyGenerationException.ExclusionNudgeExhausted(_typeName, Replay.Of(source, random.Seed));
             }
 
             candidate = next;
@@ -442,7 +442,7 @@ internal sealed class DecimalIntervalSpec {
     private DecimalIntervalSpec Validated(DecimalIntervalSpec candidate, ConstraintCall applying) {
         if (candidate.IsSatisfiable()) { return candidate; }
 
-        throw ConflictingAnyConstraintException.NoValueRemains(applying, candidate.DescribeExhaustion(applying));
+        throw ConflictingDummyConstraintException.NoValueRemains(applying, candidate.DescribeExhaustion(applying));
     }
 
     private bool IsSatisfiable() {

@@ -2,7 +2,7 @@ namespace JustDummies;
 
 /// <summary>
 ///     The ASCII universe every character draw starts from, and the families that narrow it — one definition
-///     shared by <see cref="AnyString" />'s filler and <see cref="AnyChar" />, so the two generators can never
+///     shared by <see cref="DummyString" />'s filler and <see cref="DummyChar" />, so the two generators can never
 ///     drift apart on what they draw. An unconstrained draw is the whole of ASCII and every family is a subset of
 ///     it, with no exception (ADR-0075); <see cref="RegexAlphabet" /> keeps its own, narrower universe for the
 ///     positions a pattern leaves free, which is a decision of its own.

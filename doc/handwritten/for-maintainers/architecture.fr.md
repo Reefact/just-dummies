@@ -3,7 +3,7 @@
 🌍 **Langues :**  
 🇬🇧 [English](./architecture.en.md) | 🇫🇷 Français (ce fichier)
 
-Comment le dépôt est agencé, ce qui se passe entre `Any.Int32()` et un nombre, et où va un changement
+Comment le dépôt est agencé, ce qui se passe entre `Dummy.Int32()` et un nombre, et où va un changement
 d'un type donné. Écrit pour qui s'apprête à modifier la bibliothèque, non à l'utiliser.
 
 ## Les projets
@@ -14,14 +14,14 @@ d'un type donné. Écrit pour qui s'apprête à modifier la bibliothèque, non �
 | `JustDummies.Analyzers` | *dans* `JustDummies` | `netstandard2.0` | les 33 règles Roslyn, sous `analyzers/dotnet/cs` |
 | `JustDummies.Xunit` | `JustDummies.Xunit` | `netstandard2.0` | l'adaptateur xUnit v3 — un attribut |
 | `JustDummies.DiagnosticCatalog` | `JustDummies.DiagnosticCatalog` | `netstandard2.0` | les ids de règles en constantes vérifiées |
-| `JustDummies.GenAny` | *dans* `JustDummies.Cli` | `netstandard2.0` | le moteur de `dum` : les §3.2, §4 et §5 entières — recherche, émission, résolution, guards |
+| `JustDummies.GenDummy` | *dans* `JustDummies.Cli` | `netstandard2.0` | le moteur de `dum` : les §3.2, §4 et §5 entières — recherche, émission, résolution, guards |
 | `JustDummies.Cli` | `JustDummies.Cli` (l'outil `dum`) | `net8.0` | la coquille : la §3, le chargement de projet du §11.1, le récap de la §6, les codes de la §7 |
 | `JustDummies.UnitTests` | — | — | cas nommés : messages, validation d'arguments, conventions, régressions |
 | `JustDummies.PropertyTests` | — | — | invariants valables pour tout argument de contrainte légal |
 | `JustDummies.Analyzers.UnitTests` | — | — | une suite par règle, sur des extraits compilés |
 | `JustDummies.Xunit.UnitTests` | — | — | le cycle de vie de l'adaptateur |
 | `JustDummies.Documentation.UnitTests` | — | — | les contrats propres à la documentation |
-| `JustDummies.GenAny.UnitTests` | — | — | le plancher du moteur et ses frontières |
+| `JustDummies.GenDummy.UnitTests` | — | — | le plancher du moteur et ses frontières |
 | `JustDummies.Cli.UnitTests` | — | — | la découverte du projet, ce que l'outil répond, et les codes de sortie de la §7 |
 | `tools/justdummies-check` | — | — | compatibilité de l'asset empaqueté, volontairement hors solution |
 
@@ -34,8 +34,8 @@ jamais dans la surface commune.
 
 ## La forme unique qu'ont tous les générateurs
 
-`Any` est une `static partial class` répartie par famille — `Any.Primitive.cs`, `Any.Collection.cs`,
-`Any.Choice.cs`, `Any.Combine.cs`, `Any.Pattern.cs`, `Any.Uri.cs`, `Any.Reproducibility.cs`. Elle ne
+`Dummy` est une `static partial class` répartie par famille — `Dummy.Primitive.cs`, `Dummy.Collection.cs`,
+`Dummy.Choice.cs`, `Dummy.Combine.cs`, `Dummy.Pattern.cs`, `Dummy.Uri.cs`, `Dummy.Reproducibility.cs`. Elle ne
 porte aucun état ; c'est un ensemble de portes.
 
 Derrière chaque porte se tient un builder `AnyXxx`, et tous sont la même machine en trois temps :
@@ -43,9 +43,9 @@ Derrière chaque porte se tient un builder `AnyXxx`, et tous sont la même machi
 ```mermaid
 flowchart LR
     accTitle: La forme unique qu'ont tous les générateurs
-    accDescr: La façade Any.Int32() renvoie un builder AnyInt32 immuable. Un appel de contrainte renvoie un NOUVEAU builder plutôt que de le muter. Ce builder porte une valeur de spec tenant les contraintes déclarées, et Generate() tire contre un RandomSource pour produire la valeur.
-    F["Any.Int32()<br/><i>façade</i>"] --> B["AnyInt32<br/><i>builder immuable</i>"]
-    B -->|"un appel de contrainte"| B2["AnyInt32<br/><i>un NOUVEAU builder</i>"]
+    accDescr: La façade Dummy.Int32() renvoie un builder DummyInt32 immuable. Un appel de contrainte renvoie un NOUVEAU builder plutôt que de le muter. Ce builder porte une valeur de spec tenant les contraintes déclarées, et Generate() tire contre un RandomSource pour produire la valeur.
+    F["Dummy.Int32()<br/><i>façade</i>"] --> B["DummyInt32<br/><i>builder immuable</i>"]
+    B -->|"un appel de contrainte"| B2["DummyInt32<br/><i>un NOUVEAU builder</i>"]
     B2 --> S["une valeur de spec<br/><i>les contraintes déclarées</i>"]
     S -->|"Generate()"| D["tirage contre<br/>un RandomSource"]
     D --> V["la valeur"]
@@ -79,16 +79,16 @@ validant ([ADR-0043](./adr/0043-declare-a-value-object-and-enforce-its-identity.
 `SeededRandom`. Deux implémentations, et leur différence constitue toute l'histoire de la
 reproductibilité :
 
-* **`AmbientRandomSource`** — la portée qu'épinglent `Any.Reproducibly`, `Any.UseSeed` et l'attribut
+* **`AmbientRandomSource`** — la portée qu'épinglent `Dummy.Reproducibly`, `Dummy.UseSeed` et l'attribut
   xUnit `[Reproducible]`. Elle suit le contexte d'exécution, ce qui permet à un adaptateur de
   l'ouvrir dans un crochet d'avant et de la fermer dans un crochet d'après
   ([ADR-0017](./adr/0017-open-the-ambient-seed-scope-to-adapters.fr.md)).
-* **Une source isolée** — ce que `Any.WithSeed(seed)` distribue via un `AnyContext`. Elle n'est
+* **Une source isolée** — ce que `Dummy.WithSeed(seed)` distribue via un `DummyContext`. Elle n'est
   délibérément *pas* ambiante : les valeurs qui en sortent ignorent toute portée englobante.
 
 Un générateur retient de quelle source il a été construit via la couture interne `IHasRandomSource` :
 un générateur dérivé — `.As(...)`, `.OrNull()`, un `Combine` composé — continue donc de tirer au même
-endroit que ses opérandes. `AnyDerivation` est l'endroit où vit cette plomberie.
+endroit que ses opérandes. `DummyDerivation` est l'endroit où vit cette plomberie.
 
 Les tirages sont sérialisés sur la source
 ([ADR-0021](./adr/0021-serialize-draws-on-a-random-source.fr.md)), et c'est ce qui rend rejouable une
@@ -105,13 +105,13 @@ Trois issues, et tout générateur tombe dans l'une d'elles :
 ```mermaid
 flowchart TD
     accTitle: Comment une contrainte devient une valeur
-    accDescr: On demande aux contraintes déclarées si elles admettent une valeur. Non lève une ConflictingAnyConstraintException nommant les deux revendications. Oui par construction construit la valeur. Oui mais par rejet seulement passe par un retirage borné, qui atteint la valeur dans le budget et lève une AnyGenerationException portant la graine une fois le budget épuisé.
+    accDescr: On demande aux contraintes déclarées si elles admettent une valeur. Non lève une ConflictingDummyConstraintException nommant les deux revendications. Oui par construction construit la valeur. Oui mais par rejet seulement passe par un retirage borné, qui atteint la valeur dans le budget et lève une DummyGenerationException portant la graine une fois le budget épuisé.
     S["contraintes déclarées"] --> Q{"admettent-elles une valeur ?"}
-    Q -->|"non"| C["ConflictingAnyConstraintException<br/><i>nommant les deux revendications</i>"]
+    Q -->|"non"| C["ConflictingDummyConstraintException<br/><i>nommant les deux revendications</i>"]
     Q -->|"oui, par construction"| B["la construire"] --> V["la valeur"]
     Q -->|"oui, mais par rejet seulement"| R["retirage borné"]
     R -->|"dans le budget"| V
-    R -->|"budget épuisé"| A["AnyGenerationException<br/><i>portant la graine</i>"]
+    R -->|"budget épuisé"| A["DummyGenerationException<br/><i>portant la graine</i>"]
     style V fill:#e8f5e9,stroke:#43a047,color:#1b5e20
     style C fill:#ffebee,stroke:#e53935,color:#b71c1c
     style A fill:#fff8e1,stroke:#f9a825,color:#e65100
@@ -155,7 +155,7 @@ README de ce dossier. Seul le troisième est vérifié par un outil (RS2003).
 | Si vous… | Allez vers |
 | --- | --- |
 | ajoutez une contrainte à un générateur existant | le builder `AnyXxx` et sa spec ; ajoutez un test par l'exemple et, si l'invariant vaut pour tout argument, un test de propriété |
-| ajoutez un générateur pour un nouveau type | la partielle `Any.*.cs` correspondante, un nouveau `AnyXxx`, et l'espace ordinal s'il est discret |
+| ajoutez un générateur pour un nouveau type | la partielle `Dummy.*.cs` correspondante, un nouveau `AnyXxx`, et l'espace ordinal s'il est discret |
 | ajoutez un générateur net8 seulement | derrière `#if NET8_0_OR_GREATER`, plus la seule baseline PublicAPI `net8.0` |
 | changez ce que dit un message | la fabrique d'exception nommée — et le test qui épingle la formulation |
 | ajoutez ou retirez une règle | les cinq endroits listés ci-dessus, ensemble |

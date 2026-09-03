@@ -9,20 +9,20 @@ namespace JustDummies.Analyzers.UnitTests;
 public class Jd014RejectedConstantArgumentTests {
 
     [Theory]
-    [InlineData("Any.String().WithLengthBetween(10, 5)",        "transposed")]
-    [InlineData("Any.Int32().Between(10, 5)",                   "transposed")]
-    [InlineData("Any.String().WithLength(-1)",                  "negative")]
-    [InlineData("Any.String().WithMaxLength(-1)",               "negative")]
-    [InlineData("Any.String().WithLength(2000000)",             "1,000,000")]
+    [InlineData("Dummy.String().WithLengthBetween(10, 5)",        "transposed")]
+    [InlineData("Dummy.Int32().Between(10, 5)",                   "transposed")]
+    [InlineData("Dummy.String().WithLength(-1)",                  "negative")]
+    [InlineData("Dummy.String().WithMaxLength(-1)",               "negative")]
+    [InlineData("Dummy.String().WithLength(2000000)",             "1,000,000")]
     // A ceiling steers the draw as a floor does, so ADR-0076 caps it too — one rule for every size argument.
     // This row said otherwise until the scaffolder emitted WithMaxLength(1048576) for an ordinary 1 MiB limit,
     // compiled clean, drew no diagnostic, and threw inside the emitted parameterless constructor.
-    [InlineData("Any.String().WithMaxLength(2000000)",          "1,000,000")]
-    [InlineData("Any.ListOf(Any.Int32()).WithMaxCount(2000000)", "1,000,000")]
-    [InlineData("Any.Int32().MultipleOf(0)",                    "strictly positive")]
-    [InlineData("Any.Decimal().WithScale(29)",                  "[0, 28]")]
-    [InlineData("Any.String().StartingWith(\"\")",              "must not be empty")]
-    [InlineData("Any.String().WithChars(\"\")",                 "must not be empty")]
+    [InlineData("Dummy.String().WithMaxLength(2000000)",          "1,000,000")]
+    [InlineData("Dummy.ListOf(Dummy.Int32()).WithMaxCount(2000000)", "1,000,000")]
+    [InlineData("Dummy.Int32().MultipleOf(0)",                    "strictly positive")]
+    [InlineData("Dummy.Decimal().WithScale(29)",                  "[0, 28]")]
+    [InlineData("Dummy.String().StartingWith(\"\")",              "must not be empty")]
+    [InlineData("Dummy.String().WithChars(\"\")",                 "must not be empty")]
     public async Task Reports_an_argument_the_guard_rejects(string expression, string expectedFragment) {
         string source = $$"""
             using JustDummies;
@@ -48,7 +48,7 @@ public class Jd014RejectedConstantArgumentTests {
 
             public static class Sample {
                 public static void M() {
-                    _ = Any.ListOf(Any.Int32()).WithCountBetween(10, 2);
+                    _ = Dummy.ListOf(Dummy.Int32()).WithCountBetween(10, 2);
                 }
             }
             """;
@@ -66,7 +66,7 @@ public class Jd014RejectedConstantArgumentTests {
 
             public static class Sample {
                 public static void M() {
-                    _ = Any.String().OneOf();
+                    _ = Dummy.String().OneOf();
                 }
             }
             """;
@@ -85,7 +85,7 @@ public class Jd014RejectedConstantArgumentTests {
 
             public static class Sample {
                 public static void M() {
-                    _ = Any.DateTime().WithGranularity(TimeSpan.Zero);
+                    _ = Dummy.DateTime().WithGranularity(TimeSpan.Zero);
                 }
             }
             """;
@@ -97,19 +97,19 @@ public class Jd014RejectedConstantArgumentTests {
     }
 
     [Theory]
-    [InlineData("Any.String().WithLengthBetween(5, 10)")]
-    [InlineData("Any.Int32().Between(5, 10)")]
-    [InlineData("Any.Int32().Between(5, 5)")]
-    [InlineData("Any.String().WithLength(0)")]
-    [InlineData("Any.String().WithMaxLength(0)")]
+    [InlineData("Dummy.String().WithLengthBetween(5, 10)")]
+    [InlineData("Dummy.Int32().Between(5, 10)")]
+    [InlineData("Dummy.Int32().Between(5, 5)")]
+    [InlineData("Dummy.String().WithLength(0)")]
+    [InlineData("Dummy.String().WithMaxLength(0)")]
     // Verified rather than assumed: UriSpec.RequireSegmentCount refuses a negative count and nothing else, so
     // the one member of this family that really is uncapped keeps its silence.
-    [InlineData("Any.Uri().Relative().WithPathSegments(2000000)")]
-    [InlineData("Any.Int32().MultipleOf(7)")]
-    [InlineData("Any.Decimal().WithScale(28)")]
-    [InlineData("Any.String().StartingWith(\"ORD-\")")]
-    [InlineData("Any.String().OneOf(\"EUR\")")]
-    [InlineData("Any.ListOf(Any.Int32()).WithCountBetween(2, 10)")]
+    [InlineData("Dummy.Uri().Relative().WithPathSegments(2000000)")]
+    [InlineData("Dummy.Int32().MultipleOf(7)")]
+    [InlineData("Dummy.Decimal().WithScale(28)")]
+    [InlineData("Dummy.String().StartingWith(\"ORD-\")")]
+    [InlineData("Dummy.String().OneOf(\"EUR\")")]
+    [InlineData("Dummy.ListOf(Dummy.Int32()).WithCountBetween(2, 10)")]
     public async Task Does_not_report_a_legal_argument(string expression) {
         string source = $$"""
             using JustDummies;
@@ -134,7 +134,7 @@ public class Jd014RejectedConstantArgumentTests {
 
             public static class Sample {
                 public static void M(int minimum, int maximum) {
-                    _ = Any.Int32().Between(minimum, maximum);
+                    _ = Dummy.Int32().Between(minimum, maximum);
                 }
             }
             """;
@@ -158,7 +158,7 @@ public class Jd014RejectedConstantArgumentTests {
 
             public static class Sample {
                 public static void M() {
-                    Check2.ThatCode(() => Any.Int32().Between(10, 5));
+                    Check2.ThatCode(() => Dummy.Int32().Between(10, 5));
                 }
             }
             """;
@@ -195,7 +195,7 @@ public class Jd014RejectedConstantArgumentTests {
 
             public static class Sample {
                 public static void M() {
-                    _ = Any.ListOf(Any.Int32()).Containing(0);
+                    _ = Dummy.ListOf(Dummy.Int32()).Containing(0);
                 }
             }
             """;

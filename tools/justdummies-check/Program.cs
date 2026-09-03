@@ -20,7 +20,7 @@ namespace JustDummiesCheck;
 // program must observe:
 //   net8.0 consumer -> lib/net8.0 asset         -> modern generators present
 //   net6.0 consumer -> lib/netstandard2.0 asset -> modern generators absent
-// Any mismatch is a regression in packaging or conditional compilation; the program prints the offending
+// Dummy mismatch is a regression in packaging or conditional compilation; the program prints the offending
 // asset moniker and exits non-zero so the workflow step turns red against the right asset.
 internal static class Program {
 
@@ -34,7 +34,7 @@ internal static class Program {
     private const  string ExpectedFamily    = ".NETStandard";
 #endif
 
-    // The net8.0-only generators, guarded by #if NET8_0_OR_GREATER in JustDummies (Any.cs). Present on the net8.0
+    // The net8.0-only generators, guarded by #if NET8_0_OR_GREATER in JustDummies (Dummy.cs). Present on the net8.0
     // asset, absent on the netstandard2.0 asset — the exact conditional surface the acceptance criteria name.
     private static readonly string[] ModernEntryPoints = { "DateOnly", "TimeOnly", "Int128", "UInt128", "Half" };
 
@@ -46,7 +46,7 @@ internal static class Program {
     private const int CrossTfmSeed = 20260719;
 
     private static int Main() {
-        Assembly dummies      = typeof(Any).Assembly;
+        Assembly dummies      = typeof(Dummy).Assembly;
         string   assetMoniker = dummies.GetCustomAttribute<TargetFrameworkAttribute>()?.FrameworkName ?? "(none)";
 
         // Machine-readable banner the workflow greps to prove which asset actually loaded — a program that
@@ -58,7 +58,7 @@ internal static class Program {
         // The seeded common-surface batch for THIS asset, on one grep-safe line (every draw renders to printable
         // ASCII). justdummies.yml diffs it against the other leg's banner to prove cross-asset seed equality. Emitted
         // here with the other identifying banners, before the checks run; a leg that no-oped would omit it.
-        Console.WriteLine($"SEEDBATCH={SeedBatch(Any.WithSeed(CrossTfmSeed))}");
+        Console.WriteLine($"SEEDBATCH={SeedBatch(Dummy.WithSeed(CrossTfmSeed))}");
 
         List<string> failures = new();
 
@@ -70,9 +70,9 @@ internal static class Program {
 
         // 2. The conditional net8.0-only surface is present exactly on the net8.0 asset and absent otherwise.
         foreach (string name in ModernEntryPoints) {
-            bool present = typeof(Any).GetMethod(name, BindingFlags.Public | BindingFlags.Static, binder: null, types: Type.EmptyTypes, modifiers: null) is not null;
+            bool present = typeof(Dummy).GetMethod(name, BindingFlags.Public | BindingFlags.Static, binder: null, types: Type.EmptyTypes, modifiers: null) is not null;
             if (present != ExpectModernTypes) {
-                failures.Add($"Any.{name}() is {(present ? "present" : "absent")} on '{assetMoniker}', expected {(ExpectModernTypes ? "present" : "absent")}");
+                failures.Add($"Dummy.{name}() is {(present ? "present" : "absent")} on '{assetMoniker}', expected {(ExpectModernTypes ? "present" : "absent")}");
             }
         }
 
@@ -95,66 +95,66 @@ internal static class Program {
 
     private static void RunSmoke(List<string> failures) {
         // Scalars + constraints.
-        int roll = Any.Int32().Between(1, 6).Generate();
+        int roll = Dummy.Int32().Between(1, 6).Generate();
         Require(failures, roll is >= 1 and <= 6, $"Int32().Between(1,6) produced {roll}");
 
-        int positive = Any.Int32().Positive().Generate();
+        int positive = Dummy.Int32().Positive().Generate();
         Require(failures, positive > 0, $"Int32().Positive() produced {positive}");
 
-        string capped = Any.String().NonEmpty().WithMaxLength(50).Generate();
+        string capped = Dummy.String().NonEmpty().WithMaxLength(50).Generate();
         Require(failures, capped.Length is >= 1 and <= 50, $"String().NonEmpty().WithMaxLength(50) produced length {capped.Length}");
 
-        double real = Any.Double().Between(0d, 1000d).Generate();
+        double real = Dummy.Double().Between(0d, 1000d).Generate();
         Require(failures, real is >= 0d and <= 1000d, $"Double().Between(0,1000) produced {real.ToString("R", CultureInfo.InvariantCulture)}");
 
         // A contradiction in the Arrange must fail fast at declaration time (part of the library's contract):
         // the prefix alone requires 4 characters, so WithLength(3) cannot be satisfied.
         bool threw = false;
-        try { Any.String().WithLength(3).StartingWith("ORD-"); } catch (ConflictingAnyConstraintException) { threw = true; }
-        Require(failures, threw, "a contradictory String constraint did not throw ConflictingAnyConstraintException");
+        try { Dummy.String().WithLength(3).StartingWith("ORD-"); } catch (ConflictingDummyConstraintException) { threw = true; }
+        Require(failures, threw, "a contradictory String constraint did not throw ConflictingDummyConstraintException");
 
         // Composition through a factory (.As).
-        string composed = Any.Int32().Between(1, 999).As(n => "ID-" + n.ToString(CultureInfo.InvariantCulture)).Generate();
+        string composed = Dummy.Int32().Between(1, 999).As(n => "ID-" + n.ToString(CultureInfo.InvariantCulture)).Generate();
         Require(failures, composed.StartsWith("ID-", StringComparison.Ordinal), $"As(...) produced '{composed}'");
 
         // Collections.
-        List<int> list = Any.ListOf(Any.Int32().Between(0, 9)).WithCount(4).Generate();
+        List<int> list = Dummy.ListOf(Dummy.Int32().Between(0, 9)).WithCount(4).Generate();
         Require(failures, list.Count == 4 && list.All(value => value is >= 0 and <= 9), $"ListOf(...).WithCount(4) produced [{string.Join(",", list)}]");
 
-        HashSet<int> set = Any.SetOf(Any.Int32().Between(0, 99)).WithCount(3).Generate();
+        HashSet<int> set = Dummy.SetOf(Dummy.Int32().Between(0, 99)).WithCount(3).Generate();
         Require(failures, set.Count == 3, $"SetOf(...).WithCount(3) produced {set.Count} elements");
 
         // issue #215: exercise the common generators the packaged-asset guard never touched, so a break on either
         // asset (a packaging or conditional-compilation regression) surfaces here — OrNull, array/sequence,
         // pair/triple, StringMatching and enum draws. These also ride the SEEDBATCH cross-asset comparison below.
-        int? maybeDiscount = Any.Int32().Between(0, 100).OrNull().Generate();
+        int? maybeDiscount = Dummy.Int32().Between(0, 100).OrNull().Generate();
         Require(failures, maybeDiscount is null or (>= 0 and <= 100), $"Int32().Between(0,100).OrNull() produced {maybeDiscount}");
 
-        int[] trio = Any.ArrayOf(Any.Int32().Between(0, 9)).WithCount(3).Generate();
+        int[] trio = Dummy.ArrayOf(Dummy.Int32().Between(0, 9)).WithCount(3).Generate();
         Require(failures, trio.Length == 3 && trio.All(value => value is >= 0 and <= 9), $"ArrayOf(...).WithCount(3) produced [{string.Join(",", trio)}]");
 
-        List<int> couple = Any.SequenceOf(Any.Int32().Between(0, 9)).WithCount(2).Generate().ToList();
+        List<int> couple = Dummy.SequenceOf(Dummy.Int32().Between(0, 9)).WithCount(2).Generate().ToList();
         Require(failures, couple.Count == 2 && couple.All(value => value is >= 0 and <= 9), $"SequenceOf(...).WithCount(2) produced {couple.Count} elements");
 
-        (int, string) pair = Any.PairOf(Any.Int32().Between(1, 9), Any.String().NonEmpty().WithMaxLength(4)).Generate();
+        (int, string) pair = Dummy.PairOf(Dummy.Int32().Between(1, 9), Dummy.String().NonEmpty().WithMaxLength(4)).Generate();
         Require(failures, pair.Item1 is >= 1 and <= 9 && pair.Item2.Length is >= 1 and <= 4, $"PairOf(...) produced ({pair.Item1},{pair.Item2})");
 
-        (bool, int, char) triple = Any.TripleOf(Any.Boolean(), Any.Int32().Between(0, 9), Any.Char()).Generate();
+        (bool, int, char) triple = Dummy.TripleOf(Dummy.Boolean(), Dummy.Int32().Between(0, 9), Dummy.Char()).Generate();
         Require(failures, triple.Item2 is >= 0 and <= 9, $"TripleOf(...) produced ({triple.Item1},{triple.Item2},{triple.Item3})");
 
-        string code = Any.StringMatching("[A-Z]{3}-[0-9]{4}").Generate();
+        string code = Dummy.StringMatching("[A-Z]{3}-[0-9]{4}").Generate();
         Require(failures, Regex.IsMatch(code, "^[A-Z]{3}-[0-9]{4}$"), $"StringMatching('[A-Z]{{3}}-[0-9]{{4}}') produced '{code}'");
 
-        Suit suit = Any.Enum<Suit>().Generate();
+        Suit suit = Dummy.Enum<Suit>().Generate();
         Require(failures, System.Enum.IsDefined(typeof(Suit), suit), $"Enum<Suit>() produced {suit}");
 
         // Seeded reproducibility: two contexts with the same seed replay an identical mixed sequence, and a
         // different seed diverges. This is the library's crown-jewel guarantee — verified here on each asset.
-        string first  = SeedBatch(Any.WithSeed(CrossTfmSeed));
-        string second = SeedBatch(Any.WithSeed(CrossTfmSeed));
+        string first  = SeedBatch(Dummy.WithSeed(CrossTfmSeed));
+        string second = SeedBatch(Dummy.WithSeed(CrossTfmSeed));
         Require(failures, first == second, "same-seed contexts diverged");
 
-        string other = SeedBatch(Any.WithSeed(987654321));
+        string other = SeedBatch(Dummy.WithSeed(987654321));
         Require(failures, first != other, "different-seed contexts produced identical sequences");
     }
 
@@ -164,7 +164,7 @@ internal static class Program {
     // (ADR-0075), control characters included, and a '\n' or '\r' in the value would split this SEEDBATCH
     // banner across lines, breaking the single-line `sed` extraction in justdummies.yml. The pattern and enum
     // draws are ASCII by construction and need no such pin.
-    private static string SeedBatch(AnyContext any) {
+    private static string SeedBatch(DummyContext any) {
         List<string> parts = new() {
             any.Int32().Generate().ToString(CultureInfo.InvariantCulture),
             any.Int32().Between(1, 1000).Generate().ToString(CultureInfo.InvariantCulture),
@@ -185,13 +185,13 @@ internal static class Program {
         // operand (which carries the source), so every added draw is still reproducible and cross-asset stable.
         parts.Add(any.Int32().Between(0, 100).OrNull().Generate() is int discount ? discount.ToString(CultureInfo.InvariantCulture) : "null");
         parts.Add(any.String().NonEmpty().Printable().WithMaxLength(8).OrNull().Generate() ?? "null");
-        parts.Add(string.Join(",", Any.ArrayOf(any.Int32().Between(0, 9)).WithCount(3).Generate().Select(value => value.ToString(CultureInfo.InvariantCulture))));
-        parts.Add(string.Join(",", Any.SequenceOf(any.Int32().Between(0, 9)).WithCount(2).Generate().Select(value => value.ToString(CultureInfo.InvariantCulture))));
+        parts.Add(string.Join(",", Dummy.ArrayOf(any.Int32().Between(0, 9)).WithCount(3).Generate().Select(value => value.ToString(CultureInfo.InvariantCulture))));
+        parts.Add(string.Join(",", Dummy.SequenceOf(any.Int32().Between(0, 9)).WithCount(2).Generate().Select(value => value.ToString(CultureInfo.InvariantCulture))));
 
-        (int, char) pair = Any.PairOf(any.Int32().Between(1, 9), any.Char().Printable()).Generate();
+        (int, char) pair = Dummy.PairOf(any.Int32().Between(1, 9), any.Char().Printable()).Generate();
         parts.Add($"({pair.Item1.ToString(CultureInfo.InvariantCulture)},{pair.Item2})");
 
-        (bool, int, char) triple = Any.TripleOf(any.Boolean(), any.Int32().Between(0, 9), any.Char().Printable()).Generate();
+        (bool, int, char) triple = Dummy.TripleOf(any.Boolean(), any.Int32().Between(0, 9), any.Char().Printable()).Generate();
         parts.Add($"({triple.Item1},{triple.Item2.ToString(CultureInfo.InvariantCulture)},{triple.Item3})");
 
         parts.Add(any.StringMatching("[A-Z]{3}-[0-9]{4}").Generate());

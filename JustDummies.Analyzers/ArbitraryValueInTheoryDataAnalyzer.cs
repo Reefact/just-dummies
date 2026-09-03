@@ -27,7 +27,7 @@ public sealed class ArbitraryValueInTheoryDataAnalyzer : DiagnosticAnalyzer {
 
     private static void OnCompilationStart(CompilationStartAnalysisContext context) {
         KnownSymbols symbols = KnownSymbols.From(context.Compilation);
-        if (symbols.Any is null || symbols.IAny is null) { return; }
+        if (symbols.Dummy is null || symbols.IDummy is null) { return; }
 
         // Nothing to reason about without xUnit: a data provider is an xUnit concept.
         if (symbols.MemberDataAttribute is null) { return; }
@@ -38,8 +38,8 @@ public sealed class ArbitraryValueInTheoryDataAnalyzer : DiagnosticAnalyzer {
     private static void Analyze(OperationAnalysisContext context, KnownSymbols symbols) {
         IInvocationOperation invocation = (IInvocationOperation)context.Operation;
 
-        if (!GeneratorFacts.IsGenerateCall(invocation, symbols.IAny!)) { return; }
-        if (!GeneratorFacts.RootsAtAmbientAny(invocation, symbols.Any!)) { return; }
+        if (!GeneratorFacts.IsGenerateCall(invocation, symbols.IDummy!)) { return; }
+        if (!GeneratorFacts.RootsAtAmbientAny(invocation, symbols.Dummy!)) { return; }
         if (!XunitFacts.IsTheoryDataProvider(context.ContainingSymbol, symbols)) { return; }
 
         context.ReportDiagnostic(Diagnostic.Create(Descriptors.ArbitraryValueInTheoryData, invocation.Syntax.GetLocation()));

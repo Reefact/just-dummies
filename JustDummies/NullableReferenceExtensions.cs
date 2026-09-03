@@ -20,14 +20,14 @@ public static class NullableReferenceExtensions {
     /// <typeparam name="T">The underlying reference type.</typeparam>
     /// <returns>A generator that is sometimes <c>null</c>.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="generator" /> is <c>null</c>.</exception>
-    public static IAny<T?> OrNull<T>(this IAny<T> generator)
+    public static IDummy<T?> OrNull<T>(this IDummy<T> generator)
         where T : class {
         if (generator is null) { throw new ArgumentNullException(nameof(generator)); }
 
-        RandomSource? source       = AnyDerivation.SourceOf(generator);
-        bool          reproducible = AnyDerivation.IsReproducible(generator);
+        RandomSource? source       = DummyDerivation.SourceOf(generator);
+        bool          reproducible = DummyDerivation.IsReproducible(generator);
 
-        return new DerivedAny<T?>(source, reproducible, () => {
+        return new DerivedDummy<T?>(source, reproducible, () => {
             RandomSource working = source ?? AmbientRandomSource.Instance;
 
             return working.Current.Next(NullableExtensions.NullDrawOutcomes) == 0 ? (T?)null : generator.Generate();

@@ -7,8 +7,8 @@ using System.Globalization;
 namespace JustDummies;
 
 /// <summary>
-///     The immutable count specification shared by every collection generator (<see cref="AnyList{T}" />,
-///     <see cref="AnySet{T}" />, ...): a lower bound, an optional upper bound and an optional exact count — each
+///     The immutable count specification shared by every collection generator (<see cref="DummyList{T}" />,
+///     <see cref="DummySet{T}" />, ...): a lower bound, an optional upper bound and an optional exact count — each
 ///     remembering the constraint that set it, so a conflict message can name both sides. It is the collection-count
 ///     analogue of <see cref="StringSpec" />'s length bounds: every mutation returns a new specification and
 ///     cross-validates the whole eagerly, so a collection generator that exists can always produce a count.
@@ -16,7 +16,7 @@ namespace JustDummies;
 /// <remarks>
 ///     Unconstrained, a collection draws between <c>0</c> and <see cref="DefaultCountSpread" /> elements: an
 ///     unconstrained collection can therefore be empty — chain <c>NonEmpty()</c> when the surrounding code requires
-///     content. The spread is deliberately smaller than <see cref="AnyString" />'s (which is 1024, ADR-0076): a
+///     content. The spread is deliberately smaller than <see cref="DummyString" />'s (which is 1024, ADR-0076): a
 ///     collection's elements are themselves generated values, heavier than a string's characters, so a smaller
 ///     default keeps a dummy collection cheap while still exercising the multi-element path.
 ///     <para>
@@ -79,7 +79,7 @@ internal sealed class CountSpec {
         // Re-declaring the SAME constraint is not a contradiction, so it is a no-op rather than a
         // conflict: the second declaration asks for exactly what the first already guarantees.
         if (_exactConstraint == applying) { return this; }
-        if (_exactConstraint is not null) { throw ConflictingAnyConstraintException.AlreadyDefined(applying, _exactConstraint); }
+        if (_exactConstraint is not null) { throw ConflictingDummyConstraintException.AlreadyDefined(applying, _exactConstraint); }
 
         return new CountSpec(count, applying, _min, _minConstraint, _max, _maxConstraint).Validated(applying);
     }
@@ -132,7 +132,7 @@ internal sealed class CountSpec {
         if (applying is null) { throw new ArgumentNullException(nameof(applying)); }
         int? cap = _exact ?? _max;
         if (cap is int ceiling && required > ceiling) {
-            throw ConflictingAnyConstraintException.ContainedElementsDoNotFit(applying, Elements(required), Elements(ceiling));
+            throw ConflictingDummyConstraintException.ContainedElementsDoNotFit(applying, Elements(required), Elements(ceiling));
         }
     }
 
@@ -143,7 +143,7 @@ internal sealed class CountSpec {
             // Both bounds carry their constraint name: each is written as a pair by the constructor. And this branch
             // needs _min > max, with max >= 0 because the entry points reject a negative count — so _min > 0, which
             // only WithMinCount can produce, and it names the constraint as it sets the value.
-            throw ConflictingAnyConstraintException.Contradicts(applying,
+            throw ConflictingDummyConstraintException.Contradicts(applying,
                                                                 ConstraintClaim.Of(_maxConstraint!, $"already caps the count at {V(max)}"),
                                                                 ConstraintClaim.Of(_minConstraint!, $"already requires at least {Elements(_min)}"));
         }
@@ -159,14 +159,14 @@ internal sealed class CountSpec {
         if (exact < _min) {
             // Same reasoning as above: exact >= 0 is guaranteed by the entry points, so exact < _min needs _min > 0
             // — a declared minimum, hence a named one — and a declared exact count carries its name too.
-            throw ConflictingAnyConstraintException.Contradicts(applying,
+            throw ConflictingDummyConstraintException.Contradicts(applying,
                                                                 ConstraintClaim.Of(_exactConstraint!, $"already fixes the count at {V(exact)}"),
                                                                 ConstraintClaim.Of(_minConstraint!, $"already requires at least {Elements(_min)}"));
         }
 
         if (_max is int cappedAt && exact > cappedAt) {
             // Both values are declared here, and each was written as a pair with the constraint that declared it.
-            throw ConflictingAnyConstraintException.Contradicts(applying,
+            throw ConflictingDummyConstraintException.Contradicts(applying,
                                                                 ConstraintClaim.Of(_exactConstraint!, $"already fixes the count at {V(exact)}"),
                                                                 ConstraintClaim.Of(_maxConstraint!, $"already caps the count at {V(cappedAt)}"));
         }

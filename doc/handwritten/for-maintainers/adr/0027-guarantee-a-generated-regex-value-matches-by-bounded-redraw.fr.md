@@ -10,7 +10,7 @@
 
 ## Contexte
 
-`Any.StringMatching(...)` parse un pattern en arbre une fois et, à chaque tirage, le parcourt pour
+`Dummy.StringMatching(...)` parse un pattern en arbre une fois et, à chaque tirage, le parcourt pour
 **construire** une valeur directement — jamais générer-puis-filtrer. La construction reflète le
 sous-ensemble régulier de la sémantique du moteur .NET, de sorte qu'une valeur générée est un membre
 authentique du pattern.
@@ -29,7 +29,7 @@ construction structurelle ne porte pas : l'**ordre** des alternatives, et la **f
 | `(?:r\|){1,2}` (branche vide nue)     | oui                   |
 
 La construction structurelle a choisi la branche `\S{0}b{0}` et émis `""`, que le moteur refuse ensuite
-pour cette forme — donc `Any.StringMatching` a retourné une valeur que le pattern même dont elle est
+pour cette forme — donc `Dummy.StringMatching` a retourné une valeur que le pattern même dont elle est
 issue ne matche pas. Les patterns qui déclenchent ça sont dégénérés : FsCheck *génère* `\S{0}` (matcher
 `\S` zéro fois) ; un humain écrit `\S*`. Mais le contrat « une valeur générée matche son pattern » était
 violé.
@@ -39,7 +39,7 @@ violé.
 Après la construction structurelle, la valeur est **vérifiée contre le vrai moteur .NET** (un match
 complet ancré sous la seule option honorée par le générateur — `IgnoreCase`) et **redessinée en cas
 d'échec**, borné. La vérification a le dernier mot : une valeur que le moteur refuserait n'est jamais
-retournée. Épuiser le plafond lève une `AnyGenerationException`.
+retournée. Épuiser le plafond lève une `DummyGenerationException`.
 
 ## Justification
 
@@ -53,7 +53,7 @@ retournée. Épuiser le plafond lève une `AnyGenerationException`.
   raison.
 * **Le coût est négligeable.** Un pattern supporté matche à la première construction ; seuls ces coins
   rares redessinent, et une valeur valide apparaît en une poignée de tirages. La génération n'est pas une
-  boucle chaude, et `Any.StringMatching(Regex)` détient déjà un `Regex` compilé. Le plafond transforme un
+  boucle chaude, et `Dummy.StringMatching(Regex)` détient déjà un `Regex` compilé. Le plafond transforme un
   pattern que la construction ne peut jamais satisfaire en une erreur claire au lieu d'une boucle
   illimitée.
 * **La reproductibilité est préservée.** Le redraw consomme d'autres tirages de la même source seedée,
@@ -89,7 +89,7 @@ classe sans détecteur fragile.
 * Une valeur est construite puis vérifiée, plutôt que construite et retournée inconditionnellement — un
   petit écart au « jamais généré puis filtré ». Le mécanisme principal reste structurel ; la vérification
   est un filet pour l'échec rare, et la documentation du générateur le dit.
-* Un pattern véritablement insatisfiable lève désormais une `AnyGenerationException` après le plafond au
+* Un pattern véritablement insatisfiable lève désormais une `DummyGenerationException` après le plafond au
   lieu de retourner une valeur fausse — un échec plus clair, mais un échec là où l'ancien code retournait
   silencieusement du n'importe quoi.
 

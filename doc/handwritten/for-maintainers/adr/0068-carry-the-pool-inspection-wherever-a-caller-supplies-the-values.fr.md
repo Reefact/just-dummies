@@ -32,7 +32,7 @@ Quatre faits supplémentaires cadrent le choix :
   leur pool elles-mêmes. Dès qu'un moteur calcule la réponse, chaque famille n'ajoute que trois membres
   explicites d'une ligne. La projection depuis la monnaie privée du moteur — un ordinal, un double — existe
   déjà dans chaque famille : c'est celle dont `Generate` se sert.
-* **Vingt-deux familles exposent `OneOf`.** `AnyBoolean` non : son univers est deux valeurs qui appartiennent à
+* **Vingt-deux familles exposent `OneOf`.** `DummyBoolean` non : son univers est deux valeurs qui appartiennent à
   la bibliothèque. Le générateur de motif non plus, pour la raison que l'[ADR-0033](0033-decide-a-constraint-surface-by-constructive-versus-rejective.fr.md)
   consigne — une contrainte de forme sur un motif supposerait de construire dans l'intersection de deux
   langages réguliers.
@@ -40,7 +40,7 @@ Quatre faits supplémentaires cadrent le choix :
   pas ne change rien à aucune liste de complétion. Ce n'est pas l'asymétrie qu'ADR-0033 a supprimée ; celle-là
   portait sur la surface fluide de contraintes qu'un appelant lit en écrivant.
 * **« Un pool est en vigueur » et « le domaine est dénombrable » coïncidaient par accident.** Une chaîne
-  construite n'annonce aucune cardinalité : sur `AnyString`, les deux questions avaient la même réponse. Sur un
+  construite n'annonce aucune cardinalité : sur `DummyString`, les deux questions avaient la même réponse. Sur un
   scalaire, non — `Between(1, 1_000_000)` annonce un million et n'a aucun pool.
 
 La surface gèle à la `1.0`. Ajouter l'interface à une famille ensuite est additif ; la retirer ne l'est pas.
@@ -60,7 +60,7 @@ tel qu'il est écrit n'est pas tant une extension de cette décision que son ach
 **Dès qu'un substrat calcule la réponse, toute ligne tracée à travers ses familles est arbitraire.**
 L'économie faite en excluant une famille au catalogue improbable — un `ushort`, un `Half` — est nulle, puisque
 le moteur derrière elle fait déjà le travail. Ce qu'une telle ligne coûterait est réel : un lecteur qui trouve
-l'inspection sur `Any.Int32()` et pas sur `Any.UInt32()` n'a aucun moyen d'en déduire la règle, et à la `1.0`
+l'inspection sur `Dummy.Int32()` et pas sur `Dummy.UInt32()` n'a aucun moyen d'en déduire la règle, et à la `1.0`
 cette question doit être tranchée pour toujours.
 
 **La ligne qui reste est celle qui porte déjà partout ailleurs dans la bibliothèque : l'appelant a-t-il fourni

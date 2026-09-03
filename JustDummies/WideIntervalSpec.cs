@@ -9,8 +9,8 @@ using System.Diagnostics.CodeAnalysis;
 namespace JustDummies;
 
 /// <summary>
-///     The 128-bit sibling of <see cref="OrdinalIntervalSpec" />, backing <see cref="AnyInt128" /> and
-///     <see cref="AnyUInt128" />: their ordinal space exceeds 64 bits, so the same algebra — descriptor-tracked
+///     The 128-bit sibling of <see cref="OrdinalIntervalSpec" />, backing <see cref="DummyInt128" /> and
+///     <see cref="DummyUInt128" />: their ordinal space exceeds 64 bits, so the same algebra — descriptor-tracked
 ///     inclusive bounds, allow-list, exclusions, an optional lattice (<c>MultipleOf</c>), eager conflicts, one-draw
 ///     generation — runs over <see cref="UInt128" /> ordinals. Net8-only, like the types it serves.
 /// </summary>
@@ -130,9 +130,9 @@ internal sealed class WideIntervalSpec {
         if (minimum <= _min) { return this; }
 
         if (minimum > _max) {
-            if (_maxConstraint is null) { throw ConflictingAnyConstraintException.NoValueSatisfies(applying, _typeName); }
+            if (_maxConstraint is null) { throw ConflictingDummyConstraintException.NoValueSatisfies(applying, _typeName); }
 
-            throw ConflictingAnyConstraintException.AlreadyBoundedAbove(applying, _maxConstraint, _render(_max));
+            throw ConflictingDummyConstraintException.AlreadyBoundedAbove(applying, _maxConstraint, _render(_max));
         }
 
         return Validated(new WideIntervalSpec(_typeName, _render, _domainMin, _domainMax, minimum, applying, _max, _maxConstraint, _allowed, _allowedConstraint, _exclusions, _step, _anchor, _stepConstraint), applying);
@@ -141,7 +141,7 @@ internal sealed class WideIntervalSpec {
     /// <summary>Tightens the lower bound to strictly above <paramref name="bound" /> — the exclusive form of <see cref="WithMinimum" />.</summary>
     internal WideIntervalSpec WithMinimumAbove(UInt128 bound, ConstraintCall applying) {
         if (applying is null) { throw new ArgumentNullException(nameof(applying)); }
-        if (bound == _domainMax) { throw ConflictingAnyConstraintException.NoValueSatisfies(applying, _typeName); }
+        if (bound == _domainMax) { throw ConflictingDummyConstraintException.NoValueSatisfies(applying, _typeName); }
 
         return WithMinimum(bound + 1, applying);
     }
@@ -152,9 +152,9 @@ internal sealed class WideIntervalSpec {
         if (maximum >= _max) { return this; }
 
         if (maximum < _min) {
-            if (_minConstraint is null) { throw ConflictingAnyConstraintException.NoValueSatisfies(applying, _typeName); }
+            if (_minConstraint is null) { throw ConflictingDummyConstraintException.NoValueSatisfies(applying, _typeName); }
 
-            throw ConflictingAnyConstraintException.AlreadyBoundedBelow(applying, _minConstraint, _render(_min));
+            throw ConflictingDummyConstraintException.AlreadyBoundedBelow(applying, _minConstraint, _render(_min));
         }
 
         return Validated(new WideIntervalSpec(_typeName, _render, _domainMin, _domainMax, _min, _minConstraint, maximum, applying, _allowed, _allowedConstraint, _exclusions, _step, _anchor, _stepConstraint), applying);
@@ -163,7 +163,7 @@ internal sealed class WideIntervalSpec {
     /// <summary>Tightens the upper bound to strictly below <paramref name="bound" /> — the exclusive form of <see cref="WithMaximum" />.</summary>
     internal WideIntervalSpec WithMaximumBelow(UInt128 bound, ConstraintCall applying) {
         if (applying is null) { throw new ArgumentNullException(nameof(applying)); }
-        if (bound == _domainMin) { throw ConflictingAnyConstraintException.NoValueSatisfies(applying, _typeName); }
+        if (bound == _domainMin) { throw ConflictingDummyConstraintException.NoValueSatisfies(applying, _typeName); }
 
         return WithMaximum(bound - 1, applying);
     }
@@ -175,7 +175,7 @@ internal sealed class WideIntervalSpec {
         // Re-declaring the SAME constraint is not a contradiction, so it is a no-op rather than a
         // conflict: the second declaration asks for exactly what the first already guarantees.
         if (_allowedConstraint == applying) { return this; }
-        if (_allowedConstraint is not null) { throw ConflictingAnyConstraintException.AlreadyDefined(applying, _allowedConstraint); }
+        if (_allowedConstraint is not null) { throw ConflictingDummyConstraintException.AlreadyDefined(applying, _allowedConstraint); }
 
         UInt128[] distinct = ordinals.Distinct().ToArray();
 
@@ -208,7 +208,7 @@ internal sealed class WideIntervalSpec {
 
             // _step and _stepConstraint are written as a pair by the constructor and rethreaded as a pair by every
             // rebuild, so a declared step always carries the name of the constraint that declared it.
-            throw ConflictingAnyConstraintException.AlreadyDefined(applying, _stepConstraint!);
+            throw ConflictingDummyConstraintException.AlreadyDefined(applying, _stepConstraint!);
         }
 
         return Validated(new WideIntervalSpec(_typeName, _render, _domainMin, _domainMax, _min, _minConstraint, _max, _maxConstraint, _allowed, _allowedConstraint, _exclusions, step, anchor, applying), applying);
@@ -371,7 +371,7 @@ internal sealed class WideIntervalSpec {
     private WideIntervalSpec Validated(WideIntervalSpec candidate, ConstraintCall applying) {
         if (candidate.IsSatisfiable()) { return candidate; }
 
-        throw ConflictingAnyConstraintException.NoValueRemains(applying, candidate.DescribeExhaustion(applying));
+        throw ConflictingDummyConstraintException.NoValueRemains(applying, candidate.DescribeExhaustion(applying));
     }
 
     private bool IsSatisfiable() {

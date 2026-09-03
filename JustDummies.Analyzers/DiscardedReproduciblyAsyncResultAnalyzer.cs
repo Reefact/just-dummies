@@ -7,14 +7,14 @@ using Microsoft.CodeAnalysis.Operations;
 namespace JustDummies.Analyzers;
 
 /// <summary>
-///     JD002 — reports a call to <c>Any.ReproduciblyAsync(...)</c> whose returned <see cref="Task" />
+///     JD002 — reports a call to <c>Dummy.ReproduciblyAsync(...)</c> whose returned <see cref="Task" />
 ///     is discarded (the call stands alone as a statement, or is assigned to <c>_</c>). The task faults with the body's
 ///     exception; discarding it lets a failing test pass green. Await it.
 /// </summary>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public sealed class DiscardedReproduciblyAsyncResultAnalyzer : DiagnosticAnalyzer {
 
-    private const string AnyMetadataName             = "JustDummies.Any";
+    private const string AnyMetadataName             = "JustDummies.Dummy";
     private const string ReproduciblyAsyncMethodName = "ReproduciblyAsync";
 
     /// <inheritdoc />
@@ -46,7 +46,7 @@ public sealed class DiscardedReproduciblyAsyncResultAnalyzer : DiagnosticAnalyze
     }
 
     // The result is thrown away either when the call stands alone as a statement or when it is explicitly discarded
-    // (`_ = Any.ReproduciblyAsync(...);`). Either way the body's failures are lost.
+    // (`_ = Dummy.ReproduciblyAsync(...);`). Either way the body's failures are lost.
     private static bool IsResultDiscarded(IInvocationOperation invocation) {
         return invocation.Parent switch {
             IExpressionStatementOperation                            => true,

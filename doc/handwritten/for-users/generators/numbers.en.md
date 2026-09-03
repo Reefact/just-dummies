@@ -10,23 +10,23 @@ five families below and you know all fourteen generators.
 
 | Factory | Draws | Availability |
 | --- | --- | --- |
-| `Any.Byte()` | `byte` | everywhere |
-| `Any.SByte()` | `sbyte` | everywhere |
-| `Any.Int16()` | `short` | everywhere |
-| `Any.Int32()` | `int` | everywhere |
-| `Any.Int64()` | `long` | everywhere |
-| `Any.UInt16()` | `ushort` | everywhere |
-| `Any.UInt32()` | `uint` | everywhere |
-| `Any.UInt64()` | `ulong` | everywhere |
-| `Any.Decimal()` | `decimal` | everywhere |
-| `Any.Double()` | `double` | everywhere |
-| `Any.Single()` | `float` | everywhere |
-| `Any.Int128()` | `Int128` | .NET 8+ |
-| `Any.UInt128()` | `UInt128` | .NET 8+ |
-| `Any.Half()` | `Half` | .NET 8+ |
+| `Dummy.Byte()` | `byte` | everywhere |
+| `Dummy.SByte()` | `sbyte` | everywhere |
+| `Dummy.Int16()` | `short` | everywhere |
+| `Dummy.Int32()` | `int` | everywhere |
+| `Dummy.Int64()` | `long` | everywhere |
+| `Dummy.UInt16()` | `ushort` | everywhere |
+| `Dummy.UInt32()` | `uint` | everywhere |
+| `Dummy.UInt64()` | `ulong` | everywhere |
+| `Dummy.Decimal()` | `decimal` | everywhere |
+| `Dummy.Double()` | `double` | everywhere |
+| `Dummy.Single()` | `float` | everywhere |
+| `Dummy.Int128()` | `Int128` | .NET 8+ |
+| `Dummy.UInt128()` | `UInt128` | .NET 8+ |
+| `Dummy.Half()` | `Half` | .NET 8+ |
 
-The factory is named after the CLR type, never after the C# keyword — `Any.Int32()`, not
-`Any.Int()`. One name per type, so there is nothing to remember and nothing to disambiguate.
+The factory is named after the CLR type, never after the C# keyword — `Dummy.Int32()`, not
+`Dummy.Int()`. One name per type, so there is nothing to remember and nothing to disambiguate.
 
 ## Bounds
 
@@ -34,14 +34,14 @@ Five constraints narrow the range, and they compose:
 
 <!-- jd:allow=JD031 -->
 ```csharp
-int quantity   = Any.Int32().Between(1, 100).Generate();          // inclusive on both ends
-int positive   = Any.Int32().GreaterThan(0).Generate();
-int atLeastTen = Any.Int32().GreaterThanOrEqualTo(10).Generate();
-int belowMax   = Any.Int32().LessThan(1_000).Generate();
-int atMostMax  = Any.Int32().LessThanOrEqualTo(999).Generate();
+int quantity   = Dummy.Int32().Between(1, 100).Generate();          // inclusive on both ends
+int positive   = Dummy.Int32().GreaterThan(0).Generate();
+int atLeastTen = Dummy.Int32().GreaterThanOrEqualTo(10).Generate();
+int belowMax   = Dummy.Int32().LessThan(1_000).Generate();
+int atMostMax  = Dummy.Int32().LessThanOrEqualTo(999).Generate();
 
 // Composed: a quantity in an order line, bounded on both sides by two separate calls.
-int lineQuantity = Any.Int32().GreaterThanOrEqualTo(1).LessThanOrEqualTo(50).Generate();
+int lineQuantity = Dummy.Int32().GreaterThanOrEqualTo(1).LessThanOrEqualTo(50).Generate();
 ```
 
 `Between` is inclusive at both ends. Bounds that cross are refused at once with a message naming
@@ -63,11 +63,11 @@ draws out of 100. Declare a bound when your domain has one.
 ## Sign and zero
 
 ```csharp
-int     positive = Any.Int32().Positive().Generate();   // > 0
-int     negative = Any.Int32().Negative().Generate();   // < 0
-int     nonZero  = Any.Int32().NonZero().Generate();    // != 0
-int     zero     = Any.Int32().Zero().Generate();       // always 0
-decimal price    = Any.Decimal().Positive().Generate();
+int     positive = Dummy.Int32().Positive().Generate();   // > 0
+int     negative = Dummy.Int32().Negative().Generate();   // < 0
+int     nonZero  = Dummy.Int32().NonZero().Generate();    // != 0
+int     zero     = Dummy.Int32().Zero().Generate();       // always 0
+decimal price    = Dummy.Decimal().Positive().Generate();
 ```
 
 `Positive()` and `Negative()` exist only where the type has a sign. `byte`, `ushort`, `uint`,
@@ -80,9 +80,9 @@ the call site reading like every other one.
 ## Membership and exclusion
 
 ```csharp
-int      httpPort   = Any.Int32().OneOf(80, 443, 8080).Generate();
-int      notReserved = Any.Int32().Between(1, 10).Except(3, 7).Generate();
-int      notTheSame = Any.Int32().Between(1, 100).DifferentFrom(42).Generate();
+int      httpPort   = Dummy.Int32().OneOf(80, 443, 8080).Generate();
+int      notReserved = Dummy.Int32().Between(1, 10).Except(3, 7).Generate();
+int      notTheSame = Dummy.Int32().Between(1, 100).DifferentFrom(42).Generate();
 ```
 
 `OneOf` restricts the draw to an explicit pool. `Except` removes values from the domain, `DifferentFrom`
@@ -98,21 +98,21 @@ Two constraints put the value on a grid rather than merely inside a range.
 `MultipleOf` applies to the **integer** types:
 
 ```csharp
-int    evenQuantity = Any.Int32().Between(1, 100).MultipleOf(2).Generate();
-int    onTheHour    = Any.Int32().Between(0, 1_440).MultipleOf(60).Generate();
-long   pageOffset   = Any.Int64().GreaterThanOrEqualTo(0).MultipleOf(25).Generate();
+int    evenQuantity = Dummy.Int32().Between(1, 100).MultipleOf(2).Generate();
+int    onTheHour    = Dummy.Int32().Between(0, 1_440).MultipleOf(60).Generate();
+long   pageOffset   = Dummy.Int64().GreaterThanOrEqualTo(0).MultipleOf(25).Generate();
 ```
 
 `WithScale` applies to `decimal`, and fixes the number of decimal places — which is what makes a
 money dummy behave like money:
 
 ```csharp
-decimal amount = Any.Decimal().Between(0m, 10_000m).WithScale(2).Generate(); // e.g. 4172.35
-decimal rate   = Any.Decimal().Between(0m, 1m).WithScale(4).Generate();      // e.g. 0.0725
+decimal amount = Dummy.Decimal().Between(0m, 10_000m).WithScale(2).Generate(); // e.g. 4172.35
+decimal rate   = Dummy.Decimal().Between(0m, 1m).WithScale(4).Generate();      // e.g. 0.0725
 ```
 
 Combining `Between` with `MultipleOf` is the one place to watch: an interval containing no multiple
-of the step admits no value, and is refused. `Any.Int32().Between(1, 10).MultipleOf(50)` names both
+of the step admits no value, and is refused. `Dummy.Int32().Between(1, 10).MultipleOf(50)` names both
 sides in its message, and the analyzer [JD023](../analyzers/JD023.en.md) catches it at build time
 whenever both arguments are constants.
 
@@ -139,7 +139,7 @@ When a test genuinely needs a NaN, ask for it explicitly through the generic poo
 finiteness rule:
 
 ```csharp
-double maybeNaN = Any.OneOf(double.NaN, 1.0, 2.0).Generate();
+double maybeNaN = Dummy.OneOf(double.NaN, 1.0, 2.0).Generate();
 ```
 
 ## Support matrix

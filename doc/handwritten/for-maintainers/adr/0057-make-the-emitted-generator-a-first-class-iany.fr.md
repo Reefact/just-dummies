@@ -1,4 +1,4 @@
-# ADR-0057 | Faire du generator émis un `IAny<T>` de plein droit
+# ADR-0057 | Faire du generator émis un `IDummy<T>` de plein droit
 
 🌍 🇬🇧 [English](0057-make-the-emitted-generator-a-first-class-iany.md) · 🇫🇷 Français (ce fichier)
 
@@ -11,13 +11,13 @@
 
 ## Contexte
 
-`IAny<T>` est le seam de composition de la bibliothèque : `As`, `Combine`, les generators de
+`IDummy<T>` est le seam de composition de la bibliothèque : `As`, `Combine`, les generators de
 collection et ceux de choix le consomment et le produisent tous (§14.4).
 
 L'interface est documentée comme une recette immuable, et tous les generators de la bibliothèque
 l'honorent — chaque contrainte fluide retourne une nouvelle instance (§14.5).
 
-La catégorie `Usage` des analyzers reconnaît un generator comme l'interface `IAny<T>` elle-même ou
+La catégorie `Usage` des analyzers reconnaît un generator comme l'interface `IDummy<T>` elle-même ou
 tout type qui l'implémente, plutôt que comme une liste fixe de types intégrés (§14.6).
 
 Le type émis expose une méthode fluide par paramètre de constructeur, ce qui lui donne la forme
@@ -25,7 +25,7 @@ d'un builder. Les builders de l'écosystème mutent conventionnellement et retou
 
 ## Décision
 
-Le type émis implémente `IAny<T>` et est immuable, chaque méthode `With` retournant une nouvelle
+Le type émis implémente `IDummy<T>` et est immuable, chaque méthode `With` retournant une nouvelle
 instance.
 
 ## Justification
@@ -54,7 +54,7 @@ Considéré parce que c'est la forme conventionnelle du builder et qu'il alloue 
 Écarté parce qu'il contredit le contrat documenté de l'interface qu'il implémenterait, et parce que
 dériver deux generators d'une base partagée les corromprait silencieusement tous les deux.
 
-##### Un type ordinaire exposant `Generate`, n'implémentant pas `IAny<T>`
+##### Un type ordinaire exposant `Generate`, n'implémentant pas `IDummy<T>`
 
 Considéré parce qu'il garde le fichier émis exempt de toute interface de bibliothèque.
 

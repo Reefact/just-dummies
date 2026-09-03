@@ -16,7 +16,7 @@ public class Jd006DiscardedGeneratorResultTests {
 
             public static class Sample {
                 public static List<int> M() {
-                    AnyList<int> numbers = Any.ListOf(Any.Int32());
+                    DummyList<int> numbers = Dummy.ListOf(Dummy.Int32());
                     numbers.NonEmpty();
 
                     return numbers.Generate();
@@ -39,7 +39,7 @@ public class Jd006DiscardedGeneratorResultTests {
 
             public static class Sample {
                 public static void M() {
-                    Any.String().NonEmpty();
+                    Dummy.String().NonEmpty();
                 }
             }
             """;
@@ -61,7 +61,7 @@ public class Jd006DiscardedGeneratorResultTests {
             public static class Sample {
                 public static bool M(string pattern) {
                     try {
-                        _ = Any.StringMatching(pattern);
+                        _ = Dummy.StringMatching(pattern);
 
                         return false;
                     } catch (UnsupportedRegexException) {
@@ -84,7 +84,7 @@ public class Jd006DiscardedGeneratorResultTests {
 
             public static class Sample {
                 public static List<int> M() {
-                    AnyList<int> numbers = Any.ListOf(Any.Int32());
+                    DummyList<int> numbers = Dummy.ListOf(Dummy.Int32());
                     numbers = numbers.NonEmpty();
 
                     return numbers.Generate();
@@ -105,7 +105,7 @@ public class Jd006DiscardedGeneratorResultTests {
 
             public static class Sample {
                 public static void M() {
-                    Any.String().NonEmpty().Generate();
+                    Dummy.String().NonEmpty().Generate();
                 }
             }
             """;
@@ -129,7 +129,7 @@ public class Jd006DiscardedGeneratorResultTests {
 
             public static class Sample {
                 public static void M() {
-                    Assertions.Throws(() => Any.String().WithLength(3).StartingWith("ORD-"));
+                    Assertions.Throws(() => Dummy.String().WithLength(3).StartingWith("ORD-"));
                 }
             }
             """;
@@ -141,15 +141,15 @@ public class Jd006DiscardedGeneratorResultTests {
 
     [Fact]
     public async Task Reports_arrange_code_inside_a_block_bodied_lambda() {
-        // The negative-test guard must stay narrow: inside Any.Reproducibly's body the dropped constraint is a real
+        // The negative-test guard must stay narrow: inside Dummy.Reproducibly's body the dropped constraint is a real
         // defect, because the call is one statement of a block rather than the lambda's whole body.
         const string source = """
             using JustDummies;
 
             public static class Sample {
                 public static void M() {
-                    Any.Reproducibly(() => {
-                        AnyString reference = Any.String();
+                    Dummy.Reproducibly(() => {
+                        DummyString reference = Dummy.String();
                         reference.NonEmpty();
                     });
                 }

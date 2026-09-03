@@ -3,7 +3,7 @@
 🌍 **Languages:**  
 🇬🇧 English (this file) | 🇫🇷 [Français](./justdummies.fr.md)
 
-The library itself: the `Any` entry point, every generator, the reproducibility scopes, and the 33
+The library itself: the `Dummy` entry point, every generator, the reproducibility scopes, and the 33
 rules that guard correct usage.
 
 ## Install
@@ -19,10 +19,10 @@ project and nothing else into your dependency graph.
 
 | | |
 | --- | --- |
-| `Any.*` | a factory for every BCL primitive, plus collections, URIs and choices |
-| `IAny<T>` | the seam every generator implements, and the currency of composition |
-| `Any.Reproducibly` / `UseSeed` / `WithSeed` | the reproducibility scopes |
-| `AnyContext` | an isolated, seeded world with the same factories on it |
+| `Dummy.*` | a factory for every BCL primitive, plus collections, URIs and choices |
+| `IDummy<T>` | the seam every generator implements, and the currency of composition |
+| `Dummy.Reproducibly` / `UseSeed` / `WithSeed` | the reproducibility scopes |
+| `DummyContext` | an isolated, seeded world with the same factories on it |
 | `DummyException` and its three subtypes | the failure vocabulary |
 | 33 Roslyn rules | bundled inside the package, active on your next build |
 
@@ -53,7 +53,7 @@ dotnet_diagnostic.JD024.severity = none
 | Asset | Carries |
 | --- | --- |
 | `netstandard2.0` | the whole library, minus the five modern-type factories |
-| `net8.0` | the same, plus `Any.DateOnly()`, `Any.TimeOnly()`, `Any.Int128()`, `Any.UInt128()`, `Any.Half()` |
+| `net8.0` | the same, plus `Dummy.DateOnly()`, `Dummy.TimeOnly()`, `Dummy.Int128()`, `Dummy.UInt128()`, `Dummy.Half()` |
 
 Those five factories are absent downlevel because the **types** are: `DateOnly`, `TimeOnly`,
 `Int128`, `UInt128` and `Half` arrived after `netstandard2.0`. Nothing is emulated, which is why a
@@ -67,21 +67,21 @@ that .NET Framework consumers actually load
 
 ```csharp
 // A scalar, constrained by its domain invariants.
-int quantity = Any.Int32().Between(1, 100).Generate();
+int quantity = Dummy.Int32().Between(1, 100).Generate();
 
 // A value object, built through its real factory.
-OrderReference reference = Any.String().StartingWith("ORD-").WithLength(12)
+OrderReference reference = Dummy.String().StartingWith("ORD-").WithLength(12)
                               .As(OrderReference.Create)
                               .Generate();
 
 // A collection of them.
-List<OrderReference> basket = Any.ListOf(Any.String().StartingWith("ORD-").WithLength(12)
+List<OrderReference> basket = Dummy.ListOf(Dummy.String().StartingWith("ORD-").WithLength(12)
                                             .As(OrderReference.Create))
                                  .WithCountBetween(1, 4)
                                  .Generate();
 
 // All of it replayable from one integer.
-Any.Reproducibly(() => Assert.InRange(Any.Int32().Between(1, 100).Generate(), 1, 100));
+Dummy.Reproducibly(() => Assert.InRange(Dummy.Int32().Between(1, 100).Generate(), 1, 100));
 ```
 
 Where to go from here:

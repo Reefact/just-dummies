@@ -139,7 +139,7 @@ internal static class DocumentationSampleCompiler {
         }
 
         // The shipped packages, exactly as a consumer references them.
-        references.Add(MetadataReference.CreateFromFile(typeof(global::JustDummies.Any).Assembly.Location));
+        references.Add(MetadataReference.CreateFromFile(typeof(global::JustDummies.Dummy).Assembly.Location));
         references.Add(MetadataReference.CreateFromFile(typeof(global::JustDummies.Xunit.ReproducibleAttribute).Assembly.Location));
         references.Add(MetadataReference.CreateFromFile(typeof(global::JustDummies.Diagnostics.JustDummiesRule).Assembly.Location));
         references.Add(MetadataReference.CreateFromFile(typeof(FactAttribute).Assembly.Location));

@@ -37,18 +37,18 @@ public sealed class NullableLiftProperties {
     private enum Three { First, Second, Third }
 
     private static List<int?> Lifted(int seed, int minimum, int maximum) {
-        using IDisposable scope = Any.UseSeed(seed);
+        using IDisposable scope = Dummy.UseSeed(seed);
 
-        return Drawings(Any.Int32().Between(minimum, maximum).AsNullable());
+        return Drawings(Dummy.Int32().Between(minimum, maximum).AsNullable());
     }
 
     private static List<int?> Underlying(int seed, int minimum, int maximum) {
-        using IDisposable scope = Any.UseSeed(seed);
+        using IDisposable scope = Dummy.UseSeed(seed);
 
-        return Drawings(Any.Int32().Between(minimum, maximum), value => (int?)value);
+        return Drawings(Dummy.Int32().Between(minimum, maximum), value => (int?)value);
     }
 
-    private static List<int?> Drawings(IAny<int?> generator) {
+    private static List<int?> Drawings(IDummy<int?> generator) {
         List<int?> values = [];
 
         for (int drawn = 0; drawn < Drawn; drawn++) { values.Add(generator.Generate()); }
@@ -56,7 +56,7 @@ public sealed class NullableLiftProperties {
         return values;
     }
 
-    private static List<int?> Drawings(IAny<int> generator, Func<int, int?> lift) {
+    private static List<int?> Drawings(IDummy<int> generator, Func<int, int?> lift) {
         List<int?> values = [];
 
         for (int drawn = 0; drawn < Drawn; drawn++) { values.Add(lift(generator.Generate())); }
@@ -67,8 +67,8 @@ public sealed class NullableLiftProperties {
     /// <summary>Whether a set of <paramref name="count" /> values of that enum can be drawn, lifted or not.</summary>
     private static (bool Lifted, bool Underlying) Satisfiable<T>(int count)
         where T : struct, Enum {
-        return (Draws(() => Any.SetOf(Any.Enum<T>().AsNullable()).WithCount(count).Generate()),
-                Draws(() => Any.SetOf(Any.Enum<T>()).WithCount(count).Generate()));
+        return (Draws(() => Dummy.SetOf(Dummy.Enum<T>().AsNullable()).WithCount(count).Generate()),
+                Draws(() => Dummy.SetOf(Dummy.Enum<T>()).WithCount(count).Generate()));
     }
 
     private static bool Draws(Action draw) {

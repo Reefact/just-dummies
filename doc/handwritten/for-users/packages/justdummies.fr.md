@@ -3,7 +3,7 @@
 🌍 **Langues :**  
 🇬🇧 [English](./justdummies.en.md) | 🇫🇷 Français (ce fichier)
 
-La bibliothèque elle-même : le point d'entrée `Any`, tous les générateurs, les portées de
+La bibliothèque elle-même : le point d'entrée `Dummy`, tous les générateurs, les portées de
 reproductibilité, et les 33 règles qui veillent au bon usage.
 
 ## Installation
@@ -19,10 +19,10 @@ dans votre projet de test, et rien d'autre dans votre graphe de dépendances.
 
 | | |
 | --- | --- |
-| `Any.*` | une fabrique par primitif du BCL, plus les collections, les URI et les choix |
-| `IAny<T>` | la couture qu'implémente tout générateur, et la monnaie d'échange de la composition |
-| `Any.Reproducibly` / `UseSeed` / `WithSeed` | les portées de reproductibilité |
-| `AnyContext` | un monde isolé et graîné, portant les mêmes fabriques |
+| `Dummy.*` | une fabrique par primitif du BCL, plus les collections, les URI et les choix |
+| `IDummy<T>` | la couture qu'implémente tout générateur, et la monnaie d'échange de la composition |
+| `Dummy.Reproducibly` / `UseSeed` / `WithSeed` | les portées de reproductibilité |
+| `DummyContext` | un monde isolé et graîné, portant les mêmes fabriques |
 | `DummyException` et ses trois sous-types | le vocabulaire des échecs |
 | 33 règles Roslyn | embarquées dans le paquet, actives dès la compilation suivante |
 
@@ -54,7 +54,7 @@ dotnet_diagnostic.JD024.severity = none
 | Asset | Porte |
 | --- | --- |
 | `netstandard2.0` | toute la bibliothèque, moins les cinq fabriques de types modernes |
-| `net8.0` | la même, plus `Any.DateOnly()`, `Any.TimeOnly()`, `Any.Int128()`, `Any.UInt128()`, `Any.Half()` |
+| `net8.0` | la même, plus `Dummy.DateOnly()`, `Dummy.TimeOnly()`, `Dummy.Int128()`, `Dummy.UInt128()`, `Dummy.Half()` |
 
 Ces cinq fabriques sont absentes en deçà parce que les **types** le sont : `DateOnly`, `TimeOnly`,
 `Int128`, `UInt128` et `Half` sont arrivés après `netstandard2.0`. Rien n'est émulé, et c'est
@@ -68,21 +68,21 @@ les consommateurs .NET Framework chargent réellement
 
 ```csharp
 // Un scalaire, contraint par les invariants de son domaine.
-int quantity = Any.Int32().Between(1, 100).Generate();
+int quantity = Dummy.Int32().Between(1, 100).Generate();
 
 // Un objet-valeur, construit via sa vraie fabrique.
-OrderReference reference = Any.String().StartingWith("ORD-").WithLength(12)
+OrderReference reference = Dummy.String().StartingWith("ORD-").WithLength(12)
                               .As(OrderReference.Create)
                               .Generate();
 
 // Une collection de ces objets.
-List<OrderReference> basket = Any.ListOf(Any.String().StartingWith("ORD-").WithLength(12)
+List<OrderReference> basket = Dummy.ListOf(Dummy.String().StartingWith("ORD-").WithLength(12)
                                             .As(OrderReference.Create))
                                  .WithCountBetween(1, 4)
                                  .Generate();
 
 // Le tout rejouable depuis un seul entier.
-Any.Reproducibly(() => Assert.InRange(Any.Int32().Between(1, 100).Generate(), 1, 100));
+Dummy.Reproducibly(() => Assert.InRange(Dummy.Int32().Between(1, 100).Generate(), 1, 100));
 ```
 
 Pour aller plus loin :

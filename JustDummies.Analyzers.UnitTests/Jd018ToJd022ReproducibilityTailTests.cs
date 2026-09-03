@@ -15,8 +15,8 @@ public class Jd018NestedReproducibilityScopeTests {
 
             public static class Sample {
                 public static void M() {
-                    Any.Reproducibly(() => {
-                        Any.Reproducibly(() => { });
+                    Dummy.Reproducibly(() => {
+                        Dummy.Reproducibly(() => { });
                     });
                 }
             }
@@ -26,7 +26,7 @@ public class Jd018NestedReproducibilityScopeTests {
 
         Check.That(diagnostics.Length).IsEqualTo(1);
         Check.That(diagnostics[0].Id).IsEqualTo("JD018");
-        Check.That(diagnostics[0].GetMessage()).Contains("another Any.Reproducibly scope");
+        Check.That(diagnostics[0].GetMessage()).Contains("another Dummy.Reproducibly scope");
     }
 
     [Fact]
@@ -39,7 +39,7 @@ public class Jd018NestedReproducibilityScopeTests {
             public class Sample {
                 [Fact, Reproducible]
                 public void T() {
-                    Any.Reproducibly(() => { });
+                    Dummy.Reproducibly(() => { });
                 }
             }
             """;
@@ -61,7 +61,7 @@ public class Jd018NestedReproducibilityScopeTests {
             public class Sample {
                 [Fact, Reproducible]
                 public void T() {
-                    Any.Reproducibly(1234, () => { });
+                    Dummy.Reproducibly(1234, () => { });
                 }
             }
             """;
@@ -80,7 +80,7 @@ public class Jd018NestedReproducibilityScopeTests {
             public class Sample {
                 [Fact]
                 public void T() {
-                    Any.Reproducibly(() => { });
+                    Dummy.Reproducibly(() => { });
                 }
             }
             """;
@@ -95,9 +95,9 @@ public class Jd018NestedReproducibilityScopeTests {
 public class Jd019CommittedReplaySeedTests {
 
     [Theory]
-    [InlineData("Any.Reproducibly(1234, () => { });")]
-    [InlineData("Any.ReproduciblyAsync(1234, () => System.Threading.Tasks.Task.CompletedTask);")]
-    [InlineData("_ = Any.WithSeed(1234);")]
+    [InlineData("Dummy.Reproducibly(1234, () => { });")]
+    [InlineData("Dummy.ReproduciblyAsync(1234, () => System.Threading.Tasks.Task.CompletedTask);")]
+    [InlineData("_ = Dummy.WithSeed(1234);")]
     public async Task Reports_a_pinned_constant_seed(string statement) {
         string source = $$"""
             using JustDummies;
@@ -140,7 +140,7 @@ public class Jd019CommittedReplaySeedTests {
 
             public static class Sample {
                 public static void M() {
-                    Any.Reproducibly(() => { });
+                    Dummy.Reproducibly(() => { });
                 }
             }
             """;
@@ -157,7 +157,7 @@ public class Jd019CommittedReplaySeedTests {
 
             public static class Sample {
                 public static void M(int seed) {
-                    Any.Reproducibly(seed, () => { });
+                    Dummy.Reproducibly(seed, () => { });
                 }
             }
             """;
@@ -186,11 +186,11 @@ public class Jd020SharedStaticAnyContextTests {
             using JustDummies;
 
             public static class Sample {
-                private static readonly AnyContext Context = Any.WithSeed(1234);
+                private static readonly DummyContext Context = Dummy.WithSeed(1234);
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new SharedStaticAnyContextAnalyzer(), source);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new SharedStaticDummyContextAnalyzer(), source);
 
         Check.That(diagnostics.Length).IsEqualTo(1);
         Check.That(diagnostics[0].Id).IsEqualTo("JD020");
@@ -203,11 +203,11 @@ public class Jd020SharedStaticAnyContextTests {
             using JustDummies;
 
             public class Sample {
-                private readonly AnyContext _context = Any.WithSeed(1234);
+                private readonly DummyContext _context = Dummy.WithSeed(1234);
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new SharedStaticAnyContextAnalyzer(), source);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new SharedStaticDummyContextAnalyzer(), source);
 
         Check.That(diagnostics.Length).IsEqualTo(0);
     }
@@ -219,11 +219,11 @@ public class Jd020SharedStaticAnyContextTests {
             using JustDummies;
 
             public static class Sample {
-                private static readonly IAny<string> Reference = Any.String().NonEmpty();
+                private static readonly IDummy<string> Reference = Dummy.String().NonEmpty();
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new SharedStaticAnyContextAnalyzer(), source);
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new SharedStaticDummyContextAnalyzer(), source);
 
         Check.That(diagnostics.Length).IsEqualTo(0);
     }
@@ -242,7 +242,7 @@ public class Jd021BlankReplaySnippetTests {
 
             public static class Sample {
                 public static void M() {
-                    using IDisposable scope = Any.UseSeed(1234, {{literal}});
+                    using IDisposable scope = Dummy.UseSeed(1234, {{literal}});
                 }
             }
             """;
@@ -261,7 +261,7 @@ public class Jd021BlankReplaySnippetTests {
 
             public static class Sample {
                 public static void M() {
-                    using IDisposable scope = Any.UseSeed(1234, "[Reproducible(Seed = 1234)]");
+                    using IDisposable scope = Dummy.UseSeed(1234, "[Reproducible(Seed = 1234)]");
                 }
             }
             """;
@@ -279,7 +279,7 @@ public class Jd021BlankReplaySnippetTests {
 
             public static class Sample {
                 public static void M() {
-                    using IDisposable scope = Any.UseSeed(1234);
+                    using IDisposable scope = Dummy.UseSeed(1234);
                 }
             }
             """;
@@ -302,7 +302,7 @@ public class Jd021BlankReplaySnippetTests {
 
             public static class Sample {
                 public static void M(int seed) {
-                    Expect.Throws<ArgumentException>(() => Any.UseSeed(seed, " "));
+                    Expect.Throws<ArgumentException>(() => Dummy.UseSeed(seed, " "));
                 }
             }
             """;
@@ -325,7 +325,7 @@ public class Jd022ParallelDrawWithoutPerItemSeedTests {
             public static class Sample {
                 public static void M() {
                     Parallel.For(0, 64, index => {
-                        string reference = Any.String().NonEmpty().Generate();
+                        string reference = Dummy.String().NonEmpty().Generate();
                     });
                 }
             }
@@ -349,8 +349,8 @@ public class Jd022ParallelDrawWithoutPerItemSeedTests {
                     const int runSeed = 20240501;
 
                     Parallel.For(0, 64, index => {
-                        using (Any.UseSeed(unchecked(runSeed * 397 ^ index))) {
-                            string reference = Any.String().NonEmpty().Generate();
+                        using (Dummy.UseSeed(unchecked(runSeed * 397 ^ index))) {
+                            string reference = Dummy.String().NonEmpty().Generate();
                         }
                     });
                 }
@@ -369,7 +369,7 @@ public class Jd022ParallelDrawWithoutPerItemSeedTests {
 
             public static class Sample {
                 public static void M() {
-                    string reference = Any.String().NonEmpty().Generate();
+                    string reference = Dummy.String().NonEmpty().Generate();
                 }
             }
             """;

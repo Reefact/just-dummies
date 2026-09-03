@@ -158,7 +158,7 @@ fi
 # JustDummies.dll sat in tools/net8.0/any/. The payload check is the one that bites; the nuspec check covers
 # the case where the reference is declared rather than bundled.
 #
-# JustDummies.GenAny.dll is expected in there and is not a violation: the engine is the tool's own half,
+# JustDummies.GenDummy.dll is expected in there and is not a violation: the engine is the tool's own half,
 # packed inside it (specification §10.4), and it references no JustDummies assembly either.
 if [ "$scope" = "cli" ]; then
   for package in artifacts/JustDummies.Cli.*.nupkg; do

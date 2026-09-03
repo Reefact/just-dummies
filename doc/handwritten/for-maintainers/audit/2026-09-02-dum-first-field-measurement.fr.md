@@ -62,7 +62,7 @@ en `netstandard2.0` vit sous un projet de test en `net8.0`.
 Les deux extrémités de l'écart disent ce que vaut le commit :
 
 * **`first-class-errors`** : 18 paramètres sur 28 ont gagné quelque chose — 7 vraies contraintes
-  (`Any.String().NotBlank()` là où la ligne de base était tirée), 11 `unread guards` honnêtes.
+  (`Dummy.String().NotBlank()` là où la ligne de base était tirée), 11 `unread guards` honnêtes.
 * **`nodatime`** : 24 paramètres sur 73 ont gagné un `unread guards`. Avant, `dum` aurait remis à un
   utilisateur de NodaTime 26 générateurs dont le récapitulatif annonçait *tout inféré*, au-dessus
   d'invariants qu'il n'avait jamais lus — et `LocalTime`, `LocalDate` et `AnnualDate` rejettent la

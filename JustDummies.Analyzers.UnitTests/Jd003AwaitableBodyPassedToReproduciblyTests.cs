@@ -18,7 +18,7 @@ public class Jd003AwaitableBodyPassedToReproduciblyTests {
                 private static Task SaveAsync() => Task.CompletedTask;
 
                 public static void M() {
-                    Any.Reproducibly(() => SaveAsync());
+                    Dummy.Reproducibly(() => SaveAsync());
                 }
             }
             """;
@@ -40,7 +40,7 @@ public class Jd003AwaitableBodyPassedToReproduciblyTests {
                 private static Task SaveAsync() => Task.CompletedTask;
 
                 public static void M() {
-                    Any.Reproducibly(() => { SaveAsync(); });
+                    Dummy.Reproducibly(() => { SaveAsync(); });
                 }
             }
             """;
@@ -61,7 +61,7 @@ public class Jd003AwaitableBodyPassedToReproduciblyTests {
                 private static async void Body() { await Task.Yield(); }
 
                 public static void M() {
-                    Any.Reproducibly(Body);
+                    Dummy.Reproducibly(Body);
                 }
             }
             """;
@@ -82,7 +82,7 @@ public class Jd003AwaitableBodyPassedToReproduciblyTests {
                 private static Task SaveAsync() => Task.CompletedTask;
 
                 public static void M() {
-                    Any.Reproducibly(1234, () => SaveAsync());
+                    Dummy.Reproducibly(1234, () => SaveAsync());
                 }
             }
             """;
@@ -102,7 +102,7 @@ public class Jd003AwaitableBodyPassedToReproduciblyTests {
                 private static void Save() { }
 
                 public static void M() {
-                    Any.Reproducibly(() => Save());
+                    Dummy.Reproducibly(() => Save());
                 }
             }
             """;
@@ -121,7 +121,7 @@ public class Jd003AwaitableBodyPassedToReproduciblyTests {
 
             public static class Sample {
                 public static void M() {
-                    Any.Reproducibly(async () => { await Task.Yield(); });
+                    Dummy.Reproducibly(async () => { await Task.Yield(); });
                 }
             }
             """;
@@ -141,7 +141,7 @@ public class Jd003AwaitableBodyPassedToReproduciblyTests {
                 private static Task SaveAsync() => Task.CompletedTask;
 
                 public static async Task M() {
-                    await Any.ReproduciblyAsync(() => SaveAsync());
+                    await Dummy.ReproduciblyAsync(() => SaveAsync());
                 }
             }
             """;

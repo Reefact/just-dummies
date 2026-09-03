@@ -13,8 +13,8 @@ namespace JustDummies.PropertyTests;
 
 /// <summary>
 ///     Property-based tests for the five generators the netstandard2.0 asset cannot carry —
-///     <see cref="AnyInt128" />, <see cref="AnyUInt128" />, <see cref="AnyHalf" />, <see cref="AnyDateOnly" /> and
-///     <see cref="AnyTimeOnly" />. Where the example-based suite pins one anchor date, one anchor time and a handful
+///     <see cref="DummyInt128" />, <see cref="DummyUInt128" />, <see cref="DummyHalf" />, <see cref="DummyDateOnly" /> and
+///     <see cref="DummyTimeOnly" />. Where the example-based suite pins one anchor date, one anchor time and a handful
 ///     of tiny hand-picked intervals (<c>Between(1, 3)</c>, <c>Between(1f, 2f)</c>), these draw the bounds, the
 ///     lattice steps and the seeds themselves, over the whole 128-bit domain, the whole ten-thousand-year day-number
 ///     range and the whole day of ticks, so a bound that overflows or truncates for one interval in a million is
@@ -37,7 +37,7 @@ namespace JustDummies.PropertyTests;
 ///         shape settles it.
 ///     </para>
 /// </remarks>
-[TestSubject(typeof(AnyInt128))]
+[TestSubject(typeof(DummyInt128))]
 public sealed class ModernTypeInvariantProperties {
 
     #region Statics members declarations
@@ -122,7 +122,7 @@ public sealed class ModernTypeInvariantProperties {
     }
 
     /// <summary>
-    ///     Arbitrary lattice steps for <see cref="AnyTimeOnly.WithGranularity" />, spanning the units a caller
+    ///     Arbitrary lattice steps for <see cref="DummyTimeOnly.WithGranularity" />, spanning the units a caller
     ///     actually asks for — a tick, a millisecond, a second, a minute, an hour — and deliberately reaching below
     ///     zero: a non-positive granularity is an argument error, and that half of the contract deserves the same
     ///     quantification as the lattice itself.
@@ -140,7 +140,7 @@ public sealed class ModernTypeInvariantProperties {
     [Fact(DisplayName = "Int128: Between contains — every draw falls within the declared inclusive bounds.")]
     public void Int128BetweenContainsEveryDraw() {
         Prop.ForAll(Generators.OrderedPair(Int128Values()).ToArbitrary(),
-                    bounds => Expect.EveryDraw(Any.Int128().Between(bounds.Min, bounds.Max),
+                    bounds => Expect.EveryDraw(Dummy.Int128().Between(bounds.Min, bounds.Max),
                                                value => value >= bounds.Min && value <= bounds.Max))
             .QuickCheckThrowOnFailure();
     }
@@ -148,7 +148,7 @@ public sealed class ModernTypeInvariantProperties {
     [Fact(DisplayName = "Int128: Between with equal bounds pins the value, for every value.")]
     public void Int128BetweenWithEqualBoundsPins() {
         Prop.ForAll(Int128Values().ToArbitrary(),
-                    value => Expect.EveryDraw(Any.Int128().Between(value, value), drawn => drawn == value))
+                    value => Expect.EveryDraw(Dummy.Int128().Between(value, value), drawn => drawn == value))
             .QuickCheckThrowOnFailure();
     }
 
@@ -156,7 +156,7 @@ public sealed class ModernTypeInvariantProperties {
     public void Int128CrossedBoundsAreAnArgumentError() {
         Prop.ForAll(Generators.OrderedPair(Int128Values()).ToArbitrary(),
                     bounds => bounds.Min == bounds.Max
-                              || Expect.Throws<ArgumentException>(() => Any.Int128().Between(bounds.Max, bounds.Min)))
+                              || Expect.Throws<ArgumentException>(() => Dummy.Int128().Between(bounds.Max, bounds.Min)))
             .QuickCheckThrowOnFailure();
     }
 
@@ -164,8 +164,8 @@ public sealed class ModernTypeInvariantProperties {
     public void Int128GreaterThanIsStrictAndConflictsAtTheCeiling() {
         Prop.ForAll(Int128Values().ToArbitrary(),
                     bound => bound == Int128.MaxValue
-                                 ? Expect.Throws<ConflictingAnyConstraintException>(() => Any.Int128().GreaterThan(bound))
-                                 : Expect.EveryDraw(Any.Int128().GreaterThan(bound), value => value > bound))
+                                 ? Expect.Throws<ConflictingDummyConstraintException>(() => Dummy.Int128().GreaterThan(bound))
+                                 : Expect.EveryDraw(Dummy.Int128().GreaterThan(bound), value => value > bound))
             .QuickCheckThrowOnFailure();
     }
 
@@ -173,8 +173,8 @@ public sealed class ModernTypeInvariantProperties {
     public void Int128LessThanIsStrictAndConflictsAtTheFloor() {
         Prop.ForAll(Int128Values().ToArbitrary(),
                     bound => bound == Int128.MinValue
-                                 ? Expect.Throws<ConflictingAnyConstraintException>(() => Any.Int128().LessThan(bound))
-                                 : Expect.EveryDraw(Any.Int128().LessThan(bound), value => value < bound))
+                                 ? Expect.Throws<ConflictingDummyConstraintException>(() => Dummy.Int128().LessThan(bound))
+                                 : Expect.EveryDraw(Dummy.Int128().LessThan(bound), value => value < bound))
             .QuickCheckThrowOnFailure();
     }
 
@@ -187,14 +187,14 @@ public sealed class ModernTypeInvariantProperties {
     [SuppressMessage(SonarRule.S1854.Category, SonarRule.S1854.Id, Justification = SuppressionJustification.S1854.CallIsTheSubject)]
     private static string? BuildInt128(bool hasBetween, int lo, int hi, int step, int[] allow, int[] excl) {
         try {
-            AnyInt128 spec = Any.Int128();
+            DummyInt128 spec = Dummy.Int128();
             if (hasBetween) { spec = spec.Between(lo, hi); }
             if (step > 1)   { spec = spec.MultipleOf(step); }
             if (allow.Length > 0) { spec = spec.OneOf(allow.Select(value => (Int128)value).ToArray()); }
             if (excl.Length  > 0) { spec = spec.Except(excl.Select(value => (Int128)value).ToArray()); }
 
             return null;
-        } catch (ConflictingAnyConstraintException exception) { return exception.Message; }
+        } catch (ConflictingDummyConstraintException exception) { return exception.Message; }
     }
 
     [Fact(DisplayName = "Int128: Positive and Negative meet a bound on their own side of zero, and conflict with one on the other.")]
@@ -205,12 +205,12 @@ public sealed class ModernTypeInvariantProperties {
                         // interval empty — and the library owes a conflict at the fluent call, not a failure at
                         // Generate(). The mirror image holds for Negative() and a floor at or above zero.
                         bool positive = bound <= Int128.Zero
-                                            ? Expect.Throws<ConflictingAnyConstraintException>(() => Any.Int128().Positive().LessThanOrEqualTo(bound))
-                                            : Expect.EveryDraw(Any.Int128().Positive().LessThanOrEqualTo(bound),
+                                            ? Expect.Throws<ConflictingDummyConstraintException>(() => Dummy.Int128().Positive().LessThanOrEqualTo(bound))
+                                            : Expect.EveryDraw(Dummy.Int128().Positive().LessThanOrEqualTo(bound),
                                                                value => value > Int128.Zero && value <= bound);
                         bool negative = bound >= Int128.Zero
-                                            ? Expect.Throws<ConflictingAnyConstraintException>(() => Any.Int128().Negative().GreaterThanOrEqualTo(bound))
-                                            : Expect.EveryDraw(Any.Int128().Negative().GreaterThanOrEqualTo(bound),
+                                            ? Expect.Throws<ConflictingDummyConstraintException>(() => Dummy.Int128().Negative().GreaterThanOrEqualTo(bound))
+                                            : Expect.EveryDraw(Dummy.Int128().Negative().GreaterThanOrEqualTo(bound),
                                                                value => value < Int128.Zero && value >= bound);
 
                         return positive && negative;
@@ -222,8 +222,8 @@ public sealed class ModernTypeInvariantProperties {
     public void Int128MultipleOfPutsEveryDrawOnTheGrid() {
         Prop.ForAll(Int128Values().ToArbitrary(),
                     step => step <= Int128.Zero
-                                ? Expect.Throws<ArgumentOutOfRangeException>(() => Any.Int128().MultipleOf(step))
-                                : Expect.EveryDraw(Any.Int128().MultipleOf(step), value => value % step == Int128.Zero))
+                                ? Expect.Throws<ArgumentOutOfRangeException>(() => Dummy.Int128().MultipleOf(step))
+                                : Expect.EveryDraw(Dummy.Int128().MultipleOf(step), value => value % step == Int128.Zero))
             .QuickCheckThrowOnFailure();
     }
 
@@ -244,11 +244,11 @@ public sealed class ModernTypeInvariantProperties {
 
                         // Excluding the single value of a pinned interval empties it: that is a conflict, not a draw.
                         if (window.Span == 0) {
-                            return Expect.Throws<ConflictingAnyConstraintException>(
-                                () => Any.Int128().Between(minimum, maximum).Except(excluded));
+                            return Expect.Throws<ConflictingDummyConstraintException>(
+                                () => Dummy.Int128().Between(minimum, maximum).Except(excluded));
                         }
 
-                        return Expect.EveryDraw(Any.Int128().Between(minimum, maximum).Except(excluded),
+                        return Expect.EveryDraw(Dummy.Int128().Between(minimum, maximum).Except(excluded),
                                                 value => value != excluded && value >= minimum && value <= maximum);
                     })
             .QuickCheckThrowOnFailure();
@@ -257,7 +257,7 @@ public sealed class ModernTypeInvariantProperties {
     [Fact(DisplayName = "UInt128: Between contains — every draw falls within the declared inclusive bounds.")]
     public void UInt128BetweenContainsEveryDraw() {
         Prop.ForAll(Generators.OrderedPair(UInt128Values()).ToArbitrary(),
-                    bounds => Expect.EveryDraw(Any.UInt128().Between(bounds.Min, bounds.Max),
+                    bounds => Expect.EveryDraw(Dummy.UInt128().Between(bounds.Min, bounds.Max),
                                                value => value >= bounds.Min && value <= bounds.Max))
             .QuickCheckThrowOnFailure();
     }
@@ -265,7 +265,7 @@ public sealed class ModernTypeInvariantProperties {
     [Fact(DisplayName = "UInt128: Between with equal bounds pins the value, for every value.")]
     public void UInt128BetweenWithEqualBoundsPins() {
         Prop.ForAll(UInt128Values().ToArbitrary(),
-                    value => Expect.EveryDraw(Any.UInt128().Between(value, value), drawn => drawn == value))
+                    value => Expect.EveryDraw(Dummy.UInt128().Between(value, value), drawn => drawn == value))
             .QuickCheckThrowOnFailure();
     }
 
@@ -276,11 +276,11 @@ public sealed class ModernTypeInvariantProperties {
                         // Nothing lies above UInt128.MaxValue, and — the unsigned specificity — nothing below zero:
                         // there the exclusive bound empties the domain rather than narrowing it.
                         bool above = bound == UInt128.MaxValue
-                                         ? Expect.Throws<ConflictingAnyConstraintException>(() => Any.UInt128().GreaterThan(bound))
-                                         : Expect.EveryDraw(Any.UInt128().GreaterThan(bound), value => value > bound);
+                                         ? Expect.Throws<ConflictingDummyConstraintException>(() => Dummy.UInt128().GreaterThan(bound))
+                                         : Expect.EveryDraw(Dummy.UInt128().GreaterThan(bound), value => value > bound);
                         bool below = bound == UInt128.MinValue
-                                         ? Expect.Throws<ConflictingAnyConstraintException>(() => Any.UInt128().LessThan(bound))
-                                         : Expect.EveryDraw(Any.UInt128().LessThan(bound), value => value < bound);
+                                         ? Expect.Throws<ConflictingDummyConstraintException>(() => Dummy.UInt128().LessThan(bound))
+                                         : Expect.EveryDraw(Dummy.UInt128().LessThan(bound), value => value < bound);
 
                         return above && below;
                     })
@@ -291,8 +291,8 @@ public sealed class ModernTypeInvariantProperties {
     public void UInt128MultipleOfPutsEveryDrawOnTheGrid() {
         Prop.ForAll(UInt128Values().ToArbitrary(),
                     step => step == UInt128.Zero
-                                ? Expect.Throws<ArgumentOutOfRangeException>(() => Any.UInt128().MultipleOf(step))
-                                : Expect.EveryDraw(Any.UInt128().MultipleOf(step), value => value % step == UInt128.Zero))
+                                ? Expect.Throws<ArgumentOutOfRangeException>(() => Dummy.UInt128().MultipleOf(step))
+                                : Expect.EveryDraw(Dummy.UInt128().MultipleOf(step), value => value % step == UInt128.Zero))
             .QuickCheckThrowOnFailure();
     }
 
@@ -301,7 +301,7 @@ public sealed class ModernTypeInvariantProperties {
         Gen<UInt128[]> pools = Gen.NonEmptyListOf(UInt128Values()).Select(values => values.Distinct().ToArray());
 
         Prop.ForAll(pools.ToArbitrary(),
-                    pool => Expect.EveryDraw(Any.UInt128().OneOf(pool), value => pool.Contains(value)))
+                    pool => Expect.EveryDraw(Dummy.UInt128().OneOf(pool), value => pool.Contains(value)))
             .QuickCheckThrowOnFailure();
     }
 
@@ -310,7 +310,7 @@ public sealed class ModernTypeInvariantProperties {
         // Quantifying over the seed is what an example cannot do: the guarantee is about every sequence the
         // generator can ever produce, not about the one the ambient context happens to produce today.
         Prop.ForAll(Generators.Seed().ToArbitrary(),
-                    seed => Expect.EveryDraw(Any.WithSeed(seed).Half(),
+                    seed => Expect.EveryDraw(Dummy.WithSeed(seed).Half(),
                                              value => !Half.IsNaN(value) && !Half.IsInfinity(value)))
             .QuickCheckThrowOnFailure();
     }
@@ -318,7 +318,7 @@ public sealed class ModernTypeInvariantProperties {
     [Fact(DisplayName = "Half: Between contains — every draw falls within the declared inclusive bounds.")]
     public void HalfBetweenContainsEveryDraw() {
         Prop.ForAll(Generators.OrderedPair(Halves()).ToArbitrary(),
-                    bounds => Expect.EveryDraw(Any.Half().Between(bounds.Min, bounds.Max),
+                    bounds => Expect.EveryDraw(Dummy.Half().Between(bounds.Min, bounds.Max),
                                                value => value >= bounds.Min && value <= bounds.Max))
             .QuickCheckThrowOnFailure();
     }
@@ -327,7 +327,7 @@ public sealed class ModernTypeInvariantProperties {
     public void HalfCrossedBoundsAreAnArgumentError() {
         Prop.ForAll(Generators.OrderedPair(Halves()).ToArbitrary(),
                     bounds => bounds.Min == bounds.Max
-                              || Expect.Throws<ArgumentException>(() => Any.Half().Between(bounds.Max, bounds.Min)))
+                              || Expect.Throws<ArgumentException>(() => Dummy.Half().Between(bounds.Max, bounds.Min)))
             .QuickCheckThrowOnFailure();
     }
 
@@ -338,12 +338,12 @@ public sealed class ModernTypeInvariantProperties {
                         // Positive() pins the minimum to the smallest representable half above zero, so no positive
                         // bound can ever fall below it: the legality line sits exactly at zero, on both sides.
                         bool positive = bound <= Half.Zero
-                                            ? Expect.Throws<ConflictingAnyConstraintException>(() => Any.Half().Positive().LessThanOrEqualTo(bound))
-                                            : Expect.EveryDraw(Any.Half().Positive().LessThanOrEqualTo(bound),
+                                            ? Expect.Throws<ConflictingDummyConstraintException>(() => Dummy.Half().Positive().LessThanOrEqualTo(bound))
+                                            : Expect.EveryDraw(Dummy.Half().Positive().LessThanOrEqualTo(bound),
                                                                value => value > Half.Zero && value <= bound);
                         bool negative = bound >= Half.Zero
-                                            ? Expect.Throws<ConflictingAnyConstraintException>(() => Any.Half().Negative().GreaterThanOrEqualTo(bound))
-                                            : Expect.EveryDraw(Any.Half().Negative().GreaterThanOrEqualTo(bound),
+                                            ? Expect.Throws<ConflictingDummyConstraintException>(() => Dummy.Half().Negative().GreaterThanOrEqualTo(bound))
+                                            : Expect.EveryDraw(Dummy.Half().Negative().GreaterThanOrEqualTo(bound),
                                                                value => value < Half.Zero && value >= bound);
 
                         return positive && negative;
@@ -355,15 +355,15 @@ public sealed class ModernTypeInvariantProperties {
     public void HalfZeroPinsUnlessTheExclusionEmptiesIt() {
         Prop.ForAll(Halves().ToArbitrary(),
                     excluded => excluded == Half.Zero
-                                    ? Expect.Throws<ConflictingAnyConstraintException>(() => Any.Half().Zero().DifferentFrom(excluded))
-                                    : Expect.EveryDraw(Any.Half().Zero().DifferentFrom(excluded), value => value == Half.Zero))
+                                    ? Expect.Throws<ConflictingDummyConstraintException>(() => Dummy.Half().Zero().DifferentFrom(excluded))
+                                    : Expect.EveryDraw(Dummy.Half().Zero().DifferentFrom(excluded), value => value == Half.Zero))
             .QuickCheckThrowOnFailure();
     }
 
     [Fact(DisplayName = "DateOnly: Between contains — every draw falls within the declared inclusive dates.")]
     public void DateOnlyBetweenContainsEveryDraw() {
         Prop.ForAll(Generators.OrderedPair(Dates()).ToArbitrary(),
-                    bounds => Expect.EveryDraw(Any.DateOnly().Between(bounds.Min, bounds.Max),
+                    bounds => Expect.EveryDraw(Dummy.DateOnly().Between(bounds.Min, bounds.Max),
                                                value => value >= bounds.Min && value <= bounds.Max))
             .QuickCheckThrowOnFailure();
     }
@@ -371,7 +371,7 @@ public sealed class ModernTypeInvariantProperties {
     [Fact(DisplayName = "DateOnly: Between with equal dates pins the value, for every date.")]
     public void DateOnlyBetweenWithEqualBoundsPins() {
         Prop.ForAll(Dates().ToArbitrary(),
-                    date => Expect.EveryDraw(Any.DateOnly().Between(date, date), drawn => drawn == date))
+                    date => Expect.EveryDraw(Dummy.DateOnly().Between(date, date), drawn => drawn == date))
             .QuickCheckThrowOnFailure();
     }
 
@@ -382,11 +382,11 @@ public sealed class ModernTypeInvariantProperties {
                         // No date lies after DateOnly.MaxValue, and none before DateOnly.MinValue: there the
                         // exclusive bound empties the domain, and the library owes a conflict at the fluent call.
                         bool after = date == DateOnly.MaxValue
-                                         ? Expect.Throws<ConflictingAnyConstraintException>(() => Any.DateOnly().After(date))
-                                         : Expect.EveryDraw(Any.DateOnly().After(date), value => value > date);
+                                         ? Expect.Throws<ConflictingDummyConstraintException>(() => Dummy.DateOnly().After(date))
+                                         : Expect.EveryDraw(Dummy.DateOnly().After(date), value => value > date);
                         bool before = date == DateOnly.MinValue
-                                          ? Expect.Throws<ConflictingAnyConstraintException>(() => Any.DateOnly().Before(date))
-                                          : Expect.EveryDraw(Any.DateOnly().Before(date), value => value < date);
+                                          ? Expect.Throws<ConflictingDummyConstraintException>(() => Dummy.DateOnly().Before(date))
+                                          : Expect.EveryDraw(Dummy.DateOnly().Before(date), value => value < date);
 
                         return after && before;
                     })
@@ -400,9 +400,9 @@ public sealed class ModernTypeInvariantProperties {
                         // A half-bounded draw only shows the bound is respected — an exclusive reading would pass
                         // that too. Closing the interval on the very same date is what proves it inclusive: read
                         // exclusively, those two constraints would leave nothing to draw.
-                        bool lower  = Expect.EveryDraw(Any.DateOnly().AfterOrEqualTo(date), value => value >= date);
-                        bool upper  = Expect.EveryDraw(Any.DateOnly().BeforeOrEqualTo(date), value => value <= date);
-                        bool closed = Expect.EveryDraw(Any.DateOnly().AfterOrEqualTo(date).BeforeOrEqualTo(date), value => value == date);
+                        bool lower  = Expect.EveryDraw(Dummy.DateOnly().AfterOrEqualTo(date), value => value >= date);
+                        bool upper  = Expect.EveryDraw(Dummy.DateOnly().BeforeOrEqualTo(date), value => value <= date);
+                        bool closed = Expect.EveryDraw(Dummy.DateOnly().AfterOrEqualTo(date).BeforeOrEqualTo(date), value => value == date);
 
                         return lower && upper && closed;
                     })
@@ -413,14 +413,14 @@ public sealed class ModernTypeInvariantProperties {
     public void DateOnlyCrossedBoundsAreAnArgumentError() {
         Prop.ForAll(Generators.OrderedPair(Dates()).ToArbitrary(),
                     bounds => bounds.Min == bounds.Max
-                              || Expect.Throws<ArgumentException>(() => Any.DateOnly().Between(bounds.Max, bounds.Min)))
+                              || Expect.Throws<ArgumentException>(() => Dummy.DateOnly().Between(bounds.Max, bounds.Min)))
             .QuickCheckThrowOnFailure();
     }
 
     [Fact(DisplayName = "TimeOnly: Between contains — every draw falls within the declared inclusive times of day.")]
     public void TimeOnlyBetweenContainsEveryDraw() {
         Prop.ForAll(Generators.OrderedPair(Times()).ToArbitrary(),
-                    bounds => Expect.EveryDraw(Any.TimeOnly().Between(bounds.Min, bounds.Max),
+                    bounds => Expect.EveryDraw(Dummy.TimeOnly().Between(bounds.Min, bounds.Max),
                                                value => value >= bounds.Min && value <= bounds.Max))
             .QuickCheckThrowOnFailure();
     }
@@ -432,14 +432,14 @@ public sealed class ModernTypeInvariantProperties {
                         // A time of day does not wrap: nothing lies after the last tick of the day, nor before
                         // midnight, so both exclusive bounds empty the domain at their own end of it.
                         bool after = time == TimeOnly.MaxValue
-                                         ? Expect.Throws<ConflictingAnyConstraintException>(() => Any.TimeOnly().After(time))
-                                         : Expect.EveryDraw(Any.TimeOnly().After(time), value => value > time);
+                                         ? Expect.Throws<ConflictingDummyConstraintException>(() => Dummy.TimeOnly().After(time))
+                                         : Expect.EveryDraw(Dummy.TimeOnly().After(time), value => value > time);
                         bool before = time == TimeOnly.MinValue
-                                          ? Expect.Throws<ConflictingAnyConstraintException>(() => Any.TimeOnly().Before(time))
-                                          : Expect.EveryDraw(Any.TimeOnly().Before(time), value => value < time);
+                                          ? Expect.Throws<ConflictingDummyConstraintException>(() => Dummy.TimeOnly().Before(time))
+                                          : Expect.EveryDraw(Dummy.TimeOnly().Before(time), value => value < time);
                         // Closing the interval on the very same time is what proves the other pair inclusive: read
                         // exclusively, those two constraints would leave nothing to draw.
-                        bool closed = Expect.EveryDraw(Any.TimeOnly().AfterOrEqualTo(time).BeforeOrEqualTo(time), value => value == time);
+                        bool closed = Expect.EveryDraw(Dummy.TimeOnly().AfterOrEqualTo(time).BeforeOrEqualTo(time), value => value == time);
 
                         return after && before && closed;
                     })
@@ -452,8 +452,8 @@ public sealed class ModernTypeInvariantProperties {
         // yields the same grid whatever else has been declared — and the value is built on it, never snapped onto it.
         Prop.ForAll(Granularities().ToArbitrary(),
                     granularity => granularity <= TimeSpan.Zero
-                                       ? Expect.Throws<ArgumentOutOfRangeException>(() => Any.TimeOnly().WithGranularity(granularity))
-                                       : Expect.EveryDraw(Any.TimeOnly().WithGranularity(granularity),
+                                       ? Expect.Throws<ArgumentOutOfRangeException>(() => Dummy.TimeOnly().WithGranularity(granularity))
+                                       : Expect.EveryDraw(Dummy.TimeOnly().WithGranularity(granularity),
                                                           value => (value.Ticks - TimeOnly.MinValue.Ticks) % granularity.Ticks == 0L))
             .QuickCheckThrowOnFailure();
     }

@@ -23,7 +23,7 @@ namespace JustDummies;
 ///     <para>
 ///         The rendering happens once, in the constructor, and <see cref="ToString" /> only reads it back. That is
 ///         deliberate rather than an optimization: a constraint is quoted while a
-///         <see cref="ConflictingAnyConstraintException" /> is being built, and building an exception must never
+///         <see cref="ConflictingDummyConstraintException" /> is being built, and building an exception must never
 ///         throw (ADR-0024). Rendering when the constraint is declared — on the path that succeeds — leaves nothing
 ///         on the failing path that could fail in its turn.
 ///     </para>

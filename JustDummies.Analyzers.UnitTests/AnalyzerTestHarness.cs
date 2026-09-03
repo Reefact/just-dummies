@@ -62,8 +62,8 @@ internal static class AnalyzerTestHarness {
             }
         }
 
-        // The JustDummies core, so Any.Reproducibly / Any.ReproduciblyAsync resolve inside the snippet.
-        references.Add(MetadataReference.CreateFromFile(typeof(Any).Assembly.Location));
+        // The JustDummies core, so Dummy.Reproducibly / Dummy.ReproduciblyAsync resolve inside the snippet.
+        references.Add(MetadataReference.CreateFromFile(typeof(Dummy).Assembly.Location));
 
         // The xUnit adapter and xUnit itself, so [Reproducible], [Fact], [Theory] and TheoryData resolve in the
         // snippets the lifecycle rules are tested against.

@@ -29,7 +29,7 @@ and count cases, was already marked but still left the neutral generator uncomme
 that mark.
 
 The neutral generator kept for an `unread guards` parameter can violate the invariant the dropped
-guard stated. For some of the shapes in the guarded-corpus test fixture (`JustDummies.GenAny.UnitTests`),
+guard stated. For some of the shapes in the guarded-corpus test fixture (`JustDummies.GenDummy.UnitTests`),
 this is not occasional: a floor past the library's producible cap, or a count past what a small
 enum's element row can draw distinct values for, means the generator can never satisfy the domain
 constructor at all — every draw fails, not some fraction of them.

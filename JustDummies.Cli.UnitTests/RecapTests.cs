@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 
-using JustDummies.GenAny;
+using JustDummies.GenDummy;
 
 using NFluent;
 
@@ -23,7 +23,7 @@ public sealed class RecapTests {
     ///     §6's run, verbatim: the <c>Order</c> of §4.1, every parameter inferred.
     /// </summary>
     /// <remarks>
-    ///     Both composed parameters read <c>AnyX</c>, and the recap says the same thing whether or not the
+    ///     Both composed parameters read <c>DummyX</c>, and the recap says the same thing whether or not the
     ///     compilation carries those two generators yet: the name is the answer either way, and where one is
     ///     missing the developer's own build reports it (ADR-0089). Not a silence — the file does not compile.
     /// </remarks>
@@ -31,14 +31,14 @@ public sealed class RecapTests {
                                     Analyzing Shop.Domain.Order
                                       constructor Order(OrderReference, Customer, int, OrderStatus, IReadOnlyList<string>, DateTime)
 
-                                      reference  OrderReference         new AnyOrderReference()              AnyX
-                                      customer   Customer               new AnyCustomer()                    AnyX
-                                      quantity   int                    Any.Int32().Positive()               guard
-                                      status     OrderStatus            Any.Enum<OrderStatus>()
-                                      tags       IReadOnlyList<string>  Any.ListOf(Any.String().NonEmpty())
-                                      placedAt   DateTime               Any.DateTime()
+                                      reference  OrderReference         new DummyOrderReference()                DummyX
+                                      customer   Customer               new DummyCustomer()                      DummyX
+                                      quantity   int                    Dummy.Int32().Positive()                 guard
+                                      status     OrderStatus            Dummy.Enum<OrderStatus>()
+                                      tags       IReadOnlyList<string>  Dummy.ListOf(Dummy.String().NonEmpty())
+                                      placedAt   DateTime               Dummy.DateTime()
 
-                                    ✓ AnyOrder.cs — 6 of 6 parameters inferred.
+                                    ✓ DummyOrder.cs — 6 of 6 parameters inferred.
                                     """;
 
     [Fact(DisplayName = "The recap is the one §6 writes out, to the space.")]
@@ -68,9 +68,9 @@ public sealed class RecapTests {
     // explain, and a sentence about deliberate failure under a clean run would read as a warning.
     [Fact(DisplayName = "A scaffold with nothing left open closes without the TODO sentence.")]
     public void AScaffoldWithNothingOpenClosesWithoutTheTodoSentence() {
-        string rendered = Rendered(Plan([Inferred("quantity", "int", "Any.Int32().Positive()", Provenance.Guard)]));
+        string rendered = Rendered(Plan([Inferred("quantity", "int", "Dummy.Int32().Positive()", Provenance.Guard)]));
 
-        Check.That(rendered).Contains("✓ AnySubject.cs — 1 of 1 parameters inferred.");
+        Check.That(rendered).Contains("✓ DummySubject.cs — 1 of 1 parameters inferred.");
         Check.That(rendered).Not.Contains("That is deliberate");
     }
 
@@ -78,9 +78,9 @@ public sealed class RecapTests {
     // will not compile — but counted separately, since a generator WAS inferred here and stays as the base.
     [Fact(DisplayName = "A parameter requiring verification closes with its own count and the compile sentence.")]
     public void AParameterRequiringVerificationClosesWithItsOwnCount() {
-        string rendered = Rendered(Plan([Inferred("name", "string", "Any.String().NonEmpty()", Provenance.UnreadGuards)]));
+        string rendered = Rendered(Plan([Inferred("name", "string", "Dummy.String().NonEmpty()", Provenance.UnreadGuards)]));
 
-        Check.That(rendered).Contains("✓ AnySubject.cs — 1 of 1 parameters inferred, 1 to verify.");
+        Check.That(rendered).Contains("✓ DummySubject.cs — 1 of 1 parameters inferred, 1 to verify.");
         Check.That(rendered).Contains("The file will not compile until you resolve it. That is deliberate.");
     }
 
@@ -88,7 +88,7 @@ public sealed class RecapTests {
     // reading TODO under a count reading `1 to verify, 0 TODO` is the recap contradicting itself.
     [Fact(DisplayName = "A parameter requiring verification reads `to verify` in its row too, never TODO.")]
     public void AParameterRequiringVerificationReadsToVerifyInItsRow() {
-        string rendered = Rendered(Plan([Inferred("name", "string", "Any.String().NonEmpty()", Provenance.UnreadGuards)]));
+        string rendered = Rendered(Plan([Inferred("name", "string", "Dummy.String().NonEmpty()", Provenance.UnreadGuards)]));
 
         Check.That(rendered).Contains("to verify, unread guards");
         Check.That(rendered).Not.Contains("TODO");
@@ -99,16 +99,16 @@ public sealed class RecapTests {
     [Fact(DisplayName = "An open parameter and one requiring verification are both counted, TODO first.")]
     public void AnOpenParameterAndOneRequiringVerificationAreBothCounted() {
         string rendered = Rendered(Plan([ScaffoldedParameter.Unresolved("customer", "Customer"),
-                                         Inferred("name", "string", "Any.String().NonEmpty()", Provenance.UnreadGuards)]));
+                                         Inferred("name", "string", "Dummy.String().NonEmpty()", Provenance.UnreadGuards)]));
 
-        Check.That(rendered).Contains("✓ AnySubject.cs — 1 of 2 parameters inferred, 1 TODO, 1 to verify.");
+        Check.That(rendered).Contains("✓ DummySubject.cs — 1 of 2 parameters inferred, 1 TODO, 1 to verify.");
     }
 
     // A generator for a type with a parameterless constructor is still worth having — it composes into
-    // Any.ListOf(…) where `new Subject()` does not — so the recap says so rather than counting to zero.
+    // Dummy.ListOf(…) where `new Subject()` does not — so the recap says so rather than counting to zero.
     [Fact(DisplayName = "A generator with no parameters has its own closing line.")]
     public void AGeneratorWithNoParametersHasItsOwnClosingLine() {
-        Check.That(Rendered(Plan([]))).Contains("✓ AnySubject.cs — no constructor parameters to infer.");
+        Check.That(Rendered(Plan([]))).Contains("✓ DummySubject.cs — no constructor parameters to infer.");
     }
 
     /// <summary>
@@ -116,34 +116,34 @@ public sealed class RecapTests {
     /// </summary>
     [Fact(DisplayName = "A shadowed name is named on both sides, and does not stop the scaffold.")]
     public void AShadowedNameIsNamedOnBothSides() {
-        ScaffoldOutcome outcome = Outcome(Plan([Inferred("text", "string", "Any.String().NonEmpty()")]),
-                                          [ScaffoldWarning.Shadows("AnyPattern", "JustDummies.AnyPattern")]);
+        ScaffoldOutcome outcome = Outcome(Plan([Inferred("text", "string", "Dummy.String().NonEmpty()")]),
+                                          [ScaffoldWarning.Shadows("DummyPattern", "JustDummies.DummyPattern")]);
 
         string rendered = Rendered(outcome);
 
-        Check.That(rendered).Contains("AnyPattern shadows JustDummies.AnyPattern inside its own namespace.");
-        Check.That(rendered).Contains("✓ AnySubject.cs");
+        Check.That(rendered).Contains("DummyPattern shadows JustDummies.DummyPattern inside its own namespace.");
+        Check.That(rendered).Contains("✓ DummySubject.cs");
         Check.That(ExitCode.For(outcome)).IsEqualTo(0);
     }
 
     [Theory(DisplayName = "Every provenance the engine can report has a word in the column.")]
     [InlineData(Provenance.Guard, "guard")]
-    [InlineData(Provenance.Scaffolded, "AnyX")]
+    [InlineData(Provenance.Scaffolded, "DummyX")]
     [InlineData(Provenance.GuardsNotCombined, "guards not combined")]
     [InlineData(Provenance.UnreadGuards, "unread guards")]
     [InlineData(Provenance.NoSource, "no source")]
     [InlineData(Provenance.Unavailable, "unavailable")]
     public void EveryProvenanceHasAWord(Provenance provenance, string word) {
-        Check.That(Rendered(Plan([Inferred("value", "string", "Any.String().NonEmpty()", provenance)]))).Contains(word);
+        Check.That(Rendered(Plan([Inferred("value", "string", "Dummy.String().NonEmpty()", provenance)]))).Contains(word);
     }
 
     // The base table has nothing to say, and saying nothing is the point: a column that always spoke would
     // stop meaning anything.
     [Fact(DisplayName = "A parameter straight from the base table leaves the column empty.")]
     public void AParameterFromTheBaseTableLeavesTheColumnEmpty() {
-        string rendered = Rendered(Plan([Inferred("value", "string", "Any.String().NonEmpty()")]));
+        string rendered = Rendered(Plan([Inferred("value", "string", "Dummy.String().NonEmpty()")]));
 
-        Check.That(rendered).Contains("  value  string  Any.String().NonEmpty()\n");
+        Check.That(rendered).Contains("  value  string  Dummy.String().NonEmpty()\n");
     }
 
     // The chosen construction is always printed (§5.1), and for a type built through its own factory the
@@ -151,9 +151,9 @@ public sealed class RecapTests {
     [Fact(DisplayName = "A factory-built target prints the factory it is built through.")]
     public void AFactoryBuiltTargetPrintsItsFactory() {
         ScaffoldPlan plan = new(new TargetType("Email", "Shop.Domain", NamespaceStyle.FileScoped),
-                                "AnyEmail",
+                                "DummyEmail",
                                 ["JustDummies"],
-                                [Inferred("value", "string", "Any.String().NonEmpty()", Provenance.Guard)],
+                                [Inferred("value", "string", "Dummy.String().NonEmpty()", Provenance.Guard)],
                                 factory: "Email.Create");
 
         string rendered = Rendered(plan);
@@ -164,16 +164,16 @@ public sealed class RecapTests {
 
     private static ScaffoldPlan WorkedExample() {
         return new ScaffoldPlan(new TargetType("Order", "Shop.Domain", NamespaceStyle.FileScoped),
-                                "AnyOrder",
+                                "DummyOrder",
                                 ["System", "System.Collections.Generic", "JustDummies"],
                                 [
-                                    Inferred("reference", "OrderReference", "new AnyOrderReference()",
+                                    Inferred("reference", "OrderReference", "new DummyOrderReference()",
                                              Provenance.Scaffolded),
-                                    Inferred("customer", "Customer", "new AnyCustomer()", Provenance.Scaffolded),
-                                    Inferred("quantity", "int", "Any.Int32().Positive()", Provenance.Guard),
-                                    Inferred("status", "OrderStatus", "Any.Enum<OrderStatus>()"),
-                                    Inferred("tags", "IReadOnlyList<string>", "Any.ListOf(Any.String().NonEmpty())"),
-                                    Inferred("placedAt", "DateTime", "Any.DateTime()")
+                                    Inferred("customer", "Customer", "new DummyCustomer()", Provenance.Scaffolded),
+                                    Inferred("quantity", "int", "Dummy.Int32().Positive()", Provenance.Guard),
+                                    Inferred("status", "OrderStatus", "Dummy.Enum<OrderStatus>()"),
+                                    Inferred("tags", "IReadOnlyList<string>", "Dummy.ListOf(Dummy.String().NonEmpty())"),
+                                    Inferred("placedAt", "DateTime", "Dummy.DateTime()")
                                 ]);
     }
 
@@ -186,7 +186,7 @@ public sealed class RecapTests {
 
     private static ScaffoldPlan Plan(IReadOnlyList<ScaffoldedParameter> parameters) {
         return new ScaffoldPlan(new TargetType("Subject", "Shop.Domain", NamespaceStyle.FileScoped),
-                                "AnySubject",
+                                "DummySubject",
                                 ["JustDummies"],
                                 parameters);
     }

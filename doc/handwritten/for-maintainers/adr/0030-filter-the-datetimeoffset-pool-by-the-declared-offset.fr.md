@@ -12,22 +12,22 @@ Supersède l'[ADR-0016](0016-vary-the-datetimeoffset-offset-dimension.fr.md).
 
 ## Contexte
 
-L'ADR-0016 a doté `AnyDateTimeOffset` d'une dimension de décalage et a consigné, sous *Risques*, que la combiner à
+L'ADR-0016 a doté `DummyDateTimeOffset` d'une dimension de décalage et a consigné, sous *Risques*, que la combiner à
 `OneOf` laisserait le décalage inappliqué : « `WithOffset` combiné à `OneOf` ne remplace pas le décalage propre d'une
 valeur `OneOf`. Atténuation : documenté, et cohérent avec la sémantique d'énumération terminale de `OneOf`. »
 
 L'atténuation n'a pas tenu, et le risque est plus grand qu'une surprise.
 
 La documentation XML publique de `WithOffset` énonce qu'elle « épingle la dimension de décalage — **chaque valeur
-générée porte exactement ce décalage** » et déclare lever `ConflictingAnyConstraintException` « lorsque la contrainte
+générée porte exactement ce décalage** » et déclare lever `ConflictingDummyConstraintException` « lorsque la contrainte
 en contredit une déjà déclarée ». Combinée à `OneOf`, elle ne faisait ni l'un ni l'autre : la contrainte était
 abandonnée dans les deux ordres de déclaration, aucune exception n'était levée, et les valeurs sortaient avec leur
 propre décalage. Le contrat publié disait l'inverse de ce que faisait le code, et le readme de JustDummies ne
 mentionne pas du tout l'interaction.
 
 La bibliothèque répond à cette forme de façon cohérente partout ailleurs.
-`Any.Int32().OneOf(1, 2, 3).GreaterThan(10)` et `Any.DateTime().OneOf(d1, d2).After(2022)` lèvent toutes deux une
-`ConflictingAnyConstraintException` ; `OneOf(1, 2, 3).GreaterThan(1)` resserre et tire. `DateTimeOffset` était la
+`Dummy.Int32().OneOf(1, 2, 3).GreaterThan(10)` et `Dummy.DateTime().OneOf(d1, d2).After(2022)` lèvent toutes deux une
+`ConflictingDummyConstraintException` ; `OneOf(1, 2, 3).GreaterThan(1)` resserre et tire. `DateTimeOffset` était la
 seule famille où une contrainte déclarée après un pool n'était ni appliquée ni refusée.
 
 La règle qui gouverne une contrainte fluent dans ce dépôt est qu'une méthode offerte par la DSL doit être honorée
@@ -73,7 +73,7 @@ parce qu'elle modifie la valeur fournie par l'appelant : `OneOf` énumère des v
 n'a jamais été dans le pool est une surprise pire que celle qu'on supprime. Elle détruit aussi l'instant, puisque
 déplacer le décalage en conservant l'heure locale donne un autre point dans le temps.
 
-### Rendre `OneOf` terminal sur `AnyDateTimeOffset`
+### Rendre `OneOf` terminal sur `DummyDateTimeOffset`
 
 Envisagée parce qu'un type terminal rendrait la combinaison inécrivable, ce qui est la garantie la plus forte
 possible. Rejetée parce qu'elle supprime des combinaisons légitimes et utiles — `OneOf(...).Except(...)`, et un
@@ -88,7 +88,7 @@ se règle pour elle-même du côté des pools de chaînes et d'objets, plutôt q
   ailleurs.
 * Une combinaison pool/décalage impossible est signalée à la déclaration, avec un message nommant ce qui a été
   demandé et ce que le pool admet.
-* `AnyDateTimeOffset` cesse d'être la seule famille où une contrainte déclarée peut disparaître.
+* `DummyDateTimeOffset` cesse d'être la seule famille où une contrainte déclarée peut disparaître.
 
 ### Négatives
 
@@ -115,4 +115,4 @@ se règle pour elle-même du côté des pools de chaînes et d'objets, plutôt q
   *Risques* qu'elle referme.
 * ADR-0009 — Tirer des chaînes arbitraires d'un ensemble terminal explicite : la sémantique de pool terminal sur
   laquelle l'ADR-0016 s'appuyait.
-* `AnyDateTimeOffset` dans le projet `JustDummies`.
+* `DummyDateTimeOffset` dans le projet `JustDummies`.

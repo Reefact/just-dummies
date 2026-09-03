@@ -9,7 +9,7 @@
 
 ## Context
 
-`Any.String()` without a value set is **constructive**: it lays a value out as
+`Dummy.String()` without a value set is **constructive**: it lays a value out as
 `prefix + filler + contained values + filler + suffix` and returns it, never generating and filtering. The
 character pool feeds the **filler** alone — the anchored fragments are appended exactly as the caller wrote
 them. `ADR-0075` already frames every character family, and the subtractive `WithoutAlpha` / `WithoutNumeric`,
@@ -38,7 +38,7 @@ a different mechanism with its own contract (`ADR-0054`).
 
 ## Decision
 
-A character family, a custom pool, a subtraction and a casing govern every character `Any.String()` **draws**
+A character family, a custom pool, a subtraction and a casing govern every character `Dummy.String()` **draws**
 and nothing else: on a shaped string that is the filler alone, so a literal fixed by `StartingWith`,
 `EndingWith` or `Containing` is kept exactly as written; on a value set nothing is drawn at all, so the
 supplied values stay subject to them.
@@ -98,7 +98,7 @@ It is the richest form, and it expresses a multi-zone format exactly rather than
 Rejected because `ADR-0008` already rejects the same shape, under "keep the generator chainable with the other
 string constraints": a terminal, whole-specification generator "removes a class of contradictory combinations
 entirely", and a segment DSL would reintroduce that class between segments instead of between the pattern and
-the chain. `Any.StringMatching(...)` already expresses a genuinely multi-zone format more compactly, and stays
+the chain. `Dummy.StringMatching(...)` already expresses a genuinely multi-zone format more compactly, and stays
 the right tool for it.
 
 ### Exempt the family and the subtraction, but keep judging the casing

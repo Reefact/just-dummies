@@ -22,13 +22,13 @@ explore un espace, JustDummies retire les littéraux dénués de sens des tests 
 ordinaires. Si vous voulez du rétrécissement, prenez une bibliothèque à base de propriétés —
 celle-ci ne fera pas semblant.
 
-### Pourquoi n'y a-t-il pas d'`Any.Object<T>()` qui remplirait tout un graphe d'objets ?
+### Pourquoi n'y a-t-il pas d'`Dummy.Object<T>()` qui remplirait tout un graphe d'objets ?
 
 Parce qu'un générateur qui réfléchit sur votre type doit deviner ce qui rend une instance valide, et
 il devine faux précisément là où la correction compte — l'invariant que votre constructeur impose, le
 champ qui doit s'accorder avec un autre champ.
 
-JustDummies vous demande de composer la valeur avec `.As(...)` et `Any.Combine` : cela coûte
+JustDummies vous demande de composer la valeur avec `.As(...)` et `Dummy.Combine` : cela coûte
 quelques lignes et achète un dummy que votre propre fabrique accepte. Voir
 [Composition](./composition.fr.md), et [Principes de conception](./design-principles.fr.md) pour le
 raisonnement.
@@ -36,19 +36,19 @@ raisonnement.
 ### Ai-je besoin du paquet `JustDummies.Xunit` ?
 
 Seulement si vous utilisez xUnit **v3** et voulez `[Reproducible]` plutôt que d'envelopper les corps
-dans `Any.Reproducibly`. Tout fonctionne sans lui. Voir
+dans `Dummy.Reproducibly`. Tout fonctionne sans lui. Voir
 [sa page](../packages/justdummies-xunit.fr.md).
 
 ## Valeurs et contraintes
 
 ### Pourquoi `Generate()` renvoie-t-il une valeur différente à chaque appel ?
 
-Parce qu'un générateur est une **recette**, pas une valeur. `Any.Int32().Between(1, 100)` décrit les
+Parce qu'un générateur est une **recette**, pas une valeur. `Dummy.Int32().Between(1, 100)` décrit les
 entiers acceptables ; chaque `Generate()` en tire un. Conservez la valeur dans une variable s'il vous
 faut deux fois la même :
 
 ```csharp
-AnyInt32 anyQuantity = Any.Int32().Between(1, 100);
+DummyInt32 anyQuantity = Dummy.Int32().Between(1, 100);
 
 int drawnOnce = anyQuantity.Generate();
 int sameValue = drawnOnce;        // le même nombre
@@ -64,7 +64,7 @@ Non — c'est l'unique habitude qui décide si le test vaut quelque chose. Une c
 désormais que le code est d'accord avec la supposition du test lui-même, et il continuera de passer
 après un changement de règle.
 
-### Mes contraintes ont levé `ConflictingAnyConstraintException`. Est-ce un bogue ?
+### Mes contraintes ont levé `ConflictingDummyConstraintException`. Est-ce un bogue ?
 
 Non : c'est la bibliothèque qui refuse une spécification impossible au lieu de boucler ou de
 renvoyer quelque chose d'arbitraire. Le message nomme **les deux** contraintes qui se contredisent.
@@ -76,15 +76,15 @@ Retirez celle des deux qui n'est pas un véritable invariant du domaine. Voir
 Oui — `.OrNull()` produit `null` environ une fois sur deux, et sinon une valeur contrainte :
 
 ```csharp
-int?    discount = Any.Int32().Between(0, 100).OrNull().Generate();
-string? note     = Any.String().Alpha().WithLengthBetween(1, 40).OrNull().Generate();
+int?    discount = Dummy.Int32().Between(0, 100).OrNull().Generate();
+string? note     = Dummy.String().Alpha().WithLengthBetween(1, 40).OrNull().Generate();
 ```
 
 ## Reproductibilité
 
 ### Un test a échoué une fois puis est passé à la relance. Que faire ?
 
-Enveloppez le corps dans `Any.Reproducibly` (ou ajoutez `[Reproducible]` avec le paquet xUnit) pour
+Enveloppez le corps dans `Dummy.Reproducibly` (ou ajoutez `[Reproducible]` avec le paquet xUnit) pour
 que le **prochain** échec rapporte sa graine. Épinglez ensuite cette graine pour rejouer l'exécution
 exacte, corrigez le défaut, et retirez l'épingle.
 
@@ -98,15 +98,15 @@ Oui, de trois façons, pour trois situations :
 
 ```csharp
 // 1. Rejouer tout un corps sous une graine connue.
-Any.Reproducibly(1743029518, () => Assert.True(Any.Int32().Positive().Generate() > 0));
+Dummy.Reproducibly(1743029518, () => Assert.True(Dummy.Int32().Positive().Generate() > 0));
 
 // 2. Épingler le contexte ambiant pour un bloc.
-using (IDisposable scope = Any.UseSeed(1743029518)) {
-    Assert.True(Any.Int32().Positive().Generate() > 0);
+using (IDisposable scope = Dummy.UseSeed(1743029518)) {
+    Assert.True(Dummy.Int32().Positive().Generate() > 0);
 }
 
 // 3. Construire un contexte déterministe isolé, hors de tout corps de test.
-AnyContext context  = Any.WithSeed(1743029518);
+DummyContext context  = Dummy.WithSeed(1743029518);
 int        quantity = context.Int32().Between(1, 100).Generate();
 ```
 
@@ -129,7 +129,7 @@ diagnostic [JD022](../analyzers/JD022.fr.md), actif par défaut, le signale.
 ### Quels types exigent .NET 8 ?
 
 `DateOnly`, `TimeOnly`, `Int128`, `UInt128` et `Half` n'existent pas en deçà de .NET 8 :
-`Any.DateOnly()`, `Any.TimeOnly()`, `Any.Int128()`, `Any.UInt128()` et `Any.Half()` ne figurent donc
+`Dummy.DateOnly()`, `Dummy.TimeOnly()`, `Dummy.Int128()`, `Dummy.UInt128()` et `Dummy.Half()` ne figurent donc
 que sur l'asset `net8.0`. Tout le reste est disponible partout.
 
 ### Cela fonctionne-t-il sur .NET Framework ?

@@ -32,7 +32,7 @@ The premise fails for types whose equality the BCL defines **coarser than their 
 For such a type a comparer can **split** one value into several, and a bound counted under default equality is
 no longer an upper bound on what a finer comparer will see.
 
-One generator in this library reaches that state in practice. `AnyDateTimeOffset` admits a declared range of
+One generator in this library reaches that state in practice. `DummyDateTimeOffset` admits a declared range of
 offsets and draws a minute from it, so a single instant comes back as any of the spellings that range allows.
 Counted in instants the domain is one value; under a comparer built on `EqualsExact` it is as many values as
 the range has minutes. The eager gate refused a count of three against a bound of one, on a specification for
@@ -40,7 +40,7 @@ which several hundred distinct spellings were drawable — a false refusal, prod
 purpose is to state contradictions honestly.
 
 The condition is narrow: it needs both a coarsely-compared type **and** a generator that draws a range over the
-dimension the default equality erases. `AnyDateTime` always draws one `Kind`, and a decimal scale is pinned to a
+dimension the default equality erases. `DummyDateTime` always draws one `Kind`, and a decimal scale is pinned to a
 single value rather than a range, so neither reaches it. Twenty-five of the twenty-six generators carrying a
 cardinality hint are unaffected.
 

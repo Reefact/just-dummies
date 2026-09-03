@@ -14,7 +14,7 @@ With four values written at the call site that is harmless — you can see them.
 // 2,417 names, one per line, maintained by someone who has never seen this test.
 string[] firstNames = System.IO.File.ReadAllLines("first-names.txt");
 
-string name = Any.String().OneOf(firstNames).Alpha().WithLengthBetween(2, 64).Generate();
+string name = Dummy.String().OneOf(firstNames).Alpha().WithLengthBetween(2, 64).Generate();
 ```
 
 That arrange line looks right, and it runs. But `Alpha()` means ASCII letters, so every *Anne-Marie*,
@@ -34,7 +34,7 @@ among the constraints while you are writing them. You reach it with a cast:
 ```csharp
 string[] firstNames = System.IO.File.ReadAllLines("first-names.txt");
 
-IPoolInspection<string> pool = Any.String().OneOf(firstNames).Alpha().WithLengthBetween(2, 64);
+IPoolInspection<string> pool = Dummy.String().OneOf(firstNames).Alpha().WithLengthBetween(2, 64);
 
 IReadOnlyList<string>                drawable = pool.GetSurvivors();
 IReadOnlyList<PoolRejection<string>> refused  = pool.GetRejections();
@@ -53,7 +53,7 @@ value you can compare, so grouping is the natural first look:
 ```csharp
 string[] firstNames = System.IO.File.ReadAllLines("first-names.txt");
 
-IPoolInspection<string> pool    = Any.String().OneOf(firstNames).Alpha().WithLengthBetween(2, 64);
+IPoolInspection<string> pool    = Dummy.String().OneOf(firstNames).Alpha().WithLengthBetween(2, 64);
 IReadOnlyList<PoolRejection<string>> refused = pool.GetRejections();
 
 // 214 of 2417 names never draw
@@ -84,7 +84,7 @@ lives, instead of noticing a shrunken pool months later:
 ```csharp
 string[] firstNames = System.IO.File.ReadAllLines("first-names.txt");
 
-IPoolInspection<string> pool = Any.String().OneOf(firstNames).Alpha().WithLengthBetween(2, 64);
+IPoolInspection<string> pool = Dummy.String().OneOf(firstNames).Alpha().WithLengthBetween(2, 64);
 
 Assert.Empty(pool.GetRejections());
 ```
@@ -92,7 +92,7 @@ Assert.Empty(pool.GetRejections());
 That test fails the day someone adds a name the invariant refuses — and because a rejection names both
 the value and the constraint, the failure says which name and which invariant, not merely that a count
 changed. An emptied pool never gets that far: a value set the constraints leave with nothing is a
-`ConflictingAnyConstraintException` at the arrange line, naming both sides.
+`ConflictingDummyConstraintException` at the arrange line, naming both sides.
 
 ## What it does not do
 
@@ -103,13 +103,13 @@ Drawing an adult's name from a catalogue that also holds children's is the same 
 intended.
 
 The interface is also **optional**. It is carried by every generator that admits a value set you supply
-— `Any.OneOf(...)`/`Any.ElementOf(...)`, `Any.String().OneOf(...)`, and every family with a `OneOf`: the
-integers, `Any.Decimal()`, the floating-point builders, the dates and times, `Any.Char()`, `Any.Guid()`
-and `Any.Enum<T>()`. A generator with no pool of yours to report on does not carry it at all, so write
+— `Dummy.OneOf(...)`/`Dummy.ElementOf(...)`, `Dummy.String().OneOf(...)`, and every family with a `OneOf`: the
+integers, `Dummy.Decimal()`, the floating-point builders, the dates and times, `Dummy.Char()`, `Dummy.Guid()`
+and `Dummy.Enum<T>()`. A generator with no pool of yours to report on does not carry it at all, so write
 the cast as a test when you do not know what you hold:
 
 ```csharp
-IAny<string> generator = Any.String().OneOf("Camille", "Ada");
+IDummy<string> generator = Dummy.String().OneOf("Camille", "Ada");
 
 if (generator is IPoolInspection<string> inspectable && inspectable.IsPooled) {
     Console.WriteLine(inspectable.GetRejections().Count);
@@ -119,7 +119,7 @@ if (generator is IPoolInspection<string> inspectable && inspectable.IsPooled) {
 `IsPooled` is the second half of that question: a string generator that builds its value rather than
 picking from supplied ones answers `false`, with an empty report rather than an exception.
 
-And it is *not* "this generator has a countable domain". `Any.Int32().Between(1, 1_000_000)` is perfectly
+And it is *not* "this generator has a countable domain". `Dummy.Int32().Between(1, 1_000_000)` is perfectly
 countable and answers `false`: those million values are the engine's, not yours. There is nothing of
 yours to audit, so there is nothing to report — the inspection only ever speaks about a list you handed
 over.

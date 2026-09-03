@@ -30,7 +30,7 @@
     <!-- The catalogue, so CatalogueCoverageTests can compare what it publishes with what the analyzers declare
          (ADR-0052). Neither side is a list written in the test: both are read off the shipped artifacts. -->
     <ProjectReference Include="..\JustDummies.DiagnosticCatalog\JustDummies.DiagnosticCatalog.csproj" />
-    <!-- The core is referenced so JustDummies.Any resolves inside the snippets the harness compiles. -->
+    <!-- The core is referenced so JustDummies.Dummy resolves inside the snippets the harness compiles. -->
     <ProjectReference Include="..\JustDummies\JustDummies.csproj" />
 
     <!-- Deliberately NOT wired for the JustDummies analyzers, unlike every other JustDummies consumer here.

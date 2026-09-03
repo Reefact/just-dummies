@@ -39,9 +39,9 @@ credit the project. Neither was introduced by an ADR: a sibling `*.PropertyTests
 project is established practice here, not a new architectural move.
 
 Not every contract of the library is universally quantified. A conflict must raise
-`ConflictingAnyConstraintException` with a message naming *both* offending
+`ConflictingDummyConstraintException` with a message naming *both* offending
 constraints; a null argument must raise `ArgumentNullException`; the mirror between
-`Any` and `AnyContext`, the factory naming convention, and the library's standalone
+`Dummy` and `DummyContext`, the factory naming convention, and the library's standalone
 assembly boundary are structural facts checked by reflection. These are specific,
 named cases, and their wording is deliberately direction-aware — a property that
 quantified over them would assert less, less readably.

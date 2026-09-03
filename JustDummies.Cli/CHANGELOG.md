@@ -40,7 +40,7 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 - **Composing a parameter through its type's own `AnyX` generator no longer inspects the compilation to
   decide whether to write it.** beta.5 disqualified a same-named type that cannot serve as a generator —
-  a `static class`, one that does not implement `IAny<T>`, an `abstract` one, one with no public
+  a `static class`, one that does not implement `IDummy<T>`, an `abstract` one, one with no public
   parameterless constructor — and then left the parameter open instead of composing through it: right
   that a disqualified type must not be called, wrong that the tool should look at it at all. ADR-0089
   already says the call is written "named whether or not the compilation carries that generator yet";
@@ -63,7 +63,7 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 - **A type that merely shares an `AnyX` name is no longer proposed as its generator.** §5.4 composes
   through `new AnyOrderReference()` whenever the compilation carries a type named that way — and used
   to reach for it whether or not the type could actually serve: a `static class`, one that does not
-  implement `IAny<T>`, an `abstract` one, or one with no public parameterless constructor all read as a
+  implement `IDummy<T>`, an `abstract` one, or one with no public parameterless constructor all read as a
   hit. `dum` then wrote the same call it writes for a type that scaffolds cleanly, and the developer's
   build failed on whatever the real shape happened to produce — `CS0712` for a static class, a missing
   interface member for another — under a recap that still said `AnyX`, and often with no `using` at all,
@@ -116,7 +116,7 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   took pointing `dum` at real repositories to find.
 
 - **A collection of interface-typed collections no longer emits a file that does not compile.**
-  `Any.SetOf(...)` is typed `IAny<HashSet<T>>` and `Any.ListOf(...)` `IAny<List<T>>`, so a collection
+  `Any.SetOf(...)` is typed `IDummy<HashSet<T>>` and `Any.ListOf(...)` `IDummy<List<T>>`, so a collection
   *of* one of those carried the concrete type where the parameter declared the interface. A covariant
   outer type still bound — which is why `IReadOnlyList<ISet<Slot>>` always worked — and an invariant
   one could not: `List<HashSet<Slot>>` is not a `List<ISet<Slot>>`, and the scaffolded file failed on
@@ -509,9 +509,9 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   there and that branch, with everything after it, is marked `unread guards` instead: reaching it
   would otherwise presuppose a fact about an earlier parameter, which is the cross-parameter rule
   this reading has always refused.
-- **An enum exclusion guard is read as `AnyEnum<T>.DifferentFrom`.** `if (status == Status.None) {
+- **An enum exclusion guard is read as `DummyEnum<T>.DifferentFrom`.** `if (status == Status.None) {
   throw … }` — the commonest enum guard there is — used to read as `.NonZero()`, a member
-  `AnyEnum<T>` does not carry: Roslyn reports a zero-valued enum member as a plain integer
+  `DummyEnum<T>` does not carry: Roslyn reports a zero-valued enum member as a plain integer
   constant, so the condition fell into the numeric family's `p == 0` row and the member lookup
   dropped it silently. A non-zero excluded member matched no numeric row at all and read as an
   unguarded parameter. Both now read as `.DifferentFrom(Status.None)`, with the same
@@ -655,7 +655,7 @@ repository.
 - **`--entry-point`** — a scaffold can now also write an entry point, so a generator is reached the way the
   library's own are. `--entry-point any` emits a C# 14 extension member and gives you `Any.Order()` beside
   `Any.Int32()`; `--entry-point static:<Name>` emits a `partial` root you own and gives you `Dummies.Order()`,
-  with no language requirement at all. The default is `none`, and `new AnyOrder()` is unaffected
+  with no language requirement at all. The default is `none`, and `new DummyOrder()` is unaffected
   ([ADR-0070](../doc/handwritten/for-maintainers/adr/0070-emit-an-entry-point-on-request-as-a-file-of-its-own.md)).
 - **`--entry-point-namespace`** — declares the entry-point file somewhere other than beside the generator, so one
   root can gather types from several namespaces. It moves that file and nothing else: the generator stays in the
@@ -683,7 +683,7 @@ repository.
 - Where a scaffold writes two files, it writes both or neither: an existing `Any{Type}.Entry.cs` refuses the whole
   scaffold rather than leaving the generator behind it, and `--force` covers both.
 - The console recap closes with a second line naming the call the entry point opened —
-  `✓ AnyOrder.Entry.cs — entry point Dummies.Order()`.
+  `✓ DummyOrder.Entry.cs — entry point Dummies.Order()`.
 
 ### Fixed
 

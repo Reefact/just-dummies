@@ -9,19 +9,19 @@ namespace JustDummies.Analyzers.UnitTests;
 public class Jd023ScalarChainAdmitsNoValueTests {
 
     [Theory]
-    [InlineData("Any.Int32().Between(1, 10).MultipleOf(20)")]
-    [InlineData("Any.Int32().GreaterThan(10).LessThan(3)")]
-    [InlineData("Any.Int32().Positive().LessThan(-5)")]
-    [InlineData("Any.Int32().Positive().Negative()")]
-    [InlineData("Any.Int32().Zero().NonZero()")]
-    [InlineData("Any.Int32().OneOf(5).Except(5)")]
-    [InlineData("Any.Int64().GreaterThanOrEqualTo(10).LessThanOrEqualTo(9)")]
+    [InlineData("Dummy.Int32().Between(1, 10).MultipleOf(20)")]
+    [InlineData("Dummy.Int32().GreaterThan(10).LessThan(3)")]
+    [InlineData("Dummy.Int32().Positive().LessThan(-5)")]
+    [InlineData("Dummy.Int32().Positive().Negative()")]
+    [InlineData("Dummy.Int32().Zero().NonZero()")]
+    [InlineData("Dummy.Int32().OneOf(5).Except(5)")]
+    [InlineData("Dummy.Int64().GreaterThanOrEqualTo(10).LessThanOrEqualTo(9)")]
     // The unsigned families, written the way their own type spells a literal. Without a suffix these read as int
     // constants and were judged; with one they were abandoned unread, so whether the rule spoke turned on how the
     // caller typed the number rather than on any boundary the page documents.
-    [InlineData("Any.UInt32().GreaterThan(5u).LessThan(3u)")]
-    [InlineData("Any.UInt16().GreaterThan((ushort)5).LessThan((ushort)3)")]
-    [InlineData("Any.UInt64().GreaterThanOrEqualTo(10UL).LessThanOrEqualTo(9UL)")]
+    [InlineData("Dummy.UInt32().GreaterThan(5u).LessThan(3u)")]
+    [InlineData("Dummy.UInt16().GreaterThan((ushort)5).LessThan((ushort)3)")]
+    [InlineData("Dummy.UInt64().GreaterThanOrEqualTo(10UL).LessThanOrEqualTo(9UL)")]
     public async Task Reports_a_chain_that_admits_no_value(string expression) {
         string source = $$"""
             using JustDummies;
@@ -40,12 +40,12 @@ public class Jd023ScalarChainAdmitsNoValueTests {
     }
 
     [Theory]
-    [InlineData("Any.Int32().Between(1, 10).MultipleOf(5)")]
-    [InlineData("Any.Int32().Positive().LessThan(100)")]
-    [InlineData("Any.Int32().Between(1, 10).Except(5)")]
-    [InlineData("Any.Int32().OneOf(1, 2, 3).Except(2)")]
-    [InlineData("Any.Int32().GreaterThan(-100).LessThan(100).MultipleOf(7)")]
-    [InlineData("Any.UInt32().GreaterThan(5u).LessThan(100u)")]
+    [InlineData("Dummy.Int32().Between(1, 10).MultipleOf(5)")]
+    [InlineData("Dummy.Int32().Positive().LessThan(100)")]
+    [InlineData("Dummy.Int32().Between(1, 10).Except(5)")]
+    [InlineData("Dummy.Int32().OneOf(1, 2, 3).Except(2)")]
+    [InlineData("Dummy.Int32().GreaterThan(-100).LessThan(100).MultipleOf(7)")]
+    [InlineData("Dummy.UInt32().GreaterThan(5u).LessThan(100u)")]
     public async Task Does_not_report_a_satisfiable_chain(string expression) {
         string source = $$"""
             using JustDummies;
@@ -69,7 +69,7 @@ public class Jd023ScalarChainAdmitsNoValueTests {
 
             public static class Sample {
                 public static void M(int bound) {
-                    _ = Any.Int32().GreaterThan(bound).LessThan(3);
+                    _ = Dummy.Int32().GreaterThan(bound).LessThan(3);
                 }
             }
             """;
@@ -87,7 +87,7 @@ public class Jd023ScalarChainAdmitsNoValueTests {
 
             public static class Sample {
                 public static void M() {
-                    _ = Any.Double().Positive().LessThan(-5);
+                    _ = Dummy.Double().Positive().LessThan(-5);
                 }
             }
             """;
@@ -109,7 +109,7 @@ public class Jd023ScalarChainAdmitsNoValueTests {
 
             public static class Sample {
                 public static void M() {
-                    Check2.ThatCode(() => Any.Int32().Positive().Negative());
+                    Check2.ThatCode(() => Dummy.Int32().Positive().Negative());
                 }
             }
             """;
@@ -132,7 +132,7 @@ public class Jd024ConstraintWithNoEffectTests {
 
             public static class Sample {
                 public static void M() {
-                    _ = Any.Int32().Between(1, 10).Except(20);
+                    _ = Dummy.Int32().Between(1, 10).Except(20);
                 }
             }
             """;
@@ -151,7 +151,7 @@ public class Jd024ConstraintWithNoEffectTests {
 
             public static class Sample {
                 public static void M() {
-                    _ = Any.Int32().Positive().GreaterThan(-5);
+                    _ = Dummy.Int32().Positive().GreaterThan(-5);
                 }
             }
             """;
@@ -170,7 +170,7 @@ public class Jd024ConstraintWithNoEffectTests {
 
             public static class Sample {
                 public static void M() {
-                    _ = Any.Int32().Between(1, 10).Except(5);
+                    _ = Dummy.Int32().Between(1, 10).Except(5);
                 }
             }
             """;
@@ -187,7 +187,7 @@ public class Jd024ConstraintWithNoEffectTests {
 
             public static class Sample {
                 public static void M() {
-                    _ = Any.Int32().Positive().GreaterThan(100);
+                    _ = Dummy.Int32().Positive().GreaterThan(100);
                 }
             }
             """;
@@ -202,9 +202,9 @@ public class Jd024ConstraintWithNoEffectTests {
 public class Jd023ScalarChainRepresentableExtremesTests {
 
     [Theory]
-    [InlineData("Any.Int64().LessThanOrEqualTo(long.MinValue)")]
-    [InlineData("Any.Int64().GreaterThanOrEqualTo(long.MaxValue)")]
-    [InlineData("Any.Int32().LessThanOrEqualTo(int.MinValue)")]
+    [InlineData("Dummy.Int64().LessThanOrEqualTo(long.MinValue)")]
+    [InlineData("Dummy.Int64().GreaterThanOrEqualTo(long.MaxValue)")]
+    [InlineData("Dummy.Int32().LessThanOrEqualTo(int.MinValue)")]
     public async Task Does_not_report_a_bound_at_a_representable_extreme(string expression) {
         // Live in JustDummies.UnitTests/AnySignedIntegerTests.cs, which asserts these generate exactly that value.
         // The first version used -long.MaxValue as its "unbounded" sentinel, which made long.MinValue
@@ -235,7 +235,7 @@ public class Jd023ScalarChainRepresentableExtremesTests {
 
             public static class Sample {
                 public static void M() {
-                    _ = Any.UInt64().GreaterThan(ulong.MaxValue - 1).LessThan(3UL);
+                    _ = Dummy.UInt64().GreaterThan(ulong.MaxValue - 1).LessThan(3UL);
                 }
             }
             """;
@@ -252,7 +252,7 @@ public class Jd023ScalarChainRepresentableExtremesTests {
 
             public static class Sample {
                 public static void M() {
-                    _ = Any.Int64().GreaterThan(long.MaxValue);
+                    _ = Dummy.Int64().GreaterThan(long.MaxValue);
                 }
             }
             """;
@@ -282,9 +282,9 @@ public class Jd024NarrowedToItsOwnShapeTests {
     }
 
     [Theory]
-    [InlineData("Any.Int32().GreaterThanOrEqualTo(10).GreaterThanOrEqualTo(8)")]
-    [InlineData("Any.Int32().LessThanOrEqualTo(50).LessThanOrEqualTo(90)")]
-    [InlineData("Any.Int32().GreaterThan(10).GreaterThan(5)")]
+    [InlineData("Dummy.Int32().GreaterThanOrEqualTo(10).GreaterThanOrEqualTo(8)")]
+    [InlineData("Dummy.Int32().LessThanOrEqualTo(50).LessThanOrEqualTo(90)")]
+    [InlineData("Dummy.Int32().GreaterThan(10).GreaterThan(5)")]
     public async Task Stands_down_on_a_bound_the_chain_already_named(string expression) {
         // JD032 owns the same NAME declared twice, in both writing orders and in every family (ADR-0078). Two
         // diagnostics on one expression for one mistake is noise that teaches a reader to disable both, so JD024
@@ -296,8 +296,8 @@ public class Jd024NarrowedToItsOwnShapeTests {
     }
 
     [Theory]
-    [InlineData("Any.Int32().Positive().GreaterThan(-5)")]
-    [InlineData("Any.Int32().GreaterThan(5).Positive()")]
+    [InlineData("Dummy.Int32().Positive().GreaterThan(-5)")]
+    [InlineData("Dummy.Int32().GreaterThan(5).Positive()")]
     public async Task Still_reports_a_bound_implied_by_a_different_one(string expression) {
         // What JD024's message actually describes, and the shape its page documents. The bound narrows nothing,
         // but it is not the same bound written twice, so nothing else covers it.
@@ -310,7 +310,7 @@ public class Jd024NarrowedToItsOwnShapeTests {
     [Fact]
     public async Task Still_reports_an_exclusion_that_removes_nothing() {
         // The case JD024 exists for, and the one its information severity is justified by.
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync("Any.Int32().Between(1, 10).Except(20)");
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync("Dummy.Int32().Between(1, 10).Except(20)");
 
         Check.That(diagnostics.Length).IsEqualTo(1);
         Check.That(diagnostics[0].Id).IsEqualTo("JD024");
@@ -319,7 +319,7 @@ public class Jd024NarrowedToItsOwnShapeTests {
     [Fact]
     public async Task Still_reports_a_range_declared_twice_to_no_effect() {
         // Between carries two bounds in one call, so JD032 leaves it alone and JD024 keeps it.
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync("Any.Int32().Between(1, 10).Between(1, 20)");
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync("Dummy.Int32().Between(1, 10).Between(1, 20)");
 
         Check.That(diagnostics.Length).IsEqualTo(1);
         Check.That(diagnostics[0].Id).IsEqualTo("JD024");

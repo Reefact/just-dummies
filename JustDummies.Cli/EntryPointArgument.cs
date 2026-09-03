@@ -1,6 +1,6 @@
 using System;
 
-using JustDummies.GenAny;
+using JustDummies.GenDummy;
 
 namespace JustDummies.Cli;
 
@@ -20,7 +20,7 @@ namespace JustDummies.Cli;
 internal sealed class EntryPointArgument {
 
     /// <summary>The value that asks for the library's own façade.</summary>
-    private const string AnyValue = "any";
+    private const string DummyValue = "any";
 
     /// <summary>The value that asks for nothing, which is also what omitting the option means.</summary>
     private const string NoneValue = "none";
@@ -67,11 +67,11 @@ internal sealed class EntryPointArgument {
     private static EntryPointArgument Read(string? entryPoint) {
         if (entryPoint is null || entryPoint == NoneValue) { return Understandable(EntryPointOptions.None); }
 
-        if (entryPoint == AnyValue) { return Understandable(EntryPointOptions.OnAny); }
+        if (entryPoint == DummyValue) { return Understandable(EntryPointOptions.OnDummy); }
 
         if (!entryPoint.StartsWith(StaticPrefix, StringComparison.Ordinal)) {
             return Refused($"--entry-point does not take '{entryPoint}'. It takes {NoneValue}, "
-                         + $"{StaticPrefix}<Name>, or {AnyValue}.");
+                         + $"{StaticPrefix}<Name>, or {DummyValue}.");
         }
 
         string root = entryPoint.Substring(StaticPrefix.Length);
@@ -81,7 +81,7 @@ internal sealed class EntryPointArgument {
                          + $"as in {StaticPrefix}Dummies.");
         }
 
-        // The engine owns both rules — an identifier is an identifier, and 'Any' is the one name that hides the
+        // The engine owns both rules — an identifier is an identifier, and 'Dummy' is the one name that hides the
         // library instead of extending it — so they are asked rather than restated, and the sentence a developer
         // reads is written here where the option is.
         try {
@@ -89,9 +89,9 @@ internal sealed class EntryPointArgument {
         } catch (ArgumentException) {
             return Refused(root == EntryPointOptions.ReservedRootName
                                ? $"--entry-point {StaticPrefix}{EntryPointOptions.ReservedRootName} would declare a "
-                               + "static class that hides JustDummies.Any for its whole namespace, and Any.Int32() "
-                               + $"would stop compiling. Use --entry-point {AnyValue} to hang the entry point off "
-                               + "the library's own Any instead."
+                               + "static class that hides JustDummies.Dummy for its whole namespace, and Dummy.Int32() "
+                               + $"would stop compiling. Use --entry-point {DummyValue} to hang the entry point off "
+                               + "the library's own Dummy instead."
                                : $"--entry-point {StaticPrefix}{root} does not name a class: '{root}' is not a C# identifier.");
         }
     }

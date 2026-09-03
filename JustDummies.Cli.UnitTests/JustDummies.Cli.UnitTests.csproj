@@ -35,7 +35,7 @@
     <!-- The engine, because the recap's subject is its result model: §6 has the engine decide provenance and
          the shell render it, which is what lets these tests build the model by hand and never open a project,
          a compilation or a terminal. -->
-    <ProjectReference Include="..\JustDummies.GenAny\JustDummies.GenAny.csproj" />
+    <ProjectReference Include="..\JustDummies.GenDummy\JustDummies.GenDummy.csproj" />
 
     <!-- The library, as the compilation under test must reference it: without it not one expression resolves
          (ADR-0059) and every scaffold refuses. That the TOOL may not reference JustDummies (ADR-0063) says

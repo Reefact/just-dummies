@@ -8,9 +8,9 @@ using System.Globalization;
 namespace JustDummies;
 
 /// <summary>
-///     The immutable specification behind every collection generator (<see cref="AnyList{T}" />,
-///     <see cref="AnyArray{T}" />, <see cref="AnySequence{T}" />, <see cref="AnySet{T}" /> and, for its keys,
-///     <see cref="AnyDictionary{TKey,TValue}" />): the element generator, a shared <see cref="CountSpec" />, whether
+///     The immutable specification behind every collection generator (<see cref="DummyList{T}" />,
+///     <see cref="DummyArray{T}" />, <see cref="DummySequence{T}" />, <see cref="DummySet{T}" /> and, for its keys,
+///     <see cref="DummyDictionary{TKey,TValue}" />): the element generator, a shared <see cref="CountSpec" />, whether
 ///     the collection must be distinct, an optional equality comparer, and the values it must contain. Every mutation
 ///     returns a new state; a count bound that contradicts another count bound, or a required count the declared
 ///     capacity cannot fit, is caught as it is declared — neither can ever be undone by a later call. Whether the
@@ -23,9 +23,9 @@ namespace JustDummies;
 ///     the elements that must be drawn from that generator, since values pinned with <c>Containing(...)</c> outside
 ///     its domain (see <see cref="ICardinalityHint{T}" />) are supplied directly and extend the effective domain —
 ///     the conflict is caught deterministically, before any element is generated
-///     (<see cref="ConflictingAnyConstraintException" />); otherwise the count is drawn and the elements are filled
+///     (<see cref="ConflictingDummyConstraintException" />); otherwise the count is drawn and the elements are filled
 ///     by a bounded dedup-draw, and a genuine shortfall surfaces at generation as an
-///     <see cref="AnyGenerationException" /> naming the seed to replay.
+///     <see cref="DummyGenerationException" /> naming the seed to replay.
 /// </remarks>
 /// <typeparam name="T">The element type.</typeparam>
 internal sealed class CollectionState<T> {
@@ -44,11 +44,11 @@ internal sealed class CollectionState<T> {
 
     #region Statics members declarations
 
-    internal static CollectionState<T> Create(IAny<T> item, bool distinct, IEqualityComparer<T>? comparer) {
+    internal static CollectionState<T> Create(IDummy<T> item, bool distinct, IEqualityComparer<T>? comparer) {
         if (item is null) { throw new ArgumentNullException(nameof(item)); }
 
-        return new CollectionState<T>(item, AnyDerivation.CardinalityOf(item, comparer), CountSpec.Unconstrained, distinct, comparer,
-                                      Array.Empty<T>(), Array.Empty<IAny<T>>());
+        return new CollectionState<T>(item, DummyDerivation.CardinalityOf(item, comparer), CountSpec.Unconstrained, distinct, comparer,
+                                      Array.Empty<T>(), Array.Empty<IDummy<T>>());
     }
 
     private static string Elements(int count) {
@@ -78,15 +78,15 @@ internal sealed class CollectionState<T> {
     private readonly CountSpec                 _count;
     private readonly bool                      _distinct;
     private readonly IReadOnlyList<T>          _fixedContaining;
-    private readonly IReadOnlyList<IAny<T>>    _generatedContaining;
-    private readonly IAny<T>                   _item;
+    private readonly IReadOnlyList<IDummy<T>>    _generatedContaining;
+    private readonly IDummy<T>                   _item;
     private readonly long?                     _itemCardinality;
 
     #endregion
 
-    private CollectionState(IAny<T> item, long? itemCardinality, CountSpec count, bool distinct,
+    private CollectionState(IDummy<T> item, long? itemCardinality, CountSpec count, bool distinct,
                             IEqualityComparer<T>? comparer,
-                            IReadOnlyList<T> fixedContaining, IReadOnlyList<IAny<T>> generatedContaining) {
+                            IReadOnlyList<T> fixedContaining, IReadOnlyList<IDummy<T>> generatedContaining) {
         _item                = item;
         _itemCardinality     = itemCardinality;
         _count               = count;
@@ -128,7 +128,7 @@ internal sealed class CollectionState<T> {
         // the same comparer again, or re-declaring distinctness without one, asks for the equality already in
         // force and stays a no-op.
         if (comparer is not null && _comparer is not null && !ReferenceEquals(comparer, _comparer)) {
-            throw ConflictingAnyConstraintException.ComparerAlreadyDefined(applying);
+            throw ConflictingDummyConstraintException.ComparerAlreadyDefined(applying);
         }
 
         return Rebuild(_count, true, comparer ?? _comparer, _fixedContaining, _generatedContaining, applying);
@@ -142,7 +142,7 @@ internal sealed class CollectionState<T> {
     }
 
     /// <summary>Requires the collection to contain a value drawn from <paramref name="generator" />.</summary>
-    internal CollectionState<T> WithContaining(IAny<T> generator, ConstraintCall applying) {
+    internal CollectionState<T> WithContaining(IDummy<T> generator, ConstraintCall applying) {
         if (generator is null) { throw new ArgumentNullException(nameof(generator)); }
         if (applying is null) { throw new ArgumentNullException(nameof(applying)); }
 
@@ -166,7 +166,7 @@ internal sealed class CollectionState<T> {
         if (!_distinct) {
             List<T> items = new(Math.Max(count, required));
             items.AddRange(_fixedContaining);
-            foreach (IAny<T> generator in _generatedContaining) { items.Add(generator.Generate()); }
+            foreach (IDummy<T> generator in _generatedContaining) { items.Add(generator.Generate()); }
             while (items.Count < count) { items.Add(_item.Generate()); }
             Shuffle(items, random);
 
@@ -178,7 +178,7 @@ internal sealed class CollectionState<T> {
         foreach (T value in _fixedContaining) {
             if (seen.Add(value)) { ordered.Add(value); }
         }
-        foreach (IAny<T> generator in _generatedContaining) {
+        foreach (IDummy<T> generator in _generatedContaining) {
             T value = DrawFresh(generator, seen, source, count);
             seen.Add(value);
             ordered.Add(value);
@@ -190,11 +190,11 @@ internal sealed class CollectionState<T> {
     }
 
     private CollectionState<T> Rebuild(CountSpec count, bool distinct, IEqualityComparer<T>? comparer,
-                                       IReadOnlyList<T> fixedContaining, IReadOnlyList<IAny<T>> generatedContaining, ConstraintCall applying) {
+                                       IReadOnlyList<T> fixedContaining, IReadOnlyList<IDummy<T>> generatedContaining, ConstraintCall applying) {
         // Asked again rather than carried: Create ran before Distinct(comparer) could arrive, so a cardinality
         // captured there was measured under an equality the collection may since have replaced. Re-asking here --
         // the single funnel every constraint routes through -- is what makes the two declaration orders agree.
-        CollectionState<T> candidate = new(_item, AnyDerivation.CardinalityOf(_item, comparer), count, distinct, comparer, fixedContaining, generatedContaining);
+        CollectionState<T> candidate = new(_item, DummyDerivation.CardinalityOf(_item, comparer), count, distinct, comparer, fixedContaining, generatedContaining);
         candidate.Validate(applying);
 
         return candidate;
@@ -236,7 +236,7 @@ internal sealed class CollectionState<T> {
         for (int left = 0; left < _fixedContaining.Count; left++) {
             for (int right = left + 1; right < _fixedContaining.Count; right++) {
                 if (comparer.Equals(_fixedContaining[left], _fixedContaining[right])) {
-                    throw ConflictingAnyConstraintException.DuplicateInDistinctCollection(distinctness, AnyDerivation.Display(_fixedContaining[left]));
+                    throw ConflictingDummyConstraintException.DuplicateInDistinctCollection(distinctness, DummyDerivation.Display(_fixedContaining[left]));
                 }
             }
         }
@@ -263,7 +263,7 @@ internal sealed class CollectionState<T> {
             // the sentence below is the honest one — so that fallback is exactly the behaviour this always had.
             if (cardinality == 0) { _item.Generate(); }
 
-            throw ConflictingAnyConstraintException.DistinctElementsExceedCardinality(distinctness, Elements(fromGenerator), cardinality.ToString(CultureInfo.InvariantCulture));
+            throw ConflictingDummyConstraintException.DistinctElementsExceedCardinality(distinctness, Elements(fromGenerator), cardinality.ToString(CultureInfo.InvariantCulture));
         }
     }
 
@@ -298,7 +298,7 @@ internal sealed class CollectionState<T> {
         return _fixedContaining.Count(value => !hint.Contains(value));
     }
 
-    private T DrawFresh(IAny<T> generator, HashSet<T> seen, RandomSource source, int target) {
+    private T DrawFresh(IDummy<T> generator, HashSet<T> seen, RandomSource source, int target) {
         int budget = ExhaustionBudget(target);
         for (int collisions = 0;;) {
             T value = generator.Generate();
@@ -331,18 +331,18 @@ internal sealed class CollectionState<T> {
         return (int)Math.Min(Math.Max(bounded, MinimumBudget), int.MaxValue);
     }
 
-    private static AnyGenerationException Exhausted(RandomSource source, int reached, int target, string what, IAny<T> culprit) {
+    private static DummyGenerationException Exhausted(RandomSource source, int reached, int target, string what, IDummy<T> culprit) {
         // The reported seed reproduces the count and layout, but it reproduces the elements only when the failing
-        // generator's every draw follows that same source. A foreign IAny, a derivation built over one, or a Combine
-        // that mixes a foreign operand with a sourced one is not fully reproducible (AnyDerivation.IsReproducible is
+        // generator's every draw follows that same source. A foreign IDummy, a derivation built over one, or a Combine
+        // that mixes a foreign operand with a sourced one is not fully reproducible (DummyDerivation.IsReproducible is
         // false) — even where it still carries a non-null source to name — so promising a full replay of its elements
         // would be false: qualify the hint instead.
-        Replay replay = AnyDerivation.IsReproducible(culprit)
+        Replay replay = DummyDerivation.IsReproducible(culprit)
                             ? Replay.Of(source)
                             : Replay.PartialOf(source);
         string message = $"Could not generate a distinct collection of {Elements(target)}: {what} produced only {reached} distinct value(s) before the draw budget was exhausted. Loosen the count or widen the element generator's domain. {replay.Guidance}";
 
-        return new AnyGenerationException(message, replay.Seed);
+        return new DummyGenerationException(message, replay.Seed);
     }
 
 }

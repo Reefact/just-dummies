@@ -10,10 +10,10 @@ using System.Text;
 namespace JustDummies;
 
 /// <summary>
-///     The immutable specification behind <see cref="AnyString" />: length bounds, anchored fragments (prefix,
+///     The immutable specification behind <see cref="DummyString" />: length bounds, anchored fragments (prefix,
 ///     suffix, contained values), a character set, a letter casing, an optional allow-list (<c>OneOf</c>) and
 ///     excluded values — each remembering the constraint that set it, so a conflict message can name both sides.
-///     Every mutation returns a new specification and cross-validates the whole eagerly: an <see cref="AnyString" />
+///     Every mutation returns a new specification and cross-validates the whole eagerly: an <see cref="DummyString" />
 ///     that exists can always generate — save for an exclusion tight enough to leave a <i>shaped</i> string
 ///     unsatisfiable, the one failure deferred to generation (see remarks).
 /// </summary>
@@ -41,7 +41,7 @@ namespace JustDummies;
 ///         the constructive layout — expected collisions are ≈ 0 for any non-trivial shape, the same bounded escape a
 ///         distinct collection uses to skip a duplicate. An exclusion tight enough to leave the shape unsatisfiable
 ///         (for example excluding every character a single-character length allows) is therefore the one case that
-///         surfaces at generation, as a seed-bearing <see cref="AnyGenerationException" />, rather than eagerly at
+///         surfaces at generation, as a seed-bearing <see cref="DummyGenerationException" />, rather than eagerly at
 ///         declaration.
 ///     </para>
 ///     <para>
@@ -194,7 +194,7 @@ internal sealed class StringSpec {
         // Re-declaring the SAME constraint is not a contradiction, so it is a no-op rather than a
         // conflict: the second declaration asks for exactly what the first already guarantees.
         if (_exactConstraint == applying) { return this; }
-        if (_exactConstraint is not null) { throw ConflictingAnyConstraintException.AlreadyDefined(applying, _exactConstraint); }
+        if (_exactConstraint is not null) { throw ConflictingDummyConstraintException.AlreadyDefined(applying, _exactConstraint); }
 
         StringSpec candidate = new(length, applying, _minLength, _minConstraint, _maxLength, _maxConstraint,
                                    _prefix, _prefixConstraint, _suffix, _suffixConstraint, _fragments,
@@ -266,7 +266,7 @@ internal sealed class StringSpec {
         // Re-declaring the SAME constraint is not a contradiction, so it is a no-op rather than a
         // conflict: the second declaration asks for exactly what the first already guarantees.
         if (_prefixConstraint == applying) { return this; }
-        if (_prefixConstraint is not null) { throw ConflictingAnyConstraintException.AlreadyDefined(applying, _prefixConstraint); }
+        if (_prefixConstraint is not null) { throw ConflictingDummyConstraintException.AlreadyDefined(applying, _prefixConstraint); }
 
         StringSpec candidate = new(_exactLength, _exactConstraint, _minLength, _minConstraint, _maxLength, _maxConstraint,
                                    prefix, applying, _suffix, _suffixConstraint, _fragments,
@@ -283,7 +283,7 @@ internal sealed class StringSpec {
         // Re-declaring the SAME constraint is not a contradiction, so it is a no-op rather than a
         // conflict: the second declaration asks for exactly what the first already guarantees.
         if (_suffixConstraint == applying) { return this; }
-        if (_suffixConstraint is not null) { throw ConflictingAnyConstraintException.AlreadyDefined(applying, _suffixConstraint); }
+        if (_suffixConstraint is not null) { throw ConflictingDummyConstraintException.AlreadyDefined(applying, _suffixConstraint); }
 
         StringSpec candidate = new(_exactLength, _exactConstraint, _minLength, _minConstraint, _maxLength, _maxConstraint,
                                    _prefix, _prefixConstraint, suffix, applying, _fragments,
@@ -313,7 +313,7 @@ internal sealed class StringSpec {
         // Re-declaring the SAME constraint is not a contradiction, so it is a no-op rather than a
         // conflict: the second declaration asks for exactly what the first already guarantees.
         if (_charsetConstraint == applying) { return this; }
-        if (_charsetConstraint is not null) { throw ConflictingAnyConstraintException.AlreadyDefined(applying, _charsetConstraint); }
+        if (_charsetConstraint is not null) { throw ConflictingDummyConstraintException.AlreadyDefined(applying, _charsetConstraint); }
 
         StringSpec candidate = new(_exactLength, _exactConstraint, _minLength, _minConstraint, _maxLength, _maxConstraint,
                                    _prefix, _prefixConstraint, _suffix, _suffixConstraint, _fragments,
@@ -335,11 +335,11 @@ internal sealed class StringSpec {
         // Re-declaring the SAME constraint is not a contradiction, so it is a no-op rather than a
         // conflict: the second declaration asks for exactly what the first already guarantees.
         if (_charsetConstraint == applying) { return this; }
-        if (_charsetConstraint is not null) { throw ConflictingAnyConstraintException.AlreadyDefined(applying, _charsetConstraint); }
+        if (_charsetConstraint is not null) { throw ConflictingDummyConstraintException.AlreadyDefined(applying, _charsetConstraint); }
         // Re-declaring the SAME constraint is not a contradiction, so it is a no-op rather than a
         // conflict: the second declaration asks for exactly what the first already guarantees.
         if (_casingConstraint == applying) { return this; }
-        if (_casingConstraint is not null) { throw ConflictingAnyConstraintException.AlreadyDefined(applying, _casingConstraint); }
+        if (_casingConstraint is not null) { throw ConflictingDummyConstraintException.AlreadyDefined(applying, _casingConstraint); }
 
         StringSpec candidate = new(_exactLength, _exactConstraint, _minLength, _minConstraint, _maxLength, _maxConstraint,
                                    _prefix, _prefixConstraint, _suffix, _suffixConstraint, _fragments,
@@ -371,10 +371,10 @@ internal sealed class StringSpec {
         // Re-declaring the SAME constraint is not a contradiction, so it is a no-op rather than a
         // conflict: the second declaration asks for exactly what the first already guarantees.
         if (_casingConstraint == applying) { return this; }
-        if (_casingConstraint is not null) { throw ConflictingAnyConstraintException.AlreadyDefined(applying, _casingConstraint); }
+        if (_casingConstraint is not null) { throw ConflictingDummyConstraintException.AlreadyDefined(applying, _casingConstraint); }
         // A custom pool and the constraint naming it are written together (WithCustomPool passes `applying, pool`),
         // so a declared pool always carries its name.
-        if (_customPool is not null) { throw ConflictingAnyConstraintException.AlreadyDefined(applying, _charsetConstraint!); }
+        if (_customPool is not null) { throw ConflictingDummyConstraintException.AlreadyDefined(applying, _charsetConstraint!); }
 
         StringSpec candidate = new(_exactLength, _exactConstraint, _minLength, _minConstraint, _maxLength, _maxConstraint,
                                    _prefix, _prefixConstraint, _suffix, _suffixConstraint, _fragments,
@@ -413,7 +413,7 @@ internal sealed class StringSpec {
         // Re-declaring the SAME constraint is not a contradiction, so it is a no-op rather than a
         // conflict: the second declaration asks for exactly what the first already guarantees.
         if (_allowedConstraint == applying) { return this; }
-        if (_allowedConstraint is not null) { throw ConflictingAnyConstraintException.AlreadyDefined(applying, _allowedConstraint); }
+        if (_allowedConstraint is not null) { throw ConflictingDummyConstraintException.AlreadyDefined(applying, _allowedConstraint); }
 
         string[] distinct = values.Distinct(StringComparer.Ordinal).ToArray();
 
@@ -546,7 +546,7 @@ internal sealed class StringSpec {
         return builder.ToString();
     }
 
-    private AnyGenerationException Exhausted(RandomSource source) {
+    private DummyGenerationException Exhausted(RandomSource source) {
         // A string generator draws only from its own source, so the seed replays the run fully — never the partial hint.
         Replay replay = Replay.Of(source);
         // The claim is the budget, not impossibility. The redraw is bounded, so an exhausted budget is overwhelming
@@ -562,7 +562,7 @@ internal sealed class StringSpec {
             "the shape. " +
             replay.Guidance;
 
-        return new AnyGenerationException(message, replay.Seed);
+        return new DummyGenerationException(message, replay.Seed);
     }
 
     private string DescribeExcluded() {
@@ -601,7 +601,7 @@ internal sealed class StringSpec {
         // Index from the front: the netstandard2.0 floor has no System.Index.
         ConstraintCall  culprit = _subtractions.Count > 0 ? _subtractions[_subtractions.Count - 1].Constraint : applying;
 
-        throw ConflictingAnyConstraintException.Contradicts(applying,
+        throw ConflictingDummyConstraintException.Contradicts(applying,
                                                             ConstraintClaim.OfPhrase("the declared character family",
                                                                                      family is null ? "is left with no character at all" : $"{family} admits nothing once it is applied"),
                                                             ConstraintClaim.Of(culprit, "removes every character that remained"));
@@ -646,7 +646,7 @@ internal sealed class StringSpec {
 
         // NotBlank() is named as the constraint that cannot be honoured whichever order the chain was written in:
         // the diagnosis is a property of the constraint set, so the sentence has to be one too.
-        throw ConflictingAnyConstraintException.Contradicts(_notBlank,
+        throw ConflictingDummyConstraintException.Contradicts(_notBlank,
                                                             ConstraintClaim.Of(_notBlank, "requires at least one character that is not whitespace"),
                                                             blamed);
     }
@@ -655,10 +655,10 @@ internal sealed class StringSpec {
         if (_exactLength is int exact) { ValidateExactAgainstBounds(applying, exact); }
 
         // Each bound is written as a pair with the constraint that set it. And this branch needs _minLength > max,
-        // with max >= 0 because AnyString.WithMaxLength rejects a negative length — so _minLength > 0, which only
+        // with max >= 0 because DummyString.WithMaxLength rejects a negative length — so _minLength > 0, which only
         // WithMinLength can produce, and it names the constraint as it sets the value.
         if (_maxLength is int max && _minLength > max) {
-            throw ConflictingAnyConstraintException.Contradicts(applying,
+            throw ConflictingDummyConstraintException.Contradicts(applying,
                                                                                 ConstraintClaim.Of(_maxConstraint!, $"already caps the length at {V(max)}"),
                                                                                 ConstraintClaim.Of(_minConstraint!, $"already requires at least {Characters(_minLength)}"));
         }
@@ -672,13 +672,13 @@ internal sealed class StringSpec {
         // Same reasoning: exact >= 0 is guaranteed by the entry points, so exact < _minLength needs _minLength > 0 —
         // a declared minimum, hence a named one — and a declared exact length carries its name too.
         if (exact < _minLength) {
-            throw ConflictingAnyConstraintException.Contradicts(applying,
+            throw ConflictingDummyConstraintException.Contradicts(applying,
                                                                                 ConstraintClaim.Of(_exactConstraint!, $"already fixes the length at {V(exact)}"),
                                                                                 ConstraintClaim.Of(_minConstraint!, $"already requires at least {Characters(_minLength)}"));
         }
 
         if (_maxLength is int cappedAt && exact > cappedAt) {
-            throw ConflictingAnyConstraintException.Contradicts(applying,
+            throw ConflictingDummyConstraintException.Contradicts(applying,
                                                                                 ConstraintClaim.Of(_exactConstraint!, $"already fixes the length at {V(exact)}"),
                                                                                 ConstraintClaim.Of(_maxConstraint!, $"already caps the length at {V(cappedAt)}"));
         }
@@ -692,13 +692,13 @@ internal sealed class StringSpec {
         string requires = several ? "require" : "requires";
 
         if (_exactLength is int exact && required > exact) {
-            throw ConflictingAnyConstraintException.Contradicts(applying,
+            throw ConflictingDummyConstraintException.Contradicts(applying,
                                                                                 ConstraintClaim.Of(_exactConstraint!, $"allows only {Characters(exact)} while {description} {requires} {V(required)}"),
                                                                                 ConstraintClaim.OfPhrase(description, $"already {requires} {Characters(required)}"));
         }
 
         if (_maxLength is int max && required > max) {
-            throw ConflictingAnyConstraintException.Contradicts(applying,
+            throw ConflictingDummyConstraintException.Contradicts(applying,
                                                                                 ConstraintClaim.Of(_maxConstraint!, $"allows at most {Characters(max)} while {description} {requires} {V(required)}"),
                                                                                 ConstraintClaim.OfPhrase(description, $"already {requires} {Characters(required)}"));
         }
@@ -711,7 +711,7 @@ internal sealed class StringSpec {
     private void ValidateAllowedSurvives(ConstraintCall applying, StringSpec previous) {
         if (_effectiveAllowed!.Count > 0) { return; }
 
-        throw ConflictingAnyConstraintException.NoPooledValueSurvives(applying, DescribeEmptyPool(applying, previous));
+        throw ConflictingDummyConstraintException.NoPooledValueSurvives(applying, DescribeEmptyPool(applying, previous));
     }
 
     private string DescribeEmptyPool(ConstraintCall applying, StringSpec previous) {

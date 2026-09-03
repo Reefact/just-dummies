@@ -42,9 +42,9 @@ par un ADR : un projet frère `*.PropertyTests` est ici une pratique établie, n
 mouvement architectural nouveau.
 
 Tous les contrats de la bibliothèque ne sont pas quantifiés universellement. Un
-conflit doit lever `ConflictingAnyConstraintException` avec un message nommant *les
+conflit doit lever `ConflictingDummyConstraintException` avec un message nommant *les
 deux* contraintes fautives ; un argument nul doit lever `ArgumentNullException` ; le
-miroir entre `Any` et `AnyContext`, la convention de nommage des fabriques et la
+miroir entre `Dummy` et `DummyContext`, la convention de nommage des fabriques et la
 frontière d'assemblage autonome de la bibliothèque sont des faits structurels
 vérifiés par réflexion. Ce sont des cas spécifiques et nommés, et leur formulation
 est délibérément sensible au sens de l'application — une propriété qui les

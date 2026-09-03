@@ -1,0 +1,98 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- net10.0 only, like JustDummies.Analyzers.UnitTests: this project builds compilations with Roslyn,
+       and Microsoft.CodeAnalysis.CSharp does not load on the net472 support floor. Nothing here exercises
+       the netstandard2.0 asset, so that floor has nothing to say about it (ADR-0007). -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The two guard libraries whose helpers S5.3 reads (ADR-0086), referenced so the corpus and the
+         resolver suite exercise the REAL packages: recognition resolves their true symbols, and the draw
+         oracle calls their true implementations — a mapped row whose measured semantics drifted would fail
+         here, not in a consumer's suite. The engine itself references neither (ADR-0063). -->
+    <PackageReference Include="Ardalis.GuardClauses" />
+    <PackageReference Include="CommunityToolkit.Diagnostics" />
+    <PackageReference Include="coverlet.collector">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <!-- The CURRENT Roslyn, deliberately not the floor the engine is pinned to: the suite plays the part of
+         a host handing a Compilation down, which is the direction §13.2 supports. -->
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="NFluent" />
+    <PackageReference Include="xunit.runner.visualstudio">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="xunit.v3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\JustDummies.GenDummy\JustDummies.GenDummy.csproj" />
+
+    <!-- The library and its analyzers, as the SUBJECT of EmittedCodeCompilesTests: each golden file is
+         compiled against them, and must produce no CS* error and no JD* diagnostic. That the engine may not
+         reference JustDummies (ADR-0063) says nothing about this project — the guard is on the engine's own
+         assembly, and a test that could not reference the library could not check what the emitted code does
+         against it. -->
+    <ProjectReference Include="..\JustDummies\JustDummies.csproj" />
+    <ProjectReference Include="..\JustDummies.Analyzers\JustDummies.Analyzers.csproj" />
+
+    <!-- The SAME library again, pinned to its netstandard2.0 leg and deliberately NOT referenced: the
+         compiler must keep resolving the net8.0 one, and two assemblies of that name cannot both land
+         beside this project's output. What this asks for is the build and the path — `_DownlevelAsset`,
+         which the target below copies into `downlevel\`, so DownlevelAssetTests reads an asset this
+         project produced rather than one it hopes to find in a sibling's `bin`. -->
+    <ProjectReference Include="..\JustDummies\JustDummies.csproj"
+                      SetTargetFramework="TargetFramework=netstandard2.0"
+                      ReferenceOutputAssembly="false"
+                      Private="false"
+                      OutputItemType="_DownlevelAsset" />
+  </ItemGroup>
+
+  <!-- Reading the asset out of `..\JustDummies\bin\` is what this replaces, and it was not merely
+       inelegant: a build of this project alone leaves that directory holding whatever a previous build
+       of something else put there, so the suite passed or errored on state no one had declared. -->
+  <Target Name="CopyTheDownlevelAsset" AfterTargets="ResolveProjectReferences">
+    <Copy SourceFiles="@(_DownlevelAsset)" DestinationFolder="$(OutDir)downlevel" SkipUnchangedFiles="true" />
+  </Target>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The approved files are C#, so they read as code in a review and compile in the test that compiles
+         them. They are NOT this project's own source: compiling them here would demand the fixture types in
+         this assembly, and the TODO golden does not compile by design. -->
+    <Compile Remove="Golden\**\*.cs" />
+    <None Include="Golden\**\*.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The repository root, because the approved files live in the working tree and nothing on the assembly
+         can carry them. Baked in here rather than derived from [CallerFilePath], which CI rewrites to /_/
+         under the DeterministicSourcePaths that ContinuousIntegrationBuild turns on. -->
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>RepositoryRoot</_Parameter1>
+      <_Parameter2>$(MSBuildThisFileDirectory)..</_Parameter2>
+    </AssemblyAttribute>
+
+    <!-- The library's OTHER asset, the one a project below .NET 8 resolves, named relative to this
+         project's own output where CopyTheDownlevelAsset puts it. It cannot be found from the referenced
+         assembly's own location: what lands beside the output is the net8.0 leg, copied. Keeping it
+         inside the output is what makes DownlevelAssetTests prove ADR-0059 — the same parameter, two
+         assets, two answers — from state this project produced. -->
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>DownlevelLibrary</_Parameter1>
+      <_Parameter2>downlevel/JustDummies.dll</_Parameter2>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+</Project>

@@ -9,13 +9,13 @@
 
 ## Context
 
-`IAny<out T>` is covariant across reference conversions, so an `IAny<string>` already is an
-`IAny<string?>`. A value type has no such conversion: an `IAny<int>` is not an `IAny<int?>`,
+`IDummy<out T>` is covariant across reference conversions, so an `IDummy<string>` already is an
+`IDummy<string?>`. A value type has no such conversion: an `IDummy<int>` is not an `IDummy<int?>`,
 and the scaffolder's §5.2 has written the hop explicitly since it existed —
-`Any.Int32().Positive().As(value => (int?)value)`. Never `.OrNull()`, because a dummy the code
+`Dummy.Int32().Positive().As(value => (int?)value)`. Never `.OrNull()`, because a dummy the code
 under test needs is never absent ([ADR-0064](0064-never-draw-null-for-a-nullable-parameter.md)).
 
-`As` produces a `DerivedAny<T>`, which carries the random source and the reproducibility of what
+`As` produces a `DerivedDummy<T>`, which carries the random source and the reproducibility of what
 it wraps and nothing else. That is deliberate and documented on `ICardinalityHint<T>`: a derived
 generator advertises no bound, because an arbitrary factory has no inverse to answer membership
 with, and a distinct collection over one falls back to a bounded dedup-draw
@@ -37,7 +37,7 @@ by a route that record does not cover.
 
 ## Decision
 
-The library carries a first-class lift from `IAny<T>` to `IAny<T?>` that never draws null and keeps
+The library carries a first-class lift from `IDummy<T>` to `IDummy<T?>` that never draws null and keeps
 the wrapped generator's cardinality, and the scaffolder writes it wherever the target compilation
 resolves it.
 
@@ -72,10 +72,10 @@ resolves it.
 
 ### Give the derived generator a cardinality
 
-Considered because it is the smallest edit — one interface on `DerivedAny<T>` and the whole family
+Considered because it is the smallest edit — one interface on `DerivedDummy<T>` and the whole family
 benefits at once.
 
-Rejected because the family is the problem. `DerivedAny<T>` is what `As`, `OrNull` and all seven
+Rejected because the family is the problem. `DerivedDummy<T>` is what `As`, `OrNull` and all seven
 arities of `Combine` produce, and a composer over eight operands has no cardinality anyone can
 compute. Forwarding a bound from one operand would be an over-statement in exactly the direction
 that turns a deferred draw into a wrong refusal, and forwarding membership is not possible at all
@@ -93,7 +93,7 @@ and a reader could not tell the invention from a read guard.
 ### Leave it, and record the shape as a declared residue
 
 Considered because the library's behaviour is documented and the failure is loud rather than silent
-— an `AnyGenerationException` naming its seed, not a wrong value.
+— an `DummyGenerationException` naming its seed, not a wrong value.
 
 Rejected because the failure is loud to a *reader of the exception* and silent to the developer
 who ran `dum` and committed the file: it appears at the first draw, in a generator they were handed
@@ -106,7 +106,7 @@ and told was inferred. That is the position ADR-0083 refuses.
 * A scaffolded set or dictionary keyed by a nullable enum or bool draws, where 190 shapes of the
   sweep's product could not.
 * A user gains a spelling for "nullable type, present value" that the library did not have.
-* The emitted line is shorter and says what it means: `Any.Int32().Positive().AsNullable()` rather
+* The emitted line is shorter and says what it means: `Dummy.Int32().Positive().AsNullable()` rather
   than a cast lambda a reader has to parse.
 
 ### Negative
@@ -142,5 +142,5 @@ and told was inferred. That is the position ADR-0083 refuses.
 * [ADR-0064](0064-never-draw-null-for-a-nullable-parameter.md) — why the hop is never `.OrNull()`.
 * [ADR-0083](0083-block-compilation-on-a-guard-the-engine-cannot-vouch-for.md) — the silent failure
   this arrived by a route around.
-* [`genany-sweep.en.md`](../workflows/genany-sweep.en.md) — the bench that measured it, and what its
+* [`gendummy-sweep.en.md`](../workflows/gendummy-sweep.en.md) — the bench that measured it, and what its
   counts said before and after.

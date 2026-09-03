@@ -9,7 +9,7 @@ namespace JustDummies.Analyzers;
 /// <summary>
 ///     JD005 — reports a generator rendered as text instead of the value it would draw. No JustDummies generator
 ///     overrides <see cref="object.ToString" />, so an interpolation hole, a string concatenation or an explicit
-///     <c>ToString()</c> over a recipe yields the builder's type name — the literal text <c>"JustDummies.AnyString"</c>
+///     <c>ToString()</c> over a recipe yields the builder's type name — the literal text <c>"JustDummies.DummyString"</c>
 ///     — which is non-empty, plausible, constant on every run, and flows into the assertion as if it were a value.
 /// </summary>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
@@ -30,33 +30,33 @@ public sealed class GeneratorRenderedAsTextAnalyzer : DiagnosticAnalyzer {
 
     private static void OnCompilationStart(CompilationStartAnalysisContext context) {
         KnownSymbols symbols = KnownSymbols.From(context.Compilation);
-        if (symbols.IAny is null) { return; }
+        if (symbols.IDummy is null) { return; }
 
-        INamedTypeSymbol iAny = symbols.IAny;
+        INamedTypeSymbol iDummy = symbols.IDummy;
 
-        context.RegisterOperationAction(operationContext => AnalyzeInterpolation(operationContext, iAny), OperationKind.Interpolation);
-        context.RegisterOperationAction(operationContext => AnalyzeConcatenation(operationContext, iAny), OperationKind.Binary);
-        context.RegisterOperationAction(operationContext => AnalyzeToString(operationContext, iAny), OperationKind.Invocation);
+        context.RegisterOperationAction(operationContext => AnalyzeInterpolation(operationContext, iDummy), OperationKind.Interpolation);
+        context.RegisterOperationAction(operationContext => AnalyzeConcatenation(operationContext, iDummy), OperationKind.Binary);
+        context.RegisterOperationAction(operationContext => AnalyzeToString(operationContext, iDummy), OperationKind.Invocation);
     }
 
-    private static void AnalyzeInterpolation(OperationAnalysisContext context, INamedTypeSymbol iAny) {
+    private static void AnalyzeInterpolation(OperationAnalysisContext context, INamedTypeSymbol iDummy) {
         IInterpolationOperation interpolation = (IInterpolationOperation)context.Operation;
         IOperation              expression    = GeneratorFacts.Unwrap(interpolation.Expression);
 
-        Report(context, expression, iAny);
+        Report(context, expression, iDummy);
     }
 
-    private static void AnalyzeConcatenation(OperationAnalysisContext context, INamedTypeSymbol iAny) {
+    private static void AnalyzeConcatenation(OperationAnalysisContext context, INamedTypeSymbol iDummy) {
         IBinaryOperation binary = (IBinaryOperation)context.Operation;
 
         if (binary.OperatorKind != BinaryOperatorKind.Add) { return; }
         if (binary.Type?.SpecialType != SpecialType.System_String) { return; }
 
-        Report(context, GeneratorFacts.Unwrap(binary.LeftOperand), iAny);
-        Report(context, GeneratorFacts.Unwrap(binary.RightOperand), iAny);
+        Report(context, GeneratorFacts.Unwrap(binary.LeftOperand), iDummy);
+        Report(context, GeneratorFacts.Unwrap(binary.RightOperand), iDummy);
     }
 
-    private static void AnalyzeToString(OperationAnalysisContext context, INamedTypeSymbol iAny) {
+    private static void AnalyzeToString(OperationAnalysisContext context, INamedTypeSymbol iDummy) {
         IInvocationOperation invocation = (IInvocationOperation)context.Operation;
         IMethodSymbol        method     = invocation.TargetMethod;
 
@@ -67,11 +67,11 @@ public sealed class GeneratorRenderedAsTextAnalyzer : DiagnosticAnalyzer {
         if (method.ContainingType?.SpecialType != SpecialType.System_Object) { return; }
         if (invocation.Instance is null) { return; }
 
-        Report(context, GeneratorFacts.Unwrap(invocation.Instance), iAny);
+        Report(context, GeneratorFacts.Unwrap(invocation.Instance), iDummy);
     }
 
-    private static void Report(OperationAnalysisContext context, IOperation expression, INamedTypeSymbol iAny) {
-        if (!GeneratorFacts.IsGenerator(expression.Type, iAny)) { return; }
+    private static void Report(OperationAnalysisContext context, IOperation expression, INamedTypeSymbol iDummy) {
+        if (!GeneratorFacts.IsGenerator(expression.Type, iDummy)) { return; }
 
         context.ReportDiagnostic(Diagnostic.Create(Descriptors.GeneratorRenderedAsText, expression.Syntax.GetLocation(), expression.Type!.Name));
     }

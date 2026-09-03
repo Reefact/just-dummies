@@ -13,7 +13,7 @@ Supersède l'[ADR-0009](0009-draw-arbitrary-strings-from-an-explicit-terminal-se
 ## Contexte
 
 Chaque générateur `JustDummies` est une recette fluente : chaque contrainte restreint ce qui peut être tiré, deux
-contraintes contradictoires échouent à la déclaration avec une `ConflictingAnyConstraintException` qui nomme les deux
+contraintes contradictoires échouent à la déclaration avec une `ConflictingDummyConstraintException` qui nomme les deux
 côtés, et la valeur est construite pour satisfaire toute la spécification plutôt que générée puis filtrée. Quelles
 contraintes un générateur donné expose se décidait jusqu'ici générateur par générateur.
 
@@ -22,26 +22,26 @@ du type retourné, autres que `Generate()` :
 
 | appel | retourne | contraintes chaînables |
 |---|---|---|
-| `Any.Int32().OneOf(1, 2)` | `AnyInt32` | 13 — composable |
-| `Any.DateTime().OneOf(d)` | `AnyDateTime` | 9 — composable |
-| `Any.DateTimeOffset().OneOf(x)` | `AnyDateTimeOffset` | 11 — composable |
-| `Any.Guid().OneOf(g)` | `AnyGuid` | 5 — composable |
-| `Any.String().OneOf("a", "b")` | `AnyStringOneOf` | 0 — terminal |
-| `Any.OneOf(x, y)` | `AnyOneOf<T>` | 0 — terminal |
+| `Dummy.Int32().OneOf(1, 2)` | `DummyInt32` | 13 — composable |
+| `Dummy.DateTime().OneOf(d)` | `DummyDateTime` | 9 — composable |
+| `Dummy.DateTimeOffset().OneOf(x)` | `DummyDateTimeOffset` | 11 — composable |
+| `Dummy.Guid().OneOf(g)` | `DummyGuid` | 5 — composable |
+| `Dummy.String().OneOf("a", "b")` | `AnyStringOneOf` | 0 — terminal |
+| `Dummy.OneOf(x, y)` | `DummyOneOf<T>` | 0 — terminal |
 
 Quatre familles renvoient leur propre builder composable ; deux renvoient un type distinct sans issue. Rien, au site
 d'appel, ne distingue les deux.
 
 Autres faits qui cadrent le choix :
 
-* L'ADR-0009 a rendu `Any.String().OneOf(...)` terminal, au motif que réconcilier un ensemble de valeurs explicite avec
+* L'ADR-0009 a rendu `Dummy.String().OneOf(...)` terminal, au motif que réconcilier un ensemble de valeurs explicite avec
   le préfixe, le suffixe, les valeurs contenues, la famille de caractères, la casse et la longueur d'une chaîne
   multiplierait les combinaisons contradictoires et leurs messages de conflit, pour une combinaison dont personne
   n'avait besoin. Elle listait en *Risque* qu'un appelant puisse attendre la composabilité du `OneOf` scalaire et être
-  surpris. L'ADR-0008 a rendu `Any.StringMatching(...)` terminal sur le même raisonnement, et l'ADR-0009 s'est alignée
+  surpris. L'ADR-0008 a rendu `Dummy.StringMatching(...)` terminal sur le même raisonnement, et l'ADR-0009 s'est alignée
   dessus comme précédent.
-* Le manque n'est pas théorique. `Any.ElementOf(existingOrders).DifferentFrom(theOneAlreadyUsed)` — tirer un autre
-  élément d'une fixture — n'existe pas, et `Any.String().OneOf("abc", "de").WithLength(3)` non plus, alors que `"abc"`
+* Le manque n'est pas théorique. `Dummy.ElementOf(existingOrders).DifferentFrom(theOneAlreadyUsed)` — tirer un autre
+  élément d'une fixture — n'existe pas, et `Dummy.String().OneOf("abc", "de").WithLength(3)` non plus, alors que `"abc"`
   satisfait les deux. Le contournement LINQ pour le premier, `pool.Where(x => x != used).ToArray()`, fonctionne mais
   rapporte un domaine vidé en `ArgumentException: At least one value is required`, ce qui blâme l'appelant pour un
   tableau vide au lieu de nommer les deux contraintes en jeu. Les familles numériques, elles, nomment les deux.
@@ -50,13 +50,13 @@ Autres faits qui cadrent le choix :
   rien en forme : elles retirent des valeurs.
 * Les chaînes n'ont pas de projection ordinale où intégrer une exclusion, si bien que sur une chaîne mise en forme une
   exclusion est déjà satisfaite par un **retirage borné** — une exception documentée au « construit, jamais filtré »
-  que le readme du paquet énonce, et le seul échec qu'`AnyString` diffère à la génération.
-* `AnyPattern` fait déjà tourner une boucle bornée construire-vérifier-retirer à chaque tirage : depuis l'ADR-0027,
+  que le readme du paquet énonce, et le seul échec qu'`DummyString` diffère à la génération.
+* `DummyPattern` fait déjà tourner une boucle bornée construire-vérifier-retirer à chaque tirage : depuis l'ADR-0027,
   chaque valeur construite est vérifiée contre le vrai moteur .NET et retirée en cas d'échec, pour que « une valeur
   générée matche son motif » tienne par construction.
 * Les collections distinctes bornent à la déclaration selon la cardinalité et l'appartenance annoncées par le
-  générateur d'éléments, via l'interface interne `ICardinalityHint<T>` (ADR-0004). `AnyStringOneOf` et `AnyOneOf<T>`
-  l'annoncent tous deux ; `AnyString` non.
+  générateur d'éléments, via l'interface interne `ICardinalityHint<T>` (ADR-0004). `AnyStringOneOf` et `DummyOneOf<T>`
+  l'annoncent tous deux ; `DummyString` non.
 * L'issue #337 a établi qu'un échec de génération ne peut affirmer que ce que la recherche a réellement établi : un
   budget dépensé se rapporte comme un budget dépensé, jamais comme une preuve d'impossibilité.
 * Rien n'a été publié. `PublicAPI.Shipped.txt` ne contient que `#nullable enable`, aucun tag `dum-v*` n'existe et la
@@ -85,7 +85,7 @@ le générateur doit construire, et n'est offerte que là où il sait en constru
   valeurs qui passent, et la satisfaisabilité est l'unique question de savoir s'il en reste. Une question remplace la
   matrice — et elle est tranchée précocement, donc la promesse qu'un générateur qui existe sait générer est tenue.
 * **Le refus sur un motif survit au recadrage, et y gagne une raison qu'il n'avait pas.** Une contrainte de forme sur
-  `Any.StringMatching(...)` exigerait de construire une valeur dans l'intersection de deux langages réguliers, une
+  `Dummy.StringMatching(...)` exigerait de construire une valeur dans l'intersection de deux langages réguliers, une
   machinerie que la bibliothèque n'a pas et n'ajouterait pas pour cela. C'est désormais un énoncé sur la contrainte
   plutôt que sur le type : le refus tient à ce qui ne peut pas être construit, pas à une étiquette, et il explique
   pourquoi la paire d'exclusion est admise à côté au lieu de ressembler à une incohérence.
@@ -114,19 +114,19 @@ le générateur doit construire, et n'est offerte que là où il sait en constru
 
 Considérée parce qu'elle préserve intactes les décisions des ADR-0009 et ADR-0008 tout en refermant le manque de
 capacité : un `AnyStringOneOf` composable répondrait à `OneOf("abc", "de").WithLength(3)` sans changer ce que
-`Any.String().OneOf` renvoie.
+`Dummy.String().OneOf` renvoie.
 
 Rejetée parce qu'elle referme le manque en dupliquant la surface au lieu de supprimer l'asymétrie : l'ensemble des
 contraintes existerait deux fois, sur deux types, avec deux jeux de messages de conflit à garder en phase, et
 l'appelant devrait toujours savoir quel type il tient. L'asymétrie que montre le tableau mesuré est le défaut ; un
 second type composable la laisse en place.
 
-### Ne rendre composable que `Any.String().OneOf`, et laisser le pool et le motif terminaux
+### Ne rendre composable que `Dummy.String().OneOf`, et laisser le pool et le motif terminaux
 
 Considérée parce qu'elle corrige le cas au coût le plus visible — l'ensemble de valeurs des chaînes — pour le plus
 petit changement, et laisse deux décisions intactes.
 
-Rejetée parce qu'elle corrige l'instance et non la règle. `Any.ElementOf(orders).DifferentFrom(used)` est l'idiome pour
+Rejetée parce qu'elle corrige l'instance et non la règle. `Dummy.ElementOf(orders).DifferentFrom(used)` est l'idiome pour
 lequel ce travail existe et manquerait encore, et le générateur suivant retomberait sur le même arbitrage non
 documenté. Consigner la distinction est ce qui rend la surface prévisible ; l'appliquer à un seul des trois endroits
 qu'elle couvre ne consignerait rien.
@@ -158,7 +158,7 @@ donc la porte reste ouverte si un besoin réel apparaît.
 ### Laisser le cas du pool au LINQ de l'appelant
 
 Considérée parce que `pool.Where(x => x != used).ToArray()` fonctionne déjà, ne demande aucune API et garde
-`AnyOneOf<T>` minimal.
+`DummyOneOf<T>` minimal.
 
 Rejetée parce qu'elle dégrade exactement ce que la bibliothèque existe pour protéger : le diagnostic. Filtrer jusqu'au
 vide lève `ArgumentException: At least one value is required (Parameter 'values')`, ce qui blâme l'appelant pour un
@@ -173,12 +173,12 @@ voir.
 
 * Un seul test — cette contrainte est-elle constructive ou rejective ? — répond à ce que n'importe quel générateur,
   présent ou futur, peut exposer. L'asymétrie mesurée devient une règle plutôt qu'une table de précédents.
-* `Any.String().OneOf(...)` compose avec toutes les contraintes de chaîne, et un ensemble vidé nomme les deux
+* `Dummy.String().OneOf(...)` compose avec toutes les contraintes de chaîne, et un ensemble vidé nomme les deux
   contraintes en jeu — même verdict quel que soit celui des deux déclaré en premier, chaque ordre le formulant du
   côté d'où arrive la seconde déclaration.
-* `Any.ElementOf(orders).DifferentFrom(used)` et `Any.StringMatching(p).DifferentFrom(existing)` existent, avec les
+* `Dummy.ElementOf(orders).DifferentFrom(used)` et `Dummy.StringMatching(p).DifferentFrom(existing)` existent, avec les
   diagnostics de conflit et d'échec que le reste de la bibliothèque donne.
-* `AnyString` annonce la cardinalité de l'ensemble de valeurs survivant, donc une collection distincte sur un
+* `DummyString` annonce la cardinalité de l'ensemble de valeurs survivant, donc une collection distincte sur un
   générateur de chaînes à pool borne toujours précocement — la garantie que l'ADR-0009 obtenait via `AnyStringOneOf`
   est tenue par le type qui le remplace.
 * Un type public disparaît et aucun n'est ajouté.
@@ -199,7 +199,7 @@ voir.
   contraintes avec `OneOf` en dernier entrent encore en conflit, alors qu'avec `OneOf` en premier elles passent.
   L'ordre est par ailleurs indifférent ; ici il ne l'est pas, et la surface doit le dire au lieu de promettre une
   symétrie qu'elle n'a pas.
-* `AnyPattern` n'est plus descriptible comme n'exposant rien : le cadrage « générateur terminal » de l'ADR-0008 a
+* `DummyPattern` n'est plus descriptible comme n'exposant rien : le cadrage « générateur terminal » de l'ADR-0008 a
   désormais besoin de la qualification constructif/rejectif pour rester exact.
 
 ### Risques
@@ -235,4 +235,4 @@ voir.
 * ADR-0024 — Garder les arguments publics et internes contre null : la convention que suit chaque nouveau membre.
 * Issue #352 — l'item d'audit qui a demandé ce document.
 * Issue #337 — le standard de véracité des affirmations pour un budget épuisé.
-* `AnyString`, `StringSpec`, `AnyOneOf<T>` et `AnyPattern` dans le projet `JustDummies`.
+* `DummyString`, `StringSpec`, `DummyOneOf<T>` et `DummyPattern` dans le projet `JustDummies`.

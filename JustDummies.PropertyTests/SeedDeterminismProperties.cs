@@ -10,8 +10,8 @@ using JetBrains.Annotations;
 namespace JustDummies.PropertyTests;
 
 /// <summary>
-///     Property-based tests for the seeding surface: the isolated <see cref="AnyContext" /> handed out by
-///     <see cref="Any.WithSeed" />, the ambient <c>Any.UseSeed(...)</c> scope, and the <c>Any.Reproducibly(...)</c>
+///     Property-based tests for the seeding surface: the isolated <see cref="DummyContext" /> handed out by
+///     <see cref="Dummy.WithSeed" />, the ambient <c>Dummy.UseSeed(...)</c> scope, and the <c>Dummy.Reproducibly(...)</c>
 ///     runners. The example-based suite pins three hand-picked seeds — 12345, 777, 31415 — and can therefore only
 ///     prove reproducibility for those three numbers; these quantify over the seed itself, including the values a
 ///     hand-written test would never pick (zero, <c>int.MinValue</c>, <c>int.MaxValue</c>), so a seed that fails to
@@ -26,7 +26,7 @@ namespace JustDummies.PropertyTests;
 ///         than on luck.
 ///     </para>
 ///     <para>
-///         <see cref="AnyContext" /> deliberately mirrors only the scalar factories, so the collection parts of a
+///         <see cref="DummyContext" /> deliberately mirrors only the scalar factories, so the collection parts of a
 ///         context batch go through the static combinators over a context-derived element generator. That is not a
 ///         workaround but part of what is under test: a collection draws from its element generator's random source,
 ///         never from the ambient one.
@@ -37,7 +37,7 @@ namespace JustDummies.PropertyTests;
 ///         seeding one.
 ///     </para>
 /// </remarks>
-[TestSubject(typeof(AnyContext))]
+[TestSubject(typeof(DummyContext))]
 public sealed class SeedDeterminismProperties {
 
     #region Statics members declarations
@@ -48,7 +48,7 @@ public sealed class SeedDeterminismProperties {
     ///     the example-based suite minus the .NET 8+ types — this file also compiles on the .NET Framework floor,
     ///     where <c>Int128</c> and <c>Half</c> do not exist.
     /// </summary>
-    private static string ContextBatch(AnyContext any) {
+    private static string ContextBatch(DummyContext any) {
         int      full    = any.Int32().Generate();
         int      bounded = any.Int32().Between(1, 1000).Generate();
         string   free    = any.String().Generate();
@@ -64,8 +64,8 @@ public sealed class SeedDeterminismProperties {
         DateTime instant = any.DateTime().Generate();
         // A context carries no collection factories of its own, and does not need any: the static combinators take
         // the element generator's random source, so these two collections draw from the context all the same.
-        List<int>    list  = Any.ListOf(any.Int32().Between(0, 9)).WithCount(4).Generate();
-        HashSet<int> set   = Any.SetOf(any.Int32().Between(0, 99)).WithCount(3).Generate();
+        List<int>    list  = Dummy.ListOf(any.Int32().Between(0, 9)).WithCount(4).Generate();
+        HashSet<int> set   = Dummy.SetOf(any.Int32().Between(0, 99)).WithCount(3).Generate();
         int?         maybe = any.Int32().Between(0, 9).OrNull().Generate();
         string       coded = any.StringMatching(@"[A-Z]{3}-\d{4}").Generate();
 
@@ -78,29 +78,29 @@ public sealed class SeedDeterminismProperties {
 
     /// <summary>
     ///     The same batch drawn from the static entry points, for the mechanisms that pin the <b>ambient</b> context
-    ///     instead of handing out a context object — <c>Any.UseSeed(...)</c> and <c>Any.Reproducibly(...)</c>. It is
-    ///     a second method rather than one parameterized over both because <see cref="AnyContext" /> and the static
-    ///     <see cref="Any" /> share a surface, not a type.
+    ///     instead of handing out a context object — <c>Dummy.UseSeed(...)</c> and <c>Dummy.Reproducibly(...)</c>. It is
+    ///     a second method rather than one parameterized over both because <see cref="DummyContext" /> and the static
+    ///     <see cref="Dummy" /> share a surface, not a type.
     /// </summary>
     private static string AmbientBatch() {
-        int      full    = Any.Int32().Generate();
-        int      bounded = Any.Int32().Between(1, 1000).Generate();
-        string   free    = Any.String().Generate();
-        string   capped  = Any.String().NonEmpty().WithMaxLength(50).Generate();
-        string   shaped  = Any.String().StartingWith("ORD-").WithLength(12).Generate();
-        long     wide    = Any.Int64().Generate();
-        double   real    = Any.Double().Between(0d, 1000d).Generate();
-        decimal  exact   = Any.Decimal().Between(0m, 1000m).Generate();
-        bool     flag    = Any.Boolean().Generate();
-        Guid     id      = Any.Guid().Generate();
-        char     letter  = Any.Char().Generate();
-        TimeSpan span    = Any.TimeSpan().Generate();
-        DateTime instant = Any.DateTime().Generate();
+        int      full    = Dummy.Int32().Generate();
+        int      bounded = Dummy.Int32().Between(1, 1000).Generate();
+        string   free    = Dummy.String().Generate();
+        string   capped  = Dummy.String().NonEmpty().WithMaxLength(50).Generate();
+        string   shaped  = Dummy.String().StartingWith("ORD-").WithLength(12).Generate();
+        long     wide    = Dummy.Int64().Generate();
+        double   real    = Dummy.Double().Between(0d, 1000d).Generate();
+        decimal  exact   = Dummy.Decimal().Between(0m, 1000m).Generate();
+        bool     flag    = Dummy.Boolean().Generate();
+        Guid     id      = Dummy.Guid().Generate();
+        char     letter  = Dummy.Char().Generate();
+        TimeSpan span    = Dummy.TimeSpan().Generate();
+        DateTime instant = Dummy.DateTime().Generate();
 
-        List<int>    list  = Any.ListOf(Any.Int32().Between(0, 9)).WithCount(4).Generate();
-        HashSet<int> set   = Any.SetOf(Any.Int32().Between(0, 99)).WithCount(3).Generate();
-        int?         maybe = Any.Int32().Between(0, 9).OrNull().Generate();
-        string       coded = Any.StringMatching(@"[A-Z]{3}-\d{4}").Generate();
+        List<int>    list  = Dummy.ListOf(Dummy.Int32().Between(0, 9)).WithCount(4).Generate();
+        HashSet<int> set   = Dummy.SetOf(Dummy.Int32().Between(0, 99)).WithCount(3).Generate();
+        int?         maybe = Dummy.Int32().Between(0, 9).OrNull().Generate();
+        string       coded = Dummy.StringMatching(@"[A-Z]{3}-\d{4}").Generate();
 
         return string.Join("|", full, bounded, free, capped, shaped,
                            wide, real, exact, flag, id, letter,
@@ -157,7 +157,7 @@ public sealed class SeedDeterminismProperties {
     [Fact(DisplayName = "Two contexts created with the same seed replay the same batch, for every seed.")]
     public void SameSeedContextsReplayTheSameBatch() {
         Prop.ForAll(Generators.Seed().ToArbitrary(),
-                    seed => ContextBatch(Any.WithSeed(seed)) == ContextBatch(Any.WithSeed(seed)))
+                    seed => ContextBatch(Dummy.WithSeed(seed)) == ContextBatch(Dummy.WithSeed(seed)))
             .QuickCheckThrowOnFailure();
     }
 
@@ -166,7 +166,7 @@ public sealed class SeedDeterminismProperties {
         // The round-trip is what makes a reported seed replayable at all: a context that silently normalized its
         // seed would hand the reader a number that reproduces nothing.
         Prop.ForAll(Generators.Seed().ToArbitrary(),
-                    seed => Any.WithSeed(seed).Seed == seed)
+                    seed => Dummy.WithSeed(seed).Seed == seed)
             .QuickCheckThrowOnFailure();
     }
 
@@ -174,18 +174,18 @@ public sealed class SeedDeterminismProperties {
     public void ContextIsIsolatedFromAmbientDraws() {
         Prop.ForAll(Generators.Seed().ToArbitrary(),
                     seed => {
-                        AnyContext quiet       = Any.WithSeed(seed);
+                        DummyContext quiet       = Dummy.WithSeed(seed);
                         string     firstQuiet  = ContextBatch(quiet);
                         string     secondQuiet = ContextBatch(quiet);
 
                         // The same context again, this time with ambient draws before its first batch and between
                         // the two. A context owns its generator, so nothing the static entry points draw may
                         // advance it — not even by one value, which the second batch is there to catch.
-                        AnyContext noisy = Any.WithSeed(seed);
-                        Any.Guid().Generate();
+                        DummyContext noisy = Dummy.WithSeed(seed);
+                        Dummy.Guid().Generate();
                         string firstNoisy = ContextBatch(noisy);
-                        Any.String().Generate();
-                        Any.Int32().Generate();
+                        Dummy.String().Generate();
+                        Dummy.Int32().Generate();
                         string secondNoisy = ContextBatch(noisy);
 
                         return firstNoisy == firstQuiet && secondNoisy == secondQuiet;
@@ -202,8 +202,8 @@ public sealed class SeedDeterminismProperties {
                         string first  = string.Empty;
                         string second = string.Empty;
 
-                        Any.Reproducibly(seed, () => { first = AmbientBatch(); });
-                        Any.Reproducibly(seed, () => { second = AmbientBatch(); });
+                        Dummy.Reproducibly(seed, () => { first = AmbientBatch(); });
+                        Dummy.Reproducibly(seed, () => { second = AmbientBatch(); });
 
                         return second == first;
                     })
@@ -217,8 +217,8 @@ public sealed class SeedDeterminismProperties {
                         string first;
                         string second;
 
-                        using (Any.UseSeed(seed)) { first = AmbientBatch(); }
-                        using (Any.UseSeed(seed)) { second = AmbientBatch(); }
+                        using (Dummy.UseSeed(seed)) { first = AmbientBatch(); }
+                        using (Dummy.UseSeed(seed)) { second = AmbientBatch(); }
 
                         return second == first;
                     })
@@ -234,8 +234,8 @@ public sealed class SeedDeterminismProperties {
                         string fromScope;
                         string fromRunner = string.Empty;
 
-                        using (Any.UseSeed(seed)) { fromScope = AmbientBatch(); }
-                        Any.Reproducibly(seed, () => { fromRunner = AmbientBatch(); });
+                        using (Dummy.UseSeed(seed)) { fromScope = AmbientBatch(); }
+                        Dummy.Reproducibly(seed, () => { fromRunner = AmbientBatch(); });
 
                         return fromScope == fromRunner;
                     })
@@ -252,7 +252,7 @@ public sealed class SeedDeterminismProperties {
                     pair => {
                         string first;
                         string second;
-                        using (Any.UseSeed(pair.Outer)) {
+                        using (Dummy.UseSeed(pair.Outer)) {
                             first  = AmbientBatch();
                             second = AmbientBatch();
                         }
@@ -263,9 +263,9 @@ public sealed class SeedDeterminismProperties {
                         // of its own rather than sharing the outer one.
                         string restoredFirst;
                         string restoredSecond;
-                        using (Any.UseSeed(pair.Outer)) {
+                        using (Dummy.UseSeed(pair.Outer)) {
                             restoredFirst = AmbientBatch();
-                            using (Any.UseSeed(pair.Inner)) { AmbientBatch(); }
+                            using (Dummy.UseSeed(pair.Inner)) { AmbientBatch(); }
                             restoredSecond = AmbientBatch();
                         }
 
@@ -278,14 +278,14 @@ public sealed class SeedDeterminismProperties {
     public void DisposingAScopeTwiceIsHarmless() {
         Prop.ForAll(Generators.Seed().ToArbitrary(),
                     seed => {
-                        IDisposable stale = Any.UseSeed(seed);
+                        IDisposable stale = Dummy.UseSeed(seed);
                         stale.Dispose();
 
                         string expected;
-                        using (Any.UseSeed(seed)) { expected = AmbientBatch(); }
+                        using (Dummy.UseSeed(seed)) { expected = AmbientBatch(); }
 
                         string actual;
-                        using (Any.UseSeed(seed)) {
+                        using (Dummy.UseSeed(seed)) {
                             // The second dispose of an already-closed handle must do nothing at all. Were it to run
                             // its restore again it would reinstate its own predecessor over the scope open right
                             // now, and the batch below would no longer be pinned — which is what makes this a
@@ -312,7 +312,7 @@ public sealed class SeedDeterminismProperties {
                         Exception? caught  = null;
 
                         try {
-                            Any.Reproducibly(seed, failing, message => reported = message);
+                            Dummy.Reproducibly(seed, failing, message => reported = message);
                         } catch (Exception exception) {
                             caught = exception;
                         }
@@ -328,7 +328,7 @@ public sealed class SeedDeterminismProperties {
     [Fact(DisplayName = "UseSeed rejects a null replay snippet, for every seed.")]
     public void UseSeedRejectsANullSnippet() {
         Prop.ForAll(Generators.Seed().ToArbitrary(),
-                    seed => Expect.Throws<ArgumentNullException>(() => Any.UseSeed(seed, null!)))
+                    seed => Expect.Throws<ArgumentNullException>(() => Dummy.UseSeed(seed, null!)))
             .QuickCheckThrowOnFailure();
     }
 
@@ -341,7 +341,7 @@ public sealed class SeedDeterminismProperties {
         // Exactly ArgumentException, not merely something assignable to it: a blank snippet is not a null one, and
         // the two guards must stay distinguishable.
         Prop.ForAll(cases.ToArbitrary(),
-                    testCase => ThrowsExactly<ArgumentException>(() => Any.UseSeed(testCase.Seed, testCase.Snippet)))
+                    testCase => ThrowsExactly<ArgumentException>(() => Dummy.UseSeed(testCase.Seed, testCase.Snippet)))
             .QuickCheckThrowOnFailure();
     }
 
@@ -353,7 +353,7 @@ public sealed class SeedDeterminismProperties {
         // really watches for is the failure mode that would make them coincide systematically — a seed that ends up
         // ignored, normalized away, or shared between contexts.
         Prop.ForAll(DifferentSeeds().ToArbitrary(),
-                    seeds => ContextBatch(Any.WithSeed(seeds.First)) != ContextBatch(Any.WithSeed(seeds.Second)))
+                    seeds => ContextBatch(Dummy.WithSeed(seeds.First)) != ContextBatch(Dummy.WithSeed(seeds.Second)))
             .QuickCheckThrowOnFailure();
     }
 
@@ -369,7 +369,7 @@ public sealed class SeedDeterminismProperties {
         // stable across threads. That is the documented contract, and asserting more would over-promise it.
         Prop.ForAll(Generators.Seed().ToArbitrary(),
                     seed => {
-                        int[] drawn = ConcurrentBurst(Any.WithSeed(seed));
+                        int[] drawn = ConcurrentBurst(Dummy.WithSeed(seed));
 
                         return MostFrequent(drawn) < drawn.Length / 10;
                     })
@@ -385,7 +385,7 @@ public sealed class SeedDeterminismProperties {
     ///     Draws from one context on every thread at once. Each worker writes its own slice, so the collection itself
     ///     adds no synchronization that could mask the source's.
     /// </summary>
-    private static int[] ConcurrentBurst(AnyContext context) {
+    private static int[] ConcurrentBurst(DummyContext context) {
         int[] drawn = new int[BurstThreads * BurstDrawsPerThread];
         Parallel.For(0, BurstThreads, new ParallelOptions { MaxDegreeOfParallelism = BurstThreads },
                      worker => {

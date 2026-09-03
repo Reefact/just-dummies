@@ -7,9 +7,9 @@ using Microsoft.CodeAnalysis.Operations;
 namespace JustDummies.Analyzers;
 
 /// <summary>
-///     JD004 — reports a seeding call whose result is thrown away. <c>Any.UseSeed(...)</c> returns the handle that
+///     JD004 — reports a seeding call whose result is thrown away. <c>Dummy.UseSeed(...)</c> returns the handle that
 ///     closes the scope: dropping it is the leak the library's own documentation warns about, and it leaves the seed
-///     pinned for whatever runs next in the same execution context. <c>Any.WithSeed(...)</c> returns an isolated
+///     pinned for whatever runs next in the same execution context. <c>Dummy.WithSeed(...)</c> returns an isolated
 ///     context and pins nothing at all, so a discarded call is dead code that reads as if it had seeded the run.
 /// </summary>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
@@ -19,7 +19,7 @@ public sealed class DiscardedSeedingResultAnalyzer : DiagnosticAnalyzer {
     private const string WithSeedMethodName = "WithSeed";
 
     private const string UseSeedConsequence  = "the scope is never closed, so the seed stays pinned for whatever runs next in the same execution context; hold the handle in a using declaration";
-    private const string WithSeedConsequence = "Any.WithSeed returns an isolated context and pins nothing — the ambient Any.* entry points keep drawing unseeded; capture the context and draw from it, or use Any.UseSeed to pin the ambient source";
+    private const string WithSeedConsequence = "Dummy.WithSeed returns an isolated context and pins nothing — the ambient Dummy.* entry points keep drawing unseeded; capture the context and draw from it, or use Dummy.UseSeed to pin the ambient source";
 
     /// <inheritdoc />
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; } =
@@ -34,9 +34,9 @@ public sealed class DiscardedSeedingResultAnalyzer : DiagnosticAnalyzer {
 
     private static void OnCompilationStart(CompilationStartAnalysisContext context) {
         KnownSymbols symbols = KnownSymbols.From(context.Compilation);
-        if (symbols.Any is null) { return; }
+        if (symbols.Dummy is null) { return; }
 
-        context.RegisterOperationAction(operationContext => Analyze(operationContext, symbols.Any), OperationKind.Invocation);
+        context.RegisterOperationAction(operationContext => Analyze(operationContext, symbols.Dummy), OperationKind.Invocation);
     }
 
     private static void Analyze(OperationAnalysisContext context, INamedTypeSymbol anyType) {

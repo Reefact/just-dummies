@@ -10,15 +10,15 @@
 
 ## Context
 
-`JustDummies` draws every arbitrary value from a random source. The static `Any`
+`JustDummies` draws every arbitrary value from a random source. The static `Dummy`
 entry points draw from an **ambient** source that flows with the execution
 context, so it never leaks across tests running in parallel. Determinism over
 that ambient source is opt-in, and today only two public paths reach it:
 
-* `Any.Reproducibly(...)`, which pins a seed for the duration of a **delegate it
+* `Dummy.Reproducibly(...)`, which pins a seed for the duration of a **delegate it
   owns**, runs that delegate, and reports the seed if it throws. [ADR-0026 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0026-rebase-testing-arbitrary-values-on-dummies.md) made
   this the repository's single seed story.
-* `Any.WithSeed(...)`, which creates an **isolated** context. The static `Any`
+* `Dummy.WithSeed(...)`, which creates an **isolated** context. The static `Dummy`
   entry points do not draw from it, so it pins nothing for code that uses them.
 
 The handle that opens and closes an ambient seed scope exists, but is internal.

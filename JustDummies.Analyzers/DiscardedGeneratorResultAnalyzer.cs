@@ -28,17 +28,17 @@ public sealed class DiscardedGeneratorResultAnalyzer : DiagnosticAnalyzer {
 
     private static void OnCompilationStart(CompilationStartAnalysisContext context) {
         KnownSymbols symbols = KnownSymbols.From(context.Compilation);
-        if (symbols.IAny is null) { return; }
+        if (symbols.IDummy is null) { return; }
 
-        INamedTypeSymbol iAny = symbols.IAny;
+        INamedTypeSymbol iDummy = symbols.IDummy;
 
-        context.RegisterOperationAction(operationContext => Analyze(operationContext, iAny), OperationKind.Invocation);
+        context.RegisterOperationAction(operationContext => Analyze(operationContext, iDummy), OperationKind.Invocation);
     }
 
-    private static void Analyze(OperationAnalysisContext context, INamedTypeSymbol iAny) {
+    private static void Analyze(OperationAnalysisContext context, INamedTypeSymbol iDummy) {
         IInvocationOperation invocation = (IInvocationOperation)context.Operation;
 
-        if (!GeneratorFacts.IsGenerator(invocation.TargetMethod.ReturnType, iAny)) { return; }
+        if (!GeneratorFacts.IsGenerator(invocation.TargetMethod.ReturnType, iDummy)) { return; }
         if (!IsResultDiscarded(invocation)) { return; }
 
         // A test asserting that the constraint throws writes the illegal call as the whole body of a lambda argument;

@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-using JustDummies.GenAny;
+using JustDummies.GenDummy;
 
 namespace JustDummies.Cli;
 

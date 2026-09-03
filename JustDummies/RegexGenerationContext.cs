@@ -32,7 +32,7 @@ internal sealed class RegexGenerationContext {
 
     internal void Append(char character) {
         if (_builder.Length >= _limit) {
-            throw AnyGenerationException.PatternExceedsGenerationLimit(_limit);
+            throw DummyGenerationException.PatternExceedsGenerationLimit(_limit);
         }
 
         _builder.Append(character);

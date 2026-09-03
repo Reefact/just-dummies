@@ -36,7 +36,7 @@ public sealed class InertDistinctnessAnalyzer : DiagnosticAnalyzer {
 
     private static void OnCompilationStart(CompilationStartAnalysisContext context) {
         KnownSymbols symbols = KnownSymbols.From(context.Compilation);
-        if (symbols.Any is null || symbols.IAny is null) { return; }
+        if (symbols.Dummy is null || symbols.IDummy is null) { return; }
 
         context.RegisterOperationAction(operationContext => Analyze(operationContext, symbols), OperationKind.Invocation);
     }
@@ -45,7 +45,7 @@ public sealed class InertDistinctnessAnalyzer : DiagnosticAnalyzer {
         IInvocationOperation invocation = (IInvocationOperation)context.Operation;
 
         if (invocation.Parent is IInvocationOperation) { return; }
-        if (!AnyChainFacts.TryGetChain(invocation, symbols, out IReadOnlyList<IInvocationOperation> constraints, out IInvocationOperation? factory)) { return; }
+        if (!DummyChainFacts.TryGetChain(invocation, symbols, out IReadOnlyList<IInvocationOperation> constraints, out IInvocationOperation? factory)) { return; }
         if (factory is null) { return; }
         if (NegativeTestGuard.IsSoleBodyOfLambdaArgument(invocation.Syntax)) { return; }
 
@@ -99,7 +99,7 @@ public sealed class InertDistinctnessAnalyzer : DiagnosticAnalyzer {
     /// </summary>
     /// <remarks>
     ///     The narrowing dogfooding forced. A pool generator returns the very references it was handed, so
-    ///     <c>Any.SetOf(Any.OneOf(first, second))</c> is a legal and meaningful declaration: drawing <c>first</c> twice
+    ///     <c>Dummy.SetOf(Dummy.OneOf(first, second))</c> is a legal and meaningful declaration: drawing <c>first</c> twice
     ///     yields the same reference and the set rejects it exactly as asked. The rule's premise — every element is a
     ///     new instance — holds only where the chain builds the value here, so that is the only shape it claims.
     /// </remarks>

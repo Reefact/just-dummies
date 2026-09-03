@@ -23,7 +23,7 @@ namespace JustDummies.UnitTests;
 ///         null-argument guard: the defect it prevents is a <i>new</i> builder forgetting the rule, and only
 ///         reflection holds a member that does not exist yet. The overflow behind the original defect existed because
 ///         the same arithmetic had been made safe one line away and not at the second site — a rule applied by hand
-///         is a rule applied unevenly. Discovery starts from the generator factories on <see cref="Any" />, so a
+///         is a rule applied unevenly. Discovery starts from the generator factories on <see cref="Dummy" />, so a
 ///         collection shape added later is covered with nothing to add here.
 ///     </para>
 /// </remarks>
@@ -42,7 +42,7 @@ public sealed class SizeGuardConventionTests {
 
         // An empty harvest would make every assertion below vacuously true — the classic way a convention test goes
         // green by testing nothing.
-        Check.WithCustomMessage("No generator was harvested from Any's factories; the convention would assert nothing.")
+        Check.WithCustomMessage("No generator was harvested from Dummy's factories; the convention would assert nothing.")
              .That(generators)
              .Not.IsEmpty();
 
@@ -63,14 +63,14 @@ public sealed class SizeGuardConventionTests {
     #region Statics members declarations
 
     /// <summary>
-    ///     One generator per shape that carries size constraints, obtained from <see cref="Any" />'s own factories so
+    ///     One generator per shape that carries size constraints, obtained from <see cref="Dummy" />'s own factories so
     ///     that a shape added later is picked up here automatically. Generic factories are closed over
     ///     <see cref="int" />, and the item generators a collection factory needs are supplied from the same source.
     /// </summary>
     private static IEnumerable<object> Generators() {
-        List<object> generators = [Any.String()];
+        List<object> generators = [Dummy.String()];
 
-        foreach (MethodInfo factory in typeof(Any).GetMethods(BindingFlags.Public | BindingFlags.Static)) {
+        foreach (MethodInfo factory in typeof(Dummy).GetMethods(BindingFlags.Public | BindingFlags.Static)) {
             if (!factory.IsGenericMethodDefinition) { continue; }
             if (factory.GetGenericArguments().Length is not (1 or 2)) { continue; }
             if (!TryClose(factory, out MethodInfo closed)) { continue; }
@@ -85,7 +85,7 @@ public sealed class SizeGuardConventionTests {
 
     /// <summary>
     ///     Closes a generic factory over <see cref="int" />, or reports that it cannot be: a factory constrained to
-    ///     something else (<c>Any.Enum&lt;TEnum&gt;</c>) carries no size constraint, so skipping it costs no coverage.
+    ///     something else (<c>Dummy.Enum&lt;TEnum&gt;</c>) carries no size constraint, so skipping it costs no coverage.
     /// </summary>
     private static bool TryClose(MethodInfo factory, out MethodInfo closed) {
         try {
@@ -107,13 +107,13 @@ public sealed class SizeGuardConventionTests {
     private static bool TryBuildArguments(MethodInfo factory, out object[] arguments) {
         List<object> built = [];
         foreach (ParameterInfo parameter in factory.GetParameters()) {
-            if (parameter.ParameterType != typeof(IAny<int>)) {
+            if (parameter.ParameterType != typeof(IDummy<int>)) {
                 arguments = [];
 
                 return false;
             }
 
-            built.Add(Any.Int32());
+            built.Add(Dummy.Int32());
         }
 
         arguments = built.ToArray();
@@ -125,7 +125,7 @@ public sealed class SizeGuardConventionTests {
     ///     Every public method of a generator whose parameters are all sizes — the constraints this convention
     ///     governs. Inherited members are deliberately included: the collection shapes take
     ///     <c>WithCount</c>/<c>WithMinCount</c>/<c>WithMaxCount</c> from their shared base, so excluding them would
-    ///     leave every shape but <see cref="AnyDictionary{TKey,TValue}" /> unchecked.
+    ///     leave every shape but <see cref="DummyDictionary{TKey,TValue}" /> unchecked.
     /// </summary>
     private static IEnumerable<MethodInfo> SizeMethodsOf(Type type) {
         return type.GetMethods(BindingFlags.Public | BindingFlags.Instance)

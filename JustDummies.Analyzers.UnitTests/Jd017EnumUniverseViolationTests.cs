@@ -27,8 +27,8 @@ public class Jd017EnumUniverseViolationTests {
 
             public static class Sample {
                 public static void M() {
-                    _ = Any.Enum<Perm>().OneOf(Perm.Read | Perm.Write);
-                    _ = Any.Enum<Perm>().OneOf(Perm.Read | Perm.Write).AllowingCombinations();
+                    _ = Dummy.Enum<Perm>().OneOf(Perm.Read | Perm.Write);
+                    _ = Dummy.Enum<Perm>().OneOf(Perm.Read | Perm.Write).AllowingCombinations();
                 }
             }
             """;
@@ -48,7 +48,7 @@ public class Jd017EnumUniverseViolationTests {
 
             public static class Sample {
                 public static void M() {
-                    _ = Any.Enum<Perm>().OneOf((Perm)4);
+                    _ = Dummy.Enum<Perm>().OneOf((Perm)4);
                 }
             }
             """;
@@ -70,7 +70,7 @@ public class Jd017EnumUniverseViolationTests {
 
             public static class Sample {
                 public static void M() {
-                    _ = Any.Enum<Day>().OneOf((Day)3);
+                    _ = Dummy.Enum<Day>().OneOf((Day)3);
                 }
             }
             """;
@@ -91,7 +91,7 @@ public class Jd017EnumUniverseViolationTests {
 
             public static class Sample {
                 public static void M() {
-                    _ = Any.Enum<Perm>().OneOf(Perm.Read | Perm.Write).Except(Perm.None, Perm.Read, Perm.Write);
+                    _ = Dummy.Enum<Perm>().OneOf(Perm.Read | Perm.Write).Except(Perm.None, Perm.Read, Perm.Write);
                 }
             }
             """;
@@ -111,7 +111,7 @@ public class Jd017EnumUniverseViolationTests {
 
             public static class Sample {
                 public static void M() {
-                    _ = Any.Enum<Perm>().OneOf(Perm.Read).Except(Perm.None, Perm.Read, Perm.Write);
+                    _ = Dummy.Enum<Perm>().OneOf(Perm.Read).Except(Perm.None, Perm.Read, Perm.Write);
                 }
             }
             """;
@@ -132,8 +132,8 @@ public class Jd017EnumUniverseViolationTests {
 
             public static class Sample {
                 public static void M(Perm value) {
-                    _ = Any.Enum<Perm>().OneOf(value).Except(Perm.None, Perm.Read, Perm.Write);
-                    _ = Any.Enum<Perm>().OneOf(Perm.Read, value).Except(Perm.None, Perm.Read, Perm.Write);
+                    _ = Dummy.Enum<Perm>().OneOf(value).Except(Perm.None, Perm.Read, Perm.Write);
+                    _ = Dummy.Enum<Perm>().OneOf(Perm.Read, value).Except(Perm.None, Perm.Read, Perm.Write);
                 }
             }
             """;
@@ -153,7 +153,7 @@ public class Jd017EnumUniverseViolationTests {
 
             public static class Sample {
                 public static void M() {
-                    _ = Any.Enum<Perm>().Except(Perm.None, Perm.Read, Perm.Write);
+                    _ = Dummy.Enum<Perm>().Except(Perm.None, Perm.Read, Perm.Write);
                 }
             }
             """;
@@ -172,7 +172,7 @@ public class Jd017EnumUniverseViolationTests {
 
             public static class Sample {
                 public static void M() {
-                    _ = Any.Enum<Day>().OneOf((Day)99);
+                    _ = Dummy.Enum<Day>().OneOf((Day)99);
                 }
             }
             """;
@@ -191,7 +191,7 @@ public class Jd017EnumUniverseViolationTests {
 
             public static class Sample {
                 public static void M() {
-                    _ = Any.Enum<Day>().Except(Day.Mon, Day.Tue);
+                    _ = Dummy.Enum<Day>().Except(Day.Mon, Day.Tue);
                 }
             }
             """;
@@ -213,8 +213,8 @@ public class Jd017EnumUniverseViolationTests {
 
             public static class Sample {
                 public static void M() {
-                    _ = Any.Enum<Perm>().AllowingCombinations().Except(Perm.None, Perm.Read, Perm.Write);
-                    _ = Any.Enum<Perm>().Except(Perm.None, Perm.Read, Perm.Write).AllowingCombinations();
+                    _ = Dummy.Enum<Perm>().AllowingCombinations().Except(Perm.None, Perm.Read, Perm.Write);
+                    _ = Dummy.Enum<Perm>().Except(Perm.None, Perm.Read, Perm.Write).AllowingCombinations();
                 }
             }
             """;
@@ -232,7 +232,7 @@ public class Jd017EnumUniverseViolationTests {
 
             public static class Sample {
                 public static void M() {
-                    _ = Any.Enum<Perm>().AllowingCombinations().OneOf(Perm.Read | Perm.Write);
+                    _ = Dummy.Enum<Perm>().AllowingCombinations().OneOf(Perm.Read | Perm.Write);
                 }
             }
             """;
@@ -250,7 +250,7 @@ public class Jd017EnumUniverseViolationTests {
 
             public static class Sample {
                 public static void M() {
-                    _ = Any.Enum<Perm>().OneOf(Perm.Read, Perm.Write);
+                    _ = Dummy.Enum<Perm>().OneOf(Perm.Read, Perm.Write);
                 }
             }
             """;
@@ -268,7 +268,7 @@ public class Jd017EnumUniverseViolationTests {
 
             public static class Sample {
                 public static void M() {
-                    _ = Any.Enum<Day>().Except(Day.Mon);
+                    _ = Dummy.Enum<Day>().Except(Day.Mon);
                 }
             }
             """;
@@ -287,7 +287,7 @@ public class Jd017EnumUniverseViolationTests {
             {{Declarations}}
 
             public static class Sample {
-                public static IAny<T> AnyOf<T>() where T : struct, Enum => Any.Enum<T>();
+                public static IDummy<T> AnyOf<T>() where T : struct, Enum => Dummy.Enum<T>();
             }
             """;
 
@@ -309,7 +309,7 @@ public class Jd017EnumUniverseViolationTests {
 
             public static class Sample {
                 public static void M() {
-                    Check2.ThatCode(() => Any.Enum<Day>().Except(Day.Mon, Day.Tue));
+                    Check2.ThatCode(() => Dummy.Enum<Day>().Except(Day.Mon, Day.Tue));
                 }
             }
             """;

@@ -10,12 +10,12 @@ using NFluent;
 
 namespace JustDummies.UnitTests;
 
-[TestSubject(typeof(AnyExtensions))]
+[TestSubject(typeof(DummyExtensions))]
 public sealed class CompositionTests {
 
     #region Statics members declarations
 
-    private static T Materialize<T>(IAny<T> generator) {
+    private static T Materialize<T>(IDummy<T> generator) {
         return generator.Generate();
     }
 
@@ -23,7 +23,7 @@ public sealed class CompositionTests {
 
     [Fact(DisplayName = "As bridges a constrained string to a value object through its own factory.")]
     public void AsBuildsAStringValueObject() {
-        IAny<OrderReference> generator = Any.String()
+        IDummy<OrderReference> generator = Dummy.String()
                                             .StartingWith("ORD-")
                                             .WithLength(12)
                                             .As(OrderReference.Create);
@@ -36,7 +36,7 @@ public sealed class CompositionTests {
 
     [Fact(DisplayName = "As bridges a constrained integer to a value object through its own factory.")]
     public void AsBuildsANumericValueObject() {
-        IAny<Percentage> generator = Any.Int32().Between(0, 100).As(Percentage.Create);
+        IDummy<Percentage> generator = Dummy.Int32().Between(0, 100).As(Percentage.Create);
 
         Percentage percentage = generator.Generate();
 
@@ -44,21 +44,21 @@ public sealed class CompositionTests {
         Check.That(percentage.Value).IsLessOrEqualThan(100);
     }
 
-    [Fact(DisplayName = "A factory rejecting the generated value surfaces as AnyGenerationException naming the value and the seed.")]
+    [Fact(DisplayName = "A factory rejecting the generated value surfaces as DummyGenerationException naming the value and the seed.")]
     public void AsWrapsFactoryFailures() {
-        IAny<Percentage> tooWeaklyConstrained = Any.Int32().Between(200, 300).As(Percentage.Create);
+        IDummy<Percentage> tooWeaklyConstrained = Dummy.Int32().Between(200, 300).As(Percentage.Create);
 
-        AnyGenerationException? caught = null;
-        Check.ThatCode(() => Any.Reproducibly(9876, () => {
+        DummyGenerationException? caught = null;
+        Check.ThatCode(() => Dummy.Reproducibly(9876, () => {
                 try {
                     tooWeaklyConstrained.Generate();
-                } catch (AnyGenerationException exception) {
+                } catch (DummyGenerationException exception) {
                     caught = exception;
 
                     throw;
                 }
             }, _ => { }))
-             .Throws<AnyGenerationException>();
+             .Throws<DummyGenerationException>();
 
         Check.That(caught).IsNotNull();
         Check.That(caught!.Seed).IsEqualTo(9876);
@@ -69,9 +69,9 @@ public sealed class CompositionTests {
 
     [Fact(DisplayName = "Combine assembles two constrained parts through a constructor lambda.")]
     public void CombineAssemblesTwoParts() {
-        IAny<Customer> generator = Any.Combine(
-            Any.String().NonEmpty().WithMaxLength(50),
-            Any.String().StartingWith("ORD-").WithLength(12),
+        IDummy<Customer> generator = Dummy.Combine(
+            Dummy.String().NonEmpty().WithMaxLength(50),
+            Dummy.String().StartingWith("ORD-").WithLength(12),
             (name, reference) => new Customer(name, OrderReference.Create(reference)));
 
         Customer customer = generator.Generate();
@@ -82,10 +82,10 @@ public sealed class CompositionTests {
 
     [Fact(DisplayName = "Combine assembles three parts through a constructor lambda.")]
     public void CombineAssemblesThreeParts() {
-        IAny<string> generator = Any.Combine(
-            Any.String().WithLength(2).InUpperCase(),
-            Any.Int32().Between(10, 99),
-            Any.String().WithLength(2).InLowerCase(),
+        IDummy<string> generator = Dummy.Combine(
+            Dummy.String().WithLength(2).InUpperCase(),
+            Dummy.Int32().Between(10, 99),
+            Dummy.String().WithLength(2).InLowerCase(),
             (head, middle, tail) => $"{head}{middle}{tail}");
 
         string value = generator.Generate();
@@ -93,64 +93,64 @@ public sealed class CompositionTests {
         Check.That(value.Length).IsEqualTo(6);
     }
 
-    [Fact(DisplayName = "A composer failure surfaces as AnyGenerationException naming the generated values.")]
+    [Fact(DisplayName = "A composer failure surfaces as DummyGenerationException naming the generated values.")]
     public void CombineWrapsComposerFailures() {
-        IAny<string> generator = Any.Combine<int, int, string>(
-            Any.Int32().Between(1, 3),
-            Any.Int32().Between(4, 6),
+        IDummy<string> generator = Dummy.Combine<int, int, string>(
+            Dummy.Int32().Between(1, 3),
+            Dummy.Int32().Between(4, 6),
             (first, second) => throw new InvalidOperationException($"rejected {first}/{second}"));
 
-        AnyGenerationException caught = Assert.Throws<AnyGenerationException>(() => generator.Generate());
+        DummyGenerationException caught = Assert.Throws<DummyGenerationException>(() => generator.Generate());
 
         Check.That(caught.Message).Contains("Combine(...)");
         Check.That(caught.InnerException).IsInstanceOf<InvalidOperationException>();
     }
 
-    [Fact(DisplayName = "A composer failure over ambient generators reports the Any.Reproducibly replay hint.")]
+    [Fact(DisplayName = "A composer failure over ambient generators reports the Dummy.Reproducibly replay hint.")]
     public void CombineOverAmbientGeneratorsReportsReproduciblyHint() {
-        IAny<string> generator = Any.Combine<int, int, string>(
-            Any.Int32().Between(1, 3),
-            Any.Int32().Between(4, 6),
+        IDummy<string> generator = Dummy.Combine<int, int, string>(
+            Dummy.Int32().Between(1, 3),
+            Dummy.Int32().Between(4, 6),
             (first, second) => throw new InvalidOperationException($"rejected {first}/{second}"));
 
-        Check.ThatCode(() => Any.Reproducibly(31415, () => generator.Generate(), _ => { }))
-             .Throws<AnyGenerationException>()
+        Check.ThatCode(() => Dummy.Reproducibly(31415, () => generator.Generate(), _ => { }))
+             .Throws<DummyGenerationException>()
              .WithProperty(caught => caught.Seed, 31415)
              .And.WhichMember(caught => caught.Message)
-             .Contains("Any.Reproducibly(31415")
-             .And.Not.Contains("Any.WithSeed(");
+             .Contains("Dummy.Reproducibly(31415")
+             .And.Not.Contains("Dummy.WithSeed(");
     }
 
-    [Fact(DisplayName = "A composer failure over an Any.WithSeed(...) context reports the WithSeed replay hint, not the inapplicable Any.Reproducibly instruction.")]
+    [Fact(DisplayName = "A composer failure over an Dummy.WithSeed(...) context reports the WithSeed replay hint, not the inapplicable Dummy.Reproducibly instruction.")]
     public void CombineOverFixedContextReportsWithSeedHint() {
-        AnyContext seeded = Any.WithSeed(4242);
+        DummyContext seeded = Dummy.WithSeed(4242);
 
-        IAny<string> generator = Any.Combine<int, int, string>(
+        IDummy<string> generator = Dummy.Combine<int, int, string>(
             seeded.Int32().Between(1, 3),
             seeded.Int32().Between(4, 6),
             (first, second) => throw new InvalidOperationException($"rejected {first}/{second}"));
 
         Check.ThatCode(() => generator.Generate())
-             .Throws<AnyGenerationException>()
+             .Throws<DummyGenerationException>()
              .WithProperty(caught => caught.Seed, 4242)
              .And.WhichMember(caught => caught.Message)
              .Contains("Combine(...)")
-             .And.Contains("Any.WithSeed(4242)")
-             .And.Not.Contains("Any.Reproducibly(");
+             .And.Contains("Dummy.WithSeed(4242)")
+             .And.Not.Contains("Dummy.Reproducibly(");
     }
 
     [Fact(DisplayName = "A composer failure over a Combine mixing a foreign operand qualifies the replay hint, though a library operand supplies a nameable source.")]
     public void CombineOverMixedForeignAndLibraryQualifiesTheHint() {
-        // The foreign operand has no source, but Any.Int32()'s ambient source survives the ?? collapse, so a naive
+        // The foreign operand has no source, but Dummy.Int32()'s ambient source survives the ?? collapse, so a naive
         // "non-null source means faithful" rule would over-promise. The composed value depends on the foreign draw, so
         // the hint must be qualified even though a seed can still be named.
-        IAny<string> generator = Any.Combine<int, int, string>(
+        IDummy<string> generator = Dummy.Combine<int, int, string>(
             new ForeignInt(),
-            Any.Int32().Between(1, 3),
+            Dummy.Int32().Between(1, 3),
             (first, second) => throw new InvalidOperationException($"rejected {first}/{second}"));
 
-        Check.ThatCode(() => Any.Reproducibly(31415, () => generator.Generate(), _ => { }))
-             .Throws<AnyGenerationException>()
+        Check.ThatCode(() => Dummy.Reproducibly(31415, () => generator.Generate(), _ => { }))
+             .Throws<DummyGenerationException>()
              .WithProperty(caught => caught.Seed, 31415)
              .And.WhichMember(caught => caught.Message)
              .Contains("Combine(...)")
@@ -160,15 +160,15 @@ public sealed class CompositionTests {
 
     [Fact(DisplayName = "A composer failure over a Combine mixing two different seeded sources does not promise a full replay from one seed.")]
     public void CombineOverMixedSeededSourcesQualifiesTheHint() {
-        // The first operand draws from Any.WithSeed(4242); the second from the ambient source. The composed value
+        // The first operand draws from Dummy.WithSeed(4242); the second from the ambient source. The composed value
         // depends on BOTH, so replaying WithSeed(4242) alone reproduces only the first — the hint must not promise a
         // deterministic full replay from that one seed (issue #319).
-        IAny<string> generator = Any.Combine<int, int, string>(
-            Any.WithSeed(4242).Int32().Between(1, 3),
-            Any.Int32().Between(4, 6),
+        IDummy<string> generator = Dummy.Combine<int, int, string>(
+            Dummy.WithSeed(4242).Int32().Between(1, 3),
+            Dummy.Int32().Between(4, 6),
             (first, second) => throw new InvalidOperationException($"rejected {first}/{second}"));
 
-        AnyGenerationException caught = Assert.Throws<AnyGenerationException>(() => generator.Generate());
+        DummyGenerationException caught = Assert.Throws<DummyGenerationException>(() => generator.Generate());
 
         Check.That(caught.Message).Contains("Combine(...)");
         Check.WithCustomMessage($"The hint over-promised a full replay. Message: {caught.Message}")
@@ -179,14 +179,14 @@ public sealed class CompositionTests {
 
     [Fact(DisplayName = "Combine composes four through eight parts, passing every constrained part to the lambda.")]
     public void CombineSupportsHigherArities() {
-        IAny<int> part = Any.Int32().Between(1, 9);
+        IDummy<int> part = Dummy.Int32().Between(1, 9);
 
         for (int i = 0; i < 50; i++) {
-            int[] four  = Any.Combine(part, part, part, part, (a, b, c, d) => new[] { a, b, c, d }).Generate();
-            int[] five  = Any.Combine(part, part, part, part, part, (a, b, c, d, e) => new[] { a, b, c, d, e }).Generate();
-            int[] six   = Any.Combine(part, part, part, part, part, part, (a, b, c, d, e, f) => new[] { a, b, c, d, e, f }).Generate();
-            int[] seven = Any.Combine(part, part, part, part, part, part, part, (a, b, c, d, e, f, g) => new[] { a, b, c, d, e, f, g }).Generate();
-            int[] eight = Any.Combine(part, part, part, part, part, part, part, part, (a, b, c, d, e, f, g, h) => new[] { a, b, c, d, e, f, g, h }).Generate();
+            int[] four  = Dummy.Combine(part, part, part, part, (a, b, c, d) => new[] { a, b, c, d }).Generate();
+            int[] five  = Dummy.Combine(part, part, part, part, part, (a, b, c, d, e) => new[] { a, b, c, d, e }).Generate();
+            int[] six   = Dummy.Combine(part, part, part, part, part, part, (a, b, c, d, e, f) => new[] { a, b, c, d, e, f }).Generate();
+            int[] seven = Dummy.Combine(part, part, part, part, part, part, part, (a, b, c, d, e, f, g) => new[] { a, b, c, d, e, f, g }).Generate();
+            int[] eight = Dummy.Combine(part, part, part, part, part, part, part, part, (a, b, c, d, e, f, g, h) => new[] { a, b, c, d, e, f, g, h }).Generate();
 
             Check.That(four.Length).IsEqualTo(4);
             Check.That(five.Length).IsEqualTo(5);
@@ -205,18 +205,18 @@ public sealed class CompositionTests {
         int drawnFirst  = 0;
         int drawnSecond = 0;
 
-        IAny<int> first = Any.Int32().As(value => {
+        IDummy<int> first = Dummy.Int32().As(value => {
             drawnFirst++;
 
             return value;
         });
-        IAny<int> second = Any.Int32().As(value => {
+        IDummy<int> second = Dummy.Int32().As(value => {
             drawnSecond++;
 
             return value;
         });
 
-        _ = Any.Combine(first, second, (a, b) => a).Generate();
+        _ = Dummy.Combine(first, second, (a, b) => a).Generate();
 
         Check.That(drawnFirst).IsEqualTo(1);
         Check.That(drawnSecond).IsEqualTo(1);
@@ -224,15 +224,15 @@ public sealed class CompositionTests {
 
     [Fact(DisplayName = "A higher-arity Combine validates its arguments and wraps composer failures.")]
     public void HigherArityCombineValidatesAndWraps() {
-        Check.ThatCode(() => Any.Combine(Any.Int32(), Any.Int32(), Any.Int32(), Any.Int32(), (Func<int, int, int, int, int>)null!)).Throws<ArgumentNullException>();
-        Check.ThatCode(() => Any.Combine<int, int, int, int, int>(Any.Int32(), Any.Int32(), Any.Int32(), null!, (a, b, c, d) => a)).Throws<ArgumentNullException>();
+        Check.ThatCode(() => Dummy.Combine(Dummy.Int32(), Dummy.Int32(), Dummy.Int32(), Dummy.Int32(), (Func<int, int, int, int, int>)null!)).Throws<ArgumentNullException>();
+        Check.ThatCode(() => Dummy.Combine<int, int, int, int, int>(Dummy.Int32(), Dummy.Int32(), Dummy.Int32(), null!, (a, b, c, d) => a)).Throws<ArgumentNullException>();
 
-        IAny<string> failing = Any.Combine<int, int, int, int, int, int, int, int, string>(
-            Any.Int32().Between(1, 2), Any.Int32().Between(1, 2), Any.Int32().Between(1, 2), Any.Int32().Between(1, 2),
-            Any.Int32().Between(1, 2), Any.Int32().Between(1, 2), Any.Int32().Between(1, 2), Any.Int32().Between(1, 2),
+        IDummy<string> failing = Dummy.Combine<int, int, int, int, int, int, int, int, string>(
+            Dummy.Int32().Between(1, 2), Dummy.Int32().Between(1, 2), Dummy.Int32().Between(1, 2), Dummy.Int32().Between(1, 2),
+            Dummy.Int32().Between(1, 2), Dummy.Int32().Between(1, 2), Dummy.Int32().Between(1, 2), Dummy.Int32().Between(1, 2),
             (a, b, c, d, e, f, g, h) => throw new InvalidOperationException("rejected"));
 
-        AnyGenerationException caught = Assert.Throws<AnyGenerationException>(() => failing.Generate());
+        DummyGenerationException caught = Assert.Throws<DummyGenerationException>(() => failing.Generate());
         Check.That(caught.Message).Contains("Combine(...)");
         Check.That(caught.InnerException).IsInstanceOf<InvalidOperationException>();
     }
@@ -243,12 +243,12 @@ public sealed class CompositionTests {
         // the generated value ran on EVERY draw — successful ones included. A domain object whose ToString() throws
         // (state a fixture never set, most often) therefore killed a derivation that had nothing wrong with it: the
         // factory below is never even reached. The sentence is a thunk now, so nothing renders unless it fails.
-        IAny<string> derived = Any.ElementOf(new[] { new Unrenderable() }).As(_ => "built");
+        IDummy<string> derived = Dummy.ElementOf(new[] { new Unrenderable() }).As(_ => "built");
 
         Check.That(derived.Generate()).IsEqualTo("built");
 
-        IAny<string> combined = Any.Combine(Any.ElementOf(new[] { new Unrenderable() }),
-                                            Any.Int32().Between(1, 3),
+        IDummy<string> combined = Dummy.Combine(Dummy.ElementOf(new[] { new Unrenderable() }),
+                                            Dummy.Int32().Between(1, 3),
                                             (_, number) => "built " + number);
 
         Check.That(combined.Generate()).StartsWith("built ");
@@ -258,11 +258,11 @@ public sealed class CompositionTests {
     public void AThrowingToStringStillYieldsTheWrappedDiagnostic() {
         // The other half: once the factory does fail, rendering the value is attempted — and must not replace the
         // diagnostic being built with the ToString() failure. The message degrades to the type name; the caller still
-        // gets an AnyGenerationException naming As(...) and carrying the real cause.
-        IAny<string> failing = Any.ElementOf(new[] { new Unrenderable() })
+        // gets an DummyGenerationException naming As(...) and carrying the real cause.
+        IDummy<string> failing = Dummy.ElementOf(new[] { new Unrenderable() })
                                   .As<Unrenderable, string>(_ => throw new InvalidOperationException("rejected"));
 
-        AnyGenerationException caught = Assert.Throws<AnyGenerationException>(() => failing.Generate());
+        DummyGenerationException caught = Assert.Throws<DummyGenerationException>(() => failing.Generate());
 
         Check.That(caught.Message).Contains("As(...)");
         Check.That(caught.Message).Contains(nameof(Unrenderable));       // the fallback rendering
@@ -276,17 +276,17 @@ public sealed class CompositionTests {
         // The same guard has to hold there: the caller must read the conflict, not the renderer's accident.
         Unrenderable value = new();
 
-        Check.ThatCode(() => Any.ListOf(Any.ElementOf(new[] { value })).Distinct().Containing(value).Containing(value).Generate())
-             .Throws<ConflictingAnyConstraintException>()
+        Check.ThatCode(() => Dummy.ListOf(Dummy.ElementOf(new[] { value })).Distinct().Containing(value).Containing(value).Generate())
+             .Throws<ConflictingDummyConstraintException>()
              .WhichMember(caught => caught.Message)
              .Contains(nameof(Unrenderable))
              .And.Not.Contains("ToString() exploded");
     }
 
-    [Fact(DisplayName = "Generic inference flows through IAny<T> without relying on implicit conversions.")]
+    [Fact(DisplayName = "Generic inference flows through IDummy<T> without relying on implicit conversions.")]
     public void GenericInferenceFlowsThroughIAny() {
-        string text  = Materialize(Any.String().NonEmpty().WithMaxLength(50));
-        int    value = Materialize(Any.Int32().Positive());
+        string text  = Materialize(Dummy.String().NonEmpty().WithMaxLength(50));
+        int    value = Materialize(Dummy.Int32().Positive());
 
         Check.That(text).IsNotEmpty();
         Check.That(value).IsStrictlyGreaterThan(0);
@@ -294,15 +294,15 @@ public sealed class CompositionTests {
 
     [Fact(DisplayName = "As and Combine validate their arguments.")]
     public void CompositionValidatesArguments() {
-        Check.ThatCode(() => Any.String().As<string, OrderReference>(null!)).Throws<ArgumentNullException>();
-        Check.ThatCode(() => AnyExtensions.As(null!, (string value) => value)).Throws<ArgumentNullException>();
-        Check.ThatCode(() => Any.Combine(null!, Any.Int32(), (int a, int b) => a + b)).Throws<ArgumentNullException>();
-        Check.ThatCode(() => Any.Combine(Any.Int32(), Any.Int32(), (Func<int, int, int>)null!)).Throws<ArgumentNullException>();
+        Check.ThatCode(() => Dummy.String().As<string, OrderReference>(null!)).Throws<ArgumentNullException>();
+        Check.ThatCode(() => DummyExtensions.As(null!, (string value) => value)).Throws<ArgumentNullException>();
+        Check.ThatCode(() => Dummy.Combine(null!, Dummy.Int32(), (int a, int b) => a + b)).Throws<ArgumentNullException>();
+        Check.ThatCode(() => Dummy.Combine(Dummy.Int32(), Dummy.Int32(), (Func<int, int, int>)null!)).Throws<ArgumentNullException>();
     }
 
     [Fact(DisplayName = "A derived generator draws fresh values on every generation.")]
     public void DerivedGeneratorsDrawFreshValues() {
-        IAny<Percentage> generator = Any.Int32().Between(0, 100).As(Percentage.Create);
+        IDummy<Percentage> generator = Dummy.Int32().Between(0, 100).As(Percentage.Create);
 
         HashSet<int> seen = [];
         for (int i = 0; i < 100; i++) {
@@ -325,9 +325,9 @@ public sealed class CompositionTests {
 
     }
 
-    private sealed class ForeignInt : IAny<int> {
+    private sealed class ForeignInt : IDummy<int> {
 
-        // Foreign on purpose: implements IAny<int> but NOT IHasRandomSource, so it draws from no reported source and a
+        // Foreign on purpose: implements IDummy<int> but NOT IHasRandomSource, so it draws from no reported source and a
         // Combine that includes it is not fully reproducible even when another operand carries one.
         public int Generate() {
             return 0;

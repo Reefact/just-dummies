@@ -91,8 +91,8 @@ référence dans le même commit :
 
 `RS0026`/`RS0027` (les règles de conception « paramètres optionnels répartis sur
 plusieurs surcharges ») sont désactivées délibérément : elles se déclenchent sur les
-API fluentes centrales de la bibliothèque (`Any.String()`/`Int32()` et leurs chaînes de contraintes,
-`Any.Reproducibly`), où les faire respecter exigerait une refonte cassante — une
+API fluentes centrales de la bibliothèque (`Dummy.String()`/`Int32()` et leurs chaînes de contraintes,
+`Dummy.Reproducibly`), où les faire respecter exigerait une refonte cassante — une
 décision distincte, pas une corvée de base de référence.
 
 ## Activer le hook de message de commit
@@ -159,7 +159,7 @@ Tout ce qui suit en découle.
   le travail appartient : `sylvain/…`, `claude/…`, `dependabot/…`. La
   `<short-description>` DOIT être en anglais, en minuscules, en kebab-case, et nommer le
   changement, pas le fichier qu’il touche : `sylvain/string-exclusion-redraw`, jamais
-  `sylvain/AnyString.cs`.
+  `sylvain/DummyString.cs`.
 * Un outil qui génère ses propres branches possède son espace de noms et conserve sa
   structure native en dessous — `dependabot/nuget/Newtonsoft.Json-13.0.1`,
   `renovate/…`. La forme `<author>/<short-description>` lie les branches qu’une personne
@@ -236,7 +236,7 @@ forme, au niveau de la branche, du commit qui porte deux intentions.
 | Branche | Pourquoi elle convient |
 |---|---|
 | `sylvain/add-html-renderer` | Propriétaire et changement, nommés simplement. Le type qu’elle portera vit dans ses commits. |
-| `claude/string-exclusion-redraw` | La branche d’un agent ; la description nomme la zone, pas `AnyString.cs`. |
+| `claude/string-exclusion-redraw` | La branche d’un agent ; la description nomme la zone, pas `DummyString.cs`. |
 | `dependabot/nuget/Newtonsoft.Json-13.0.1` | Un générateur conserve sa structure native sous son espace de noms `dependabot/`. |
 | `sylvain/security-policy` | La description seule porte le sujet ; la branche n’a besoin d’aucun type. |
 
@@ -247,7 +247,7 @@ forme, au niveau de la branche, du commit qui porte deux intentions.
 | un commit poussé directement sur `main` | `main` n’avance que par merge. Même un correctif d’une ligne prend une branche et une pull request. |
 | `patch-1`, `my-work`, `tmp` | Aucun propriétaire, et ça ne nomme rien. Un nom de branche se lit dans la liste des pull requests ; il DOIT dire qui possède quoi. |
 | `feat/add-html-renderer` | Un type à la place du propriétaire. Le type appartient aux commits ; le préfixe de branche est le propriétaire : `sylvain/add-html-renderer`. |
-| `sylvain/AnyString.cs` | Nomme un fichier. Il devrait nommer le changement : `sylvain/string-exclusion-redraw`. |
+| `sylvain/DummyString.cs` | Nomme un fichier. Il devrait nommer le changement : `sylvain/string-exclusion-redraw`. |
 | `sylvain/corrige-le-rendu` | Pas en anglais. |
 | raviver une branche mergée `claude/add-html-renderer` pour un suivi | Une branche mergée est épuisée. Coupez le suivi à neuf depuis `origin/main`. |
 | une branche coupée depuis un `main` local vieux de trois semaines | Le diff de la pull request se remplit de commits déjà sur `main`. Fetchez d’abord ; coupez depuis `origin/main`. |
@@ -337,11 +337,11 @@ est présent, il DOIT être en minuscules et DOIT être l’un des suivants :
 
 | Scope | Couvre |
 |---|---|
-| `core` | `JustDummies` — la bibliothèque de génération (`Any`, les specs de contraintes, le moteur d’expressions régulières, …) |
+| `core` | `JustDummies` — la bibliothèque de génération (`Dummy`, les specs de contraintes, le moteur d’expressions régulières, …) |
 | `analyzers` | `JustDummies.Analyzers` — les analyzers Roslyn et leurs diagnostics `JDxxx` |
 | `xunit` | `JustDummies.Xunit` — l’adaptateur xUnit v3 |
 | `catalog` | `JustDummies.DiagnosticCatalog` — les règles `JDxxx` en constantes qu'une suppression peut nommer |
-| `cli` | `dum` — le scaffolder : `JustDummies.Cli` et son moteur `JustDummies.GenAny` |
+| `cli` | `dum` — le scaffolder : `JustDummies.Cli` et son moteur `JustDummies.GenDummy` |
 
 Cette liste vit ici, dans le dépôt, là où un outil peut la vérifier. Un scope NE DOIT PAS
 être un nom de fichier ni un nom de classe : ceux-ci bougent ; la zone qu’ils habitent,
@@ -379,7 +379,7 @@ fix(analyzers,core): reject a constraint chain that admits no value
 
 * Elle DOIT être à l’impératif présent : `add`, pas `added` ni `adds`. La description
   complète une phrase — *If applied, this commit will …* — et seul l’impératif y convient :
-  *…will add `Any.SetOf`*.
+  *…will add `Dummy.SetOf`*.
 * Elle DOIT commencer par une lettre minuscule et NE DOIT PAS se terminer par un point. La
   ligne d’en-tête n’est pas une phrase ; c’est un titre.
 * La ligne d’en-tête complète — type, scope optionnel, `!` optionnel, deux-points et
@@ -426,7 +426,7 @@ deux-points, et par un footer `BREAKING CHANGE:` en majuscules.
 ```
 feat(core)!: refuse a distinctness request the element generator cannot meet
 
-BREAKING CHANGE: Any.SetOf(...).WithCount(n) now throws AnyGenerationException
+BREAKING CHANGE: Dummy.SetOf(...).WithCount(n) now throws DummyGenerationException
 when the element generator's domain holds fewer than n values, where it used to
 loop until the redraw budget ran out and return a shorter set. Callers relying on
 the short result must widen the element domain.
@@ -532,7 +532,7 @@ refactor(core): extract transience computation into TransienceCalculator
 ```
 feat(core)!: refuse a distinctness request the element generator cannot meet
 
-BREAKING CHANGE: Any.SetOf(...).WithCount(n) now throws AnyGenerationException
+BREAKING CHANGE: Dummy.SetOf(...).WithCount(n) now throws DummyGenerationException
 when the element generator's domain holds fewer than n values, where it used to
 loop until the redraw budget ran out and return a shorter set. Callers relying on
 the short result must widen the element domain.
@@ -556,7 +556,7 @@ Classés comme le sont les règles : type, scope, description, corps, breaking, 
 | `fix(core): change line 42 of Error` | La description nomme une ligne. Elle devrait nommer un changement. |
 | `fix(core): honour a string exclusion` — corps : `Replaced the while loop with a bounded redraw` | Le corps répète le diff. Il devrait dire pourquoi la boucle non bornée ne pouvait pas terminer. |
 | `feat(core)!: refuse an unmeetable distinctness request` — sans footer | Le `!` avertit ; il ne fait migrer personne. |
-| `feat(core): add Any.SetOf (#142)` | L’issue mange les 72 caractères de la description. Sa place est un footer. |
+| `feat(core): add Dummy.SetOf (#142)` | L’issue mange les 72 caractères de la description. Sa place est un footer. |
 | `refs: #142` | Token en minuscules. Le token du footer est `Refs`. |
 
 ### Adoption
@@ -633,5 +633,5 @@ le code.
 |---|---|
 | `feat: various improvements` | Un type sur un fourre-tout. Soit c’est une seule intention — nommez-la — soit il y en a plusieurs, et `feat:` les cache. |
 | `fix(core): Fixed the null dereference.` | La forme à intention unique, portant les défauts propres à l’en-tête de commit : majuscule, passé, point final. |
-| `Add Any.SetOf (#142)` | Le numéro d’issue a sa place dans le `Closes`/`Refs` de la description, là où GitHub le lit — pas à manger le titre. |
+| `Add Dummy.SetOf (#142)` | Le numéro d’issue a sa place dans le `Closes`/`Refs` de la description, là où GitHub le lit — pas à manger le titre. |
 | `Corrige le rendu des exemples` | Pas en anglais. |

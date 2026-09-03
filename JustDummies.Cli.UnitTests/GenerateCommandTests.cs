@@ -63,10 +63,10 @@ public sealed class GenerateCommandTests : IDisposable {
 
         Check.That(run.ExitCode).IsEqualTo(0);
         Check.That(run.Output).Contains("Analyzing Shop.Domain.Order");
-        Check.That(run.Output).Contains("✓ AnyOrder.cs");
+        Check.That(run.Output).Contains("✓ DummyOrder.cs");
         Check.That(run.Error).IsEmpty();
-        Check.That(await File.ReadAllTextAsync(Path.Combine(directory, "AnyOrder.cs"), TestContext.Current.CancellationToken))
-             .Contains("Any.Int32().Positive()");
+        Check.That(await File.ReadAllTextAsync(Path.Combine(directory, "DummyOrder.cs"), TestContext.Current.CancellationToken))
+             .Contains("Dummy.Int32().Positive()");
     }
 
     /// <summary>
@@ -83,7 +83,7 @@ public sealed class GenerateCommandTests : IDisposable {
 
         Check.That(run.ExitCode).IsEqualTo(0);
         Check.That(run.Output).StartsWith("// Scaffolded by dum");
-        Check.That(run.Error).Contains("✓ AnyOrder.cs");
+        Check.That(run.Error).Contains("✓ DummyOrder.cs");
         Check.That(Directory.GetFiles(directory)).IsEmpty();
     }
 
@@ -103,12 +103,12 @@ public sealed class GenerateCommandTests : IDisposable {
 
         Check.That(run.ExitCode).IsEqualTo(0);
         Check.That(run.Output).Contains("TODO");
-        Check.That(File.Exists(Path.Combine(directory, "AnyWarehouse.cs"))).IsTrue();
+        Check.That(File.Exists(Path.Combine(directory, "DummyWarehouse.cs"))).IsTrue();
     }
 
     [Fact(DisplayName = "An existing file is refused, and the run fails without touching it.")]
     public async Task AnExistingFileIsRefused() {
-        string path = Path.Combine(directory, "AnyOrder.cs");
+        string path = Path.Combine(directory, "DummyOrder.cs");
 
         await File.WriteAllTextAsync(path, "// mine", TestContext.Current.CancellationToken);
 
@@ -125,14 +125,14 @@ public sealed class GenerateCommandTests : IDisposable {
 
         settings.Force = true;
 
-        await File.WriteAllTextAsync(Path.Combine(directory, "AnyOrder.cs"), "// mine",
+        await File.WriteAllTextAsync(Path.Combine(directory, "DummyOrder.cs"), "// mine",
                                      TestContext.Current.CancellationToken);
 
         Run run = await Generate(settings);
 
         Check.That(run.ExitCode).IsEqualTo(0);
-        Check.That(await File.ReadAllTextAsync(Path.Combine(directory, "AnyOrder.cs"), TestContext.Current.CancellationToken))
-             .Contains("public sealed partial class AnyOrder");
+        Check.That(await File.ReadAllTextAsync(Path.Combine(directory, "DummyOrder.cs"), TestContext.Current.CancellationToken))
+             .Contains("public sealed partial class DummyOrder");
     }
 
     [Fact(DisplayName = "--namespace puts the generator where it was asked to go.")]
@@ -143,7 +143,7 @@ public sealed class GenerateCommandTests : IDisposable {
 
         await Generate(settings);
 
-        Check.That(await File.ReadAllTextAsync(Path.Combine(directory, "AnyOrder.cs"), TestContext.Current.CancellationToken))
+        Check.That(await File.ReadAllTextAsync(Path.Combine(directory, "DummyOrder.cs"), TestContext.Current.CancellationToken))
              .Contains("namespace Shop.Tests.Dummies;");
     }
 
@@ -156,8 +156,8 @@ public sealed class GenerateCommandTests : IDisposable {
         Run run = await Generate(settings);
 
         Check.That(run.ExitCode).IsEqualTo(0);
-        Check.That(run.Output).Contains("✓ AnyOrder.Entry.cs — entry point Dummies.Order()");
-        Check.That(await File.ReadAllTextAsync(Path.Combine(directory, "AnyOrder.Entry.cs"), TestContext.Current.CancellationToken))
+        Check.That(run.Output).Contains("✓ DummyOrder.Entry.cs — entry point Dummies.Order()");
+        Check.That(await File.ReadAllTextAsync(Path.Combine(directory, "DummyOrder.Entry.cs"), TestContext.Current.CancellationToken))
              .Contains("public static partial class Dummies {");
     }
 
@@ -170,9 +170,9 @@ public sealed class GenerateCommandTests : IDisposable {
         Run run = await Generate(settings);
 
         Check.That(run.ExitCode).IsEqualTo(0);
-        Check.That(run.Output).Contains("entry point Any.Order()");
-        Check.That(await File.ReadAllTextAsync(Path.Combine(directory, "AnyOrder.Entry.cs"), TestContext.Current.CancellationToken))
-             .Contains("extension(Any) {");
+        Check.That(run.Output).Contains("entry point Dummy.Order()");
+        Check.That(await File.ReadAllTextAsync(Path.Combine(directory, "DummyOrder.Entry.cs"), TestContext.Current.CancellationToken))
+             .Contains("extension(Dummy) {");
     }
 
     /// <summary>
@@ -207,7 +207,7 @@ public sealed class GenerateCommandTests : IDisposable {
         Run run = await Generate(settings, Compilation(Domain, language: LanguageVersion.CSharp12));
 
         Check.That(run.ExitCode).IsEqualTo(0);
-        Check.That(File.Exists(Path.Combine(directory, "AnyOrder.Entry.cs"))).IsTrue();
+        Check.That(File.Exists(Path.Combine(directory, "DummyOrder.Entry.cs"))).IsTrue();
     }
 
     /// <summary>
@@ -223,14 +223,14 @@ public sealed class GenerateCommandTests : IDisposable {
 
         settings.EntryPoint = "static:Dummies";
 
-        await File.WriteAllTextAsync(Path.Combine(directory, "AnyOrder.Entry.cs"), "// mine",
+        await File.WriteAllTextAsync(Path.Combine(directory, "DummyOrder.Entry.cs"), "// mine",
                                      TestContext.Current.CancellationToken);
 
         Run run = await Generate(settings);
 
         Check.That(run.ExitCode).IsEqualTo(1);
-        Check.That(run.Error).Contains("AnyOrder.Entry.cs");
-        Check.That(File.Exists(Path.Combine(directory, "AnyOrder.cs"))).IsFalse();
+        Check.That(run.Error).Contains("DummyOrder.Entry.cs");
+        Check.That(File.Exists(Path.Combine(directory, "DummyOrder.cs"))).IsFalse();
     }
 
     [Fact(DisplayName = "--dry-run prints both files and writes neither.")]
@@ -243,8 +243,8 @@ public sealed class GenerateCommandTests : IDisposable {
         Run run = await Generate(settings);
 
         Check.That(run.ExitCode).IsEqualTo(0);
-        Check.That(run.Output).Contains("public sealed partial class AnyOrder");
-        Check.That(run.Output).Contains("extension(Any) {");
+        Check.That(run.Output).Contains("public sealed partial class DummyOrder");
+        Check.That(run.Output).Contains("extension(Dummy) {");
         Check.That(run.Error).Contains("Both files are on stdout");
         Check.That(Directory.GetFiles(directory)).IsEmpty();
     }
@@ -260,10 +260,10 @@ public sealed class GenerateCommandTests : IDisposable {
 
         await Generate(settings);
 
-        Check.That(await File.ReadAllTextAsync(Path.Combine(directory, "AnyOrder.cs"), TestContext.Current.CancellationToken))
+        Check.That(await File.ReadAllTextAsync(Path.Combine(directory, "DummyOrder.cs"), TestContext.Current.CancellationToken))
              .Contains("namespace Shop.Domain;");
 
-        string entry = await File.ReadAllTextAsync(Path.Combine(directory, "AnyOrder.Entry.cs"),
+        string entry = await File.ReadAllTextAsync(Path.Combine(directory, "DummyOrder.Entry.cs"),
                                                    TestContext.Current.CancellationToken);
 
         Check.That(entry).Contains("namespace Shop.Tests.Dummies;");
@@ -274,7 +274,7 @@ public sealed class GenerateCommandTests : IDisposable {
     public async Task NoEntryPointAskedForWritesOneFile() {
         await Generate(Settings("Order"));
 
-        Check.That(File.Exists(Path.Combine(directory, "AnyOrder.Entry.cs"))).IsFalse();
+        Check.That(File.Exists(Path.Combine(directory, "DummyOrder.Entry.cs"))).IsFalse();
     }
 
     /// <summary>
@@ -366,7 +366,7 @@ public sealed class GenerateCommandTests : IDisposable {
                                              .GetProperty("results")[0].GetProperty("parameters")[0];
 
         Check.That(quantity.GetProperty("name").GetString()).IsEqualTo("quantity");
-        Check.That(quantity.GetProperty("expression").GetString()).IsEqualTo("Any.Int32().Positive()");
+        Check.That(quantity.GetProperty("expression").GetString()).IsEqualTo("Dummy.Int32().Positive()");
         Check.That(quantity.GetProperty("resolved").GetBoolean()).IsTrue();
         Check.That(quantity.GetProperty("provenance")[0].GetString()).IsEqualTo("guard");
     }
@@ -383,7 +383,7 @@ public sealed class GenerateCommandTests : IDisposable {
 
         Check.That(run.Output).StartsWith("{");
         Check.That(run.Output).Not.Contains("Analyzing Shop.Domain.Order");
-        Check.That(run.Output).Not.Contains("✓ AnyOrder.cs");
+        Check.That(run.Output).Not.Contains("✓ DummyOrder.cs");
         Check.That(JsonDocument.Parse(run.Output).RootElement.GetProperty("results")[0]
                                .GetProperty("files")[0].GetProperty("written").GetBoolean()).IsTrue();
     }
@@ -403,7 +403,7 @@ public sealed class GenerateCommandTests : IDisposable {
 
         Check.That(file.GetProperty("written").GetBoolean()).IsFalse();
         Check.That(file.GetProperty("path").ValueKind).IsEqualTo(JsonValueKind.Null);
-        Check.That(file.GetProperty("text").GetString()).Contains("public sealed partial class AnyOrder");
+        Check.That(file.GetProperty("text").GetString()).Contains("public sealed partial class DummyOrder");
         Check.That(Directory.GetFiles(directory)).IsEmpty();
     }
 
@@ -418,7 +418,7 @@ public sealed class GenerateCommandTests : IDisposable {
         JsonElement entry = JsonDocument.Parse(run.Output).RootElement
                                         .GetProperty("results")[0].GetProperty("entryPoint");
 
-        Check.That(entry.GetProperty("file").GetString()).IsEqualTo("AnyOrder.Entry.cs");
+        Check.That(entry.GetProperty("file").GetString()).IsEqualTo("DummyOrder.Entry.cs");
         Check.That(entry.GetProperty("call").GetString()).IsEqualTo("Dummies.Order()");
     }
 
@@ -462,9 +462,9 @@ public sealed class GenerateCommandTests : IDisposable {
         Run run = await Generate(settings);
 
         Check.That(run.ExitCode).IsEqualTo(0);
-        Check.That(await File.ReadAllTextAsync(Path.Combine(directory, "AnyOrder.cs"), TestContext.Current.CancellationToken))
+        Check.That(await File.ReadAllTextAsync(Path.Combine(directory, "DummyOrder.cs"), TestContext.Current.CancellationToken))
              .Contains("namespace Shop.Tests.Dummies;");
-        Check.That(File.Exists(Path.Combine(directory, "AnyOrder.Entry.cs"))).IsTrue();
+        Check.That(File.Exists(Path.Combine(directory, "DummyOrder.Entry.cs"))).IsTrue();
     }
 
     // Refused, not ignored: a default someone believes is in force and is not would be worse than no file. It
@@ -474,13 +474,13 @@ public sealed class GenerateCommandTests : IDisposable {
         GenerateSettings settings = Settings("Order");
 
         await File.WriteAllTextAsync(Path.Combine(Path.GetDirectoryName(settings.Project)!, "dum.json"),
-                                     """{ "entryPoint": "static:Any" }""",
+                                     """{ "entryPoint": "static:Dummy" }""",
                                      TestContext.Current.CancellationToken);
 
         Run run = await Generate(settings);
 
         Check.That(run.ExitCode).IsEqualTo(2);
-        Check.That(run.Error).Contains("Any.Int32()");
+        Check.That(run.Error).Contains("Dummy.Int32()");
         Check.That(run.Error).Contains("dum.json");
         Check.That(Directory.GetFiles(directory)).IsEmpty();
     }
@@ -516,7 +516,7 @@ public sealed class GenerateCommandTests : IDisposable {
         Run run = await Generate(Settings("Ordr", "Order"));
 
         Check.That(run.ExitCode).IsEqualTo(1);
-        Check.That(File.Exists(Path.Combine(directory, "AnyOrder.cs"))).IsTrue();
+        Check.That(File.Exists(Path.Combine(directory, "DummyOrder.cs"))).IsTrue();
     }
 
     // Not a fact about the type: without the package nothing in this project resolves (ADR-0059), so the two
@@ -634,7 +634,7 @@ public sealed class GenerateCommandTests : IDisposable {
             }
         }
 
-        if (withLibrary) { references.Add(MetadataReference.CreateFromFile(typeof(global::JustDummies.Any).Assembly.Location)); }
+        if (withLibrary) { references.Add(MetadataReference.CreateFromFile(typeof(global::JustDummies.Dummy).Assembly.Location)); }
 
         return [.. references];
     }

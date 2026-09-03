@@ -42,7 +42,7 @@ public sealed class RejectedConstantArgumentAnalyzer : DiagnosticAnalyzer {
 
     private static void OnCompilationStart(CompilationStartAnalysisContext context) {
         KnownSymbols symbols = KnownSymbols.From(context.Compilation);
-        if (symbols.IAny is null) { return; }
+        if (symbols.IDummy is null) { return; }
 
         context.RegisterOperationAction(operationContext => Analyze(operationContext, symbols), OperationKind.Invocation);
     }
@@ -285,7 +285,7 @@ public sealed class RejectedConstantArgumentAnalyzer : DiagnosticAnalyzer {
     }
 
     private static bool IsJustDummiesMember(IMethodSymbol method, KnownSymbols symbols) {
-        return SymbolEqualityComparer.Default.Equals(method.ContainingType?.ContainingAssembly, symbols.IAny!.ContainingAssembly);
+        return SymbolEqualityComparer.Default.Equals(method.ContainingType?.ContainingAssembly, symbols.IDummy!.ContainingAssembly);
     }
 
 }

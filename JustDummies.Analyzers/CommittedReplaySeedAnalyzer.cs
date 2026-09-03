@@ -35,7 +35,7 @@ public sealed class CommittedReplaySeedAnalyzer : DiagnosticAnalyzer {
 
     private static void OnCompilationStart(CompilationStartAnalysisContext context) {
         KnownSymbols symbols = KnownSymbols.From(context.Compilation);
-        if (symbols.Any is null) { return; }
+        if (symbols.Dummy is null) { return; }
 
         context.RegisterOperationAction(operationContext => AnalyzeInvocation(operationContext, symbols), OperationKind.Invocation);
 
@@ -48,7 +48,7 @@ public sealed class CommittedReplaySeedAnalyzer : DiagnosticAnalyzer {
         IInvocationOperation invocation = (IInvocationOperation)context.Operation;
 
         if (invocation.TargetMethod.Name is not ("Reproducibly" or "ReproduciblyAsync" or "UseSeed" or "WithSeed")) { return; }
-        if (!SymbolEqualityComparer.Default.Equals(invocation.TargetMethod.ContainingType, symbols.Any)) { return; }
+        if (!SymbolEqualityComparer.Default.Equals(invocation.TargetMethod.ContainingType, symbols.Dummy)) { return; }
 
         foreach (IArgumentOperation argument in invocation.Arguments) {
             if (argument.Parameter?.Name != "seed") { continue; }

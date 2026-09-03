@@ -62,7 +62,7 @@ C'est toute la règle. Tout ce qui suit n'en est que l'application.
 * **Atteignabilité.** Qu'une plage bornée soit effectivement atteinte, que les deux
   branches d'un tirage soient observées. C'est statistique, non universel : figez
   une graine.
-* **Conventions structurelles.** Le miroir `Any` ↔ `AnyContext`, le nommage des
+* **Conventions structurelles.** Le miroir `Dummy` ↔ `DummyContext`, le nommage des
   fabriques, la frontière d'assemblage autonome. De la réflexion sur une table
   d'attentes fixe ; il n'y a rien à générer.
 * **Régressions datées.** Un défaut qui a réellement eu lieu, figé aux coordonnées
@@ -95,8 +95,8 @@ C'est toute la règle. Tout ce qui suit n'en est que l'application.
 Un exemple qui fige un refus l'affirme avec NFluent, en une seule expression :
 
 ```csharp
-Check.ThatCode(() => Any.Int32().Positive().Negative())
-     .Throws<ConflictingAnyConstraintException>()
+Check.ThatCode(() => Dummy.Int32().Positive().Negative())
+     .Throws<ConflictingDummyConstraintException>()
      .WhichMember(conflict => conflict.Message).Contains("Negative()", "Positive()");
 ```
 

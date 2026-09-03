@@ -14,15 +14,15 @@ JustDummies construit un scalaire directement pour satisfaire ses contraintes �
 
 Tous les builders scalaires sauf un exposent un trio d'exclusion (`OneOf`/`Except`/`DifferentFrom`). Pour les types à projection ordinale (entiers, types temporels, `char`, `Guid`), une exclusion est intégrée à la construction : le tirage est projeté sur le k-ième ordinal non exclu du domaine en une passe, et le fait que les exclusions laissent le domaine non vide se compte à bas coût à la déclaration.
 
-Les chaînes n'ont pas de projection ordinale. Un `AnyString` est assemblé par disposition — préfixe, remplissage, valeurs contenues, suffixe — sur un domaine effectivement non borné. Une valeur exclue ne peut pas être retirée de ce domaine par construction, et le fait qu'un ensemble d'exclusions laisse une forme satisfaisable n'est pas décidable à bas coût en général : c'est trivial pour une longueur fixe d'un caractère, mais cela croît de façon combinatoire avec la longueur et le jeu de caractères.
+Les chaînes n'ont pas de projection ordinale. Un `DummyString` est assemblé par disposition — préfixe, remplissage, valeurs contenues, suffixe — sur un domaine effectivement non borné. Une valeur exclue ne peut pas être retirée de ce domaine par construction, et le fait qu'un ensemble d'exclusions laisse une forme satisfaisable n'est pas décidable à bas coût en général : c'est trivial pour une longueur fixe d'un caractère, mais cela croît de façon combinatoire avec la longueur et le jeu de caractères.
 
-`AnyString` était le seul builder scalaire sans contraintes d'exclusion, alors que « une valeur différente de celle que je détiens déjà » — tester un chemin d'inégalité avec un identifiant de type chaîne tout en préservant son format — est un besoin courant de chaîne factice (issue #224). L'écrire à la main avec une boucle de nouvelles tentatives oublie généralement la source seedée et casse la reproductibilité, précisément le piège que la bibliothèque existe pour éviter.
+`DummyString` était le seul builder scalaire sans contraintes d'exclusion, alors que « une valeur différente de celle que je détiens déjà » — tester un chemin d'inégalité avec un identifiant de type chaîne tout en préservant son format — est un besoin courant de chaîne factice (issue #224). L'écrire à la main avec une boucle de nouvelles tentatives oublie généralement la source seedée et casse la reproductibilité, précisément le piège que la bibliothèque existe pour éviter.
 
-La bibliothèque accepte déjà un endroit où une valeur qu'un appelant a déclarée peut malgré tout ne pas se matérialiser : une collection distincte sur un domaine non dénombrable tire-et-déduplique sous un budget borné et échoue à la génération, de manière reproductible, lorsqu'elle ne le peut pas (ADR-0004). `AnyString.OneOf` est un générateur terminal distinct qui ne se combine pas avec les autres contraintes (ADR-0009).
+La bibliothèque accepte déjà un endroit où une valeur qu'un appelant a déclarée peut malgré tout ne pas se matérialiser : une collection distincte sur un domaine non dénombrable tire-et-déduplique sous un budget borné et échoue à la génération, de manière reproductible, lorsqu'elle ne le peut pas (ADR-0004). `DummyString.OneOf` est un générateur terminal distinct qui ne se combine pas avec les autres contraintes (ADR-0009).
 
 ## Décision
 
-`AnyString.DifferentFrom`/`Except` sont satisfaits par un nouveau tirage borné de la disposition constructive, et une exclusion qui rend la forme insatisfaisable échoue à la génération par une erreur reproductible portant la seed, plutôt qu'au moment de la déclaration.
+`DummyString.DifferentFrom`/`Except` sont satisfaits par un nouveau tirage borné de la disposition constructive, et une exclusion qui rend la forme insatisfaisable échoue à la génération par une erreur reproductible portant la seed, plutôt qu'au moment de la déclaration.
 
 ## Justification
 
@@ -36,7 +36,7 @@ Le budget de nouveau tirage, le contenu de l'exception et la propagation de la s
 
 ## Alternatives envisagées
 
-### Laisser `AnyString` sans contraintes d'exclusion
+### Laisser `DummyString` sans contraintes d'exclusion
 
 Envisagé parce que cela préservait la règle purement constructive des scalaires et n'exigeait aucun nouveau canal d'échec. Rejeté parce que cela laissait le builder le plus utilisé comme le seul scalaire incapable d'exprimer une exclusion, forçant des boucles de nouvelles tentatives écrites à la main qui cassent silencieusement le seed.
 
@@ -62,7 +62,7 @@ Envisagé parce que construire la chaîne pour esquiver l'ensemble exclu gardera
 
 ### Négatives
 
-* « Un `AnyString` qui existe peut toujours générer » ne tient plus sans condition : une exclusion trop serrée est le seul cas différé à la génération.
+* « Un `DummyString` qui existe peut toujours générer » ne tient plus sans condition : une exclusion trop serrée est le seul cas différé à la génération.
 * Le moment de l'échec d'une exclusion de chaîne insatisfaisable diffère du diagnostic anticipé, au moment de la déclaration, que donnent les builders ordinaux.
 
 ### Risques
@@ -79,7 +79,7 @@ Envisagé parce que construire la chaîne pour esquiver l'ensemble exclu gardera
 ## Références
 
 * [ADR-0004](0004-gate-distinct-collections-by-cardinality-else-bounded-draw.fr.md) — le canal frère « tirage borné avec échec différé ».
-* [ADR-0009](0009-draw-arbitrary-strings-from-an-explicit-terminal-set.fr.md) — `AnyString.OneOf` reste terminal et ne se combine pas avec les exclusions.
+* [ADR-0009](0009-draw-arbitrary-strings-from-an-explicit-terminal-set.fr.md) — `DummyString.OneOf` reste terminal et ne se combine pas avec les exclusions.
 * [ADR-0006](0006-materialize-dummies-only-through-generate.fr.md) — les dummies se matérialisent uniquement via `Generate()`.
-* `StringSpec` et `AnyString` dans le projet `JustDummies` ; le readme NuGet de JustDummies.
+* `StringSpec` et `DummyString` dans le projet `JustDummies` ; le readme NuGet de JustDummies.
 * Issue [#224](https://github.com/Reefact/first-class-errors/issues/224).

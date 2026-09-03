@@ -37,7 +37,7 @@ public static class JustDummiesRule {
     /// <summary>The English page's extension, composed into every rule's link beside its identifier.</summary>
     private const string HelpLinkSuffix = ".en.md";
 
-    /// <summary>An asynchronous body is passed to Any.Reproducibly</summary>
+    /// <summary>An asynchronous body is passed to Dummy.Reproducibly</summary>
     [DiagnosticRule]
     public static class JD001 {
 
@@ -48,14 +48,14 @@ public static class JustDummiesRule {
         public const string Category = JustDummiesCategory.Reproducibility;
 
         /// <summary>The one-line summary the IDE shows beside the rule.</summary>
-        public const string Title = "An asynchronous body is passed to Any.Reproducibly";
+        public const string Title = "An asynchronous body is passed to Dummy.Reproducibly";
 
         /// <summary>The page explaining the condition this diagnostic detects.</summary>
         public const string HelpLinkUri = HelpLinkBase + nameof(JD001) + HelpLinkSuffix;
 
     }
 
-    /// <summary>The task returned by Any.ReproduciblyAsync is discarded</summary>
+    /// <summary>The task returned by Dummy.ReproduciblyAsync is discarded</summary>
     [DiagnosticRule]
     public static class JD002 {
 
@@ -66,14 +66,14 @@ public static class JustDummiesRule {
         public const string Category = JustDummiesCategory.Reproducibility;
 
         /// <summary>The one-line summary the IDE shows beside the rule.</summary>
-        public const string Title = "The task returned by Any.ReproduciblyAsync is discarded";
+        public const string Title = "The task returned by Dummy.ReproduciblyAsync is discarded";
 
         /// <summary>The page explaining the condition this diagnostic detects.</summary>
         public const string HelpLinkUri = HelpLinkBase + nameof(JD002) + HelpLinkSuffix;
 
     }
 
-    /// <summary>An asynchronous body reaches Any.Reproducibly without being awaited</summary>
+    /// <summary>An asynchronous body reaches Dummy.Reproducibly without being awaited</summary>
     [DiagnosticRule]
     public static class JD003 {
 
@@ -84,7 +84,7 @@ public static class JustDummiesRule {
         public const string Category = JustDummiesCategory.Reproducibility;
 
         /// <summary>The one-line summary the IDE shows beside the rule.</summary>
-        public const string Title = "An asynchronous body reaches Any.Reproducibly without being awaited";
+        public const string Title = "An asynchronous body reaches Dummy.Reproducibly without being awaited";
 
         /// <summary>The page explaining the condition this diagnostic detects.</summary>
         public const string HelpLinkUri = HelpLinkBase + nameof(JD003) + HelpLinkSuffix;
@@ -253,7 +253,7 @@ public static class JustDummiesRule {
 
     }
 
-    /// <summary>A held collection is passed to Any.OneOf, making a pool of one</summary>
+    /// <summary>A held collection is passed to Dummy.OneOf, making a pool of one</summary>
     [DiagnosticRule]
     public static class JD013 {
 
@@ -264,7 +264,7 @@ public static class JustDummiesRule {
         public const string Category = JustDummiesCategory.Usage;
 
         /// <summary>The one-line summary the IDE shows beside the rule.</summary>
-        public const string Title = "A held collection is passed to Any.OneOf, making a pool of one";
+        public const string Title = "A held collection is passed to Dummy.OneOf, making a pool of one";
 
         /// <summary>The page explaining the condition this diagnostic detects.</summary>
         public const string HelpLinkUri = HelpLinkBase + nameof(JD013) + HelpLinkSuffix;
@@ -379,7 +379,7 @@ public static class JustDummiesRule {
 
     }
 
-    /// <summary>An AnyContext is shared through a static field</summary>
+    /// <summary>An DummyContext is shared through a static field</summary>
     [DiagnosticRule]
     public static class JD020 {
 
@@ -390,14 +390,14 @@ public static class JustDummiesRule {
         public const string Category = JustDummiesCategory.Reproducibility;
 
         /// <summary>The one-line summary the IDE shows beside the rule.</summary>
-        public const string Title = "An AnyContext is shared through a static field";
+        public const string Title = "An DummyContext is shared through a static field";
 
         /// <summary>The page explaining the condition this diagnostic detects.</summary>
         public const string HelpLinkUri = HelpLinkBase + nameof(JD020) + HelpLinkSuffix;
 
     }
 
-    /// <summary>Any.UseSeed is given a blank replay snippet</summary>
+    /// <summary>Dummy.UseSeed is given a blank replay snippet</summary>
     [DiagnosticRule]
     public static class JD021 {
 
@@ -408,7 +408,7 @@ public static class JustDummiesRule {
         public const string Category = JustDummiesCategory.Reproducibility;
 
         /// <summary>The one-line summary the IDE shows beside the rule.</summary>
-        public const string Title = "Any.UseSeed is given a blank replay snippet";
+        public const string Title = "Dummy.UseSeed is given a blank replay snippet";
 
         /// <summary>The page explaining the condition this diagnostic detects.</summary>
         public const string HelpLinkUri = HelpLinkBase + nameof(JD021) + HelpLinkSuffix;

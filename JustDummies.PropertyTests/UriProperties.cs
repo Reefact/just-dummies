@@ -14,7 +14,7 @@ using JetBrains.Annotations;
 namespace JustDummies.PropertyTests;
 
 /// <summary>
-///     Property-based tests for the <see cref="AnyUri" /> family. The example-based suite pins one host
+///     Property-based tests for the <see cref="DummyUri" /> family. The example-based suite pins one host
 ///     (<c>api.example.com</c>), one port (<c>8443</c>) and one segment count (<c>3</c>), and can only prove the
 ///     builder right for those; these quantify over the whole option space of each family — every host the library
 ///     accepts, every port in 1..65535, every small segment count, and every on/off combination of the optional
@@ -27,7 +27,7 @@ namespace JustDummies.PropertyTests;
 ///     conflicts survive to run time — a second scheme constraint and a second path constraint — and both are proven
 ///     below over arbitrary arguments.
 /// </remarks>
-[TestSubject(typeof(AnyUri))]
+[TestSubject(typeof(DummyUri))]
 public sealed class UriProperties {
 
     private const string LowerLetters  = "abcdefghijklmnopqrstuvwxyz";
@@ -112,27 +112,27 @@ public sealed class UriProperties {
     }
 
     /// <summary>Applies one of the two web scheme pins — the pair that conflicts with itself in either order.</summary>
-    private static AnyWebUri PinScheme(AnyWebUri generator, bool secure) {
+    private static DummyWebUri PinScheme(DummyWebUri generator, bool secure) {
         return secure ? generator.UsingHttps() : generator.UsingHttp();
     }
 
     /// <summary>Applies one of the two WebSocket scheme pins — the pair that conflicts with itself in either order.</summary>
-    private static AnyWebSocketUri PinScheme(AnyWebSocketUri generator, bool secure) {
+    private static DummyWebSocketUri PinScheme(DummyWebSocketUri generator, bool secure) {
         return secure ? generator.UsingWss() : generator.UsingWs();
     }
 
-    /// <summary>The scheme a pinned web generator must draw — the read side of <see cref="PinScheme(AnyWebUri, bool)" />.</summary>
+    /// <summary>The scheme a pinned web generator must draw — the read side of <see cref="PinScheme(DummyWebUri, bool)" />.</summary>
     private static string WebScheme(bool secure) {
         return secure ? "https" : "http";
     }
 
-    /// <summary>The scheme a pinned WebSocket generator must draw — the read side of <see cref="PinScheme(AnyWebSocketUri, bool)" />.</summary>
+    /// <summary>The scheme a pinned WebSocket generator must draw — the read side of <see cref="PinScheme(DummyWebSocketUri, bool)" />.</summary>
     private static string WebSocketScheme(bool secure) {
         return secure ? "wss" : "ws";
     }
 
     /// <summary>Declares a path constraint: a segment count, or the root path when <paramref name="segments" /> is <c>null</c>.</summary>
-    private static AnyWebUri PinPath(AnyWebUri generator, int? segments) {
+    private static DummyWebUri PinPath(DummyWebUri generator, int? segments) {
         return segments.HasValue ? generator.WithPathSegments(segments.Value) : generator.WithoutPath();
     }
 
@@ -147,8 +147,8 @@ public sealed class UriProperties {
     }
 
     /// <summary>Declares on a web generator exactly the components the case asks for, and nothing else.</summary>
-    private static AnyWebUri WebGeneratorFor((string Host, int? Port, PathChoice Path, int Segments, bool? Secure, bool Query, bool Fragment) testCase) {
-        AnyWebUri generator = Any.Uri().Web().WithHost(testCase.Host);
+    private static DummyWebUri WebGeneratorFor((string Host, int? Port, PathChoice Path, int Segments, bool? Secure, bool Query, bool Fragment) testCase) {
+        DummyWebUri generator = Dummy.Uri().Web().WithHost(testCase.Host);
         if (testCase.Secure.HasValue) { generator = PinScheme(generator, testCase.Secure.Value); }
         if (testCase.Port.HasValue) { generator = generator.WithPort(testCase.Port.Value); }
         if (testCase.Path == PathChoice.Root) { generator = generator.WithoutPath(); }
@@ -181,8 +181,8 @@ public sealed class UriProperties {
     }
 
     /// <summary>Declares on a WebSocket generator exactly the components the case asks for.</summary>
-    private static AnyWebSocketUri WebSocketGeneratorFor((string Host, PathChoice Path, int Segments, bool? Secure, bool Query) testCase) {
-        AnyWebSocketUri generator = Any.Uri().WebSocket().WithHost(testCase.Host);
+    private static DummyWebSocketUri WebSocketGeneratorFor((string Host, PathChoice Path, int Segments, bool? Secure, bool Query) testCase) {
+        DummyWebSocketUri generator = Dummy.Uri().WebSocket().WithHost(testCase.Host);
         if (testCase.Secure.HasValue) { generator = PinScheme(generator, testCase.Secure.Value); }
         if (testCase.Path == PathChoice.Root) { generator = generator.WithoutPath(); }
         if (testCase.Path == PathChoice.Exact) { generator = generator.WithPathSegments(testCase.Segments); }
@@ -210,8 +210,8 @@ public sealed class UriProperties {
     }
 
     /// <summary>Declares on a mailto generator whichever address parts the case pins.</summary>
-    private static AnyMailtoUri MailtoGeneratorFor((string Local, string Domain, bool PinLocal, bool PinDomain, bool Headers) testCase) {
-        AnyMailtoUri generator = Any.Uri().Mailto();
+    private static DummyMailtoUri MailtoGeneratorFor((string Local, string Domain, bool PinLocal, bool PinDomain, bool Headers) testCase) {
+        DummyMailtoUri generator = Dummy.Uri().Mailto();
         if (testCase.PinLocal) { generator = generator.WithLocalPart(testCase.Local); }
         if (testCase.PinDomain) { generator = generator.WithDomain(testCase.Domain); }
         if (testCase.Headers) { generator = generator.WithHeaders(); }
@@ -239,8 +239,8 @@ public sealed class UriProperties {
     }
 
     /// <summary>Declares on a relative generator exactly the path, query and fragment the case asks for.</summary>
-    private static AnyRelativeUri RelativeGeneratorFor((int? Segments, bool Rooted, bool Query, bool Fragment) testCase) {
-        AnyRelativeUri generator = Any.Uri().Relative();
+    private static DummyRelativeUri RelativeGeneratorFor((int? Segments, bool Rooted, bool Query, bool Fragment) testCase) {
+        DummyRelativeUri generator = Dummy.Uri().Relative();
         if (testCase.Rooted) { generator = generator.Rooted(); }
         if (testCase.Segments.HasValue) { generator = generator.WithPathSegments(testCase.Segments.Value); }
         if (testCase.Query) { generator = generator.WithQuery(); }
@@ -270,7 +270,7 @@ public sealed class UriProperties {
     [Fact(DisplayName = "Every unconstrained draw is a valid URI of an emittable family, whatever the seed.")]
     public void UnconstrainedDrawsAreValidUris() {
         Prop.ForAll(Generators.Seed().ToArbitrary(),
-                    seed => Expect.EveryDraw(Any.WithSeed(seed).Uri(),
+                    seed => Expect.EveryDraw(Dummy.WithSeed(seed).Uri(),
                                              value => {
                                                  UriKind kind = value.IsAbsoluteUri ? UriKind.Absolute : UriKind.Relative;
 
@@ -292,7 +292,7 @@ public sealed class UriProperties {
                         // One family in five per draw, so 120 draws leave a miss far below any rate that could make
                         // this flaky, while a hand-written test can only ever assert it for the one seed it picked.
                         HashSet<string> seen = [];
-                        foreach (Uri value in Expect.Draws(Any.WithSeed(seed).Uri(), 120)) {
+                        foreach (Uri value in Expect.Draws(Dummy.WithSeed(seed).Uri(), 120)) {
                             seen.Add(value.IsAbsoluteUri ? value.Scheme : "relative");
                         }
 
@@ -333,10 +333,10 @@ public sealed class UriProperties {
 
         Prop.ForAll(cases.ToArbitrary(),
                     testCase => {
-                        AnyWebUri generator = testCase.Choice switch {
-                            UserInfoChoice.UserOnly        => Any.Uri().Web().WithUserInfo(testCase.User),
-                            UserInfoChoice.UserAndPassword => Any.Uri().Web().WithUserInfo(testCase.User, testCase.Password),
-                            _                              => Any.Uri().Web().WithUserInfo()
+                        DummyWebUri generator = testCase.Choice switch {
+                            UserInfoChoice.UserOnly        => Dummy.Uri().Web().WithUserInfo(testCase.User),
+                            UserInfoChoice.UserAndPassword => Dummy.Uri().Web().WithUserInfo(testCase.User, testCase.Password),
+                            _                              => Dummy.Uri().Web().WithUserInfo()
                         };
 
                         return Expect.EveryDraw(generator,
@@ -380,7 +380,7 @@ public sealed class UriProperties {
 
         Prop.ForAll(cases.ToArbitrary(),
                     testCase => {
-                        AnyFtpUri generator = Any.Uri().Ftp().WithHost(testCase.Host);
+                        DummyFtpUri generator = Dummy.Uri().Ftp().WithHost(testCase.Host);
                         if (testCase.Port.HasValue) { generator = generator.WithPort(testCase.Port.Value); }
                         if (testCase.Path == PathChoice.Root) { generator = generator.WithoutPath(); }
                         if (testCase.Path == PathChoice.Exact) { generator = generator.WithPathSegments(testCase.Segments); }
@@ -425,12 +425,12 @@ public sealed class UriProperties {
 
         Prop.ForAll(cases.ToArbitrary(),
                     testCase => {
-                        AnyRelativeUri generator = RelativeGeneratorFor(testCase);
+                        DummyRelativeUri generator = RelativeGeneratorFor(testCase);
 
                         // An explicit zero-segment path with nothing else to carry it renders the empty string, which is
                         // not a valid reference: the one shape of this family that cannot generate.
                         if (testCase.Segments == 0 && !testCase.Rooted && !testCase.Query && !testCase.Fragment) {
-                            return Expect.Throws<AnyGenerationException>(() => generator.Generate());
+                            return Expect.Throws<DummyGenerationException>(() => generator.Generate());
                         }
 
                         return Expect.EveryDraw(generator, value => RelativeDrawCarries(value, testCase));
@@ -443,7 +443,7 @@ public sealed class UriProperties {
         Prop.ForAll(Generators.Seed().ToArbitrary(),
                     // The draw picks 0, 1 or 2 segments; the 0 that would render the empty string is silently resolved
                     // to a single arbitrary segment, so the count never leaves 1..2 and generation never fails.
-                    seed => Expect.EveryDraw(Any.WithSeed(seed).Uri().Relative(),
+                    seed => Expect.EveryDraw(Dummy.WithSeed(seed).Uri().Relative(),
                                              value => !value.IsAbsoluteUri
                                                       && value.OriginalString.Length > 0
                                                       && SegmentCount(value.OriginalString) is 1 or 2,
@@ -457,10 +457,10 @@ public sealed class UriProperties {
         Prop.ForAll(Generators.Seed().ToArbitrary(),
                     seed => {
                         try {
-                            Any.WithSeed(seed).Uri().Relative().WithPathSegments(0).Generate();
+                            Dummy.WithSeed(seed).Uri().Relative().WithPathSegments(0).Generate();
 
                             return false;
-                        } catch (AnyGenerationException error) {
+                        } catch (DummyGenerationException error) {
                             return error.Seed == seed;
                         }
                     })
@@ -474,15 +474,15 @@ public sealed class UriProperties {
 
         Prop.ForAll(candidates.ToArbitrary(),
                     port => port is < 1 or > 65535
-                                ? Expect.Throws<ArgumentOutOfRangeException>(() => Any.Uri().Web().WithPort(port))
-                                : Expect.EveryDraw(Any.Uri().Web().WithPort(port), value => value.Port == port))
+                                ? Expect.Throws<ArgumentOutOfRangeException>(() => Dummy.Uri().Web().WithPort(port))
+                                : Expect.EveryDraw(Dummy.Uri().Web().WithPort(port), value => value.Port == port))
             .QuickCheckThrowOnFailure();
     }
 
     [Fact(DisplayName = "The argument-less WithPort yields an explicit, non-default port on every draw.")]
     public void ArbitraryPortsAreExplicitAndNonDefault() {
         Prop.ForAll(Hosts().ToArbitrary(),
-                    host => Expect.EveryDraw(Any.Uri().Web().WithHost(host).WithPort(),
+                    host => Expect.EveryDraw(Dummy.Uri().Web().WithHost(host).WithPort(),
                                              // Drawn above every default the library emits, so the port is always visible.
                                              value => value.Port >= 1025 && value.Port <= 65535 && !value.IsDefaultPort))
             .QuickCheckThrowOnFailure();
@@ -498,12 +498,12 @@ public sealed class UriProperties {
                     // Pinning the same scheme twice asks for the scheme already in force, so it is a no-op and the
                     // generator still produces it; pinning the other one contradicts it.
                     testCase => testCase.First == testCase.Second
-                                    ? Expect.EveryDraw(PinScheme(PinScheme(Any.Uri().Web(), testCase.First), testCase.Second), uri => uri.IsAbsoluteUri)
-                                      && Expect.EveryDraw(PinScheme(PinScheme(Any.Uri().WebSocket(), testCase.First), testCase.Second), uri => uri.IsAbsoluteUri)
-                                    : Expect.Throws<ConflictingAnyConstraintException>(
-                                          () => PinScheme(PinScheme(Any.Uri().Web(), testCase.First), testCase.Second))
-                                      && Expect.Throws<ConflictingAnyConstraintException>(
-                                          () => PinScheme(PinScheme(Any.Uri().WebSocket(), testCase.First), testCase.Second)))
+                                    ? Expect.EveryDraw(PinScheme(PinScheme(Dummy.Uri().Web(), testCase.First), testCase.Second), uri => uri.IsAbsoluteUri)
+                                      && Expect.EveryDraw(PinScheme(PinScheme(Dummy.Uri().WebSocket(), testCase.First), testCase.Second), uri => uri.IsAbsoluteUri)
+                                    : Expect.Throws<ConflictingDummyConstraintException>(
+                                          () => PinScheme(PinScheme(Dummy.Uri().Web(), testCase.First), testCase.Second))
+                                      && Expect.Throws<ConflictingDummyConstraintException>(
+                                          () => PinScheme(PinScheme(Dummy.Uri().WebSocket(), testCase.First), testCase.Second)))
             .QuickCheckThrowOnFailure();
     }
 
@@ -518,16 +518,16 @@ public sealed class UriProperties {
                     // Repeating the SAME path declaration is a no-op; any other pair contradicts. The relative leg has
                     // no WithoutPath(), so it only ever exercises the doubled segment count.
                     testCase => testCase.First == testCase.Second
-                                    ? Expect.EveryDraw(PinPath(PinPath(Any.Uri().Web(), testCase.First), testCase.Second), uri => uri.IsAbsoluteUri)
+                                    ? Expect.EveryDraw(PinPath(PinPath(Dummy.Uri().Web(), testCase.First), testCase.Second), uri => uri.IsAbsoluteUri)
                                       // Shifted off zero: a relative reference with no segment, query, fragment or root
                                       // is the empty string, which is not a valid URI reference — a pre-existing refusal
                                       // this property is not about.
-                                      && Expect.EveryDraw(Any.Uri().Relative().WithPathSegments(RelativeSegments(testCase.First)).WithPathSegments(RelativeSegments(testCase.Second)),
+                                      && Expect.EveryDraw(Dummy.Uri().Relative().WithPathSegments(RelativeSegments(testCase.First)).WithPathSegments(RelativeSegments(testCase.Second)),
                                                           uri => !uri.IsAbsoluteUri)
-                                    : Expect.Throws<ConflictingAnyConstraintException>(
-                                          () => PinPath(PinPath(Any.Uri().Web(), testCase.First), testCase.Second))
-                                      && Expect.Throws<ConflictingAnyConstraintException>(
-                                          () => Any.Uri().Relative().WithPathSegments(RelativeSegments(testCase.First)).WithPathSegments(RelativeSegments(testCase.Second))))
+                                    : Expect.Throws<ConflictingDummyConstraintException>(
+                                          () => PinPath(PinPath(Dummy.Uri().Web(), testCase.First), testCase.Second))
+                                      && Expect.Throws<ConflictingDummyConstraintException>(
+                                          () => Dummy.Uri().Relative().WithPathSegments(RelativeSegments(testCase.First)).WithPathSegments(RelativeSegments(testCase.Second))))
             .QuickCheckThrowOnFailure();
     }
 
@@ -543,7 +543,7 @@ public sealed class UriProperties {
                     // Argument validation runs before conflict checking, so the argument error wins over the conflict
                     // the second path constraint would otherwise raise.
                     testCase => Expect.Throws<ArgumentOutOfRangeException>(
-                        () => PinPath(Any.Uri().Web(), testCase.Declared).WithPathSegments(testCase.Count)))
+                        () => PinPath(Dummy.Uri().Web(), testCase.Declared).WithPathSegments(testCase.Count)))
             .QuickCheckThrowOnFailure();
     }
 
@@ -557,7 +557,7 @@ public sealed class UriProperties {
         Prop.ForAll(cases.ToArbitrary(),
                     // An internationalized host is refused at the call site, pointing at punycode — never silently
                     // accepted, because it would not round-trip identically across target frameworks.
-                    spoiled => Expect.Throws<ArgumentException>(() => Any.Uri().Web().WithHost(spoiled)))
+                    spoiled => Expect.Throws<ArgumentException>(() => Dummy.Uri().Web().WithHost(spoiled)))
             .QuickCheckThrowOnFailure();
     }
 
@@ -569,8 +569,8 @@ public sealed class UriProperties {
                             select part.Insert(index, character.ToString());
 
         Prop.ForAll(cases.ToArbitrary(),
-                    spoiled => Expect.Throws<ArgumentException>(() => Any.Uri().Web().WithUserInfo(spoiled))
-                               && Expect.Throws<ArgumentException>(() => Any.Uri().Mailto().WithLocalPart(spoiled)))
+                    spoiled => Expect.Throws<ArgumentException>(() => Dummy.Uri().Web().WithUserInfo(spoiled))
+                               && Expect.Throws<ArgumentException>(() => Dummy.Uri().Mailto().WithLocalPart(spoiled)))
             .QuickCheckThrowOnFailure();
     }
 

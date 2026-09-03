@@ -12,16 +12,16 @@
 ## Context
 
 The library offers two reproducibility mechanisms. The **ambient** context is pinned by a scope
-(`Any.UseSeed`, `Any.Reproducibly`) and flows with the execution context; the **isolated** context
-is created by `Any.WithSeed` and carries its own fixed random source, unaffected by any scope.
+(`Dummy.UseSeed`, `Dummy.Reproducibly`) and flows with the execution context; the **isolated** context
+is created by `Dummy.WithSeed` and carries its own fixed random source, unaffected by any scope.
 
-Every static `Any.*` factory captures the ambient source object, and that source resolves the
+Every static `Dummy.*` factory captures the ambient source object, and that source resolves the
 current `AsyncLocal` frame **when `Generate()` runs**, not when the generator is built (§14.5).
 
-`AnyContext` mirrors the primitive, pattern, URI and choice entry points as instance methods. It
+`DummyContext` mirrors the primitive, pattern, URI and choice entry points as instance methods. It
 does **not** mirror the collection or composition entry points (§14.2).
 
-The emitted type carries a `With{Param}(IAny<TParam>)` overload for every parameter ([ADR-0057](0057-make-the-emitted-generator-a-first-class-iany.md)). It is
+The emitted type carries a `With{Param}(IDummy<TParam>)` overload for every parameter ([ADR-0057](0057-make-the-emitted-generator-a-first-class-iany.md)). It is
 built once and may be generated from many times, possibly inside different scopes.
 
 Two analyzers, `JD009` and `JD020`, report draws from static initialisers and shared static
@@ -29,7 +29,7 @@ contexts. The emitted file is analyzed like hand-written code ([ADR-0058](0058-l
 
 ## Decision
 
-The emitted generator builds its recipe from the static `Any` façade alone, holding no random
+The emitted generator builds its recipe from the static `Dummy` façade alone, holding no random
 source, no seed and no static state of its own.
 
 ## Rationale
@@ -46,7 +46,7 @@ developer's own build rather than in ours — the diagnostic would be correct, a
 the one at fault.
 
 Supporting the isolated context would mean a second constructor and a second recipe path through
-`AnyContext`. That path could not express every row of §5.2, because `AnyContext` mirrors no
+`DummyContext`. That path could not express every row of §5.2, because `DummyContext` mirrors no
 collection or composition entry point: the surface would be larger *and* less capable. The case is
 already covered without adding any: a developer on `WithSeed` passes that context's generators
 per parameter through the overload [ADR-0057](0057-make-the-emitted-generator-a-first-class-iany.md) already provides.
@@ -63,12 +63,12 @@ generators in one test would draw from independent sequences — so no single se
 failing test could replay the run as a whole, which is the property the library's reproducibility
 exists to provide.
 
-##### A second constructor taking an `AnyContext`
+##### A second constructor taking an `DummyContext`
 
-Considered because it closes the gap for a developer working with `Any.WithSeed`, which is a
+Considered because it closes the gap for a developer working with `Dummy.WithSeed`, which is a
 supported way to use the library.
 
-Rejected for v1.0 because `AnyContext` mirrors only part of the façade, so the second path could
+Rejected for v1.0 because `DummyContext` mirrors only part of the façade, so the second path could
 not resolve collection or composed parameters at all, and because the per-parameter override
 already covers the case at no cost in surface. Left open in §16.
 
@@ -77,7 +77,7 @@ already covers the case at no cost in surface. Left open in §16.
 **Positive.** No lifecycle rule and no static state. The reproducibility guarantee of §8.2 comes
 free, and the two seeding analyzers have nothing to fire on.
 
-**Negative.** A developer using `Any.WithSeed` cannot hand the whole context to the generator and
+**Negative.** A developer using `Dummy.WithSeed` cannot hand the whole context to the generator and
 must supply generators parameter by parameter, which is verbose for a wide constructor.
 
 **Risks.** A future emitter that memoised anything — a cached generator, a shared instance — would

@@ -33,7 +33,7 @@ the score. Nothing in the tool's output invites doubt — it does not report the
 used, and the run summary's own wording was "all mutants were killed".
 
 A second observation bears on the same question and has **no identified cause**. On
-`JustDummies.GenAny/Guards.cs`, at one commit and with the same declared oracle of 495
+`JustDummies.GenDummy/Guards.cs`, at one commit and with the same declared oracle of 495
 tests read from both logs, the CI runner reported 38 survivors and a Linux container 52:
 seventeen mutants the runner called killed survive in the container. For one of them,
 applying the mutation to the source by hand leaves the whole suite green, under both SDK

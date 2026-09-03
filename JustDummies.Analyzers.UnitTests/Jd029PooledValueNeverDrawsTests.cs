@@ -23,33 +23,33 @@ public class Jd029PooledValueNeverDrawsTests {
     }
 
     [Theory]
-    [InlineData("_ = Any.String().OneOf(\"abc\", \"de\").WithLength(3);", "WithLength(3)")]
-    [InlineData("_ = Any.String().OneOf(\"abc\", \"x\").WithMinLength(2);", "WithMinLength(2)")]
-    [InlineData("_ = Any.String().OneOf(\"ab\", \"abcdef\").WithMaxLength(3);", "WithMaxLength(3)")]
-    [InlineData("_ = Any.String().OneOf(\"12\", \"ab\").Numeric();", "Numeric()")]
-    [InlineData("_ = Any.String().OneOf(\"ab\", \"a-b\").Alpha();", "Alpha()")]
-    [InlineData("_ = Any.String().OneOf(\"-:-\", \"abc\").Punctuation();", "Punctuation()")]
-    [InlineData("_ = Any.String().OneOf(\"deadBEEF\", \"xyz\").Hexadecimal();", "Hexadecimal()")]
-    [InlineData("_ = Any.String().OneOf(\" \", \"ab\").Whitespaces();", "Whitespaces()")]
-    [InlineData("_ = Any.String().OneOf(\"-:-\", \"abc\").WithoutAlpha();", "WithoutAlpha()")]
-    [InlineData("_ = Any.String().OneOf(\"-:-\", \"a1c\").WithoutNumeric();", "WithoutNumeric()")]
-    [InlineData("_ = Any.String().OneOf(\"AB-1\", \"caf\\u00E9\").Printable();", "Printable()")]
-    [InlineData("_ = Any.String().OneOf(\"ABC\", \"abc\").InUpperCase();", "InUpperCase()")]
-    [InlineData("_ = Any.String().OneOf(\"ORD-1\", \"INV-1\").StartingWith(\"ORD-\");", "StartingWith(\"ORD-\")")]
-    [InlineData("_ = Any.String().OneOf(\"a-FR\", \"a-BE\").EndingWith(\"-FR\");", "EndingWith(\"-FR\")")]
-    [InlineData("_ = Any.String().OneOf(\"xKEYx\", \"nope\").Containing(\"KEY\");", "Containing(\"KEY\")")]
-    [InlineData("_ = Any.String().OneOf(\"a\", \"b\").DifferentFrom(\"b\");", "DifferentFrom(\"b\")")]
-    [InlineData("_ = Any.Int32().OneOf(1, 5, 42).Between(1, 10);", "Between(1, 10)")]
-    [InlineData("_ = Any.Int32().OneOf(1, -3).Positive();", "Positive()")]
-    [InlineData("_ = Any.Int32().OneOf(-1, 3).Negative();", "Negative()")]
-    [InlineData("_ = Any.Int32().OneOf(0, 7).NonZero();", "NonZero()")]
-    [InlineData("_ = Any.Int32().OneOf(6, 7).MultipleOf(3);", "MultipleOf(3)")]
-    [InlineData("_ = Any.Int32().OneOf(4, 12).GreaterThan(5);", "GreaterThan(5)")]
-    [InlineData("_ = Any.Int64().OneOf(1L, 99L).LessThanOrEqualTo(50L);", "LessThanOrEqualTo(50)")]
-    [InlineData("_ = Any.Byte().OneOf((byte)1, (byte)9).LessThan(5);", "LessThan(5)")]
-    [InlineData("_ = Any.Decimal().OneOf(1.5m, 2.25m).WithScale(1);", "WithScale(1)")]
-    [InlineData("_ = Any.Decimal().OneOf(1.5m, -2m).Positive();", "Positive()")]
-    [InlineData("_ = Any.Int32().OneOf(1, 2).DifferentFrom(2);", "DifferentFrom(2)")]
+    [InlineData("_ = Dummy.String().OneOf(\"abc\", \"de\").WithLength(3);", "WithLength(3)")]
+    [InlineData("_ = Dummy.String().OneOf(\"abc\", \"x\").WithMinLength(2);", "WithMinLength(2)")]
+    [InlineData("_ = Dummy.String().OneOf(\"ab\", \"abcdef\").WithMaxLength(3);", "WithMaxLength(3)")]
+    [InlineData("_ = Dummy.String().OneOf(\"12\", \"ab\").Numeric();", "Numeric()")]
+    [InlineData("_ = Dummy.String().OneOf(\"ab\", \"a-b\").Alpha();", "Alpha()")]
+    [InlineData("_ = Dummy.String().OneOf(\"-:-\", \"abc\").Punctuation();", "Punctuation()")]
+    [InlineData("_ = Dummy.String().OneOf(\"deadBEEF\", \"xyz\").Hexadecimal();", "Hexadecimal()")]
+    [InlineData("_ = Dummy.String().OneOf(\" \", \"ab\").Whitespaces();", "Whitespaces()")]
+    [InlineData("_ = Dummy.String().OneOf(\"-:-\", \"abc\").WithoutAlpha();", "WithoutAlpha()")]
+    [InlineData("_ = Dummy.String().OneOf(\"-:-\", \"a1c\").WithoutNumeric();", "WithoutNumeric()")]
+    [InlineData("_ = Dummy.String().OneOf(\"AB-1\", \"caf\\u00E9\").Printable();", "Printable()")]
+    [InlineData("_ = Dummy.String().OneOf(\"ABC\", \"abc\").InUpperCase();", "InUpperCase()")]
+    [InlineData("_ = Dummy.String().OneOf(\"ORD-1\", \"INV-1\").StartingWith(\"ORD-\");", "StartingWith(\"ORD-\")")]
+    [InlineData("_ = Dummy.String().OneOf(\"a-FR\", \"a-BE\").EndingWith(\"-FR\");", "EndingWith(\"-FR\")")]
+    [InlineData("_ = Dummy.String().OneOf(\"xKEYx\", \"nope\").Containing(\"KEY\");", "Containing(\"KEY\")")]
+    [InlineData("_ = Dummy.String().OneOf(\"a\", \"b\").DifferentFrom(\"b\");", "DifferentFrom(\"b\")")]
+    [InlineData("_ = Dummy.Int32().OneOf(1, 5, 42).Between(1, 10);", "Between(1, 10)")]
+    [InlineData("_ = Dummy.Int32().OneOf(1, -3).Positive();", "Positive()")]
+    [InlineData("_ = Dummy.Int32().OneOf(-1, 3).Negative();", "Negative()")]
+    [InlineData("_ = Dummy.Int32().OneOf(0, 7).NonZero();", "NonZero()")]
+    [InlineData("_ = Dummy.Int32().OneOf(6, 7).MultipleOf(3);", "MultipleOf(3)")]
+    [InlineData("_ = Dummy.Int32().OneOf(4, 12).GreaterThan(5);", "GreaterThan(5)")]
+    [InlineData("_ = Dummy.Int64().OneOf(1L, 99L).LessThanOrEqualTo(50L);", "LessThanOrEqualTo(50)")]
+    [InlineData("_ = Dummy.Byte().OneOf((byte)1, (byte)9).LessThan(5);", "LessThan(5)")]
+    [InlineData("_ = Dummy.Decimal().OneOf(1.5m, 2.25m).WithScale(1);", "WithScale(1)")]
+    [InlineData("_ = Dummy.Decimal().OneOf(1.5m, -2m).Positive();", "Positive()")]
+    [InlineData("_ = Dummy.Int32().OneOf(1, 2).DifferentFrom(2);", "DifferentFrom(2)")]
     public async Task Reports_the_value_a_declared_constraint_refuses(string body, string expected) {
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync($"        {body}");
 
@@ -62,7 +62,7 @@ public class Jd029PooledValueNeverDrawsTests {
     public async Task Reports_a_pooled_value_of_nothing_but_whitespace_under_NotBlank() {
         // The value is not empty, so NonEmpty would admit it; NotBlank is what refuses it, and a pool holding one
         // value that survives keeps this at the severity a still-working chain deserves.
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync("        _ = Any.String().OneOf(\"ok\", \"  \").NotBlank();");
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync("        _ = Dummy.String().OneOf(\"ok\", \"  \").NotBlank();");
 
         Check.That(diagnostics.Length).IsEqualTo(1);
         Check.That(diagnostics[0].GetMessage()).IsEqualTo("This value never draws: NotBlank() refuses it");
@@ -72,7 +72,7 @@ public class Jd029PooledValueNeverDrawsTests {
     public async Task Does_not_report_a_binary_floating_point_pool() {
         // Double and Single are out of scope on purpose: their constants have no exact decimal, and judging one
         // through decimal could refuse a value the run time admits. Under-reporting is the safe direction.
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync("        _ = Any.Double().OneOf(0.1, 99.0).LessThan(1.0);");
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync("        _ = Dummy.Double().OneOf(0.1, 99.0).LessThan(1.0);");
 
         Check.That(diagnostics.Length).IsEqualTo(0);
     }
@@ -81,7 +81,7 @@ public class Jd029PooledValueNeverDrawsTests {
     public async Task Names_a_two_bound_call_under_its_own_name() {
         // WithLengthBetween sets two bounds under one name, and the caller can only loosen the call. Reporting a
         // half would point at something they cannot edit on its own.
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync("        _ = Any.String().OneOf(\"ab\", \"a\").WithLengthBetween(2, 3);");
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync("        _ = Dummy.String().OneOf(\"ab\", \"a\").WithLengthBetween(2, 3);");
 
         Check.That(diagnostics.Length).IsEqualTo(1);
         Check.That(diagnostics[0].GetMessage()).IsEqualTo("This value never draws: WithLengthBetween(2, 3) refuses it");
@@ -89,7 +89,7 @@ public class Jd029PooledValueNeverDrawsTests {
 
     [Fact]
     public async Task Reports_every_offending_value_not_only_the_first() {
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync("        _ = Any.String().OneOf(\"abc\", \"de\", \"fg\").WithLength(3);");
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync("        _ = Dummy.String().OneOf(\"abc\", \"de\", \"fg\").WithLength(3);");
 
         Check.That(diagnostics.Length).IsEqualTo(2);
     }
@@ -102,7 +102,7 @@ public class Jd029PooledValueNeverDrawsTests {
 
             public static class Sample {
                 public static void M() {
-                    string code = Any.String().OneOf("abc", "de").WithLength(3).Generate();
+                    string code = Dummy.String().OneOf("abc", "de").WithLength(3).Generate();
                 }
             }
             """;
@@ -114,13 +114,13 @@ public class Jd029PooledValueNeverDrawsTests {
     }
 
     [Theory]
-    [InlineData("_ = Any.String().OneOf(\"abc\", \"xyz\").WithLength(3);")]
-    [InlineData("_ = Any.String().OneOf(\"12\", \"34\").Numeric();")]
-    [InlineData("_ = Any.String().WithLength(3).Alpha();")]
-    [InlineData("_ = Any.String().OneOf(\"abc\", \"de\");")]
-    [InlineData("_ = Any.Int32().OneOf(2, 4).Between(1, 10);")]
-    [InlineData("_ = Any.Int32().Between(1, 10);")]
-    [InlineData("_ = Any.Decimal().OneOf(1.5m, 2.5m).WithScale(1);")]
+    [InlineData("_ = Dummy.String().OneOf(\"abc\", \"xyz\").WithLength(3);")]
+    [InlineData("_ = Dummy.String().OneOf(\"12\", \"34\").Numeric();")]
+    [InlineData("_ = Dummy.String().WithLength(3).Alpha();")]
+    [InlineData("_ = Dummy.String().OneOf(\"abc\", \"de\");")]
+    [InlineData("_ = Dummy.Int32().OneOf(2, 4).Between(1, 10);")]
+    [InlineData("_ = Dummy.Int32().Between(1, 10);")]
+    [InlineData("_ = Dummy.Decimal().OneOf(1.5m, 2.5m).WithScale(1);")]
     public async Task Does_not_report_a_pool_in_step_with_its_constraints(string body) {
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync($"        {body}");
 
@@ -131,7 +131,7 @@ public class Jd029PooledValueNeverDrawsTests {
     public async Task Reports_through_an_inline_seeded_chain() {
         // The chain walk used to name WithSeed as the factory here and fall through, silencing this rule on the
         // very form the library recommends for reproducibility.
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync("        _ = Any.WithSeed(1).Int32().OneOf(1, -3).Positive();");
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync("        _ = Dummy.WithSeed(1).Int32().OneOf(1, -3).Positive();");
 
         Check.That(diagnostics.Length).IsEqualTo(1);
         Check.That(diagnostics[0].GetMessage()).IsEqualTo("This value never draws: Positive() refuses it");
@@ -143,7 +143,7 @@ public class Jd029PooledValueNeverDrawsTests {
         // catalogue is a variable by nature, and IPoolInspection<T> is what answers for it at run time.
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync("""
                     string[] names = ["abc", "de"];
-                    _ = Any.String().OneOf(names).WithLength(3);
+                    _ = Dummy.String().OneOf(names).WithLength(3);
             """);
 
         Check.That(diagnostics.Length).IsEqualTo(0);
@@ -155,7 +155,7 @@ public class Jd029PooledValueNeverDrawsTests {
         // guessed at, so the rule never accuses a value it has not actually tested.
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync("""
                     int length = System.Environment.ProcessorCount;
-                    _ = Any.String().OneOf("abc", "de").WithLength(length);
+                    _ = Dummy.String().OneOf("abc", "de").WithLength(length);
             """);
 
         Check.That(diagnostics.Length).IsEqualTo(0);
@@ -176,7 +176,7 @@ public class Jd029PooledValueNeverDrawsTests {
 
             public static class Sample {
                 public static void M() {
-                    Check2.ThatCode(() => Any.String().OneOf("abc", "de").WithLength(3));
+                    Check2.ThatCode(() => Dummy.String().OneOf("abc", "de").WithLength(3));
                 }
             }
             """;
@@ -189,7 +189,7 @@ public class Jd029PooledValueNeverDrawsTests {
     [Fact]
     public async Task Reports_a_value_only_a_later_constraint_refuses() {
         // The value set may be declared first or last; the chain is judged whole, from its outermost call.
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync("        _ = Any.String().WithLength(3).OneOf(\"abc\", \"de\");");
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync("        _ = Dummy.String().WithLength(3).OneOf(\"abc\", \"de\");");
 
         Check.That(diagnostics.Length).IsEqualTo(1);
         Check.That(diagnostics[0].GetMessage()).IsEqualTo("This value never draws: WithLength(3) refuses it");
@@ -204,7 +204,7 @@ public class Jd029PooledValueNeverDrawsTests {
 
             public static class Sample {
                 public static string M() {
-                    return Any.String().AlphaNumeric().OneOf("ORD-1", "ORD-2").Generate();
+                    return Dummy.String().AlphaNumeric().OneOf("ORD-1", "ORD-2").Generate();
                 }
             }
             """;

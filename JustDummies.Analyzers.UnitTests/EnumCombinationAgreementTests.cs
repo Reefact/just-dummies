@@ -12,8 +12,8 @@ namespace JustDummies.Analyzers.UnitTests;
 /// </summary>
 /// <remarks>
 ///     <para>
-///         The rule cannot ask the library: it reasons over symbols at build time, where no <c>AnyEnum</c> exists.
-///         So the OR-reachability arithmetic is written twice — <c>AnyEnum.IsCombinationOfDeclaredMembers</c> and
+///         The rule cannot ask the library: it reasons over symbols at build time, where no <c>DummyEnum</c> exists.
+///         So the OR-reachability arithmetic is written twice — <c>DummyEnum.IsCombinationOfDeclaredMembers</c> and
 ///         <c>EnumUniverseViolationAnalyzer.IsCombinationOfDeclared</c> — and a copy nothing compares is a copy
 ///         that goes stale. Drift in one direction refuses at build time a chain the run time honours; in the
 ///         other it stays silent on one that throws.
@@ -78,7 +78,7 @@ public sealed class EnumCombinationAgreementTests {
     /// <summary>Whether the library refuses the value as one its type does not define.</summary>
     private static bool LibraryRefuses<TEnum>(int bits) where TEnum : struct, Enum {
         try {
-            Any.Enum<TEnum>().OneOf((TEnum)Enum.ToObject(typeof(TEnum), bits));
+            Dummy.Enum<TEnum>().OneOf((TEnum)Enum.ToObject(typeof(TEnum), bits));
 
             return false;
         } catch (ArgumentException) {
@@ -96,7 +96,7 @@ public sealed class EnumCombinationAgreementTests {
 
             public static class Sample {
                 public static void M() {
-                    _ = Any.Enum<{{name}}>().OneOf(({{name}}){{bits}});
+                    _ = Dummy.Enum<{{name}}>().OneOf(({{name}}){{bits}});
                 }
             }
             """;

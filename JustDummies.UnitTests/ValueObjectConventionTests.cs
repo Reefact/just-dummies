@@ -35,7 +35,7 @@ namespace JustDummies.UnitTests;
 /// </remarks>
 public sealed class ValueObjectConventionTests {
 
-    private static readonly Assembly LibraryAssembly = typeof(Any).Assembly;
+    private static readonly Assembly LibraryAssembly = typeof(Dummy).Assembly;
 
     [Fact(DisplayName = "Every type declared a value object carries a full value identity.")]
     public void EveryDeclaredValueObjectCarriesAValueIdentity() {

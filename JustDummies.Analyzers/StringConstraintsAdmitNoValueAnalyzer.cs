@@ -10,7 +10,7 @@ using Microsoft.CodeAnalysis.Operations;
 namespace JustDummies.Analyzers;
 
 /// <summary>
-///     JD015 — reports an <c>AnyString</c> chain whose constant constraints admit no value: anchored fragments that
+///     JD015 — reports an <c>DummyString</c> chain whose constant constraints admit no value: anchored fragments that
 ///     cannot fit the declared length, or a declared character constraint that admits none of the values a constant
 ///     <c>OneOf(...)</c> supplies.
 /// </summary>
@@ -45,7 +45,7 @@ public sealed class StringConstraintsAdmitNoValueAnalyzer : DiagnosticAnalyzer {
 
     private static void OnCompilationStart(CompilationStartAnalysisContext context) {
         KnownSymbols symbols = KnownSymbols.From(context.Compilation);
-        if (symbols.Any is null || symbols.IAny is null) { return; }
+        if (symbols.Dummy is null || symbols.IDummy is null) { return; }
 
         context.RegisterOperationAction(operationContext => Analyze(operationContext, symbols), OperationKind.Invocation);
     }
@@ -55,7 +55,7 @@ public sealed class StringConstraintsAdmitNoValueAnalyzer : DiagnosticAnalyzer {
 
         // Analyse each chain once, from its outermost call.
         if (invocation.Parent is IInvocationOperation) { return; }
-        if (!AnyChainFacts.TryGetChain(invocation, symbols, out IReadOnlyList<IInvocationOperation> constraints, out IInvocationOperation? factory)) { return; }
+        if (!DummyChainFacts.TryGetChain(invocation, symbols, out IReadOnlyList<IInvocationOperation> constraints, out IInvocationOperation? factory)) { return; }
         if (factory is null || factory.TargetMethod.Name != "String") { return; }
         if (NegativeTestGuard.IsSoleBodyOfLambdaArgument(invocation.Syntax)) { return; }
 

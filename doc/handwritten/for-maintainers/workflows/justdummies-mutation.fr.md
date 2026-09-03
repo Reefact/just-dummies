@@ -24,7 +24,7 @@ Ce workflow rend ce contrôle automatique pour les **quatre composants
 JustDummies** : `JustDummies`, son adaptateur xUnit v3 `JustDummies.Xunit`
 ([ADR-0018](../adr/0018-adapt-dummies-to-xunit-v3-through-a-companion-package.fr.md)),
 les analyseurs livrés dans le package
-([ADR-0023](../adr/0023-ship-justdummies-analyzers.fr.md)), et `JustDummies.GenAny`,
+([ADR-0023](../adr/0023-ship-justdummies-analyzers.fr.md)), et `JustDummies.GenDummy`,
 le moteur de lecture de gardes sur lequel repose le scaffolder `dum`. Sur une pull
 request, il ne mute que les fichiers modifiés par celle-ci, pour l'adaptateur et les
 analyseurs ; le générateur et le moteur sont mesurés par le seul balayage hebdomadaire
@@ -290,7 +290,7 @@ précisément pour que le prochain lecteur voie cette distinction sans avoir à 
 recalculer.
 
 **Élargir le budget de temps a été mesuré, pas supposé, et aucun réglage n'est bon
-marché.** Sur `Any.Combine.cs` — 205 mutants, dont 169 en timeout lors du balayage
+marché.** Sur `Dummy.Combine.cs` — 205 mutants, dont 169 en timeout lors du balayage
 — le budget par défaut se reproduit en local à 173 timeouts contre 32 kills. Dix
 secondes de plus ne changent strictement rien : 174 et 31. Trente secondes de plus
 transforment **112 de ces timeouts en vrais kills** — 61 et 144 — et coûtent
@@ -420,7 +420,7 @@ Les rapports atterrissent là où `--output` le dit, sinon dans `StrykerOutput/`
 
 ### Un rapport local et celui de la CI peuvent diverger
 
-Mesuré le 2026-09-01 sur `JustDummies.GenAny/Guards.cs` — même commit, même
+Mesuré le 2026-09-01 sur `JustDummies.GenDummy/Guards.cs` — même commit, même
 configuration, et le même oracle déclaré de 495 tests lu dans les deux journaux.
 Le runner a annoncé 38 survivants ; un conteneur Linux en a annoncé 52.
 **Dix-sept mutants que le runner dit tués survivent dans le conteneur**, et pour

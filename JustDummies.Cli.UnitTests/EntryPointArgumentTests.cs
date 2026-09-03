@@ -1,4 +1,4 @@
-using JustDummies.GenAny;
+using JustDummies.GenDummy;
 
 using NFluent;
 
@@ -30,11 +30,11 @@ public sealed class EntryPointArgumentTests {
     }
 
     [Fact(DisplayName = "'any' hangs the entry point off the library's own façade.")]
-    public void AnyHangsItOffTheLibrary() {
+    public void DummyHangsItOffTheLibrary() {
         EntryPointOptions options = Parsed("any");
 
-        Check.That(options.Kind).IsEqualTo(EntryPointKind.Any);
-        Check.That(options.Root).IsEqualTo("Any");
+        Check.That(options.Kind).IsEqualTo(EntryPointKind.Dummy);
+        Check.That(options.Root).IsEqualTo("Dummy");
     }
 
     [Fact(DisplayName = "'static:<Name>' names a root the developer owns.")]
@@ -46,20 +46,20 @@ public sealed class EntryPointArgumentTests {
     }
 
     /// <summary>
-    ///     The one refusal this option exists to make: a static class named <c>Any</c> hides the library's
-    ///     façade for its whole namespace rather than extending it, and <c>Any.Int32()</c> stops compiling.
+    ///     The one refusal this option exists to make: a static class named <c>Dummy</c> hides the library's
+    ///     façade for its whole namespace rather than extending it, and <c>Dummy.Int32()</c> stops compiling.
     /// </summary>
     /// <remarks>
     ///     Refused rather than warned, unlike the shadowing row of §7: that one compiles and is wrong later,
     ///     this one does not compile at all, and the developer asking for it is asking for
     ///     <c>--entry-point any</c> by another name.
     /// </remarks>
-    [Fact(DisplayName = "'static:Any' is refused, and the refusal names what would stop compiling.")]
+    [Fact(DisplayName = "'static:Dummy' is refused, and the refusal names what would stop compiling.")]
     public void StaticAnyIsRefused() {
-        EntryPointArgument read = EntryPointArgument.Parse("static:Any", entryPointNamespace: null);
+        EntryPointArgument read = EntryPointArgument.Parse("static:Dummy", entryPointNamespace: null);
 
         Check.That(read.Understood).IsFalse();
-        Check.That(read.Refusal).Contains("Any.Int32()");
+        Check.That(read.Refusal).Contains("Dummy.Int32()");
         Check.That(read.Refusal).Contains("--entry-point any");
     }
 
@@ -107,7 +107,7 @@ public sealed class EntryPointArgumentTests {
 
     [Fact(DisplayName = "The settings refuse an unreadable pair before the command runs.")]
     public void TheSettingsRefuseAnUnreadablePair() {
-        GenerateSettings settings = new() { Types = ["Order"], EntryPoint = "static:Any" };
+        GenerateSettings settings = new() { Types = ["Order"], EntryPoint = "static:Dummy" };
 
         Check.That(settings.Validate().Successful).IsFalse();
     }

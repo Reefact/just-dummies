@@ -32,8 +32,8 @@ input is a defect this test can never find.
 JustDummies replaces the literal with a **declaration of what the value must satisfy**:
 
 ```csharp
-string reference = Any.String().StartingWith("ORD-").WithLength(12).Generate();
-int    quantity  = Any.Int32().Between(1, 100).Generate();
+string reference = Dummy.String().StartingWith("ORD-").WithLength(12).Generate();
+int    quantity  = Dummy.Int32().Between(1, 100).Generate();
 ```
 
 Now the test says what it means. The reference must start with `ORD-` and be twelve characters long
@@ -51,10 +51,10 @@ correct usage start working on your next build with nothing further to configure
 ## Your first dummy
 
 ```csharp
-int      quantity  = Any.Int32().Between(1, 100).Generate();
-string   name      = Any.String().Alpha().WithLengthBetween(3, 20).Generate();
-Guid     id        = Any.Guid().NonEmpty().Generate();
-DateTime orderedAt = Any.DateTime().Before(new DateTime(2030, 1, 1)).Generate();
+int      quantity  = Dummy.Int32().Between(1, 100).Generate();
+string   name      = Dummy.String().Alpha().WithLengthBetween(3, 20).Generate();
+Guid     id        = Dummy.Guid().NonEmpty().Generate();
+DateTime orderedAt = Dummy.DateTime().Before(new DateTime(2030, 1, 1)).Generate();
 ```
 
 Every line follows the same three-step shape, and it is worth naming the steps because the rest of
@@ -63,15 +63,15 @@ the library is just more of them.
 ```mermaid
 flowchart LR
     accTitle: From a generator to a drawn value
-    accDescr: Any.Int32() gives a generator, Between(1, 100) gives a new generator, and Generate() gives a value.
-    A["Any.Int32()<br/><i>a generator</i>"] --> B["Between(1, 100)<br/><i>a new generator</i>"]
+    accDescr: Dummy.Int32() gives a generator, Between(1, 100) gives a new generator, and Generate() gives a value.
+    A["Dummy.Int32()<br/><i>a generator</i>"] --> B["Between(1, 100)<br/><i>a new generator</i>"]
     B --> C["Generate()<br/><i>a value</i>"]
     style A fill:#e8eaf6,stroke:#3f51b5,color:#1a237e
     style B fill:#e8eaf6,stroke:#3f51b5,color:#1a237e
     style C fill:#e8f5e9,stroke:#43a047,color:#1b5e20
 ```
 
-1. **`Any.Int32()` opens a generator.** A generator is a *recipe* — a description of the values that
+1. **`Dummy.Int32()` opens a generator.** A generator is a *recipe* — a description of the values that
    would be acceptable. It is not a value, and no value has been drawn yet.
 2. **`.Between(1, 100)` adds a constraint.** It does not modify the generator; it returns a **new**
    generator carrying one more requirement. The original is untouched.
@@ -81,10 +81,10 @@ flowchart LR
 That second point is the one newcomers trip over, so it is worth seeing directly:
 
 ```csharp
-AnyInt32 anyQuantity = Any.Int32().Between(1, 100);
+DummyInt32 anyQuantity = Dummy.Int32().Between(1, 100);
 
 // Adding a constraint returns a NEW generator; anyQuantity still means "1 to 100".
-AnyInt32 anyEvenQuantity = anyQuantity.MultipleOf(2);
+DummyInt32 anyEvenQuantity = anyQuantity.MultipleOf(2);
 
 int     quantity = anyQuantity.Generate();     // 1..100, odd or even
 int evenQuantity = anyEvenQuantity.Generate(); // 1..100, even
@@ -135,8 +135,8 @@ public sealed class OrderTests {
         // Arrange
         // Reference and customer must be well-formed for an Order to exist.
         // Neither takes any part in the discount: that is what makes them dummies.
-        string anyReference = Any.String().StartingWith("ORD-").WithLength(12).Generate();
-        string anyCustomer  = Any.String().Alpha().WithLengthBetween(1, 50).Generate();
+        string anyReference = Dummy.String().StartingWith("ORD-").WithLength(12).Generate();
+        string anyCustomer  = Dummy.String().Alpha().WithLengthBetween(1, 50).Generate();
 
         Order order = new Order(anyReference, anyCustomer, amount: 100m);
 
@@ -188,10 +188,10 @@ public sealed class OrderTests {
     [Fact]
     public void Applying_a_discount_keeps_the_total_between_zero_and_the_amount() {
         // Arrange
-        string  anyReference  = Any.String().StartingWith("ORD-").WithLength(12).Generate();
-        string  anyCustomer   = Any.String().Alpha().WithLengthBetween(1, 50).Generate();
-        decimal anyAmount     = Any.Decimal().Between(0m, 10_000m).WithScale(2).Generate();
-        int     anyPercentage = Any.Int32().Between(0, 100).Generate();
+        string  anyReference  = Dummy.String().StartingWith("ORD-").WithLength(12).Generate();
+        string  anyCustomer   = Dummy.String().Alpha().WithLengthBetween(1, 50).Generate();
+        decimal anyAmount     = Dummy.Decimal().Between(0m, 10_000m).WithScale(2).Generate();
+        int     anyPercentage = Dummy.Int32().Between(0, 100).Generate();
 
         Order order = new Order(anyReference, anyCustomer, anyAmount);
 
@@ -223,12 +223,12 @@ when you need the claim genuinely defended.
 ## Making a failure reproducible
 
 A test that draws a different value every run is more powerful than one that does not — and it is
-only acceptable if a failure can be replayed exactly. That is what `Any.Reproducibly` is for:
+only acceptable if a failure can be replayed exactly. That is what `Dummy.Reproducibly` is for:
 
 ```csharp
-Any.Reproducibly(() => {
-    string anyReference = Any.String().StartingWith("ORD-").WithLength(12).Generate();
-    string anyCustomer  = Any.String().Alpha().WithLengthBetween(1, 50).Generate();
+Dummy.Reproducibly(() => {
+    string anyReference = Dummy.String().StartingWith("ORD-").WithLength(12).Generate();
+    string anyCustomer  = Dummy.String().Alpha().WithLengthBetween(1, 50).Generate();
 
     Order order = new Order(anyReference, anyCustomer, amount: 100m);
 
@@ -242,14 +242,14 @@ While the body runs, every draw comes from one pinned seed. If the body throws, 
 before the failure propagates:
 
 ```text
-[JustDummies] These arbitrary values were seeded with 1743029518. Reproduce this run with Any.Reproducibly(1743029518, ...).
+[JustDummies] These arbitrary values were seeded with 1743029518. Reproduce this run with Dummy.Reproducibly(1743029518, ...).
 ```
 
 Copy that number in front of the body. Nothing else moves — same test, one argument more — and the
 exact run comes back, value for value:
 
 ```csharp
-Any.Reproducibly(1743029518, () => {
+Dummy.Reproducibly(1743029518, () => {
     // the same draws as the run that failed
 });
 ```

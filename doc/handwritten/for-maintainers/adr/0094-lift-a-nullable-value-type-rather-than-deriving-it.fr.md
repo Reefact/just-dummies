@@ -9,14 +9,14 @@
 
 ## Contexte
 
-`IAny<out T>` est covariant à travers les conversions de référence : un `IAny<string>` est donc déjà
-un `IAny<string?>`. Un type valeur n'a pas cette conversion — un `IAny<int>` n'est pas un
-`IAny<int?>` — et le §5.2 du scaffolder écrit le saut explicitement depuis qu'il existe :
-`Any.Int32().Positive().As(value => (int?)value)`. Jamais `.OrNull()`, parce qu'un dummy dont le code
+`IDummy<out T>` est covariant à travers les conversions de référence : un `IDummy<string>` est donc déjà
+un `IDummy<string?>`. Un type valeur n'a pas cette conversion — un `IDummy<int>` n'est pas un
+`IDummy<int?>` — et le §5.2 du scaffolder écrit le saut explicitement depuis qu'il existe :
+`Dummy.Int32().Positive().As(value => (int?)value)`. Jamais `.OrNull()`, parce qu'un dummy dont le code
 testé a besoin n'est jamais absent
 ([ADR-0064](0064-never-draw-null-for-a-nullable-parameter.fr.md)).
 
-`As` produit un `DerivedAny<T>`, qui porte la source aléatoire et la reproductibilité de ce qu'il
+`As` produit un `DerivedDummy<T>`, qui porte la source aléatoire et la reproductibilité de ce qu'il
 enveloppe, et rien d'autre. C'est délibéré et documenté sur `ICardinalityHint<T>` : un générateur
 dérivé n'annonce aucune borne, parce qu'une fabrique quelconque n'a pas d'inverse pour répondre à
 l'appartenance, et une collection distincte au-dessus retombe sur un tirage dédupliqué borné
@@ -39,7 +39,7 @@ existe pour empêcher, arrivée par une route que ce record ne couvre pas.
 
 ## Décision
 
-La bibliothèque porte un lift de première classe d'`IAny<T>` vers `IAny<T?>` qui ne tire jamais null
+La bibliothèque porte un lift de première classe d'`IDummy<T>` vers `IDummy<T?>` qui ne tire jamais null
 et conserve la cardinalité du générateur enveloppé, et le scaffolder l'écrit partout où la
 compilation cible le résout.
 
@@ -78,10 +78,10 @@ compilation cible le résout.
 
 ### Donner une cardinalité au générateur dérivé
 
-Considérée parce que c'est la plus petite édition — une interface sur `DerivedAny<T>` et toute la
+Considérée parce que c'est la plus petite édition — une interface sur `DerivedDummy<T>` et toute la
 famille en profite d'un coup.
 
-Rejetée parce que la famille est le problème. `DerivedAny<T>` est ce que produisent `As`, `OrNull` et
+Rejetée parce que la famille est le problème. `DerivedDummy<T>` est ce que produisent `As`, `OrNull` et
 les sept arités de `Combine`, et un composeur sur huit opérandes n'a aucune cardinalité que
 quiconque puisse calculer. Faire suivre la borne d'un opérande serait une sur-estimation exactement
 dans le sens qui transforme un tirage différé en refus erroné, et faire suivre l'appartenance est
@@ -100,7 +100,7 @@ développeur ne contraint pas, et un lecteur ne pourrait pas distinguer l'invent
 ### Laisser en l'état, et consigner la forme comme un résidu déclaré
 
 Considérée parce que le comportement de la bibliothèque est documenté et que l'échec est bruyant
-plutôt que silencieux — une `AnyGenerationException` qui nomme sa graine, pas une valeur fausse.
+plutôt que silencieux — une `DummyGenerationException` qui nomme sa graine, pas une valeur fausse.
 
 Rejetée parce que l'échec est bruyant pour *un lecteur de l'exception* et silencieux pour le
 développeur qui a lancé `dum` et commité le fichier : il apparaît au premier tirage, dans un
@@ -115,7 +115,7 @@ refuse.
   formes du produit du balayage ne le pouvaient pas.
 * Un utilisateur gagne une écriture pour « type nullable, valeur présente » que la bibliothèque
   n'avait pas.
-* La ligne émise est plus courte et dit ce qu'elle veut dire : `Any.Int32().Positive().AsNullable()`
+* La ligne émise est plus courte et dit ce qu'elle veut dire : `Dummy.Int32().Positive().AsNullable()`
   plutôt qu'une lambda de conversion qu'un lecteur doit décoder.
 
 ### Négatives
@@ -152,5 +152,5 @@ refuse.
   `.OrNull()`.
 * [ADR-0083](0083-block-compilation-on-a-guard-the-engine-cannot-vouch-for.fr.md) — la défaillance
   silencieuse que ceci a contournée par une autre route.
-* [`genany-sweep.fr.md`](../workflows/genany-sweep.fr.md) — le banc qui l'a mesurée, et ce que ses
+* [`gendummy-sweep.fr.md`](../workflows/gendummy-sweep.fr.md) — le banc qui l'a mesurée, et ce que ses
   comptes disaient avant et après.

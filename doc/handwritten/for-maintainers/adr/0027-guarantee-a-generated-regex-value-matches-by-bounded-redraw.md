@@ -10,7 +10,7 @@
 
 ## Context
 
-`Any.StringMatching(...)` parses a pattern into a tree once and, on each draw, walks it to **build** a value
+`Dummy.StringMatching(...)` parses a pattern into a tree once and, on each draw, walks it to **build** a value
 directly — never generate-then-filter. The build mirrors the regular subset of the .NET engine's
 semantics, so a generated value is a genuine member of the pattern.
 
@@ -28,7 +28,7 @@ alternatives, and the **form** of the empty branch (a bare `|` versus a zero-qua
 | `(?:r\|){1,2}` (bare-empty branch)    | yes                 |
 
 The structural build picked the `\S{0}b{0}` branch and emitted `""`, which the engine then refuses for
-that shape — so `Any.StringMatching` returned a value the very pattern it was built from does not match.
+that shape — so `Dummy.StringMatching` returned a value the very pattern it was built from does not match.
 The patterns that trigger this are degenerate: FsCheck *generates* `\S{0}` (match `\S` zero times); a
 human writes `\S*`. But the contract "a generated value matches its pattern" was broken.
 
@@ -37,7 +37,7 @@ human writes `\S*`. But the contract "a generated value matches its pattern" was
 After the structural build, the value is **verified against the real .NET engine** (a full, anchored
 match under the one option the generator honoured — `IgnoreCase`) and **redrawn on a miss**, bounded. The
 check is the last word: a value the engine would reject is never returned. Exhausting the cap raises an
-`AnyGenerationException`.
+`DummyGenerationException`.
 
 ## Rationale
 
@@ -50,7 +50,7 @@ check is the last word: a value the engine would reject is never returned. Exhau
   a structural fast path plus a bounded safety net. This is the same shape for the same reason.
 * **The cost is immaterial.** A supported pattern matches on the first build; only these rare corners
   redraw, and a valid value appears within a handful of draws. Generation is not a hot loop, and
-  `Any.StringMatching(Regex)` already holds a compiled `Regex`. The cap turns a pattern the build can
+  `Dummy.StringMatching(Regex)` already holds a compiled `Regex`. The cap turns a pattern the build can
   never satisfy into a clear error instead of an unbounded loop.
 * **Reproducibility is preserved.** The redraw consumes further draws from the same seeded source, so a
   seed still replays the run exactly.
@@ -83,7 +83,7 @@ outside the supported subset. The bounded redraw covers the whole class without 
 * A value is built and then checked, rather than built and returned unconditionally — a small departure
   from "never generated then filtered". The primary mechanism stays structural; the check is a rare-miss
   safety net, and the generator's documentation says so.
-* A genuinely unsatisfiable pattern now raises an `AnyGenerationException` after the cap instead of
+* A genuinely unsatisfiable pattern now raises an `DummyGenerationException` after the cap instead of
   returning a wrong value — a clearer failure, but a failure where the old code silently returned garbage.
 
 ## References

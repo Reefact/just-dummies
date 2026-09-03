@@ -31,20 +31,20 @@ needing a different shape of input is a defect this test can never find.
 Say what the value must **satisfy**, and let the library draw one that does:
 
 ```csharp
-string reference = Any.String().StartingWith("ORD-").WithLength(12).Generate();
-int    quantity  = Any.Int32().Between(1, 100).Generate();
-Guid   id        = Any.Guid().NonEmpty().Generate();
+string reference = Dummy.String().StartingWith("ORD-").WithLength(12).Generate();
+int    quantity  = Dummy.Int32().Between(1, 100).Generate();
+Guid   id        = Dummy.Guid().NonEmpty().Generate();
 ```
 
 The test now states its assumptions. Everything else varies between runs, which is what makes it find
 things.
 
-An `Any.*` call returns a **generator** — an immutable recipe — and `.Generate()` draws a value from
+An `Dummy.*` call returns a **generator** — an immutable recipe — and `.Generate()` draws a value from
 it. A value object with a stricter contract is built by transforming a constrained primitive through
 its real factory:
 
 ```csharp
-OrderReference orderRef = Any.String()
+OrderReference orderRef = Dummy.String()
     .StartingWith("ORD-")
     .WithLength(12)
     .As(OrderReference.Create)
@@ -68,8 +68,8 @@ build.
 Random values in tests are only acceptable if a failure can be replayed. Wrap the test body:
 
 ```csharp
-Any.Reproducibly(() => {
-    decimal orderTotal = Any.Decimal().Between(0m, 10_000m).WithScale(2).Generate();
+Dummy.Reproducibly(() => {
+    decimal orderTotal = Dummy.Decimal().Between(0m, 10_000m).WithScale(2).Generate();
 
     Assert.InRange(Shipping.FeeFor(orderTotal), 0m, 4.90m);
 });
@@ -78,14 +78,14 @@ Any.Reproducibly(() => {
 When it goes red — and only then — the seed that produced the run is reported:
 
 ```text
-[JustDummies] These arbitrary values were seeded with 1743029518. Reproduce this run with Any.Reproducibly(1743029518, ...).
+[JustDummies] These arbitrary values were seeded with 1743029518. Reproduce this run with Dummy.Reproducibly(1743029518, ...).
 ```
 
 Copy that number in front of the body. Same test, one argument more, and the exact run comes back —
 value for value:
 
 ```csharp
-Any.Reproducibly(1743029518, () => {
+Dummy.Reproducibly(1743029518, () => {
     // the same body as above; only the seed was added
 });
 ```
@@ -99,7 +99,7 @@ seed replays across every patch and minor of a major version, enforced by a gold
 
 ## 🛠 Scaffold one for your own type
 
-Writing an `IAny<T>` by hand for each of your domain types is the tedious part. `dum` writes the
+Writing an `IDummy<T>` by hand for each of your domain types is the tedious part. `dum` writes the
 first draft:
 
 ```bash
@@ -108,11 +108,11 @@ dum generate Order
 ```
 
 ```text
-  reference  OrderReference  Any.String().NonEmpty().As(OrderReference.Create)  factory, guard
+  reference  OrderReference  Dummy.String().NonEmpty().As(OrderReference.Create)  factory, guard
   customer   Customer        —                                                  TODO
-  quantity   int             Any.Int32().Positive()                             guard
+  quantity   int             Dummy.Int32().Positive()                             guard
 
-✓ AnyOrder.cs — 5 of 6 parameters inferred, 1 TODO.
+✓ DummyOrder.cs — 5 of 6 parameters inferred, 1 TODO.
 ```
 
 It reads your compilation, tightens what the constructor's own guard clauses tell it
@@ -130,7 +130,7 @@ of a plausible value being drawn behind your back.
 | --- | --- |
 | [Documentation index](doc/handwritten/for-users/README.md) | everything, organised, in English and French |
 | [Core concepts](doc/handwritten/for-users/guides/core-concepts.en.md) | recipe versus value, and the golden rule |
-| [Generator reference](doc/handwritten/for-users/generators/README.md) | every `Any.*` factory and its constraints |
+| [Generator reference](doc/handwritten/for-users/generators/README.md) | every `Dummy.*` factory and its constraints |
 | [Reproducibility](doc/handwritten/for-users/guides/reproducibility.en.md) | seeds, scopes and replay |
 | [Composition](doc/handwritten/for-users/guides/composition.en.md) | dummies for your own types |
 | [Analyzer rules](doc/handwritten/for-users/analyzers/README.md) | one page per diagnostic |

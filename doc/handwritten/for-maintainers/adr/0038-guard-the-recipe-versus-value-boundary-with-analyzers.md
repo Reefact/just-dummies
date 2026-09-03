@@ -15,18 +15,18 @@
   omits `.Generate()` hits "a compile-time error with an actionable message ..., **never a silent wrong value**".
   Its *Follow-up Actions* concluded: "Do not pursue the optional analyzer suggested in issue #190; the removal
   makes it unnecessary."
-* That assessment holds wherever the target position is typed by the **generated value**. `int x = Any.Int32()` is
-  `CS0029`, `Any.Int32() == 5` is `CS0019`, and `Assert.Equal(Any.Int32(), value)` is `CS0411`. There, removing the
+* That assessment holds wherever the target position is typed by the **generated value**. `int x = Dummy.Int32()` is
+  `CS0029`, `Dummy.Int32() == 5` is `CS0019`, and `Assert.Equal(Dummy.Int32(), value)` is `CS0411`. There, removing the
   conversion did turn a silent substitution into a compile error.
 * It does not hold wherever the target position accepts the generator's **own static type**. Generators are
   reference types, so no conversion is needed and none was there to remove: `object`, `params object[]`, `dynamic`,
   an `object[]` or `List<object>` element, an interpolation hole, an operand of a `string` concatenation, and the
   inherited `object.ToString()` / `object.Equals` all accept a generator as it stands.
 * No JustDummies generator overrides `ToString()`. Rendering one as text therefore yields the builder's CLR type
-  name — `$"{Any.String()}"` produces the literal string `"JustDummies.AnyString"`. Verified by compilation: every
+  name — `$"{Dummy.String()}"` produces the literal string `"JustDummies.DummyString"`. Verified by compilation: every
   shape above builds with zero diagnostics of any kind.
 * The resulting value is non-empty, plausible, and identical on every run. It reaches the code under test as if it
-  were an arbitrary value, so the test passes green while exercising a constant — the precise outcome `Any` exists
+  were an arbitrary value, so the test passes green while exercising a constant — the precise outcome `Dummy` exists
   to prevent, and the one ADR-0006 recorded as impossible.
 * A second, adjacent shape is silent for the same structural reason. Generators are immutable recipes, so a
   constraint returns a new generator; a call whose result is discarded (`numbers.NonEmpty();`) reads as a mutation
@@ -93,7 +93,7 @@ least predictable. It would trade a diagnosable mistake for an undiagnosable one
 ### Make the generators sealed against text rendering by overriding `ToString()`
 
 Considered because an override returning the drawn value, or a deliberately alarming string, would make
-`$"{Any.String()}"` harmless or obviously wrong at a glance, with no analyzer at all.
+`$"{Dummy.String()}"` harmless or obviously wrong at a glance, with no analyzer at all.
 
 Rejected on both readings. Returning a drawn value makes `ToString()` an effectful, non-idempotent draw — the
 implicit conversion again, under another name. Returning an alarm string improves the symptom without preventing
@@ -140,7 +140,7 @@ it: the test still passes, still asserts on a constant, and the alarm surfaces o
   residual-risk claim it corrects.
 * ADR-0023 — ship first-party JustDummies analyzers; the pattern this decision applies, and the source of the
   severity grain ("a silent green is worth failing the build").
-* ADR-0014 — enforce structural `Any` conflicts at compile time, value-dependent ones at run time; the same
+* ADR-0014 — enforce structural `Dummy` conflicts at compile time, value-dependent ones at run time; the same
   "enforcement follows what the mechanism can know" reasoning, applied to the constraint surface.
 * Issue #190 — define and document the contract of implicit generator conversions; the origin of the analyzer
   ADR-0006 declined.

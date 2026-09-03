@@ -94,7 +94,7 @@
          the analyzers do, which is what makes version skew between tool and library impossible
          (ADR-0063). The packed tool must therefore declare no JustDummies dependency; the release train
          asserts it on the produced .nuspec (§13.6). -->
-    <ProjectReference Include="..\JustDummies.GenAny\JustDummies.GenAny.csproj" />
+    <ProjectReference Include="..\JustDummies.GenDummy\JustDummies.GenDummy.csproj" />
   </ItemGroup>
 
   <ItemGroup>

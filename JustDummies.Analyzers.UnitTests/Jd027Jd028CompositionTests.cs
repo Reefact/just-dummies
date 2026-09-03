@@ -15,7 +15,7 @@ public class Jd027UnusedCombineOperandTests {
 
             public static class Sample {
                 public static void M() {
-                    _ = Any.Combine(Any.Int32(), Any.String(), (number, text) => number);
+                    _ = Dummy.Combine(Dummy.Int32(), Dummy.String(), (number, text) => number);
                 }
             }
             """;
@@ -34,7 +34,7 @@ public class Jd027UnusedCombineOperandTests {
 
             public static class Sample {
                 public static void M() {
-                    _ = Any.Combine(Any.Int32(), Any.String(), Any.Boolean(), (number, text, flag) => number);
+                    _ = Dummy.Combine(Dummy.Int32(), Dummy.String(), Dummy.Boolean(), (number, text, flag) => number);
                 }
             }
             """;
@@ -51,7 +51,7 @@ public class Jd027UnusedCombineOperandTests {
 
             public static class Sample {
                 public static void M() {
-                    _ = Any.Combine(Any.Int32(), Any.String(), (number, text) => text + number);
+                    _ = Dummy.Combine(Dummy.Int32(), Dummy.String(), (number, text) => text + number);
                 }
             }
             """;
@@ -68,7 +68,7 @@ public class Jd027UnusedCombineOperandTests {
 
             public static class Sample {
                 public static void M() {
-                    _ = Any.Combine(Any.Int32(), Any.String(), (number, _) => number);
+                    _ = Dummy.Combine(Dummy.Int32(), Dummy.String(), (number, _) => number);
                 }
             }
             """;
@@ -87,7 +87,7 @@ public class Jd027UnusedCombineOperandTests {
 
             public static class Sample {
                 public static void M() {
-                    _ = Any.Combine(Any.Int32(), Any.String(), (number, text) => Enumerable.Range(0, 1).Select(_ => text).First() + number);
+                    _ = Dummy.Combine(Dummy.Int32(), Dummy.String(), (number, text) => Enumerable.Range(0, 1).Select(_ => text).First() + number);
                 }
             }
             """;
@@ -111,7 +111,7 @@ public class Jd027UnusedCombineOperandTests {
 
             public static class Sample {
                 public static void M() {
-                    IAny<string> failing = Any.Combine<int, string, string>(Any.Int32(), Any.String(), (number, text) => throw new InvalidOperationException("rejected"));
+                    IDummy<string> failing = Dummy.Combine<int, string, string>(Dummy.Int32(), Dummy.String(), (number, text) => throw new InvalidOperationException("rejected"));
                 }
             }
             """;
@@ -129,7 +129,7 @@ public class Jd027UnusedCombineOperandTests {
 
             public static class Sample {
                 public static void M() {
-                    _ = Any.Combine(Any.Int32(), Any.String(), Pair);
+                    _ = Dummy.Combine(Dummy.Int32(), Dummy.String(), Pair);
                 }
 
                 private static string Pair(int number, string text) { return text; }
@@ -153,10 +153,10 @@ public class Jd028InertDistinctnessTests {
         """;
 
     [Theory]
-    [InlineData("Any.ListOf(Any.Int32().As(v => new Box(v))).Distinct()")]
-    [InlineData("Any.ArrayOf(Any.Int32().As(v => new Box(v))).Distinct()")]
-    [InlineData("Any.SequenceOf(Any.Int32().As(v => new Box(v))).Distinct()")]
-    [InlineData("Any.SetOf(Any.Int32().As(v => new Box(v)))")]
+    [InlineData("Dummy.ListOf(Dummy.Int32().As(v => new Box(v))).Distinct()")]
+    [InlineData("Dummy.ArrayOf(Dummy.Int32().As(v => new Box(v))).Distinct()")]
+    [InlineData("Dummy.SequenceOf(Dummy.Int32().As(v => new Box(v))).Distinct()")]
+    [InlineData("Dummy.SetOf(Dummy.Int32().As(v => new Box(v)))")]
     public async Task Reports_distinctness_over_reference_equality(string expression) {
         string source = $$"""
             using JustDummies;
@@ -190,7 +190,7 @@ public class Jd028InertDistinctnessTests {
 
             public static class Sample {
                 public static void M() {
-                    _ = Any.ListOf(Any.Int32().As(v => (Box)null)).Distinct();
+                    _ = Dummy.ListOf(Dummy.Int32().As(v => (Box)null)).Distinct();
                 }
             }
             """;
@@ -201,9 +201,9 @@ public class Jd028InertDistinctnessTests {
     }
 
     [Theory]
-    [InlineData("Any.ListOf(Any.Int32()).Distinct()")]
-    [InlineData("Any.ListOf(Any.String()).Distinct()")]
-    [InlineData("Any.SetOf(Any.Guid())")]
+    [InlineData("Dummy.ListOf(Dummy.Int32()).Distinct()")]
+    [InlineData("Dummy.ListOf(Dummy.String()).Distinct()")]
+    [InlineData("Dummy.SetOf(Dummy.Guid())")]
     public async Task Does_not_report_a_built_in_element_type(string expression) {
         string source = $$"""
             using JustDummies;
@@ -221,9 +221,9 @@ public class Jd028InertDistinctnessTests {
     }
 
     [Theory]
-    [InlineData("Any.SetOf(Any.OneOf(first, second))")]
-    [InlineData("Any.ListOf(Any.OneOf(first, second)).Distinct()")]
-    [InlineData("Any.ListOf(held).Distinct()")]
+    [InlineData("Dummy.SetOf(Dummy.OneOf(first, second))")]
+    [InlineData("Dummy.ListOf(Dummy.OneOf(first, second)).Distinct()")]
+    [InlineData("Dummy.ListOf(held).Distinct()")]
     public async Task Does_not_report_a_generator_that_hands_back_existing_instances(string expression) {
         // The narrowing dogfooding forced. A pool returns the very references it was handed, so drawing the same
         // member twice yields the same reference and distinctness binds exactly as asked — the library's own suite
@@ -234,7 +234,7 @@ public class Jd028InertDistinctnessTests {
             {{ReferenceEqualityType}}
 
             public static class Sample {
-                public static void M(Box first, Box second, IAny<Box> held) {
+                public static void M(Box first, Box second, IDummy<Box> held) {
                     _ = {{expression}};
                 }
             }
@@ -254,7 +254,7 @@ public class Jd028InertDistinctnessTests {
 
             public static class Sample {
                 public static void M() {
-                    _ = Any.ListOf(Any.Int32().As(v => new Box(v))).WithCount(3);
+                    _ = Dummy.ListOf(Dummy.Int32().As(v => new Box(v))).WithCount(3);
                 }
             }
             """;
@@ -274,8 +274,8 @@ public class Jd028InertDistinctnessTests {
 
             public static class Sample {
                 public static void M(IEqualityComparer<Box> comparer) {
-                    _ = Any.ListOf(Any.Int32().As(v => new Box(v))).Distinct(comparer);
-                    _ = Any.SetOf(Any.Int32().As(v => new Box(v)), comparer);
+                    _ = Dummy.ListOf(Dummy.Int32().As(v => new Box(v))).Distinct(comparer);
+                    _ = Dummy.SetOf(Dummy.Int32().As(v => new Box(v)), comparer);
                 }
             }
             """;
@@ -294,7 +294,7 @@ public class Jd028InertDistinctnessTests {
 
             public static class Sample {
                 public static void M() {
-                    _ = Any.SetOf(Any.Combine(Any.Int32(), Any.Int32(), (left, right) => new Box(left + right)));
+                    _ = Dummy.SetOf(Dummy.Combine(Dummy.Int32(), Dummy.Int32(), (left, right) => new Box(left + right)));
                 }
             }
             """;
@@ -316,7 +316,7 @@ public class Jd028InertDistinctnessTests {
                 private static Box Lookup(int value) { return null; }
 
                 public static void M() {
-                    _ = Any.SetOf(Any.Int32().As(v => Lookup(v)));
+                    _ = Dummy.SetOf(Dummy.Int32().As(v => Lookup(v)));
                 }
             }
             """;
@@ -335,7 +335,7 @@ public class Jd028InertDistinctnessTests {
 
             public static class Sample {
                 public static void M() {
-                    _ = Any.DictionaryOf(Any.Int32().As(v => new Box(v)), Any.String());
+                    _ = Dummy.DictionaryOf(Dummy.Int32().As(v => new Box(v)), Dummy.String());
                 }
             }
             """;
@@ -356,7 +356,7 @@ public class Jd028InertDistinctnessTests {
 
             public static class Sample {
                 public static void M() {
-                    Run(() => Any.SetOf(Any.Int32().As(v => new Box(v))));
+                    Run(() => Dummy.SetOf(Dummy.Int32().As(v => new Box(v))));
                 }
 
                 private static void Run(Func<object> body) { }

@@ -16,7 +16,7 @@ namespace JustDummies.PropertyTests;
 ///     counter-example.
 /// </summary>
 /// <remarks>
-///     Drawing the constraints from FsCheck rather than from <see cref="Any" /> also breaks a circularity: the suite
+///     Drawing the constraints from FsCheck rather than from <see cref="Dummy" /> also breaks a circularity: the suite
 ///     no longer uses the component under test to decide what to test it with.
 /// </remarks>
 internal static class Generators {
@@ -125,7 +125,7 @@ internal static class Expect {
     ///     FsCheck case would leave most of its randomness untested; a handful of draws per case multiplies the
     ///     coverage without making the property expensive.
     /// </summary>
-    public static bool EveryDraw<T>(IAny<T> generator, Func<T, bool> invariant, int count = 8) {
+    public static bool EveryDraw<T>(IDummy<T> generator, Func<T, bool> invariant, int count = 8) {
         for (int i = 0; i < count; i++) {
             if (!invariant(generator.Generate())) { return false; }
         }
@@ -137,7 +137,7 @@ internal static class Expect {
     ///     Materializes <paramref name="count" /> draws from <paramref name="generator" />, for the properties that
     ///     reason over a batch rather than over each value in isolation (reachability, distinctness, ...).
     /// </summary>
-    public static List<T> Draws<T>(IAny<T> generator, int count) {
+    public static List<T> Draws<T>(IDummy<T> generator, int count) {
         List<T> values = new(count);
         for (int i = 0; i < count; i++) {
             values.Add(generator.Generate());

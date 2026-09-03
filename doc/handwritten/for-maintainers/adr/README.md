@@ -167,7 +167,7 @@ failure mode of a "not now" is that nobody remembers the option existed on the d
 | [ADR-0054](0054-draw-only-valid-values-from-a-typed-builder.md) | Draw only valid values from a typed builder, and judge nothing in a caller-supplied pool | Accepted | recorded here |
 | [ADR-0055](0055-hold-the-user-documentation-to-contracts-the-build-checks.md) | Hold the user documentation to contracts the build checks | Accepted | recorded here |
 | [ADR-0056](0056-scaffold-the-generator-once-and-hand-the-file-to-the-developer.md) | Scaffold the generator once and hand the file to the developer | Accepted | recorded here |
-| [ADR-0057](0057-make-the-emitted-generator-a-first-class-iany.md) | Make the emitted generator a first-class `IAny<T>` | Accepted | recorded here |
+| [ADR-0057](0057-make-the-emitted-generator-a-first-class-iany.md) | Make the emitted generator a first-class `IDummy<T>` | Accepted | recorded here |
 | [ADR-0058](0058-leave-the-scaffolded-file-open-to-the-analyzers.md) | Leave the scaffolded file open to the JustDummies analyzers | Accepted | recorded here |
 | [ADR-0059](0059-emit-only-members-resolved-in-the-target-compilation.md) | Emit only members resolved in the target compilation | Accepted | recorded here |
 | [ADR-0060](0060-seed-generators-from-constructor-guards.md) | Seed generators from constructor guards, and leave the rest as a compile error | Accepted | recorded here |

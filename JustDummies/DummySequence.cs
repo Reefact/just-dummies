@@ -1,0 +1,49 @@
+namespace JustDummies;
+
+/// <summary>
+///     A fluent generator of arbitrary <see cref="IEnumerable{T}" /> values over an element generator. The generated
+///     sequence is <b>fully materialized</b>: it never defers work, so enumerating it twice yields the same elements
+///     and never re-draws. Shares the collection constraint surface
+///     (<see cref="DummyCollection{TItem,TResult,TSelf}" />) — count bounds and contained values — and adds
+///     <see cref="Distinct()" /> to require pairwise-distinct elements.
+/// </summary>
+/// <remarks>
+///     Materialize the sequence with <see cref="DummyCollection{TItem,TResult,TSelf}.Generate" />, or use the generator
+///     through <see cref="IDummy{T}" />.
+/// </remarks>
+/// <typeparam name="T">The element type.</typeparam>
+public sealed class DummySequence<T> : DummyCollection<T, IEnumerable<T>, DummySequence<T>> {
+
+    internal DummySequence(RandomSource? source, CollectionState<T> state) : base(source, state) { }
+
+    /// <summary>Requires the elements to be pairwise distinct (default equality).</summary>
+    /// <returns>A new generator carrying the added constraint.</returns>
+    /// <exception cref="ConflictingDummyConstraintException">Thrown when the constraint cannot be satisfied by the element generator's domain.</exception>
+    public DummySequence<T> Distinct() {
+        return With(State.AsDistinct(null, ConstraintCall.Of(nameof(Distinct))));
+    }
+
+    /// <summary>Requires the elements to be pairwise distinct under <paramref name="comparer" />.</summary>
+    /// <param name="comparer">The equality comparer deciding whether two elements are the same.</param>
+    /// <returns>A new generator carrying the added constraint.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="comparer" /> is <c>null</c>.</exception>
+    /// <exception cref="ConflictingDummyConstraintException">Thrown when the constraint cannot be satisfied by the element generator's domain.</exception>
+    public DummySequence<T> Distinct(IEqualityComparer<T> comparer) {
+        if (comparer is null) { throw new ArgumentNullException(nameof(comparer)); }
+
+        return With(State.AsDistinct(comparer, ConstraintCall.Of(nameof(Distinct), "comparer")));
+    }
+
+    private protected override DummySequence<T> With(CollectionState<T> state) {
+        if (state is null) { throw new ArgumentNullException(nameof(state)); }
+
+        return new DummySequence<T>(SourceOrNull, state);
+    }
+
+    private protected override IEnumerable<T> Build(List<T> items) {
+        if (items is null) { throw new ArgumentNullException(nameof(items)); }
+
+        return items;
+    }
+
+}

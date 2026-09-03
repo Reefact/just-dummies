@@ -47,7 +47,7 @@ public sealed class Percentage {
 
 }
 
-/// <summary>A small aggregate assembled from constrained parts, for <c>Any.Combine</c>.</summary>
+/// <summary>A small aggregate assembled from constrained parts, for <c>Dummy.Combine</c>.</summary>
 public sealed class Customer {
 
     public Customer(string name, OrderReference lastOrder) {

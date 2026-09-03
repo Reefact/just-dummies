@@ -12,4 +12,4 @@
 #
 # Scoped rather than repository-wide: this pins the files whose bytes are the contract, and leaves
 # every other file to the developer's own Git configuration.
-JustDummies.GenAny.UnitTests/Golden/*.approved.cs text eol=lf
+JustDummies.GenDummy.UnitTests/Golden/*.approved.cs text eol=lf

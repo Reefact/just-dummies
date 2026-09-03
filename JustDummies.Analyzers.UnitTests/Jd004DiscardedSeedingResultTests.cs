@@ -15,7 +15,7 @@ public class Jd004DiscardedSeedingResultTests {
 
             public static class Sample {
                 public static void M() {
-                    Any.UseSeed(1234);
+                    Dummy.UseSeed(1234);
                 }
             }
             """;
@@ -35,7 +35,7 @@ public class Jd004DiscardedSeedingResultTests {
 
             public static class Sample {
                 public static void M() {
-                    _ = Any.UseSeed(1234, "[Reproducible(Seed = 1234)]");
+                    _ = Dummy.UseSeed(1234, "[Reproducible(Seed = 1234)]");
                 }
             }
             """;
@@ -54,7 +54,7 @@ public class Jd004DiscardedSeedingResultTests {
 
             public static class Sample {
                 public static void M() {
-                    Any.WithSeed(1234);
+                    Dummy.WithSeed(1234);
                 }
             }
             """;
@@ -74,8 +74,8 @@ public class Jd004DiscardedSeedingResultTests {
 
             public static class Sample {
                 public static void M() {
-                    using (Any.UseSeed(1234)) {
-                        Any.String().Generate();
+                    using (Dummy.UseSeed(1234)) {
+                        Dummy.String().Generate();
                     }
                 }
             }
@@ -94,9 +94,9 @@ public class Jd004DiscardedSeedingResultTests {
 
             public static class Sample {
                 public static void M() {
-                    using IDisposable scope = Any.UseSeed(1234);
+                    using IDisposable scope = Dummy.UseSeed(1234);
 
-                    Any.String().Generate();
+                    Dummy.String().Generate();
                 }
             }
             """;
@@ -113,7 +113,7 @@ public class Jd004DiscardedSeedingResultTests {
 
             public static class Sample {
                 public static string M() {
-                    AnyContext context = Any.WithSeed(1234);
+                    DummyContext context = Dummy.WithSeed(1234);
 
                     return context.String().Generate();
                 }
@@ -139,7 +139,7 @@ public class Jd004DiscardedSeedingResultTests {
 
             public static class Sample {
                 public static void M(int seed) {
-                    Expect.Throws<ArgumentNullException>(() => Any.UseSeed(seed, null!));
+                    Expect.Throws<ArgumentNullException>(() => Dummy.UseSeed(seed, null!));
                 }
             }
             """;
@@ -178,7 +178,7 @@ public class Jd004DiscardedSeedingResultTests {
 
             public static class Sample {
                 public static void M() {
-                    Any.String();
+                    Dummy.String();
                 }
             }
             """;

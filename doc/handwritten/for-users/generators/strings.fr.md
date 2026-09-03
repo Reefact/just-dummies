@@ -3,17 +3,17 @@
 🌍 **Langues :**  
 🇬🇧 [English](./strings.en.md) | 🇫🇷 Français (ce fichier)
 
-`Any.String()` est le générateur le plus contraint de la bibliothèque, parce que c'est dans les
+`Dummy.String()` est le générateur le plus contraint de la bibliothèque, parce que c'est dans les
 chaînes que vivent les formats métier. Cette page couvre ses quatre familles de contraintes, la règle
-de disposition qui explique comment elles interagissent, `Any.Char()`, et la génération pilotée par
-motif avec `Any.StringMatching`.
+de disposition qui explique comment elles interagissent, `Dummy.Char()`, et la génération pilotée par
+motif avec `Dummy.StringMatching`.
 
 ## À quoi ressemble une chaîne non contrainte
 
 <!-- jd:allow=JD030 -->
 ```csharp
-string anything = Any.String().Generate();   // 0 à 1024 caractères, n'importe où dans l'ASCII
-string nonEmpty = Any.String().NonEmpty().Generate();
+string anything = Dummy.String().Generate();   // 0 à 1024 caractères, n'importe où dans l'ASCII
+string nonEmpty = Dummy.String().NonEmpty().Generate();
 ```
 
 Un tirage non contraint produit **0 à 1024 caractères pris dans tout l'ASCII** — caractères de
@@ -35,7 +35,7 @@ est revenue, la valeur a cessé d'être un dummy — voir
 Alors contraignez — avec les invariants que votre code exige réellement :
 
 ```csharp
-string reference = Any.String().Printable().WithMaxLength(32).NonEmpty().Generate();
+string reference = Dummy.String().Printable().WithMaxLength(32).NonEmpty().Generate();
 ```
 
 `NonEmpty()` quand du contenu est requis, `WithMaxLength(...)` pour la longueur que votre colonne ou
@@ -48,12 +48,12 @@ un fait sur le code environnant, écrit là où il doit l'être
 
 <!-- jd:allow=JD030 -->
 ```csharp
-string exact     = Any.String().WithLength(12).Generate();
-string ranged    = Any.String().WithLengthBetween(3, 20).Generate();
-string atLeast   = Any.String().WithMinLength(8).Generate();
-string atMost    = Any.String().WithMaxLength(50).Generate();
-string withStuff = Any.String().NonEmpty().Generate();
-string realText  = Any.String().NotBlank().Generate();
+string exact     = Dummy.String().WithLength(12).Generate();
+string ranged    = Dummy.String().WithLengthBetween(3, 20).Generate();
+string atLeast   = Dummy.String().WithMinLength(8).Generate();
+string atMost    = Dummy.String().WithMaxLength(50).Generate();
+string withStuff = Dummy.String().NonEmpty().Generate();
+string realText  = Dummy.String().NotBlank().Generate();
 ```
 
 `NonEmpty()` est l'intrus de cette liste : il relève le plancher à un et laisse le plafond là où il
@@ -72,9 +72,9 @@ admet ; seule une valeur entièrement blanche est refusée
 À noter que le blanc dont il s'agit ici est le `char.IsWhiteSpace` de la BCL, plus large que la
 famille `Whitespaces()` ci-dessous : la famille nomme la paire lisible **à** laquelle un tirage peut
 être restreint, tandis que `NotBlank()` doit s'accorder avec la garde qui jugera la valeur. Les deux
-se contredisent là où le remplissage doit fournir le caractère non blanc — `Any.String().Whitespaces().NotBlank()`
+se contredisent là où le remplissage doit fournir le caractère non blanc — `Dummy.String().Whitespaces().NotBlank()`
 nomme chaque côté — tandis qu'un littéral ancré qui en porte déjà un règle la garantie lui-même, ce
-qui laisse `Any.String().StartingWith("A").Whitespaces().NotBlank()` légal.
+qui laisse `Dummy.String().StartingWith("A").Whitespaces().NotBlank()` légal.
 
 **Et l'ordre dans lequel vous les écrivez vous appartient.** Ce qui est jugé, c'est le jeu de
 contraintes, non l'appel écrit jusqu'ici : `Whitespaces().NotBlank().StartingWith("A")` tire donc
@@ -108,15 +108,15 @@ cette règle.
 | `Hexadecimal()` | `0-9 A-F a-f` | 22 |
 
 ```csharp
-string letters      = Any.String().Alpha().WithLength(10).Generate();          // A-Z a-z
-string alphanumeric = Any.String().AlphaNumeric().WithLength(10).Generate();   // A-Z a-z 0-9
-string digits       = Any.String().Numeric().WithLength(6).Generate();         // 0-9
-string symbols      = Any.String().Punctuation().WithLength(4).Generate();     // !"#$%&'()*+,-./ etc.
-string sha          = Any.String().Hexadecimal().InLowerCase().WithLength(40).Generate();
-string anyText      = Any.String().Printable().WithLength(20).Generate();      // aucun caractère de contrôle
-string shouting     = Any.String().Alpha().InUpperCase().WithLength(4).Generate();
-string noDigits     = Any.String().Printable().WithoutNumeric().WithLength(8).Generate();
-string custom       = Any.String().WithChars("ACGT").WithLength(20).Generate(); // votre propre vivier
+string letters      = Dummy.String().Alpha().WithLength(10).Generate();          // A-Z a-z
+string alphanumeric = Dummy.String().AlphaNumeric().WithLength(10).Generate();   // A-Z a-z 0-9
+string digits       = Dummy.String().Numeric().WithLength(6).Generate();         // 0-9
+string symbols      = Dummy.String().Punctuation().WithLength(4).Generate();     // !"#$%&'()*+,-./ etc.
+string sha          = Dummy.String().Hexadecimal().InLowerCase().WithLength(40).Generate();
+string anyText      = Dummy.String().Printable().WithLength(20).Generate();      // aucun caractère de contrôle
+string shouting     = Dummy.String().Alpha().InUpperCase().WithLength(4).Generate();
+string noDigits     = Dummy.String().Printable().WithoutNumeric().WithLength(8).Generate();
+string custom       = Dummy.String().WithChars("ACGT").WithLength(20).Generate(); // votre propre vivier
 ```
 
 Une famille occupe **un seul créneau** : en déclarer une seconde contredit la première, et le conflit
@@ -140,9 +140,9 @@ exprime un alphabet que les familles nommées ne couvrent pas : une séquence d'
 ## Forme : préfixes, suffixes, fragments
 
 ```csharp
-string reference = Any.String().StartingWith("ORD-").WithLength(12).Generate();
-string filename  = Any.String().EndingWith(".txt").WithMaxLength(30).Generate();
-string path      = Any.String().Alpha().Containing("admin").WithMinLength(20).Generate();
+string reference = Dummy.String().StartingWith("ORD-").WithLength(12).Generate();
+string filename  = Dummy.String().EndingWith(".txt").WithMaxLength(30).Generate();
+string path      = Dummy.String().Alpha().Containing("admin").WithMinLength(20).Generate();
 ```
 
 ## Comment fonctionne la disposition
@@ -170,7 +170,7 @@ un appel nommé :
 
 <!-- jd:allow=JD033 -->
 ```csharp
-string reference = Any.String().StartingWith("ORD-").AlphaNumeric().InUpperCase().WithLengthBetween(8, 20).Generate();
+string reference = Dummy.String().StartingWith("ORD-").AlphaNumeric().InUpperCase().WithLengthBetween(8, 20).Generate();
 // ORD-7K2P9QW, ORD-XZ4M1TB, ORD-B8N3TVJ2 — le tiret sépare, et le corps reste alphanumérique
 ```
 
@@ -185,7 +185,7 @@ tenir :
 
 <!-- jd:allow=JD015,JD006 -->
 ```csharp
-Any.String().WithLength(3).StartingWith("ORD-");  // la longueur ne peut pas contenir le préfixe
+Dummy.String().WithLength(3).StartingWith("ORD-");  // la longueur ne peut pas contenir le préfixe
 ```
 
 L'analyzer [JD015](../analyzers/JD015.fr.md) le signale à la compilation dès que les arguments sont
@@ -195,10 +195,10 @@ constants : l'échec arrive donc généralement avant même l'exécution du test
 
 <!-- jd:allow=JD029 -->
 ```csharp
-string currency = Any.String().OneOf("EUR", "USD", "GBP").Generate();
-string status   = Any.String().OneOf(["draft", "sent", "paid"]).Generate();
-string notDraft = Any.String().OneOf("draft", "sent", "paid").DifferentFrom("draft").Generate();
-string notEmpty = Any.String().WithLengthBetween(1, 5).Except("aaa", "bbb").Generate();
+string currency = Dummy.String().OneOf("EUR", "USD", "GBP").Generate();
+string status   = Dummy.String().OneOf(["draft", "sent", "paid"]).Generate();
+string notDraft = Dummy.String().OneOf("draft", "sent", "paid").DifferentFrom("draft").Generate();
+string notEmpty = Dummy.String().WithLengthBetween(1, 5).Except("aaa", "bbb").Generate();
 ```
 
 `OneOf` est la seule contrainte qui **remplace** la disposition au lieu de la façonner : c'est vous
@@ -210,27 +210,27 @@ contredisent en leurs propres termes sont refusées dès leur déclaration — a
 valeurs ne puisse les réinterpréter comme un filtre.
 
 Les exclusions sont honorées par un retirage **borné** : exclure presque tout ce qu'un petit domaine
-peut produire se termine donc par une `AnyGenerationException` explicite, et non par un blocage
+peut produire se termine donc par une `DummyGenerationException` explicite, et non par un blocage
 ([ADR-0012](../../for-maintainers/adr/0012-meet-string-exclusions-with-a-bounded-redraw.fr.md)).
 
 ## Caractères
 
-`Any.Char()` porte la famille de l'alphabet et celle de l'appartenance :
+`Dummy.Char()` porte la famille de l'alphabet et celle de l'appartenance :
 
 ```csharp
-char letter      = Any.Char().Alpha().Generate();
-char upper       = Any.Char().Alpha().InUpperCase().Generate();
-char digit       = Any.Char().Numeric().Generate();
-char punctuation = Any.Char().Punctuation().Generate();
-char printable   = Any.Char().Printable().Generate();
-char control     = Any.Char().NonPrintable().Generate();
-char hex         = Any.Char().Hexadecimal().InLowerCase().Generate();
-char separator   = Any.Char().OneOf('-', '_', '.').Generate();
-char notVowel    = Any.Char().Alpha().InLowerCase().Except('a', 'e', 'i', 'o', 'u').Generate();
+char letter      = Dummy.Char().Alpha().Generate();
+char upper       = Dummy.Char().Alpha().InUpperCase().Generate();
+char digit       = Dummy.Char().Numeric().Generate();
+char punctuation = Dummy.Char().Punctuation().Generate();
+char printable   = Dummy.Char().Printable().Generate();
+char control     = Dummy.Char().NonPrintable().Generate();
+char hex         = Dummy.Char().Hexadecimal().InLowerCase().Generate();
+char separator   = Dummy.Char().OneOf('-', '_', '.').Generate();
+char notVowel    = Dummy.Char().Alpha().InLowerCase().Except('a', 'e', 'i', 'o', 'u').Generate();
 ```
 
-Ce sont les familles que `Any.String()` déclare, elles ont ici le même sens, et le défaut aussi :
-**un `Any.Char()` non contraint tire n'importe où dans l'ASCII**, il peut donc très bien vous remettre
+Ce sont les familles que `Dummy.String()` déclare, elles ont ici le même sens, et le défaut aussi :
+**un `Dummy.Char()` non contraint tire n'importe où dans l'ASCII**, il peut donc très bien vous remettre
 un retour chariot ou un NUL. `Printable()` est ce que vous déclarez quand ce n'est pas acceptable ;
 `Punctuation()` quand le caractère ne doit pas se lire comme alphanumérique ; `NonPrintable()` quand un
 caractère de contrôle est précisément le contre-exemple dont votre test a besoin. Là où l'ensemble est
@@ -238,13 +238,13 @@ précis — trois séparateurs autorisés, pas les trente-deux — `OneOf` le di
 
 ## Motifs
 
-`Any.StringMatching` génère une valeur **à partir** d'un motif au lieu de tester des candidats contre
+`Dummy.StringMatching` génère une valeur **à partir** d'un motif au lieu de tester des candidats contre
 lui, ce qui lui permet de garantir la correspondance. Une chaîne comme une `Regex` sont acceptées :
 
 ```csharp
-string sku       = Any.StringMatching(@"[A-Z]{3}-\d{4}").Generate();
-string reference = Any.StringMatching(new Regex(@"ORD-\d{8}")).Generate();
-string flag      = Any.StringMatching("(true|false)").Generate();
+string sku       = Dummy.StringMatching(@"[A-Z]{3}-\d{4}").Generate();
+string reference = Dummy.StringMatching(new Regex(@"ORD-\d{8}")).Generate();
+string flag      = Dummy.StringMatching("(true|false)").Generate();
 ```
 
 ### Constructions acceptées
@@ -283,10 +283,10 @@ de garder un analyseur maison et de refuser bruyamment est
 
 ### Ce que l'on peut encore contraindre
 
-Un `AnyPattern` ne porte que `Except` et `DifferentFrom` :
+Un `DummyPattern` ne porte que `Except` et `DifferentFrom` :
 
 ```csharp
-string sku = Any.StringMatching(@"[A-Z]{3}-\d{4}").DifferentFrom("ABC-0000").Generate();
+string sku = Dummy.StringMatching(@"[A-Z]{3}-\d{4}").DifferentFrom("ABC-0000").Generate();
 ```
 
 Les contraintes de longueur, d'alphabet ou de préfixe sont volontairement absentes : les appliquer

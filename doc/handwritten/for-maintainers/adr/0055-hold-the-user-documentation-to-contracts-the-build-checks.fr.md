@@ -37,7 +37,7 @@ observations générales sur la documentation :
 
 1. un exemple enchaînant un alphabet de lettres seules avec un suffixe contenant `.`, chaîne que la
    bibliothèque refuse dès la déclaration ;
-2. une affirmation selon laquelle `Any.OneOf` se lie mal à un tableau, ce qui est faux — l'expansion
+2. une affirmation selon laquelle `Dummy.OneOf` se lie mal à un tableau, ce qui est faux — l'expansion
    `params` rend ce cas correct, et c'est une `List` conservée en variable qui pose problème ;
 3. deux exemples de `[SuppressMessage]` écrits hors de tout type.
 

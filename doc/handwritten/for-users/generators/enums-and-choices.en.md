@@ -8,13 +8,13 @@ enumerations, explicit pools, elements of an existing collection, and booleans.
 
 ## Enumerations
 
-`Any.Enum<TEnum>()` draws one of the members declared on the type:
+`Dummy.Enum<TEnum>()` draws one of the members declared on the type:
 
 ```csharp
-OrderStatus status    = Any.Enum<OrderStatus>().Generate();
-OrderStatus notDraft  = Any.Enum<OrderStatus>().DifferentFrom(OrderStatus.Draft).Generate();
-OrderStatus openState = Any.Enum<OrderStatus>().Except(OrderStatus.Shipped, OrderStatus.Cancelled).Generate();
-OrderStatus terminal  = Any.Enum<OrderStatus>().OneOf(OrderStatus.Shipped, OrderStatus.Cancelled).Generate();
+OrderStatus status    = Dummy.Enum<OrderStatus>().Generate();
+OrderStatus notDraft  = Dummy.Enum<OrderStatus>().DifferentFrom(OrderStatus.Draft).Generate();
+OrderStatus openState = Dummy.Enum<OrderStatus>().Except(OrderStatus.Shipped, OrderStatus.Cancelled).Generate();
+OrderStatus terminal  = Dummy.Enum<OrderStatus>().OneOf(OrderStatus.Shipped, OrderStatus.Cancelled).Generate();
 ```
 
 The draw stays inside the declared members. It never invents an undeclared numeric value, even
@@ -30,13 +30,13 @@ For a `[Flags]` enum, a plain draw still yields **one declared member**. Widenin
 
 ```csharp
 // One declared member: None, Read, Write or Delete.
-Permissions single = Any.Enum<Permissions>().Generate();
+Permissions single = Dummy.Enum<Permissions>().Generate();
 
-// Any combination of them: Read | Delete, Read | Write | Delete, ...
-Permissions combined = Any.Enum<Permissions>().AllowingCombinations().Generate();
+// Dummy combination of them: Read | Delete, Read | Write | Delete, ...
+Permissions combined = Dummy.Enum<Permissions>().AllowingCombinations().Generate();
 
 // One of two combinations you name: an allow-list is the pool itself, so it needs no opt-in.
-Permissions writable = Any.Enum<Permissions>()
+Permissions writable = Dummy.Enum<Permissions>()
                           .OneOf(Permissions.Read | Permissions.Write, Permissions.Write | Permissions.Delete)
                           .Generate();
 ```
@@ -56,15 +56,15 @@ combination in `OneOf` needs none of it, since an allow-list is the pool itself 
 
 ## Explicit pools
 
-`Any.OneOf` draws uniformly from values you list:
+`Dummy.OneOf` draws uniformly from values you list:
 
 ```csharp
-string  currency = Any.OneOf("EUR", "USD", "GBP").Generate();
-int     httpPort = Any.OneOf(80, 443, 8080).Generate();
-decimal vatRate  = Any.OneOf(0.055m, 0.10m, 0.20m).Generate();
+string  currency = Dummy.OneOf("EUR", "USD", "GBP").Generate();
+int     httpPort = Dummy.OneOf(80, 443, 8080).Generate();
+decimal vatRate  = Dummy.OneOf(0.055m, 0.10m, 0.20m).Generate();
 
 // Pools narrow like anything else.
-string notEuro = Any.OneOf("EUR", "USD", "GBP").DifferentFrom("EUR").Generate();
+string notEuro = Dummy.OneOf("EUR", "USD", "GBP").DifferentFrom("EUR").Generate();
 ```
 
 Two mistakes are common enough to have their own diagnostics.
@@ -73,11 +73,11 @@ Two mistakes are common enough to have their own diagnostics.
 the repeated value weighs nothing extra — [JD025](../analyzers/JD025.en.md).
 
 **Passing generators instead of values** infers a pool of *recipes*, so the draw returns a generator
-rather than a value — [JD012](../analyzers/JD012.en.md). Use `Any.Combine` when you meant to compose.
+rather than a value — [JD012](../analyzers/JD012.en.md). Use `Dummy.Combine` when you meant to compose.
 
 ## Elements of an existing collection
 
-`Any.OneOf` takes `params T[]`, so handing it an **array** expands as usual and does what you expect.
+`Dummy.OneOf` takes `params T[]`, so handing it an **array** expands as usual and does what you expect.
 Handing it any other collection does not: `T` binds to the collection type itself, and the pool
 becomes a single element — that collection:
 
@@ -86,15 +86,15 @@ becomes a single element — that collection:
 List<string> currencies = ["EUR", "USD", "GBP"];
 
 // JD013: a pool of one, whose single element is the list.
-IAny<List<string>> wrong = Any.OneOf(currencies);
+IDummy<List<string>> wrong = Dummy.OneOf(currencies);
 ```
 
-`Any.ElementOf` is the one that draws *from* the collection, whatever its type:
+`Dummy.ElementOf` is the one that draws *from* the collection, whatever its type:
 
 ```csharp
 List<string> currencies = ["EUR", "USD", "GBP"];
 
-string currency = Any.ElementOf(currencies).Generate();
+string currency = Dummy.ElementOf(currencies).Generate();
 ```
 
 Two overloads exist, for `IReadOnlyList<T>` and `IEnumerable<T>`. The compiler picks the more
@@ -106,8 +106,8 @@ walked; both are supported so a `yield`-returning helper or a LINQ query works w
 List<OrderStatus>       open      = [OrderStatus.Draft, OrderStatus.Submitted];
 IEnumerable<OrderStatus> lazyOpen = open.Where(status => status != OrderStatus.Draft);
 
-OrderStatus fromList     = Any.ElementOf(open).Generate();
-OrderStatus fromSequence = Any.ElementOf(lazyOpen).Generate();
+OrderStatus fromList     = Dummy.ElementOf(open).Generate();
+OrderStatus fromSequence = Dummy.ElementOf(lazyOpen).Generate();
 ```
 
 An empty pool admits no value and is refused rather than returning a default.
@@ -115,16 +115,16 @@ An empty pool admits no value and is refused rather than returning a default.
 ## Booleans
 
 ```csharp
-bool flag       = Any.Boolean().Generate();
-bool always     = Any.Boolean().True().Generate();
-bool never      = Any.Boolean().False().Generate();
-bool notTheSame = Any.Boolean().DifferentFrom(true).Generate();
+bool flag       = Dummy.Boolean().Generate();
+bool always     = Dummy.Boolean().True().Generate();
+bool never      = Dummy.Boolean().False().Generate();
+bool notTheSame = Dummy.Boolean().DifferentFrom(true).Generate();
 ```
 
 `True()` and `False()` exist so a call site that pins the flag still reads like the ones that do not,
 which matters in a test where three of four dummies vary and one does not.
 
-`Any.Boolean().Except(true, false)` would empty the domain, and is refused with a message naming
+`Dummy.Boolean().Except(true, false)` would empty the domain, and is refused with a message naming
 exactly that.
 
 ---

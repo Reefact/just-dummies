@@ -3,7 +3,7 @@
 🌍 **Langues :**  
 🇬🇧 [English](./README.md) | 🇫🇷 Français (ce fichier)
 
-Toutes les fabriques `Any.*` de la bibliothèque, regroupées par famille, avec la page qui les
+Toutes les fabriques `Dummy.*` de la bibliothèque, regroupées par famille, avec la page qui les
 documente. Si vous connaissez le type dont vous avez besoin, cette page vous amène aux bonnes
 contraintes en un saut.
 
@@ -11,64 +11,64 @@ contraintes en un saut.
 
 | Fabrique | Tire | Page |
 | --- | --- | --- |
-| `Any.Byte()` | `byte` | [Nombres](./numbers.fr.md) |
-| `Any.SByte()` | `sbyte` | [Nombres](./numbers.fr.md) |
-| `Any.Int16()` | `short` | [Nombres](./numbers.fr.md) |
-| `Any.Int32()` | `int` | [Nombres](./numbers.fr.md) |
-| `Any.Int64()` | `long` | [Nombres](./numbers.fr.md) |
-| `Any.UInt16()` | `ushort` | [Nombres](./numbers.fr.md) |
-| `Any.UInt32()` | `uint` | [Nombres](./numbers.fr.md) |
-| `Any.UInt64()` | `ulong` | [Nombres](./numbers.fr.md) |
-| `Any.Decimal()` | `decimal` | [Nombres](./numbers.fr.md) |
-| `Any.Double()` | `double` | [Nombres](./numbers.fr.md) |
-| `Any.Single()` | `float` | [Nombres](./numbers.fr.md) |
-| `Any.Int128()` 🔹 | `Int128` | [Nombres](./numbers.fr.md) |
-| `Any.UInt128()` 🔹 | `UInt128` | [Nombres](./numbers.fr.md) |
-| `Any.Half()` 🔹 | `Half` | [Nombres](./numbers.fr.md) |
+| `Dummy.Byte()` | `byte` | [Nombres](./numbers.fr.md) |
+| `Dummy.SByte()` | `sbyte` | [Nombres](./numbers.fr.md) |
+| `Dummy.Int16()` | `short` | [Nombres](./numbers.fr.md) |
+| `Dummy.Int32()` | `int` | [Nombres](./numbers.fr.md) |
+| `Dummy.Int64()` | `long` | [Nombres](./numbers.fr.md) |
+| `Dummy.UInt16()` | `ushort` | [Nombres](./numbers.fr.md) |
+| `Dummy.UInt32()` | `uint` | [Nombres](./numbers.fr.md) |
+| `Dummy.UInt64()` | `ulong` | [Nombres](./numbers.fr.md) |
+| `Dummy.Decimal()` | `decimal` | [Nombres](./numbers.fr.md) |
+| `Dummy.Double()` | `double` | [Nombres](./numbers.fr.md) |
+| `Dummy.Single()` | `float` | [Nombres](./numbers.fr.md) |
+| `Dummy.Int128()` 🔹 | `Int128` | [Nombres](./numbers.fr.md) |
+| `Dummy.UInt128()` 🔹 | `UInt128` | [Nombres](./numbers.fr.md) |
+| `Dummy.Half()` 🔹 | `Half` | [Nombres](./numbers.fr.md) |
 
 ## Chaînes et caractères
 
 | Fabrique | Tire | Page |
 | --- | --- | --- |
-| `Any.String()` | `string` | [Chaînes et motifs](./strings.fr.md) |
-| `Any.Char()` | `char` | [Chaînes et motifs](./strings.fr.md) |
-| `Any.StringMatching(pattern)` | une `string` satisfaisant un motif régulier | [Chaînes et motifs](./strings.fr.md) |
+| `Dummy.String()` | `string` | [Chaînes et motifs](./strings.fr.md) |
+| `Dummy.Char()` | `char` | [Chaînes et motifs](./strings.fr.md) |
+| `Dummy.StringMatching(pattern)` | une `string` satisfaisant un motif régulier | [Chaînes et motifs](./strings.fr.md) |
 
 ## Dates et heures
 
 | Fabrique | Tire | Page |
 | --- | --- | --- |
-| `Any.DateTime()` | `DateTime` | [Dates et heures](./dates-and-times.fr.md) |
-| `Any.DateTimeOffset()` | `DateTimeOffset` | [Dates et heures](./dates-and-times.fr.md) |
-| `Any.TimeSpan()` | `TimeSpan` | [Dates et heures](./dates-and-times.fr.md) |
-| `Any.DateOnly()` 🔹 | `DateOnly` | [Dates et heures](./dates-and-times.fr.md) |
-| `Any.TimeOnly()` 🔹 | `TimeOnly` | [Dates et heures](./dates-and-times.fr.md) |
+| `Dummy.DateTime()` | `DateTime` | [Dates et heures](./dates-and-times.fr.md) |
+| `Dummy.DateTimeOffset()` | `DateTimeOffset` | [Dates et heures](./dates-and-times.fr.md) |
+| `Dummy.TimeSpan()` | `TimeSpan` | [Dates et heures](./dates-and-times.fr.md) |
+| `Dummy.DateOnly()` 🔹 | `DateOnly` | [Dates et heures](./dates-and-times.fr.md) |
+| `Dummy.TimeOnly()` 🔹 | `TimeOnly` | [Dates et heures](./dates-and-times.fr.md) |
 
 ## Collections
 
 | Fabrique | Tire | Page |
 | --- | --- | --- |
-| `Any.ArrayOf(item)` | `T[]` | [Collections](./collections.fr.md) |
-| `Any.ListOf(item)` | `List<T>` | [Collections](./collections.fr.md) |
-| `Any.SequenceOf(item)` | `IEnumerable<T>` | [Collections](./collections.fr.md) |
-| `Any.SetOf(item)` | `HashSet<T>` | [Collections](./collections.fr.md) |
-| `Any.DictionaryOf(keys, values)` | `Dictionary<TKey, TValue>` | [Collections](./collections.fr.md) |
+| `Dummy.ArrayOf(item)` | `T[]` | [Collections](./collections.fr.md) |
+| `Dummy.ListOf(item)` | `List<T>` | [Collections](./collections.fr.md) |
+| `Dummy.SequenceOf(item)` | `IEnumerable<T>` | [Collections](./collections.fr.md) |
+| `Dummy.SetOf(item)` | `HashSet<T>` | [Collections](./collections.fr.md) |
+| `Dummy.DictionaryOf(keys, values)` | `Dictionary<TKey, TValue>` | [Collections](./collections.fr.md) |
 
 ## Énumérations et choix
 
 | Fabrique | Tire | Page |
 | --- | --- | --- |
-| `Any.Enum<TEnum>()` | un membre déclaré de `TEnum` | [Énumérations et choix](./enums-and-choices.fr.md) |
-| `Any.OneOf(values)` | l'une des valeurs listées | [Énumérations et choix](./enums-and-choices.fr.md) |
-| `Any.ElementOf(collection)` | un élément d'une collection | [Énumérations et choix](./enums-and-choices.fr.md) |
-| `Any.Boolean()` | `bool` | [Énumérations et choix](./enums-and-choices.fr.md) |
+| `Dummy.Enum<TEnum>()` | un membre déclaré de `TEnum` | [Énumérations et choix](./enums-and-choices.fr.md) |
+| `Dummy.OneOf(values)` | l'une des valeurs listées | [Énumérations et choix](./enums-and-choices.fr.md) |
+| `Dummy.ElementOf(collection)` | un élément d'une collection | [Énumérations et choix](./enums-and-choices.fr.md) |
+| `Dummy.Boolean()` | `bool` | [Énumérations et choix](./enums-and-choices.fr.md) |
 
 ## Identifiants et URI
 
 | Fabrique | Tire | Page |
 | --- | --- | --- |
-| `Any.Guid()` | `Guid` | [Identifiants et URI](./guids-and-uris.fr.md) |
-| `Any.Uri()` | `Uri` — web, WebSocket, FTP, mailto ou relative | [Identifiants et URI](./guids-and-uris.fr.md) |
+| `Dummy.Guid()` | `Guid` | [Identifiants et URI](./guids-and-uris.fr.md) |
+| `Dummy.Uri()` | `Uri` — web, WebSocket, FTP, mailto ou relative | [Identifiants et URI](./guids-and-uris.fr.md) |
 
 ## Composition
 
@@ -77,22 +77,22 @@ d'autres générateurs.
 
 | Fabrique | Produit | Page |
 | --- | --- | --- |
-| `generator.As(factory)` | `IAny<TResult>` | [Composition](../guides/composition.fr.md) |
-| `Any.Combine(…, compose)` | `IAny<TResult>` à partir de 2 à 8 générateurs | [Composition](../guides/composition.fr.md) |
-| `Any.PairOf(first, second)` | `IAny<(T1, T2)>` | [Composition](../guides/composition.fr.md) |
-| `Any.TripleOf(first, second, third)` | `IAny<(T1, T2, T3)>` | [Composition](../guides/composition.fr.md) |
-| `generator.OrNull()` | `IAny<T?>`, `null` une fois sur deux environ | [Composition](../guides/composition.fr.md) |
-| `generator.AsNullable()` | `IAny<T?>`, jamais `null` | [Composition](../guides/composition.fr.md) |
+| `generator.As(factory)` | `IDummy<TResult>` | [Composition](../guides/composition.fr.md) |
+| `Dummy.Combine(…, compose)` | `IDummy<TResult>` à partir de 2 à 8 générateurs | [Composition](../guides/composition.fr.md) |
+| `Dummy.PairOf(first, second)` | `IDummy<(T1, T2)>` | [Composition](../guides/composition.fr.md) |
+| `Dummy.TripleOf(first, second, third)` | `IDummy<(T1, T2, T3)>` | [Composition](../guides/composition.fr.md) |
+| `generator.OrNull()` | `IDummy<T?>`, `null` une fois sur deux environ | [Composition](../guides/composition.fr.md) |
+| `generator.AsNullable()` | `IDummy<T?>`, jamais `null` | [Composition](../guides/composition.fr.md) |
 
 ## Reproductibilité
 
 | Fabrique | Rôle | Page |
 | --- | --- | --- |
-| `Any.Reproducibly(body)` | exécute un corps sous une graine fraîche, rapportée en cas d'échec | [Reproductibilité](../guides/reproducibility.fr.md) |
-| `Any.Reproducibly(seed, body)` | rejoue un corps sous une graine connue | [Reproductibilité](../guides/reproducibility.fr.md) |
-| `Any.ReproduciblyAsync(body)` | la contrepartie attendable | [Reproductibilité](../guides/reproducibility.fr.md) |
-| `Any.UseSeed(seed)` | épingle le contexte ambiant jusqu'à libération | [Reproductibilité](../guides/reproducibility.fr.md) |
-| `Any.WithSeed(seed)` | renvoie un `AnyContext` isolé | [Reproductibilité](../guides/reproducibility.fr.md) |
+| `Dummy.Reproducibly(body)` | exécute un corps sous une graine fraîche, rapportée en cas d'échec | [Reproductibilité](../guides/reproducibility.fr.md) |
+| `Dummy.Reproducibly(seed, body)` | rejoue un corps sous une graine connue | [Reproductibilité](../guides/reproducibility.fr.md) |
+| `Dummy.ReproduciblyAsync(body)` | la contrepartie attendable | [Reproductibilité](../guides/reproducibility.fr.md) |
+| `Dummy.UseSeed(seed)` | épingle le contexte ambiant jusqu'à libération | [Reproductibilité](../guides/reproducibility.fr.md) |
+| `Dummy.WithSeed(seed)` | renvoie un `DummyContext` isolé | [Reproductibilité](../guides/reproducibility.fr.md) |
 
 🔹 Disponible sur le seul asset `net8.0` — le type lui-même n'existe pas en deçà de .NET 8.
 

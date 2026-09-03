@@ -16,7 +16,7 @@ public class Jd001AsyncBodyPassedToReproduciblyTests {
 
             public static class Sample {
                 public static void M() {
-                    Any.Reproducibly(async () => { await Task.Yield(); });
+                    Dummy.Reproducibly(async () => { await Task.Yield(); });
                 }
             }
             """;
@@ -36,7 +36,7 @@ public class Jd001AsyncBodyPassedToReproduciblyTests {
 
             public static class Sample {
                 public static void M() {
-                    Any.Reproducibly(42, async () => { await Task.Yield(); });
+                    Dummy.Reproducibly(42, async () => { await Task.Yield(); });
                 }
             }
             """;
@@ -54,7 +54,7 @@ public class Jd001AsyncBodyPassedToReproduciblyTests {
 
             public static class Sample {
                 public static void M() {
-                    Any.Reproducibly(() => { var _ = Any.Int32().Generate(); });
+                    Dummy.Reproducibly(() => { var _ = Dummy.Int32().Generate(); });
                 }
             }
             """;
@@ -66,7 +66,7 @@ public class Jd001AsyncBodyPassedToReproduciblyTests {
 
     [Fact]
     public async Task Does_not_report_a_Reproducibly_that_is_not_Any() {
-        // A same-named method on another type must not trip the rule — the analyzer keys on JustDummies.Any.
+        // A same-named method on another type must not trip the rule — the analyzer keys on JustDummies.Dummy.
         const string source = """
             using System;
             using System.Threading.Tasks;
@@ -95,7 +95,7 @@ public class Jd001AsyncBodyPassedToReproduciblyTests {
 
             public static class Sample {
                 public static async Task M() {
-                    await Any.ReproduciblyAsync(async () => { await Task.Yield(); });
+                    await Dummy.ReproduciblyAsync(async () => { await Task.Yield(); });
                 }
             }
             """;

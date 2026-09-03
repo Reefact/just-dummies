@@ -47,7 +47,7 @@ _A rename that reads better, and a size ceiling analyzer and library now agree o
 
 ### ⚠️ Breaking changes
 
-- `AnyChar` and `AnyString` rename `LowerCase()`/`UpperCase()` to `InLowerCase()`/`InUpperCase()` — the bare names read like a state change, not a quality of the drawn value. No behaviour changes; only the two names do.
+- `DummyChar` and `DummyString` rename `LowerCase()`/`UpperCase()` to `InLowerCase()`/`InUpperCase()` — the bare names read like a state change, not a quality of the drawn value. No behaviour changes; only the two names do.
 
 ### 🐛 Bug Fixes
 

@@ -19,7 +19,7 @@ A test that uses `Order` already imports `Order`'s namespace.
 C# resolves a simple type name in the **enclosing namespace before any `using` directive**, so a
 type declared in a namespace wins over an imported one of the same name and arity.
 
-The library declares 32 non-generic public `Any*` type names (§14.2); a scaffolded generator whose
+The library declares 32 non-generic public `Dummy*` type names (§14.2); a scaffolded generator whose
 name matches one of them, in a namespace where the library is imported, shadows it.
 
 The tool offers `--namespace` as a per-invocation override (§3), and the v1.1 naming pattern (§16)
@@ -36,7 +36,7 @@ says otherwise.
 ## Rationale
 
 It is the only choice that costs nothing at the call site. A test already importing the domain
-namespace writes `new AnyOrder()` and stops; any other namespace adds an import to every test file
+namespace writes `new DummyOrder()` and stops; any other namespace adds an import to every test file
 that touches the generator. That is friction paid on every single use, and design rule 2 prices
 that heavily — a tool too tedious to use at each call is not worth adopting.
 

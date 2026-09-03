@@ -11,8 +11,8 @@ namespace JustDummies.PropertyTests;
 
 /// <summary>
 ///     Property-based tests for the interval algebra of every integer width <b>other than</b>
-///     <see cref="AnyInt32" />: <see cref="AnySByte" />, <see cref="AnyByte" />, <see cref="AnyInt16" />,
-///     <see cref="AnyUInt16" />, <see cref="AnyUInt32" />, <see cref="AnyInt64" /> and <see cref="AnyUInt64" />.
+///     <see cref="DummyInt32" />: <see cref="DummySByte" />, <see cref="DummyByte" />, <see cref="DummyInt16" />,
+///     <see cref="DummyUInt16" />, <see cref="DummyUInt32" />, <see cref="DummyInt64" /> and <see cref="DummyUInt64" />.
 ///     They all ride the same ordinal interval engine, but each one supplies its own domain edges and its own
 ///     signed-or-unsigned mapping into ordinal space — and that mapping is exactly where an off-by-one at a domain
 ///     edge, or an overflow in the interval arithmetic, hides. Quantifying over the whole bound space of a width
@@ -24,7 +24,7 @@ namespace JustDummies.PropertyTests;
 ///     where almost every bound is an edge) and the widest pair (<c>long</c>/<c>ulong</c>, where the interval
 ///     arithmetic runs out of room) getting the fullest treatment.
 /// </remarks>
-[TestSubject(typeof(AnyInt64))]
+[TestSubject(typeof(DummyInt64))]
 public sealed class ScalarIntervalProperties {
 
     #region Statics members declarations
@@ -77,7 +77,7 @@ public sealed class ScalarIntervalProperties {
     [Fact(DisplayName = "SByte: Between contains — every draw falls within the declared inclusive bounds.")]
     public void SByteBetweenContainsEveryDraw() {
         Prop.ForAll(Generators.OrderedPair(SByte()).ToArbitrary(),
-                    bounds => Expect.EveryDraw(Any.SByte().Between(bounds.Min, bounds.Max),
+                    bounds => Expect.EveryDraw(Dummy.SByte().Between(bounds.Min, bounds.Max),
                                                value => value >= bounds.Min && value <= bounds.Max))
             .QuickCheckThrowOnFailure();
     }
@@ -85,15 +85,15 @@ public sealed class ScalarIntervalProperties {
     [Fact(DisplayName = "SByte: Between with equal bounds pins the value, for every value.")]
     public void SByteBetweenWithEqualBoundsPins() {
         Prop.ForAll(SByte().ToArbitrary(),
-                    value => Expect.EveryDraw(Any.SByte().Between(value, value), drawn => drawn == value))
+                    value => Expect.EveryDraw(Dummy.SByte().Between(value, value), drawn => drawn == value))
             .QuickCheckThrowOnFailure();
     }
 
     [Fact(DisplayName = "SByte: the inclusive bounds admit their own bound, on both sides.")]
     public void SByteInclusiveBoundsAdmitTheirOwnBound() {
         Prop.ForAll(SByte().ToArbitrary(),
-                    bound => Expect.EveryDraw(Any.SByte().GreaterThanOrEqualTo(bound), value => value >= bound)
-                             && Expect.EveryDraw(Any.SByte().LessThanOrEqualTo(bound), value => value <= bound))
+                    bound => Expect.EveryDraw(Dummy.SByte().GreaterThanOrEqualTo(bound), value => value >= bound)
+                             && Expect.EveryDraw(Dummy.SByte().LessThanOrEqualTo(bound), value => value <= bound))
             .QuickCheckThrowOnFailure();
     }
 
@@ -104,11 +104,11 @@ public sealed class ScalarIntervalProperties {
                         // There is no sbyte above sbyte.MaxValue nor below sbyte.MinValue: asking for one is a
                         // conflict declared at the call, never an interval that generates and then disappoints.
                         bool above = bound == sbyte.MaxValue
-                                         ? Expect.Throws<ConflictingAnyConstraintException>(() => Any.SByte().GreaterThan(bound))
-                                         : Expect.EveryDraw(Any.SByte().GreaterThan(bound), value => value > bound);
+                                         ? Expect.Throws<ConflictingDummyConstraintException>(() => Dummy.SByte().GreaterThan(bound))
+                                         : Expect.EveryDraw(Dummy.SByte().GreaterThan(bound), value => value > bound);
                         bool below = bound == sbyte.MinValue
-                                         ? Expect.Throws<ConflictingAnyConstraintException>(() => Any.SByte().LessThan(bound))
-                                         : Expect.EveryDraw(Any.SByte().LessThan(bound), value => value < bound);
+                                         ? Expect.Throws<ConflictingDummyConstraintException>(() => Dummy.SByte().LessThan(bound))
+                                         : Expect.EveryDraw(Dummy.SByte().LessThan(bound), value => value < bound);
 
                         return above && below;
                     })
@@ -126,11 +126,11 @@ public sealed class ScalarIntervalProperties {
                     testCase => {
                         // Excluding the single value of a pinned interval empties it: that is a conflict, not a draw.
                         if (testCase.Bounds.Min == testCase.Bounds.Max) {
-                            return Expect.Throws<ConflictingAnyConstraintException>(
-                                () => Any.SByte().Between(testCase.Bounds.Min, testCase.Bounds.Max).Except(testCase.Excluded));
+                            return Expect.Throws<ConflictingDummyConstraintException>(
+                                () => Dummy.SByte().Between(testCase.Bounds.Min, testCase.Bounds.Max).Except(testCase.Excluded));
                         }
 
-                        return Expect.EveryDraw(Any.SByte().Between(testCase.Bounds.Min, testCase.Bounds.Max).Except(testCase.Excluded),
+                        return Expect.EveryDraw(Dummy.SByte().Between(testCase.Bounds.Min, testCase.Bounds.Max).Except(testCase.Excluded),
                                                 value => value != testCase.Excluded
                                                          && value >= testCase.Bounds.Min
                                                          && value <= testCase.Bounds.Max);
@@ -141,7 +141,7 @@ public sealed class ScalarIntervalProperties {
     [Fact(DisplayName = "Byte: Between contains — every draw falls within the declared inclusive bounds.")]
     public void ByteBetweenContainsEveryDraw() {
         Prop.ForAll(Generators.OrderedPair(Byte()).ToArbitrary(),
-                    bounds => Expect.EveryDraw(Any.Byte().Between(bounds.Min, bounds.Max),
+                    bounds => Expect.EveryDraw(Dummy.Byte().Between(bounds.Min, bounds.Max),
                                                value => value >= bounds.Min && value <= bounds.Max))
             .QuickCheckThrowOnFailure();
     }
@@ -149,15 +149,15 @@ public sealed class ScalarIntervalProperties {
     [Fact(DisplayName = "Byte: Between with equal bounds pins the value, for every value.")]
     public void ByteBetweenWithEqualBoundsPins() {
         Prop.ForAll(Byte().ToArbitrary(),
-                    value => Expect.EveryDraw(Any.Byte().Between(value, value), drawn => drawn == value))
+                    value => Expect.EveryDraw(Dummy.Byte().Between(value, value), drawn => drawn == value))
             .QuickCheckThrowOnFailure();
     }
 
     [Fact(DisplayName = "Byte: the inclusive bounds admit their own bound, on both sides.")]
     public void ByteInclusiveBoundsAdmitTheirOwnBound() {
         Prop.ForAll(Byte().ToArbitrary(),
-                    bound => Expect.EveryDraw(Any.Byte().GreaterThanOrEqualTo(bound), value => value >= bound)
-                             && Expect.EveryDraw(Any.Byte().LessThanOrEqualTo(bound), value => value <= bound))
+                    bound => Expect.EveryDraw(Dummy.Byte().GreaterThanOrEqualTo(bound), value => value >= bound)
+                             && Expect.EveryDraw(Dummy.Byte().LessThanOrEqualTo(bound), value => value <= bound))
             .QuickCheckThrowOnFailure();
     }
 
@@ -168,11 +168,11 @@ public sealed class ScalarIntervalProperties {
                         // The unsigned floor is zero, not a negative sentinel: LessThan(0) has nothing left to offer
                         // and must conflict rather than wrap around to byte.MaxValue.
                         bool above = bound == byte.MaxValue
-                                         ? Expect.Throws<ConflictingAnyConstraintException>(() => Any.Byte().GreaterThan(bound))
-                                         : Expect.EveryDraw(Any.Byte().GreaterThan(bound), value => value > bound);
+                                         ? Expect.Throws<ConflictingDummyConstraintException>(() => Dummy.Byte().GreaterThan(bound))
+                                         : Expect.EveryDraw(Dummy.Byte().GreaterThan(bound), value => value > bound);
                         bool below = bound == byte.MinValue
-                                         ? Expect.Throws<ConflictingAnyConstraintException>(() => Any.Byte().LessThan(bound))
-                                         : Expect.EveryDraw(Any.Byte().LessThan(bound), value => value < bound);
+                                         ? Expect.Throws<ConflictingDummyConstraintException>(() => Dummy.Byte().LessThan(bound))
+                                         : Expect.EveryDraw(Dummy.Byte().LessThan(bound), value => value < bound);
 
                         return above && below;
                     })
@@ -190,11 +190,11 @@ public sealed class ScalarIntervalProperties {
                     testCase => {
                         // Excluding the single value of a pinned interval empties it: that is a conflict, not a draw.
                         if (testCase.Bounds.Min == testCase.Bounds.Max) {
-                            return Expect.Throws<ConflictingAnyConstraintException>(
-                                () => Any.Byte().Between(testCase.Bounds.Min, testCase.Bounds.Max).Except(testCase.Excluded));
+                            return Expect.Throws<ConflictingDummyConstraintException>(
+                                () => Dummy.Byte().Between(testCase.Bounds.Min, testCase.Bounds.Max).Except(testCase.Excluded));
                         }
 
-                        return Expect.EveryDraw(Any.Byte().Between(testCase.Bounds.Min, testCase.Bounds.Max).Except(testCase.Excluded),
+                        return Expect.EveryDraw(Dummy.Byte().Between(testCase.Bounds.Min, testCase.Bounds.Max).Except(testCase.Excluded),
                                                 value => value != testCase.Excluded
                                                          && value >= testCase.Bounds.Min
                                                          && value <= testCase.Bounds.Max);
@@ -206,8 +206,8 @@ public sealed class ScalarIntervalProperties {
     public void Int16ConstrainingNeverMutatesTheOriginal() {
         Prop.ForAll(Generators.OrderedPair(Int16()).ToArbitrary(),
                     bounds => {
-                        AnyInt16 original = Any.Int16().Between(bounds.Min, bounds.Max);
-                        AnyInt16 narrowed = original.GreaterThanOrEqualTo(bounds.Max);
+                        DummyInt16 original = Dummy.Int16().Between(bounds.Min, bounds.Max);
+                        DummyInt16 narrowed = original.GreaterThanOrEqualTo(bounds.Max);
 
                         return !ReferenceEquals(original, narrowed)
                                && Expect.EveryDraw(original, value => value >= bounds.Min && value <= bounds.Max)
@@ -220,8 +220,8 @@ public sealed class ScalarIntervalProperties {
     public void UInt16ConstrainingNeverMutatesTheOriginal() {
         Prop.ForAll(Generators.OrderedPair(UInt16()).ToArbitrary(),
                     bounds => {
-                        AnyUInt16 original = Any.UInt16().Between(bounds.Min, bounds.Max);
-                        AnyUInt16 narrowed = original.GreaterThanOrEqualTo(bounds.Max);
+                        DummyUInt16 original = Dummy.UInt16().Between(bounds.Min, bounds.Max);
+                        DummyUInt16 narrowed = original.GreaterThanOrEqualTo(bounds.Max);
 
                         return !ReferenceEquals(original, narrowed)
                                && Expect.EveryDraw(original, value => value >= bounds.Min && value <= bounds.Max)
@@ -237,9 +237,9 @@ public sealed class ScalarIntervalProperties {
                               // Argument validation precedes conflict checking: a swapped pair passed to a single
                               // call is an argument error, whereas the same emptiness spread over two calls is a
                               // constraint conflict. The two must not collapse into one another.
-                              || (Expect.Throws<ArgumentException>(() => Any.UInt32().Between(bounds.Max, bounds.Min))
-                                  && Expect.Throws<ConflictingAnyConstraintException>(
-                                      () => Any.UInt32().GreaterThan(bounds.Max).LessThan(bounds.Min))))
+                              || (Expect.Throws<ArgumentException>(() => Dummy.UInt32().Between(bounds.Max, bounds.Min))
+                                  && Expect.Throws<ConflictingDummyConstraintException>(
+                                      () => Dummy.UInt32().GreaterThan(bounds.Max).LessThan(bounds.Min))))
             .QuickCheckThrowOnFailure();
     }
 
@@ -248,14 +248,14 @@ public sealed class ScalarIntervalProperties {
         Gen<uint[]> pools = Gen.NonEmptyListOf(UInt32()).Select(values => values.Distinct().ToArray());
 
         Prop.ForAll(pools.ToArbitrary(),
-                    pool => Expect.EveryDraw(Any.UInt32().OneOf(pool), value => pool.Contains(value)))
+                    pool => Expect.EveryDraw(Dummy.UInt32().OneOf(pool), value => pool.Contains(value)))
             .QuickCheckThrowOnFailure();
     }
 
     [Fact(DisplayName = "Int64: Between contains — every draw falls within the bounds, across the whole 64-bit space.")]
     public void Int64BetweenContainsEveryDraw() {
         Prop.ForAll(Generators.OrderedPair(Generators.Int64()).ToArbitrary(),
-                    bounds => Expect.EveryDraw(Any.Int64().Between(bounds.Min, bounds.Max),
+                    bounds => Expect.EveryDraw(Dummy.Int64().Between(bounds.Min, bounds.Max),
                                                value => value >= bounds.Min && value <= bounds.Max))
             .QuickCheckThrowOnFailure();
     }
@@ -264,9 +264,9 @@ public sealed class ScalarIntervalProperties {
     public void Int64CrossedBoundsAreRejected() {
         Prop.ForAll(Generators.OrderedPair(Generators.Int64()).ToArbitrary(),
                     bounds => bounds.Min == bounds.Max
-                              || (Expect.Throws<ArgumentException>(() => Any.Int64().Between(bounds.Max, bounds.Min))
-                                  && Expect.Throws<ConflictingAnyConstraintException>(
-                                      () => Any.Int64().GreaterThan(bounds.Max).LessThan(bounds.Min))))
+                              || (Expect.Throws<ArgumentException>(() => Dummy.Int64().Between(bounds.Max, bounds.Min))
+                                  && Expect.Throws<ConflictingDummyConstraintException>(
+                                      () => Dummy.Int64().GreaterThan(bounds.Max).LessThan(bounds.Min))))
             .QuickCheckThrowOnFailure();
     }
 
@@ -275,7 +275,7 @@ public sealed class ScalarIntervalProperties {
         Gen<long[]> pools = Gen.NonEmptyListOf(Generators.Int64()).Select(values => values.Distinct().ToArray());
 
         Prop.ForAll(pools.ToArbitrary(),
-                    pool => Expect.EveryDraw(Any.Int64().OneOf(pool), value => pool.Contains(value)))
+                    pool => Expect.EveryDraw(Dummy.Int64().OneOf(pool), value => pool.Contains(value)))
             .QuickCheckThrowOnFailure();
     }
 
@@ -284,7 +284,7 @@ public sealed class ScalarIntervalProperties {
         // The unsigned 64-bit domain is the one interval whose own size does not fit its own width: an interval
         // spanning it cannot be sampled by "draw an index in [0, count)". Only quantified bounds reach that case.
         Prop.ForAll(Generators.OrderedPair(UInt64()).ToArbitrary(),
-                    bounds => Expect.EveryDraw(Any.UInt64().Between(bounds.Min, bounds.Max),
+                    bounds => Expect.EveryDraw(Dummy.UInt64().Between(bounds.Min, bounds.Max),
                                                value => value >= bounds.Min && value <= bounds.Max))
             .QuickCheckThrowOnFailure();
     }
@@ -294,7 +294,7 @@ public sealed class ScalarIntervalProperties {
         // No interval is declared, so the specification still spans the whole domain and the exclusion has to be
         // honoured by the full-width sampling path rather than by index arithmetic over a bounded range.
         Prop.ForAll(UInt64().ToArbitrary(),
-                    excluded => Expect.EveryDraw(Any.UInt64().Except(excluded), value => value != excluded))
+                    excluded => Expect.EveryDraw(Dummy.UInt64().Except(excluded), value => value != excluded))
             .QuickCheckThrowOnFailure();
     }
 

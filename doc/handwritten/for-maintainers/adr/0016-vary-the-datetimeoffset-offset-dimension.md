@@ -10,21 +10,21 @@
 
 ## Context
 
-A `DateTimeOffset` carries two dimensions: the instant (its `UtcTicks`) and the offset from UTC. The offset is the reason the type exists rather than a plain `DateTime`. `AnyDateTimeOffset` varies only the instant and pins the offset to `TimeSpan.Zero`, a limitation its own remarks document. Code whose behaviour depends on the offset — local rendering, offset arithmetic, "same instant, different offset" equality — therefore cannot obtain a varied-but-valid offset from JustDummies, and the common latent bug "the code assumes the offset is zero" is never surfaced by a dummy value.
+A `DateTimeOffset` carries two dimensions: the instant (its `UtcTicks`) and the offset from UTC. The offset is the reason the type exists rather than a plain `DateTime`. `DummyDateTimeOffset` varies only the instant and pins the offset to `TimeSpan.Zero`, a limitation its own remarks document. Code whose behaviour depends on the offset — local rendering, offset arithmetic, "same instant, different offset" equality — therefore cannot obtain a varied-but-valid offset from JustDummies, and the common latent bug "the code assumes the offset is zero" is never surfaced by a dummy value.
 
 `DateTimeOffset` constrains its offset to a whole number of minutes within ±14:00, and requires that the local ticks (`UtcTicks + offset`) stay inside the `DateTime` range; near the extremes of the domain, not every offset is valid for a given instant. JustDummies builds a value constructively to satisfy its constraints, detects contradictions eagerly at declaration, and never retries. Comparison is by instant, and `OneOf` already returns the supplied values verbatim, offset included, because rebuilding from the instant alone would normalise the offset away. Issue #226 records a bounded offset draw as a demand-driven addition; issue #297 tracks it.
 
 ## Decision
 
-`AnyDateTimeOffset` gains an opt-in offset dimension — `WithOffset` pins a whole-minute offset and `WithOffsetBetween` draws a bounded one — while the unconstrained default stays `TimeSpan.Zero`, and the instant is tightened at declaration so that every admitted offset yields a valid value.
+`DummyDateTimeOffset` gains an opt-in offset dimension — `WithOffset` pins a whole-minute offset and `WithOffsetBetween` draws a bounded one — while the unconstrained default stays `TimeSpan.Zero`, and the instant is tightened at declaration so that every admitted offset yields a valid value.
 
 ## Rationale
 
-Reaching the offset makes `AnyDateTimeOffset` a faithful generator of its own type and surfaces the "assumes UTC offset" bug class that a zero-pinned generator hides. Keeping it opt-in — the default stays `TimeSpan.Zero` — makes the addition non-breaking: tests that today rely on a zero offset, or serialise to `+00:00`, keep working.
+Reaching the offset makes `DummyDateTimeOffset` a faithful generator of its own type and surfaces the "assumes UTC offset" bug class that a zero-pinned generator hides. Keeping it opt-in — the default stays `TimeSpan.Zero` — makes the addition non-breaking: tests that today rely on a zero offset, or serialise to `+00:00`, keep working.
 
 Tightening the instant at declaration, rather than clamping or rejecting the offset per draw, is what keeps the constructive, one-draw, no-retry model: once the instant window admits every offset in the requested range, the offset is an independent draw that can never produce an out-of-range value. It also reuses the interval engine's bound tightening, so an instant window with no room for the requested offset conflicts eagerly and names both sides — exactly as every other constraint does. Offering a pin and a bounded draw mirrors the library's existing pin/`Between` idiom, and the whole-minute ±14:00 rule mirrors `DateTimeOffset`'s own. `OneOf` keeps returning its values verbatim because it is a terminal enumeration of exact values, so the offset dimension governs only the constructed draw.
 
-The offset arithmetic, the instant-tightening bounds, and the draw are implementation, documented in the `AnyDateTimeOffset` code and the JustDummies user documentation — not here.
+The offset arithmetic, the instant-tightening bounds, and the draw are implementation, documented in the `DummyDateTimeOffset` code and the JustDummies user documentation — not here.
 
 ## Alternatives Considered
 
@@ -42,7 +42,7 @@ Considered as the minimal surface. Rejected because the motivating use case — 
 
 ### Leave the gap
 
-Considered because most code treats a `DateTimeOffset` as an instant. Rejected because it keeps `AnyDateTimeOffset` an unfaithful generator whose offset never varies, and pushes anyone who needs a varied offset to a hand-rolled construction that typically ignores the seed.
+Considered because most code treats a `DateTimeOffset` as an instant. Rejected because it keeps `DummyDateTimeOffset` an unfaithful generator whose offset never varies, and pushes anyone who needs a varied offset to a hand-rolled construction that typically ignores the seed.
 
 ## Consequences
 
@@ -54,7 +54,7 @@ Considered because most code treats a `DateTimeOffset` as an instant. Rejected b
 
 ### Negative
 
-* `AnyDateTimeOffset` now carries a second dimension and its own offset state threaded through every transform.
+* `DummyDateTimeOffset` now carries a second dimension and its own offset state threaded through every transform.
 * The offset dimension is `DateTimeOffset`-specific — the other temporal generators have no offset — a deliberate specificity rather than a uniform surface.
 
 ### Risks
@@ -73,4 +73,4 @@ Considered because most code treats a `DateTimeOffset` as an instant. Rejected b
 * Issue [#297](https://github.com/Reefact/first-class-errors/issues/297) — the dedicated issue for this feature.
 * Issue [#226](https://github.com/Reefact/first-class-errors/issues/226) — the Nice-to-Have backlog it was split from.
 * [ADR-0009](0009-draw-arbitrary-strings-from-an-explicit-terminal-set.md) — the terminal-enumeration semantics `OneOf` follows.
-* `AnyDateTimeOffset` in the `JustDummies` project; the JustDummies NuGet readme.
+* `DummyDateTimeOffset` in the `JustDummies` project; the JustDummies NuGet readme.

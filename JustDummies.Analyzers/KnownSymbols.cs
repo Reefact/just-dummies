@@ -14,31 +14,31 @@ namespace JustDummies.Analyzers;
 /// </remarks>
 internal sealed class KnownSymbols {
 
-    public const string AnyMetadataName        = "JustDummies.Any";
-    public const string IAnyMetadataName       = "JustDummies.IAny`1";
-    public const string AnyContextMetadataName = "JustDummies.AnyContext";
+    public const string AnyMetadataName        = "JustDummies.Dummy";
+    public const string IDummyMetadataName       = "JustDummies.IDummy`1";
+    public const string AnyContextMetadataName = "JustDummies.DummyContext";
 
     public const string ReproducibleAttributeMetadataName = "JustDummies.Xunit.ReproducibleAttribute";
     public const string FactAttributeMetadataName         = "Xunit.v3.IFactAttribute";
     public const string MemberDataAttributeMetadataName   = "Xunit.MemberDataAttribute";
 
     private KnownSymbols(Compilation compilation) {
-        Any                   = compilation.GetTypeByMetadataName(AnyMetadataName);
-        IAny                  = compilation.GetTypeByMetadataName(IAnyMetadataName);
-        AnyContext            = compilation.GetTypeByMetadataName(AnyContextMetadataName);
+        Dummy                   = compilation.GetTypeByMetadataName(AnyMetadataName);
+        IDummy                  = compilation.GetTypeByMetadataName(IDummyMetadataName);
+        DummyContext            = compilation.GetTypeByMetadataName(AnyContextMetadataName);
         ReproducibleAttribute = compilation.GetTypeByMetadataName(ReproducibleAttributeMetadataName);
         FactAttribute         = compilation.GetTypeByMetadataName(FactAttributeMetadataName);
         MemberDataAttribute   = compilation.GetTypeByMetadataName(MemberDataAttributeMetadataName);
     }
 
-    /// <summary>The <c>JustDummies.Any</c> façade, or <c>null</c> when the compilation does not reference JustDummies.</summary>
-    public INamedTypeSymbol? Any { get; }
+    /// <summary>The <c>JustDummies.Dummy</c> façade, or <c>null</c> when the compilation does not reference JustDummies.</summary>
+    public INamedTypeSymbol? Dummy { get; }
 
-    /// <summary>The unbound <c>JustDummies.IAny&lt;T&gt;</c> generator interface, or <c>null</c> as above.</summary>
-    public INamedTypeSymbol? IAny { get; }
+    /// <summary>The unbound <c>JustDummies.IDummy&lt;T&gt;</c> generator interface, or <c>null</c> as above.</summary>
+    public INamedTypeSymbol? IDummy { get; }
 
-    /// <summary>The isolated <c>JustDummies.AnyContext</c>, whose draws are unaffected by the ambient seed scope.</summary>
-    public INamedTypeSymbol? AnyContext { get; }
+    /// <summary>The isolated <c>JustDummies.DummyContext</c>, whose draws are unaffected by the ambient seed scope.</summary>
+    public INamedTypeSymbol? DummyContext { get; }
 
     /// <summary>The xUnit adapter's <c>[Reproducible]</c>, or <c>null</c> when the adapter is not referenced.</summary>
     public INamedTypeSymbol? ReproducibleAttribute { get; }

@@ -27,26 +27,26 @@ internal static class Sample {
     // would report and which would be noise in the one job whose signal is a clean diagnostic.
     public static int Exercise() {
         // Scalars, with the constraint families the analyzers reason about.
-        int    roll   = Any.Int32().Between(1, 6).Generate();
-        int    count  = Any.Int32().Positive().Generate();
-        string label  = Any.String().NonEmpty().WithMaxLength(50).Generate();
-        double ratio  = Any.Double().Between(0d, 1d).Generate();
-        bool   toggle = Any.Boolean().Generate();
+        int    roll   = Dummy.Int32().Between(1, 6).Generate();
+        int    count  = Dummy.Int32().Positive().Generate();
+        string label  = Dummy.String().NonEmpty().WithMaxLength(50).Generate();
+        double ratio  = Dummy.Double().Between(0d, 1d).Generate();
+        bool   toggle = Dummy.Boolean().Generate();
 
         // Composition: As, pairs, and an explicit pool.
-        string identifier = Any.Int32().Between(1, 999)
+        string identifier = Dummy.Int32().Between(1, 999)
                                .As(value => "ID-" + value.ToString(CultureInfo.InvariantCulture))
                                .Generate();
-        (int, string) pair = Any.PairOf(Any.Int32().Between(1, 9),
-                                        Any.String().NonEmpty().WithMaxLength(4)).Generate();
+        (int, string) pair = Dummy.PairOf(Dummy.Int32().Between(1, 9),
+                                        Dummy.String().NonEmpty().WithMaxLength(4)).Generate();
 
         // Collections, where the cardinality rules live.
-        List<int> values = Any.ListOf(Any.Int32().Between(0, 9)).WithCount(4).Generate();
+        List<int> values = Dummy.ListOf(Dummy.Int32().Between(0, 9)).WithCount(4).Generate();
 
         // Reproducibility: a pinned scope, awaited nowhere and discarded nowhere, so the JD001-JD004 family
         // has a well-formed call site to inspect rather than a violation.
         int drawn = 0;
-        Any.Reproducibly(() => drawn = Any.Int32().Between(10, 20).Generate());
+        Dummy.Reproducibly(() => drawn = Dummy.Int32().Between(10, 20).Generate());
 
         return roll
              + count

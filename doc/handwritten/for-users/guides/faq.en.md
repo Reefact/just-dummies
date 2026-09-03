@@ -21,32 +21,32 @@ The two solve different problems and coexist happily: property-based testing exp
 JustDummies removes meaningless literals from ordinary example-based tests. If you want shrinking,
 use a property-based library — this one will not pretend to.
 
-### Why is there no `Any.Object<T>()` that fills a whole object graph?
+### Why is there no `Dummy.Object<T>()` that fills a whole object graph?
 
 Because a generator that reflects over your type has to guess what makes an instance valid, and it
 guesses wrong exactly where correctness matters — the invariant your constructor enforces, the field
 that must agree with another field.
 
-JustDummies asks you to compose the value with `.As(...)` and `Any.Combine`, which costs a few lines
+JustDummies asks you to compose the value with `.As(...)` and `Dummy.Combine`, which costs a few lines
 and buys a dummy that your own factory accepts. See [Composition](./composition.en.md), and
 [Design principles](./design-principles.en.md) for the reasoning.
 
 ### Do I need the `JustDummies.Xunit` package?
 
 Only if you use xUnit **v3** and want `[Reproducible]` instead of wrapping bodies in
-`Any.Reproducibly`. Everything works without it. See
+`Dummy.Reproducibly`. Everything works without it. See
 [packages](../packages/justdummies-xunit.en.md).
 
 ## Values and constraints
 
 ### Why does `Generate()` return a different value every call?
 
-Because a generator is a **recipe**, not a value. `Any.Int32().Between(1, 100)` describes the
+Because a generator is a **recipe**, not a value. `Dummy.Int32().Between(1, 100)` describes the
 acceptable integers; each `Generate()` draws one. Hold the value in a variable if you need the same
 one twice:
 
 ```csharp
-AnyInt32 anyQuantity = Any.Int32().Between(1, 100);
+DummyInt32 anyQuantity = Dummy.Int32().Between(1, 100);
 
 int drawnOnce = anyQuantity.Generate();
 int sameValue = drawnOnce;        // the same number
@@ -61,7 +61,7 @@ No — this is the one habit that decides whether the test is worth anything. A 
 **invariant of the domain**. If you add one so an assertion passes, the test now proves that the
 code agrees with the test's own assumption, and it will keep passing after the rule changes.
 
-### My constraints threw `ConflictingAnyConstraintException`. Is that a bug?
+### My constraints threw `ConflictingDummyConstraintException`. Is that a bug?
 
 No, that is the library refusing an impossible specification instead of looping or returning
 something arbitrary. The message names **both** constraints that disagree. Drop whichever of the two
@@ -72,15 +72,15 @@ is not a genuine domain invariant. See [Errors and conflicts](./errors-and-confl
 Yes — `.OrNull()` yields `null` about half the time and a constrained value otherwise:
 
 ```csharp
-int?    discount = Any.Int32().Between(0, 100).OrNull().Generate();
-string? note     = Any.String().Alpha().WithLengthBetween(1, 40).OrNull().Generate();
+int?    discount = Dummy.Int32().Between(0, 100).OrNull().Generate();
+string? note     = Dummy.String().Alpha().WithLengthBetween(1, 40).OrNull().Generate();
 ```
 
 ## Reproducibility
 
 ### A test failed once and passed on rerun. What do I do?
 
-Wrap the body in `Any.Reproducibly` (or add `[Reproducible]` with the xUnit package) so the **next**
+Wrap the body in `Dummy.Reproducibly` (or add `[Reproducible]` with the xUnit package) so the **next**
 failure reports its seed. Then pin that seed to replay the exact run, fix the defect, and remove the
 pin.
 
@@ -93,15 +93,15 @@ Yes, three ways, for three situations:
 
 ```csharp
 // 1. Replay a whole body under a known seed.
-Any.Reproducibly(1743029518, () => Assert.True(Any.Int32().Positive().Generate() > 0));
+Dummy.Reproducibly(1743029518, () => Assert.True(Dummy.Int32().Positive().Generate() > 0));
 
 // 2. Pin the ambient context for a block.
-using (IDisposable scope = Any.UseSeed(1743029518)) {
-    Assert.True(Any.Int32().Positive().Generate() > 0);
+using (IDisposable scope = Dummy.UseSeed(1743029518)) {
+    Assert.True(Dummy.Int32().Positive().Generate() > 0);
 }
 
 // 3. Build an isolated deterministic context, outside any test body.
-AnyContext context  = Any.WithSeed(1743029518);
+DummyContext context  = Dummy.WithSeed(1743029518);
 int        quantity = context.Int32().Between(1, 100).Generate();
 ```
 
@@ -124,7 +124,7 @@ not stable — give each item its own seed scope. The opt-in-free diagnostic
 ### Which types need .NET 8?
 
 `DateOnly`, `TimeOnly`, `Int128`, `UInt128` and `Half` do not exist below .NET 8, so
-`Any.DateOnly()`, `Any.TimeOnly()`, `Any.Int128()`, `Any.UInt128()` and `Any.Half()` are only on the
+`Dummy.DateOnly()`, `Dummy.TimeOnly()`, `Dummy.Int128()`, `Dummy.UInt128()` and `Dummy.Half()` are only on the
 `net8.0` asset. Everything else is available everywhere.
 
 ### Does it work on .NET Framework?

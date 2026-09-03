@@ -12,15 +12,15 @@ using JetBrains.Annotations;
 namespace JustDummies.PropertyTests;
 
 /// <summary>
-///     Property-based tests for the composition seams — <see cref="AnyExtensions.As{TSource,TResult}" />,
-///     <c>OrNull()</c>, <see cref="Any.Combine{T1,T2,TResult}" />, <c>PairOf</c>/<c>TripleOf</c> — and for the explicit
+///     Property-based tests for the composition seams — <see cref="DummyExtensions.As{TSource,TResult}" />,
+///     <c>OrNull()</c>, <see cref="Dummy.Combine{T1,T2,TResult}" />, <c>PairOf</c>/<c>TripleOf</c> — and for the explicit
 ///     pools (<c>OneOf</c>, <c>ElementOf</c>). Where the example-based suite pins one hand-picked constraint per part
 ///     (<c>Between(0, 100)</c>, <c>WithLength(12)</c>) and, at the higher arities, passes the <b>same</b> generator to
 ///     every slot, these quantify over the constraint of each part independently — so a part routed to the wrong slot,
 ///     a constraint dropped on the way through a seam, or a pool value invented out of nothing is found and shrunk to
 ///     its minimal counter-example.
 /// </summary>
-[TestSubject(typeof(AnyExtensions))]
+[TestSubject(typeof(DummyExtensions))]
 public sealed class CompositionProperties {
 
     #region Statics members declarations
@@ -51,8 +51,8 @@ public sealed class CompositionProperties {
     }
 
     /// <summary>A generator pinned to a single value — one distinct part per slot, so a mis-routed slot changes the result.</summary>
-    private static IAny<int> Pinned(int value) {
-        return Any.Int32().Between(value, value);
+    private static IDummy<int> Pinned(int value) {
+        return Dummy.Int32().Between(value, value);
     }
 
     #endregion
@@ -62,7 +62,7 @@ public sealed class CompositionProperties {
         // Doubling is invertible, so the projected value can be mapped back and checked against the source interval —
         // which is what "the image of a value satisfying the source constraint" means, stated without naming the draw.
         Prop.ForAll(Generators.OrderedPair(Generators.Int32()).ToArbitrary(),
-                    bounds => Expect.EveryDraw(Any.Int32().Between(bounds.Min, bounds.Max).As(value => (long)value * 2),
+                    bounds => Expect.EveryDraw(Dummy.Int32().Between(bounds.Min, bounds.Max).As(value => (long)value * 2),
                                                projected => projected % 2 == 0
                                                             && projected / 2 >= bounds.Min
                                                             && projected / 2 <= bounds.Max))
@@ -75,27 +75,27 @@ public sealed class CompositionProperties {
                      from outside in Generators.OrderedPair(Gen.Choose(101, 100_000))
                      select (inside, outside)).ToArbitrary(),
                     testCase => {
-                        bool accepted = Expect.EveryDraw(Any.Int32().Between(testCase.inside.Min, testCase.inside.Max).As(Ratio.Create),
+                        bool accepted = Expect.EveryDraw(Dummy.Int32().Between(testCase.inside.Min, testCase.inside.Max).As(Ratio.Create),
                                                          ratio => ratio.Value >= testCase.inside.Min && ratio.Value <= testCase.inside.Max);
 
                         // Constraints weaker than the invariant the factory enforces are the documented cause of a
                         // generation failure. Entirely outside the window every draw is rejected, so the wrap is
                         // certain rather than probable — no interval in the quantified space can slip through.
-                        bool rejected = Expect.Throws<AnyGenerationException>(
-                            () => Any.Int32().Between(testCase.outside.Min, testCase.outside.Max).As(Ratio.Create).Generate());
+                        bool rejected = Expect.Throws<DummyGenerationException>(
+                            () => Dummy.Int32().Between(testCase.outside.Min, testCase.outside.Max).As(Ratio.Create).Generate());
 
                         return accepted && rejected;
                     })
             .QuickCheckThrowOnFailure();
     }
 
-    [Fact(DisplayName = "A factory that throws surfaces as AnyGenerationException carrying the original failure and the seed that replays it.")]
+    [Fact(DisplayName = "A factory that throws surfaces as DummyGenerationException carrying the original failure and the seed that replays it.")]
     public void AsWrapsFactoryFailuresPreservingTheCause() {
         Prop.ForAll((from bounds in Generators.OrderedPair(Generators.Int32())
                      from seed in Generators.Seed()
                      select (bounds, seed)).ToArbitrary(),
                     testCase => {
-                        IAny<int> generator = Any.WithSeed(testCase.seed)
+                        IDummy<int> generator = Dummy.WithSeed(testCase.seed)
                                                  .Int32()
                                                  .Between(testCase.bounds.Min, testCase.bounds.Max)
                                                  .As<int, int>(_ => throw new FactoryRejection());
@@ -104,7 +104,7 @@ public sealed class CompositionProperties {
                             generator.Generate();
 
                             return false;
-                        } catch (AnyGenerationException exception) {
+                        } catch (DummyGenerationException exception) {
                             return exception.InnerException is FactoryRejection && exception.Seed == testCase.seed;
                         }
                     })
@@ -114,7 +114,7 @@ public sealed class CompositionProperties {
     [Fact(DisplayName = "OrNull on a value type: every non-null draw satisfies the wrapped generator's constraint.")]
     public void ValueTypeOrNullKeepsTheWrappedConstraint() {
         Prop.ForAll(Generators.OrderedPair(Generators.Int32()).ToArbitrary(),
-                    bounds => Expect.EveryDraw(Any.Int32().Between(bounds.Min, bounds.Max).OrNull(),
+                    bounds => Expect.EveryDraw(Dummy.Int32().Between(bounds.Min, bounds.Max).OrNull(),
                                                value => value is null || (value.Value >= bounds.Min && value.Value <= bounds.Max)))
             .QuickCheckThrowOnFailure();
     }
@@ -122,7 +122,7 @@ public sealed class CompositionProperties {
     [Fact(DisplayName = "OrNull on a reference type: every non-null draw satisfies the wrapped generator's constraint.")]
     public void ReferenceTypeOrNullKeepsTheWrappedConstraint() {
         Prop.ForAll(Gen.Choose(1, 12).ToArbitrary(),
-                    length => Expect.EveryDraw(Any.String().WithLength(length).OrNull(),
+                    length => Expect.EveryDraw(Dummy.String().WithLength(length).OrNull(),
                                                value => value is null || value.Length == length))
             .QuickCheckThrowOnFailure();
     }
@@ -130,11 +130,11 @@ public sealed class CompositionProperties {
     [Fact(DisplayName = "OrNull is a coin flip: over enough draws from any seed, both the null and the value branch appear.")]
     public void OrNullEventuallyYieldsBothBranches() {
         // The null decision is an even coin flip, so 64 draws miss a branch with probability about 2^-63 — vanishing,
-        // but a probability nonetheless. Drawing from an Any.WithSeed(...) context removes the residual flakiness: each
+        // but a probability nonetheless. Drawing from an Dummy.WithSeed(...) context removes the residual flakiness: each
         // FsCheck case is a fixed, replayable run, so a case that passes passes identically on every execution.
         Prop.ForAll(Generators.Seed().ToArbitrary(),
                     seed => {
-                        AnyContext context = Any.WithSeed(seed);
+                        DummyContext context = Dummy.WithSeed(seed);
 
                         List<int?>    values     = Expect.Draws(context.Int32().Between(1, 100).OrNull(), 64);
                         List<string?> references = Expect.Draws(context.String().WithLength(4).OrNull(), 64);
@@ -173,8 +173,8 @@ public sealed class CompositionProperties {
                      from second in intervals
                      select (first, second)).ToArbitrary(),
                     testCase => Expect.EveryDraw(
-                        Any.Combine(Any.Int32().Between(testCase.first.Min, testCase.first.Max),
-                                    Any.Int32().Between(testCase.second.Min, testCase.second.Max),
+                        Dummy.Combine(Dummy.Int32().Between(testCase.first.Min, testCase.first.Max),
+                                    Dummy.Int32().Between(testCase.second.Min, testCase.second.Max),
                                     (one, two) => (Head: one, Tail: two)),
                         composed => composed.Head >= testCase.first.Min
                                     && composed.Head <= testCase.first.Max
@@ -192,9 +192,9 @@ public sealed class CompositionProperties {
                      from third in intervals
                      select (first, length, third)).ToArbitrary(),
                     testCase => Expect.EveryDraw(
-                        Any.Combine(Any.Int32().Between(testCase.first.Min, testCase.first.Max),
-                                    Any.String().WithLength(testCase.length),
-                                    Any.Int32().Between(testCase.third.Min, testCase.third.Max),
+                        Dummy.Combine(Dummy.Int32().Between(testCase.first.Min, testCase.first.Max),
+                                    Dummy.String().WithLength(testCase.length),
+                                    Dummy.Int32().Between(testCase.third.Min, testCase.third.Max),
                                     (one, two, three) => (Head: one, Text: two, Tail: three)),
                         composed => composed.Head >= testCase.first.Min
                                     && composed.Head <= testCase.first.Max
@@ -221,7 +221,7 @@ public sealed class CompositionProperties {
                         // Each of the eight parts is pinned to a value of its own, so two slots swapped change the
                         // composed array. The example-based suite passes the SAME generator to all eight slots and
                         // therefore cannot see such a mix-up at all — only the arity itself.
-                        IAny<int[]> generator = Any.Combine(
+                        IDummy<int[]> generator = Dummy.Combine(
                             Pinned(expected[0]), Pinned(expected[1]), Pinned(expected[2]), Pinned(expected[3]),
                             Pinned(expected[4]), Pinned(expected[5]), Pinned(expected[6]), Pinned(expected[7]),
                             (one, two, three, four, five, six, seven, eight) => new[] { one, two, three, four, five, six, seven, eight });
@@ -240,16 +240,16 @@ public sealed class CompositionProperties {
                      from third in intervals
                      select (first, length, third)).ToArbitrary(),
                     testCase => {
-                        AnyInt32  head = Any.Int32().Between(testCase.first.Min, testCase.first.Max);
-                        AnyString text = Any.String().WithLength(testCase.length);
-                        AnyInt32  tail = Any.Int32().Between(testCase.third.Min, testCase.third.Max);
+                        DummyInt32  head = Dummy.Int32().Between(testCase.first.Min, testCase.first.Max);
+                        DummyString text = Dummy.String().WithLength(testCase.length);
+                        DummyInt32  tail = Dummy.Int32().Between(testCase.third.Min, testCase.third.Max);
 
-                        bool pairs = Expect.EveryDraw(Any.PairOf(head, text),
+                        bool pairs = Expect.EveryDraw(Dummy.PairOf(head, text),
                                                       pair => pair.Item1 >= testCase.first.Min
                                                               && pair.Item1 <= testCase.first.Max
                                                               && pair.Item2.Length == testCase.length);
 
-                        bool triples = Expect.EveryDraw(Any.TripleOf(head, text, tail),
+                        bool triples = Expect.EveryDraw(Dummy.TripleOf(head, text, tail),
                                                         triple => triple.Item1 >= testCase.first.Min
                                                                   && triple.Item1 <= testCase.first.Max
                                                                   && triple.Item2.Length == testCase.length
@@ -264,9 +264,9 @@ public sealed class CompositionProperties {
     [Fact(DisplayName = "OneOf and ElementOf draw only from the pool they were given, whatever the pool and whichever overload.")]
     public void PoolGeneratorsStayWithinTheirPool() {
         Prop.ForAll(IntegerPools().ToArbitrary(),
-                    pool => Expect.EveryDraw(Any.OneOf(pool), value => pool.Contains(value))
-                            && Expect.EveryDraw(Any.ElementOf((IReadOnlyList<int>)pool), value => pool.Contains(value))
-                            && Expect.EveryDraw(Any.ElementOf(pool.Select(value => value)), value => pool.Contains(value)))
+                    pool => Expect.EveryDraw(Dummy.OneOf(pool), value => pool.Contains(value))
+                            && Expect.EveryDraw(Dummy.ElementOf((IReadOnlyList<int>)pool), value => pool.Contains(value))
+                            && Expect.EveryDraw(Dummy.ElementOf(pool.Select(value => value)), value => pool.Contains(value)))
             .QuickCheckThrowOnFailure();
     }
 
@@ -282,18 +282,18 @@ public sealed class CompositionProperties {
                      select (pool, seed)).ToArbitrary(),
                     testCase => {
                         HashSet<int> distinct = [.. testCase.pool];
-                        HashSet<int> drawn    = [.. Expect.Draws(Any.WithSeed(testCase.seed).OneOf(testCase.pool), 96)];
+                        HashSet<int> drawn    = [.. Expect.Draws(Dummy.WithSeed(testCase.seed).OneOf(testCase.pool), 96)];
 
                         return drawn.SetEquals(distinct);
                     })
             .QuickCheckThrowOnFailure();
     }
 
-    [Fact(DisplayName = "Any.String().OneOf draws only from its value set, whatever the set and whichever overload.")]
+    [Fact(DisplayName = "Dummy.String().OneOf draws only from its value set, whatever the set and whichever overload.")]
     public void StringOneOfStaysWithinItsValueSet() {
         Prop.ForAll(StringPools().ToArbitrary(),
-                    pool => Expect.EveryDraw(Any.String().OneOf(pool), value => pool.Contains(value))
-                            && Expect.EveryDraw(Any.String().OneOf(pool.Select(value => value)), value => pool.Contains(value)))
+                    pool => Expect.EveryDraw(Dummy.String().OneOf(pool), value => pool.Contains(value))
+                            && Expect.EveryDraw(Dummy.String().OneOf(pool.Select(value => value)), value => pool.Contains(value)))
             .QuickCheckThrowOnFailure();
     }
 
@@ -314,8 +314,8 @@ public sealed class CompositionProperties {
                         string[] surviving = testCase.Pool.Distinct().Except(testCase.Excluded).ToArray();
 
                         return surviving.Length == 0
-                                   ? Expect.Throws<ConflictingAnyConstraintException>(() => Any.OneOf(testCase.Pool).Except(testCase.Excluded))
-                                   : Expect.EveryDraw(Any.OneOf(testCase.Pool).Except(testCase.Excluded), value => surviving.Contains(value));
+                                   ? Expect.Throws<ConflictingDummyConstraintException>(() => Dummy.OneOf(testCase.Pool).Except(testCase.Excluded))
+                                   : Expect.EveryDraw(Dummy.OneOf(testCase.Pool).Except(testCase.Excluded), value => surviving.Contains(value));
                     })
             .QuickCheckThrowOnFailure();
     }
@@ -335,7 +335,7 @@ public sealed class CompositionProperties {
                             }
                         }
 
-                        AnyOneOf<int> generator = Any.ElementOf(LazyPool());
+                        DummyOneOf<int> generator = Dummy.ElementOf(LazyPool());
                         List<int>     drawn     = Expect.Draws(generator, testCase.drawCount);
 
                         // One enumeration at construction, none per draw: a lazy query re-run per draw would both cost
@@ -353,10 +353,10 @@ public sealed class CompositionProperties {
                     testCase => {
                         string[] poisoned = Poisoned(testCase.pool, testCase.index);
 
-                        return Expect.Throws<ArgumentException>(() => Any.OneOf(poisoned))
-                               && Expect.Throws<ArgumentException>(() => Any.ElementOf((IReadOnlyList<string>)poisoned))
-                               && Expect.Throws<ArgumentException>(() => Any.ElementOf(poisoned.Select(value => value)))
-                               && Expect.Throws<ArgumentException>(() => Any.String().OneOf(poisoned));
+                        return Expect.Throws<ArgumentException>(() => Dummy.OneOf(poisoned))
+                               && Expect.Throws<ArgumentException>(() => Dummy.ElementOf((IReadOnlyList<string>)poisoned))
+                               && Expect.Throws<ArgumentException>(() => Dummy.ElementOf(poisoned.Select(value => value)))
+                               && Expect.Throws<ArgumentException>(() => Dummy.String().OneOf(poisoned));
                     })
             .QuickCheckThrowOnFailure();
     }
@@ -364,20 +364,20 @@ public sealed class CompositionProperties {
     [Fact(DisplayName = "An absent pool is a null-argument error and an empty one an argument error, on the ambient and seeded entry points alike.")]
     public void AbsentAndEmptyPoolsAreArgumentErrors() {
         // There is nothing to quantify inside the pool — it is absent or empty by definition — so the quantification
-        // runs over the context instead: Any and Any.WithSeed(...) mirror the same surface and must reject identically.
+        // runs over the context instead: Dummy and Dummy.WithSeed(...) mirror the same surface and must reject identically.
         Prop.ForAll(Generators.Seed().ToArbitrary(),
                     seed => {
-                        AnyContext context = Any.WithSeed(seed);
+                        DummyContext context = Dummy.WithSeed(seed);
 
-                        return Expect.Throws<ArgumentNullException>(() => Any.OneOf((string[])null!))
-                               && Expect.Throws<ArgumentNullException>(() => Any.ElementOf((IReadOnlyList<string>)null!))
-                               && Expect.Throws<ArgumentNullException>(() => Any.ElementOf((IEnumerable<string>)null!))
-                               && Expect.Throws<ArgumentNullException>(() => Any.String().OneOf((string[])null!))
+                        return Expect.Throws<ArgumentNullException>(() => Dummy.OneOf((string[])null!))
+                               && Expect.Throws<ArgumentNullException>(() => Dummy.ElementOf((IReadOnlyList<string>)null!))
+                               && Expect.Throws<ArgumentNullException>(() => Dummy.ElementOf((IEnumerable<string>)null!))
+                               && Expect.Throws<ArgumentNullException>(() => Dummy.String().OneOf((string[])null!))
                                && Expect.Throws<ArgumentNullException>(() => context.OneOf((string[])null!))
-                               && Expect.Throws<ArgumentException>(() => Any.OneOf<string>())
-                               && Expect.Throws<ArgumentException>(() => Any.ElementOf(new List<string>()))
-                               && Expect.Throws<ArgumentException>(() => Any.ElementOf(Enumerable.Empty<string>()))
-                               && Expect.Throws<ArgumentException>(() => Any.String().OneOf())
+                               && Expect.Throws<ArgumentException>(() => Dummy.OneOf<string>())
+                               && Expect.Throws<ArgumentException>(() => Dummy.ElementOf(new List<string>()))
+                               && Expect.Throws<ArgumentException>(() => Dummy.ElementOf(Enumerable.Empty<string>()))
+                               && Expect.Throws<ArgumentException>(() => Dummy.String().OneOf())
                                && Expect.Throws<ArgumentException>(() => context.ElementOf(new List<string>()));
                     })
             .QuickCheckThrowOnFailure();
@@ -387,19 +387,19 @@ public sealed class CompositionProperties {
     public void CompositionSeamsRejectNullArguments() {
         Prop.ForAll(Generators.OrderedPair(Generators.Int32()).ToArbitrary(),
                     bounds => {
-                        AnyInt32 part = Any.Int32().Between(bounds.Min, bounds.Max);
+                        DummyInt32 part = Dummy.Int32().Between(bounds.Min, bounds.Max);
 
                         return Expect.Throws<ArgumentNullException>(() => part.As<int, int>(null!))
-                               && Expect.Throws<ArgumentNullException>(() => AnyExtensions.As(null!, (int value) => value))
-                               && Expect.Throws<ArgumentNullException>(() => ((IAny<int>)null!).OrNull())
-                               && Expect.Throws<ArgumentNullException>(() => ((IAny<string>)null!).OrNull())
-                               && Expect.Throws<ArgumentNullException>(() => Any.Combine(null!, part, (int one, int two) => one + two))
-                               && Expect.Throws<ArgumentNullException>(() => Any.Combine(part, null!, (int one, int two) => one + two))
-                               && Expect.Throws<ArgumentNullException>(() => Any.Combine(part, part, (Func<int, int, int>)null!))
-                               && Expect.Throws<ArgumentNullException>(() => Any.PairOf(part, (IAny<int>)null!))
-                               && Expect.Throws<ArgumentNullException>(() => Any.TripleOf(part, (IAny<int>)null!, part))
+                               && Expect.Throws<ArgumentNullException>(() => DummyExtensions.As(null!, (int value) => value))
+                               && Expect.Throws<ArgumentNullException>(() => ((IDummy<int>)null!).OrNull())
+                               && Expect.Throws<ArgumentNullException>(() => ((IDummy<string>)null!).OrNull())
+                               && Expect.Throws<ArgumentNullException>(() => Dummy.Combine(null!, part, (int one, int two) => one + two))
+                               && Expect.Throws<ArgumentNullException>(() => Dummy.Combine(part, null!, (int one, int two) => one + two))
+                               && Expect.Throws<ArgumentNullException>(() => Dummy.Combine(part, part, (Func<int, int, int>)null!))
+                               && Expect.Throws<ArgumentNullException>(() => Dummy.PairOf(part, (IDummy<int>)null!))
+                               && Expect.Throws<ArgumentNullException>(() => Dummy.TripleOf(part, (IDummy<int>)null!, part))
                                && Expect.Throws<ArgumentNullException>(
-                                   () => Any.Combine(part, part, part, part, part, part, part, (IAny<int>)null!,
+                                   () => Dummy.Combine(part, part, part, part, part, part, part, (IDummy<int>)null!,
                                                      (int one, int two, int three, int four, int five, int six, int seven, int eight) => one));
                     })
             .QuickCheckThrowOnFailure();
@@ -442,10 +442,10 @@ public sealed class CompositionProperties {
 
     /// <summary>
     ///     A generator counting how many times it is asked for a value. Foreign on purpose — it implements
-    ///     <see cref="IAny{T}" /> only — which is exactly what makes the count observable from outside the library.
+    ///     <see cref="IDummy{T}" /> only — which is exactly what makes the count observable from outside the library.
     /// </summary>
     /// <typeparam name="T">The type of the generated values.</typeparam>
-    private sealed class CountingAny<T> : IAny<T> {
+    private sealed class CountingAny<T> : IDummy<T> {
 
         #region Fields declarations
 

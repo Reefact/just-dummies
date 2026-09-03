@@ -43,7 +43,7 @@ internal sealed class GenerateSettings : CommandSettings {
     public string? Namespace { get; set; }
 
     /// <summary>
-    ///     Off by default, so the generator file is all a scaffold writes and <c>new Any{Type}()</c> stays the
+    ///     Off by default, so the generator file is all a scaffold writes and <c>new Dummy{Type}()</c> stays the
     ///     way in (§4.5).
     /// </summary>
     [CommandOption("--entry-point <VALUE>")]

@@ -18,8 +18,8 @@ namespace JustDummies.UnitTests;
 ///         The suite closes the reachability blind spot the 2026-07-20 JustDummies architecture audit named (§9.2/§9.3,
 ///         issue #213): the existing tests assert <i>membership</i> (a generated value satisfies its constraints) but
 ///         never <i>reachability</i> (the whole declared domain is actually generable). Two shipped defects survived
-///         that gap — <see cref="AnyDecimal" /> never reaching the upper half of a range (#206) and the
-///         <c>AnySingle</c>/<c>AnyHalf</c> exclusion nudge stalling on satisfiable specs (#207). Both are guarded here
+///         that gap — <see cref="DummyDecimal" /> never reaching the upper half of a range (#206) and the
+///         <c>DummySingle</c>/<c>DummyHalf</c> exclusion nudge stalling on satisfiable specs (#207). Both are guarded here
 ///         structurally, across every engine at once, in addition to their dedicated regressions
 ///         (<see cref="AnyContinuousTests.DecimalBetweenReachesBothHalves" /> and
 ///         <see cref="ContinuousExclusionNudgeTests" />, kept as focused, commented guards).
@@ -199,10 +199,10 @@ public sealed class CrossEngineReachabilityTests {
     }
 
     private static IntervalCase<T> Case<T>(string                          name,       bool exact,
-                                           Func<AnyContext, IAny<T>>        full,
-                                           Func<AnyContext, T, T, IAny<T>>  between,
-                                           Func<AnyContext, T, T, T, IAny<T>> betweenDifferentFrom,
-                                           Func<AnyContext, T[], T[], IAny<T>> oneOfExcept,
+                                           Func<DummyContext, IDummy<T>>        full,
+                                           Func<DummyContext, T, T, IDummy<T>>  between,
+                                           Func<DummyContext, T, T, T, IDummy<T>> betweenDifferentFrom,
+                                           Func<DummyContext, T[], T[], IDummy<T>> oneOfExcept,
                                            Func<T, double>                 scale,
                                            T domainMin, T domainMax, T wideLo, T wideHi, T na, T nb, T nc,
                                            bool laddered = false) {
@@ -295,16 +295,16 @@ internal sealed class IntervalCase<T> : ReachabilityCase {
 
     #region Fields declarations
 
-    private readonly Func<AnyContext, T, T, T, IAny<T>>   _betweenDifferentFrom;
-    private readonly Func<AnyContext, T, T, IAny<T>>      _between;
+    private readonly Func<DummyContext, T, T, T, IDummy<T>>   _betweenDifferentFrom;
+    private readonly Func<DummyContext, T, T, IDummy<T>>      _between;
     private readonly T                                    _domainMax;
     private readonly T                                    _domainMin;
     private readonly bool                                 _endpointsExact;
-    private readonly Func<AnyContext, IAny<T>>            _full;
+    private readonly Func<DummyContext, IDummy<T>>            _full;
     private readonly T                                    _na;
     private readonly T                                    _nb;
     private readonly T                                    _nc;
-    private readonly Func<AnyContext, T[], T[], IAny<T>>  _oneOfExcept;
+    private readonly Func<DummyContext, T[], T[], IDummy<T>>  _oneOfExcept;
     private readonly bool                                 _laddered;
     private readonly Func<T, double>                      _scale;
     private readonly T                                    _wideHi;
@@ -313,10 +313,10 @@ internal sealed class IntervalCase<T> : ReachabilityCase {
     #endregion
 
     public IntervalCase(string                             name,       bool endpointsExact,
-                        Func<AnyContext, IAny<T>>          full,
-                        Func<AnyContext, T, T, IAny<T>>    between,
-                        Func<AnyContext, T, T, T, IAny<T>> betweenDifferentFrom,
-                        Func<AnyContext, T[], T[], IAny<T>> oneOfExcept,
+                        Func<DummyContext, IDummy<T>>          full,
+                        Func<DummyContext, T, T, IDummy<T>>    between,
+                        Func<DummyContext, T, T, T, IDummy<T>> betweenDifferentFrom,
+                        Func<DummyContext, T[], T[], IDummy<T>> oneOfExcept,
                         Func<T, double>                    scale,
                         T domainMin, T domainMax, T wideLo, T wideHi, T na, T nb, T nc,
                         bool laddered = false)
@@ -338,7 +338,7 @@ internal sealed class IntervalCase<T> : ReachabilityCase {
     }
 
     public override void FullRangeReachesBothHalvesOfTheDomain() {
-        (double min, double max, _) = Sample(_full(Any.WithSeed(Seed)), DistributionSamples);
+        (double min, double max, _) = Sample(_full(Dummy.WithSeed(Seed)), DistributionSamples);
         double mid = _scale(_domainMin) / 2 + _scale(_domainMax) / 2;
 
         Check.That(min).IsStrictlyLessThan(mid);    // the lower half of the domain is reached
@@ -346,7 +346,7 @@ internal sealed class IntervalCase<T> : ReachabilityCase {
     }
 
     public override void WideBetweenReachesBothHalves() {
-        (double min, double max, _) = Sample(_between(Any.WithSeed(Seed), _wideLo, _wideHi), DistributionSamples);
+        (double min, double max, _) = Sample(_between(Dummy.WithSeed(Seed), _wideLo, _wideHi), DistributionSamples);
         double lo  = _scale(_wideLo);
         double hi  = _scale(_wideHi);
         double mid = lo / 2 + hi / 2;
@@ -360,7 +360,7 @@ internal sealed class IntervalCase<T> : ReachabilityCase {
     public override void BothInclusiveBoundsAreReachable() {
         if (_endpointsExact) {
             // Discrete types: a narrow three-value range must hand back both of its exact endpoints.
-            (_, _, HashSet<T> seen) = Sample(_between(Any.WithSeed(Seed), _na, _nc), DistributionSamples);
+            (_, _, HashSet<T> seen) = Sample(_between(Dummy.WithSeed(Seed), _na, _nc), DistributionSamples);
             Check.That(seen.Contains(_na)).IsTrue();
             Check.That(seen.Contains(_nc)).IsTrue();
 
@@ -369,7 +369,7 @@ internal sealed class IntervalCase<T> : ReachabilityCase {
 
         // Continuous types: exact endpoints are a measure-zero target, so a draw must instead come within 1% of
         // each inclusive bound of a wide range. A generator stuck below the midpoint (#206) never gets near the top.
-        (double min, double max, _) = Sample(_between(Any.WithSeed(Seed), _wideLo, _wideHi), DistributionSamples);
+        (double min, double max, _) = Sample(_between(Dummy.WithSeed(Seed), _wideLo, _wideHi), DistributionSamples);
         double lo    = _scale(_wideLo);
         double hi    = _scale(_wideHi);
         double range = hi - lo;
@@ -393,7 +393,7 @@ internal sealed class IntervalCase<T> : ReachabilityCase {
     public override void NarrowExclusionStillGenerates() {
         // Between(na, nc).DifferentFrom(na): on the quantized floating types this drives the type-aware nudge that
         // stalled in #207; on the discrete types it drives the ordinal exclusion. Either way it must generate.
-        IAny<T>                 generator = _betweenDifferentFrom(Any.WithSeed(Seed), _na, _nc, _na);
+        IDummy<T>                 generator = _betweenDifferentFrom(Dummy.WithSeed(Seed), _na, _nc, _na);
         EqualityComparer<T>     equals    = EqualityComparer<T>.Default;
         double                  lo        = _scale(_na);
         double                  hi        = _scale(_nc);
@@ -407,7 +407,7 @@ internal sealed class IntervalCase<T> : ReachabilityCase {
     }
 
     public override void OneOfThenExceptYieldsOnlyTheSurvivors() {
-        IAny<T>             generator = _oneOfExcept(Any.WithSeed(Seed), [_na, _nb, _nc], [_nb]);
+        IDummy<T>             generator = _oneOfExcept(Dummy.WithSeed(Seed), [_na, _nb, _nc], [_nb]);
         EqualityComparer<T> equals    = EqualityComparer<T>.Default;
 
         for (int i = 0; i < SetSamples; i++) {
@@ -420,12 +420,12 @@ internal sealed class IntervalCase<T> : ReachabilityCase {
     public override void ContradictoryConstraintsNameBothSides() {
         // OneOf(na).Except(na) empties the allow-list; the message must name both the allow-list and the exclusion.
         // Asserting the method-name tokens keeps this independent of how each type renders its values.
-        Check.ThatCode(() => _oneOfExcept(Any.WithSeed(Seed), [_na], [_na]))
-             .Throws<ConflictingAnyConstraintException>()
+        Check.ThatCode(() => _oneOfExcept(Dummy.WithSeed(Seed), [_na], [_na]))
+             .Throws<ConflictingDummyConstraintException>()
              .WhichMember(conflict => conflict.Message).Contains("OneOf(", "Except(");
     }
 
-    private (double Min, double Max, HashSet<T> Seen) Sample(IAny<T> generator, int count) {
+    private (double Min, double Max, HashSet<T> Seen) Sample(IDummy<T> generator, int count) {
         double     min  = double.PositiveInfinity;
         double     max  = double.NegativeInfinity;
         HashSet<T> seen = [];

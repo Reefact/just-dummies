@@ -17,7 +17,7 @@ public sealed class ArchitectureTests {
 
     [Fact(DisplayName = "JustDummies references no FirstClassErrors assembly.")]
     public void JustDummiesReferencesNoFirstClassErrorsAssembly() {
-        AssemblyName[] references = typeof(Any).Assembly.GetReferencedAssemblies();
+        AssemblyName[] references = typeof(Dummy).Assembly.GetReferencedAssemblies();
 
         foreach (AssemblyName reference in references) {
             Check.That(reference.Name!.StartsWith("FirstClassErrors", StringComparison.Ordinal)).IsFalse();
@@ -26,7 +26,7 @@ public sealed class ArchitectureTests {
 
     [Fact(DisplayName = "JustDummies depends on nothing beyond the standard library.")]
     public void JustDummiesDependsOnNothingBeyondTheStandardLibrary() {
-        AssemblyName[] references = typeof(Any).Assembly.GetReferencedAssemblies();
+        AssemblyName[] references = typeof(Dummy).Assembly.GetReferencedAssemblies();
 
         foreach (AssemblyName reference in references) {
             // The exact facade split (System.Runtime, System.Threading, ...) varies with the SDK and build

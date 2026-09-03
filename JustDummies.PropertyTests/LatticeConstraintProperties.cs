@@ -11,7 +11,7 @@ namespace JustDummies.PropertyTests;
 
 /// <summary>
 ///     Property-based tests for the three lattice constraints — <c>MultipleOf</c> on the integers,
-///     <see cref="AnyDecimal.WithScale" /> on <see cref="decimal" />, and <c>WithGranularity</c> on the temporals.
+///     <see cref="DummyDecimal.WithScale" /> on <see cref="decimal" />, and <c>WithGranularity</c> on the temporals.
 ///     Where the example-based suite pins a handful of hand-picked steps (<c>MultipleOf(100)</c>,
 ///     <c>WithScale(2)</c>, <c>WithGranularity(15 minutes)</c>) and can only prove the grid right for those, these
 ///     quantify over the whole step space: the step, the interval it must live inside, and the allow-list it must
@@ -26,7 +26,7 @@ namespace JustDummies.PropertyTests;
 ///     contract: the drawn value lies on the <c>10^-scale</c> grid but is not padded with trailing zeros, so it is
 ///     checked with <c>Math.Round(value, scale)</c> and never through <c>decimal.GetBits</c> or <c>ToString()</c>.
 /// </remarks>
-[TestSubject(typeof(AnyDecimal))]
+[TestSubject(typeof(DummyDecimal))]
 public sealed class LatticeConstraintProperties {
 
     #region Statics members declarations
@@ -100,10 +100,10 @@ public sealed class LatticeConstraintProperties {
 
                         // The signed widths and the unsigned ones map onto the shared ordinal engine differently;
                         // the grid is anchored at zero for all of them, so the invariant reads the same everywhere.
-                        return Expect.EveryDraw(Any.Int32().MultipleOf(signedStep), value => value % signedStep == 0)
-                               && Expect.EveryDraw(Any.Int64().MultipleOf(signedStep), value => value % signedStep == 0)
-                               && Expect.EveryDraw(Any.UInt32().MultipleOf(unsignedStep), value => value % unsignedStep == 0)
-                               && Expect.EveryDraw(Any.Byte().MultipleOf(byteStep), value => value % byteStep == 0);
+                        return Expect.EveryDraw(Dummy.Int32().MultipleOf(signedStep), value => value % signedStep == 0)
+                               && Expect.EveryDraw(Dummy.Int64().MultipleOf(signedStep), value => value % signedStep == 0)
+                               && Expect.EveryDraw(Dummy.UInt32().MultipleOf(unsignedStep), value => value % unsignedStep == 0)
+                               && Expect.EveryDraw(Dummy.Byte().MultipleOf(byteStep), value => value % byteStep == 0);
                     })
             .QuickCheckThrowOnFailure();
     }
@@ -122,10 +122,10 @@ public sealed class LatticeConstraintProperties {
                         // point of drawing the bounds and the step independently. The lattice is then empty, and the
                         // library owes the caller a conflict at the fluent call, not a failure at Generate().
                         if (!ContainsMultiple(minimum, maximum, gridStep)) {
-                            return Expect.Throws<ConflictingAnyConstraintException>(() => Any.Int32().Between(minimum, maximum).MultipleOf(gridStep));
+                            return Expect.Throws<ConflictingDummyConstraintException>(() => Dummy.Int32().Between(minimum, maximum).MultipleOf(gridStep));
                         }
 
-                        return Expect.EveryDraw(Any.Int32().Between(minimum, maximum).MultipleOf(gridStep),
+                        return Expect.EveryDraw(Dummy.Int32().Between(minimum, maximum).MultipleOf(gridStep),
                                                 value => value % gridStep == 0 && value >= minimum && value <= maximum);
                     })
             .QuickCheckThrowOnFailure();
@@ -144,11 +144,11 @@ public sealed class LatticeConstraintProperties {
                         // Nothing in the pool on the grid means the intersection is empty: eager conflict, again at
                         // the call. The example-based suite can only pin one pool; this quantifies over all of them.
                         if (survivors.Length == 0) {
-                            return Expect.Throws<ConflictingAnyConstraintException>(
-                                () => Any.Int32().OneOf(testCase.pool).MultipleOf(testCase.step));
+                            return Expect.Throws<ConflictingDummyConstraintException>(
+                                () => Dummy.Int32().OneOf(testCase.pool).MultipleOf(testCase.step));
                         }
 
-                        return Expect.EveryDraw(Any.Int32().OneOf(testCase.pool).MultipleOf(testCase.step),
+                        return Expect.EveryDraw(Dummy.Int32().OneOf(testCase.pool).MultipleOf(testCase.step),
                                                 value => survivors.Contains(value));
                     })
             .QuickCheckThrowOnFailure();
@@ -157,8 +157,8 @@ public sealed class LatticeConstraintProperties {
     [Fact(DisplayName = "MultipleOf: a step that is not strictly positive is an argument error, for every such step.")]
     public void NonPositiveMultipleOfIsAnArgumentError() {
         Prop.ForAll(Gen.Choose(-1000, 0).ToArbitrary(),
-                    step => Expect.Throws<ArgumentOutOfRangeException>(() => Any.Int32().MultipleOf(step))
-                            && Expect.Throws<ArgumentOutOfRangeException>(() => Any.Int64().MultipleOf(step)))
+                    step => Expect.Throws<ArgumentOutOfRangeException>(() => Dummy.Int32().MultipleOf(step))
+                            && Expect.Throws<ArgumentOutOfRangeException>(() => Dummy.Int64().MultipleOf(step)))
             .QuickCheckThrowOnFailure();
     }
 
@@ -175,13 +175,13 @@ public sealed class LatticeConstraintProperties {
                         // second lattice. Only a real second lattice conflicts, so the verdict comes from the drawn
                         // values rather than from the call shape.
                         if (firstStep != secondStep && firstStep != 1 && secondStep != 1) {
-                            return Expect.Throws<ConflictingAnyConstraintException>(() => Any.Int32().MultipleOf(firstStep).MultipleOf(secondStep));
+                            return Expect.Throws<ConflictingDummyConstraintException>(() => Dummy.Int32().MultipleOf(firstStep).MultipleOf(secondStep));
                         }
 
                         // In every accepted case exactly one of the two steps survives: the coarser one.
                         int surviving = Math.Max(firstStep, secondStep);
 
-                        return Expect.EveryDraw(Any.Int32().MultipleOf(firstStep).MultipleOf(secondStep), value => value % surviving == 0);
+                        return Expect.EveryDraw(Dummy.Int32().MultipleOf(firstStep).MultipleOf(secondStep), value => value % surviving == 0);
                     })
             .QuickCheckThrowOnFailure();
     }
@@ -189,7 +189,7 @@ public sealed class LatticeConstraintProperties {
     [Fact(DisplayName = "WithScale: every draw lies on the 10^-scale value grid, for every supported scale.")]
     public void WithScaleLandsOnTheDecimalGrid() {
         Prop.ForAll(Gen.Choose(0, 28).ToArbitrary(),
-                    scale => Expect.EveryDraw(Any.Decimal().WithScale(scale),
+                    scale => Expect.EveryDraw(Dummy.Decimal().WithScale(scale),
                                               // A value lattice: the value is expressible in `scale` decimals. Its
                                               // rendered form is deliberately not asserted — the library pads nothing.
                                               value => Math.Round(value, scale, MidpointRounding.ToEven) == value))
@@ -210,7 +210,7 @@ public sealed class LatticeConstraintProperties {
                         decimal minimum = testCase.start * step;
                         decimal maximum = (testCase.start + testCase.width) * step;
 
-                        return Expect.EveryDraw(Any.Decimal().Between(minimum, maximum).WithScale(testCase.scale),
+                        return Expect.EveryDraw(Dummy.Decimal().Between(minimum, maximum).WithScale(testCase.scale),
                                                 value => Math.Round(value, testCase.scale, MidpointRounding.ToEven) == value
                                                          && value >= minimum
                                                          && value <= maximum);
@@ -232,8 +232,8 @@ public sealed class LatticeConstraintProperties {
                         decimal lower = testCase.cell * step + finer;
                         decimal upper = testCase.cell * step + 9m * finer;
 
-                        return Expect.Throws<ConflictingAnyConstraintException>(
-                            () => Any.Decimal().Between(lower, upper).WithScale(testCase.scale));
+                        return Expect.Throws<ConflictingDummyConstraintException>(
+                            () => Dummy.Decimal().Between(lower, upper).WithScale(testCase.scale));
                     })
             .QuickCheckThrowOnFailure();
     }
@@ -241,7 +241,7 @@ public sealed class LatticeConstraintProperties {
     [Fact(DisplayName = "WithScale: a scale outside [0, 28] is an argument error, for every such scale.")]
     public void WithScaleOutsideTheSupportedRangeIsAnArgumentError() {
         Prop.ForAll(Gen.OneOf(Gen.Choose(-1000, -1), Gen.Choose(29, 1000)).ToArbitrary(),
-                    scale => Expect.Throws<ArgumentOutOfRangeException>(() => Any.Decimal().WithScale(scale)))
+                    scale => Expect.Throws<ArgumentOutOfRangeException>(() => Dummy.Decimal().WithScale(scale)))
             .QuickCheckThrowOnFailure();
     }
 
@@ -254,11 +254,11 @@ public sealed class LatticeConstraintProperties {
                         // Unlike MultipleOf, no scale is a no-op: scale zero is the integer grid, a constraint in its
                         // own right. Only re-declaring the very same scale is idempotent.
                         if (testCase.first != testCase.second) {
-                            return Expect.Throws<ConflictingAnyConstraintException>(
-                                () => Any.Decimal().WithScale(testCase.first).WithScale(testCase.second));
+                            return Expect.Throws<ConflictingDummyConstraintException>(
+                                () => Dummy.Decimal().WithScale(testCase.first).WithScale(testCase.second));
                         }
 
-                        return Expect.EveryDraw(Any.Decimal().WithScale(testCase.first).WithScale(testCase.second),
+                        return Expect.EveryDraw(Dummy.Decimal().WithScale(testCase.first).WithScale(testCase.second),
                                                 value => Math.Round(value, testCase.first, MidpointRounding.ToEven) == value);
                     })
             .QuickCheckThrowOnFailure();
@@ -273,15 +273,15 @@ public sealed class LatticeConstraintProperties {
                         // The anchor is part of the contract and differs per type — TimeSpan.Zero for a duration,
                         // MinValue for an instant — so it is written out rather than folded into a bare modulo:
                         // an anchor drifting onto the wrong origin is exactly what this property exists to catch.
-                        // AnyTimeSpan is the sharpest of the three, since its unconstrained domain is signed and a
+                        // DummyTimeSpan is the sharpest of the three, since its unconstrained domain is signed and a
                         // misplaced anchor shows up on the negative side.
-                        return Expect.EveryDraw(Any.TimeSpan().WithGranularity(granularity),
+                        return Expect.EveryDraw(Dummy.TimeSpan().WithGranularity(granularity),
                                                 value => (value.Ticks - TimeSpan.Zero.Ticks) % step == 0)
-                               && Expect.EveryDraw(Any.DateTime().WithGranularity(granularity),
+                               && Expect.EveryDraw(Dummy.DateTime().WithGranularity(granularity),
                                                    value => (value.Ticks - DateTime.MinValue.Ticks) % step == 0)
                                // The DateTimeOffset lattice lives on the instant, which is what its own ordering
                                // compares; unconstrained, the offset is TimeSpan.Zero and the two tick counts agree.
-                               && Expect.EveryDraw(Any.DateTimeOffset().WithGranularity(granularity),
+                               && Expect.EveryDraw(Dummy.DateTimeOffset().WithGranularity(granularity),
                                                    value => (value.UtcTicks - DateTimeOffset.MinValue.UtcTicks) % step == 0);
                     })
             .QuickCheckThrowOnFailure();
@@ -306,11 +306,11 @@ public sealed class LatticeConstraintProperties {
                         DateTimeOffset offsetFrom   = new(instantFrom.Ticks, TimeSpan.Zero);
                         DateTimeOffset offsetTo     = new(instantTo.Ticks, TimeSpan.Zero);
 
-                        return Expect.EveryDraw(Any.TimeSpan().Between(durationFrom, durationTo).WithGranularity(testCase.granularity),
+                        return Expect.EveryDraw(Dummy.TimeSpan().Between(durationFrom, durationTo).WithGranularity(testCase.granularity),
                                                 value => value.Ticks % step == 0 && value >= durationFrom && value <= durationTo)
-                               && Expect.EveryDraw(Any.DateTime().Between(instantFrom, instantTo).WithGranularity(testCase.granularity),
+                               && Expect.EveryDraw(Dummy.DateTime().Between(instantFrom, instantTo).WithGranularity(testCase.granularity),
                                                    value => value.Ticks % step == 0 && value >= instantFrom && value <= instantTo)
-                               && Expect.EveryDraw(Any.DateTimeOffset().Between(offsetFrom, offsetTo).WithGranularity(testCase.granularity),
+                               && Expect.EveryDraw(Dummy.DateTimeOffset().Between(offsetFrom, offsetTo).WithGranularity(testCase.granularity),
                                                    value => value.UtcTicks % step == 0 && value >= offsetFrom && value <= offsetTo);
                     })
             .QuickCheckThrowOnFailure();
@@ -319,9 +319,9 @@ public sealed class LatticeConstraintProperties {
     [Fact(DisplayName = "WithGranularity: a granularity that is not strictly positive is an argument error.")]
     public void NonPositiveGranularityIsAnArgumentError() {
         Prop.ForAll(Gen.Choose(-10000, 0).Select(ticks => TimeSpan.FromTicks(ticks)).ToArbitrary(),
-                    granularity => Expect.Throws<ArgumentOutOfRangeException>(() => Any.TimeSpan().WithGranularity(granularity))
-                                   && Expect.Throws<ArgumentOutOfRangeException>(() => Any.DateTime().WithGranularity(granularity))
-                                   && Expect.Throws<ArgumentOutOfRangeException>(() => Any.DateTimeOffset().WithGranularity(granularity)))
+                    granularity => Expect.Throws<ArgumentOutOfRangeException>(() => Dummy.TimeSpan().WithGranularity(granularity))
+                                   && Expect.Throws<ArgumentOutOfRangeException>(() => Dummy.DateTime().WithGranularity(granularity))
+                                   && Expect.Throws<ArgumentOutOfRangeException>(() => Dummy.DateTimeOffset().WithGranularity(granularity)))
             .QuickCheckThrowOnFailure();
     }
 
@@ -337,14 +337,14 @@ public sealed class LatticeConstraintProperties {
                         // One tick constrains nothing, and the same granularity twice is idempotent — the same rule
                         // as MultipleOf, since both ride the one lattice the interval engine carries.
                         if (declared != redeclared && declared.Ticks != 1 && redeclared.Ticks != 1) {
-                            return Expect.Throws<ConflictingAnyConstraintException>(() => Any.TimeSpan().WithGranularity(declared).WithGranularity(redeclared))
-                                   && Expect.Throws<ConflictingAnyConstraintException>(() => Any.DateTime().WithGranularity(declared).WithGranularity(redeclared));
+                            return Expect.Throws<ConflictingDummyConstraintException>(() => Dummy.TimeSpan().WithGranularity(declared).WithGranularity(redeclared))
+                                   && Expect.Throws<ConflictingDummyConstraintException>(() => Dummy.DateTime().WithGranularity(declared).WithGranularity(redeclared));
                         }
 
                         long surviving = Math.Max(declared.Ticks, redeclared.Ticks);
 
-                        return Expect.EveryDraw(Any.TimeSpan().WithGranularity(declared).WithGranularity(redeclared), value => value.Ticks % surviving == 0)
-                               && Expect.EveryDraw(Any.DateTime().WithGranularity(declared).WithGranularity(redeclared), value => value.Ticks % surviving == 0);
+                        return Expect.EveryDraw(Dummy.TimeSpan().WithGranularity(declared).WithGranularity(redeclared), value => value.Ticks % surviving == 0)
+                               && Expect.EveryDraw(Dummy.DateTime().WithGranularity(declared).WithGranularity(redeclared), value => value.Ticks % surviving == 0);
                     })
             .QuickCheckThrowOnFailure();
     }

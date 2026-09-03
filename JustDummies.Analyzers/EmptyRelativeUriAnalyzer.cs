@@ -9,7 +9,7 @@ namespace JustDummies.Analyzers;
 
 /// <summary>
 ///     JD026 — reports a relative-URI chain that describes the empty reference:
-///     <c>Any.Uri().Relative().WithPathSegments(0)</c> with no query, no fragment and no root.
+///     <c>Dummy.Uri().Relative().WithPathSegments(0)</c> with no query, no fragment and no root.
 /// </summary>
 /// <remarks>
 ///     The whole point is <i>when</i> the library reports it. Every other unsatisfiable chain throws at the arrange
@@ -33,7 +33,7 @@ public sealed class EmptyRelativeUriAnalyzer : DiagnosticAnalyzer {
 
     private static void OnCompilationStart(CompilationStartAnalysisContext context) {
         KnownSymbols symbols = KnownSymbols.From(context.Compilation);
-        if (symbols.Any is null || symbols.IAny is null) { return; }
+        if (symbols.Dummy is null || symbols.IDummy is null) { return; }
 
         context.RegisterOperationAction(operationContext => Analyze(operationContext, symbols), OperationKind.Invocation);
     }
@@ -42,7 +42,7 @@ public sealed class EmptyRelativeUriAnalyzer : DiagnosticAnalyzer {
         IInvocationOperation invocation = (IInvocationOperation)context.Operation;
 
         if (invocation.Parent is IInvocationOperation) { return; }
-        if (!AnyChainFacts.TryGetChain(invocation, symbols, out IReadOnlyList<IInvocationOperation> constraints, out IInvocationOperation? factory)) { return; }
+        if (!DummyChainFacts.TryGetChain(invocation, symbols, out IReadOnlyList<IInvocationOperation> constraints, out IInvocationOperation? factory)) { return; }
         if (factory is null || factory.TargetMethod.Name != "Uri") { return; }
         if (NegativeTestGuard.IsSoleBodyOfLambdaArgument(invocation.Syntax)) { return; }
 

@@ -14,9 +14,9 @@ namespace JustDummies;
 ///     </para>
 ///     <para>
 ///         The interface is <b>optional</b>, and carried by every generator that admits a caller-supplied value set:
-///         <see cref="AnyOneOf{T}" />, <see cref="AnyString" />, and each family exposing <c>OneOf</c> — the
-///         integers, the floating-point and decimal builders, the dates and times, <see cref="AnyChar" />,
-///         <see cref="AnyGuid" /> and <see cref="AnyEnum{TEnum}" />. A generator with no pool of the caller's to
+///         <see cref="DummyOneOf{T}" />, <see cref="DummyString" />, and each family exposing <c>OneOf</c> — the
+///         integers, the floating-point and decimal builders, the dates and times, <see cref="DummyChar" />,
+///         <see cref="DummyGuid" /> and <see cref="DummyEnum{TEnum}" />. A generator with no pool of the caller's to
 ///         report on does not carry it at all, so a cast is written as a test
 ///         (<c>if (generator is IPoolInspection&lt;string&gt; pool)</c>) rather than assumed to succeed.
 ///     </para>
@@ -24,7 +24,7 @@ namespace JustDummies;
 ///         <see cref="IsPooled" /> is <b>not</b> "this generator has a countable domain". A bounded interval is
 ///         countable and has no pool: its values are the engine's rather than the caller's, so there is nothing of
 ///         theirs to audit and nothing here reports on it. The two questions coincide on a shaped string and diverge
-///         everywhere else — <c>Any.Int32().Between(1, 1_000_000)</c> answers <c>false</c>.
+///         everywhere else — <c>Dummy.Int32().Between(1, 1_000_000)</c> answers <c>false</c>.
 ///     </para>
 ///     <para>
 ///         Nothing here draws. The domain is fixed the moment the constraints are declared, so every member returns

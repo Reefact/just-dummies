@@ -10,11 +10,11 @@ dimension the others do not have: granularity, and the offset.
 
 | Factory | Draws | Availability |
 | --- | --- | --- |
-| `Any.DateTime()` | `DateTime` | everywhere |
-| `Any.DateTimeOffset()` | `DateTimeOffset` | everywhere |
-| `Any.TimeSpan()` | `TimeSpan` | everywhere |
-| `Any.DateOnly()` | `DateOnly` | .NET 8+ |
-| `Any.TimeOnly()` | `TimeOnly` | .NET 8+ |
+| `Dummy.DateTime()` | `DateTime` | everywhere |
+| `Dummy.DateTimeOffset()` | `DateTimeOffset` | everywhere |
+| `Dummy.TimeSpan()` | `TimeSpan` | everywhere |
+| `Dummy.DateOnly()` | `DateOnly` | .NET 8+ |
+| `Dummy.TimeOnly()` | `TimeOnly` | .NET 8+ |
 
 ## Ordering
 
@@ -22,21 +22,21 @@ Instants order rather than compare in size, so the vocabulary reads temporally â
 `Before` rather than `GreaterThan` and `LessThan`:
 
 ```csharp
-DateTime ordered   = Any.DateTime().Between(new DateTime(2020, 1, 1), new DateTime(2025, 12, 31)).Generate();
-DateTime recent    = Any.DateTime().After(new DateTime(2024, 1, 1)).Generate();
-DateTime onOrAfter = Any.DateTime().AfterOrEqualTo(new DateTime(2024, 1, 1)).Generate();
-DateTime past      = Any.DateTime().Before(new DateTime(2030, 1, 1)).Generate();
-DateTime onOrBefore = Any.DateTime().BeforeOrEqualTo(new DateTime(2030, 1, 1)).Generate();
+DateTime ordered   = Dummy.DateTime().Between(new DateTime(2020, 1, 1), new DateTime(2025, 12, 31)).Generate();
+DateTime recent    = Dummy.DateTime().After(new DateTime(2024, 1, 1)).Generate();
+DateTime onOrAfter = Dummy.DateTime().AfterOrEqualTo(new DateTime(2024, 1, 1)).Generate();
+DateTime past      = Dummy.DateTime().Before(new DateTime(2030, 1, 1)).Generate();
+DateTime onOrBefore = Dummy.DateTime().BeforeOrEqualTo(new DateTime(2030, 1, 1)).Generate();
 ```
 
 `TimeSpan` is a duration rather than an instant, so it keeps the numeric vocabulary and adds the
 sign family:
 
 ```csharp
-TimeSpan timeout  = Any.TimeSpan().Between(TimeSpan.FromSeconds(1), TimeSpan.FromMinutes(5)).Generate();
-TimeSpan positive = Any.TimeSpan().Positive().Generate();
-TimeSpan nonZero  = Any.TimeSpan().NonZero().Generate();
-TimeSpan shorter  = Any.TimeSpan().LessThan(TimeSpan.FromHours(1)).Generate();
+TimeSpan timeout  = Dummy.TimeSpan().Between(TimeSpan.FromSeconds(1), TimeSpan.FromMinutes(5)).Generate();
+TimeSpan positive = Dummy.TimeSpan().Positive().Generate();
+TimeSpan nonZero  = Dummy.TimeSpan().NonZero().Generate();
+TimeSpan shorter  = Dummy.TimeSpan().LessThan(TimeSpan.FromHours(1)).Generate();
 ```
 
 ## Granularity
@@ -46,16 +46,16 @@ domain would actually store:
 
 ```csharp
 // Whole minutes: no stray seconds or ticks to break an equality assertion.
-DateTime appointment = Any.DateTime()
+DateTime appointment = Dummy.DateTime()
                           .Between(new DateTime(2025, 1, 1), new DateTime(2025, 12, 31))
                           .WithGranularity(TimeSpan.FromMinutes(1))
                           .Generate();
 
 // Whole days.
-DateTime businessDay = Any.DateTime().WithGranularity(TimeSpan.FromDays(1)).Generate();
+DateTime businessDay = Dummy.DateTime().WithGranularity(TimeSpan.FromDays(1)).Generate();
 
 // A duration in whole seconds.
-TimeSpan retryAfter = Any.TimeSpan().Positive().WithGranularity(TimeSpan.FromSeconds(1)).Generate();
+TimeSpan retryAfter = Dummy.TimeSpan().Positive().WithGranularity(TimeSpan.FromSeconds(1)).Generate();
 ```
 
 Without it, a drawn instant carries sub-second precision, and a test that round-trips it through a
@@ -72,9 +72,9 @@ deliberate: a dummy that always carried `+00:00` would never find the code that 
 ([ADR-0016](../../for-maintainers/adr/0016-vary-the-datetimeoffset-offset-dimension.md)).
 
 ```csharp
-DateTimeOffset anywhere = Any.DateTimeOffset().Generate();                       // instant and offset both vary
-DateTimeOffset utc      = Any.DateTimeOffset().WithOffset(TimeSpan.Zero).Generate();
-DateTimeOffset european = Any.DateTimeOffset()
+DateTimeOffset anywhere = Dummy.DateTimeOffset().Generate();                       // instant and offset both vary
+DateTimeOffset utc      = Dummy.DateTimeOffset().WithOffset(TimeSpan.Zero).Generate();
+DateTimeOffset european = Dummy.DateTimeOffset()
                              .WithOffsetBetween(TimeSpan.FromHours(0), TimeSpan.FromHours(3))
                              .Generate();
 ```
@@ -89,7 +89,7 @@ This is the mistake worth naming, because it survives review and fails at midnig
 
 ```csharp
 // Fragile: the dummy is drawn relative to a clock the test does not control.
-DateTime createdAt = Any.DateTime().Before(DateTime.Now).Generate();
+DateTime createdAt = Dummy.DateTime().Before(DateTime.Now).Generate();
 ```
 
 The test now depends on when it runs. Worse, it is not reproducible: replaying the seed replays the
@@ -99,7 +99,7 @@ Pin an instant the test owns, and constrain relative to that:
 
 ```csharp
 DateTime now       = new DateTime(2025, 6, 15, 12, 0, 0, DateTimeKind.Utc);
-DateTime createdAt = Any.DateTime().Before(now).AfterOrEqualTo(now.AddYears(-1)).Generate();
+DateTime createdAt = Dummy.DateTime().Before(now).AfterOrEqualTo(now.AddYears(-1)).Generate();
 ```
 
 ## Membership and exclusion
@@ -107,11 +107,11 @@ DateTime createdAt = Any.DateTime().Before(now).AfterOrEqualTo(now.AddYears(-1))
 Every temporal generator carries the usual pool and exclusion family:
 
 ```csharp
-DateTime quarterEnd = Any.DateTime()
+DateTime quarterEnd = Dummy.DateTime()
                          .OneOf(new DateTime(2025, 3, 31), new DateTime(2025, 6, 30), new DateTime(2025, 9, 30))
                          .Generate();
 
-DateTime notEpoch = Any.DateTime()
+DateTime notEpoch = Dummy.DateTime()
                        .Between(new DateTime(2020, 1, 1), new DateTime(2025, 1, 1))
                        .DifferentFrom(new DateTime(2020, 1, 1))
                        .Generate();
@@ -123,11 +123,11 @@ Available on .NET 8 and above, with the same ordering vocabulary:
 
 <!-- jd:net8 -->
 ```csharp
-DateOnly dueDate = Any.DateOnly()
+DateOnly dueDate = Dummy.DateOnly()
                       .Between(new DateOnly(2025, 1, 1), new DateOnly(2025, 12, 31))
                       .Generate();
 
-TimeOnly openingTime = Any.TimeOnly()
+TimeOnly openingTime = Dummy.TimeOnly()
                           .Between(new TimeOnly(8, 0), new TimeOnly(20, 0))
                           .WithGranularity(TimeSpan.FromMinutes(15))
                           .Generate();

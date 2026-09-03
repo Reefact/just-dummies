@@ -29,15 +29,15 @@ Analyzing Shop.Domain.Order
 
   reference  OrderReference         new AnyOrderReference()              AnyX
   customer   Customer               new AnyCustomer()                    AnyX
-  quantity   int                    Any.Int32().Positive()               guard
-  status     OrderStatus            Any.Enum<OrderStatus>()
-  tags       IReadOnlyList<string>  Any.ListOf(Any.String().NonEmpty())
-  placedAt   DateTime               Any.DateTime()
+  quantity   int                    Dummy.Int32().Positive()               guard
+  status     OrderStatus            Dummy.Enum<OrderStatus>()
+  tags       IReadOnlyList<string>  Dummy.ListOf(Dummy.String().NonEmpty())
+  placedAt   DateTime               Dummy.DateTime()
 
-✓ AnyOrder.cs — 6 of 6 parameters inferred.
+✓ DummyOrder.cs — 6 of 6 parameters inferred.
 ```
 
-`AnyOrder.cs` est une `partial class` implémentant `IAny<Order>`, avec une méthode `With…` par
+`DummyOrder.cs` est une `partial class` implémentant `IDummy<Order>`, avec une méthode `With…` par
 paramètre du constructeur. Il vous appartient dès cet instant : lisez-le, modifiez-le, commitez-le.
 
 ## Ce que dit la dernière colonne
@@ -70,13 +70,13 @@ travail et ajoute au-dessus une ligne qui ne compile pas :
 
 <!-- jd:skip -->
 ```csharp
-private static IAny<string> AnyValidValue() {
+private static IDummy<string> AnyValidValue() {
     // TODO(dum): 'string value' may be guarded by something dum could not read (§9).
     //   This is dum's best generator for the type; verify it honours the real invariant,
     //   or replace it, then delete the line below.
     _ = TODO_verify_the_generator_for_value;
 
-    return Any.String().NonEmpty();
+    return Dummy.String().NonEmpty();
 }
 ```
 
@@ -110,21 +110,21 @@ Le récapitulatif ne le répète pas — un fichier qui ne build pas n'est pas u
 composée qu'il laisse à un `TODO` est un type générique, parce que `AnyRepository` nommerait aussi
 mal `Repository<Order>` que `Repository<Line>`.
 
-## L'atteindre comme `Any.Order()`
+## L'atteindre comme `Dummy.Order()`
 
-`new AnyOrder()` est la façon d'atteindre le generator, et elle marche toujours. Si vous préférez que
-les deux moitiés d'un bloc d'arrangement se lisent pareil — `Any.Int32()` sur une ligne et
-`Any.Order()` sur la suivante — demandez un point d'entrée :
+`new DummyOrder()` est la façon d'atteindre le generator, et elle marche toujours. Si vous préférez que
+les deux moitiés d'un bloc d'arrangement se lisent pareil — `Dummy.Int32()` sur une ligne et
+`Dummy.Order()` sur la suivante — demandez un point d'entrée :
 
 ```bash
 dum generate Order --entry-point any
 ```
 
-Cela écrit un second fichier, `AnyOrder.Entry.cs`, à côté du generator :
+Cela écrit un second fichier, `DummyOrder.Entry.cs`, à côté du generator :
 
 <!-- jd:skip -->
 ```csharp
-Order order = Any.Order().WithStatus(OrderStatus.Pending).Generate();
+Order order = Dummy.Order().WithStatus(OrderStatus.Pending).Generate();
 ```
 
 Il utilise un membre d'extension C# 14, donc le projet doit compiler en C# 14 ; en deçà, `dum` le dit
@@ -147,9 +147,9 @@ rassemble des types de plusieurs namespaces :
 dum generate Order --entry-point static:Dummies --entry-point-namespace Shop.Tests.Dummies
 ```
 
-Le generator, lui, ne bouge pas, et `AnyOrder.cs` est identique octet pour octet quelle que soit la
-valeur demandée. Une racine nommée `Any` est refusée : une classe statique de ce nom dans votre propre
-projet masquerait `JustDummies.Any` pour tout son namespace, et `Any.Int32()` cesserait de compiler —
+Le generator, lui, ne bouge pas, et `DummyOrder.cs` est identique octet pour octet quelle que soit la
+valeur demandée. Une racine nommée `Dummy` est refusée : une classe statique de ce nom dans votre propre
+projet masquerait `JustDummies.Dummy` pour tout son namespace, et `Dummy.Int32()` cesserait de compiler —
 ce que `--entry-point any` existe précisément pour éviter. Décision :
 [ADR-0070](../../for-maintainers/adr/0070-emit-an-entry-point-on-request-as-a-file-of-its-own.fr.md).
 

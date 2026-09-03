@@ -24,7 +24,7 @@ JD016   | JustDummies.Constraints     | Warning  | CollectionConstraintsAdmitNoV
 JD017   | JustDummies.Constraints     | Warning  | EnumUniverseViolationAnalyzer
 JD018   | JustDummies.Reproducibility | Warning  | NestedReproducibilityScopeAnalyzer
 JD019   | JustDummies.Reproducibility | Disabled | CommittedReplaySeedAnalyzer
-JD020   | JustDummies.Reproducibility | Info     | SharedStaticAnyContextAnalyzer
+JD020   | JustDummies.Reproducibility | Info     | SharedStaticDummyContextAnalyzer
 JD021   | JustDummies.Reproducibility | Warning  | BlankReplaySnippetAnalyzer
 JD022   | JustDummies.Reproducibility | Info     | ParallelDrawWithoutPerItemSeedAnalyzer
 JD023   | JustDummies.Constraints     | Warning  | ScalarChainAdmitsNoValueAnalyzer

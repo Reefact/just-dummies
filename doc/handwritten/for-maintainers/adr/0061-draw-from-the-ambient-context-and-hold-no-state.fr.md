@@ -12,16 +12,16 @@
 ## Contexte
 
 La bibliothèque offre deux mécanismes de reproductibilité. Le contexte **ambiant** est épinglé par
-un scope (`Any.UseSeed`, `Any.Reproducibly`) et suit le contexte d'exécution ; le contexte **isolé**
-est créé par `Any.WithSeed` et porte sa propre source aléatoire fixe, insensible à tout scope.
+un scope (`Dummy.UseSeed`, `Dummy.Reproducibly`) et suit le contexte d'exécution ; le contexte **isolé**
+est créé par `Dummy.WithSeed` et porte sa propre source aléatoire fixe, insensible à tout scope.
 
-Chaque fabrique statique `Any.*` capture l'objet source ambiant, et cette source résout la frame
+Chaque fabrique statique `Dummy.*` capture l'objet source ambiant, et cette source résout la frame
 `AsyncLocal` courante **au moment du `Generate()`**, pas à la construction du generator (§14.5).
 
-`AnyContext` reflète les points d'entrée primitifs, motif, URI et choix comme méthodes d'instance.
+`DummyContext` reflète les points d'entrée primitifs, motif, URI et choix comme méthodes d'instance.
 Il ne reflète **pas** les points d'entrée de collection ni de composition (§14.2).
 
-Le type émis porte une surcharge `With{Param}(IAny<TParam>)` pour chaque paramètre ([ADR-0057](0057-make-the-emitted-generator-a-first-class-iany.fr.md)). Il est
+Le type émis porte une surcharge `With{Param}(IDummy<TParam>)` pour chaque paramètre ([ADR-0057](0057-make-the-emitted-generator-a-first-class-iany.fr.md)). Il est
 construit une fois et peut être générateur de plusieurs valeurs, possiblement dans des scopes
 différents.
 
@@ -30,7 +30,7 @@ contextes statiques partagés. Le fichier émis est analysé comme du code écri
 
 ## Décision
 
-Le generator émis construit sa recette à partir de la seule façade statique `Any`, sans détenir de
+Le generator émis construit sa recette à partir de la seule façade statique `Dummy`, sans détenir de
 source aléatoire, de seed ni d'état statique propre.
 
 ## Justification
@@ -47,8 +47,8 @@ le build du développeur et non dans le nôtre — le diagnostic serait juste, e
 fautif.
 
 Supporter le contexte isolé signifierait un second constructeur et un second chemin de recette à
-travers `AnyContext`. Ce chemin ne pourrait pas exprimer toutes les lignes du §5.2, puisque
-`AnyContext` ne reflète aucun point d'entrée de collection ni de composition : la surface serait
+travers `DummyContext`. Ce chemin ne pourrait pas exprimer toutes les lignes du §5.2, puisque
+`DummyContext` ne reflète aucun point d'entrée de collection ni de composition : la surface serait
 plus grande *et* moins capable. Le cas est déjà couvert sans rien ajouter : un développeur sur
 `WithSeed` passe les generators de ce contexte paramètre par paramètre, via la surcharge que [ADR-0057](0057-make-the-emitted-generator-a-first-class-iany.fr.md)
 fournit déjà.
@@ -65,12 +65,12 @@ generators de ce type dans un même test tireraient de séquences indépendantes
 rapporté par un test en échec ne pourrait alors rejouer l'exécution dans son ensemble, ce qui est
 précisément la propriété que la reproductibilité de la bibliothèque existe pour offrir.
 
-##### Un second constructeur prenant un `AnyContext`
+##### Un second constructeur prenant un `DummyContext`
 
-Considérée parce qu'elle referme le manque pour un développeur travaillant avec `Any.WithSeed`, qui
+Considérée parce qu'elle referme le manque pour un développeur travaillant avec `Dummy.WithSeed`, qui
 est une façon supportée d'utiliser la bibliothèque.
 
-Écartée pour la v1.0 parce que `AnyContext` ne reflète qu'une partie de la façade — le second chemin
+Écartée pour la v1.0 parce que `DummyContext` ne reflète qu'une partie de la façade — le second chemin
 ne saurait pas résoudre les paramètres collection ni composés — et parce que la surcharge par
 paramètre couvre déjà le cas sans coût de surface. Laissée ouverte au §16.
 
@@ -79,7 +79,7 @@ paramètre couvre déjà le cas sans coût de surface. Laissée ouverte au §16.
 **Positives.** Aucune règle de cycle de vie, aucun état statique. La garantie de reproductibilité du
 §8.2 vient gratuitement, et les deux analyzers de seeding n'ont rien sur quoi se déclencher.
 
-**Négatives.** Un développeur utilisant `Any.WithSeed` ne peut pas confier le contexte entier au
+**Négatives.** Un développeur utilisant `Dummy.WithSeed` ne peut pas confier le contexte entier au
 generator et doit fournir les generators paramètre par paramètre, ce qui est verbeux pour un
 constructeur large.
 

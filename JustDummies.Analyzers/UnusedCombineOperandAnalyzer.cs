@@ -33,7 +33,7 @@ public sealed class UnusedCombineOperandAnalyzer : DiagnosticAnalyzer {
 
     private static void OnCompilationStart(CompilationStartAnalysisContext context) {
         KnownSymbols symbols = KnownSymbols.From(context.Compilation);
-        if (symbols.Any is null) { return; }
+        if (symbols.Dummy is null) { return; }
 
         context.RegisterOperationAction(operationContext => Analyze(operationContext, symbols), OperationKind.Invocation);
     }
@@ -42,7 +42,7 @@ public sealed class UnusedCombineOperandAnalyzer : DiagnosticAnalyzer {
         IInvocationOperation invocation = (IInvocationOperation)context.Operation;
 
         if (invocation.TargetMethod.Name != "Combine") { return; }
-        if (!SymbolEqualityComparer.Default.Equals(invocation.TargetMethod.ContainingType, symbols.Any)) { return; }
+        if (!SymbolEqualityComparer.Default.Equals(invocation.TargetMethod.ContainingType, symbols.Dummy)) { return; }
         if (invocation.Arguments.Length < 3) { return; }
         if (NegativeTestGuard.IsSoleBodyOfLambdaArgument(invocation.Syntax)) { return; }
 

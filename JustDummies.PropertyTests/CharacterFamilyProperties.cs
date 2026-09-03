@@ -10,13 +10,13 @@ using JetBrains.Annotations;
 namespace JustDummies.PropertyTests;
 
 /// <summary>
-///     Property-based tests for <see cref="AnyChar" />'s alphabet — the character families, the casing, the
-///     subtractions and the exclusions. <see cref="AnyChar" /> and <see cref="AnyString" /> share one
+///     Property-based tests for <see cref="DummyChar" />'s alphabet — the character families, the casing, the
+///     subtractions and the exclusions. <see cref="DummyChar" /> and <see cref="DummyString" /> share one
 ///     <c>Belongs()</c> definition for the pool filter (ADR-0075), and <see cref="StringShapeProperties" /> already
 ///     quantifies the same families over strings; these hold the singular type to the same account, over the
 ///     surface it does not share with strings — there is no length here, so no property below is about one.
 /// </summary>
-[TestSubject(typeof(AnyChar))]
+[TestSubject(typeof(DummyChar))]
 public sealed class CharacterFamilyProperties {
 
     #region Statics members declarations
@@ -27,7 +27,7 @@ public sealed class CharacterFamilyProperties {
     ///     <c>Whitespaces</c>, 7 <c>Hexadecimal</c> — so a property can quantify over the family itself instead of
     ///     restating the same invariant eight times over.
     /// </summary>
-    private static AnyChar ApplyCharacterFamily(AnyChar generator, int family) {
+    private static DummyChar ApplyCharacterFamily(DummyChar generator, int family) {
         return family switch {
             0 => generator.Alpha(),
             1 => generator.Numeric(),
@@ -55,7 +55,7 @@ public sealed class CharacterFamilyProperties {
     }
 
     /// <summary>Applies one of the two casings, so a property can quantify over the casing itself.</summary>
-    private static AnyChar ApplyCasing(AnyChar generator, bool upper) {
+    private static DummyChar ApplyCasing(DummyChar generator, bool upper) {
         return upper ? generator.InUpperCase() : generator.InLowerCase();
     }
 
@@ -92,7 +92,7 @@ public sealed class CharacterFamilyProperties {
     [Fact(DisplayName = "Every character family draws only from its own alphabet, whichever family is declared.")]
     public void CharacterFamiliesDrawOnlyFromTheirOwnAlphabet() {
         Prop.ForAll(Gen.Choose(0, 7).ToArbitrary(),
-                    family => Expect.EveryDraw(ApplyCharacterFamily(Any.Char(), family),
+                    family => Expect.EveryDraw(ApplyCharacterFamily(Dummy.Char(), family),
                                                value => AllowedByFamily(value, family)))
             .QuickCheckThrowOnFailure();
     }
@@ -101,7 +101,7 @@ public sealed class CharacterFamilyProperties {
     public void ACasingConstrainsEveryCasedCharacter() {
         Prop.ForAll(Gen.Elements(false, true).ToArbitrary(),
                     // A casing constrains the letters only: digits and punctuation stay drawable under either of them.
-                    upper => Expect.EveryDraw(ApplyCasing(Any.Char(), upper),
+                    upper => Expect.EveryDraw(ApplyCasing(Dummy.Char(), upper),
                                               value => upper ? !(value is >= 'a' and <= 'z') : !(value is >= 'A' and <= 'Z')))
             .QuickCheckThrowOnFailure();
     }
@@ -115,7 +115,7 @@ public sealed class CharacterFamilyProperties {
 
         Prop.ForAll(cases.ToArbitrary(),
                     testCase => {
-                        AnyChar generator = Any.Char();
+                        DummyChar generator = Dummy.Char();
                         if (testCase.WithoutAlpha) { generator = generator.WithoutAlpha(); }
                         if (testCase.WithoutNumeric) { generator = generator.WithoutNumeric(); }
 
@@ -137,10 +137,10 @@ public sealed class CharacterFamilyProperties {
                     // Repeating the same family is not a contradiction — the domain asked for is the one already in
                     // force — so it is a no-op; a different family contradicts it.
                     testCase => testCase.First == testCase.Second
-                                    ? Expect.EveryDraw(ApplyCharacterFamily(ApplyCharacterFamily(Any.Char(), testCase.First), testCase.Second),
+                                    ? Expect.EveryDraw(ApplyCharacterFamily(ApplyCharacterFamily(Dummy.Char(), testCase.First), testCase.Second),
                                                        value => AllowedByFamily(value, testCase.First))
-                                    : Expect.Throws<ConflictingAnyConstraintException>(
-                                        () => ApplyCharacterFamily(ApplyCharacterFamily(Any.Char(), testCase.First), testCase.Second)))
+                                    : Expect.Throws<ConflictingDummyConstraintException>(
+                                        () => ApplyCharacterFamily(ApplyCharacterFamily(Dummy.Char(), testCase.First), testCase.Second)))
             .QuickCheckThrowOnFailure();
     }
 
@@ -153,10 +153,10 @@ public sealed class CharacterFamilyProperties {
 
         Prop.ForAll(cases.ToArbitrary(),
                     testCase => testCase.First == testCase.Second
-                                    ? Expect.EveryDraw(ApplyCasing(ApplyCasing(Any.Char(), testCase.First), testCase.Second),
+                                    ? Expect.EveryDraw(ApplyCasing(ApplyCasing(Dummy.Char(), testCase.First), testCase.Second),
                                                        value => testCase.First ? !(value is >= 'a' and <= 'z') : !(value is >= 'A' and <= 'Z'))
-                                    : Expect.Throws<ConflictingAnyConstraintException>(
-                                        () => ApplyCasing(ApplyCasing(Any.Char(), testCase.First), testCase.Second)))
+                                    : Expect.Throws<ConflictingDummyConstraintException>(
+                                        () => ApplyCasing(ApplyCasing(Dummy.Char(), testCase.First), testCase.Second)))
             .QuickCheckThrowOnFailure();
     }
 
@@ -166,7 +166,7 @@ public sealed class CharacterFamilyProperties {
                                .Select(values => values.Distinct().Take(10).ToArray());
 
         Prop.ForAll(pools.ToArbitrary(),
-                    pool => Expect.EveryDraw(Any.Char().OneOf(pool), value => pool.Contains(value)))
+                    pool => Expect.EveryDraw(Dummy.Char().OneOf(pool), value => pool.Contains(value)))
             .QuickCheckThrowOnFailure();
     }
 
@@ -177,10 +177,10 @@ public sealed class CharacterFamilyProperties {
                     // exclusion is never vacuous. Alpha alone already allows 52 candidates, so removing up to ten of
                     // them plus one more banned value leaves the family amply satisfiable.
                     excludeCount => {
-                        AnyChar shaped   = Any.Char().Alpha();
+                        DummyChar shaped   = Dummy.Char().Alpha();
                         char[]  excluded = Expect.Draws(shaped, excludeCount).Distinct().ToArray();
                         char    banned   = shaped.Generate();
-                        AnyChar narrowed = shaped.Except(excluded).DifferentFrom(banned);
+                        DummyChar narrowed = shaped.Except(excluded).DifferentFrom(banned);
 
                         return Expect.EveryDraw(narrowed,
                                                 value => IsAsciiLetter(value) && !excluded.Contains(value) && value != banned);

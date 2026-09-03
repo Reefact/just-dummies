@@ -26,7 +26,7 @@ instructions are followed.
 
 The content is not uniformly needed. The ADR procedure matters when a pull request is being
 finalised, the release procedure when a train is cut, the CLI conventions when
-`JustDummies.Cli` or `JustDummies.GenAny` is touched, the analyzer five-in-step rule when a
+`JustDummies.Cli` or `JustDummies.GenDummy` is touched, the analyzer five-in-step rule when a
 `JDxxx` rule moves. A change to a single test pays for all of them.
 
 Part of the content is not needed as prose at all, because a tool already refuses the

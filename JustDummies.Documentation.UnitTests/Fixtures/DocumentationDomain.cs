@@ -66,7 +66,7 @@ public sealed record OrderReference {
 }
 
 /// <summary>
-///     A two-part value object, used wherever a page needs to show <c>Any.Combine</c> folding several constrained
+///     A two-part value object, used wherever a page needs to show <c>Dummy.Combine</c> folding several constrained
 ///     primitives into one type rather than a single <c>.As(...)</c> transformation.
 /// </summary>
 public sealed record Money {

@@ -8,7 +8,7 @@ namespace JustDummies.Analyzers;
 
 /// <summary>
 ///     JD018 — reports a reproducibility scope opened inside another one. Both mechanisms report a replay
-///     instruction, and nesting makes the outer instruction <b>false</b>: <c>Any.Reproducibly</c> takes its seed from
+///     instruction, and nesting makes the outer instruction <b>false</b>: <c>Dummy.Reproducibly</c> takes its seed from
 ///     <c>Guid.NewGuid().GetHashCode()</c>, not from the ambient source, so the inner scope draws a brand-new seed on
 ///     every run whatever the outer one pinned. The failure names a seed that reproduces nothing.
 /// </summary>
@@ -28,7 +28,7 @@ public sealed class NestedReproducibilityScopeAnalyzer : DiagnosticAnalyzer {
 
     private static void OnCompilationStart(CompilationStartAnalysisContext context) {
         KnownSymbols symbols = KnownSymbols.From(context.Compilation);
-        if (symbols.Any is null) { return; }
+        if (symbols.Dummy is null) { return; }
 
         context.RegisterOperationAction(operationContext => Analyze(operationContext, symbols), OperationKind.Invocation);
     }
@@ -43,7 +43,7 @@ public sealed class NestedReproducibilityScopeAnalyzer : DiagnosticAnalyzer {
         if (HasSeedArgument(invocation)) { return; }
 
         if (IsInsideAnotherRunner(invocation, symbols)) {
-            Report(context, invocation, "another Any.Reproducibly scope");
+            Report(context, invocation, "another Dummy.Reproducibly scope");
 
             return;
         }
@@ -62,7 +62,7 @@ public sealed class NestedReproducibilityScopeAnalyzer : DiagnosticAnalyzer {
 
     private static bool IsRunner(IInvocationOperation invocation, KnownSymbols symbols) {
         return invocation.TargetMethod.Name is "Reproducibly" or "ReproduciblyAsync"
-            && SymbolEqualityComparer.Default.Equals(invocation.TargetMethod.ContainingType, symbols.Any);
+            && SymbolEqualityComparer.Default.Equals(invocation.TargetMethod.ContainingType, symbols.Dummy);
     }
 
     private static bool HasSeedArgument(IInvocationOperation invocation) {

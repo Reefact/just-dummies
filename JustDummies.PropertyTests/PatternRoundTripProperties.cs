@@ -13,7 +13,7 @@ using JetBrains.Annotations;
 namespace JustDummies.PropertyTests;
 
 /// <summary>
-///     Property-based tests for <see cref="AnyPattern" />, built around a <b>round trip</b>: FsCheck generates a
+///     Property-based tests for <see cref="DummyPattern" />, built around a <b>round trip</b>: FsCheck generates a
 ///     pattern from the supported regular subset, JustDummies generates a value from it, and the real .NET regex
 ///     engine is asked whether that value matches. The example-based suite pins some fifty hand-written patterns and
 ///     can only prove the walk right for those; here the pattern itself is the quantified variable, so a class,
@@ -31,7 +31,7 @@ namespace JustDummies.PropertyTests;
 ///         The pattern generator is deliberately narrower than the supported subset. It emits <b>no anchors</b> — the
 ///         wrapper supplies them, and a generated <c>^</c> or <c>$</c> would either duplicate them or land where the
 ///         parser rightly refuses it — and it never nests an unbounded quantifier inside a repeated group, because
-///         <c>(a+)+</c> legitimately overruns the generation ceiling with an <see cref="AnyGenerationException" />.
+///         <c>(a+)+</c> legitimately overruns the generation ceiling with an <see cref="DummyGenerationException" />.
 ///         Unbounded quantifiers therefore apply to single-character atoms only, group repeats stay at or below two,
 ///         and nesting stops at <see cref="MaxNestingDepth" />: a narrow round trip that always holds is worth more
 ///         than a broad one that flakes.
@@ -44,7 +44,7 @@ namespace JustDummies.PropertyTests;
 ///         answer.
 ///     </para>
 /// </remarks>
-[TestSubject(typeof(AnyPattern))]
+[TestSubject(typeof(DummyPattern))]
 public sealed class PatternRoundTripProperties {
 
     /// <summary>How deep a generated pattern may nest groups. Shallow on purpose — see the class remarks.</summary>
@@ -63,7 +63,7 @@ public sealed class PatternRoundTripProperties {
     private const int UnboundedExtra = 8;
 
     /// <summary>
-    ///     The character ceiling a generation may not cross — the library's own <c>AnyPattern.GenerationLimit</c>,
+    ///     The character ceiling a generation may not cross — the library's own <c>DummyPattern.GenerationLimit</c>,
     ///     restated here because it is private. A quantifier minimum above it can only be refused, never built.
     /// </summary>
     private const int GenerationLimit = 65536;
@@ -192,7 +192,7 @@ public sealed class PatternRoundTripProperties {
     /// </summary>
     private static bool ThrowsMalformed(string pattern) {
         try {
-            _ = Any.StringMatching(pattern);
+            _ = Dummy.StringMatching(pattern);
 
             return false;
         } catch (UnsupportedRegexException) {
@@ -421,7 +421,7 @@ public sealed class PatternRoundTripProperties {
                         // between cases, not between draws.
                         Regex oracle = Anchored(pattern, RegexOptions.None);
 
-                        return Expect.EveryDraw(Any.StringMatching(pattern), oracle.IsMatch);
+                        return Expect.EveryDraw(Dummy.StringMatching(pattern), oracle.IsMatch);
                     })
             .QuickCheckThrowOnFailure();
     }
@@ -431,14 +431,14 @@ public sealed class PatternRoundTripProperties {
         Prop.ForAll(SupportedPattern().ToArbitrary(),
                     pattern => {
                         Regex  oracle   = Anchored(pattern, RegexOptions.None);
-                        string existing = Any.StringMatching(pattern).Generate();
+                        string existing = Dummy.StringMatching(pattern).Generate();
 
                         try {
                             // The exclusion is rejective: it removes a value without touching how the rest are built,
                             // so the round trip must still hold for every draw that comes back.
-                            return Expect.EveryDraw(Any.StringMatching(pattern).DifferentFrom(existing),
+                            return Expect.EveryDraw(Dummy.StringMatching(pattern).DifferentFrom(existing),
                                                     value => !string.Equals(value, existing, StringComparison.Ordinal) && oracle.IsMatch(value));
-                        } catch (AnyGenerationException) {
+                        } catch (DummyGenerationException) {
                             // A pattern whose language the exclusion leaves nothing of — a single-word one, most
                             // often. The bounded redraw reports its exhausted budget rather than ever returning the
                             // excluded value, which is the invariant under test.
@@ -457,7 +457,7 @@ public sealed class PatternRoundTripProperties {
                         Regex source = new(pattern, RegexOptions.IgnoreCase);
                         Regex oracle = Anchored(pattern, RegexOptions.IgnoreCase);
 
-                        return Expect.EveryDraw(Any.StringMatching(source), oracle.IsMatch);
+                        return Expect.EveryDraw(Dummy.StringMatching(source), oracle.IsMatch);
                     })
             .QuickCheckThrowOnFailure();
     }
@@ -473,8 +473,8 @@ public sealed class PatternRoundTripProperties {
                     testCase => {
                         // A whole sequence, not a single draw: a generator that reseeded itself per value would still
                         // agree on the first one.
-                        List<string> first  = Expect.Draws(Any.WithSeed(testCase.Seed).StringMatching(testCase.Pattern), 8);
-                        List<string> second = Expect.Draws(Any.WithSeed(testCase.Seed).StringMatching(testCase.Pattern), 8);
+                        List<string> first  = Expect.Draws(Dummy.WithSeed(testCase.Seed).StringMatching(testCase.Pattern), 8);
+                        List<string> second = Expect.Draws(Dummy.WithSeed(testCase.Seed).StringMatching(testCase.Pattern), 8);
 
                         return first.SequenceEqual(second);
                     })
@@ -500,7 +500,7 @@ public sealed class PatternRoundTripProperties {
                             _ => (testCase.Atom + "?", 0, 1)
                         };
 
-                        return Expect.EveryDraw(Any.StringMatching(quantified.Pattern),
+                        return Expect.EveryDraw(Dummy.StringMatching(quantified.Pattern),
                                                 value => value.Length >= quantified.Min && value.Length <= quantified.Max);
                     })
             .QuickCheckThrowOnFailure();
@@ -525,7 +525,7 @@ public sealed class PatternRoundTripProperties {
                             _ => (testCase.Atom + "{" + Digits(testCase.Min) + ",}", testCase.Min)
                         };
 
-                        return Expect.EveryDraw(Any.StringMatching(quantified.Pattern),
+                        return Expect.EveryDraw(Dummy.StringMatching(quantified.Pattern),
                                                 value => value.Length >= quantified.Min
                                                          && value.Length <= quantified.Min + UnboundedExtra);
                     })
@@ -546,14 +546,14 @@ public sealed class PatternRoundTripProperties {
                         // either a value of the promised length comes out, or the ceiling refuses — but a value
                         // SHORTER than the minimum is not an outcome. That is the class the int-arithmetic overflow
                         // fell into, where a minimum near int.MaxValue wrapped negative and yielded the empty string.
-                        AnyPattern generator = Any.StringMatching(testCase.Atom + "{" + Digits(testCase.Min) + ",}");
+                        DummyPattern generator = Dummy.StringMatching(testCase.Atom + "{" + Digits(testCase.Min) + ",}");
 
                         for (int draw = 0; draw < MinimumHonouredDrawCount; draw++) {
                             try {
                                 // The atom is one character wide, so the generated length IS the repetition count.
                                 int length = generator.Generate().Length;
                                 if (length < testCase.Min || length > (long)testCase.Min + UnboundedExtra) { return false; }
-                            } catch (AnyGenerationException) {
+                            } catch (DummyGenerationException) {
                                 // Overrunning the ceiling is the honest refusal for a minimum too large to build.
                             }
                         }
@@ -575,7 +575,7 @@ public sealed class PatternRoundTripProperties {
                         // Branches are plain literal words, so a drawn value IS the branch that produced it. SetEquals
                         // then states both halves at once: no branch is dead, and nothing outside the declared set
                         // can come out.
-                        AnyPattern      generator = Any.WithSeed(testCase.Seed).StringMatching(string.Join("|", testCase.Branches));
+                        DummyPattern      generator = Dummy.WithSeed(testCase.Seed).StringMatching(string.Join("|", testCase.Branches));
                         HashSet<string> seen      = [.. Expect.Draws(generator, BranchSampleCount)];
 
                         return seen.SetEquals(testCase.Branches);
@@ -598,8 +598,8 @@ public sealed class PatternRoundTripProperties {
                         // option cannot change whether the pattern compiles — only how JustDummies must answer.
                         Regex source = new(testCase.Pattern, RegexOptions.IgnorePatternWhitespace | testCase.Companion);
 
-                        return Expect.Throws<ArgumentException>(() => Any.StringMatching(source))
-                               && Expect.Throws<ArgumentException>(() => Any.WithSeed(testCase.Seed).StringMatching(source));
+                        return Expect.Throws<ArgumentException>(() => Dummy.StringMatching(source))
+                               && Expect.Throws<ArgumentException>(() => Dummy.WithSeed(testCase.Seed).StringMatching(source));
                     })
             .QuickCheckThrowOnFailure();
     }
@@ -607,10 +607,10 @@ public sealed class PatternRoundTripProperties {
     [Fact(DisplayName = "A null pattern is an argument error, on both overloads and on a seeded context.")]
     public void ANullPatternIsAnArgumentError() {
         Prop.ForAll(Generators.Seed().ToArbitrary(),
-                    seed => Expect.Throws<ArgumentNullException>(() => Any.StringMatching((string)null!))
-                            && Expect.Throws<ArgumentNullException>(() => Any.StringMatching((Regex)null!))
-                            && Expect.Throws<ArgumentNullException>(() => Any.WithSeed(seed).StringMatching((string)null!))
-                            && Expect.Throws<ArgumentNullException>(() => Any.WithSeed(seed).StringMatching((Regex)null!)))
+                    seed => Expect.Throws<ArgumentNullException>(() => Dummy.StringMatching((string)null!))
+                            && Expect.Throws<ArgumentNullException>(() => Dummy.StringMatching((Regex)null!))
+                            && Expect.Throws<ArgumentNullException>(() => Dummy.WithSeed(seed).StringMatching((string)null!))
+                            && Expect.Throws<ArgumentNullException>(() => Dummy.WithSeed(seed).StringMatching((Regex)null!)))
             .QuickCheckThrowOnFailure();
     }
 
@@ -625,8 +625,8 @@ public sealed class PatternRoundTripProperties {
                     // Each construct opens on '(', '[' or '\', none of which a preceding supported pattern can absorb,
                     // so appending one to an arbitrary prefix reaches the same refusal from a different parser state:
                     // the verdict must not depend on the construct sitting at position zero.
-                    testCase => Expect.Throws<UnsupportedRegexException>(() => Any.StringMatching(testCase.Construct))
-                                && Expect.Throws<UnsupportedRegexException>(() => Any.StringMatching(testCase.Prefix + testCase.Construct)))
+                    testCase => Expect.Throws<UnsupportedRegexException>(() => Dummy.StringMatching(testCase.Construct))
+                                && Expect.Throws<UnsupportedRegexException>(() => Dummy.StringMatching(testCase.Prefix + testCase.Construct)))
             .QuickCheckThrowOnFailure();
     }
 

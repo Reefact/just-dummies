@@ -86,7 +86,7 @@ number that promises compatibility. Two guards, wired once in
 
 `RS0026`/`RS0027` (the "optional parameters across overloads" design rules) are
 disabled deliberately: they fire on the library's central fluent APIs
-(`Any.String()`/`Int32()` and their constraint chains, `Any.Reproducibly`), where enforcing
+(`Dummy.String()`/`Int32()` and their constraint chains, `Dummy.Reproducibly`), where enforcing
 them would demand a breaking redesign — a separate decision, not a baseline chore.
 
 ## Enabling the commit-message hook
@@ -147,7 +147,7 @@ below follows from that.
   work belongs to: `sylvain/…`, `claude/…`, `dependabot/…`. The
   `<short-description>` MUST be English, lowercase, kebab-case, and name the
   change, not the file it touches: `sylvain/string-exclusion-redraw`, never
-  `sylvain/AnyString.cs`.
+  `sylvain/DummyString.cs`.
 * A tool that generates its own branches owns its namespace and keeps its
   native layout beneath it — `dependabot/nuget/Newtonsoft.Json-13.0.1`,
   `renovate/…`. The `<author>/<short-description>` form binds the branches a
@@ -224,7 +224,7 @@ of the commit that carries two intentions.
 | Branch | Why it fits |
 |---|---|
 | `sylvain/add-html-renderer` | Owner and change, named plainly. The type it will carry lives in its commits. |
-| `claude/string-exclusion-redraw` | An agent's branch; the description names the zone, not `AnyString.cs`. |
+| `claude/string-exclusion-redraw` | An agent's branch; the description names the zone, not `DummyString.cs`. |
 | `dependabot/nuget/Newtonsoft.Json-13.0.1` | A generator keeps its native layout under its `dependabot/` namespace. |
 | `sylvain/security-policy` | The description alone carries the subject; the branch needs no type. |
 
@@ -235,7 +235,7 @@ of the commit that carries two intentions.
 | a commit pushed straight to `main` | `main` moves only by merge. Even a one-line fix takes a branch and a pull request. |
 | `patch-1`, `my-work`, `tmp` | No owner, and it names nothing. A branch name is read in the pull-request list; it MUST say who owns what. |
 | `feat/add-html-renderer` | A type in the owner's slot. The type belongs on the commits; the branch prefix is the owner: `sylvain/add-html-renderer`. |
-| `sylvain/AnyString.cs` | Names a file. It should name the change: `sylvain/string-exclusion-redraw`. |
+| `sylvain/DummyString.cs` | Names a file. It should name the change: `sylvain/string-exclusion-redraw`. |
 | `sylvain/corrige-le-rendu` | Not English. |
 | reviving a merged `claude/add-html-renderer` for a follow-up | A merged branch is spent. Cut the follow-up fresh from `origin/main`. |
 | a branch cut from a three-week-old local `main` | The pull request diff fills with commits already on `main`. Fetch first; cut from `origin/main`. |
@@ -327,11 +327,11 @@ When present it MUST be lowercase and MUST be one of:
 
 | Scope | Covers |
 |---|---|
-| `core` | `JustDummies` — the generator library (`Any`, the constraint specs, the regex engine, …) |
+| `core` | `JustDummies` — the generator library (`Dummy`, the constraint specs, the regex engine, …) |
 | `analyzers` | `JustDummies.Analyzers` — the Roslyn analyzers and their `JDxxx` diagnostics |
 | `xunit` | `JustDummies.Xunit` — the xUnit v3 adapter |
 | `catalog` | `JustDummies.DiagnosticCatalog` — the `JDxxx` rules as constants a suppression can name |
-| `cli` | `dum` — the scaffolder: `JustDummies.Cli` and its engine `JustDummies.GenAny` |
+| `cli` | `dum` — the scaffolder: `JustDummies.Cli` and its engine `JustDummies.GenDummy` |
 
 This list lives here, in the repository, where a tool can check it. A scope
 MUST NOT be a file name or a class name: those move; the zone they inhabit does
@@ -370,7 +370,7 @@ fix(analyzers,core): reject a constraint chain that admits no value
 
 * It MUST be in the imperative present: `add`, not `added` nor `adds`. The
   description completes one sentence — *If applied, this commit will …* — and
-  only the imperative fits it: *…will add `Any.SetOf`*.
+  only the imperative fits it: *…will add `Dummy.SetOf`*.
 * It MUST begin with a lowercase letter and MUST NOT end with a period. The
   header line is not a sentence; it is a title.
 * The full header line — type, optional scope, optional `!`, colon and
@@ -421,7 +421,7 @@ colon, and by a `BREAKING CHANGE:` footer in capitals.
 ```
 feat(core)!: refuse a distinctness request the element generator cannot meet
 
-BREAKING CHANGE: Any.SetOf(...).WithCount(n) now throws AnyGenerationException
+BREAKING CHANGE: Dummy.SetOf(...).WithCount(n) now throws DummyGenerationException
 when the element generator's domain holds fewer than n values, where it used to
 loop until the redraw budget ran out and return a shorter set. Callers relying on
 the short result must widen the element domain.
@@ -530,7 +530,7 @@ refactor(core): extract transience computation into TransienceCalculator
 ```
 feat(core)!: refuse a distinctness request the element generator cannot meet
 
-BREAKING CHANGE: Any.SetOf(...).WithCount(n) now throws AnyGenerationException
+BREAKING CHANGE: Dummy.SetOf(...).WithCount(n) now throws DummyGenerationException
 when the element generator's domain holds fewer than n values, where it used to
 loop until the redraw budget ran out and return a shorter set. Callers relying on
 the short result must widen the element domain.
@@ -554,7 +554,7 @@ Ordered as the rules are: type, scope, description, body, breaking, issue.
 | `fix(core): change line 42 of Error` | The description names a line. It should name a change. |
 | `fix(core): honour a string exclusion` — body: `Replaced the while loop with a bounded redraw` | The body repeats the diff. It should say why the unbounded loop could never terminate. |
 | `feat(core)!: refuse an unmeetable distinctness request` — no footer | The `!` warns; it migrates no one. |
-| `feat(core): add Any.SetOf (#142)` | The issue eats the 72 characters of the description. Its place is a footer. |
+| `feat(core): add Dummy.SetOf (#142)` | The issue eats the 72 characters of the description. Its place is a footer. |
 | `refs: #142` | Lowercase token. The footer token is `Refs`. |
 
 ### Adoption
@@ -634,5 +634,5 @@ the review, as the code does.
 |---|---|
 | `feat: various improvements` | A type on a grab-bag. Either it is one intention — name it — or it is several, and `feat:` hides them. |
 | `fix(core): Fixed the null dereference.` | The single-intention form, wearing the commit header's own faults: capital, past tense, trailing period. |
-| `Add Any.SetOf (#142)` | The issue number belongs in the description's `Closes`/`Refs`, where GitHub reads it — not eating the title. |
+| `Add Dummy.SetOf (#142)` | The issue number belongs in the description's `Closes`/`Refs`, where GitHub reads it — not eating the title. |
 | `Corrige le rendu des exemples` | Not English. |

@@ -12,7 +12,7 @@
 
 An enum marked `[Flags]` declares bits meant to be combined: its members are not alternatives but the parts of a set. Its **valid** values are therefore the combinations, while the values it **declares** are only the parts — `Read | Write` is a value the type is designed to hold and never names. The BCL agrees on both counts: `Enum.GetValues` returns the declared members only, and `Enum.IsDefined` answers `false` for a combination.
 
-`AnyEnum<TEnum>` draws uniformly from the declared members, a contract its own remarks state. For a flags enum this means a dummy carries at most one bit, so a branch reading two — the ordinary shape of flag-consuming code — is never exercised by a JustDummies value. That is the inverse of what the library exists for: the constraint surface is meant to surface hidden assumptions, and here the generator silently installs one of its own ("this value has zero or one bit"). It is the same shape as a reachability defect, except reached by design.
+`DummyEnum<TEnum>` draws uniformly from the declared members, a contract its own remarks state. For a flags enum this means a dummy carries at most one bit, so a branch reading two — the ordinary shape of flag-consuming code — is never exercised by a JustDummies value. That is the inverse of what the library exists for: the constraint surface is meant to surface hidden assumptions, and here the generator silently installs one of its own ("this value has zero or one bit"). It is the same shape as a reachability defect, except reached by design.
 
 The generator is bound by three of the library's standing rules. It builds values constructively in one draw and never generates-then-filters. It detects contradictory constraints eagerly, at the fluent call that caused them, naming both sides. And it advertises a distinct cardinality through `ICardinalityHint<TEnum>`, which is what lets a distinct collection over an enum fail at declaration rather than at generation — so the size of the draw domain is part of the public contract, not an implementation detail.
 
@@ -22,13 +22,13 @@ JustDummies has never been released, so the meaning of the unconstrained draw is
 
 ## Decision
 
-`AnyEnum<TEnum>` keeps drawing from the declared members by default and gains `AllowingCombinations()`, an explicit constraint widening the draw to the OR-closure of the declared members — plus the zero value when the enum declares one — refused on an enum that is not `[Flags]` and on one with more non-zero members than can be enumerated.
+`DummyEnum<TEnum>` keeps drawing from the declared members by default and gains `AllowingCombinations()`, an explicit constraint widening the draw to the OR-closure of the declared members — plus the zero value when the enum declares one — refused on an enum that is not `[Flags]` and on one with more non-zero members than can be enumerated.
 
 ## Rationale
 
-**The default cannot depend on the attribute.** Making `Any.Enum<T>()` behave differently because the type carries `[Flags]` would make the draw a function of a type's metadata rather than of what the test wrote, which is the class of implicit, action-at-a-distance behaviour ADR-0006 removed from this library when it deleted the implicit conversions. Declared-members-only is also the sole default that is *valid* for both enum families: a declared member is always a legitimate value, whereas a combination is legitimate only for a flags enum. Keeping it costs the flags user one call and costs everyone else nothing.
+**The default cannot depend on the attribute.** Making `Dummy.Enum<T>()` behave differently because the type carries `[Flags]` would make the draw a function of a type's metadata rather than of what the test wrote, which is the class of implicit, action-at-a-distance behaviour ADR-0006 removed from this library when it deleted the implicit conversions. Declared-members-only is also the sole default that is *valid* for both enum families: a declared member is always a legitimate value, whereas a combination is legitimate only for a flags enum. Keeping it costs the flags user one call and costs everyone else nothing.
 
-**Making it a constraint, not a second factory,** puts the choice where the reader already looks for the shape of a value. `Any.Enum<Permissions>().AllowingCombinations()` reads as a widening of the same generator, composes with `OneOf`/`Except`/`DifferentFrom` through the existing pool, and needs no mirror on `AnyContext` — the factory is unchanged, so the hand-mirrored surface does not grow.
+**Making it a constraint, not a second factory,** puts the choice where the reader already looks for the shape of a value. `Dummy.Enum<Permissions>().AllowingCombinations()` reads as a widening of the same generator, composes with `OneOf`/`Except`/`DifferentFrom` through the existing pool, and needs no mirror on `DummyContext` — the factory is unchanged, so the hand-mirrored surface does not grow.
 
 **The universe is the OR-closure of the declared members, not of the individual bits.** Taking the declared members as the generating set absorbs a declared composite without having to decide which members "are" bits: `ReadWrite = Read | Write` contributes nothing new, and an enum whose members are not all powers of two needs no special case. Adding the zero value only when a zero member is declared keeps the promise that every drawn value is one the type defines: an enum declaring `Left` and `Right` alone has no name for the empty set, and inventing it would be exactly the undeclared value the declared-members default refuses.
 
@@ -56,7 +56,7 @@ Rejected because it is uniform over subsets rather than over values, so any decl
 
 Considered because a distinct entry point would state the intent even more loudly and could carry its own constraint surface.
 
-Rejected because it duplicates the whole enum constraint algebra for one widening, and because it would have to be mirrored on `AnyContext`, growing the hand-mirrored surface the parity guards exist to police. A constraint on the existing builder composes with everything already there.
+Rejected because it duplicates the whole enum constraint algebra for one widening, and because it would have to be mirrored on `DummyContext`, growing the hand-mirrored surface the parity guards exist to police. A constraint on the existing builder composes with everything already there.
 
 ### Read `Except` as a bit mask under the opt-in
 

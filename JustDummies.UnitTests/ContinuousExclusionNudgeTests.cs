@@ -10,7 +10,7 @@ namespace JustDummies.UnitTests;
 ///     Regression coverage for issue #207. On the narrow (quantized) floating-point types an exclusion inside a tight
 ///     range must be honoured by the type-aware nudge — ascending or descending — instead of stalling on a sub-ulp
 ///     double step and exhausting the budget on a satisfiable specification. The identical scenarios on
-///     <see cref="Any.Double" /> guard the shared engine from the other side.
+///     <see cref="Dummy.Double" /> guard the shared engine from the other side.
 /// </summary>
 public sealed class ContinuousExclusionNudgeTests {
 
@@ -23,7 +23,7 @@ public sealed class ContinuousExclusionNudgeTests {
         Half survivor = max;
 
         for (int seed = 0; seed < SeedCount; seed++) {
-            Half value = Any.WithSeed(seed).Half().Between(min, max).DifferentFrom(min).Generate();
+            Half value = Dummy.WithSeed(seed).Half().Between(min, max).DifferentFrom(min).Generate();
             Check.That(value == survivor).IsTrue();
         }
     }
@@ -34,7 +34,7 @@ public sealed class ContinuousExclusionNudgeTests {
         Half max = (Half)1.001f;
 
         for (int seed = 0; seed < SeedCount; seed++) {
-            Half value = Any.WithSeed(seed).Half().Between(min, max).DifferentFrom(max).Generate();
+            Half value = Dummy.WithSeed(seed).Half().Between(min, max).DifferentFrom(max).Generate();
             Check.That(value == min).IsTrue();
         }
     }
@@ -45,11 +45,11 @@ public sealed class ContinuousExclusionNudgeTests {
         float max = MathF.BitIncrement(MathF.BitIncrement(1f));   // 1 + 2 ulp: three representable floats in range
 
         for (int seed = 0; seed < SeedCount; seed++) {
-            float lower = Any.WithSeed(seed).Single().Between(min, max).DifferentFrom(min).Generate();
+            float lower = Dummy.WithSeed(seed).Single().Between(min, max).DifferentFrom(min).Generate();
             Check.That(lower).IsStrictlyGreaterThan(min);
             Check.That(lower).IsLessOrEqualThan(max);
 
-            float upper = Any.WithSeed(seed).Single().Between(min, max).DifferentFrom(max).Generate();
+            float upper = Dummy.WithSeed(seed).Single().Between(min, max).DifferentFrom(max).Generate();
             Check.That(upper).IsStrictlyLessThan(max);
             Check.That(upper).IsGreaterOrEqualThan(min);
         }
@@ -61,30 +61,30 @@ public sealed class ContinuousExclusionNudgeTests {
         double max = Math.BitIncrement(Math.BitIncrement(1d));   // 1 + 2 ulp: three representable doubles in range
 
         for (int seed = 0; seed < SeedCount; seed++) {
-            double lower = Any.WithSeed(seed).Double().Between(min, max).DifferentFrom(min).Generate();
+            double lower = Dummy.WithSeed(seed).Double().Between(min, max).DifferentFrom(min).Generate();
             Check.That(lower).IsStrictlyGreaterThan(min);
             Check.That(lower).IsLessOrEqualThan(max);
 
-            double upper = Any.WithSeed(seed).Double().Between(min, max).DifferentFrom(max).Generate();
+            double upper = Dummy.WithSeed(seed).Double().Between(min, max).DifferentFrom(max).Generate();
             Check.That(upper).IsStrictlyLessThan(max);
             Check.That(upper).IsGreaterOrEqualThan(min);
         }
     }
 
-    [Fact(DisplayName = "A range whose every representable value is excluded fails with a seeded AnyGenerationException whose replay hint points at Any.WithSeed, not the inapplicable Any.Reproducibly.")]
+    [Fact(DisplayName = "A range whose every representable value is excluded fails with a seeded DummyGenerationException whose replay hint points at Dummy.WithSeed, not the inapplicable Dummy.Reproducibly.")]
     public void ExhaustedRangeThrowsSeededGenerationException() {
         Half min = (Half)1f;
         Half max = (Half)1.001f;   // exactly two representable Half values in [min, max]
 
-        Check.ThatCode(() => Any.WithSeed(207).Half().Between(min, max).Except(min, max).Generate())
-             .Throws<AnyGenerationException>()
+        Check.ThatCode(() => Dummy.WithSeed(207).Half().Between(min, max).Except(min, max).Generate())
+             .Throws<DummyGenerationException>()
              .WithProperty(thrown => thrown.Seed, 207)
              .And.WhichMember(thrown => thrown.Message)
              .Contains("207")
-             // The draw came from Any.WithSeed(207) — a fixed context that replays by itself — so the hint must name it,
-             // not the ambient Any.Reproducibly(...) instruction, which would not reproduce this run.
-             .And.Contains("Any.WithSeed(207)")
-             .And.Not.Contains("Any.Reproducibly(");
+             // The draw came from Dummy.WithSeed(207) — a fixed context that replays by itself — so the hint must name it,
+             // not the ambient Dummy.Reproducibly(...) instruction, which would not reproduce this run.
+             .And.Contains("Dummy.WithSeed(207)")
+             .And.Not.Contains("Dummy.Reproducibly(");
     }
 
     [Fact(DisplayName = "An exhausted nudge reports a local search, never a claim that the range holds no free value.")]
@@ -105,8 +105,8 @@ public sealed class ContinuousExclusionNudgeTests {
             value = Math.BitIncrement(value);
         }
 
-        AnyGenerationException thrown = Assert.Throws<AnyGenerationException>(
-            () => Any.WithSeed(5).Double().Between(min, max).Except(excluded.ToArray()).Generate());
+        DummyGenerationException thrown = Assert.Throws<DummyGenerationException>(
+            () => Dummy.WithSeed(5).Double().Between(min, max).Except(excluded.ToArray()).Generate());
 
         // The two bounds are free: the range is satisfiable, so any claim that it is empty would be a falsehood.
         Check.That(excluded).Not.Contains(min);
@@ -124,8 +124,8 @@ public sealed class ContinuousExclusionNudgeTests {
         double max = Math.BitIncrement(Math.BitIncrement(1d));
 
         for (int seed = 0; seed < 50; seed++) {
-            double first  = Any.WithSeed(seed).Double().Between(min, max).DifferentFrom(min).Generate();
-            double second = Any.WithSeed(seed).Double().Between(min, max).DifferentFrom(min).Generate();
+            double first  = Dummy.WithSeed(seed).Double().Between(min, max).DifferentFrom(min).Generate();
+            double second = Dummy.WithSeed(seed).Double().Between(min, max).DifferentFrom(min).Generate();
             Check.That(second).IsEqualTo(first);
         }
     }

@@ -31,14 +31,14 @@ Four further facts frame the choice:
   hold their pool themselves. Once an engine computes the answer, each family adds three one-line explicit
   members. The projection back from the engine's private currency — an ordinal, a double — already exists in
   every family: it is what `Generate` uses.
-* **Twenty-two families expose `OneOf`.** `AnyBoolean` does not: its universe is two values the library owns.
+* **Twenty-two families expose `OneOf`.** `DummyBoolean` does not: its universe is two values the library owns.
   Neither does the pattern generator, for the reason [ADR-0033](0033-decide-a-constraint-surface-by-constructive-versus-rejective.md)
   records — a shape constraint on a pattern would mean building in the intersection of two regular languages.
 * **The interface is implemented explicitly and documented as optional**, so a family that does not carry it
   changes nothing in any completion list. This is not the kind of asymmetry ADR-0033 removed; that one was
   about the fluent constraint surface a caller reads while writing.
 * **Whether a pool is in force and whether a domain is countable coincided by accident.** A shaped string
-  advertises no cardinality, so on `AnyString` the two questions had the same answer. On a scalar they do not:
+  advertises no cardinality, so on `DummyString` the two questions had the same answer. On a scalar they do not:
   `Between(1, 1_000_000)` advertises a cardinality of a million and has no pool at all.
 
 The surface freezes at `1.0`. Adding the interface to a family after that is additive; removing it is not.
@@ -57,8 +57,8 @@ as written is not an extension of that decision so much as its completion.
 
 **Once a substrate computes the answer, every line drawn through its families is arbitrary.** The saving from
 excluding a family whose catalogue is implausible — an unsigned short, a `Half` — is nil, because the engine
-behind it already does the work. What such a line would cost is real: a reader meeting `Any.Int32()` with the
-inspection and `Any.UInt32()` without it has no way to derive the rule, and at `1.0` that question has to be
+behind it already does the work. What such a line would cost is real: a reader meeting `Dummy.Int32()` with the
+inspection and `Dummy.UInt32()` without it has no way to derive the rule, and at `1.0` that question has to be
 answered forever.
 
 **The line that remains is the one already load-bearing everywhere else in the library: did the caller supply

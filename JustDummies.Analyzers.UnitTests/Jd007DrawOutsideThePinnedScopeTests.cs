@@ -20,7 +20,7 @@ public class Jd007DrawOutsideThePinnedScopeTests {
                 private readonly string _reference;
 
                 public Sample() {
-                    _reference = Any.String().NonEmpty().Generate();
+                    _reference = Dummy.String().NonEmpty().Generate();
                 }
 
                 [Fact]
@@ -44,7 +44,7 @@ public class Jd007DrawOutsideThePinnedScopeTests {
 
             [Reproducible]
             public class Sample {
-                private readonly string _reference = Any.String().NonEmpty().Generate();
+                private readonly string _reference = Dummy.String().NonEmpty().Generate();
 
                 [Fact]
                 public void T() { }
@@ -71,7 +71,7 @@ public class Jd007DrawOutsideThePinnedScopeTests {
                 private string _reference = "";
 
                 public ValueTask InitializeAsync() {
-                    _reference = Any.String().NonEmpty().Generate();
+                    _reference = Dummy.String().NonEmpty().Generate();
 
                     return default;
                 }
@@ -102,7 +102,7 @@ public class Jd007DrawOutsideThePinnedScopeTests {
             public class Sample {
                 [Fact]
                 public void T() {
-                    string reference = Any.String().NonEmpty().Generate();
+                    string reference = Dummy.String().NonEmpty().Generate();
                 }
             }
             """;
@@ -119,7 +119,7 @@ public class Jd007DrawOutsideThePinnedScopeTests {
             using Xunit;
 
             public class Sample {
-                private readonly string _reference = Any.String().NonEmpty().Generate();
+                private readonly string _reference = Dummy.String().NonEmpty().Generate();
 
                 [Fact]
                 public void T() { }
@@ -133,7 +133,7 @@ public class Jd007DrawOutsideThePinnedScopeTests {
 
     [Fact]
     public async Task Does_not_report_a_draw_from_an_isolated_context() {
-        // Any.WithSeed is isolated by design: the ambient scope does not govern it, so the diagnostic would be wrong.
+        // Dummy.WithSeed is isolated by design: the ambient scope does not govern it, so the diagnostic would be wrong.
         const string source = """
             using JustDummies;
             using JustDummies.Xunit;
@@ -144,7 +144,7 @@ public class Jd007DrawOutsideThePinnedScopeTests {
                 private readonly string _reference;
 
                 public Sample() {
-                    AnyContext context = Any.WithSeed(1234);
+                    DummyContext context = Dummy.WithSeed(1234);
                     _reference = context.String().NonEmpty().Generate();
                 }
 
@@ -168,7 +168,7 @@ public class Jd007DrawOutsideThePinnedScopeTests {
             [assembly: Reproducible]
 
             public class Sample {
-                private readonly string _reference = Any.String().NonEmpty().Generate();
+                private readonly string _reference = Dummy.String().NonEmpty().Generate();
 
                 [Fact]
                 public void T() { }

@@ -14,7 +14,7 @@ est un **catalogue** que vous ne pouvez pas lire d'un coup d'œil, ça cesse de 
 // 2 417 prénoms, un par ligne, maintenus par quelqu'un qui n'a jamais vu ce test.
 string[] firstNames = System.IO.File.ReadAllLines("first-names.txt");
 
-string name = Any.String().OneOf(firstNames).Alpha().WithLengthBetween(2, 64).Generate();
+string name = Dummy.String().OneOf(firstNames).Alpha().WithLengthBetween(2, 64).Generate();
 ```
 
 Cette ligne d'arrange a l'air juste, et elle s'exécute. Mais `Alpha()` signifie lettres ASCII : chaque
@@ -35,7 +35,7 @@ n'apparaît donc jamais parmi les contraintes pendant que vous les écrivez. Vou
 ```csharp
 string[] firstNames = System.IO.File.ReadAllLines("first-names.txt");
 
-IPoolInspection<string> pool = Any.String().OneOf(firstNames).Alpha().WithLengthBetween(2, 64);
+IPoolInspection<string> pool = Dummy.String().OneOf(firstNames).Alpha().WithLengthBetween(2, 64);
 
 IReadOnlyList<string>                drawable = pool.GetSurvivors();
 IReadOnlyList<PoolRejection<string>> refused  = pool.GetRejections();
@@ -54,7 +54,7 @@ valeur comparable : le regroupement est donc le premier regard naturel :
 ```csharp
 string[] firstNames = System.IO.File.ReadAllLines("first-names.txt");
 
-IPoolInspection<string> pool    = Any.String().OneOf(firstNames).Alpha().WithLengthBetween(2, 64);
+IPoolInspection<string> pool    = Dummy.String().OneOf(firstNames).Alpha().WithLengthBetween(2, 64);
 IReadOnlyList<PoolRejection<string>> refused = pool.GetRejections();
 
 // 214 of 2417 names never draw
@@ -86,7 +86,7 @@ catalogue, au lieu de constater un pool rétréci des mois plus tard :
 ```csharp
 string[] firstNames = System.IO.File.ReadAllLines("first-names.txt");
 
-IPoolInspection<string> pool = Any.String().OneOf(firstNames).Alpha().WithLengthBetween(2, 64);
+IPoolInspection<string> pool = Dummy.String().OneOf(firstNames).Alpha().WithLengthBetween(2, 64);
 
 Assert.Empty(pool.GetRejections());
 ```
@@ -94,7 +94,7 @@ Assert.Empty(pool.GetRejections());
 Ce test échoue le jour où quelqu'un ajoute un prénom que l'invariant refuse — et comme un rejet nomme la
 valeur comme la contrainte, l'échec dit quel prénom et quel invariant, pas seulement qu'un compte a
 changé. Un pool entièrement vidé ne va jamais jusque-là : un value set auquel les contraintes ne laissent
-rien lève une `ConflictingAnyConstraintException` dès la ligne d'arrange, en nommant les deux côtés.
+rien lève une `ConflictingDummyConstraintException` dès la ligne d'arrange, en nommant les deux côtés.
 
 ## Ce qu'elle ne fait pas
 
@@ -105,13 +105,13 @@ tort plus souvent que raison. Tirer un prénom d'adulte d'un catalogue qui conti
 d'enfants, c'est le même mécanisme fonctionnant comme prévu.
 
 L'interface est par ailleurs **optionnelle**. Elle est portée par tout générateur qui admet un value set
-que vous fournissez — `Any.OneOf(...)`/`Any.ElementOf(...)`, `Any.String().OneOf(...)`, et toutes les
-familles dotées d'un `OneOf` : les entiers, `Any.Decimal()`, les flottants, les dates et heures,
-`Any.Char()`, `Any.Guid()` et `Any.Enum<T>()`. Un générateur sans pool à vous ne la porte pas du tout,
+que vous fournissez — `Dummy.OneOf(...)`/`Dummy.ElementOf(...)`, `Dummy.String().OneOf(...)`, et toutes les
+familles dotées d'un `OneOf` : les entiers, `Dummy.Decimal()`, les flottants, les dates et heures,
+`Dummy.Char()`, `Dummy.Guid()` et `Dummy.Enum<T>()`. Un générateur sans pool à vous ne la porte pas du tout,
 alors écrivez le cast comme un test quand vous ne savez pas ce que vous tenez :
 
 ```csharp
-IAny<string> generator = Any.String().OneOf("Camille", "Ada");
+IDummy<string> generator = Dummy.String().OneOf("Camille", "Ada");
 
 if (generator is IPoolInspection<string> inspectable && inspectable.IsPooled) {
     Console.WriteLine(inspectable.GetRejections().Count);
@@ -122,7 +122,7 @@ if (generator is IPoolInspection<string> inspectable && inspectable.IsPooled) {
 lieu de la choisir parmi des valeurs fournies répond `false`, avec un rapport vide plutôt qu'une
 exception.
 
-Et ce n'est *pas* « ce générateur a un domaine dénombrable ». `Any.Int32().Between(1, 1_000_000)` est
+Et ce n'est *pas* « ce générateur a un domaine dénombrable ». `Dummy.Int32().Between(1, 1_000_000)` est
 parfaitement dénombrable et répond `false` : ce million de valeurs appartient au moteur, pas à vous. Il
 n'y a rien de vôtre à auditer, donc rien à rendre — l'inspection ne parle jamais que d'une liste que vous
 avez confiée.

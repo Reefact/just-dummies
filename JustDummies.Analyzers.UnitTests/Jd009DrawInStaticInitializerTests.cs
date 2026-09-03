@@ -14,7 +14,7 @@ public class Jd009DrawInStaticInitializerTests {
             using JustDummies;
 
             public static class Sample {
-                private static readonly string Reference = Any.String().NonEmpty().Generate();
+                private static readonly string Reference = Dummy.String().NonEmpty().Generate();
             }
             """;
 
@@ -34,7 +34,7 @@ public class Jd009DrawInStaticInitializerTests {
                 private static readonly string Reference;
 
                 static Sample() {
-                    Reference = Any.String().NonEmpty().Generate();
+                    Reference = Dummy.String().NonEmpty().Generate();
                 }
             }
             """;
@@ -53,7 +53,7 @@ public class Jd009DrawInStaticInitializerTests {
             using JustDummies;
 
             public static class Sample {
-                private static readonly IAny<string> Reference = Any.String().NonEmpty();
+                private static readonly IDummy<string> Reference = Dummy.String().NonEmpty();
 
                 public static string Next() => Reference.Generate();
             }
@@ -70,7 +70,7 @@ public class Jd009DrawInStaticInitializerTests {
             using JustDummies;
 
             public class Sample {
-                private readonly string _reference = Any.String().NonEmpty().Generate();
+                private readonly string _reference = Dummy.String().NonEmpty().Generate();
             }
             """;
 
@@ -85,7 +85,7 @@ public class Jd009DrawInStaticInitializerTests {
             using JustDummies;
 
             public static class Sample {
-                public static string Next() => Any.String().NonEmpty().Generate();
+                public static string Next() => Dummy.String().NonEmpty().Generate();
             }
             """;
 

@@ -10,12 +10,12 @@ using JetBrains.Annotations;
 namespace JustDummies.PropertyTests;
 
 /// <summary>
-///     Property-based tests for <see cref="AnyGuid" />'s value constraints — <c>OneOf</c>, <c>Except</c> and
+///     Property-based tests for <see cref="DummyGuid" />'s value constraints — <c>OneOf</c>, <c>Except</c> and
 ///     <c>DifferentFrom</c> — quantified over arbitrary <see cref="Guid" /> pools rather than a handful of
 ///     hand-picked identifiers, mirroring <see cref="StringShapeProperties" />'s treatment of the same shapes on
-///     <see cref="AnyString" />.
+///     <see cref="DummyString" />.
 /// </summary>
-[TestSubject(typeof(AnyGuid))]
+[TestSubject(typeof(DummyGuid))]
 public sealed class GuidProperties {
 
     [Fact(DisplayName = "OneOf draws only the supplied values, whichever pool is supplied.")]
@@ -24,7 +24,7 @@ public sealed class GuidProperties {
                                .Select(values => values.Distinct().Take(10).ToArray());
 
         Prop.ForAll(pools.ToArbitrary(),
-                    pool => Expect.EveryDraw(Any.Guid().OneOf(pool), value => pool.Contains(value)))
+                    pool => Expect.EveryDraw(Dummy.Guid().OneOf(pool), value => pool.Contains(value)))
             .QuickCheckThrowOnFailure();
     }
 
@@ -34,10 +34,10 @@ public sealed class GuidProperties {
                     // The excluded values are drawn from the very generator they are then excluded from, so the
                     // exclusion is never vacuous — the 128-bit space leaves it amply satisfiable regardless.
                     excludeCount => {
-                        AnyGuid shaped   = Any.Guid();
+                        DummyGuid shaped   = Dummy.Guid();
                         Guid[]  excluded = Expect.Draws(shaped, excludeCount).Distinct().ToArray();
                         Guid    banned   = shaped.Generate();
-                        AnyGuid narrowed = shaped.Except(excluded).DifferentFrom(banned);
+                        DummyGuid narrowed = shaped.Except(excluded).DifferentFrom(banned);
 
                         return Expect.EveryDraw(narrowed, value => !excluded.Contains(value) && value != banned);
                     })

@@ -20,10 +20,10 @@ Plusieurs faits établis cadrent le choix :
 
 * Les générateurs de scalaires et d'enums exposent déjà `OneOf(params T[])` — tirer uniformément dans une liste
   explicite — mais il s'agit là d'une contrainte **composable** : elle restreint *au sein* de l'intervalle ou du pool
-  du type et se cross-valide avec les autres contraintes. `AnyString` n'a aucun `OneOf`.
-* `Any.StringMatching` (ADR-0008) est un générateur **terminal** : le motif est toute la spécification, il n'expose
+  du type et se cross-valide avec les autres contraintes. `DummyString` n'a aucun `OneOf`.
+* `Dummy.StringMatching` (ADR-0008) est un générateur **terminal** : le motif est toute la spécification, il n'expose
   donc aucune contrainte de forme ou de longueur supplémentaire, tout en se composant via `As`, `OrNull`, `Combine`
-  et les générateurs de collections comme n'importe quel `IAny<string>`.
+  et les générateurs de collections comme n'importe quel `IDummy<string>`.
 * La surface de mise en forme d'une chaîne est bien plus large que l'intervalle d'un scalaire : préfixe, suffixe,
   fragments contenus, famille de caractères, casse et longueur, chacun déjà cross-validé avec les autres.
 * Les collections distinctes bornent à la déclaration selon la cardinalité annoncée par le générateur d'éléments
@@ -33,11 +33,11 @@ Plusieurs faits établis cadrent le choix :
   les valeurs pour satisfaire les contraintes plutôt que de générer-puis-filtrer, et est livrée **sans aucune
   dépendance runtime ni jeu de données** — son README liste « pas de fausses données réalistes (noms, e-mails,
   adresses) » comme non-objectif explicite (ADR-0003).
-* La forme d'appel demandée est `Any.String().OneOf(...)` — chaînée depuis le point d'entrée des chaînes.
+* La forme d'appel demandée est `Dummy.String().OneOf(...)` — chaînée depuis le point d'entrée des chaînes.
 
 ## Décision
 
-`Any.String().OneOf(...)` tire la chaîne dans un ensemble de valeurs explicite fourni par l'appelant, sous la forme
+`Dummy.String().OneOf(...)` tire la chaîne dans un ensemble de valeurs explicite fourni par l'appelant, sous la forme
 d'un générateur **terminal** — l'ensemble est toute la spécification et ne se combine pas avec les autres contraintes
 de chaîne — plutôt que comme une contrainte composable à la manière du `OneOf` des générateurs de scalaires.
 
@@ -47,12 +47,12 @@ de chaîne — plutôt que comme une contrainte composable à la manière du `On
   explicite avec le préfixe, le suffixe, les fragments, la famille de caractères, la casse et la longueur d'une chaîne
   multiplierait les combinaisons contradictoires et leurs messages de conflit, pour une combinaison dont personne n'a
   besoin — un appelant qui fournit des valeurs littérales en fixe déjà la forme. Faire de l'ensemble toute la
-  spécification supprime cette classe entière d'un coup. `Any.StringMatching` a tranché de même, pour la même raison
+  spécification supprime cette classe entière d'un coup. `Dummy.StringMatching` a tranché de même, pour la même raison
   (ADR-0008) ; s'aligner sur ce précédent garde les deux terminaux de chaîne cohérents.
-* **Il reste sur `Any.String()` pour la découvrabilité, et reste honnête par l'échec précoce.** Un appelant part de
-  `Any.String()` et trouve `OneOf` à côté des autres façons d'obtenir une chaîne. La nature terminale est garantie de
+* **Il reste sur `Dummy.String()` pour la découvrabilité, et reste honnête par l'échec précoce.** Un appelant part de
+  `Dummy.String()` et trouve `OneOf` à côté des autres façons d'obtenir une chaîne. La nature terminale est garantie de
   deux façons : le générateur renvoyé ne porte aucune méthode de mise en forme, et déclarer `OneOf` après une autre
-  contrainte lève une `ConflictingAnyConstraintException` à la déclaration — la même règle « un Arrange impossible est
+  contrainte lève une `ConflictingDummyConstraintException` à la déclaration — la même règle « un Arrange impossible est
   un défaut du test » que la bibliothèque applique à tout autre conflit.
 * **Des valeurs fournies par l'appelant préservent l'identité de la bibliothèque.** Le contenu réaliste vit dans le
   test du consommateur, pas dans le paquet : le non-objectif « pas de fausses données réalistes » tient, et aucun jeu
@@ -60,7 +60,7 @@ de chaîne — plutôt que comme une contrainte composable à la manière du `On
   « donne-moi une valeur plausible tirée d'un ensemble connu ».
 * **Annoncer la cardinalité garde les collections distinctes précoces.** Un ensemble explicite est un petit domaine
   dénombrable, donc le générateur implémente `ICardinalityHint<string>` ; une collection distincte le borne à la
-  déclaration (ADR-0004), exactement comme sur `AnyChar` ou `AnyEnum`, au lieu de compter silencieusement sur le repli
+  déclaration (ADR-0004), exactement comme sur `DummyChar` ou `DummyEnum`, au lieu de compter silencieusement sur le repli
   par tirage dédupliquant borné.
 * **La reproductibilité est préservée.** La valeur est un tirage uniforme dans l'ensemble dédupliqué, via la même
   source seedable que tout autre générateur : un run se rejoue sous une graine ([ADR-0006 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0006-supply-arbitrary-test-values-from-a-seedable-source.fr.md)) ; dédupliquer empêche
@@ -68,21 +68,21 @@ de chaîne — plutôt que comme une contrainte composable à la manière du `On
 
 ## Alternatives considérées
 
-### Un `OneOf` composable sur `AnyString`, comme les générateurs de scalaires
+### Un `OneOf` composable sur `DummyString`, comme les générateurs de scalaires
 
-Considérée par symétrie de surface avec `AnyInt32.OneOf` et ses pairs. Rejetée parce que les contraintes de mise en
+Considérée par symétrie de surface avec `DummyInt32.OneOf` et ses pairs. Rejetée parce que les contraintes de mise en
 forme d'une chaîne croisent un ensemble de valeurs explicite de multiples façons, chacune nécessitant sa propre
 analyse de conflit précoce et son message, pour une combinaison dont un appelant fournissant des littéraux n'a jamais
 besoin — la forme terminale supprime la classe entière, cohérente avec ADR-0008.
 
-### Une factory statique `Any.StringOneOf(...)` (ou `Any.OneOf(...)`), parallèle à `Any.StringMatching`
+### Une factory statique `Dummy.StringOneOf(...)` (ou `Dummy.OneOf(...)`), parallèle à `Dummy.StringMatching`
 
 Considérée parce qu'une factory statique est terminale dès le premier appel et esquive tout cas « une contrainte est
-déjà déclarée ». Rejetée parce que la surface demandée et plus découvrable est `Any.String().OneOf(...)`, qui garde
+déjà déclarée ». Rejetée parce que la surface demandée et plus découvrable est `Dummy.String().OneOf(...)`, qui garde
 les points d'entrée des chaînes ensemble ; le cas de la contrainte préalable est couvert par un conflit clair à la
 déclaration, le mécanisme que la bibliothèque emploie déjà pour toute combinaison impossible.
 
-### Livrer des jeux de données réalistes curés (`Any.CompanyName()`, `Any.FirstName()`, ...)
+### Livrer des jeux de données réalistes curés (`Dummy.CompanyName()`, `Dummy.FirstName()`, ...)
 
 Considérée parce qu'elle répond directement à « donne-moi une valeur plausible ». Rejetée parce qu'elle contredit le
 non-objectif affiché de ne livrer aucune fausse donnée réaliste, et ferait porter à la bibliothèque un jeu de données
@@ -138,5 +138,5 @@ conception, qui a sa place hors de la bibliothèque.
 * [ADR-0006 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0006-supply-arbitrary-test-values-from-a-seedable-source.fr.md) — Fournir des valeurs de test arbitraires depuis une source unique seedable (la reproductibilité).
 * ADR-0003 — Héberger JustDummies comme un paquet autonome dans ce dépôt (la frontière zéro-dépendance, sans jeu de
   données).
-* Le type `AnyStringOneOf`, la méthode `AnyString.OneOf` et leurs tests dans le projet `JustDummies` et
+* Le type `AnyStringOneOf`, la méthode `DummyString.OneOf` et leurs tests dans le projet `JustDummies` et
   `JustDummies.UnitTests`.

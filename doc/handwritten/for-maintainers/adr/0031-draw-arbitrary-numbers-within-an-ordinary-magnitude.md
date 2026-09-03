@@ -19,24 +19,24 @@ a few decades of the type's maximum. Measured on 5 000 draws:
 
 | measurement                                         | result       |
 | --------------------------------------------------- | ------------ |
-| `Any.Double()` — `\|v\| < 1e6`                        | 0 / 5000     |
-| `Any.Single()` — `\|v\| < 1e34`                       | 0 / 5000     |
-| `Any.Decimal()` — `\|v\| < 1e24`                      | 0 / 5000     |
-| `Any.Double().Positive()` × 1.2 → `Infinity`         | 16.1 %       |
-| `Any.Decimal()` × 1.2m → `OverflowException`          | 17.1 %       |
+| `Dummy.Double()` — `\|v\| < 1e6`                        | 0 / 5000     |
+| `Dummy.Single()` — `\|v\| < 1e34`                       | 0 / 5000     |
+| `Dummy.Decimal()` — `\|v\| < 1e24`                      | 0 / 5000     |
+| `Dummy.Double().Positive()` × 1.2 → `Infinity`         | 16.1 %       |
+| `Dummy.Decimal()` × 1.2m → `OverflowException`          | 17.1 %       |
 | `x + 1 == x` on a `Positive()` draw                  | true         |
 
 At those magnitudes a floating-point type stops behaving like arithmetic: a further multiplication
 overflows — to `Infinity` for the binary types, which is contagious and yields `NaN` downstream, and to a
 thrown `OverflowException` for `decimal`. Precision is exhausted, so `x + 1 == x`. A scale constraint has
-no fractional digits left to act on: `Any.Decimal().WithScale(2)` was satisfied by 5 000 draws out of
+no fractional digits left to act on: `Dummy.Decimal().WithScale(2)` was satisfied by 5 000 draws out of
 5 000, every one of them a 29-digit integer — true and empty at once.
 
 The magnitudes where ordinary code runs, and where rounding, comparison and formatting defects live, are
 never visited.
 
-The integer generators share the same distribution — `Any.Int32()` draws below 1e6 in 0.06 % of cases,
-`Any.Int64()` in 0 of 5 000 — but not the same consequence: a large integer is an ordinary integer, C#
+The integer generators share the same distribution — `Dummy.Int32()` draws below 1e6 in 0.06 % of cases,
+`Dummy.Int64()` in 0 of 5 000 — but not the same consequence: a large integer is an ordinary integer, C#
 integer arithmetic wraps silently rather than saturating or throwing, `x + 1 != x` always holds, and an
 integer overflow in the code under test is frequently a genuine defect. The integer builders also ride the
 shared ordinal engine, which four builder families depend on.

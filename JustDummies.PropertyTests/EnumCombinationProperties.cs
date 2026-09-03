@@ -10,7 +10,7 @@ using JetBrains.Annotations;
 namespace JustDummies.PropertyTests;
 
 /// <summary>
-///     Property-based tests for <see cref="AnyEnum{TEnum}.AllowingCombinations" />. Where the example-based suite pins
+///     Property-based tests for <see cref="DummyEnum{TEnum}.AllowingCombinations" />. Where the example-based suite pins
 ///     the universe a handful of named enum shapes yield, these quantify over the <b>constraints</b> applied on top of
 ///     it: the allow-list and the exclusion set are drawn from the universe itself, so a draw escaping the universe, an
 ///     exclusion silently read as a bit mask, or a pool that empties without conflicting is found and shrunk.
@@ -20,7 +20,7 @@ namespace JustDummies.PropertyTests;
 ///     <see cref="Permissions" /> is used throughout because its four declared members give a universe of eight values:
 ///     small enough to enumerate in the assertion, wide enough that a subset drawn from it is rarely trivial.
 /// </remarks>
-[TestSubject(typeof(AnyEnum<>))]
+[TestSubject(typeof(DummyEnum<>))]
 public sealed class EnumCombinationProperties {
 
     #region Statics members declarations
@@ -47,11 +47,11 @@ public sealed class EnumCombinationProperties {
                         // so the property branches on the drawn values rather than on the call shape.
                         Permissions[] distinct = excluded.Distinct().ToArray();
                         if (distinct.Length == Universe.Length) {
-                            return Expect.Throws<ConflictingAnyConstraintException>(
-                                () => Any.Enum<Permissions>().AllowingCombinations().Except(excluded).Generate());
+                            return Expect.Throws<ConflictingDummyConstraintException>(
+                                () => Dummy.Enum<Permissions>().AllowingCombinations().Except(excluded).Generate());
                         }
 
-                        return Expect.EveryDraw(Any.Enum<Permissions>().AllowingCombinations().Except(excluded),
+                        return Expect.EveryDraw(Dummy.Enum<Permissions>().AllowingCombinations().Except(excluded),
                                                 value => Universe.Contains(value) && !distinct.Contains(value));
                     })
             .QuickCheckThrowOnFailure();
@@ -66,7 +66,7 @@ public sealed class EnumCombinationProperties {
                         Permissions[] survivors = Universe.Where(value => value != excluded && (value & excluded) == excluded).ToArray();
                         if (survivors.Length == 0) { return true; }
 
-                        List<Permissions> draws = Expect.Draws(Any.Enum<Permissions>().AllowingCombinations().Except(excluded), 200);
+                        List<Permissions> draws = Expect.Draws(Dummy.Enum<Permissions>().AllowingCombinations().Except(excluded), 200);
 
                         return draws.All(value => value != excluded) && survivors.Any(draws.Contains);
                     })
@@ -79,7 +79,7 @@ public sealed class EnumCombinationProperties {
                     allowed => {
                         Permissions[] distinct = allowed.Distinct().ToArray();
 
-                        return Expect.EveryDraw(Any.Enum<Permissions>().AllowingCombinations().OneOf(allowed),
+                        return Expect.EveryDraw(Dummy.Enum<Permissions>().AllowingCombinations().OneOf(allowed),
                                                 distinct.Contains);
                     })
             .QuickCheckThrowOnFailure();
@@ -92,9 +92,9 @@ public sealed class EnumCombinationProperties {
         Prop.ForAll(Gen.Choose(0, 2).ToArbitrary(),
                     size => {
                         Permissions[] excluded = declared.Take(size).ToArray();
-                        AnyEnum<Permissions> generator = excluded.Length == 0
-                                                             ? Any.Enum<Permissions>()
-                                                             : Any.Enum<Permissions>().Except(excluded);
+                        DummyEnum<Permissions> generator = excluded.Length == 0
+                                                             ? Dummy.Enum<Permissions>()
+                                                             : Dummy.Enum<Permissions>().Except(excluded);
 
                         // Without the opt-in no combination is ever drawn, whatever else was declared — the contract
                         // AllowingCombinations() exists precisely to leave alone.
@@ -107,8 +107,8 @@ public sealed class EnumCombinationProperties {
     public void CombinationsAreReproducibleForEverySeed() {
         Prop.ForAll(Generators.Seed().ToArbitrary(),
                     seed => {
-                        List<Permissions> first  = Expect.Draws(Any.WithSeed(seed).Enum<Permissions>().AllowingCombinations(), 12);
-                        List<Permissions> second = Expect.Draws(Any.WithSeed(seed).Enum<Permissions>().AllowingCombinations(), 12);
+                        List<Permissions> first  = Expect.Draws(Dummy.WithSeed(seed).Enum<Permissions>().AllowingCombinations(), 12);
+                        List<Permissions> second = Expect.Draws(Dummy.WithSeed(seed).Enum<Permissions>().AllowingCombinations(), 12);
 
                         return first.SequenceEqual(second);
                     })

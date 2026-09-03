@@ -21,14 +21,14 @@ exactement.
 ```mermaid
 sequenceDiagram
     accTitle: Ce qu'une portée de graine ambiante enregistre pendant un test qui échoue
-    accDescr: Le test ouvre une portée sur la graine 1743029518. Il demande à Any un int borné et reçoit 73, puis une chaîne de douze caractères et reçoit kQ8fnZ2xLmTa. Son assertion échoue, la portée rapporte la graine 1743029518, et le test ferme la portée.
+    accDescr: Le test ouvre une portée sur la graine 1743029518. Il demande à Dummy un int borné et reçoit 73, puis une chaîne de douze caractères et reçoit kQ8fnZ2xLmTa. Son assertion échoue, la portée rapporte la graine 1743029518, et le test ferme la portée.
     participant T as Test
     participant S as Portée de graine ambiante
-    participant A as Any.*
+    participant A as Dummy.*
     T->>S: ouvrir la portée (graine = 1743029518)
-    T->>A: Any.Int32().Between(1, 100).Generate()
+    T->>A: Dummy.Int32().Between(1, 100).Generate()
     A-->>T: 73
-    T->>A: Any.String().WithLength(12).Generate()
+    T->>A: Dummy.String().WithLength(12).Generate()
     A-->>T: "kQ8fnZ2xLmTa"
     T->>T: l'assertion échoue ✗
     S-->>T: rapporte la graine 1743029518
@@ -37,14 +37,14 @@ sequenceDiagram
 
 La graine n'est rapportée **que si l'exécution échoue**. Une suite verte reste silencieuse.
 
-## `Any.Reproducibly` : une portée épinglée par test
+## `Dummy.Reproducibly` : une portée épinglée par test
 
 Enveloppez le corps d'un test et tout ce qui est tiré à l'intérieur provient d'une seule graine :
 
 ```csharp
-Any.Reproducibly(() => {
-    string anyReference = Any.String().StartingWith("ORD-").WithLength(12).Generate();
-    string anyCustomer  = Any.String().Alpha().WithLengthBetween(1, 50).Generate();
+Dummy.Reproducibly(() => {
+    string anyReference = Dummy.String().StartingWith("ORD-").WithLength(12).Generate();
+    string anyCustomer  = Dummy.String().Alpha().WithLengthBetween(1, 50).Generate();
 
     Order order = new Order(anyReference, anyCustomer, amount: 100m);
 
@@ -58,15 +58,15 @@ Si le corps lève une exception, la graine est écrite et l'exception d'origine 
 l'échec que vous voyez reste celui de votre assertion, avec la graine à côté :
 
 ```text
-[JustDummies] These arbitrary values were seeded with 1743029518. Reproduce this run with Any.Reproducibly(1743029518, ...).
+[JustDummies] These arbitrary values were seeded with 1743029518. Reproduce this run with Dummy.Reproducibly(1743029518, ...).
 ```
 
 Par défaut, le rapport part vers `Console.Error`. Passez un second argument pour l'envoyer ailleurs
 — par exemple vers la sortie d'un framework de test :
 
 ```csharp
-Any.Reproducibly(
-    () => Assert.True(Any.Int32().Positive().Generate() > 0),
+Dummy.Reproducibly(
+    () => Assert.True(Dummy.Int32().Positive().Generate() > 0),
     report: message => Console.Out.WriteLine(message));
 ```
 
@@ -76,9 +76,9 @@ Prenez le nombre du rapport, passez-le à la surcharge avec graine, et l'exécut
 pour valeur :
 
 ```csharp
-Any.Reproducibly(1743029518, () => {
-    string anyReference = Any.String().StartingWith("ORD-").WithLength(12).Generate();
-    string anyCustomer  = Any.String().Alpha().WithLengthBetween(1, 50).Generate();
+Dummy.Reproducibly(1743029518, () => {
+    string anyReference = Dummy.String().StartingWith("ORD-").WithLength(12).Generate();
+    string anyCustomer  = Dummy.String().Alpha().WithLengthBetween(1, 50).Generate();
 
     Order order = new Order(anyReference, anyCustomer, amount: 100m);
 
@@ -115,9 +115,9 @@ revue dans votre équipe.
 Un corps `async` demande `ReproduciblyAsync`, et la tâche renvoyée **doit** être attendue :
 
 ```csharp
-await Any.ReproduciblyAsync(async () => {
-    string anyReference = Any.String().StartingWith("ORD-").WithLength(12).Generate();
-    string anyCustomer  = Any.String().Alpha().WithLengthBetween(1, 50).Generate();
+await Dummy.ReproduciblyAsync(async () => {
+    string anyReference = Dummy.String().StartingWith("ORD-").WithLength(12).Generate();
+    string anyCustomer  = Dummy.String().Alpha().WithLengthBetween(1, 50).Generate();
 
     Order order = new Order(anyReference, anyCustomer, amount: 100m);
 
@@ -130,20 +130,20 @@ await Any.ReproduciblyAsync(async () => {
 ```
 
 Se tromper ici est silencieux de la pire façon ; deux analyzers le gardent donc en **erreur** :
-passer une lambda `async` au `Any.Reproducibly` synchrone est [JD001](../analyzers/JD001.fr.md) —
+passer une lambda `async` au `Dummy.Reproducibly` synchrone est [JD001](../analyzers/JD001.fr.md) —
 liée à une `Action`, elle devient `async void` et ses échecs d'assertion n'atteignent jamais le
 lanceur de tests — et jeter la tâche renvoyée par `ReproduciblyAsync` est
 [JD002](../analyzers/JD002.fr.md).
 
-## `Any.UseSeed` : la forme à portée
+## `Dummy.UseSeed` : la forme à portée
 
 Quand le code à épingler ne peut pas être enveloppé dans un délégué, ouvrez une portée et libérez-la
 à la fin :
 
 ```csharp
-using (IDisposable scope = Any.UseSeed(1743029518)) {
-    string anyReference = Any.String().StartingWith("ORD-").WithLength(12).Generate();
-    string anyCustomer  = Any.String().Alpha().WithLengthBetween(1, 50).Generate();
+using (IDisposable scope = Dummy.UseSeed(1743029518)) {
+    string anyReference = Dummy.String().StartingWith("ORD-").WithLength(12).Generate();
+    string anyCustomer  = Dummy.String().Alpha().WithLengthBetween(1, 50).Generate();
 
     Order order = new Order(anyReference, anyCustomer, amount: 100m);
 
@@ -163,19 +163,19 @@ adaptateur veut voir figurer dans les conseils d'échec, pour que le message nom
 lecteur doit réellement modifier :
 
 ```csharp
-using (IDisposable scope = Any.UseSeed(1743029518, "[Reproducible(Seed = 1743029518)]")) {
-    Assert.True(Any.Int32().Positive().Generate() > 0);
+using (IDisposable scope = Dummy.UseSeed(1743029518, "[Reproducible(Seed = 1743029518)]")) {
+    Assert.True(Dummy.Int32().Positive().Generate() > 0);
 }
 ```
 
-## `Any.WithSeed` : un contexte isolé
+## `Dummy.WithSeed` : un contexte isolé
 
-`Any.WithSeed(seed)` n'épingle rien d'ambiant. Il renvoie un `AnyContext` — un monde autonome
+`Dummy.WithSeed(seed)` n'épingle rien d'ambiant. Il renvoie un `DummyContext` — un monde autonome
 portant les mêmes fabriques — ce qu'il faut pour construire des données déterministes *en dehors*
 d'un corps de test, comme une fixture ou un benchmark :
 
 ```csharp
-AnyContext context = Any.WithSeed(1743029518);
+DummyContext context = Dummy.WithSeed(1743029518);
 
 int      quantity  = context.Int32().Between(1, 100).Generate();
 string   reference = context.String().StartingWith("ORD-").WithLength(12).Generate();
@@ -185,9 +185,9 @@ int      seed      = context.Seed;
 ```
 
 Parce que le contexte est isolé, les valeurs qui en sont tirées ne subissent aucune portée ambiante
-— et ni un attribut `[Reproducible]` ni un `Any.Reproducibly` englobant ne les gouvernent.
+— et ni un attribut `[Reproducible]` ni un `Dummy.Reproducibly` englobant ne les gouvernent.
 
-Conserver un `AnyContext` dans un champ **statique** est un piège qui mérite d'être nommé : des
+Conserver un `DummyContext` dans un champ **statique** est un piège qui mérite d'être nommé : des
 tirages entrelacés depuis plusieurs tests ne rendent stables ni la séquence ni le multiensemble,
 c'est le diagnostic [JD020](../analyzers/JD020.fr.md).
 
@@ -203,8 +203,8 @@ public sealed class OrderTests {
     [Fact, Reproducible]
     public void A_20_percent_discount_takes_a_fifth_off_the_order() {
         // Arrange
-        string anyReference = Any.String().StartingWith("ORD-").WithLength(12).Generate();
-        string anyCustomer  = Any.String().Alpha().WithLengthBetween(1, 50).Generate();
+        string anyReference = Dummy.String().StartingWith("ORD-").WithLength(12).Generate();
+        string anyCustomer  = Dummy.String().Alpha().WithLengthBetween(1, 50).Generate();
 
         Order order = new Order(anyReference, anyCustomer, amount: 100m);
 

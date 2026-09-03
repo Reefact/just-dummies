@@ -7,15 +7,15 @@ using Microsoft.CodeAnalysis.Operations;
 namespace JustDummies.Analyzers;
 
 /// <summary>
-///     JD001 — reports an <c>async</c> lambda passed to the synchronous <c>Any.Reproducibly(Action)</c>. Bound to an
+///     JD001 — reports an <c>async</c> lambda passed to the synchronous <c>Dummy.Reproducibly(Action)</c>. Bound to an
 ///     <see cref="Action" /> it becomes <c>async void</c>, so the body's failures after the first <c>await</c>
-///     escape the reproducible scope entirely and never fail the test. Use <c>Any.ReproduciblyAsync(Func&lt;Task&gt;)</c>
+///     escape the reproducible scope entirely and never fail the test. Use <c>Dummy.ReproduciblyAsync(Func&lt;Task&gt;)</c>
 ///     and await it.
 /// </summary>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public sealed class AsyncBodyPassedToReproduciblyAnalyzer : DiagnosticAnalyzer {
 
-    private const string AnyMetadataName        = "JustDummies.Any";
+    private const string AnyMetadataName        = "JustDummies.Dummy";
     private const string ReproduciblyMethodName = "Reproducibly";
 
     /// <inheritdoc />

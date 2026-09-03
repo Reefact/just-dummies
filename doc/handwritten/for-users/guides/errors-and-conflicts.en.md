@@ -12,10 +12,10 @@ contradiction.
 ```mermaid
 flowchart TD
     accTitle: The library's exception hierarchy
-    accDescr: DummyException is abstract and derives from Exception. Three concrete types derive from it. AnyGenerationException, when a draw could not be completed. ConflictingAnyConstraintException, when the constraints admit no value. UnsupportedRegexException, when the pattern falls outside the regular subset.
+    accDescr: DummyException is abstract and derives from Exception. Three concrete types derive from it. DummyGenerationException, when a draw could not be completed. ConflictingDummyConstraintException, when the constraints admit no value. UnsupportedRegexException, when the pattern falls outside the regular subset.
     E["Exception"] --> D["DummyException<br/><i>abstract — the library's root</i>"]
-    D --> A["AnyGenerationException<br/><i>a draw could not be completed</i>"]
-    D --> C["ConflictingAnyConstraintException<br/><i>the constraints admit no value</i>"]
+    D --> A["DummyGenerationException<br/><i>a draw could not be completed</i>"]
+    D --> C["ConflictingDummyConstraintException<br/><i>the constraints admit no value</i>"]
     D --> U["UnsupportedRegexException<br/><i>the pattern is outside the regular subset</i>"]
     style D fill:#e8eaf6,stroke:#3f51b5,color:#1a237e
     style A fill:#fff8e1,stroke:#f9a825,color:#e65100
@@ -28,7 +28,7 @@ flowchart TD
 <!-- jd:allow=JD023 -->
 ```csharp
 try {
-    int impossible = Any.Int32().Between(1, 10).MultipleOf(50).Generate();
+    int impossible = Dummy.Int32().Between(1, 10).MultipleOf(50).Generate();
 } catch (DummyException exception) {
     Console.Error.WriteLine(exception.Message);
 }
@@ -38,7 +38,7 @@ Ordinary argument mistakes are **not** in that hierarchy. Passing `null` where a
 required, or a negative length, throws the usual `ArgumentNullException` / `ArgumentException` —
 those are bugs in the calling code, not statements about a constraint set.
 
-## `ConflictingAnyConstraintException`: the constraints admit no value
+## `ConflictingDummyConstraintException`: the constraints admit no value
 
 This is the one you will meet most, and it is a feature rather than a defect. Because values are
 built to satisfy the whole specification rather than drawn and filtered, a specification satisfying
@@ -47,7 +47,7 @@ nothing is detected instead of looped over:
 <!-- jd:allow=JD023 -->
 ```csharp
 // No integer is both above 100 and below 10.
-int impossible = Any.Int32().GreaterThan(100).LessThan(10).Generate();
+int impossible = Dummy.Int32().GreaterThan(100).LessThan(10).Generate();
 ```
 
 **The message names both sides of the conflict.** That is a product guarantee, not an accident of
@@ -60,7 +60,7 @@ Conflicts come in a few recognisable shapes:
 | --- | --- |
 | bounds that cross | `.GreaterThan(100).LessThan(10)` |
 | a lattice with no point in range | `.Between(1, 10).MultipleOf(50)` |
-| exclusions that empty the domain | `Any.Boolean().Except(true, false)` |
+| exclusions that empty the domain | `Dummy.Boolean().Except(true, false)` |
 | a length that cannot hold the fragments | `.StartingWith("ORDER-").WithLength(3)` |
 | a count no element pool can fill | 100 distinct values from a pool of three |
 
@@ -82,7 +82,7 @@ red build and a red test at 3 a.m.:
 The run-time checks stay in place regardless: they cover every argument an analyzer cannot see —
 anything computed, read from a field, or passed in as a parameter.
 
-## `AnyGenerationException`: a draw that could not be completed
+## `DummyGenerationException`: a draw that could not be completed
 
 A few constraints cannot be honoured by construction. Excluding values from a continuous range,
 matching a regular expression, and filling a collection with distinct elements all end in the same
@@ -96,14 +96,14 @@ attempts, then a refusal:
 decimal[] excluded = Enumerable.Range(0, 100).Select(index => index / 100m).ToArray();
 
 try {
-    decimal awkward = Any.Decimal().Between(0m, 1m).WithScale(2).Except(excluded).Generate();
-} catch (AnyGenerationException exception) {
+    decimal awkward = Dummy.Decimal().Between(0m, 1m).WithScale(2).Except(excluded).Generate();
+} catch (DummyGenerationException exception) {
     // exception.Seed carries the seed of the run, when one was pinned — so the failure replays.
     Console.Error.WriteLine($"{exception.Message} (seed: {exception.Seed})");
 }
 ```
 
-`AnyGenerationException` carries a nullable `Seed`. When the draw happened inside a reproducible
+`DummyGenerationException` carries a nullable `Seed`. When the draw happened inside a reproducible
 scope, the seed that produced it is on the exception, so a bounded-redraw failure is as replayable
 as any other failure.
 
@@ -112,14 +112,14 @@ gave up early. Widen the interval, drop an exclusion, or ask for fewer distinct 
 
 ## `UnsupportedRegexException`: outside the regular subset
 
-`Any.StringMatching` builds a value from the pattern rather than testing candidates against it,
+`Dummy.StringMatching` builds a value from the pattern rather than testing candidates against it,
 which is why it can guarantee a match. Building requires the pattern to be **regular**, and the
 library says so rather than guessing:
 
 ```csharp
 try {
     // A back-reference is not a regular construct: no finite automaton can carry it.
-    string impossible = Any.StringMatching(@"(\w+)\s\1").Generate();
+    string impossible = Dummy.StringMatching(@"(\w+)\s\1").Generate();
 } catch (UnsupportedRegexException exception) {
     Console.Error.WriteLine(exception.Message);
 }
@@ -134,11 +134,11 @@ library's own parser, rather than taking a regex-automaton dependency to widen c
 
 | Symptom | Likely cause | Fix |
 | --- | --- | --- |
-| `ConflictingAnyConstraintException` at the arrange line | two constraints disagree | read the message — it names both — and drop the one that is not a domain invariant |
-| `AnyGenerationException` after a pause | a bounded redraw exhausted its attempts | widen the domain, or ask for fewer distinct values |
-| `UnsupportedRegexException` | the pattern uses a non-regular construct | rewrite it within the regular subset, or build the string with `Any.String()` constraints |
+| `ConflictingDummyConstraintException` at the arrange line | two constraints disagree | read the message — it names both — and drop the one that is not a domain invariant |
+| `DummyGenerationException` after a pause | a bounded redraw exhausted its attempts | widen the domain, or ask for fewer distinct values |
+| `UnsupportedRegexException` | the pattern uses a non-regular construct | rewrite it within the regular subset, or build the string with `Dummy.String()` constraints |
 | a value your factory rejects | the constraints are looser than the factory | tighten the constraints until they imply the factory's contract |
-| a test that passes on rerun | the failing values are gone | wrap the body in `Any.Reproducibly` so the next failure names its seed |
+| a test that passes on rerun | the failing values are gone | wrap the body in `Dummy.Reproducibly` so the next failure names its seed |
 | a build warning `JD0NN` | a mistake decidable at compile time | open the rule page linked from the diagnostic |
 
 ---

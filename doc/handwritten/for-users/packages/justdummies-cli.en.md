@@ -29,15 +29,15 @@ Analyzing Shop.Domain.Order
 
   reference  OrderReference         new AnyOrderReference()              AnyX
   customer   Customer               new AnyCustomer()                    AnyX
-  quantity   int                    Any.Int32().Positive()               guard
-  status     OrderStatus            Any.Enum<OrderStatus>()
-  tags       IReadOnlyList<string>  Any.ListOf(Any.String().NonEmpty())
-  placedAt   DateTime               Any.DateTime()
+  quantity   int                    Dummy.Int32().Positive()               guard
+  status     OrderStatus            Dummy.Enum<OrderStatus>()
+  tags       IReadOnlyList<string>  Dummy.ListOf(Dummy.String().NonEmpty())
+  placedAt   DateTime               Dummy.DateTime()
 
-✓ AnyOrder.cs — 6 of 6 parameters inferred.
+✓ DummyOrder.cs — 6 of 6 parameters inferred.
 ```
 
-`AnyOrder.cs` is a `partial class` implementing `IAny<Order>`, with a `With…` method per constructor
+`DummyOrder.cs` is a `partial class` implementing `IDummy<Order>`, with a `With…` method per constructor
 parameter. It is yours from that moment: read it, edit it, commit it.
 
 ## What the last column means
@@ -70,13 +70,13 @@ line that does not compile above it:
 
 <!-- jd:skip -->
 ```csharp
-private static IAny<string> AnyValidValue() {
+private static IDummy<string> AnyValidValue() {
     // TODO(dum): 'string value' may be guarded by something dum could not read (§9).
     //   This is dum's best generator for the type; verify it honours the real invariant,
     //   or replace it, then delete the line below.
     _ = TODO_verify_the_generator_for_value;
 
-    return Any.String().NonEmpty();
+    return Dummy.String().NonEmpty();
 }
 ```
 
@@ -110,21 +110,21 @@ The recap does not repeat that — a file that will not build is not a silence. 
 shape it leaves to a `TODO` is a generic type, because `AnyRepository` would name
 `Repository<Order>` and `Repository<Line>` equally badly.
 
-## Reaching it as `Any.Order()`
+## Reaching it as `Dummy.Order()`
 
-`new AnyOrder()` is how the generator is reached, and it always works. If you would rather the two
-halves of an arrange block read alike — `Any.Int32()` on one line and `Any.Order()` on the next —
+`new DummyOrder()` is how the generator is reached, and it always works. If you would rather the two
+halves of an arrange block read alike — `Dummy.Int32()` on one line and `Dummy.Order()` on the next —
 ask for an entry point:
 
 ```bash
 dum generate Order --entry-point any
 ```
 
-That writes a second file, `AnyOrder.Entry.cs`, beside the generator:
+That writes a second file, `DummyOrder.Entry.cs`, beside the generator:
 
 <!-- jd:skip -->
 ```csharp
-Order order = Any.Order().WithStatus(OrderStatus.Pending).Generate();
+Order order = Dummy.Order().WithStatus(OrderStatus.Pending).Generate();
 ```
 
 It uses a C# 14 extension member, so the project has to compile at C# 14; below that `dum` says so
@@ -147,9 +147,9 @@ several namespaces:
 dum generate Order --entry-point static:Dummies --entry-point-namespace Shop.Tests.Dummies
 ```
 
-The generator itself does not move, and `AnyOrder.cs` is byte-identical whichever of the three you
-ask for. A root named `Any` is refused: a static class by that name in your own project would hide
-`JustDummies.Any` for its whole namespace, and `Any.Int32()` would stop compiling — which is what
+The generator itself does not move, and `DummyOrder.cs` is byte-identical whichever of the three you
+ask for. A root named `Dummy` is refused: a static class by that name in your own project would hide
+`JustDummies.Dummy` for its whole namespace, and `Dummy.Int32()` would stop compiling — which is what
 `--entry-point any` exists to avoid. Decision:
 [ADR-0070](../../for-maintainers/adr/0070-emit-an-entry-point-on-request-as-a-file-of-its-own.md).
 

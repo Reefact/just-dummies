@@ -8,7 +8,7 @@ using Microsoft.CodeAnalysis.Operations;
 namespace JustDummies.Analyzers;
 
 /// <summary>
-///     JD003 — reports the two asynchronous bodies <c>Any.Reproducibly(Action)</c> accepts that JD001 does not see: a
+///     JD003 — reports the two asynchronous bodies <c>Dummy.Reproducibly(Action)</c> accepts that JD001 does not see: a
 ///     <b>synchronous</b> lambda whose body is an awaitable the call then drops, and an <c>async void</c> method passed
 ///     as a method group. Both reproduce JD001's damage — the reproducible scope returns before the body's assertions
 ///     run, and their failures never reach the test — while compiling without a single diagnostic, <c>CS4014</c>
@@ -33,9 +33,9 @@ public sealed class AwaitableBodyPassedToReproduciblyAnalyzer : DiagnosticAnalyz
 
     private static void OnCompilationStart(CompilationStartAnalysisContext context) {
         KnownSymbols symbols = KnownSymbols.From(context.Compilation);
-        if (symbols.Any is null) { return; }
+        if (symbols.Dummy is null) { return; }
 
-        context.RegisterOperationAction(operationContext => Analyze(operationContext, symbols.Any), OperationKind.Invocation);
+        context.RegisterOperationAction(operationContext => Analyze(operationContext, symbols.Dummy), OperationKind.Invocation);
     }
 
     [SuppressMessage(SonarRule.S3267.Category, SonarRule.S3267.Id, Justification = SuppressionJustification.S3267.UnwrappingHappensInsideTheLoop)]

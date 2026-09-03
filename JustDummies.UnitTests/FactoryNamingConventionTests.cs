@@ -10,28 +10,28 @@ namespace JustDummies.UnitTests;
 
 /// <summary>
 ///     Locks the factory-naming rule recorded in ADR-0010: every parameterless, type-named scalar factory
-///     on <see cref="Any" /> is named after the CLR type it produces — which is also the name of its
-///     <c>Any{ClrType}</c> builder. This is the guard that would have caught the <c>Bool</c>/<c>AnyBool</c>
-///     deviation before release. The <see cref="Any" />↔<see cref="AnyContext" /> mirror itself is guarded
+///     on <see cref="Dummy" /> is named after the CLR type it produces — which is also the name of its
+///     <c>Dummy{ClrType}</c> builder. This is the guard that would have caught the <c>Bool</c>/<c>AnyBool</c>
+///     deviation before release. The <see cref="Dummy" />↔<see cref="DummyContext" /> mirror itself is guarded
 ///     separately by <c>SurfaceParityTests</c>.
 /// </summary>
 public sealed class FactoryNamingConventionTests {
 
-    // The type-named scalar factories are exactly Any's public, static, non-generic, parameterless methods
-    // whose return type is a builder (implements IAny<T>). StringMatching (parameters), Enum<T> (generic),
+    // The type-named scalar factories are exactly Dummy's public, static, non-generic, parameterless methods
+    // whose return type is a builder (implements IDummy<T>). StringMatching (parameters), Enum<T> (generic),
     // the collection/composition factories (generic, parameterized) and WithSeed/Reproducibly (not builders)
     // fall out by construction, so no hand-maintained allow-list can drift out of sync with the surface.
     private static IEnumerable<MethodInfo> ScalarFactories() {
-        return typeof(Any).GetMethods(BindingFlags.Public | BindingFlags.Static)
+        return typeof(Dummy).GetMethods(BindingFlags.Public | BindingFlags.Static)
                           .Where(method => !method.IsGenericMethod
                                         && method.GetParameters().Length == 0
                                         && ElementTypeOf(method.ReturnType) is not null);
     }
 
-    // The T of the single IAny<T> a builder implements, or null when the type is not a builder.
+    // The T of the single IDummy<T> a builder implements, or null when the type is not a builder.
     private static Type? ElementTypeOf(Type builder) {
         return builder.GetInterfaces()
-                      .FirstOrDefault(candidate => candidate.IsGenericType && candidate.GetGenericTypeDefinition() == typeof(IAny<>))
+                      .FirstOrDefault(candidate => candidate.IsGenericType && candidate.GetGenericTypeDefinition() == typeof(IDummy<>))
                       ?.GetGenericArguments()[0];
     }
 
@@ -46,10 +46,10 @@ public sealed class FactoryNamingConventionTests {
             Type   builder = factory.ReturnType;
             string clrName = ElementTypeOf(builder)!.Name;
 
-            Check.WithCustomMessage($"Any.{factory.Name}() returns {builder.Name} (IAny<{clrName}>); the factory must be named '{clrName}', after the CLR type it produces.")
+            Check.WithCustomMessage($"Dummy.{factory.Name}() returns {builder.Name} (IDummy<{clrName}>); the factory must be named '{clrName}', after the CLR type it produces.")
                  .That(factory.Name).IsEqualTo(clrName);
-            Check.WithCustomMessage($"The builder for {clrName} is named '{builder.Name}'; it must be 'Any{clrName}' to match the CLR type.")
-                 .That(builder.Name).IsEqualTo("Any" + clrName);
+            Check.WithCustomMessage($"The builder for {clrName} is named '{builder.Name}'; it must be 'Dummy{clrName}' to match the CLR type.")
+                 .That(builder.Name).IsEqualTo("Dummy" + clrName);
         }
     }
 

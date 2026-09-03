@@ -9,7 +9,7 @@
 
 ## Contexte
 
-`Any.String()` sans ensemble de valeurs est **constructif** : il agence une valeur en
+`Dummy.String()` sans ensemble de valeurs est **constructif** : il agence une valeur en
 `préfixe + remplissage + valeurs contenues + remplissage + suffixe` et la rend, sans jamais générer puis
 filtrer. Le pool de caractères n'alimente que le **remplissage** — les fragments ancrés sont ajoutés exactement
 tels que l'appelant les a écrits. L'`ADR-0075` encadre déjà chaque famille de caractères, ainsi que les
@@ -42,7 +42,7 @@ restreignent le pool fourni au lieu de façonner une chaîne — un mécanisme d
 ## Décision
 
 Une famille de caractères, un pool personnalisé, une soustraction et une casse gouvernent chaque caractère que
-`Any.String()` **tire** et rien d'autre : sur une chaîne façonnée c'est le remplissage seul, de sorte qu'un
+`Dummy.String()` **tire** et rien d'autre : sur une chaîne façonnée c'est le remplissage seul, de sorte qu'un
 littéral fixé par `StartingWith`, `EndingWith` ou `Containing` est conservé exactement tel qu'écrit ; sur un
 ensemble de valeurs rien n'est tiré du tout, de sorte que les valeurs fournies leur restent soumises.
 
@@ -104,7 +104,7 @@ C'est la forme la plus riche, et elle exprime un format multizone exactement plu
 Rejeté parce que l'`ADR-0008` rejette déjà la même forme, sous « garder le générateur chaînable avec les autres
 contraintes de chaîne » : un générateur terminal, portant toute la spécification, « supprime entièrement une
 classe de combinaisons contradictoires », et un DSL par segment réintroduirait cette classe entre segments au
-lieu de l'avoir entre le motif et la chaîne. `Any.StringMatching(...)` exprime déjà plus compactement un format
+lieu de l'avoir entre le motif et la chaîne. `Dummy.StringMatching(...)` exprime déjà plus compactement un format
 réellement multizone, et reste l'outil adapté pour cela.
 
 ### Exempter la famille et la soustraction, mais continuer de juger la casse

@@ -10,12 +10,12 @@ using NFluent;
 
 namespace JustDummies.UnitTests;
 
-[TestSubject(typeof(Any))]
+[TestSubject(typeof(Dummy))]
 public sealed class MaterializationTests {
 
     #region Statics members declarations
 
-    private static T Materialize<T>(IAny<T> generator) {
+    private static T Materialize<T>(IDummy<T> generator) {
         return generator.Generate();
     }
 
@@ -23,14 +23,14 @@ public sealed class MaterializationTests {
 
     [Fact(DisplayName = "Generate materializes a valid string value.")]
     public void GenerateMaterializesAString() {
-        string value = Any.String().NonEmpty().Generate();
+        string value = Dummy.String().NonEmpty().Generate();
 
         Check.That(value).IsNotEmpty();
     }
 
     [Fact(DisplayName = "Generate materializes a valid int value.")]
     public void GenerateMaterializesAnInt() {
-        int value = Any.Int32().Positive().Generate();
+        int value = Dummy.Int32().Positive().Generate();
 
         Check.That(value).IsStrictlyGreaterThan(0);
     }
@@ -41,14 +41,14 @@ public sealed class MaterializationTests {
             return text.Length;
         }
 
-        int length = Measure(Any.String().WithLength(9).Generate());
+        int length = Measure(Dummy.String().WithLength(9).Generate());
 
         Check.That(length).IsEqualTo(9);
     }
 
     [Fact(DisplayName = "Each Generate call draws a fresh value.")]
     public void EachGenerateDrawsAFreshValue() {
-        AnyInt32 generator = Any.Int32().Between(0, int.MaxValue);
+        DummyInt32 generator = Dummy.Int32().Between(0, int.MaxValue);
 
         HashSet<int> seen = [];
         for (int i = 0; i < 20; i++) {
@@ -58,10 +58,10 @@ public sealed class MaterializationTests {
         Check.That(seen.Count).IsStrictlyGreaterThan(1);
     }
 
-    [Fact(DisplayName = "Generic inference flows through IAny<T>, materializing without any implicit conversion.")]
+    [Fact(DisplayName = "Generic inference flows through IDummy<T>, materializing without any implicit conversion.")]
     public void GenericInferenceMaterializesThroughIAny() {
-        string text  = Materialize(Any.String().NonEmpty());
-        int    value = Materialize(Any.Int32().Positive());
+        string text  = Materialize(Dummy.String().NonEmpty());
+        int    value = Materialize(Dummy.Int32().Positive());
 
         Check.That(text).IsNotEmpty();
         Check.That(value).IsStrictlyGreaterThan(0);
@@ -72,7 +72,7 @@ public sealed class MaterializationTests {
     public void BuildingAGeneratorDrawsNothing() {
         int draws = 0;
 
-        Any.Int32().As(value => {
+        Dummy.Int32().As(value => {
             draws++;
 
             return value;
@@ -84,9 +84,9 @@ public sealed class MaterializationTests {
     [Fact(DisplayName = "A generator interpolated into text renders its type name, never a value it could draw.")]
     [SuppressMessage(JustDummiesRule.JD005.Category, JustDummiesRule.JD005.Id, Justification = SuppressionJustification.JD005.RenderedGeneratorIsTheSubject)]
     public void AGeneratorRendersAsItsTypeName() {
-        string rendered = $"{Any.Int32()}";
+        string rendered = $"{Dummy.Int32()}";
 
-        Check.That(rendered).IsEqualTo(typeof(AnyInt32).ToString());
+        Check.That(rendered).IsEqualTo(typeof(DummyInt32).ToString());
         Check.That(int.TryParse(rendered, out int _)).IsFalse();
     }
 

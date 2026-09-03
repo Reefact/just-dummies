@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
-using JustDummies.GenAny;
+using JustDummies.GenDummy;
 
 namespace JustDummies.Cli;
 

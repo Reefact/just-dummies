@@ -8,7 +8,7 @@ using Microsoft.CodeAnalysis.Operations;
 namespace JustDummies.Analyzers;
 
 /// <summary>
-///     JD025 — reports a constant listed twice in the same pool. <c>Any.OneOf(a, b, a)</c> is deduplicated when the
+///     JD025 — reports a constant listed twice in the same pool. <c>Dummy.OneOf(a, b, a)</c> is deduplicated when the
 ///     generator is built, so the pool is one value smaller than it reads, and nothing anywhere says so.
 /// </summary>
 /// <remarks>
@@ -33,7 +33,7 @@ public sealed class DuplicatePoolValueAnalyzer : DiagnosticAnalyzer {
 
     private static void OnCompilationStart(CompilationStartAnalysisContext context) {
         KnownSymbols symbols = KnownSymbols.From(context.Compilation);
-        if (symbols.Any is null || symbols.IAny is null) { return; }
+        if (symbols.Dummy is null || symbols.IDummy is null) { return; }
 
         context.RegisterOperationAction(operationContext => Analyze(operationContext, symbols), OperationKind.Invocation);
     }
@@ -42,7 +42,7 @@ public sealed class DuplicatePoolValueAnalyzer : DiagnosticAnalyzer {
         IInvocationOperation invocation = (IInvocationOperation)context.Operation;
 
         if (invocation.TargetMethod.Name is not ("OneOf" or "ElementOf")) { return; }
-        if (!AnyChainFacts.TryGetChain(invocation, symbols, out _, out IInvocationOperation? factory) || factory is null) { return; }
+        if (!DummyChainFacts.TryGetChain(invocation, symbols, out _, out IInvocationOperation? factory) || factory is null) { return; }
         if (NegativeTestGuard.IsSoleBodyOfLambdaArgument(invocation.Syntax)) { return; }
 
         HashSet<object?> seen = [];

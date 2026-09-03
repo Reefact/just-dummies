@@ -22,7 +22,7 @@ namespace JustDummies.UnitTests;
 ///     provenance. The four interval engines (ordinal, wide, decimal, continuous) share one exhaustion path, so a
 ///     case per engine guards them all.
 /// </remarks>
-[TestSubject(typeof(ConflictingAnyConstraintException))]
+[TestSubject(typeof(ConflictingDummyConstraintException))]
 public sealed class ConflictMessageProvenanceTests {
 
     #region Statics members declarations
@@ -30,11 +30,11 @@ public sealed class ConflictMessageProvenanceTests {
     private static string ConflictMessage(Action build) {
         try {
             build();
-        } catch (ConflictingAnyConstraintException exception) {
+        } catch (ConflictingDummyConstraintException exception) {
             return exception.Message;
         }
 
-        return "<no ConflictingAnyConstraintException was thrown>";
+        return "<no ConflictingDummyConstraintException was thrown>";
     }
 
     #endregion
@@ -43,35 +43,35 @@ public sealed class ConflictMessageProvenanceTests {
 
     [Fact(DisplayName = "A pin emptied by NonZero names NonZero, not the pin itself.")]
     public void PinEmptiedByNonZeroNamesTheExclusion() {
-        string message = ConflictMessage(() => Any.Byte().NonZero().Zero());
+        string message = ConflictMessage(() => Dummy.Byte().NonZero().Zero());
 
         Check.WithCustomMessage($"The exclusion was not named. Message: {message}").That(message).Contains("NonZero()");
     }
 
     [Fact(DisplayName = "A single-value bound emptied by NonZero names NonZero.")]
     public void BoundEmptiedByNonZeroNamesTheExclusion() {
-        string message = ConflictMessage(() => Any.Byte().NonZero().LessThan(1));
+        string message = ConflictMessage(() => Dummy.Byte().NonZero().LessThan(1));
 
         Check.WithCustomMessage($"The exclusion was not named. Message: {message}").That(message).Contains("NonZero()");
     }
 
     [Fact(DisplayName = "A range pinned by two bounds and emptied by Except names Except, not a bound.")]
     public void PinEmptiedByExceptNamesTheExclusionNotABound() {
-        string message = ConflictMessage(() => Any.Int32().Except(5).GreaterThanOrEqualTo(5).LessThanOrEqualTo(5));
+        string message = ConflictMessage(() => Dummy.Int32().Except(5).GreaterThanOrEqualTo(5).LessThanOrEqualTo(5));
 
         Check.WithCustomMessage($"The exclusion was not named. Message: {message}").That(message).Contains("Except(5)");
     }
 
     [Fact(DisplayName = "A pin emptied by DifferentFrom names DifferentFrom.")]
     public void PinEmptiedByDifferentFromNamesTheExclusion() {
-        string message = ConflictMessage(() => Any.Int32().DifferentFrom(-1).Negative().GreaterThan(-2));
+        string message = ConflictMessage(() => Dummy.Int32().DifferentFrom(-1).Negative().GreaterThan(-2));
 
         Check.WithCustomMessage($"The exclusion was not named. Message: {message}").That(message).Contains("DifferentFrom(-1)");
     }
 
     [Fact(DisplayName = "A lattice emptied by Except names Except and the lattice, not the lattice alone.")]
     public void LatticeEmptiedByExceptNamesBothTheExclusionAndTheLattice() {
-        string message = ConflictMessage(() => Any.Int32().MultipleOf(5).Except(0).Between(-4, 4));
+        string message = ConflictMessage(() => Dummy.Int32().MultipleOf(5).Except(0).Between(-4, 4));
 
         Check.WithCustomMessage($"The exclusion was not named. Message: {message}").That(message).Contains("Except(0)");
         Check.WithCustomMessage($"The lattice was not named. Message: {message}").That(message).Contains("MultipleOf(5)");
@@ -79,7 +79,7 @@ public sealed class ConflictMessageProvenanceTests {
 
     [Fact(DisplayName = "An allow-list emptied by Except names Except, not just the allow-list.")]
     public void AllowListEmptiedByExceptNamesTheExclusion() {
-        string message = ConflictMessage(() => Any.Int32().Except(1, 2).OneOf(1, 2));
+        string message = ConflictMessage(() => Dummy.Int32().Except(1, 2).OneOf(1, 2));
 
         Check.WithCustomMessage($"The exclusion was not named. Message: {message}").That(message).Contains("Except(1, 2)");
     }
@@ -88,7 +88,7 @@ public sealed class ConflictMessageProvenanceTests {
 
     [Fact(DisplayName = "A decimal pin emptied by DifferentFrom names DifferentFrom.")]
     public void DecimalPinEmptiedByDifferentFromNamesTheExclusion() {
-        string message = ConflictMessage(() => Any.Decimal().DifferentFrom(1m).Between(1m, 1m));
+        string message = ConflictMessage(() => Dummy.Decimal().DifferentFrom(1m).Between(1m, 1m));
 
         Check.WithCustomMessage($"The exclusion was not named. Message: {message}").That(message).Contains("DifferentFrom(1)");
     }
@@ -97,7 +97,7 @@ public sealed class ConflictMessageProvenanceTests {
 
     [Fact(DisplayName = "A double pin emptied by DifferentFrom names DifferentFrom.")]
     public void DoublePinEmptiedByDifferentFromNamesTheExclusion() {
-        string message = ConflictMessage(() => Any.Double().DifferentFrom(1d).Between(1d, 1d));
+        string message = ConflictMessage(() => Dummy.Double().DifferentFrom(1d).Between(1d, 1d));
 
         Check.WithCustomMessage($"The exclusion was not named. Message: {message}").That(message).Contains("DifferentFrom(1)");
     }
@@ -107,7 +107,7 @@ public sealed class ConflictMessageProvenanceTests {
 
     [Fact(DisplayName = "An Int128 pin emptied by NonZero names NonZero.")]
     public void Int128PinEmptiedByNonZeroNamesTheExclusion() {
-        string message = ConflictMessage(() => Any.Int128().NonZero().Between(System.Int128.Zero, System.Int128.Zero));
+        string message = ConflictMessage(() => Dummy.Int128().NonZero().Between(System.Int128.Zero, System.Int128.Zero));
 
         Check.WithCustomMessage($"The exclusion was not named. Message: {message}").That(message).Contains("NonZero()");
     }
@@ -120,7 +120,7 @@ public sealed class ConflictMessageProvenanceTests {
         // OneOf(1, 3) offers two values, but Between(0, 1) already drops 3; Except(1) then removes the only one
         // that survived. Saying Except(1) forbids *every* value OneOf allows would be false — it never forbids 3 —
         // so the claim must be qualified to the values the other constraints leave.
-        string message = ConflictMessage(() => Any.Int32().Except(1).Between(0, 1).OneOf(1, 3));
+        string message = ConflictMessage(() => Dummy.Int32().Except(1).Between(0, 1).OneOf(1, 3));
 
         Check.WithCustomMessage($"The exclusion was not named. Message: {message}").That(message).Contains("Except(1)");
         Check.WithCustomMessage($"The message overclaims that Except(1) forbids every value OneOf allows. Message: {message}")
@@ -131,7 +131,7 @@ public sealed class ConflictMessageProvenanceTests {
     public void AnExclusionAppliedLastIsNotRepeatedOnBothSides() {
         // Zero() pins the byte to 0; NonZero(), applied last, is itself the forbidder. Repeating "NonZero()" on
         // both sides of "because" reads as circular, so the clause refers back to the applied constraint as "it".
-        string message = ConflictMessage(() => Any.Byte().Zero().NonZero());
+        string message = ConflictMessage(() => Dummy.Byte().Zero().NonZero());
 
         Check.WithCustomMessage($"The applied constraint should be referred to as 'it'. Message: {message}").That(message).Contains("it forbids");
         Check.WithCustomMessage($"The applied constraint is echoed after 'because'. Message: {message}").That(message).Not.Contains("because NonZero()");
@@ -141,7 +141,7 @@ public sealed class ConflictMessageProvenanceTests {
 
     [Fact(DisplayName = "A bound-vs-bound conflict still names the opposing bound (unchanged).")]
     public void BoundVersusBoundStillNamesBothSides() {
-        string message = ConflictMessage(() => Any.Int32().Between(1, 10).GreaterThan(50));
+        string message = ConflictMessage(() => Dummy.Int32().Between(1, 10).GreaterThan(50));
 
         Check.That(message).Contains("Between(1, 10)");
         Check.That(message).Contains("GreaterThan(50)");

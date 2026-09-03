@@ -10,10 +10,10 @@ using Xunit.v3;
 namespace JustDummies.Xunit;
 
 /// <summary>
-///     Makes a test's arbitrary values reproducible: the ambient <see cref="Any" /> context is pinned to a seed for
+///     Makes a test's arbitrary values reproducible: the ambient <see cref="Dummy" /> context is pinned to a seed for
 ///     the duration of the test, and that seed is reported <b>only when the test fails</b> — so a red test names the
 ///     exact seed to replay while a green one stays silent. This is the declarative form of
-///     <c>Any.Reproducibly(() =&gt; { ... })</c>: the values still vary between runs, which is what surfaces a test
+///     <c>Dummy.Reproducibly(() =&gt; { ... })</c>: the values still vary between runs, which is what surfaces a test
 ///     secretly depending on one, but a failure is recoverable without the body having been wrapped in advance.
 /// </summary>
 /// <remarks>
@@ -31,7 +31,7 @@ namespace JustDummies.Xunit;
 ///         <code>
 ///         [Fact, Reproducible]
 ///         public void Order_reference_is_accepted() {
-///             string reference = Any.String().StartingWith("ORD-").WithLength(12).Generate();
+///             string reference = Dummy.String().StartingWith("ORD-").WithLength(12).Generate();
 ///             // ... act, assert ...
 ///         }
 ///
@@ -42,7 +42,7 @@ namespace JustDummies.Xunit;
 ///     </example>
 ///     <para>
 ///         The seed reaches the test's output, which xUnit attaches to the failing test's result. Values drawn from an
-///         explicit <c>Any.WithSeed(...)</c> context are unaffected: that context is isolated by design and does not
+///         explicit <c>Dummy.WithSeed(...)</c> context are unaffected: that context is isolated by design and does not
 ///         draw from the ambient source this attribute pins.
 ///     </para>
 /// </remarks>
@@ -80,7 +80,7 @@ public sealed class ReproducibleAttribute : BeforeAfterTestAttribute {
     public override void Before(MethodInfo methodUnderTest, IXunitTest test) {
         int seed = _seed ?? NewSeed();
 
-        Open.Value = new Scope(Any.UseSeed(seed, ReplaySnippet(seed)), seed, Open.Value);
+        Open.Value = new Scope(Dummy.UseSeed(seed, ReplaySnippet(seed)), seed, Open.Value);
     }
 
     /// <inheritdoc />

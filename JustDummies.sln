@@ -29,11 +29,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "doc", "doc", "{6F7BC048-0A7
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JustDummies.Documentation", "doc\JustDummies.Documentation.csproj", "{B4FF9A5D-D203-4A62-A676-84A0D5802CF6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JustDummies.GenAny", "JustDummies.GenAny\JustDummies.GenAny.csproj", "{7415E3AF-5646-4ACE-A3DF-F625CC82B677}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JustDummies.GenDummy", "JustDummies.GenDummy\JustDummies.GenDummy.csproj", "{7415E3AF-5646-4ACE-A3DF-F625CC82B677}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JustDummies.Cli", "JustDummies.Cli\JustDummies.Cli.csproj", "{5020E959-37CD-4A89-9A97-FB466CAC79A8}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JustDummies.GenAny.UnitTests", "JustDummies.GenAny.UnitTests\JustDummies.GenAny.UnitTests.csproj", "{73BD6C89-DAB6-4297-A492-B6FE6F2D94A5}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JustDummies.GenDummy.UnitTests", "JustDummies.GenDummy.UnitTests\JustDummies.GenDummy.UnitTests.csproj", "{73BD6C89-DAB6-4297-A492-B6FE6F2D94A5}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JustDummies.Cli.UnitTests", "JustDummies.Cli.UnitTests\JustDummies.Cli.UnitTests.csproj", "{F50B3A8F-C27D-475F-958F-C7311702167E}"
 EndProject

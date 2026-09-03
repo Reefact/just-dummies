@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-using JustDummies.GenAny;
+using JustDummies.GenDummy;
 
 using Spectre.Console;
 
@@ -92,7 +92,7 @@ internal static class Refusals {
     ///     does not decide it: the <c>extension</c> member compiles for <c>netstandard2.0</c> as readily as for
     ///     <c>net10.0</c> — verified — and what it needs is the language version the project is built at. And
     ///     refused rather than quietly downgraded to a static root: a developer who asked for
-    ///     <c>Any.Order()</c> and silently got <c>Dummies.Order()</c> would find out at the call site.
+    ///     <c>Dummy.Order()</c> and silently got <c>Dummies.Order()</c> would find out at the call site.
     /// </remarks>
     internal static void LanguageVersionTooLow(string projectPath, string current, IAnsiConsole console) {
         ArgumentNullException.ThrowIfNull(projectPath);

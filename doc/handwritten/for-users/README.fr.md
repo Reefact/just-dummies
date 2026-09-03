@@ -38,9 +38,9 @@ De quoi chercher, organisé par le type dont vous avez besoin.
 
 | Page | Couvre |
 | --- | --- |
-| [Index de toutes les fabriques](./generators/README.fr.md) | chaque appel `Any.*` associé à sa page |
+| [Index de toutes les fabriques](./generators/README.fr.md) | chaque appel `Dummy.*` associé à sa page |
 | [Nombres](./generators/numbers.fr.md) | les quatorze types numériques, bornes, signe, multiples, échelle |
-| [Chaînes et motifs](./generators/strings.fr.md) | longueur, alphabets, préfixes, et `Any.StringMatching` |
+| [Chaînes et motifs](./generators/strings.fr.md) | longueur, alphabets, préfixes, et `Dummy.StringMatching` |
 | [Dates et heures](./generators/dates-and-times.fr.md) | instants, durées, granularité, la dimension du décalage |
 | [Collections](./generators/collections.fr.md) | tableaux, listes, séquences, ensembles, dictionnaires, distinction |
 | [Énumérations et choix](./generators/enums-and-choices.fr.md) | énumérations, drapeaux, viviers, `ElementOf`, booléens |

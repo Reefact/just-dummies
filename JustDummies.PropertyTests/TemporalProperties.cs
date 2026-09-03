@@ -10,16 +10,16 @@ using JetBrains.Annotations;
 namespace JustDummies.PropertyTests;
 
 /// <summary>
-///     Property-based tests for the three temporal generators — <see cref="AnyDateTime" />,
-///     <see cref="AnyTimeSpan" /> and <see cref="AnyDateTimeOffset" />, including its offset dimension. Where the
+///     Property-based tests for the three temporal generators — <see cref="DummyDateTime" />,
+///     <see cref="DummyTimeSpan" /> and <see cref="DummyDateTimeOffset" />, including its offset dimension. Where the
 ///     example-based suite pins one anchor instant and a handful of hand-picked windows, these draw the instants,
 ///     the durations and the offsets themselves, over the whole ten-thousand-year domain and the whole ±14:00
 ///     offset range, so a bound that overflows at the edge of the domain, or an offset that quietly pins itself to
 ///     one end of its range, is found and shrunk to its minimal counter-example.
 /// </summary>
 /// <remarks>
-///     Two traps shape almost every property here. The naming differs by type — <see cref="AnyDateTime" /> and
-///     <see cref="AnyDateTimeOffset" /> say <c>After</c>/<c>Before</c> while <see cref="AnyTimeSpan" /> says
+///     Two traps shape almost every property here. The naming differs by type — <see cref="DummyDateTime" /> and
+///     <see cref="DummyDateTimeOffset" /> say <c>After</c>/<c>Before</c> while <see cref="DummyTimeSpan" /> says
 ///     <c>GreaterThan</c>/<c>LessThan</c> — and legality is <b>value-dependent</b>: <c>Positive()</c> on an interval
 ///     that lies below zero, <c>After</c> at the very top of the domain, or a <c>WithOffset</c> that no longer fits
 ///     the instant window already declared are conflicts rather than narrowings. The properties therefore decide
@@ -31,7 +31,7 @@ namespace JustDummies.PropertyTests;
 ///         by <see cref="DateTimeOffset.UtcTicks" /> for <see cref="DateTimeOffset" /> (rendering ignored).
 ///     </para>
 /// </remarks>
-[TestSubject(typeof(AnyDateTimeOffset))]
+[TestSubject(typeof(DummyDateTimeOffset))]
 public sealed class TemporalProperties {
 
     #region Statics members declarations
@@ -146,7 +146,7 @@ public sealed class TemporalProperties {
     [Fact(DisplayName = "DateTime: Between contains — every draw falls within the declared inclusive instants.")]
     public void DateTimeBetweenContainsEveryDraw() {
         Prop.ForAll(Generators.OrderedPair(Instants()).ToArbitrary(),
-                    bounds => Expect.EveryDraw(Any.DateTime().Between(bounds.Min, bounds.Max),
+                    bounds => Expect.EveryDraw(Dummy.DateTime().Between(bounds.Min, bounds.Max),
                                                value => value >= bounds.Min && value <= bounds.Max))
             .QuickCheckThrowOnFailure();
     }
@@ -154,7 +154,7 @@ public sealed class TemporalProperties {
     [Fact(DisplayName = "DateTime: Between with equal instants pins the value, for every instant.")]
     public void DateTimeBetweenWithEqualBoundsPins() {
         Prop.ForAll(Instants().ToArbitrary(),
-                    instant => Expect.EveryDraw(Any.DateTime().Between(instant, instant), drawn => drawn.Ticks == instant.Ticks))
+                    instant => Expect.EveryDraw(Dummy.DateTime().Between(instant, instant), drawn => drawn.Ticks == instant.Ticks))
             .QuickCheckThrowOnFailure();
     }
 
@@ -166,11 +166,11 @@ public sealed class TemporalProperties {
                         // exclusive bound empties the domain, and the library owes a conflict at the fluent call
                         // rather than a failure at Generate().
                         bool after = instant == DateTime.MaxValue
-                                         ? Expect.Throws<ConflictingAnyConstraintException>(() => Any.DateTime().After(instant))
-                                         : Expect.EveryDraw(Any.DateTime().After(instant), value => value > instant);
+                                         ? Expect.Throws<ConflictingDummyConstraintException>(() => Dummy.DateTime().After(instant))
+                                         : Expect.EveryDraw(Dummy.DateTime().After(instant), value => value > instant);
                         bool before = instant == DateTime.MinValue
-                                          ? Expect.Throws<ConflictingAnyConstraintException>(() => Any.DateTime().Before(instant))
-                                          : Expect.EveryDraw(Any.DateTime().Before(instant), value => value < instant);
+                                          ? Expect.Throws<ConflictingDummyConstraintException>(() => Dummy.DateTime().Before(instant))
+                                          : Expect.EveryDraw(Dummy.DateTime().Before(instant), value => value < instant);
 
                         return after && before;
                     })
@@ -180,17 +180,17 @@ public sealed class TemporalProperties {
     [Fact(DisplayName = "DateTime: AfterOrEqualTo and BeforeOrEqualTo are inclusive, right up to the edge of the domain.")]
     public void DateTimeInclusiveBoundsAreInclusive() {
         Prop.ForAll(Instants().ToArbitrary(),
-                    instant => Expect.EveryDraw(Any.DateTime().AfterOrEqualTo(instant), value => value >= instant)
-                               && Expect.EveryDraw(Any.DateTime().BeforeOrEqualTo(instant), value => value <= instant))
+                    instant => Expect.EveryDraw(Dummy.DateTime().AfterOrEqualTo(instant), value => value >= instant)
+                               && Expect.EveryDraw(Dummy.DateTime().BeforeOrEqualTo(instant), value => value <= instant))
             .QuickCheckThrowOnFailure();
     }
 
     [Fact(DisplayName = "DateTime: every generated value carries Utc kind, whatever kind the bounds carry.")]
     public void DateTimeGeneratedValuesCarryUtcKind() {
         Prop.ForAll(Instants().ToArbitrary(),
-                    instant => Expect.EveryDraw(Any.DateTime(), value => value.Kind == DateTimeKind.Utc)
-                               && Expect.EveryDraw(Any.DateTime().AfterOrEqualTo(instant), value => value.Kind == DateTimeKind.Utc)
-                               && Expect.EveryDraw(Any.DateTime().BeforeOrEqualTo(instant), value => value.Kind == DateTimeKind.Utc))
+                    instant => Expect.EveryDraw(Dummy.DateTime(), value => value.Kind == DateTimeKind.Utc)
+                               && Expect.EveryDraw(Dummy.DateTime().AfterOrEqualTo(instant), value => value.Kind == DateTimeKind.Utc)
+                               && Expect.EveryDraw(Dummy.DateTime().BeforeOrEqualTo(instant), value => value.Kind == DateTimeKind.Utc))
             .QuickCheckThrowOnFailure();
     }
 
@@ -198,14 +198,14 @@ public sealed class TemporalProperties {
     public void DateTimeCrossedBoundsAreAnArgumentError() {
         Prop.ForAll(Generators.OrderedPair(Instants()).ToArbitrary(),
                     bounds => bounds.Min == bounds.Max
-                              || ThrowsArgumentExceptionNaming(() => Any.DateTime().Between(bounds.Max, bounds.Min), "start"))
+                              || ThrowsArgumentExceptionNaming(() => Dummy.DateTime().Between(bounds.Max, bounds.Min), "start"))
             .QuickCheckThrowOnFailure();
     }
 
     [Fact(DisplayName = "TimeSpan: Between contains — every draw falls within the declared inclusive durations.")]
     public void TimeSpanBetweenContainsEveryDraw() {
         Prop.ForAll(Generators.OrderedPair(Durations()).ToArbitrary(),
-                    bounds => Expect.EveryDraw(Any.TimeSpan().Between(bounds.Min, bounds.Max),
+                    bounds => Expect.EveryDraw(Dummy.TimeSpan().Between(bounds.Min, bounds.Max),
                                                value => value >= bounds.Min && value <= bounds.Max))
             .QuickCheckThrowOnFailure();
     }
@@ -217,11 +217,11 @@ public sealed class TemporalProperties {
                         // The duration surface names its bounds GreaterThan/LessThan where the instant surface says
                         // After/Before; the invariant underneath is the same one.
                         bool greater = duration == TimeSpan.MaxValue
-                                           ? Expect.Throws<ConflictingAnyConstraintException>(() => Any.TimeSpan().GreaterThan(duration))
-                                           : Expect.EveryDraw(Any.TimeSpan().GreaterThan(duration), value => value > duration);
+                                           ? Expect.Throws<ConflictingDummyConstraintException>(() => Dummy.TimeSpan().GreaterThan(duration))
+                                           : Expect.EveryDraw(Dummy.TimeSpan().GreaterThan(duration), value => value > duration);
                         bool less = duration == TimeSpan.MinValue
-                                        ? Expect.Throws<ConflictingAnyConstraintException>(() => Any.TimeSpan().LessThan(duration))
-                                        : Expect.EveryDraw(Any.TimeSpan().LessThan(duration), value => value < duration);
+                                        ? Expect.Throws<ConflictingDummyConstraintException>(() => Dummy.TimeSpan().LessThan(duration))
+                                        : Expect.EveryDraw(Dummy.TimeSpan().LessThan(duration), value => value < duration);
 
                         return greater && less;
                     })
@@ -231,8 +231,8 @@ public sealed class TemporalProperties {
     [Fact(DisplayName = "TimeSpan: GreaterThanOrEqualTo and LessThanOrEqualTo are inclusive, right up to the edge of the domain.")]
     public void TimeSpanInclusiveBoundsAreInclusive() {
         Prop.ForAll(Durations().ToArbitrary(),
-                    duration => Expect.EveryDraw(Any.TimeSpan().GreaterThanOrEqualTo(duration), value => value >= duration)
-                                && Expect.EveryDraw(Any.TimeSpan().LessThanOrEqualTo(duration), value => value <= duration))
+                    duration => Expect.EveryDraw(Dummy.TimeSpan().GreaterThanOrEqualTo(duration), value => value >= duration)
+                                && Expect.EveryDraw(Dummy.TimeSpan().LessThanOrEqualTo(duration), value => value <= duration))
             .QuickCheckThrowOnFailure();
     }
 
@@ -240,7 +240,7 @@ public sealed class TemporalProperties {
     public void TimeSpanPositiveAndNegativeAreStrictAboutZero() {
         Prop.ForAll(Generators.OrderedPair(Durations()).ToArbitrary(),
                     bounds => {
-                        AnyTimeSpan interval = Any.TimeSpan().Between(bounds.Min, bounds.Max);
+                        DummyTimeSpan interval = Dummy.TimeSpan().Between(bounds.Min, bounds.Max);
 
                         // Value-dependent legality: the very same call narrows an interval that still reaches past
                         // zero and empties one that does not, so the expectation is read off the drawn bounds. An
@@ -248,11 +248,11 @@ public sealed class TemporalProperties {
                         bool positive = bounds.Max > TimeSpan.Zero
                                             ? Expect.EveryDraw(interval.Positive(),
                                                                value => value > TimeSpan.Zero && value >= bounds.Min && value <= bounds.Max)
-                                            : Expect.Throws<ConflictingAnyConstraintException>(() => interval.Positive());
+                                            : Expect.Throws<ConflictingDummyConstraintException>(() => interval.Positive());
                         bool negative = bounds.Min < TimeSpan.Zero
                                             ? Expect.EveryDraw(interval.Negative(),
                                                                value => value < TimeSpan.Zero && value >= bounds.Min && value <= bounds.Max)
-                                            : Expect.Throws<ConflictingAnyConstraintException>(() => interval.Negative());
+                                            : Expect.Throws<ConflictingDummyConstraintException>(() => interval.Negative());
 
                         return positive && negative;
                     })
@@ -263,13 +263,13 @@ public sealed class TemporalProperties {
     public void TimeSpanZeroPinsTheIntervalsThatHoldIt() {
         Prop.ForAll(Generators.OrderedPair(Durations()).ToArbitrary(),
                     bounds => {
-                        AnyTimeSpan interval = Any.TimeSpan().Between(bounds.Min, bounds.Max);
+                        DummyTimeSpan interval = Dummy.TimeSpan().Between(bounds.Min, bounds.Max);
 
                         if (bounds.Min <= TimeSpan.Zero && bounds.Max >= TimeSpan.Zero) {
                             return Expect.EveryDraw(interval.Zero(), value => value == TimeSpan.Zero);
                         }
 
-                        return Expect.Throws<ConflictingAnyConstraintException>(() => interval.Zero());
+                        return Expect.Throws<ConflictingDummyConstraintException>(() => interval.Zero());
                     })
             .QuickCheckThrowOnFailure();
     }
@@ -278,13 +278,13 @@ public sealed class TemporalProperties {
     public void TimeSpanNonZeroExcludesZero() {
         Prop.ForAll(Generators.OrderedPair(Durations()).ToArbitrary(),
                     bounds => {
-                        AnyTimeSpan interval = Any.TimeSpan().Between(bounds.Min, bounds.Max);
+                        DummyTimeSpan interval = Dummy.TimeSpan().Between(bounds.Min, bounds.Max);
 
                         // Excluding zero from the interval pinned to zero leaves nothing to draw: that is a conflict
                         // at the fluent call, the duration counterpart of excluding the single value of a pinned
                         // integer interval.
                         if (bounds.Min == TimeSpan.Zero && bounds.Max == TimeSpan.Zero) {
-                            return Expect.Throws<ConflictingAnyConstraintException>(() => interval.NonZero());
+                            return Expect.Throws<ConflictingDummyConstraintException>(() => interval.NonZero());
                         }
 
                         return Expect.EveryDraw(interval.NonZero(),
@@ -297,14 +297,14 @@ public sealed class TemporalProperties {
     public void TimeSpanCrossedBoundsAreAnArgumentError() {
         Prop.ForAll(Generators.OrderedPair(Durations()).ToArbitrary(),
                     bounds => bounds.Min == bounds.Max
-                              || ThrowsArgumentExceptionNaming(() => Any.TimeSpan().Between(bounds.Max, bounds.Min), "minimum"))
+                              || ThrowsArgumentExceptionNaming(() => Dummy.TimeSpan().Between(bounds.Max, bounds.Min), "minimum"))
             .QuickCheckThrowOnFailure();
     }
 
     [Fact(DisplayName = "DateTimeOffset: Between contains — every draw falls within the declared inclusive instants.")]
     public void DateTimeOffsetBetweenContainsEveryDraw() {
         Prop.ForAll(Generators.OrderedPair(Moments()).ToArbitrary(),
-                    bounds => Expect.EveryDraw(Any.DateTimeOffset().Between(bounds.Min, bounds.Max),
+                    bounds => Expect.EveryDraw(Dummy.DateTimeOffset().Between(bounds.Min, bounds.Max),
                                                value => value.UtcTicks >= bounds.Min.UtcTicks && value.UtcTicks <= bounds.Max.UtcTicks))
             .QuickCheckThrowOnFailure();
     }
@@ -314,11 +314,11 @@ public sealed class TemporalProperties {
         Prop.ForAll(Moments().ToArbitrary(),
                     instant => {
                         bool after = instant == DateTimeOffset.MaxValue
-                                         ? Expect.Throws<ConflictingAnyConstraintException>(() => Any.DateTimeOffset().After(instant))
-                                         : Expect.EveryDraw(Any.DateTimeOffset().After(instant), value => value.UtcTicks > instant.UtcTicks);
+                                         ? Expect.Throws<ConflictingDummyConstraintException>(() => Dummy.DateTimeOffset().After(instant))
+                                         : Expect.EveryDraw(Dummy.DateTimeOffset().After(instant), value => value.UtcTicks > instant.UtcTicks);
                         bool before = instant == DateTimeOffset.MinValue
-                                          ? Expect.Throws<ConflictingAnyConstraintException>(() => Any.DateTimeOffset().Before(instant))
-                                          : Expect.EveryDraw(Any.DateTimeOffset().Before(instant), value => value.UtcTicks < instant.UtcTicks);
+                                          ? Expect.Throws<ConflictingDummyConstraintException>(() => Dummy.DateTimeOffset().Before(instant))
+                                          : Expect.EveryDraw(Dummy.DateTimeOffset().Before(instant), value => value.UtcTicks < instant.UtcTicks);
 
                         return after && before;
                     })
@@ -328,16 +328,16 @@ public sealed class TemporalProperties {
     [Fact(DisplayName = "DateTimeOffset: AfterOrEqualTo and BeforeOrEqualTo are inclusive, right up to the edge of the domain.")]
     public void DateTimeOffsetInclusiveBoundsAreInclusive() {
         Prop.ForAll(Moments().ToArbitrary(),
-                    instant => Expect.EveryDraw(Any.DateTimeOffset().AfterOrEqualTo(instant), value => value.UtcTicks >= instant.UtcTicks)
-                               && Expect.EveryDraw(Any.DateTimeOffset().BeforeOrEqualTo(instant), value => value.UtcTicks <= instant.UtcTicks))
+                    instant => Expect.EveryDraw(Dummy.DateTimeOffset().AfterOrEqualTo(instant), value => value.UtcTicks >= instant.UtcTicks)
+                               && Expect.EveryDraw(Dummy.DateTimeOffset().BeforeOrEqualTo(instant), value => value.UtcTicks <= instant.UtcTicks))
             .QuickCheckThrowOnFailure();
     }
 
     [Fact(DisplayName = "DateTimeOffset: with no offset constraint every draw carries the UTC offset, whatever the instant window.")]
     public void DateTimeOffsetDefaultsToTheUtcOffset() {
         Prop.ForAll(Generators.OrderedPair(Moments()).ToArbitrary(),
-                    bounds => Expect.EveryDraw(Any.DateTimeOffset(), value => value.Offset == TimeSpan.Zero)
-                              && Expect.EveryDraw(Any.DateTimeOffset().Between(bounds.Min, bounds.Max), value => value.Offset == TimeSpan.Zero))
+                    bounds => Expect.EveryDraw(Dummy.DateTimeOffset(), value => value.Offset == TimeSpan.Zero)
+                              && Expect.EveryDraw(Dummy.DateTimeOffset().Between(bounds.Min, bounds.Max), value => value.Offset == TimeSpan.Zero))
             .QuickCheckThrowOnFailure();
     }
 
@@ -345,7 +345,7 @@ public sealed class TemporalProperties {
     public void DateTimeOffsetCrossedBoundsAreAnArgumentError() {
         Prop.ForAll(Generators.OrderedPair(Moments()).ToArbitrary(),
                     bounds => bounds.Min == bounds.Max
-                              || ThrowsArgumentExceptionNaming(() => Any.DateTimeOffset().Between(bounds.Max, bounds.Min), "start"))
+                              || ThrowsArgumentExceptionNaming(() => Dummy.DateTimeOffset().Between(bounds.Max, bounds.Min), "start"))
             .QuickCheckThrowOnFailure();
     }
 
@@ -358,7 +358,7 @@ public sealed class TemporalProperties {
                         // Reaching the assertion at all is half the property: the local ticks are the UTC ticks
                         // shifted by the offset, so without the instant range the library tightens on declaration,
                         // the extreme offsets would overflow inside Generate() long before the offset is compared.
-                        return Expect.EveryDraw(Any.DateTimeOffset().WithOffset(offset),
+                        return Expect.EveryDraw(Dummy.DateTimeOffset().WithOffset(offset),
                                                 value => value.Offset == offset
                                                          && value.UtcTicks + offset.Ticks >= DateTime.MinValue.Ticks
                                                          && value.UtcTicks + offset.Ticks <= DateTime.MaxValue.Ticks);
@@ -374,13 +374,13 @@ public sealed class TemporalProperties {
                     testCase => {
                         DateTimeOffset    floor    = DateTimeOffset.MaxValue.AddTicks(-testCase.floorMinutes * TimeSpan.TicksPerMinute);
                         TimeSpan          offset   = Minutes(testCase.offsetMinutes);
-                        AnyDateTimeOffset windowed = Any.DateTimeOffset().After(floor);
+                        DummyDateTimeOffset windowed = Dummy.DateTimeOffset().After(floor);
 
                         // Value-dependent legality again: the last hours of the domain can host a +02:00 offset but
                         // not a +14:00 one, and host every negative offset whatever the window — the window must be
                         // wider than the shift the offset applies to the local ticks.
                         if (testCase.floorMinutes <= testCase.offsetMinutes) {
-                            return Expect.Throws<ConflictingAnyConstraintException>(() => windowed.WithOffset(offset));
+                            return Expect.Throws<ConflictingDummyConstraintException>(() => windowed.WithOffset(offset));
                         }
 
                         return Expect.EveryDraw(windowed.WithOffset(offset),
@@ -397,7 +397,7 @@ public sealed class TemporalProperties {
                         TimeSpan maximum = Minutes(bounds.Max);
 
                         // The degenerate range is kept: a range collapsed onto one offset must pin it, not reject it.
-                        return Expect.EveryDraw(Any.DateTimeOffset().WithOffsetBetween(minimum, maximum),
+                        return Expect.EveryDraw(Dummy.DateTimeOffset().WithOffsetBetween(minimum, maximum),
                                                 value => value.Offset >= minimum
                                                          && value.Offset <= maximum
                                                          && value.Offset.Ticks % TimeSpan.TicksPerMinute == 0);
@@ -417,7 +417,7 @@ public sealed class TemporalProperties {
                         // The range is drawn at least an hour wide, so it always offers more than sixty offsets: a
                         // generator that quietly pinned the offset to one end — the failure a single-draw assertion
                         // cannot see, since one end of the range satisfies the bounds perfectly — surfaces here.
-                        List<DateTimeOffset> draws = Expect.Draws(Any.DateTimeOffset().WithOffsetBetween(minimum, maximum), VariationDraws);
+                        List<DateTimeOffset> draws = Expect.Draws(Dummy.DateTimeOffset().WithOffsetBetween(minimum, maximum), VariationDraws);
 
                         return draws.Select(value => value.Offset).Distinct().Count() > 1
                                && draws.All(value => value.Offset >= minimum && value.Offset <= maximum);
@@ -434,9 +434,9 @@ public sealed class TemporalProperties {
                         // The drawn offsets stay inside ±14:00, so it is the whole-minute rule that fires and not
                         // the range rule — argument validation runs in that order, and the two are told apart by
                         // the exact exception type.
-                        ThrowsArgumentExceptionNaming(() => Any.DateTimeOffset().WithOffset(offset), "offset")
-                        && ThrowsArgumentExceptionNaming(() => Any.DateTimeOffset().WithOffsetBetween(offset, TimeSpan.Zero), "minimum")
-                        && ThrowsArgumentExceptionNaming(() => Any.DateTimeOffset().WithOffsetBetween(TimeSpan.Zero, offset), "maximum"))
+                        ThrowsArgumentExceptionNaming(() => Dummy.DateTimeOffset().WithOffset(offset), "offset")
+                        && ThrowsArgumentExceptionNaming(() => Dummy.DateTimeOffset().WithOffsetBetween(offset, TimeSpan.Zero), "minimum")
+                        && ThrowsArgumentExceptionNaming(() => Dummy.DateTimeOffset().WithOffsetBetween(TimeSpan.Zero, offset), "maximum"))
             .QuickCheckThrowOnFailure();
     }
 
@@ -447,8 +447,8 @@ public sealed class TemporalProperties {
                      select Minutes(mirrored == 0 ? magnitude : -magnitude)).ToArbitrary(),
                     // Whole minutes by construction, so the whole-minute rule passes and the range rule is the one
                     // under test.
-                    offset => Expect.Throws<ArgumentOutOfRangeException>(() => Any.DateTimeOffset().WithOffset(offset))
-                              && Expect.Throws<ArgumentOutOfRangeException>(() => Any.DateTimeOffset().WithOffsetBetween(offset, offset)))
+                    offset => Expect.Throws<ArgumentOutOfRangeException>(() => Dummy.DateTimeOffset().WithOffset(offset))
+                              && Expect.Throws<ArgumentOutOfRangeException>(() => Dummy.DateTimeOffset().WithOffsetBetween(offset, offset)))
             .QuickCheckThrowOnFailure();
     }
 
@@ -456,7 +456,7 @@ public sealed class TemporalProperties {
     public void CrossedOffsetRangeIsAnArgumentError() {
         Prop.ForAll(DistinctOffsetMinutes().ToArbitrary(),
                     bounds => ThrowsArgumentExceptionNaming(
-                        () => Any.DateTimeOffset().WithOffsetBetween(Minutes(bounds.High), Minutes(bounds.Low)), "minimum"))
+                        () => Dummy.DateTimeOffset().WithOffsetBetween(Minutes(bounds.High), Minutes(bounds.Low)), "minimum"))
             .QuickCheckThrowOnFailure();
     }
 
@@ -467,12 +467,12 @@ public sealed class TemporalProperties {
                         TimeSpan low  = Minutes(bounds.Low);
                         TimeSpan high = Minutes(bounds.High);
 
-                        return Expect.Throws<ConflictingAnyConstraintException>(() => Any.DateTimeOffset().WithOffset(low).WithOffset(high))
-                               && Expect.Throws<ConflictingAnyConstraintException>(() => Any.DateTimeOffset().WithOffset(low).WithOffsetBetween(low, high))
-                               && Expect.Throws<ConflictingAnyConstraintException>(() => Any.DateTimeOffset().WithOffsetBetween(low, high).WithOffset(high))
+                        return Expect.Throws<ConflictingDummyConstraintException>(() => Dummy.DateTimeOffset().WithOffset(low).WithOffset(high))
+                               && Expect.Throws<ConflictingDummyConstraintException>(() => Dummy.DateTimeOffset().WithOffset(low).WithOffsetBetween(low, high))
+                               && Expect.Throws<ConflictingDummyConstraintException>(() => Dummy.DateTimeOffset().WithOffsetBetween(low, high).WithOffset(high))
                                // Re-declaring the very same range is idempotent, not a conflict: the dimension is
                                // declared once, which is not the same thing as called once.
-                               && Expect.EveryDraw(Any.DateTimeOffset().WithOffset(low).WithOffset(low), value => value.Offset == low);
+                               && Expect.EveryDraw(Dummy.DateTimeOffset().WithOffset(low).WithOffset(low), value => value.Offset == low);
                     })
             .QuickCheckThrowOnFailure();
     }

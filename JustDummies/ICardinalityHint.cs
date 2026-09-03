@@ -2,10 +2,10 @@ namespace JustDummies;
 
 /// <summary>
 ///     Implemented by the library's own generators that draw from a <b>small, countable</b> domain, so a distinct
-///     collection (<see cref="AnySet{T}" />, <c>ListOf(...).Distinct()</c>, a dictionary's keys) can tell — at
+///     collection (<see cref="DummySet{T}" />, <c>ListOf(...).Distinct()</c>, a dictionary's keys) can tell — at
 ///     declaration time — whether a requested count, together with any values pinned through <c>Containing(...)</c>,
 ///     can be satisfied from the effective domain, and fail eagerly with a
-///     <see cref="ConflictingAnyConstraintException" /> instead of only discovering it while drawing.
+///     <see cref="ConflictingDummyConstraintException" /> instead of only discovering it while drawing.
 /// </summary>
 /// <remarks>
 ///     The two members travel together on purpose — that is the whole point of putting them on one interface:
@@ -17,9 +17,9 @@ namespace JustDummies;
 ///     keeps the promise, so no generator can drift out of the eager perimeter unnoticed.
 ///     <para>
 ///         A generator whose domain is unbounded, effectively unbounded, or simply unknown (a foreign
-///         <see cref="IAny{T}" />, a derived generator) does not implement this interface; the collection then relies
+///         <see cref="IDummy{T}" />, a derived generator) does not implement this interface; the collection then relies
 ///         on the bounded dedup-draw fallback, which surfaces a genuine shortfall as an
-///         <see cref="AnyGenerationException" />.
+///         <see cref="DummyGenerationException" />.
 ///     </para>
 ///     <para>
 ///         Both answers are given under <see cref="EqualityComparer{T}.Default" />, and neither survives a collection

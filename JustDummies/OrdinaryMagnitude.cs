@@ -34,7 +34,7 @@ namespace JustDummies;
 ///         That last sentence is true and was long read as more than it says. Being inside the window does not make a
 ///         draw reach the magnitudes inside it: the halves are spaced geometrically, so a draw uniform over the reals
 ///         sat almost entirely in the widest gaps and produced nothing below 1 at all. The window was never the
-///         remedy for that; <c>AnyHalf</c> draws over the values it can represent instead (ADR-0091), and this window
+///         remedy for that; <c>DummyHalf</c> draws over the values it can represent instead (ADR-0091), and this window
 ///         still does not clip it.
 ///     </para>
 /// </remarks>

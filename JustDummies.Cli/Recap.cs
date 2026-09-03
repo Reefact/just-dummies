@@ -5,7 +5,7 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 
-using JustDummies.GenAny;
+using JustDummies.GenDummy;
 
 using Spectre.Console;
 
@@ -39,14 +39,14 @@ internal static class Recap {
     private const string NoExpression = "—";
 
     /// <summary>The order the provenance column reads in, so two runs never word the same facts differently.</summary>
-    private static readonly (GenAny.Provenance Flag, string Word)[] Words = [
-        (GenAny.Provenance.Scaffolded, "AnyX"),
-        (GenAny.Provenance.Guard, "guard"),
-        (GenAny.Provenance.GuardsNotCombined, "guards not combined"),
-        (GenAny.Provenance.UnreadGuards, "unread guards"),
-        (GenAny.Provenance.ConstraintUnavailable, "constraint unavailable"),
-        (GenAny.Provenance.NoSource, "no source"),
-        (GenAny.Provenance.Unavailable, "unavailable")
+    private static readonly (GenDummy.Provenance Flag, string Word)[] Words = [
+        (GenDummy.Provenance.Scaffolded, "DummyX"),
+        (GenDummy.Provenance.Guard, "guard"),
+        (GenDummy.Provenance.GuardsNotCombined, "guards not combined"),
+        (GenDummy.Provenance.UnreadGuards, "unread guards"),
+        (GenDummy.Provenance.ConstraintUnavailable, "constraint unavailable"),
+        (GenDummy.Provenance.NoSource, "no source"),
+        (GenDummy.Provenance.Unavailable, "unavailable")
     ];
 
     /// <summary>Renders one scaffold, as §6 writes it.</summary>
@@ -145,7 +145,7 @@ internal static class Recap {
     ///     differently. It carries provenance alone — an open parameter reads as <c>TODO</c> in the recap's
     ///     column and as <c>resolved: false</c> in the report, which is each rendering's own business.
     /// </remarks>
-    internal static IReadOnlyList<string> WordsFor(GenAny.Provenance provenance) {
+    internal static IReadOnlyList<string> WordsFor(GenDummy.Provenance provenance) {
         return [.. Words.Where(word => provenance.HasFlag(word.Flag)).Select(word => word.Word)];
     }
 

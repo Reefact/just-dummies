@@ -19,7 +19,7 @@ false alarm on a routine change trains the team to ignore you.
 **Likely warrants an ADR** (a lasting, cross-cutting choice):
 
 - a new or changed **public API contract** (a new error type or hierarchy shape,
-  a change to `Any`'s factory surface, a constraint's semantics, or a `[ValueObject]` type);
+  a change to `Dummy`'s factory surface, a constraint's semantics, or a `[ValueObject]` type);
 - a change to a **cross-cutting invariant** (for example making a value object a
   `struct`, or changing error-code immutability);
 - raising or lowering a **supported-platform floor** (target framework, SDK,

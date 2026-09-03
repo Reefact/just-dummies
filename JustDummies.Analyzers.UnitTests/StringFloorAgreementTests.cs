@@ -38,16 +38,16 @@ public sealed class StringFloorAgreementTests {
     ///     character.
     /// </summary>
     private static readonly (string Text, Func<int, string> DrawUnder)[] Chains = [
-        ("Any.String()", cap => Any.String().WithMaxLength(cap).Generate()),
-        ("Any.String().NonEmpty()", cap => Any.String().NonEmpty().WithMaxLength(cap).Generate()),
-        ("Any.String().NotBlank()", cap => Any.String().NotBlank().WithMaxLength(cap).Generate()),
-        ("Any.String().StartingWith(\"hello\")", cap => Any.String().StartingWith("hello").WithMaxLength(cap).Generate()),
-        ("Any.String().StartingWith(\"A\").StartingWith(\"A\")", cap => Any.String().StartingWith("A").StartingWith("A").WithMaxLength(cap).Generate()),
-        ("Any.String().EndingWith(\"Z\").EndingWith(\"Z\")", cap => Any.String().EndingWith("Z").EndingWith("Z").WithMaxLength(cap).Generate()),
-        ("Any.String().Containing(\"XY\").Containing(\"XY\")", cap => Any.String().Containing("XY").Containing("XY").WithMaxLength(cap).Generate()),
-        ("Any.String().StartingWith(\"ab\").EndingWith(\"cd\")", cap => Any.String().StartingWith("ab").EndingWith("cd").WithMaxLength(cap).Generate()),
-        ("Any.String().StartingWith(\" \").NotBlank()", cap => Any.String().StartingWith(" ").NotBlank().WithMaxLength(cap).Generate()),
-        ("Any.String().StartingWith(\"A\").NotBlank()", cap => Any.String().StartingWith("A").NotBlank().WithMaxLength(cap).Generate())
+        ("Dummy.String()", cap => Dummy.String().WithMaxLength(cap).Generate()),
+        ("Dummy.String().NonEmpty()", cap => Dummy.String().NonEmpty().WithMaxLength(cap).Generate()),
+        ("Dummy.String().NotBlank()", cap => Dummy.String().NotBlank().WithMaxLength(cap).Generate()),
+        ("Dummy.String().StartingWith(\"hello\")", cap => Dummy.String().StartingWith("hello").WithMaxLength(cap).Generate()),
+        ("Dummy.String().StartingWith(\"A\").StartingWith(\"A\")", cap => Dummy.String().StartingWith("A").StartingWith("A").WithMaxLength(cap).Generate()),
+        ("Dummy.String().EndingWith(\"Z\").EndingWith(\"Z\")", cap => Dummy.String().EndingWith("Z").EndingWith("Z").WithMaxLength(cap).Generate()),
+        ("Dummy.String().Containing(\"XY\").Containing(\"XY\")", cap => Dummy.String().Containing("XY").Containing("XY").WithMaxLength(cap).Generate()),
+        ("Dummy.String().StartingWith(\"ab\").EndingWith(\"cd\")", cap => Dummy.String().StartingWith("ab").EndingWith("cd").WithMaxLength(cap).Generate()),
+        ("Dummy.String().StartingWith(\" \").NotBlank()", cap => Dummy.String().StartingWith(" ").NotBlank().WithMaxLength(cap).Generate()),
+        ("Dummy.String().StartingWith(\"A\").NotBlank()", cap => Dummy.String().StartingWith("A").NotBlank().WithMaxLength(cap).Generate())
     ];
 
     [Fact(DisplayName = "JD030 reports the floor the library actually enforces, for every shape of the arithmetic.")]
@@ -71,7 +71,7 @@ public sealed class StringFloorAgreementTests {
                 drawUnder(cap);
 
                 return cap;
-            } catch (ConflictingAnyConstraintException) {
+            } catch (ConflictingDummyConstraintException) {
                 // Too tight for this shape; the next ceiling up is the question.
             }
         }

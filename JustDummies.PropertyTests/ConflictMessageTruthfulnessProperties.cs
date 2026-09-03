@@ -32,12 +32,12 @@ namespace JustDummies.PropertyTests;
 ///         messages), which is the falsifiability the suite requires.
 ///     </para>
 ///     <para>
-///         The engines share one exhaustion path, so a builder per family — ordinal (<see cref="AnyInt32" />), decimal,
-///         continuous (<see cref="AnyDouble" />) — proves them all; the 128-bit sibling is checked in
+///         The engines share one exhaustion path, so a builder per family — ordinal (<see cref="DummyInt32" />), decimal,
+///         continuous (<see cref="DummyDouble" />) — proves them all; the 128-bit sibling is checked in
 ///         <c>ModernTypeInvariantProperties</c>, which the net472 floor leg excludes.
 ///     </para>
 /// </remarks>
-[TestSubject(typeof(ConflictingAnyConstraintException))]
+[TestSubject(typeof(ConflictingDummyConstraintException))]
 public sealed class ConflictMessageTruthfulnessProperties {
 
     #region Statics members declarations
@@ -190,38 +190,38 @@ public sealed class ConflictMessageTruthfulnessProperties {
     [SuppressMessage(SonarRule.S1854.Category, SonarRule.S1854.Id, Justification = SuppressionJustification.S1854.CallIsTheSubject)]
     private static string? BuildInt32(bool hasBetween, int lo, int hi, int step, int[] allow, int[] excl) {
         try {
-            AnyInt32 spec = Any.Int32();
+            DummyInt32 spec = Dummy.Int32();
             if (hasBetween) { spec = spec.Between(lo, hi); }
             if (step > 1)   { spec = spec.MultipleOf(step); }
             if (allow.Length > 0) { spec = spec.OneOf(allow); }
             if (excl.Length  > 0) { spec = spec.Except(excl); }
 
             return null;
-        } catch (ConflictingAnyConstraintException exception) { return exception.Message; }
+        } catch (ConflictingDummyConstraintException exception) { return exception.Message; }
     }
 
     [SuppressMessage(SonarRule.S1854.Category, SonarRule.S1854.Id, Justification = SuppressionJustification.S1854.CallIsTheSubject)]
     private static string? BuildDecimal(bool hasBetween, int lo, int hi, int step, int[] allow, int[] excl) {
         try {
-            AnyDecimal spec = Any.Decimal();
+            DummyDecimal spec = Dummy.Decimal();
             if (hasBetween) { spec = spec.Between(lo, hi); }
             if (allow.Length > 0) { spec = spec.OneOf(allow.Select(value => (decimal)value).ToArray()); }
             if (excl.Length  > 0) { spec = spec.Except(excl.Select(value => (decimal)value).ToArray()); }
 
             return null;
-        } catch (ConflictingAnyConstraintException exception) { return exception.Message; }
+        } catch (ConflictingDummyConstraintException exception) { return exception.Message; }
     }
 
     [SuppressMessage(SonarRule.S1854.Category, SonarRule.S1854.Id, Justification = SuppressionJustification.S1854.CallIsTheSubject)]
     private static string? BuildDouble(bool hasBetween, int lo, int hi, int step, int[] allow, int[] excl) {
         try {
-            AnyDouble spec = Any.Double();
+            DummyDouble spec = Dummy.Double();
             if (hasBetween) { spec = spec.Between(lo, hi); }
             if (allow.Length > 0) { spec = spec.OneOf(allow.Select(value => (double)value).ToArray()); }
             if (excl.Length  > 0) { spec = spec.Except(excl.Select(value => (double)value).ToArray()); }
 
             return null;
-        } catch (ConflictingAnyConstraintException exception) { return exception.Message; }
+        } catch (ConflictingDummyConstraintException exception) { return exception.Message; }
     }
 
     #endregion

@@ -11,17 +11,17 @@ about constraining a scalar applies to the element.
 
 | Factory | Draws | Adds |
 | --- | --- | --- |
-| `Any.ArrayOf(item)` | `T[]` | `Distinct()` |
-| `Any.ListOf(item)` | `List<T>` | `Distinct()` |
-| `Any.SequenceOf(item)` | `IEnumerable<T>` | `Distinct()` |
-| `Any.SetOf(item)` | `HashSet<T>` | distinctness by construction |
-| `Any.DictionaryOf(keys, values)` | `Dictionary<TKey, TValue>` | key constraints |
+| `Dummy.ArrayOf(item)` | `T[]` | `Distinct()` |
+| `Dummy.ListOf(item)` | `List<T>` | `Distinct()` |
+| `Dummy.SequenceOf(item)` | `IEnumerable<T>` | `Distinct()` |
+| `Dummy.SetOf(item)` | `HashSet<T>` | distinctness by construction |
+| `Dummy.DictionaryOf(keys, values)` | `Dictionary<TKey, TValue>` | key constraints |
 
 ```csharp
-int[]            quantities = Any.ArrayOf(Any.Int32().Between(1, 100)).WithCount(5).Generate();
-List<string>     references = Any.ListOf(Any.String().StartingWith("ORD-").WithLength(12)).NonEmpty().Generate();
-IEnumerable<Guid> ids       = Any.SequenceOf(Any.Guid().NonEmpty()).WithCountBetween(2, 6).Generate();
-HashSet<OrderStatus> states = Any.SetOf(Any.Enum<OrderStatus>()).WithMaxCount(3).Generate();
+int[]            quantities = Dummy.ArrayOf(Dummy.Int32().Between(1, 100)).WithCount(5).Generate();
+List<string>     references = Dummy.ListOf(Dummy.String().StartingWith("ORD-").WithLength(12)).NonEmpty().Generate();
+IEnumerable<Guid> ids       = Dummy.SequenceOf(Dummy.Guid().NonEmpty()).WithCountBetween(2, 6).Generate();
+HashSet<OrderStatus> states = Dummy.SetOf(Dummy.Enum<OrderStatus>()).WithMaxCount(3).Generate();
 ```
 
 ## The shared count vocabulary
@@ -29,14 +29,14 @@ HashSet<OrderStatus> states = Any.SetOf(Any.Enum<OrderStatus>()).WithMaxCount(3)
 Every collection generator carries the same six count constraints:
 
 ```csharp
-IAny<int> anyQuantity = Any.Int32().Between(1, 100);
+IDummy<int> anyQuantity = Dummy.Int32().Between(1, 100);
 
-int[] exactly5   = Any.ArrayOf(anyQuantity).WithCount(5).Generate();
-int[] two2Six    = Any.ArrayOf(anyQuantity).WithCountBetween(2, 6).Generate();
-int[] atLeast3   = Any.ArrayOf(anyQuantity).WithMinCount(3).Generate();
-int[] atMost10   = Any.ArrayOf(anyQuantity).WithMaxCount(10).Generate();
-int[] notEmpty   = Any.ArrayOf(anyQuantity).NonEmpty().Generate();
-int[] empty      = Any.ArrayOf(anyQuantity).Empty().Generate();
+int[] exactly5   = Dummy.ArrayOf(anyQuantity).WithCount(5).Generate();
+int[] two2Six    = Dummy.ArrayOf(anyQuantity).WithCountBetween(2, 6).Generate();
+int[] atLeast3   = Dummy.ArrayOf(anyQuantity).WithMinCount(3).Generate();
+int[] atMost10   = Dummy.ArrayOf(anyQuantity).WithMaxCount(10).Generate();
+int[] notEmpty   = Dummy.ArrayOf(anyQuantity).NonEmpty().Generate();
+int[] empty      = Dummy.ArrayOf(anyQuantity).Empty().Generate();
 ```
 
 `Empty()` is not a curiosity: the empty collection is the case most likely to break production code,
@@ -55,15 +55,15 @@ Two constraints put something known inside an otherwise arbitrary collection:
 
 ```csharp
 // A specific value must be present.
-List<OrderStatus> withDraft = Any.ListOf(Any.Enum<OrderStatus>())
+List<OrderStatus> withDraft = Dummy.ListOf(Dummy.Enum<OrderStatus>())
                                  .WithCountBetween(3, 6)
                                  .Containing(OrderStatus.Draft)
                                  .Generate();
 
 // A value satisfying a second generator must be present.
-List<int> withABigOne = Any.ListOf(Any.Int32().Between(1, 100))
+List<int> withABigOne = Dummy.ListOf(Dummy.Int32().Between(1, 100))
                            .WithCountBetween(3, 6)
-                           .ContainingAny(Any.Int32().Between(90, 100))
+                           .ContainingAny(Dummy.Int32().Between(90, 100))
                            .Generate();
 ```
 
@@ -73,16 +73,16 @@ asserting.
 
 ## Distinctness
 
-`Distinct()` requires the drawn elements to differ. `Any.SetOf` gets there by construction — a
+`Distinct()` requires the drawn elements to differ. `Dummy.SetOf` gets there by construction — a
 `HashSet<T>` cannot hold a duplicate — while `Distinct()` on an array, list or sequence is a
 requirement the generator must actively satisfy:
 
 ```csharp
-int[]        distinctIds = Any.ArrayOf(Any.Int32().Between(1, 1_000)).WithCount(10).Distinct().Generate();
-List<string> distinctRefs = Any.ListOf(Any.String().Alpha().WithLength(6)).WithCount(4).Distinct().Generate();
+int[]        distinctIds = Dummy.ArrayOf(Dummy.Int32().Between(1, 1_000)).WithCount(10).Distinct().Generate();
+List<string> distinctRefs = Dummy.ListOf(Dummy.String().Alpha().WithLength(6)).WithCount(4).Distinct().Generate();
 
 // With an explicit comparer, when the default equality is not the one that matters.
-List<string> caseInsensitive = Any.ListOf(Any.String().Alpha().WithLength(6))
+List<string> caseInsensitive = Dummy.ListOf(Dummy.String().Alpha().WithLength(6))
                                   .WithCount(4)
                                   .Distinct(StringComparer.OrdinalIgnoreCase)
                                   .Generate();
@@ -97,7 +97,7 @@ distinct values from a pool of three, is refused immediately and by name rather 
 The analyzer [JD016](../analyzers/JD016.en.md) reports the constant cases at build time.
 
 **Where the count is feasible but tight, a bounded redraw finishes the job** — a fixed number of
-attempts, then an explicit `AnyGenerationException`. Never an unbounded loop.
+attempts, then an explicit `DummyGenerationException`. Never an unbounded loop.
 
 **Distinctness needs value equality to mean anything.** Declaring it over a reference type that does
 not override `Equals` is satisfied trivially — every instance differs — so the collection can still
@@ -106,12 +106,12 @@ hold what a reader would call the same value twice. That is diagnostic
 
 ## Dictionaries
 
-`Any.DictionaryOf` takes a generator for the keys and one for the values:
+`Dummy.DictionaryOf` takes a generator for the keys and one for the values:
 
 ```csharp
-Dictionary<string, int> stock = Any.DictionaryOf(
-                                       Any.String().Alpha().InUpperCase().WithLength(3),
-                                       Any.Int32().Between(0, 500))
+Dictionary<string, int> stock = Dummy.DictionaryOf(
+                                       Dummy.String().Alpha().InUpperCase().WithLength(3),
+                                       Dummy.Int32().Between(0, 500))
                                    .WithCountBetween(2, 5)
                                    .Generate();
 ```
@@ -122,40 +122,40 @@ default equality is not the one your domain uses.
 Three constraints are specific to dictionaries:
 
 ```csharp
-IAny<string> anyCode  = Any.String().Alpha().InUpperCase().WithLength(3);
-IAny<int>    anyLevel = Any.Int32().Between(0, 500);
+IDummy<string> anyCode  = Dummy.String().Alpha().InUpperCase().WithLength(3);
+IDummy<int>    anyLevel = Dummy.Int32().Between(0, 500);
 
 // A key that must be present.
-Dictionary<string, int> withKey = Any.DictionaryOf(anyCode, anyLevel)
+Dictionary<string, int> withKey = Dummy.DictionaryOf(anyCode, anyLevel)
                                      .WithCountBetween(2, 5)
                                      .ContainingKey("ABC")
                                      .Generate();
 
 // A whole entry that must be present.
-Dictionary<string, int> withEntry = Any.DictionaryOf(anyCode, anyLevel)
+Dictionary<string, int> withEntry = Dummy.DictionaryOf(anyCode, anyLevel)
                                        .WithCountBetween(2, 5)
                                        .ContainingEntry("ABC", 42)
                                        .Generate();
 
 // A key satisfying another generator must be present.
-Dictionary<string, int> withAnyKey = Any.DictionaryOf(anyCode, anyLevel)
+Dictionary<string, int> withAnyKey = Dummy.DictionaryOf(anyCode, anyLevel)
                                         .WithCountBetween(2, 5)
-                                        .ContainingAnyKey(Any.String().OneOf("ABC", "XYZ"))
+                                        .ContainingAnyKey(Dummy.String().OneOf("ABC", "XYZ"))
                                         .Generate();
 ```
 
 ## Collections of your own types
 
-Because a composed generator is an ordinary `IAny<T>`, a collection of value objects or aggregates
+Because a composed generator is an ordinary `IDummy<T>`, a collection of value objects or aggregates
 needs nothing new:
 
 ```csharp
-IAny<OrderReference> anyReference = Any.String()
+IDummy<OrderReference> anyReference = Dummy.String()
                                        .StartingWith("ORD-")
                                        .WithLength(12)
                                        .As(OrderReference.Create);
 
-List<OrderReference> basket = Any.ListOf(anyReference).WithCountBetween(1, 4).Generate();
+List<OrderReference> basket = Dummy.ListOf(anyReference).WithCountBetween(1, 4).Generate();
 ```
 
 ---

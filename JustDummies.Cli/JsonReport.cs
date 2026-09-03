@@ -24,7 +24,7 @@ internal static class JsonReport {
     /// <remarks>
     ///     <see cref="JavaScriptEncoder.UnsafeRelaxedJsonEscaping" /> is the load-bearing one, and it is not
     ///     unsafe here: the default encoder escapes <c>&lt;</c>, <c>&gt;</c>, <c>&amp;</c> and every non-ASCII
-    ///     character, so a generic parameter list would come back as <c>IAny<string></c> and the
+    ///     character, so a generic parameter list would come back as <c>IDummy<string></c> and the
     ///     <c>—</c> of a recap as an escape. That output is valid JSON and unreadable, and the escaping buys
     ///     nothing the tool needs: this text goes to a pipe, never into an HTML document. Nulls are kept rather
     ///     than dropped so that every key a consumer reads is always present.

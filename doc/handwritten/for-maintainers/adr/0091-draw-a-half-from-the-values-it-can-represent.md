@@ -39,7 +39,7 @@ Measured on the unconstrained row, 200 000 draws:
 | 100 ≤ \|x\| < 1000 | 1.32 % | 10.95 % |
 | \|x\| ≥ 1000 | **98.53 %** | 19.34 % |
 
-`Any.Half()` does not draw a value below 1. Not rarely — not once in two hundred thousand draws. A
+`Dummy.Half()` does not draw a value below 1. Not rarely — not once in two hundred thousand draws. A
 generator that cannot produce `0.5` certifies nothing about the code paths where a half is a fraction,
 which is most of the code that has a reason to use one.
 

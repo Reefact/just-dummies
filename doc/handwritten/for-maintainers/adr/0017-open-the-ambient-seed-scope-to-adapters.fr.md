@@ -11,16 +11,16 @@
 ## Contexte
 
 `JustDummies` tire chaque valeur arbitraire d'une source aléatoire. Les points
-d'entrée statiques `Any` tirent d'une source **ambiante** qui suit le contexte
+d'entrée statiques `Dummy` tirent d'une source **ambiante** qui suit le contexte
 d'exécution, si bien qu'elle ne fuit jamais entre des tests exécutés en
 parallèle. Le déterminisme sur cette source ambiante est optionnel, et
 aujourd'hui seuls deux chemins publics y accèdent :
 
-* `Any.Reproducibly(...)`, qui fixe une graine pour la durée d'un **délégué dont
+* `Dummy.Reproducibly(...)`, qui fixe une graine pour la durée d'un **délégué dont
   il est propriétaire**, exécute ce délégué et rapporte la graine si celui-ci
   lève. L'[ADR-0026 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0026-rebase-testing-arbitrary-values-on-dummies.fr.md) en a fait le récit unique de graine du dépôt.
-* `Any.WithSeed(...)`, qui crée un contexte **isolé**. Les points d'entrée
-  statiques `Any` n'y tirent pas, donc il ne fixe rien pour du code qui les
+* `Dummy.WithSeed(...)`, qui crée un contexte **isolé**. Les points d'entrée
+  statiques `Dummy` n'y tirent pas, donc il ne fixe rien pour du code qui les
   utilise.
 
 La poignée qui ouvre et ferme une portée de graine ambiante existe, mais elle est

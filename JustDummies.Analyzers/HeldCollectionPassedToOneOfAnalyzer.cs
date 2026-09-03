@@ -7,10 +7,10 @@ using Microsoft.CodeAnalysis.Operations;
 namespace JustDummies.Analyzers;
 
 /// <summary>
-///     JD013 — reports a held collection handed to <c>Any.OneOf</c>. The parameter is <c>params T[]</c>, so a single
+///     JD013 — reports a held collection handed to <c>Dummy.OneOf</c>. The parameter is <c>params T[]</c>, so a single
 ///     <c>List&lt;Order&gt;</c> argument binds <c>T = List&lt;Order&gt;</c> and yields a pool of exactly <b>one</b>:
 ///     every draw returns the same list, and the "arbitrary order" the test claims to exercise never varies.
-///     <c>Any.ElementOf</c> is the entry point that takes a collection and draws from its elements.
+///     <c>Dummy.ElementOf</c> is the entry point that takes a collection and draws from its elements.
 /// </summary>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public sealed class HeldCollectionPassedToOneOfAnalyzer : DiagnosticAnalyzer {
@@ -30,7 +30,7 @@ public sealed class HeldCollectionPassedToOneOfAnalyzer : DiagnosticAnalyzer {
 
     private static void OnCompilationStart(CompilationStartAnalysisContext context) {
         KnownSymbols symbols = KnownSymbols.From(context.Compilation);
-        if (symbols.Any is null || symbols.AnyContext is null) { return; }
+        if (symbols.Dummy is null || symbols.DummyContext is null) { return; }
 
         context.RegisterOperationAction(operationContext => Analyze(operationContext, symbols), OperationKind.Invocation);
     }
@@ -40,10 +40,10 @@ public sealed class HeldCollectionPassedToOneOfAnalyzer : DiagnosticAnalyzer {
         IMethodSymbol        method     = invocation.TargetMethod;
 
         if (method.Name != OneOfMethodName) { return; }
-        if (!SymbolEqualityComparer.Default.Equals(method.ContainingType, symbols.Any)
-         && !SymbolEqualityComparer.Default.Equals(method.ContainingType, symbols.AnyContext)) { return; }
+        if (!SymbolEqualityComparer.Default.Equals(method.ContainingType, symbols.Dummy)
+         && !SymbolEqualityComparer.Default.Equals(method.ContainingType, symbols.DummyContext)) { return; }
 
-        // An explicit type argument states the intent — Any.OneOf<List<Order>>(orders) really does want a pool of one.
+        // An explicit type argument states the intent — Dummy.OneOf<List<Order>>(orders) really does want a pool of one.
         if (!IsTypeArgumentInferred(invocation)) { return; }
         if (method.TypeArguments.Length != 1) { return; }
 

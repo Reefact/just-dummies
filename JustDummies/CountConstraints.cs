@@ -8,11 +8,11 @@ namespace JustDummies;
 
 /// <summary>
 ///     The count-constraint facade shared by every collection generator, defined once over
-///     <see cref="CollectionState{T}" />. The <see cref="AnyCollection{TItem,TResult,TSelf}" /> builders
-///     (a list, an array, a sequence, a set) and <see cref="AnyDictionary{TKey,TValue}" /> — whose keys run through
+///     <see cref="CollectionState{T}" />. The <see cref="DummyCollection{TItem,TResult,TSelf}" /> builders
+///     (a list, an array, a sequence, a set) and <see cref="DummyDictionary{TKey,TValue}" /> — whose keys run through
 ///     the very same <see cref="CollectionState{T}" /> — each expose <c>NonEmpty</c>/<c>Empty</c>/<c>WithCount</c>/
 ///     <c>WithMinCount</c>/<c>WithMaxCount</c>/<c>WithCountBetween</c> by delegating here, so the argument
-///     validation and the constraint labels that surface in a <see cref="ConflictingAnyConstraintException" /> live
+///     validation and the constraint labels that surface in a <see cref="ConflictingDummyConstraintException" /> live
 ///     in exactly one place and cannot drift between the two surfaces.
 /// </summary>
 /// <remarks>

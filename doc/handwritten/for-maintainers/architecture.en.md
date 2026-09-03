@@ -3,7 +3,7 @@
 🌍 **Languages:**  
 🇬🇧 English (this file) | 🇫🇷 [Français](./architecture.fr.md)
 
-How the repository is laid out, what happens between `Any.Int32()` and a number, and where a change
+How the repository is laid out, what happens between `Dummy.Int32()` and a number, and where a change
 of a given kind belongs. Written for someone about to modify the library, not to use it.
 
 ## The projects
@@ -14,14 +14,14 @@ of a given kind belongs. Written for someone about to modify the library, not to
 | `JustDummies.Analyzers` | *inside* `JustDummies` | `netstandard2.0` | the 33 Roslyn rules, at `analyzers/dotnet/cs` |
 | `JustDummies.Xunit` | `JustDummies.Xunit` | `netstandard2.0` | the xUnit v3 adapter — one attribute |
 | `JustDummies.DiagnosticCatalog` | `JustDummies.DiagnosticCatalog` | `netstandard2.0` | the rule ids as compile-checked constants |
-| `JustDummies.GenAny` | *inside* `JustDummies.Cli` | `netstandard2.0` | the `dum` engine: §3.2, §4 and §5 entire — lookup, emission, resolution, guards |
+| `JustDummies.GenDummy` | *inside* `JustDummies.Cli` | `netstandard2.0` | the `dum` engine: §3.2, §4 and §5 entire — lookup, emission, resolution, guards |
 | `JustDummies.Cli` | `JustDummies.Cli` (the `dum` tool) | `net8.0` | the shell: §3's command line, §11.1's project loading, §6's recap, §7's exit codes |
 | `JustDummies.UnitTests` | — | — | named cases: messages, argument validation, conventions, regressions |
 | `JustDummies.PropertyTests` | — | — | invariants that hold for every legal constraint argument |
 | `JustDummies.Analyzers.UnitTests` | — | — | one suite per rule, over compiled snippets |
 | `JustDummies.Xunit.UnitTests` | — | — | the adapter's lifecycle |
 | `JustDummies.Documentation.UnitTests` | — | — | the documentation's own contracts |
-| `JustDummies.GenAny.UnitTests` | — | — | the engine's floor and its boundaries |
+| `JustDummies.GenDummy.UnitTests` | — | — | the engine's floor and its boundaries |
 | `JustDummies.Cli.UnitTests` | — | — | project discovery, what the tool answers, and the exit codes of §7 |
 | `tools/justdummies-check` | — | — | packaged-asset compatibility, deliberately outside the solution |
 
@@ -34,8 +34,8 @@ common surface.
 
 ## The one shape every generator has
 
-`Any` is a `static partial class` split by family — `Any.Primitive.cs`, `Any.Collection.cs`,
-`Any.Choice.cs`, `Any.Combine.cs`, `Any.Pattern.cs`, `Any.Uri.cs`, `Any.Reproducibility.cs`. It
+`Dummy` is a `static partial class` split by family — `Dummy.Primitive.cs`, `Dummy.Collection.cs`,
+`Dummy.Choice.cs`, `Dummy.Combine.cs`, `Dummy.Pattern.cs`, `Dummy.Uri.cs`, `Dummy.Reproducibility.cs`. It
 holds no state; it is a set of doors.
 
 Behind each door sits an `AnyXxx` builder, and every one of them is the same three-part machine:
@@ -43,9 +43,9 @@ Behind each door sits an `AnyXxx` builder, and every one of them is the same thr
 ```mermaid
 flowchart LR
     accTitle: The one shape every generator has
-    accDescr: The Any.Int32() facade returns an immutable AnyInt32 builder. A constraint call returns a NEW builder rather than mutating it. That builder carries a spec value holding the declared constraints, and Generate() draws against a RandomSource to produce the value.
-    F["Any.Int32()<br/><i>facade</i>"] --> B["AnyInt32<br/><i>immutable builder</i>"]
-    B -->|"a constraint call"| B2["AnyInt32<br/><i>a NEW builder</i>"]
+    accDescr: The Dummy.Int32() facade returns an immutable DummyInt32 builder. A constraint call returns a NEW builder rather than mutating it. That builder carries a spec value holding the declared constraints, and Generate() draws against a RandomSource to produce the value.
+    F["Dummy.Int32()<br/><i>facade</i>"] --> B["DummyInt32<br/><i>immutable builder</i>"]
+    B -->|"a constraint call"| B2["DummyInt32<br/><i>a NEW builder</i>"]
     B2 --> S["a spec value<br/><i>the declared constraints</i>"]
     S -->|"Generate()"| D["draw against<br/>a RandomSource"]
     D --> V["the value"]
@@ -79,16 +79,16 @@ reflection convention in `JustDummies.UnitTests` to a full value identity, and m
 `SeededRandom`. Two implementations, and the difference between them is the whole reproducibility
 story:
 
-* **`AmbientRandomSource`** — the scope `Any.Reproducibly`, `Any.UseSeed` and the xUnit
+* **`AmbientRandomSource`** — the scope `Dummy.Reproducibly`, `Dummy.UseSeed` and the xUnit
   `[Reproducible]` attribute all pin. It flows with the execution context, which is what lets an
   adapter open it in a before-hook and close it in an after-hook
   ([ADR-0017](./adr/0017-open-the-ambient-seed-scope-to-adapters.md)).
-* **An isolated source** — what `Any.WithSeed(seed)` hands out through an `AnyContext`. It is
+* **An isolated source** — what `Dummy.WithSeed(seed)` hands out through an `DummyContext`. It is
   deliberately *not* ambient: values drawn from it ignore any enclosing scope.
 
 A generator remembers which source it was built from through the internal `IHasRandomSource` seam,
 so a derived generator — `.As(...)`, `.OrNull()`, a composed `Combine` — keeps drawing from the same
-place as its operands. `AnyDerivation` is where that plumbing lives.
+place as its operands. `DummyDerivation` is where that plumbing lives.
 
 Draws are serialised on the source ([ADR-0021](./adr/0021-serialize-draws-on-a-random-source.md)),
 which is what makes a *sequential* run replayable. Parallel work items inside one scope interleave
@@ -104,13 +104,13 @@ outcomes, and every generator lands in one of them:
 ```mermaid
 flowchart TD
     accTitle: How a constraint becomes a value
-    accDescr: The declared constraints are asked whether they admit a value. No raises a ConflictingAnyConstraintException naming both claims. Yes constructively builds the value. Yes but only rejectively goes to a bounded redraw, which reaches the value within budget and raises an AnyGenerationException carrying the seed once the budget is exhausted.
+    accDescr: The declared constraints are asked whether they admit a value. No raises a ConflictingDummyConstraintException naming both claims. Yes constructively builds the value. Yes but only rejectively goes to a bounded redraw, which reaches the value within budget and raises an DummyGenerationException carrying the seed once the budget is exhausted.
     S["declared constraints"] --> Q{"do they admit a value?"}
-    Q -->|"no"| C["ConflictingAnyConstraintException<br/><i>naming both claims</i>"]
+    Q -->|"no"| C["ConflictingDummyConstraintException<br/><i>naming both claims</i>"]
     Q -->|"yes, constructively"| B["build it"] --> V["the value"]
     Q -->|"yes, but only rejectively"| R["bounded redraw"]
     R -->|"within budget"| V
-    R -->|"budget exhausted"| A["AnyGenerationException<br/><i>carrying the seed</i>"]
+    R -->|"budget exhausted"| A["DummyGenerationException<br/><i>carrying the seed</i>"]
     style V fill:#e8f5e9,stroke:#43a047,color:#1b5e20
     style C fill:#ffebee,stroke:#e53935,color:#b71c1c
     style A fill:#fff8e1,stroke:#f9a825,color:#e65100
@@ -151,7 +151,7 @@ folder's README. Only the third is checked by a tool (RS2003).
 | If you are… | Go to |
 | --- | --- |
 | adding a constraint to an existing generator | the `AnyXxx` builder and its spec; add an example test and, if it holds for every argument, a property test |
-| adding a generator for a new type | the matching `Any.*.cs` partial, a new `AnyXxx`, and the ordinal space if it is discrete |
+| adding a generator for a new type | the matching `Dummy.*.cs` partial, a new `AnyXxx`, and the ordinal space if it is discrete |
 | adding a net8-only generator | behind `#if NET8_0_OR_GREATER`, plus the `net8.0` PublicAPI baseline only |
 | changing what a message says | the named exception factory — and the test that pins the wording |
 | adding or retiring a rule | all five places listed above, together |

@@ -70,7 +70,7 @@ as they stand, not carried over on faith:
 | `ci` | Build and test the solution on Linux and Windows, with coverage, plus the .NET Framework 4.7.2 floor leg. The primary gate. |
 | `justdummies` | Prove the packaged `netstandard2.0` and `net8.0` assets behave on the runtimes that actually load them — the leg the net10 test project cannot exercise. |
 | [`justdummies-mutation`](justdummies-mutation.en.md) | Mutation testing of the three components with Stryker.NET — an advisory check on what a PR changed, plus the weekly full sweep. Publishes counts by status, never a score (ADR-0093). |
-| [`genany-sweep`](genany-sweep.en.md) | Weekly: the generative sweep over the scaffolding engine — ~3600 guarded domains from a declared axis product, each scaffolded, compiled, analyzed and drawn from. The instrument that finds defects; a covering slice of it runs on every build. |
+| [`gendummy-sweep`](gendummy-sweep.en.md) | Weekly: the generative sweep over the scaffolding engine — ~3600 guarded domains from a declared axis product, each scaffolded, compiled, analyzed and drawn from. The instrument that finds defects; a covering slice of it runs on every build. |
 | `stryker-xunit-v3-watch` | Weekly: flags the moment Stryker.NET fixes its xUnit v3 test-discovery bug, which nothing else here would ever notice. Reports on PR #148; merges and reopens nothing. |
 | [`analyzers`](analyzers.en.md) | Load the bundled analyzers out of the packed artifact under the oldest supported compiler (Roslyn 4.8), the one thing an ordinary build never does. |
 | [`sonar`](sonar.en.md) | SonarQube Cloud analysis — quality gate and coverage reporting. |

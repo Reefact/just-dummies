@@ -10,11 +10,11 @@
 
 ## Context
 
-* `JustDummies` is a test-support library: its whole value is that a broken arrangement *fails*. `Any.Reproducibly`
+* `JustDummies` is a test-support library: its whole value is that a broken arrangement *fails*. `Dummy.Reproducibly`
   runs a test body under a pinned seed and reports it on failure. It overloaded a synchronous `Action` and an
   asynchronous `Func<Task>` on one name.
 * That overload set had a silent-failure footgun. An `async` lambda is a better conversion to `Func<Task>` than to
-  `Action`, so `Any.Reproducibly(async () => { ... })` bound to the async overload, which returned a `Task`. A test
+  `Action`, so `Dummy.Reproducibly(async () => { ... })` bound to the async overload, which returned a `Task`. A test
   method is usually a synchronous `void`, so the returned task was discarded; the body's assertions ran on a
   continuation after the method had already returned, and the failure surfaced — if at all — as a later
   `UnobservedTaskException`. **The test passed green.** The compiler's own `CS4014` does not fire in a synchronous
@@ -41,9 +41,9 @@
 JustDummies-owned diagnostic-id scheme (`JDxxx`, mirroring `FCExxx`).
 
 The first application makes the reproducible async surface un-misusable: the asynchronous entry point is
-`Any.ReproduciblyAsync(Func<Task>)` (TAP-named, returns an awaited `Task`), the synchronous one stays
-`Any.Reproducibly(Action)`, and two error-severity analyzers close the mistakes the types cannot — **JD001**, an
-`async` lambda passed to `Any.Reproducibly`, and **JD002**, a discarded `Any.ReproduciblyAsync` task.
+`Dummy.ReproduciblyAsync(Func<Task>)` (TAP-named, returns an awaited `Task`), the synchronous one stays
+`Dummy.Reproducibly(Action)`, and two error-severity analyzers close the mistakes the types cannot — **JD001**, an
+`async` lambda passed to `Dummy.Reproducibly`, and **JD002**, a discarded `Dummy.ReproduciblyAsync` task.
 
 ## Rationale
 
@@ -93,8 +93,8 @@ routing a JustDummies rule through the error library breaks the standalone bound
 
 ### Positive
 
-* The silent-green footgun becomes a compile error: `Any.Reproducibly(async …)` (JD001) and a discarded
-  `Any.ReproduciblyAsync(…)` (JD002) both fail the build, with a message pointing at the fix.
+* The silent-green footgun becomes a compile error: `Dummy.Reproducibly(async …)` (JD001) and a discarded
+  `Dummy.ReproduciblyAsync(…)` (JD002) both fail the build, with a message pointing at the fix.
 * The async entry point is TAP-named (`ReproduciblyAsync`), so it reads correctly and `CS4014` covers the
   await-in-async-method case for free.
 * JustDummies gains a first-party analyzer story it can extend to future rules, in its own package, without coupling
@@ -112,14 +112,14 @@ routing a JustDummies rule through the error library breaks the standalone bound
 * The `JustDummies.Analyzers` load contract must stay pinned to the Roslyn floor, like `FirstClassErrors.Analyzers`,
   or the analyzer silently fails to load (CS8032) on older SDKs; mitigated by pinning `Microsoft.CodeAnalysis.CSharp`
   to `$(RoslynFloorVersion)`.
-* JD001/JD002 detect the invocation by the `JustDummies.Any` metadata name and the method name; a future rename of
+* JD001/JD002 detect the invocation by the `JustDummies.Dummy` metadata name and the method name; a future rename of
   those members would silently disable the rules, so their names are now part of the diagnostic contract.
 
 ## Follow-up Actions
 
 * None required for the reproducible surface. Apply the same first-party-analyzer pattern when a future JustDummies
   mistake is expressible only at compile time.
-* `AnyEnum` / `AnyGuid` conflict-message provenance (issue #314) is unrelated and unaffected.
+* `DummyEnum` / `DummyGuid` conflict-message provenance (issue #314) is unrelated and unaffected.
 
 ## References
 

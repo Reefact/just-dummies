@@ -14,34 +14,34 @@ namespace JustDummies.UnitTests;
 ///     under the same seed agree — and that different seeds diverge — holds for <i>every</i> seed and is
 ///     quantified in <c>JustDummies.PropertyTests</c> instead of pinned to 12345, 777 and 31415 (ADR-0019).
 /// </summary>
-[TestSubject(typeof(Any))]
+[TestSubject(typeof(Dummy))]
 public sealed class SeedReproducibilityTests {
 
     #region Statics members declarations
 
     private static string Batch() {
-        int      full     = Any.Int32().Generate();
-        int      bounded  = Any.Int32().Between(1, 1000).Generate();
-        string   free     = Any.String().Generate();
-        string   capped   = Any.String().NonEmpty().WithMaxLength(50).Generate();
-        string   shaped   = Any.String().StartingWith("ORD-").WithLength(12).Generate();
-        long     wide     = Any.Int64().Generate();
-        ulong    unsigned = Any.UInt64().Generate();
-        double   real     = Any.Double().Between(0d, 1000d).Generate();
-        decimal  exact    = Any.Decimal().Between(0m, 1000m).Generate();
-        bool     flag     = Any.Boolean().Generate();
-        Guid     id       = Any.Guid().Generate();
-        char     letter   = Any.Char().Generate();
-        TimeSpan span     = Any.TimeSpan().Generate();
-        DateTime instant  = Any.DateTime().Generate();
+        int      full     = Dummy.Int32().Generate();
+        int      bounded  = Dummy.Int32().Between(1, 1000).Generate();
+        string   free     = Dummy.String().Generate();
+        string   capped   = Dummy.String().NonEmpty().WithMaxLength(50).Generate();
+        string   shaped   = Dummy.String().StartingWith("ORD-").WithLength(12).Generate();
+        long     wide     = Dummy.Int64().Generate();
+        ulong    unsigned = Dummy.UInt64().Generate();
+        double   real     = Dummy.Double().Between(0d, 1000d).Generate();
+        decimal  exact    = Dummy.Decimal().Between(0m, 1000m).Generate();
+        bool     flag     = Dummy.Boolean().Generate();
+        Guid     id       = Dummy.Guid().Generate();
+        char     letter   = Dummy.Char().Generate();
+        TimeSpan span     = Dummy.TimeSpan().Generate();
+        DateTime instant  = Dummy.DateTime().Generate();
 #if NET8_0_OR_GREATER
-        Int128   huge     = Any.Int128().Generate();
-        Half     tiny     = Any.Half().Generate();
+        Int128   huge     = Dummy.Int128().Generate();
+        Half     tiny     = Dummy.Half().Generate();
 #endif
-        List<int>    list = Any.ListOf(Any.Int32().Between(0, 9)).WithCount(4).Generate();
-        HashSet<int> set  = Any.SetOf(Any.Int32().Between(0, 99)).WithCount(3).Generate();
-        int?         maybe = Any.Int32().Between(0, 9).OrNull().Generate();
-        string       coded = Any.StringMatching(@"[A-Z]{3}-\d{4}").Generate();
+        List<int>    list = Dummy.ListOf(Dummy.Int32().Between(0, 9)).WithCount(4).Generate();
+        HashSet<int> set  = Dummy.SetOf(Dummy.Int32().Between(0, 99)).WithCount(3).Generate();
+        int?         maybe = Dummy.Int32().Between(0, 9).OrNull().Generate();
+        string       coded = Dummy.StringMatching(@"[A-Z]{3}-\d{4}").Generate();
 
         return string.Join("|", full, bounded, free, capped, shaped,
                            wide, unsigned, real, exact, flag, id, letter,
@@ -62,19 +62,19 @@ public sealed class SeedReproducibilityTests {
         Action                    failing  = () => throw boom;
 
         InvalidOperationException thrown = Assert.Throws<InvalidOperationException>(
-            () => Any.Reproducibly(4242, failing, message => reported = message));
+            () => Dummy.Reproducibly(4242, failing, message => reported = message));
 
         Check.That(ReferenceEquals(thrown, boom)).IsTrue();
         Check.That(reported).IsNotNull();
         Check.That(reported!).Contains("4242");
-        Check.That(reported!).Contains("Any.Reproducibly(");
+        Check.That(reported!).Contains("Dummy.Reproducibly(");
     }
 
     [Fact(DisplayName = "Reproducibly does not report when the body succeeds.")]
     public void ReproduciblyIsSilentOnSuccess() {
         bool reported = false;
 
-        Any.Reproducibly(() => { Any.String().NonEmpty().Generate(); }, _ => reported = true);
+        Dummy.Reproducibly(() => { Dummy.String().NonEmpty().Generate(); }, _ => reported = true);
 
         Check.That(reported).IsFalse();
     }
@@ -85,10 +85,10 @@ public sealed class SeedReproducibilityTests {
         Action  failing  = () => throw new InvalidOperationException("x");
 
         Assert.Throws<InvalidOperationException>(
-            () => Any.Reproducibly(failing, message => reported = message));
+            () => Dummy.Reproducibly(failing, message => reported = message));
 
         Check.That(reported).IsNotNull();
-        Check.That(reported!).Contains("Any.Reproducibly(");
+        Check.That(reported!).Contains("Dummy.Reproducibly(");
     }
 
     [Fact(DisplayName = "The async ReproduciblyAsync reports the seed and rethrows on failure.")]
@@ -96,7 +96,7 @@ public sealed class SeedReproducibilityTests {
         string? reported = null;
 
         await Assert.ThrowsAsync<InvalidOperationException>(
-            () => Any.ReproduciblyAsync(7, async () => {
+            () => Dummy.ReproduciblyAsync(7, async () => {
                 await Task.Yield();
 
                 throw new InvalidOperationException("boom");
@@ -111,11 +111,11 @@ public sealed class SeedReproducibilityTests {
         string first  = string.Empty;
         string second = string.Empty;
 
-        await Any.ReproduciblyAsync(4321, async () => {
+        await Dummy.ReproduciblyAsync(4321, async () => {
             await Task.Yield();
             first = Batch();
         });
-        await Any.ReproduciblyAsync(4321, async () => {
+        await Dummy.ReproduciblyAsync(4321, async () => {
             await Task.Yield();
             second = Batch();
         });
@@ -125,8 +125,8 @@ public sealed class SeedReproducibilityTests {
 
     [Fact(DisplayName = "Reproducibly and ReproduciblyAsync require a body.")]
     public void ReproduciblyRequiresABody() {
-        Check.ThatCode(() => Any.Reproducibly((Action)null!)).Throws<ArgumentNullException>();
-        Check.ThatCode(() => Any.ReproduciblyAsync((Func<Task>)null!)).Throws<ArgumentNullException>();
+        Check.ThatCode(() => Dummy.Reproducibly((Action)null!)).Throws<ArgumentNullException>();
+        Check.ThatCode(() => Dummy.ReproduciblyAsync((Func<Task>)null!)).Throws<ArgumentNullException>();
     }
 
     [Fact(DisplayName = "A report sink that throws does not mask the body's failure.")]
@@ -137,7 +137,7 @@ public sealed class SeedReproducibilityTests {
         // The seed report is a best-effort aid: a sink that throws must never replace the failure it exists to
         // help diagnose. The body's exception — not the sink's — must reach the test runner, unchanged.
         InvalidOperationException thrown = Assert.Throws<InvalidOperationException>(
-            () => Any.Reproducibly(4242, () => throw boom, throwingSink));
+            () => Dummy.Reproducibly(4242, () => throw boom, throwingSink));
 
         Check.That(ReferenceEquals(thrown, boom)).IsTrue();
         Check.That(thrown.Message).IsEqualTo("real body failure");
@@ -149,7 +149,7 @@ public sealed class SeedReproducibilityTests {
         Action<string>            throwingSink = _ => throw new Exception("sink failure");
 
         InvalidOperationException thrown = await Assert.ThrowsAsync<InvalidOperationException>(
-            () => Any.ReproduciblyAsync(7, async () => {
+            () => Dummy.ReproduciblyAsync(7, async () => {
                 await Task.Yield();
 
                 throw boom;
@@ -166,7 +166,7 @@ public sealed class SeedReproducibilityTests {
         Console.SetError(captured);
         try {
             Assert.Throws<InvalidOperationException>(
-                () => Any.Reproducibly(6006, () => throw new InvalidOperationException("boom"),
+                () => Dummy.Reproducibly(6006, () => throw new InvalidOperationException("boom"),
                                        _ => throw new Exception("sink down")));
         } finally {
             Console.SetError(original);
@@ -184,7 +184,7 @@ public sealed class SeedReproducibilityTests {
         string? reported = null;
         try {
             Assert.Throws<InvalidOperationException>(
-                () => Any.Reproducibly(5005, () => throw new InvalidOperationException("boom"),
+                () => Dummy.Reproducibly(5005, () => throw new InvalidOperationException("boom"),
                                        message => reported = message));
         } finally {
             Console.SetError(original);

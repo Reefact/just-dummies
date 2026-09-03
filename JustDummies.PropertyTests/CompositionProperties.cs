@@ -130,7 +130,7 @@ public sealed class CompositionProperties {
     [Fact(DisplayName = "OrNull is a coin flip: over enough draws from any seed, both the null and the value branch appear.")]
     public void OrNullEventuallyYieldsBothBranches() {
         // The null decision is an even coin flip, so 64 draws miss a branch with probability about 2^-63 — vanishing,
-        // but a probability nonetheless. Drawing from an Dummy.WithSeed(...) context removes the residual flakiness: each
+        // but a probability nonetheless. Drawing from a Dummy.WithSeed(...) context removes the residual flakiness: each
         // FsCheck case is a fixed, replayable run, so a case that passes passes identically on every execution.
         Prop.ForAll(Generators.Seed().ToArbitrary(),
                     seed => {

@@ -33,7 +33,7 @@ These rules keep an asynchronous test body from silently swallowing its own fail
 | [JD018 NestedReproducibilityScope](JD018.en.md) | 🟠 Warning | on | A reproducibility scope nested inside another; the inner one draws a fresh seed, so the outer's reported seed replays nothing. |
 | [JD021 BlankReplaySnippet](JD021.en.md) | 🟠 Warning | on | Any.UseSeed is given a blank replay snippet, which the guard rejects — from an adapter hook, failing the whole suite. |
 | [JD019 CommittedReplaySeed](JD019.en.md) | 🔵 Info | opt-in | A constant replay seed is pinned in committed code, so the test stops varying between runs. |
-| [JD020 SharedStaticDummyContext](JD020.en.md) | 🔵 Info | on | An DummyContext held in a static field; interleaved draws make neither the sequence nor the multiset stable. |
+| [JD020 SharedStaticDummyContext](JD020.en.md) | 🔵 Info | on | A DummyContext held in a static field; interleaved draws make neither the sequence nor the multiset stable. |
 | [JD022 ParallelDrawWithoutPerItemSeed](JD022.en.md) | 🔵 Info | on | A parallel work item draws without its own seed scope, so the draws interleave and the run replays nothing. |
 
 ## Usage
@@ -55,7 +55,7 @@ These rules front-load, to build time, the subset of the library's run-time cons
 | Rule | Severity | Default | Description |
 |------|----------|---------|-------------|
 | [JD014 RejectedConstantArgument](JD014.en.md) | 🟠 Warning | on | A constraint argument is a compile-time constant the generator's own guard refuses, so the call throws every time it runs. |
-| [JD015 StringConstraintsAdmitNoValue](JD015.en.md) | 🟠 Warning | on | An DummyString chain's constant constraints admit no value — a declared length the shape cannot fit under, or character constraints that together admit none of a value set's values. |
+| [JD015 StringConstraintsAdmitNoValue](JD015.en.md) | 🟠 Warning | on | A DummyString chain's constant constraints admit no value — a declared length the shape cannot fit under, or character constraints that together admit none of a value set's values. |
 | [JD016 CollectionConstraintsAdmitNoValue](JD016.en.md) | 🟠 Warning | on | A collection chain's count constraints cannot all hold, or it asks for more distinct elements than its element generator can produce. |
 | [JD017 EnumUniverseViolation](JD017.en.md) | 🟠 Warning | on | An enum constraint names a value the type does not define — an undeclared numeric value, or an exclusion that empties the universe. |
 | [JD023 ScalarChainAdmitsNoValue](JD023.en.md) | 🟠 Warning | on | An integer chain's constant constraints narrow the domain to nothing — bounds, lattice or allow-list. |

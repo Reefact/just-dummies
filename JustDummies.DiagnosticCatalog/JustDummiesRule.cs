@@ -379,7 +379,7 @@ public static class JustDummiesRule {
 
     }
 
-    /// <summary>An DummyContext is shared through a static field</summary>
+    /// <summary>A DummyContext is shared through a static field</summary>
     [DiagnosticRule]
     public static class JD020 {
 
@@ -390,7 +390,7 @@ public static class JustDummiesRule {
         public const string Category = JustDummiesCategory.Reproducibility;
 
         /// <summary>The one-line summary the IDE shows beside the rule.</summary>
-        public const string Title = "An DummyContext is shared through a static field";
+        public const string Title = "A DummyContext is shared through a static field";
 
         /// <summary>The page explaining the condition this diagnostic detects.</summary>
         public const string HelpLinkUri = HelpLinkBase + nameof(JD020) + HelpLinkSuffix;

@@ -121,7 +121,7 @@ public sealed class CompositionTests {
              .And.Not.Contains("Dummy.WithSeed(");
     }
 
-    [Fact(DisplayName = "A composer failure over an Dummy.WithSeed(...) context reports the WithSeed replay hint, not the inapplicable Dummy.Reproducibly instruction.")]
+    [Fact(DisplayName = "A composer failure over a Dummy.WithSeed(...) context reports the WithSeed replay hint, not the inapplicable Dummy.Reproducibly instruction.")]
     public void CombineOverFixedContextReportsWithSeedHint() {
         DummyContext seeded = Dummy.WithSeed(4242);
 
@@ -258,7 +258,7 @@ public sealed class CompositionTests {
     public void AThrowingToStringStillYieldsTheWrappedDiagnostic() {
         // The other half: once the factory does fail, rendering the value is attempted — and must not replace the
         // diagnostic being built with the ToString() failure. The message degrades to the type name; the caller still
-        // gets an DummyGenerationException naming As(...) and carrying the real cause.
+        // gets a DummyGenerationException naming As(...) and carrying the real cause.
         IDummy<string> failing = Dummy.ElementOf(new[] { new Unrenderable() })
                                   .As<Unrenderable, string>(_ => throw new InvalidOperationException("rejected"));
 

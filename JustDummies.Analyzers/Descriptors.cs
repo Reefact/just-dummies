@@ -229,7 +229,7 @@ internal static class Descriptors {
     public static readonly DiagnosticDescriptor ParallelDrawWithoutPerItemSeed = new(
         id: JustDummiesRule.JD022.Id,
         title: JustDummiesRule.JD022.Title,
-        messageFormat: "Open an Dummy.UseSeed scope inside the work item: the ambient scope reaches every worker, so the draws interleave and the run replays nothing",
+        messageFormat: "Open a Dummy.UseSeed scope inside the work item: the ambient scope reaches every worker, so the draws interleave and the run replays nothing",
         category: JustDummiesRule.JD022.Category,
         defaultSeverity: DiagnosticSeverity.Info,
         isEnabledByDefault: true,

@@ -104,7 +104,7 @@ outcomes, and every generator lands in one of them:
 ```mermaid
 flowchart TD
     accTitle: How a constraint becomes a value
-    accDescr: The declared constraints are asked whether they admit a value. No raises a ConflictingDummyConstraintException naming both claims. Yes constructively builds the value. Yes but only rejectively goes to a bounded redraw, which reaches the value within budget and raises an DummyGenerationException carrying the seed once the budget is exhausted.
+    accDescr: The declared constraints are asked whether they admit a value. No raises a ConflictingDummyConstraintException naming both claims. Yes constructively builds the value. Yes but only rejectively goes to a bounded redraw, which reaches the value within budget and raises a DummyGenerationException carrying the seed once the budget is exhausted.
     S["declared constraints"] --> Q{"do they admit a value?"}
     Q -->|"no"| C["ConflictingDummyConstraintException<br/><i>naming both claims</i>"]
     Q -->|"yes, constructively"| B["build it"] --> V["the value"]

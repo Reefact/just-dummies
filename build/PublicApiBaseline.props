@@ -14,7 +14,7 @@
     entire public surface as undeclared, and they carry no compatibility promise.
 
     Two complementary guards, neither of which the reflection-based parity tests can replace (those prove the
-    Any/DummyContext mirror stays COMPLETE; they are blind to a removed overload or a narrowed return type):
+    Dummy/DummyContext mirror stays COMPLETE; they are blind to a removed overload or a narrowed return type):
 
       1. Microsoft.CodeAnalysis.PublicApiAnalyzers — every public-surface change becomes a reviewed diff in a
          committed PublicAPI.*.txt file. An undeclared public symbol raises RS0016; a declared symbol that no

@@ -27,7 +27,7 @@ nothing about what happens at 300 characters, or when a `\r` arrives.
 
 Note which way that argument runs: the draw is wide because *your code* might wrongly care, never
 because the *test* does. The moment the test cares which string came back, the value has stopped
-being a dummy — see [Getting started](../guides/getting-started.en.md#where-the-line-runs).
+being a dummy — see [Getting started](../guides/getting-started.en.md#careful-not-to-misuse-a-dummy).
 
 So constrain it — with the invariants your code actually has:
 

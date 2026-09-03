@@ -23,7 +23,7 @@ Les deux moitiés travaillent. Ôtez la garantie et un dummy devient inutilisabl
 viole le domaine échoue pour des raisons que le test n'a jamais voulu explorer. Ôtez la définition
 et le périmètre devient discrètement autre chose : générez une valeur dont dépend le résultat du
 test et vous avez écrit une propriété — que cette bibliothèque exécute avec un échantillon de taille
-un et ne peut pas défendre. Le [guide de démarrage](./getting-started.fr.md#où-passe-la-ligne)
+un et ne peut pas défendre. Le [guide de démarrage](./getting-started.fr.md#attention-à-ne-pas-détourner-un-dummy-de-son-rôle)
 montre précisément où passe cette ligne.
 
 C'est plus étroit que ce que ce pourrait être, volontairement. Le travail de la bibliothèque est de

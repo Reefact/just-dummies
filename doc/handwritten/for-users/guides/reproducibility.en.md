@@ -41,10 +41,10 @@ Wrap the body of a test and everything drawn inside it comes from one seed:
 
 ```csharp
 Any.Reproducibly(() => {
-    string anyReference = Any.String().StartingWith("ORD-").WithLength(12).Generate();
-    string anyCustomer  = Any.String().Alpha().WithLengthBetween(1, 50).Generate();
+    OrderReference anyReference    = Any.String().StartingWith("ORD-").WithLength(12).As(OrderReference.Create).Generate();
+    string         anyCustomerName = Any.String().Alpha().WithLengthBetween(1, 50).Generate();
 
-    Order order = new Order(anyReference, anyCustomer, amount: 100m);
+    Order order = new Order(anyReference, anyCustomerName, amount: 100m);
 
     order.ApplyDiscount(20);
 
@@ -75,10 +75,10 @@ value:
 
 ```csharp
 Any.Reproducibly(1743029518, () => {
-    string anyReference = Any.String().StartingWith("ORD-").WithLength(12).Generate();
-    string anyCustomer  = Any.String().Alpha().WithLengthBetween(1, 50).Generate();
+    OrderReference anyReference    = Any.String().StartingWith("ORD-").WithLength(12).As(OrderReference.Create).Generate();
+    string         anyCustomerName = Any.String().Alpha().WithLengthBetween(1, 50).Generate();
 
-    Order order = new Order(anyReference, anyCustomer, amount: 100m);
+    Order order = new Order(anyReference, anyCustomerName, amount: 100m);
 
     order.ApplyDiscount(20);
 
@@ -113,10 +113,10 @@ An `async` body needs `ReproduciblyAsync`, and the returned task **must** be awa
 
 ```csharp
 await Any.ReproduciblyAsync(async () => {
-    string anyReference = Any.String().StartingWith("ORD-").WithLength(12).Generate();
-    string anyCustomer  = Any.String().Alpha().WithLengthBetween(1, 50).Generate();
+    OrderReference anyReference    = Any.String().StartingWith("ORD-").WithLength(12).As(OrderReference.Create).Generate();
+    string         anyCustomerName = Any.String().Alpha().WithLengthBetween(1, 50).Generate();
 
-    Order order = new Order(anyReference, anyCustomer, amount: 100m);
+    Order order = new Order(anyReference, anyCustomerName, amount: 100m);
 
     await Task.Delay(1);
 
@@ -137,10 +137,10 @@ When the code to pin cannot be wrapped in a delegate, open a scope instead and d
 
 ```csharp
 using (IDisposable scope = Any.UseSeed(1743029518)) {
-    string anyReference = Any.String().StartingWith("ORD-").WithLength(12).Generate();
-    string anyCustomer  = Any.String().Alpha().WithLengthBetween(1, 50).Generate();
+    OrderReference anyReference    = Any.String().StartingWith("ORD-").WithLength(12).As(OrderReference.Create).Generate();
+    string         anyCustomerName = Any.String().Alpha().WithLengthBetween(1, 50).Generate();
 
-    Order order = new Order(anyReference, anyCustomer, amount: 100m);
+    Order order = new Order(anyReference, anyCustomerName, amount: 100m);
 
     order.ApplyDiscount(20);
 
@@ -198,10 +198,10 @@ public sealed class OrderTests {
     [Fact, Reproducible]
     public void A_20_percent_discount_takes_a_fifth_off_the_order() {
         // Arrange
-        string anyReference = Any.String().StartingWith("ORD-").WithLength(12).Generate();
-        string anyCustomer  = Any.String().Alpha().WithLengthBetween(1, 50).Generate();
+        OrderReference anyReference    = Any.String().StartingWith("ORD-").WithLength(12).As(OrderReference.Create).Generate();
+        string         anyCustomerName = Any.String().Alpha().WithLengthBetween(1, 50).Generate();
 
-        Order order = new Order(anyReference, anyCustomer, amount: 100m);
+        Order order = new Order(anyReference, anyCustomerName, amount: 100m);
 
         // Act
         order.ApplyDiscount(20);

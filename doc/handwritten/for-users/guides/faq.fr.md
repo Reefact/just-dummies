@@ -10,7 +10,8 @@ en profondeur.
 
 ### Est-ce une bibliothèque de test à base de propriétés ?
 
-Non, et la différence mérite d'être claire.
+Non, et la différence mérite d'être claire. Si le Property Based Testing est un concept nouveau
+pour vous, [cette page en donne une bonne introduction](https://fr.wikipedia.org/wiki/Test_de_propri%C3%A9t%C3%A9).
 
 Une bibliothèque à base de propriétés (FsCheck, Hedgehog) exécute votre test de nombreuses fois, sur
 de nombreuses entrées générées, et **rétrécit** un échec jusqu'à un contre-exemple minimal.

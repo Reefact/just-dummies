@@ -23,7 +23,7 @@ Both halves do work. Drop the guarantee and a dummy is unusable, because a value
 domain fails for reasons the test never meant to explore. Drop the definition and the scope quietly
 becomes something else: generate a value the test's outcome depends on and you have written a
 property, which this library runs with a sample size of one and cannot defend. The
-[getting-started guide](./getting-started.en.md#where-the-line-runs) shows exactly where that line
+[getting-started guide](./getting-started.en.md#careful-not-to-misuse-a-dummy) shows exactly where that line
 runs.
 
 That is narrower than it could be, deliberately. The library's job is to make a test say what it

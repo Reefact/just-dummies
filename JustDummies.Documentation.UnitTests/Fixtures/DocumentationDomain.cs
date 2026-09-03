@@ -119,7 +119,7 @@ public sealed class Order {
 
     /// <summary>Builds an order at its undiscounted amount.</summary>
     /// <exception cref="ArgumentNullException">The reference or the customer name is <see langword="null" />.</exception>
-    public Order(string reference, string customerName, decimal amount) {
+    public Order(OrderReference reference, string customerName, decimal amount) {
         ArgumentNullException.ThrowIfNull(reference);
         ArgumentNullException.ThrowIfNull(customerName);
 
@@ -129,7 +129,7 @@ public sealed class Order {
     }
 
     /// <summary>The order's reference.</summary>
-    public string Reference { get; }
+    public OrderReference Reference { get; }
 
     /// <summary>The name the order was placed under.</summary>
     public string CustomerName { get; }

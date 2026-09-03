@@ -47,7 +47,7 @@ _Un renommage qui se lit mieux, et un plafond de taille sur lequel l'analyseur e
 
 ### ⚠️ Changements cassants
 
-- `DummyChar` et `DummyString` renomment `LowerCase()`/`UpperCase()` en `InLowerCase()`/`InUpperCase()` — les noms nus se lisaient comme un changement d'état plutôt qu'une qualité de la valeur tirée. Aucun changement de comportement ; seuls les deux noms changent.
+- `AnyChar` et `AnyString` renomment `LowerCase()`/`UpperCase()` en `InLowerCase()`/`InUpperCase()` — les noms nus se lisaient comme un changement d'état plutôt qu'une qualité de la valeur tirée. Aucun changement de comportement ; seuls les deux noms changent.
 
 ### 🐛 Corrections
 

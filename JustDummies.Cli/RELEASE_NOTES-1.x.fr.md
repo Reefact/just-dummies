@@ -16,7 +16,7 @@ _Un type qui ne faisait que partager le nom d'un générateur était encore prop
 
 ### 🐛 Corrections
 
-- Un type qui partage un nom mais n'est pas utilisable comme générateur — `static`, sans `IDummy<T>`, `abstract`, ou sans constructeur public sans paramètre — n'est plus proposé comme `AnyX` d'un paramètre. Le générer entrait en collision avec la déclaration réelle et faisait échouer votre build sur ce qu'elle était réellement (`CS0712` pour une classe statique, entre autres), sous un récapitulatif qui prétendait encore que `AnyX` l'avait inféré, souvent sans même le `using` de son espace de noms. Le paramètre reste désormais ouvert, exactement comme si rien ne répondait à ce nom.
+- Un type qui partage un nom mais n'est pas utilisable comme générateur — `static`, sans `IAny<T>`, `abstract`, ou sans constructeur public sans paramètre — n'est plus proposé comme `AnyX` d'un paramètre. Le générer entrait en collision avec la déclaration réelle et faisait échouer votre build sur ce qu'elle était réellement (`CS0712` pour une classe statique, entre autres), sous un récapitulatif qui prétendait encore que `AnyX` l'avait inféré, souvent sans même le `using` de son espace de noms. Le paramètre reste désormais ouvert, exactement comme si rien ne répondait à ce nom.
 - Là où deux types nommés `AnyX` ou plus conviennent chacun comme générateur d'un paramètre, `dum` ne choisit plus silencieusement l'un d'eux — il les liste tous sous le `TODO` du paramètre, la même discipline déjà appliquée à une factory statique liée à égalité.
 
 ## 1.1.0-beta.4 — 2 septembre 2026
@@ -67,7 +67,7 @@ _La lecture des gardes devient à la fois plus large et plus stricte — deux bi
 - **Une garde de signe sur un paramètre non signé ne perd plus sa contrainte** — `if (size <= 0)` sur un `byte` ou un `uint` se lisait `.Positive()`, un membre que les générateurs non signés ne portent pas, si bien qu'elle était perdue en silence et qu'`Any.Byte()` tirait encore `0` ; elle se lit maintenant `.NonZero()`, ce qui est la même contrainte et non une plus lâche.
 - **Les throw helpers arithmétiques d'`ArgumentOutOfRangeException` sont lus comme des gardes au lieu de bloquer le build** — `ThrowIfNegative`, `ThrowIfNegativeOrZero`, `ThrowIfZero`, `ThrowIfLessThan`, `ThrowIfGreaterThan`, `ThrowIfLessThanOrEqual` et `ThrowIfGreaterThanOrEqual` correspondent désormais aux mêmes lignes numériques qu'une comparaison construit déjà.
 - **Une garde suivie d'un `else`, ou une chaîne `else if` qui lève de bout en bout, est lue au lieu d'être ignorée** — la lecture s'arrête à la première branche qui ne lève pas inconditionnellement, et cette branche, avec tout ce qui la suit, est marquée `unread guards`.
-- **Une garde d'exclusion d'énumération se lit `DummyEnum<T>.DifferentFrom`** — `if (status == Status.None) { throw … }`, la garde d'énumération la plus courante qui soit, se lisait `.NonZero()`, un membre qu'`DummyEnum<T>` ne porte pas, et était perdue en silence.
+- **Une garde d'exclusion d'énumération se lit `AnyEnum<T>.DifferentFrom`** — `if (status == Status.None) { throw … }`, la garde d'énumération la plus courante qui soit, se lisait `.NonZero()`, un membre qu'`AnyEnum<T>` ne porte pas, et était perdue en silence.
 - **Le résumé n'affiche plus `guard` pour une factory dont les gardes n'ont rien resserré** — le mot est calculé à partir des contraintes qui atteignent la chaîne émise, sur le chemin factory comme sur tous les autres.
 
 ### 📝 Limites connues

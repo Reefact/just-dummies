@@ -16,7 +16,7 @@ _A same-named type that could not actually serve as a generator was still being 
 
 ### 🐛 Bug Fixes
 
-- A same-named type that is not usable as a generator — `static`, missing `IDummy<T>`, `abstract`, or missing a public parameterless constructor — is no longer proposed as a parameter's `AnyX`. Composing through it collided with the real declaration and failed your build on whatever it actually was (`CS0712` for a static class, among others), under a recap that still claimed `AnyX` inferred it, often with no `using` for its namespace either. The parameter is now left open instead, exactly as if nothing answered to that name.
+- A same-named type that is not usable as a generator — `static`, missing `IAny<T>`, `abstract`, or missing a public parameterless constructor — is no longer proposed as a parameter's `AnyX`. Composing through it collided with the real declaration and failed your build on whatever it actually was (`CS0712` for a static class, among others), under a recap that still claimed `AnyX` inferred it, often with no `using` for its namespace either. The parameter is now left open instead, exactly as if nothing answered to that name.
 - Where two or more types named `AnyX` each qualify as a parameter's generator, `dum` no longer picks one silently — it lists every one of them under the parameter's `TODO`, the same discipline already held for a tied static factory.
 
 ## 1.1.0-beta.4 — September 2, 2026
@@ -67,7 +67,7 @@ _Guard reading gets wider and stricter at once — two named guard libraries and
 - **A sign guard on an unsigned parameter no longer loses its constraint** — `if (size <= 0)` on a `byte` or a `uint` read as `.Positive()`, a member the unsigned generators do not carry, so it was dropped silently and `Any.Byte()` still drew `0`; it now reads as `.NonZero()`, which is the same constraint rather than a looser one.
 - **The arithmetic `ArgumentOutOfRangeException` throw helpers are read as guards instead of blocking the build** — `ThrowIfNegative`, `ThrowIfNegativeOrZero`, `ThrowIfZero`, `ThrowIfLessThan`, `ThrowIfGreaterThan`, `ThrowIfLessThanOrEqual` and `ThrowIfGreaterThanOrEqual` now map to the same numeric rows a comparison already builds.
 - **A guard followed by an `else`, or an `else if` chain that throws throughout, is read rather than passed over** — reading stops at the first branch that does not throw unconditionally, and that branch, with everything after it, is marked `unread guards`.
-- **An enum exclusion guard is read as `DummyEnum<T>.DifferentFrom`** — `if (status == Status.None) { throw … }`, the commonest enum guard there is, used to read as `.NonZero()`, a member `DummyEnum<T>` does not carry, and was dropped silently.
+- **An enum exclusion guard is read as `AnyEnum<T>.DifferentFrom`** — `if (status == Status.None) { throw … }`, the commonest enum guard there is, used to read as `.NonZero()`, a member `AnyEnum<T>` does not carry, and was dropped silently.
 - **The recap no longer prints `guard` for a factory whose guards tightened nothing** — the word is computed from the constraints that reach the emitted chain, on the factory path as on every other.
 
 ### 📝 Known limitations

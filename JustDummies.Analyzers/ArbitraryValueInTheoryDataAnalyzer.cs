@@ -39,7 +39,7 @@ public sealed class ArbitraryValueInTheoryDataAnalyzer : DiagnosticAnalyzer {
         IInvocationOperation invocation = (IInvocationOperation)context.Operation;
 
         if (!GeneratorFacts.IsGenerateCall(invocation, symbols.IDummy!)) { return; }
-        if (!GeneratorFacts.RootsAtAmbientAny(invocation, symbols.Dummy!)) { return; }
+        if (!GeneratorFacts.RootsAtAmbientDummy(invocation, symbols.Dummy!)) { return; }
         if (!XunitFacts.IsTheoryDataProvider(context.ContainingSymbol, symbols)) { return; }
 
         context.ReportDiagnostic(Diagnostic.Create(Descriptors.ArbitraryValueInTheoryData, invocation.Syntax.GetLocation()));

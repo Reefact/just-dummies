@@ -219,7 +219,7 @@ public sealed class AmbientSeedScopeTests {
         DummyGenerationException caught;
 
         using (Dummy.UseSeed(777, "[Reproducible(Seed = 777)]")) {
-            IDummy<int> foreign = new ForeignAny();
+            IDummy<int> foreign = new ForeignDummy();
             caught = Assert.Throws<DummyGenerationException>(
                 () => Dummy.Combine<int, int, int>(Dummy.Int32(), foreign, (_, _) => throw new InvalidOperationException("rejected")).Generate());
         }
@@ -258,7 +258,7 @@ public sealed class AmbientSeedScopeTests {
     #region Nested types
 
     /// <summary>A generator carrying no random source, so a derivation over it cannot promise a full replay.</summary>
-    private sealed class ForeignAny : IDummy<int> {
+    private sealed class ForeignDummy : IDummy<int> {
 
         public int Generate() {
             return 42;

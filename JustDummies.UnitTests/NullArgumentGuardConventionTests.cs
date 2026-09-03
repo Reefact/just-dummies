@@ -304,7 +304,7 @@ public sealed class NullArgumentGuardConventionTests {
             Type   definition = type.GetGenericTypeDefinition();
             Type[] arguments  = type.GetGenericArguments();
 
-            if (definition == typeof(IDummy<>)) { return CreateAny(arguments[0]); }
+            if (definition == typeof(IDummy<>)) { return CreateDummy(arguments[0]); }
 
             if (definition == typeof(IEnumerable<>) || definition == typeof(IReadOnlyList<>) || definition == typeof(IReadOnlyCollection<>)
              || definition == typeof(IList<>) || definition == typeof(ICollection<>) || definition == typeof(List<>)) {
@@ -336,7 +336,7 @@ public sealed class NullArgumentGuardConventionTests {
         return Sample(type);
     }
 
-    private static object CreateAny(Type valueType) {
+    private static object CreateDummy(Type valueType) {
         MethodInfo oneOf = typeof(Dummy).GetMethods(BindingFlags.Public | BindingFlags.Static)
                                       .First(method => method is { Name: "OneOf", IsGenericMethodDefinition: true }
                                                     && method.GetParameters() is [{ ParameterType.IsArray: true }])

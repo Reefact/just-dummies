@@ -47,7 +47,7 @@ internal sealed class GenerateSettings : CommandSettings {
     ///     way in (§4.5).
     /// </summary>
     [CommandOption("--entry-point <VALUE>")]
-    [Description("Also emit an entry point: none, static:<Name>, or any. Defaults to none.")]
+    [Description("Also emit an entry point: none, static:<Name>, or dummy. Defaults to none.")]
     public string? EntryPoint { get; set; }
 
     /// <summary>Defaults to the emitted generator's own namespace, which costs the call site no import.</summary>

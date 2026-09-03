@@ -48,7 +48,7 @@ public class Jd002DiscardedReproduciblyAsyncResultTests {
     }
 
     [Fact]
-    public async Task Does_not_report_a_ReproduciblyAsync_that_is_not_Any() {
+    public async Task Does_not_report_a_ReproduciblyAsync_that_is_not_Dummy() {
         // A same-named method on another type must not trip the rule — the analyzer keys on JustDummies.Dummy.
         const string source = """
             using System;

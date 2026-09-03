@@ -34,7 +34,7 @@ public sealed class SurfaceParityTests {
     #region Mirror parity: Dummy <-> DummyContext
 
     [Fact(DisplayName = "Every Dummy scalar factory has an identical DummyContext counterpart.")]
-    public void AnyAndAnyContextExposeTheSameScalarFactories() {
+    public void DummyAndDummyContextExposeTheSameScalarFactories() {
         HashSet<string> onDummy = typeof(Dummy)
                                 .GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly)
                                 .Where(IsScalarFactory)

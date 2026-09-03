@@ -130,7 +130,7 @@ dum generate <Type> [<Type>...] [options]
 | `--project <path>` | l'unique `*.csproj` du répertoire courant | Projet dont la compilation est analysée. |
 | `--output <dir>` | le répertoire courant | Où le fichier est écrit. |
 | `--namespace <ns>` | le namespace du type cible (D8) | Namespace du type émis. |
-| `--entry-point <v>` *(v1.1)* | `none` | Émet en plus un point d'entrée : `none`, `static:<Name>` ou `any` (§4.5). |
+| `--entry-point <v>` *(v1.1)* | `none` | Émet en plus un point d'entrée : `none`, `static:<Name>` ou `dummy` (§4.5). |
 | `--entry-point-namespace <ns>` *(v1.1)* | le namespace du type émis | Namespace du seul fichier de point d'entrée. |
 | `--force` | inactif | Écrase un fichier existant. |
 | `--dry-run` | inactif | Affiche le fichier sur stdout ; n'écrit rien. |
@@ -462,7 +462,7 @@ Décision : [ADR-0070](../adr/0070-emit-an-entry-point-on-request-as-a-file-of-i
 |---|---|---|
 | `none` *(défaut)* | rien | — |
 | `static:<Name>` | `public static partial class <Name>` portant une fabrique | `Dummies.Order()` |
-| `any` | `extension(Dummy)` portant une fabrique statique | `Dummy.Order()` |
+| `dummy` | `extension(Dummy)` portant une fabrique statique | `Dummy.Order()` |
 
 **Le fichier du generator ne change pas.** `Dummy{Type}.cs` est identique octet pour octet sous les
 trois valeurs, donc `new Dummy{Type}()` continue de fonctionner et le plancher du §4.4 n'est pas
@@ -473,14 +473,14 @@ scaffold écrit sa propre part. Rien n'est lu pour être réécrit, donc le §8.
 discrètement renversée : `dum generate Order Customer Invoice --entry-point static:Dummies` écrit six
 fichiers et aucun deux fois.
 
-**`any` exige C# 14, et le framework cible n'a rien à y voir.** Un membre d'extension statique
+**`dummy` exige C# 14, et le framework cible n'a rien à y voir.** Un membre d'extension statique
 compile pour une cible `netstandard2.0` aussi bien que pour `net10.0` ; ce qu'il exige, c'est le
 `LangVersion` du projet. Un projet en deçà de C# 14 est refusé, pas rétrogradé (§7).
 
 **`static:Dummy` est refusé.** C# résout un nom de type simple dans le namespace englobant avant tout
 `using`, donc une classe statique nommée `Dummy` dans le projet du développeur masque
 `JustDummies.Dummy` au lieu de la compléter, et `Dummy.Int32()` cesse de compiler (`CS0117`). C'est à cela
-que sert `any`, et c'est un autre mécanisme.
+que sert `dummy`, et c'est un autre mécanisme.
 
 **Le point d'entrée peut se déplacer seul.** `--entry-point-namespace` place le fichier de point
 d'entrée et rien d'autre ; le generator reste dans le namespace que D8 lui donne, donc aucun site
@@ -490,10 +490,10 @@ atteignable à travers plusieurs namespaces, et cela ouvre le namespace du gener
 option en décide autrement.
 
 **Règles de forme.** Trois lignes d'en-tête comme au §4.3, nommant l'option qui a écrit le fichier.
-Une fabrique publique statique nommée d'après le seul type cible — `Order.Line` scaffolde `AnyLine` et
+Une fabrique publique statique nommée d'après le seul type cible — `Order.Line` scaffolde `DummyLine` et
 s'atteint par `Line()`. Elle rend le generator, jamais une valeur : le contraindre par `With…` et
 appeler `Generate()` appartiennent au développeur, exactement comme avec `new Dummy{Type}()`. Le fichier
-`static:<Name>` n'utilise aucune construction plus récente que C# 7.3 ; le fichier `any` exige C# 14
+`static:<Name>` n'utilise aucune construction plus récente que C# 7.3 ; le fichier `dummy` exige C# 14
 et rien de plus.
 
 Un type cible dont le nom propre est celui de la racine choisie émet un membre nommé comme sa classe
@@ -1308,7 +1308,7 @@ diagnostics du projet, l'avis de `--dry-run` — continue d'aller sur stderr exa
 `human`, de sorte que `2>/dev/null` laisse un tuyau propre.
 
 **Un document par exécution, sans exception à retenir.** Une exécution arrêtée avant son premier
-scaffold — pas de projet, un projet qui ne charge pas, `--entry-point any` en deçà de C# 14 — en
+scaffold — pas de projet, un projet qui ne charge pas, `--entry-point dummy` en deçà de C# 14 — en
 produit un aussi, dont le `refusal` nomme lequel c'était. Un contrat qui n'écrit parfois rien oblige
 un script à distinguer une sortie vide d'une analyse en échec.
 
@@ -1338,8 +1338,8 @@ réponses.
 | Le type cible est abstrait | `1` | Refusé qu'il déclare ou non un constructeur à lui — le type abstrait ordinaire déclare les siens `protected` et s'entendrait sinon répondre la ligne du dessus, dont le remède est le mauvais. Une fabrique reconnue qui l'atteint est l'exception : `CS0144` porte sur `new`. Suggère un type concret qui en dérive. |
 | Le type cible est générique, ou imbriqué dans un générique | `1` | Rien n'en fournit l'argument de type, donc le fichier émis ne pourrait pas le nommer. |
 | Les membres `required` du type cible ne sont pas assignés par le constructeur retenu | `1` | Reporté au §16 ; nomme `[SetsRequiredMembers]`, scaffoldé comme n'importe quel autre constructeur. |
-| `--entry-point any`, projet en deçà de C# 14 | `1` | Nomme la version que le projet a résolue, et `static:<Name>`. |
-| `--entry-point static:Dummy` | `2` | Nomme ce qui cesserait de compiler, et renvoie vers `--entry-point any`. |
+| `--entry-point dummy`, projet en deçà de C# 14 | `1` | Nomme la version que le projet a résolue, et `static:<Name>`. |
+| `--entry-point static:Dummy` | `2` | Nomme ce qui cesserait de compiler, et renvoie vers `--entry-point dummy`. |
 | `--entry-point` reçoit une valeur hors des trois | `2` | Liste les trois. |
 | `--entry-point-namespace` sans point d'entrée à placer | `2` | Dit quelle option manque. |
 | `--format` reçoit une valeur qui n'est ni `human` ni `json` | `2` | Nomme les deux. |

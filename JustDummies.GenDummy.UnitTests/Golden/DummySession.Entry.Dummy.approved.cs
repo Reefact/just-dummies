@@ -1,5 +1,5 @@
 // Scaffolded by dum (JustDummies). This file is yours: read it, edit it, commit it.
-// `dum generate Session --entry-point any --force` overwrites it.
+// `dum generate Session --entry-point dummy --force` overwrites it.
 // It needs C# 14: a static extension member is what reaches this spelling without touching the library.
 
 using JustDummies;

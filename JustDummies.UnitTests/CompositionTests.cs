@@ -284,7 +284,7 @@ public sealed class CompositionTests {
     }
 
     [Fact(DisplayName = "Generic inference flows through IDummy<T> without relying on implicit conversions.")]
-    public void GenericInferenceFlowsThroughIAny() {
+    public void GenericInferenceFlowsThroughIDummy() {
         string text  = Materialize(Dummy.String().NonEmpty().WithMaxLength(50));
         int    value = Materialize(Dummy.Int32().Positive());
 

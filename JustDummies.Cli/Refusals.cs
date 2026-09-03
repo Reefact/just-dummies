@@ -85,7 +85,7 @@ internal static class Refusals {
     }
 
     /// <summary>
-    ///     <c>--entry-point any</c> against a project that cannot compile what it would write (§4.5).
+    ///     <c>--entry-point dummy</c> against a project that cannot compile what it would write (§4.5).
     /// </summary>
     /// <remarks>
     ///     Asked of the compilation rather than guessed from the target framework, because the target framework
@@ -99,7 +99,7 @@ internal static class Refusals {
         ArgumentNullException.ThrowIfNull(current);
 
         Say(console, [
-            Mark + $"--entry-point any emits a C# 14 extension member, and {projectPath} compiles at {current}.",
+            Mark + $"--entry-point dummy emits a C# 14 extension member, and {projectPath} compiles at {current}.",
             "  Raise <LangVersion> in that project, or ask for --entry-point static:<Name>, which needs no C# 14."
         ]);
     }

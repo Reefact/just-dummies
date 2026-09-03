@@ -161,11 +161,11 @@ public sealed class GenerateCommandTests : IDisposable {
              .Contains("public static partial class Dummies {");
     }
 
-    [Fact(DisplayName = "--entry-point any writes the extension member, on a project that can compile it.")]
-    public async Task AnEntryPointOnAnyWritesTheExtensionMember() {
+    [Fact(DisplayName = "--entry-point dummy writes the extension member, on a project that can compile it.")]
+    public async Task AnEntryPointOnDummyWritesTheExtensionMember() {
         GenerateSettings settings = Settings("Order");
 
-        settings.EntryPoint = "any";
+        settings.EntryPoint = "dummy";
 
         Run run = await Generate(settings);
 
@@ -176,18 +176,18 @@ public sealed class GenerateCommandTests : IDisposable {
     }
 
     /// <summary>
-    ///     The refusal of §7 that is about the project rather than the type: what <c>--entry-point any</c>
+    ///     The refusal of §7 that is about the project rather than the type: what <c>--entry-point dummy</c>
     ///     writes needs C# 14, and this project does not compile at it.
     /// </summary>
     /// <remarks>
     ///     Refused before the first scaffold, so a run over several types says it once — and refused rather
     ///     than downgraded to a static root, which the developer would only discover at the call site.
     /// </remarks>
-    [Fact(DisplayName = "--entry-point any is refused below C# 14, before anything is written.")]
-    public async Task AnEntryPointOnAnyIsRefusedBelowCSharp14() {
+    [Fact(DisplayName = "--entry-point dummy is refused below C# 14, before anything is written.")]
+    public async Task AnEntryPointOnDummyIsRefusedBelowCSharp14() {
         GenerateSettings settings = Settings("Order");
 
-        settings.EntryPoint = "any";
+        settings.EntryPoint = "dummy";
 
         Run run = await Generate(settings, Compilation(Domain, language: LanguageVersion.CSharp12));
 
@@ -237,7 +237,7 @@ public sealed class GenerateCommandTests : IDisposable {
     public async Task ADryRunPrintsBothFiles() {
         GenerateSettings settings = Settings("Order");
 
-        settings.EntryPoint = "any";
+        settings.EntryPoint = "dummy";
         settings.DryRun     = true;
 
         Run run = await Generate(settings);
@@ -599,7 +599,7 @@ public sealed class GenerateCommandTests : IDisposable {
     /// </summary>
     /// <remarks>
     ///     The language version is a parameter because one refusal turns on it and on nothing else: what
-    ///     <c>--entry-point any</c> writes is a C# 14 construct, and the target framework has no say in it
+    ///     <c>--entry-point dummy</c> writes is a C# 14 construct, and the target framework has no say in it
     ///     (§4.5).
     /// </remarks>
     private static CSharpCompilation Compilation(string source,

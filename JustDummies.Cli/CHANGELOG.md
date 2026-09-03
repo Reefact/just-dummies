@@ -23,14 +23,20 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Changed
 
+- **BREAKING — the scaffolder follows the library's `Any` → `Dummy` rename.** `dum generate Order` now
+  writes `DummyOrder.cs` (not `AnyOrder.cs`), `--entry-point dummy` (renamed from `--entry-point any`)
+  reaches it as `Dummy.Order()`, and the one static-root name `--entry-point static:<Name>` refuses is
+  `Dummy` (was `Any`). No shapes change — the same C# 14 extension member, the same refusal below C# 14 —
+  only the names do.
+
 - **A parameter with nothing to report — resolved, no verification pending, no guard combined into it — is now
   written inline, with no factory method, whether it composes through its own type's generator or reads
   straight off the base table (ADR-0096).** Previously only a composed parameter earned this: a guard-free
   primitive always went through a private factory returning exactly the base table's own call, tightened by
   nothing. The fix above made the gap visible on a composed parameter too — a null-check now read as satisfied
   routed through a factory anyway, purely to hold a verification marker that, once resolved, left a method
-  wrapping one call and saying nothing it did not. Both shapes are now the same: `status: Any.Enum<OrderStatus>()`
-  reads exactly like `customerId: new AnyCustomerId()`, right beside each other in the same constructor. A
+  wrapping one call and saying nothing it did not. Both shapes are now the same: `status: Dummy.Enum<OrderStatus>()`
+  reads exactly like `customerId: new DummyCustomerId()`, right beside each other in the same constructor. A
   parameter that still has something to say — a guard tightened its chain, or one of the two blocking markers of
   §5.5/§5.6 applies — keeps its factory exactly as before.
 

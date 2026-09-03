@@ -117,7 +117,7 @@ les deux moitiés d'un bloc d'arrangement se lisent pareil — `Dummy.Int32()` s
 `Dummy.Order()` sur la suivante — demandez un point d'entrée :
 
 ```bash
-dum generate Order --entry-point any
+dum generate Order --entry-point dummy
 ```
 
 Cela écrit un second fichier, `DummyOrder.Entry.cs`, à côté du generator :
@@ -150,7 +150,7 @@ dum generate Order --entry-point static:Dummies --entry-point-namespace Shop.Tes
 Le generator, lui, ne bouge pas, et `DummyOrder.cs` est identique octet pour octet quelle que soit la
 valeur demandée. Une racine nommée `Dummy` est refusée : une classe statique de ce nom dans votre propre
 projet masquerait `JustDummies.Dummy` pour tout son namespace, et `Dummy.Int32()` cesserait de compiler —
-ce que `--entry-point any` existe précisément pour éviter. Décision :
+ce que `--entry-point dummy` existe précisément pour éviter. Décision :
 [ADR-0070](../../for-maintainers/adr/0070-emit-an-entry-point-on-request-as-a-file-of-its-own.fr.md).
 
 ## Rendre compte à un script

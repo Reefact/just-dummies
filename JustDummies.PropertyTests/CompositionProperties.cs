@@ -155,7 +155,7 @@ public sealed class CompositionProperties {
         // distinguish "not drawn" from "drawn and discarded".
         Prop.ForAll(Gen.Choose(1, 40).ToArbitrary(),
                     drawCount => {
-                        CountingAny<int> wrapped = new(7);
+                        CountingDummy<int> wrapped = new(7);
 
                         List<int?> values = Expect.Draws(wrapped.OrNull(), drawCount);
 
@@ -445,7 +445,7 @@ public sealed class CompositionProperties {
     ///     <see cref="IDummy{T}" /> only — which is exactly what makes the count observable from outside the library.
     /// </summary>
     /// <typeparam name="T">The type of the generated values.</typeparam>
-    private sealed class CountingAny<T> : IDummy<T> {
+    private sealed class CountingDummy<T> : IDummy<T> {
 
         #region Fields declarations
 
@@ -453,7 +453,7 @@ public sealed class CompositionProperties {
 
         #endregion
 
-        internal CountingAny(T value) {
+        internal CountingDummy(T value) {
             _value = value;
         }
 

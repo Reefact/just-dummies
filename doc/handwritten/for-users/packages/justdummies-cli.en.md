@@ -117,7 +117,7 @@ halves of an arrange block read alike — `Dummy.Int32()` on one line and `Dummy
 ask for an entry point:
 
 ```bash
-dum generate Order --entry-point any
+dum generate Order --entry-point dummy
 ```
 
 That writes a second file, `DummyOrder.Entry.cs`, beside the generator:
@@ -150,7 +150,7 @@ dum generate Order --entry-point static:Dummies --entry-point-namespace Shop.Tes
 The generator itself does not move, and `DummyOrder.cs` is byte-identical whichever of the three you
 ask for. A root named `Dummy` is refused: a static class by that name in your own project would hide
 `JustDummies.Dummy` for its whole namespace, and `Dummy.Int32()` would stop compiling — which is what
-`--entry-point any` exists to avoid. Decision:
+`--entry-point dummy` exists to avoid. Decision:
 [ADR-0070](../../for-maintainers/adr/0070-emit-an-entry-point-on-request-as-a-file-of-its-own.md).
 
 ## Reporting to a script

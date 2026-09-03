@@ -125,7 +125,7 @@ public sealed class EmittedCodeCompilesTests {
     }
 
     /// <summary>
-    ///     The claim §4.5 rests on: <c>--entry-point any</c> needs C# 14, and nothing else the tool writes does.
+    ///     The claim §4.5 rests on: <c>--entry-point dummy</c> needs C# 14, and nothing else the tool writes does.
     /// </summary>
     /// <remarks>
     ///     Asserted from both sides on purpose. That the extension member fails below C# 14 is what makes the

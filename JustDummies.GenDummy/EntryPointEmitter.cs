@@ -76,7 +76,7 @@ public static class EntryPointEmitter {
     /// </summary>
     private static void WriteHeader(StringBuilder file, ScaffoldPlan plan, EntryPointOptions entryPoint) {
         string option = entryPoint.Kind == EntryPointKind.Dummy
-                            ? "any"
+                            ? "dummy"
                             : "static:" + entryPoint.Root;
 
         Line(file, "// Scaffolded by dum (JustDummies). This file is yours: read it, edit it, commit it.");

@@ -29,9 +29,9 @@ public sealed class EntryPointArgumentTests {
         Check.That(Parsed("none").Kind).IsEqualTo(EntryPointKind.None);
     }
 
-    [Fact(DisplayName = "'any' hangs the entry point off the library's own façade.")]
+    [Fact(DisplayName = "'dummy' hangs the entry point off the library's own façade.")]
     public void DummyHangsItOffTheLibrary() {
-        EntryPointOptions options = Parsed("any");
+        EntryPointOptions options = Parsed("dummy");
 
         Check.That(options.Kind).IsEqualTo(EntryPointKind.Dummy);
         Check.That(options.Root).IsEqualTo("Dummy");
@@ -52,15 +52,15 @@ public sealed class EntryPointArgumentTests {
     /// <remarks>
     ///     Refused rather than warned, unlike the shadowing row of §7: that one compiles and is wrong later,
     ///     this one does not compile at all, and the developer asking for it is asking for
-    ///     <c>--entry-point any</c> by another name.
+    ///     <c>--entry-point dummy</c> by another name.
     /// </remarks>
     [Fact(DisplayName = "'static:Dummy' is refused, and the refusal names what would stop compiling.")]
-    public void StaticAnyIsRefused() {
+    public void StaticDummyIsRefused() {
         EntryPointArgument read = EntryPointArgument.Parse("static:Dummy", entryPointNamespace: null);
 
         Check.That(read.Understood).IsFalse();
         Check.That(read.Refusal).Contains("Dummy.Int32()");
-        Check.That(read.Refusal).Contains("--entry-point any");
+        Check.That(read.Refusal).Contains("--entry-point dummy");
     }
 
     [Theory(DisplayName = "A root that is not an identifier is refused, by name.")]
@@ -82,7 +82,7 @@ public sealed class EntryPointArgumentTests {
         Check.That(read.Understood).IsFalse();
         Check.That(read.Refusal).Contains("none");
         Check.That(read.Refusal).Contains("static:<Name>");
-        Check.That(read.Refusal).Contains("any");
+        Check.That(read.Refusal).Contains("dummy");
     }
 
     // Not ignored: a namespace given with nothing to place is a command line whose author expects a file
@@ -99,7 +99,7 @@ public sealed class EntryPointArgumentTests {
 
     [Fact(DisplayName = "A namespace is carried through to the options.")]
     public void ANamespaceIsCarriedThrough() {
-        EntryPointArgument read = EntryPointArgument.Parse("any", "Shop.Tests.Dummies");
+        EntryPointArgument read = EntryPointArgument.Parse("dummy", "Shop.Tests.Dummies");
 
         Check.That(read.Understood).IsTrue();
         Check.That(read.Options.NamespaceOverride).IsEqualTo("Shop.Tests.Dummies");

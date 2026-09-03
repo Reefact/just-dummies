@@ -152,7 +152,7 @@ public class Jd003AwaitableBodyPassedToReproduciblyTests {
     }
 
     [Fact]
-    public async Task Does_not_report_a_Reproducibly_that_is_not_Any() {
+    public async Task Does_not_report_a_Reproducibly_that_is_not_Dummy() {
         const string source = """
             using System;
             using System.Threading.Tasks;

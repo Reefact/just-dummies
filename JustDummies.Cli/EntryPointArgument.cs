@@ -20,7 +20,7 @@ namespace JustDummies.Cli;
 internal sealed class EntryPointArgument {
 
     /// <summary>The value that asks for the library's own façade.</summary>
-    private const string DummyValue = "any";
+    private const string DummyValue = "dummy";
 
     /// <summary>The value that asks for nothing, which is also what omitting the option means.</summary>
     private const string NoneValue = "none";
@@ -58,7 +58,7 @@ internal sealed class EntryPointArgument {
         // a file somewhere, and would go looking for it.
         if (read.Options.Kind == EntryPointKind.None) {
             return Refused("--entry-point-namespace places the entry-point file, and no entry point was asked for. "
-                         + "Add --entry-point static:<Name> or --entry-point any.");
+                         + $"Add --entry-point static:<Name> or --entry-point {DummyValue}.");
         }
 
         return new EntryPointArgument(read.Options.InNamespace(entryPointNamespace), refusal: null);

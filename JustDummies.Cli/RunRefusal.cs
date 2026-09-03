@@ -21,7 +21,7 @@ internal static class RunRefusal {
     /// <summary>The project would not open, and its diagnostics went to stderr verbatim.</summary>
     internal const string ProjectDidNotLoad = "ProjectDidNotLoad";
 
-    /// <summary><c>--entry-point any</c> against a project that cannot compile what it would write (§4.5).</summary>
+    /// <summary><c>--entry-point dummy</c> against a project that cannot compile what it would write (§4.5).</summary>
     internal const string LanguageVersionTooLow = "LanguageVersionTooLow";
 
     /// <summary>A <c>dum.json</c> that could not be read, or whose values were refused (§3.3).</summary>

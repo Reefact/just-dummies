@@ -171,7 +171,7 @@ public class Jd004DiscardedSeedingResultTests {
     }
 
     [Fact]
-    public async Task Does_not_report_another_Any_member_whose_result_is_discarded() {
+    public async Task Does_not_report_another_Dummy_member_whose_result_is_discarded() {
         // Only the two seeding entry points carry this hazard; a discarded generator is JD006's subject, not JD004's.
         const string source = """
             using JustDummies;

@@ -25,7 +25,7 @@ public sealed class EntryPointEmitterTests {
     }
 
     [Fact(DisplayName = "An extension member on the library's own Dummy.")]
-    public void AnExtensionMemberOnAny() {
+    public void AnExtensionMemberOnDummy() {
         ScaffoldedEntryPoint entry = Emitted(Shapes.Order(), EntryPointOptions.OnDummy);
 
         GoldenFile.Approve("DummyOrder.Entry.Dummy", entry.File.SourceText);

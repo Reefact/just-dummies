@@ -8,6 +8,15 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ## [Unreleased]
 
+### Changed
+
+- **BREAKING — the library's façade `Any` is now `Dummy`, and every `Any<Suffix>` type follows: `AnyString`
+  is `DummyString`, `AnyContext` is `DummyContext`, `IAny<T>` is `IDummy<T>`,
+  `ConflictingAnyConstraintException` is `ConflictingDummyConstraintException`, and so on for the whole
+  family.** No behaviour changes — every constraint, every draw, every seed replays exactly as before; only
+  the names do. Migrating is a rename: `Any.Int32()` becomes `Dummy.Int32()`, `new AnyOrder()` becomes
+  `new DummyOrder()`, `IAny<T>` becomes `IDummy<T>`.
+
 ## [1.0.0-preview.6] - 2026-09-02
 
 ### Added

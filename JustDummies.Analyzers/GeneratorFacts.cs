@@ -46,11 +46,11 @@ internal static class GeneratorFacts {
     ///     than misfiring on a draw from an isolated <c>DummyContext</c> — that context is unaffected by the ambient
     ///     scope, so reporting it would be plainly wrong.
     /// </remarks>
-    public static bool RootsAtAmbientAny(IInvocationOperation invocation, INamedTypeSymbol anyType) {
+    public static bool RootsAtAmbientDummy(IInvocationOperation invocation, INamedTypeSymbol dummyType) {
         for (IOperation? current = invocation; current is IInvocationOperation call;) {
             if (call.Instance is null) {
                 // A static call: ambient only when it is one of Dummy's own factories.
-                return SymbolEqualityComparer.Default.Equals(call.TargetMethod.ContainingType, anyType);
+                return SymbolEqualityComparer.Default.Equals(call.TargetMethod.ContainingType, dummyType);
             }
 
             current = Unwrap(call.Instance);

@@ -178,7 +178,7 @@ public class Jd019CommittedReplaySeedTests {
 
 }
 
-public class Jd020SharedStaticAnyContextTests {
+public class Jd020SharedStaticDummyContextTests {
 
     [Fact]
     public async Task Reports_a_static_context_field() {

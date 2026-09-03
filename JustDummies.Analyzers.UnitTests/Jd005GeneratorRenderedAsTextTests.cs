@@ -66,7 +66,7 @@ public class Jd005GeneratorRenderedAsTextTests {
     }
 
     [Fact]
-    public async Task Reports_a_generator_held_behind_the_IAny_interface() {
+    public async Task Reports_a_generator_held_behind_the_IDummy_interface() {
         // The rule keys on IDummy<T>, not on a list of concrete builders, so As(...) and Combine(...) results are covered.
         const string source = """
             using JustDummies;

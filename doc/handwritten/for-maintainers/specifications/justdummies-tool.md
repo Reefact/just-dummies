@@ -127,7 +127,7 @@ dum generate <Type> [<Type>...] [options]
 | `--project <path>` | the single `*.csproj` in the current directory | Project whose compilation is analyzed. |
 | `--output <dir>` | the current directory | Where the file is written. |
 | `--namespace <ns>` | the target type's namespace (D8) | Namespace of the emitted type. |
-| `--entry-point <v>` *(v1.1)* | `none` | Also emit an entry point: `none`, `static:<Name>` or `any` (§4.5). |
+| `--entry-point <v>` *(v1.1)* | `none` | Also emit an entry point: `none`, `static:<Name>` or `dummy` (§4.5). |
 | `--entry-point-namespace <ns>` *(v1.1)* | the emitted type's namespace | Namespace of the entry-point file alone. |
 | `--force` | off | Overwrite an existing file. |
 | `--dry-run` | off | Print the file to stdout; write nothing. |
@@ -449,7 +449,7 @@ library's own are — `Dummy.Int32()` on one line and `Dummy.Order()` on the nex
 |---|---|---|
 | `none` *(default)* | nothing | — |
 | `static:<Name>` | `public static partial class <Name>` with one factory | `Dummies.Order()` |
-| `any` | `extension(Dummy)` carrying one static factory | `Dummy.Order()` |
+| `dummy` | `extension(Dummy)` carrying one static factory | `Dummy.Order()` |
 
 **The generator file does not change.** `Dummy{Type}.cs` is byte-identical under all three values, so
 `new Dummy{Type}()` keeps working and §4.4's floor is untouched. What is added is added beside it, in
@@ -460,13 +460,13 @@ writes its own part. Nothing is read to be rewritten, so §8.1 holds and D1 is n
 `dum generate Order Customer Invoice --entry-point static:Dummies` writes six files and no file
 twice.
 
-**`any` needs C# 14, and the target framework has nothing to say about it.** A static extension
+**`dummy` needs C# 14, and the target framework has nothing to say about it.** A static extension
 member compiles for a `netstandard2.0` target as readily as for `net10.0`; what it needs is the
 project's `LangVersion`. A project below C# 14 is refused, not downgraded (§7).
 
 **`static:Dummy` is refused.** C# resolves a simple type name in the enclosing namespace before any
 `using`, so a static class named `Dummy` in the developer's project hides `JustDummies.Dummy` rather than
-extending it, and `Dummy.Int32()` stops compiling (`CS0117`). That is what `any` is for, and it is a
+extending it, and `Dummy.Int32()` stops compiling (`CS0117`). That is what `dummy` is for, and it is a
 different mechanism.
 
 **The entry point may move on its own.** `--entry-point-namespace` places the entry-point file and
@@ -476,10 +476,10 @@ opens the generator's namespace in the emitted file. `--namespace` still moves t
 takes the entry point with it unless this option says otherwise.
 
 **Shape rules.** Three header comment lines like §4.3's, naming the option that wrote the file. One
-public static factory named after the target type alone — `Order.Line` scaffolds `AnyLine` and is
+public static factory named after the target type alone — `Order.Line` scaffolds `DummyLine` and is
 reached as `Line()`. It returns the generator, never a value: constraining it through `With…` and
 calling `Generate()` are the developer's, exactly as with `new Dummy{Type}()`. The `static:<Name>` file
-uses no construct newer than C# 7.3; the `any` file needs C# 14 and nothing more.
+uses no construct newer than C# 7.3; the `dummy` file needs C# 14 and nothing more.
 
 A target type whose own name is the chosen root name emits a member named like its enclosing class,
 which does not compile (`CS0542`). It is loud at the developer's build, like §5.5's open parameter,
@@ -1244,7 +1244,7 @@ own diagnostics, the `--dry-run` notice — keeps going to stderr exactly as it 
 `2>/dev/null` leaves a clean pipe.
 
 **One document per run, with no exception to remember.** A run that stopped before its first scaffold
-— no project, a project that would not load, `--entry-point any` below C# 14 — produces one too, with
+— no project, a project that would not load, `--entry-point dummy` below C# 14 — produces one too, with
 `refusal` naming which of them it was. A contract that sometimes writes nothing forces a script to
 tell empty output from a failed parse.
 
@@ -1273,8 +1273,8 @@ The provenance words are the recap's own (§6), read from one table rather than 
 | The target is abstract | `1` | Refused whether or not it declares a constructor of its own — the ordinary abstract type declares `protected` ones and would otherwise hear the row above, whose remedy is the wrong one. A recognised factory reaching it is the exception: `CS0144` is about `new`. Suggests a concrete type that derives from it. |
 | The target is generic, or nested in a generic type | `1` | Nothing supplies the type argument, so the emitted file could not name it. |
 | The target's `required` members are unset by the chosen constructor | `1` | Deferred to §16; names `[SetsRequiredMembers]`, which is scaffolded like any other constructor. |
-| `--entry-point any`, project below C# 14 | `1` | Names the version the project resolved, and `static:<Name>`. |
-| `--entry-point static:Dummy` | `2` | Names what would stop compiling, and points at `--entry-point any`. |
+| `--entry-point dummy`, project below C# 14 | `1` | Names the version the project resolved, and `static:<Name>`. |
+| `--entry-point static:Dummy` | `2` | Names what would stop compiling, and points at `--entry-point dummy`. |
 | `--entry-point` given a value that is not one of the three | `2` | Lists the three. |
 | `--entry-point-namespace` with no entry point to place | `2` | Says which option is missing. |
 | `--format` given a value that is neither `human` nor `json` | `2` | Names both. |

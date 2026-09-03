@@ -65,7 +65,7 @@ worse.
 throughout — `Dummy.Int32()` on one line and `Dummy.Order()` on the next — ask for an
 entry point, and a second file lands beside the generator:
 
-    dum generate Order --entry-point any               # Dummy.Order()      needs C# 14
+    dum generate Order --entry-point dummy             # Dummy.Order()      needs C# 14
     dum generate Order --entry-point static:Dummies    # Dummies.Order()  needs nothing
 
 `DummyOrder.cs` is byte-identical either way, so nothing about the generator

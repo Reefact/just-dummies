@@ -59,7 +59,7 @@ public sealed class MaterializationTests {
     }
 
     [Fact(DisplayName = "Generic inference flows through IDummy<T>, materializing without any implicit conversion.")]
-    public void GenericInferenceMaterializesThroughIAny() {
+    public void GenericInferenceMaterializesThroughIDummy() {
         string text  = Materialize(Dummy.String().NonEmpty());
         int    value = Materialize(Dummy.Int32().Positive());
 

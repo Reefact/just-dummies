@@ -1063,35 +1063,39 @@ au développeur.
 
 ### 5.4 Composition
 
-**Un generator scaffoldé l'emporte.** Si la compilation contient un type nommé `Any{T}` qui
-**convient** — `public`, ni `static` ni `abstract`, implémentant `IAny<T>` pour ce `T` exact, et
-instanciable via un constructeur public sans paramètre —, le moteur émet `new Any{T}()`. C'est ainsi
-que les agrégats se composent en cascade, et cela fonctionne que ce type ait été scaffoldé plus tôt
-ou écrit à la main.
+**L'appel est écrit à l'aveugle.** Un paramètre composé de type `T` est tiré via `new Any{T}()`,
+dans le namespace propre à `T` (ADR-0062) — toujours, inconditionnellement, et sans que le moteur
+n'inspecte jamais la compilation pour décider si cet appel se résoudrait. C'est ainsi que les
+agrégats se composent en cascade, et c'est la lecture littérale de l'ADR-0089 : le paramètre est
+tiré via le generator que son type possède, « nommé que la compilation porte déjà ce generator ou
+non ».
 
-**Un type qui ne fait que partager le nom n'est pas un candidat.** Une `static class`, un type qui
-n'implémente pas `IAny<T>`, un type `abstract`, ou un type sans constructeur public sans paramètre
-échoue à au moins l'une de ces vérifications, et est lu exactement comme si rien ne répondait à ce
-nom — jamais proposé, et jamais nommé de la façon dont un generator réellement manquant l'est
-(ci-dessous). Traiter un candidat disqualifié comme la réponse compilerait quand même l'appel vers un
-nom qui existe, pour que le build du développeur échoue ensuite sur la forme réelle du type —
-`CS0712` pour une classe `static`, un membre d'interface manquant pour un autre — sous un récapitulatif
-qui prétend que `AnyX` l'a inféré.
+**Aucune recherche, donc aucun arbitrage.** Un type homonyme qui existe mais ne peut pas servir —
+une `static class`, un type n'implémentant pas `IAny<T>`, un type `abstract`, un type sans
+constructeur public sans paramètre — ne change rien à l'appel : le moteur ne l'a jamais inspecté et
+ne l'inspectera jamais. Deux types ou plus qui pourraient chacun servir de generator pour `T` ne
+changent rien non plus — il n'y a pas d'égalité à constater, puisqu'il n'y a pas de recherche
+susceptible d'en trouver une. Que l'appel se résolve, et si plusieurs candidats existent lequel le
+compilateur retient, se répond de la même façon que pour toute autre ligne de C# écrite à la main :
+par le build du développeur lui-même, dans l'IDE et en intégration continue, à la ligne exacte où
+l'appel se trouve.
 
-**Et là où rien ne répond au nom du tout, il émet l'appel quand même.** La recette d'un value object
-appartient au generator scaffoldé pour lui. En dériver une ici à la place — déplier la fabrique
-statique à un paramètre de `T` et lire ses gardes, pour émettre `<generator du paramètre>.As(T.Create)`
-— écrivait une copie de cette recette par site composant `T`, chacune libre de dériver du constructeur
-qu'elle décrivait. Donc là où `Any{T}` manque vraiment, le moteur le nomme quand même, et `CS0246` à
-cette ligne est l'instruction : `dum generate T`, ou en écrire un à la main. C'est le mécanisme du
-§5.5 épelé comme un nom de type plutôt que comme un identifiant inventé, si bien que le paramètre
-n'est **pas** non résolu (ADR-0089).
+**Rien n'est recherché, donc rien n'est deviné non plus.** Le moteur ne lit jamais la déclaration
+d'un type homonyme, ne demande jamais s'il implémente `IAny<T>`, n'ouvre jamais de `using` pour
+lui. Composer ne lit pas la compilation pour trouver le generator de `T` du tout — il écrit le seul
+nom que l'ADR-0062 fixe déjà, dans le seul namespace que l'ADR-0062 fixe déjà, et s'arrête là. La
+recette d'un value object appartient au generator scaffoldé pour lui, jamais rederivée ici : déplier
+la fabrique statique propre à `T` et lire ses gardes pour émettre `<generator du paramètre>.As(T.Create)`
+a été écarté pour la même raison que le §5.5 écarte de laisser le paramètre ouvert — cela écrirait
+une copie de la recette de `T` par site d'appel, chacune libre de dériver du constructeur qu'elle
+décrit.
 
-**Deux candidats qui conviennent tous les deux ne se règlent pas non plus en devinant.** Là où
-plusieurs types nommés `Any{T}` conviennent chacun, lequel est visé est la réponse de l'auteur, pas
-celle de l'outil — la même règle que le §5.1.2 applique déjà à une fabrique statique liée à égalité.
-Le paramètre reste non résolu, et son `TODO` liste chaque type qui convient par son nom complet
-plutôt que d'en choisir un.
+**Le paramètre n'est jamais laissé non résolu pour un type composé.** Quoi que la compilation
+porte ou ne porte pas sous ce nom, `new Any{T}()` est ce qui est écrit — jamais un `TODO` nommant
+des candidats, jamais une valeur soupesée au moment de la composition. Un generator manquant, un
+type homonyme disqualifié, une véritable égalité entre deux types valides, et un generator réel,
+unique et correctement implémenté sont traités de façon identique : le même appel, et `CS0246` —
+ou un build propre — est le seul verdict qui ait jamais compté.
 
 **Un type générique est la seule forme composée à laquelle le §5.5 répond encore.** La fonction de
 nommage (§11.3) travaille depuis le nom du type, qui perd ses arguments : `Repository<Order>` et
@@ -1207,8 +1211,8 @@ Analyzing Shop.Domain.Order
 ```
 
 La colonne de droite porte la provenance de chaque expression : vide pour la table de base, `guard`
-quand le §5.3 l'a resserrée, `AnyX` quand le §5.4 a nommé le generator que le type possède,
-`guards not combined` pour le cas de conflit du §5.3, `no source` quand le
+quand le §5.3 l'a resserrée, `AnyX` quand le §5.4 a écrit l'appel à l'aveugle vers le generator que
+le type possède, `guards not combined` pour le cas de conflit du §5.3, `no source` quand le
 corps du constructeur était indisponible et qu'aucune garde n'a pu être lue, `unread guards` quand
 une instruction de tête lève ou appelle d'une façon que l'ensemble reconnu n'a pas appariée, ou à un
 endroit dont le moteur ne peut pas répondre — sous une écriture du paramètre, ou sous quelque chose qui

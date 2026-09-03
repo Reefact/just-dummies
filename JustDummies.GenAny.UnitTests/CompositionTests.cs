@@ -6,46 +6,48 @@ namespace JustDummies.GenAny.UnitTests;
 ///     How a type the base table has no row for is drawn anyway (§5.4).
 /// </summary>
 /// <remarks>
-///     One rule, since ADR-0089: through the generator that type owns. What the type's own factories look like
-///     no longer reaches this decision. A value object's recipe belongs to the generator scaffolded for it, so
-///     every site composing that type calls it rather than deriving a copy free to drift from the original.
+///     One rule, since ADR-0089: through the generator that type owns, named as a blind code-generation
+///     convention — <c>new AnyX()</c> — never as a lookup. Composition never asks the compilation whether a
+///     type of that name exists, qualifies, or is ambiguous; whether the call resolves is the developer's own
+///     compiler's verdict. What the type's own factories look like, or what answers to the same name and
+///     whether it could serve, never reaches this decision.
 /// </remarks>
 public sealed class CompositionTests {
 
     /// <summary>
-    ///     A scaffolded generator is used, and that is how aggregates compose in cascade: scaffold
-    ///     <c>Customer</c>, re-run <c>--force</c> on <c>Order</c>, and the parameter closes.
+    ///     The call is written the same way whether a real, valid generator already answers to the name, a
+    ///     same-named type exists but could never serve as one, several same-named types tie, or nothing
+    ///     answers to the name at all. Composition looks at none of it.
     /// </summary>
-    [Fact(DisplayName = "A generator already scaffolded for the type is used.")]
-    public void AGeneratorAlreadyScaffoldedIsUsed() {
-        ScaffoldedParameter parameter = Composed("""
-                                                 public sealed class Customer { public Customer(string name) { } }
+    [Theory(DisplayName = "The call is written blind, regardless of what answers to the name.")]
+    [InlineData("")]
+    [InlineData("public sealed class AnyEmail : IAny<Email> { public Email Generate() { return new Email(); } }")]
+    [InlineData("public static class AnyEmail { public static Email Generate() { return new Email(); } }")]
+    [InlineData("public abstract class AnyEmail : IAny<Email> { public Email Generate() { return new Email(); } }")]
+    [InlineData("""
+                public sealed class AnyEmail : IAny<Email> {
+                    public AnyEmail(int seed) { }
+                    public Email Generate() { return new Email(); }
+                }
+                """)]
+    [InlineData("""
+                public sealed class AnyEmail : IAny<Email> {
+                    public AnyEmail(int seed = 0) { }
+                    public AnyEmail(string seed = "") { }
+                    public Email Generate() { return new Email(); }
+                }
+                """)]
+    public void TheCallIsWrittenBlindRegardlessOfWhatAnswersToTheName(string anyEmail) {
+        ScaffoldedParameter parameter = Composed($$"""
+                                                  public sealed class Email { public Email() { } }
 
-                                                 public sealed class AnyCustomer : IAny<Customer> {
-                                                     public Customer Generate() { return new Customer("name"); }
-                                                 }
-                                                 """,
-                                                 "Customer");
+                                                  {{anyEmail}}
+                                                  """,
+                                                  "Email");
 
-        Check.That(parameter.Expression).IsEqualTo("new AnyCustomer()");
-        Check.That(parameter.Provenance.HasFlag(Provenance.Scaffolded)).IsTrue();
-    }
-
-    // It is the developer's own answer to the question, so it outranks anything the engine could infer.
-    [Fact(DisplayName = "A scaffolded generator wins over a static factory.")]
-    public void AScaffoldedGeneratorWinsOverAFactory() {
-        ScaffoldedParameter parameter = Composed("""
-                                                 public sealed class Email {
-                                                     public static Email Create(string value) { return new Email(); }
-                                                 }
-
-                                                 public sealed class AnyEmail : IAny<Email> {
-                                                     public Email Generate() { return Email.Create("a@b.c"); }
-                                                 }
-                                                 """,
-                                                 "Email");
-
+        Check.That(parameter.IsUnresolved).IsFalse();
         Check.That(parameter.Expression).IsEqualTo("new AnyEmail()");
+        Check.That(parameter.Provenance.HasFlag(Provenance.Scaffolded)).IsTrue();
     }
 
     /// <summary>
@@ -172,39 +174,77 @@ public sealed class CompositionTests {
     }
 
     /// <summary>
-    ///     The four ways a same-named type fails to be a usable <c>AnyX</c> — static, not <c>IAny&lt;T&gt;</c>,
-    ///     abstract, and missing a public parameterless constructor — and the nominal case that must keep
-    ///     working: a single <c>AnyX : IAny&lt;X&gt;</c> that qualifies on every count.
+    ///     The field case: several same-named types, none of them usable and none of them looked at.
+    ///     Reproduces <c>Reefact/justdummies.io</c>'s <c>tools/snippet-validation</c>, where three unrelated
+    ///     <c>static class AnyOrderReference</c> narrative snippets share a name with the composed type's real
+    ///     generator without being one.
     /// </summary>
     /// <remarks>
-    ///     Every disqualified row is treated as though nothing named <c>AnyEmail</c> existed at all: composed
-    ///     as an open parameter, never as <c>new AnyEmail()</c> — which would collide with the very declaration
-    ///     that failed to qualify and send the developer chasing a compiler error at the wrong culprit.
+    ///     None of the three earns a <c>using</c> — nothing here is ever consulted to decide that, since the
+    ///     call is written the same way regardless of how many same-named types the compilation carries.
     /// </remarks>
-    [Theory(DisplayName = "A same-named type that is not usable as a generator is not a candidate.")]
-    [InlineData("public static class AnyEmail { public static Email Generate() { return new Email(); } }")]
-    [InlineData("public sealed class AnyEmail { public Email Generate() { return new Email(); } }")]
-    [InlineData("public abstract class AnyEmail : IAny<Email> { public Email Generate() { return new Email(); } }")]
-    [InlineData("public sealed class AnyEmail : IAny<Email> { public AnyEmail(int seed) { } public Email Generate() { return new Email(); } }")]
-    public void ASameNamedTypeThatIsNotUsableIsNotACandidate(string anyEmail) {
-        ScaffoldedParameter parameter = Composed($$"""
-                                                  public sealed class Email { public Email() { } }
+    [Fact(DisplayName = "Several same-named types in different namespaces change nothing about the call.")]
+    public void SeveralSameNamedTypesInDifferentNamespacesChangeNothingAboutTheCall() {
+        ScaffoldOutcome outcome = Subject.Scaffold("""
+                                                   namespace Shop.Domain {
 
-                                                  {{anyEmail}}
-                                                  """,
-                                                  "Email");
+                                                       public sealed class Email { public Email() { } }
 
-        Check.That(parameter.IsUnresolved).IsTrue();
-        Check.That(parameter.Provenance.HasFlag(Provenance.Scaffolded)).IsFalse();
-        Check.That(parameter.AmbiguousGeneratorCandidates).IsEmpty();
+                                                       public sealed class Subject {
+                                                           public Subject(Email value) { }
+                                                       }
+
+                                                   }
+
+                                                   namespace Shop.SnippetsCareless {
+
+                                                       public static class AnyEmail {
+                                                           public static Email Generate() { return new Email(); }
+                                                       }
+
+                                                   }
+
+                                                   namespace Shop.SnippetsHandwritten {
+
+                                                       public static class AnyEmail {
+                                                           public static Email Generate() { return new Email(); }
+                                                       }
+
+                                                   }
+
+                                                   namespace Shop.SnippetsConstrained {
+
+                                                       public static class AnyEmail {
+                                                           public static Email Generate() { return new Email(); }
+                                                       }
+
+                                                   }
+                                                   """);
+
+        Check.That(outcome.Status).IsEqualTo(ScaffoldStatus.Scaffolded);
+
+        ScaffoldedParameter parameter = outcome.Plan!.Parameters[0];
+
+        Check.That(parameter.IsUnresolved).IsFalse();
+        Check.That(parameter.Expression).IsEqualTo("new AnyEmail()");
+        Check.That(parameter.Provenance.HasFlag(Provenance.Scaffolded)).IsTrue();
+
+        string sourceText = outcome.File!.SourceText;
+
+        Check.That(sourceText).Not.Contains("Shop.SnippetsCareless");
+        Check.That(sourceText).Not.Contains("Shop.SnippetsHandwritten");
+        Check.That(sourceText).Not.Contains("Shop.SnippetsConstrained");
     }
 
     /// <summary>
-    ///     The nominal case a disqualified same-named type must never be confused with: exactly one usable
-    ///     generator, reached from another namespace, whose namespace the emitted file therefore has to open.
+    ///     Even a real, valid generator sitting in another namespace earns no <c>using</c>: composition never
+    ///     opens a namespace for anything but the composed type's own (ADR-0062), which is deterministic from
+    ///     the type being composed and never from a lookup. If the developer's own convention does not put
+    ///     <c>AnyEmail</c> where the composed type lives, the resulting <c>CS0246</c> is the answer, not a bug —
+    ///     adding the <c>using</c> by hand is the developer's call, never dum's.
     /// </summary>
-    [Fact(DisplayName = "A single usable generator in another namespace is used, and its namespace is opened.")]
-    public void ASingleUsableGeneratorInAnotherNamespaceIsUsedAndItsNamespaceIsOpened() {
+    [Fact(DisplayName = "A real generator in another namespace earns no using: the call stays blind.")]
+    public void ARealGeneratorInAnotherNamespaceEarnsNoUsing() {
         ScaffoldOutcome outcome = Subject.Scaffold("""
                                                    namespace Shop.Domain {
 
@@ -233,61 +273,7 @@ public sealed class CompositionTests {
         ScaffoldedParameter parameter = outcome.Plan!.Parameters[0];
 
         Check.That(parameter.Expression).IsEqualTo("new AnyEmail()");
-        Check.That(outcome.File!.SourceText).Contains("using Shop.Generators;");
-    }
-
-    /// <summary>
-    ///     Two usable generators answer to the same name, in two different namespaces: the discipline §5.1.2
-    ///     already holds a tied static factory to — list them, choose neither.
-    /// </summary>
-    [Fact(DisplayName = "Two usable generators in two namespaces are listed, and neither is chosen.")]
-    public void TwoUsableGeneratorsInTwoNamespacesAreListedAndNeitherIsChosen() {
-        ScaffoldOutcome outcome = Subject.Scaffold("""
-                                                   namespace Shop.Domain {
-
-                                                       public sealed class Email { public Email() { } }
-
-                                                       public sealed class Subject {
-                                                           public Subject(Email value) { }
-                                                       }
-
-                                                   }
-
-                                                   namespace Shop.GeneratorsOne {
-
-                                                       using JustDummies;
-                                                       using Shop.Domain;
-
-                                                       public sealed class AnyEmail : IAny<Email> {
-                                                           public Email Generate() { return new Email(); }
-                                                       }
-
-                                                   }
-
-                                                   namespace Shop.GeneratorsTwo {
-
-                                                       using JustDummies;
-                                                       using Shop.Domain;
-
-                                                       public sealed class AnyEmail : IAny<Email> {
-                                                           public Email Generate() { return new Email(); }
-                                                       }
-
-                                                   }
-                                                   """);
-
-        Check.That(outcome.Status).IsEqualTo(ScaffoldStatus.Scaffolded);
-
-        ScaffoldedParameter parameter = outcome.Plan!.Parameters[0];
-
-        Check.That(parameter.IsUnresolved).IsTrue();
-        Check.That(parameter.AmbiguousGeneratorCandidates)
-             .ContainsExactly("Shop.GeneratorsOne.AnyEmail", "Shop.GeneratorsTwo.AnyEmail");
-
-        string sourceText = outcome.File!.SourceText;
-
-        Check.That(sourceText).Contains("Shop.GeneratorsOne.AnyEmail");
-        Check.That(sourceText).Contains("Shop.GeneratorsTwo.AnyEmail");
+        Check.That(outcome.File!.SourceText).Not.Contains("using Shop.Generators;");
     }
 
     /// <summary>Scaffolds a <c>Subject</c> whose single parameter is of <paramref name="parameterType" />.</summary>

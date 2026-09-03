@@ -126,7 +126,7 @@ public static class Scaffolder {
 
         string?      fileNamespace = options.NamespaceOverride ?? NamespaceOf(target);
         TypeNames    names         = new(fileNamespace);
-        GeneratorFor generators    = new(library, names, compilation, options.Naming);
+        GeneratorFor generators    = new(library, names, options.Naming);
         GuardReading guards        = Guards.Read(chosen, compilation, names);
 
         string targetName = names.Of(target);
@@ -164,7 +164,7 @@ public static class Scaffolder {
                               | (guards.Unread(parameter.Name) ? Provenance.UnreadGuards : Provenance.None);
 
         if (!drawn.Resolved) {
-            return ScaffoldedParameter.Unresolved(parameter.Name, typeDisplay, provenance, drawn.AmbiguousGenerators);
+            return ScaffoldedParameter.Unresolved(parameter.Name, typeDisplay, provenance);
         }
 
         IReadOnlyList<GuardConstraint> tightening = guards.For(parameter.Name);

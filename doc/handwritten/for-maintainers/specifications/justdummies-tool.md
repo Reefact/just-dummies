@@ -1011,31 +1011,37 @@ confirmation.
 
 ### 5.4 Composition
 
-**A scaffolded generator wins.** If the compilation contains a type named `Any{T}` that **qualifies** —
-`public`, not `static`, not `abstract`, implementing `IAny<T>` for this exact `T`, and instantiable
-through a public parameterless constructor — the engine emits `new Any{T}()`. This is how aggregates
-compose in cascade, and it works whether that type was scaffolded earlier or written by hand.
+**The call is written blind.** A composed parameter of type `T` is drawn through
+`new Any{T}()`, in `T`'s own namespace (ADR-0062) — always, unconditionally, and without the
+engine ever inspecting the compilation to decide whether that call would resolve. This is how
+aggregates compose in cascade, and it is the literal reading of ADR-0089: the parameter is
+drawn through the generator its type owns, "named whether or not the compilation carries that
+generator yet."
 
-**A type that merely shares the name is not a candidate.** A `static class`, one that does not
-implement `IAny<T>`, an `abstract` one, or one with no public parameterless constructor fails at
-least one of the checks above, and is read exactly as though nothing answered to that name — never
-proposed, and never named the way a genuinely missing generator is (below). Treating a disqualified
-type as the answer would still compile the call site down to a name that exists, only for the
-developer's build to fail on whatever the real shape produces instead — `CS0712` for a `static`
-class, a missing interface member for another — under a recap that claims `AnyX` inferred it.
+**No lookup, so no arbitration.** A same-named type that exists but cannot serve — a
+`static class`, one that does not implement `IAny<T>`, an `abstract` one, one with no public
+parameterless constructor — changes nothing about the call: `dum` never inspected it and never
+will. Two or more types that could each serve as `T`'s generator change nothing either — there
+is no tie to notice, because there is no search that could find one. Whether the call resolves,
+and if several candidates exist which one the compiler picks, is answered the same way any other
+line of hand-written C# is: by the developer's own build, in the IDE and in CI, at the exact
+line the call sits on.
 
-**And where nothing answers to the name at all, it emits the call anyway.** A value object's recipe
-belongs to the generator scaffolded for it. Deriving one here instead — unwrapping `T`'s
-one-parameter static factory and reading its guards, to emit `<param generator>.As(T.Create)` — wrote
-one copy of that recipe per site composing `T`, each free to drift from the constructor it described.
-So where `Any{T}` is missing outright the engine names it anyway, and `CS0246` at that line is the
-instruction: `dum generate T`, or write one by hand. That is §5.5's mechanism spelled as a type name
-rather than as an invented identifier, so the parameter is **not** unresolved (ADR-0089).
+**Nothing is looked up, so nothing is guessed either.** The engine never reads a same-named
+type's declaration, never asks whether it implements `IAny<T>`, never opens a `using` for it.
+Composing does not read the compilation for `T`'s generator at all — it writes the one name
+ADR-0062 already fixes, in the one namespace ADR-0062 already fixes, and stops. A value object's
+recipe belongs to the generator scaffolded for it, never re-derived here: unwrapping `T`'s own
+static factory and reading its guards to emit `<param generator>.As(T.Create)` was rejected for
+the same reason §5.5 rejects leaving the parameter open — it would write one copy of `T`'s recipe
+per call site, each free to drift from the constructor it describes.
 
-**Two or more qualifying types are not settled by guessing either.** Where several types named
-`Any{T}` each qualify, which one is meant is the author's answer, not the tool's — the same rule
-§5.1.2 already holds a tied static factory to. The parameter is left unresolved, and its `TODO`
-lists every qualifying type by its full name rather than picking one.
+**The parameter is never left unresolved for a composed type.** Whatever the compilation does or
+does not carry under that name, `new Any{T}()` is what gets written — never a `TODO` naming
+candidates, never a value reasoned about at compose time. A missing generator, a disqualified
+same-named type, a genuine tie between two valid ones, and a real, unique, correctly-implemented
+generator are handled identically: the same call, and `CS0246` — or a clean build — is the only
+verdict that ever mattered.
 
 **A generic type is the one composed shape §5.5 still answers for.** The naming function (§11.3)
 works from the type's name, which drops its arguments, so `Repository<Order>` and `Repository<Line>`
@@ -1148,8 +1154,8 @@ Analyzing Shop.Domain.Order
 ```
 
 The right-hand column carries the provenance of each expression: empty for the base table,
-`guard` when §5.3 tightened it, `AnyX` when §5.4 named the generator the type owns,
-`guards not combined` for the §5.3 conflict case, `no source` when the
+`guard` when §5.3 tightened it, `AnyX` when §5.4 wrote the blind call to the generator the type
+owns, `guards not combined` for the §5.3 conflict case, `no source` when the
 constructor body was unavailable so no guard could be read, `unread guards` when a leading statement
 throws or calls in a way the recognised set did not match, or in a place the engine cannot vouch for —
 below a write to the parameter, or under something deciding whether it runs at all —,

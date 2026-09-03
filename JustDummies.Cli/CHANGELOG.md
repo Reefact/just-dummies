@@ -8,6 +8,26 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ## [Unreleased]
 
+### Fixed
+
+- **Composing a parameter through its type's own `AnyX` generator no longer inspects the compilation to
+  decide whether to write it.** beta.5 disqualified a same-named type that cannot serve as a generator —
+  a `static class`, one that does not implement `IAny<T>`, an `abstract` one, one with no public
+  parameterless constructor — and then left the parameter open instead of composing through it: right
+  that a disqualified type must not be called, wrong that the tool should look at it at all. ADR-0089
+  already says the call is written "named whether or not the compilation carries that generator yet";
+  `dum` now honours that literally. `Generate()` always draws a composed parameter through
+  `new AnyOrderReference()`, in the composed type's own namespace (ADR-0062) — never by inspecting what,
+  if anything, answers to that name in the compilation, and never by opening a `using` for a type it did
+  not look up. A `static class AnyOrderReference`, two unrelated types sharing that name in different
+  namespaces, and a type that genuinely qualifies as `OrderReference`'s generator are now handled
+  identically: `dum` writes the call and leaves resolving it to the developer's own build, in the IDE and
+  in CI, at the exact line. Measured on `Reefact/justdummies.io`'s `tools/snippet-validation`, where three
+  unrelated `static class AnyOrderReference` narrative snippets — none of them a generator — sit in three
+  namespaces beside the real one: `reference`, `customerId` and `total` now read a named, if unresolved,
+  call rather than a bare `TODO`, the same outcome a domain with no `AnyX` at all was always given — and a
+  domain where the real generator exists gets the identical call, with no `using` added on its behalf.
+
 ## [1.1.0-beta.5] - 2026-09-02
 
 ### Fixed

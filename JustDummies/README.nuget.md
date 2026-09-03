@@ -169,7 +169,7 @@ matter — and that is the point.
   distinct elements than its effective domain — the element generator plus any values
   pinned outside it with `Containing` — can supply, and it fails fast, just like any
   other conflict, wherever that domain is countable; where it is not, the same
-  shortfall instead surfaces at generation as an `DummyGenerationException` naming the
+  shortfall instead surfaces at generation as a `DummyGenerationException` naming the
   seed to replay. `Dummy.PairOf`/`TripleOf` pair generators into value tuples.
 - **Optional values**: `.OrNull()` turns any generator into one that is `null` about
   half the time and otherwise a constrained value — the dummy for an optional field,
@@ -182,7 +182,7 @@ matter — and that is the point.
   so a run pinned from outside the test body never points at a call the test does not
   contain. Drawing from several threads at once is safe — values stay arbitrary and
   well-formed — but concurrent draws interleave, so a seed replays a run only while its
-  draws are taken one at a time; open an `Dummy.UseSeed(...)` scope per unit of work to
+  draws are taken one at a time; open a `Dummy.UseSeed(...)` scope per unit of work to
   keep a parallel run reproducible. A seed keeps its meaning across upgrades: within a
   major version, it draws the same values in every patch and minor, so a pinned seed
   committed today still covers the case it was pinned for after an upgrade. The mapping

@@ -150,7 +150,7 @@ public sealed class DummyGenerationException : DummyException {
     /// <summary>
     ///     The seed of the random context the failing generation drew from, when it is known. Under the ambient context
     ///     (<c>Dummy.Reproducibly(...)</c>) pass it to <c>Dummy.Reproducibly(seed, ...)</c> to replay the run; a value drawn
-    ///     from an <c>Dummy.WithSeed(seed)</c> context already replays deterministically on its own. The failure message
+    ///     from a <c>Dummy.WithSeed(seed)</c> context already replays deterministically on its own. The failure message
     ///     states which of the two applies. <c>null</c> when the failing generator does not draw from one of the
     ///     library's random contexts.
     /// </summary>

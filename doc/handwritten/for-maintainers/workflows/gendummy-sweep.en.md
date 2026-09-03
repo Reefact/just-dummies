@@ -62,7 +62,7 @@ rather than assuming `Count`: the axis knows what an array answers to.
 
 ### Rule 5 is the sharpest one, and it is free
 
-Every one of the 352 draw failures in the August survey was an `DummyGenerationException` — the library
+Every one of the 352 draw failures in the August survey was a `DummyGenerationException` — the library
 declining a domain it cannot honour (ADR-0046). Not one was the domain's own constructor rejecting a
 value the engine produced. That gives an exact line: a refusal in the first class is an outcome the
 library is entitled to, and **anything else is a value that should never have been drawn**.

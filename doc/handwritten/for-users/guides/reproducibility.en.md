@@ -165,7 +165,7 @@ using (IDisposable scope = Dummy.UseSeed(1743029518, "[Reproducible(Seed = 17430
 
 ## `Dummy.WithSeed`: an isolated context
 
-`Dummy.WithSeed(seed)` pins nothing ambient. It returns an `DummyContext` — a self-contained world with
+`Dummy.WithSeed(seed)` pins nothing ambient. It returns a `DummyContext` — a self-contained world with
 the same factories on it — which is what you want to build deterministic data *outside* a test body,
 such as a fixture or a benchmark:
 
@@ -182,7 +182,7 @@ int      seed      = context.Seed;
 Because the context is isolated, values drawn from it are unaffected by any ambient scope — and a
 `[Reproducible]` attribute or an enclosing `Dummy.Reproducibly` does not govern them.
 
-Holding an `DummyContext` in a **static** field is a trap worth naming: interleaved draws from several
+Holding a `DummyContext` in a **static** field is a trap worth naming: interleaved draws from several
 tests make neither the sequence nor the multiset stable, which is diagnostic
 [JD020](../analyzers/JD020.en.md).
 

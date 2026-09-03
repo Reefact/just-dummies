@@ -39,7 +39,7 @@ Guid   id        = Dummy.Guid().NonEmpty().Generate();
 The test now states its assumptions. Everything else varies between runs, which is what makes it find
 things.
 
-An `Dummy.*` call returns a **generator** — an immutable recipe — and `.Generate()` draws a value from
+A `Dummy.*` call returns a **generator** — an immutable recipe — and `.Generate()` draws a value from
 it. A value object with a stricter contract is built by transforming a constrained primitive through
 its real factory:
 

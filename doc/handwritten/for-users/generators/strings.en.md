@@ -274,7 +274,7 @@ parser and refuse loudly instead is
 
 ### What you can still constrain
 
-An `DummyPattern` carries only `Except` and `DifferentFrom`:
+A `DummyPattern` carries only `Except` and `DifferentFrom`:
 
 ```csharp
 string sku = Dummy.StringMatching(@"[A-Z]{3}-\d{4}").DifferentFrom("ABC-0000").Generate();

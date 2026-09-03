@@ -9,7 +9,7 @@ using Microsoft.CodeAnalysis.Operations;
 namespace JustDummies.Analyzers;
 
 /// <summary>
-///     JD030 — reports an <c>Dummy.String()</c> chain that declares no length, so it draws the whole default
+///     JD030 — reports a <c>Dummy.String()</c> chain that declares no length, so it draws the whole default
 ///     spread: 0 to 1024 characters.
 /// </summary>
 /// <remarks>

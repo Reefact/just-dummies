@@ -10,7 +10,7 @@ namespace JustDummies;
 ///     The random context a generator draws from when it generates: a pseudo-random generator paired with the seed
 ///     that created it, so any failure can name the seed that replays the run. Generators hold a
 ///     <see cref="RandomSource" /> and resolve it at <see cref="IDummy{T}.Generate" /> time — never at construction
-///     time — which is what lets a recipe built outside an <c>Dummy.Reproducibly(...)</c> scope generate
+///     time — which is what lets a recipe built outside a <c>Dummy.Reproducibly(...)</c> scope generate
 ///     deterministically inside one.
 /// </summary>
 [SuppressMessage(SonarRule.S1694.Category, SonarRule.S1694.Id, Justification = SuppressionJustification.S1694.ClosedInternalHierarchyRoot)]

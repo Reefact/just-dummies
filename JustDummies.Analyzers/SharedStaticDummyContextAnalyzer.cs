@@ -6,7 +6,7 @@ using Microsoft.CodeAnalysis.Diagnostics;
 namespace JustDummies.Analyzers;
 
 /// <summary>
-///     JD020 — reports an <c>DummyContext</c> held in a static field. It looks maximally deterministic — a literal seed,
+///     JD020 — reports a <c>DummyContext</c> held in a static field. It looks maximally deterministic — a literal seed,
 ///     right there in the source — and is not: the type's own documentation states that sharing one context across
 ///     threads "costs the replay rather than the values", because interleaved draws make neither the sequence nor the
 ///     multiset stable. A suite that runs its classes in parallel therefore gets a different value per test per run,

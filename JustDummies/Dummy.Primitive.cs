@@ -163,7 +163,7 @@ public static partial class Dummy {
 
     /// <summary>
     ///     Starts an arbitrary <see cref="System.Guid" /> generator drawing from the ambient random context — unlike
-    ///     <see cref="System.Guid.NewGuid" />, reproducible inside an <c>Dummy.Reproducibly(...)</c> run, and for every
+    ///     <see cref="System.Guid.NewGuid" />, reproducible inside a <c>Dummy.Reproducibly(...)</c> run, and for every
     ///     practical purpose never empty.
     /// </summary>
     /// <returns>A generator to constrain fluently.</returns>

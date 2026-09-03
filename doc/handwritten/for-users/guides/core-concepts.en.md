@@ -12,7 +12,7 @@ serves *that*; none of it makes a value a dummy that the test is about.
 
 ## A generator is a recipe, not a value
 
-`Dummy.Int32()` does not give you a number. It gives you an `DummyInt32` — an object describing which
+`Dummy.Int32()` does not give you a number. It gives you a `DummyInt32` — an object describing which
 numbers would be acceptable. Nothing is drawn until `Generate()` is called, and every call draws
 again:
 

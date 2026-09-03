@@ -10,7 +10,7 @@ using Microsoft.CodeAnalysis.Operations;
 namespace JustDummies.Analyzers;
 
 /// <summary>
-///     JD015 — reports an <c>DummyString</c> chain whose constant constraints admit no value: anchored fragments that
+///     JD015 — reports a <c>DummyString</c> chain whose constant constraints admit no value: anchored fragments that
 ///     cannot fit the declared length, or a declared character constraint that admits none of the values a constant
 ///     <c>OneOf(...)</c> supplies.
 /// </summary>

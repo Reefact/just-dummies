@@ -29,10 +29,10 @@ public sealed class OrderTests {
     [Fact, Reproducible]
     public void A_20_percent_discount_takes_a_fifth_off_the_order() {
         // Arrange
-        string anyReference = Any.String().StartingWith("ORD-").WithLength(12).Generate();
-        string anyCustomer  = Any.String().Alpha().WithLengthBetween(1, 50).Generate();
+        OrderReference anyReference    = Any.String().StartingWith("ORD-").WithLength(12).As(OrderReference.Create).Generate();
+        string         anyCustomerName = Any.String().Alpha().WithLengthBetween(1, 50).Generate();
 
-        Order order = new Order(anyReference, anyCustomer, amount: 100m);
+        Order order = new Order(anyReference, anyCustomerName, amount: 100m);
 
         // Act
         order.ApplyDiscount(20);
@@ -55,10 +55,10 @@ public sealed class OrderTests {
     [Fact]
     public void A_20_percent_discount_takes_a_fifth_off_the_order() {
         // Arrange
-        string anyReference = Any.String().StartingWith("ORD-").WithLength(12).Generate();
-        string anyCustomer  = Any.String().Alpha().WithLengthBetween(1, 50).Generate();
+        OrderReference anyReference    = Any.String().StartingWith("ORD-").WithLength(12).As(OrderReference.Create).Generate();
+        string         anyCustomerName = Any.String().Alpha().WithLengthBetween(1, 50).Generate();
 
-        Order order = new Order(anyReference, anyCustomer, amount: 100m);
+        Order order = new Order(anyReference, anyCustomerName, amount: 100m);
 
         // Act
         order.ApplyDiscount(20);
@@ -71,10 +71,10 @@ public sealed class OrderTests {
     [Fact, Reproducible(Seed = 1743029518)]
     public void A_100_percent_discount_clears_the_order() {
         // Arrange
-        string anyReference = Any.String().StartingWith("ORD-").WithLength(12).Generate();
-        string anyCustomer  = Any.String().Alpha().WithLengthBetween(1, 50).Generate();
+        OrderReference anyReference    = Any.String().StartingWith("ORD-").WithLength(12).As(OrderReference.Create).Generate();
+        string         anyCustomerName = Any.String().Alpha().WithLengthBetween(1, 50).Generate();
 
-        Order order = new Order(anyReference, anyCustomer, amount: 100m);
+        Order order = new Order(anyReference, anyCustomerName, amount: 100m);
 
         // Act
         order.ApplyDiscount(100);

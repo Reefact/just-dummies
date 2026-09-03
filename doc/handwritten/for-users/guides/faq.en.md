@@ -10,7 +10,8 @@ properly.
 
 ### Is this a property-based testing library?
 
-No, and the difference is worth being clear about.
+No, and the difference is worth being clear about. If property-based testing is a new concept for
+you, [this page gives a good introduction](https://fsharpforfunandprofit.com/pbt/).
 
 A property-based library (FsCheck, Hedgehog) runs your test many times, over many generated inputs,
 and **shrinks** a failure to a minimal counter-example. JustDummies draws **one** value per

@@ -29,7 +29,7 @@ more often than it is written:
 * **Name every drawn value `anyXxxx`** — `anyReference`, not `reference`. A reader then tells
   a dummy from a chosen value at a glance, and the page's central rule becomes checkable by
   eye: *an `anyXxxx` in an assertion is not a dummy, it is a property with a sample size of
-  one* (`getting-started`, "Where the line runs").
+  one* (`getting-started`, "Careful not to misuse a dummy").
 * **Split the body Arrange / Act / Assert**, with those comments. It is what makes the `any`
   names visibly confined to the Arrange.
 

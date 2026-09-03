@@ -36,7 +36,7 @@ back:
 
 1. a sample chaining a letters-only alphabet with a suffix containing `.`, a chain the library refuses
    at declaration;
-2. a claim that `Dummy.OneOf` mis-binds an array, which is false — `params` expansion makes that case
+2. a claim that `Any.OneOf` mis-binds an array, which is false — `params` expansion makes that case
    correct, and it is a held `List` that does not;
 3. two `[SuppressMessage]` samples written outside any type.
 

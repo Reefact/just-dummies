@@ -36,7 +36,7 @@ représentation** :
 Pour un tel type, un comparateur peut **scinder** une valeur en plusieurs, et une borne comptée sous l'égalité
 par défaut n'est plus une borne supérieure de ce qu'un comparateur plus fin verra.
 
-Un générateur de cette bibliothèque atteint cet état en pratique. `DummyDateTimeOffset` admet une plage d'offsets
+Un générateur de cette bibliothèque atteint cet état en pratique. `AnyDateTimeOffset` admet une plage d'offsets
 déclarée et y tire une minute, si bien qu'un instant unique revient sous n'importe laquelle des graphies que
 cette plage autorise. Compté en instants, le domaine vaut une valeur ; sous un comparateur bâti sur
 `EqualsExact`, il en vaut autant que la plage compte de minutes. Le contrôle anticipé refusait un compte de
@@ -45,7 +45,7 @@ trois face à une borne de un, sur une spécification pour laquelle plusieurs ce
 contradictions.
 
 La condition est étroite : il lui faut à la fois un type à égalité grossière **et** un générateur qui tire une
-plage sur la dimension que l'égalité par défaut efface. `DummyDateTime` tire toujours un seul `Kind`, et l'échelle
+plage sur la dimension que l'égalité par défaut efface. `AnyDateTime` tire toujours un seul `Kind`, et l'échelle
 d'un décimal est fixée à une valeur unique plutôt qu'à une plage : aucun des deux ne l'atteint. Vingt-cinq des
 vingt-six générateurs porteurs d'un indice de cardinalité ne sont pas concernés.
 

@@ -18,7 +18,7 @@ static factory method the initializer calls by name, whether or not that method'
 anything to add over the base table's own draw.
 
 A guard-free primitive parameter's factory is empty in every sense that matters: `private static
-IDummy<OrderStatus> AnyValidStatus() { return Any.Enum<OrderStatus>(); }` returns exactly the base
+IAny<OrderStatus> AnyValidStatus() { return Any.Enum<OrderStatus>(); }` returns exactly the base
 table's own call, tightened by nothing, blocking nothing. ADR-0089's own reasoning for the
 composed case — "a method wrapping it would say nothing the call does not" — describes this
 parameter word for word, but the rule it was written into only asked the question of composed
@@ -27,7 +27,7 @@ parameters.
 The gap surfaces sharply once a composed parameter can also carry a guard that turns out to add
 nothing (ADR-0095): before that fix, a composed parameter guarded only by a null-check was routed
 to a factory purely to hold a verification marker that, once resolved, left `private static
-IDummy<OrderReference> AnyValidReference() { return new AnyOrderReference(); }` — a method wrapping
+IAny<OrderReference> AnyValidReference() { return new AnyOrderReference(); }` — a method wrapping
 one call, indistinguishable in shape from the guard-free primitive's factory beside it, both
 saying nothing their own call does not.
 
@@ -77,7 +77,7 @@ composed-only rule rather than removing the rule's boundary.
 
 Rejected because it does not answer why the boundary is composed-versus-primitive rather than
 has-something-to-say-versus-does-not: the two parameters this record's own example contrasts —
-`status: Dummy.Enum<OrderStatus>()` and a clean composed `customerId: new AnyCustomerId()` — carry
+`status: Any.Enum<OrderStatus>()` and a clean composed `customerId: new AnyCustomerId()` — carry
 the identical shape and the identical nothing to report, and a rule that told them apart by type
 alone would have been drawing a line the emitted file gives no reader a reason to see.
 

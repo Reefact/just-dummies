@@ -22,7 +22,7 @@ that is unbounded by anything a pull request controls:
   granularity, so touching a single line of a large file puts **every** mutant in that file on the
   gate.
 
-The consequence surfaced on a one-line-region fix to `JustDummies/Dummy.cs` (~1000 lines, the largest
+The consequence surfaced on a one-line-region fix to `JustDummies/Any.cs` (~1000 lines, the largest
 file in the repository): the `justdummies` leg selected the whole file's mutants and ran **~40 minutes**,
 blocking the merge, while every other required check finished in ~2–3 minutes. The cost follows the size
 of the *file the change lands in*, which no author can keep small on a central type.
@@ -72,7 +72,7 @@ would make the gate lie — the one thing this repository refuses of a diagnosti
 
 ### Keep it blocking, split every large file so per-file selection stays small
 
-A real improvement worth doing on its own merits — `Dummy.cs` is a god-file, and splitting it into
+A real improvement worth doing on its own merits — `Any.cs` is a god-file, and splitting it into
 partial-class files by concern would keep any single diff's mutant set small. But it is a large, careful
 refactor, it offers no guarantee against the *next* file growing, and it is not a precondition for
 merging a correct change today. Left as a follow-up (see below), not a blocker on unblocking.
@@ -113,7 +113,7 @@ being self-contained in the workflow. Changing the job fixes both the block and 
 * **Speed the advisory run itself.** A `concurrency` bump is applied in `justdummies.json`. The larger
   run-time levers — dropping the FsCheck property suite from the mutation *oracle* (its
   hundred-cases-per-property dominates per-mutant time, and its non-determinism is the very reason
-  `coverage-analysis` is off), and/or splitting `JustDummies/Dummy.cs` so per-file `--since` selection
+  `coverage-analysis` is off), and/or splitting `JustDummies/Any.cs` so per-file `--since` selection
   stays small — are separate decisions, recorded here so they are not lost.
 * **Branch protection — the gate must be *removed* from the required checks to actually stop the wait.**
   Advisory removes the *false red*, not the *wait*: the `gate` job runs `needs: changed`, so it does not

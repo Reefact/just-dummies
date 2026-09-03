@@ -10,23 +10,23 @@
 
 ## Context
 
-* Every generator on `JustDummies`' `Dummy` entry point — and its `DummyContext` mirror — has until now been a
+* Every generator on `JustDummies`' `Any` entry point — and its `AnyContext` mirror — has until now been a
   **flat builder**: a single type exposes every constraint method, the methods chain in any order, and an
-  incompatible combination is reported at **run time** by a `ConflictingDummyConstraintException` whose message
+  incompatible combination is reported at **run time** by a `ConflictingAnyConstraintException` whose message
   names both sides ("Cannot apply X because Y is already defined"). A spec that only proves unsatisfiable while
-  a value is being produced throws `DummyGenerationException`, which carries the seed. The type system is never
+  a value is being produced throws `AnyGenerationException`, which carries the seed. The type system is never
   used to prevent a combination.
 * Two different kinds of incompatibility occur on that surface. One is **structural**: it holds for the
-  combination itself, for every argument value — on `Dummy.String()`, a second character set after a first is
+  combination itself, for every argument value — on `Any.String()`, a second character set after a first is
   always wrong. The other is **value-dependent**: the same method call is legal or illegal according to its
-  argument's run-time value — `Dummy.String().WithLength(3).StartingWith("ORD-")` conflicts because the prefix
-  needs four characters, while `Dummy.String().WithLength(12).StartingWith("ORD-")` is valid; the call site and
+  argument's run-time value — `Any.String().WithLength(3).StartingWith("ORD-")` conflicts because the prefix
+  needs four characters, while `Any.String().WithLength(12).StartingWith("ORD-")` is valid; the call site and
   the static types are identical in both. (This record originally illustrated the same point with
   `Numeric().StartingWith("ORD-")`. That combination is no longer a conflict — a character family governs what
   the generator draws, never a literal the caller wrote, [ADR-0079](0079-constrain-what-a-dummy-draws-never-the-literals-it-was-given.md)
   — so the illustration was repinned onto the length budget. The decision below is untouched: the
   value-dependent kind still exists and is still the analyzer's.)
-* `Dummy.Uri()` (issue #226) is the first generator whose space is partitioned into structurally different
+* `Any.Uri()` (issue #226) is the first generator whose space is partitioned into structurally different
   **shapes**: an absolute web, WebSocket, FTP or mailto URI, or a relative reference. Each shape admits a
   different, RFC-fixed set of components — a mailto has no port or authority (RFC 6068), a WebSocket URI no
   user-info or fragment (RFC 6455), an FTP URI no query or fragment, a relative reference no scheme or
@@ -35,19 +35,19 @@
   structural in the sense above, and known before any value is drawn.
 * C# can make a member unavailable on a type. A generator that returns a **different type per shape**, each
   exposing only that shape's components, turns a category error into code that does not compile, whereas a
-  single flat `DummyUri` exposing every component could only reject the same error at run time.
+  single flat `AnyUri` exposing every component could only reject the same error at run time.
 * `JustDummies` is pre-release: no `dum-v*` tag, no external consumers, an empty *Unreleased* changelog. The shape
   of its public generator surface can still be set at no migration cost.
-* The repository records decisions that shape the `Dummy` public surface as ADRs — ADR-0006 (materialize only
+* The repository records decisions that shape the `Any` public surface as ADRs — ADR-0006 (materialize only
   through `Generate()`), ADR-0010 (name factories after their CLR type), [ADR-0006 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0006-supply-arbitrary-test-values-from-a-seedable-source.md) (a single seeded source). A
   new, cross-cutting rule for *how* the surface reports an illegal combination is a decision of that same class.
 
 ## Decision
 
-An illegal constraint combination on the `Dummy` surface is made unrepresentable at compile time — through a
+An illegal constraint combination on the `Any` surface is made unrepresentable at compile time — through a
 typed progression that returns a shape-specific builder exposing only that shape's members — when the
-illegality is structural, and is otherwise left to the run-time `ConflictingDummyConstraintException` /
-`DummyGenerationException` path when it depends on a generated value.
+illegality is structural, and is otherwise left to the run-time `ConflictingAnyConstraintException` /
+`AnyGenerationException` path when it depends on a generated value.
 
 ## Rationale
 
@@ -62,7 +62,7 @@ illegality is structural, and is otherwise left to the run-time `ConflictingDumm
   express the constraint at all.
 * Conversely, leaving a structural URI error to run time throws away a guarantee that is freely available.
   `Mailto().WithPort(...)` is wrong for every possible argument; surfacing it as a failed generation, or even as
-  a thrown `ConflictingDummyConstraintException`, defers to run time an error the compiler would otherwise catch at
+  a thrown `ConflictingAnyConstraintException`, defers to run time an error the compiler would otherwise catch at
   the keystroke, for no gain.
 * Making category errors unrepresentable also removes them from the surface a reader must learn: a shape-specific
   builder that never offers `WithPort` cannot be misused that way, so the RFC rule "a mailto has no port" is
@@ -78,7 +78,7 @@ illegality is structural, and is otherwise left to the run-time `ConflictingDumm
 ### Keep every generator flat and report all conflicts at run time
 
 Considered because it is the library's established pattern, gives one uniform mental model ("chain freely, learn
-the conflicts from exceptions"), and keeps the smallest public type count — a single `DummyUri` instead of a
+the conflicts from exceptions"), and keeps the smallest public type count — a single `AnyUri` instead of a
 family.
 
 Rejected because it spends a guarantee it need not spend: a category error such as a port on a mailto is knowable
@@ -88,7 +88,7 @@ value-dependent one, when only the latter is genuinely forced to run time.
 
 ### Make every generator a typed progression
 
-Considered for symmetry — one enforcement model across the whole `Dummy` surface — and because it would move more
+Considered for symmetry — one enforcement model across the whole `Any` surface — and because it would move more
 errors to compile time in general.
 
 Rejected because most conflicts on the surface are value-dependent (prefixes, contained values, exclusions,
@@ -99,7 +99,7 @@ generator is meant to express. Typed progression earns its cost only where a spa
 ### Enforce the URI category rules with a Roslyn analyzer over a flat builder
 
 Considered because the library already ships analyzers, so a diagnostic could flag `Mailto().WithPort()` on a
-single flat `DummyUri` while keeping one type.
+single flat `AnyUri` while keeping one type.
 
 Rejected because it reintroduces, as an external check, an invariant the type system can hold intrinsically: an
 analyzer can be suppressed, lags the compiler, and must be documented and tested as its own surface, whereas an
@@ -119,7 +119,7 @@ cannot catch, not for a structural rule they can.
 
 ### Negative
 
-* The `Dummy` surface is no longer single-model: a contributor must recognise which of the two patterns a new
+* The `Any` surface is no longer single-model: a contributor must recognise which of the two patterns a new
   generator calls for, instead of always reaching for the flat builder.
 * A shape-partitioned generator carries several public builder types instead of one, enlarging the type count
   and the public-API baseline for that family.
@@ -135,18 +135,18 @@ cannot catch, not for a structural rule they can.
 
 ## Follow-up Actions
 
-* None required. `Dummy.Uri()` (issue #226, first application) already realises the typed-progression side, and
-  the existing `DummyString` surface already realises the run-time side; this ADR records the rule they jointly
+* None required. `Any.Uri()` (issue #226, first application) already realises the typed-progression side, and
+  the existing `AnyString` surface already realises the run-time side; this ADR records the rule they jointly
   establish.
 * Apply the rule when a future generator's space splits into fixed shapes; otherwise keep the flat, run-time
   pattern.
 
 ## References
 
-* ADR-0006 — materialize dummies only through `Generate()`; shares the "shape of the `Dummy` surface" subject.
+* ADR-0006 — materialize dummies only through `Generate()`; shares the "shape of the `Any` surface" subject.
 * ADR-0010 — name Any's factories after their CLR type; precedent for "make the rule un-break-able rather than
-  merely checked", and for recording `Dummy`-surface decisions as ADRs.
-* [ADR-0006 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0006-supply-arbitrary-test-values-from-a-seedable-source.md) — supply arbitrary values from a single seedable source; the seed carried by `DummyGenerationException`
+  merely checked", and for recording `Any`-surface decisions as ADRs.
+* [ADR-0006 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0006-supply-arbitrary-test-values-from-a-seedable-source.md) — supply arbitrary values from a single seedable source; the seed carried by `AnyGenerationException`
   on the run-time path.
-* PR #295 — add the `Dummy.Uri()` family, the first typed progression.
-* Issue #226 — the JustDummies Nice-to-Have backlog that prompted `Dummy.Uri()`.
+* PR #295 — add the `Any.Uri()` family, the first typed progression.
+* Issue #226 — the JustDummies Nice-to-Have backlog that prompted `Any.Uri()`.

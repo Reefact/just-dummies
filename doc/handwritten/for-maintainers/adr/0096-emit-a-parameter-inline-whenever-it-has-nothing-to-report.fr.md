@@ -18,7 +18,7 @@ partout ailleurs, une méthode statique privée que l'initialiseur appelle par s
 de cette méthode ait ou non quoi que ce soit à ajouter au tirage propre de la table de base.
 
 La factory d'un paramètre primitif sans guard est vide en tout ce qui compte : `private static
-IDummy<OrderStatus> AnyValidStatus() { return Any.Enum<OrderStatus>(); }` retourne exactement l'appel
+IAny<OrderStatus> AnyValidStatus() { return Any.Enum<OrderStatus>(); }` retourne exactement l'appel
 propre de la table de base, resserré par rien, ne bloquant rien. La justification même d'ADR-0089
 pour le cas composé — « une méthode l'enveloppant ne dirait rien que l'appel ne dit déjà » —
 décrit ce paramètre mot pour mot, mais la règle dans laquelle elle a été écrite ne posait la
@@ -27,7 +27,7 @@ question que pour les paramètres composés.
 L'écart devient net dès qu'un paramètre composé peut lui aussi porter un guard qui s'avère
 n'ajouter rien (ADR-0095) : avant ce correctif, un paramètre composé gardé seulement par un
 null-check était routé vers une factory uniquement pour y loger un marqueur de vérification qui,
-une fois résolu, laissait `private static IDummy<OrderReference> AnyValidReference() { return new
+une fois résolu, laissait `private static IAny<OrderReference> AnyValidReference() { return new
 AnyOrderReference(); }` — une méthode enveloppant un seul appel, indiscernable dans sa forme de la
 factory du paramètre primitif sans guard juste à côté, toutes deux ne disant rien que leur propre
 appel ne dit déjà.
@@ -80,7 +80,7 @@ la règle existante réservée aux composés plutôt qu'une suppression de sa fr
 
 Rejetée parce qu'elle ne répond pas à la question de savoir pourquoi la frontière est
 composé-contre-primitif plutôt que a-quelque-chose-à-dire-contre-n'en-a-pas : les deux paramètres
-que l'exemple même de cet enregistrement met en regard — `status: Dummy.Enum<OrderStatus>()` et un
+que l'exemple même de cet enregistrement met en regard — `status: Any.Enum<OrderStatus>()` et un
 `customerId: new AnyCustomerId()` composé et propre — portent la forme identique et le rien
 identique à rapporter, et une règle qui les distinguerait par leur seul type aurait tracé une
 ligne qu'aucun lecteur du fichier émis n'a de raison de voir.

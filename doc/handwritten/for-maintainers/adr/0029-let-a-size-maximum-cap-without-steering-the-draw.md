@@ -42,8 +42,8 @@ parameters the caller never wrote, one is an unbounded wait, one is a silently e
 The library already has an exception taxonomy. A caller mistake on a single argument surfaces as a BCL
 argument exception — `UnsupportedRegexException` documents this for a malformed pattern, and ADR-0024
 fixed it for `null` across the whole surface, enforced by a reflection-driven convention test. A
-contradiction *between* declared constraints raises `ConflictingDummyConstraintException` at declaration
-time. A generation that fails despite accepted constraints raises `DummyGenerationException`.
+contradiction *between* declared constraints raises `ConflictingAnyConstraintException` at declaration
+time. A generation that fails despite accepted constraints raises `AnyGenerationException`.
 
 Large sizes do have legitimate uses: tests that exercise a business limit ("rejects a label longer than
 255 characters", "the batch splits past 1 000 items"). Those sizes are calibrated on the limit under
@@ -103,7 +103,7 @@ stays one sentence either way, and this version has no false positives.
 
 ### Raise the ceiling breach as a library exception
 
-Considered: a `ConflictingDummyConstraintException`, or a new member of the library's own hierarchy, so
+Considered: a `ConflictingAnyConstraintException`, or a new member of the library's own hierarchy, so
 that the whole failure surface is catchable in one clause. Rejected because it contradicts the taxonomy
 recorded elsewhere in the library: an argument that is unusable on its own is a caller mistake, not a
 constraint interaction, and mapping it to a conflict would make the word "conflict" mean two different

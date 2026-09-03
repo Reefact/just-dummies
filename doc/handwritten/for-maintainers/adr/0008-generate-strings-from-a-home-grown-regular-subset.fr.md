@@ -13,7 +13,7 @@
 `JustDummies` permet à un test de fournir des valeurs arbitraires mais valides. Une règle de validité très courante est
 une **expression régulière** de format : un objet-valeur valide son entrée contre un motif (une référence de
 commande, un SKU, un code devise), et un test a besoin d'une valeur qui passe cette validation sans réécrire le
-format à la main. `Dummy.StringMatching(motif)` répond à ce besoin — générer une chaîne que le motif matche.
+format à la main. `Any.StringMatching(motif)` répond à ce besoin — générer une chaîne que le motif matche.
 
 Trois faits cadrent sa construction :
 
@@ -34,7 +34,7 @@ quantifieur non borné.
 
 ## Décision
 
-`Dummy.StringMatching` analyse le **sous-ensemble régulier** du langage de motifs avec le parseur propre à la
+`Any.StringMatching` analyse le **sous-ensemble régulier** du langage de motifs avec le parseur propre à la
 bibliothèque et génère à partir de lui — en refusant par une `UnsupportedRegexException` first-class un construct
 bien formé mais non régulier ou hors périmètre — plutôt que de dépendre d'une bibliothèque d'automates de regex.
 
@@ -80,7 +80,7 @@ validation de format.
 Considérée pour qu'un motif puisse se combiner avec `WithLength`, `Numeric`, etc. Rejetée parce que le motif est
 déjà toute la spécification : la longueur et la forme des caractères s'expriment dedans. Un générateur terminal
 supprime d'emblée une classe de combinaisons contradictoires et garde la surface petite, tandis que la composition
-via `As`, `OrNull`, `Combine` et les générateurs de collections — tous définis sur `IDummy<T>` — reste disponible.
+via `As`, `OrNull`, `Combine` et les générateurs de collections — tous définis sur `IAny<T>` — reste disponible.
 
 ## Conséquences
 

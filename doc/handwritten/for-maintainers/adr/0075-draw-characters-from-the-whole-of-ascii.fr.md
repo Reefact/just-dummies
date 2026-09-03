@@ -9,17 +9,17 @@
 
 ## Contexte
 
-`Dummy.String()` et `Dummy.Char()` portent chacun une **famille de caractères** : une contrainte déclarée une
+`Any.String()` et `Any.Char()` portent chacun une **famille de caractères** : une contrainte déclarée une
 seule fois par générateur, qui nomme les caractères qu'un tirage peut utiliser. Les familles sont `Alpha`,
 `Numeric` et `AlphaNumeric`, à côté de deux casses, plus `WithChars` sur la chaîne et `OneOf` sur le
 caractère. Non contraints, les deux générateurs tirent parmi les lettres et les chiffres ASCII — 62
 caractères — et `CharacterPools` détient cette définition une seule fois pour que les deux ne puissent pas
-diverger. La documentation d'`DummyChar` énonce que ses familles reflètent celles de la chaîne, et un garde
+diverger. La documentation d'`AnyChar` énonce que ses familles reflètent celles de la chaîne, et un garde
 par réflexion dans `SurfaceParityTests` tient chaque builder à l'ensemble de contraintes que sa famille
 déclare.
 
 Aucune famille nommée n'atteint un caractère qui ne soit ni une lettre ni un chiffre. Atteindre `:` suppose
-de fournir les caractères soi-même — `Dummy.Char().OneOf(':')`, ou `Dummy.String().WithChars(...)` — ce qui
+de fournir les caractères soi-même — `Any.Char().OneOf(':')`, ou `Any.String().WithChars(...)` — ce qui
 répond à *« exactement ces caractères »* et non à *« un caractère qui n'est pas alphanumérique »*. C'est le
 signalement qui a ouvert la question.
 
@@ -27,7 +27,7 @@ La bibliothèque tire pourtant déjà au-delà des lettres et des chiffres, aill
 d'expressions régulières résout toute position qu'un motif laisse **libre** — le point, un raccourci, une
 classe niée — dans l'ASCII imprimable (0x20–0x7E), et `RegexAlphabet` en consigne la raison : restreindre
 les positions libres garde les dummies générés lisibles au lieu de disperser de l'Unicode arbitraire. Ainsi
-`Dummy.StringMatching(".")` produit `:` alors qu'aucune famille de caractères ne le peut, et deux portes du
+`Any.StringMatching(".")` produit `:` alors qu'aucune famille de caractères ne le peut, et deux portes du
 même produit répondent différemment à la même question.
 
 Quatre autres faits pèsent sur le choix.
@@ -59,7 +59,7 @@ caractères.
 
 ## Décision
 
-Un `Dummy.Char()` non contraint, et le remplissage non contraint d'`Dummy.String()`, tirent dans tout l'ASCII
+Un `Any.Char()` non contraint, et le remplissage non contraint d'`Any.String()`, tirent dans tout l'ASCII
 (0x00–0x7F), et toute famille de caractères — `Printable`, `NonPrintable`, `Whitespaces`, `Alpha`,
 `Numeric`, `AlphaNumeric`, `Punctuation`, `Hexadecimal`, et la paire soustractive `WithoutAlpha` /
 `WithoutNumeric` — ne fait jamais que rétrécir cet ensemble.
@@ -95,7 +95,7 @@ est un sous-ensemble, et il n'y a aucune exception à expliquer. `Printable()` d
 au lieu d'un no-op qui nomme le défaut.
 
 **La symétrie entre les deux générateurs est déjà un engagement.** `CharacterPools` existe pour que le
-remplissage de la chaîne et le vivier du caractère ne puissent pas se contredire, `DummyChar` documente ses
+remplissage de la chaîne et le vivier du caractère ne puissent pas se contredire, `AnyChar` documente ses
 familles comme reflétant celles de la chaîne, et le garde de parité fait échouer un builder dont l'ensemble
 dérive. Chaque famille atterrit sur les deux.
 

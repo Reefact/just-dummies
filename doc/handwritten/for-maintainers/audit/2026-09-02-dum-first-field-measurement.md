@@ -60,7 +60,7 @@ projects did not bind the same references, which is what a `netstandard2.0` libr
 The two ends of the range say what the commit is:
 
 * **`first-class-errors`**: 18 of 28 parameters gained something — 7 real constraints
-  (`Dummy.String().NotBlank()` where the base row had been drawn), 11 honest `unread guards`.
+  (`Any.String().NotBlank()` where the base row had been drawn), 11 honest `unread guards`.
 * **`nodatime`**: 24 of 73 parameters gained an `unread guards`. Before, `dum` would have handed a
   NodaTime user 26 generators whose recap read *all inferred*, over invariants it had never read —
   and `LocalTime`, `LocalDate` and `AnnualDate` reject most of what they would have drawn.

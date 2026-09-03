@@ -19,7 +19,7 @@ graine aléatoire. Cela en fait deux choses à la fois :
 
 * **La moitié coûteuse du coût par mutant.** Chaque mutant rejoue tout l'oracle
   (`"coverage-analysis": "off"`, ADR-0022), et cent cas par propriété dominent ce temps — ce qui, sur un
-  gros fichier changé comme `Dummy.cs`, fait la différence entre minutes et dizaines de minutes.
+  gros fichier changé comme `Any.cs`, fait la différence entre minutes et dizaines de minutes.
 * **Un oracle non-déterministe.** Un verdict de mutation répond à « un test de l'oracle échoue-t-il sur ce
   mutant ? ». Avec un oracle randomisé, cette réponse dépend de la graine FsCheck : un mutant peut être
   **tué sur les tirages d'un run et survivant sur ceux d'un autre**. Le score de mutation reflète alors la

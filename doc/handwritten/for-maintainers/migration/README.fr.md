@@ -49,7 +49,7 @@ frontière a donc été dérivée de l'historique lui-même :
 
 * **Fichiers sans « dummies » dans leur chemin.** Les 56 pages de documentation des analyzers
   (`doc/handwritten/for-users/analyzers/JD001…JD028.{en,fr}.md`) et environ 25 ADR portant sur le
-  moteur de génération `Dummy` ne portent aucun marqueur de ce genre. Ils ont été trouvés en lisant
+  moteur de génération `Any` ne portent aucun marqueur de ce genre. Ils ont été trouvés en lisant
   chaque titre d'ADR et en cherchant dans le *contenu* des fichiers, non dans les chemins.
 
 Notez que `git log -- <chemin>` applique une simplification d'historique et ne rapporte

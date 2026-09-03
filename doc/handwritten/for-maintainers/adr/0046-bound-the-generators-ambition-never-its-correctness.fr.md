@@ -20,8 +20,8 @@ propres raisons locales :
 | Décision | Ce qu'elle borne |
 | --- | --- |
 | [ADR-0004](0004-gate-distinct-collections-by-cardinality-else-bounded-draw.fr.md) | Une collection distincte utilise un tirage dédupliquant borné et échoue explicitement quand elle ne peut pas atteindre le cardinal demandé. |
-| [ADR-0005](0005-cap-any-combine-at-arity-eight.fr.md) | `Dummy.Combine` fournit les arités deux à huit et s'arrête là. |
-| [ADR-0008](0008-generate-strings-from-a-home-grown-regular-subset.fr.md) | `Dummy.StringMatching` couvre le sous-ensemble régulier avec le parseur maison et refuse un construit non régulier en le nommant, plutôt que de prendre une dépendance vers un automate regex. |
+| [ADR-0005](0005-cap-any-combine-at-arity-eight.fr.md) | `Any.Combine` fournit les arités deux à huit et s'arrête là. |
+| [ADR-0008](0008-generate-strings-from-a-home-grown-regular-subset.fr.md) | `Any.StringMatching` couvre le sous-ensemble régulier avec le parseur maison et refuse un construit non régulier en le nommant, plutôt que de prendre une dépendance vers un automate regex. |
 | [ADR-0012](0012-meet-string-exclusions-with-a-bounded-redraw.fr.md) | Une exclusion de chaîne est honorée par un redraw borné. |
 | [ADR-0027](0027-guarantee-a-generated-regex-value-matches-by-bounded-redraw.fr.md) | Une valeur regex générée est garantie de matcher par un redraw borné. |
 | [ADR-0029](0029-let-a-size-maximum-cap-without-steering-the-draw.fr.md) | Une taille que le générateur doit réellement produire est refusée au-delà d'un million. |
@@ -134,7 +134,7 @@ maintenance sans commune mesure avec l'usage.
 
 ### Négatives
 
-* Certaines demandes légitimes sont refusées. Qui veut un lookahead dans `Dummy.StringMatching` s'entend
+* Certaines demandes légitimes sont refusées. Qui veut un lookahead dans `Any.StringMatching` s'entend
   dire non, et la réponse reste non tant que cette décision n'est pas remplacée.
 * Contributeurs et agents peuvent lire la première moitié de la décision comme une licence de
   négligence. La seconde moitié est énoncée pour cela, et toute revue doit la tenir.

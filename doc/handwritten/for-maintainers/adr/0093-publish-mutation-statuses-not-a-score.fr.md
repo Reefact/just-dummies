@@ -36,7 +36,7 @@ score monte. Rien dans la sortie de l'outil n'invite au doute — il ne rapporte
 qu'il a retenu, et le résumé du run écrivait de lui-même « tous les mutants ont été tués ».
 
 Une seconde observation porte sur la même question et n'a **aucune cause identifiée**. Sur
-`JustDummies.GenDummy/Guards.cs`, à un commit donné et avec le même oracle déclaré de 495
+`JustDummies.GenAny/Guards.cs`, à un commit donné et avec le même oracle déclaré de 495
 tests lu dans les deux journaux, le runner de la CI a annoncé 38 survivants et un conteneur
 Linux 52 : dix-sept mutants que le runner dit tués survivent dans le conteneur. Pour l'un
 d'eux, appliquer la mutation au source à la main laisse toute la suite verte, sous les deux

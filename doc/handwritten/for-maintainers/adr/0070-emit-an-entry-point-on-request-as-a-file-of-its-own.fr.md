@@ -11,21 +11,21 @@
 
 ## Contexte
 
-Un generator scaffoldé s'atteint avec `new DummyOrder()`. Les generators de la bibliothèque, eux,
-s'atteignent par une façade statique — `Dummy.Int32()`, `Dummy.String()` — de sorte que les deux moitiés
+Un generator scaffoldé s'atteint avec `new AnyOrder()`. Les generators de la bibliothèque, eux,
+s'atteignent par une façade statique — `Any.Int32()`, `Any.String()` — de sorte que les deux moitiés
 d'un même bloc d'arrangement s'écrivent sous deux formes différentes.
 
-`JustDummies.Dummy` est déclarée `partial`, mais uniquement pour répartir un type sur des fichiers
+`JustDummies.Any` est déclarée `partial`, mais uniquement pour répartir un type sur des fichiers
 frères au sein d'un même assembly. Une déclaration partielle ne franchit pas une frontière
 d'assembly.
 
 C# résout un nom de type simple dans le namespace englobant avant toute directive `using`
 ([ADR-0062](0062-emit-the-generator-into-the-target-types-namespace.fr.md)). Une classe statique
-nommée `Dummy` déclarée dans le projet du développeur masque donc celle de la bibliothèque au lieu de
-la compléter, et `Dummy.Int32()` cesse de compiler avec `CS0117` — vérifié.
+nommée `Any` déclarée dans le projet du développeur masque donc celle de la bibliothèque au lieu de
+la compléter, et `Any.Int32()` cesse de compiler avec `CS0117` — vérifié.
 
 Les membres d'extension statiques de C# 14 acceptent une classe statique comme receveur, ce qui
-atteint `Dummy.Order()` sans déclarer un second `Dummy`. Ils compilent pour une cible `netstandard2.0`
+atteint `Any.Order()` sans déclarer un second `Any`. Ils compilent pour une cible `netstandard2.0`
 aussi bien que pour `net10.0` — vérifié — donc ce qu'ils exigent est la **version de langage** du
 projet, pas son framework cible. En deçà de C# 14 la construction ne parse pas.
 
@@ -44,20 +44,20 @@ La CLI héberge un Roslyn courant et détient la compilation ; le moteur est ép
 (§13.2), qui n'a pas de nom pour C# 14.
 
 La recette du generator tire du contexte ambiant, de sorte qu'un generator atteint depuis un
-`DummyContext` ignorerait le contexte qu'on lui a donné
+`AnyContext` ignorerait le contexte qu'on lui a donné
 ([ADR-0061](0061-draw-from-the-ambient-context-and-hold-no-state.fr.md)).
 
 ## Décision
 
 L'outil n'émet un point d'entrée que si on le lui demande, toujours dans un second fichier à lui, et
-atteint l'écriture `Dummy.` par un membre d'extension C# 14 plutôt que par un type nommé `Dummy` dans le
+atteint l'écriture `Any.` par un membre d'extension C# 14 plutôt que par un type nommé `Any` dans le
 projet du développeur.
 
 ## Justification
 
 **L'additivité est ce qui préserve chaque garantie existante.** Le fichier du generator est identique
 octet pour octet qu'un point d'entrée ait été demandé ou non, donc le plancher de langage de §4.4
-reste une propriété du generator et non de l'exécution, `new DummyOrder()` continue de fonctionner, et
+reste une propriété du generator et non de l'exécution, `new AnyOrder()` continue de fonctionner, et
 la ligne de commande publiée ne gagne qu'une option dont le défaut est son comportement antérieur.
 Rien de ce qui est déjà livré ne change de sens.
 
@@ -69,11 +69,11 @@ part par scaffold atteint le même site d'appel sans rien de tout cela — les p
 jamais sur le disque.
 
 **Le membre d'extension est le seul mécanisme qui ajoute l'écriture sans en retirer une.**
-L'alternative à laquelle un lecteur pense d'abord — déclarer `Dummy` dans le projet du développeur — ne
-complète pas la façade, elle la masque, et elle coûte `Dummy.Int32()`. Ce n'est pas un compromis qui
+L'alternative à laquelle un lecteur pense d'abord — déclarer `Any` dans le projet du développeur — ne
+complète pas la façade, elle la masque, et elle coûte `Any.Int32()`. Ce n'est pas un compromis qui
 vaille d'être proposé.
 
-**Refuser en deçà de C# 14 vaut mieux que rétrograder.** Un développeur qui a demandé `Dummy.Order()`
+**Refuser en deçà de C# 14 vaut mieux que rétrograder.** Un développeur qui a demandé `Any.Order()`
 et a reçu silencieusement `Dummies.Order()` le découvrirait au site d'appel, dans un fichier que
 l'outil n'a pas écrit. Le refus nomme la version de langage que le projet a résolue et l'option qui
 n'exige pas C# 14, ce qui est la forme que prend tout autre refus : ce qui n'a pas pu être fait, puis
@@ -87,22 +87,22 @@ plusieurs contextes bornés, ce qui vaut un import ; ce qu'il ne doit pas achete
 déplacement du generator, que chaque site d'appel nomme. Garder les deux surcharges distinctes est ce
 qui permet à l'une de bouger sans l'autre.
 
-**Le contexte seedé reste en dehors.** `Dummy.WithSeed(...)` rend un contexte dont les generators
+**Le contexte seedé reste en dehors.** `Any.WithSeed(...)` rend un contexte dont les generators
 doivent être passés paramètre par paramètre, parce que la recette émise tire de la façade ambiante
-(ADR-0061). Un point d'entrée sur `DummyContext` aurait l'air symétrique et ignorerait discrètement le
+(ADR-0061). Un point d'entrée sur `AnyContext` aurait l'air symétrique et ignorerait discrètement le
 contexte qu'on lui a remis. Rendre le generator émis conscient du contexte est une décision à part
 entière ; une option d'ergonomie ne doit pas l'y faire entrer.
 
 ## Alternatives envisagées
 
-##### Une partielle d'`Dummy` apportée depuis le projet du développeur
+##### Une partielle d'`Any` apportée depuis le projet du développeur
 
-L'écriture que le nom suggère : `Dummy` est déjà `partial`, donc une part déclarée dans le projet de
+L'écriture que le nom suggère : `Any` est déjà `partial`, donc une part déclarée dans le projet de
 test semblerait la compléter.
 
 Rejetée parce qu'une déclaration partielle ne franchit pas une frontière d'assembly. La part déclare
-un second `Dummy` sans rapport dans l'assembly du développeur, qui gagne la résolution de nom face à
-celui qui est importé et le masque pour tout son namespace — `Dummy.Order()` compile et `Dummy.Int32()`
+un second `Any` sans rapport dans l'assembly du développeur, qui gagne la résolution de nom face à
+celui qui est importé et le masque pour tout son namespace — `Any.Order()` compile et `Any.Int32()`
 non (`CS0117`, vérifié). Elle retire exactement ce qui rendait l'écriture désirable.
 
 ##### Un fichier racine partagé, réécrit au fil des scaffolds
@@ -115,7 +115,7 @@ de travail plutôt que du type analysé (§8.1), et chaque scaffold deviendrait 
 qui appartient au développeur (ADR-0056). La racine partielle atteint le même site d'appel et n'exige
 ni l'un ni l'autre.
 
-##### Faire de l'écriture `Dummy.` la forme par défaut
+##### Faire de l'écriture `Any.` la forme par défaut
 
 Envisagée parce que c'est la forme que la bibliothèque emploie elle-même, et un défaut que personne
 n'a à découvrir.
@@ -136,9 +136,9 @@ moteur ne porte pas ([ADR-0065](0065-keep-the-scaffolding-engine-loadable-by-a-r
 ce qui est la raison même pour laquelle l'ADR-0062 a rejeté le namespace induit par le dossier de
 sortie. Une surcharge explicite atteint la même disposition sans deviner.
 
-##### Émettre un point d'entrée jumeau sur `DummyContext`
+##### Émettre un point d'entrée jumeau sur `AnyContext`
 
-Envisagée par symétrie : la bibliothèque reflète sa façade sur `DummyContext`, donc un développeur qui a
+Envisagée par symétrie : la bibliothèque reflète sa façade sur `AnyContext`, donc un développeur qui a
 appris l'une attend l'autre.
 
 Rejetée parce que ce serait un mensonge. La recette émise tire de la façade ambiante, donc un

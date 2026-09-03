@@ -12,20 +12,20 @@ Supersedes [ADR-0016](0016-vary-the-datetimeoffset-offset-dimension.md).
 
 ## Context
 
-ADR-0016 gave `DummyDateTimeOffset` an offset dimension and recorded, under *Risks*, that combining it with `OneOf`
+ADR-0016 gave `AnyDateTimeOffset` an offset dimension and recorded, under *Risks*, that combining it with `OneOf`
 would leave the offset unapplied: "`WithOffset` combined with `OneOf` does not replace a `OneOf` value's own offset.
 Mitigation: documented, and consistent with `OneOf`'s terminal enumeration semantics."
 
 The mitigation did not hold, and the risk is larger than a surprise.
 
 `WithOffset`'s public XML documentation states that it "pins the offset dimension — **every generated value carries
-exactly that offset**" and declares `ConflictingDummyConstraintException` "when the constraint contradicts a constraint
+exactly that offset**" and declares `ConflictingAnyConstraintException` "when the constraint contradicts a constraint
 already declared". Combined with `OneOf`, it did neither: the constraint was dropped in both declaration orders, no
 exception was raised, and the values came out with their own offsets. The published contract said the opposite of
 what the code did, and the JustDummies readme does not mention the interaction at all.
 
-The library answers this shape consistently everywhere else. `Dummy.Int32().OneOf(1, 2, 3).GreaterThan(10)` and
-`Dummy.DateTime().OneOf(d1, d2).After(2022)` both raise `ConflictingDummyConstraintException`; `OneOf(1, 2, 3)
+The library answers this shape consistently everywhere else. `Any.Int32().OneOf(1, 2, 3).GreaterThan(10)` and
+`Any.DateTime().OneOf(d1, d2).After(2022)` both raise `ConflictingAnyConstraintException`; `OneOf(1, 2, 3)
 .GreaterThan(1)` narrows and draws. `DateTimeOffset` was the one family where a constraint declared after a pool was
 neither applied nor refused.
 
@@ -69,7 +69,7 @@ it changes the value the caller supplied: `OneOf` enumerates exact values, and r
 pool is a worse surprise than the one being removed. It also destroys the instant, since moving the offset while
 keeping the local time yields a different point in time.
 
-### Make `OneOf` terminal on `DummyDateTimeOffset`
+### Make `OneOf` terminal on `AnyDateTimeOffset`
 
 Considered because a terminal type would make the combination unwritable, which is the strongest possible guarantee.
 Rejected because it removes combinations that are legitimate and useful — `OneOf(...).Except(...)`, and an offset that
@@ -83,7 +83,7 @@ the string and object pools rather than family by family.
 * `WithOffset` and `WithOffsetBetween` mean the same thing whatever else the generator carries.
 * An impossible pool/offset combination is reported at declaration, with a message naming what was asked and what the
   pool admits.
-* `DummyDateTimeOffset` stops being the one family where a declared constraint can vanish.
+* `AnyDateTimeOffset` stops being the one family where a declared constraint can vanish.
 
 ### Negative
 
@@ -107,4 +107,4 @@ the string and object pools rather than family by family.
 
 * ADR-0016 — Vary the DateTimeOffset offset dimension: the decision this supersedes, and the *Risks* entry it closes.
 * ADR-0009 — Draw arbitrary strings from an explicit terminal set: the terminal-pool semantics ADR-0016 leaned on.
-* `DummyDateTimeOffset` in the `JustDummies` project.
+* `AnyDateTimeOffset` in the `JustDummies` project.

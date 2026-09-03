@@ -20,10 +20,10 @@ Several existing facts frame the choice:
 
 * The scalar and enum generators already expose `OneOf(params T[])` — draw uniformly from an explicit allow-list —
   but there it is a **composable** constraint: it narrows *within* the type's interval or pool and cross-validates
-  against the other constraints. `DummyString` has no `OneOf` at all.
-* `Dummy.StringMatching` (ADR-0008) is a **terminal** generator: the pattern is the whole specification, so it exposes
+  against the other constraints. `AnyString` has no `OneOf` at all.
+* `Any.StringMatching` (ADR-0008) is a **terminal** generator: the pattern is the whole specification, so it exposes
   no further shape or length constraints, yet it still composes through `As`, `OrNull`, `Combine` and the collection
-  generators as any `IDummy<string>` does.
+  generators as any `IAny<string>` does.
 * A string's shaping surface is far wider than a scalar's interval: prefix, suffix, contained fragments, character
   family, letter casing and length, each already cross-validated against the others.
 * Distinct collections gate on an element generator's advertised cardinality at declaration time (ADR-0004), through
@@ -31,11 +31,11 @@ Several existing facts frame the choice:
 * The library draws from a single seedable source so any run is reproducible ([ADR-0006 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0006-supply-arbitrary-test-values-from-a-seedable-source.md)), builds values to satisfy
   the constraints rather than generate-and-filter, and ships with **zero runtime dependencies and no datasets** —
   its README lists "no realistic fake data (names, emails, addresses)" as an explicit non-goal (ADR-0003).
-* The requested call shape is `Dummy.String().OneOf(...)` — chained off the string entry point.
+* The requested call shape is `Any.String().OneOf(...)` — chained off the string entry point.
 
 ## Decision
 
-`Dummy.String().OneOf(...)` draws the string from an explicit set of caller-supplied values as a **terminal**
+`Any.String().OneOf(...)` draws the string from an explicit set of caller-supplied values as a **terminal**
 generator — the set is the whole specification and does not combine with the other string constraints — rather than
 as a composable constraint like the scalar generators' `OneOf`.
 
@@ -44,41 +44,41 @@ as a composable constraint like the scalar generators' `OneOf`.
 * **A terminal set keeps the surface small and contradiction-free.** Reconciling an explicit value set with a
   string's prefix, suffix, fragments, character family, casing and length would multiply contradictory combinations
   and their conflict messages, for a combination nobody needs — a caller who supplies literal values already fixes
-  their shape. Making the set the whole specification removes that whole class at once. `Dummy.StringMatching` reached
+  their shape. Making the set the whole specification removes that whole class at once. `Any.StringMatching` reached
   the same conclusion for the same reason (ADR-0008); matching that precedent keeps the two string terminals
   coherent.
-* **It stays on `Dummy.String()` for discoverability, and stays honest through fail-fast.** A caller reaches for
-  `Dummy.String()` and finds `OneOf` beside the other ways to obtain a string. The terminal nature is enforced two
+* **It stays on `Any.String()` for discoverability, and stays honest through fail-fast.** A caller reaches for
+  `Any.String()` and finds `OneOf` beside the other ways to obtain a string. The terminal nature is enforced two
   ways: the returned generator carries no shaping methods, and declaring `OneOf` after another constraint raises a
-  `ConflictingDummyConstraintException` at declaration time — the same "an impossible Arrange is a test defect" rule
+  `ConflictingAnyConstraintException` at declaration time — the same "an impossible Arrange is a test defect" rule
   the library applies to every other conflict.
 * **Caller-supplied values preserve the library's identity.** The realistic content lives in the consumer's test,
   not in the package, so the "no realistic fake data" non-goal holds and no dataset, dependency, or network call is
   introduced. `OneOf` is the dependency-free, deterministic answer to "give me a plausible value from a known set".
 * **Advertising cardinality keeps distinct collections eager.** An explicit set is a small countable domain, so the
   generator implements `ICardinalityHint<string>`; a distinct collection over it gates eagerly (ADR-0004), exactly
-  as it does over `DummyChar` or `DummyEnum`, instead of silently relying on the bounded dedup-draw fallback.
+  as it does over `AnyChar` or `AnyEnum`, instead of silently relying on the bounded dedup-draw fallback.
 * **Reproducibility is preserved.** The value is a uniform pick from the deduplicated set through the same seedable
   source as every other generator, so a run replays under a seed ([ADR-0006 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0006-supply-arbitrary-test-values-from-a-seedable-source.md)); collapsing duplicates keeps a listed
   value from being implicitly weighted.
 
 ## Alternatives Considered
 
-### A composable `OneOf` on `DummyString`, like the scalar generators
+### A composable `OneOf` on `AnyString`, like the scalar generators
 
-Considered for surface symmetry with `DummyInt32.OneOf` and its peers. Rejected because a string's shaping constraints
+Considered for surface symmetry with `AnyInt32.OneOf` and its peers. Rejected because a string's shaping constraints
 intersect an explicit value set in many ways, each needing its own eager conflict analysis and message, for a
 combination a caller supplying literals never needs — the terminal form removes the whole class, consistent with
 ADR-0008.
 
-### A static factory `Dummy.StringOneOf(...)` (or `Dummy.OneOf(...)`), parallel to `Dummy.StringMatching`
+### A static factory `Any.StringOneOf(...)` (or `Any.OneOf(...)`), parallel to `Any.StringMatching`
 
 Considered because a static factory is terminal from the first call and sidesteps any "a constraint is already
-declared" case. Rejected because the requested and more discoverable surface is `Dummy.String().OneOf(...)`, which
+declared" case. Rejected because the requested and more discoverable surface is `Any.String().OneOf(...)`, which
 keeps the string entry points together; the prior-constraint case is covered by a clear declaration-time conflict,
 the mechanism the library already uses for every impossible combination.
 
-### Ship curated realistic datasets (`Dummy.CompanyName()`, `Dummy.FirstName()`, ...)
+### Ship curated realistic datasets (`Any.CompanyName()`, `Any.FirstName()`, ...)
 
 Considered because it answers "give me a plausible value" directly. Rejected because it contradicts the stated
 non-goal of shipping no realistic fake data, and would make the library own, grow and localize an open-ended dataset;
@@ -127,5 +127,5 @@ a non-deterministic, non-hermetic first run to a library whose identity is zero-
 * ADR-0004 — Gate distinct collections by cardinality, otherwise by a bounded draw (the `ICardinalityHint` contract).
 * [ADR-0006 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0006-supply-arbitrary-test-values-from-a-seedable-source.md) — Supply arbitrary test values from a single seedable source (reproducibility).
 * ADR-0003 — Host JustDummies as a standalone package in this repository (the zero-dependency, no-dataset boundary).
-* The `AnyStringOneOf` type, the `DummyString.OneOf` method, and their tests in the `JustDummies` project and
+* The `AnyStringOneOf` type, the `AnyString.OneOf` method, and their tests in the `JustDummies` project and
   `JustDummies.UnitTests`.

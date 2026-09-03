@@ -22,7 +22,7 @@ documentées, se combinent en un coût que rien de ce que contrôle une pull req
   pas de granularité à la ligne : toucher une seule ligne d'un gros fichier met **tous** les mutants de
   ce fichier sur la porte.
 
-La conséquence est apparue sur un correctif d'une région d'une ligne dans `JustDummies/Dummy.cs`
+La conséquence est apparue sur un correctif d'une région d'une ligne dans `JustDummies/Any.cs`
 (~1000 lignes, le plus gros fichier du dépôt) : le leg `justdummies` a sélectionné les mutants de tout le
 fichier et tourné **~40 minutes**, bloquant le merge, alors que tous les autres checks requis
 finissaient en ~2–3 minutes. Le coût suit la taille du *fichier où la modification atterrit*, qu'aucun
@@ -79,7 +79,7 @@ diagnostic.
 
 ### Le garder bloquant, découper chaque gros fichier pour que la sélection par fichier reste petite
 
-Une vraie amélioration, méritante en soi — `Dummy.cs` est un god-file, et le découper en fichiers de
+Une vraie amélioration, méritante en soi — `Any.cs` est un god-file, et le découper en fichiers de
 classe partielle par thème garderait petit l'ensemble de mutants de n'importe quel diff. Mais c'est un
 refactor lourd et prudent, il n'offre aucune garantie contre le *prochain* fichier qui grossit, et ce
 n'est pas un préalable au merge d'un changement correct aujourd'hui. Laissé en suivi (ci-dessous), pas en
@@ -123,7 +123,7 @@ autonome dans le workflow. Changer le job corrige le blocage et le bruit au mêm
 * **Accélérer le run consultatif lui-même.** Une hausse de `concurrency` est appliquée dans
   `justdummies.json`. Les leviers de temps plus importants — retirer la suite de propriétés FsCheck de
   l'*oracle* de mutation (ses cent cas par propriété dominent le temps par mutant, et son
-  non-déterminisme est la raison même du `coverage-analysis: off`), et/ou découper `JustDummies/Dummy.cs`
+  non-déterminisme est la raison même du `coverage-analysis: off`), et/ou découper `JustDummies/Any.cs`
   pour que la sélection `--since` par fichier reste petite — sont des décisions séparées, consignées ici
   pour ne pas les perdre.
 * **Protection de branche — il faut *retirer* la porte des checks requis pour vraiment stopper

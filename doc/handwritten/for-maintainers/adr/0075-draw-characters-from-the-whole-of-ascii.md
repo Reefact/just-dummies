@@ -9,21 +9,21 @@
 
 ## Context
 
-`Dummy.String()` and `Dummy.Char()` each carry a **character family**: a once-per-generator constraint naming
+`Any.String()` and `Any.Char()` each carry a **character family**: a once-per-generator constraint naming
 the characters a draw may use. The families are `Alpha`, `Numeric` and `AlphaNumeric`, alongside two
 casings, plus `WithChars` on the string and `OneOf` on the character. Unconstrained, both generators draw
 from ASCII letters and digits — 62 characters — and `CharacterPools` holds that definition once so the two
-cannot drift apart on it. `DummyChar`'s documentation states that its families mirror the string's, and a
+cannot drift apart on it. `AnyChar`'s documentation states that its families mirror the string's, and a
 reflection guard in `SurfaceParityTests` holds each builder to the constraint set its family declares.
 
 No named family reaches a character that is neither a letter nor a digit. Reaching `:` means supplying the
-characters oneself — `Dummy.Char().OneOf(':')`, or `Dummy.String().WithChars(...)` — which answers *"these exact
+characters oneself — `Any.Char().OneOf(':')`, or `Any.String().WithChars(...)` — which answers *"these exact
 characters"* and not *"a character that is not alphanumeric"*. This is the report that opened the question.
 
 The library nevertheless already draws beyond letters and digits, elsewhere. The regex generator resolves
 every position a pattern leaves **free** — the dot, a shorthand, a negated class — to printable ASCII
 (0x20–0x7E), and `RegexAlphabet` records the reason: restricting the free positions keeps generated dummies
-legible instead of scattering arbitrary Unicode. So `Dummy.StringMatching(".")` yields `:` while no character
+legible instead of scattering arbitrary Unicode. So `Any.StringMatching(".")` yields `:` while no character
 family can, and two doors to the same product answer the same question differently.
 
 Four further facts bear on the choice.
@@ -53,7 +53,7 @@ Finally, .NET's `char.IsPunctuation` is narrower than the printable non-alphanum
 
 ## Decision
 
-An unconstrained `Dummy.Char()`, and the unconstrained filler of `Dummy.String()`, draw from the whole of ASCII
+An unconstrained `Any.Char()`, and the unconstrained filler of `Any.String()`, draw from the whole of ASCII
 (0x00–0x7F), and every character family — `Printable`, `NonPrintable`, `Whitespaces`, `Alpha`, `Numeric`,
 `AlphaNumeric`, `Punctuation`, `Hexadecimal`, and the subtractive `WithoutAlpha` / `WithoutNumeric` — only
 ever narrows that set.
@@ -88,7 +88,7 @@ model: the default is the top of the lattice, every family is a subset, and ther
 explain. `Printable()` becomes a real constraint rather than a no-op naming the default.
 
 **Symmetry across the two generators is already a commitment.** `CharacterPools` exists so the string
-filler and the character pool cannot disagree, `DummyChar` documents its families as mirroring the string's,
+filler and the character pool cannot disagree, `AnyChar` documents its families as mirroring the string's,
 and the parity guard fails a builder whose family set drifts. Every family lands on both.
 
 **The member list is bounded by the shape of ASCII, not by taste.** The universe splits into blocks —

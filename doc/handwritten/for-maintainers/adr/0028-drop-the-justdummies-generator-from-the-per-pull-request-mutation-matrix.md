@@ -25,7 +25,7 @@ set by the size of the *files* the diff touches, not by the size of the diff.
 Three constraints, each recorded and measured, together make that cost structural rather than incidental:
 
 * **`--since` is file-scoped, not line-scoped.** Stryker mutates every mutant in a changed file. Those
-  99 lines pulled in whole files — `StringSpec.cs` (246 mutants), `Dummy.Combine.cs` (205),
+  99 lines pulled in whole files — `StringSpec.cs` (246 mutants), `Any.Combine.cs` (205),
   `ContinuousIntervalSpec.cs` (204), `CollectionState.cs` (109) — so roughly nine tenths of the work
   landed on code the pull request never touched.
 * **`"coverage-analysis": "off"` is mandatory, not tuning.** Under the MTP runner Stryker's test

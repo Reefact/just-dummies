@@ -52,7 +52,7 @@ guards over both the mirrored entry points and each family's constraint method s
 
 This arrangement is the decision that most shapes the library's internals, and it constrains how every
 future discrete or numeric builder is added. Its reasoning lives only in internal XML documentation,
-while smaller decisions — the `Dummy.Combine` arity cap (ADR-0005) — carry records.
+while smaller decisions — the `Any.Combine` arity cap (ADR-0005) — carry records.
 
 ## Decision
 
@@ -194,7 +194,7 @@ to be expressed in its own arithmetic.
   internal architecture sits inside.
 * ADR-0004 — Gate distinct collections by cardinality, otherwise by a bounded draw: the cardinality
   reasoning that the shared engine's counting serves.
-* ADR-0005 — Cap `Dummy.Combine` at arity eight: the smaller decision whose existing record made this
+* ADR-0005 — Cap `Any.Combine` at arity eight: the smaller decision whose existing record made this
   one's absence conspicuous.
 * ADR-0007 — Floor the library's .NET Framework support at 4.7.2: the floor target that removes the
   generic-math alternative.

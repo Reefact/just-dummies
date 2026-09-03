@@ -20,7 +20,7 @@ pas qu'un test particulier a l'intention d'exercer le chemin null.
 Le principe affiché de la bibliothèque est que les contraintes expriment les invariants qu'une
 valeur doit satisfaire, jamais ce que le test asserte.
 
-Le type émis porte une surcharge `With{Param}(IDummy<TParam>)` pour chaque paramètre ([ADR-0057](0057-make-the-emitted-generator-a-first-class-iany.fr.md)), donc un
+Le type émis porte une surcharge `With{Param}(IAny<TParam>)` pour chaque paramètre ([ADR-0057](0057-make-the-emitted-generator-a-first-class-iany.fr.md)), donc un
 développeur peut fournir n'importe quel generator, y compris nullable, sur un paramètre choisi dans
 un test choisi.
 

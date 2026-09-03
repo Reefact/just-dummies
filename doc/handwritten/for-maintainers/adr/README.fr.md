@@ -182,7 +182,7 @@ que l'option existait le jour où elle compterait.
 | [ADR-0054](0054-draw-only-valid-values-from-a-typed-builder.fr.md) | Ne tirer que des valeurs valides depuis un builder typé, et ne rien juger dans un pool fourni par l'appelant | Accepted | consigné ici |
 | [ADR-0055](0055-hold-the-user-documentation-to-contracts-the-build-checks.fr.md) | Tenir la documentation utilisateur à des contrats que le build vérifie | Accepted | consigné ici |
 | [ADR-0056](0056-scaffold-the-generator-once-and-hand-the-file-to-the-developer.fr.md) | Scaffolder le generator une fois et confier le fichier au développeur | Accepted | consigné ici |
-| [ADR-0057](0057-make-the-emitted-generator-a-first-class-iany.fr.md) | Faire du generator émis un `IDummy<T>` de plein droit | Accepted | consigné ici |
+| [ADR-0057](0057-make-the-emitted-generator-a-first-class-iany.fr.md) | Faire du generator émis un `IAny<T>` de plein droit | Accepted | consigné ici |
 | [ADR-0058](0058-leave-the-scaffolded-file-open-to-the-analyzers.fr.md) | Laisser le fichier scaffoldé ouvert aux analyzers JustDummies | Accepted | consigné ici |
 | [ADR-0059](0059-emit-only-members-resolved-in-the-target-compilation.fr.md) | N'émettre que des membres résolus dans la compilation cible | Accepted | consigné ici |
 | [ADR-0060](0060-seed-generators-from-constructor-guards.fr.md) | Amorcer les generators sur les gardes du constructeur, et laisser le reste en erreur de compilation | Accepted | consigné ici |

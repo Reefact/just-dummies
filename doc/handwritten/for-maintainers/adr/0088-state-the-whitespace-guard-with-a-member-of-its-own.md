@@ -13,7 +13,7 @@
 The scaffolder reads that guard, and until now emitted `.NonEmpty()` for it — a floor of one character. The two
 are not the same: a value of one space satisfies the floor and the guard rejects it.
 
-The fold rested on a premise written into the specification, that an unconstrained `Dummy.String()` draws only
+The fold rested on a premise written into the specification, that an unconstrained `Any.String()` draws only
 ASCII letters and digits, which makes an all-whitespace draw impossible. [ADR-0075](0075-draw-characters-from-the-whole-of-ascii.md)
 falsified it — the filler is the whole of ASCII, whitespace included — and [ADR-0076](0076-let-a-declared-maximum-steer-the-size-draw.md)
 made a declared maximum steer the draw, so a short ceiling makes short strings ordinary. Neither record revisited
@@ -47,7 +47,7 @@ whitespace rejection are unread today for exactly that reason, with a comment na
 
 ## Decision
 
-`Dummy.String()` gains `NotBlank()`, a constructive constraint requiring at least one character the BCL's
+`Any.String()` gains `NotBlank()`, a constructive constraint requiring at least one character the BCL's
 `char.IsWhiteSpace` rejects, and the scaffolder reads every spelling of the whitespace guard as that member
 rather than as `NonEmpty()`.
 
@@ -165,7 +165,7 @@ different things that happen to share a word.
   the public API baseline, the analyzers that read a chain, and the documentation. A recurring cost per member,
   not a one-off.
 * The library carries two notions of whitespace, and documentation is the only thing keeping them apart.
-* `NotBlank()` has no `Dummy.Char()` counterpart, so the two surfaces are no longer symmetric — deliberately, since
+* `NotBlank()` has no `Any.Char()` counterpart, so the two surfaces are no longer symmetric — deliberately, since
   a single character is blank or it is not, which the existing families already say.
 
 ### Risks

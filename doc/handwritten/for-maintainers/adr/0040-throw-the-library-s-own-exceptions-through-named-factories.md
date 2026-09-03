@@ -19,7 +19,7 @@ The result is that a method about constraints spends four lines on prose. In the
 draw loop read like this:
 
 ```csharp
-throw new DummyGenerationException(
+throw new AnyGenerationException(
     $"Generation failed: no {_typeName} value near the drawn candidate satisfies the exclusions. {source.ReplayGuidance(random.Seed)}",
     random.Seed,
     new InvalidOperationException($"Every representable value within {NudgeBudget.ToString(CultureInfo.InvariantCulture)} steps of the drawn candidate, in both directions, is excluded or out of bounds. Values further away were not examined, so this is an exhausted local search rather than an empty range."));
@@ -48,7 +48,7 @@ contradiction produces a particular English sentence is plumbing, and plumbing b
 mechanism. An exception type *is* a mechanism more than anything else, which makes it the right
 home: the call site states which failure occurred, and the exception knows how to say it.
 
-**A name is worth more than a message at the call site.** `throw DummyGenerationException.GridNudgeExhausted(...)`
+**A name is worth more than a message at the call site.** `throw AnyGenerationException.GridNudgeExhausted(...)`
 tells a reader what happened in three words. The message it produces tells the *user* what happened,
 which is a different audience and a different moment. Separating them lets both be good.
 
@@ -99,7 +99,7 @@ cost no reader of theirs would ever collect.
 * The call site states which failure occurred and nothing else, so a method about constraints reads
   as a method about constraints. The message it produces addresses a different reader at a different
   moment, and separating them lets both be good.
-* The wording of a failure has one home. `ConflictingDummyConstraintException` holds the sentence shape
+* The wording of a failure has one home. `ConflictingAnyConstraintException` holds the sentence shape
   for every conflict in the library, which makes it the only file to read when a message must change.
 * The rule is checkable by inspection: "does this file throw one of our exceptions with `new`?" has a
   yes/no answer, which is what makes a convention hold.

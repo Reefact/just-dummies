@@ -10,21 +10,21 @@
 
 ## Contexte
 
-* `JustDummies` expose un point d'entrée statique `Dummy` dont les fabriques sans paramètre démarrent
-  chacune un générateur pour un type simple .NET — `Dummy.Int32()`, `Dummy.SByte()`,
-  `Dummy.Single()`, `Dummy.UInt64()`, `Dummy.String()`, `Dummy.Guid()`, `Dummy.DateTime()`, … — et
-  retournent chacune un type builder nommé `Dummy{Nom}` (`Dummy.Int32()` retourne `DummyInt32`).
-  `DummyContext` reflète chacune de ces fabriques scalaires pour la surface à contexte graine, si
+* `JustDummies` expose un point d'entrée statique `Any` dont les fabriques sans paramètre démarrent
+  chacune un générateur pour un type simple .NET — `Any.Int32()`, `Any.SByte()`,
+  `Any.Single()`, `Any.UInt64()`, `Any.String()`, `Any.Guid()`, `Any.DateTime()`, … — et
+  retournent chacune un type builder nommé `Any{Nom}` (`Any.Int32()` retourne `AnyInt32`).
+  `AnyContext` reflète chacune de ces fabriques scalaires pour la surface à contexte graine, si
   bien que chaque fabrique existe en deux endroits qui doivent concorder.
 * Sur toute cette surface scalaire, le nom de la fabrique et le nom du builder sont le **nom de
   type CLR** — la valeur que retourne `System.Type.Name` — et non le mot-clé C# : `Int32` et non
   `Int`, `Single` et non `Float`, `Int64` et non `Long`, `Byte`/`SByte`, `Decimal`, `Char`. Les
-  formes mots-clés C# ne peuvent pas toutes servir d'identifiants (`Dummy.int()` est une erreur de
+  formes mots-clés C# ne peuvent pas toutes servir d'identifiants (`Any.int()` est une erreur de
   syntaxe), et les noms CLR se lisent uniformément avec les noms de types builder.
 * Cela reflète les familles de méthodes par primitive de la bibliothèque de base .NET, qui
   nomment chaque méthode d'après le type CLR : `Convert.ToInt32` / `ToSingle` / `ToBoolean`,
   `BitConverter.ToInt32` / `ToBoolean` — jamais `ToBool`, `ToFloat` ou `ToInt`.
-* Une fabrique déviait : `Dummy.Bool()`, retournant `AnyBool`, produisait un `System.Boolean`,
+* Une fabrique déviait : `Any.Bool()`, retournant `AnyBool`, produisait un `System.Boolean`,
   dont le nom CLR est `Boolean`. C'était le seul membre de la surface scalaire non nommé d'après
   son type CLR. L'audit d'architecture et de conception de JustDummies du 2026-07-20 l'a mis en
   évidence (§8.2, §8.4) et a recommandé que le choix soit tranché délibérément et consigné avant
@@ -39,10 +39,10 @@
 
 ## Décision
 
-Toute fabrique scalaire sans paramètre de `Dummy` et de `DummyContext`, ainsi que le type builder
+Toute fabrique scalaire sans paramètre de `Any` et de `AnyContext`, ainsi que le type builder
 qu'elle retourne, est nommée d'après le nom CLR du type qu'elle produit, sans exception — en
-renommant `Dummy.Bool()` / `DummyContext.Bool()` / `AnyBool` en `Dummy.Boolean()` /
-`DummyContext.Boolean()` / `DummyBoolean`.
+renommant `Any.Bool()` / `AnyContext.Bool()` / `AnyBool` en `Any.Boolean()` /
+`AnyContext.Boolean()` / `AnyBoolean`.
 
 ## Justification
 
@@ -58,10 +58,10 @@ renommant `Dummy.Bool()` / `DummyContext.Bool()` / `AnyBool` en `Dummy.Boolean()
   écrit déjà en toutes lettres.
 * Le choix aligne la surface sur les familles par primitive `Convert` / `BitConverter` de la BCL
   citées au Contexte, l'analogue existant le plus proche de « une méthode par type simple, nommée
-  d'après le type » ; un consommateur qui cherche `Convert.ToBoolean` trouve `Dummy.Boolean()` là où
+  d'après le type » ; un consommateur qui cherche `Convert.ToBoolean` trouve `Any.Boolean()` là où
   il l'attend.
 * Faire concorder nom de fabrique, nom de builder et nom CLR garde un seul modèle mental —
-  `Dummy.X()` → `AnyX` → `System.X` — qu'un unique garde par réflexion peut vérifier sur toute la
+  `Any.X()` → `AnyX` → `System.X` — qu'un unique garde par réflexion peut vérifier sur toute la
   surface, si bien qu'un type ajouté plus tard ne peut réintroduire la déviation en silence.
 * Trancher en pré-publication ne coûte rien et, selon l'audit, est le moment le moins cher pour
   décider ; différer au-delà de la 1.0 transforme un renommage gratuit en changement cassant dans
@@ -72,7 +72,7 @@ renommant `Dummy.Bool()` / `DummyContext.Bool()` / `AnyBool` en `Dummy.Boolean()
 ### Garder `Bool()` / `AnyBool` et consigner la forme courte comme exception délibérée
 
 Envisagée parce que `bool` est la graphie quasi universelle en C# moderne tandis que `Boolean`
-est rarement écrit à la main, si bien que `Dummy.Bool()` est marginalement plus familier au point
+est rarement écrit à la main, si bien que `Any.Bool()` est marginalement plus familier au point
 d'appel, et qu'une justification d'une ligne dans le README pourrait faire lire la déviation comme
 choisie plutôt qu'accidentelle.
 
@@ -82,12 +82,12 @@ règle qu'il faut alors énoncer avec une réserve et garder avec une entrée de
 échangeant un renommage unique en pré-publication contre une asymétrie permanente dans la surface
 dont toute la valeur est l'uniformité.
 
-### Ne renommer qu'un côté — le builder en `DummyBoolean` en gardant `Bool()`, ou l'inverse
+### Ne renommer qu'un côté — le builder en `AnyBoolean` en gardant `Bool()`, ou l'inverse
 
 Envisagée parce qu'elle toucherait moins de points d'appel.
 
 Rejetée parce qu'elle casse la correspondance nom-de-fabrique-égale-nom-de-builder qui tient
-partout ailleurs (`Dummy.Int32()` → `DummyInt32`), remplaçant une déviation par une autre et perdant
+partout ailleurs (`Any.Int32()` → `AnyInt32`), remplaçant une déviation par une autre et perdant
 le bénéfice du modèle mental unique qui motive le changement.
 
 ### Offrir à la fois `Bool()` et `Boolean()`, l'un déléguant à l'autre
@@ -103,7 +103,7 @@ sans coût.
 
 ### Positives
 
-* La surface de fabriques scalaires suit une règle unique sans exception (`Dummy.X()` → `AnyX` →
+* La surface de fabriques scalaires suit une règle unique sans exception (`Any.X()` → `AnyX` →
   CLR `X`), énonçable en une phrase et exécutable par un seul garde par réflexion.
 * La surface correspond au nommage par primitive `Convert` / `BitConverter` de la BCL, réduisant
   la surprise pour les consommateurs.
@@ -112,7 +112,7 @@ sans coût.
 
 ### Négatives
 
-* `Dummy.Boolean()` est plus verbeux que la graphie quasi universelle du mot-clé `bool` ; un
+* `Any.Boolean()` est plus verbeux que la graphie quasi universelle du mot-clé `bool` ; un
   consommateur attendant `Bool()` doit se tourner vers `Boolean()`.
 * Le renommage touche d'un coup le type builder, les deux points d'entrée, la vérification de
   l'artefact empaqueté et les tests — un coût mécanique, en pré-publication.
@@ -121,11 +121,11 @@ sans coût.
 
 * Sans mise en application, un type scalaire futur pourrait réintroduire un nom court de mot-clé
   (un second `Bool`) ; atténué par le garde de parité de nommage ajouté avec cette décision, qui
-  échoue lorsqu'une fabrique, son builder ou son miroir `DummyContext` s'écarte du nom CLR.
+  échoue lorsqu'une fabrique, son builder ou son miroir `AnyContext` s'écarte du nom CLR.
 
 ## Actions de suivi
 
-* Renommer `Dummy.Bool()` / `DummyContext.Bool()` / `AnyBool` en `Boolean` / `DummyBoolean`, et mettre
+* Renommer `Any.Bool()` / `AnyContext.Bool()` / `AnyBool` en `Boolean` / `AnyBoolean`, et mettre
   à jour les tests, la sonde d'artefact empaqueté `justdummies-check` et le README du package *(fait
   dans ce changement)*.
 * Ajouter le garde de parité de nommage à `JustDummies.UnitTests` *(fait dans ce changement)*.

@@ -10,7 +10,7 @@
 ## Context
 
 A failing generation reports the seed that produced it, and the reader replays the run by pinning that
-seed — `Dummy.Reproducibly(1234, ...)`, `Dummy.WithSeed(1234)`, or `[Fact, Reproducible(Seed = 1234)]` on
+seed — `Any.Reproducibly(1234, ...)`, `Any.WithSeed(1234)`, or `[Fact, Reproducible(Seed = 1234)]` on
 the xUnit adapter. That loop is the library's central ergonomic: an arbitrary value is worth drawing
 only if the run that failed on it can be reproduced.
 
@@ -33,7 +33,7 @@ version upgrade, that test does not fail: it draws different values and stays gr
 stopped testing what it was pinned for. The failure mode is lost coverage, not a broken build.
 
 One property of the current implementation shapes every option below. The draws come from a **single
-sequential stream shared by the whole scope**, so the value an `Dummy.String()` produces depends on
+sequential stream shared by the whole scope**, so the value an `Any.String()` produces depends on
 everything drawn before it. A change to how many draws any generator consumes shifts every value that
 follows it in the same scope — including values produced by generators that were not touched.
 
@@ -88,7 +88,7 @@ substantially less useful than the library's own documentation implies it is.
 Replacing the shared sequential stream with per-generator streams derived from the seed (for instance
 from `hash(seed, factory identity, call index)`), so one generator's draws cannot disturb another's.
 Rejected, on the grounds that it does not buy what it appears to: under the promise decided here,
-changing `Dummy.String()` changes `Dummy.String()`'s values, which is a major-version change whether the
+changing `Any.String()` changes `Any.String()`'s values, which is a major-version change whether the
 streams are shared or independent. Independence narrows the **blast radius** of such a change — only
 that factory's values move, rather than everything drawn after it — but it grants no freedom to make
 the change in a minor. It is a rework of the generator core for a benefit that materialises only on

@@ -10,7 +10,7 @@
 
 ## Context
 
-JustDummies composes differently typed generators into larger objects through `Dummy.Combine`, preserving constructor-based domain validation without reflection.
+JustDummies composes differently typed generators into larger objects through `Any.Combine`, preserving constructor-based domain validation without reflection.
 
 C# has no heterogeneous variadic generics, so each supported arity requires a distinct public overload. Low arities alone force nested composition or positional tuples for larger constructors, while an unlimited surface would create repetitive API and documentation with diminishing value.
 
@@ -18,7 +18,7 @@ Very wide constructors can also indicate missing intermediate domain concepts.
 
 ## Decision
 
-`Dummy.Combine` provides flat heterogeneous overloads from arity two through arity eight and deliberately stops there.
+`Any.Combine` provides flat heterogeneous overloads from arity two through arity eight and deliberately stops there.
 
 ## Rationale
 

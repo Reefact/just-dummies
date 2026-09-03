@@ -23,7 +23,7 @@ legal, deliberate on some call sites, and true — the chain does draw that spre
 because the author is unlikely to know it.
 
 The library ships pairs of spellings that are equivalent **by construction**, not by coincidence.
-`DummyString.WithLengthBetween` is implemented as the two bounds it replaces, and its documentation says the
+`AnyString.WithLengthBetween` is implemented as the two bounds it replaces, and its documentation says the
 two forms behave identically, which is what keeps the range decomposable. The same pairing exists for the
 collection generators, and nineteen `Between` overloads cover the numeric, `TimeSpan` and temporal ones.
 Alongside them the library ships exact aliases of a single bound: `NonEmpty` is a minimum length of one,
@@ -92,7 +92,7 @@ would leave the next candidate to whoever argues it best. Three conditions that 
 generator's source settle JD032 and everything after it without a second reading — which is the same reason
 ADR-0046 exists rather than seven separate bounding decisions.
 
-**The criterion deliberately admits more than the case that prompted it.** `Dummy.String().WithMinLength(1)`
+**The criterion deliberately admits more than the case that prompted it.** `Any.String().WithMinLength(1)`
 has a shorter named form implemented as exactly that constraint, so it passes all three conditions. A
 criterion narrow enough to admit precisely one rule would not be a criterion, and the cost of the extra
 candidates is bounded: each still has to earn an issue, an id and two documentation pages.

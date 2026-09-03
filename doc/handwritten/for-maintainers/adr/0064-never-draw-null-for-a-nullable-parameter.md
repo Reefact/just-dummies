@@ -20,7 +20,7 @@ state that any particular test intends to exercise the null path.
 The library's stated principle is that constraints express the invariants a value must satisfy,
 never what the test asserts.
 
-The emitted type carries a `With{Param}(IDummy<TParam>)` overload for every parameter ([ADR-0057](0057-make-the-emitted-generator-a-first-class-iany.md)), so a
+The emitted type carries a `With{Param}(IAny<TParam>)` overload for every parameter ([ADR-0057](0057-make-the-emitted-generator-a-first-class-iany.md)), so a
 developer can supply any generator, including a nullable one, at a chosen parameter in a chosen
 test.
 

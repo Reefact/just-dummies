@@ -13,7 +13,7 @@ Supersedes [ADR-0009](0009-draw-arbitrary-strings-from-an-explicit-terminal-set.
 ## Context
 
 Every `JustDummies` generator is a fluent recipe: each constraint narrows what may be drawn, contradictory constraints
-fail at declaration with a `ConflictingDummyConstraintException` naming both sides, and the value is built to satisfy the
+fail at declaration with a `ConflictingAnyConstraintException` naming both sides, and the value is built to satisfy the
 whole specification rather than generated and filtered. Which constraints a given generator exposes has, until now,
 been decided generator by generator.
 
@@ -22,25 +22,25 @@ methods other than `Generate()`:
 
 | call | returns | chainable constraints |
 |---|---|---|
-| `Dummy.Int32().OneOf(1, 2)` | `DummyInt32` | 13 — composable |
-| `Dummy.DateTime().OneOf(d)` | `DummyDateTime` | 9 — composable |
-| `Dummy.DateTimeOffset().OneOf(x)` | `DummyDateTimeOffset` | 11 — composable |
-| `Dummy.Guid().OneOf(g)` | `DummyGuid` | 5 — composable |
-| `Dummy.String().OneOf("a", "b")` | `AnyStringOneOf` | 0 — terminal |
-| `Dummy.OneOf(x, y)` | `DummyOneOf<T>` | 0 — terminal |
+| `Any.Int32().OneOf(1, 2)` | `AnyInt32` | 13 — composable |
+| `Any.DateTime().OneOf(d)` | `AnyDateTime` | 9 — composable |
+| `Any.DateTimeOffset().OneOf(x)` | `AnyDateTimeOffset` | 11 — composable |
+| `Any.Guid().OneOf(g)` | `AnyGuid` | 5 — composable |
+| `Any.String().OneOf("a", "b")` | `AnyStringOneOf` | 0 — terminal |
+| `Any.OneOf(x, y)` | `AnyOneOf<T>` | 0 — terminal |
 
 Four families return their own composable builder; two return a distinct dead-end type. Nothing at the call site tells
 the two apart.
 
 Further facts framing the choice:
 
-* ADR-0009 made `Dummy.String().OneOf(...)` terminal, on the ground that reconciling an explicit value set with the
+* ADR-0009 made `Any.String().OneOf(...)` terminal, on the ground that reconciling an explicit value set with the
   prefix, suffix, contained values, character family, casing and length of a string would multiply contradictory
   combinations and their conflict messages, for a combination nobody needed. It listed as a *Risk* that a caller may
-  expect the scalar `OneOf`'s composability and be surprised. ADR-0008 made `Dummy.StringMatching(...)` terminal on the
+  expect the scalar `OneOf`'s composability and be surprised. ADR-0008 made `Any.StringMatching(...)` terminal on the
   same reasoning, and ADR-0009 aligned with it as a precedent.
-* The gap is not theoretical. `Dummy.ElementOf(existingOrders).DifferentFrom(theOneAlreadyUsed)` — drawing another
-  element of a fixture — does not exist, and `Dummy.String().OneOf("abc", "de").WithLength(3)` does not either, though
+* The gap is not theoretical. `Any.ElementOf(existingOrders).DifferentFrom(theOneAlreadyUsed)` — drawing another
+  element of a fixture — does not exist, and `Any.String().OneOf("abc", "de").WithLength(3)` does not either, though
   `"abc"` satisfies both. The LINQ workaround for the first, `pool.Where(x => x != used).ToArray()`, works but reports
   an emptied domain as `ArgumentException: At least one value is required`, blaming the caller for an empty array
   instead of naming the two constraints in play. The numeric families name both.
@@ -48,12 +48,12 @@ Further facts framing the choice:
   casing *shape* a string the generator builds. `Except`/`DifferentFrom` do not shape anything: they remove values.
 * Strings have no ordinal mapping to build an exclusion into, so on a shaped string an exclusion is already met by a
   **bounded redraw** — a documented exception to "built, never filtered" that the package readme states, and the only
-  failure `DummyString` defers to generation.
-* `DummyPattern` already runs a bounded build-verify-redraw loop on every draw: since ADR-0027 each built value is
+  failure `AnyString` defers to generation.
+* `AnyPattern` already runs a bounded build-verify-redraw loop on every draw: since ADR-0027 each built value is
   checked against the real .NET engine and redrawn on a miss, so that "a generated value matches its pattern" holds by
   construction.
 * Distinct collections gate at declaration on the element generator's advertised cardinality and membership through
-  the internal `ICardinalityHint<T>` (ADR-0004). `AnyStringOneOf` and `DummyOneOf<T>` both advertise it; `DummyString`
+  the internal `ICardinalityHint<T>` (ADR-0004). `AnyStringOneOf` and `AnyOneOf<T>` both advertise it; `AnyString`
   does not.
 * Issue #337 established that a generation failure may assert only what the search actually established: a spent
   budget is reported as a spent budget, never as a proof of impossibility.
@@ -82,7 +82,7 @@ removes values from a domain, and is offered everywhere — rather than by decla
   is the values that pass, and satisfiability is the single question of whether any remain. One question replaces the
   matrix — and it is answered eagerly, so the promise that a generator which exists can generate is kept.
 * **The refusal on a pattern survives the reframing, and gains a reason it did not have.** A shape constraint on
-  `Dummy.StringMatching(...)` would require building a value in the intersection of two regular languages, machinery the
+  `Any.StringMatching(...)` would require building a value in the intersection of two regular languages, machinery the
   library does not have and would not add for this. That is now a statement about the constraint rather than about the
   type: the refusal stands on why it cannot be built, not on a label, and it explains why the exclusion pair is
   admitted alongside it rather than looking like an inconsistency.
@@ -108,7 +108,7 @@ removes values from a domain, and is offered everywhere — rather than by decla
 ### Keep the terminal types and give them the shaping constraints
 
 Considered because it preserves ADR-0009's and ADR-0008's decisions intact while closing the capability gap: a
-composable `AnyStringOneOf` would answer `OneOf("abc", "de").WithLength(3)` without changing what `Dummy.String().OneOf`
+composable `AnyStringOneOf` would answer `OneOf("abc", "de").WithLength(3)` without changing what `Any.String().OneOf`
 returns.
 
 Rejected because it closes the gap by duplicating the surface rather than removing the asymmetry: the constraint set
@@ -116,12 +116,12 @@ would exist twice, on two types, with two sets of conflict messages to keep in s
 know which type they hold. The asymmetry the measured table shows is the defect; a second composable type leaves it in
 place.
 
-### Make only `Dummy.String().OneOf` composable, and leave the pool and the pattern terminal
+### Make only `Any.String().OneOf` composable, and leave the pool and the pattern terminal
 
 Considered because it fixes the case with the most obvious cost — the string value set — for the smallest change, and
 leaves two decisions untouched.
 
-Rejected because it fixes the instance and not the rule. `Dummy.ElementOf(orders).DifferentFrom(used)` is the idiom this
+Rejected because it fixes the instance and not the rule. `Any.ElementOf(orders).DifferentFrom(used)` is the idiom this
 work exists for and would still be missing, and the next generator would face the same undocumented judgement call.
 Recording the distinction is what makes the surface predictable; applying it to one of the three places it covers would
 record nothing.
@@ -149,7 +149,7 @@ machinery rather than a property of the type, so the door is left open should a 
 
 ### Leave the pool case to the caller's LINQ
 
-Considered because `pool.Where(x => x != used).ToArray()` already works, needs no API, and keeps `DummyOneOf<T>`
+Considered because `pool.Where(x => x != used).ToArray()` already works, needs no API, and keeps `AnyOneOf<T>`
 minimal.
 
 Rejected because it degrades exactly what the library exists to protect: the diagnostic. Filtering to nothing raises
@@ -164,12 +164,12 @@ of the specification and into the arrange code, where a distinct collection can 
 
 * One test — is this constraint constructive or rejective? — answers what any generator, present or future, may
   expose. The measured asymmetry becomes a rule rather than a table of precedents.
-* `Dummy.String().OneOf(...)` composes with every string constraint, and an emptied set names the two constraints in
+* `Any.String().OneOf(...)` composes with every string constraint, and an emptied set names the two constraints in
   play — the same verdict whichever of the two was declared first, each order phrasing it from the side the second
   declaration arrives on.
-* `Dummy.ElementOf(orders).DifferentFrom(used)` and `Dummy.StringMatching(p).DifferentFrom(existing)` exist, with the
+* `Any.ElementOf(orders).DifferentFrom(used)` and `Any.StringMatching(p).DifferentFrom(existing)` exist, with the
   conflict and failure diagnostics the rest of the library gives.
-* `DummyString` advertises the cardinality of its surviving value set, so a distinct collection over a pooled string
+* `AnyString` advertises the cardinality of its surviving value set, so a distinct collection over a pooled string
   generator still gates eagerly — the guarantee ADR-0009 secured through `AnyStringOneOf` is kept by the type that
   replaces it.
 * One public type disappears and none is added.
@@ -187,7 +187,7 @@ of the specification and into the arrange code, where a distinct collection can 
   deferring the refusal would cost every shaped string its eager conflict — so those constraints with `OneOf` last
   still conflict, while `OneOf` first accepts them. Order is otherwise immaterial; here it is not, and the surface has
   to say so rather than promise a symmetry it does not have.
-* `DummyPattern` is no longer describable as exposing nothing: ADR-0008's "terminal generator" framing now needs the
+* `AnyPattern` is no longer describable as exposing nothing: ADR-0008's "terminal generator" framing now needs the
   constructive/rejective qualification to stay accurate.
 
 ### Risks
@@ -220,4 +220,4 @@ of the specification and into the arrange code, where a distinct collection can 
 * ADR-0024 — Guard public and internal arguments against null: the convention every new member follows.
 * Issue #352 — the audit item that asked for this record.
 * Issue #337 — the claim-truthfulness standard for an exhausted budget.
-* `DummyString`, `StringSpec`, `DummyOneOf<T>` and `DummyPattern` in the `JustDummies` project.
+* `AnyString`, `StringSpec`, `AnyOneOf<T>` and `AnyPattern` in the `JustDummies` project.

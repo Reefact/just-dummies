@@ -20,8 +20,8 @@ reasons:
 | Decision | What it bounds |
 | --- | --- |
 | [ADR-0004](0004-gate-distinct-collections-by-cardinality-else-bounded-draw.md) | A distinct collection uses a bounded deduplicating draw and fails explicitly when it cannot reach the requested count. |
-| [ADR-0005](0005-cap-any-combine-at-arity-eight.md) | `Dummy.Combine` provides arities two through eight and stops there. |
-| [ADR-0008](0008-generate-strings-from-a-home-grown-regular-subset.md) | `Dummy.StringMatching` covers the regular subset with the library's own parser and refuses a non-regular construct by name, rather than taking a regex-automaton dependency. |
+| [ADR-0005](0005-cap-any-combine-at-arity-eight.md) | `Any.Combine` provides arities two through eight and stops there. |
+| [ADR-0008](0008-generate-strings-from-a-home-grown-regular-subset.md) | `Any.StringMatching` covers the regular subset with the library's own parser and refuses a non-regular construct by name, rather than taking a regex-automaton dependency. |
 | [ADR-0012](0012-meet-string-exclusions-with-a-bounded-redraw.md) | A string exclusion is met by a bounded redraw. |
 | [ADR-0027](0027-guarantee-a-generated-regex-value-matches-by-bounded-redraw.md) | A generated regex value is guaranteed to match by a bounded redraw. |
 | [ADR-0029](0029-let-a-size-maximum-cap-without-steering-the-draw.md) | A size the generator must actually produce is refused above one million. |
@@ -122,7 +122,7 @@ nobody can explain, and of a maintenance surface out of proportion to the use ca
 
 ### Negative
 
-* Some legitimate requests are refused. A user wanting a lookahead in `Dummy.StringMatching` is told no,
+* Some legitimate requests are refused. A user wanting a lookahead in `Any.StringMatching` is told no,
   and the answer stays no until this decision is superseded.
 * Contributors and agents may read the first half of the decision as licence to be careless. The
   second half is stated for that reason, and every review should hold it.

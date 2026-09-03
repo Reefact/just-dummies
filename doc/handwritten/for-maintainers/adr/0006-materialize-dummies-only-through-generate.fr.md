@@ -11,7 +11,7 @@
 ## Contexte
 
 `JustDummies` est une DSL fluide de générateurs typés porteurs de contraintes. Chaque
-générateur implémente `IDummy<T>`, dont l'unique membre `Generate()` tire une valeur
+générateur implémente `IAny<T>`, dont l'unique membre `Generate()` tire une valeur
 satisfaisant les contraintes déclarées ; les points de composition `As` et
 `Combine` construisent des générateurs plus larges et matérialisent leurs parties
 en appelant `Generate()`. Le modèle affiché de la bibliothèque est qu'un générateur
@@ -31,7 +31,7 @@ bibliothèque (issue #190) :
 
 * La conversion a des **effets de bord** : elle tire de l'aléatoire, ce n'est donc
   pas un élargissement ; elle peut **lever une exception**
-  (`DummyGenerationException`, `ConflictingDummyConstraintException`) sur un site qui
+  (`AnyGenerationException`, `ConflictingAnyConstraintException`) sur un site qui
   se lit comme une simple affectation ; et elle n'est **pas idempotente** — chaque
   conversion tire une valeur fraîche, si bien que lire deux fois la « même »
   variable donne deux valeurs.
@@ -138,7 +138,7 @@ même la surprise de l'affectation à effet de bord sur les types qui les garden
 
 * Un utilisateur portant un modèle mental de conversion implicite pourrait au
   début omettre `.Generate()`. Le risque est borné : l'omission est une erreur de
-  compilation au message actionnable (affecter via `IDummy<T>` ou appeler
+  compilation au message actionnable (affecter via `IAny<T>` ou appeler
   `Generate()`), jamais une valeur fausse silencieuse.
 
 ## Actions de suivi
@@ -159,4 +159,4 @@ même la surprise de l'affectation à effet de bord sur les types qui les garden
   auto-consommé).
 * [ADR-0006 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0006-supply-arbitrary-test-values-from-a-seedable-source.fr.md) — Fournir des valeurs de test arbitraires depuis une source unique à
   graine.
-* `JustDummies/IDummy.cs` — le contrat `Generate()` par lequel passent ces générateurs.
+* `JustDummies/IAny.cs` — le contrat `Generate()` par lequel passent ces générateurs.

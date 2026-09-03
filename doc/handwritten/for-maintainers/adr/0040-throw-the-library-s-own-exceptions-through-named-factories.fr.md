@@ -19,7 +19,7 @@ Résultat : une méthode qui parle de contraintes consacre quatre lignes à de l
 d'intervalle, une boucle de tirage se lisait ainsi :
 
 ```csharp
-throw new DummyGenerationException(
+throw new AnyGenerationException(
     $"Generation failed: no {_typeName} value near the drawn candidate satisfies the exclusions. {source.ReplayGuidance(random.Seed)}",
     random.Seed,
     new InvalidOperationException($"Every representable value within {NudgeBudget.ToString(CultureInfo.InvariantCulture)} steps of the drawn candidate, in both directions, is excluded or out of bounds. Values further away were not examined, so this is an exhausted local search rather than an empty range."));
@@ -49,7 +49,7 @@ contradiction produise telle phrase anglaise est de la plomberie, et la plomberi
 mécanisme. Un type d'exception *est* un mécanisme avant tout, ce qui en fait le bon domicile : le
 site d'appel énonce quel échec s'est produit, et l'exception sait le dire.
 
-**Un nom vaut mieux qu'un message au site d'appel.** `throw DummyGenerationException.GridNudgeExhausted(...)`
+**Un nom vaut mieux qu'un message au site d'appel.** `throw AnyGenerationException.GridNudgeExhausted(...)`
 dit à un lecteur ce qui s'est passé en trois mots. Le message qu'elle produit le dit à
 l'*utilisateur*, ce qui est un autre public et un autre moment. Les séparer permet aux deux d'être
 bons.
@@ -103,7 +103,7 @@ percevrait.
 * Le site d'appel énonce quel échec s'est produit, et rien d'autre : une méthode qui parle de
   contraintes se lit comme telle. Le message qu'elle produit s'adresse à un autre lecteur, à un autre
   moment ; les séparer permet aux deux d'être bons.
-* La formulation d'un échec a un seul domicile. `ConflictingDummyConstraintException` porte la forme de
+* La formulation d'un échec a un seul domicile. `ConflictingAnyConstraintException` porte la forme de
   phrase de tous les conflits, ce qui en fait le seul fichier à lire quand un message doit changer.
 * La règle se vérifie à l'œil : « ce fichier lève-t-il une de nos exceptions avec `new` ? » a une
   réponse binaire, et c'est ce qui fait tenir une convention.

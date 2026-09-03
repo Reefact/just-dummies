@@ -13,7 +13,7 @@
 `JustDummies` lets a test supply arbitrary yet valid values. A very common validity rule is a format
 **regular expression**: a value object validates its input against a pattern (an order reference, a SKU, a
 currency code), and a test needs a value that passes that validation without duplicating the format by hand.
-`Dummy.StringMatching(pattern)` fills that need — generate a string the pattern matches.
+`Any.StringMatching(pattern)` fills that need — generate a string the pattern matches.
 
 Three facts frame how it is built:
 
@@ -34,7 +34,7 @@ unbounded quantifier.
 
 ## Decision
 
-`Dummy.StringMatching` parses the **regular subset** of the pattern language with the library's own parser and
+`Any.StringMatching` parses the **regular subset** of the pattern language with the library's own parser and
 generates from it — refusing a well-formed but non-regular or out-of-scope construct with a first-class
 `UnsupportedRegexException` — rather than taking a dependency on a regex-automaton library.
 
@@ -76,7 +76,7 @@ categories and the rest would be unbounded work for constructs outside format va
 Considered so a pattern could combine with `WithLength`, `Numeric`, and the like. Rejected because the pattern is
 already the whole specification: length and character shape belong inside it. A terminal generator removes a class
 of contradictory combinations entirely and keeps the surface small, while composition through `As`, `OrNull`,
-`Combine` and the collection generators — all defined over `IDummy<T>` — stays available.
+`Combine` and the collection generators — all defined over `IAny<T>` — stays available.
 
 ## Consequences
 

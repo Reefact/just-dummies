@@ -32,7 +32,7 @@ mais laissait encore le generator neutre sans aucun commentaire au-delà de cett
 
 Le generator neutre gardé pour un paramètre `unread guards` peut violer l'invariant que la garde
 abandonnée énonçait. Pour certaines des formes du corpus de test des gardes
-(`JustDummies.GenDummy.UnitTests`), ce n'est pas occasionnel : un plancher au-delà du plafond
+(`JustDummies.GenAny.UnitTests`), ce n'est pas occasionnel : un plancher au-delà du plafond
 producible de la bibliothèque, ou un compte au-delà de ce qu'une ligne d'élément d'une petite
 énumération peut tirer de valeurs distinctes, signifie que le generator ne peut jamais satisfaire le
 constructeur du domaine — chaque tirage échoue, pas seulement une fraction d'entre eux.

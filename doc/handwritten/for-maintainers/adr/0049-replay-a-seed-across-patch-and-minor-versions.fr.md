@@ -10,7 +10,7 @@
 ## Contexte
 
 Une génération qui échoue reporte la graine qui l'a produite, et le lecteur rejoue le run en épinglant
-cette graine — `Dummy.Reproducibly(1234, ...)`, `Dummy.WithSeed(1234)`, ou `[Fact, Reproducible(Seed =
+cette graine — `Any.Reproducibly(1234, ...)`, `Any.WithSeed(1234)`, ou `[Fact, Reproducible(Seed =
 1234)]` avec l'adaptateur xUnit. Cette boucle est l'ergonomie centrale de la bibliothèque : une valeur
 arbitraire ne vaut la peine d'être tirée que si le run qui a échoué dessus peut être reproduit.
 
@@ -36,7 +36,7 @@ couverture, pas un build cassé.
 
 Une propriété de l'implémentation actuelle façonne toutes les options ci-dessous. Les tirages viennent
 d'un **unique flux séquentiel partagé par tout le scope**, si bien que la valeur produite par un
-`Dummy.String()` dépend de tout ce qui a été tiré avant lui. Un changement du nombre de tirages que
+`Any.String()` dépend de tout ce qui a été tiré avant lui. Un changement du nombre de tirages que
 consomme un générateur décale toutes les valeurs qui le suivent dans le même scope — y compris celles
 produites par des générateurs qu'on n'a pas touchés.
 
@@ -97,7 +97,7 @@ bibliothèque laisse entendre.
 Remplacer le flux séquentiel partagé par des flux par générateur dérivés de la graine (par exemple
 depuis `hash(graine, identité de la fabrique, index d'appel)`), afin que les tirages d'un générateur ne
 puissent pas perturber ceux d'un autre. Rejeté, au motif que cela n'achète pas ce qu'on croit : sous la
-promesse décidée ici, modifier `Dummy.String()` modifie les valeurs de `Dummy.String()`, ce qui est un
+promesse décidée ici, modifier `Any.String()` modifie les valeurs de `Any.String()`, ce qui est un
 changement majeur que les flux soient partagés ou indépendants. L'indépendance réduit le **rayon de
 souffle** d'un tel changement — seules les valeurs de cette fabrique bougent, au lieu de tout ce qui est
 tiré après elle — mais elle n'accorde aucune liberté de faire ce changement en mineure. C'est un

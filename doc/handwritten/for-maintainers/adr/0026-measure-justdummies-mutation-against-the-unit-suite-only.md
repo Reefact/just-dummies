@@ -19,7 +19,7 @@ That makes it two things at once:
 
 * **The expensive half of the per-mutant cost.** Every mutant re-runs the whole oracle
   (`"coverage-analysis": "off"`, ADR-0022), and a hundred cases per property dominates that time —
-  which, on a large changed file like `Dummy.cs`, is the difference between minutes and tens of minutes.
+  which, on a large changed file like `Any.cs`, is the difference between minutes and tens of minutes.
 * **A non-deterministic oracle.** A mutation verdict answers "does *any* test in the oracle fail on this
   mutant?" With a randomized oracle, that answer depends on the FsCheck seed: a mutant can be **killed on
   one run's draws and survive on another's**. The mutation score then reflects the seed as much as the

@@ -20,8 +20,8 @@ instance de cette propriété qu'il avait en vue. JD031 est cette instance.
 
 L'[ADR-0079](0079-constrain-what-a-dummy-draws-never-the-literals-it-was-given.fr.md) en a produit une seconde,
 d'une autre forme. Une famille de caractères, un pool personnalisé, une soustraction et une casse gouvernent les
-caractères qu'`Dummy.String()` **tire** ; un littéral ancré n'est pas tiré et est conservé tel qu'écrit. Ainsi
-`Dummy.String().AlphaNumeric().StartingWith("ORD-")` est légal et constitue la façon simple d'écrire un séparateur
+caractères qu'`Any.String()` **tire** ; un littéral ancré n'est pas tiré et est conservé tel qu'écrit. Ainsi
+`Any.String().AlphaNumeric().StartingWith("ORD-")` est légal et constitue la façon simple d'écrire un séparateur
 fixe. Lue seule, cette chaîne dit deux choses de ses caractères : seulement de l'alphanumérique, puis un tiret.
 Les déclarations se contredisent ; l'ADR-0079 tranche laquelle gouverne. Rien n'est fautif au site d'appel, et
 laquelle des deux lectures s'applique n'est pas visible depuis la chaîne — seulement depuis un enregistrement de

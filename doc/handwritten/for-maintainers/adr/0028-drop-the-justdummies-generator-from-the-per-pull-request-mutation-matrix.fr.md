@@ -28,7 +28,7 @@ Trois contraintes, chacune enregistrée et mesurée, rendent ce coût structurel
 
 * **`--since` a une granularité par fichier, pas par ligne.** Stryker mute tous les mutants d'un fichier
   changé. Ces 99 lignes ont entraîné des fichiers entiers — `StringSpec.cs` (246 mutants),
-  `Dummy.Combine.cs` (205), `ContinuousIntervalSpec.cs` (204), `CollectionState.cs` (109) — de sorte que
+  `Any.Combine.cs` (205), `ContinuousIntervalSpec.cs` (204), `CollectionState.cs` (109) — de sorte que
   près de neuf dixièmes du travail portaient sur du code que la pull request ne touche pas.
 * **`"coverage-analysis": "off"` est obligatoire, pas un réglage.** Sous le runner MTP, la sélection de
   tests de Stryker classe à tort des mutants tués comme non couverts, donc chaque mutant rejoue tout

@@ -47,7 +47,7 @@ derived from the history itself:
   specification lists **every path each decision ever occupied**, matched by slug rather than by number.
 
 * **Files with no "dummies" in their path.** The 56 analyzer documentation pages
-  (`doc/handwritten/for-users/analyzers/JD001…JD028.{en,fr}.md`) and roughly 25 ADRs about the `Dummy`
+  (`doc/handwritten/for-users/analyzers/JD001…JD028.{en,fr}.md`) and roughly 25 ADRs about the `Any`
   generation engine carry no such marker. They were found by reading every ADR title and by grepping file
   *contents*, not paths.
 

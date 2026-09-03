@@ -34,17 +34,17 @@ priced trade-offs.
 
 The audit nevertheless found **three genuine behavioral defects**, all reproduced at runtime:
 
-1. **Critical — `DummyDecimal` can never generate the upper half of its range.** A fraction intended
+1. **Critical — `AnyDecimal` can never generate the upper half of its range.** A fraction intended
    to be uniform in [0, 1) is constructed from three 31-bit draws against a 96-bit denominator and
-   tops out near 0.5; `Dummy.Decimal().Between(0m, 100m)` never exceeds ~49.9999
+   tops out near 0.5; `Any.Decimal().Between(0m, 100m)` never exceeds ~49.9999
    (`DecimalIntervalSpec.cs:145`).
-2. **Major — `DummySingle`/`DummyHalf` exclusion nudge stalls.** The exclusion-collision walk steps by a
+2. **Major — `AnySingle`/`AnyHalf` exclusion nudge stalls.** The exclusion-collision walk steps by a
    *double* ulp instead of the type's own ulp, so quantization lands back on the same value and a
-   satisfiable spec such as `Dummy.Half().Between((Half)1f, (Half)1.001f).DifferentFrom((Half)1f)`
-   throws `DummyGenerationException` for ~half of all seeds (`ContinuousIntervalSpec.cs:189`).
+   satisfiable spec such as `Any.Half().Between((Half)1f, (Half)1.001f).DifferentFrom((Half)1f)`
+   throws `AnyGenerationException` for ~half of all seeds (`ContinuousIntervalSpec.cs:189`).
 3. **Major — a regex character-class range ending at `￿` hangs forever.** The class-expansion
    loop increments a 16-bit `char` that wraps at `0xFFFF`, so
-   `Dummy.StringMatching(@"[ -￿]")` never returns (`RegexParser.cs:398`).
+   `Any.StringMatching(@"[ -￿]")` never returns (`RegexParser.cs:398`).
 
 All three share one root cause worth naming: **the test suite asserts membership, never
 reachability.** Tests check that generated values satisfy the constraints; no test checks that the
@@ -58,7 +58,7 @@ and every contract decided, with zero compatibility cost. This audit's headline 
 treat the pre-1.0 window the way ADR-0006 did — as the cheapest moment to decide — and close the
 items in §11–§12 before the first publication.
 
-Beyond the defects, the significant findings are: the hand-mirrored `Dummy`/`DummyContext` surface and
+Beyond the defects, the significant findings are: the hand-mirrored `Any`/`AnyContext` surface and
 the fourteen cloned numeric builders carry **no parity guard** (and documentation drift has already
 begun); the **determinism contract has documentation gaps** (concurrent draws inside one seeded scope
 silently void replayability; cross-version seed stability is neither promised nor disclaimed; the
@@ -67,8 +67,8 @@ executed by JustDummies' own test suite** (only transitively, via FirstClassErro
 is **no user-facing reference of the constraint surface** — the repository README does not even
 mention the package. The feature-gap analysis (§10) finds the type coverage genuinely complete for
 the library's philosophy; the two absences that qualify as surprising are a *top-level* choice
-combinator (`Dummy.OneOf<T>(params T[])` / `Dummy.ElementOf(...)`) and exclusion constraints on
-`DummyString` — the only scalar builder without them.
+combinator (`Any.OneOf<T>(params T[])` / `Any.ElementOf(...)`) and exclusion constraints on
+`AnyString` — the only scalar builder without them.
 
 ## 2. Overall Assessment
 
@@ -129,13 +129,13 @@ executed consistently.
 ### 3.3 The determinism machinery is done right at the hard level
 
 The linchpin — generators store a `RandomSource` and resolve `.Current` only at `Generate()` time —
-is what lets a recipe built outside `Dummy.Reproducibly(...)` generate deterministically inside one
+is what lets a recipe built outside `Any.Reproducibly(...)` generate deterministically inside one
 (`RandomSource.cs:3-9`). The `AsyncLocal` scope semantics were scrutinized closely and hold: the
 sync overload's `using`-restore is correct; the async overload's `UseSeed` mutation cannot leak to
 the caller (an async method's `ExecutionContext` mutations do not flow back); nesting restores the
 outer scope untouched; `ConfigureAwait(false)` is immaterial to `ExecutionContext` flow. The seed is
 reported end-to-end: a user factory that throws inside `.As(...)` produces an
-`DummyGenerationException` naming the generated value *and* the seed (`DummyDerivation.cs:59-73`); a
+`AnyGenerationException` naming the generated value *and* the seed (`AnyDerivation.cs:59-73`); a
 distinct-collection exhaustion does the same (`CollectionState.cs:246-254`).
 
 Two subtle dual-target traps were caught in advance and documented at the exact point of danger:
@@ -150,17 +150,17 @@ because `struct`- and `class`-constrained overloads of one name would collide
 The library's "built to satisfy, never generate-then-filter" claim survives scrutiny with three
 honest, ADR-recorded exceptions, each *bounded*: the distinct-collection dedup draw (budgeted,
 coupon-collector-generous, reset-on-progress — `CollectionState.cs:236-244`), the continuous-domain
-exclusion nudge (walks to the neighbouring representable value), and `DummyGuid`'s collision escape (a
-full-width carry increment that provably terminates — `DummyGuid.cs:27-36`). Each failure mode
+exclusion nudge (walks to the neighbouring representable value), and `AnyGuid`'s collision escape (a
+full-width carry increment that provably terminates — `AnyGuid.cs:27-36`). Each failure mode
 produces an actionable, seed-bearing message instead of a hang.
 
 ### 3.5 Care at the edges
 
-Small things that reveal the quality bar: `DummyDateTime.OneOf` remembers callers' original values so
-the ordinal round-trip does not silently normalize `DateTimeKind` (`DummyDateTime.cs:124-131`);
+Small things that reveal the quality bar: `AnyDateTime.OneOf` remembers callers' original values so
+the ordinal round-trip does not silently normalize `DateTimeKind` (`AnyDateTime.cs:124-131`);
 collection layout is Fisher-Yates-shuffled so a dummy collection never advertises a positional
 invariant a test might accidentally rely on (`CollectionState.cs:46-53`); `CountSpec` and
-`StringSpec` saturate rather than overflow on huge declared minima; `IDummy<out T>` covariance means
+`StringSpec` saturate rather than overflow on huge declared minima; `IAny<out T>` covariance means
 the read-only collection interfaces (`IReadOnlyList<T>`, etc.) are served for free.
 
 ### 3.6 The regex subsystem is well-built for its decided scope
@@ -190,7 +190,7 @@ of this is discussed in §5 — it is a strength in itself.
 
 The "constraints express what the surrounding code *requires*, never what the test asserts" idea is
 stated on the entry point, on every builder, in the package README, and in the user guide — the same
-sentence, deliberately. The no-clock-relative-constraints stance (`DummyDateTime` has no
+sentence, deliberately. The no-clock-relative-constraints stance (`AnyDateTime` has no
 `InThePast()`) is documented at every point a user would look for it, with the reproducibility
 rationale attached. Intention-revealing near-synonyms are honestly explained: `DifferentFrom(x)` is
 documented as semantically `Except(x)` with a name that carries intent; `Containing` (a value known
@@ -202,7 +202,7 @@ Ordered by severity. Items 4.1 and 4.3 are the ones that should gate a first rel
 
 ### 4.1 Reproduced behavioral defects
 
-**(a) `DummyDecimal` never reaches the upper half of any range — critical.**
+**(a) `AnyDecimal` never reaches the upper half of any range — critical.**
 
 `DecimalIntervalSpec.cs:144-149`:
 
@@ -218,11 +218,11 @@ decimal candidate = Clamped(mid + (fraction * 2 - 1) * half);
 mantissa is always zero, while `MaxFraction` is the *full* 96-bit mantissa maximum
 (`7.9228…`, `DecimalIntervalSpec.cs:14`). The fraction therefore lives in [0, ~0.49999986], not
 [0, 1); `(fraction * 2 - 1)` lives in [−1, ~0); and every candidate lands in `[min, mid)`. The
-inclusive maximum documented on `DummyDecimal.Between` (`DummyDecimal.cs:112`) is unreachable — as is
+inclusive maximum documented on `AnyDecimal.Between` (`AnyDecimal.cs:112`) is unreachable — as is
 everything above the midpoint. Independently reproduced for this audit: the maximum of 200,000 draws
-of `Dummy.Decimal().Between(0m, 100m)` was **49.99992…**.
+of `Any.Decimal().Between(0m, 100m)` was **49.99992…**.
 
-Why it matters beyond the obvious: a test using `Dummy.Decimal().Between(0m, 100m)` to exercise "any
+Why it matters beyond the obvious: a test using `Any.Decimal().Between(0m, 100m)` to exercise "any
 valid percentage" silently never exercises 50–100 — the library's core promise ("arbitrary yet
 valid, so hidden assumptions surface") is inverted into a hidden assumption of its own. The fix is
 small: build the fraction from 96 genuinely uniform bits, e.g.
@@ -245,17 +245,17 @@ reachability test from §11 item 2. Note the comment's own claim ("93 random bit
 mantissa scale") documents an intent the code does not meet — and even 93 well-placed bits would
 not reach a 96-bit denominator's upper octant.
 
-**(b) `DummySingle`/`DummyHalf` exclusion nudge stalls on satisfiable specs — major.**
+**(b) `AnySingle`/`AnyHalf` exclusion nudge stalls on satisfiable specs — major.**
 
 `ContinuousIntervalSpec.cs:188-198`: when a drawn value collides with an excluded point, the walk
 steps with the **static, double-space** `NextUp` (line 189) instead of the *type-aware* `_nextUp`
-lambda that `DummySingle`/`DummyHalf` supply precisely for stepping in their own representable ladder
-(`DummySingle.cs:20`, `DummyHalf.cs:22`) — and which the exclusive-bound paths already use correctly
+lambda that `AnySingle`/`AnyHalf` supply precisely for stepping in their own representable ladder
+(`AnySingle.cs:20`, `AnyHalf.cs:22`) — and which the exclusive-bound paths already use correctly
 (lines 120, 125). One double-ulp above a representable `float`/`Half` re-quantizes to the same
 value, the `next > _max` escape at line 190 is unreachable (`Quantized` clamps to `_max` first,
 lines 203-209), so the 128-step budget burns and a *satisfiable* spec throws. Independently
-reproduced: `Dummy.Half().Between((Half)1f, (Half)1.001f).DifferentFrom((Half)1f).Generate()` threw
-`DummyGenerationException` for **250 of 500 seeds**; the identical `DummyDouble` scenario never throws
+reproduced: `Any.Half().Between((Half)1f, (Half)1.001f).DifferentFrom((Half)1f).Generate()` threw
+`AnyGenerationException` for **250 of 500 seeds**; the identical `AnyDouble` scenario never throws
 (its quantize is identity). The fix is one token — `Quantized(_nextUp(candidate))` — plus a
 regression test per continuous type.
 
@@ -274,7 +274,7 @@ for (char character = low; character <= high; character++) { set.Add(character);
 
 When `high == '￿'` (reachable through the supported `\uHHHH` escape), the 16-bit `char` wraps
 to `0x0000` and `character <= high` is always true. Independently reproduced:
-`Dummy.StringMatching(@"[ -￿]")` did not return within five seconds (hard hang), while the
+`Any.StringMatching(@"[ -￿]")` did not return within five seconds (hard hang), while the
 same pattern is valid .NET regex. A declaration-time hang is the worst failure mode this library
 can exhibit — its identity is *failing fast with a named cause*. Fix: guard the wrap
 (`if (character == high) break;` inside the loop, or iterate an `int`), and mirror the check in the
@@ -285,7 +285,7 @@ direction.**
 
 `SkipGroupName` (`RegexParser.cs:295-300`) scans to the terminator with no validation. Consequently
 `(?<-a>x)` — a *balancing group*, non-regular, same family as the backreferences the library
-proudly rejects — is treated as an ordinary named group: `Dummy.StringMatching(@"(?<a>y)?(?<-a>x)")`
+proudly rejects — is treated as an ordinary named group: `Any.StringMatching(@"(?<a>y)?(?<-a>x)")`
 generates `"x"`, which the real engine does **not** match (verified: the pattern's language is
 exactly `{"yx"}`). Invalid group names (`(?<a b>x)`) are likewise accepted where .NET rejects them.
 This is the single place the audit found where the library's signature promise — *"a clear error
@@ -304,7 +304,7 @@ mis-generation) and are cosmetic next to (c) and (d).
 
 ### 4.2 The "printable ASCII" claim is overstated in three places
 
-`RegexAlphabet.cs:3-9`, `DummyPattern.cs:21`, and `Dummy.Pattern.cs:23` all claim every terminal resolves to
+`RegexAlphabet.cs:3-9`, `AnyPattern.cs:21`, and `Any.Pattern.cs:23` all claim every terminal resolves to
 printable ASCII (0x20–0x7E). The code — correctly — emits exactly the characters the pattern
 demands: `\t`, `\a`, `\cA`, `\0`, and `\uHHHH` literals can be non-printable or non-ASCII, and the
 library's own test asserts it (`AnyPatternTests` — `\a` → U+0007). The restriction genuinely
@@ -316,20 +316,20 @@ three doc sites should say precisely that (§11 item 6).
 
 Two mirror structures must agree method-for-method, and nothing checks either:
 
-* **`Dummy` ↔ `DummyContext`**: every scalar entry point exists twice (21 on the netstandard2.0 leg, 26
-  on net8.0, counting both `StringMatching` overloads) — `Dummy.Primitive.cs:11-224`,
-  `Dummy.Pattern.cs:34-52` and `Dummy.Uri.cs:13` vs `DummyContext.cs:51-305`.
+* **`Any` ↔ `AnyContext`**: every scalar entry point exists twice (21 on the netstandard2.0 leg, 26
+  on net8.0, counting both `StringMatching` overloads) — `Any.Primitive.cs:11-224`,
+  `Any.Pattern.cs:34-52` and `Any.Uri.cs:13` vs `AnyContext.cs:51-305`.
   The mirror is legitimate design (composition and collections are deliberately *not* mirrored —
   they inherit a context through operand sources, which is elegant), but a new scalar type added to
-  `Dummy` and forgotten on `DummyContext` would compile, pass all 222 tests, and ship a hole in the
-  deterministic surface. Wording drift is already visible inside `DummyContext` itself (two different
-  determinism phrasings across its factories; its `Guid()` doc mentions `Dummy.Reproducibly`, which a
+  `Any` and forgotten on `AnyContext` would compile, pass all 222 tests, and ship a hole in the
+  deterministic surface. Wording drift is already visible inside `AnyContext` itself (two different
+  determinism phrasings across its factories; its `Guid()` doc mentions `Any.Reproducibly`, which a
   fixed context ignores by design).
 * **The fourteen numeric builders** are byte-identical clones modulo type substitution (~2,450
   lines; the signed quartet, unsigned quartet, continuous trio, and wide pair; the five temporal
   builders follow the same pattern for ~800 more). To the clone families' credit, a scripted scan
   found **zero copy-paste slips** in the code itself — but three XML summaries say "Same constraint
-  algebra as `DummyInt32`" on builders where it is literally false (unsigned types lack
+  algebra as `AnyInt32`" on builders where it is literally false (unsigned types lack
   `Positive`/`Negative`; temporal types rename the bound family), and three test DisplayNames still
   claim generators "convert implicitly to their value type"
   (`AnyContinuousTests.cs:108`, `AnySignedIntegerTests.cs:87`, `AnyUnsignedIntegerTests.cs:76`) —
@@ -369,7 +369,7 @@ anchor when [ADR-0006 (first-class-errors)](https://github.com/Reefact/first-cla
 
 `JustDummies.UnitTests` targets net10.0 only. The netstandard2.0 assembly — the one .NET Framework
 consumers will load — is exercised only *transitively*: the FirstClassErrors floor job
-(`ci.yml:98-115`) runs `FirstClassErrors.UnitTests` on net472, which arranges with `JustDummies.Dummy`
+(`ci.yml:98-115`) runs `FirstClassErrors.UnitTests` on net472, which arranges with `JustDummies.Any`
 via project reference and the Testing factories, so JustDummies does load and generate on the real
 .NET Framework CLR — but its own 222-test contract suite (regex oracle, conflict detection,
 distinctness gating, seed reproducibility) never runs there, and same-seed-same-values across the
@@ -475,8 +475,8 @@ is.
 
 **Quality: a thorough consolidation record** — six real alternatives, the one-seed-story rationale,
 honest interim-packaging risk. **Two precision drifts:** (1) the decision text says each factory
-exposes "an `IDummy<T>` generator through a distinct method where composition is needed" — no factory
-exposes any such method today (verified: zero `IDummy` occurrences in `FirstClassErrors.Testing`
+exposes "an `IAny<T>` generator through a distinct method where composition is needed" — no factory
+exposes any such method today (verified: zero `IAny` occurrences in `FirstClassErrors.Testing`
 sources). Defensible YAGNI, but the text reads as a decided API shape, and a compliance check a
 year from now cannot tell deliberate deferral from unfinished migration. (2) Its risk clause says
 the double-assembly hazard exists "precisely because JustDummies types appear in Testing's public API"
@@ -507,14 +507,14 @@ the implementation reference.
 
 | ADR | Status | Compliance of the implementation |
 |---|---|---|
-| 0006 (historical) | Superseded | **Compliant and exceeded.** The inherited seeding contract (context-local, opt-in determinism, seed reporting) is implemented faithfully; JustDummies adds the isolated `DummyContext` the original ADR only anticipated. |
+| 0006 (historical) | Superseded | **Compliant and exceeded.** The inherited seeding contract (context-local, opt-in determinism, seed reporting) is implemented faithfully; JustDummies adds the isolated `AnyContext` the original ADR only anticipated. |
 | 0011 | Accepted | **Compliant.** No FirstClassErrors reference; boundary machine-checked (`ArchitectureTests`); standalone identity, release train, and docs in place. Note: enforcement is *stronger* than the recorded decision (§5). |
-| 0013 | Accepted | **Compliant, verified in detail** — eager gate net of outside-domain `Containing` credits, conservative `ContainingAny` accounting, overflow-safe arithmetic, bounded budget, both failure channels. **One minor deviation:** the exhaustion message *unconditionally* promises `Dummy.Reproducibly({seed}, …)` replay (`CollectionState.cs:246-254`; the `seed is not null` guard is dead code — the seed can never be null there). For a **foreign** element generator whose draws ignore the ambient source, that promise is false; the ADR says failures are "explicit and reproducible". Qualify the message when the element generator carries no library source. |
-| 0015 | Accepted | **Compliant exactly** — arities 2–8, no more; suppressions localized with ADR-referencing justifications (`Dummy.Combine.cs:214-215`, `266-267`); ceiling documented on the arity-8 overload. |
+| 0013 | Accepted | **Compliant, verified in detail** — eager gate net of outside-domain `Containing` credits, conservative `ContainingAny` accounting, overflow-safe arithmetic, bounded budget, both failure channels. **One minor deviation:** the exhaustion message *unconditionally* promises `Any.Reproducibly({seed}, …)` replay (`CollectionState.cs:246-254`; the `seed is not null` guard is dead code — the seed can never be null there). For a **foreign** element generator whose draws ignore the ambient source, that promise is false; the ADR says failures are "explicit and reproducible". Qualify the message when the element generator carries no library source. |
+| 0015 | Accepted | **Compliant exactly** — arities 2–8, no more; suppressions localized with ADR-referencing justifications (`Any.Combine.cs:214-215`, `266-267`); ceiling documented on the arity-8 overload. |
 | 0020 | Accepted | **Fully compliant.** No implicit conversions anywhere; `Generate()` is the sole materialization; builders verified immutable (every fluent method returns a new instance). Residue: three test DisplayNames and one comment still *describe* the removed conversions (§4.3). |
 | 0022 | Accepted | **Partial for JustDummies.** The netstandard2.0 asset is loaded and driven on net472 only transitively through FirstClassErrors' floor job; JustDummies' own suite never runs there, and the package README states no .NET Framework floor at all (FirstClassErrors' README does). Close before first publication (§11 item 5). |
 | 0025 | Proposed | **Compliant on every major clause** (home-grown parser, first-class rejection, terminal generator, zero dependencies, printable-ASCII *default* universe, bounded unbounded-quantifier spread). The §4.1(c)/(d) defects are quality bugs *within* the decided scope, not deviations — with the caveat that (d) breaks the rejection *promise* the ADR records. One taxonomy edge: a well-formed negated class outside the printable universe raises `ArgumentException` ("malformed") instead of `UnsupportedRegexException`. |
-| 0026 | Accepted | **Compliant on every executed clause** — single engine, single seed scope, `Testing.Dummy` removed, factories shipped, clock/ids on the ambient context, docs updated EN/FR. The unimplemented "distinct `IDummy<T>` method" half and the misstated risk premise are recorded in §5. |
+| 0026 | Accepted | **Compliant on every executed clause** — single engine, single seed scope, `Testing.Any` removed, factories shipped, clock/ids on the ambient context, docs updated EN/FR. The unimplemented "distinct `IAny<T>` method" half and the misstated risk premise are recorded in §5. |
 
 ## 7. Architecture Review
 
@@ -525,7 +525,7 @@ The library is three clean layers: **public fluent builders** (thin, per-type, s
 `DecimalIntervalSpec`, `StringSpec`, `CountSpec`, `CollectionState<T>`) → **sampling primitives**
 (`RandomSampling`). Public surface never leaks internal types; internal engines never touch the
 ambient state directly (sources are passed down). The composition seams — `.As(factory)`,
-`Dummy.Combine(...)`, the collection factories — are all defined over the one-member `IDummy<out T>`,
+`Any.Combine(...)`, the collection factories — are all defined over the one-member `IAny<out T>`,
 which is as small as an interface can be (ISP by construction) and covariant, so derived and foreign
 generators flow through every seam uniformly.
 
@@ -538,12 +538,12 @@ is *missing* is the ADR recording this (§5), and — as §4.1(b) showed — a p
 exercising each engine through each of its type facades.
 
 The **collection hierarchy** is a textbook-clean CRTP:
-`DummyCollection<TItem, TResult, TSelf>` holds the shared fluent count/containment surface returning
+`AnyCollection<TItem, TResult, TSelf>` holds the shared fluent count/containment surface returning
 `TSelf` (without the classic unsafe `(TSelf)this` cast — concrete types implement a
 `With(state)` factory), and the five concrete builders add only element shaping and the
-`Build(List<TItem>)` conversion. The exception is `DummyDictionary`, which cannot inherit the base
+`Build(List<TItem>)` conversion. The exception is `AnyDictionary`, which cannot inherit the base
 (its element is a pair) and therefore **duplicates the entire count facade verbatim** (~60 lines,
-`DummyDictionary.cs:51-113`) and offers no containment constraint at all — the one place in the
+`AnyDictionary.cs:51-113`) and offers no containment constraint at all — the one place in the
 collection family where sharing failed. Extracting the count facade over `CollectionState` (or
 adding `ContainingKey`, which would ride the existing key-state machinery for free) would close
 both the duplication and the acknowledged test hole (`AnyCollectionTests.cs:161-163` comments on
@@ -551,19 +551,19 @@ it).
 
 ### 7.2 Extensibility
 
-**For users, the design is closed, and that is a legitimate but undocumented choice.** `IDummy<T>` is
+**For users, the design is closed, and that is a legitimate but undocumented choice.** `IAny<T>` is
 public, so anyone can implement a generator and compose it through `As`/`Combine`/collections. But
 `RandomSource`, `IHasRandomSource`, and `ICardinalityHint<T>` are all internal, so a foreign
-generator (a) cannot draw from the ambient seeded source — under `Dummy.Reproducibly` its values do
+generator (a) cannot draw from the ambient seeded source — under `Any.Reproducibly` its values do
 not replay, and (b) cannot advertise a finite domain — a distinct collection over it always takes
 the bounded-draw path (safe, and exactly what ADR-0004 promises). The degradation is graceful
 everywhere (verified: `OrNull` falls back to the ambient source for the null coin; `Combine`
-propagates `null` sources without failing). What is missing is one honest paragraph on `IDummy<T>`'s
+propagates `null` sources without failing). What is missing is one honest paragraph on `IAny<T>`'s
 XML doc telling implementers where they stand — today the contract is discoverable only by reading
 internal code. If the seam is ever to open, an `ISeedableAny` in a minor release is the natural
 shape; nothing needs deciding now except the documentation.
 
-**For maintainers**, adding one new scalar type touches 6–9 files (builder, `Dummy`, `DummyContext`,
+**For maintainers**, adding one new scalar type touches 6–9 files (builder, `Any`, `AnyContext`,
 tests, user docs EN/FR, package README, `justdummies-check` if net8-only, possibly a spec engine). The
 process is mechanical but real, and only partially guarded (§9.2).
 
@@ -588,14 +588,14 @@ complicate `WithSeed`; the honest restriction is the right V1).
 
 **(b) Seed reports can name a wrong or inapplicable seed in mixed/fixed-source composition.**
 `Combine` propagates the **first non-null** operand source for failure reporting
-(`Dummy.Combine.cs:33` et al.). `Dummy.Combine(Dummy.WithSeed(1).Int32(), Dummy.WithSeed(2).Int32(), throwing)`
-fails with "seeded with 1; reproduce with `Dummy.Reproducibly(1, …)`" — doubly wrong: seed 2 goes
+(`Any.Combine.cs:33` et al.). `Any.Combine(Any.WithSeed(1).Int32(), Any.WithSeed(2).Int32(), throwing)`
+fails with "seeded with 1; reproduce with `Any.Reproducibly(1, …)`" — doubly wrong: seed 2 goes
 unreported, and the instruction is inapplicable because `Reproducibly` pins the *ambient* source,
 which `FixedRandomSource`-backed generators ignore by design. This is an edge case (mixing seeded
 contexts inside one composition is unusual), but the failure mode is a *confidently misleading
 diagnostic* in the library whose signature is diagnostic honesty. A small fix reaches it: let the
-source kind produce the replay hint (ambient → "reproduce with `Dummy.Reproducibly({seed}, …)`";
-fixed → "this generator draws from `Dummy.WithSeed({seed})`, which already replays by itself"), and
+source kind produce the replay hint (ambient → "reproduce with `Any.Reproducibly({seed}, …)`";
+fixed → "this generator draws from `Any.WithSeed({seed})`, which already replays by itself"), and
 have `Combine` collect distinct sources rather than the first.
 
 **(c) Cross-version and cross-runtime seed stability is neither promised nor disclaimed.** The
@@ -629,7 +629,7 @@ SRP: builders carry fluent surface, engines carry semantics — clean. OCP: addi
 a discrete type is a one-method facade addition over an existing engine operation; adding a *type*
 is deliberately closed (sealed builders, internal engines) — the right trade for an invariant-heavy
 library. LSP: the CRTP collection base is sound (no self-cast trick, `TSelf` bound enforced). ISP:
-`IDummy<T>` single-member; `ICardinalityHint<T>`'s two members travel together by explicit,
+`IAny<T>` single-member; `ICardinalityHint<T>`'s two members travel together by explicit,
 documented design (cardinality without membership would be unsound — the interface doc argues it).
 DIP is intentionally absent at the user seam (no injectable randomness abstraction) — that *is* the
 closed-extensibility decision of §7.2, acceptable but deserving its paragraph of documentation.
@@ -644,10 +644,10 @@ expose exactly `Positive · Negative · Zero · NonZero · GreaterThan[OrEqualTo
 `Positive`/`Negative` (meaningless there — `NonZero` covers the intent); the four instant-like
 builders (`DateTime`, `DateTimeOffset`, `DateOnly`, `TimeOnly`) rename the bound family to domain
 vocabulary (`After`/`AfterOrEqualTo`/`Before`/`BeforeOrEqualTo`/`Between`) with identical
-inclusive/exclusive semantics, while `DummyTimeSpan` — a magnitude, not an instant — correctly keeps
-the full numeric algebra including `Positive`/`Negative`/`Zero`; `DummyChar` carries the character families
-plus the exclusion trio; `DummyGuid` has `NonEmpty`/`Empty`/`OneOf`/`Except`/`DifferentFrom`;
-`DummyEnum` has the exclusion trio with declared-members validation; collections share
+inclusive/exclusive semantics, while `AnyTimeSpan` — a magnitude, not an instant — correctly keeps
+the full numeric algebra including `Positive`/`Negative`/`Zero`; `AnyChar` carries the character families
+plus the exclusion trio; `AnyGuid` has `NonEmpty`/`Empty`/`OneOf`/`Except`/`DifferentFrom`;
+`AnyEnum` has the exclusion trio with declared-members validation; collections share
 `NonEmpty · Empty · WithCount · WithMinCount · WithMaxCount · WithCountBetween · Containing ·
 ContainingAny` (+ `Distinct` variants where meaningful). Bounds are consistently inclusive for
 `Between`/`…OrEqualTo` and exclusive for `GreaterThan`/`LessThan`/`After`/`Before` — no semantic
@@ -657,7 +657,7 @@ achievement in itself.
 
 ### 8.2 The asymmetries worth fixing or recording
 
-* **`DummyString` is the only scalar builder with no exclusion constraints** — no `OneOf`, no
+* **`AnyString` is the only scalar builder with no exclusion constraints** — no `OneOf`, no
   `Except`, no `DifferentFrom`. "A name different from the one I already hold" is one of the most
   common dummy-string needs (it is exactly why `DifferentFrom` exists everywhere else, per its own
   XML doc). The honest reason for the gap: strings are not ordinal-mapped, so exclusions cannot
@@ -667,14 +667,14 @@ achievement in itself.
 
   ```csharp
   // Today — no way to express this:
-  string other = Dummy.String().NonEmpty().Generate();     // might equal existing!
+  string other = Any.String().NonEmpty().Generate();     // might equal existing!
   // Proposed:
-  string other = Dummy.String().NonEmpty().DifferentFrom(existing).Generate();
+  string other = Any.String().NonEmpty().DifferentFrom(existing).Generate();
   ```
 
-* **`DummyDictionary` drops `Containing`/`ContainingAny`** and duplicates the count facade (§7.1).
+* **`AnyDictionary` drops `Containing`/`ContainingAny`** and duplicates the count facade (§7.1).
   `ContainingKey(TKey)` would ride the existing key-state machinery unchanged.
-* **`Dummy.Bool()` is the single deviation from the CLR-name factory convention**
+* **`Any.Bool()` is the single deviation from the CLR-name factory convention**
   (`Int32`, `SByte`, `Single`, … are all CLR names; the CLR name here is `Boolean`). The short form
   is arguably the better ergonomics — but then the convention is "CLR names, except one", and after
   1.0 the rename is breaking in either direction. Decide deliberately and record one line, before
@@ -685,7 +685,7 @@ achievement in itself.
 
 ### 8.3 Discoverability and ceremony
 
-The static `Dummy.` entry point makes the whole scalar surface one keystroke discoverable, and each
+The static `Any.` entry point makes the whole scalar surface one keystroke discoverable, and each
 builder's fluent methods enumerate its full constraint vocabulary in IntelliSense — good. Two
 seams are less discoverable: `As` and `OrNull` are extension methods in separate static classes
 (invisible until the `using` exists — though the namespace is shared, so in practice they appear),
@@ -694,15 +694,15 @@ vocabulary ("`As` is `Select` for generators — named for its dominant use: pas
 object's factory") would help LINQ-native readers. The `Generate()` terminal ceremony is the
 ADR-0006 trade, consciously priced there; the audit confirms the cost is real but small (one call
 per materialization), the benefit (no effectful hidden conversions) is structural, and the decision
-should stand. `DummyContext` mirrors scalars only — composition inherits the context through operand
+should stand. `AnyContext` mirrors scalars only — composition inherits the context through operand
 sources, which is *more* elegant than mirroring and correctly documented.
 
 ### 8.4 Naming
 
 `StartingWith`/`EndingWith`/`Containing`, `After`/`Before`, `DifferentFrom` vs `Except`,
 `Containing` vs `ContainingAny` — the vocabulary is intention-revealing and reads at the call site
-the way the philosophy intends. CLR type-name factories (`Dummy.Int32()`, not `Dummy.Int()`) are
-consistent with the builder type names (`DummyInt32`) and sidestep C# keyword restrictions;
+the way the philosophy intends. CLR type-name factories (`Any.Int32()`, not `Any.Int()`) are
+consistent with the builder type names (`AnyInt32`) and sidestep C# keyword restrictions;
 this is defensible and, more importantly, uniform (§8.2's `Bool` aside).
 
 ## 9. Maintainability Review
@@ -712,7 +712,7 @@ this is defensible and, more importantly, uniform (§8.2's `Bool` aside).
 Four clone families among the numeric builders (signed quartet, unsigned quartet, continuous trio,
 wide pair — byte-identical modulo type substitution; ~2,450 lines), the five temporal builders on
 the same pattern (~800 lines), the constraint-and-conflict logic quadruplicated across the four
-engines (~910 lines), and the `Dummy`/`DummyContext` scalar mirror (~300 doc-heavy lines). A scripted
+engines (~910 lines), and the `Any`/`AnyContext` scalar mirror (~300 doc-heavy lines). A scripted
 comparison found **zero behavioral copy-paste slips** across the clone families — evidence of real
 discipline — while all drift found so far is *documentation* drift (§4.3), which is exactly the
 kind guards don't exist for yet.
@@ -728,8 +728,8 @@ base. Source generators/T4 buy deduplication at the cost of build machinery and 
 also a poor trade here. **Recommended instead: executable parity guards**, ~3 short
 reflection-based tests:
 
-1. *Mirror parity:* every public static `Dummy` method returning a builder type has an
-   `DummyContext` instance counterpart with identical name/signature/return type, per TFM (~20
+1. *Mirror parity:* every public static `Any` method returning a builder type has an
+   `AnyContext` instance counterpart with identical name/signature/return type, per TFM (~20
    lines; kills the §4.3 drift class outright).
 2. *Algebra parity:* each builder family exposes its exact expected method-name set (the §8.1
    matrix, encoded once as data) — a new builder missing `DifferentFrom`, or a renamed method,
@@ -747,7 +747,7 @@ validation) — they catch the breaking-change class parity tests cannot.
 
 What exists is well-shaped: behavior-first naming that reads as living documentation; exception
 *messages* tested as first-class contracts; the real-engine regex oracle; regression tests that
-encode bug history (the `DummyGuid` race test that races a deadline instead of hanging the suite);
+encode bug history (the `AnyGuid` race test that races a deadline instead of hanging the suite);
 flake-safe property-style assertions (unseeded draws asserted only against their declared domain);
 and a strictly black-box posture — no `InternalsVisibleTo` exists, so all 222 tests exercise the
 public surface only. That last fact cuts both ways and should be held as a deliberate choice: it
@@ -756,7 +756,7 @@ test-transparent), *and* it is consistent with how both reachability defects sur
 looks at an engine's value-space coverage directly. The additions that close the gap, in order of
 leverage: the cross-engine scenario suite above; **reachability assertions** (for each builder, a
 seeded loop over `Between(lo, hi)` must observe values in both halves and hit both endpoints —
-cheap, deterministic under `WithSeed`); a generation-limit test for `DummyPattern` (currently
+cheap, deterministic under `WithSeed`); a generation-limit test for `AnyPattern` (currently
 untested); dedicated tests for the documented-but-untested contracts (empty enum, `AnyException`
 base catchability, `DictionaryOf` key-comparer flow); and the cross-TFM same-seed assertion in
 `justdummies-check` (extend `SeedBatch` with a golden sequence compared across the net8.0 and net6.0
@@ -765,7 +765,7 @@ draws, which the packaged-asset guard currently never touches).
 
 ### 9.4 Organization and hygiene
 
-The flat 54-file root is acceptable today because naming discipline does the foldering (`Dummy*` =
+The flat 54-file root is acceptable today because naming discipline does the foldering (`Any*` =
 builders, `*Spec` = engines, `Regex*` = pattern subsystem); grouping into folders is optional
 polish, worth doing only alongside another structural change. Hygiene nits found: dead member
 `RegexCharacters.Count`; the dead null-guard in `CollectionState.Exhausted` (§6/ADR-0004 row); the
@@ -776,14 +776,14 @@ stale comments and DisplayNames of §4.3; the stale `Directory.Build.props` head
 Method: every proposal was screened against (i) the library's philosophy (constraints express
 invariants; no realistic-fake-data, no object graphs, no clock coupling), (ii) the composition
 test — *can `As`/`Combine`/`StringMatching` already express this in one readable line?* — and
-(iii) the full cost of a new builder (builder + `Dummy` + `DummyContext` + parity data + tests + docs
+(iii) the full cost of a new builder (builder + `Any` + `AnyContext` + parity data + tests + docs
 EN/FR + package README + possibly `justdummies-check`). The bar for **Must Have** is the mandate's:
 absence genuinely surprising. The library's composition-first design keeps this list short — most
 BCL types are already one `As` away, which is the design working as intended.
 
 ### Must Have
 
-**1. A top-level choice combinator: `Dummy.OneOf<T>(params T[])` and `Dummy.ElementOf<T>(IReadOnlyList<T>)`.**
+**1. A top-level choice combinator: `Any.OneOf<T>(params T[])` and `Any.ElementOf<T>(IReadOnlyList<T>)`.**
 Picking an arbitrary element from a caller-supplied set is among the most common dummy needs in
 real suites ("any of the three configured currencies", "one of the states in this table"). Today
 `OneOf` exists only *inside* typed builders — there is no way to draw from a set of domain objects
@@ -796,16 +796,16 @@ var currencies = new[] { eur, usd, gbp };
 var currency   = currencies[new Random().Next(currencies.Length)];   // ambient seed ignored!
 
 // Proposed — seed-aware, philosophy-consistent, eagerly validated (empty set throws):
-Currency currency = Dummy.OneOf(eur, usd, gbp).Generate();
-Order    order    = Dummy.ElementOf(existingOrders).Generate();
+Currency currency = Any.OneOf(eur, usd, gbp).Generate();
+Order    order    = Any.ElementOf(existingOrders).Generate();
 ```
 
 Constructive (single draw), trivially implemented over the ambient source with an
 `ICardinalityHint` (distinct count of the pool — it composes with distinct collections for free),
-mirrored on `DummyContext`. Who benefits: every consumer, weekly. Cost: one small builder. This is
+mirrored on `AnyContext`. Who benefits: every consumer, weekly. Cost: one small builder. This is
 the highest-leverage addition available.
 
-**2. `DummyString.DifferentFrom(string)` / `Except(params string[])`.**
+**2. `AnyString.DifferentFrom(string)` / `Except(params string[])`.**
 The §8.2 asymmetry: the most-used builder is the only scalar one that cannot exclude values. Honest
 cost: a bounded redraw (the library's established escape pattern) or fragment-aware exclusion;
 either fits in the existing `StringSpec` validation model. Who benefits: anyone testing
@@ -814,11 +814,11 @@ free via proposal 1.)
 
 ### Nice to Have
 
-* **`Uri` builder** (`Dummy.Uri().UsingHttps().WithHost("example.com")`) — the one BCL value-like
+* **`Uri` builder** (`Any.Uri().UsingHttps().WithHost("example.com")`) — the one BCL value-like
   type that is both commonly needed in tests and genuinely awkward to compose by hand (scheme/host/
   path/query validity rules). In-box on both TFMs. Moderate cost (its own mini constraint algebra);
   demand-driven timing is fine.
-* **`WithChars(string pool)` / custom alphabet on `DummyString`** — today non-ASCII text (accents,
+* **`WithChars(string pool)` / custom alphabet on `AnyString`** — today non-ASCII text (accents,
   i18n) is reachable only through `StringMatching` literals; a custom pool is a small, composable
   extension of the existing charset mechanism, and unlocks the i18n-sensitive-code use case without
   any Unicode-table machinery.
@@ -826,13 +826,13 @@ free via proposal 1.)
   quantity in dozens": genuine invariants (not assertions) that today force `As(x => x * 100)`
   workarounds that distort the declared range. Constructive to implement (draw in the quotient
   space).
-* **`ContainingKey(TKey)` on `DummyDictionary`** (§7.1/§8.2) — closes an API hole, a duplication, and
+* **`ContainingKey(TKey)` on `AnyDictionary`** (§7.1/§8.2) — closes an API hole, a duplication, and
   a test hole at once.
-* **[Flags] enum combinations, opt-in** (`Dummy.Enum<Permissions>().AllowingCombinations()`) — today
+* **[Flags] enum combinations, opt-in** (`Any.Enum<Permissions>().AllowingCombinations()`) — today
   undeclared combined values are unreachable *by design* (declared-members-only is the right
   default); an explicit opt-in respects the default while serving flag-heavy domains. Requires a
   documented stance on what "valid" means for flags (union of declared members).
-* **`WithOffset`/offset control on `DummyDateTimeOffset`** — the offset dimension is currently
+* **`WithOffset`/offset control on `AnyDateTimeOffset`** — the offset dimension is currently
   degenerate (always zero, documented); tests exercising offset math cannot vary it. A bounded
   offset draw (±14 h in minutes, per the type's own rules) keeps validity.
 * **Temporal granularity** (`WholeSeconds()`/`WholeDays()` or `WithGranularity(TimeSpan)`) — tick-
@@ -849,12 +849,12 @@ free via proposal 1.)
 
 ### Optional Ideas
 
-`Version` (composable today: `Combine(Dummy.Int32().Between(0,99), …, (ma,mi,pa) => new Version(ma,mi,pa))`;
+`Version` (composable today: `Combine(Any.Int32().Between(0,99), …, (ma,mi,pa) => new Version(ma,mi,pa))`;
 low frequency); `IPAddress`/`IPEndPoint` (in-box, niche; a doc recipe first); `Encoding` and
 `CultureInfo` (feasible **only** from a fixed embedded pool — the installed-culture set is a
 cross-machine reproducibility hazard the library must not inherit; both are subsumed by proposal 1
 + a documented pool); `MailAddress`, file-system paths, `Stream`, `byte[]` blobs (all one-line
-recipes over existing surface — `ArrayOf(Dummy.Byte())` already is the blob builder; document them
+recipes over existing surface — `ArrayOf(Any.Byte())` already is the blob builder; document them
 in the user guide's recipe section instead of shipping builders); `KeyValuePair` sugar;
 `Queue`/`Stack`/`LinkedList` and `Sorted*` collections (one-line `As` conversions; a first-class
 `Sorted()` needs a comparability gate analogous to the cardinality hint — design exists if demand
@@ -891,7 +891,7 @@ In priority order; items 1–7 are the recommended pre-release gate.
    balancing-group/name validation in `SkipGroupName` (§4.1 d). Each with a regression test.
 2. **Add reachability tests and the cross-engine scenario suite** (§9.3) — the structural answer to
    the defect class, not just the instances.
-3. **Add the parity guards** (§9.2): `Dummy`↔`DummyContext` mirror test, algebra-matrix test.
+3. **Add the parity guards** (§9.2): `Any`↔`AnyContext` mirror test, algebra-matrix test.
 4. **Close the determinism contract** (§7.3): document single-logical-flow seeding on
    `Reproducibly`; source-kind-aware replay hints (and multi-source `Combine` reporting); the
    cross-version stability policy sentence; the foreign-generator qualification in the exhaustion
@@ -910,9 +910,9 @@ In priority order; items 1–7 are the recommended pre-release gate.
    `EnablePackageValidation`; decide `Bool()` vs `Boolean()` and record it; ask `@reefact` to
    resolve ADR-0008's status (after its wording fix); record the two [ADR-0026 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0026-rebase-testing-arbitrary-values-on-dummies.md) clarifications in the
    implementation reference; enrich or soften the ADR-0004/0015 implementation-reference pointers.
-8. **Ship the two Must-Have features** (§10): `Dummy.OneOf<T>`/`Dummy.ElementOf<T>`, and string
-   exclusions (`DifferentFrom`/`Except` on `DummyString`).
-9. **`DummyDictionary`**: extract the shared count facade; add `ContainingKey`.
+8. **Ship the two Must-Have features** (§10): `Any.OneOf<T>`/`Any.ElementOf<T>`, and string
+   exclusions (`DifferentFrom`/`Except` on `AnyString`).
+9. **`AnyDictionary`**: extract the shared count facade; add `ContainingKey`.
 10. **Then, demand-driven**: the Nice-to-Have list (§10), each on evidence of need, with the
     parity-guard data updated as part of each addition's definition of done.
 
@@ -963,15 +963,15 @@ progress) lives in the issue tracker, not here — do not maintain status in thi
 
 | §11 item | Issue(s) | Phase (§12) |
 |---|---|---|
-| 1 — Fix the reproduced defects | [#206](https://github.com/Reefact/first-class-errors/issues/206) DummyDecimal upper half · [#207](https://github.com/Reefact/first-class-errors/issues/207) Single/Half nudge · [#208](https://github.com/Reefact/first-class-errors/issues/208) U+FFFF hang · [#209](https://github.com/Reefact/first-class-errors/issues/209) balancing groups · [#210](https://github.com/Reefact/first-class-errors/issues/210) minor regex edges | 0 |
+| 1 — Fix the reproduced defects | [#206](https://github.com/Reefact/first-class-errors/issues/206) AnyDecimal upper half · [#207](https://github.com/Reefact/first-class-errors/issues/207) Single/Half nudge · [#208](https://github.com/Reefact/first-class-errors/issues/208) U+FFFF hang · [#209](https://github.com/Reefact/first-class-errors/issues/209) balancing groups · [#210](https://github.com/Reefact/first-class-errors/issues/210) minor regex edges | 0 |
 | 2 — Reachability + cross-engine suite | [#213](https://github.com/Reefact/first-class-errors/issues/213) | 0 |
 | 3 — Parity guards | [#214](https://github.com/Reefact/first-class-errors/issues/214) | 0 |
 | 4 — Close the determinism contract | [#216](https://github.com/Reefact/first-class-errors/issues/216) contract docs + ADR · [#217](https://github.com/Reefact/first-class-errors/issues/217) ordinal-engine ADR · [#211](https://github.com/Reefact/first-class-errors/issues/211) seed report · [#212](https://github.com/Reefact/first-class-errors/issues/212) exhaustion message | 0 |
 | 5 — Run on the floors | [#215](https://github.com/Reefact/first-class-errors/issues/215) | 0 |
 | 6 — Documentation pass | [#218](https://github.com/Reefact/first-class-errors/issues/218) README + user guide · [#219](https://github.com/Reefact/first-class-errors/issues/219) printable-ASCII & stale docs | 0 |
 | 7 — Release-engineering guards | [#221](https://github.com/Reefact/first-class-errors/issues/221) API baseline · [#222](https://github.com/Reefact/first-class-errors/issues/222) Bool naming · [#220](https://github.com/Reefact/first-class-errors/issues/220) ADR hygiene | 0 |
-| 8 — Ship the Must-Have features | [#223](https://github.com/Reefact/first-class-errors/issues/223) Any.OneOf/ElementOf · [#224](https://github.com/Reefact/first-class-errors/issues/224) DummyString exclusions | 1 |
-| 9 — DummyDictionary | [#225](https://github.com/Reefact/first-class-errors/issues/225) | 1 |
+| 8 — Ship the Must-Have features | [#223](https://github.com/Reefact/first-class-errors/issues/223) Any.OneOf/ElementOf · [#224](https://github.com/Reefact/first-class-errors/issues/224) AnyString exclusions | 1 |
+| 9 — AnyDictionary | [#225](https://github.com/Reefact/first-class-errors/issues/225) | 1 |
 | 10 — Demand-driven Nice-to-Haves | [#226](https://github.com/Reefact/first-class-errors/issues/226) backlog | 2 |
 
 ---

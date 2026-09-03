@@ -14,7 +14,7 @@ JustDummies treats contradictory constraints as arrangement errors and avoids hi
 
 A distinct collection of `N` elements is satisfiable only when at least `N` distinct values can be assembled from its effective domain: the element generator's own domain, widened by any values pinned outside it and by opaque externally-supplied values the generator itself could never draw. The generator's own cardinality therefore bounds only the elements that must come from it, not the whole request.
 
-Some generators expose a domain the library can count cheaply — a small fixed set, or a value pinned to one member of it. Others cannot honestly report their domain size, either because counting it is disproportionately expensive (a floating-point range, for example) or because it is genuinely unbounded or unknowable, including foreign `IDummy<T>` implementations and composed generators.
+Some generators expose a domain the library can count cheaply — a small fixed set, or a value pinned to one member of it. Others cannot honestly report their domain size, either because counting it is disproportionately expensive (a floating-point range, for example) or because it is genuinely unbounded or unknowable, including foreign `IAny<T>` implementations and composed generators.
 
 A custom equality comparer can reduce the number of effective equivalence classes even when the generator's nominal domain is larger.
 

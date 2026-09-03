@@ -10,21 +10,21 @@
 
 ## Context
 
-* `JustDummies` exposes a static entry point `Dummy` whose parameterless factories each start a
-  generator for one .NET simple type — `Dummy.Int32()`, `Dummy.SByte()`, `Dummy.Single()`,
-  `Dummy.UInt64()`, `Dummy.String()`, `Dummy.Guid()`, `Dummy.DateTime()`, … — and each returns a
-  builder type named `Dummy{Name}` (`Dummy.Int32()` returns `DummyInt32`). `DummyContext` mirrors
+* `JustDummies` exposes a static entry point `Any` whose parameterless factories each start a
+  generator for one .NET simple type — `Any.Int32()`, `Any.SByte()`, `Any.Single()`,
+  `Any.UInt64()`, `Any.String()`, `Any.Guid()`, `Any.DateTime()`, … — and each returns a
+  builder type named `Any{Name}` (`Any.Int32()` returns `AnyInt32`). `AnyContext` mirrors
   every one of these scalar factories for the seeded-context surface, so each factory exists
   in two places that must agree.
 * Across that whole scalar surface the factory name and the builder name are the **CLR type
   name** — the value `System.Type.Name` returns — not the C# keyword: `Int32` not `Int`,
   `Single` not `Float`, `Int64` not `Long`, `Byte`/`SByte`, `Decimal`, `Char`. The C# keyword
-  forms cannot all serve as identifiers (`Dummy.int()` is a syntax error), and the CLR names
+  forms cannot all serve as identifiers (`Any.int()` is a syntax error), and the CLR names
   read uniformly with the builder type names.
 * This mirrors the .NET base class library's own per-primitive method families, which name
   each method after the CLR type: `Convert.ToInt32` / `ToSingle` / `ToBoolean`,
   `BitConverter.ToInt32` / `ToBoolean` — never `ToBool`, `ToFloat`, or `ToInt`.
-* One factory deviated: `Dummy.Bool()`, returning `AnyBool`, produced a `System.Boolean`, whose
+* One factory deviated: `Any.Bool()`, returning `AnyBool`, produced a `System.Boolean`, whose
   CLR name is `Boolean`. It was the single member of the scalar surface not named after its
   CLR type. The 2026-07-20 JustDummies architecture & design audit surfaced it (§8.2, §8.4) and
   recommended the choice be settled deliberately and recorded before release.
@@ -37,9 +37,9 @@
 
 ## Decision
 
-Every parameterless scalar factory on `Dummy` and `DummyContext`, and the builder type it returns,
-is named after the CLR name of the type it produces, with no exception — renaming `Dummy.Bool()`
-/ `DummyContext.Bool()` / `AnyBool` to `Dummy.Boolean()` / `DummyContext.Boolean()` / `DummyBoolean`.
+Every parameterless scalar factory on `Any` and `AnyContext`, and the builder type it returns,
+is named after the CLR name of the type it produces, with no exception — renaming `Any.Bool()`
+/ `AnyContext.Bool()` / `AnyBool` to `Any.Boolean()` / `AnyContext.Boolean()` / `AnyBoolean`.
 
 ## Rationale
 
@@ -54,9 +54,9 @@ is named after the CLR name of the type it produces, with no exception — renam
   surface already spells out in full.
 * The choice aligns the surface with the BCL's own `Convert` / `BitConverter` per-primitive
   families named in Context, the closest existing analog to "one method per simple type, named
-  after the type"; a consumer who reaches for `Convert.ToBoolean` finds `Dummy.Boolean()` where
+  after the type"; a consumer who reaches for `Convert.ToBoolean` finds `Any.Boolean()` where
   they expect it.
-* Matching factory name to builder name to CLR name keeps one mental model — `Dummy.X()` →
+* Matching factory name to builder name to CLR name keeps one mental model — `Any.X()` →
   `AnyX` → `System.X` — which a single reflection guard can assert for the whole surface, so a
   future added type cannot silently reintroduce the deviation.
 * Settling this pre-release costs nothing and, per the audit, is the cheapest moment to decide;
@@ -67,7 +67,7 @@ is named after the CLR name of the type it produces, with no exception — renam
 ### Keep `Bool()` / `AnyBool` and record the short form as a deliberate exception
 
 Considered because `bool` is the near-universal spelling in modern C# while `Boolean` is rarely
-hand-written, so `Dummy.Bool()` is marginally more familiar at the call site, and a one-line
+hand-written, so `Any.Bool()` is marginally more familiar at the call site, and a one-line
 README rationale could make the deviation read as chosen rather than accidental.
 
 Rejected because the same familiarity argument applies verbatim to `Int`/`Long`/`Short`/`Float`,
@@ -75,12 +75,12 @@ which the surface already declines; recording the exception preserves a rule tha
 stated with a caveat and guarded with an allow-list entry, trading a one-time pre-release rename
 for permanent asymmetry in the surface whose whole value is its uniformity.
 
-### Rename only one side — the builder to `DummyBoolean` while keeping `Bool()`, or the reverse
+### Rename only one side — the builder to `AnyBoolean` while keeping `Bool()`, or the reverse
 
 Considered because it would touch fewer call sites.
 
 Rejected because it breaks the factory-name-equals-builder-name correspondence that holds
-everywhere else (`Dummy.Int32()` → `DummyInt32`), replacing one deviation with another and losing
+everywhere else (`Any.Int32()` → `AnyInt32`), replacing one deviation with another and losing
 the single-mental-model benefit that motivates the change.
 
 ### Offer both `Bool()` and `Boolean()`, one delegating to the other
@@ -95,7 +95,7 @@ the pre-release window makes a single clean name available at no cost.
 
 ### Positive
 
-* The scalar factory surface follows one exception-free rule (`Dummy.X()` → `AnyX` → CLR `X`),
+* The scalar factory surface follows one exception-free rule (`Any.X()` → `AnyX` → CLR `X`),
   statable in a sentence and enforceable by a single reflection guard.
 * The surface matches the BCL's own `Convert` / `BitConverter` per-primitive naming, lowering
   surprise for consumers.
@@ -103,7 +103,7 @@ the pre-release window makes a single clean name available at no cost.
 
 ### Negative
 
-* `Dummy.Boolean()` is more verbose than the near-universal `bool` keyword spelling; a consumer
+* `Any.Boolean()` is more verbose than the near-universal `bool` keyword spelling; a consumer
   expecting `Bool()` must reach for `Boolean()`.
 * The rename touches the builder type, both entry points, the packaged-asset check, and the
   tests at once — a mechanical, pre-release cost.
@@ -112,11 +112,11 @@ the pre-release window makes a single clean name available at no cost.
 
 * Without enforcement a future scalar type could reintroduce a keyword-short name (a second
   `Bool`); mitigated by the factory-naming parity guard added with this decision, which fails
-  when a factory, its builder, or its `DummyContext` mirror departs from the CLR name.
+  when a factory, its builder, or its `AnyContext` mirror departs from the CLR name.
 
 ## Follow-up Actions
 
-* Rename `Dummy.Bool()` / `DummyContext.Bool()` / `AnyBool` to `Boolean` / `DummyBoolean`, and update
+* Rename `Any.Bool()` / `AnyContext.Bool()` / `AnyBool` to `Boolean` / `AnyBoolean`, and update
   the tests, the `justdummies-check` packaged-asset probe, and the package README *(done in this
   change)*.
 * Add the factory-naming parity guard to `JustDummies.UnitTests` *(done in this change)*.

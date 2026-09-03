@@ -11,7 +11,7 @@
 ## Context
 
 `JustDummies` is a fluent DSL of typed, constraint-carrying generators. Every
-generator implements `IDummy<T>`, whose single member `Generate()` draws one value
+generator implements `IAny<T>`, whose single member `Generate()` draws one value
 satisfying the declared constraints; the composition seams `As` and `Combine`
 build larger generators and materialize their parts by calling `Generate()`. The
 library's stated model is that a generator is an **immutable recipe, not a
@@ -28,8 +28,8 @@ Several facts about that conversion were surfaced during a focused review of the
 library (issue #190):
 
 * The conversion has **side effects**: it draws randomness, so it is not a
-  widening; it can **throw** (`DummyGenerationException`,
-  `ConflictingDummyConstraintException`) at a site that reads like a plain
+  widening; it can **throw** (`AnyGenerationException`,
+  `ConflictingAnyConstraintException`) at a site that reads like a plain
   assignment; and it is **not idempotent** — each conversion draws a fresh value,
   so reading the "same" variable twice yields two values.
 * The conversion fires in only **one** syntactic shape — an explicitly-typed
@@ -128,7 +128,7 @@ surprise on the types that keep it.
 
 * A user carrying an implicit-conversion mental model may at first omit
   `.Generate()`. The risk is bounded: the omission is a compile-time error with
-  an actionable message (assign through `IDummy<T>` or call `Generate()`), never a
+  an actionable message (assign through `IAny<T>` or call `Generate()`), never a
   silent wrong value.
 
 ## Follow-up Actions
@@ -147,4 +147,4 @@ surprise on the types that keep it.
   conversions.
 * ADR-0003 — Host JustDummies as a standalone package (pre-1.0 churn, self-consumed).
 * [ADR-0006 (first-class-errors)](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0006-supply-arbitrary-test-values-from-a-seedable-source.md) — Supply arbitrary test values from a single seedable source.
-* `JustDummies/IDummy.cs` — the `Generate()` contract these generators flow through.
+* `JustDummies/IAny.cs` — the `Generate()` contract these generators flow through.

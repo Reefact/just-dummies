@@ -9,7 +9,7 @@ using NFluent;
 namespace JustDummies.UnitTests;
 
 [TestSubject(typeof(DummyString))]
-public sealed class AnyStringTests {
+public sealed class DummyStringTests {
 
     private const int SampleCount = 200;
 

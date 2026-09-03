@@ -21,7 +21,7 @@
 
     <!-- SYSLIB1045 asks every `new Regex("...")` to become a partial method carrying [GeneratedRegex], so a
          source generator emits the automaton at compile time. The attribute arrived in .NET 7 and the floor
-         leg is net472, where it does not exist — and the three suites it fires on (AnyPatternTests,
+         leg is net472, where it does not exist — and the three suites it fires on (DummyPatternTests,
          XmlDocCrefConventionTests, ConcurrentDrawTests) are all compiled on that leg, none of them being in
          the net472 <Compile Remove> list below. Same wall as CA1510, same remedy and same expiry: suppressed
          for as long as this project builds against the floor; see ADR-0037 and ADR-0007. -->
@@ -101,7 +101,7 @@
        net10; on the floor the netstandard2.0 behavioral contract is exercised by the rest of the suite. The
        other files' isolated net8-only draws are conditioned with `#if NET8_0_OR_GREATER` in-source. -->
   <ItemGroup Condition="'$(TargetFramework)' == 'net472'">
-    <Compile Remove="AnyModernTypeTests.cs" />
+    <Compile Remove="DummyModernTypeTests.cs" />
     <Compile Remove="CrossEngineReachabilityTests.cs" />
     <Compile Remove="ContinuousExclusionNudgeTests.cs" />
     <!-- Uses System.Reflection nullability metadata (NullabilityInfoContext, .NET 6+) to read parameter annotations,

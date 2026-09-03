@@ -16,7 +16,7 @@ namespace JustDummies.UnitTests;
 ///     <c>JustDummies.PropertyTests</c> instead, and are deliberately not restated here (ADR-0019).
 /// </summary>
 [TestSubject(typeof(DummyInt32))]
-public sealed class AnyInt32Tests {
+public sealed class DummyInt32Tests {
 
     private const int SampleCount = 200;
 

@@ -12,10 +12,10 @@ namespace JustDummies.UnitTests;
 
 /// <summary>
 ///     The value-set half of <see cref="DummyString" />: <c>OneOf(...)</c> and how it composes with every other string
-///     constraint. Split from <see cref="AnyStringTests" />, which owns the constructive shape.
+///     constraint. Split from <see cref="DummyStringTests" />, which owns the constructive shape.
 /// </summary>
 [TestSubject(typeof(DummyString))]
-public sealed class AnyStringValueSetTests {
+public sealed class DummyStringValueSetTests {
 
     private const int SampleCount = 200;
 

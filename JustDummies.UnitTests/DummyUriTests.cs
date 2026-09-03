@@ -14,7 +14,7 @@ using Xunit;
 namespace JustDummies.UnitTests;
 
 [TestSubject(typeof(DummyUri))]
-public sealed class AnyUriTests {
+public sealed class DummyUriTests {
 
     private const int FuzzSeeds   = 500;
     private const int SampleCount = 300;

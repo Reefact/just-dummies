@@ -21,7 +21,7 @@ namespace JustDummies.UnitTests;
 ///         that gap — <see cref="DummyDecimal" /> never reaching the upper half of a range (#206) and the
 ///         <c>DummySingle</c>/<c>DummyHalf</c> exclusion nudge stalling on satisfiable specs (#207). Both are guarded here
 ///         structurally, across every engine at once, in addition to their dedicated regressions
-///         (<see cref="AnyContinuousTests.DecimalBetweenReachesBothHalves" /> and
+///         (<see cref="DummyContinuousTests.DecimalBetweenReachesBothHalves" /> and
 ///         <see cref="ContinuousExclusionNudgeTests" />, kept as focused, commented guards).
 ///     </para>
 ///     <para>

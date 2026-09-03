@@ -6,7 +6,7 @@ using NFluent;
 
 namespace JustDummies.UnitTests;
 
-public sealed class AnyModernTypeTests {
+public sealed class DummyModernTypeTests {
 
     private const int SampleCount = 200;
 

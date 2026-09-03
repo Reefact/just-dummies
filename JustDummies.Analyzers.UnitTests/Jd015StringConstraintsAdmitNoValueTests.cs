@@ -88,7 +88,7 @@ public class Jd015StringConstraintsAdmitNoValueTests {
     [Fact]
     public async Task Does_not_report_a_length_budget_once_a_value_set_is_declared() {
         // With OneOf declared, the fragments are matched against the pooled values rather than laid out side by side,
-        // so the budget no longer applies. Live in JustDummies.UnitTests/AnyStringValueSetTests.cs.
+        // so the budget no longer applies. Live in JustDummies.UnitTests/DummyStringValueSetTests.cs.
         const string source = """
             using JustDummies;
 

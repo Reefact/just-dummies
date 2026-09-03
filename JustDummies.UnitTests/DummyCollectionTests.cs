@@ -10,7 +10,7 @@ using NFluent;
 
 namespace JustDummies.UnitTests;
 
-public sealed class AnyCollectionTests {
+public sealed class DummyCollectionTests {
 
     #region Statics members declarations
 

@@ -9,7 +9,7 @@ using NFluent;
 
 namespace JustDummies.UnitTests;
 
-public sealed class AnyPatternTests {
+public sealed class DummyPatternTests {
 
     #region Statics members declarations
 

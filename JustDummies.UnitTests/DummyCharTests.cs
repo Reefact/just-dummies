@@ -14,7 +14,7 @@ namespace JustDummies.UnitTests;
 ///     algebra is already quantified generically by <c>CharacterFamilyProperties</c>.
 /// </summary>
 [TestSubject(typeof(DummyChar))]
-public sealed class AnyCharTests {
+public sealed class DummyCharTests {
 
     private const int SampleCount = 300;
 

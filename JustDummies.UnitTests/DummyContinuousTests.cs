@@ -13,7 +13,7 @@ namespace JustDummies.UnitTests;
 ///     hold for <i>every</i> bound and are quantified in <c>JustDummies.PropertyTests</c> (ADR-0019); the #206
 ///     regression stays here because it pins the interval where the defect actually occurred.
 /// </summary>
-public sealed class AnyContinuousTests {
+public sealed class DummyContinuousTests {
 
     private const int SampleCount = 200;
 

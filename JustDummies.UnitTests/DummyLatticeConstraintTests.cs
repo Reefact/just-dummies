@@ -11,7 +11,7 @@ namespace JustDummies.UnitTests;
 ///     <see cref="decimal" />, and <c>WithGranularity</c> on the temporals: values are built directly on the grid in
 ///     one draw, the grid composes with bounds/exclusions/allow-lists, and an empty grid conflicts eagerly.
 /// </summary>
-public sealed class AnyLatticeConstraintTests {
+public sealed class DummyLatticeConstraintTests {
 
     private const int SampleCount = 200;
 

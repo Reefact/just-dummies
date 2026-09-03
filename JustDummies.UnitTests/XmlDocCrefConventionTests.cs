@@ -64,7 +64,7 @@ public sealed class XmlDocCrefConventionTests {
     private static readonly Regex Identifier    = new("[A-Za-z_][A-Za-z0-9_]*", RegexOptions.Compiled);
 
     // Dummy is partial across several files, so the hosts are found by what they declare rather than by name. The
-    // word boundary keeps DummyString, AnyContextTests and their like out.
+    // word boundary keeps DummyString, DummyContextTests and their like out.
     private static readonly Regex FactoryHostDeclaration = new(@"\bclass\s+(Dummy|DummyContext)\b", RegexOptions.Compiled);
 
     [Fact(DisplayName = "Every cref spells a predefined type with its C# keyword, not its CLR name.")]

@@ -14,7 +14,7 @@ namespace JustDummies.UnitTests;
 ///     algebra is already quantified generically by <c>GuidProperties</c>.
 /// </summary>
 [TestSubject(typeof(DummyGuid))]
-public sealed class AnyGuidTests {
+public sealed class DummyGuidTests {
 
     private const int SampleCount = 50;
 

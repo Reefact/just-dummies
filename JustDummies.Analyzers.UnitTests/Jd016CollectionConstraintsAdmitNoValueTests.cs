@@ -238,7 +238,7 @@ public class Jd016CollectionConstraintsAdmitNoValueTests {
     public async Task Does_not_report_a_widened_flag_enum_domain() {
         // AllowingCombinations widens the universe to the OR-closure of the declared members — eight values for four
         // flags — so counting declared members would condemn a legal chain. Live in
-        // JustDummies.UnitTests/AnyEnumCombinationTests.cs, which asserts WithCount(8) succeeds.
+        // JustDummies.UnitTests/DummyEnumCombinationTests.cs, which asserts WithCount(8) succeeds.
         const string source = """
             using System;
             using JustDummies;

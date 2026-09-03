@@ -14,18 +14,18 @@ namespace JustDummies.Analyzers;
 /// </remarks>
 internal sealed class KnownSymbols {
 
-    public const string AnyMetadataName        = "JustDummies.Dummy";
+    public const string DummyMetadataName        = "JustDummies.Dummy";
     public const string IDummyMetadataName       = "JustDummies.IDummy`1";
-    public const string AnyContextMetadataName = "JustDummies.DummyContext";
+    public const string DummyContextMetadataName = "JustDummies.DummyContext";
 
     public const string ReproducibleAttributeMetadataName = "JustDummies.Xunit.ReproducibleAttribute";
     public const string FactAttributeMetadataName         = "Xunit.v3.IFactAttribute";
     public const string MemberDataAttributeMetadataName   = "Xunit.MemberDataAttribute";
 
     private KnownSymbols(Compilation compilation) {
-        Dummy                   = compilation.GetTypeByMetadataName(AnyMetadataName);
+        Dummy                   = compilation.GetTypeByMetadataName(DummyMetadataName);
         IDummy                  = compilation.GetTypeByMetadataName(IDummyMetadataName);
-        DummyContext            = compilation.GetTypeByMetadataName(AnyContextMetadataName);
+        DummyContext            = compilation.GetTypeByMetadataName(DummyContextMetadataName);
         ReproducibleAttribute = compilation.GetTypeByMetadataName(ReproducibleAttributeMetadataName);
         FactAttribute         = compilation.GetTypeByMetadataName(FactAttributeMetadataName);
         MemberDataAttribute   = compilation.GetTypeByMetadataName(MemberDataAttributeMetadataName);

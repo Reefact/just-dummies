@@ -15,7 +15,7 @@ namespace JustDummies.Analyzers;
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public sealed class AsyncBodyPassedToReproduciblyAnalyzer : DiagnosticAnalyzer {
 
-    private const string AnyMetadataName        = "JustDummies.Dummy";
+    private const string DummyMetadataName        = "JustDummies.Dummy";
     private const string ReproduciblyMethodName = "Reproducibly";
 
     /// <inheritdoc />
@@ -30,17 +30,17 @@ public sealed class AsyncBodyPassedToReproduciblyAnalyzer : DiagnosticAnalyzer {
     }
 
     private static void OnCompilationStart(CompilationStartAnalysisContext context) {
-        INamedTypeSymbol? anyType = context.Compilation.GetTypeByMetadataName(AnyMetadataName);
-        if (anyType is null) { return; }
+        INamedTypeSymbol? dummyType = context.Compilation.GetTypeByMetadataName(DummyMetadataName);
+        if (dummyType is null) { return; }
 
-        context.RegisterOperationAction(operationContext => Analyze(operationContext, anyType), OperationKind.Invocation);
+        context.RegisterOperationAction(operationContext => Analyze(operationContext, dummyType), OperationKind.Invocation);
     }
 
-    private static void Analyze(OperationAnalysisContext context, INamedTypeSymbol anyType) {
+    private static void Analyze(OperationAnalysisContext context, INamedTypeSymbol dummyType) {
         IInvocationOperation invocation = (IInvocationOperation)context.Operation;
         IMethodSymbol        method     = invocation.TargetMethod;
 
-        if (method.Name != ReproduciblyMethodName || !SymbolEqualityComparer.Default.Equals(method.ContainingType, anyType)) { return; }
+        if (method.Name != ReproduciblyMethodName || !SymbolEqualityComparer.Default.Equals(method.ContainingType, dummyType)) { return; }
 
         foreach (IArgumentOperation argument in invocation.Arguments) {
             if (TryGetAsyncLambda(argument.Value, out IAnonymousFunctionOperation? lambda)) {

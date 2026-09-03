@@ -11,7 +11,7 @@ namespace JustDummies.UnitTests;
 ///     <c>WithOffsetBetween</c> draws it bounded, the default stays UTC, and values stay valid at the domain edges
 ///     because the instant is tightened before the offset is drawn.
 /// </summary>
-public sealed class AnyDateTimeOffsetOffsetTests {
+public sealed class DummyDateTimeOffsetOffsetTests {
 
     private const int SampleCount = 200;
 

@@ -6,7 +6,7 @@ using NFluent;
 
 namespace JustDummies.UnitTests;
 
-public sealed class AnyTimeTests {
+public sealed class DummyTimeTests {
 
     private const int SampleCount = 200;
 

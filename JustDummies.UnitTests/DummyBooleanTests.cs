@@ -14,7 +14,7 @@ namespace JustDummies.UnitTests;
 ///     already quantified generically by <c>BooleanProperties</c>.
 /// </summary>
 [TestSubject(typeof(DummyBoolean))]
-public sealed class AnyBooleanTests {
+public sealed class DummyBooleanTests {
 
     private const int SampleCount = 50;
 

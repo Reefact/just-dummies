@@ -206,7 +206,7 @@ public class Jd023ScalarChainRepresentableExtremesTests {
     [InlineData("Dummy.Int64().GreaterThanOrEqualTo(long.MaxValue)")]
     [InlineData("Dummy.Int32().LessThanOrEqualTo(int.MinValue)")]
     public async Task Does_not_report_a_bound_at_a_representable_extreme(string expression) {
-        // Live in JustDummies.UnitTests/AnySignedIntegerTests.cs, which asserts these generate exactly that value.
+        // Live in JustDummies.UnitTests/DummySignedIntegerTests.cs, which asserts these generate exactly that value.
         // The first version used -long.MaxValue as its "unbounded" sentinel, which made long.MinValue
         // unrepresentable and condemned a legal chain.
         string source = $$"""

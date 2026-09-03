@@ -6,7 +6,7 @@ using NFluent;
 
 namespace JustDummies.UnitTests;
 
-public sealed class AnyNullableTests {
+public sealed class DummyNullableTests {
 
     #region Statics members declarations
 

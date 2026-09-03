@@ -11,7 +11,7 @@ using NFluent;
 namespace JustDummies.UnitTests;
 
 [TestSubject(typeof(DummyOneOf<>))]
-public sealed class AnyOneOfTests {
+public sealed class DummyOneOfTests {
 
     private const int SampleCount = 200;
 

@@ -12,7 +12,7 @@ namespace JustDummies.UnitTests;
 ///     universal half — that every draw belongs to the universe whatever the constraints — lives in
 ///     <c>JustDummies.PropertyTests</c>.
 /// </summary>
-public sealed class AnyEnumCombinationTests {
+public sealed class DummyEnumCombinationTests {
 
     // Enough draws that an eight-value universe is exhausted with overwhelming probability, while a missing value is
     // not attributed to bad luck. The assertions below are on the SET observed, so they are reachability claims.

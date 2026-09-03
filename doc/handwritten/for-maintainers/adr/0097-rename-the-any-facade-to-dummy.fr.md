@@ -34,13 +34,25 @@
   `JustDummies.GenAny` compris ; puis, en revoyant la conséquence que la valeur
   `--entry-point any` de `JustDummies.Cli` était restée inchangée, a confirmé qu'elle devait
   suivre le même renommage.
+* Certaines parties de ce dépôt sont des enregistrements d'un état passé plutôt que des
+  descriptions de l'état courant. Une ADR acceptée est un enregistrement historique
+  immuable — le README de la base le dit, et l'ADR-0036 conserve une ligne datée par état
+  qu'une décision a atteint précisément pour qu'aucun état ne soit jamais écrasé. Une
+  section de changelog sous une version publiée, et la release note qui en est tirée,
+  décrivent un artefact déjà publié sur nuget.org. Les audits datés et l'enregistrement
+  d'extraction sous `audit/` et `migration/` rapportent ce qui a été constaté à leur propre
+  date ; `.claude/rules/documentation.md` les regroupe comme « dated records of a past
+  state, not current rules ».
 
 ## Décision
 
-Chaque occurrence de `Any` nommant ce concept — la façade et sa famille de générateurs,
-l'interface `IAny<T>`, `ConflictingAnyConstraintException`, le moteur `JustDummies.GenAny`
-et la valeur `--entry-point any` du CLI `dum` — est renommée en `Dummy`, sans exception et
-sans alias de compatibilité.
+Chaque occurrence de `Any` nommant ce concept dans la surface vivante et sa documentation
+vivante — la façade et sa famille de générateurs, l'interface `IAny<T>`,
+`ConflictingAnyConstraintException`, le moteur `JustDummies.GenAny` et la valeur
+`--entry-point any` du CLI `dum` — est renommée en `Dummy` sans alias de compatibilité,
+tandis que chaque enregistrement d'un état passé — une ADR acceptée, une section de
+changelog publiée et sa release note, un audit daté — garde les noms avec lesquels il a été
+écrit.
 
 ## Justification
 
@@ -58,6 +70,18 @@ sans alias de compatibilité.
   l'ambiguïté même que cette décision supprime — un consommateur lisant `Any.Int32()` à
   côté de `Dummy.Int32()` dans la même base de code aurait de nouveau deux mots à
   concilier, indéfiniment, plutôt qu'une fois à la mise à niveau.
+* Un enregistrement d'un état passé est exempté pour la raison inverse de celle qui motive
+  le renommage partout ailleurs. Ailleurs, l'ancien nom décrit quelque chose qui n'existe
+  plus, donc le garder induit en erreur ; dans un enregistrement, l'ancien nom est le *fait
+  rapporté* — le package `1.0.0-preview.6` réellement publié, la surface sur laquelle
+  l'ADR-0010 a réellement décidé — et le remplacer rend l'enregistrement faux. Cela le rend
+  aussi inutile pour ce à quoi sert un enregistrement : un lecteur ne peut plus rapprocher
+  une release note du package sur nuget.org qu'elle décrit, et une décision acceptée se
+  lirait comme si elle avait été prise à propos d'un nom qui n'existait pas à sa date. À
+  moitié appliqué, c'est pire encore : une ligne de changelog était devenue
+  « `Any.SetOf(...)` is typed `IDummy<HashSet<T>>` », nommant les deux surfaces dans une
+  seule phrase, et la décision de l'ADR-0010 « renaming `Dummy.Bool()` … / `AnyBool` »
+  décrivait un renommage s'éloignant d'un nom qu'elle venait de dire déjà en place.
 * Payer le coût de migration maintenant plutôt que plus tard est un arbitrage délibéré :
   `JustDummies` et `JustDummies.Cli` ont déjà de vrais consommateurs, certes précoces, en
   preview et en beta, donc le nombre de consommateurs devant migrer ne fait que croître
@@ -107,6 +131,9 @@ qui le paient.
   scaffolder et l'option du CLI elle-même.
 * L'appel émis par le scaffolder et l'option du CLI qui le demande s'accordent de
   nouveau : `--entry-point dummy` atteint `Dummy.Order()`.
+* La base de décisions, les sections de changelog publiées et les audits datés se lisent
+  encore tels qu'ils ont été écrits, si bien que chacun reste rapprochable de l'artefact ou
+  de la décision qu'il rapporte.
 
 ### Négatives
 
@@ -124,6 +151,10 @@ qui le paient.
   compilation sans transition douce, puisqu'aucun alias n'a été gardé. Atténué par les
   entrées de changelog que ce renommage ajoute aux deux trains, et par SemVer : une version
   preview ou beta ne promet aucune compatibilité entre versions.
+* Les deux noms cohabitent désormais dans le dépôt, et un lecteur qui croise `Any` dans une
+  ADR ou une vieille section de changelog peut le prendre pour un oubli. C'est la frontière
+  qui les distingue, elle doit donc tenir à chaque changement ultérieur : un enregistrement
+  d'un état passé n'est jamais balayé.
 
 ## Actions de suivi
 
@@ -135,7 +166,12 @@ qui le paient.
 
 * [ADR-0010](0010-name-any-factories-after-their-clr-type.fr.md) — la décision de nommage
   des fabriques par type CLR sur la même surface scalaire ; non affectée par ce renommage,
-  qui renomme le préfixe de la surface, non ses noms de fabriques.
+  qui renomme le préfixe de la surface, non ses noms de fabriques. Son texte est aussi le
+  cas le plus net de la frontière que cet enregistrement trace : il décide *à propos du*
+  nom `Any`, si bien que le réécrire aurait détruit la décision qu'il enregistre.
+* [ADR-0036](0036-keep-one-dated-line-per-state-an-adr-reached.fr.md) — une ligne datée par
+  état qu'une décision a atteint, jamais écrasée ; le même principe appliqué au corps d'un
+  enregistrement plutôt qu'à son en-tête.
 * [`doc/handwritten/for-maintainers/specifications/justdummies-tool.fr.md`](../specifications/justdummies-tool.fr.md),
   §4.5 — la mécanique du point d'entrée que touche le volet CLI de cette décision.
 * `CONTRIBUTING.md`, « Public API baseline » — le mécanisme qui a fait de ce renommage un

@@ -30,13 +30,23 @@
   whole generator family, library-wide, including the `JustDummies.GenAny` engine; then,
   on review of the consequence that `JustDummies.Cli`'s `--entry-point any` value was left
   unchanged, confirmed it should follow the same rename.
+* Parts of this repository are records of a past state rather than descriptions of the
+  current one. An accepted ADR is an immutable historical record — the base's own README
+  says so, and ADR-0036 keeps one dated line per state a decision reached so that no state
+  is ever overwritten. A changelog section under a released version, and the release note
+  drafted from it, describe an artefact already published to nuget.org. The dated audits
+  and the extraction record under `audit/` and `migration/` report what was found on their
+  own date; `.claude/rules/documentation.md` groups them as "dated records of a past state,
+  not current rules".
 
 ## Decision
 
-Every occurrence of `Any` naming this concept — the facade and its generator family, the
-`IAny<T>` interface, `ConflictingAnyConstraintException`, the `JustDummies.GenAny` engine and
-the `dum` CLI's `--entry-point any` value — is renamed to `Dummy`, with no exception and no
-compatibility alias.
+Every occurrence of `Any` naming this concept in the living surface and its living
+documentation — the facade and its generator family, the `IAny<T>` interface,
+`ConflictingAnyConstraintException`, the `JustDummies.GenAny` engine and the `dum` CLI's
+`--entry-point any` value — is renamed to `Dummy` with no compatibility alias, while every
+record of a past state — an accepted ADR, a released changelog section and its release note,
+a dated audit — keeps the names it was written with.
 
 ## Rationale
 
@@ -54,6 +64,17 @@ compatibility alias.
   ambiguity this decision removes — a consumer reading `Any.Int32()` beside `Dummy.Int32()`
   in the same codebase would again have two words to reconcile, indefinitely, rather than
   once at upgrade time.
+* A record of a past state is exempt for the opposite reason to the one that drives the
+  rename everywhere else. Elsewhere the old name describes something that no longer exists,
+  so keeping it misleads; in a record the old name is the *fact being reported* — the
+  package `1.0.0-preview.6` actually shipped, the surface ADR-0010 actually decided about —
+  and replacing it makes the record false. It also makes it useless for what a record is
+  for: a reader can no longer reconcile a release note with the package on nuget.org it
+  describes, and an accepted decision would read as though it had been taken about a name
+  that did not exist on its date. Half-applied, it is worse still: one changelog line had
+  become "`Any.SetOf(...)` is typed `IDummy<HashSet<T>>`", naming both surfaces in one
+  sentence, and ADR-0010's decision "renaming `Dummy.Bool()` … / `AnyBool`" described a
+  rename away from a name it had just said was already in place.
 * Paying the migration cost now rather than later is a deliberate trade: `JustDummies` and
   `JustDummies.Cli` already have real, if early, preview and beta consumers, so the number
   of consumers who must migrate only grows the longer the rename waits.
@@ -97,6 +118,8 @@ the migration cost, it only grows the set of consumers who pay it.
   flag.
 * The scaffolder's emitted call and the CLI flag that asks for it agree again:
   `--entry-point dummy` reaches `Dummy.Order()`.
+* The decision base, the released changelog sections and the dated audits still read as they
+  were written, so each stays reconcilable with the artefact or the decision it reports.
 
 ### Negative
 
@@ -113,6 +136,9 @@ the migration cost, it only grows the set of consumers who pay it.
   transition, since no alias was kept. Mitigated by the changelog entries this rename adds
   to both trains, and by SemVer: a preview or beta version does not promise compatibility
   across releases.
+* Both names now live in the repository at once, and a reader who meets `Any` in an ADR or
+  an old changelog section may take it for a leftover. The boundary is what tells them
+  apart, so it has to hold on every later change: a record of a past state is never swept.
 
 ## Follow-up Actions
 
@@ -124,7 +150,12 @@ the migration cost, it only grows the set of consumers who pay it.
 
 * [ADR-0010](0010-name-any-factories-after-their-clr-type.md) — the CLR-type
   factory-naming decision on the same scalar surface; unaffected by this rename, which
-  renames the surface's own prefix, not its factory names.
+  renames the surface's own prefix, not its factory names. Its text is also the clearest
+  case for the boundary this record draws: it decides *about* the name `Any`, so rewriting
+  it would have destroyed the decision it records.
+* [ADR-0036](0036-keep-one-dated-line-per-state-an-adr-reached.md) — one dated line per
+  state a decision reached, never overwritten; the same principle applied to a record's
+  body rather than its header.
 * [`doc/handwritten/for-maintainers/specifications/justdummies-tool.md`](../specifications/justdummies-tool.md),
   §4.5 — the entry-point mechanics this decision's CLI half touches.
 * `CONTRIBUTING.md`, "Public API baseline" — the mechanism that turned this rename into a

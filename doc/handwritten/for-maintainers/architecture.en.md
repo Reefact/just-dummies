@@ -38,7 +38,7 @@ common surface.
 `Dummy.Choice.cs`, `Dummy.Combine.cs`, `Dummy.Pattern.cs`, `Dummy.Uri.cs`, `Dummy.Reproducibility.cs`. It
 holds no state; it is a set of doors.
 
-Behind each door sits an `AnyXxx` builder, and every one of them is the same three-part machine:
+Behind each door sits an `DummyXxx` builder, and every one of them is the same three-part machine:
 
 ```mermaid
 flowchart LR
@@ -83,7 +83,7 @@ story:
   `[Reproducible]` attribute all pin. It flows with the execution context, which is what lets an
   adapter open it in a before-hook and close it in an after-hook
   ([ADR-0017](./adr/0017-open-the-ambient-seed-scope-to-adapters.md)).
-* **An isolated source** — what `Dummy.WithSeed(seed)` hands out through an `DummyContext`. It is
+* **An isolated source** — what `Dummy.WithSeed(seed)` hands out through a `DummyContext`. It is
   deliberately *not* ambient: values drawn from it ignore any enclosing scope.
 
 A generator remembers which source it was built from through the internal `IHasRandomSource` seam,
@@ -150,8 +150,8 @@ folder's README. Only the third is checked by a tool (RS2003).
 
 | If you are… | Go to |
 | --- | --- |
-| adding a constraint to an existing generator | the `AnyXxx` builder and its spec; add an example test and, if it holds for every argument, a property test |
-| adding a generator for a new type | the matching `Dummy.*.cs` partial, a new `AnyXxx`, and the ordinal space if it is discrete |
+| adding a constraint to an existing generator | the `DummyXxx` builder and its spec; add an example test and, if it holds for every argument, a property test |
+| adding a generator for a new type | the matching `Dummy.*.cs` partial, a new `DummyXxx`, and the ordinal space if it is discrete |
 | adding a net8-only generator | behind `#if NET8_0_OR_GREATER`, plus the `net8.0` PublicAPI baseline only |
 | changing what a message says | the named exception factory — and the test that pins the wording |
 | adding or retiring a rule | all five places listed above, together |

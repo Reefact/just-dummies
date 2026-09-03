@@ -38,7 +38,7 @@ jamais dans la surface commune.
 `Dummy.Choice.cs`, `Dummy.Combine.cs`, `Dummy.Pattern.cs`, `Dummy.Uri.cs`, `Dummy.Reproducibility.cs`. Elle ne
 porte aucun état ; c'est un ensemble de portes.
 
-Derrière chaque porte se tient un builder `AnyXxx`, et tous sont la même machine en trois temps :
+Derrière chaque porte se tient un builder `DummyXxx`, et tous sont la même machine en trois temps :
 
 ```mermaid
 flowchart LR
@@ -154,8 +154,8 @@ README de ce dossier. Seul le troisième est vérifié par un outil (RS2003).
 
 | Si vous… | Allez vers |
 | --- | --- |
-| ajoutez une contrainte à un générateur existant | le builder `AnyXxx` et sa spec ; ajoutez un test par l'exemple et, si l'invariant vaut pour tout argument, un test de propriété |
-| ajoutez un générateur pour un nouveau type | la partielle `Dummy.*.cs` correspondante, un nouveau `AnyXxx`, et l'espace ordinal s'il est discret |
+| ajoutez une contrainte à un générateur existant | le builder `DummyXxx` et sa spec ; ajoutez un test par l'exemple et, si l'invariant vaut pour tout argument, un test de propriété |
+| ajoutez un générateur pour un nouveau type | la partielle `Dummy.*.cs` correspondante, un nouveau `DummyXxx`, et l'espace ordinal s'il est discret |
 | ajoutez un générateur net8 seulement | derrière `#if NET8_0_OR_GREATER`, plus la seule baseline PublicAPI `net8.0` |
 | changez ce que dit un message | la fabrique d'exception nommée — et le test qui épingle la formulation |
 | ajoutez ou retirez une règle | les cinq endroits listés ci-dessus, ensemble |

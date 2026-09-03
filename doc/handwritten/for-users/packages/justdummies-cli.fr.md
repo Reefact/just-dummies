@@ -27,8 +27,8 @@ $ dum generate Order
 Analyzing Shop.Domain.Order
   constructor Order(OrderReference, Customer, int, OrderStatus, IReadOnlyList<string>, DateTime)
 
-  reference  OrderReference         new AnyOrderReference()              AnyX
-  customer   Customer               new AnyCustomer()                    AnyX
+  reference  OrderReference         new DummyOrderReference()              DummyX
+  customer   Customer               new DummyCustomer()                    DummyX
   quantity   int                    Dummy.Int32().Positive()               guard
   status     OrderStatus            Dummy.Enum<OrderStatus>()
   tags       IReadOnlyList<string>  Dummy.ListOf(Dummy.String().NonEmpty())
@@ -49,7 +49,7 @@ qui a été **deviné** :
 | --- | --- |
 | *(vide)* | directement issu de la table de base pour ce type |
 | `guard` | un guard du constructeur l'a resserré (`quantity <= 0` → `.Positive()`) |
-| `AnyX` | tiré par le generator que ce type possède |
+| `DummyX` | tiré par le generator que ce type possède |
 | `TODO` | rien n'a pu être inféré ; le fichier nomme ce qu'il reste à faire |
 | `to verify` | un générateur *a bien* été inféré, mais quelque chose près de ce paramètre n'a pas pu être lu — vérifiez-le |
 | `unread guards` | ce « quelque chose » : une garde que l'outil ne reconnaît pas, un helper dans lequel il ne voit pas, ou une garde qu'il lit sans pouvoir la situer — sous une écriture du paramètre, ou sous quelque chose qui décide si elle s'exécute |
@@ -70,7 +70,7 @@ travail et ajoute au-dessus une ligne qui ne compile pas :
 
 <!-- jd:skip -->
 ```csharp
-private static IDummy<string> AnyValidValue() {
+private static IDummy<string> DummyValidValue() {
     // TODO(dum): 'string value' may be guarded by something dum could not read (§9).
     //   This is dum's best generator for the type; verify it honours the real invariant,
     //   or replace it, then delete the line below.
@@ -87,7 +87,7 @@ ultérieure — est l'échec qui coûte le plus cher, parce qu'il surgit loin de
 
 ## À travers un graphe d'agrégats
 
-Un type de domaine est tiré par le generator qu'il possède — `new AnyOrderReference()` — là où vit
+Un type de domaine est tiré par le generator qu'il possède — `new DummyOrderReference()` — là où vit
 la recette de ce type. Rien ne la redérive à chaque site qui le compose, donc aucun fichier ne porte
 sa propre copie d'un invariant susceptible de dériver du constructeur qu'il décrit
 ([ADR-0089](../../for-maintainers/adr/0089-draw-a-composed-parameter-through-the-generator-its-type-owns.fr.md)).
@@ -96,7 +96,7 @@ Ce nom est écrit **que vous l'ayez scaffoldé ou non**, si bien que scaffolder 
 vous donne un fichier qui nomme ce qui lui manque encore :
 
 ```text
-error CS0246: The type or namespace name 'AnyOrderReference' could not be found
+error CS0246: The type or namespace name 'DummyOrderReference' could not be found
 ```
 
 Soit la liste de travail, à la ligne qui en a besoin :
@@ -107,7 +107,7 @@ dum generate Order --force
 ```
 
 Le récapitulatif ne le répète pas — un fichier qui ne build pas n'est pas un silence. La seule forme
-composée qu'il laisse à un `TODO` est un type générique, parce que `AnyRepository` nommerait aussi
+composée qu'il laisse à un `TODO` est un type générique, parce que `DummyRepository` nommerait aussi
 mal `Repository<Order>` que `Repository<Line>`.
 
 ## L'atteindre comme `Dummy.Order()`

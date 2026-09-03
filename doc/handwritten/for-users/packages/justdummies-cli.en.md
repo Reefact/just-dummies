@@ -27,8 +27,8 @@ $ dum generate Order
 Analyzing Shop.Domain.Order
   constructor Order(OrderReference, Customer, int, OrderStatus, IReadOnlyList<string>, DateTime)
 
-  reference  OrderReference         new AnyOrderReference()              AnyX
-  customer   Customer               new AnyCustomer()                    AnyX
+  reference  OrderReference         new DummyOrderReference()              DummyX
+  customer   Customer               new DummyCustomer()                    DummyX
   quantity   int                    Dummy.Int32().Positive()               guard
   status     OrderStatus            Dummy.Enum<OrderStatus>()
   tags       IReadOnlyList<string>  Dummy.ListOf(Dummy.String().NonEmpty())
@@ -49,7 +49,7 @@ It is the point of the recap, not decoration — it separates what was **inferre
 | --- | --- |
 | *(empty)* | straight from the base table for that type |
 | `guard` | a constructor guard tightened it (`quantity <= 0` → `.Positive()`) |
-| `AnyX` | drawn through the generator that type owns |
+| `DummyX` | drawn through the generator that type owns |
 | `TODO` | nothing could be inferred; the file names what to do |
 | `to verify` | a generator *was* inferred, but something near that parameter could not be read — check it |
 | `unread guards` | that "something": a guard the tool does not recognise, a helper it cannot see into, or a guard it reads but cannot place — below a write to the parameter, or under something deciding whether it runs |
@@ -70,7 +70,7 @@ line that does not compile above it:
 
 <!-- jd:skip -->
 ```csharp
-private static IDummy<string> AnyValidValue() {
+private static IDummy<string> DummyValidValue() {
     // TODO(dum): 'string value' may be guarded by something dum could not read (§9).
     //   This is dum's best generator for the type; verify it honours the real invariant,
     //   or replace it, then delete the line below.
@@ -87,7 +87,7 @@ most, because it surfaces far from its cause
 
 ## Through a graph of aggregates
 
-A domain type is drawn through the generator it owns — `new AnyOrderReference()` — which is where
+A domain type is drawn through the generator it owns — `new DummyOrderReference()` — which is where
 that type's recipe belongs. Nothing re-derives it at each site composing it, so no two files carry
 their own copy of an invariant that can drift from the constructor it describes
 ([ADR-0089](../../for-maintainers/adr/0089-draw-a-composed-parameter-through-the-generator-its-type-owns.md)).
@@ -96,7 +96,7 @@ That name is written **whether or not you have scaffolded it yet**, so scaffoldi
 first gives you a file that names what it still needs:
 
 ```text
-error CS0246: The type or namespace name 'AnyOrderReference' could not be found
+error CS0246: The type or namespace name 'DummyOrderReference' could not be found
 ```
 
 Which is the work list, at the line that needs it:
@@ -107,7 +107,7 @@ dum generate Order --force
 ```
 
 The recap does not repeat that — a file that will not build is not a silence. The only composed
-shape it leaves to a `TODO` is a generic type, because `AnyRepository` would name
+shape it leaves to a `TODO` is a generic type, because `DummyRepository` would name
 `Repository<Order>` and `Repository<Line>` equally badly.
 
 ## Reaching it as `Dummy.Order()`

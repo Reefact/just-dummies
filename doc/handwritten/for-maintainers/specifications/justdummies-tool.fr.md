@@ -162,7 +162,7 @@ moteur le traduit pour la recherche, où le séparateur est `+` et non `.`
 (`Shop.Domain.Order+Line`). Passer la forme pointée telle quelle à une recherche par nom de
 métadonnée ne renvoie rien, ce qui signalerait comme absent un type bien réel. Le generator émis est
 un type de premier niveau dans le namespace englobant, nommé d'après le seul type imbriqué :
-`AnyLine`.
+`DummyLine`.
 
 Zéro correspondance → erreur, avec les noms les plus proches par distance d'édition. Plus d'une →
 erreur, avec les noms complets, en demandant lequel. Les deux sortent en `1`.
@@ -234,7 +234,7 @@ public sealed class OrderReference {
 }
 ```
 
-`dum generate Order`, avec `AnyOrderReference` et `AnyCustomer` déjà scaffoldés dans le projet,
+`dum generate Order`, avec `DummyOrderReference` et `DummyCustomer` déjà scaffoldés dans le projet,
 émet :
 
 ```csharp
@@ -266,26 +266,26 @@ public sealed partial class DummyOrder : IDummy<Order> {
 
     /// <summary>Creates the generator with a default recipe for every constructor parameter.</summary>
     public DummyOrder()
-        : this(reference: new AnyOrderReference(),
-               customer:  new AnyCustomer(),
-               quantity:  AnyValidQuantity(),
-               status:    AnyValidStatus(),
-               tags:      AnyValidTags(),
-               placedAt:  AnyValidPlacedAt()) { }
+        : this(reference: new DummyOrderReference(),
+               customer:  new DummyCustomer(),
+               quantity:  DummyValidQuantity(),
+               status:    DummyValidStatus(),
+               tags:      DummyValidTags(),
+               placedAt:  DummyValidPlacedAt()) { }
 
-    private static IDummy<int> AnyValidQuantity() {
+    private static IDummy<int> DummyValidQuantity() {
         return Dummy.Int32().Positive();
     }
 
-    private static IDummy<OrderStatus> AnyValidStatus() {
+    private static IDummy<OrderStatus> DummyValidStatus() {
         return Dummy.Enum<OrderStatus>();
     }
 
-    private static IDummy<IReadOnlyList<string>> AnyValidTags() {
+    private static IDummy<IReadOnlyList<string>> DummyValidTags() {
         return Dummy.ListOf(Dummy.String().NonEmpty());
     }
 
-    private static IDummy<DateTime> AnyValidPlacedAt() {
+    private static IDummy<DateTime> DummyValidPlacedAt() {
         return Dummy.DateTime();
     }
 
@@ -398,7 +398,7 @@ public sealed partial class DummyOrder : IDummy<Order> {
   déclaration.
 * Un **constructeur public sans paramètre** portant la recette inférée, écrit avec des arguments
   nommés pour que le lecteur associe chaque appel à son paramètre sans compter.
-* Une **fabrique privée statique** par paramètre qui en a besoin — `AnyValid{Param}()` — logeant sa
+* Une **fabrique privée statique** par paramètre qui en a besoin — `DummyValid{Param}()` — logeant sa
   recette, et nommée pour ce qu'elle retourne : une valeur que le constructeur du type accepte.
   L'initialiseur du constructeur public les appelle par leur nom plutôt que d'inliner chaque chaîne,
   et le TODO d'un paramètre non résolu (§5.5) vit dans sa propre fabrique, pas au point d'appel.
@@ -565,7 +565,7 @@ Chaque entrée est soumise à D4 : le membre n'est émis que s'il se résout dan
 | `Dictionary<K,V>` `IDictionary<K,V>` `IReadOnlyDictionary<K,V>` | `Dummy.DictionaryOf(<K>, <V>)` |
 | `T?` où `T` est un type référence | le generator de `T` inchangé — **jamais** `.OrNull()` (D10) |
 | `T?` où `T` est un type valeur | `<generator de T>.AsNullable()`, ou `.As(value => (T?)value)` quand l'asset ne porte pas le lift — **jamais** `.OrNull()` (D10) |
-| tout autre type nommé non générique | `new AnyT()` (§5.4) — que la compilation porte `AnyT` ou non |
+| tout autre type nommé non générique | `new DummyT()` (§5.4) — que la compilation porte `DummyT` ou non |
 | tout le reste | non résolu (§5.5) |
 
 Trois remarques sur la table.
@@ -589,7 +589,7 @@ n'est **pas** un `IDummy<int?>`, donc un paramètre `int?` exige le saut explici
 compile pas — les lignes réservées à `net8.0` sont elles aussi des types valeur.
 
 **Les generators d'éléments récursent.** `IReadOnlyList<OrderLine>` résout son élément par cette
-même table, et devient donc `Dummy.ListOf(new AnyOrderLine())` quand `AnyOrderLine` existe. La
+même table, et devient donc `Dummy.ListOf(new DummyOrderLine())` quand `DummyOrderLine` existe. La
 récursion est limitée à une profondeur de 3 et protégée contre les cycles ; dépasser l'une ou
 l'autre rend le paramètre non résolu.
 
@@ -886,7 +886,7 @@ pas (§14.3) et est ignorée.
 
 La lecture des gardes est aussi ce qui rend correct plutôt que nominal le generator propre d'un
 value object, et c'est là qu'a été prise la mesure derrière cette section. `OrderReference.Create`
-garde sur `IsNullOrWhiteSpace`, donc `AnyOrderReference` tire `Dummy.String().NotBlank()` — une chaîne
+garde sur `IsNullOrWhiteSpace`, donc `DummyOrderReference` tire `Dummy.String().NotBlank()` — une chaîne
 qui rejette la valeur tout-blanc que la garde rejette aussi — au lieu de `Dummy.String()`, mesurée
 levant `DummyGenerationException` **594 fois sur
 10 000 tirages**, et 557 lors d'une reprise indépendante — environ une fois sur dix-sept, ce que
@@ -1110,7 +1110,7 @@ ou un build propre — est le seul verdict qui ait jamais compté.
 
 **Un type générique est la seule forme composée à laquelle le §5.5 répond encore.** La fonction de
 nommage (§11.3) travaille depuis le nom du type, qui perd ses arguments : `Repository<Order>` et
-`Repository<Line>` s'entendraient tous deux dire d'écrire `AnyRepository`, et aucun n'est le nom à
+`Repository<Line>` s'entendraient tous deux dire d'écrire `DummyRepository`, et aucun n'est le nom à
 écrire. Une sentinelle qui ne dit rien vaut mieux qu'un nom qui dit faux.
 
 Convention, pas attribut, pas configuration : un attribut supposerait de toucher au code de
@@ -1124,12 +1124,12 @@ recette se trouverait sinon — le point d'appel dans le constructeur public res
 comme pour tout autre paramètre :
 
 ```csharp
-    public AnyWarehouse()
-        : this(reference: new AnyOrderReference(),
-               crates:    AnyValidCrates(),
+    public DummyWarehouse()
+        : this(reference: new DummyOrderReference(),
+               crates:    DummyValidCrates(),
                ...) { }
 
-    private static IDummy<Crate<int>> AnyValidCrates() {
+    private static IDummy<Crate<int>> DummyValidCrates() {
         // TODO(dum): no generator inferred for 'Crate<int> crates'.
         //   Write one here, or replace it and always pass .WithCrates(...) instead.
         return TODO_supply_a_generator_for_crates;
@@ -1141,7 +1141,7 @@ comme pour tout autre paramètre :
 Le fichier ne compile pas tant que le développeur n'a pas agi. C'est le but (D6). Le message du
 compilateur lui-même — *« The name 'TODO_supply_a_generator_for_crates' does not exist in the
 current context »* — est l'instruction, et il apparaît dans l'IDE, dans la liste d'erreurs et en
-intégration continue, à la ligne propre à `AnyValidCrates`.
+intégration continue, à la ligne propre à `DummyValidCrates`.
 
 Le commentaire ne nomme `dum generate` que là où cette commande accepterait le nom. Le §3.2 refuse
 une cible générique : y envoyer le développeur serait une instruction que le tool lui-même décline
@@ -1161,7 +1161,7 @@ différence près : un generator **a bien été** inféré ici, et il reste comm
 fabrique plutôt que d'être jeté.
 
 ```csharp
-    private static IDummy<string> AnyValidName() {
+    private static IDummy<string> DummyValidName() {
         // TODO(dum): 'string name' may be guarded by something dum could not read (§9).
         //   This is dum's best generator for the type; verify it honours the real invariant,
         //   or replace it, then delete the line below.
@@ -1191,7 +1191,7 @@ Le récapitulatif console n'est pas décoratif : c'est le mécanisme qui maintie
 ce qu'il a inféré et ce qu'il a deviné.
 
 L'exécution ci-dessous porte sur le `Order` du §4.1. Ses deux paramètres composés portent tous deux
-`AnyX` : chacun est tiré par le generator que son propre type possède (§5.4), là où vit la recette de
+`DummyX` : chacun est tiré par le generator que son propre type possède (§5.4), là où vit la recette de
 ce type.
 
 Le récapitulatif se lit à l'identique, que la compilation porte déjà ces deux generators ou non, et
@@ -1211,8 +1211,8 @@ $ dum generate Order
 Analyzing Shop.Domain.Order
   constructor Order(OrderReference, Customer, int, OrderStatus, IReadOnlyList<string>, DateTime)
 
-  reference  OrderReference         new AnyOrderReference()              AnyX
-  customer   Customer               new AnyCustomer()                    AnyX
+  reference  OrderReference         new DummyOrderReference()              DummyX
+  customer   Customer               new DummyCustomer()                    DummyX
   quantity   int                    Dummy.Int32().Positive()               guard
   status     OrderStatus            Dummy.Enum<OrderStatus>()
   tags       IReadOnlyList<string>  Dummy.ListOf(Dummy.String().NonEmpty())
@@ -1222,7 +1222,7 @@ Analyzing Shop.Domain.Order
 ```
 
 La colonne de droite porte la provenance de chaque expression : vide pour la table de base, `guard`
-quand le §5.3 l'a resserrée, `AnyX` quand le §5.4 a écrit l'appel à l'aveugle vers le generator que
+quand le §5.3 l'a resserrée, `DummyX` quand le §5.4 a écrit l'appel à l'aveugle vers le generator que
 le type possède, `guards not combined` pour le cas de conflit du §5.3, `no source` quand le
 corps du constructeur était indisponible et qu'aucune garde n'a pu être lue, `unread guards` quand
 une instruction de tête lève ou appelle d'une façon que l'ensemble reconnu n'a pas appariée, ou à un
@@ -1253,7 +1253,7 @@ jamais `TODO`, puisque la ligne et la ligne de clôture décrivent le même para
   crates  Crate<int>  —                        TODO
   name    string      Dummy.String().NonEmpty()  to verify, unread guards
 
-✓ AnyWarehouse.cs — 5 of 6 parameters inferred, 1 TODO, 1 to verify.
+✓ DummyWarehouse.cs — 5 of 6 parameters inferred, 1 TODO, 1 to verify.
   The file will not compile until you resolve it. That is deliberate.
 ```
 
@@ -1504,7 +1504,7 @@ Nommés explicitement pour ne pas être pris pour des oublis.
 
 Sur le nom : le moteur existant du tool frère de ce dépôt s'appelle `GenDoc` — un nom de
 **fonction**, pas un nom de pattern (`GenDoc` génère de la documentation). `GenDummy` le suit
-exactement : il génère les types `AnyX`, et `Dummy` est le nom central de la bibliothèque
+exactement : il génère les types `DummyX`, et `Dummy` est le nom central de la bibliothèque
 (`Dummy.String()`, `IDummy<T>`, `DummyOrder`). « Scaffolder » a été écarté comme nom de projet — il
 nomme un rôle générique plutôt qu'un produit, et tous les frameworks en ont un. Le mot survit dans
 la prose, où il décrit un **comportement** (§1) ; le projet est nommé d'après ce qu'il **produit**.
@@ -2063,7 +2063,7 @@ forme de régénération ou de détection de dérive. D1 supprime le problème q
 ### 17.1 Ce qui a été contrôlé
 
 Le fichier émis du §4.1 a été écrit à la main exactement comme spécifié — paramètre `int?`, helper
-`FixedValue<TValue>` et `AnyCustomer` composé compris — puis compilé et exécuté contre le
+`FixedValue<TValue>` et `DummyCustomer` composé compris — puis compilé et exécuté contre le
 `JustDummies.dll` construit depuis la source (asset `net8.0`), avec les analyzers JustDummies
 branchés. Les résultats ci-dessous sont ce que le harnais a affiché.
 
@@ -2110,7 +2110,7 @@ déménage ou change de version.
    `<Reference>` / `<HintPath>`, et l'analyzer construit par
    `<Analyzer Include="…/JustDummies.Analyzers.dll" />`.
 3. Ajouter le domaine du §4.1 (`Order`, `OrderReference` avec son `Create` gardé, `Customer`,
-   `OrderStatus`) et les `DummyOrder.cs` / `AnyCustomer.cs` scaffoldés exactement comme le §4.1 les
+   `OrderStatus`) et les `DummyOrder.cs` / `DummyCustomer.cs` scaffoldés exactement comme le §4.1 les
    spécifie.
 4. Ajouter un **fichier de contrôle** avec deux violations connues — une contrainte dont le résultat
    est jeté (`Dummy.String().NonEmpty();` comme instruction, `JD006`) et un generator dans une chaîne
@@ -2122,7 +2122,7 @@ déménage ou change de version.
    diagnostics disparaissent et le build réussit. C'est la preuve de D3.
 6. Lancer les assertions du §17.1. Pour la mesure, boucler
    `Dummy.String().As(OrderReference.Create).Generate()` 10 000 fois en comptant les
-   `DummyGenerationException` — soit la chaîne que `AnyOrderReference` tirerait si le §5.3 ne lisait
+   `DummyGenerationException` — soit la chaîne que `DummyOrderReference` tirerait si le §5.3 ne lisait
    rien de `OrderReference.Create`.
 
 Note d'exécution : si seul un runtime .NET plus récent est installé, la sortie `net8.0` s'exécute

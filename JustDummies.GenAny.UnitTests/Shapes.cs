@@ -98,8 +98,10 @@ internal static class Shapes {
 
     /// <summary>
     ///     A parameter drawn through the generator its own type owns, which is every composed parameter
-    ///     (ADR-0089). Spelled here because the provenance is what decides the parameter has no method of its
-    ///     own, and a shape that left it off would pin the emitter against a plan the engine cannot produce.
+    ///     (ADR-0089). Spelled here because the provenance is what decides whether the parameter has a method of
+    ///     its own (§4.2) — the same question <c>quantity</c>'s explicit <see cref="Provenance.Guard" /> below
+    ///     answers for a primitive — and a shape that left it off would pin the emitter against a plan the
+    ///     engine cannot produce.
     /// </summary>
     private static ScaffoldedParameter Composed(string name, string type, string expression, Provenance also = Provenance.None) {
         return ScaffoldedParameter.DrawnFrom(name, type, expression, Provenance.Scaffolded | also);
@@ -109,7 +111,7 @@ internal static class Shapes {
         return [
             Composed("reference", "OrderReference", "new AnyOrderReference()"),
             customer,
-            ScaffoldedParameter.DrawnFrom("quantity", "int", "Any.Int32().Positive()"),
+            ScaffoldedParameter.DrawnFrom("quantity", "int", "Any.Int32().Positive()", Provenance.Guard),
             ScaffoldedParameter.DrawnFrom("status", "OrderStatus", "Any.Enum<OrderStatus>()"),
             ScaffoldedParameter.DrawnFrom("tags", "IReadOnlyList<string>", "Any.ListOf(Any.String().NonEmpty())"),
             ScaffoldedParameter.DrawnFrom("placedAt", "DateTime", "Any.DateTime()")

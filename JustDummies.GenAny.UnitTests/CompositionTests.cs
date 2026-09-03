@@ -276,6 +276,76 @@ public sealed class CompositionTests {
         Check.That(outcome.File!.SourceText).Not.Contains("using Shop.Generators;");
     }
 
+    /// <summary>
+    ///     A null-check on a composed parameter adds nothing to verify: the generator it draws through never
+    ///     returns <c>null</c> (§5.3), so the parameter is exactly as clean as one with no guard at all — inline,
+    ///     with no method of its own (§4.2).
+    /// </summary>
+    [Fact(DisplayName = "A composed parameter's own recognised null-check needs no verification.")]
+    public void ARecognisedNullCheckOnAComposedParameterNeedsNoVerification() {
+        ScaffoldOutcome outcome = Subject.Scaffold("""
+                                                   namespace Shop.Domain;
+
+                                                   using System;
+                                                   using JustDummies;
+
+                                                   public sealed class Email { public Email() { } }
+
+                                                   public sealed class Subject {
+                                                       public Subject(Email value) {
+                                                           Value = value ?? throw new ArgumentNullException(nameof(value));
+                                                       }
+
+                                                       public Email Value { get; }
+                                                   }
+                                                   """);
+
+        Check.That(outcome.Status).IsEqualTo(ScaffoldStatus.Scaffolded);
+
+        ScaffoldedParameter parameter = outcome.Plan!.Parameters[0];
+
+        Check.That(parameter.Expression).IsEqualTo("new AnyEmail()");
+        Check.That(parameter.RequiresVerification).IsFalse();
+        Check.That(parameter.DrawnInline).IsTrue();
+        Check.That(outcome.File!.SourceText).Not.Contains("AnyValidValue");
+    }
+
+    /// <summary>
+    ///     The recognised null-check reads only what it recognises: a second, unclassified guard on the same
+    ///     composed parameter still blocks compilation, exactly as it would on a parameter with no null-check at
+    ///     all.
+    /// </summary>
+    [Fact(DisplayName = "A composed parameter's guard beyond a null-check still blocks compilation.")]
+    public void AComposedParametersGuardBeyondANullCheckStillBlocksCompilation() {
+        ScaffoldOutcome outcome = Subject.Scaffold("""
+                                                   namespace Shop.Domain;
+
+                                                   using System;
+                                                   using JustDummies;
+
+                                                   public sealed class Email { public string Text => "x"; }
+
+                                                   public sealed class Subject {
+                                                       public Subject(Email value) {
+                                                           Value = value ?? throw new ArgumentNullException(nameof(value));
+
+                                                           if (value.Text == "forbidden") { throw new ArgumentException(nameof(value)); }
+                                                       }
+
+                                                       public Email Value { get; }
+                                                   }
+                                                   """);
+
+        Check.That(outcome.Status).IsEqualTo(ScaffoldStatus.Scaffolded);
+
+        ScaffoldedParameter parameter = outcome.Plan!.Parameters[0];
+
+        Check.That(parameter.Expression).IsEqualTo("new AnyEmail()");
+        Check.That(parameter.RequiresVerification).IsTrue();
+        Check.That(parameter.DrawnInline).IsFalse();
+        Check.That(outcome.File!.SourceText).Contains("AnyValidValue");
+    }
+
     /// <summary>Scaffolds a <c>Subject</c> whose single parameter is of <paramref name="parameterType" />.</summary>
     private static ScaffoldedParameter Composed(string declarations, string parameterType) {
         ScaffoldOutcome outcome = Subject.Scaffold($$"""

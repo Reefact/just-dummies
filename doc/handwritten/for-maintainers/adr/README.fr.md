@@ -22,7 +22,7 @@ n'existe, et la colonne **Origine** dit comment chacune est arrivée ici :
   aussi, car ce dépôt l'applique encore. Les deux copies sont désormais
   indépendantes : chaque côté peut remplacer la sienne sans toucher à l'autre.
   9 décisions.
-* **consigné ici** — décidé dans ce dépôt, de son propre chef. 51 décisions.
+* **consigné ici** — décidé dans ce dépôt, de son propre chef. 53 décisions.
 
 Les numéros appartiennent à cette base, attribués dans l'ordre où les décisions
 ont été consignées en amont
@@ -220,3 +220,5 @@ que l'option existait le jour où elle compterait.
 | [ADR-0092](0092-run-every-mutation-leg-from-its-own-source-project.fr.md) | Lancer chaque jambe de mutation depuis son propre projet source | Accepted | consigné ici |
 | [ADR-0093](0093-publish-mutation-statuses-not-a-score.fr.md) | Publier des statuts de mutation, pas un score | Accepted | consigné ici |
 | [ADR-0094](0094-lift-a-nullable-value-type-rather-than-deriving-it.fr.md) | Lever un type valeur nullable plutôt que le dériver | Accepted | consigné ici |
+| [ADR-0095](0095-read-the-assigned-null-check-as-a-guard-idiom-too.fr.md) | Lire aussi le null-check assigné comme un idiome de garde | Accepted | consigné ici |
+| [ADR-0096](0096-emit-a-parameter-inline-whenever-it-has-nothing-to-report.fr.md) | Émettre un paramètre en ligne dès qu'il n'a rien à rapporter | Accepted | consigné ici |

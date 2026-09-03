@@ -157,10 +157,10 @@ public static class GeneratorEmitter {
     }
 
     /// <summary>
-    ///     Named arguments, aligned, so a reader maps each call to its parameter without counting (§4.2). Each
-    ///     one is a call to that parameter's own factory — never the chain itself, which is written once, in
-    ///     that factory's body — except a composed parameter, whose whole recipe is the one call to the
-    ///     generator its type owns, and which is therefore written here (ADR-0089).
+    ///     Named arguments, aligned, so a reader maps each call to its parameter without counting (§4.2). A
+    ///     parameter with a factory is a call to it — never the chain itself, which is written once, in that
+    ///     factory's body — and a parameter with nothing to put in a body (ADR-0089) is its one call, written
+    ///     here instead.
     /// </summary>
     private static void WritePublicConstructor(StringBuilder file, ScaffoldPlan plan, string indent) {
         Line(file, $"{indent}/// <summary>Creates the generator with a default recipe for every constructor parameter.</summary>");
@@ -186,7 +186,9 @@ public static class GeneratorEmitter {
     /// <summary>
     ///     One factory per parameter that has one (§4.2): the method the public constructor calls, and the place
     ///     a parameter with something to say for itself says it, right beside the chain it is about. A parameter
-    ///     drawn inline has nothing to put in a body, so it gets no method (ADR-0089).
+    ///     drawn inline has nothing to put in a body — no guard tightened its draw, and it blocks compilation
+    ///     for neither §5.5 nor §5.6 — so it gets no method, whether its one call composes through the type's
+    ///     own generator or reads straight off the base table (ADR-0089).
     /// </summary>
     private static void WriteFactories(StringBuilder file, ScaffoldPlan plan, string indent) {
         string body = indent + Indent;

@@ -688,7 +688,7 @@ The recognised set is closed:
 
 | Condition that throws | Constraint added |
 |---|---|
-| `p is null`, `p == null` | none — the generator never returns `null` anyway |
+| `p is null`, `p == null`, or the assigned `f = p ?? throw new ArgumentNullException(nameof(p));` | none — the generator never returns `null` anyway |
 | `string.IsNullOrEmpty(p)`, `p.Length == 0`, `p.Length < 1` | `.NonEmpty()` |
 | `string.IsNullOrWhiteSpace(p)` | `.NotBlank()` |
 | `p.Length > N` | `.WithMaxLength(N)` |
@@ -703,6 +703,16 @@ The recognised set is closed:
 | `p == Guid.Empty` | `.NonEmpty()` |
 | `!Enum.IsDefined(typeof(E), p)`, `!Enum.IsDefined(p)` | none — `Any.Enum<E>()` already draws only declared members, **where `p` is of type `E`** |
 | `p == E.Member` | `.DifferentFrom(E.Member)`, **where `p` is of type `E`** |
+
+**The assigned null-check does not end the leading scan, unlike an ordinary write to state.** `f =
+p ?? throw new ArgumentNullException(nameof(p));` both validates and stores in the one statement a
+constructor with several such lines writes once per parameter — the shape ADR-0086 already carves
+an exception for, extended here to a second idiom rather than a second helper. Read as an ordinary
+assignment it would end the scan at the first parameter it guards, and every later one — guarded the
+same way, two lines down — would read as though nothing had ever been asked of it. A different
+exception thrown from the same shape states an invariant this row does not know how to name, and is
+left to the ordinary "rejects, and the engine cannot tell why" reading, exactly as an unrecognised
+`if` is.
 
 **`.NonEmpty()` does not cover `IsNullOrWhiteSpace`, and the two rows are deliberately apart.** It
 once did, on the premise that an unconstrained `Any.String()` draws only ASCII letters and digits so

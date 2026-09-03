@@ -119,14 +119,16 @@ public sealed class ScaffoldedParameter {
     ///     Whether this parameter is written straight into the initializer, with no method of its own (§4.2).
     /// </summary>
     /// <remarks>
-    ///     A composed parameter is one call to the generator that type owns — <c>new AnyOrderReference()</c> —
-    ///     and a method wrapping it would say nothing the call does not (ADR-0089). It keeps a method only when
-    ///     there is something to put in the body: the sentinel of §5.5 is a statement, and a statement needs
-    ///     somewhere to stand.
+    ///     A method earns its place only when there is something for it to hold: a guard tightened the base
+    ///     draw into a chain worth naming on its own, or the sentinel of §5.5/§5.6 needs a statement to stand
+    ///     on. A parameter with neither — resolved, no verification pending, no guard combined into it — is one
+    ///     call and nothing else, whether that call composes through the type's own generator
+    ///     (<c>new AnyOrderReference()</c>, ADR-0089) or reads straight off the base table
+    ///     (<c>Any.Enum&lt;OrderStatus&gt;()</c>); a method wrapping either would say nothing the call does not.
     /// </remarks>
-    public bool DrawnInline => Provenance.HasFlag(GenAny.Provenance.Scaffolded)
-                            && !IsUnresolved
-                            && !RequiresVerification;
+    public bool DrawnInline => !IsUnresolved
+                            && !RequiresVerification
+                            && !Provenance.HasFlag(GenAny.Provenance.Guard);
 
     /// <summary>The identifier §5.5 emits in place of a generator, which is deliberately undefined.</summary>
     public string TodoIdentifier => "TODO_supply_a_generator_for_" + Bare();

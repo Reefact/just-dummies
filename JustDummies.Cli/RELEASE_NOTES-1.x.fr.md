@@ -2,6 +2,14 @@
 
 Ce qui a changé pour vous, version par version, sur le train `cli`. Pour le registre technique complet — chaque contrainte, chaque cas limite, chaque ADR — voir [CHANGELOG.md](https://github.com/Reefact/just-dummies/blob/main/JustDummies.Cli/CHANGELOG.md).
 
+## 1.1.0-beta.6 — 3 septembre 2026
+
+_L'appel au générateur d'un paramètre composé s'écrit désormais de la même façon quoi que ce soit, ou rien, qui réponde à son nom — plus d'inspection de votre compilation pour en décider._
+
+### 🐛 Corrections
+
+- Composer un paramètre via le générateur `AnyX` propre à son type ne dépend plus de ce qui, le cas échéant, existe sous ce nom dans votre compilation. `dum` écrit toujours `new AnyOrderReference()`, dans le namespace du type composé lui-même — sans jamais ouvrir de `using` pour un candidat qu'il n'a pas recherché. Un type homonyme qui ne peut pas servir de générateur, deux ou plus qui le pourraient, et un générateur réel, unique et correctement implémenté sont tous traités de façon identique : `dum` écrit l'appel, et c'est votre propre build qui le résout.
+
 ## 1.1.0-beta.5 — 2 septembre 2026
 
 _Un type qui ne faisait que partager le nom d'un générateur était encore proposé comme tel — cette version comble l'écart._

@@ -2,6 +2,14 @@
 
 What changed for you, release by release, in the `cli` train. For the full technical record — every constraint, every edge case, every ADR — see [CHANGELOG.md](https://github.com/Reefact/just-dummies/blob/main/JustDummies.Cli/CHANGELOG.md).
 
+## 1.1.0-beta.6 — September 3, 2026
+
+_A composed parameter's generator call is now written the same way whatever, if anything, answers to its name — no more inspecting your compilation to decide._
+
+### 🐛 Bug Fixes
+
+- Composing a parameter through its type's own `AnyX` generator no longer depends on what, if anything, exists under that name in your compilation. `dum` always writes `new AnyOrderReference()`, in the composed type's own namespace — never opening a `using` for a candidate it did not look up. A same-named type that cannot serve as a generator, two or more that could, and a real, unique, correctly-implemented one are all handled identically: `dum` writes the call, and your own build resolves it.
+
 ## 1.1.0-beta.5 — September 2, 2026
 
 _A same-named type that could not actually serve as a generator was still being proposed as one — this closes that gap._

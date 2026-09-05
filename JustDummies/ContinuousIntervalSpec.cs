@@ -53,7 +53,7 @@ internal sealed class ContinuousIntervalSpec {
         if (quantize is null) { throw new ArgumentNullException(nameof(quantize)); }
         if (nextUp is null) { throw new ArgumentNullException(nameof(nextUp)); }
 
-        return new ContinuousIntervalSpec(typeName, render, quantize, nextUp, domainMin, null, domainMax, null, null, null, [], laddered);
+        return new ContinuousIntervalSpec(typeName, render, quantize, nextUp, domainMin, domainMax, domainMin, null, domainMax, null, null, null, [], laddered);
     }
 
     /// <summary>
@@ -90,6 +90,8 @@ internal sealed class ContinuousIntervalSpec {
 
     private readonly IReadOnlyList<double>? _allowed;
     private readonly ConstraintCall?        _allowedConstraint;
+    private readonly double                 _domainMax;
+    private readonly double                 _domainMin;
     private readonly List<double>?          _effectiveAllowed;
     private readonly IReadOnlyList<double>  _excluded;
     private readonly IReadOnlyList<(ConstraintCall Constraint, double[] Ordinals)> _exclusions;
@@ -107,6 +109,7 @@ internal sealed class ContinuousIntervalSpec {
 
     [SuppressMessage(SonarRule.S107.Category, SonarRule.S107.Id, Justification = SuppressionJustification.S107.EngineImmutableState)]
     private ContinuousIntervalSpec(string  typeName, Func<double, string> render, Func<double, double> quantize, Func<double, double> nextUp,
+                                   double  domainMin, double domainMax,
                                    double  min,      ConstraintCall? minConstraint,
                                    double  max,      ConstraintCall? maxConstraint,
                                    IReadOnlyList<double>? allowed, ConstraintCall? allowedConstraint,
@@ -117,6 +120,8 @@ internal sealed class ContinuousIntervalSpec {
         _quantize          = quantize;
         _nextUp            = nextUp;
         _laddered          = laddered;
+        _domainMin         = domainMin;
+        _domainMax         = domainMax;
         _min               = min;
         _minConstraint     = minConstraint;
         _max               = max;
@@ -142,7 +147,7 @@ internal sealed class ContinuousIntervalSpec {
             throw ConflictingAnyConstraintException.AlreadyBoundedAbove(applying, _maxConstraint, _render(_max));
         }
 
-        return Validated(new ContinuousIntervalSpec(_typeName, _render, _quantize, _nextUp, minimum, applying, _max, _maxConstraint, _allowed, _allowedConstraint, _exclusions, _laddered), applying);
+        return Validated(new ContinuousIntervalSpec(_typeName, _render, _quantize, _nextUp, _domainMin, _domainMax, minimum, applying, _max, _maxConstraint, _allowed, _allowedConstraint, _exclusions, _laddered), applying);
     }
 
     /// <summary>Tightens the upper bound; a looser bound than the current one is a no-op.</summary>
@@ -157,7 +162,7 @@ internal sealed class ContinuousIntervalSpec {
             throw ConflictingAnyConstraintException.AlreadyBoundedBelow(applying, _minConstraint, _render(_min));
         }
 
-        return Validated(new ContinuousIntervalSpec(_typeName, _render, _quantize, _nextUp, _min, _minConstraint, maximum, applying, _allowed, _allowedConstraint, _exclusions, _laddered), applying);
+        return Validated(new ContinuousIntervalSpec(_typeName, _render, _quantize, _nextUp, _domainMin, _domainMax, _min, _minConstraint, maximum, applying, _allowed, _allowedConstraint, _exclusions, _laddered), applying);
     }
 
     /// <summary>Tightens the lower bound to strictly above <paramref name="bound" /> — via the type's next representable value.</summary>
@@ -185,7 +190,7 @@ internal sealed class ContinuousIntervalSpec {
 
         double[] distinct = values.Distinct().ToArray();
 
-        return Validated(new ContinuousIntervalSpec(_typeName, _render, _quantize, _nextUp, _min, _minConstraint, _max, _maxConstraint, distinct, applying, _exclusions, _laddered), applying);
+        return Validated(new ContinuousIntervalSpec(_typeName, _render, _quantize, _nextUp, _domainMin, _domainMax, _min, _minConstraint, _max, _maxConstraint, distinct, applying, _exclusions, _laddered), applying);
     }
 
     /// <summary>Adds values the generator must never produce.</summary>
@@ -197,7 +202,7 @@ internal sealed class ContinuousIntervalSpec {
         // that actually emptied the domain rather than a bound that merely happens to border it.
         List<(ConstraintCall Constraint, double[] Ordinals)> exclusions = [.. _exclusions, (applying, values)];
 
-        return Validated(new ContinuousIntervalSpec(_typeName, _render, _quantize, _nextUp, _min, _minConstraint, _max, _maxConstraint, _allowed, _allowedConstraint, exclusions, _laddered), applying);
+        return Validated(new ContinuousIntervalSpec(_typeName, _render, _quantize, _nextUp, _domainMin, _domainMax, _min, _minConstraint, _max, _maxConstraint, _allowed, _allowedConstraint, exclusions, _laddered), applying);
     }
 
     /// <summary>
@@ -322,15 +327,8 @@ internal sealed class ContinuousIntervalSpec {
 
         if (_min == _max) { return _min; }
 
-        // Draw from the ordinary window rather than the declared interval (ADR-0031): the window only ever clips,
-        // and it steps aside entirely when it would leave the declared interval empty — a caller who asked for a
-        // magnitude gets it, a caller who merely permitted one does not.
-        double lower = Math.Max(_min, -OrdinaryMagnitude.AsDouble);
-        double upper = Math.Min(_max, OrdinaryMagnitude.AsDouble);
-        if (lower > upper) {
-            lower = _min;
-            upper = _max;
-        }
+        // Draw from the ordinary window rather than the declared interval (ADR-0031).
+        (double lower, double upper) = DrawnInterval();
 
         // One unit sample either way, so the two paths consume the seed identically and only the VALUE a laddered
         // row produces differs from what it would have produced uniformly (ADR-0049 pins draws consumed as well as
@@ -358,6 +356,50 @@ internal sealed class ContinuousIntervalSpec {
         }
 
         return free.Value;
+    }
+
+    /// <summary>
+    ///     The interval a draw is actually taken from: the declared one narrowed to the ordinary magnitude
+    ///     (ADR-0031), and — where that narrowing would leave fewer than two values — the interval the window's own
+    ///     purpose asks for instead. The rule the three branches implement, in the terms a caller reads it in:
+    ///     a one-sided constraint stays ordinary <b>around</b> the bound it declares; an explicitly bounded interval
+    ///     belongs to the caller and is drawn whole; a one-sided bound so extraordinary that no ordinary slab is
+    ///     representable beside it falls back to the declared domain.
+    /// </summary>
+    /// <remarks>
+    ///     What separates the second branch from the third is the <b>value</b> of the opposing bound, never whether a
+    ///     constraint declared it: <c>Between(1e6, double.MaxValue)</c> and <c>GreaterThanOrEqualTo(1e6)</c> denote
+    ///     the same set, so they must draw alike, and reading the constraint would split them 300 decades apart.
+    /// </remarks>
+    private (double Lower, double Upper) DrawnInterval() {
+        double lower = Math.Max(_min, -OrdinaryMagnitude.AsDouble);
+        double upper = Math.Min(_max, OrdinaryMagnitude.AsDouble);
+        // Two or more values left: the ordinary case, and the one every existing draw already took.
+        if (lower < upper) { return (lower, upper); }
+
+        // Past here the declared interval sits at or beyond the window's edge, so the narrowing has nothing to hand
+        // back. A bound short of the type's own edge is one the caller wrote and owns; a bound sitting exactly on
+        // that edge is the domain showing through, which permits a magnitude rather than asking for one.
+        bool floorIsOwned   = _min > _domainMin;
+        bool ceilingIsOwned = _max < _domainMax;
+        if (floorIsOwned && ceilingIsOwned) { return (_min, _max); }
+
+        // One side is the domain: keep the window's width and carry it to the bound the caller did write, rather
+        // than dropping it and drawing the whole domain. That is also what keeps GreaterThan(1e6) and
+        // GreaterThanOrEqualTo(1e6) — one ulp apart — from landing 300 decades apart.
+        double width = 2 * OrdinaryMagnitude.AsDouble;
+        if (floorIsOwned) {
+            double top = Math.Min(_min + width, _max);
+            if (_min < top) { return (_min, top); }
+        } else if (ceilingIsOwned) {
+            double bottom = Math.Max(_max - width, _min);
+            if (bottom < _max) { return (bottom, _max); }
+        }
+
+        // An extraordinary bound: adding the window's width to it does not move it, so no ordinary slab exists to
+        // draw from and the declared interval is the honest answer. (Both bounds on the domain edge cannot reach
+        // here — the window lies inside every supported domain, so the first branch returned.)
+        return (_min, _max);
     }
 
     /// <summary>

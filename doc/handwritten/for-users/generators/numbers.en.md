@@ -129,7 +129,9 @@ within a magnitude of one million rather than roaming the type's full range
 ([ADR-0031](../../for-maintainers/adr/0031-draw-arbitrary-numbers-within-an-ordinary-magnitude.md)).
 Values like `1.7e308` are technically in range and useless in a test: they turn every subsequent
 arithmetic assertion into a question about floating-point overflow. Declare a bound when your domain
-has one.
+has one — and what you declare is what you get: an interval bounded on both sides is drawn whole,
+whatever its magnitude, while a one-sided bound keeps an ordinary spread beside the value you named
+([ADR-0097](../../for-maintainers/adr/0097-follow-the-declared-bounds-with-the-ordinary-magnitude-window.md)).
 
 **NaN and the infinities are never drawn, and never accepted.** The refusal covers arguments too, so
 `Except(double.NaN)` and a non-finite bound are both rejected — a NaN never narrows anything, since

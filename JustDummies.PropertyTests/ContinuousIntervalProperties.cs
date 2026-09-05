@@ -55,21 +55,55 @@ public sealed class ContinuousIntervalProperties {
     ///     responsibility is deliberate: those properties own <i>the sampler covers the range it draws from</i> —
     ///     issue #206 was a bit-level defect in assembling the fraction, magnitude-independent, and a fraction stuck
     ///     below one half still fails them with this helper in place. That the range is the <i>right</i> one is owned
-    ///     by the windowing properties, which assert it against the API rather than against a mirror.
+    ///     by <c>OrdinaryMagnitudeWindowTests</c>, which pins it case by case against the API.
+    ///     <para>
+    ///         That split is load-bearing rather than tidy: this mirror once stated the rule as well as consuming it,
+    ///         and a windowing defect that collapsed a whole interval to one point (issue #178) passed every property
+    ///         here because the expectation collapsed with it. A mirror may say what range a correct sampler draws
+    ///         from; it may never be what decides the range is correct.
+    ///     </para>
     /// </remarks>
     private static (double Min, double Max) DrawnFrom(double min, double max) {
         double lower = Math.Max(min, -OrdinaryMagnitude);
         double upper = Math.Min(max, OrdinaryMagnitude);
+        if (lower < upper) { return (lower, upper); }
 
-        return lower > upper ? (min, max) : (lower, upper);
+        bool floorIsOwned   = min > double.MinValue;
+        bool ceilingIsOwned = max < double.MaxValue;
+        if (floorIsOwned && ceilingIsOwned) { return (min, max); }
+
+        const double width = 2d * OrdinaryMagnitude;
+        if (floorIsOwned) {
+            double top = Math.Min(min + width, max);
+            if (min < top) { return (min, top); }
+        } else if (ceilingIsOwned) {
+            double bottom = Math.Max(max - width, min);
+            if (bottom < max) { return (bottom, max); }
+        }
+
+        return (min, max);
     }
 
     /// <summary>The <see cref="decimal" /> counterpart of <see cref="DrawnFrom(double,double)" />.</summary>
     private static (decimal Min, decimal Max) DrawnFrom(decimal min, decimal max) {
         decimal lower = Math.Max(min, -(decimal)OrdinaryMagnitude);
         decimal upper = Math.Min(max, (decimal)OrdinaryMagnitude);
+        if (lower < upper) { return (lower, upper); }
 
-        return lower > upper ? (min, max) : (lower, upper);
+        bool floorIsOwned   = min > decimal.MinValue;
+        bool ceilingIsOwned = max < decimal.MaxValue;
+        if (floorIsOwned && ceilingIsOwned) { return (min, max); }
+
+        const decimal width = 2m * (decimal)OrdinaryMagnitude;
+        if (floorIsOwned) {
+            decimal top = min <= decimal.MaxValue - width ? Math.Min(min + width, max) : max;
+            if (min < top) { return (min, top); }
+        } else if (ceilingIsOwned) {
+            decimal bottom = max >= decimal.MinValue + width ? Math.Max(max - width, min) : min;
+            if (bottom < max) { return (bottom, max); }
+        }
+
+        return (min, max);
     }
 
     /// <summary>Arbitrary finite <see cref="float" />s — the <c>Generators.Double()</c> recipe on the narrow type.</summary>
@@ -100,25 +134,49 @@ public sealed class ContinuousIntervalProperties {
     }
 
     /// <summary>
-    ///     Seeded, comfortably wide <see cref="double" /> intervals at three magnitudes. Deliberately kept away from the
-    ///     domain edges: reachability asks whether the sampler covers a range, and a midpoint taken over the full domain
-    ///     cannot be formed without the arithmetic itself becoming the subject.
+    ///     Seeded, comfortably wide <see cref="double" /> intervals at three magnitudes, plus the interval whose bound
+    ///     lands exactly on the ordinary-magnitude window's edge. Deliberately kept away from the domain edges:
+    ///     reachability asks whether the sampler covers a range, and a midpoint taken over the full domain cannot be
+    ///     formed without the arithmetic itself becoming the subject.
     /// </summary>
+    /// <remarks>
+    ///     The seam is supplied rather than left to the uniform draws, which reach it with probability around 1e-6:
+    ///     issue #178 was a collapse of exactly that interval, and it survived this suite because no case here could
+    ///     reach it. A generator that cannot produce the shape a rule turns on states nothing about that rule.
+    /// </remarks>
     private static Gen<(int Seed, double Min, double Max)> DoubleIntervals() {
-        return from seed in Generators.Seed()
-               from low in Gen.Choose(-1_000_000, 1_000_000)
-               from width in Gen.Choose(1, 1_000_000)
-               from unit in Gen.Elements(0.0001d, 1d, 1000d)
-               select (Seed: seed, Min: low * unit, Max: (low + width) * unit);
+        Gen<(int Seed, double Min, double Max)> spread = from seed in Generators.Seed()
+                                                         from low in Gen.Choose(-1_000_000, 1_000_000)
+                                                         from width in Gen.Choose(1, 1_000_000)
+                                                         from unit in Gen.Elements(0.0001d, 1d, 1000d)
+                                                         select (Seed: seed, Min: low * unit, Max: (low + width) * unit);
+
+        Gen<(int Seed, double Min, double Max)> seam = from seed in Generators.Seed()
+                                                       from width in Gen.Choose(1, 1_000_000)
+                                                       from above in Gen.Elements(true, false)
+                                                       select above
+                                                                  ? (Seed: seed, Min: OrdinaryMagnitude, Max: OrdinaryMagnitude + width)
+                                                                  : (Seed: seed, Min: -OrdinaryMagnitude - width, Max: -OrdinaryMagnitude);
+
+        return Gen.OneOf(spread, seam);
     }
 
-    /// <summary>The <see cref="decimal" /> counterpart of <see cref="DoubleIntervals" />.</summary>
+    /// <summary>The <see cref="decimal" /> counterpart of <see cref="DoubleIntervals" />, seam included.</summary>
     private static Gen<(int Seed, decimal Min, decimal Max)> DecimalIntervals() {
-        return from seed in Generators.Seed()
-               from low in Gen.Choose(-1_000_000, 1_000_000)
-               from width in Gen.Choose(1, 1_000_000)
-               from unit in Gen.Elements(0.0001m, 1m, 1000m)
-               select (Seed: seed, Min: low * unit, Max: (low + width) * unit);
+        Gen<(int Seed, decimal Min, decimal Max)> spread = from seed in Generators.Seed()
+                                                           from low in Gen.Choose(-1_000_000, 1_000_000)
+                                                           from width in Gen.Choose(1, 1_000_000)
+                                                           from unit in Gen.Elements(0.0001m, 1m, 1000m)
+                                                           select (Seed: seed, Min: low * unit, Max: (low + width) * unit);
+
+        Gen<(int Seed, decimal Min, decimal Max)> seam = from seed in Generators.Seed()
+                                                         from width in Gen.Choose(1, 1_000_000)
+                                                         from above in Gen.Elements(true, false)
+                                                         select above
+                                                                    ? (Seed: seed, Min: (decimal)OrdinaryMagnitude, Max: (decimal)OrdinaryMagnitude + width)
+                                                                    : (Seed: seed, Min: -(decimal)OrdinaryMagnitude - width, Max: -(decimal)OrdinaryMagnitude);
+
+        return Gen.OneOf(spread, seam);
     }
 
     #endregion

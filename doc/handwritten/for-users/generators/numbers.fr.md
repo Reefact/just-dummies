@@ -135,7 +135,10 @@ est tiré dans un ordre de grandeur d'un million, au lieu de parcourir toute la 
 ([ADR-0031](../../for-maintainers/adr/0031-draw-arbitrary-numbers-within-an-ordinary-magnitude.fr.md)).
 Des valeurs comme `1.7e308` sont techniquement dans la plage et inutiles dans un test : elles
 transforment chaque assertion arithmétique suivante en question sur le dépassement de capacité.
-Déclarez une borne quand votre domaine en a une.
+Déclarez une borne quand votre domaine en a une — et ce que vous déclarez est ce que vous obtenez :
+un intervalle borné des deux côtés est tiré en entier, quelle que soit sa magnitude, tandis qu'une
+borne unilatérale conserve un étalement ordinaire à côté de la valeur que vous avez nommée
+([ADR-0097](../../for-maintainers/adr/0097-follow-the-declared-bounds-with-the-ordinary-magnitude-window.fr.md)).
 
 **NaN et les infinis ne sont jamais tirés, ni acceptés.** Le refus couvre aussi les arguments :
 `Except(double.NaN)` et une borne non finie sont tous deux rejetés — un NaN ne restreint jamais

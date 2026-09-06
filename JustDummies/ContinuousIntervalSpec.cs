@@ -375,7 +375,7 @@ internal sealed class ContinuousIntervalSpec {
         double lower = Math.Max(_min, -OrdinaryMagnitude.AsDouble);
         double upper = Math.Min(_max, OrdinaryMagnitude.AsDouble);
         // Two or more values left: the ordinary case, and the one every existing draw already took.
-        if (lower < upper) { return (lower, upper); }
+        if (HoldsTwoDrawableValues(lower, upper)) { return (lower, upper); }
 
         // Past here the declared interval sits at or beyond the window's edge, so the narrowing has nothing to hand
         // back. A bound short of the type's own edge is one the caller wrote and owns; a bound sitting exactly on
@@ -400,6 +400,30 @@ internal sealed class ContinuousIntervalSpec {
         // draw from and the declared interval is the honest answer. (Both bounds on the domain edge cannot reach
         // here — the window lies inside every supported domain, so the first branch returned.)
         return (_min, _max);
+    }
+
+    /// <summary>
+    ///     Whether <c>[lower, upper]</c> holds two or more values a draw could actually land on — the question the
+    ///     rule is phrased in, which distinct endpoints alone do not answer once exclusions are in force.
+    /// </summary>
+    /// <remarks>
+    ///     A narrowing that keeps a span whose only free value is one leaves the singleton the rule exists to
+    ///     remove, and the values the caller declared beyond it unreachable. The walk steps the type's own ladder
+    ///     and is bounded by the number of exclusions: every step that finds no survivor consumes one, so two
+    ///     survivors are found — or shown absent — in at most that many steps however wide the span.
+    /// </remarks>
+    private bool HoldsTwoDrawableValues(double lower, double upper) {
+        if (lower >= upper) { return false; }
+        if (_excluded.Count == 0) { return true; }
+
+        int survivors = 0;
+        int budget    = _excluded.Count + 2;
+        for (double point = lower; point <= upper && budget-- > 0; point = _nextUp(point)) {
+            if (IsExcluded(point)) { continue; }
+            if (++survivors == 2) { return true; }
+        }
+
+        return false;
     }
 
     /// <summary>

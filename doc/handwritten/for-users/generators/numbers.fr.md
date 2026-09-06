@@ -135,10 +135,18 @@ est tiré dans un ordre de grandeur d'un million, au lieu de parcourir toute la 
 ([ADR-0031](../../for-maintainers/adr/0031-draw-arbitrary-numbers-within-an-ordinary-magnitude.fr.md)).
 Des valeurs comme `1.7e308` sont techniquement dans la plage et inutiles dans un test : elles
 transforment chaque assertion arithmétique suivante en question sur le dépassement de capacité.
-Déclarez une borne quand votre domaine en a une — et ce que vous déclarez est ce que vous obtenez :
-un intervalle borné des deux côtés est tiré en entier, quelle que soit sa magnitude, tandis qu'une
-borne unilatérale conserve un étalement ordinaire à côté de la valeur que vous avez nommée
-([ADR-0097](../../for-maintainers/adr/0097-follow-the-declared-bounds-with-the-ordinary-magnitude-window.fr.md)).
+Déclarez une borne quand votre domaine en a une.
+
+Une borne déclarée restreint cet ordre de grandeur ; elle ne le remplace pas d'ordinaire.
+`Between(0, 5_000_000)` tire toujours sous le million, parce qu'il reste des valeurs ordinaires
+disponibles dans la plage que vous avez écrite. Ce n'est que là où la plage ne laisse aucune valeur
+ordinaire à tirer que la fenêtre suit vos bornes à la place
+([ADR-0097](../../for-maintainers/adr/0097-follow-the-declared-bounds-with-the-ordinary-magnitude-window.fr.md)) :
+une plage bornée des deux côtés est alors tirée en entier, si bien que `Between(1_000_000, 5_000_000)`
+la parcourt toute ; une borne unilatérale conserve un étalement ordinaire à côté de la valeur que vous
+avez nommée, si bien que `GreaterThanOrEqualTo(1_000_000)` reste juste au-dessus du million au lieu de
+partir vers `1e308`. Écrire la limite propre du type comme borne opposée revient à ne pas la mettre :
+`Between(1_000_000, double.MaxValue)` tire exactement comme `GreaterThanOrEqualTo(1_000_000)`.
 
 **NaN et les infinis ne sont jamais tirés, ni acceptés.** Le refus couvre aussi les arguments :
 `Except(double.NaN)` et une borne non finie sont tous deux rejetés — un NaN ne restreint jamais

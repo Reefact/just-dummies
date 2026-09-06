@@ -2,7 +2,7 @@
 
 🌍 🇫🇷 Français (ce fichier) · 🇬🇧 [English](0031-draw-arbitrary-numbers-within-an-ordinary-magnitude.md)
 
-**Statut :** Accepté
+**Statut :** Superseded par l'[ADR-0097](0097-follow-the-declared-bounds-with-the-ordinary-magnitude-window.fr.md)
 **Proposé :** 2026-07-28
 **Accepté :** 2026-07-28
 **Décideurs :** Reefact

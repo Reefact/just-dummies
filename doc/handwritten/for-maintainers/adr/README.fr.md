@@ -156,7 +156,7 @@ que l'option existait le jour où elle compterait.
 | [ADR-0028](0028-drop-the-justdummies-generator-from-the-per-pull-request-mutation-matrix.fr.md) | Retirer le générateur JustDummies de la matrice de mutation par pull request | Accepted | déplacé · FCE ADR-0049 |
 | [ADR-0029](0029-let-a-size-maximum-cap-without-steering-the-draw.fr.md) | Laisser un maximum de taille plafonner sans piloter le tirage, et plafonner une taille explicitement demandée | Superseded by ADR-0076 | déplacé · FCE ADR-0050 |
 | [ADR-0030](0030-filter-the-datetimeoffset-pool-by-the-declared-offset.fr.md) | Filtrer le pool DateTimeOffset par le décalage déclaré | Accepted | déplacé · FCE ADR-0051 |
-| [ADR-0031](0031-draw-arbitrary-numbers-within-an-ordinary-magnitude.fr.md) | Tirer les nombres arbitraires dans une magnitude ordinaire | Accepted | déplacé · FCE ADR-0052 |
+| [ADR-0031](0031-draw-arbitrary-numbers-within-an-ordinary-magnitude.fr.md) | Tirer les nombres arbitraires dans une magnitude ordinaire | Superseded by ADR-0097 | déplacé · FCE ADR-0052 |
 | [ADR-0032](0032-unify-discrete-generation-in-one-ordinal-space.fr.md) | Unifier la génération discrète dans un espace ordinal unique, avec un moteur dédié seulement là où le substrat arithmétique l'impose | Accepted | déplacé · FCE ADR-0053 |
 | [ADR-0033](0033-decide-a-constraint-surface-by-constructive-versus-rejective.fr.md) | Décider la surface de contraintes d'un générateur par constructif contre rejectif, et non par terminalité | Accepted | déplacé · FCE ADR-0054 |
 | [ADR-0034](0034-enforce-the-style-rules-the-compiler-can-express.fr.md) | Faire appliquer par le compilateur les règles de style qu'il sait exprimer, et laisser le DotSettings faire autorité pour les autres | Accepted | adopté · FCE ADR-0055 |
@@ -222,4 +222,4 @@ que l'option existait le jour où elle compterait.
 | [ADR-0094](0094-lift-a-nullable-value-type-rather-than-deriving-it.fr.md) | Lever un type valeur nullable plutôt que le dériver | Accepted | consigné ici |
 | [ADR-0095](0095-read-the-assigned-null-check-as-a-guard-idiom-too.fr.md) | Lire aussi le null-check assigné comme un idiome de garde | Accepted | consigné ici |
 | [ADR-0096](0096-emit-a-parameter-inline-whenever-it-has-nothing-to-report.fr.md) | Émettre un paramètre en ligne dès qu'il n'a rien à rapporter | Accepted | consigné ici |
-| [ADR-0097](0097-follow-the-declared-bounds-with-the-ordinary-magnitude-window.fr.md) | Faire suivre les bornes déclarées par la fenêtre de magnitude ordinaire | Proposed | consigné ici |
+| [ADR-0097](0097-follow-the-declared-bounds-with-the-ordinary-magnitude-window.fr.md) | Faire suivre les bornes déclarées par la fenêtre de magnitude ordinaire | Accepted | consigné ici |

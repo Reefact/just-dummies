@@ -335,10 +335,7 @@ internal sealed class ContinuousIntervalSpec {
         // values, and a row switching path must not shift what follows it in the same scope).
         double unit = random.NextDouble();
 
-        // Sample around the midpoint so the span (max - min) never overflows to infinity on wide ranges.
-        double mid       = lower / 2 + upper / 2;
-        double half      = upper / 2 - lower / 2;
-        double candidate = Quantized(_laddered is null ? mid + (2 * unit - 1) * half : _laddered(lower, upper, unit));
+        double candidate = CandidateIn(lower, upper, unit);
 
         // A draw colliding with an excluded point (a measure-zero event) is nudged to the nearest
         // non-excluded representable neighbour: ascending first, then descending from the original draw
@@ -400,6 +397,28 @@ internal sealed class ContinuousIntervalSpec {
         // draw from and the declared interval is the honest answer. (Both bounds on the domain edge cannot reach
         // here — the window lies inside every supported domain, so the first branch returned.)
         return (_min, _max);
+    }
+
+    /// <summary>
+    ///     One candidate in <c>[lower, upper]</c> from one unit sample — the draw itself, before the exclusions are
+    ///     escaped.
+    /// </summary>
+    /// <remarks>
+    ///     A span of a single step of the type's own ladder leaves the midpoint form no room to work in: <c>half</c>
+    ///     is then half an ulp, <c>mid ± half</c> rounds straight back to <c>mid</c>, and the upper of the pair can
+    ///     never be returned. Two values the type represents must be two values a draw can land on — the terms
+    ///     ADR-0097 states the rule in — so that pair is chosen directly. It consumes the same one unit sample as
+    ///     every other path, which is what keeps a pinned seed replaying (ADR-0049).
+    /// </remarks>
+    private double CandidateIn(double lower, double upper, double unit) {
+        if (_nextUp(lower) >= upper) { return unit < 0.5d ? lower : upper; }
+        if (_laddered is not null) { return Quantized(_laddered(lower, upper, unit)); }
+
+        // Sample around the midpoint so the span (max - min) never overflows to infinity on wide ranges.
+        double mid  = lower / 2 + upper / 2;
+        double half = upper / 2 - lower / 2;
+
+        return Quantized(mid + (2 * unit - 1) * half);
     }
 
     /// <summary>

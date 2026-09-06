@@ -169,6 +169,31 @@ public sealed class OrdinaryMagnitudeWindowTests {
                          justBelow, 2d * Magnitude);
     }
 
+    [Fact(DisplayName = "A span of one ladder step returns both its values, not only the lower one.")]
+    public void ASpanOfOneLadderStepReturnsBothItsValues() {
+        // Regression, and the last layer of the same invariant. Counting representable values was not enough: the
+        // midpoint form cannot resolve a span one ulp wide — half is half an ulp, mid ± half rounds back to mid —
+        // so the upper of the pair was unreachable and the draw a constant. ADR-0097 states the rule in terms of
+        // values a draw can land on, which made the record false at the one-ulp neighbour of the seam.
+        AnyContext any = Any.WithSeed(Seed);
+
+        double justBelow = ContinuousIntervalSpec.NextDown(Magnitude);
+
+        HashSet<double> pair = [];
+        for (int i = 0; i < SampleCount; i++) { pair.Add(any.Double().Between(justBelow, 2d * Magnitude).Generate()); }
+
+        Check.WithCustomMessage("The narrowing kept the two doubles either side of the seam; the draw returned only one.")
+             .That(pair)
+             .IsEqualTo(new HashSet<double> { justBelow, Magnitude });
+
+        // Single, where the pair is nameable, and where the same span with one of them excluded must still leave
+        // the declared interval reachable rather than collapsing.
+        HashSet<float> singles = [];
+        for (int i = 0; i < SampleCount; i++) { singles.Add(any.Single().Between(999_999.9375f, 1_000_000.0625f).Generate()); }
+
+        Check.That(singles).IsEqualTo(new HashSet<float> { 999_999.9375f, 1_000_000f });
+    }
+
     [Fact(DisplayName = "The drawable-value walk stops at the domain edge instead of overflowing past it.")]
     public void TheDrawableValueWalkStopsAtTheDomainEdge() {
         // Regression on the bounded walk itself. Its loop stepped past its last grid point before re-testing the

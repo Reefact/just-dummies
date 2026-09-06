@@ -151,9 +151,17 @@ public sealed class OrdinaryMagnitudeWindowTests {
              .IsEqualTo(new HashSet<decimal> { 1_000_000m, 1_000_001m });
         Check.That(twoGone).IsEqualTo(new HashSet<decimal> { 1_000_000m, 1_000_001m });
 
-        // The binary engine, where the ladder is the type's representable values rather than a grid: a bound one
-        // ulp below the window's edge narrows to a two-value span, and excluding one of them leaves a singleton
-        // while the rest of the declared interval goes unreachable.
+        // The binary engine carries the same hole, its ladder being the type's representable values rather than a
+        // grid. Single makes it deterministic: the two adjacent floats either side of the seam are nameable, so
+        // the surviving pair can be pinned exactly rather than sampled for.
+        HashSet<float> singles = [];
+        for (int i = 0; i < SampleCount; i++) { singles.Add(any.Single().Between(999_999.9375f, 1_000_000.0625f).Except(999_999.9375f).Generate()); }
+
+        Check.WithCustomMessage("The clip kept 999_999.9375f and 1_000_000f, then the exclusion left one of them; 1_000_000.0625f was declared and unreachable.")
+             .That(singles)
+             .IsEqualTo(new HashSet<float> { 1_000_000f, 1_000_000.0625f });
+
+        // And the double row, where the same shape is reached one ulp below the window's edge.
         double justBelow = ContinuousIntervalSpec.NextDown(Magnitude);
 
         CheckDrawnWithin("Between(nextDown(1e6), 2e6).Except(nextDown(1e6))",

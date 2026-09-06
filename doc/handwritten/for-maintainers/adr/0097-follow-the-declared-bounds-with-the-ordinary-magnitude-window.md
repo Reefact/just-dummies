@@ -89,6 +89,12 @@ bound beyond the reach of that width falls back to the declared domain.
   "at least a million, but otherwise ordinary" has a way to say exactly that, and gets the carried window;
   truncating a two-sided interval instead would protect nothing, since the magnitudes such an interval
   reaches are the ones ADR-0031's own criterion already calls ordinary.
+* **"Two values" means two values a draw can land on.** On `decimal` a declared scale lattice decides that, not
+  the endpoints: an interval straddling a single grid point yields one value however wide it reads, so the
+  narrowing is judged against the grid. Reading the endpoints instead reaches the same singleton this decision
+  exists to remove — `Between(999_999.5m, 1_000_001m).WithScale(0)` narrows to a span whose only grid point is
+  `1 000 000`, and the `1 000 001` the caller declared becomes unreachable. The binary types have no such lattice:
+  their drawable values are the type's own representable ones, and bounds arrive already representable in it.
 * **The rule stays predictable at a call site.** Each of the invariants above pushes toward more machinery,
   and a windowing rule is a short walk from a search. [ADR-0046](0046-bound-the-generators-ambition-never-its-correctness.md)
   applies to this decision as much as to the generators it governs: a rule stated in three clauses and

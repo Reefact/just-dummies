@@ -58,6 +58,31 @@ public sealed class OrdinaryMagnitudeWindowTests {
              .IsStrictlyGreaterThan(1);
     }
 
+    /// <summary>
+    ///     The same, plus the stronger claim a "drawn whole" case actually makes: the sample straddles the declared
+    ///     midpoint, so the whole range is reached rather than merely not exceeded.
+    /// </summary>
+    /// <remarks>
+    ///     Containment alone cannot state this. An implementation truncating <c>Between(1e6, 1e300)</c> to any
+    ///     sub-range — the carried slab, <c>[1e6, 5e6]</c>, <c>[1e6, 1e20]</c> — satisfies "inside the declared
+    ///     interval and not a constant" while violating the policy the case is named for. Straddling the midpoint
+    ///     is the assertion that separates them, and it is the shape the decimal reachability regression already
+    ///     uses.
+    /// </remarks>
+    private static void CheckDrawnAcross(string what, Func<double> draw, double floor, double ceiling) {
+        CheckDrawnWithin(what, draw, floor, ceiling);
+
+        (double lowest, double highest, int _) = Sample(draw);
+        double midpoint = floor / 2d + ceiling / 2d;
+
+        Check.WithCustomMessage($"{what} never drew below the declared midpoint {midpoint}: the range was truncated from above.")
+             .That(lowest)
+             .IsStrictlyLessThan(midpoint);
+        Check.WithCustomMessage($"{what} never drew above the declared midpoint {midpoint}: the range was truncated from below.")
+             .That(highest)
+             .IsStrictlyGreaterThan(midpoint);
+    }
+
     #endregion
 
     [Fact(DisplayName = "A two-sided interval declared at the window's edge is drawn whole, never collapsed to its floor.")]
@@ -68,10 +93,10 @@ public sealed class OrdinaryMagnitudeWindowTests {
         // here, so the interval they wrote is the interval they get.
         AnyContext any = Any.WithSeed(Seed);
 
-        CheckDrawnWithin("Between(1e6, 5e6)", () => any.Double().Between(Magnitude, 5d * Magnitude).Generate(), Magnitude, 5d * Magnitude);
-        CheckDrawnWithin("Between(-2e6, -1e6)", () => any.Double().Between(-2d * Magnitude, -Magnitude).Generate(), -2d * Magnitude, -Magnitude);
-        CheckDrawnWithin("Single.Between(1e6f, 2e6f)", () => any.Single().Between(1e6f, 2e6f).Generate(), Magnitude, 2d * Magnitude);
-        CheckDrawnWithin("Decimal.Between(1e6, 5e6).WithScale(2)",
+        CheckDrawnAcross("Between(1e6, 5e6)", () => any.Double().Between(Magnitude, 5d * Magnitude).Generate(), Magnitude, 5d * Magnitude);
+        CheckDrawnAcross("Between(-2e6, -1e6)", () => any.Double().Between(-2d * Magnitude, -Magnitude).Generate(), -2d * Magnitude, -Magnitude);
+        CheckDrawnAcross("Single.Between(1e6f, 2e6f)", () => any.Single().Between(1e6f, 2e6f).Generate(), Magnitude, 2d * Magnitude);
+        CheckDrawnAcross("Decimal.Between(1e6, 5e6).WithScale(2)",
                          () => (double)any.Decimal().Between(1_000_000m, 5_000_000m).WithScale(2).Generate(),
                          Magnitude, 5d * Magnitude);
     }
@@ -165,14 +190,10 @@ public sealed class OrdinaryMagnitudeWindowTests {
         // otherwise ordinary" writes GreaterThanOrEqualTo(1e6) and gets the slab above.
         AnyContext any = Any.WithSeed(Seed);
 
-        (double lowest, double highest, int distinct) = Sample(() => any.Double().Between(Magnitude, 1e300d).Generate());
-
-        Check.That(lowest).IsGreaterOrEqualThan(Magnitude);
-        Check.That(highest).IsLessOrEqualThan(1e300d);
-        Check.That(distinct).IsStrictlyGreaterThan(1);
-        Check.WithCustomMessage("The declared interval was truncated to an ordinary slab instead of being drawn whole.")
-             .That(highest)
-             .IsStrictlyGreaterThan(Magnitude + SlabWidth);
+        // Across, not merely within: containment plus "not the carried slab" would still be satisfied by an
+        // implementation truncating this 294-decade range to [1e6, 5e6] or [1e6, 1e20]. Straddling the declared
+        // midpoint is what states the policy the case is named for.
+        CheckDrawnAcross("Between(1e6, 1e300)", () => any.Double().Between(Magnitude, 1e300d).Generate(), Magnitude, 1e300d);
     }
 
     [Fact(DisplayName = "The window still narrows everything it narrowed before.")]
@@ -195,9 +216,9 @@ public sealed class OrdinaryMagnitudeWindowTests {
         // interval stands. These are the cases ADR-0031 was already right about, and the fix leaves them alone.
         AnyContext any = Any.WithSeed(Seed);
 
-        CheckDrawnWithin("Between(1e300, 1e308)", () => any.Double().Between(1e300d, 1e308d).Generate(), 1e300d, 1e308d);
-        CheckDrawnWithin("GreaterThanOrEqualTo(1e300)", () => any.Double().GreaterThanOrEqualTo(1e300d).Generate(), 1e300d, double.MaxValue);
-        CheckDrawnWithin("GreaterThan(1e300)", () => any.Double().GreaterThan(1e300d).Generate(), 1e300d, double.MaxValue);
+        CheckDrawnAcross("Between(1e300, 1e308)", () => any.Double().Between(1e300d, 1e308d).Generate(), 1e300d, 1e308d);
+        CheckDrawnAcross("GreaterThanOrEqualTo(1e300)", () => any.Double().GreaterThanOrEqualTo(1e300d).Generate(), 1e300d, double.MaxValue);
+        CheckDrawnAcross("GreaterThan(1e300)", () => any.Double().GreaterThan(1e300d).Generate(), 1e300d, double.MaxValue);
     }
 
 #if NET8_0_OR_GREATER
@@ -211,7 +232,7 @@ public sealed class OrdinaryMagnitudeWindowTests {
         AnyContext any = Any.WithSeed(Seed);
 
         CheckDrawnWithin("Half()", () => (double)any.Half().Generate(), -65_504d, 65_504d);
-        CheckDrawnWithin("Half.Between(1000, 2000)", () => (double)any.Half().Between((Half)1000, (Half)2000).Generate(), 1_000d, 2_000d);
+        CheckDrawnAcross("Half.Between(1000, 2000)", () => (double)any.Half().Between((Half)1000, (Half)2000).Generate(), 1_000d, 2_000d);
         CheckDrawnWithin("Half.GreaterThanOrEqualTo(60000)", () => (double)any.Half().GreaterThanOrEqualTo((Half)60_000).Generate(), 60_000d, 65_504d);
     }
 #endif

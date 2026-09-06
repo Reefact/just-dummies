@@ -129,9 +129,17 @@ within a magnitude of one million rather than roaming the type's full range
 ([ADR-0031](../../for-maintainers/adr/0031-draw-arbitrary-numbers-within-an-ordinary-magnitude.md)).
 Values like `1.7e308` are technically in range and useless in a test: they turn every subsequent
 arithmetic assertion into a question about floating-point overflow. Declare a bound when your domain
-has one — and what you declare is what you get: an interval bounded on both sides is drawn whole,
-whatever its magnitude, while a one-sided bound keeps an ordinary spread beside the value you named
-([ADR-0097](../../for-maintainers/adr/0097-follow-the-declared-bounds-with-the-ordinary-magnitude-window.md)).
+has one.
+
+A declared bound narrows that magnitude; it does not usually replace it. `Between(0, 5_000_000)`
+still draws below a million, because ordinary values remain available inside the range you wrote.
+Only where the range leaves no ordinary values to draw does the window follow your bounds instead
+([ADR-0097](../../for-maintainers/adr/0097-follow-the-declared-bounds-with-the-ordinary-magnitude-window.md)):
+a range bounded on both sides is then drawn whole, so `Between(1_000_000, 5_000_000)` reaches all of
+it; a one-sided bound keeps an ordinary spread beside the value you named, so
+`GreaterThanOrEqualTo(1_000_000)` stays just above a million rather than roaming to `1e308`. Writing
+the type's own limit as the far bound means the same thing as leaving it out, so
+`Between(1_000_000, double.MaxValue)` draws exactly like `GreaterThanOrEqualTo(1_000_000)`.
 
 **NaN and the infinities are never drawn, and never accepted.** The refusal covers arguments too, so
 `Except(double.NaN)` and a non-finite bound are both rejected — a NaN never narrows anything, since

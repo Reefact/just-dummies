@@ -2,8 +2,9 @@
 
 🌍 🇬🇧 English (this file) · 🇫🇷 [Français](0097-follow-the-declared-bounds-with-the-ordinary-magnitude-window.fr.md)
 
-**Status:** Proposed
+**Status:** Accepted
 **Proposed:** 2026-09-05
+**Accepted:** 2026-09-06
 **Decision Makers:** Reefact
 
 Supersedes [ADR-0031](0031-draw-arbitrary-numbers-within-an-ordinary-magnitude.md).

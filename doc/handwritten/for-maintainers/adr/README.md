@@ -141,7 +141,7 @@ failure mode of a "not now" is that nobody remembers the option existed on the d
 | [ADR-0028](0028-drop-the-justdummies-generator-from-the-per-pull-request-mutation-matrix.md) | Drop the JustDummies generator from the per-pull-request mutation matrix | Accepted | moved · FCE ADR-0049 |
 | [ADR-0029](0029-let-a-size-maximum-cap-without-steering-the-draw.md) | Let a size maximum cap without steering the draw, and ceiling an explicitly demanded size | Superseded by ADR-0076 | moved · FCE ADR-0050 |
 | [ADR-0030](0030-filter-the-datetimeoffset-pool-by-the-declared-offset.md) | Filter the DateTimeOffset pool by the declared offset | Accepted | moved · FCE ADR-0051 |
-| [ADR-0031](0031-draw-arbitrary-numbers-within-an-ordinary-magnitude.md) | Draw arbitrary numbers within an ordinary magnitude | Accepted | moved · FCE ADR-0052 |
+| [ADR-0031](0031-draw-arbitrary-numbers-within-an-ordinary-magnitude.md) | Draw arbitrary numbers within an ordinary magnitude | Superseded by ADR-0097 | moved · FCE ADR-0052 |
 | [ADR-0032](0032-unify-discrete-generation-in-one-ordinal-space.md) | Unify discrete generation in one ordinal space, with a dedicated engine only where the arithmetic substrate forces one | Accepted | moved · FCE ADR-0053 |
 | [ADR-0033](0033-decide-a-constraint-surface-by-constructive-versus-rejective.md) | Decide a generator's constraint surface by constructive versus rejective, not by terminality | Accepted | moved · FCE ADR-0054 |
 | [ADR-0034](0034-enforce-the-style-rules-the-compiler-can-express.md) | Enforce the style rules the compiler can express, and keep the DotSettings authoritative for the rest | Accepted | adopted · FCE ADR-0055 |
@@ -207,4 +207,4 @@ failure mode of a "not now" is that nobody remembers the option existed on the d
 | [ADR-0094](0094-lift-a-nullable-value-type-rather-than-deriving-it.md) | Lift a nullable value type rather than deriving it | Accepted | recorded here |
 | [ADR-0095](0095-read-the-assigned-null-check-as-a-guard-idiom-too.md) | Read the assigned null-check as a guard idiom too | Accepted | recorded here |
 | [ADR-0096](0096-emit-a-parameter-inline-whenever-it-has-nothing-to-report.md) | Emit a parameter inline whenever it has nothing to report | Accepted | recorded here |
-| [ADR-0097](0097-follow-the-declared-bounds-with-the-ordinary-magnitude-window.md) | Follow the declared bounds with the ordinary-magnitude window | Proposed | recorded here |
+| [ADR-0097](0097-follow-the-declared-bounds-with-the-ordinary-magnitude-window.md) | Follow the declared bounds with the ordinary-magnitude window | Accepted | recorded here |

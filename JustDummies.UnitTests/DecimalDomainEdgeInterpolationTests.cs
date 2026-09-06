@@ -46,19 +46,38 @@ public sealed class DecimalDomainEdgeInterpolationTests {
              .DoesNotThrow();
     }
 
-    [Fact(DisplayName = "Every draw at the domain edge lands inside the declared interval.")]
-    public void EveryDrawAtTheDomainEdgeLandsInsideTheDeclaredInterval() {
-        // The other half of the same defect, and the one a clamp would hide: the interpolation could also land
-        // outside [lower, upper] without overflowing. Asserted on the drawn values rather than on the absence of
-        // an exception, because the engine clamps afterwards and a clamp turns a wrong value into a biased one.
-        AnyContext any = Any.WithSeed(Seed);
+    [Fact(DisplayName = "The interpolation never leaves the interval it was handed.")]
+    public void TheInterpolationNeverLeavesTheIntervalItWasHanded() {
+        // The other half of the same defect: the convex combination could also land OUTSIDE [lower, upper]
+        // without overflowing at all.
+        //
+        // Asserted on the arithmetic rather than on a drawn value, because Generate clamps afterwards —
+        // Clamped(Interpolated(...)) pulls any finite excursion back onto _min or _max, so a draw cannot tell a
+        // correct value from a clamped one and would pass under a form that overshoots on every fraction. The
+        // clamp turns a wrong value into a biased one; only the interpolation itself shows the difference.
+        //
+        // The fractions are pinned rather than swept, and they are ugly on purpose. The engine's fraction is a
+        // 96-bit mantissa over MaxFraction, so it carries 28 decimal places, and that length is what makes the
+        // two products round badly enough to leave the interval. A readable sweep — tenths, thousandths — is
+        // exactly representable, rounds cleanly, and never reaches the defect: an earlier version of this case
+        // swept a thousand such fractions and passed against the very form it exists to reject. Each triple
+        // below was found by hunting the old form for a non-throwing excursion, and is reproduced verbatim.
+        (decimal Lower, decimal Upper, decimal Fraction)[] cases = [
+            (decimal.MaxValue - 2m, decimal.MaxValue,     0.0127992940576924200617150217m),
+            (decimal.MaxValue - 2m, decimal.MaxValue,     0.0109142484980403495603963809m),
+            (decimal.MinValue,      decimal.MinValue + 2m, 0.9898625332631361125579742647m),
+            (decimal.MinValue,      decimal.MinValue + 2m, 0.984453838112435651521349221m)
+        ];
 
-        for (int i = 0; i < SampleCount; i++) {
-            decimal high = any.Decimal().GreaterThanOrEqualTo(decimal.MaxValue - 1m).Generate();
-            decimal low  = any.Decimal().LessThanOrEqualTo(decimal.MinValue + 1m).Generate();
+        foreach ((decimal lower, decimal upper, decimal fraction) in cases) {
+            decimal value = DecimalIntervalSpec.Interpolated(lower, upper, fraction);
 
-            Check.That(high).IsGreaterOrEqualThan(decimal.MaxValue - 1m);
-            Check.That(low).IsLessOrEqualThan(decimal.MinValue + 1m);
+            Check.WithCustomMessage($"[{lower}, {upper}] at fraction {fraction} interpolated to {value}, outside the interval it was handed.")
+                 .That(value)
+                 .IsGreaterOrEqualThan(lower);
+            Check.WithCustomMessage($"[{lower}, {upper}] at fraction {fraction} interpolated to {value}, outside the interval it was handed.")
+                 .That(value)
+                 .IsLessOrEqualThan(upper);
         }
     }
 

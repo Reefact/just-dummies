@@ -130,6 +130,37 @@ public sealed class OrdinaryMagnitudeWindowTests {
         Check.That(finer).Contains(1_000_000.0m, 1_000_000.5m);
     }
 
+    [Fact(DisplayName = "An exclusion counts against the drawable values, not only the lattice.")]
+    public void AnExclusionCountsAgainstTheDrawableValues() {
+        // Regression. Counting grid points before the exclusions leaves the same singleton one step later:
+        // Between(999_999m, 1_000_001m).WithScale(0).Except(999_999m) narrowed to [999_999, 1_000_000], which
+        // holds two grid points — but one of them is forbidden, so every candidate nudged onto the other and the
+        // 1 000 001 the caller declared stayed unreachable. "Two drawable values" has to mean what survives every
+        // constraint, and the same holds for the binary engine, whose ladder is the type's own.
+        AnyContext any = Any.WithSeed(Seed);
+
+        HashSet<decimal> excluded = [];
+        HashSet<decimal> twoGone  = [];
+        for (int i = 0; i < SampleCount; i++) {
+            excluded.Add(any.Decimal().Between(999_999m, 1_000_001m).WithScale(0).Except(999_999m).Generate());
+            twoGone.Add(any.Decimal().Between(999_998m, 1_000_001m).WithScale(0).Except(999_998m, 999_999m).Generate());
+        }
+
+        Check.WithCustomMessage("The exclusion left 1 000 000 and 1 000 001 drawable; the draw reached only one.")
+             .That(excluded)
+             .IsEqualTo(new HashSet<decimal> { 1_000_000m, 1_000_001m });
+        Check.That(twoGone).IsEqualTo(new HashSet<decimal> { 1_000_000m, 1_000_001m });
+
+        // The binary engine, where the ladder is the type's representable values rather than a grid: a bound one
+        // ulp below the window's edge narrows to a two-value span, and excluding one of them leaves a singleton
+        // while the rest of the declared interval goes unreachable.
+        double justBelow = ContinuousIntervalSpec.NextDown(Magnitude);
+
+        CheckDrawnWithin("Between(nextDown(1e6), 2e6).Except(nextDown(1e6))",
+                         () => any.Double().Between(justBelow, 2d * Magnitude).Except(justBelow).Generate(),
+                         justBelow, 2d * Magnitude);
+    }
+
     [Fact(DisplayName = "A decimal exclusive bound on the window's edge generates instead of failing.")]
     public void ADecimalExclusiveBoundOnTheWindowEdgeGenerates() {
         // Regression, and the loudest symptom of the same seam. GreaterThan on a decimal is an inclusive bound plus

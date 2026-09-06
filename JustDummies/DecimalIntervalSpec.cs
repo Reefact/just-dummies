@@ -423,9 +423,22 @@ internal sealed class DecimalIntervalSpec {
     /// </remarks>
     private bool HoldsTwoDrawableValues(decimal lower, decimal upper) {
         if (lower >= upper) { return false; }
+        // Without a lattice the span holds astronomically many values, which no exclusion list can empty: a
+        // decimal interval with distinct endpoints carries at least 10^20 of them at ordinary magnitudes.
         if (_scale < 0) { return true; }
 
-        return CeilToGrid(lower, _scale, _step) < FloorToGrid(upper, _scale, _step);
+        // Walk the grid from its first point, skipping what the exclusions forbid. Two survivors is the whole
+        // question, and every step that finds none consumes one exclusion, so the walk is bounded by their count
+        // however wide the interval — the grid itself is far too large to enumerate.
+        decimal last      = FloorToGrid(upper, _scale, _step);
+        int     survivors = 0;
+        int     budget    = _excluded.Count + 2;
+        for (decimal point = CeilToGrid(lower, _scale, _step); point <= last && budget-- > 0; point += _step) {
+            if (IsExcluded(point)) { continue; }
+            if (++survivors == 2) { return true; }
+        }
+
+        return false;
     }
 
     /// <summary>

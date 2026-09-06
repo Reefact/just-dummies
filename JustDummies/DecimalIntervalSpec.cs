@@ -433,16 +433,51 @@ internal sealed class DecimalIntervalSpec {
         decimal last      = FloorToGrid(upper, _scale, _step);
         int     survivors = 0;
         int     budget    = _excluded.Count + 2;
-        for (decimal point = CeilToGrid(lower, _scale, _step); point <= last && budget-- > 0; point += _step) {
+        for (decimal point = CeilToGrid(lower, _scale, _step); point <= last && budget-- > 0;) {
             if (!IsExcluded(point) && ++survivors == 2) { return true; }
             // Stop ON the last grid point rather than stepping past it. Where that point is decimal.MaxValue the
             // step does not merely leave the range, it throws — and the walk would then take a specification whose
             // only surviving value is the domain edge down with it, instead of returning here and falling back to
             // the declared interval.
             if (point >= last) { break; }
+
+            decimal? next = NextDistinct(point, _step);
+            if (next is null) { break; }
+
+            point = next.Value;
         }
 
         return false;
+    }
+
+    /// <summary>
+    ///     The next value above <paramref name="from" /> that this walk can actually reach, or <c>null</c> where
+    ///     none is representable.
+    /// </summary>
+    /// <remarks>
+    ///     The scale quantum is what the snap rounds a candidate onto, but it is not always an increment the
+    ///     representation can make: a <see cref="decimal" /> at a magnitude of 1e6 carries 22 decimal places, so
+    ///     <c>WithScale(28)</c> asks for a step of <c>1e-28</c> that adding leaves the value exactly where it was.
+    ///     Walking with it revisits one point until the budget runs out and reports a singleton that is not one —
+    ///     which is how <c>Between(999_999m, 2_000_000m).WithScale(28).Except(999_999m)</c> lost its narrowing and
+    ///     reached above a million. Where the requested quantum is finer than the representation, the values a draw
+    ///     can land on are the representable ones, so the walk steps by the coarser of the two. A decimal's scale
+    ///     runs from 0 to 28, so that many decades past the finest quantum always reach an increment the
+    ///     representation can make: the loop is bounded by the type, never by the data.
+    /// </remarks>
+    private static decimal? NextDistinct(decimal from, decimal step) {
+        decimal increment = step;
+        for (int decade = 0; decade <= MaxScale; decade++) {
+            // decimal arithmetic throws rather than saturating, so the headroom is checked before the add.
+            if (from > 0m && increment > decimal.MaxValue - from) { return null; }
+
+            decimal next = from + increment;
+            if (next != from) { return next; }
+
+            increment *= 10m;
+        }
+
+        return null;
     }
 
     /// <summary>

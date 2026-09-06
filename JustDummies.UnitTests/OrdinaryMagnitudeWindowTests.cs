@@ -218,6 +218,39 @@ public sealed class OrdinaryMagnitudeWindowTests {
         Check.That(both).IsEqualTo(new HashSet<decimal> { decimal.MaxValue - 1m, decimal.MaxValue });
     }
 
+    [Fact(DisplayName = "A scale quantum finer than the representation still advances the drawable-value walk.")]
+    public void AScaleFinerThanTheRepresentationStillAdvancesTheWalk() {
+        // Regression on the bounded walk, again on this branch's own account. The scale quantum is what the snap
+        // rounds onto, not an increment the representation can always make: at a magnitude of 1e6 a decimal carries
+        // 22 decimal places, so WithScale(28) asks for 1e-28 and adding it leaves the value exactly where it was.
+        // The walk then revisited one excluded point until its budget ran out, reported a singleton that was not
+        // one, and the two-sided branch handed back the whole declared interval — putting values above a million
+        // inside a draw the window had always kept below it.
+        AnyContext any = Any.WithSeed(Seed);
+
+        HashSet<decimal> drawn = [];
+        for (int i = 0; i < SampleCount; i++) { drawn.Add(any.Decimal().Between(999_999m, 2_000_000m).WithScale(28).Except(999_999m).Generate()); }
+
+        Check.WithCustomMessage($"The narrowing was lost and the draw reached {drawn.Max()}, above the window the declared interval still fits inside.")
+             .That(drawn.Max())
+             .IsLessOrEqualThan(1_000_000m);
+        Check.That(drawn.Min()).IsGreaterOrEqualThan(999_999m);
+        Check.That(drawn.Count).IsStrictlyGreaterThan(1);
+
+        // The controls the fix must leave alone: the same shape without the exclusion, which never entered the
+        // walk, and a coarse scale whose quantum does move the value.
+        HashSet<decimal> unexcluded = [];
+        HashSet<decimal> coarse     = [];
+        for (int i = 0; i < SampleCount; i++) {
+            unexcluded.Add(any.Decimal().Between(999_999m, 2_000_000m).WithScale(28).Generate());
+            coarse.Add(any.Decimal().Between(999_999m, 2_000_000m).WithScale(2).Except(999_999m).Generate());
+        }
+
+        Check.That(unexcluded.Max()).IsLessOrEqualThan(1_000_000m);
+        Check.That(coarse.Max()).IsLessOrEqualThan(1_000_000m);
+        Check.That(coarse).Not.Contains(999_999m);
+    }
+
     [Fact(DisplayName = "A decimal exclusive bound on the window's edge generates instead of failing.")]
     public void ADecimalExclusiveBoundOnTheWindowEdgeGenerates() {
         // Regression, and the loudest symptom of the same seam. GreaterThan on a decimal is an inclusive bound plus

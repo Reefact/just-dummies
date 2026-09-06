@@ -20,9 +20,18 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   add past it, and `decimal` throws where the binary types saturate. The engine now picks the
   arithmetic form from the interval's shape — the convex combination where the interval straddles
   zero, which is the case it was introduced for and the one `upper - lower` cannot serve, and an
-  offset from the nearer endpoint where both ends share a sign. **Ordinary draws are unchanged**, to
-  the digit: the two forms agree exactly wherever the old one was not already losing precision, and
-  the seeded golden master did not move.
+  offset from the nearer endpoint where both ends share a sign.
+
+  **A pinned seed draws the same values as before for most, but not all, declarations.** The two
+  forms round identically wherever the old one was not already losing precision, which covers the
+  common cases — an unconstrained draw, `Positive()`, `Between(0m, 1000m)`, `Between(1e6m, 5e6m)`,
+  a `WithScale` interval, anything straddling zero — and includes every case the seeded golden
+  master pins, which did not move. Some same-sign declarations do shift in their last digits,
+  including inside the ordinary-magnitude window where the two endpoints differ widely in
+  magnitude: measured over 3 000 seeded draws each, `Between(1m, 1e12m)` moves 19 and
+  `GreaterThanOrEqualTo(1e12m)` moves 112. Near the domain edge, where the defect lived, most draws
+  move. Nothing is promised about seed-to-value stability before 1.0 (ADR-0049), and the number of
+  draws a declaration consumes is unchanged.
 
 ## [1.0.0-preview.6] - 2026-09-02
 

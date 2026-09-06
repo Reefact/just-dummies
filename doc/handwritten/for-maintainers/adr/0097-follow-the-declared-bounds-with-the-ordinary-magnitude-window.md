@@ -94,7 +94,13 @@ bound beyond the reach of that width falls back to the declared domain.
   narrowing is judged against the grid. Reading the endpoints instead reaches the same singleton this decision
   exists to remove — `Between(999_999.5m, 1_000_001m).WithScale(0)` narrows to a span whose only grid point is
   `1 000 000`, and the `1 000 001` the caller declared becomes unreachable. The binary types have no such lattice:
-  their drawable values are the type's own representable ones, and bounds arrive already representable in it.
+  their drawable values are the type's own representable ones. Neither reading is a shortcut past the row's own
+  value ladder, and both engines learned that the hard way. A declared *bound* arrives representable; an endpoint
+  the rule *computes* need not be, so a carried slab can move in the arithmetic and still hold one value of the
+  row — at `2^45f` one `float` ulp is wider than the whole slab. A declared *scale* is what a candidate is snapped
+  onto, not an increment the representation can always make — at a magnitude of 1e6 a `decimal` has 22 decimal
+  places, so `WithScale(28)` names a step that moves nothing. The ladder the row actually draws on is what settles
+  the question, on either engine.
 * **The rule stays predictable at a call site.** Each of the invariants above pushes toward more machinery,
   and a windowing rule is a short walk from a search. [ADR-0046](0046-bound-the-generators-ambition-never-its-correctness.md)
   applies to this decision as much as to the generators it governs: a rule stated in three clauses and

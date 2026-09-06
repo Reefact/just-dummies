@@ -441,17 +441,36 @@ internal sealed class ContinuousIntervalSpec {
     /// </remarks>
     private bool HoldsTwoDrawableValues(double lower, double upper) {
         if (lower >= upper) { return false; }
-        if (_nextUp(lower) > upper) { return false; }
+
+        double first = FirstRungAtOrAbove(lower);
+        if (first > upper) { return false; }
+        if (_nextUp(first) > upper) { return false; }
         if (_excluded.Count == 0) { return true; }
 
         int survivors = 0;
         int budget    = _excluded.Count + 2;
-        for (double point = lower; point <= upper && budget-- > 0; point = _nextUp(point)) {
+        for (double point = first; point <= upper && budget-- > 0; point = _nextUp(point)) {
             if (IsExcluded(point)) { continue; }
             if (++survivors == 2) { return true; }
         }
 
         return false;
+    }
+
+    /// <summary>The first value of the row's own ladder at or above <paramref name="value" />.</summary>
+    /// <remarks>
+    ///     The count has to start on the ladder, not on the bound it was handed. A declared bound arrives
+    ///     representable, but a <b>carried ceiling slab</b> computes its floor as <c>_max - width</c> in
+    ///     <see cref="double" />, and that need not be a rung: quantizing it can land <i>below</i> the slab. Counting
+    ///     from there credits a rung the interval does not contain — at <c>-2^44f</c>, where one <c>float</c> ulp is
+    ///     2 097 152 against a carried width of 2 000 000, that turned a one-rung slab into a reported pair, and the
+    ///     sampler then returned the out-of-slab value itself. The floor slab never showed it: its <c>_min</c> is the
+    ///     bound the caller declared, and so already a rung.
+    /// </remarks>
+    private double FirstRungAtOrAbove(double value) {
+        double rung = _quantize(value);
+
+        return rung >= value ? rung : _nextUp(rung);
     }
 
     /// <summary>

@@ -26,6 +26,12 @@ public sealed class OrdinaryMagnitudeWindowTests {
     /// <summary>The width the window carries to a declared bound when the other side is the type's own edge.</summary>
     private const double SlabWidth = 2d * Magnitude;
 
+    /// <summary>
+    ///     2^45 — a <see cref="float" /> bound where one ulp is 4 194 304, so the whole carried slab is narrower
+    ///     than a single rung of the row's own ladder.
+    /// </summary>
+    private const float BigSingle = 35_184_372_088_832f;
+
     private const int SampleCount = 400;
 
     /// <summary>The seed every case draws under, so a failure names one run rather than a flaky one.</summary>
@@ -249,6 +255,33 @@ public sealed class OrdinaryMagnitudeWindowTests {
         Check.That(unexcluded.Max()).IsLessOrEqualThan(1_000_000m);
         Check.That(coarse.Max()).IsLessOrEqualThan(1_000_000m);
         Check.That(coarse).Not.Contains(999_999m);
+    }
+
+    [Fact(DisplayName = "A carried slab narrower than one rung of the row's ladder is not taken.")]
+    public void ACarriedSlabNarrowerThanOneRungIsNotTaken() {
+        // Regression on the second branch, and the same invariant one level further out: this spec computes in
+        // double while a row draws its own type, so "the carried width moved the endpoint" is not "the slab holds
+        // two values this row can return". At 2^45f one float ulp is 4 194 304 — wider than the whole 2e6 slab —
+        // so both of its ends cast back to the same float and the draw collapsed onto the declared bound, where
+        // before this branch it fell back to the declared domain. The slab now answers to the same ladder the
+        // narrowing does.
+        AnyContext any = Any.WithSeed(Seed);
+
+        CheckDrawnAcross("Single.GreaterThanOrEqualTo(2^45f)",
+                         () => any.Single().GreaterThanOrEqualTo(BigSingle).Generate(),
+                         BigSingle, float.MaxValue);
+        CheckDrawnAcross("Single.LessThanOrEqualTo(-2^45f)",
+                         () => any.Single().LessThanOrEqualTo(-BigSingle).Generate(),
+                         -float.MaxValue, -BigSingle);
+        CheckDrawnAcross("Single.GreaterThan(2^45f)",
+                         () => any.Single().GreaterThan(BigSingle).Generate(),
+                         BigSingle, float.MaxValue);
+
+        // The control: a bound low enough that one slab width still spans millions of floats keeps its slab, so
+        // the ladder check narrows nothing it should not.
+        CheckDrawnWithin("Single.GreaterThanOrEqualTo(1e7f)",
+                         () => any.Single().GreaterThanOrEqualTo(1e7f).Generate(),
+                         1e7d, 1e7d + SlabWidth);
     }
 
     [Fact(DisplayName = "A decimal exclusive bound on the window's edge generates instead of failing.")]

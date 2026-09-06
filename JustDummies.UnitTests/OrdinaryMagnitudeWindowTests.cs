@@ -27,10 +27,17 @@ public sealed class OrdinaryMagnitudeWindowTests {
     private const double SlabWidth = 2d * Magnitude;
 
     /// <summary>
-    ///     2^45 — a <see cref="float" /> bound where one ulp is 4 194 304, so the whole carried slab is narrower
-    ///     than a single rung of the row's own ladder.
+    ///     2^45 — a <see cref="float" /> bound where one ulp is 4 194 304, more than twice the carried width, so
+    ///     the whole slab is narrower than a single rung of the row's own ladder.
     /// </summary>
-    private const float BigSingle = 35_184_372_088_832f;
+    private const float Single2Pow45 = 35_184_372_088_832f;
+
+    /// <summary>
+    ///     2^44 — one ulp is 2 097 152, only just wider than the carried width. The slab still holds one rung, but
+    ///     its computed floor now quantizes to the rung <b>below</b> it, which is what makes the ceiling side
+    ///     asymmetric with the floor side.
+    /// </summary>
+    private const float Single2Pow44 = 17_592_186_044_416f;
 
     private const int SampleCount = 400;
 
@@ -268,20 +275,50 @@ public sealed class OrdinaryMagnitudeWindowTests {
         AnyContext any = Any.WithSeed(Seed);
 
         CheckDrawnAcross("Single.GreaterThanOrEqualTo(2^45f)",
-                         () => any.Single().GreaterThanOrEqualTo(BigSingle).Generate(),
-                         BigSingle, float.MaxValue);
+                         () => any.Single().GreaterThanOrEqualTo(Single2Pow45).Generate(),
+                         Single2Pow45, float.MaxValue);
         CheckDrawnAcross("Single.LessThanOrEqualTo(-2^45f)",
-                         () => any.Single().LessThanOrEqualTo(-BigSingle).Generate(),
-                         -float.MaxValue, -BigSingle);
+                         () => any.Single().LessThanOrEqualTo(-Single2Pow45).Generate(),
+                         -float.MaxValue, -Single2Pow45);
         CheckDrawnAcross("Single.GreaterThan(2^45f)",
-                         () => any.Single().GreaterThan(BigSingle).Generate(),
-                         BigSingle, float.MaxValue);
+                         () => any.Single().GreaterThan(Single2Pow45).Generate(),
+                         Single2Pow45, float.MaxValue);
 
         // The control: a bound low enough that one slab width still spans millions of floats keeps its slab, so
         // the ladder check narrows nothing it should not.
         CheckDrawnWithin("Single.GreaterThanOrEqualTo(1e7f)",
                          () => any.Single().GreaterThanOrEqualTo(1e7f).Generate(),
                          1e7d, 1e7d + SlabWidth);
+    }
+
+    [Fact(DisplayName = "A slab whose computed floor is not a rung is counted from the first rung inside it.")]
+    public void ASlabWhoseFloorIsNotARungIsCountedFromInsideIt() {
+        // Regression, and the asymmetric half of the case above. A declared bound arrives representable, but the
+        // carried CEILING slab computes its floor as `_max - width` in double, and that need not be a rung: at
+        // -2^44f one float ulp is 2 097 152 against a carried width of 2 000 000, so the floor quantizes to the
+        // float BELOW the slab. Counting the rungs from there credited one the slab does not contain, so a
+        // one-rung slab was taken as a pair — and the sampler then returned that out-of-slab value itself, with
+        // half of 4 000 draws landing beneath the slab's own floor. The floor slab never showed this: its _min is
+        // the bound the caller declared, and so already a rung.
+        AnyContext any = Any.WithSeed(Seed);
+
+        CheckDrawnAcross("Single.LessThanOrEqualTo(-2^44f)",
+                         () => any.Single().LessThanOrEqualTo(-Single2Pow44).Generate(),
+                         -float.MaxValue, -Single2Pow44);
+        CheckDrawnAcross("Single.LessThan(-2^44f)",
+                         () => any.Single().LessThan(-Single2Pow44).Generate(),
+                         -float.MaxValue, -Single2Pow44);
+
+        // The floor side at the same magnitude, which was already right and must stay so.
+        CheckDrawnAcross("Single.GreaterThanOrEqualTo(2^44f)",
+                         () => any.Single().GreaterThanOrEqualTo(Single2Pow44).Generate(),
+                         Single2Pow44, float.MaxValue);
+
+        // And the mirror of the control: a ceiling bound low enough that its slab still spans millions of floats
+        // keeps that slab, so starting the count on the ladder narrows nothing it should not.
+        CheckDrawnWithin("Single.LessThanOrEqualTo(-1e7f)",
+                         () => any.Single().LessThanOrEqualTo(-1e7f).Generate(),
+                         -1e7d - SlabWidth, -1e7d);
     }
 
     [Fact(DisplayName = "A decimal exclusive bound on the window's edge generates instead of failing.")]

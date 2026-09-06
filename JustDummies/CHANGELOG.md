@@ -8,6 +8,22 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ## [Unreleased]
 
+### Fixed
+
+- **A `decimal` interval within a unit of the type's own domain no longer fails at random.**
+  `Any.Decimal().GreaterThanOrEqualTo(decimal.MaxValue - 1m)` and
+  `Any.Decimal().LessThanOrEqualTo(decimal.MinValue + 1m)` threw a bare `System.OverflowException` on
+  roughly one draw in a thousand — intermittently, carrying no seed and naming no constraint, so a
+  suite using such a dummy went red now and then on something the test had not written. The sampler
+  interpolated as `lower * (1 - f) + upper * f`, whose two products are each rounded to the type's
+  28-29 significant digits; where both endpoints share a sign near the edge, the two rounding errors
+  add past it, and `decimal` throws where the binary types saturate. The engine now picks the
+  arithmetic form from the interval's shape — the convex combination where the interval straddles
+  zero, which is the case it was introduced for and the one `upper - lower` cannot serve, and an
+  offset from the nearer endpoint where both ends share a sign. **Ordinary draws are unchanged**, to
+  the digit: the two forms agree exactly wherever the old one was not already losing precision, and
+  the seeded golden master did not move.
+
 ## [1.0.0-preview.6] - 2026-09-02
 
 ### Added

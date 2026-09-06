@@ -76,6 +76,35 @@ public sealed class OrdinaryMagnitudeWindowTests {
                          Magnitude, 5d * Magnitude);
     }
 
+    [Fact(DisplayName = "A coarse scale at the window's edge keeps every grid point the interval declares.")]
+    public void ACoarseScaleAtTheWindowEdgeKeepsEveryDeclaredGridPoint() {
+        // Regression. Two distinct endpoints do not make two drawable values once a scale lattice is in force:
+        // Between(999_999.5m, 1_000_001m).WithScale(0) narrowed to [999_999.5, 1_000_000], whose only grid point
+        // is 1 000 000 — so the draw was a constant again and the 1 000 001 the caller declared was unreachable.
+        // The seam is the same one as above, seen through the lattice rather than through the numbers.
+        AnyContext any = Any.WithSeed(Seed);
+
+        HashSet<decimal> coarse = [];
+        for (int i = 0; i < SampleCount; i++) { coarse.Add(any.Decimal().Between(999_999.5m, 1_000_001m).WithScale(0).Generate()); }
+
+        Check.WithCustomMessage("The scale-0 lattice holds 1 000 000 and 1 000 001; the draw reached only one of them.")
+             .That(coarse)
+             .IsEqualTo(new HashSet<decimal> { 1_000_000m, 1_000_001m });
+
+        // The mirror side, and a finer lattice, so the fix is not read off the one arrangement that exposed it.
+        HashSet<decimal> mirrored = [];
+        HashSet<decimal> finer    = [];
+        for (int i = 0; i < SampleCount; i++) {
+            mirrored.Add(any.Decimal().Between(-1_000_001m, -999_999.5m).WithScale(0).Generate());
+            finer.Add(any.Decimal().Between(999_999.95m, 1_000_000.5m).WithScale(1).Generate());
+        }
+
+        Check.That(mirrored).IsEqualTo(new HashSet<decimal> { -1_000_001m, -1_000_000m });
+        // Stated as the two ends rather than the whole six-point grid: reaching the far end is the regression, and
+        // pinning every point in between would make an unrelated change to the seed or the draw count read as one.
+        Check.That(finer).Contains(1_000_000.0m, 1_000_000.5m);
+    }
+
     [Fact(DisplayName = "A decimal exclusive bound on the window's edge generates instead of failing.")]
     public void ADecimalExclusiveBoundOnTheWindowEdgeGenerates() {
         // Regression, and the loudest symptom of the same seam. GreaterThan on a decimal is an inclusive bound plus

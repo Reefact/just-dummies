@@ -384,7 +384,7 @@ internal sealed class DecimalIntervalSpec {
         decimal lower = Math.Max(_min, -OrdinaryMagnitude.AsDecimal);
         decimal upper = Math.Min(_max, OrdinaryMagnitude.AsDecimal);
         // Two or more values left: the ordinary case, and the one every existing draw already took.
-        if (lower < upper) { return (lower, upper); }
+        if (HoldsTwoDrawableValues(lower, upper)) { return (lower, upper); }
 
         // Past here the declared interval sits at or beyond the window's edge. A bound short of the type's own edge
         // is one the caller wrote and owns; a bound sitting exactly on that edge is the domain showing through.
@@ -398,16 +398,34 @@ internal sealed class DecimalIntervalSpec {
         decimal width = 2m * OrdinaryMagnitude.AsDecimal;
         if (floorIsOwned) {
             decimal top = _min <= decimal.MaxValue - width ? Math.Min(_min + width, _max) : _max;
-            if (_min < top) { return (_min, top); }
+            if (HoldsTwoDrawableValues(_min, top)) { return (_min, top); }
         } else if (ceilingIsOwned) {
             decimal bottom = _max >= decimal.MinValue + width ? Math.Max(_max - width, _min) : _min;
-            if (bottom < _max) { return (bottom, _max); }
+            if (HoldsTwoDrawableValues(bottom, _max)) { return (bottom, _max); }
         }
 
         // No ordinary slab exists beside the declared bound, so the declared interval is the honest answer. (Both
         // bounds on the domain edge cannot reach here — the window lies inside the decimal domain, so the first
         // branch returned.)
         return (_min, _max);
+    }
+
+    /// <summary>
+    ///     Whether <c>[lower, upper]</c> holds two or more values a draw could actually land on — the question the
+    ///     rule is phrased in, which two distinct endpoints do not answer once a scale lattice is in force.
+    /// </summary>
+    /// <remarks>
+    ///     The grid is what the snap rounds a candidate onto, so an interval straddling a single grid point yields
+    ///     one value however wide it reads: <c>Between(999_999.5m, 1_000_001m).WithScale(0)</c> narrows to
+    ///     <c>[999_999.5, 1_000_000]</c>, whose only grid point is <c>1 000 000</c> — and the <c>1 000 001</c> the
+    ///     caller declared becomes unreachable. Judging the numbers rather than the lattice left exactly the
+    ///     singleton this window's rule exists to remove.
+    /// </remarks>
+    private bool HoldsTwoDrawableValues(decimal lower, decimal upper) {
+        if (lower >= upper) { return false; }
+        if (_scale < 0) { return true; }
+
+        return CeilToGrid(lower, _scale, _step) < FloorToGrid(upper, _scale, _step);
     }
 
     /// <summary>

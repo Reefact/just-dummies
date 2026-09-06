@@ -94,6 +94,14 @@ et une borne unilatérale hors de portée de cette largeur retombe sur le domain
   « au moins un million, mais ordinaire par ailleurs » dispose d'une façon de le dire exactement, et reçoit
   la fenêtre reportée ; tronquer un intervalle bilatéral ne protégerait de rien, puisque les magnitudes qu'un
   tel intervalle atteint sont celles que le critère propre de l'ADR-0031 qualifie déjà d'ordinaires.
+* **« Deux valeurs » signifie deux valeurs sur lesquelles un tirage peut tomber.** Sur `decimal`, c'est un
+  treillis d'échelle déclaré qui en décide, non les bornes : un intervalle à cheval sur un seul point de grille
+  ne rend qu'une valeur, si large qu'il paraisse — le rétrécissement se juge donc contre la grille. Lire les
+  bornes à la place rejoint le singleton même que cette décision existe pour supprimer :
+  `Between(999_999.5m, 1_000_001m).WithScale(0)` se rétrécit sur une portée dont l'unique point de grille est
+  `1 000 000`, et le `1 000 001` que l'appelant a déclaré devient inatteignable. Les types binaires n'ont pas de
+  tel treillis : leurs valeurs tirables sont celles que le type représente, et les bornes y arrivent déjà
+  représentables.
 * **La règle reste prédictible au point d'appel.** Chacun des invariants ci-dessus pousse vers plus de
   machinerie, et une règle de fenêtrage n'est jamais loin d'une recherche.
   L'[ADR-0046](0046-bound-the-generators-ambition-never-its-correctness.fr.md) s'applique à cette décision

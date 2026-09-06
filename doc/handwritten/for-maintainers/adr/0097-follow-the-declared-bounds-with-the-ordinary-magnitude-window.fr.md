@@ -100,8 +100,14 @@ et une borne unilatérale hors de portée de cette largeur retombe sur le domain
   bornes à la place rejoint le singleton même que cette décision existe pour supprimer :
   `Between(999_999.5m, 1_000_001m).WithScale(0)` se rétrécit sur une portée dont l'unique point de grille est
   `1 000 000`, et le `1 000 001` que l'appelant a déclaré devient inatteignable. Les types binaires n'ont pas de
-  tel treillis : leurs valeurs tirables sont celles que le type représente, et les bornes y arrivent déjà
-  représentables.
+  tel treillis : leurs valeurs tirables sont celles que le type représente. Ni l'une ni l'autre lecture ne
+  dispense de l'échelle de valeurs propre à la ligne, et les deux moteurs l'ont appris à leurs dépens. Une
+  *borne* déclarée arrive représentable ; une extrémité que la règle *calcule* ne l'est pas forcément, si bien
+  qu'une tranche reportée peut bouger dans l'arithmétique tout en ne tenant qu'une valeur de la ligne — à
+  `2^45f`, un ulp de `float` est plus large que la tranche entière. Une *échelle* déclarée est ce sur quoi un
+  candidat est aligné, non un incrément que la représentation peut toujours faire — à une magnitude de 1e6, un
+  `decimal` porte 22 décimales, si bien que `WithScale(28)` nomme un pas qui ne déplace rien. C'est l'échelle de
+  valeurs sur laquelle la ligne tire réellement qui tranche, sur l'un comme sur l'autre moteur.
 * **La règle reste prédictible au point d'appel.** Chacun des invariants ci-dessus pousse vers plus de
   machinerie, et une règle de fenêtrage n'est jamais loin d'une recherche.
   L'[ADR-0046](0046-bound-the-generators-ambition-never-its-correctness.fr.md) s'applique à cette décision

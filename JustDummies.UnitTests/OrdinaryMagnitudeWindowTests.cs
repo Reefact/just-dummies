@@ -169,6 +169,30 @@ public sealed class OrdinaryMagnitudeWindowTests {
                          justBelow, 2d * Magnitude);
     }
 
+    [Fact(DisplayName = "The drawable-value walk stops at the domain edge instead of overflowing past it.")]
+    public void TheDrawableValueWalkStopsAtTheDomainEdge() {
+        // Regression on the bounded walk itself. Its loop stepped past its last grid point before re-testing the
+        // bound, which merely leaves the range everywhere except at decimal.MaxValue — where the step throws. A
+        // specification whose only surviving value IS the domain edge was then taken down by the check meant to
+        // protect it, rather than falling back to the declared interval and drawing that value.
+        AnyContext any = Any.WithSeed(Seed);
+
+        Check.ThatCode(() => any.Decimal().GreaterThanOrEqualTo(decimal.MaxValue - 1m).WithScale(0).Except(decimal.MaxValue - 1m).Generate())
+             .DoesNotThrow();
+        Check.That(any.Decimal().Between(decimal.MaxValue - 1m, decimal.MaxValue).WithScale(0).Except(decimal.MaxValue - 1m).Generate())
+             .IsEqualTo(decimal.MaxValue);
+
+        // The floor side, which walks nowhere near the edge it could fall off, and the unexcluded control that must
+        // still reach both grid points.
+        Check.That(any.Decimal().LessThanOrEqualTo(decimal.MinValue + 1m).WithScale(0).Except(decimal.MinValue + 1m).Generate())
+             .IsEqualTo(decimal.MinValue);
+
+        HashSet<decimal> both = [];
+        for (int i = 0; i < SampleCount; i++) { both.Add(any.Decimal().Between(decimal.MaxValue - 1m, decimal.MaxValue).WithScale(0).Generate()); }
+
+        Check.That(both).IsEqualTo(new HashSet<decimal> { decimal.MaxValue - 1m, decimal.MaxValue });
+    }
+
     [Fact(DisplayName = "A decimal exclusive bound on the window's edge generates instead of failing.")]
     public void ADecimalExclusiveBoundOnTheWindowEdgeGenerates() {
         // Regression, and the loudest symptom of the same seam. GreaterThan on a decimal is an inclusive bound plus

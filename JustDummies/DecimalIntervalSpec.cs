@@ -434,8 +434,12 @@ internal sealed class DecimalIntervalSpec {
         int     survivors = 0;
         int     budget    = _excluded.Count + 2;
         for (decimal point = CeilToGrid(lower, _scale, _step); point <= last && budget-- > 0; point += _step) {
-            if (IsExcluded(point)) { continue; }
-            if (++survivors == 2) { return true; }
+            if (!IsExcluded(point) && ++survivors == 2) { return true; }
+            // Stop ON the last grid point rather than stepping past it. Where that point is decimal.MaxValue the
+            // step does not merely leave the range, it throws — and the walk would then take a specification whose
+            // only surviving value is the domain edge down with it, instead of returning here and falling back to
+            // the declared interval.
+            if (point >= last) { break; }
         }
 
         return false;

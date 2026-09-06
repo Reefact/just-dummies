@@ -383,19 +383,21 @@ internal sealed class ContinuousIntervalSpec {
 
         // One side is the domain: keep the window's width and carry it to the bound the caller did write, rather
         // than dropping it and drawing the whole domain. That is also what keeps GreaterThan(1e6) and
-        // GreaterThanOrEqualTo(1e6) — one ulp apart — from landing 300 decades apart.
+        // GreaterThanOrEqualTo(1e6) — one ulp apart — from landing 300 decades apart. The slab answers to the same
+        // ladder the narrowing did: this spec computes in double while a row draws its own type, so at 2^45f the
+        // carried width is under half a float ulp and both ends of a slab that moved in double are one float.
         double width = 2 * OrdinaryMagnitude.AsDouble;
         if (floorIsOwned) {
             double top = Math.Min(_min + width, _max);
-            if (_min < top) { return (_min, top); }
+            if (HoldsTwoDrawableValues(_min, top)) { return (_min, top); }
         } else if (ceilingIsOwned) {
             double bottom = Math.Max(_max - width, _min);
-            if (bottom < _max) { return (bottom, _max); }
+            if (HoldsTwoDrawableValues(bottom, _max)) { return (bottom, _max); }
         }
 
-        // An extraordinary bound: adding the window's width to it does not move it, so no ordinary slab exists to
-        // draw from and the declared interval is the honest answer. (Both bounds on the domain edge cannot reach
-        // here — the window lies inside every supported domain, so the first branch returned.)
+        // An extraordinary bound: no ordinary slab beside it holds two values a draw can land on, so the declared
+        // interval is the honest answer. (Both bounds on the domain edge cannot reach here — the window lies
+        // inside every supported domain, so the first branch returned.)
         return (_min, _max);
     }
 
@@ -430,9 +432,16 @@ internal sealed class ContinuousIntervalSpec {
     ///     remove, and the values the caller declared beyond it unreachable. The walk steps the type's own ladder
     ///     and is bounded by the number of exclusions: every step that finds no survivor consumes one, so two
     ///     survivors are found — or shown absent — in at most that many steps however wide the span.
+    ///     <para>
+    ///         Distinct endpoints are not two rungs. This spec computes in <see cref="double" /> while a row draws
+    ///         its own type, so a span this arithmetic moves through can still collapse onto one value of that row:
+    ///         at <c>2^45f</c> one <c>float</c> ulp is 4 194 304 and the window's whole carried width is under half
+    ///         of it. The ladder decides, before the exclusions are counted at all.
+    ///     </para>
     /// </remarks>
     private bool HoldsTwoDrawableValues(double lower, double upper) {
         if (lower >= upper) { return false; }
+        if (_nextUp(lower) > upper) { return false; }
         if (_excluded.Count == 0) { return true; }
 
         int survivors = 0;

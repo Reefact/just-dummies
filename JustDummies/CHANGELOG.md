@@ -33,6 +33,30 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   move. Nothing is promised about seed-to-value stability before 1.0 (ADR-0049), and the number of
   draws a declaration consumes is unchanged.
 
+- **An exclusion sitting on a `decimal` interval's own boundary no longer refuses to generate.**
+  `Any.Decimal().Between(1.0m, 1.0000000000000000000000000001m).LessThan(1.0000000000000000000000000001m)`
+  threw an `AnyGenerationException` on about half its seeds, on an interval whose other value was free
+  and drawable. Two mechanisms, both in the walk that carries a colliding draw off an excluded point.
+  The walk only went **upwards** — and on `decimal` an exclusive bound is an inclusive bound plus a
+  point exclusion, so `LessThan(x)` excludes the interval's own ceiling, which ascending cannot leave,
+  where `GreaterThan(x)` excludes the floor, which it walks away from: the two spellings behaved
+  differently on the very same set. And its step was a nominal `1E-28`, which stops changing the value
+  once the magnitude no longer leaves 28 decimal places — a `decimal` keeps 28 places at one, but only
+  22 at a million — so past that magnitude the walk declared itself stuck having moved nothing. It now
+  goes both ways, and widens its step by decades until the representation can carry it; the same two
+  corrections apply to the `WithScale` grid walk, whose nominal step vanishes for the same reason.
+  Measured over 1 500 seeded draws each: the declaration above went from 748 refusals to none,
+  `GreaterThan(decimal.MaxValue - 2m)` from 376 to none, and
+  `Between(decimal.MaxValue - 10m, decimal.MaxValue).LessThan(decimal.MaxValue)` from 72 to none.
+
+  **Nothing that generated before draws differently.** Over 46 500 seeded draws across 31
+  declarations — unconstrained, `Positive()`, `Between(...)`, `WithScale` grids, exclusions placed
+  mid-interval, and the edge shapes above — every draw that succeeded returns the identical value and
+  no draw that succeeded now refuses; all 4 648 differences are a refusal replaced by a value. What
+  the walk is allowed to attempt is unchanged too: still 128 steps in each direction, and a
+  neighbourhood it genuinely cannot leave still refuses, still saying it searched near the drawn
+  candidate rather than claiming the range holds nothing (ADR-0046).
+
 ## [1.0.0-preview.6] - 2026-09-02
 
 ### Added

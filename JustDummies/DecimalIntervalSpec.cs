@@ -11,7 +11,8 @@ namespace JustDummies;
 ///     The immutable engine behind <see cref="AnyDecimal" /> — the same algebra as
 ///     <see cref="ContinuousIntervalSpec" /> in <see cref="decimal" /> arithmetic. <see cref="decimal" /> has no
 ///     next-representable-value ladder, so exclusive bounds are expressed as an inclusive bound plus a point
-///     exclusion, and a colliding draw is nudged by the smallest decimal increment within a bounded budget. An
+///     exclusion, and a colliding draw is nudged — in either direction, by an increment the representation can
+///     actually make at that magnitude — to the nearest value the exclusions allow, within a bounded budget. An
 ///     optional <b>scale lattice</b> (set by <c>WithScale</c>) restricts the domain to the multiples of
 ///     <c>10^-scale</c> — every value expressible in <c>scale</c> decimal places — by snapping the drawn candidate to
 ///     the grid, still in one constructive draw.
@@ -348,20 +349,16 @@ internal sealed class DecimalIntervalSpec {
             return free.Value;
         }
 
-        // A draw colliding with an excluded point is walked by the smallest decimal step — deterministic and
-        // bounded, not a retry loop. (At extreme magnitudes the step can vanish in rounding; the budget then
-        // fails the generation loudly instead of looping.)
-        int budget = NudgeBudget;
-        while (IsExcluded(candidate)) {
-            decimal next = Clamped(candidate + SmallestStep);
-            if (next == candidate || budget-- == 0) {
-                throw AnyGenerationException.ExclusionNudgeExhausted(_typeName, Replay.Of(source, random.Seed));
-            }
-
-            candidate = next;
+        // A draw colliding with an excluded point is walked to the nearest value the exclusions allow —
+        // ascending first, then descending, the same policy the scaled path follows. Deterministic and bounded,
+        // not a retry loop; both directions exhausted means the neighbourhood is, which is weaker than the range
+        // being empty and the message says so.
+        decimal? escaped = NudgeOffExclusion(candidate, true) ?? NudgeOffExclusion(candidate, false);
+        if (escaped is null) {
+            throw AnyGenerationException.ExclusionNudgeExhausted(_typeName, Replay.Of(source, random.Seed));
         }
 
-        return candidate;
+        return escaped.Value;
     }
 
     /// <summary>
@@ -437,7 +434,7 @@ internal sealed class DecimalIntervalSpec {
             // the declared interval.
             if (point >= last) { break; }
 
-            decimal? next = NextDistinct(point, _step);
+            decimal? next = NextDistinct(point, _step, true);
             if (next is null) { break; }
 
             point = next.Value;
@@ -504,19 +501,58 @@ internal sealed class DecimalIntervalSpec {
     ///     runs from 0 to 28, so that many decades past the finest quantum always reach an increment the
     ///     representation can make: the loop is bounded by the type, never by the data.
     /// </remarks>
-    private static decimal? NextDistinct(decimal from, decimal step) {
+    private static decimal? NextDistinct(decimal from, decimal step, bool ascending) {
         decimal increment = step;
         for (int decade = 0; decade <= MaxScale; decade++) {
-            // decimal arithmetic throws rather than saturating, so the headroom is checked before the add.
-            if (from > 0m && increment > decimal.MaxValue - from) { return null; }
+            // decimal arithmetic throws rather than saturating, so the headroom is checked before the step. Only
+            // the direction being travelled can run out of it.
+            if (ascending && from > 0m && increment > decimal.MaxValue - from) { return null; }
+            if (!ascending && from < 0m && increment > from - decimal.MinValue) { return null; }
 
-            decimal next = from + increment;
+            decimal next = ascending ? from + increment : from - increment;
             if (next != from) { return next; }
 
             increment *= 10m;
         }
 
         return null;
+    }
+
+    /// <summary>
+    ///     Walks from <paramref name="from" /> to the nearest value the exclusions allow, in one direction, staying
+    ///     inside the declared bounds. Returns <c>null</c> where that direction is exhausted, so the caller can try
+    ///     the other — the unscaled twin of <see cref="NudgeOnGrid" />.
+    /// </summary>
+    /// <remarks>
+    ///     <para>
+    ///         The <paramref name="ascending" /> parameter is the defect this fixes. The walk used to be
+    ///         <b>one-way</b>: <c>Clamped(candidate + SmallestStep)</c>. On <c>decimal</c> an exclusive bound is an
+    ///         inclusive bound plus a point exclusion, so for <c>LessThan(x)</c> the excluded value <b>is</b>
+    ///         <c>_max</c> — the ascending step left the range, the clamp put it back on <c>x</c>, and the walk
+    ///         reported itself stuck on a specification holding a free value one step below. Ascending alone cannot
+    ///         leave an exclusion sitting on the ceiling, so the two exclusive spellings are not mirror images:
+    ///         <c>GreaterThan</c> puts its exclusion on <c>_min</c>, which ascending walks away from.
+    ///     </para>
+    ///     <para>
+    ///         The bound check <b>rejects</b> rather than clamps because rejecting says what it means — this
+    ///         direction has run out of room, try the other one. It is not itself a fix: <see cref="NextDistinct" />
+    ///         lands on the immediately next representable value and a declared bound is itself representable, so no
+    ///         bound can sit strictly between the two; a clamp could only return to the bound this walk has just
+    ///         rejected and spin the budget there. The two forms were measured to agree on every drawn value.
+    ///     </para>
+    /// </remarks>
+    private decimal? NudgeOffExclusion(decimal from, bool ascending) {
+        decimal candidate = from;
+        int     budget    = NudgeBudget;
+        while (IsExcluded(candidate)) {
+            decimal? stepped = NextDistinct(candidate, SmallestStep, ascending);
+            if (stepped is null || budget-- == 0) { return null; }
+            if (stepped.Value < _min || stepped.Value > _max) { return null; }
+
+            candidate = stepped.Value;
+        }
+
+        return candidate;
     }
 
     /// <summary>
@@ -528,7 +564,10 @@ internal sealed class DecimalIntervalSpec {
         decimal candidate = from;
         int     budget    = NudgeBudget;
         while (IsExcluded(candidate)) {
-            decimal next = ascending ? candidate + _step : candidate - _step;
+            decimal? stepped = NextDistinct(candidate, _step, ascending);
+            if (stepped is null) { return null; }
+
+            decimal next = stepped.Value;
             if (next < _ceiledMin || next > _flooredMax || budget-- == 0) { return null; }
 
             candidate = next;

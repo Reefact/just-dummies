@@ -286,6 +286,8 @@ JustDummies.AnyPattern
 JustDummies.AnyPattern.DifferentFrom(string! value) -> JustDummies.AnyPattern!
 JustDummies.AnyPattern.Except(params string![]! values) -> JustDummies.AnyPattern!
 JustDummies.AnyPattern.Generate() -> string!
+JustDummies.AnyPattern.OneOf(params string![]! values) -> JustDummies.AnyPattern!
+JustDummies.AnyPattern.OneOf(System.Collections.Generic.IEnumerable<string!>! values) -> JustDummies.AnyPattern!
 JustDummies.AnyRelativeUri
 JustDummies.AnyRelativeUri.Generate() -> System.Uri!
 JustDummies.AnyRelativeUri.Rooted() -> JustDummies.AnyRelativeUri!

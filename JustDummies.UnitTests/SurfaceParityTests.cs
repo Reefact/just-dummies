@@ -202,6 +202,12 @@ public sealed class SurfaceParityTests {
             "OneOf", "Except", "DifferentFrom"
         });
 
+        // AnyPattern carries the type-agnostic trio and nothing else. The pattern is the whole shape, so a shape
+        // constraint stays refused — it would mean building in the intersection of two regular languages — while
+        // neither the value set nor the exclusion pair builds anything: OneOf supplies the domain and turns the
+        // pattern into the test each value passes, and the pair only rejects. This row is what keeps the trio from
+        // drifting back to two, which is how the gap issue #185 reported got there.
+        data.Add(typeof(AnyPattern), new[] { "OneOf", "Except", "DifferentFrom" });
 
 #if NET8_0_OR_GREATER
         data.Add(typeof(AnyInt128), SignedIntegerAlgebra);

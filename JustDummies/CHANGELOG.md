@@ -28,6 +28,20 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   first two; on a collection expression S3220 and **S3878** ask for opposite things, and passing the
   values themselves satisfies both.
 
+- **`Any.StringMatching(...)` accepts a value set.** The pattern generator carried `Except` and
+  `DifferentFrom` and no `OneOf`, the only partial trio on the surface. It now carries all three. The
+  pattern keeps its meaning and becomes the test each supplied value passes or fails, so
+  `Any.StringMatching(@"\d{3}").OneOf("123", "abcd")` draws `"123"` and never `"abcd"`. This is what
+  lets a shared helper own the format while a call site narrows it to the references a fixture holds
+  (ADR-0099).
+
+  With a value set in force the diagnostics get stronger, because the domain is finite and
+  enumerable: a set the pattern admits nothing of, and an exclusion that empties what it left, are
+  both refused **at declaration** naming both sides — where the same exclusion on an unpooled pattern
+  can only spend its bounded redraw budget at `Generate()`. A pooled pattern also reports its
+  survivors and rejections through `IPoolInspection<string>`, naming the pattern as the constraint
+  that turned a value away, and answers a distinct collection with the size of its surviving set.
+
 ### Fixed
 
 - **A `decimal` interval within a unit of the type's own domain no longer fails at random.**

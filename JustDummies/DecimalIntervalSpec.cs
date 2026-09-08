@@ -487,8 +487,9 @@ internal sealed class DecimalIntervalSpec {
     }
 
     /// <summary>
-    ///     The next value above <paramref name="from" /> that this walk can actually reach, or <c>null</c> where
-    ///     none is representable.
+    ///     The next distinct value from <paramref name="from" /> in the requested direction — above it when
+    ///     <paramref name="ascending" /> is set, below it otherwise — that this walk can actually reach, or
+    ///     <c>null</c> where that direction holds none.
     /// </summary>
     /// <remarks>
     ///     The scale quantum is what the snap rounds a candidate onto, but it is not always an increment the

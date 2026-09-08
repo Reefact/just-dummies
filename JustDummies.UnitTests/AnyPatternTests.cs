@@ -612,6 +612,33 @@ public sealed class AnyPatternTests {
              .WithMessage("Cannot apply OneOf(\"789\") because OneOf(\"123\", \"456\") is already defined.");
     }
 
+    [Fact(DisplayName = "A redeclared value set is judged as a set, not as the call that was written.")]
+    public void ARedeclaredValueSetIsJudgedAsASet() {
+        // OneOf documents duplicates as ignored and promises nothing about order, so these three spellings declare
+        // one domain. Comparing the rendered call instead would refuse two of them as a second, conflicting set —
+        // a conflict the caller cannot act on, since there is nothing to loosen.
+        AnyPattern   generator = Any.StringMatching(@"^\d{3}$").OneOf("123", "456");
+        List<string> asHeld    = ["456", "123", "456"];
+
+        Check.That(generator.OneOf("456", "123").Generate()).IsOneOfThese("123", "456");
+        Check.That(generator.OneOf("123", "456", "456").Generate()).IsOneOfThese("123", "456");
+        // The sequence overload reaches the same identity check, so a held collection is judged as a set too.
+        Check.That(generator.OneOf(asHeld).Generate()).IsOneOfThese("123", "456");
+    }
+
+    [Fact(DisplayName = "A redeclared set that is genuinely different still conflicts, naming the first one.")]
+    public void ARedeclaredDifferentValueSetStillConflicts() {
+        // The set comparison must not swallow a real second declaration: one value in common is not the same domain.
+        AnyPattern generator = Any.StringMatching(@"^\d{3}$").OneOf("123", "456");
+
+        Check.ThatCode(() => generator.OneOf("123", "456", "789"))
+             .Throws<ConflictingAnyConstraintException>()
+             .WithMessage("Cannot apply OneOf(\"123\", \"456\", \"789\") because OneOf(\"123\", \"456\") is already defined.");
+        Check.ThatCode(() => generator.OneOf("123"))
+             .Throws<ConflictingAnyConstraintException>()
+             .WithMessage("Cannot apply OneOf(\"123\") because OneOf(\"123\", \"456\") is already defined.");
+    }
+
     [Fact(DisplayName = "A pooled pattern reports its survivors and what refused the rest.")]
     public void APooledPatternReportsItsSurvivorsAndRejections() {
         // Which of the two to repair — the catalogue or the invariant — is the question the inspection answers, and

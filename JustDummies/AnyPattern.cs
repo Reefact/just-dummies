@@ -249,13 +249,18 @@ public sealed class AnyPattern : IAny<string>, IHasRandomSource, ICardinalityHin
         if (values.Length == 0) { throw new ArgumentException("At least one value is required.", nameof(values)); }
         if (values.Any(value => value is null)) { throw new ArgumentException("The values must not contain a null element; use OrNull() to make the whole generator nullable.", nameof(values)); }
 
-        ConstraintCall applying = ConstraintCall.Of(nameof(OneOf), Join(values));
+        ConstraintCall applying  = ConstraintCall.Of(nameof(OneOf), Join(values));
+        string[]       requested = values.Distinct(StringComparer.Ordinal).ToArray();
+
         // Re-declaring the SAME constraint is not a contradiction, so it is a no-op rather than a conflict: the
-        // second declaration asks for exactly what the first already guarantees.
-        if (_allowedConstraint == applying) { return this; }
+        // second declaration asks for exactly what the first already guarantees. What "the same" means is the
+        // SET, not the call as it was written — OneOf documents duplicates as ignored and promises nothing about
+        // order, so OneOf("a", "b"), OneOf("b", "a") and OneOf("a", "b", "b") all declare one domain. The rendered
+        // call is still kept for the messages, because a conflict has to quote the caller their own words.
+        if (_allowed is not null && new HashSet<string>(_allowed, StringComparer.Ordinal).SetEquals(requested)) { return this; }
         if (_allowedConstraint is not null) { throw ConflictingAnyConstraintException.AlreadyDefined(applying, _allowedConstraint); }
 
-        AnyPattern candidate = new(this, values.Distinct(StringComparer.Ordinal).ToArray(), applying, _excluded, _exclusions);
+        AnyPattern candidate = new(this, requested, applying, _excluded, _exclusions);
         if (candidate._survivors!.Count > 0) { return candidate; }
 
         throw ConflictingAnyConstraintException.NoPooledValueSurvives(applying, candidate.DescribeEmptyPool());

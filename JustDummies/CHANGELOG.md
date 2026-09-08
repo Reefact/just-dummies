@@ -8,6 +8,26 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ## [Unreleased]
 
+### Added
+
+- **Every `OneOf` now takes a sequence as well as a value list.** `AnyString` was the only generator
+  of twenty-three carrying an `IEnumerable<T>` overload; the other twenty-two now carry it too, with
+  the same contract, validation and conflicts. A set already held as a list, a LINQ result or a
+  fixture's values reaches a typed builder directly — `Any.Int32().OneOf(allowedPorts)` — and the
+  type's own constraints still narrow it, which `Any.ElementOf(...)` cannot do because it returns a
+  pool generator carrying only the exclusion pair. No existing call changes meaning: an array, a
+  `params` list and a collection expression all still bind to the array form, so the only calls the
+  new overload affects are the ones that did not compile (ADR-0098).
+
+  Two consequences worth knowing. On `Any.Char()` the sequence form accepts a `string`, since a
+  `string` is an `IEnumerable<char>`: `Any.Char().OneOf("-_.")` reads as the three separators it
+  lists. And under Sonar, three call shapes now raise **S3220** where they did not: a collection
+  expression (`OneOf([1, 2])`), a bare `null`, and a single value whose type is an unresolved type
+  parameter. Ordinary calls are untouched — `OneOf(1)`, `OneOf(Suit.Hearts)`, `OneOf(1, 2)`,
+  `OneOf(array)` and `OneOf(list)` all stay silent. A cast naming the intended overload settles the
+  first two; on a collection expression S3220 and **S3878** ask for opposite things, and passing the
+  values themselves satisfies both.
+
 ### Fixed
 
 - **A `decimal` interval within a unit of the type's own domain no longer fails at random.**

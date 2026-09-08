@@ -20,9 +20,9 @@ namespace JustDummies;
 ///     <see cref="Punctuation" /> and <see cref="Hexadecimal" /> each occupy one slot, so a second one contradicts
 ///     the first; <see cref="WithoutAlpha" /> and <see cref="WithoutNumeric" /> subtract instead and accumulate;
 ///     <see cref="InLowerCase" /> / <see cref="InUpperCase" /> constrain the letters; and
-///     <see cref="OneOf" /> / <see cref="Except" /> / <see cref="DifferentFrom" /> work on values. A combination
+///     <see cref="OneOf(char[])" /> / <see cref="Except" /> / <see cref="DifferentFrom" /> work on values. A combination
 ///     that empties the pool fails eagerly with a <see cref="ConflictingAnyConstraintException" />. Nothing named
-///     reaches past ASCII — a specific alphabet beyond it is <see cref="OneOf" />, whose values are yours.
+///     reaches past ASCII — a specific alphabet beyond it is <see cref="OneOf(char[])" />, whose values are yours.
 /// </remarks>
 public sealed class AnyChar : IAny<char>, IHasRandomSource, ICardinalityHint<char>, IPoolInspection<char> {
 
@@ -275,6 +275,27 @@ public sealed class AnyChar : IAny<char>, IHasRandomSource, ICardinalityHint<cha
         if (_allowedConstraint is not null) { throw ConflictingAnyConstraintException.AlreadyDefined(constraint, _allowedConstraint); }
 
         return Validated(new AnyChar(_source, _charset, _charsetConstraint, _casing, _casingConstraint, values.Distinct().ToArray(), constraint, _excluded, _exclusions, _subtractions), constraint);
+    }
+
+    /// <summary>
+    ///     Requires the character to be one of the supplied values — the <see cref="IEnumerable{T}" /> counterpart of
+    ///     <see cref="OneOf(char[])" />, for a set already held as a sequence (a list, a LINQ result, values loaded at test
+    ///     setup). Same contract in every other respect.
+    /// </summary>
+    /// <remarks>
+    ///     A <see cref="string" /> <i>is</i> an <see cref="IEnumerable{T}" /> of characters, so
+    ///     <c>OneOf("-_.")</c> binds here and reads as the three separators it lists — the one spelling this overload
+    ///     admits that the <c>params</c> form does not.
+    /// </remarks>
+    /// <param name="values">The allowed characters; duplicates are ignored.</param>
+    /// <returns>A new generator carrying the added constraint.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="values" /> is <c>null</c>.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="values" /> is empty.</exception>
+    /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
+    public AnyChar OneOf(IEnumerable<char> values) {
+        if (values is null) { throw new ArgumentNullException(nameof(values)); }
+
+        return OneOf(values as char[] ?? values.ToArray());
     }
 
     /// <summary>Requires the character to be none of the supplied values.</summary>

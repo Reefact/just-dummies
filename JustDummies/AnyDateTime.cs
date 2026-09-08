@@ -17,7 +17,7 @@ namespace JustDummies;
 /// <remarks>
 ///     Generated values carry <see cref="DateTimeKind.Utc" />; constraints compare by <see cref="DateTime.Ticks" />,
 ///     ignoring the <see cref="DateTime.Kind" /> of the supplied bounds — exactly as <see cref="DateTime" />'s own
-///     comparison operators do. Values supplied to <see cref="OneOf" /> are returned as given, Kind included. There is deliberately no clock-relative constraint (no "in the past/future"): a
+///     comparison operators do. Values supplied to <see cref="OneOf(DateTime[])" /> are returned as given, Kind included. There is deliberately no clock-relative constraint (no "in the past/future"): a
 ///     reproducible test pins its reference instants explicitly with <see cref="After" /> and <see cref="Before" />.
 /// </remarks>
 public sealed class AnyDateTime : IAny<DateTime>, IHasRandomSource, ICardinalityHint<DateTime>, IPoolInspection<DateTime> {
@@ -169,6 +169,22 @@ public sealed class AnyDateTime : IAny<DateTime>, IHasRandomSource, ICardinality
         }
 
         return new AnyDateTime(_source, _spec.WithAllowed(values.Select(Ord).ToArray(), ConstraintCall.Of(nameof(OneOf), Join(values))), originals);
+    }
+
+    /// <summary>
+    ///     Requires the instant to be one of the supplied values — the <see cref="IEnumerable{T}" /> counterpart of
+    ///     <see cref="OneOf(DateTime[])" />, for a set already held as a sequence (a list, a LINQ result, values loaded at
+    ///     test setup). Same contract in every other respect.
+    /// </summary>
+    /// <param name="values">The allowed values; duplicates are ignored.</param>
+    /// <returns>A new generator carrying the added constraint.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="values" /> is <c>null</c>.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="values" /> is empty.</exception>
+    /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
+    public AnyDateTime OneOf(IEnumerable<DateTime> values) {
+        if (values is null) { throw new ArgumentNullException(nameof(values)); }
+
+        return OneOf(values as DateTime[] ?? values.ToArray());
     }
 
     /// <summary>Requires the instant to be none of the supplied values.</summary>

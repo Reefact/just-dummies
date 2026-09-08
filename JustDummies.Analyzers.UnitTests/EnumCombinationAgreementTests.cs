@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.CodeAnalysis;
 
@@ -76,6 +77,7 @@ public sealed class EnumCombinationAgreementTests {
     }
 
     /// <summary>Whether the library refuses the value as one its type does not define.</summary>
+    [SuppressMessage(SonarRule.S3220.Category, SonarRule.S3220.Id, Justification = "OneOf carries a sequence overload alongside the params one, and TEnum is an unresolved type parameter the rule cannot clear — a concrete enum member does not trip it. Only the params form is applicable here, and wrapping the value in an array to disambiguate would immediately trip S3878, which asks for that array to be removed again.")]
     private static bool LibraryRefuses<TEnum>(int bits) where TEnum : struct, Enum {
         try {
             Any.Enum<TEnum>().OneOf((TEnum)Enum.ToObject(typeof(TEnum), bits));

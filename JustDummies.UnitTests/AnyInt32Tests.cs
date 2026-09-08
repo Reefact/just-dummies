@@ -132,8 +132,12 @@ public sealed class AnyInt32Tests {
 
     [Fact(DisplayName = "OneOf and Except reject null or empty value lists.")]
     public void OneOfAndExceptRejectNullOrEmpty() {
+        // OneOf carries two overloads, so a bare null would read as either. Each is named at its own call: the guard
+        // is the same on both, and a test that cannot say which one it exercised proves neither.
         Check.ThatCode(() => Any.Int32().OneOf()).Throws<ArgumentException>();
-        Check.ThatCode(() => Any.Int32().OneOf(null!)).Throws<ArgumentNullException>();
+        Check.ThatCode(() => Any.Int32().OneOf((int[])null!)).Throws<ArgumentNullException>();
+        Check.ThatCode(() => Any.Int32().OneOf((IEnumerable<int>)null!)).Throws<ArgumentNullException>();
+        Check.ThatCode(() => Any.Int32().OneOf(Enumerable.Empty<int>())).Throws<ArgumentException>();
         Check.ThatCode(() => Any.Int32().Except()).Throws<ArgumentException>();
         Check.ThatCode(() => Any.Int32().Except(null!)).Throws<ArgumentNullException>();
     }

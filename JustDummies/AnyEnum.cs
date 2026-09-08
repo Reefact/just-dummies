@@ -11,7 +11,7 @@ namespace JustDummies;
 /// <summary>
 ///     A fluent generator of arbitrary <typeparamref name="TEnum" /> values, drawn uniformly from the enum's
 ///     <b>declared</b> members — never from undeclared numeric values. Constraints narrow the pool
-///     (<see cref="OneOf" />, <see cref="Except" />, <see cref="DifferentFrom" />), and a combination that empties it
+///     (<see cref="OneOf(TEnum[])" />, <see cref="Except" />, <see cref="DifferentFrom" />), and a combination that empties it
 ///     fails with a <see cref="ConflictingAnyConstraintException" /> naming both sides — before any value is drawn,
 ///     and whichever order the chain was written in, since <see cref="AllowingCombinations" /> widens the universe
 ///     the pool is cut from wherever it appears.
@@ -22,7 +22,7 @@ namespace JustDummies;
 ///     declares. The declared-members default holds for those enums too — it is the only default valid for both enum
 ///     families, and switching on the attribute would make the draw depend on a type's metadata rather than on what
 ///     the test wrote. Opt in explicitly with <see cref="AllowingCombinations" /> to widen the draw to every
-///     combination — <see cref="OneOf" /> asks for nothing so wide, since an allow-list is the pool itself, so
+///     combination — <see cref="OneOf(TEnum[])" /> asks for nothing so wide, since an allow-list is the pool itself, so
 ///     naming a combination there needs no opt-in.
 /// </remarks>
 /// <typeparam name="TEnum">The enum type to draw values from.</typeparam>
@@ -110,7 +110,7 @@ public sealed class AnyEnum<TEnum> : IAny<TEnum>, IHasRandomSource, ICardinality
     ///     Decided arithmetically rather than by searching <see cref="Combinations" />: OR-ing every declared member
     ///     whose bits the value already carries gives the largest reachable value within it, so the value is
     ///     reachable exactly when that OR is the value itself. Linear in the declared members, which is what lets
-    ///     <see cref="OneOf" /> accept a combination on an enum too wide for the universe to be enumerated at all.
+    ///     <see cref="OneOf(TEnum[])" /> accept a combination on an enum too wide for the universe to be enumerated at all.
     /// </remarks>
     private static bool IsCombinationOfDeclaredMembers(TEnum value) {
         if (!IsFlags) { return false; }
@@ -222,7 +222,7 @@ public sealed class AnyEnum<TEnum> : IAny<TEnum>, IHasRandomSource, ICardinality
     ///     <para>
     ///         <see cref="Except" /> and <see cref="DifferentFrom" /> keep comparing by <b>equality</b>, here as
     ///         everywhere else: <c>Except(Read)</c> forbids the value <c>Read</c> and still allows
-    ///         <c>Read | Write</c>. Beside <see cref="OneOf" /> this constraint changes nothing, in either order —
+    ///         <c>Read | Write</c>. Beside <see cref="OneOf(TEnum[])" /> this constraint changes nothing, in either order —
     ///         an explicit allow-list is a terminal enumeration of exact values, and a combination written in one is
     ///         accepted on its own account.
     ///     </para>
@@ -280,6 +280,27 @@ public sealed class AnyEnum<TEnum> : IAny<TEnum>, IHasRandomSource, ICardinality
         if (_allowedConstraint is not null) { throw ConflictingAnyConstraintException.AlreadyDefined(constraint, _allowedConstraint); }
 
         return new AnyEnum<TEnum>(_source, _universe, _combinable, values.Distinct().ToArray(), constraint, _excluded, _exclusions);
+    }
+
+    /// <summary>
+    ///     Requires the value to be one of the supplied members — the <see cref="IEnumerable{T}" /> counterpart of
+    ///     <see cref="OneOf(TEnum[])" />, for a set already held as a sequence (a list, a LINQ result, values loaded at test
+    ///     setup). Same contract in every other respect.
+    /// </summary>
+    /// <param name="values">
+    ///     The allowed values; duplicates are ignored. Every value must be one the type defines — a declared member,
+    ///     or, on a <see cref="FlagsAttribute">[Flags]</see> enum, any combination of declared members, with or
+    ///     without <see cref="AllowingCombinations" />. The generator never yields a value the type does not define,
+    ///     not even an explicitly supplied one.
+    /// </param>
+    /// <returns>A new generator carrying the added constraint.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="values" /> is <c>null</c>.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="values" /> is empty or contains a value the type does not define.</exception>
+    /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
+    public AnyEnum<TEnum> OneOf(IEnumerable<TEnum> values) {
+        if (values is null) { throw new ArgumentNullException(nameof(values)); }
+
+        return OneOf(values as TEnum[] ?? values.ToArray());
     }
 
     /// <summary>

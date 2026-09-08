@@ -165,6 +165,22 @@ public sealed class AnyDecimal : IAny<decimal>, IHasRandomSource, ICardinalityHi
         return new AnyDecimal(_source, _spec.WithAllowed(values, ConstraintCall.Of(nameof(OneOf), Join(values))));
     }
 
+    /// <summary>
+    ///     Requires the value to be one of the supplied values — the <see cref="IEnumerable{T}" /> counterpart of
+    ///     <see cref="OneOf(decimal[])" />, for a set already held as a sequence (a list, a LINQ result, values loaded at
+    ///     test setup). Same contract in every other respect.
+    /// </summary>
+    /// <param name="values">The allowed values; duplicates are ignored.</param>
+    /// <returns>A new generator carrying the added constraint.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="values" /> is <c>null</c>.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="values" /> is empty.</exception>
+    /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
+    public AnyDecimal OneOf(IEnumerable<decimal> values) {
+        if (values is null) { throw new ArgumentNullException(nameof(values)); }
+
+        return OneOf(values as decimal[] ?? values.ToArray());
+    }
+
     /// <summary>Requires the value to be none of the supplied values.</summary>
     /// <param name="values">The forbidden values.</param>
     /// <returns>A new generator carrying the added constraint.</returns>

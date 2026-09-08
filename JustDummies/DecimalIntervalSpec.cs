@@ -11,8 +11,9 @@ namespace JustDummies;
 ///     The immutable engine behind <see cref="AnyDecimal" /> — the same algebra as
 ///     <see cref="ContinuousIntervalSpec" /> in <see cref="decimal" /> arithmetic. <see cref="decimal" /> has no
 ///     next-representable-value ladder, so exclusive bounds are expressed as an inclusive bound plus a point
-///     exclusion, and a colliding draw is nudged — in either direction, by an increment the representation can
-///     actually make at that magnitude — to the nearest value the exclusions allow, within a bounded budget. An
+///     exclusion, and a colliding draw is nudged — ascending first, then descending, by an increment the
+///     representation can actually make at that magnitude — to a nearby value the exclusions allow, within a
+///     bounded budget. An
 ///     optional <b>scale lattice</b> (set by <c>WithScale</c>) restricts the domain to the multiples of
 ///     <c>10^-scale</c> — every value expressible in <c>scale</c> decimal places — by snapping the drawn candidate to
 ///     the grid, still in one constructive draw.
@@ -349,8 +350,9 @@ internal sealed class DecimalIntervalSpec {
             return free.Value;
         }
 
-        // A draw colliding with an excluded point is walked to the nearest value the exclusions allow —
-        // ascending first, then descending, the same policy the scaled path follows. Deterministic and bounded,
+        // A draw colliding with an excluded point is walked off it — ascending first, then descending, the same
+        // policy the scaled path follows. That order decides, not proximity: a run of exclusions above the
+        // candidate is walked out of before the free value just below it is looked at. Deterministic and bounded,
         // not a retry loop; both directions exhausted means the neighbourhood is, which is weaker than the range
         // being empty and the message says so.
         decimal? escaped = NudgeOffExclusion(candidate, true) ?? NudgeOffExclusion(candidate, false);
@@ -520,9 +522,9 @@ internal sealed class DecimalIntervalSpec {
     }
 
     /// <summary>
-    ///     Walks from <paramref name="from" /> to the nearest value the exclusions allow, in one direction, staying
-    ///     inside the declared bounds. Returns <c>null</c> where that direction is exhausted, so the caller can try
-    ///     the other — the unscaled twin of <see cref="NudgeOnGrid" />.
+    ///     Walks from <paramref name="from" /> to the first value the exclusions allow in the given direction,
+    ///     staying inside the declared bounds. Returns <c>null</c> where that direction is exhausted, so the caller
+    ///     can try the other — the unscaled twin of <see cref="NudgeOnGrid" />.
     /// </summary>
     /// <remarks>
     ///     <para>

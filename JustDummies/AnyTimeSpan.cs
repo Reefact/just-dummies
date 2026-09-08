@@ -172,6 +172,22 @@ public sealed class AnyTimeSpan : IAny<TimeSpan>, IHasRandomSource, ICardinality
         return new AnyTimeSpan(_source, _spec.WithAllowed(values.Select(Ord).ToArray(), ConstraintCall.Of(nameof(OneOf), Join(values))));
     }
 
+    /// <summary>
+    ///     Requires the duration to be one of the supplied values — the <see cref="IEnumerable{T}" /> counterpart of
+    ///     <see cref="OneOf(TimeSpan[])" />, for a set already held as a sequence (a list, a LINQ result, values loaded at
+    ///     test setup). Same contract in every other respect.
+    /// </summary>
+    /// <param name="values">The allowed values; duplicates are ignored.</param>
+    /// <returns>A new generator carrying the added constraint.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="values" /> is <c>null</c>.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="values" /> is empty.</exception>
+    /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
+    public AnyTimeSpan OneOf(IEnumerable<TimeSpan> values) {
+        if (values is null) { throw new ArgumentNullException(nameof(values)); }
+
+        return OneOf(values as TimeSpan[] ?? values.ToArray());
+    }
+
     /// <summary>Requires the duration to be none of the supplied values.</summary>
     /// <param name="values">The forbidden values.</param>
     /// <returns>A new generator carrying the added constraint.</returns>

@@ -112,6 +112,36 @@ OrderStatus fromSequence = Any.ElementOf(lazyOpen).Generate();
 
 An empty pool admits no value and is refused rather than returning a default.
 
+### The trap is `Any.OneOf` only
+
+The warning above is about the **top-level** `Any.OneOf<T>`, where `T` is inferred and can silently
+bind to the collection itself. A **typed builder**'s `OneOf` has no `T` to infer, so it takes both
+shapes and there is nothing to get wrong:
+
+```csharp
+List<int> allowedPorts = [80, 443, 8080];
+
+int port = Any.Int32().OneOf(allowedPorts).Generate();
+```
+
+That is not the same call as `Any.ElementOf(allowedPorts)`, which is why both exist. `ElementOf`
+returns a pool generator carrying only `Except`/`DifferentFrom`; a typed `OneOf` returns the builder,
+so the type's own constraints keep narrowing the set:
+
+```csharp
+List<decimal> rates = [0.055m, 0.10m, 0.20m];
+
+decimal standardRate = Any.Decimal().OneOf(rates).GreaterThan(0.09m).Generate();
+```
+
+Every generator that offers `OneOf` offers both shapes — that uniformity is the rule, and a test holds
+the surface to it. One consequence is worth knowing: a `string` is an `IEnumerable<char>`, so on
+`Any.Char()` the sequence form accepts one directly, and it reads as the characters it lists:
+
+```csharp
+char separator = Any.Char().OneOf("-_.").Generate();
+```
+
 ## Booleans
 
 ```csharp

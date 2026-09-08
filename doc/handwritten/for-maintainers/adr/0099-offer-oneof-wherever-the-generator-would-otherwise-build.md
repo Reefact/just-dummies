@@ -117,8 +117,8 @@ Considered as the way to keep the verifier deferred: filter the pool when `Gener
 pattern the generation ceiling refuses never compiles a `Regex`.
 
 Rejected because it moves the failure from the declaration that caused it to a draw that did not,
-which is the diagnostic this library exists to protect. An impossible arrange reported at generation
-reads as a generator defect rather than as the test defect it is.
+which is the diagnostic this library exists to protect. An impossible test arrangement reported at
+generation reads as a defect in the generator rather than as the defect in the test that it is.
 
 ## Consequences
 

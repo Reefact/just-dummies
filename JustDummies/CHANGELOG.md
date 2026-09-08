@@ -10,23 +10,24 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Added
 
-- **Every `OneOf` now takes a sequence as well as a value list.** `AnyString` was the only generator
-  of twenty-three carrying an `IEnumerable<T>` overload; the other twenty-two now carry it too, with
-  the same contract, validation and conflicts. A set already held as a list, a LINQ result or a
-  fixture's values reaches a typed builder directly — `Any.Int32().OneOf(allowedPorts)` — and the
-  type's own constraints still narrow it, which `Any.ElementOf(...)` cannot do because it returns a
-  pool generator carrying only the exclusion pair. No existing call changes meaning: an array, a
-  `params` list and a collection expression all still bind to the array form, so the only calls the
-  new overload affects are the ones that did not compile (ADR-0098).
+- **Every `OneOf` now accepts a sequence as well as a list of values.** `AnyString` was the only one
+  of the twenty-three generators with an `IEnumerable<T>` overload. The other twenty-two now have one
+  too, with the same contract, the same validation and the same conflicts. You can pass a set you
+  already hold as a list, a LINQ result or a fixture's values straight to a typed builder —
+  `Any.Int32().OneOf(allowedPorts)` — and the constraints belonging to the type still narrow it.
+  `Any.ElementOf(...)` cannot do that, because it returns a pool generator that carries only the
+  exclusion pair. No existing call site changes meaning: arrays, `params` lists and collection
+  expressions all continue to bind to the array form, so the only calls the new overload affects are
+  those that previously did not compile (ADR-0098).
 
-  Two consequences worth knowing. On `Any.Char()` the sequence form accepts a `string`, since a
-  `string` is an `IEnumerable<char>`: `Any.Char().OneOf("-_.")` reads as the three separators it
-  lists. And under Sonar, three call shapes now raise **S3220** where they did not: a collection
-  expression (`OneOf([1, 2])`), a bare `null`, and a single value whose type is an unresolved type
-  parameter. Ordinary calls are untouched — `OneOf(1)`, `OneOf(Suit.Hearts)`, `OneOf(1, 2)`,
-  `OneOf(array)` and `OneOf(list)` all stay silent. A cast naming the intended overload settles the
-  first two; on a collection expression S3220 and **S3878** ask for opposite things, and passing the
-  values themselves satisfies both.
+  Two consequences are worth knowing. On `Any.Char()`, the sequence form accepts a `string`, because
+  a `string` is an `IEnumerable<char>`, so `Any.Char().OneOf("-_.")` reads as the three separators it
+  lists. And under Sonar, three call shapes now raise **S3220** where they did not before: a
+  collection expression such as `OneOf([1, 2])`, a bare `null`, and a single value whose type is an
+  unresolved type parameter. Ordinary calls are unaffected: `OneOf(1)`, `OneOf(Suit.Hearts)`,
+  `OneOf(1, 2)`, `OneOf(array)` and `OneOf(list)` all stay silent. A cast naming the intended
+  overload settles the first two. On a collection expression, S3220 and **S3878** contradict each
+  other, and passing the values themselves satisfies both.
 
 - **`Any.StringMatching(...)` accepts a value set.** The pattern generator carried `Except` and
   `DifferentFrom` and no `OneOf`, the only partial trio on the surface. It now carries all three. The

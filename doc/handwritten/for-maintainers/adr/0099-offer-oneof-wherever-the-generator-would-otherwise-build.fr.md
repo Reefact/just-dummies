@@ -74,24 +74,26 @@ disait « la paire d'exclusion » comme si la question était close. Énoncer la
 est offert partout où le générateur construirait sinon — répond pour `AnyPattern`, et explique aussi
 les deux générateurs qui portent moins, lesquels ressemblaient jusqu'ici à deux exceptions de plus.
 
-**Cela achète un diagnostic, et pas seulement une symétrie.** Le domaine étant fourni, une exclusion
-qui le vide devient un conflit à la déclaration nommant les deux côtés, là où la même exclusion sur un
-motif sans vivier ne pouvait que dépenser son budget de retirage et rapporter un budget dépensé. Une
-valeur que le motif ne reconnaît pas est rapportée par l'inspection de vivier, qui nomme le motif comme
-la contrainte l'ayant écartée — c'est la question à laquelle `IPoolInspection<T>` existe pour répondre :
-élargir l'invariant, ou corriger le catalogue ?
+**Le gain n'est pas seulement une symétrie : c'est un meilleur diagnostic.** Le domaine étant fourni,
+une exclusion qui le vide devient un conflit signalé dès la déclaration, avec un message nommant les
+deux contraintes en cause. Sur un motif sans vivier, la même exclusion ne pouvait qu'épuiser son
+budget de retirage et signaler ce budget épuisé. Quant à une valeur que le motif ne reconnaît pas,
+l'inspection de vivier la rapporte en désignant le motif comme la contrainte qui l'a écartée. C'est
+précisément la question à laquelle `IPoolInspection<T>` doit répondre : faut-il élargir l'invariant,
+ou corriger le catalogue ?
 
 **La composition qu'il permet est celle pour laquelle la bibliothèque existe.** Un helper partagé
-possède le format (`Any.StringMatching(SkuPattern)`) pendant qu'un site d'appel le resserre sur les
-références qu'une fixture détient réellement. Sans `OneOf`, l'appelant doit abandonner le helper et
-écrire `Any.ElementOf(pool)`, laissant tomber le format que le helper existait pour énoncer — et avec
-lui la vérification que le vivier s'accorde encore avec.
+définit le format (`Any.StringMatching(SkuPattern)`), et le site d'appel limite ensuite le générateur
+aux références réellement disponibles dans la fixture. Sans `OneOf`, l'appelant doit renoncer au
+helper et écrire `Any.ElementOf(pool)` : il perd alors le format que le helper servait à énoncer, et
+avec lui la vérification que le vivier lui reste conforme.
 
-**Forcer le vérificateur tôt est un troc qu'il faut nommer.** Juger les valeurs de l'appelant à la
-déclaration est ce qui rend le conflit immédiat, et cela compile le vérificateur pour un motif qu'un
-tirage aurait pu refuser avant d'en bâtir une seule. L'exposition, c'est un motif à borne de
-quantificateur monstrueuse *et* un ensemble de valeurs — une combinaison qui n'a aucune raison de se
-produire — contre un conflit immédiat sur chacune des combinaisons ordinaires.
+**Compiler le vérificateur plus tôt est un compromis qu'il faut énoncer.** Valider les valeurs de
+l'appelant dès la déclaration est ce qui rend le conflit immédiat, mais cela compile le vérificateur
+pour un motif qu'un tirage aurait pu refuser avant même d'avoir bâti une valeur. Le cas exposé exige
+à la fois un motif à borne de quantificateur démesurée *et* un ensemble de valeurs, combinaison qui
+n'a aucune raison de se présenter ; en face, le conflit devient immédiat dans tous les cas
+ordinaires.
 
 ## Alternatives envisagées
 
@@ -143,18 +145,19 @@ test qu'il est.
 
 * `AnyPattern` passe d'un petit constructeur autonome à un constructeur portant un vivier, sa
   provenance et deux interfaces de plus — davantage d'état à garder cohérent au fil des dérivations.
-* Le vérificateur n'est plus compilé uniquement sur un chemin qui a vouché pour le motif. Déclarer un
-  ensemble de valeurs le compile, délibérément.
+* Le vérificateur n'est plus compilé uniquement sur un chemin qui a déjà validé que le motif est
+  générable : déclarer un ensemble de valeurs le compile, délibérément.
 * Un troisième générateur se comporte désormais différemment selon qu'un ensemble fourni par
-  l'appelant est en vigueur, ce que la documentation doit porter : immédiat sous un ensemble, retirage
-  borné sans.
+  l'appelant est déclaré ou non, ce que la documentation doit énoncer : refus immédiat avec un
+  ensemble, retirage borné sans.
 
 ### Risques
 
-* **La césure immédiat/différé est une couture.** La même exclusion rapporte deux échecs différents
-  selon qu'un ensemble de valeurs a été déclaré, et un lecteur qui rencontre l'une des deux formes en
-  premier peut lire l'autre comme une régression. Atténué en énonçant les deux sur le type et sur la
-  page utilisateur, au niveau de la contrainte plutôt qu'ici seulement.
+* **La distinction entre refus immédiat et refus différé est une couture.** La même exclusion produit
+  deux échecs différents selon qu'un ensemble de valeurs a été déclaré ou non, et un lecteur qui
+  rencontre l'une des deux formes en premier risque de lire l'autre comme une régression. Atténué en
+  énonçant les deux cas sur le type et sur la page utilisateur, au niveau de la contrainte, et pas
+  seulement ici.
 * **La compilation du vérificateur à la déclaration n'a été mesurée que sur un moteur.** Un motif à
   borne de quantificateur énorme se compile en quelques millisecondes sur le moteur .NET moderne ; la
   précaution que portait le code nomme une autre implémentation, et le plancher .NET Framework 4.7.2

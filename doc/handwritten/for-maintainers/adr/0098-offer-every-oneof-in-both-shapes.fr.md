@@ -57,37 +57,37 @@ avec le même contrat, la même validation et les mêmes conflits.
 
 ## Justification
 
-**La surface enseigne une règle, et le lecteur ne peut pas voir l'exception.** Un appelant qui a
-rencontré `OneOf(params …)` sur un constructeur attend raisonnablement que le suivant accepte
-l'ensemble qu'il détient déjà. Vingt-deux sur vingt-trois le refusent, et rien au site d'appel ne dit
-lequel. C'est un coût payé par chaque lecteur, à répétition, pour économiser vingt-deux méthodes de
-quatre lignes écrites une fois.
+**La surface enseigne une règle, mais le lecteur ne peut pas repérer l'exception.** Un appelant qui a
+rencontré `OneOf(params …)` sur un constructeur s'attend raisonnablement à ce que le suivant accepte
+l'ensemble qu'il détient déjà. Vingt-deux sur vingt-trois le refusent, et rien au site d'appel
+n'indique lesquels. Chaque lecteur paie donc ce coût, à répétition, pour économiser vingt-deux
+méthodes de quatre lignes écrites une seule fois.
 
-**« Une séquence passe par `ElementOf` » est une règle défendable pour la voie générique et fausse
-ici.** Elle tient là où le vivier est toute la spécification, car `AnyOneOf<T>` ne perd alors rien.
-Sur un constructeur typé elle perd les contraintes du type, et l'appelant qui voulait un tirage borné
-depuis un ensemble fourni n'a plus aucune écriture. Consigner cette règle documenterait une capacité
-que la bibliothèque n'a pas.
+**« Une séquence passe par `ElementOf` » est une règle défendable pour la voie générique, mais fausse
+ici.** Elle tient là où le vivier constitue toute la spécification, car `AnyOneOf<T>` ne perd alors
+rien. Sur un constructeur typé, en revanche, elle fait perdre les contraintes du type : l'appelant qui
+voulait un tirage borné depuis un ensemble fourni ne dispose plus d'aucune écriture pour l'exprimer.
+Consigner cette règle reviendrait à documenter une capacité que la bibliothèque n'a pas.
 
 **La surcharge n'ajoute rien à ce que le générateur tente.**
-[ADR-0046](0046-bound-the-generators-ambition-never-its-correctness.fr.md) borne l'ambition —
+L'[ADR-0046](0046-bound-the-generators-ambition-never-its-correctness.fr.md) borne l'ambition :
 solveurs, propagation, bornes élargies, cas rendus satisfaisables par chance. Une forme qui
-matérialise une séquence et délègue à la contrainte existante n'en porte rien : les valeurs tirées,
-les conflits et les diagnostics sont ceux que la forme tableau produisait déjà. La surface grandit ;
-ce que la bibliothèque promet, non.
+matérialise une séquence puis délègue à la contrainte existante ne relève d'aucun de ces cas. Les
+valeurs tirées, les conflits et les diagnostics restent ceux que la forme tableau produisait déjà :
+la surface s'élargit, mais pas ce que la bibliothèque promet.
 
-**Une uniformité que seule la convention tient est une uniformité qui dérive.** L'écart a été trouvé
-en comparant la surface déclarée de chaque générateur aux autres, non par un test qui échoue, et la
-garde d'algèbre existante compare des *noms* de méthodes — elle était donc structurellement aveugle à
-un jeu de surcharges. Une règle qui mérite d'être énoncée mérite d'être tenue par réflexion, ce qui
-couvre aussi la prochaine famille ajoutée.
+**Une uniformité que seule la convention maintient finit par dériver.** L'écart a été trouvé en
+comparant la surface déclarée de chaque générateur à celle des autres, et non par un test qui échoue :
+la garde d'algèbre existante compare des *noms* de méthodes, elle ne pouvait donc pas voir qu'un
+générateur portait une surcharge que les autres n'avaient pas. Une règle qui mérite d'être énoncée
+mérite d'être vérifiée par réflexion, ce qui couvre aussi la prochaine famille ajoutée.
 
-**Le coût `S3220` est assez étroit pour ne pas peser contre la décision, et cela a été mesuré plutôt
-que supposé.** La règle laisse les appels ordinaires tranquilles ; le dépôt a rencontré deux des trois
-formes, une fois chacune, et les a réglées en nommant la surcharge voulue. Celle qu'un utilisateur
-pourrait plausiblement écrire est l'expression de collection, où Sonar se contredit lui-même et où
-passer les valeurs elles-mêmes satisfait les deux règles. Refuser l'uniformité pour épargner un
-analyseur tiers sur un cas aussi étroit serait le mauvais arbitrage.
+**Le coût `S3220` est trop limité pour peser contre la décision, et il a été mesuré plutôt que
+supposé.** La règle ne touche pas les appels ordinaires. Le dépôt rencontre deux des trois formes
+concernées, une fois chacune, et les résout en nommant explicitement la surcharge voulue. La seule
+qu'un utilisateur écrirait plausiblement est l'expression de collection, où Sonar se contredit
+lui-même et où passer directement les valeurs satisfait les deux règles. Renoncer à l'uniformité pour
+épargner un analyseur tiers sur un cas aussi limité serait un mauvais arbitrage.
 
 ## Alternatives envisagées
 

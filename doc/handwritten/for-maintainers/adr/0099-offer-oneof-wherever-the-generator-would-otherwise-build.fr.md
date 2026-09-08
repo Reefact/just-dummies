@@ -126,9 +126,9 @@ Envisagée comme le moyen de garder le vérificateur différé : filtrer le vivi
 pour qu'un motif que le plafond de génération refuse ne compile jamais de `Regex`.
 
 Rejetée parce qu'elle déplace l'échec de la déclaration qui l'a causé vers un tirage qui n'y est pour
-rien, ce qui est précisément le diagnostic que cette bibliothèque existe pour protéger. Un *arrange*
-impossible rapporté à la génération se lit comme un défaut du générateur plutôt que comme le défaut de
-test qu'il est.
+rien, ce qui est précisément le diagnostic que cette bibliothèque existe pour protéger. Une
+configuration de test impossible, signalée au moment de la génération, se lit comme un défaut du
+générateur alors qu'elle est un défaut du test.
 
 ## Conséquences
 
@@ -153,11 +153,11 @@ test qu'il est.
 
 ### Risques
 
-* **La distinction entre refus immédiat et refus différé est une couture.** La même exclusion produit
-  deux échecs différents selon qu'un ensemble de valeurs a été déclaré ou non, et un lecteur qui
-  rencontre l'une des deux formes en premier risque de lire l'autre comme une régression. Atténué en
-  énonçant les deux cas sur le type et sur la page utilisateur, au niveau de la contrainte, et pas
-  seulement ici.
+* **La distinction entre refus immédiat et refus différé constitue un point de friction.** La même
+  exclusion produit deux échecs différents selon qu'un ensemble de valeurs a été déclaré ou non, et un
+  lecteur qui rencontre l'une des deux formes en premier risque de lire l'autre comme une régression.
+  Atténué en énonçant les deux cas sur le type et sur la page utilisateur, au niveau de la contrainte,
+  et pas seulement ici.
 * **La compilation du vérificateur à la déclaration n'a été mesurée que sur un moteur.** Un motif à
   borne de quantificateur énorme se compile en quelques millisecondes sur le moteur .NET moderne ; la
   précaution que portait le code nomme une autre implémentation, et le plancher .NET Framework 4.7.2

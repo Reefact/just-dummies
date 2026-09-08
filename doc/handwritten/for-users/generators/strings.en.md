@@ -274,7 +274,8 @@ parser and refuse loudly instead is
 
 ### What you can still constrain
 
-An `AnyPattern` carries only `Except` and `DifferentFrom`:
+An `AnyPattern` carries the same three membership constraints every other generator does — `OneOf`,
+`Except` and `DifferentFrom`:
 
 ```csharp
 string sku = Any.StringMatching(@"[A-Z]{3}-\d{4}").DifferentFrom("ABC-0000").Generate();
@@ -283,6 +284,37 @@ string sku = Any.StringMatching(@"[A-Z]{3}-\d{4}").DifferentFrom("ABC-0000").Gen
 Length, alphabet or prefix constraints are deliberately absent: applying them would mean building a
 value in the intersection of two regular languages. Put the requirement in the pattern instead — it
 is already the more precise place to say it.
+
+`OneOf` asks for nothing of the sort, and that is why it is there: once you supply the values there
+is nothing left to build, and the pattern becomes the test each of them passes or fails. It is what
+lets a shared helper own the format while a call site narrows it to the references a fixture actually
+holds:
+
+```csharp
+List<string> skusAlreadySeeded = ["ABC-0001", "ABC-0002", "ABC-0003"];
+string       theOneAlreadyUsed = "ABC-0001";
+
+static AnyPattern AnySku() => Any.StringMatching(@"[A-Z]{3}-\d{4}");
+
+string knownSku = AnySku().OneOf(skusAlreadySeeded).DifferentFrom(theOneAlreadyUsed).Generate();
+```
+
+A value the pattern does not match is not one the generator may yield, so it is dropped from the set
+— and a set the pattern admits nothing of is refused **at declaration**, naming both sides:
+
+<!-- jd:allow=JD006 -->
+```csharp
+// "abcd" is not in the language, so it is not a value this generator may yield.
+string alwaysTheDigits = Any.StringMatching(@"\d{3}").OneOf("123", "abcd").Generate();
+
+// Nothing supplied matches, so there is no domain left: refused where it is declared.
+Any.StringMatching(@"\d{3}").OneOf("abcd");
+```
+
+That eagerness extends to the exclusions, and only under a value set. Left to build from its
+language, a pattern meets an exclusion by the bounded redraw described above, because the library
+does not enumerate a regular language to prove it empty. A set you supplied *is* enumerable, so an
+exclusion that empties it conflicts at declaration instead of spending a budget at `Generate`.
 
 A generated value is guaranteed to match its pattern, by a bounded redraw where construction alone
 cannot ensure it

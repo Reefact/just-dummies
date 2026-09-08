@@ -377,10 +377,12 @@ public sealed class AnyPatternTests {
              .And.Not.Contains("\"a\", \"a\"");
     }
 
-    [Fact(DisplayName = "A shape constraint stays refused: only the rejective pair is offered.")]
-    public void OnlyTheRejectivePairIsOffered() {
-        // Constructive constraints would mean building a value in the intersection of two regular languages, which
-        // the generator has no machinery for; the exclusion pair needs none, so it is the whole added surface.
+    [Fact(DisplayName = "A shape constraint stays refused: the value set and the exclusion pair are the whole surface.")]
+    public void OnlyTheValueSetAndTheRejectivePairAreOffered() {
+        // A shape constraint would mean building a value in the intersection of two regular languages, which the
+        // generator has no machinery for. The exclusion pair needs none — it rejects rather than builds — and neither
+        // does the value set: once the caller supplies the values there is nothing left to build, and the pattern
+        // becomes the test each of them passes or fails. Those three are the whole added surface.
         string[] fluent = typeof(AnyPattern)
                           .GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
                           .Where(method => method.ReturnType == typeof(AnyPattern) && !method.IsSpecialName)
@@ -389,7 +391,7 @@ public sealed class AnyPatternTests {
                           .OrderBy(name => name, StringComparer.Ordinal)
                           .ToArray();
 
-        Check.That(fluent).ContainsExactly("DifferentFrom", "Except");
+        Check.That(fluent).ContainsExactly("DifferentFrom", "Except", "OneOf");
     }
 
     [Fact(DisplayName = "The exclusion arguments are validated as arguments, not as conflicts.")]
@@ -555,5 +557,155 @@ public sealed class AnyPatternTests {
             AssertMatches(generator.Generate(), pattern);
         }
     }
+
+    #region The value set (issue #185)
+
+    private static List<string> Draw(IAny<string> generator) {
+        List<string> drawn = [];
+        for (int i = 0; i < SampleCount; i++) { drawn.Add(generator.Generate()); }
+
+        return drawn;
+    }
+
+    [Fact(DisplayName = "A value set draws from the supplied values, and the pattern is what keeps them.")]
+    public void AValueSetDrawsFromTheValuesThePatternAdmits() {
+        // The whole shape of the constraint: the caller supplies the domain, and the pattern stops building to
+        // become the test each supplied value passes or fails. "abcd" is not a value the generator may yield.
+        IAny<string> generator = Any.StringMatching(@"^\d{3}$").OneOf("123", "abcd", "456");
+
+        for (int i = 0; i < SampleCount; i++) {
+            Check.That(generator.Generate()).IsOneOfThese("123", "456");
+        }
+    }
+
+    [Fact(DisplayName = "A value set the pattern admits nothing of conflicts at declaration, naming both sides.")]
+    public void AValueSetThePatternRefusesConflicts() {
+        // Eager, not deferred: with the domain supplied it can be established rather than searched for, so this is
+        // a ConflictingAnyConstraintException at declaration and not an AnyGenerationException after a spent budget.
+        Check.ThatCode(() => Any.StringMatching(@"^\d{3}$").OneOf("abcd", "ef"))
+             .Throws<ConflictingAnyConstraintException>()
+             .WithMessage("Cannot apply OneOf(\"abcd\", \"ef\") because StringMatching(\"^\\d{3}$\") allows none of its values.");
+    }
+
+    [Fact(DisplayName = "Under a value set an exclusion emptying it conflicts instead of spending the redraw budget.")]
+    public void AnExclusionEmptyingAValueSetConflicts() {
+        // Without a set this same exclusion could only be discovered at Generate, by exhausting the budget — the
+        // library does not enumerate a regular language to prove it empty. A supplied set IS enumerable.
+        Check.ThatCode(() => Any.StringMatching(@"^\d{3}$").OneOf("123", "456").Except("123", "456"))
+             .Throws<ConflictingAnyConstraintException>()
+             .WithMessage("Cannot apply Except(\"123\", \"456\") because it forbids every value OneOf(\"123\", \"456\") allows.");
+    }
+
+    [Fact(DisplayName = "The value set and the exclusion pair compose in either order.")]
+    public void TheValueSetAndTheExclusionsComposeInEitherOrder() {
+        Check.That(Any.StringMatching(@"^\d{3}$").OneOf("123", "456").DifferentFrom("123").Generate()).IsEqualTo("456");
+        Check.That(Any.StringMatching(@"^\d{3}$").DifferentFrom("123").OneOf("123", "456").Generate()).IsEqualTo("456");
+    }
+
+    [Fact(DisplayName = "A second value set is refused; the same one declared twice is a no-op.")]
+    public void ASecondValueSetIsRefused() {
+        AnyPattern generator = Any.StringMatching(@"^\d{3}$").OneOf("123", "456");
+
+        Check.That(generator.OneOf("123", "456").Generate()).IsOneOfThese("123", "456");
+        Check.ThatCode(() => generator.OneOf("789"))
+             .Throws<ConflictingAnyConstraintException>()
+             .WithMessage("Cannot apply OneOf(\"789\") because OneOf(\"123\", \"456\") is already defined.");
+    }
+
+    [Fact(DisplayName = "A redeclared value set is judged as a set, not as the call that was written.")]
+    public void ARedeclaredValueSetIsJudgedAsASet() {
+        // OneOf documents duplicates as ignored and promises nothing about order, so these three spellings declare
+        // one domain. Comparing the rendered call instead would refuse two of them as a second, conflicting set —
+        // a conflict the caller cannot act on, since there is nothing to loosen.
+        AnyPattern   generator = Any.StringMatching(@"^\d{3}$").OneOf("123", "456");
+        List<string> asHeld    = ["456", "123", "456"];
+
+        Check.That(generator.OneOf("456", "123").Generate()).IsOneOfThese("123", "456");
+        Check.That(generator.OneOf("123", "456", "456").Generate()).IsOneOfThese("123", "456");
+        // The sequence overload reaches the same identity check, so a held collection is judged as a set too.
+        Check.That(generator.OneOf(asHeld).Generate()).IsOneOfThese("123", "456");
+    }
+
+    [Fact(DisplayName = "A redeclared set that is genuinely different still conflicts, naming the first one.")]
+    public void ARedeclaredDifferentValueSetStillConflicts() {
+        // The set comparison must not swallow a real second declaration: one value in common is not the same domain.
+        AnyPattern generator = Any.StringMatching(@"^\d{3}$").OneOf("123", "456");
+
+        Check.ThatCode(() => generator.OneOf("123", "456", "789"))
+             .Throws<ConflictingAnyConstraintException>()
+             .WithMessage("Cannot apply OneOf(\"123\", \"456\", \"789\") because OneOf(\"123\", \"456\") is already defined.");
+        Check.ThatCode(() => generator.OneOf("123"))
+             .Throws<ConflictingAnyConstraintException>()
+             .WithMessage("Cannot apply OneOf(\"123\") because OneOf(\"123\", \"456\") is already defined.");
+    }
+
+    [Fact(DisplayName = "A pooled pattern reports its survivors and what refused the rest.")]
+    public void APooledPatternReportsItsSurvivorsAndRejections() {
+        // Which of the two to repair — the catalogue or the invariant — is the question the inspection answers, and
+        // on a pattern the answer names the pattern itself: it is the constraint that turned the value away.
+        IPoolInspection<string> inspection = Any.StringMatching(@"^\d{3}$").OneOf("123", "abcd").DifferentFrom("456");
+
+        Check.That(inspection.IsPooled).IsTrue();
+        Check.That(inspection.GetSurvivors()).ContainsExactly("123");
+        Check.That(inspection.GetRejections().Select(rejection => rejection.Value)).ContainsExactly("abcd");
+        Check.That(inspection.GetRejections().Single().RejectedBy.Select(constraint => constraint.ToString()))
+             .ContainsExactly("StringMatching(\"^\\d{3}$\")");
+    }
+
+    [Fact(DisplayName = "A value a value set and an exclusion both refuse names both of them.")]
+    public void ARejectionNamesEveryConstraintRefusingTheValue() {
+        // Naming one of two would send a reader at a constraint they could loosen without changing the verdict.
+        IPoolInspection<string> inspection = Any.StringMatching(@"^\d{3}$").OneOf("123", "456").Except("123");
+
+        Check.That(inspection.GetRejections().Single().RejectedBy.Select(constraint => constraint.ToString()))
+             .ContainsExactly("Except(\"123\")");
+    }
+
+    [Fact(DisplayName = "A pooled pattern answers a distinct collection with the size of its surviving set.")]
+    public void APooledPatternAnswersItsCardinality() {
+        // Two survivors, so a third distinct element cannot be drawn — and with the domain supplied that is
+        // established at declaration rather than discovered by exhausting the dedup draw.
+        Check.ThatCode(() => Any.SetOf(Any.StringMatching(@"^\d{3}$").OneOf("123", "456")).WithCount(3).Generate())
+             .Throws<ConflictingAnyConstraintException>();
+    }
+
+    [Fact(DisplayName = "A value set is drawn reproducibly under a seed.")]
+    public void AValueSetIsDrawnReproducibly() {
+        string[] pool = ["123", "456", "789"];
+
+        List<string> first  = Draw(Any.WithSeed(4242).StringMatching(@"^\d{3}$").OneOf(pool));
+        List<string> second = Draw(Any.WithSeed(4242).StringMatching(@"^\d{3}$").OneOf(pool));
+
+        Check.That(first).ContainsExactly(second);
+        Check.That(first.Distinct()).HasSize(3);
+    }
+
+    [Fact(DisplayName = "The value set arguments are validated as arguments, not as conflicts.")]
+    public void ValueSetArgumentsAreValidated() {
+        Check.ThatCode(() => Any.StringMatching("a").OneOf((string[])null!)).Throws<ArgumentNullException>();
+        Check.ThatCode(() => Any.StringMatching("a").OneOf((IEnumerable<string>)null!)).Throws<ArgumentNullException>();
+        Check.ThatCode(() => Any.StringMatching("a").OneOf()).Throws<ArgumentException>();
+        Check.ThatCode(() => Any.StringMatching("a").OneOf("a", null!)).Throws<ArgumentException>();
+    }
+
+    [Fact(DisplayName = "The sequence form accepts a set already held as a list.")]
+    public void TheSequenceFormAcceptsAHeldCollection() {
+        List<string> references = ["123", "456"];
+
+        Check.That(Any.StringMatching(@"^\d{3}$").OneOf(references).Generate()).IsOneOfThese("123", "456");
+    }
+
+    [Fact(DisplayName = "Membership is ordinal even where the pattern ignores case.")]
+    public void MembershipIsOrdinalEvenUnderAnIgnoreCasePattern() {
+        // The pattern decides membership of the language; ordinal equality decides identity. Those are not the same
+        // question, and an exclusion answers the second — so excluding "ABC" leaves "abc" drawable.
+        AnyPattern generator = Any.StringMatching(new Regex("^[a-c]{3}$", RegexOptions.IgnoreCase))
+                                  .OneOf("abc", "ABC")
+                                  .DifferentFrom("ABC");
+
+        Check.That(generator.Generate()).IsEqualTo("abc");
+    }
+
+    #endregion
 
 }

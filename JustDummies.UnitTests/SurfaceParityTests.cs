@@ -202,6 +202,13 @@ public sealed class SurfaceParityTests {
             "OneOf", "Except", "DifferentFrom"
         });
 
+        // AnyPattern carries the type-agnostic trio and nothing else. The pattern is the whole shape, so a shape
+        // constraint stays refused — it would mean building in the intersection of two regular languages — while
+        // neither the value set nor the exclusion pair builds anything: OneOf supplies the domain and turns the
+        // pattern into the test each value passes, and the pair only rejects. This row is what keeps the trio from
+        // drifting back to two, which is how the gap issue #185 reported got there.
+        data.Add(typeof(AnyPattern), new[] { "OneOf", "Except", "DifferentFrom" });
+
 #if NET8_0_OR_GREATER
         data.Add(typeof(AnyInt128), SignedIntegerAlgebra);
         data.Add(typeof(AnyHalf), FloatingPointAlgebra);
@@ -230,6 +237,55 @@ public sealed class SurfaceParityTests {
         Check.WithCustomMessage($"{builder.Name} — missing: [{string.Join(", ", missing)}]; unexpected: [{string.Join(", ", unexpected)}].")
              .That(missing.Length + unexpected.Length)
              .IsEqualTo(0);
+    }
+
+    #endregion
+
+    #region Overload parity: the shape of OneOf
+
+    [Fact(DisplayName = "Every OneOf offers both the params and the sequence form, over the same element type.")]
+    public void EveryOneOfOffersBothForms() {
+        // The algebra table above compares NAMES, so it cannot see an overload set that differs from one builder to
+        // the next — which is exactly the drift issue #185 found: one generator of twenty-three carried a sequence
+        // form the others did not. A caller reading `OneOf(params …)` on one builder must not have to discover, per
+        // builder, whether a set they already hold as a list is accepted. Reflection rather than a hand-kept list:
+        // the next family added is covered without touching this test.
+        List<string> offenders = [];
+
+        foreach (Type builder in typeof(Any).Assembly
+                                            .GetTypes()
+                                            .Where(type => type.IsPublic && Implements(type, typeof(IAny<>)))
+                                            .OrderBy(type => type.Name, StringComparer.Ordinal)) {
+            MethodInfo[] oneOf = builder.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+                                        .Where(method => method.Name == "OneOf")
+                                        .ToArray();
+            if (oneOf.Length == 0) { continue; }
+
+            // The element type comes from the params form, so the sequence form is checked against what the builder
+            // itself declares rather than against a type this test guessed.
+            Type? element = oneOf.Select(method => method.GetParameters()[0].ParameterType)
+                                 .FirstOrDefault(parameter => parameter.IsArray)
+                                 ?.GetElementType();
+
+            if (element is null) {
+                offenders.Add($"{builder.Name} (no params form)");
+
+                continue;
+            }
+
+            if (!oneOf.Any(method => method.GetParameters()[0].ParameterType == typeof(IEnumerable<>).MakeGenericType(element))) {
+                offenders.Add($"{builder.Name} (no IEnumerable<{element.Name}> form)");
+            }
+        }
+
+        Check.WithCustomMessage($"These generators do not offer both OneOf forms: {string.Join(", ", offenders)}.")
+             .That(offenders)
+             .IsEmpty();
+    }
+
+    /// <summary>Whether <paramref name="type" /> closes <paramref name="definition" /> at any type argument.</summary>
+    private static bool Implements(Type type, Type definition) {
+        return type.GetInterfaces().Any(candidate => candidate.IsGenericType && candidate.GetGenericTypeDefinition() == definition);
     }
 
     #endregion

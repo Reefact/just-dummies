@@ -115,6 +115,38 @@ OrderStatus fromSequence = Any.ElementOf(lazyOpen).Generate();
 
 Un vivier vide n'admet aucune valeur et est refusé, plutôt que de renvoyer une valeur par défaut.
 
+### Le piège ne concerne que `Any.OneOf`
+
+L'avertissement ci-dessus concerne le `Any.OneOf<T>` **de premier niveau**, où `T` est inféré et peut
+se lier silencieusement à la collection elle-même. Le `OneOf` d'un **constructeur typé** n'a aucun `T`
+à inférer : il accepte les deux formes, et le piège disparaît :
+
+```csharp
+List<int> allowedPorts = [80, 443, 8080];
+
+int port = Any.Int32().OneOf(allowedPorts).Generate();
+```
+
+Ce n'est pas le même appel que `Any.ElementOf(allowedPorts)`, et c'est pourquoi les deux existent.
+`ElementOf` renvoie un générateur de vivier qui n'expose que `Except` et `DifferentFrom`, alors qu'un
+`OneOf` typé renvoie le constructeur : les contraintes propres au type peuvent donc continuer de
+restreindre l'ensemble.
+
+```csharp
+List<decimal> rates = [0.055m, 0.10m, 0.20m];
+
+decimal standardRate = Any.Decimal().OneOf(rates).GreaterThan(0.09m).Generate();
+```
+
+Tout générateur qui propose `OneOf` propose les deux formes : cette uniformité est la règle, et un
+test la vérifie. Une conséquence mérite d'être connue : une `string` étant un `IEnumerable<char>`, la
+forme séquence de `Any.Char()` en accepte une directement, et elle se lit comme la liste des
+caractères autorisés :
+
+```csharp
+char separator = Any.Char().OneOf("-_.").Generate();
+```
+
 ## Booléens
 
 ```csharp

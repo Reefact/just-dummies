@@ -283,7 +283,8 @@ de garder un analyseur maison et de refuser bruyamment est
 
 ### Ce que l'on peut encore contraindre
 
-Un `AnyPattern` ne porte que `Except` et `DifferentFrom` :
+Un `AnyPattern` porte les trois mêmes contraintes d'appartenance que tous les autres générateurs —
+`OneOf`, `Except` et `DifferentFrom` :
 
 ```csharp
 string sku = Any.StringMatching(@"[A-Z]{3}-\d{4}").DifferentFrom("ABC-0000").Generate();
@@ -292,6 +293,39 @@ string sku = Any.StringMatching(@"[A-Z]{3}-\d{4}").DifferentFrom("ABC-0000").Gen
 Les contraintes de longueur, d'alphabet ou de préfixe sont volontairement absentes : les appliquer
 reviendrait à construire une valeur dans l'intersection de deux langages réguliers. Mettez plutôt
 l'exigence dans le motif — c'est déjà l'endroit le plus précis pour l'énoncer.
+
+`OneOf` n'exige rien de tel, et c'est pour cela qu'il est proposé : dès que vous fournissez les
+valeurs, il n'y a plus rien à construire, et le motif sert alors à vérifier chaque valeur. Un helper
+partagé peut ainsi définir le format, le site d'appel limitant ensuite le générateur aux références
+réellement disponibles dans la fixture :
+
+```csharp
+List<string> skusAlreadySeeded = ["ABC-0001", "ABC-0002", "ABC-0003"];
+string       theOneAlreadyUsed = "ABC-0001";
+
+static AnyPattern AnySku() => Any.StringMatching(@"[A-Z]{3}-\d{4}");
+
+string knownSku = AnySku().OneOf(skusAlreadySeeded).DifferentFrom(theOneAlreadyUsed).Generate();
+```
+
+Une valeur que le motif ne reconnaît pas ne fait pas partie de ce que le générateur peut produire :
+elle est donc retirée de l'ensemble. Et si le motif n'en admet aucune, l'ensemble est refusé **dès la
+déclaration**, avec un message qui nomme les deux contraintes en cause :
+
+<!-- jd:allow=JD006 -->
+```csharp
+// « abcd » n'est pas dans le langage : ce n'est donc pas une valeur que ce générateur peut produire.
+string alwaysTheDigits = Any.StringMatching(@"\d{3}").OneOf("123", "abcd").Generate();
+
+// Rien de ce qui est fourni ne correspond : il ne reste aucun domaine, refus là où c'est déclaré.
+Any.StringMatching(@"\d{3}").OneOf("abcd");
+```
+
+Ce refus immédiat vaut aussi pour les exclusions, mais uniquement lorsqu'un ensemble de valeurs est
+déclaré. Livré à son langage, un motif satisfait une exclusion par le retirage borné décrit plus
+haut, car la bibliothèque n'énumère pas un langage régulier pour démontrer qu'il est vide. Un
+ensemble que vous fournissez, lui, peut être énuméré : une exclusion qui le vide est donc signalée
+dès la déclaration, au lieu d'épuiser un budget au moment du `Generate`.
 
 Une valeur générée correspond forcément à son motif, grâce à un retirage borné là où la seule
 construction ne peut pas le garantir

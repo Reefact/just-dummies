@@ -20,7 +20,7 @@ namespace JustDummies;
 ///     as <see cref="DateTimeOffset" />'s own comparison operators do. Unconstrained, generated values carry offset
 ///     <see cref="TimeSpan.Zero" /> (UTC); <see cref="WithOffset" /> / <see cref="WithOffsetBetween" /> opt the offset
 ///     dimension into a fixed or bounded whole-minute value so offset-sensitive code can be exercised. Values supplied
-///     to <see cref="OneOf" /> are returned as given, offset included. There is deliberately no clock-relative
+///     to <see cref="OneOf(DateTimeOffset[])" /> are returned as given, offset included. There is deliberately no clock-relative
 ///     constraint (no "in the past/future"): a reproducible test pins its reference instants explicitly with
 ///     <see cref="After" /> and <see cref="Before" />.
 /// </remarks>
@@ -276,6 +276,22 @@ public sealed class AnyDateTimeOffset : IAny<DateTimeOffset>, IHasRandomSource, 
 
         return new AnyDateTimeOffset(_source, NarrowedToTheDeclaredOffset(allowed, supplied, applying, _offsetMinMinutes, _offsetMaxMinutes, _offsetConstraint),
                                      supplied, _offsetConstraint, _offsetMinMinutes, _offsetMaxMinutes);
+    }
+
+    /// <summary>
+    ///     Requires the instant to be one of the supplied values — returned as given, offset included — the
+    ///     <see cref="IEnumerable{T}" /> counterpart of <see cref="OneOf(DateTimeOffset[])" />, for a set already held as a
+    ///     sequence (a list, a LINQ result, values loaded at test setup). Same contract in every other respect.
+    /// </summary>
+    /// <param name="values">The allowed values; duplicates (same instant) are ignored.</param>
+    /// <returns>A new generator carrying the added constraint.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="values" /> is <c>null</c>.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="values" /> is empty.</exception>
+    /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
+    public AnyDateTimeOffset OneOf(IEnumerable<DateTimeOffset> values) {
+        if (values is null) { throw new ArgumentNullException(nameof(values)); }
+
+        return OneOf(values as DateTimeOffset[] ?? values.ToArray());
     }
 
     /// <summary>Requires the instant to be none of the supplied values (compared by instant).</summary>

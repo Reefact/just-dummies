@@ -56,11 +56,22 @@ public sealed class PoolInspectionTests {
 
     [Fact(DisplayName = "A generator with no caller-supplied pool does not carry the inspection at all.")]
     public void AGeneratorWithoutAPoolDoesNotCarryTheInspection() {
-        // The interface is optional by decision, so the cast is written as a test rather than assumed. A pattern
-        // builds its value from a language, and a boolean has a two-value universe nobody supplied: neither has a
-        // pool of the caller's to report on, so neither answers here — not even with an empty report.
-        Check.That(Implements(typeof(AnyPattern), typeof(IPoolInspection<>))).IsFalse();
+        // The interface is optional by decision, so the cast is written as a test rather than assumed. A boolean has
+        // a two-value universe nobody supplied and no OneOf to supply one with: there is no pool of the caller's to
+        // report on, so it does not answer here — not even with an empty report.
         Check.That(Implements(typeof(AnyBoolean), typeof(IPoolInspection<>))).IsFalse();
+    }
+
+    [Fact(DisplayName = "A pattern with no value set is not a pool, however it builds its value.")]
+    public void APatternWithoutAValueSetIsNotAPool() {
+        // AnyPattern carries the inspection because OneOf can supply it a pool — but carrying it is not being pooled.
+        // Left to build from its language, it reports nothing, exactly like a bounded interval: the values would be
+        // the engine's, and there is nothing of the caller's to audit.
+        IPoolInspection<string> inspection = Any.StringMatching(@"^\d{3}$").DifferentFrom("123");
+
+        Check.That(inspection.IsPooled).IsFalse();
+        Check.That(inspection.GetSurvivors()).IsEmpty();
+        Check.That(inspection.GetRejections()).IsEmpty();
     }
 
     [Fact(DisplayName = "A scalar interval is not a pool, however countable it is.")]

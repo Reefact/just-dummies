@@ -8,6 +8,41 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ## [Unreleased]
 
+### Added
+
+- **Every `OneOf` now accepts a sequence as well as a list of values.** `AnyString` was the only one
+  of the twenty-three generators with an `IEnumerable<T>` overload. The other twenty-two now have one
+  too, with the same contract, the same validation and the same conflicts. You can pass a set you
+  already hold as a list, a LINQ result or a fixture's values straight to a typed builder —
+  `Any.Int32().OneOf(allowedPorts)` — and the constraints belonging to the type still narrow it.
+  `Any.ElementOf(...)` cannot do that, because it returns a pool generator that carries only the
+  exclusion pair. No existing call site changes meaning: arrays, `params` lists and collection
+  expressions all continue to bind to the array form, so the only calls the new overload affects are
+  those that previously did not compile (ADR-0098).
+
+  Two consequences are worth knowing. On `Any.Char()`, the sequence form accepts a `string`, because
+  a `string` is an `IEnumerable<char>`, so `Any.Char().OneOf("-_.")` reads as the three separators it
+  lists. And under Sonar, three call shapes now raise **S3220** where they did not before: a
+  collection expression such as `OneOf([1, 2])`, a bare `null`, and a single value whose type is an
+  unresolved type parameter. Ordinary calls are unaffected: `OneOf(1)`, `OneOf(Suit.Hearts)`,
+  `OneOf(1, 2)`, `OneOf(array)` and `OneOf(list)` all stay silent. A cast naming the intended
+  overload settles the first two. On a collection expression, S3220 and **S3878** contradict each
+  other, and passing the values themselves satisfies both.
+
+- **`Any.StringMatching(...)` accepts a value set.** The pattern generator carried `Except` and
+  `DifferentFrom` and no `OneOf`, the only partial trio on the surface. It now carries all three. The
+  pattern keeps its meaning and becomes the test each supplied value passes or fails, so
+  `Any.StringMatching(@"\d{3}").OneOf("123", "abcd")` draws `"123"` and never `"abcd"`. This is what
+  lets a shared helper own the format while a call site narrows it to the references a fixture holds
+  (ADR-0099).
+
+  With a value set in force the diagnostics get stronger, because the domain is finite and
+  enumerable: a set the pattern admits nothing of, and an exclusion that empties what it left, are
+  both refused **at declaration** naming both sides — where the same exclusion on an unpooled pattern
+  can only spend its bounded redraw budget at `Generate()`. A pooled pattern also reports its
+  survivors and rejections through `IPoolInspection<string>`, naming the pattern as the constraint
+  that turned a value away, and answers a distinct collection with the size of its surviving set.
+
 ### Fixed
 
 - **A `decimal` interval within a unit of the type's own domain no longer fails at random.**

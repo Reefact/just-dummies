@@ -143,9 +143,11 @@ public sealed class AnyPattern : IAny<string>, IHasRandomSource, ICardinalityHin
     // compiled where a draw would never have compiled it.
     // Lazy<T>'s default thread-safety mode guarantees the factory runs exactly once even under concurrent
     // Generate() calls on the same instance (see the "concurrent draws" test); no thread ever sees, or pays for, a
-    // second compilation. Anchored with ^(?:…)$ so it decides a full match, and honours only the option the
-    // generator itself honoured (IgnoreCase), never the rest of a passed Regex's. Shared, not rebuilt, when an
-    // exclusion derives a new generator: the pattern it verifies is unchanged.
+    // second compilation. Anchored with \A(?:…)\z so it decides a full match, and honours only the option the
+    // generator itself honoured (IgnoreCase), never the rest of a passed Regex's. The absolute anchors are the ones
+    // that mean it: '$' also matches just before a trailing '\n', so ^(?:…)$ would have let OneOf admit "123\n"
+    // against \d{3} — a value outside the language the pattern names. Shared, not rebuilt, when an exclusion
+    // derives a new generator: the pattern it verifies is unchanged.
     private readonly Lazy<Regex> _verifier;
 
     #endregion
@@ -160,7 +162,7 @@ public sealed class AnyPattern : IAny<string>, IHasRandomSource, ICardinalityHin
         _pattern    = pattern;
         _excluded   = [];
         _exclusions = [];
-        _verifier   = new Lazy<Regex>(() => new Regex("^(?:" + pattern + ")$", options, MatchTimeout));
+        _verifier   = new Lazy<Regex>(() => new Regex(@"\A(?:" + pattern + @")\z", options, MatchTimeout));
     }
 
     // The one derivation constructor, shared by the value set and the exclusions: both change what may be drawn, and

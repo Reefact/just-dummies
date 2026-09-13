@@ -26,10 +26,10 @@ Autres faits qui encadrent le choix :
   toute la surface est la paire d'exclusion : l'appelant qui le prend perd les contraintes propres au
   type. `Any.String().OneOf(list).WithLength(3)` et `Any.Decimal().OneOf(rates).GreaterThan(0m)` n'ont
   aucun équivalent en `ElementOf`.
-* Les deux modes de défaillance diffèrent. Passer une collection détenue au `Any.OneOf<T>` générique
-  compile et produit silencieusement un vivier d'un seul élément — le piège que `JD013` signale. La
-  passer à un `OneOf` typé ne compile pas du tout : il n'y a aucun `T` à inférer, donc l'appelant
-  écrit `.ToArray()` et passe à la suite.
+* Les deux modes de défaillance diffèrent. Passer au `Any.OneOf<T>` générique une collection déjà
+  disponible chez l'appelant compile et produit silencieusement un vivier d'un seul élément — le
+  piège que `JD013` signale. La passer à un `OneOf` typé ne compile pas du tout : il n'y a aucun `T`
+  à inférer, donc l'appelant écrit `.ToArray()` et passe à la suite.
 * La résolution de surcharge ne déplace aucun appel existant. `T[]` est une meilleure cible de
   conversion que `IEnumerable<T>` : un argument tableau, une liste `params` et une expression de
   collection se lient toutes encore à la forme tableau. Les seuls appels que la seconde surcharge
@@ -59,7 +59,7 @@ avec le même contrat, la même validation et les mêmes conflits.
 
 **La surface enseigne une règle, mais le lecteur ne peut pas repérer l'exception.** Un appelant qui a
 rencontré `OneOf(params …)` sur un constructeur s'attend raisonnablement à ce que le suivant accepte
-l'ensemble qu'il détient déjà. Vingt-deux sur vingt-trois le refusent, et rien au site d'appel
+l'ensemble dont il dispose déjà. Vingt-deux sur vingt-trois le refusent, et rien au site d'appel
 n'indique lesquels. Chaque lecteur paie donc ce coût, à répétition, pour économiser vingt-deux
 méthodes de quatre lignes écrites une seule fois.
 
@@ -124,7 +124,7 @@ d'uniformité n'en est pas une version réduite.
 
 ### Positives
 
-* Un ensemble déjà détenu comme liste, résultat LINQ ou valeurs d'une fixture atteint directement
+* Un ensemble déjà disponible sous forme de liste, de résultat LINQ ou de valeurs de fixture atteint
   n'importe quel constructeur typé, les contraintes propres au type restant disponibles pour le
   resserrer.
 * La règle — tout `OneOf` prend les deux formes — est vérifiable, tenue par une garde par réflexion

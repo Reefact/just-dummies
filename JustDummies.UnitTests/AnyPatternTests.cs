@@ -16,10 +16,12 @@ public sealed class AnyPatternTests {
     private const int SampleCount = 200;
 
     // The oracle: a generated value is correct iff the REAL .NET regex engine fully matches it. Anchoring with
-    // ^(?:...)$ turns the partial-match IsMatch into a whole-string test, so it catches both under-generation
-    // (too few characters) and over-generation (trailing junk), and handles top-level alternation correctly.
+    // \A(?:...)\z turns the partial-match IsMatch into a whole-string test, so it catches both under-generation
+    // (too few characters) and over-generation (trailing junk), and handles top-level alternation correctly. The
+    // anchors are the absolute ones because '$' also matches just before a trailing '\n', which would let exactly
+    // one shape of trailing junk through the oracle unseen.
     private static void AssertMatches(string value, string pattern, RegexOptions options = RegexOptions.None) {
-        Assert.True(Regex.IsMatch(value, "^(?:" + pattern + ")$", options),
+        Assert.True(Regex.IsMatch(value, @"\A(?:" + pattern + @")\z", options),
                     $"generated value {Display(value)} is not matched by /{pattern}/");
     }
 
@@ -576,6 +578,21 @@ public sealed class AnyPatternTests {
         for (int i = 0; i < SampleCount; i++) {
             Check.That(generator.Generate()).IsOneOfThese("123", "456");
         }
+    }
+
+    [Fact(DisplayName = "A value carrying a trailing newline is outside the pattern, and the set refuses it.")]
+    public void AValueSetRefusesAValueCarryingATrailingNewline() {
+        // Why the verifier is anchored \A…\z and not ^…$: in .NET '$' also matches just before a trailing '\n', so
+        // the lax anchors admitted "123\n" against \d{3} — and a pooled draw could then yield a value outside the
+        // language the pattern names. The pattern stands for the WHOLE shape of the value; nothing trails it.
+        Check.ThatCode(() => Any.StringMatching(@"^\d{3}$").OneOf("123\n"))
+             .Throws<ConflictingAnyConstraintException>()
+             .WithMessage("Cannot apply OneOf(\"123\n\") because StringMatching(\"^\\d{3}$\") allows none of its values.");
+
+        IPoolInspection<string> inspection = Any.StringMatching(@"^\d{3}$").OneOf("123", "123\n");
+
+        Check.That(inspection.GetSurvivors()).ContainsExactly("123");
+        Check.That(inspection.GetRejections().Select(rejection => rejection.Value)).ContainsExactly("123\n");
     }
 
     [Fact(DisplayName = "A value set the pattern admits nothing of conflicts at declaration, naming both sides.")]

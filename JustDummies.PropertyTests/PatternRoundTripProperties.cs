@@ -22,10 +22,11 @@ namespace JustDummies.PropertyTests;
 /// </summary>
 /// <remarks>
 ///     <para>
-///         The oracle is <c>^(?:P)$</c> rather than <c>P</c>: JustDummies generates a <b>whole</b> matching string, so
+///         The oracle is <c>\A(?:P)\z</c> rather than <c>P</c>: JustDummies generates a <b>whole</b> matching string, so
 ///         anchoring turns the partial-match <see cref="Regex.IsMatch(string)" /> into a whole-string test that catches
 ///         under-generation (too few characters) and over-generation (trailing junk) alike, and keeps a top-level
-///         alternation from binding looser than intended.
+///         alternation from binding looser than intended. The anchors are absolute: <c>$</c> also matches just before
+///         a trailing <c>\n</c>, so <c>^(?:P)$</c> would let that one shape of trailing junk pass.
 ///     </para>
 ///     <para>
 ///         The pattern generator is deliberately narrower than the supported subset. It emits <b>no anchors</b> — the
@@ -171,7 +172,7 @@ public sealed class PatternRoundTripProperties {
     ///     should fail the suite, never hang it.
     /// </summary>
     private static Regex Anchored(string pattern, RegexOptions options) {
-        return new Regex("^(?:" + pattern + ")$", options, TimeSpan.FromSeconds(10));
+        return new Regex(@"\A(?:" + pattern + @")\z", options, TimeSpan.FromSeconds(10));
     }
 
     /// <summary>Whether the real .NET engine compiles <paramref name="pattern" /> at all — the reference verdict on well-formedness.</summary>

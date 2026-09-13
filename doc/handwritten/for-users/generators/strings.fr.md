@@ -283,8 +283,8 @@ de garder un analyseur maison et de refuser bruyamment est
 
 ### Ce que l'on peut encore contraindre
 
-Un `AnyPattern` porte les trois mêmes contraintes d'appartenance que tous les autres générateurs —
-`OneOf`, `Except` et `DifferentFrom` :
+Un `AnyPattern` porte le trio agnostique du type — `OneOf`, `Except` et `DifferentFrom` — offert
+partout où le générateur construirait sinon la valeur :
 
 ```csharp
 string sku = Any.StringMatching(@"[A-Z]{3}-\d{4}").DifferentFrom("ABC-0000").Generate();

@@ -13,11 +13,11 @@ namespace JustDummies;
 ///     A generator of arbitrary strings that <b>match a regular expression</b> — the dummy for a value whose format is
 ///     defined by a pattern (an order reference, a SKU, a currency code). The pattern is the whole <i>shape</i> of the
 ///     specification: unlike <see cref="AnyString" /> this generator exposes no further shape or length constraints —
-///     express those inside the pattern instead. What it does expose is the type-agnostic trio every other generator
-///     carries: the value set <see cref="OneOf(string[])" /> and the exclusion pair <see cref="Except" /> and
-///     <see cref="DifferentFrom" />. It also composes like any other generator: pipe it through <c>As(...)</c> into a
-///     value object, make it optional with <c>OrNull()</c>, or fold it into <c>Combine(...)</c> and the collection
-///     generators.
+///     express those inside the pattern instead. What it does expose is the type-agnostic trio, offered wherever a
+///     generator would otherwise build the value: the value set <see cref="OneOf(string[])" /> and the exclusion pair
+///     <see cref="Except" /> and <see cref="DifferentFrom" />. It also composes like any other generator: pipe it
+///     through <c>As(...)</c> into a value object, make it optional with <c>OrNull()</c>, or fold it into
+///     <c>Combine(...)</c> and the collection generators.
 /// </summary>
 /// <remarks>
 ///     <para>

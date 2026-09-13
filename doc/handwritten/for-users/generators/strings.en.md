@@ -274,8 +274,8 @@ parser and refuse loudly instead is
 
 ### What you can still constrain
 
-An `AnyPattern` carries the same three membership constraints every other generator does — `OneOf`,
-`Except` and `DifferentFrom`:
+An `AnyPattern` carries the type-agnostic trio — `OneOf`, `Except` and `DifferentFrom` — offered
+wherever the generator would otherwise build the value:
 
 ```csharp
 string sku = Any.StringMatching(@"[A-Z]{3}-\d{4}").DifferentFrom("ABC-0000").Generate();

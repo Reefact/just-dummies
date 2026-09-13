@@ -83,10 +83,13 @@ catalogue.
 holds. Without `OneOf` the caller must abandon the helper and write `Any.ElementOf(pool)`, dropping
 the format the helper existed to state — and with it the check that the pool still agrees with it.
 
-**Forcing the verifier early is a trade worth naming.** Judging the caller's values at declaration is
-what makes the conflict eager, and it compiles the verifier for a pattern a draw might have refused
-before ever building one. The exposure is a pattern with a monstrous quantifier bound *and* a value
-set — a combination that has no reason to occur — against an eager conflict on every ordinary one.
+**The verifier is forced early, but only behind the same guard.** Judging the caller's values at
+declaration is what makes the conflict eager, and it compiles a verifier a draw might never have
+compiled. That is not a trade to accept: the lazy field exists so a pattern the ceiling refuses is
+never handed to `Regex`, and a value set must not become the way around it. `OneOf` therefore puts
+the pattern to the ceiling first, on a discarded draw of its own, so such a pattern fails at the
+declaration exactly as it fails at generation. What a value set costs is that draw, not the
+guarantee.
 
 ## Alternatives Considered
 
@@ -135,8 +138,8 @@ generation reads as a defect in the generator rather than as the defect in the t
 
 * `AnyPattern` grows from a small self-contained builder into one carrying a pool, its provenance and
   two more interfaces — more state to keep consistent across derivations.
-* The verifier is no longer compiled only on a path that has vouched for the pattern. Declaring a
-  value set compiles it, deliberately.
+* Declaring a value set compiles the verifier, where only a draw did before. It goes through the
+  same ceiling check a draw goes through, at the cost of one discarded draw per declaration.
 * A third generator now behaves differently depending on whether a caller-supplied set is in force,
   which the documentation has to carry: eager under a set, bounded redraw without one.
 
@@ -146,10 +149,11 @@ generation reads as a defect in the generator rather than as the defect in the t
   on whether a value set was declared, and a reader who meets one form first may read the other as a
   regression. Mitigated by stating both on the type and on the user page, at the constraint rather
   than only here.
-* **Compiling the verifier at declaration was measured on one engine only.** A pattern with an
-  enormous quantifier bound compiles in milliseconds on the modern .NET engine; the precaution the
-  code carried names another implementation, and the .NET Framework 4.7.2 floor was not measured. The
-  exposure needs that pattern *and* a value set to be reached at all.
+* **The ceiling check is a necessary condition, not a sufficient one.** A pattern whose expansion
+  depends on the draw can fit the probe and still meet the ceiling at `Generate`, which enforces it
+  per draw. That is the shape of the guard being preserved rather than a weakening of it — what the
+  probe establishes is the case that matters, a pattern no draw can ever fit — but a declaration that
+  passes it still promises nothing about the draw.
 
 ## Follow-up Actions
 

@@ -580,6 +580,19 @@ public sealed class AnyPatternTests {
         }
     }
 
+    [Fact(DisplayName = "A pattern the generation ceiling refuses is refused by a value set too, uncompiled.")]
+    public void AValueSetRefusesAPatternTheCeilingRefuses() {
+        // The verifier is lazy so a quantifier bound near int.MaxValue is never handed to Regex: compiling one has
+        // been observed to exhaust memory on at least one .NET engine implementation, and the generation ceiling
+        // refuses such a pattern without ever needing it. Judging a supplied set forces the verifier, so OneOf puts
+        // the pattern to the ceiling first and fails exactly where Generate does. This test earns its keep on the
+        // .NET Framework 4.7.2 job, which is where that failure was observed.
+        AnyPattern generator = Any.StringMatching("a{2147483647,}");
+
+        Check.ThatCode(() => generator.Generate()).Throws<AnyGenerationException>();
+        Check.ThatCode(() => generator.OneOf("a")).Throws<AnyGenerationException>();
+    }
+
     [Fact(DisplayName = "A value carrying a trailing newline is outside the pattern, and the set refuses it.")]
     public void AValueSetRefusesAValueCarryingATrailingNewline() {
         // Why the verifier is anchored \A…\z and not ^…$: in .NET '$' also matches just before a trailing '\n', so

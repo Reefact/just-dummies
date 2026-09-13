@@ -317,15 +317,16 @@ déclaration**, avec un message qui nomme les deux contraintes en cause :
 // « abcd » n'est pas dans le langage : ce n'est donc pas une valeur que ce générateur peut produire.
 string alwaysTheDigits = Any.StringMatching(@"\d{3}").OneOf("123", "abcd").Generate();
 
-// Rien de ce qui est fourni ne correspond : il ne reste aucun domaine, refus là où c'est déclaré.
+// Rien de ce qui est fourni ne correspond : il ne reste aucun domaine, la déclaration est refusée aussitôt.
 Any.StringMatching(@"\d{3}").OneOf("abcd");
 ```
 
 Ce refus immédiat vaut aussi pour les exclusions, mais uniquement lorsqu'un ensemble de valeurs est
-déclaré. Livré à son langage, un motif satisfait une exclusion par le retirage borné décrit plus
-haut, car la bibliothèque n'énumère pas un langage régulier pour démontrer qu'il est vide. Un
-ensemble que vous fournissez, lui, peut être énuméré : une exclusion qui le vide est donc signalée
-dès la déclaration, au lieu d'épuiser un budget au moment du `Generate`.
+déclaré. Lorsqu'il construit lui-même ses valeurs à partir de son langage, un motif satisfait une
+exclusion par le retirage borné décrit plus haut, car la bibliothèque n'énumère pas un langage
+régulier pour démontrer qu'il est vide. Un ensemble que vous fournissez, lui, peut être énuméré :
+une exclusion qui le vide est donc signalée dès la déclaration, au lieu d'épuiser un budget au
+moment du `Generate`.
 
 Une valeur générée correspond forcément à son motif, grâce à un retirage borné là où la seule
 construction ne peut pas le garantir

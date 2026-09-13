@@ -29,9 +29,9 @@ Autres faits qui encadrent le choix :
 
 * L'argument même de l'ADR-0033 pour admettre un ensemble de valeurs fourni par l'appelant est qu'il
   s'agit d'*un domaine, non d'une mise en page* : dès que les valeurs sont fournies il n'y a plus rien
-  à bâtir, chaque autre contrainte devient un test que chaque valeur passe ou échoue, le domaine est
-  l'ensemble des valeurs qui passent, et la satisfiabilité est l'unique question de savoir s'il en
-  reste.
+  à bâtir, chaque autre contrainte devient un prédicat auquel chaque valeur satisfait ou non, le
+  domaine est l'ensemble des valeurs qui y satisfont, et la satisfiabilité est l'unique question de
+  savoir s'il en reste.
 * Un motif est exactement un tel test, et le moteur qui l'exécute existe déjà. Depuis
   l'[ADR-0027](0027-guarantee-a-generated-regex-value-matches-by-bounded-redraw.fr.md), chaque valeur
   bâtie est vérifiée contre le vrai moteur .NET avant d'être renvoyée. Juger les valeurs fournies
@@ -44,9 +44,10 @@ Autres faits qui encadrent le choix :
   qui vide le langage se manifeste à la génération comme un budget dépensé — jamais comme une preuve
   d'impossibilité, puisque la bibliothèque n'énumère pas un langage régulier. Un ensemble fourni est
   fini et énumérable : la même question devient décidable à la déclaration.
-* Deux générateurs portent légitimement moins que le trio complet, et les deux se dérivent :
-  `AnyOneOf<T>`, dont le vivier *est* le `OneOf` — un second ne pourrait qu'intersecter deux viviers —
-  et `AnyBoolean`, dont le domaine à deux valeurs est nommé membre par membre par `True()`/`False()`.
+* Deux générateurs exposent légitimement moins de contraintes que le trio complet, et les deux se
+  dérivent : `AnyOneOf<T>`, dont le vivier *est* le `OneOf` — un second ne pourrait qu'intersecter
+  deux viviers — et `AnyBoolean`, dont le domaine à deux valeurs est nommé membre par membre par
+  `True()`/`False()`.
 * `AnyPattern` diffère la compilation de son vérificateur jusqu'à ce qu'un tirage en ait besoin, et
   c'est délibéré : un motif dont le plafond de génération refuse la génération (un quantificateur non
   borné dont le minimum se compte en milliards) est rejeté par le constructeur avant que le
@@ -72,7 +73,8 @@ motif ne fait alors que valider » — est tout aussi vrai de `WithLength(3)` à
 `DifferentFrom` sur un motif et pas de `OneOf` ne peut pas distinguer un refus d'un oubli, et le type
 disait « la paire d'exclusion » comme si la question était close. Énoncer la règle positive — `OneOf`
 est offert partout où le générateur construirait sinon — répond pour `AnyPattern`, et explique aussi
-les deux générateurs qui portent moins, lesquels ressemblaient jusqu'ici à deux exceptions de plus.
+les deux générateurs qui exposent moins de contraintes, lesquels ressemblaient jusqu'ici à deux
+exceptions de plus.
 
 **Le gain n'est pas seulement une symétrie : c'est un meilleur diagnostic.** Le domaine étant fourni,
 une exclusion qui le vide devient un conflit signalé dès la déclaration, avec un message nommant les
@@ -134,8 +136,8 @@ générateur alors qu'elle est un défaut du test.
 
 ### Positives
 
-* Le trio agnostique du type est complet partout où il a du sens, et les deux générateurs qui en
-  portent moins sont expliqués par la même phrase au lieu de rester des exceptions.
+* Le trio agnostique du type est complet partout où il a du sens, et les deux générateurs qui
+  exposent moins de contraintes sont expliqués par la même phrase au lieu de rester des exceptions.
 * Sous un ensemble de valeurs, un domaine vidé est un conflit à la déclaration nommant les deux côtés,
   au lieu d'un budget de retirage épuisé à la génération.
 * Un motif à vivier rapporte ses survivants et ses rejets, et répond à une collection distincte avec

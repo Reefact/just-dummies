@@ -76,6 +76,10 @@ public sealed class AnyPattern : IAny<string>, IHasRandomSource, ICardinalityHin
     // A nested unbounded quantifier can, in principle, expand super-linearly; this ceiling turns that into a clear
     // AnyGenerationException instead of an out-of-memory. It is far above any realistic format-validation pattern.
     private const int GenerationLimit = 65536;
+    // The seed the ceiling probe draws on. Any constant does: the probe's value is discarded and only the verdict —
+    // does the draw fit the ceiling — is read. Drawing on a generator of its own is what keeps the probe out of the
+    // seeded run, so declaring a value set never shifts what the following draws yield.
+    private const int CeilingProbeSeed = 0;
 
     // The structural build occasionally produces a value the real engine rejects (see the class remarks). Each build
     // is verified and redrawn on a miss; the cap turns a pattern the generator cannot satisfy at all into a clear
@@ -138,9 +142,9 @@ public sealed class AnyPattern : IAny<string>, IHasRandomSource, ICardinalityHin
     // Compiled at most once, on first need — see the FromPattern and Generate() remarks. Two things force it, and
     // only one of them was here first: a draw, which reaches this line only after _root.Append has vouched for the
     // pattern's generability; and OneOf, which forces it at DECLARATION because judging the caller's values is what
-    // makes an emptied set an eager conflict rather than a spent redraw budget. That is a deliberate trade: a
-    // pattern whose generation the ceiling refuses can still be handed a value set, and its verifier is then
-    // compiled where a draw would never have compiled it.
+    // makes an emptied set an eager conflict rather than a spent redraw budget. Both go through the same door:
+    // OneOf calls RefuseWhatTheCeilingRefuses first, so a pattern the ceiling refuses is refused there too and no
+    // Regex is ever compiled for it — the guarantee this lazy field exists for, which a value set must not weaken.
     // Lazy<T>'s default thread-safety mode guarantees the factory runs exactly once even under concurrent
     // Generate() calls on the same instance (see the "concurrent draws" test); no thread ever sees, or pays for, a
     // second compilation. Anchored with \A(?:…)\z so it decides a full match, and honours only the option the
@@ -262,6 +266,11 @@ public sealed class AnyPattern : IAny<string>, IHasRandomSource, ICardinalityHin
         if (_allowed is not null && new HashSet<string>(_allowed, StringComparer.Ordinal).SetEquals(requested)) { return this; }
         if (_allowedConstraint is not null) { throw ConflictingAnyConstraintException.AlreadyDefined(applying, _allowedConstraint); }
 
+        // Judging the supplied values forces the verifier, and the verifier is lazy precisely so a pattern the
+        // generation ceiling refuses is never handed to Regex. Ask the ceiling first, so the value set reaches the
+        // compilation only by the same door a draw does.
+        RefuseWhatTheCeilingRefuses();
+
         AnyPattern candidate = new(this, requested, applying, _excluded, _exclusions);
         if (candidate._survivors!.Count > 0) { return candidate; }
 
@@ -350,6 +359,24 @@ public sealed class AnyPattern : IAny<string>, IHasRandomSource, ICardinalityHin
         if (candidate._survivors is null || candidate._survivors.Count > 0) { return candidate; }
 
         throw ConflictingAnyConstraintException.NoValueRemains(applying, DescribeEmptiedPool(values));
+    }
+
+    /// <summary>
+    ///     Puts the pattern to the generation ceiling, raising the same <see cref="AnyGenerationException" /> a draw
+    ///     would — the guard that keeps a pattern the ceiling refuses from ever being compiled into a
+    ///     <see cref="Regex" />, which a quantifier bound near <see cref="int.MaxValue" /> has been observed to make
+    ///     exhaust memory on at least one .NET engine implementation. The draw is discarded and runs on a random
+    ///     generator of its own, so it neither advances this generator's source nor changes what
+    ///     <see cref="Generate" /> later yields.
+    /// </summary>
+    /// <remarks>
+    ///     A necessary condition, not a sufficient one, exactly like the guard it preserves: a pattern whose
+    ///     expansion depends on the draw may fit here and still meet the ceiling at <see cref="Generate" />, which
+    ///     enforces it per draw. What it does establish is the case that matters — a pattern no draw can ever fit is
+    ///     refused before anything compiles it.
+    /// </remarks>
+    private void RefuseWhatTheCeilingRefuses() {
+        _root.Append(new RegexGenerationContext(new SeededRandom(CeilingProbeSeed), GenerationLimit));
     }
 
     /// <summary>

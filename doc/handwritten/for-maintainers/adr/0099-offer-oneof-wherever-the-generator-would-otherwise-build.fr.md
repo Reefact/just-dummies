@@ -90,12 +90,14 @@ aux références réellement disponibles dans la fixture. Sans `OneOf`, l'appela
 helper et écrire `Any.ElementOf(pool)` : il perd alors le format que le helper servait à énoncer, et
 avec lui la vérification que le vivier lui reste conforme.
 
-**Compiler le vérificateur plus tôt est un compromis qu'il faut énoncer.** Valider les valeurs de
-l'appelant dès la déclaration est ce qui rend le conflit immédiat, mais cela compile le vérificateur
-pour un motif qu'un tirage aurait pu refuser avant même d'avoir bâti une valeur. Le cas exposé exige
-à la fois un motif à borne de quantificateur démesurée *et* un ensemble de valeurs, combinaison qui
-n'a aucune raison de se présenter ; en face, le conflit devient immédiat dans tous les cas
-ordinaires.
+**Le vérificateur est compilé plus tôt, mais derrière la même protection.** Valider les valeurs de
+l'appelant dès la déclaration est ce qui rend le conflit immédiat, et cela compile un vérificateur
+qu'un tirage n'aurait peut-être jamais compilé. Ce n'est pas un compromis à accepter : le champ
+paresseux existe pour qu'un motif que le plafond refuse ne soit jamais confié à `Regex`, et un
+ensemble de valeurs ne doit pas devenir le moyen de contourner cette garantie. `OneOf` soumet donc
+d'abord le motif au plafond, sur un tirage jeté qui lui est propre, si bien qu'un tel motif échoue à
+la déclaration exactement comme il échoue à la génération. Ce qu'un ensemble de valeurs coûte, c'est
+ce tirage, pas la garantie.
 
 ## Alternatives envisagées
 
@@ -147,8 +149,8 @@ générateur alors qu'elle est un défaut du test.
 
 * `AnyPattern` passe d'un petit constructeur autonome à un constructeur portant un vivier, sa
   provenance et deux interfaces de plus — davantage d'état à garder cohérent au fil des dérivations.
-* Le vérificateur n'est plus compilé uniquement sur un chemin qui a déjà validé que le motif est
-  générable : déclarer un ensemble de valeurs le compile, délibérément.
+* Déclarer un ensemble de valeurs compile le vérificateur, là où seul un tirage le faisait. Cela
+  passe par le même contrôle de plafond qu'un tirage, au prix d'un tirage jeté par déclaration.
 * Un troisième générateur se comporte désormais différemment selon qu'un ensemble fourni par
   l'appelant est déclaré ou non, ce que la documentation doit énoncer : refus immédiat avec un
   ensemble, retirage borné sans.
@@ -160,10 +162,11 @@ générateur alors qu'elle est un défaut du test.
   lecteur qui rencontre l'une des deux formes en premier risque de lire l'autre comme une régression.
   Atténué en énonçant les deux cas sur le type et sur la page utilisateur, au niveau de la contrainte,
   et pas seulement ici.
-* **La compilation du vérificateur à la déclaration n'a été mesurée que sur un moteur.** Un motif à
-  borne de quantificateur énorme se compile en quelques millisecondes sur le moteur .NET moderne ; la
-  précaution que portait le code nomme une autre implémentation, et le plancher .NET Framework 4.7.2
-  n'a pas été mesuré. L'exposition exige ce motif *et* un ensemble de valeurs pour être atteinte.
+* **Le contrôle de plafond est une condition nécessaire, non suffisante.** Un motif dont l'expansion
+  dépend du tirage peut passer le contrôle et rencontrer malgré tout le plafond au `Generate`, qui
+  l'applique à chaque tirage. C'est la forme même de la protection préservée et non un
+  affaiblissement — ce que le contrôle établit est le cas qui compte, un motif qu'aucun tirage ne peut
+  faire tenir — mais une déclaration qui le passe ne promet toujours rien du tirage.
 
 ## Actions de suivi
 

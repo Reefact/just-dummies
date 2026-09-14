@@ -171,9 +171,9 @@ public sealed class ConflictingAnyConstraintException : DummyException {
     ///     key pinned outside the generator's domain, or a <c>ContainingAnyKey</c> slot, already fills its own room
     ///     without drawing on it, so this can be smaller than what the caller wrote.
     /// </param>
-    /// <param name="cardinality">The number of distinct values the key generator can produce.</param>
+    /// <param name="cardinality">The number of distinct keys the key generator can produce.</param>
     internal static ConflictingAnyConstraintException DictionaryKeysExceedCardinality(string required, string cardinality) {
-        return Verdict($"The key generator can produce only {cardinality} distinct value(s), not enough for the {required} it must still supply");
+        return Verdict($"The key generator can produce only {cardinality} distinct key(s), not enough for the {required} it must still supply");
     }
 
     /// <summary>

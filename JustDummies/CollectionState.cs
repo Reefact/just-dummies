@@ -44,15 +44,19 @@ internal sealed class CollectionState<T> {
 
     #region Statics members declarations
 
-    internal static CollectionState<T> Create(IAny<T> item, bool distinct, IEqualityComparer<T>? comparer) {
+    internal static CollectionState<T> Create(IAny<T> item, bool distinct, IEqualityComparer<T>? comparer, DistinctnessOwner owner) {
         if (item is null) { throw new ArgumentNullException(nameof(item)); }
 
         return new CollectionState<T>(item, AnyDerivation.CardinalityOf(item, comparer), CountSpec.Unconstrained, distinct, comparer,
-                                      Array.Empty<T>(), Array.Empty<IAny<T>>());
+                                      Array.Empty<T>(), Array.Empty<IAny<T>>(), owner);
     }
 
     private static string Elements(int count) {
         return count == 1 ? "1 element" : $"{count.ToString(CultureInfo.InvariantCulture)} elements";
+    }
+
+    private static string Keys(int count) {
+        return count == 1 ? "1 key" : $"{count.ToString(CultureInfo.InvariantCulture)} keys";
     }
 
     private static IReadOnlyList<TItem> Append<TItem>(IReadOnlyList<TItem> list, TItem value) {
@@ -77,6 +81,7 @@ internal sealed class CollectionState<T> {
     private readonly IEqualityComparer<T>?     _comparer;
     private readonly CountSpec                 _count;
     private readonly bool                      _distinct;
+    private readonly DistinctnessOwner         _distinctnessOwner;
     private readonly IReadOnlyList<T>          _fixedContaining;
     private readonly IReadOnlyList<IAny<T>>    _generatedContaining;
     private readonly IAny<T>                   _item;
@@ -84,9 +89,10 @@ internal sealed class CollectionState<T> {
 
     #endregion
 
+    [SuppressMessage(SonarRule.S107.Category, SonarRule.S107.Id, Justification = SuppressionJustification.S107.EngineImmutableState)]
     private CollectionState(IAny<T> item, long? itemCardinality, CountSpec count, bool distinct,
                             IEqualityComparer<T>? comparer,
-                            IReadOnlyList<T> fixedContaining, IReadOnlyList<IAny<T>> generatedContaining) {
+                            IReadOnlyList<T> fixedContaining, IReadOnlyList<IAny<T>> generatedContaining, DistinctnessOwner distinctnessOwner) {
         _item                = item;
         _itemCardinality     = itemCardinality;
         _count               = count;
@@ -94,6 +100,7 @@ internal sealed class CollectionState<T> {
         _comparer            = comparer;
         _fixedContaining     = fixedContaining;
         _generatedContaining = generatedContaining;
+        _distinctnessOwner   = distinctnessOwner;
     }
 
     /// <summary>The equality comparer distinct collections deduplicate with, or <c>null</c> for the default.</summary>
@@ -194,7 +201,7 @@ internal sealed class CollectionState<T> {
         // Asked again rather than carried: Create ran before Distinct(comparer) could arrive, so a cardinality
         // captured there was measured under an equality the collection may since have replaced. Re-asking here --
         // the single funnel every constraint routes through -- is what makes the two declaration orders agree.
-        CollectionState<T> candidate = new(_item, AnyDerivation.CardinalityOf(_item, comparer), count, distinct, comparer, fixedContaining, generatedContaining);
+        CollectionState<T> candidate = new(_item, AnyDerivation.CardinalityOf(_item, comparer), count, distinct, comparer, fixedContaining, generatedContaining, _distinctnessOwner);
         candidate.Validate(applying);
 
         return candidate;
@@ -224,19 +231,19 @@ internal sealed class CollectionState<T> {
     ///     <para>
     ///         Asked mid-chain, the same constraints were refused in one order and honoured in another — a verdict
     ///         belonging to the constraint set, read off whichever prefix of it happened to be declared first. Both
-    ///         sentences therefore name <c>Distinct()</c>, the constraint that cannot be honoured however the chain
-    ///         was written, rather than whichever call the refusal happened to land on.
+    ///         sentences therefore blame whatever makes this collection distinct — <c>Distinct()</c> for the
+    ///         list-shaped generators, the set or the dictionary's key generator for the other two (see
+    ///         <see cref="DistinctnessOwner" />) — rather than whichever call the refusal happened to land on.
     ///     </para>
     /// </remarks>
     private void EnsureDistinctIsBuildable() {
         if (!_distinct) { return; }
 
-        ConstraintCall       distinctness = ConstraintCall.Of("Distinct");
-        IEqualityComparer<T> comparer     = _comparer ?? EqualityComparer<T>.Default;
+        IEqualityComparer<T> comparer = _comparer ?? EqualityComparer<T>.Default;
         for (int left = 0; left < _fixedContaining.Count; left++) {
             for (int right = left + 1; right < _fixedContaining.Count; right++) {
                 if (comparer.Equals(_fixedContaining[left], _fixedContaining[right])) {
-                    throw ConflictingAnyConstraintException.DuplicateInDistinctCollection(distinctness, AnyDerivation.Display(_fixedContaining[left]));
+                    throw DuplicateException(AnyDerivation.Display(_fixedContaining[left]));
                 }
             }
         }
@@ -263,8 +270,28 @@ internal sealed class CollectionState<T> {
             // the sentence below is the honest one — so that fallback is exactly the behaviour this always had.
             if (cardinality == 0) { _item.Generate(); }
 
-            throw ConflictingAnyConstraintException.DistinctElementsExceedCardinality(distinctness, Elements(fromGenerator), cardinality.ToString(CultureInfo.InvariantCulture));
+            throw CardinalityException(fromGenerator, cardinality);
         }
+    }
+
+    /// <summary>The exception for a value required to be contained twice, blamed under this collection's <see cref="DistinctnessOwner" />.</summary>
+    private ConflictingAnyConstraintException DuplicateException(string value) {
+        return _distinctnessOwner switch {
+            DistinctnessOwner.SetIdentity    => ConflictingAnyConstraintException.DuplicateInDistinctSet(value),
+            DistinctnessOwner.DictionaryKeys => ConflictingAnyConstraintException.DuplicateKeyInDistinctDictionary(value),
+            _                                => ConflictingAnyConstraintException.DuplicateInDistinctCollection(ConstraintCall.Of("Distinct"), value)
+        };
+    }
+
+    /// <summary>The exception for more distinct elements than the generator can produce, blamed under this collection's <see cref="DistinctnessOwner" />.</summary>
+    private ConflictingAnyConstraintException CardinalityException(int fromGenerator, long cardinality) {
+        string domain = cardinality.ToString(CultureInfo.InvariantCulture);
+
+        return _distinctnessOwner switch {
+            DistinctnessOwner.SetIdentity    => ConflictingAnyConstraintException.SetElementsExceedCardinality(Elements(fromGenerator), domain),
+            DistinctnessOwner.DictionaryKeys => ConflictingAnyConstraintException.DictionaryKeysExceedCardinality(Keys(fromGenerator), domain),
+            _                                => ConflictingAnyConstraintException.DistinctElementsExceedCardinality(ConstraintCall.Of("Distinct"), Elements(fromGenerator), domain)
+        };
     }
 
     private int? CardinalityCap() {

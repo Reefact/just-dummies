@@ -130,6 +130,41 @@ public sealed class ConflictingAnyConstraintException : DummyException {
     }
 
     /// <summary>
+    ///     Builds the exception for a value required to be contained twice in a set, which is distinct by nature and
+    ///     exposes no <c>Distinct()</c> call to blame — unlike <see cref="DuplicateInDistinctCollection" />, the
+    ///     counterpart for the list-shaped generators.
+    /// </summary>
+    internal static ConflictingAnyConstraintException DuplicateInDistinctSet(string value) {
+        return Verdict($"A set cannot contain {value} more than once");
+    }
+
+    /// <summary>
+    ///     Builds the exception for more distinct elements than a set's element generator has distinct values to
+    ///     give — the counterpart of <see cref="DistinctElementsExceedCardinality" /> for a set, which has no
+    ///     <c>Distinct()</c> call to blame: the caller can only loosen the count or the element generator.
+    /// </summary>
+    internal static ConflictingAnyConstraintException SetElementsExceedCardinality(string required, string cardinality) {
+        return Verdict($"A set of {required} cannot be drawn from a generator with {cardinality} distinct value(s)");
+    }
+
+    /// <summary>
+    ///     Builds the exception for a key required to be contained twice in a dictionary, whose keys are distinct by
+    ///     nature — the counterpart of <see cref="DuplicateInDistinctCollection" /> that names the key, not a call.
+    /// </summary>
+    internal static ConflictingAnyConstraintException DuplicateKeyInDistinctDictionary(string value) {
+        return Verdict($"A dictionary cannot contain the key {value} more than once");
+    }
+
+    /// <summary>
+    ///     Builds the exception for more distinct keys than a dictionary's key generator has distinct values to
+    ///     give — the counterpart of <see cref="DistinctElementsExceedCardinality" /> for a dictionary's keys, which
+    ///     have no <c>Distinct()</c> call to blame: the caller can only loosen the count or the key generator.
+    /// </summary>
+    internal static ConflictingAnyConstraintException DictionaryKeysExceedCardinality(string required, string cardinality) {
+        return Verdict($"A dictionary of {required} cannot be drawn from a key generator with {cardinality} distinct value(s)");
+    }
+
+    /// <summary>
     ///     Builds the exception for a constraint that contradicts an upper bound already declared.
     /// </summary>
     internal static ConflictingAnyConstraintException AlreadyBoundedAbove(ConstraintCall applying, ConstraintCall existingConstraint, string bound) {
@@ -169,6 +204,16 @@ public sealed class ConflictingAnyConstraintException : DummyException {
     /// <param name="reason">Why it cannot be applied, written without a final period.</param>
     private static ConflictingAnyConstraintException Sentence(ConstraintCall applying, string reason) {
         return new ConflictingAnyConstraintException($"Cannot apply {applying} because {reason}.");
+    }
+
+    /// <summary>
+    ///     Writes a conflict as a standalone verdict, for the cases <see cref="Sentence" /> cannot honestly phrase:
+    ///     a set or a dictionary is distinct by nature, so nothing was "applied" that a caller could point to and
+    ///     remove — the value is being generated, not accepted against a declared constraint.
+    /// </summary>
+    /// <param name="statement">The verdict, written without a final period.</param>
+    private static ConflictingAnyConstraintException Verdict(string statement) {
+        return new ConflictingAnyConstraintException($"{statement}.");
     }
 
     #endregion

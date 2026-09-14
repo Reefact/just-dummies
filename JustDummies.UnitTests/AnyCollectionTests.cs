@@ -566,6 +566,34 @@ public sealed class AnyCollectionTests {
              .Throws<ConflictingAnyConstraintException>();
     }
 
+    [Fact(DisplayName = "SetOf and DictionaryOf: a conflict never names Distinct(), a call neither surface has (issue #179).")]
+    public void SetAndDictionaryConflictsNeverNameDistinct() {
+        // A set is distinct by nature: the caller can loosen the count or the element generator, never a Distinct()
+        // they never wrote.
+        Check.ThatCode(() => Any.SetOf(Any.Boolean()).WithCount(3).Generate())
+             .Throws<ConflictingAnyConstraintException>()
+             .WithMessage("A set of 3 elements cannot be drawn from a generator with 2 distinct value(s).");
+
+        Check.ThatCode(() => Any.SetOf(Any.Int32()).Containing(1).Containing(1).Generate())
+             .Throws<ConflictingAnyConstraintException>()
+             .WithMessage("A set cannot contain 1 more than once.");
+
+        // A dictionary's keys are distinct by nature: the caller can loosen the count or the key generator.
+        Check.ThatCode(() => Any.DictionaryOf(Any.Boolean(), Any.Int32()).WithCount(3).Generate())
+             .Throws<ConflictingAnyConstraintException>()
+             .WithMessage("A dictionary of 3 keys cannot be drawn from a key generator with 2 distinct value(s).");
+
+        Check.ThatCode(() => Any.DictionaryOf(Any.Int32(), Any.String()).ContainingKey(1).ContainingKey(1).Generate())
+             .Throws<ConflictingAnyConstraintException>()
+             .WithMessage("A dictionary cannot contain the key 1 more than once.");
+
+        // ContainingEntry silently drops the first value into the pinned map before this fires at Generate() rather
+        // than at declaration — a gap this issue leaves open, but the message it does raise names the key correctly.
+        Check.ThatCode(() => Any.DictionaryOf(Any.Int32(), Any.String()).ContainingEntry(1, "a").ContainingEntry(1, "b").Generate())
+             .Throws<ConflictingAnyConstraintException>()
+             .WithMessage("A dictionary cannot contain the key 1 more than once.");
+    }
+
     [Fact(DisplayName = "PairOf and TripleOf assemble value tuples from constrained parts.")]
     public void PairAndTriple() {
         for (int i = 0; i < SampleCount; i++) {

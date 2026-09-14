@@ -572,7 +572,7 @@ public sealed class AnyCollectionTests {
         // they never wrote.
         Check.ThatCode(() => Any.SetOf(Any.Boolean()).WithCount(3).Generate())
              .Throws<ConflictingAnyConstraintException>()
-             .WithMessage("A set of 3 elements cannot be drawn from a generator with 2 distinct value(s).");
+             .WithMessage("The generator can produce only 2 distinct value(s), not enough for the 3 elements it must still supply.");
 
         Check.ThatCode(() => Any.SetOf(Any.Int32()).Containing(1).Containing(1).Generate())
              .Throws<ConflictingAnyConstraintException>()
@@ -581,7 +581,7 @@ public sealed class AnyCollectionTests {
         // A dictionary's keys are distinct by nature: the caller can loosen the count or the key generator.
         Check.ThatCode(() => Any.DictionaryOf(Any.Boolean(), Any.Int32()).WithCount(3).Generate())
              .Throws<ConflictingAnyConstraintException>()
-             .WithMessage("A dictionary of 3 keys cannot be drawn from a key generator with 2 distinct value(s).");
+             .WithMessage("The key generator can produce only 2 distinct value(s), not enough for the 3 keys it must still supply.");
 
         Check.ThatCode(() => Any.DictionaryOf(Any.Int32(), Any.String()).ContainingKey(1).ContainingKey(1).Generate())
              .Throws<ConflictingAnyConstraintException>()
@@ -592,6 +592,20 @@ public sealed class AnyCollectionTests {
         Check.ThatCode(() => Any.DictionaryOf(Any.Int32(), Any.String()).ContainingEntry(1, "a").ContainingEntry(1, "b").Generate())
              .Throws<ConflictingAnyConstraintException>()
              .WithMessage("A dictionary cannot contain the key 1 more than once.");
+    }
+
+    [Fact(DisplayName = "SetOf and DictionaryOf: the shortfall names what still must be drawn, not the requested size (PR #196 review).")]
+    public void SetAndDictionaryShortfallNamesWhatMustStillBeDrawn() {
+        // 3m sits outside the {1m, 2m} the element generator can produce, so it fills its own slot: only 3 of the 4
+        // requested elements — not the full 4 — must still come from the generator. Naming the requested count here
+        // would report a number the caller did not write and the generator was never asked to produce.
+        Check.ThatCode(() => Any.SetOf(Any.Decimal().OneOf(1m, 2m)).Containing(3m).WithCount(4).Generate())
+             .Throws<ConflictingAnyConstraintException>()
+             .WithMessage("The generator can produce only 2 distinct value(s), not enough for the 3 elements it must still supply.");
+
+        Check.ThatCode(() => Any.DictionaryOf(Any.Decimal().OneOf(1m, 2m), Any.Int32()).ContainingKey(3m).WithCount(4).Generate())
+             .Throws<ConflictingAnyConstraintException>()
+             .WithMessage("The key generator can produce only 2 distinct value(s), not enough for the 3 keys it must still supply.");
     }
 
     [Fact(DisplayName = "PairOf and TripleOf assemble value tuples from constrained parts.")]

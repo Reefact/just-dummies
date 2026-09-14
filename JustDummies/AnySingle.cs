@@ -10,7 +10,8 @@ namespace JustDummies;
 ///     A fluent generator of arbitrary <see cref="float" /> values — the same contract as <see cref="AnyInt32" />:
 ///     constraints express what the surrounding code requires of the value, never what the test asserts;
 ///     contradictory constraints fail eagerly with a <see cref="ConflictingAnyConstraintException" /> naming both
-///     sides; instances are immutable recipes. NaN and the infinities are never generated nor accepted.
+///     sides; instances are immutable recipes. NaN and the infinities are never generated, and never accepted as a
+///     bound or a <c>OneOf</c> value.
 /// </summary>
 /// <remarks>
 ///     <para>

@@ -22,7 +22,7 @@ n'existe, et la colonne **Origine** dit comment chacune est arrivée ici :
   aussi, car ce dépôt l'applique encore. Les deux copies sont désormais
   indépendantes : chaque côté peut remplacer la sienne sans toucher à l'autre.
   9 décisions.
-* **consigné ici** — décidé dans ce dépôt, de son propre chef. 58 décisions.
+* **consigné ici** — décidé dans ce dépôt, de son propre chef. 59 décisions.
 
 Les numéros appartiennent à cette base, attribués dans l'ordre où les décisions
 ont été consignées en amont
@@ -227,3 +227,4 @@ que l'option existait le jour où elle compterait.
 | [ADR-0099](0099-offer-oneof-wherever-the-generator-would-otherwise-build.fr.md) | Offrir OneOf partout où le générateur construirait sinon la valeur | Accepted | consigné ici |
 | [ADR-0100](0100-identify-a-value-set-by-its-values.fr.md) | Identifier un ensemble de valeurs déclaré par ses valeurs, non par l'appel qui l'a déclaré | Accepted | consigné ici |
 | [ADR-0101](0101-accept-a-non-finite-exclusion-as-a-no-op.fr.md) | Accepter l'exclusion d'une valeur non finie sur un générateur flottant comme une opération sans effet | Accepted | consigné ici |
+| [ADR-0102](0102-let-a-collection-or-composition-inherit-its-operands-source.fr.md) | Laisser une collection ou une composition hériter de la source de ses opérandes plutôt que de celle d'un contexte | Accepted | consigné ici |

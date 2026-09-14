@@ -22,7 +22,7 @@ project and nothing else into your dependency graph.
 | `Any.*` | a factory for every BCL primitive, plus collections, URIs and choices |
 | `IAny<T>` | the seam every generator implements, and the currency of composition |
 | `Any.Reproducibly` / `UseSeed` / `WithSeed` | the reproducibility scopes |
-| `AnyContext` | an isolated, seeded world with the same factories on it |
+| `AnyContext` | an isolated, seeded world with the scalar factories on it; collections and compositions are built over its generators with `Any` |
 | `DummyException` and its three subtypes | the failure vocabulary |
 | 33 Roslyn rules | bundled inside the package, active on your next build |
 

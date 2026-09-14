@@ -39,6 +39,9 @@ public sealed class AnySingle : IAny<float>, IHasRandomSource, ICardinalityHint<
 
     #region Statics members declarations
 
+    /// <summary>The type as the non-finite refusal's pool advice spells it — the C# keyword where one exists.</summary>
+    private const string TypeName = "float";
+
     internal static AnySingle Create(RandomSource source) {
         if (source is null) { throw new ArgumentNullException(nameof(source)); }
 
@@ -126,7 +129,7 @@ public sealed class AnySingle : IAny<float>, IHasRandomSource, ICardinalityHint<
     /// <exception cref="ArgumentException">Thrown when <paramref name="value" /> is not finite.</exception>
     /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
     public AnySingle GreaterThan(float value) {
-        ContinuousIntervalSpec.EnsureFinite(value, nameof(value));
+        ContinuousIntervalSpec.EnsureFinite(value, nameof(value), TypeName);
         return new AnySingle(_source, _spec.WithMinimumAbove(value, ConstraintCall.Of(nameof(GreaterThan), V(value))));
     }
 
@@ -136,7 +139,7 @@ public sealed class AnySingle : IAny<float>, IHasRandomSource, ICardinalityHint<
     /// <exception cref="ArgumentException">Thrown when <paramref name="value" /> is not finite.</exception>
     /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
     public AnySingle GreaterThanOrEqualTo(float value) {
-        ContinuousIntervalSpec.EnsureFinite(value, nameof(value));
+        ContinuousIntervalSpec.EnsureFinite(value, nameof(value), TypeName);
         return new AnySingle(_source, _spec.WithMinimum((double)value, ConstraintCall.Of(nameof(GreaterThanOrEqualTo), V(value))));
     }
 
@@ -146,7 +149,7 @@ public sealed class AnySingle : IAny<float>, IHasRandomSource, ICardinalityHint<
     /// <exception cref="ArgumentException">Thrown when <paramref name="value" /> is not finite.</exception>
     /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
     public AnySingle LessThan(float value) {
-        ContinuousIntervalSpec.EnsureFinite(value, nameof(value));
+        ContinuousIntervalSpec.EnsureFinite(value, nameof(value), TypeName);
         return new AnySingle(_source, _spec.WithMaximumBelow(value, ConstraintCall.Of(nameof(LessThan), V(value))));
     }
 
@@ -156,7 +159,7 @@ public sealed class AnySingle : IAny<float>, IHasRandomSource, ICardinalityHint<
     /// <exception cref="ArgumentException">Thrown when <paramref name="value" /> is not finite.</exception>
     /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
     public AnySingle LessThanOrEqualTo(float value) {
-        ContinuousIntervalSpec.EnsureFinite(value, nameof(value));
+        ContinuousIntervalSpec.EnsureFinite(value, nameof(value), TypeName);
         return new AnySingle(_source, _spec.WithMaximum((double)value, ConstraintCall.Of(nameof(LessThanOrEqualTo), V(value))));
     }
 
@@ -167,8 +170,8 @@ public sealed class AnySingle : IAny<float>, IHasRandomSource, ICardinalityHint<
     /// <exception cref="ArgumentException">Thrown when a bound is not finite or <paramref name="minimum" /> is greater than <paramref name="maximum" />.</exception>
     /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
     public AnySingle Between(float minimum, float maximum) {
-        ContinuousIntervalSpec.EnsureFinite(minimum, nameof(minimum));
-        ContinuousIntervalSpec.EnsureFinite(maximum, nameof(maximum));
+        ContinuousIntervalSpec.EnsureFinite(minimum, nameof(minimum), TypeName);
+        ContinuousIntervalSpec.EnsureFinite(maximum, nameof(maximum), TypeName);
         if (minimum > maximum) { throw new ArgumentException($"The minimum ({V(minimum)}) must be less than or equal to the maximum ({V(maximum)}).", nameof(minimum)); }
 
         ConstraintCall constraint = ConstraintCall.Of(nameof(Between), V(minimum), V(maximum));
@@ -185,7 +188,7 @@ public sealed class AnySingle : IAny<float>, IHasRandomSource, ICardinalityHint<
     public AnySingle OneOf(params float[] values) {
         if (values is null) { throw new ArgumentNullException(nameof(values)); }
         if (values.Length == 0) { throw new ArgumentException("At least one value is required.", nameof(values)); }
-        foreach (float value in values) { ContinuousIntervalSpec.EnsureFiniteForPool(value, nameof(values)); }
+        foreach (float value in values) { ContinuousIntervalSpec.EnsureFiniteForPool(value, nameof(values), TypeName); }
 
         return new AnySingle(_source, _spec.WithAllowed(values.Select(value => (double)value).ToArray(), ConstraintCall.Of(nameof(OneOf), Join(values))));
     }

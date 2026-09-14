@@ -40,6 +40,9 @@ public sealed class AnyHalf : IAny<Half>, IHasRandomSource, ICardinalityHint<Hal
 
     #region Statics members declarations
 
+    /// <summary>The type as the non-finite refusal's pool advice spells it — the C# keyword where one exists.</summary>
+    private const string TypeName = "Half";
+
     internal static AnyHalf Create(RandomSource source) {
         if (source is null) { throw new ArgumentNullException(nameof(source)); }
 
@@ -199,7 +202,7 @@ public sealed class AnyHalf : IAny<Half>, IHasRandomSource, ICardinalityHint<Hal
     /// <exception cref="ArgumentException">Thrown when <paramref name="value" /> is not finite.</exception>
     /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
     public AnyHalf GreaterThan(Half value) {
-        ContinuousIntervalSpec.EnsureFinite((double)value, nameof(value));
+        ContinuousIntervalSpec.EnsureFinite((double)value, nameof(value), TypeName);
 
         return new AnyHalf(_source, _spec.WithMinimumAbove((double)value, ConstraintCall.Of(nameof(GreaterThan), V(value))));
     }
@@ -210,7 +213,7 @@ public sealed class AnyHalf : IAny<Half>, IHasRandomSource, ICardinalityHint<Hal
     /// <exception cref="ArgumentException">Thrown when <paramref name="value" /> is not finite.</exception>
     /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
     public AnyHalf GreaterThanOrEqualTo(Half value) {
-        ContinuousIntervalSpec.EnsureFinite((double)value, nameof(value));
+        ContinuousIntervalSpec.EnsureFinite((double)value, nameof(value), TypeName);
 
         return new AnyHalf(_source, _spec.WithMinimum((double)value, ConstraintCall.Of(nameof(GreaterThanOrEqualTo), V(value))));
     }
@@ -221,7 +224,7 @@ public sealed class AnyHalf : IAny<Half>, IHasRandomSource, ICardinalityHint<Hal
     /// <exception cref="ArgumentException">Thrown when <paramref name="value" /> is not finite.</exception>
     /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
     public AnyHalf LessThan(Half value) {
-        ContinuousIntervalSpec.EnsureFinite((double)value, nameof(value));
+        ContinuousIntervalSpec.EnsureFinite((double)value, nameof(value), TypeName);
 
         return new AnyHalf(_source, _spec.WithMaximumBelow((double)value, ConstraintCall.Of(nameof(LessThan), V(value))));
     }
@@ -232,7 +235,7 @@ public sealed class AnyHalf : IAny<Half>, IHasRandomSource, ICardinalityHint<Hal
     /// <exception cref="ArgumentException">Thrown when <paramref name="value" /> is not finite.</exception>
     /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
     public AnyHalf LessThanOrEqualTo(Half value) {
-        ContinuousIntervalSpec.EnsureFinite((double)value, nameof(value));
+        ContinuousIntervalSpec.EnsureFinite((double)value, nameof(value), TypeName);
 
         return new AnyHalf(_source, _spec.WithMaximum((double)value, ConstraintCall.Of(nameof(LessThanOrEqualTo), V(value))));
     }
@@ -244,8 +247,8 @@ public sealed class AnyHalf : IAny<Half>, IHasRandomSource, ICardinalityHint<Hal
     /// <exception cref="ArgumentException">Thrown when a bound is not finite or <paramref name="minimum" /> is greater than <paramref name="maximum" />.</exception>
     /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
     public AnyHalf Between(Half minimum, Half maximum) {
-        ContinuousIntervalSpec.EnsureFinite((double)minimum, nameof(minimum));
-        ContinuousIntervalSpec.EnsureFinite((double)maximum, nameof(maximum));
+        ContinuousIntervalSpec.EnsureFinite((double)minimum, nameof(minimum), TypeName);
+        ContinuousIntervalSpec.EnsureFinite((double)maximum, nameof(maximum), TypeName);
         if (minimum > maximum) { throw new ArgumentException($"The minimum ({V(minimum)}) must be less than or equal to the maximum ({V(maximum)}).", nameof(minimum)); }
 
         ConstraintCall constraint = ConstraintCall.Of(nameof(Between), V(minimum), V(maximum));
@@ -262,7 +265,7 @@ public sealed class AnyHalf : IAny<Half>, IHasRandomSource, ICardinalityHint<Hal
     public AnyHalf OneOf(params Half[] values) {
         if (values is null) { throw new ArgumentNullException(nameof(values)); }
         if (values.Length == 0) { throw new ArgumentException("At least one value is required.", nameof(values)); }
-        foreach (Half value in values) { ContinuousIntervalSpec.EnsureFiniteForPool((double)value, nameof(values)); }
+        foreach (Half value in values) { ContinuousIntervalSpec.EnsureFiniteForPool((double)value, nameof(values), TypeName); }
 
         return new AnyHalf(_source, _spec.WithAllowed(values.Select(value => (double)value).ToArray(), ConstraintCall.Of(nameof(OneOf), Join(values))));
     }

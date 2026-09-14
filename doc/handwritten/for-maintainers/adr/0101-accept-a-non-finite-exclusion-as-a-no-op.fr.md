@@ -2,8 +2,9 @@
 
 🌍 🇬🇧 [English](0101-accept-a-non-finite-exclusion-as-a-no-op.md) · 🇫🇷 Français (ce fichier)
 
-**Status:** Proposed
+**Status:** Accepted
 **Proposed:** 2026-09-14
+**Accepted:** 2026-09-14
 **Decision Makers:** Reefact
 
 Restreint l'[ADR-0054](0054-draw-only-valid-values-from-a-typed-builder.fr.md) sur un seul point : la règle

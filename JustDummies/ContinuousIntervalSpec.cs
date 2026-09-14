@@ -63,11 +63,12 @@ internal sealed class ContinuousIntervalSpec {
     ///     served by an explicit pool. Stating only the refusal leaves them concluding the library is missing a
     ///     feature it deliberately does not have.
     /// </summary>
-    internal static void EnsureFinite(double value, string parameterName) {
+    internal static void EnsureFinite(double value, string parameterName, string typeName) {
         if (parameterName is null) { throw new ArgumentNullException(nameof(parameterName)); }
+        if (typeName is null) { throw new ArgumentNullException(nameof(typeName)); }
         if (double.IsNaN(value) || double.IsInfinity(value)) {
             throw new ArgumentException("The value must be finite: NaN and infinities are never generated, and not accepted as a bound. " +
-                                        "To draw a non-finite value that genuinely belongs to your domain, use an explicit pool: Any.OneOf(double.NaN, ...).",
+                                        $"To draw a non-finite value that genuinely belongs to your domain, use an explicit pool: Any.OneOf({typeName}.NaN, ...).",
                                         parameterName);
         }
     }
@@ -79,12 +80,13 @@ internal sealed class ContinuousIntervalSpec {
     ///     <c>Any.OneOf&lt;T&gt;(...)</c> is what the advice means — the pool with no finiteness rule — distinct from
     ///     this generator's own <c>OneOf</c>, which draws from the same finite domain as every other constraint.
     /// </summary>
-    internal static void EnsureFiniteForPool(double value, string parameterName) {
+    internal static void EnsureFiniteForPool(double value, string parameterName, string typeName) {
         if (parameterName is null) { throw new ArgumentNullException(nameof(parameterName)); }
+        if (typeName is null) { throw new ArgumentNullException(nameof(typeName)); }
         if (double.IsNaN(value) || double.IsInfinity(value)) {
             throw new ArgumentException("The value must be finite: NaN and infinities are never generated, and not accepted as a value of this builder's OneOf. " +
                                         "To draw a non-finite value that genuinely belongs to your domain, build a generic pool instead: " +
-                                        "Any.OneOf<double>(double.NaN, ...) — never this builder's own OneOf.",
+                                        $"Any.OneOf<{typeName}>({typeName}.NaN, ...) — never this builder's own OneOf.",
                                         parameterName);
         }
     }

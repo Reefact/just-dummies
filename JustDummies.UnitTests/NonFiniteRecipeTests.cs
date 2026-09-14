@@ -94,41 +94,42 @@ public sealed class NonFiniteRecipeTests {
         }
     }
 
-    [Fact(DisplayName = "A bound's refusal names the way out, and says what is refused — a bound, not every argument — on all three builders.")]
+    [Fact(DisplayName = "A bound's refusal names the way out in the builder's own type, and says what is refused — a bound, not every argument — on all three builders.")]
     public void TheRefusalNamesTheWayOut() {
-        ArgumentException[] refusals = [
-            Assert.Throws<ArgumentException>(() => Any.Double().LessThan(double.NaN)),
-            Assert.Throws<ArgumentException>(() => Any.Single().LessThan(float.NaN)),
+        (ArgumentException Refusal, string Pool)[] refusals = [
+            (Assert.Throws<ArgumentException>(() => Any.Double().LessThan(double.NaN)), "Any.OneOf(double.NaN, ...)"),
+            (Assert.Throws<ArgumentException>(() => Any.Single().LessThan(float.NaN)), "Any.OneOf(float.NaN, ...)"),
 #if NET8_0_OR_GREATER
-            Assert.Throws<ArgumentException>(() => Any.Half().LessThan(Half.NaN)),
+            (Assert.Throws<ArgumentException>(() => Any.Half().LessThan(Half.NaN)), "Any.OneOf(Half.NaN, ...)"),
 #endif
         ];
 
-        foreach (ArgumentException refusal in refusals) {
+        foreach ((ArgumentException refusal, string pool) in refusals) {
             Check.That(refusal.Message).Contains("must be finite");
             // Narrowed to what is actually refused: an exclusion is accepted, so "never accepted as arguments" would
             // now be false, and a caller reading the bounds' sentence must not conclude otherwise.
             Check.That(refusal.Message).Contains("not accepted as a bound");
             // The half the recipe is about: a message that states the rule and stops leaves the reader concluding
-            // the library is missing a feature it deliberately does not have.
-            Check.That(refusal.Message).Contains("Any.OneOf");
+            // the library is missing a feature it deliberately does not have. The pool it names is of the builder's
+            // own type — a float caller sent to a pool of doubles would be sent to the wrong door.
+            Check.That(refusal.Message).Contains(pool);
         }
     }
 
-    [Fact(DisplayName = "OneOf's refusal names the generic pool, distinct from the builder's own OneOf, so the advice does not read as the call just written — on all three builders (issue #180).")]
+    [Fact(DisplayName = "OneOf's refusal names the generic pool in the builder's own type, distinct from the builder's own OneOf, so the advice does not read as the call just written — on all three builders (issue #180).")]
     public void OneOfsRefusalNamesTheGenericPool() {
-        ArgumentException[] refusals = [
-            Assert.Throws<ArgumentException>(() => Any.Double().OneOf(1.0, double.NaN)),
-            Assert.Throws<ArgumentException>(() => Any.Single().OneOf(1.0f, float.NaN)),
+        (ArgumentException Refusal, string Pool)[] refusals = [
+            (Assert.Throws<ArgumentException>(() => Any.Double().OneOf(1.0, double.NaN)), "Any.OneOf<double>(double.NaN, ...)"),
+            (Assert.Throws<ArgumentException>(() => Any.Single().OneOf(1.0f, float.NaN)), "Any.OneOf<float>(float.NaN, ...)"),
 #if NET8_0_OR_GREATER
-            Assert.Throws<ArgumentException>(() => Any.Half().OneOf((Half)1, Half.NaN)),
+            (Assert.Throws<ArgumentException>(() => Any.Half().OneOf((Half)1, Half.NaN)), "Any.OneOf<Half>(Half.NaN, ...)"),
 #endif
         ];
 
-        foreach (ArgumentException refusal in refusals) {
+        foreach ((ArgumentException refusal, string pool) in refusals) {
             Check.That(refusal.Message).Contains("must be finite");
             Check.That(refusal.Message).Contains("not accepted as a value of this builder's OneOf");
-            Check.That(refusal.Message).Contains("Any.OneOf<double>");
+            Check.That(refusal.Message).Contains(pool);
         }
     }
 

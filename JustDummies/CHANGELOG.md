@@ -52,8 +52,8 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   two constraints asking for the same thing, with nothing in either to loosen. Every generator that
   takes a value set was affected: `Any.String()`, `Any.Char()`, `Any.Enum<TEnum>()`, `Any.Guid()`,
   and the numeric, temporal and `decimal` builders. All of them now compare the deduplicated set, so
-  a redeclaration is the harmless no-op the surface promises, while a genuinely different set — a
-  superset or a subset included — still conflicts, and the message still quotes the caller their own
+  a redeclaration is the harmless no-op the surface promises, while a genuinely different set —
+  including a superset or a subset — still conflicts, and the message still quotes the caller's own
   words (ADR-0100).
 
 - **A `decimal` interval within a unit of the type's own domain no longer fails at random.**

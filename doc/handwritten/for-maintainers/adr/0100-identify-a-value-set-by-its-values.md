@@ -60,9 +60,9 @@ has; it is contradicting one the library published.
 library raises names two constraints the caller can choose between. A redeclaration conflict over
 one domain names two calls that agree, and sends the reader to look for a disagreement that is not
 there. The message is well-formed and the diagnosis it invites is false, which is the failure mode
-the base's whole first-class-errors lineage exists to avoid.
+the library's first-class error model is designed to avoid.
 
-**This is a departure from ADR-0042's shape, and it is the narrow one.** That record moved equality
+**This is a narrow departure from the design established by ADR-0042.** That record moved equality
 into the type precisely so that comparison sites would stop carrying behaviour, and this decision
 gives one class of constraint its comparison back. The reason it does not reopen the case ADR-0042
 settled is that the two answer different questions: ADR-0042 is about where the *rendering and its
@@ -74,12 +74,12 @@ already hold, and go on using `ConstraintCall` for every scalar constraint they 
 rendered text would put the rule in one place, which is the shape ADR-0042 argues for, but it would
 box every element of every value set for a comparison that runs once per declaration, give the type
 two kinds of equality to explain, and still leave `OfElided` without an answer. The rule is worth
-stating once; it is not worth a second identity on the type every constraint in the library flows
-through.
+stating once; it is not worth a second identity on the type used by every constraint in the
+library.
 
 **A rule worth stating is worth a guard.** Nine copies of a comment is how this drifted in the first
 place — the audit found one site, and the other eight kept the defect because nothing compared them.
-A reflection guard that draws its material from the builders themselves holds the rule across the
+A reflection guard that draws values from the builders themselves enforces the rule across the
 generators that exist and the ones not yet written, which is the same move
 [ADR-0098](0098-offer-every-oneof-in-both-shapes.md) made for the shape of `OneOf`.
 
@@ -92,8 +92,8 @@ rather than to each comparison site, and a value set is exactly the case where t
 answers wrongly.
 
 Rejected on cost rather than on principle. The constraint would have to carry its values as objects
-next to the text it renders, boxing every element of every declared set; the type every constraint in
-the library flows through would gain a second notion of equality, which is a thing to explain at
+next to the text it renders, boxing every element of every declared set; the type used by every
+constraint in the library would gain a second notion of equality, which is a thing to explain at
 every site that does *not* use it; and the opaque-pool constraint would still have no values to
 compare. The nine sites that need the rule already hold the set, so the centralisation would move
 the code without removing the concept.
@@ -123,7 +123,7 @@ a step whose result no longer matches what the constraint claims to be.
 ### Positive
 
 * Re-declaring one domain is the no-op the surface promises, on every generator that takes a value
-  set rather than on the one an audit happened to reach.
+  set rather than only on the generator where the audit found it.
 * A conflict over a value set now means the sets genuinely differ, so the message names something
   the caller can act on.
 * The rule is held by a guard that constructs the builders and draws its own material, so a

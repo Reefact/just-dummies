@@ -14,7 +14,7 @@ déclarée un objet-valeur qui se rend lui-même, et lui a donné une égalité 
 par commodité : une vingtaine de comparaisons, réparties dans les spécifications, décident si une
 seconde déclaration est une redéclaration inoffensive — qui renvoie le générateur inchangé — ou un
 vrai conflit. Cette égalité porte sur le texte, comparé de façon ordinale : deux contraintes sont
-égales quand elles se lisent pareil.
+égales lorsque leur rendu textuel est identique.
 
 Pour une contrainte dont les arguments sont positionnels et scalaires, se lire pareil et être
 identiques sont une seule et même question. `Between(0, 100)` écrit deux fois ne rend qu'une chaîne ;
@@ -40,7 +40,7 @@ D'autres faits encadrent le choix :
   survit aux autres contraintes — l'un alimente les diagnostics, l'autre le tirage. L'identité dont
   cette décision a besoin est donc déjà stockée et n'exige aucun état nouveau.
 * L'appel rendu reste nécessaire, pour une raison que la question de l'égalité ne touche pas : un
-  conflit cite à l'appelant ses propres mots, ce qui participe de ce qui fait lire une contradiction
+  conflit reprend les propres termes de l'appelant, ce qui contribue à faire lire une contradiction
   dans l'`Arrange` d'un test comme un défaut de ce test.
 * `ConstraintCall.OfElided` existe pour un vivier dont le type d'élément est opaque à la
   bibliothèque, et dont elle ne doit pas rendre les arguments. Une telle contrainte n'a aucun
@@ -66,7 +66,7 @@ envoie le lecteur chercher un désaccord qui n'existe pas. Le message est bien f
 qu'il invite à poser est faux, ce qui est précisément le mode de défaillance que toute la lignée
 « erreurs de première classe » de la base cherche à éviter.
 
-**C'est un écart par rapport à la forme de l'ADR-0042, et c'est l'écart étroit.** Ce record a déplacé
+**C'est un écart étroit par rapport à la conception établie par l'ADR-0042.** Cet ADR a déplacé
 l'égalité dans le type justement pour que les sites de comparaison cessent de porter du comportement,
 et la présente décision rend sa comparaison à une classe de contraintes. Si elle ne rouvre pas le cas
 que l'ADR-0042 a tranché, c'est que les deux répondent à des questions différentes : l'ADR-0042 traite
@@ -75,8 +75,9 @@ dont l'identité n'a jamais été son rendu. Les neuf sites ne réimplémentent 
 comparent les ensembles que les générateurs détiennent déjà, et continuent d'utiliser `ConstraintCall`
 pour chaque contrainte scalaire qu'ils déclarent.
 
-**Trancher cela dans `ConstraintCall` rapporterait moins que le coût.** Porter les valeurs à côté du
-texte rendu mettrait la règle en un seul endroit, ce qui est la forme que défend l'ADR-0042, mais cela
+**Centraliser cette décision dans `ConstraintCall` coûterait plus qu'elle ne rapporterait.** Porter
+les valeurs à côté du texte rendu mettrait la règle en un seul endroit, ce qui est la forme que
+défend l'ADR-0042, mais cela
 boxerait chaque élément de chaque ensemble pour une comparaison qui n'a lieu qu'une fois par
 déclaration, donnerait au type deux sortes d'égalité à expliquer, et laisserait quand même `OfElided`
 sans réponse. La règle mérite d'être énoncée une fois ; elle ne mérite pas une seconde identité sur le
@@ -84,9 +85,10 @@ type par lequel passe chaque contrainte de la bibliothèque.
 
 **Une règle qui mérite d'être énoncée mérite une garde.** Neuf copies d'un commentaire, c'est
 exactement ainsi que la dérive s'est installée : l'audit a trouvé un site, et les huit autres ont gardé
-le défaut parce que rien ne les comparait. Une garde par réflexion, qui tire sa matière des
-constructeurs eux-mêmes, tient la règle sur les générateurs existants comme sur ceux qui ne sont pas
-encore écrits — c'est le mouvement qu'a fait l'[ADR-0098](0098-offer-every-oneof-in-both-shapes.fr.md)
+le défaut parce que rien ne les comparait. Une garde par réflexion, qui tire ses valeurs des
+constructeurs eux-mêmes et vérifie la règle sur les générateurs existants comme sur ceux qui ne
+sont pas encore écrits — c'est le mouvement qu'a fait
+l'[ADR-0098](0098-offer-every-oneof-in-both-shapes.fr.md)
 pour la forme de `OneOf`.
 
 ## Alternatives envisagées
@@ -97,8 +99,9 @@ Envisagée en premier, parce que c'est ce vers quoi pointe l'argument même de l
 appartient au type plutôt qu'à chaque site de comparaison, et un ensemble de valeurs est justement le
 cas où le type répond aujourd'hui de travers.
 
-Rejetée sur le coût, non sur le principe. La contrainte devrait porter ses valeurs sous forme
-d'objets à côté du texte qu'elle rend, en boxant chaque élément de chaque ensemble déclaré ; le type
+Rejetée pour des raisons de coût, non de principe. La contrainte devrait porter ses valeurs sous
+forme d'objets à côté du texte qu'elle rend, en boxant chaque élément de chaque ensemble déclaré ; le
+type
 par lequel passe chaque contrainte de la bibliothèque gagnerait une seconde notion d'égalité, qu'il
 faudrait expliquer à chaque site qui ne l'utilise *pas* ; et la contrainte à vivier opaque n'aurait
 toujours aucune valeur à comparer. Les neuf sites qui ont besoin de la règle détiennent déjà
@@ -110,8 +113,8 @@ Envisagée parce qu'elle n'exigerait aucune comparaison nouvelle : si le texte �
 l'égalité textuelle serait déjà l'égalité d'ensembles, et chaque site existant deviendrait correct
 sans être touché.
 
-Rejetée parce qu'elle rompt le contrat pour lequel le rendu existe. Un message de conflit cite à
-l'appelant ses propres mots ; un rendu trié et dédupliqué lui cite des mots qu'il n'a pas écrits, et
+Rejetée parce qu'elle rompt le contrat pour lequel le rendu existe. Un message de conflit reprend
+les propres termes de l'appelant ; un rendu trié et dédupliqué lui en prête qu'il n'a pas écrits, et
 le fait précisément dans le message qui lui demande d'aller retrouver la ligne. Ce serait en outre une
 modification silencieuse de chaque diagnostic nommant un vivier.
 
@@ -130,8 +133,8 @@ dont le résultat ne correspondrait plus à ce que la contrainte prétend être.
 
 ### Positives
 
-* Redéclarer un domaine est le no-op que la surface promet, sur tout générateur prenant un ensemble
-  de valeurs, et non sur le seul qu'un audit a eu l'occasion d'atteindre.
+* Redéclarer un domaine est l'opération neutre promise par l'API, sur tout générateur prenant un
+  ensemble de valeurs, et non sur le seul générateur où l'audit avait trouvé le défaut.
 * Un conflit portant sur un ensemble de valeurs signifie désormais que les ensembles diffèrent
   réellement : le message nomme donc quelque chose sur quoi l'appelant peut agir.
 * La règle est tenue par une garde qui construit les générateurs et tire sa propre matière : un
@@ -140,7 +143,7 @@ dont le résultat ne correspondrait plus à ce que la contrainte prétend être.
 ### Négatives
 
 * Neuf sites comparent un ensemble là où l'ADR-0042 n'avait laissé qu'un opérateur de comparaison :
-  le lecteur de l'un d'eux rencontre donc une règle locale avant de rencontrer ce record.
+  le lecteur de l'un d'eux rencontre donc une règle locale avant de rencontrer cet ADR.
 * La comparaison alloue un ensemble par déclaration, là où la précédente comparait deux chaînes. Elle
   s'exécute une fois par contrainte déclarée, jamais à chaque tirage.
 
@@ -159,7 +162,7 @@ dont le résultat ne correspondrait plus à ce que la contrainte prétend être.
 
 ## Références
 
-* [ADR-0042](0042-carry-a-declared-constraint-as-a-value-object.fr.md) — le record dont celui-ci
+* [ADR-0042](0042-carry-a-declared-constraint-as-a-value-object.fr.md) — l'ADR dont celui-ci
   s'écarte, et la raison pour laquelle l'écart est étroit.
 * [ADR-0098](0098-offer-every-oneof-in-both-shapes.fr.md) — la règle jumelle sur la forme de `OneOf`,
   tenue par le même genre de garde.

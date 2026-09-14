@@ -1,10 +1,10 @@
 namespace JustDummies;
 
 /// <summary>
-///     Why a <see cref="CollectionState{T}" /> must be distinct — which constraint a caller meeting an
-///     unbuildable distinctness should be shown, since the three shapes name it differently: a redeclarable
-///     <c>Distinct()</c> call for the list-shaped generators, <c>SetOf(...)</c> itself for a set, and the key
-///     generator of <c>DictionaryOf(...)</c> for a dictionary's keys.
+///     Why a <see cref="CollectionState{T}" /> must be distinct — which constraint should be reported when a caller
+///     encounters an unsatisfiable distinctness requirement, since the three shapes name it differently: a
+///     redeclarable <c>Distinct()</c> call for the list-shaped generators, <c>SetOf(...)</c> itself for a set, and
+///     the key generator of <c>DictionaryOf(...)</c> for a dictionary's keys.
 /// </summary>
 internal enum DistinctnessOwner {
 

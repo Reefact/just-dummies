@@ -525,7 +525,7 @@ public sealed class AnyCollectionTests {
         // any entry is drawn, naming the shortfall — exactly as ContainingInsideDomainDoesNotInflate asserts for a set.
         Check.ThatCode(() => Any.DictionaryOf(Any.Int32().OneOf(1, 2), Any.String().NonEmpty()).ContainingKey(1).WithCount(3).Generate())
              .Throws<ConflictingAnyConstraintException>()
-             .WhichMember(conflict => conflict.Message).Contains("2 distinct value");
+             .WhichMember(conflict => conflict.Message).Contains("2 distinct key");
     }
 
     [Fact(DisplayName = "ContainingAnyKey: a key drawn from a generator is forced into the dictionary; null is rejected (issue #287).")]
@@ -581,7 +581,7 @@ public sealed class AnyCollectionTests {
         // A dictionary's keys are distinct by nature: the caller can loosen the count or the key generator.
         Check.ThatCode(() => Any.DictionaryOf(Any.Boolean(), Any.Int32()).WithCount(3).Generate())
              .Throws<ConflictingAnyConstraintException>()
-             .WithMessage("The key generator can produce only 2 distinct value(s), not enough for the 3 keys it must still supply.");
+             .WithMessage("The key generator can produce only 2 distinct key(s), not enough for the 3 keys it must still supply.");
 
         Check.ThatCode(() => Any.DictionaryOf(Any.Int32(), Any.String()).ContainingKey(1).ContainingKey(1).Generate())
              .Throws<ConflictingAnyConstraintException>()
@@ -605,7 +605,7 @@ public sealed class AnyCollectionTests {
 
         Check.ThatCode(() => Any.DictionaryOf(Any.Decimal().OneOf(1m, 2m), Any.Int32()).ContainingKey(3m).WithCount(4).Generate())
              .Throws<ConflictingAnyConstraintException>()
-             .WithMessage("The key generator can produce only 2 distinct value(s), not enough for the 3 keys it must still supply.");
+             .WithMessage("The key generator can produce only 2 distinct key(s), not enough for the 3 keys it must still supply.");
     }
 
     [Fact(DisplayName = "PairOf and TripleOf assemble value tuples from constrained parts.")]

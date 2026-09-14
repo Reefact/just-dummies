@@ -101,8 +101,10 @@ public abstract class AnyCollection<TItem, TResult, TSelf> : IAny<TResult>, IHas
     }
 
     /// <summary>
-    ///     Requires the collection to contain <paramref name="value" />. May be declared several times; each required
-    ///     value takes one element's room. In a distinct collection the required values must themselves be distinct.
+    ///     Requires the collection to contain <paramref name="value" />. May be declared several times; each
+    ///     declaration takes one element's room, so writing the same value twice requires it twice — a bag holding it
+    ///     twice is a legitimate reading. In a distinct collection the required values must themselves be distinct, so
+    ///     the same value declared twice conflicts instead (see <see cref="ConflictingAnyConstraintException" />).
     /// </summary>
     /// <param name="value">The value the generated collection must contain.</param>
     /// <returns>A new generator carrying the added constraint.</returns>

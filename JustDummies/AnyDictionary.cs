@@ -96,11 +96,13 @@ public sealed class AnyDictionary<TKey, TValue> : IAny<Dictionary<TKey, TValue>>
 
     /// <summary>
     ///     Requires the dictionary to contain an entry for <paramref name="key" />. May be declared several times;
-    ///     each required key takes one entry's room and the required keys must be distinct. A key outside the key
-    ///     generator's domain extends the effective cardinality exactly as <see cref="AnySet{T}" />'s containment
-    ///     does, so an otherwise impossible entry count becomes reachable; the entry's value is generated like any
-    ///     other. Named <c>ContainingKey</c> rather than a bare <c>Containing</c> so the surface reads unambiguously
-    ///     on a dictionary, whose elements are key/value pairs.
+    ///     each required key takes one entry's room, and — unlike <see cref="AnyCollection{TItem,TResult,TSelf}.Containing" />
+    ///     on a plain collection — the required keys must themselves be distinct, so declaring the same key twice
+    ///     conflicts instead of asking for two entries (see <see cref="ConflictingAnyConstraintException" />). A key
+    ///     outside the key generator's domain extends the effective cardinality exactly as <see cref="AnySet{T}" />'s
+    ///     containment does, so an otherwise impossible entry count becomes reachable; the entry's value is generated
+    ///     like any other. Named <c>ContainingKey</c> rather than a bare <c>Containing</c> so the surface reads
+    ///     unambiguously on a dictionary, whose elements are key/value pairs.
     /// </summary>
     /// <param name="key">The key the generated dictionary must contain.</param>
     /// <returns>A new generator carrying the added constraint.</returns>

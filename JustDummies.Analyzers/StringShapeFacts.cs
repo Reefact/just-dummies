@@ -58,10 +58,11 @@ internal static class StringShapeFacts {
         // A prefix and a suffix each own a single slot, so at most one of each ever reaches the draw: re-declaring
         // the same literal is a no-op, and declaring a different one is refused outright. Taking one of each is
         // therefore counting what the specification keeps, not sampling it. Containing accumulates instead, so every
-        // fragment it contributes is a fragment the value has to carry.
+        // DISTINCT fragment it contributes is a fragment the value has to carry — but a fragment redeclared
+        // identically is the same no-op StringSpec.WithFragment applies at runtime, not a second slot (issue #181).
         string anchored = string.Concat(Anchors(constraints, "StartingWith").Take(1))
                         + string.Concat(Anchors(constraints, "EndingWith").Take(1))
-                        + string.Concat(Anchors(constraints, "Containing"));
+                        + string.Concat(Anchors(constraints, "Containing").Distinct(System.StringComparer.Ordinal));
 
         return (anchored.Length, anchored.Any(character => !char.IsWhiteSpace(character)));
     }

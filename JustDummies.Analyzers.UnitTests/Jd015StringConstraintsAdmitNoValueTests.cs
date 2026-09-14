@@ -500,15 +500,36 @@ public class Jd015StringConstraintsAdmitNoValueTests {
     }
 
     [Fact]
-    public async Task Reports_a_repeated_fragment_that_genuinely_lengthens_the_value() {
-        // The counterpart the affix fix must not flatten: Containing accumulates, so two of the same fragment really
-        // do need four characters -- the library refuses this and draws "XYXY" at a length of four.
+    public async Task Does_not_report_an_identical_fragment_the_library_folds_into_one() {
+        // A Containing fragment redeclared identically is the same no-op every other redeclaration check applies:
+        // this chain draws "XY" at a length of two, not "XYXY" -- summing both declarations reported a chain the
+        // run time honours (issue #181).
         const string source = """
             using JustDummies;
 
             public static class Sample {
                 public static string M() {
                     return Any.String().Containing("XY").Containing("XY").WithLength(2).Generate();
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new StringConstraintsAdmitNoValueAnalyzer(), source);
+
+        Check.That(diagnostics.Length).IsEqualTo(0);
+    }
+
+    [Fact]
+    public async Task Reports_two_different_fragments_that_genuinely_lengthen_the_value() {
+        // The counterpart the identical-fragment fix must not flatten: Containing accumulates DISTINCT fragments, so
+        // two different ones really do need four characters -- the library refuses this (issue #137, unaffected by
+        // #181's fix).
+        const string source = """
+            using JustDummies;
+
+            public static class Sample {
+                public static string M() {
+                    return Any.String().Containing("XY").Containing("YX").WithLength(2).Generate();
                 }
             }
             """;

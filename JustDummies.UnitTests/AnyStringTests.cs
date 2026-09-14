@@ -255,6 +255,23 @@ public sealed class AnyStringTests {
         Check.That(Any.String().Containing("ab").Containing("ba").WithLength(4).Generate()).IsEqualTo("abba");
     }
 
+    [Fact(DisplayName = "Containing: two fragments whose diagnostics render alike stay two requirements — CharacterPools.Escape is not injective (PR #197 review).")]
+    public void FragmentsThatRenderAlikeAreNotFoldedTogether() {
+        // "\n" (one newline character) and "\\n" (a literal backslash then 'n', two characters) both escape to the
+        // same diagnostic text Containing("\n"), so comparing the rendered ConstraintCall instead of the fragment
+        // itself would fold two DIFFERENT requirements into one and silently drop the second.
+        string newline       = "\n";
+        string backslashThenN = "\\n";
+        Check.That(newline).Not.IsEqualTo(backslashThenN);
+
+        Check.ThatCode(() => Any.String().Containing(newline).Containing(backslashThenN).WithLength(1))
+             .Throws<ConflictingAnyConstraintException>();
+
+        string value = Any.String().Containing(newline).Containing(backslashThenN).WithLength(3).Generate();
+        Check.That(value).Contains(newline);
+        Check.That(value).Contains(backslashThenN);
+    }
+
     [Fact(DisplayName = "Alpha yields ASCII letters only.")]
     public void AlphaYieldsLettersOnly() {
         foreach (string value in Samples(Any.String().Alpha().NonEmpty())) {

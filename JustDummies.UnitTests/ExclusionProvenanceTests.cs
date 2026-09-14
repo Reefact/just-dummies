@@ -155,14 +155,17 @@ public sealed class ExclusionProvenanceTests {
         Check.That(distinct.Message).IsEqualTo(plain.Message);
     }
 
-    [Fact(DisplayName = "A distinct collection asking for more than a NON-empty domain still names Distinct().")]
-    public void DistinctBeyondANonEmptyDomainStillNamesDistinct() {
+    [Fact(DisplayName = "A distinct collection asking for more than a NON-empty domain still names the cardinality shortfall.")]
+    public void DistinctBeyondANonEmptyDomainStillNamesTheShortfall() {
         // The other side of the same guard: where the element generator does admit values and the collection asks
-        // for more distinct ones than exist, Distinct() IS the constraint that cannot be honoured, and the
-        // cardinality sentence is the right one. Letting an exhausted generator speak must not relax that.
+        // for more distinct ones than exist, the cardinality sentence is the right one. Letting an exhausted
+        // generator speak (EmptyElementGeneratorNamesItsOwnExclusion, above) must not relax that.
         Check.ThatCode(() => Any.SetOf(Any.Enum<OrderStatus>()).WithCount(5).Generate())
              .Throws<ConflictingAnyConstraintException>()
-             .WhichMember(conflict => conflict.Message).Contains("Distinct()", "5");
+             .WhichMember(conflict => conflict.Message).Contains("5", "3 distinct value")
+             // A set has no Distinct() call to blame (issue #179): the label used to be borrowed from the
+             // list-shaped generators regardless, which named a call this surface does not have.
+             .And.DoesNotContain("Distinct()");
     }
 
 }

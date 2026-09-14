@@ -143,8 +143,14 @@ public sealed class ConflictingAnyConstraintException : DummyException {
     ///     give — the counterpart of <see cref="DistinctElementsExceedCardinality" /> for a set, which has no
     ///     <c>Distinct()</c> call to blame: the caller can only loosen the count or the element generator.
     /// </summary>
+    /// <param name="required">
+    ///     The elements still to be drawn from the generator — <b>not</b> the collection's requested size: a value
+    ///     pinned outside the generator's domain, or a <c>ContainingAny</c> slot, already fills its own room without
+    ///     drawing on it, so this can be smaller than what the caller wrote.
+    /// </param>
+    /// <param name="cardinality">The number of distinct values the element generator can produce.</param>
     internal static ConflictingAnyConstraintException SetElementsExceedCardinality(string required, string cardinality) {
-        return Verdict($"A set of {required} cannot be drawn from a generator with {cardinality} distinct value(s)");
+        return Verdict($"The generator can produce only {cardinality} distinct value(s), not enough for the {required} it must still supply");
     }
 
     /// <summary>
@@ -160,8 +166,14 @@ public sealed class ConflictingAnyConstraintException : DummyException {
     ///     give — the counterpart of <see cref="DistinctElementsExceedCardinality" /> for a dictionary's keys, which
     ///     have no <c>Distinct()</c> call to blame: the caller can only loosen the count or the key generator.
     /// </summary>
+    /// <param name="required">
+    ///     The keys still to be drawn from the key generator — <b>not</b> the dictionary's requested entry count: a
+    ///     key pinned outside the generator's domain, or a <c>ContainingAnyKey</c> slot, already fills its own room
+    ///     without drawing on it, so this can be smaller than what the caller wrote.
+    /// </param>
+    /// <param name="cardinality">The number of distinct values the key generator can produce.</param>
     internal static ConflictingAnyConstraintException DictionaryKeysExceedCardinality(string required, string cardinality) {
-        return Verdict($"A dictionary of {required} cannot be drawn from a key generator with {cardinality} distinct value(s)");
+        return Verdict($"The key generator can produce only {cardinality} distinct value(s), not enough for the {required} it must still supply");
     }
 
     /// <summary>

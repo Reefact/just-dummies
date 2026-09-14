@@ -14,10 +14,18 @@ namespace JustDummies;
 /// </summary>
 /// <remarks>
 ///     <para>
-///         The refusal covers <b>arguments</b> too, not only draws: <c>Except(double.NaN)</c> and a non-finite bound
-///         are rejected with an <see cref="System.ArgumentException" />. A value that cannot be compared is not a
-///         constraint — every comparison with NaN is false — and a NaN drawn into an arrangement the test never meant
-///         to exercise fails an assertion nobody wrote.
+///         The refusal covers <b>arguments</b> too, not only draws — but only where a non-finite argument would mean
+///         something: a non-finite bound (<c>Between</c>, <c>GreaterThan(OrEqualTo)</c>, <c>LessThan(OrEqualTo)</c>)
+///         or a non-finite <c>OneOf(...)</c> value is rejected with an <see cref="System.ArgumentException" />. A
+///         value that cannot be compared is not a constraint — every comparison with NaN is false — and a NaN drawn
+///         into an arrangement the test never meant to exercise fails an assertion nobody wrote.
+///     </para>
+///     <para>
+///         <c>Except(double.NaN)</c> and <c>DifferentFrom(double.NaN)</c> are accepted instead, as a no-op: a
+///         non-finite value is already guaranteed never to be drawn, so excluding one asks for nothing the generator
+///         does not already give. This matters for <c>DifferentFrom</c> in particular, routinely written over a value
+///         a test already holds — refusing it would turn a harmless exclusion into a failure whenever that value
+///         happened to be infinite.
 ///     </para>
 ///     <para>
 ///         When a non-finite value is genuinely part of the domain under test, draw it from an explicit pool instead:
@@ -165,7 +173,7 @@ public sealed class AnyDouble : IAny<double>, IHasRandomSource, ICardinalityHint
     public AnyDouble OneOf(params double[] values) {
         if (values is null) { throw new ArgumentNullException(nameof(values)); }
         if (values.Length == 0) { throw new ArgumentException("At least one value is required.", nameof(values)); }
-        foreach (double value in values) { ContinuousIntervalSpec.EnsureFinite(value, nameof(values)); }
+        foreach (double value in values) { ContinuousIntervalSpec.EnsureFiniteForPool(value, nameof(values)); }
 
         return new AnyDouble(_source, _spec.WithAllowed(values, ConstraintCall.Of(nameof(OneOf), Join(values))));
     }
@@ -186,30 +194,33 @@ public sealed class AnyDouble : IAny<double>, IHasRandomSource, ICardinalityHint
         return OneOf(values as double[] ?? values.ToArray());
     }
 
-    /// <summary>Requires the value to be none of the supplied values.</summary>
+    /// <summary>
+    ///     Requires the value to be none of the supplied values. A non-finite value among them is accepted as a
+    ///     no-op: NaN and the infinities are already guaranteed never to be drawn, so excluding one asks for nothing
+    ///     the generator does not already give.
+    /// </summary>
     /// <param name="values">The forbidden values.</param>
     /// <returns>A new generator carrying the added constraint.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="values" /> is <c>null</c>.</exception>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="values" /> is empty or contains a non-finite value.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="values" /> is empty.</exception>
     /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
     public AnyDouble Except(params double[] values) {
         if (values is null) { throw new ArgumentNullException(nameof(values)); }
         if (values.Length == 0) { throw new ArgumentException("At least one value is required.", nameof(values)); }
-        foreach (double value in values) { ContinuousIntervalSpec.EnsureFinite(value, nameof(values)); }
 
         return new AnyDouble(_source, _spec.WithExcluded(values.ToArray(), ConstraintCall.Of(nameof(Except), Join(values))));
     }
 
     /// <summary>
     ///     Requires the value to differ from <paramref name="value" /> — typically an existing value the test already
-    ///     holds. Semantically equivalent to <see cref="Except" />; the name carries the intent at the call site.
+    ///     holds. Semantically equivalent to <see cref="Except" />; the name carries the intent at the call site. A
+    ///     non-finite <paramref name="value" /> is accepted as a no-op, for the same reason <see cref="Except" />
+    ///     accepts one: friendlier to a value a computation happened to produce than a refusal would be.
     /// </summary>
     /// <param name="value">The value the generated value must differ from.</param>
     /// <returns>A new generator carrying the added constraint.</returns>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="value" /> is not finite.</exception>
     /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
     public AnyDouble DifferentFrom(double value) {
-        ContinuousIntervalSpec.EnsureFinite(value, nameof(value));
         return new AnyDouble(_source, _spec.WithExcluded([value], ConstraintCall.Of(nameof(DifferentFrom), V(value))));
     }
 

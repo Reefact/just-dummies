@@ -200,21 +200,30 @@ matter — and that is the point.
 
 ## NaN and the infinities
 
-`Any.Double()`, `Any.Single()` and `Any.Half()` never draw a non-finite value, and they
-**also refuse one as an argument** — so `Any.Double().Except(double.NaN)` throws rather
-than doing something sensible. That surprises people, so here is the whole rule and the
-way out.
+`Any.Double()`, `Any.Single()` and `Any.Half()` never draw a non-finite value, and a
+bound or a `OneOf(...)` value **also refuses one as an argument** — so
+`Any.Double().GreaterThan(double.NaN)` throws rather than doing something sensible.
+`Except` and `DifferentFrom` are the one exception: `Any.Double().Except(double.NaN)`
+succeeds instead, as a no-op — see *The one accepted exception* below. That surprises
+people, so here is the whole rule and the way out.
 
-**Why.** An arbitrary test value should cross your invariants, not sabotage your
-arithmetic. Every comparison with `NaN` is false, so a `NaN` drawn into an arrangement
-the test never meant to exercise fails an assertion nobody wrote. Refusing it as an
-argument too is the same decision applied one step earlier: a bound or an exclusion that
-cannot be compared is not a constraint.
+**Why refuse a bound or a pool value.** An arbitrary test value should cross your
+invariants, not sabotage your arithmetic. Every comparison with `NaN` is false, so a
+`NaN` drawn into an arrangement the test never meant to exercise fails an assertion
+nobody wrote. Refusing it as an argument too is the same decision applied one step
+earlier: a bound or a pool value that cannot be compared is not a constraint.
 
-**The way out — `Any.OneOf`.** The generic entry points carry no finiteness rule, by
-construction: `Any.OneOf(...)` takes your pool as the whole specification, and `.As(...)`
-projects to whatever you return. The library judges the domains it knows; it does not
-judge yours.
+**The one accepted exception — `Except` and `DifferentFrom`.** Excluding a value the
+generator already guarantees never to draw asks for nothing more than that guarantee, so
+these two accept a non-finite value as a no-op rather than throwing. This matters beyond
+consistency: `DifferentFrom` is routinely written over a value a test already holds —
+`DifferentFrom(existing)` — and a computation that happened to produce an infinity
+should not turn a harmless exclusion into an `ArgumentException`.
+
+**The way out for a bound or a pool value — `Any.OneOf`.** The generic entry points
+carry no finiteness rule, by construction: `Any.OneOf(...)` takes your pool as the whole
+specification, and `.As(...)` projects to whatever you return. The library judges the
+domains it knows; it does not judge yours.
 
 **Which shape to use.**
 

@@ -21,7 +21,7 @@ and the **Origin** column says how each one got here:
   but its record stays live in `Reefact/first-class-errors` too, because that
   repository still applies it. Both copies are now independent: either side can
   supersede its own without touching the other. 9 decisions.
-* **recorded here** — decided in this repository, on its own. 57 decisions.
+* **recorded here** — decided in this repository, on its own. 58 decisions.
 
 The numbers are this base's own, assigned in the order the decisions were
 recorded upstream ([ADR-0045](0045-renumber-the-decision-base.md)); every ADR
@@ -211,3 +211,4 @@ failure mode of a "not now" is that nobody remembers the option existed on the d
 | [ADR-0098](0098-offer-every-oneof-in-both-shapes.md) | Offer every OneOf in both the params and the sequence shape | Accepted | recorded here |
 | [ADR-0099](0099-offer-oneof-wherever-the-generator-would-otherwise-build.md) | Offer OneOf wherever the generator would otherwise build the value | Accepted | recorded here |
 | [ADR-0100](0100-identify-a-value-set-by-its-values.md) | Identify a declared value set by its values, not by the call that declared it | Accepted | recorded here |
+| [ADR-0101](0101-accept-a-non-finite-exclusion-as-a-no-op.md) | Accept a non-finite exclusion on a floating-point builder as a no-op | Proposed | recorded here |

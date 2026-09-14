@@ -223,6 +223,6 @@ que l'option existait le jour où elle compterait.
 | [ADR-0095](0095-read-the-assigned-null-check-as-a-guard-idiom-too.fr.md) | Lire aussi le null-check assigné comme un idiome de garde | Accepted | consigné ici |
 | [ADR-0096](0096-emit-a-parameter-inline-whenever-it-has-nothing-to-report.fr.md) | Émettre un paramètre en ligne dès qu'il n'a rien à rapporter | Accepted | consigné ici |
 | [ADR-0097](0097-follow-the-declared-bounds-with-the-ordinary-magnitude-window.fr.md) | Faire suivre les bornes déclarées par la fenêtre de magnitude ordinaire | Accepted | consigné ici |
-| [ADR-0098](0098-offer-every-oneof-in-both-shapes.fr.md) | Offrir chaque OneOf sous les deux formes, params et séquence | Proposed | consigné ici |
-| [ADR-0099](0099-offer-oneof-wherever-the-generator-would-otherwise-build.fr.md) | Offrir OneOf partout où le générateur construirait sinon la valeur | Proposed | consigné ici |
+| [ADR-0098](0098-offer-every-oneof-in-both-shapes.fr.md) | Offrir chaque OneOf sous les deux formes, params et séquence | Accepted | consigné ici |
+| [ADR-0099](0099-offer-oneof-wherever-the-generator-would-otherwise-build.fr.md) | Offrir OneOf partout où le générateur construirait sinon la valeur | Accepted | consigné ici |
 | [ADR-0100](0100-identify-a-value-set-by-its-values.fr.md) | Identifier un ensemble de valeurs déclaré par ses valeurs, non par l'appel qui l'a déclaré | Accepted | consigné ici |

@@ -208,6 +208,6 @@ failure mode of a "not now" is that nobody remembers the option existed on the d
 | [ADR-0095](0095-read-the-assigned-null-check-as-a-guard-idiom-too.md) | Read the assigned null-check as a guard idiom too | Accepted | recorded here |
 | [ADR-0096](0096-emit-a-parameter-inline-whenever-it-has-nothing-to-report.md) | Emit a parameter inline whenever it has nothing to report | Accepted | recorded here |
 | [ADR-0097](0097-follow-the-declared-bounds-with-the-ordinary-magnitude-window.md) | Follow the declared bounds with the ordinary-magnitude window | Accepted | recorded here |
-| [ADR-0098](0098-offer-every-oneof-in-both-shapes.md) | Offer every OneOf in both the params and the sequence shape | Proposed | recorded here |
-| [ADR-0099](0099-offer-oneof-wherever-the-generator-would-otherwise-build.md) | Offer OneOf wherever the generator would otherwise build the value | Proposed | recorded here |
+| [ADR-0098](0098-offer-every-oneof-in-both-shapes.md) | Offer every OneOf in both the params and the sequence shape | Accepted | recorded here |
+| [ADR-0099](0099-offer-oneof-wherever-the-generator-would-otherwise-build.md) | Offer OneOf wherever the generator would otherwise build the value | Accepted | recorded here |
 | [ADR-0100](0100-identify-a-value-set-by-its-values.md) | Identify a declared value set by its values, not by the call that declared it | Accepted | recorded here |

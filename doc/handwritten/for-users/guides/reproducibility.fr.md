@@ -171,7 +171,7 @@ using (IDisposable scope = Any.UseSeed(1743029518, "[Reproducible(Seed = 1743029
 ## `Any.WithSeed` : un contexte isolé
 
 `Any.WithSeed(seed)` n'épingle rien d'ambiant. Il renvoie un `AnyContext` — un monde autonome
-portant les mêmes fabriques — ce qu'il faut pour construire des données déterministes *en dehors*
+portant les fabriques scalaires — ce qu'il faut pour construire des données déterministes *en dehors*
 d'un corps de test, comme une fixture ou un benchmark :
 
 ```csharp
@@ -186,6 +186,28 @@ int      seed      = context.Seed;
 
 Parce que le contexte est isolé, les valeurs qui en sont tirées ne subissent aucune portée ambiante
 — et ni un attribut `[Reproducible]` ni un `Any.Reproducibly` englobant ne les gouvernent.
+
+Le contexte n'a ni `ListOf`, ni `SetOf`, ni `DictionaryOf`, ni `Combine` en propre, et n'en a pas
+besoin : une collection ou une composition ne choisit pas de source, elle réutilise celle que portent
+*ses opérandes*. Construisez-la avec la fabrique de `Any` à partir des générateurs du contexte, et elle
+est déterministe avec la graine du contexte, exactement comme ses éléments :
+
+```csharp
+AnyContext context = Any.WithSeed(1743029518);
+
+List<int>          quantities = Any.ListOf(context.Int32().Between(1, 100)).NonEmpty().Generate();
+(string, DateTime) stamped    = Any.PairOf(context.String().WithLength(8), context.DateTime()).Generate();
+```
+
+La règle de résolution, replis compris : une collection réutilise la source de son générateur
+d'éléments ; un dictionnaire celle de son générateur de clés, ou celle de son générateur de valeurs
+quand le générateur de clés est un `IAny<T>` étranger qui n'en porte aucune ; une composition celle du
+premier opérande qui en porte une ; une recette dont aucun opérande n'en porte tire de la source
+ambiante. Une recette qui mélange les sources — un `ContainingAny` sur un générateur ambiant dans une
+liste du contexte, un `Combine` d'un générateur du contexte et d'un générateur ambiant — se génère tout
+de même, mais la graine qu'elle signale ne rejoue qu'une partie de ses tirages ; une composition le dit
+dans ses diagnostics, une collection pas encore. La règle et ses raisons sont consignées dans
+l'[ADR-0102](../../for-maintainers/adr/0102-let-a-collection-or-composition-inherit-its-operands-source.fr.md).
 
 Conserver un `AnyContext` dans un champ **statique** est un piège qui mérite d'être nommé : des
 tirages entrelacés depuis plusieurs tests ne rendent stables ni la séquence ni le multiensemble,

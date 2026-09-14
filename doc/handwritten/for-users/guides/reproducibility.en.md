@@ -166,7 +166,7 @@ using (IDisposable scope = Any.UseSeed(1743029518, "[Reproducible(Seed = 1743029
 ## `Any.WithSeed`: an isolated context
 
 `Any.WithSeed(seed)` pins nothing ambient. It returns an `AnyContext` — a self-contained world with
-the same factories on it — which is what you want to build deterministic data *outside* a test body,
+the scalar factories on it — which is what you want to build deterministic data *outside* a test body,
 such as a fixture or a benchmark:
 
 ```csharp
@@ -181,6 +181,27 @@ int      seed      = context.Seed;
 
 Because the context is isolated, values drawn from it are unaffected by any ambient scope — and a
 `[Reproducible]` attribute or an enclosing `Any.Reproducibly` does not govern them.
+
+The context has no `ListOf`, `SetOf`, `DictionaryOf` or `Combine` of its own, and does not need one: a
+collection or a composition chooses no source of its own and reuses the one *its operands* carry. Build
+it with the `Any` factory over the context's generators, and it is deterministic with the context's seed
+exactly as its elements are:
+
+```csharp
+AnyContext context = Any.WithSeed(1743029518);
+
+List<int>          quantities = Any.ListOf(context.Int32().Between(1, 100)).NonEmpty().Generate();
+(string, DateTime) stamped    = Any.PairOf(context.String().WithLength(8), context.DateTime()).Generate();
+```
+
+The resolution, fallbacks included: a collection reuses its element generator's source; a dictionary
+its key generator's, or its value generator's when the key generator is a foreign `IAny<T>` that carries
+none; a composition the source of the first operand that carries one; a recipe whose operands all carry
+none draws from the ambient source. A recipe that mixes sources — a `ContainingAny` over an ambient
+generator inside a context's list, a `Combine` of a context's generator and an ambient one — still
+generates, but the seed it reports replays only part of its draws; a composition says so in its
+diagnostics, a collection does not yet. The rule and the reasons behind it are
+[ADR-0102](../../for-maintainers/adr/0102-let-a-collection-or-composition-inherit-its-operands-source.md).
 
 Holding an `AnyContext` in a **static** field is a trap worth naming: interleaved draws from several
 tests make neither the sequence nor the multiset stable, which is diagnostic

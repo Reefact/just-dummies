@@ -33,7 +33,9 @@ namespace JustDummies.UnitTests;
 ///     </list>
 ///     Composition and collection factories (<c>Combine</c>, <c>ListOf</c>, <c>DictionaryOf</c>, ...) are deliberately
 ///     <b>not</b> mirrored onto <see cref="AnyContext" />: they inherit the context through their operand sources, so
-///     the mirror guard excludes them by construction (they take an <see cref="IAny{T}" /> operand).
+///     the mirror guard excludes them by construction (they take an <see cref="IAny{T}" /> operand). That is
+///     ADR-0102, and the guard holds it both ways: one of them added to the context shows up as "only on
+///     AnyContext" and fails. <c>ContextInheritanceTests</c> pins the behaviour the rule promises.
 /// </summary>
 public sealed class SurfaceParityTests {
 

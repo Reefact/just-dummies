@@ -7,12 +7,27 @@ using System.Text.RegularExpressions;
 namespace JustDummies;
 
 /// <summary>
-///     An isolated, deterministic generation context created by <see cref="Any.WithSeed" />: every generator created
-///     from it draws from a dedicated source seeded with <see cref="Seed" />, independent of the ambient context the
-///     static <see cref="Any" /> entry points use. Two contexts created with the same seed yield the same sequence
-///     of values.
+///     An isolated, deterministic generation context created by <see cref="Any.WithSeed" />: every scalar generator
+///     created from it draws from a dedicated source seeded with <see cref="Seed" />, independent of the ambient
+///     context the static <see cref="Any" /> entry points use. Two contexts created with the same seed yield the same
+///     sequence of values.
 /// </summary>
 /// <remarks>
+///     <para>
+///         A context is a source of scalar draws, so it carries the scalar factories of <see cref="Any" /> and none
+///         of its collection or composition factories. Those choose no source of their own: each reuses the one
+///         its operands carry, so <c>Any.ListOf(context.Int32())</c> draws its count, its elements and its order
+///         from this context and replays from <see cref="Seed" /> exactly as <c>context.Int32()</c> does, and the
+///         same holds for <c>SetOf</c>, <c>ArrayOf</c>, <c>SequenceOf</c>, <c>DictionaryOf</c>, <c>Combine</c>,
+///         <c>PairOf</c> and <c>TripleOf</c>. The resolution, fallbacks included: a collection reuses its element
+///         generator's source; a dictionary its key generator's, or its value generator's when the key generator is
+///         a foreign <see cref="IAny{T}" /> carrying none; a composition the source of the first operand that
+///         carries one; and a recipe whose operands all carry none draws from the ambient source. A recipe that
+///         mixes sources — <c>Any.ListOf(context.Int32()).ContainingAny(Any.Int32())</c>, a foreign element
+///         generator, a <c>Combine</c> over this context's generator and an ambient one — still generates, but the
+///         seed it reports replays only part of its draws; a composition says so in its diagnostics, a collection
+///         does not yet (ADR-0102).
+///     </para>
 ///     <para>
 ///         Inside a test, prefer wrapping the body in <c>Any.Reproducibly(...)</c>: it keeps values arbitrary by
 ///         default and reports a replayable seed only when the test fails. A context is the explicit-object

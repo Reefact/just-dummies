@@ -9,11 +9,12 @@ using NFluent;
 namespace JustDummies.UnitTests;
 
 /// <summary>
-///     Locks in the "NaN and the infinities" recipe of <c>JustDummies/README.nuget.md</c>. That page tells a user two
-///     things: the floating-point builders refuse a non-finite value as an ARGUMENT as well as a draw, and the way to
-///     get one anyway is an explicit pool. Both halves are behaviour, so both are pinned here — a documented exit that
-///     silently stopped working would be worse than no documentation at all, since the reader would have no reason to
-///     doubt it.
+///     Locks in the "NaN and the infinities" recipe of <c>JustDummies/README.nuget.md</c>. That page tells a user
+///     three things: the floating-point builders refuse a non-finite value as a bound or a <c>OneOf</c> value, they
+///     accept one in <c>Except</c> and <c>DifferentFrom</c> as a no-op, and the way to get one anyway is the generic
+///     pool. All three are behaviour, so all three are pinned here, for each of the three builders — a documented
+///     exit that silently stopped working would be worse than no documentation at all, since the reader would have
+///     no reason to doubt it.
 /// </summary>
 public sealed class NonFiniteRecipeTests {
 
@@ -21,9 +22,9 @@ public sealed class NonFiniteRecipeTests {
 
     /// <summary>
     ///     The guarded declarations, each under the call it makes. The delegate itself cannot travel as theory data
-    ///     — a <c>Func&lt;object&gt;</c> is not serializable, so the runner shows eight rows it cannot tell apart
-    ///     and cannot run one of them on its own. The key travels instead, and it is what names the row: a failure
-    ///     then says WHICH entry point stopped refusing rather than that one of eight did.
+    ///     — a <c>Func&lt;object&gt;</c> is not serializable, so the runner shows rows it cannot tell apart and
+    ///     cannot run one of them on its own. The key travels instead, and it is what names the row: a failure then
+    ///     says WHICH entry point stopped refusing rather than that one of them did.
     /// </summary>
     private static readonly Dictionary<string, Func<object>> Declarations = new() {
         ["Any.Double().GreaterThan(double.NegativeInfinity)"] = () => Any.Double().GreaterThan(double.NegativeInfinity),
@@ -31,6 +32,8 @@ public sealed class NonFiniteRecipeTests {
         ["Any.Double().OneOf(1.0, double.NaN)"]               = () => Any.Double().OneOf(1.0, double.NaN),
         ["Any.Single().GreaterThan(float.NegativeInfinity)"]  = () => Any.Single().GreaterThan(float.NegativeInfinity),
         ["Any.Single().OneOf(1.0f, float.PositiveInfinity)"]  = () => Any.Single().OneOf(1.0f, float.PositiveInfinity),
+        ["Any.Half().GreaterThan(Half.NegativeInfinity)"]     = () => Any.Half().GreaterThan(Half.NegativeInfinity),
+        ["Any.Half().OneOf((Half)1, Half.NaN)"]               = () => Any.Half().OneOf((Half)1, Half.NaN),
     };
 
     /// <summary>
@@ -39,9 +42,12 @@ public sealed class NonFiniteRecipeTests {
     ///     — see <see cref="ExcludingANonFiniteValueIsANoOp" />.
     /// </summary>
     private static readonly Dictionary<string, Func<object>> AcceptedExclusions = new() {
-        ["Any.Double().Except(double.NaN)"]                     = () => Any.Double().Except(double.NaN),
-        ["Any.Double().DifferentFrom(double.PositiveInfinity)"] = () => Any.Double().DifferentFrom(double.PositiveInfinity),
-        ["Any.Single().Except(float.NaN)"]                      = () => Any.Single().Except(float.NaN),
+        ["Any.Double().Except(double.NaN)"]                      = () => Any.Double().Except(double.NaN),
+        ["Any.Double().DifferentFrom(double.PositiveInfinity)"]  = () => Any.Double().DifferentFrom(double.PositiveInfinity),
+        ["Any.Single().Except(float.NaN)"]                       = () => Any.Single().Except(float.NaN),
+        ["Any.Single().DifferentFrom(float.NegativeInfinity)"]   = () => Any.Single().DifferentFrom(float.NegativeInfinity),
+        ["Any.Half().Except(Half.NaN)"]                          = () => Any.Half().Except(Half.NaN),
+        ["Any.Half().DifferentFrom(Half.PositiveInfinity)"]      = () => Any.Half().DifferentFrom(Half.PositiveInfinity),
     };
 
     public static TheoryData<string> GuardedEntryPoints => [.. Declarations.Keys];
@@ -59,34 +65,61 @@ public sealed class NonFiniteRecipeTests {
         Check.ThatCode(() => AcceptedExclusions[declaration]()).DoesNotThrow();
     }
 
-    [Fact(DisplayName = "Excluding a non-finite value changes nothing about what is drawn, seed for seed (issue #180).")]
+    [Fact(DisplayName = "Excluding a non-finite value changes nothing about what is drawn, seed for seed, on all three builders (issue #180).")]
     public void ExcludingANonFiniteValueIsGenuinelyInert() {
         for (int seed = 0; seed < SampleCount; seed++) {
-            double plain;
-            double excluded;
-            using (Any.UseSeed(seed)) { plain = Any.Double().Generate(); }
-            using (Any.UseSeed(seed)) { excluded = Any.Double().Except(double.NaN).DifferentFrom(double.PositiveInfinity).Generate(); }
+            double plainDouble;
+            double excludedDouble;
+            using (Any.UseSeed(seed)) { plainDouble = Any.Double().Generate(); }
+            using (Any.UseSeed(seed)) { excludedDouble = Any.Double().Except(double.NaN).DifferentFrom(double.PositiveInfinity).Generate(); }
+            Check.That(excludedDouble).IsEqualTo(plainDouble);
 
-            Check.That(excluded).IsEqualTo(plain);
+            float plainSingle;
+            float excludedSingle;
+            using (Any.UseSeed(seed)) { plainSingle = Any.Single().Generate(); }
+            using (Any.UseSeed(seed)) { excludedSingle = Any.Single().Except(float.NaN).DifferentFrom(float.NegativeInfinity).Generate(); }
+            Check.That(excludedSingle).IsEqualTo(plainSingle);
+
+            Half plainHalf;
+            Half excludedHalf;
+            using (Any.UseSeed(seed)) { plainHalf = Any.Half().Generate(); }
+            using (Any.UseSeed(seed)) { excludedHalf = Any.Half().Except(Half.NaN).DifferentFrom(Half.PositiveInfinity).Generate(); }
+            Check.That(excludedHalf).IsEqualTo(plainHalf);
         }
     }
 
-    [Fact(DisplayName = "The refusal names the way out, so the wall explains its own exit.")]
+    [Fact(DisplayName = "A bound's refusal names the way out, and says what is refused — a bound, not every argument — on all three builders.")]
     public void TheRefusalNamesTheWayOut() {
-        ArgumentException refusal = Assert.Throws<ArgumentException>(() => Any.Double().LessThan(double.NaN));
+        ArgumentException[] refusals = [
+            Assert.Throws<ArgumentException>(() => Any.Double().LessThan(double.NaN)),
+            Assert.Throws<ArgumentException>(() => Any.Single().LessThan(float.NaN)),
+            Assert.Throws<ArgumentException>(() => Any.Half().LessThan(Half.NaN)),
+        ];
 
-        Check.That(refusal.Message).Contains("must be finite");
-        // The half the recipe is about: a message that states the rule and stops leaves the reader concluding the
-        // library is missing a feature it deliberately does not have.
-        Check.That(refusal.Message).Contains("Any.OneOf");
+        foreach (ArgumentException refusal in refusals) {
+            Check.That(refusal.Message).Contains("must be finite");
+            // Narrowed to what is actually refused: an exclusion is accepted, so "never accepted as arguments" would
+            // now be false, and a caller reading the bounds' sentence must not conclude otherwise.
+            Check.That(refusal.Message).Contains("not accepted as a bound");
+            // The half the recipe is about: a message that states the rule and stops leaves the reader concluding
+            // the library is missing a feature it deliberately does not have.
+            Check.That(refusal.Message).Contains("Any.OneOf");
+        }
     }
 
-    [Fact(DisplayName = "OneOf's refusal names the generic pool, distinct from this generator's own OneOf, so the advice does not read as the call just written (issue #180).")]
+    [Fact(DisplayName = "OneOf's refusal names the generic pool, distinct from the builder's own OneOf, so the advice does not read as the call just written — on all three builders (issue #180).")]
     public void OneOfsRefusalNamesTheGenericPool() {
-        ArgumentException refusal = Assert.Throws<ArgumentException>(() => Any.Double().OneOf(1.0, double.NaN));
+        ArgumentException[] refusals = [
+            Assert.Throws<ArgumentException>(() => Any.Double().OneOf(1.0, double.NaN)),
+            Assert.Throws<ArgumentException>(() => Any.Single().OneOf(1.0f, float.NaN)),
+            Assert.Throws<ArgumentException>(() => Any.Half().OneOf((Half)1, Half.NaN)),
+        ];
 
-        Check.That(refusal.Message).Contains("must be finite");
-        Check.That(refusal.Message).Contains("Any.OneOf<double>");
+        foreach (ArgumentException refusal in refusals) {
+            Check.That(refusal.Message).Contains("must be finite");
+            Check.That(refusal.Message).Contains("not accepted as a value of this builder's OneOf");
+            Check.That(refusal.Message).Contains("Any.OneOf<double>");
+        }
     }
 
     [Fact(DisplayName = "An explicit pool is the documented exit, and it really does yield the non-finite values.")]

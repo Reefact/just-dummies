@@ -66,7 +66,7 @@ internal sealed class ContinuousIntervalSpec {
     internal static void EnsureFinite(double value, string parameterName) {
         if (parameterName is null) { throw new ArgumentNullException(nameof(parameterName)); }
         if (double.IsNaN(value) || double.IsInfinity(value)) {
-            throw new ArgumentException("The value must be finite: NaN and infinities are never generated, and never accepted as arguments. " +
+            throw new ArgumentException("The value must be finite: NaN and infinities are never generated, and not accepted as a bound. " +
                                         "To draw a non-finite value that genuinely belongs to your domain, use an explicit pool: Any.OneOf(double.NaN, ...).",
                                         parameterName);
         }
@@ -82,9 +82,9 @@ internal sealed class ContinuousIntervalSpec {
     internal static void EnsureFiniteForPool(double value, string parameterName) {
         if (parameterName is null) { throw new ArgumentNullException(nameof(parameterName)); }
         if (double.IsNaN(value) || double.IsInfinity(value)) {
-            throw new ArgumentException("The value must be finite: NaN and infinities are never generated, and never accepted as arguments. " +
+            throw new ArgumentException("The value must be finite: NaN and infinities are never generated, and not accepted as a value of this builder's OneOf. " +
                                         "To draw a non-finite value that genuinely belongs to your domain, build a generic pool instead: " +
-                                        "Any.OneOf<double>(double.NaN, ...) — never this generator's own OneOf.",
+                                        "Any.OneOf<double>(double.NaN, ...) — never this builder's own OneOf.",
                                         parameterName);
         }
     }

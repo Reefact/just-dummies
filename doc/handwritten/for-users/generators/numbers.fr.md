@@ -153,10 +153,10 @@ finie est rejetée comme une erreur d'argument, au même titre qu'une valeur hor
 avez déclarée — la valeur ne pourrait jamais être produite, donc l'écrire est une erreur qu'il vaut
 mieux détecter immédiatement.
 
-`Except(double.NaN)` et `DifferentFrom(double.NaN)` sont différents : ils sont **acceptés**, comme
-un sans-effet. Un NaN est déjà garanti de ne jamais être tiré, donc en exclure un ne demande rien que
-le générateur n'offre déjà — le refuser ne ferait que gêner un `DifferentFrom(existant)` écrit sur une
-valeur qu'un calcul a produite, laquelle pourrait parfois être infinie.
+`Except(double.NaN)` et `DifferentFrom(double.NaN)` sont différents : ils sont **acceptés** et n'ont
+aucun effet. Un NaN n'est de toute façon jamais tiré, donc en exclure un ne demande rien que le
+générateur n'offre déjà — le refuser ne ferait que gêner un `DifferentFrom(existant)` écrit sur une
+valeur issue d'un calcul, laquelle pourrait parfois être infinie.
 
 Quand un test a réellement besoin d'un NaN, demandez-le explicitement via le vivier générique, qui
 ne porte aucune règle de finitude :

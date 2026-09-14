@@ -226,4 +226,4 @@ que l'option existait le jour où elle compterait.
 | [ADR-0098](0098-offer-every-oneof-in-both-shapes.fr.md) | Offrir chaque OneOf sous les deux formes, params et séquence | Accepted | consigné ici |
 | [ADR-0099](0099-offer-oneof-wherever-the-generator-would-otherwise-build.fr.md) | Offrir OneOf partout où le générateur construirait sinon la valeur | Accepted | consigné ici |
 | [ADR-0100](0100-identify-a-value-set-by-its-values.fr.md) | Identifier un ensemble de valeurs déclaré par ses valeurs, non par l'appel qui l'a déclaré | Accepted | consigné ici |
-| [ADR-0101](0101-accept-a-non-finite-exclusion-as-a-no-op.fr.md) | Accepter comme sans effet l'exclusion d'une valeur non finie sur un générateur flottant | Proposed | consigné ici |
+| [ADR-0101](0101-accept-a-non-finite-exclusion-as-a-no-op.fr.md) | Accepter l'exclusion d'une valeur non finie sur un générateur flottant comme une opération sans effet | Proposed | consigné ici |

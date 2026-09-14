@@ -27,9 +27,9 @@ matter — and that is the point.
 - **Fluent, typed generators** implementing `IAny<T>`, materialized through
   `.Generate()`, across the .NET simple types: `String`, `Char`, every integer
   width (`SByte`/`Byte`/`Int16`/`UInt16`/`Int32`/`UInt32`/`Int64`/`UInt64`),
-  `Double`/`Single`/`Decimal` (finite values only — never NaN or infinities, and
-  never accepted as arguments either: see *NaN and the infinities* below for the
-  way to draw one deliberately),
+  `Double`/`Single`/`Decimal` (finite values only — never NaN or infinities, which
+  are rejected as bounds and `OneOf` values too: see *NaN and the infinities* below
+  for the way to draw one deliberately),
   `Boolean`, `Guid`, `Enum<T>` (declared members only — a `[Flags]` enum widens to
   every combination with `AllowingCombinations()`), `TimeSpan`, `DateTime` (UTC)
   and `DateTimeOffset`. On modern targets (`net8.0`) the surface extends to
@@ -200,8 +200,8 @@ matter — and that is the point.
 
 ## NaN and the infinities
 
-`Any.Double()`, `Any.Single()` and `Any.Half()` never draw a non-finite value, and a
-bound or a `OneOf(...)` value **also refuses one as an argument** — so
+`Any.Double()`, `Any.Single()` and `Any.Half()` never draw a non-finite value, and they
+**also reject non-finite values used as bounds or passed to `OneOf(...)`** — so
 `Any.Double().GreaterThan(double.NaN)` throws rather than doing something sensible.
 `Except` and `DifferentFrom` are the one exception: `Any.Double().Except(double.NaN)`
 succeeds instead, as a no-op — see *The one accepted exception* below. That surprises

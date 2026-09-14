@@ -11,8 +11,8 @@ namespace JustDummies;
 ///     A fluent generator of arbitrary <see cref="Half" /> values — the same contract as <see cref="AnyInt32" />:
 ///     constraints express what the surrounding code requires of the value, never what the test asserts;
 ///     contradictory constraints fail eagerly with a <see cref="ConflictingAnyConstraintException" /> naming both
-///     sides; instances are immutable recipes. NaN and the infinities are never generated nor accepted. Available on
-///     the net8.0 target only, like the type itself.
+///     sides; instances are immutable recipes. NaN and the infinities are never generated, and never accepted as a
+///     bound or a <c>OneOf</c> value. Available on the net8.0 target only, like the type itself.
 /// </summary>
 /// <remarks>
 ///     <para>

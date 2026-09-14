@@ -148,11 +148,20 @@ public class Jd030UndeclaredStringLengthTests {
     }
 
     [Fact]
-    public async Task Counts_a_repeated_fragment_every_time_because_Containing_accumulates() {
-        // Containing does not own a slot: a second identical fragment is a second fragment the value must carry --
-        // measured against the library, this draws 4 to 1028. The counterpart to the two cases above, and the
-        // reason they cannot share one rule.
+    public async Task Folds_an_identical_repeated_fragment_into_one_like_every_other_redeclaration() {
+        // A Containing fragment redeclared identically is a no-op, exactly like the prefix and suffix cases above --
+        // measured against the library, this draws 2 to 1026, not 4 to 1028 (issue #181).
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync("        _ = Any.String().Containing(\"XY\").Containing(\"XY\").Generate();");
+
+        Check.That(diagnostics.Length).IsEqualTo(1);
+        Check.That(diagnostics[0].GetMessage()).IsEqualTo("This string dummy declares no length: it draws 2 to 1026 characters");
+    }
+
+    [Fact]
+    public async Task Counts_two_different_fragments_because_Containing_accumulates_distinct_ones() {
+        // Two DIFFERENT fragments each claim their own room: measured against the library, this draws 4 to 1028 --
+        // issue #137's concatenated budget, unaffected by #181's identical-fragment fix.
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync("        _ = Any.String().Containing(\"XY\").Containing(\"YX\").Generate();");
 
         Check.That(diagnostics.Length).IsEqualTo(1);
         Check.That(diagnostics[0].GetMessage()).IsEqualTo("This string dummy declares no length: it draws 4 to 1028 characters");

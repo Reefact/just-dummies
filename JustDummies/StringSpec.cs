@@ -297,6 +297,12 @@ internal sealed class StringSpec {
     internal StringSpec WithFragment(string fragment, ConstraintCall applying) {
         if (fragment is null) { throw new ArgumentNullException(nameof(fragment)); }
         if (applying is null) { throw new ArgumentNullException(nameof(applying)); }
+        // Re-declaring the SAME constraint is not a contradiction, so it is a no-op rather than a conflict: the
+        // second declaration asks for exactly what the first already guarantees — a substring predicate has no
+        // "contains it twice" reading. Without this, an identical fragment cost two on the shaped budget below but
+        // only one on DeclaredConstraints' pooled predicate, which groups by this same ConstraintCall.
+        if (_fragments.Any(existing => existing.Constraint == applying)) { return this; }
+
         List<(string Fragment, ConstraintCall Constraint)> fragments = [.. _fragments, (fragment, applying)];
 
         StringSpec candidate = new(_exactLength, _exactConstraint, _minLength, _minConstraint, _maxLength, _maxConstraint,

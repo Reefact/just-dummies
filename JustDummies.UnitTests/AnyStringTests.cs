@@ -231,6 +231,30 @@ public sealed class AnyStringTests {
         Check.That(Any.String().StartingWith("AB").EndingWith("CD").WithLength(4).Generate()).IsEqualTo("ABCD");
     }
 
+    [Fact(DisplayName = "Containing: an identical fragment redeclared is a no-op, on the shaped path and the pooled one alike (issue #181).")]
+    public void IdenticalFragmentRedeclaredIsANoOp() {
+        // Before the fix, two identical "ab" fragments cost 4 characters on the shaped path (RequiredLength summed
+        // both) but only 1 on the pooled path (DeclaredConstraints groups by the same ConstraintCall) — a budget that
+        // disagreed with itself depending on whether a value set was also in force.
+        Check.That(Any.String().Containing("ab").Containing("ab").WithLength(2).Generate()).IsEqualTo("ab");
+
+        foreach (string value in Samples(Any.String().Containing("ab").Containing("ab"))) {
+            Check.That(value).Contains("ab");
+        }
+
+        Check.That(Any.String().OneOf("ab").Containing("ab").Containing("ab").Generate()).IsEqualTo("ab");
+        Check.That(Any.String().Containing("ab").Containing("ab").OneOf("ab").Generate()).IsEqualTo("ab");
+    }
+
+    [Fact(DisplayName = "Containing: two DIFFERENT fragments keep the concatenated budget — issue #137's refusal is unaffected by #181's fix.")]
+    public void DifferentFragmentsKeepTheConcatenatedBudget() {
+        Check.ThatCode(() => Any.String().Containing("ab").Containing("ba").WithLength(3))
+             .Throws<ConflictingAnyConstraintException>()
+             .WhichMember(conflict => conflict.Message).Contains("\"ab\"", "\"ba\"");
+
+        Check.That(Any.String().Containing("ab").Containing("ba").WithLength(4).Generate()).IsEqualTo("abba");
+    }
+
     [Fact(DisplayName = "Alpha yields ASCII letters only.")]
     public void AlphaYieldsLettersOnly() {
         foreach (string value in Samples(Any.String().Alpha().NonEmpty())) {

@@ -2,8 +2,9 @@
 
 🌍 🇬🇧 English (this file) · 🇫🇷 [Français](0099-offer-oneof-wherever-the-generator-would-otherwise-build.fr.md)
 
-**Status:** Proposed
+**Status:** Accepted
 **Proposed:** 2026-09-08
+**Accepted:** 2026-09-14
 **Decision Makers:** Reefact
 
 ## Context

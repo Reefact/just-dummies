@@ -2,6 +2,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Text.RegularExpressions;
 
 #endregion
 
@@ -15,10 +16,14 @@ namespace JustDummies;
 ///     <c>? * + {n} {n,} {n,m}</c> (a lazy <c>?</c> marker is accepted and ignored — it changes matching order, never
 ///     which strings match; possessive quantifiers do not exist in .NET and are rejected); alternation; grouping
 ///     (capturing, non-capturing and named — the name is validated as the real engine would, then ignored); the dot;
-///     and the anchors <c>^ $</c> at the start and end of the pattern or of a top-level alternation branch — including
-///     a run of them (<c>^^</c>, <c>$$</c>) or a quantified one (<c>^*</c>, <c>$?</c>), all no-ops there since a whole
-///     matching string is generated; anywhere else they are refused, because the pattern could never be matched by a
-///     whole generated string. A brace that does not form a well-formed quantifier is a literal, as in the real engine,
+///     one exact leading <c>(?i)</c>, the pattern-string spelling of <see cref="RegexOptions.IgnoreCase" /> (a scoped
+///     <c>(?i:…)</c>, a <c>(?i)</c> anywhere else, and every other option group stay outside the subset); and the anchors <c>^ $</c> at the start and end of the pattern or of a top-level alternation branch
+///     — including a run of them (<c>^^</c>, <c>$$</c>) or a quantified one (<c>^*</c>, <c>$?</c>), all no-ops there
+///     since a whole matching string is generated; anywhere else they are refused, because the pattern could never be
+///     matched by a whole generated string. Case-insensitivity pairs each ASCII letter with its twin the way the real
+///     engine does under the culture current at declaration: under a Turkish or Azeri culture <c>I</c> pairs with
+///     <c>ı</c> and <c>i</c> with <c>İ</c>, neither of them ASCII, so each stands alone there unless
+///     <see cref="RegexOptions.CultureInvariant" /> is in force. A brace that does not form a well-formed quantifier is a literal, as in the real engine,
 ///     and groups may nest at most 256 levels deep. A well-formed but non-regular or out-of-scope construct — a
 ///     lookaround, a backreference, a balancing group (it pops the capture stack, the backreference family), a Unicode
 ///     category, a word boundary, an atomic group (its first-branch commit is not language-equivalent to plain
@@ -32,6 +37,16 @@ internal sealed class RegexParser {
     #region Statics members declarations
 
     private const int MaxGroupDepth = 256;
+
+    /// <summary>The one option group the parser honours: the whole-pattern case flag, exactly this, and only at the very start.</summary>
+    private const string LeadingIgnoreCase = "(?i)";
+
+    /// <summary>
+    ///     Whether the culture current now folds <c>I</c> to <c>i</c>; false under a Turkish or Azeri culture, where the
+    ///     real engine's case-insensitive <c>I</c> matches <c>ı</c> instead. Read at declaration, as the engine reads it
+    ///     when the pattern is compiled.
+    /// </summary>
+    private static bool CultureFoldsAsciiI => CultureInfo.CurrentCulture.TextInfo.ToLower('I') == 'i';
 
     /// <summary>How many hexadecimal digits a <c>\xHH</c> escape spells.</summary>
     private const int HexEscapeDigits = 2;
@@ -54,10 +69,22 @@ internal sealed class RegexParser {
     /// <summary>The control code <c>\cA</c> names — the alphabet's first letter maps to the first control character, not to the null one.</summary>
     private const int FirstControlCode = 1;
 
-    internal static RegexNode Parse(string pattern, bool ignoreCase) {
+    /// <summary>
+    ///     Parses <paramref name="pattern" /> under the options the generator honours —
+    ///     <see cref="RegexOptions.IgnoreCase" /> and <see cref="RegexOptions.CultureInvariant" />; every other flag is
+    ///     the caller's to have masked out.
+    /// </summary>
+    internal static RegexNode Parse(string pattern, RegexOptions options) {
         if (pattern is null) { throw new ArgumentNullException(nameof(pattern)); }
-        RegexParser parser = new(pattern, ignoreCase);
-        RegexNode   root   = parser.ParseAlternation();
+        // One exact leading '(?i)' is the pattern-string spelling of RegexOptions.IgnoreCase — a flag over the whole
+        // pattern, which is all this parser carries — so it is consumed here and folded into the same boolean, never
+        // treated as a group. A scoped '(?i:…)', a '(?i)' anywhere else and every other option group stay outside the
+        // subset; ParseGroup keeps refusing them.
+        bool        leadingIgnoreCase = pattern.StartsWith(LeadingIgnoreCase, StringComparison.Ordinal);
+        bool        ignoreCase        = leadingIgnoreCase || (options & RegexOptions.IgnoreCase) != 0;
+        bool        foldsAsciiI       = (options & RegexOptions.CultureInvariant) != 0 || CultureFoldsAsciiI;
+        RegexParser parser            = new(pattern, ignoreCase, foldsAsciiI, leadingIgnoreCase ? LeadingIgnoreCase.Length : 0);
+        RegexNode   root              = parser.ParseAlternation();
         if (!parser.AtEnd) {
             // The only character ParseSequence stops on without consuming is a ')' with no opener.
             throw parser.Malformed(parser.Peek() == ')' ? "unbalanced closing parenthesis ')'" : $"unexpected character '{parser.Peek()}'");
@@ -82,15 +109,6 @@ internal sealed class RegexParser {
         foreach (char member in members) { set.Add(member); }
     }
 
-    private static HashSet<char> ExpandCase(HashSet<char> set) {
-        HashSet<char> expanded = [];
-        foreach (char character in set) {
-            foreach (char variant in RegexAlphabet.WithBothCases(character)) { expanded.Add(variant); }
-        }
-
-        return expanded;
-    }
-
     private static bool IsHexDigit(char character) {
         return character is (>= '0' and <= '9') or (>= 'a' and <= 'f') or (>= 'A' and <= 'F');
     }
@@ -103,6 +121,7 @@ internal sealed class RegexParser {
 
     #region Fields declarations
 
+    private readonly bool   _foldsAsciiI;
     private readonly bool   _ignoreCase;
     private readonly string _pattern;
     private          int    _depth;
@@ -110,9 +129,11 @@ internal sealed class RegexParser {
 
     #endregion
 
-    private RegexParser(string pattern, bool ignoreCase) {
-        _pattern    = pattern;
-        _ignoreCase = ignoreCase;
+    private RegexParser(string pattern, bool ignoreCase, bool foldsAsciiI, int start) {
+        _pattern     = pattern;
+        _ignoreCase  = ignoreCase;
+        _foldsAsciiI = foldsAsciiI;
+        _index       = start;
     }
 
     private bool AtEnd => _index >= _pattern.Length;
@@ -575,7 +596,27 @@ internal sealed class RegexParser {
     private RegexNode Literal(char character) {
         if (!_ignoreCase) { return new RegexCharacters(new[] { character }); }
 
-        return new RegexCharacters(RegexAlphabet.WithBothCases(character).Distinct().ToArray());
+        return new RegexCharacters(Cases(character).Distinct().ToArray());
+    }
+
+    private HashSet<char> ExpandCase(HashSet<char> set) {
+        HashSet<char> expanded = [];
+        foreach (char character in set) {
+            foreach (char variant in Cases(character)) { expanded.Add(variant); }
+        }
+
+        return expanded;
+    }
+
+    /// <summary>
+    ///     <paramref name="character" /> with the twins the real engine's case-insensitive match would accept from the
+    ///     ASCII universe — every letter pairs with its opposite case, except <c>I</c> and <c>i</c> under a culture that
+    ///     pairs them with the dotless and dotted forms instead, where each stands alone.
+    /// </summary>
+    private IEnumerable<char> Cases(char character) {
+        if (!_foldsAsciiI && (character is 'I' or 'i')) { return new[] { character }; }
+
+        return RegexAlphabet.WithBothCases(character);
     }
 
     [SuppressMessage(SonarRule.S3928.Category, SonarRule.S3928.Id, Justification = SuppressionJustification.S3928.PatternIsTheCallersArgument)]

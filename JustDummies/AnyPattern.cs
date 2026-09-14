@@ -96,7 +96,13 @@ public sealed class AnyPattern : IAny<string>, IHasRandomSource, ICardinalityHin
     // its own pattern is near-instant, so this bites only a pathological pattern, which is treated as a miss.
     private static readonly TimeSpan MatchTimeout = TimeSpan.FromSeconds(1);
 
-    internal static AnyPattern FromPattern(RandomSource source, string pattern, bool ignoreCase) {
+    /// <summary>
+    ///     The options of a passed <see cref="Regex" /> the generator honours; the rest either change nothing about
+    ///     which strings match, or are refused before reaching here.
+    /// </summary>
+    internal const RegexOptions HonouredOptions = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
+
+    internal static AnyPattern FromPattern(RandomSource source, string pattern, RegexOptions options) {
         if (source is null) { throw new ArgumentNullException(nameof(source)); }
         if (pattern is null) { throw new ArgumentNullException(nameof(pattern)); }
 
@@ -104,8 +110,7 @@ public sealed class AnyPattern : IAny<string>, IHasRandomSource, ICardinalityHin
         // unsupported pattern. The verifier Regex is NOT built here — the Lazy<Regex> field below defers it to the
         // first actual need — so a pattern whose generation can never succeed (an unbounded quantifier with a
         // minimum in the billions, say) never pays, or risks, compiling it.
-        RegexNode    root    = RegexParser.Parse(pattern, ignoreCase);
-        RegexOptions options = ignoreCase ? RegexOptions.IgnoreCase : RegexOptions.None;
+        RegexNode root = RegexParser.Parse(pattern, options);
 
         return new AnyPattern(source, root, pattern, options);
     }
@@ -147,8 +152,8 @@ public sealed class AnyPattern : IAny<string>, IHasRandomSource, ICardinalityHin
     // Regex is ever compiled for it — the guarantee this lazy field exists for, which a value set must not weaken.
     // Lazy<T>'s default thread-safety mode guarantees the factory runs exactly once even under concurrent
     // Generate() calls on the same instance (see the "concurrent draws" test); no thread ever sees, or pays for, a
-    // second compilation. Anchored with \A(?:…)\z so it decides a full match, and honours only the option the
-    // generator itself honoured (IgnoreCase), never the rest of a passed Regex's. The absolute anchors are the ones
+    // second compilation. Anchored with \A(?:…)\z so it decides a full match, and honours only the options the
+    // generator itself honoured (IgnoreCase, CultureInvariant), never the rest of a passed Regex's. The absolute anchors are the ones
     // that mean it: '$' also matches just before a trailing '\n', so ^(?:…)$ would have let OneOf admit "123\n"
     // against \d{3} — a value outside the language the pattern names. Shared, not rebuilt, when an exclusion
     // derives a new generator: the pattern it verifies is unchanged.

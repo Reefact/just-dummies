@@ -21,7 +21,12 @@ public static partial class Any {
     ///     (ranges, negation), the quantifiers <c>? * + {n} {n,} {n,m}</c> (an unbounded quantifier draws its minimum
     ///     plus 0 to 8 repetitions), alternation, grouping (capturing, non-capturing and named), the dot, and the
     ///     anchors <c>^ $</c> at the start and end of the pattern or of a top-level alternation branch (no-ops there,
-    ///     since a whole matching string is generated). Wherever the pattern leaves a character free, values are drawn
+    ///     since a whole matching string is generated). Case-insensitivity is spelled with one exact leading
+    ///     <c>(?i)</c>, the pattern-string twin of <see cref="RegexOptions.IgnoreCase" /> on the
+    ///     <see cref="StringMatching(Regex)" /> overload; a scoped <c>(?i:…)</c>, a <c>(?i)</c> anywhere else, and
+    ///     every other option group stay outside the subset. The case pairs are the current culture's, as the engine's
+    ///     are: under a Turkish or Azeri culture <c>I</c> and <c>i</c> are not a pair. Wherever the pattern leaves a
+    ///     character free, values are drawn
     ///     from printable ASCII (<c>\s</c> may also yield a tab); a character the pattern names explicitly is emitted as
     ///     written, control characters included. A well-formed but
     ///     non-regular or not-generatable construct — a lookaround, a backreference, a word boundary, a Unicode
@@ -37,15 +42,17 @@ public static partial class Any {
     public static AnyPattern StringMatching(string pattern) {
         if (pattern is null) { throw new ArgumentNullException(nameof(pattern)); }
 
-        return AnyPattern.FromPattern(AmbientRandomSource.Instance, pattern, ignoreCase: false);
+        return AnyPattern.FromPattern(AmbientRandomSource.Instance, pattern, RegexOptions.None);
     }
 
     /// <summary>
     ///     Starts a generator of arbitrary strings matching <paramref name="pattern" /> — the same contract as
     ///     <see cref="StringMatching(string)" />, taking a compiled <see cref="Regex" /> so a test can reuse the very
-    ///     object its production code validates with. <see cref="RegexOptions.IgnoreCase" /> is honoured.
-    ///     <see cref="RegexOptions.IgnorePatternWhitespace" /> changes how the pattern text itself is read and is
-    ///     rejected; the remaining options do not change which strings the pattern matches and are ignored.
+    ///     object its production code validates with. <see cref="RegexOptions.IgnoreCase" /> is honoured, and so is
+    ///     its inline spelling, a leading <c>(?i)</c> in the pattern text — the two are one requirement; so is
+    ///     <see cref="RegexOptions.CultureInvariant" />, which pairs <c>I</c> with <c>i</c> whatever the current
+    ///     culture. <see cref="RegexOptions.IgnorePatternWhitespace" /> changes how the pattern text itself is read and
+    ///     is rejected; the remaining options do not change which strings the pattern matches and are ignored.
     /// </summary>
     /// <param name="pattern">The regular expression the generated strings must match.</param>
     /// <returns>A generator of strings matching the pattern.</returns>
@@ -56,7 +63,7 @@ public static partial class Any {
         if (pattern is null) { throw new ArgumentNullException(nameof(pattern)); }
         if ((pattern.Options & RegexOptions.IgnorePatternWhitespace) != 0) { throw new ArgumentException("RegexOptions.IgnorePatternWhitespace changes how the pattern text is read; pass the pattern without it (or with its whitespace and comments removed).", nameof(pattern)); }
 
-        return AnyPattern.FromPattern(AmbientRandomSource.Instance, pattern.ToString(), (pattern.Options & RegexOptions.IgnoreCase) != 0);
+        return AnyPattern.FromPattern(AmbientRandomSource.Instance, pattern.ToString(), pattern.Options & AnyPattern.HonouredOptions);
     }
 
 }

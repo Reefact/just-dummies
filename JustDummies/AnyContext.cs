@@ -55,6 +55,7 @@ public sealed class AnyContext {
     /// <summary>
     ///     Starts a generator of arbitrary strings matching <paramref name="pattern" /> drawing from this context —
     ///     same fluent surface as <see cref="Any.StringMatching(string)" />, deterministic under this context's seed.
+    ///     A leading <c>(?i)</c> is honoured as <see cref="RegexOptions.IgnoreCase" /> would be.
     /// </summary>
     /// <param name="pattern">The regular expression the generated strings must match.</param>
     /// <returns>A generator of strings matching the pattern.</returns>
@@ -64,13 +65,14 @@ public sealed class AnyContext {
     public AnyPattern StringMatching(string pattern) {
         if (pattern is null) { throw new ArgumentNullException(nameof(pattern)); }
 
-        return AnyPattern.FromPattern(_source, pattern, ignoreCase: false);
+        return AnyPattern.FromPattern(_source, pattern, RegexOptions.None);
     }
 
     /// <summary>
     ///     Starts a generator of arbitrary strings matching <paramref name="pattern" /> drawing from this context —
     ///     same fluent surface as <see cref="Any.StringMatching(Regex)" />, deterministic under this context's seed.
-    ///     <see cref="RegexOptions.IgnoreCase" /> is honoured; <see cref="RegexOptions.IgnorePatternWhitespace" /> is
+    ///     <see cref="RegexOptions.IgnoreCase" /> is honoured, as are a leading <c>(?i)</c> in the pattern text and
+    ///     <see cref="RegexOptions.CultureInvariant" />; <see cref="RegexOptions.IgnorePatternWhitespace" /> is
     ///     rejected; the remaining options are ignored.
     /// </summary>
     /// <param name="pattern">The regular expression the generated strings must match.</param>
@@ -82,7 +84,7 @@ public sealed class AnyContext {
         if (pattern is null) { throw new ArgumentNullException(nameof(pattern)); }
         if ((pattern.Options & RegexOptions.IgnorePatternWhitespace) != 0) { throw new ArgumentException("RegexOptions.IgnorePatternWhitespace changes how the pattern text is read; pass the pattern without it (or with its whitespace and comments removed).", nameof(pattern)); }
 
-        return AnyPattern.FromPattern(_source, pattern.ToString(), (pattern.Options & RegexOptions.IgnoreCase) != 0);
+        return AnyPattern.FromPattern(_source, pattern.ToString(), pattern.Options & AnyPattern.HonouredOptions);
     }
 
     /// <summary>

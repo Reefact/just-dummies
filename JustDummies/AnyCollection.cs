@@ -59,7 +59,7 @@ public abstract class AnyCollection<TItem, TResult, TSelf> : IAny<TResult>, IHas
     /// <summary>Fixes the exact number of elements. Declared once per generator.</summary>
     /// <param name="count">The exact number of elements.</param>
     /// <returns>A new generator carrying the added constraint.</returns>
-    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="count" /> is negative.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="count" /> is negative or exceeds 1000000, the largest count a generator is asked to produce.</exception>
     /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
     public TSelf WithCount(int count) {
         return With(CountConstraints.WithCount(State, count));
@@ -68,7 +68,7 @@ public abstract class AnyCollection<TItem, TResult, TSelf> : IAny<TResult>, IHas
     /// <summary>Requires at least <paramref name="count" /> elements.</summary>
     /// <param name="count">The inclusive minimum number of elements.</param>
     /// <returns>A new generator carrying the added constraint.</returns>
-    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="count" /> is negative.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="count" /> is negative or exceeds 1000000, the largest count a generator is asked to produce.</exception>
     /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
     public TSelf WithMinCount(int count) {
         return With(CountConstraints.WithMinCount(State, count));

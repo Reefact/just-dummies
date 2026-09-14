@@ -59,7 +59,7 @@ public sealed class AnyDictionary<TKey, TValue> : IAny<Dictionary<TKey, TValue>>
     /// <summary>Fixes the exact number of entries. Declared once per generator.</summary>
     /// <param name="count">The exact number of entries.</param>
     /// <returns>A new generator carrying the added constraint.</returns>
-    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="count" /> is negative.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="count" /> is negative or exceeds 1000000, the largest count a generator is asked to produce.</exception>
     /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
     public AnyDictionary<TKey, TValue> WithCount(int count) {
         return With(CountConstraints.WithCount(_keys, count));
@@ -68,7 +68,7 @@ public sealed class AnyDictionary<TKey, TValue> : IAny<Dictionary<TKey, TValue>>
     /// <summary>Requires at least <paramref name="count" /> entries.</summary>
     /// <param name="count">The inclusive minimum number of entries.</param>
     /// <returns>A new generator carrying the added constraint.</returns>
-    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="count" /> is negative.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="count" /> is negative or exceeds 1000000, the largest count a generator is asked to produce.</exception>
     /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
     public AnyDictionary<TKey, TValue> WithMinCount(int count) {
         return With(CountConstraints.WithMinCount(_keys, count));
@@ -77,7 +77,7 @@ public sealed class AnyDictionary<TKey, TValue> : IAny<Dictionary<TKey, TValue>>
     /// <summary>Requires at most <paramref name="count" /> entries.</summary>
     /// <param name="count">The inclusive maximum number of entries.</param>
     /// <returns>A new generator carrying the added constraint.</returns>
-    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="count" /> is negative.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="count" /> is negative or exceeds 1000000, the largest count a generator is asked to produce.</exception>
     /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
     public AnyDictionary<TKey, TValue> WithMaxCount(int count) {
         return With(CountConstraints.WithMaxCount(_keys, count));
@@ -87,7 +87,7 @@ public sealed class AnyDictionary<TKey, TValue> : IAny<Dictionary<TKey, TValue>>
     /// <param name="minimum">The inclusive minimum number of entries.</param>
     /// <param name="maximum">The inclusive maximum number of entries.</param>
     /// <returns>A new generator carrying the added constraint.</returns>
-    /// <exception cref="ArgumentOutOfRangeException">Thrown when a bound is negative.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when a bound is negative or exceeds 1000000, the largest count a generator is asked to produce.</exception>
     /// <exception cref="ArgumentException">Thrown when <paramref name="minimum" /> is greater than <paramref name="maximum" />.</exception>
     /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
     public AnyDictionary<TKey, TValue> WithCountBetween(int minimum, int maximum) {

@@ -148,9 +148,15 @@ avez nommée, si bien que `GreaterThanOrEqualTo(1_000_000)` reste juste au-dessu
 partir vers `1e308`. Écrire la limite propre du type comme borne opposée revient à ne pas la mettre :
 `Between(1_000_000, double.MaxValue)` tire exactement comme `GreaterThanOrEqualTo(1_000_000)`.
 
-**NaN et les infinis ne sont jamais tirés, ni acceptés.** Le refus couvre aussi les arguments :
-`Except(double.NaN)` et une borne non finie sont tous deux rejetés — un NaN ne restreint jamais
-rien, puisque toute comparaison avec lui est fausse.
+**NaN et les infinis ne sont jamais tirés.** Une borne non finie ou une valeur `OneOf(...)` non
+finie est rejetée comme une erreur d'argument, au même titre qu'une valeur hors de la plage que vous
+avez déclarée — la valeur ne pourrait jamais être produite, donc l'écrire est une erreur qu'il vaut
+mieux détecter immédiatement.
+
+`Except(double.NaN)` et `DifferentFrom(double.NaN)` sont différents : ils sont **acceptés**, comme
+un sans-effet. Un NaN est déjà garanti de ne jamais être tiré, donc en exclure un ne demande rien que
+le générateur n'offre déjà — le refuser ne ferait que gêner un `DifferentFrom(existant)` écrit sur une
+valeur qu'un calcul a produite, laquelle pourrait parfois être infinie.
 
 Quand un test a réellement besoin d'un NaN, demandez-le explicitement via le vivier générique, qui
 ne porte aucune règle de finitude :

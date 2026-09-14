@@ -328,7 +328,7 @@ public sealed class ContinuousIntervalProperties {
             .QuickCheckThrowOnFailure();
     }
 
-    [Fact(DisplayName = "Double: NaN and the infinities are rejected as argument errors by every entry point taking a bound.")]
+    [Fact(DisplayName = "Double: NaN and the infinities are rejected as argument errors by every entry point taking a bound or a pool.")]
     public void DoubleRejectsNonFiniteArguments() {
         Prop.ForAll((from finite in Generators.Double()
                      from nonFinite in NonFiniteDoubles()
@@ -339,13 +339,11 @@ public sealed class ContinuousIntervalProperties {
                                 && Expect.Throws<ArgumentException>(() => Any.Double().LessThanOrEqualTo(testCase.nonFinite))
                                 && Expect.Throws<ArgumentException>(() => Any.Double().Between(testCase.nonFinite, testCase.finite))
                                 && Expect.Throws<ArgumentException>(() => Any.Double().Between(testCase.finite, testCase.nonFinite))
-                                && Expect.Throws<ArgumentException>(() => Any.Double().OneOf(testCase.finite, testCase.nonFinite))
-                                && Expect.Throws<ArgumentException>(() => Any.Double().Except(testCase.nonFinite))
-                                && Expect.Throws<ArgumentException>(() => Any.Double().DifferentFrom(testCase.nonFinite)))
+                                && Expect.Throws<ArgumentException>(() => Any.Double().OneOf(testCase.finite, testCase.nonFinite)))
             .QuickCheckThrowOnFailure();
     }
 
-    [Fact(DisplayName = "Single: NaN and the infinities are rejected as argument errors by every entry point taking a bound.")]
+    [Fact(DisplayName = "Single: NaN and the infinities are rejected as argument errors by every entry point taking a bound or a pool.")]
     public void SingleRejectsNonFiniteArguments() {
         Prop.ForAll((from finite in Singles()
                      from nonFinite in NonFiniteSingles()
@@ -356,9 +354,23 @@ public sealed class ContinuousIntervalProperties {
                                 && Expect.Throws<ArgumentException>(() => Any.Single().LessThanOrEqualTo(testCase.nonFinite))
                                 && Expect.Throws<ArgumentException>(() => Any.Single().Between(testCase.nonFinite, testCase.finite))
                                 && Expect.Throws<ArgumentException>(() => Any.Single().Between(testCase.finite, testCase.nonFinite))
-                                && Expect.Throws<ArgumentException>(() => Any.Single().OneOf(testCase.finite, testCase.nonFinite))
-                                && Expect.Throws<ArgumentException>(() => Any.Single().Except(testCase.nonFinite))
-                                && Expect.Throws<ArgumentException>(() => Any.Single().DifferentFrom(testCase.nonFinite)))
+                                && Expect.Throws<ArgumentException>(() => Any.Single().OneOf(testCase.finite, testCase.nonFinite)))
+            .QuickCheckThrowOnFailure();
+    }
+
+    [Fact(DisplayName = "Double: Except and DifferentFrom accept a non-finite value as a no-op — issue #180, the counterpart of the refusal above.")]
+    public void DoubleAcceptsNonFiniteExclusions() {
+        Prop.ForAll(NonFiniteDoubles().ToArbitrary(),
+                    nonFinite => Expect.EveryDraw(Any.Double().Except(nonFinite), IsFinite)
+                                 && Expect.EveryDraw(Any.Double().DifferentFrom(nonFinite), IsFinite))
+            .QuickCheckThrowOnFailure();
+    }
+
+    [Fact(DisplayName = "Single: Except and DifferentFrom accept a non-finite value as a no-op — issue #180, the counterpart of the refusal above.")]
+    public void SingleAcceptsNonFiniteExclusions() {
+        Prop.ForAll(NonFiniteSingles().ToArbitrary(),
+                    nonFinite => Expect.EveryDraw(Any.Single().Except(nonFinite), value => !float.IsNaN(value) && !float.IsInfinity(value))
+                                 && Expect.EveryDraw(Any.Single().DifferentFrom(nonFinite), value => !float.IsNaN(value) && !float.IsInfinity(value)))
             .QuickCheckThrowOnFailure();
     }
 

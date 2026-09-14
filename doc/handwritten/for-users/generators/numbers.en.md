@@ -141,9 +141,14 @@ it; a one-sided bound keeps an ordinary spread beside the value you named, so
 the type's own limit as the far bound means the same thing as leaving it out, so
 `Between(1_000_000, double.MaxValue)` draws exactly like `GreaterThanOrEqualTo(1_000_000)`.
 
-**NaN and the infinities are never drawn, and never accepted.** The refusal covers arguments too, so
-`Except(double.NaN)` and a non-finite bound are both rejected — a NaN never narrows anything, since
-every comparison with it is false.
+**NaN and the infinities are never drawn.** A non-finite bound or `OneOf(...)` value is rejected as
+an argument error, the same way a value outside your declared range would be — the value could
+never be produced, so writing it is a mistake worth catching immediately.
+
+`Except(double.NaN)` and `DifferentFrom(double.NaN)` are different: they are **accepted**, as a
+no-op. A NaN is already guaranteed never to be drawn, so excluding one asks for nothing the
+generator does not already give — refusing it would only get in the way of `DifferentFrom(existing)`
+written over a value a computation happened to produce, which might occasionally be infinite.
 
 When a test genuinely needs a NaN, ask for it explicitly through the generic pool, which carries no
 finiteness rule:

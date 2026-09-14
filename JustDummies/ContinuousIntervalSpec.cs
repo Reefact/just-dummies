@@ -57,16 +57,34 @@ internal sealed class ContinuousIntervalSpec {
     }
 
     /// <summary>
-    ///     Rejects NaN and the infinities — the shared argument guard of every floating-point generator. The message
-    ///     names the way out as well as the rule: a user meeting this wall wants a non-finite value for a reason, and
-    ///     that reason is served by an explicit pool. Stating only the refusal leaves them concluding the library is
-    ///     missing a feature it deliberately does not have.
+    ///     Rejects NaN and the infinities on a bound — the argument guard the interval-shaped constraints apply
+    ///     (<c>Between</c>, <c>GreaterThan(OrEqualTo)</c>, <c>LessThan(OrEqualTo)</c>). The message names the way out
+    ///     as well as the rule: a user meeting this wall wants a non-finite value for a reason, and that reason is
+    ///     served by an explicit pool. Stating only the refusal leaves them concluding the library is missing a
+    ///     feature it deliberately does not have.
     /// </summary>
     internal static void EnsureFinite(double value, string parameterName) {
         if (parameterName is null) { throw new ArgumentNullException(nameof(parameterName)); }
         if (double.IsNaN(value) || double.IsInfinity(value)) {
             throw new ArgumentException("The value must be finite: NaN and infinities are never generated, and never accepted as arguments. " +
                                         "To draw a non-finite value that genuinely belongs to your domain, use an explicit pool: Any.OneOf(double.NaN, ...).",
+                                        parameterName);
+        }
+    }
+
+    /// <summary>
+    ///     Rejects NaN and the infinities in a value set — the argument guard <c>OneOf</c> applies. Named apart from
+    ///     <see cref="EnsureFinite" /> because the advice is the call the reader has just written: naming
+    ///     <c>OneOf(...)</c> plainly here would read as a loop rather than a way out. The generic
+    ///     <c>Any.OneOf&lt;T&gt;(...)</c> is what the advice means — the pool with no finiteness rule — distinct from
+    ///     this generator's own <c>OneOf</c>, which draws from the same finite domain as every other constraint.
+    /// </summary>
+    internal static void EnsureFiniteForPool(double value, string parameterName) {
+        if (parameterName is null) { throw new ArgumentNullException(nameof(parameterName)); }
+        if (double.IsNaN(value) || double.IsInfinity(value)) {
+            throw new ArgumentException("The value must be finite: NaN and infinities are never generated, and never accepted as arguments. " +
+                                        "To draw a non-finite value that genuinely belongs to your domain, build a generic pool instead: " +
+                                        "Any.OneOf<double>(double.NaN, ...) — never this generator's own OneOf.",
                                         parameterName);
         }
     }

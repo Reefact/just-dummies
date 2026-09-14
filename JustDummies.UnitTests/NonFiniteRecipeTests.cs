@@ -32,8 +32,10 @@ public sealed class NonFiniteRecipeTests {
         ["Any.Double().OneOf(1.0, double.NaN)"]               = () => Any.Double().OneOf(1.0, double.NaN),
         ["Any.Single().GreaterThan(float.NegativeInfinity)"]  = () => Any.Single().GreaterThan(float.NegativeInfinity),
         ["Any.Single().OneOf(1.0f, float.PositiveInfinity)"]  = () => Any.Single().OneOf(1.0f, float.PositiveInfinity),
+#if NET8_0_OR_GREATER
         ["Any.Half().GreaterThan(Half.NegativeInfinity)"]     = () => Any.Half().GreaterThan(Half.NegativeInfinity),
         ["Any.Half().OneOf((Half)1, Half.NaN)"]               = () => Any.Half().OneOf((Half)1, Half.NaN),
+#endif
     };
 
     /// <summary>
@@ -46,8 +48,10 @@ public sealed class NonFiniteRecipeTests {
         ["Any.Double().DifferentFrom(double.PositiveInfinity)"]  = () => Any.Double().DifferentFrom(double.PositiveInfinity),
         ["Any.Single().Except(float.NaN)"]                       = () => Any.Single().Except(float.NaN),
         ["Any.Single().DifferentFrom(float.NegativeInfinity)"]   = () => Any.Single().DifferentFrom(float.NegativeInfinity),
+#if NET8_0_OR_GREATER
         ["Any.Half().Except(Half.NaN)"]                          = () => Any.Half().Except(Half.NaN),
         ["Any.Half().DifferentFrom(Half.PositiveInfinity)"]      = () => Any.Half().DifferentFrom(Half.PositiveInfinity),
+#endif
     };
 
     public static TheoryData<string> GuardedEntryPoints => [.. Declarations.Keys];
@@ -80,11 +84,13 @@ public sealed class NonFiniteRecipeTests {
             using (Any.UseSeed(seed)) { excludedSingle = Any.Single().Except(float.NaN).DifferentFrom(float.NegativeInfinity).Generate(); }
             Check.That(excludedSingle).IsEqualTo(plainSingle);
 
+#if NET8_0_OR_GREATER
             Half plainHalf;
             Half excludedHalf;
             using (Any.UseSeed(seed)) { plainHalf = Any.Half().Generate(); }
             using (Any.UseSeed(seed)) { excludedHalf = Any.Half().Except(Half.NaN).DifferentFrom(Half.PositiveInfinity).Generate(); }
             Check.That(excludedHalf).IsEqualTo(plainHalf);
+#endif
         }
     }
 
@@ -93,7 +99,9 @@ public sealed class NonFiniteRecipeTests {
         ArgumentException[] refusals = [
             Assert.Throws<ArgumentException>(() => Any.Double().LessThan(double.NaN)),
             Assert.Throws<ArgumentException>(() => Any.Single().LessThan(float.NaN)),
+#if NET8_0_OR_GREATER
             Assert.Throws<ArgumentException>(() => Any.Half().LessThan(Half.NaN)),
+#endif
         ];
 
         foreach (ArgumentException refusal in refusals) {
@@ -112,7 +120,9 @@ public sealed class NonFiniteRecipeTests {
         ArgumentException[] refusals = [
             Assert.Throws<ArgumentException>(() => Any.Double().OneOf(1.0, double.NaN)),
             Assert.Throws<ArgumentException>(() => Any.Single().OneOf(1.0f, float.NaN)),
+#if NET8_0_OR_GREATER
             Assert.Throws<ArgumentException>(() => Any.Half().OneOf((Half)1, Half.NaN)),
+#endif
         ];
 
         foreach (ArgumentException refusal in refusals) {

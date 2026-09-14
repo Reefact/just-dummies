@@ -241,10 +241,12 @@ public sealed class AnyString : IAny<string>, IHasRandomSource, ICardinalityHint
     }
 
     /// <summary>
-    ///     Requires the string to contain <paramref name="value" />. May be declared several times; the contained
-    ///     values are laid out side by side, without overlap, between the prefix and the suffix. Each is a literal
+    ///     Requires the string to contain <paramref name="value" />. May be declared several times; DISTINCT
+    ///     contained values are laid out side by side, without overlap, between the prefix and the suffix, and each
+    ///     one's length counts against the declared length. Redeclaring the exact SAME value is a no-op instead, like
+    ///     every other constraint's redeclaration — it does not double the length it costs. Each value is a literal
     ///     rather than a draw, so the declared character constraints leave it exactly as written and govern the drawn
-    ///     characters around it (ADR-0079). Their lengths still count against the declared length.
+    ///     characters around it (ADR-0079).
     /// </summary>
     /// <param name="value">The value the generated string must contain.</param>
     /// <returns>A new generator carrying the added constraint.</returns>

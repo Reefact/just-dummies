@@ -1,5 +1,6 @@
 #region Usings declarations
 
+using System.Globalization;
 using System.Reflection;
 using System.Text.RegularExpressions;
 
@@ -64,6 +65,7 @@ public sealed class AnyPatternTests {
     [InlineData(@"(?'2'y)")]          // ...same, quote form
     [InlineData(@"(?<10>ab)")]        // a multi-digit group number stays valid
     [InlineData(@"(?<a1>xy)")]        // a named group whose name merely contains digits stays valid
+    [InlineData(@"(?i)[a-z]{3}")]     // a leading (?i) is the pattern-string spelling of IgnoreCase
     [InlineData(@"^a$|^b$")]
     [InlineData(@"^^abc")]            // a run of boundary anchors is a no-op, exactly as in the real engine
     [InlineData(@"abc$$")]
@@ -295,6 +297,97 @@ public sealed class AnyPatternTests {
         }
 
         Check.That(sawUpper).IsTrue();
+    }
+
+    [Fact(DisplayName = "A leading (?i) in a pattern string generates either case, exactly as RegexOptions.IgnoreCase does.")]
+    public void LeadingInlineIgnoreCaseHonoured() {
+        AnyPattern generator = Any.WithSeed(99).StringMatching("(?i)^[a-z]{5}$");
+        bool       sawUpper  = false;
+
+        for (int i = 0; i < SampleCount; i++) {
+            string value = generator.Generate();
+            AssertMatches(value, "[a-z]{5}", RegexOptions.IgnoreCase);
+            if (value.Any(char.IsUpper)) { sawUpper = true; }
+        }
+
+        Check.That(sawUpper).IsTrue();
+    }
+
+    [Fact(DisplayName = "The two spellings of whole-pattern case-insensitivity are one requirement: same seed, same draws.")]
+    public void BothSpellingsOfIgnoreCaseAreOneRequirement() {
+        List<string> inlinePrefix   = Draw(Any.WithSeed(7).StringMatching("(?i)[a-z]{5}"));
+        List<string> regexOption    = Draw(Any.WithSeed(7).StringMatching(new Regex("[a-z]{5}", RegexOptions.IgnoreCase)));
+        List<string> prefixedRegex  = Draw(Any.WithSeed(7).StringMatching(new Regex("(?i)[a-z]{5}")));
+
+        Check.That(inlinePrefix).ContainsExactly(regexOption);
+        Check.That(prefixedRegex).ContainsExactly(regexOption);
+    }
+
+    [Fact(DisplayName = "Under a Turkish culture the dotted and dotless I stay apart, so a case-insensitive I is only ever an I.")]
+    public void UnderATurkishCultureTheTwoIsStayApart() {
+        UnderCulture("tr-TR", () => {
+            // The real engine pairs 'I' with 'ı' and 'i' with 'İ' here, neither of which is ASCII. Forty of them
+            // leave a generator that folded 'I' with 'i' no realistic chance of a matching draw.
+            foreach (AnyPattern generator in new[] {
+                         Any.WithSeed(1).StringMatching("(?i)I{40}"),
+                         Any.WithSeed(1).StringMatching(new Regex("I{40}", RegexOptions.IgnoreCase))
+                     }) {
+                string value = generator.Generate();
+                AssertMatches(value, "I{40}", RegexOptions.IgnoreCase);
+                Check.That(value).IsEqualTo(new string('I', 40));
+            }
+
+            string lower = Any.WithSeed(1).StringMatching("(?i)i{40}").Generate();
+            AssertMatches(lower, "i{40}", RegexOptions.IgnoreCase);
+            Check.That(lower).IsEqualTo(new string('i', 40));
+        });
+    }
+
+    [Fact(DisplayName = "RegexOptions.CultureInvariant is honoured: under a Turkish culture an invariant I still draws either case.")]
+    public void CultureInvariantIsHonoured() {
+        UnderCulture("tr-TR", () => {
+            AnyPattern generator = Any.WithSeed(99).StringMatching(new Regex("I{5}", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant));
+            bool       sawLower  = false;
+
+            for (int i = 0; i < SampleCount; i++) {
+                string value = generator.Generate();
+                AssertMatches(value, "I{5}", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+                if (value.Any(char.IsLower)) { sawLower = true; }
+            }
+
+            Check.That(sawLower).IsTrue();
+        });
+    }
+
+    private static void UnderCulture(string name, Action test) {
+        CultureInfo previous = CultureInfo.CurrentCulture;
+        CultureInfo.CurrentCulture = new CultureInfo(name);
+        try {
+            test();
+        } finally {
+            CultureInfo.CurrentCulture = previous;
+        }
+    }
+
+    [Fact(DisplayName = "Only one exact leading (?i) is honoured: a scoped or later (?i), and every other option group, stay refused.")]
+    public void ScopedOrMidPatternOptionGroupsStayRefused() {
+        Check.ThatCode(() => Any.StringMatching("(?i:abc)"))
+             .Throws<UnsupportedRegexException>()
+             .WhichMember(caught => caught.Message).Contains("a group option '(?i…)' at position 0");
+        Check.ThatCode(() => Any.StringMatching("a(?i)bc"))
+             .Throws<UnsupportedRegexException>()
+             .WhichMember(caught => caught.Message).Contains("a group option '(?i…)' at position 1");
+        Check.ThatCode(() => Any.StringMatching("(?i)a(?i)bc"))
+             .Throws<UnsupportedRegexException>()
+             .WhichMember(caught => caught.Message).Contains("a group option '(?i…)' at position 5");
+
+        // Only the exact '(?i)' prefix is honoured: every other option group, leading or not, stays refused as today.
+        Check.ThatCode(() => Any.StringMatching("(?s)abc"))
+             .Throws<UnsupportedRegexException>()
+             .WhichMember(caught => caught.Message).Contains("a group option '(?s…)' at position 0");
+        Check.ThatCode(() => Any.StringMatching("(?is)abc"))
+             .Throws<UnsupportedRegexException>()
+             .WhichMember(caught => caught.Message).Contains("a group option '(?i…)' at position 0");
     }
 
     [Fact(DisplayName = "A matching generator composes into a value object through As.")]

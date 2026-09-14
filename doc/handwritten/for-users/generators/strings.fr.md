@@ -247,6 +247,17 @@ string reference = Any.StringMatching(new Regex(@"ORD-\d{8}")).Generate();
 string flag      = Any.StringMatching("(true|false)").Generate();
 ```
 
+L'insensibilité à la casse dispose de deux syntaxes en .NET, qui expriment ici la même exigence : un
+`(?i)` en tête du motif ou `RegexOptions.IgnoreCase` sur l'objet `Regex` fourni. À graine identique,
+les deux génèrent la même séquence de valeurs. Les paires de casse sont celles de la culture courante,
+exactement comme pour le moteur : sous une culture turque ou azérie, `I` et `i` ne forment pas une
+paire, sauf si la `Regex` porte aussi `RegexOptions.CultureInvariant`, honoré lui aussi.
+
+```csharp
+string code = Any.StringMatching("(?i)[a-z]{3}").Generate();                                   // "aBc"
+string same = Any.StringMatching(new Regex("[a-z]{3}", RegexOptions.IgnoreCase)).Generate();
+```
+
 ### Constructions acceptées
 
 | Construction | Exemple |
@@ -260,6 +271,7 @@ string flag      = Any.StringMatching("(true|false)").Generate();
 | groupements | `(…)`, `(?:…)`, `(?<nom>…)` |
 | alternation | `a|b` |
 | ancres aux extrémités | `^…$` |
+| insensibilité à la casse sur tout le motif | un `(?i)` en tête, ou `RegexOptions.IgnoreCase` sur la surcharge `Regex` |
 
 ### Constructions refusées
 
@@ -274,7 +286,8 @@ jamais mal généré :
 | rétro-anticipation `(?<=…)`, `(?<!…)` | non régulier |
 | groupes atomiques `(?>…)` | non régulier |
 | groupes conditionnels `(?(…)…)` | non régulier |
-| commentaires en ligne `(?#…)`, options de groupe `(?i…)` | ne font pas partie du langage généré |
+| commentaires en ligne `(?#…)` | ne font pas partie du langage généré |
+| un `(?i:…)` à portée limitée, un `(?i)` ailleurs qu'en tête, toute autre option de groupe `(?s…)` | seul un unique `(?i)` en tête est honoré ; toute autre option de groupe reste hors du sous-ensemble |
 | une ancre hors extrémité | `^` et `$` n'ont de sens qu'au début et à la fin du motif, ou d'une branche d'alternation de premier niveau |
 
 Élargir cet ensemble supposerait une dépendance à un automate d'expressions régulières ; la décision

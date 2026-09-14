@@ -239,6 +239,17 @@ string reference = Any.StringMatching(new Regex(@"ORD-\d{8}")).Generate();
 string flag      = Any.StringMatching("(true|false)").Generate();
 ```
 
+Case-insensitivity has two spellings in .NET, and both express the same requirement here: a
+leading `(?i)` in the pattern text, or `RegexOptions.IgnoreCase` on the `Regex` you pass. Under the
+same seed the two generate the same sequence of values. The case pairs are the current culture's,
+exactly as the engine's are: under a Turkish or Azeri culture `I` and `i` are not a pair, unless the
+`Regex` also carries `RegexOptions.CultureInvariant`, which is honoured too.
+
+```csharp
+string code = Any.StringMatching("(?i)[a-z]{3}").Generate();                                   // "aBc"
+string same = Any.StringMatching(new Regex("[a-z]{3}", RegexOptions.IgnoreCase)).Generate();
+```
+
 ### Supported constructs
 
 | Construct | Example |
@@ -252,6 +263,7 @@ string flag      = Any.StringMatching("(true|false)").Generate();
 | grouping | `(…)`, `(?:…)`, `(?<name>…)` |
 | alternation | `a|b` |
 | anchors at the edges | `^…$` |
+| whole-pattern case-insensitivity | a leading `(?i)`, or `RegexOptions.IgnoreCase` on the `Regex` overload |
 
 ### Refused constructs
 
@@ -265,7 +277,8 @@ an `UnsupportedRegexException` naming the construct and its position — never m
 | lookbehind `(?<=…)`, `(?<!…)` | not regular |
 | atomic groups `(?>…)` | not regular |
 | conditional groups `(?(…)…)` | not regular |
-| inline comments `(?#…)`, group options `(?i…)` | not part of the language being generated |
+| inline comments `(?#…)` | not part of the language being generated |
+| a scoped `(?i:…)`, a `(?i)` anywhere but first, any other option group `(?s…)` | only one exact leading `(?i)` is honoured; every other option group stays outside the subset |
 | an anchor away from an edge | `^` and `$` are only meaningful at the start and end of the pattern, or of a top-level alternation branch |
 
 Widening this set would mean taking a regex-automaton dependency; the decision to keep a home-grown

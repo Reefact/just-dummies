@@ -164,12 +164,17 @@ public sealed class AnyGuid : IAny<Guid>, IHasRandomSource, ICardinalityHint<Gui
         if (values.Length == 0) { throw new ArgumentException("At least one value is required.", nameof(values)); }
 
         ConstraintCall constraint = ConstraintCall.Of(nameof(OneOf), Join(values));
+        Guid[]         distinct   = values.Distinct().ToArray();
+
         // Re-declaring the SAME constraint is not a contradiction, so it is a no-op rather than a
-        // conflict: the second declaration asks for exactly what the first already guarantees.
-        if (_allowedConstraint == constraint) { return this; }
+        // conflict: the second declaration asks for exactly what the first already guarantees. What
+        // "the same" means is the SET, not the call as it was written — OneOf ignores duplicates and
+        // promises nothing about order. The rendered call is still kept for the messages, because a
+        // conflict has to quote the caller their own words.
+        if (_allowed is not null && new HashSet<Guid>(_allowed).SetEquals(distinct)) { return this; }
         if (_allowedConstraint is not null) { throw ConflictingAnyConstraintException.AlreadyDefined(constraint, _allowedConstraint); }
 
-        return Validated(new AnyGuid(_source, _pinned, _pinnedConstraint, values.Distinct().ToArray(), constraint, _excluded, _exclusions), constraint);
+        return Validated(new AnyGuid(_source, _pinned, _pinnedConstraint, distinct, constraint, _excluded, _exclusions), constraint);
     }
 
     /// <summary>

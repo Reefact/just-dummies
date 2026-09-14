@@ -24,6 +24,12 @@ namespace JustDummies.UnitTests;
 ///             renamed or missing constraint on one of the cloned numeric or temporal builders would otherwise slip
 ///             past the copy-paste discipline that keeps the duplication safe.
 ///         </item>
+///         <item>
+///             <b>Value-set identity.</b> Every <c>OneOf</c> identifies the set it was given by its <i>values</i>,
+///             so re-declaring the same domain is the documented no-op whatever order it is written in. This one
+///             draws its material from the builders rather than reading their declarations, because the rule it
+///             holds is about behaviour; it is here because it is the same family of drift the two above catch.
+///         </item>
 ///     </list>
 ///     Composition and collection factories (<c>Combine</c>, <c>ListOf</c>, <c>DictionaryOf</c>, ...) are deliberately
 ///     <b>not</b> mirrored onto <see cref="AnyContext" />: they inherit the context through their operand sources, so
@@ -286,6 +292,130 @@ public sealed class SurfaceParityTests {
     /// <summary>Whether <paramref name="type" /> closes <paramref name="definition" /> at any type argument.</summary>
     private static bool Implements(Type type, Type definition) {
         return type.GetInterfaces().Any(candidate => candidate.IsGenericType && candidate.GetGenericTypeDefinition() == definition);
+    }
+
+    #endregion
+
+    #region Value-set identity: a OneOf is its values
+
+    // A builder whose factory needs an argument or a type parameter cannot be reached by the reflection below, so it
+    // is named here instead. The guard FAILS on a builder it can neither construct nor find here, which is what keeps
+    // this list honest: the next generator carrying OneOf either works by reflection or costs one line.
+    private static readonly Dictionary<Type, object> ExplicitInstances = new() {
+        [typeof(AnyPattern)]  = Any.StringMatching(@"[a-z]{5}"),
+        [typeof(AnyEnum<>)]   = Any.Enum<Suit>()
+    };
+
+    private enum Suit {
+
+        Clubs,
+        Diamonds,
+        Hearts,
+        Spades
+
+    }
+
+    [Fact(DisplayName = "Every OneOf identifies a value set by its values, not by the call as it was written.")]
+    public void EveryOneOfIdentifiesAValueSetByItsValues() {
+        // OneOf documents duplicates as ignored and promises nothing about order, so OneOf(a, b), OneOf(b, a) and
+        // OneOf(a, b, b) all declare ONE domain, and re-declaring it is the no-op the surface promises. Comparing
+        // the rendered call instead refuses two of the three as a second, conflicting set — a conflict naming a
+        // constraint the caller has nothing to loosen in. Issue #185 found that on AnyPattern; it was true of eight
+        // other builders, which is why the rule now answers to a guard rather than to nine copies of a comment.
+        List<string> offenders = [];
+
+        foreach (Type builder in typeof(Any).Assembly
+                                            .GetTypes()
+                                            .Where(type => type.IsPublic && Implements(type, typeof(IAny<>)))
+                                            .OrderBy(type => type.Name, StringComparer.Ordinal)) {
+            MethodInfo? oneOf = builder.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+                                       .FirstOrDefault(method => method.Name == "OneOf" && method.GetParameters()[0].ParameterType.IsArray);
+            if (oneOf is null) { continue; }
+
+            object? generator = Instantiate(builder);
+            if (generator is null) {
+                offenders.Add($"{builder.Name} (no instance: add one to ExplicitInstances)");
+
+                continue;
+            }
+
+            // The material is drawn from the builder itself, so the values are ones it genuinely admits — a set this
+            // test invented could be refused for reasons that have nothing to do with the rule under guard.
+            List<object>? drawn = TwoDistinctValues(generator);
+            if (drawn is null) {
+                offenders.Add($"{builder.Name} (could not draw two distinct values)");
+
+                continue;
+            }
+
+            // Read off the CONSTRUCTED builder, never off the declaration above: on a generic builder the declared
+            // parameter is still an open type argument, which no array can be made of.
+            MethodInfo declaring = generator.GetType()
+                                            .GetMethods(BindingFlags.Public | BindingFlags.Instance)
+                                            .First(method => method.Name == "OneOf" && method.GetParameters()[0].ParameterType.IsArray);
+            Type   element  = declaring.GetParameters()[0].ParameterType.GetElementType()!;
+            object declared = declaring.Invoke(generator, [Pack(element, drawn[0], drawn[1])])!;
+
+            // The set, written three ways. The first is the declaration; the other two must be no-ops.
+            Refusing(declaring, declared, Pack(element, drawn[1], drawn[0]), $"{builder.Name} (a reordered set conflicts)", offenders);
+            Refusing(declaring, declared, Pack(element, drawn[0], drawn[1], drawn[1]), $"{builder.Name} (a duplicated set conflicts)", offenders);
+
+            // And the guard must not swallow a REAL second declaration: one value in common is not the same domain.
+            if (!Conflicts(declaring, declared, Pack(element, drawn[0]))) {
+                offenders.Add($"{builder.Name} (a genuinely different set no longer conflicts)");
+            }
+        }
+
+        Check.WithCustomMessage($"These generators do not identify a value set by its values: {string.Join("; ", offenders)}.")
+             .That(offenders)
+             .IsEmpty();
+    }
+
+    /// <summary>The builder as the caller would obtain it, or <c>null</c> when this test has no way to build one.</summary>
+    private static object? Instantiate(Type builder) {
+        Type key = builder.IsGenericType ? builder.GetGenericTypeDefinition() : builder;
+        if (ExplicitInstances.TryGetValue(key, out object? named)) { return named; }
+
+        MethodInfo? factory = typeof(Any).GetMethods(BindingFlags.Public | BindingFlags.Static)
+                                         .FirstOrDefault(method => !method.IsGenericMethod
+                                                                && method.GetParameters().Length == 0
+                                                                && method.ReturnType == builder);
+
+        return factory?.Invoke(null, null);
+    }
+
+    /// <summary>Two values the builder itself yields, or <c>null</c> when the draw did not separate two in time.</summary>
+    private static List<object>? TwoDistinctValues(object generator) {
+        MethodInfo   generate = generator.GetType().GetMethod("Generate", Type.EmptyTypes)!;
+        List<object> drawn    = [];
+
+        for (int attempt = 0; attempt < 200 && drawn.Count < 2; attempt++) {
+            object value = generate.Invoke(generator, null)!;
+            if (!drawn.Contains(value)) { drawn.Add(value); }
+        }
+
+        return drawn.Count == 2 ? drawn : null;
+    }
+
+    private static Array Pack(Type element, params object[] values) {
+        Array packed = Array.CreateInstance(element, values.Length);
+        for (int index = 0; index < values.Length; index++) { packed.SetValue(values[index], index); }
+
+        return packed;
+    }
+
+    private static void Refusing(MethodInfo declaring, object declared, Array values, string offence, List<string> offenders) {
+        if (Conflicts(declaring, declared, values)) { offenders.Add(offence); }
+    }
+
+    private static bool Conflicts(MethodInfo declaring, object declared, Array values) {
+        try {
+            declaring.Invoke(declared, [values]);
+
+            return false;
+        } catch (TargetInvocationException error) when (error.InnerException is ConflictingAnyConstraintException) {
+            return true;
+        }
     }
 
     #endregion

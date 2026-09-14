@@ -162,12 +162,15 @@ internal sealed class DecimalIntervalSpec {
     internal DecimalIntervalSpec WithAllowed(decimal[] values, ConstraintCall applying) {
         if (values is null) { throw new ArgumentNullException(nameof(values)); }
         if (applying is null) { throw new ArgumentNullException(nameof(applying)); }
-        // Re-declaring the SAME constraint is not a contradiction, so it is a no-op rather than a
-        // conflict: the second declaration asks for exactly what the first already guarantees.
-        if (_allowedConstraint == applying) { return this; }
-        if (_allowedConstraint is not null) { throw ConflictingAnyConstraintException.AlreadyDefined(applying, _allowedConstraint); }
-
         decimal[] distinct = values.Distinct().ToArray();
+
+        // Re-declaring the SAME constraint is not a contradiction, so it is a no-op rather than a
+        // conflict: the second declaration asks for exactly what the first already guarantees. What
+        // "the same" means is the SET, not the call as it was written — an allow-list ignores duplicates
+        // and promises nothing about order. The rendered call is still kept for the messages, because a
+        // conflict has to quote the caller their own words.
+        if (_allowed is not null && new HashSet<decimal>(_allowed).SetEquals(distinct)) { return this; }
+        if (_allowedConstraint is not null) { throw ConflictingAnyConstraintException.AlreadyDefined(applying, _allowedConstraint); }
 
         return Validated(new DecimalIntervalSpec(_typeName, _render, _min, _minConstraint, _max, _maxConstraint, distinct, applying, _exclusions, _scale, _scaleConstraint), applying);
     }

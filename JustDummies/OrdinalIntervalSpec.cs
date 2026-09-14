@@ -186,12 +186,15 @@ internal sealed class OrdinalIntervalSpec {
     internal OrdinalIntervalSpec WithAllowed(ulong[] ordinals, ConstraintCall applying) {
         if (ordinals is null) { throw new ArgumentNullException(nameof(ordinals)); }
         if (applying is null) { throw new ArgumentNullException(nameof(applying)); }
-        // Re-declaring the SAME constraint is not a contradiction, so it is a no-op rather than a
-        // conflict: the second declaration asks for exactly what the first already guarantees.
-        if (_allowedConstraint == applying) { return this; }
-        if (_allowedConstraint is not null) { throw ConflictingAnyConstraintException.AlreadyDefined(applying, _allowedConstraint); }
-
         ulong[] distinct = ordinals.Distinct().ToArray();
+
+        // Re-declaring the SAME constraint is not a contradiction, so it is a no-op rather than a
+        // conflict: the second declaration asks for exactly what the first already guarantees. What
+        // "the same" means is the SET, not the call as it was written — an allow-list ignores duplicates
+        // and promises nothing about order. The rendered call is still kept for the messages, because a
+        // conflict has to quote the caller their own words.
+        if (_allowed is not null && new HashSet<ulong>(_allowed).SetEquals(distinct)) { return this; }
+        if (_allowedConstraint is not null) { throw ConflictingAnyConstraintException.AlreadyDefined(applying, _allowedConstraint); }
 
         return Validated(new OrdinalIntervalSpec(_typeName, _render, _domainMin, _domainMax, _min, _minConstraint, _max, _maxConstraint, distinct, applying, _exclusions, _step, _anchor, _stepConstraint), applying);
     }

@@ -2,8 +2,9 @@
 
 🌍 🇬🇧 English (this file) · 🇫🇷 [Français](0101-accept-a-non-finite-exclusion-as-a-no-op.fr.md)
 
-**Status:** Proposed
+**Status:** Accepted
 **Proposed:** 2026-09-14
+**Accepted:** 2026-09-14
 **Decision Makers:** Reefact
 
 Narrows [ADR-0054](0054-draw-only-valid-values-from-a-typed-builder.md) on one point — the argument-side

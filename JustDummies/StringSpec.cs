@@ -301,7 +301,11 @@ internal sealed class StringSpec {
         // second declaration asks for exactly what the first already guarantees — a substring predicate has no
         // "contains it twice" reading. Without this, an identical fragment cost two on the shaped budget below but
         // only one on DeclaredConstraints' pooled predicate, which groups by this same ConstraintCall.
-        if (_fragments.Any(existing => existing.Constraint == applying)) { return this; }
+        //
+        // Compared on the fragment itself, ordinal, never on the rendered ConstraintCall: CharacterPools.Escape is
+        // not injective ("\n" and the two-character "\\n" both render as Containing("\n")), so two DIFFERENT
+        // fragments could otherwise collide into one and silently drop a requirement the caller wrote.
+        if (_fragments.Any(existing => string.Equals(existing.Fragment, fragment, StringComparison.Ordinal))) { return this; }
 
         List<(string Fragment, ConstraintCall Constraint)> fragments = [.. _fragments, (fragment, applying)];
 

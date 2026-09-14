@@ -45,6 +45,17 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Fixed
 
+- **Re-declaring the same value set no longer conflicts with itself.** `OneOf` documents duplicates
+  as ignored and promises nothing about order, so `OneOf("a", "b")`, `OneOf("b", "a")` and
+  `OneOf("a", "b", "b")` all declare one domain. The redeclaration check compared the call as it was
+  written, so two of those three were refused as a second, conflicting set — and the message named
+  two constraints asking for the same thing, with nothing in either to loosen. Every generator that
+  takes a value set was affected: `Any.String()`, `Any.Char()`, `Any.Enum<TEnum>()`, `Any.Guid()`,
+  and the numeric, temporal and `decimal` builders. All of them now compare the deduplicated set, so
+  a redeclaration is the harmless no-op the surface promises, while a genuinely different set — a
+  superset or a subset included — still conflicts, and the message still quotes the caller their own
+  words (ADR-0100).
+
 - **A `decimal` interval within a unit of the type's own domain no longer fails at random.**
   `Any.Decimal().GreaterThanOrEqualTo(decimal.MaxValue - 1m)` and
   `Any.Decimal().LessThanOrEqualTo(decimal.MinValue + 1m)` threw a bare `System.OverflowException` on

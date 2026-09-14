@@ -183,12 +183,15 @@ internal sealed class ContinuousIntervalSpec {
     internal ContinuousIntervalSpec WithAllowed(double[] values, ConstraintCall applying) {
         if (values is null) { throw new ArgumentNullException(nameof(values)); }
         if (applying is null) { throw new ArgumentNullException(nameof(applying)); }
-        // Re-declaring the SAME constraint is not a contradiction, so it is a no-op rather than a
-        // conflict: the second declaration asks for exactly what the first already guarantees.
-        if (_allowedConstraint == applying) { return this; }
-        if (_allowedConstraint is not null) { throw ConflictingAnyConstraintException.AlreadyDefined(applying, _allowedConstraint); }
-
         double[] distinct = values.Distinct().ToArray();
+
+        // Re-declaring the SAME constraint is not a contradiction, so it is a no-op rather than a
+        // conflict: the second declaration asks for exactly what the first already guarantees. What
+        // "the same" means is the SET, not the call as it was written — an allow-list ignores duplicates
+        // and promises nothing about order. The rendered call is still kept for the messages, because a
+        // conflict has to quote the caller their own words.
+        if (_allowed is not null && new HashSet<double>(_allowed).SetEquals(distinct)) { return this; }
+        if (_allowedConstraint is not null) { throw ConflictingAnyConstraintException.AlreadyDefined(applying, _allowedConstraint); }
 
         return Validated(new ContinuousIntervalSpec(_typeName, _render, _quantize, _nextUp, _domainMin, _domainMax, _min, _minConstraint, _max, _maxConstraint, distinct, applying, _exclusions, _laddered), applying);
     }

@@ -359,6 +359,27 @@ public sealed class AnyPatternTests {
         });
     }
 
+    [Fact(DisplayName = "A value set is judged by the caller's own Regex, options included: Singleline admits a newline for the dot, ECMAScript narrows \\w to ASCII.")]
+    public void AValueSetIsJudgedByTheCallersOwnOptions() {
+        // Singleline lets '.' match '\n'; without it the same value is outside the language.
+        Check.That(Any.StringMatching(new Regex(".", RegexOptions.Singleline)).OneOf("\n").Generate()).IsEqualTo("\n");
+        Check.ThatCode(() => Any.StringMatching(new Regex(".")).OneOf("\n")).Throws<ConflictingAnyConstraintException>();
+
+        // ECMAScript makes \w ASCII-only; canonically it matches 'é'.
+        Check.That(Any.StringMatching(new Regex(@"\w")).OneOf("é").Generate()).IsEqualTo("é");
+        Check.ThatCode(() => Any.StringMatching(new Regex(@"\w", RegexOptions.ECMAScript)).OneOf("é")).Throws<ConflictingAnyConstraintException>();
+    }
+
+    [Fact(DisplayName = "A generated value is verified by the caller's own Regex, options included: under ECMAScript | IgnoreCase a negated class never yields the Kelvin-folded k.")]
+    public void AGeneratedValueIsVerifiedByTheCallersOwnOptions() {
+        Regex pattern = new(@"[^\W_]{5}", RegexOptions.IgnoreCase | RegexOptions.ECMAScript);
+
+        for (int seed = 0; seed < 300; seed++) {
+            string value = Any.WithSeed(seed).StringMatching(pattern).Generate();
+            Assert.True(pattern.IsMatch(value) && value.Length == 5, $"seed {seed} drew {Display(value)}, which the caller's Regex rejects");
+        }
+    }
+
     private static void UnderCulture(string name, Action test) {
         CultureInfo previous = CultureInfo.CurrentCulture;
         CultureInfo.CurrentCulture = new CultureInfo(name);

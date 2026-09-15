@@ -97,11 +97,11 @@ public sealed class AnyPattern : IAny<string>, IHasRandomSource, ICardinalityHin
     private static readonly TimeSpan MatchTimeout = TimeSpan.FromSeconds(1);
 
     /// <summary>
-    ///     The options of a passed <see cref="Regex" /> the generator honours; the rest either change nothing about
-    ///     which strings match, or are refused before reaching here.
+    ///     Builds the generator for <paramref name="pattern" /> under the caller's <paramref name="options" />. The
+    ///     parser models <see cref="RegexOptions.IgnoreCase" /> and <see cref="RegexOptions.CultureInvariant" /> and
+    ///     ignores the rest; the verifier is compiled with every option as given, so its verdict — on a generated
+    ///     value and on a <c>OneOf</c> value alike — is the verdict of the caller's own <see cref="Regex" />.
     /// </summary>
-    internal const RegexOptions HonouredOptions = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
-
     internal static AnyPattern FromPattern(RandomSource source, string pattern, RegexOptions options) {
         if (source is null) { throw new ArgumentNullException(nameof(source)); }
         if (pattern is null) { throw new ArgumentNullException(nameof(pattern)); }
@@ -152,8 +152,13 @@ public sealed class AnyPattern : IAny<string>, IHasRandomSource, ICardinalityHin
     // Regex is ever compiled for it — the guarantee this lazy field exists for, which a value set must not weaken.
     // Lazy<T>'s default thread-safety mode guarantees the factory runs exactly once even under concurrent
     // Generate() calls on the same instance (see the "concurrent draws" test); no thread ever sees, or pays for, a
-    // second compilation. Anchored with \A(?:…)\z so it decides a full match, and honours only the options the
-    // generator itself honoured (IgnoreCase, CultureInvariant), never the rest of a passed Regex's. The absolute anchors are the ones
+    // second compilation. Anchored with \A(?:…)\z so it decides a full match, and compiled with every option the
+    // caller's Regex carried, so its verdict is that Regex's own: an option the parser does not model (Singleline,
+    // Multiline, ECMAScript, RightToLeft) still decides which OneOf values are admitted, and still rejects a draw the
+    // caller's Regex would reject — such as the Kelvin-folded 'k' that ECMAScript | IgnoreCase excludes from a
+    // negated class — which then costs a redraw rather than letting a non-matching value out. That is what makes
+    // the unmasked options sound: the verifier is authoritative and a rejected candidate is boundedly redrawn, not
+    // any promise that a candidate the parser builds already belongs to the caller's language. The absolute anchors are the ones
     // that mean it: '$' also matches just before a trailing '\n', so ^(?:…)$ would have let OneOf admit "123\n"
     // against \d{3} — a value outside the language the pattern names. Shared, not rebuilt, when an exclusion
     // derives a new generator: the pattern it verifies is unchanged.

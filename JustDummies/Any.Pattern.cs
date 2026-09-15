@@ -52,7 +52,13 @@ public static partial class Any {
     ///     its inline spelling, a leading <c>(?i)</c> in the pattern text — the two are one requirement; so is
     ///     <see cref="RegexOptions.CultureInvariant" />, which pairs <c>I</c> with <c>i</c> whatever the current
     ///     culture. <see cref="RegexOptions.IgnorePatternWhitespace" /> changes how the pattern text itself is read and
-    ///     is rejected; the remaining options do not change which strings the pattern matches and are ignored.
+    ///     is rejected. Every other option is kept on the <see cref="Regex" /> that verifies each value, so what this
+    ///     generator produces, and which <c>OneOf</c> values it admits, is judged by the caller's own semantics: under
+    ///     <see cref="RegexOptions.Singleline" /> a <c>OneOf</c> value may carry a newline where the pattern has a
+    ///     dot, under <see cref="RegexOptions.ECMAScript" /> <c>\w</c> admits ASCII only. Generation itself models
+    ///     none of those modes: a candidate it builds that the caller's <see cref="Regex" /> rejects — the
+    ///     Kelvin-folded <c>k</c> that <see cref="RegexOptions.ECMAScript" /> with <see cref="RegexOptions.IgnoreCase" />
+    ///     excludes from <c>[^\W_]</c>, say — is redrawn within the bounded budget rather than let out.
     /// </summary>
     /// <param name="pattern">The regular expression the generated strings must match.</param>
     /// <returns>A generator of strings matching the pattern.</returns>
@@ -63,7 +69,7 @@ public static partial class Any {
         if (pattern is null) { throw new ArgumentNullException(nameof(pattern)); }
         if ((pattern.Options & RegexOptions.IgnorePatternWhitespace) != 0) { throw new ArgumentException("RegexOptions.IgnorePatternWhitespace changes how the pattern text is read; pass the pattern without it (or with its whitespace and comments removed).", nameof(pattern)); }
 
-        return AnyPattern.FromPattern(AmbientRandomSource.Instance, pattern.ToString(), pattern.Options & AnyPattern.HonouredOptions);
+        return AnyPattern.FromPattern(AmbientRandomSource.Instance, pattern.ToString(), pattern.Options);
     }
 
 }

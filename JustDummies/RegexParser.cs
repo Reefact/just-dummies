@@ -70,9 +70,9 @@ internal sealed class RegexParser {
     private const int FirstControlCode = 1;
 
     /// <summary>
-    ///     Parses <paramref name="pattern" /> under the options the generator honours —
-    ///     <see cref="RegexOptions.IgnoreCase" /> and <see cref="RegexOptions.CultureInvariant" />; every other flag is
-    ///     the caller's to have masked out.
+    ///     Parses <paramref name="pattern" /> under the caller's <paramref name="options" />, of which the parser
+    ///     interprets only <see cref="RegexOptions.IgnoreCase" /> and <see cref="RegexOptions.CultureInvariant" />;
+    ///     the rest are received as given and left to the verifier, which enforces the complete set.
     /// </summary>
     internal static RegexNode Parse(string pattern, RegexOptions options) {
         if (pattern is null) { throw new ArgumentNullException(nameof(pattern)); }

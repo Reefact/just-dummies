@@ -88,7 +88,8 @@ public sealed class AnyContext {
     ///     same fluent surface as <see cref="Any.StringMatching(Regex)" />, deterministic under this context's seed.
     ///     <see cref="RegexOptions.IgnoreCase" /> is honoured, as are a leading <c>(?i)</c> in the pattern text and
     ///     <see cref="RegexOptions.CultureInvariant" />; <see cref="RegexOptions.IgnorePatternWhitespace" /> is
-    ///     rejected; the remaining options are ignored.
+    ///     rejected; every other option stays on the <see cref="Regex" /> that verifies each value, so the verdict
+    ///     is the caller's own — see <see cref="Any.StringMatching(Regex)" />.
     /// </summary>
     /// <param name="pattern">The regular expression the generated strings must match.</param>
     /// <returns>A generator of strings matching the pattern.</returns>
@@ -99,7 +100,7 @@ public sealed class AnyContext {
         if (pattern is null) { throw new ArgumentNullException(nameof(pattern)); }
         if ((pattern.Options & RegexOptions.IgnorePatternWhitespace) != 0) { throw new ArgumentException("RegexOptions.IgnorePatternWhitespace changes how the pattern text is read; pass the pattern without it (or with its whitespace and comments removed).", nameof(pattern)); }
 
-        return AnyPattern.FromPattern(_source, pattern.ToString(), pattern.Options & AnyPattern.HonouredOptions);
+        return AnyPattern.FromPattern(_source, pattern.ToString(), pattern.Options);
     }
 
     /// <summary>

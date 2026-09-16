@@ -140,7 +140,7 @@ relisible pour elle-même.
 
 ### Remplacer le collecteur par l'extension de couverture de Microsoft
 
-C'est le collecteur de première partie de la plateforme, et il dispose d'une version pour chaque ligne de
+C'est le collecteur fourni par Microsoft avec la plateforme, et il dispose d'une version pour chaque ligne de
 MTP, ce qui aurait rendu possible la migration en deux étapes évoquée plus haut.
 
 Rejetée parce qu'il produit un format différent, lu par un importateur Sonar différent : il change donc ce
@@ -151,12 +151,12 @@ l'adopter deux fois : une fois pour étaler la migration, une fois pour retenir 
 ### Retirer `xunit.runner.visualstudio` comme poids mort
 
 Plus rien dans `dotnet test` ne charge l'adaptateur VSTest une fois la plateforme changée : le paquet
-aurait donc pu être supprimé plutôt que monté de version.
+aurait donc pu être supprimé plutôt que mis à jour.
 
 Rejetée comme hors du périmètre de la migration, et pas gratuite : l'adaptateur est aussi ce qui permet à
 un IDE ne parlant que VSTest de découvrir ces tests : le supprimer échangerait un gain à la compilation
-contre une gêne quotidienne sur tout éditeur pas encore à l'aise avec la nouvelle plateforme. Il est monté
-de version avec ses voisins et reste en place.
+contre une gêne quotidienne sur tout éditeur pas encore à l'aise avec la nouvelle plateforme. Il est mis à
+jour avec ses voisins et reste en place.
 
 ## Conséquences
 

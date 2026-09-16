@@ -22,7 +22,7 @@ n'existe, et la colonne **Origine** dit comment chacune est arrivée ici :
   aussi, car ce dépôt l'applique encore. Les deux copies sont désormais
   indépendantes : chaque côté peut remplacer la sienne sans toucher à l'autre.
   9 décisions.
-* **consigné ici** — décidé dans ce dépôt, de son propre chef. 59 décisions.
+* **consigné ici** — décidé dans ce dépôt, de son propre chef. 60 décisions.
 
 Les numéros appartiennent à cette base, attribués dans l'ordre où les décisions
 ont été consignées en amont
@@ -215,6 +215,7 @@ que l'option existait le jour où elle compterait.
 | [ADR-0087](0087-check-a-documented-count-against-its-source-not-its-translation.fr.md) | Vérifier un décompte documenté contre sa source, non contre sa traduction | Accepted | consigné ici |
 | [ADR-0088](0088-state-the-whitespace-guard-with-a-member-of-its-own.fr.md) | Énoncer la garde de blancheur avec un membre à elle | Accepted | consigné ici |
 | [ADR-0089](0089-draw-a-composed-parameter-through-the-generator-its-type-owns.fr.md) | Tirer un paramètre composé par le generator que son type possède | Accepted | consigné ici |
+<<<<<<< HEAD
 | [ADR-0090](0090-exempt-dependabot-from-the-contributor-agreement.fr.md) | Exempter Dependabot de l'accord de contribution, uniquement sur son propre commit signé | Accepted | consigné ici |
 | [ADR-0091](0091-draw-a-half-from-the-values-it-can-represent.fr.md) | Tirer un `Half` parmi les valeurs qu'il sait représenter | Accepted | consigné ici |
 | [ADR-0092](0092-run-every-mutation-leg-from-its-own-source-project.fr.md) | Lancer chaque jambe de mutation depuis son propre projet source | Accepted | consigné ici |
@@ -228,3 +229,4 @@ que l'option existait le jour où elle compterait.
 | [ADR-0100](0100-identify-a-value-set-by-its-values.fr.md) | Identifier un ensemble de valeurs déclaré par ses valeurs, non par l'appel qui l'a déclaré | Accepted | consigné ici |
 | [ADR-0101](0101-accept-a-non-finite-exclusion-as-a-no-op.fr.md) | Accepter l'exclusion d'une valeur non finie sur un générateur flottant comme une opération sans effet | Accepted | consigné ici |
 | [ADR-0102](0102-let-a-collection-or-composition-inherit-its-operands-source.fr.md) | Laisser une collection ou une composition hériter de la source de ses opérandes plutôt que de celle d'un contexte | Accepted | consigné ici |
+| [ADR-0103](0103-run-the-suites-on-microsoft-testing-platform.fr.md) | Exécuter les suites de tests sur Microsoft.Testing.Platform | Proposed | consigné ici |

@@ -21,7 +21,7 @@ and the **Origin** column says how each one got here:
   but its record stays live in `Reefact/first-class-errors` too, because that
   repository still applies it. Both copies are now independent: either side can
   supersede its own without touching the other. 9 decisions.
-* **recorded here** — decided in this repository, on its own. 59 decisions.
+* **recorded here** — decided in this repository, on its own. 60 decisions.
 
 The numbers are this base's own, assigned in the order the decisions were
 recorded upstream ([ADR-0045](0045-renumber-the-decision-base.md)); every ADR
@@ -200,6 +200,7 @@ failure mode of a "not now" is that nobody remembers the option existed on the d
 | [ADR-0087](0087-check-a-documented-count-against-its-source-not-its-translation.md) | Check a documented count against its source, not against its translation | Accepted | recorded here |
 | [ADR-0088](0088-state-the-whitespace-guard-with-a-member-of-its-own.md) | State the whitespace guard with a member of its own | Accepted | recorded here |
 | [ADR-0089](0089-draw-a-composed-parameter-through-the-generator-its-type-owns.md) | Draw a composed parameter through the generator its type owns | Accepted | recorded here |
+<<<<<<< HEAD
 | [ADR-0090](0090-exempt-dependabot-from-the-contributor-agreement.md) | Exempt Dependabot from the contributor agreement, only at its own signed commit | Accepted | recorded here |
 | [ADR-0091](0091-draw-a-half-from-the-values-it-can-represent.md) | Draw a `Half` from the values it can represent | Accepted | recorded here |
 | [ADR-0092](0092-run-every-mutation-leg-from-its-own-source-project.md) | Run every mutation leg from its own source project | Accepted | recorded here |
@@ -213,3 +214,4 @@ failure mode of a "not now" is that nobody remembers the option existed on the d
 | [ADR-0100](0100-identify-a-value-set-by-its-values.md) | Identify a declared value set by its values, not by the call that declared it | Accepted | recorded here |
 | [ADR-0101](0101-accept-a-non-finite-exclusion-as-a-no-op.md) | Accept a non-finite exclusion on a floating-point builder as a no-op | Accepted | recorded here |
 | [ADR-0102](0102-let-a-collection-or-composition-inherit-its-operands-source.md) | Let a collection or composition inherit its operands' source rather than a context's | Accepted | recorded here |
+| [ADR-0103](0103-run-the-suites-on-microsoft-testing-platform.md) | Run the test suites on Microsoft.Testing.Platform | Proposed | recorded here |

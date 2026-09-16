@@ -76,7 +76,6 @@ les workflows tels qu'ils sont, pas reprise sur parole :
 | `justdummies` | Prouve que les assets `netstandard2.0` et `net8.0` packagés se comportent bien sur les runtimes qui les chargent réellement — la patte que le projet de tests net10 ne peut pas exercer. |
 | [`justdummies-mutation`](justdummies-mutation.fr.md) | Tests de mutation des trois composants avec Stryker.NET — un check consultatif sur ce qu'une PR change, plus le balayage complet hebdomadaire. Publie des comptes par statut, jamais un score (ADR-0093). |
 | [`genany-sweep`](genany-sweep.fr.md) | Hebdomadaire : le balayage génératif du moteur de scaffolding — ~3 600 domaines gardés issus d'un produit d'axes déclaré, chacun scaffoldé, compilé, analysé et tiré. L'instrument qui trouve des défauts ; une tranche couvrante tourne à chaque build. |
-| `stryker-xunit-v3-watch` | Hebdomadaire : signale le moment où Stryker.NET corrige son bug de découverte de tests xUnit v3, que rien d'autre ici ne remarquerait jamais. Rapporte sur la PR #148 ; ne merge et ne rouvre rien. |
 | [`analyzers`](analyzers.fr.md) | Charge les analyseurs embarqués depuis l'artefact packagé sous le plus vieux compilateur supporté (Roslyn 4.8), ce qu'un build ordinaire ne fait jamais. |
 | [`sonar`](sonar.fr.md) | Analyse SonarQube Cloud — quality gate et remontée de couverture. |
 | [`sonar-profile`](sonar-profile.fr.md) | Hebdomadaire : échoue quand la liste de règles Sonar C# commitée a dérivé du quality profile SonarCloud. Rapporte, ne répare jamais. |

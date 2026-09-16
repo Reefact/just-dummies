@@ -204,7 +204,7 @@ jour avec ses voisins et reste en place.
   *bibliothèque* de l'adaptateur est choisie au moment du packaging ; sa dépendance xUnit n'est pas choisie
   de cette façon et suit la version épinglée.
 * [ADR-0026](0026-measure-justdummies-mutation-against-the-unit-suite-only.fr.md) — la suite de mutation,
-  déjà pilotée sur cette plateforme, et la moitié de la divergence entre plateformes qui existait en
-  premier.
+  déjà exécutée sur MTP avant cette décision et à l'origine de la coexistence temporaire des deux
+  plateformes.
 * [`workflows/sonar`](../workflows/sonar.fr.md) — comment le rapport de couverture parvient au quality
   gate.

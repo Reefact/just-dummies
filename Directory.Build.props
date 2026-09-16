@@ -64,6 +64,18 @@
   </PropertyGroup>
 
   <!--
+    xunit.v3's core package now defaults IsTestingPlatformApplication to true (it did not before),
+    which makes `dotnet test` refuse the VSTest-based invocation this repository's CI relies on
+    (coverage.runsettings, the XPlat Code Coverage collector) on the .NET 10 SDK: "Testing with VSTest
+    target is no longer supported by Microsoft.Testing.Platform on .NET 10 SDK and later." Setting it
+    back to false here keeps every test project on that VSTest path; a project can still opt back into
+    the Microsoft.Testing.Platform-native runner by setting the property itself before this import.
+  -->
+  <PropertyGroup>
+    <IsTestingPlatformApplication Condition="'$(IsTestingPlatformApplication)' == ''">false</IsTestingPlatformApplication>
+  </PropertyGroup>
+
+  <!--
     The Roslyn floor for the shipped analyzer. JustDummies.Analyzers is compiled against this version
     of Microsoft.CodeAnalysis.*, which is the MINIMUM host compiler able to load it once it is packed into
     JustDummies and delivered to consumers. A higher version makes the analyzer fail to load (CS8032)

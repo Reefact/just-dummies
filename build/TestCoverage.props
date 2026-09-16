@@ -1,0 +1,44 @@
+<Project>
+
+  <!--
+    Code coverage for a test project, under Microsoft.Testing.Platform.
+
+    A test project opts in with
+
+        <Import Project="..\build\TestCoverage.props" />
+
+    and gets both halves of the wiring: the collector itself, and the settings file that configures it.
+
+    WHY THIS FILE EXISTS AT ALL. Until the move to Microsoft.Testing.Platform each of the seven test
+    projects carried its own copy of the coverlet.collector reference, and coverage.runsettings sat at the
+    repository root where the VSTest command line named it. Under MTP the settings file has to be COPIED
+    BESIDE each test application to be found, so the seven copies would have become fourteen. One import
+    instead — the same shape build/Net472TestFloor.props already uses for the support floor.
+  -->
+
+  <!-- Scoped OFF the .NET Framework 4.7.2 support-floor leg. coverlet.MTP documents .NET Core >= 8.0 as its
+       supported runtime, and the `framework-floor` job never collects coverage anyway: that leg exists to prove
+       the netstandard2.0 assets RUN on the floor, and the coverage numbers come from the net10.0 leg. Keeping the
+       extension off net472 leaves the floor with nothing extra to self-register at start-up. -->
+  <ItemGroup Condition="'$(TargetFramework)' != 'net472'">
+    <!-- coverlet.collector is a VSTest DATA COLLECTOR: nothing loads it once `dotnet test` runs on
+         Microsoft.Testing.Platform, so it is not a package that merely needed a version bump. coverlet.MTP is
+         the SAME project's (coverlet-coverage/coverlet) extension for this platform, and it still emits
+         OpenCover — which is what keeps sonar.cs.opencover.reportsPaths pointing at a report Sonar reads.
+
+         The reference is a plain PrivateAssets="all" and deliberately NOT the
+         `IncludeAssets=runtime;build;native;contentfiles;analyzers;buildtransitive` shape the collector
+         carried. Measured: with that shape the build fails with CS0400, because an MTP extension
+         SELF-REGISTERS through generated code (obj/.../SelfRegisteredExtensions.cs) that names
+         `Coverlet.MTP.TestingPlatformBuilderHook` — so it needs the COMPILE assets the collector never did. -->
+    <PackageReference Include="coverlet.MTP" PrivateAssets="all" />
+
+    <!-- The settings, copied beside the test application because that is where the platform looks for them
+         (an `[appname].testconfig.json` first, then a generic `testconfig.json`). Linked from the repository
+         root rather than copied per project, so the seven suites cannot drift apart in what they measure. -->
+    <None Include="$(MSBuildThisFileDirectory)../testconfig.json"
+          Link="testconfig.json"
+          CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

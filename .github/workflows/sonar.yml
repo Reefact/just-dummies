@@ -131,7 +131,7 @@ jobs:
           /o:"reefact"
           /d:sonar.token="$SONAR_TOKEN"
           /d:sonar.host.url="https://sonarcloud.io"
-          /d:sonar.cs.opencover.reportsPaths="artifacts/coverage/**/coverage.opencover.xml"
+          /d:sonar.cs.opencover.reportsPaths="artifacts/coverage/coverage.opencover.*.xml"
           /d:sonar.exclusions="**/*.verified.*"
           /d:sonar.coverage.exclusions="JustDummies.DiagnosticCatalog/**/*.cs,JustDummies.Analyzers/DiagnosticIds.cs,JustDummies.Analyzers/DiagnosticCategories.cs"
           /d:sonar.issue.ignore.multicriteria="s7682,s7679"
@@ -150,13 +150,12 @@ jobs:
         run: dotnet build JustDummies.sln -c Release -p:TreatWarningsAsErrors=false -p:MSBuildTreatWarningsAsErrors=false
 
       - name: Test with coverage
-        # Reuse coverage.runsettings so the OpenCover report matches the one the ci workflow produces.
+        # Reuse testconfig.json so the OpenCover report matches the one the ci workflow produces.
         run: >-
-          dotnet test JustDummies.sln -c Release --no-build
-          --collect:"XPlat Code Coverage"
-          --settings coverage.runsettings
+          dotnet test --solution JustDummies.sln -c Release --no-build
+          --coverlet
           --results-directory artifacts/coverage
-          --logger "console;verbosity=normal"
+          --output Detailed
 
       - name: End analysis
         env:

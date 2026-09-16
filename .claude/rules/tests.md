@@ -29,8 +29,8 @@ The other projects have one suite each and no such question.
 ## Running them
 
 ```
-dotnet test JustDummies.sln
-dotnet test JustDummies.Analyzers.UnitTests
+dotnet test --solution JustDummies.sln
+dotnet test --project JustDummies.Analyzers.UnitTests
 ```
 
 Report a suite as passing only if you actually ran it. If you did not run a relevant

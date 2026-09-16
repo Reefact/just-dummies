@@ -36,8 +36,8 @@ dépendances de ce dépôt répondant à une publication amont
 
 * Framework cible : **.NET Standard 2.0**.
 * Compiler : `dotnet build JustDummies.sln`
-* Tester : `dotnet test JustDummies.sln`
-* Tests des analyzers, lorsque vous touchez aux analyzers : `dotnet test JustDummies.Analyzers.UnitTests`
+* Tester : `dotnet test --solution JustDummies.sln`
+* Tests des analyzers, lorsque vous touchez aux analyzers : `dotnet test --project JustDummies.Analyzers.UnitTests`
 
 Voir [`CLAUDE.md`](../../../CLAUDE.md) pour l’organisation du projet et les lignes
 directrices plus larges concernant les changements.

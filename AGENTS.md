@@ -48,7 +48,7 @@ that cannot read `.claude/` loses nothing by reading this file instead.
   clear refusal. A solver, a runtime dependency taken to widen coverage, or a silently widened bound
   needs a decision, not a patch.
 - Build: `dotnet build JustDummies.sln`
-- Test: `dotnet test JustDummies.sln` (analyzer tests: `dotnet test JustDummies.Analyzers.UnitTests`).
+- Test: `dotnet test --solution JustDummies.sln` (analyzer tests: `dotnet test --project JustDummies.Analyzers.UnitTests`).
 - Adding a `JustDummies` test? It belongs to exactly one of two suites:
   `JustDummies.PropertyTests` for invariants that hold for every legal constraint
   argument, `JustDummies.UnitTests` for specific named cases — message content,

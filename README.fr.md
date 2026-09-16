@@ -171,7 +171,7 @@ et les règles du banc de test, et par
 
 ```bash
 dotnet build JustDummies.sln -c Release
-dotnet test  JustDummies.sln -c Release
+dotnet test  --solution JustDummies.sln -c Release
 ```
 
 Le dépôt cible le SDK .NET 10 (épinglé dans `global.json`). Le matériel destiné aux mainteneurs —

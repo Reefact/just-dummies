@@ -8,178 +8,204 @@
 
 ## Contexte
 
-Jusqu'ici, chaque suite de ce dépôt passait par **VSTest** : `dotnet test` invoquait la cible `VSTest`
-du SDK, `xunit.runner.visualstudio` y adaptait xUnit, et `coverlet.collector` — un *data collector*
-VSTest — produisait le rapport OpenCover que lit la barrière Sonar.
+Jusqu'ici, toutes les suites de ce dépôt s'exécutaient via **VSTest** : `dotnet test` appelait la cible
+`VSTest` du SDK, `xunit.runner.visualstudio` y adaptait xUnit, et `coverlet.collector` — un collecteur de
+données VSTest — produisait le rapport OpenCover que lit le quality gate Sonar.
 
 xUnit.net est depuis passé à **Microsoft.Testing.Platform** (MTP), un exécuteur où un projet de test est
-un exécutable qui héberge ses propres extensions, au lieu d'une bibliothèque qu'un exécuteur séparé
-charge. Les deux plateformes ont coexisté tant que MTP 1.x livrait un pont vers la cible `VSTest`.
-**MTP 2.x a supprimé ce pont sur le SDK .NET 10**, celui-là même que `global.json` épingle : la cible
-s'arrête désormais sur une erreur de première classe qui invite à opter pour la nouvelle expérience
+un exécutable qui héberge lui-même ses extensions, au lieu d'une bibliothèque chargée par un exécuteur
+externe. Les deux plateformes ont coexisté tant que MTP 1.x fournissait une passerelle vers la cible
+`VSTest`. **MTP 2.x a supprimé cette passerelle sur le SDK .NET 10**, celui que `global.json` épingle : la
+cible s'interrompt désormais sur une erreur explicite, qui invite à adopter la nouvelle expérience
 `dotnet test`.
 
-Trois faits rendent le déplacement obligatoire plutôt qu'optionnel, et en font un seul changement plutôt
-que plusieurs :
+`xunit.v3` 4.x est malgré tout arrivé dans le dépôt avant cette décision. Son paquet principal installe la
+variante MTP 2.x et positionne `IsTestingPlatformApplication` à `true` par défaut, ce qui est précisément
+ce qui a fait échouer `dotnet test`. La montée de version a tout de même été intégrée, au moyen d'un
+contournement : repasser cette propriété à `false`, ce qui ramène tous les projets de test sur la cible
+`VSTest`. Un état intermédiaire existe donc bel et bien, et c'est celui dans lequel `main` se trouve
+aujourd'hui : xUnit épinglé en 4.0.1, les suites exécutées via VSTest, la couverture toujours produite par
+`coverlet.collector`.
 
-* `xunit.v3` 4.x dépend de MTP 2.x. Il ne peut pas être pris tant que le dépôt tourne sur VSTest.
-* `xunit.v3` 3.2.2 épingle sa variante MTP sur un intervalle **exact** de la ligne v1 : impossible de
-  hisser le dépôt sur MTP 2.x en restant en 3.2.2.
-* `coverlet.MTP` — le remplaçant du collector par le même projet (`coverlet-coverage/coverlet`) —
-  n'existe que face à MTP 2.x, dans chacune des versions publiées. La couverture ne peut pas franchir la
-  nouvelle plateforme avant le majeur xUnit.
+Trois éléments décrivent ce que coûte le maintien de cet état.
 
-L'exécuteur, le collector et le majeur xUnit forment donc une seule marche indivisible. Dependabot les a
-pourtant proposés en trois pull requests distinctes (#85, #86, #87), chacune rouge isolément.
+* Il s'oppose à la trajectoire de l'écosystème, et non à une anomalie passagère. xUnit cible MTP, la
+  passerelle a disparu sur le SDK épinglé, et toutes les versions ultérieures de xUnit se trouvent de
+  l'autre côté. La valeur par défaut que le contournement inverse est celle que l'amont fixe
+  délibérément.
+* Le dépôt exécute déjà ses suites sur les deux plateformes en parallèle. Les quatre configurations
+  Stryker pilotent leurs jobs avec `"test-runner": "mtp"`, et Stryker lance directement l'application de
+  test au lieu de passer par la cible `VSTest` : le contournement ne l'atteint donc jamais. Un job de
+  mutation exerce ces suites sur MTP pendant que `dotnet test` exerce les mêmes suites sur VSTest.
+* `coverlet.collector` est un collecteur de données VSTest. Il ne continue de fonctionner qu'aussi
+  longtemps que les suites restent sur la plateforme à laquelle il se raccorde.
 
-Deux autres contraintes portent sur le changement. Le workflow de mutation pilote déjà Stryker avec son
-exécuteur `mtp`, mais cet exécuteur n'est devenu utilisable ici qu'à Stryker 5.0.0 : la 4.16.0 comptait
-tous les tests de la solution pendant le run initial d'une jambe au lieu de ceux du projet, ce qui
-déclenchait sa propre garde de plus-de-la-moitié-en-échec (issue amont
-`stryker-mutator/stryker-net#3117`). Le dépôt épingle la 5.0.0, où le run initial d'une jambe compte sa
-propre suite. Et `JustDummies.Xunit` compile contre
-`xunit.v3.extensibility.core` et le déclare comme dépendance **publiée** : le plancher de compatibilité
-de l'adaptateur bouge avec l'épingle — ce n'est pas une montée de développement seulement.
+Un dernier élément rendait l'attente préférable, et ne la justifie plus. L'exécuteur `mtp` de Stryker était
+inutilisable ici avant la version 5.0.0 : la 4.16.0 comptait tous les tests de la solution lors de
+l'exécution initiale d'un job, au lieu des seuls tests du projet concerné, et déclenchait ainsi son propre
+garde-fou, celui qui interrompt l'analyse quand plus de la moitié des tests échouent (issue amont
+`stryker-mutator/stryker-net#3117`). Un job de mutation restait de ce fait durablement rouge lors de la
+première tentative de cette migration. Le dépôt épingle désormais la 5.0.0, où l'exécution initiale d'un
+job ne compte que sa propre suite.
+
+`JustDummies.Xunit` compile contre `xunit.v3.extensibility.core` et le déclare comme dépendance
+**publiée** : sa version minimale compatible a donc suivi la version épinglée au moment de la montée de
+version, et `main` déclare déjà 4.0.1. Relever cette version minimale ne fait par conséquent pas partie de
+cette décision, et rien ici ne modifie une dépendance publiée.
 
 ## Décision
 
-Les suites de tests du dépôt s'exécutent sur Microsoft.Testing.Platform, choisi pour tout appelant via
+Les suites de tests du dépôt s'exécutent sur Microsoft.Testing.Platform, adopté pour tout appelant via
 `global.json`, avec une couverture produite par `coverlet.MTP` et configurée par un fichier de réglages
 copié à côté de chaque application de test.
 
 ## Justification
 
-**Aucune version de ce dépôt ne garde VSTest tout en prenant xUnit v4.** Les trois faits du Contexte
-ferment tous les états intermédiaires : le pont a disparu sur le SDK épinglé, 3.2.2 ne peut pas
-atteindre MTP 2.x, et le successeur du collector n'existe pas en dessous. Une décision qu'on
-étagerait normalement — déplacer l'exécuteur, puis le framework — n'a aucun étage disponible ; la
-consigner comme une seule décision décrit ce qui s'est produit plutôt que de le ranger après coup.
+**Le contournement était un sursis, et un sursis ne vaut que tant qu'il apporte quelque chose.** Il a
+permis la montée de xUnit : la CI était rouge sur toutes les suites, et remettre une seule propriété à sa
+valeur précédente a suffi à la rétablir, sans toucher en même temps à l'exécuteur, au collecteur et à
+quatre invocations CI. Ce qu'il apporte désormais, c'est un dépôt maintenu sur une plateforme que son
+propre framework de test a quittée, au prix de l'inversion d'une valeur par défaut que l'amont fixe
+volontairement — un coût qui se reproduit à chaque version de xUnit, sans rien accumuler en contrepartie.
+Migrer pendant que le sursis tient encore, c'est la différence entre choisir le moment et s'y voir
+contraint.
 
-**Opter via `global.json` place le choix là où le SDK regarde déjà.** L'exécuteur est une propriété de
-*la chaîne d'outils de ce dépôt*, pas d'un projet ni d'une ligne de commande, et `global.json` est déjà
-l'endroit où ce dépôt dit par quel SDK il est bâti. Une propriété MSBuild par projet aurait dû être
-répétée sept fois et aurait laissé un `dotnet test` nu, dans le shell d'un contributeur, se comporter
-autrement que la même commande en CI — précisément la divergence que le SDK épinglé existe pour empêcher.
+**Un même dépôt ne devrait pas exécuter ses suites sur deux plateformes.** Les jobs de mutation pilotent
+déjà MTP quand `dotnet test` pilote VSTest : les mêmes tests s'exécutent sous deux exécuteurs selon
+l'outil qui les demande. Une différence de découverte ou d'exécution entre les deux se manifeste alors par
+un résultat de mutation impossible à réconcilier avec une suite verte — ce qu'a produit exactement la
+première tentative de cette migration, et ce qui explique le temps qu'il a fallu pour en identifier la
+cause amont. Cette divergence était tolérable tant qu'elle n'était la décision de personne ; elle n'est pas
+quelque chose à conserver volontairement.
 
-**Garder OpenCover garde la barrière qualité honnête.** Le collector alternatif de cette plateforme émet
-le format de couverture propre à Microsoft, que Sonar lit par un importateur *différent*. Changer le
-format du rapport en même temps que l'exécuteur aurait déplacé deux variables sous une barrière dont les
-seuils ont été calibrés contre le premier, et toute dérive des chiffres serait devenue inattribuable.
-`coverlet.MTP` est le même outil qu'avant, des mêmes auteurs, émettant le même format : la barrière
-continue de mesurer ce qu'elle mesurait, et la migration reste réfutable par comparaison.
+**Adopter la plateforme via `global.json` place le choix là où le SDK regarde déjà.** L'exécuteur est une
+propriété de *la chaîne d'outils du dépôt*, et non d'un projet ni d'une ligne de commande, et `global.json`
+est déjà l'endroit où le dépôt déclare le SDK avec lequel il est construit. Une propriété MSBuild par
+projet aurait dû être répétée sept fois, et aurait laissé un `dotnet test` nu, dans le shell d'un
+contributeur, se comporter autrement que la même commande en CI — précisément la divergence que le SDK
+épinglé sert à empêcher.
 
-**Configurer le collector dans un fichier, non sur une ligne de commande, préserve une décision
-existante.** Les réglages qui vivaient dans `coverage.runsettings` y étaient tenus précisément pour
-qu'une exécution locale et une exécution CI ne puissent pas mesurer des choses différentes. Le fichier
-de réglages de la plateforme sert le même but : la propriété survit au changement de mécanisme, seuls le
-nom et le format du fichier ont bougé. La ligne de commande ne garde que l'interrupteur qui *active* la
-collecte, exactement comme avant.
+**Conserver OpenCover préserve la sincérité du quality gate.** Le collecteur alternatif de cette
+plateforme produit le format de couverture propre à Microsoft, que Sonar lit via un importateur
+*différent*. Changer le format du rapport en même temps que l'exécuteur aurait fait bouger deux variables
+sous un quality gate dont les seuils ont été calibrés sur le premier, et toute dérive des chiffres aurait
+été impossible à imputer. `coverlet.MTP` est le même outil qu'avant, des mêmes auteurs, produisant le même
+format : le quality gate continue donc de mesurer ce qu'il mesurait, et la migration reste réfutable par
+comparaison.
 
-**Borner le collector à la jambe moderne vaut mieux que découvrir ses limites sur le plancher.** Le
-plancher de support (ADR-0007) exécute les assets netstandard2.0 sur le vrai CLR .NET Framework, et
-cette jambe ne collecte aucune couverture — les chiffres viennent de la jambe moderne. Puisque le
-collector documente .NET Core 8.0 comme son runtime supporté, le câbler dans une jambe qui n'en a pas
-besoin et à qui il n'est pas promis n'achèterait rien et risquerait un échec au démarrage dans le seul
-job dont le but entier est de prouver que le plancher tourne encore.
+**Configurer le collecteur dans un fichier, et non sur une ligne de commande, préserve une décision
+antérieure.** Les réglages qui vivaient dans `coverage.runsettings` y étaient tenus précisément pour
+qu'une exécution locale et une exécution en CI ne puissent pas mesurer des choses différentes. Le fichier
+de réglages de la plateforme remplit le même rôle : la propriété survit au changement de mécanisme, seuls
+le nom et le format du fichier ont changé. La ligne de commande ne conserve que l'option qui *active* la
+collecte, exactement comme auparavant.
 
-**Le plancher de l'adaptateur bouge parce qu'une dépendance de compilation ne peut pas se publier plus
-ancienne qu'elle n'est.** `JustDummies.Xunit` se lie à la surface d'extensibilité de xUnit ; il est bâti
-contre ce que le dépôt épingle, et livrer un paquet prétendant fonctionner face à une version contre
-laquelle il n'a pas été compilé serait une promesse que rien ne vérifie. Relever le plancher déclaré est
-la lecture honnête de ce que le paquet est devenu.
+**Restreindre le collecteur au job moderne vaut mieux que découvrir ses limites sur le plancher de
+support.** Le plancher de support (ADR-0007) exécute les assemblages `netstandard2.0` sur le véritable CLR
+.NET Framework, et ce job ne collecte aucune couverture : les chiffres proviennent du job moderne. Puisque
+le collecteur documente .NET Core 8.0 comme son runtime pris en charge, le câbler dans un job qui n'en a
+pas besoin et sur lequel il n'offre aucune garantie n'apporterait rien, et risquerait un échec au démarrage
+dans le seul job dont la raison d'être est de prouver que le plancher fonctionne toujours.
+
+**L'exécuteur relève de la chaîne d'outils : il ne change donc rien d'observable pour un consommateur.**
+`JustDummies.Xunit` se lie à la surface d'extensibilité de xUnit, et sa version minimale compatible suit la
+version épinglée, que la montée de version a déjà déplacée. La façon dont ce dépôt *exécute* ses propres
+suites n'atteint aucun paquet : le collecteur, le fichier de réglages et les quatre invocations CI relèvent
+tous du temps de construction. Cette décision peut donc être jugée sur ses seules preuves, et non au regard
+d'une promesse de compatibilité.
 
 ## Alternatives envisagées
 
-### Rester sur VSTest et décliner le majeur xUnit
+### Conserver le contournement indéfiniment
 
-Le dépôt fonctionne aujourd'hui : rien ne force le déplacement *cette semaine*. Fermer les trois pull
-requests et demander à Dependabot d'ignorer le majeur ne coûterait rien dans l'immédiat.
+La CI est verte avec lui, les suites passent, et le quality gate de couverture lit les rapports qu'il a
+toujours lus. Rien ne casse demain si la propriété reste simplement à `false`.
 
-Rejetée parce que le sursis est temporaire et rétrécit. Le pont a déjà disparu sur le SDK épinglé ;
-chaque publication xUnit ultérieure est de l'autre côté, donc la dette grossit pendant que la migration
-garde la même taille. Décliner gèlerait aussi la liaison de l'adaptateur sur une version que son propre
-amont a dépassée — la position que l'ADR-0018 a donné au paquet compagnon justement pour l'éviter.
+Rejetée parce que c'est une maintenance sans fin et sans bénéfice. Chaque version de xUnit arrive de
+l'autre côté de la passerelle : le contournement doit donc continuer d'avoir raison contre une valeur par
+défaut que l'amont continue de fixer dans l'autre sens, pendant que la migration qu'il diffère garde la
+même ampleur. Elle fait par ailleurs de la divergence entre les deux plateformes, décrite plus haut, une
+propriété permanente du dépôt plutôt qu'un accident de calendrier.
 
-### Migrer l'exécuteur d'abord, prendre le majeur xUnit ensuite
+### Migrer l'exécuteur dans le même changement que la montée de xUnit
 
-L'étagement naturel : faire atterrir le changement risqué et transversal — exécuteur, couverture, quatre
-invocations CI — seul, pour qu'il soit revu pour lui-même, puis laisser les trois montées de dépendances
-devenir triviales.
+L'histoire la plus propre : une seule pull request déplace le framework, l'exécuteur, le collecteur et les
+quatre invocations CI d'un coup, et aucun contournement n'existe jamais.
 
-Rejetée comme indisponible, non comme indésirable. C'était le plan préféré jusqu'à ce que la mesure
-montre que `coverlet.MTP` n'a aucun build face à MTP 1.x, et que `xunit.v3` 3.2.2 épingle exactement la
-ligne v1. La version étagée aurait donc dû franchir la frontière de plateforme sans aucune couverture,
-sous une barrière qui bloque dessus.
+Rejetée pour une raison de calendrier — et c'est ce qui a été tenté en premier. À ce moment-là, Stryker
+4.16.0 ne savait pas exécuter ces suites sur MTP (`stryker-net#3117`) : le changement groupé portait donc
+un job de mutation durablement rouge et restait non mergeable. Pendant ce temps, `dotnet test` refusait
+toutes les suites, ce qui constitue une panne de CI urgente et non quelque chose à suspendre à une
+migration transversale. Les séparer a permis de faire atterrir la moitié urgente en deux fichiers, et de
+garder celle-ci relisible pour elle-même.
 
-### Remplacer le collector par l'extension de couverture de Microsoft
+### Remplacer le collecteur par l'extension de couverture de Microsoft
 
-C'est le collector de première partie de la plateforme et il a un build pour chaque ligne MTP, ce qui
-aurait rendu possible la migration étagée ci-dessus.
+C'est le collecteur de première partie de la plateforme, et il dispose d'une version pour chaque ligne de
+MTP, ce qui aurait rendu possible la migration en deux étapes évoquée plus haut.
 
-Rejetée parce qu'il émet un format différent, lu par un importateur Sonar différent : il change ce que
-la barrière de couverture consomme au moment même où l'exécuteur change — et il faudrait l'adopter deux
-fois, une pour étager la migration, une pour arrêter le collector final. `coverlet.MTP` atteint l'état
-final en un seul mouvement.
+Rejetée parce qu'il produit un format différent, lu par un importateur Sonar différent : il change donc ce
+que consomme le quality gate de couverture au moment même où l'exécuteur change — et il aurait fallu
+l'adopter deux fois, une fois pour étaler la migration, une fois pour arrêter le collecteur définitif.
+`coverlet.MTP` atteint l'état final en un seul mouvement.
 
 ### Retirer `xunit.runner.visualstudio` comme poids mort
 
-Rien dans `dotnet test` ne charge l'adaptateur VSTest une fois la plateforme changée : le paquet aurait
-pu être retiré plutôt que monté.
+Plus rien dans `dotnet test` ne charge l'adaptateur VSTest une fois la plateforme changée : le paquet
+aurait donc pu être supprimé plutôt que monté de version.
 
-Rejetée comme hors du périmètre de la migration, et non gratuite : cet adaptateur est aussi ce qui
-permet à un IDE ne parlant que VSTest de découvrir ces tests, et le retirer échangerait une économie à
-la compilation contre une régression de travail quotidien sur tout éditeur pas encore à l'aise avec la
-nouvelle plateforme. Il est monté avec ses frères et reste.
+Rejetée comme hors du périmètre de la migration, et pas gratuite : l'adaptateur est aussi ce qui permet à
+un IDE ne parlant que VSTest de découvrir ces tests, et le supprimer échangerait une économie au moment de
+la construction contre une régression quotidienne sur tout éditeur pas encore à l'aise avec la nouvelle
+plateforme. Il est monté de version avec ses voisins et reste en place.
 
 ## Conséquences
 
 ### Positives
 
-* Les trois pull requests Dependabot rouges (#85, #86, #87) sont répondues par un seul changement, et
-  aucune ne peut être fusionnée seule.
-* Les suites s'exécutent sur la plateforme que xUnit vise lui-même : les majeurs futurs cessent d'être
-  bloqués sur un pont qui n'existe plus.
-* Sept copies du câblage de couverture s'effondrent en un import partagé : les suites ne peuvent plus
-  diverger sur ce qu'elles mesurent.
+* Les suites s'exécutent sur la plateforme que xUnit cible lui-même : les futures versions majeures ne
+  seront donc plus bloquées par une passerelle qui n'existe plus.
+* Une seule plateforme, une seule réponse : `dotnet test` et les jobs de mutation exercent les suites de la
+  même manière, de sorte qu'un résultat de mutation et une suite verte redeviennent comparables.
+* Le contournement disparaît, et avec lui une valeur par défaut que ce dépôt devait sans cesse inverser.
+* Sept copies du câblage de couverture se ramènent à un seul import partagé : les suites ne peuvent donc
+  plus diverger sur ce qu'elles mesurent.
 
 ### Négatives
 
-* **Le plancher de dépendance publié de `JustDummies.Xunit` monte à `xunit.v3.extensibility.core`
-  4.0.1.** Un consommateur encore sur la ligne 3.x ne peut pas prendre la prochaine version de
-  l'adaptateur sans bouger lui aussi. C'est un changement visible du consommateur sur le train `xunit`,
-  pas un détail de build, et c'est la part de cette décision qui n'est pas réversible en éditant ce
-  dépôt.
-* Chaque invocation `dotnet test` documentée change de forme : les automatismes et toute copie d'une
-  commande hors de ce dépôt périment d'un coup.
-* Les contributeurs sur un IDE qui ne sait pas encore piloter la nouvelle plateforme ne gardent la
-  découverte des tests que par l'adaptateur VSTest conservé, lequel ne correspond plus à la façon dont
-  la CI exécute les mêmes suites.
+* Toutes les invocations documentées de `dotnet test` changent de forme : les automatismes, comme toute
+  copie d'une commande conservée hors de ce dépôt, deviennent obsolètes d'un coup.
+* Les contributeurs travaillant sur un IDE qui ne sait pas encore piloter la nouvelle plateforme ne
+  conservent la découverte des tests qu'au travers de l'adaptateur VSTest maintenu, lequel ne correspond
+  plus à la façon dont la CI exécute ces mêmes suites.
 
 ### Risques
 
-* Le plancher de support est la seule jambe qui ne peut pas être exercée hors CI — .NET Framework exige
-  Windows — donc sa migration est prouvée par le job `framework-floor` plutôt que localement. Ses
-  projets compilent proprement contre les nouvelles épingles ; qu'ils *tournent* encore est ce à quoi
-  ce job répond.
-* Le collector horodate chaque rapport pour que sept suites partagent un seul répertoire de résultats.
-  Deux rapports écrits dans la même milliseconde entreraient en collision ; le préfixe par module de la
-  plateforme est le remède si le cas est un jour observé.
+* Le plancher de support est le seul job qui ne peut pas être exercé hors CI — .NET Framework exige
+  Windows : sa migration est donc prouvée par le job `framework-floor` plutôt qu'en local. Ses projets se
+  compilent sans avertissement contre les nouvelles versions épinglées ; qu'ils *s'exécutent* toujours est
+  ce à quoi ce job répond.
+* Le collecteur horodate chaque rapport afin que sept suites puissent partager un même répertoire de
+  résultats. Deux rapports écrits dans la même milliseconde entreraient en collision ; le préfixe par
+  module de la plateforme est le remède, si le cas est un jour observé.
 
 ## Actions de suivi
 
-* Fermer #85, #86 et #87 comme supersédées une fois ceci atterri ; aucune n'est fusionnable seule.
-* Décider, à la prochaine publication du train `xunit`, si la montée du plancher de l'adaptateur mérite
-  son propre signal de version aux consommateurs.
+* Décider, lors de la prochaine publication du train `xunit`, si la version minimale compatible déjà
+  déplacée par la montée de version mérite son propre signal de version pour les consommateurs. Le dernier
+  adaptateur publié est encore livré contre 3.2.2 : ce signal n'était donc pas encore dû.
 
 ## Références
 
 * [ADR-0007](0007-floor-the-library-on-net-framework-4-7-2.fr.md) — le plancher de support .NET Framework
-  que le job `framework-floor` prouve, et hors duquel le collector est borné.
+  que prouve le job `framework-floor`, et hors duquel le collecteur est restreint.
 * [ADR-0018](0018-adapt-dummies-to-xunit-v3-through-a-companion-package.fr.md) — pourquoi l'adaptateur
   existe et se lie à la surface d'extensibilité de xUnit.
 * [ADR-0047](0047-declare-the-adapters-library-dependency-independently.fr.md) — comment la dépendance
-  *bibliothèque* de l'adaptateur est choisie au pack ; sa dépendance xUnit ne l'est pas et suit l'épingle.
+  *bibliothèque* de l'adaptateur est choisie au moment du packaging ; sa dépendance xUnit n'est pas choisie
+  de cette façon et suit la version épinglée.
 * [ADR-0026](0026-measure-justdummies-mutation-against-the-unit-suite-only.fr.md) — la suite de mutation,
-  déjà pilotée sur cette plateforme et non concernée.
-* [`workflows/sonar`](../workflows/sonar.fr.md) — comment le rapport de couverture atteint la barrière
-  qualité.
+  déjà pilotée sur cette plateforme, et la moitié de la divergence entre plateformes qui existait en
+  premier.
+* [`workflows/sonar`](../workflows/sonar.fr.md) — comment le rapport de couverture parvient au quality
+  gate.

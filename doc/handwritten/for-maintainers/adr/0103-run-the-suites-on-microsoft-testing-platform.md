@@ -18,25 +18,34 @@ platforms coexisted while MTP 1.x still shipped a bridge back to the `VSTest` ta
 that bridge on the .NET 10 SDK**, which is the SDK `global.json` pins: the target now stops with a
 first-class error telling the caller to opt into the new `dotnet test` experience.
 
-Three facts make the move mandatory rather than optional, and make it one change rather than several:
+`xunit.v3` 4.x reached the repository anyway, ahead of this decision. Its core package installs the
+MTP 2.x variant and defaults `IsTestingPlatformApplication` to true, which is what stopped `dotnet test`
+on that error; the bump landed by defaulting the property back to false, putting every test project back
+on the `VSTest` target. So an intermediate state does exist — it is the one `main` is in today: xUnit
+pinned at 4.0.1, the suites running through VSTest, coverage still produced by `coverlet.collector`.
 
-* `xunit.v3` 4.x depends on MTP 2.x. It cannot be taken while the repository runs on VSTest.
-* `xunit.v3` 3.2.2 pins its MTP variant to an **exact** version range on the v1 line, so the repository
-  cannot be lifted onto MTP 2.x while staying on 3.2.2.
-* `coverlet.MTP` — the same project's (`coverlet-coverage/coverlet`) replacement for the collector —
-  exists only against MTP 2.x, in every version it has published. Coverage cannot cross to the new
-  platform ahead of the xUnit major.
+Three facts describe what holding that state costs.
 
-So the runner, the collector and the xUnit major are one indivisible step. Dependabot nevertheless
-proposed them as three separate pull requests (#85, #86, #87), each of which is red on its own.
+* It holds against the direction of the ecosystem rather than against a transient defect. xUnit targets
+  MTP, the bridge is gone on the pinned SDK, and every subsequent xUnit release is on the far side of it.
+  The default the shim overrides is one upstream sets deliberately.
+* The repository already runs its suites on both platforms at once. The four Stryker configurations
+  drive their legs with `"test-runner": "mtp"`, and Stryker launches the test application directly
+  instead of going through the `VSTest` target, so the shim never reaches it: a mutation leg exercises
+  these suites on MTP while `dotnet test` exercises the same suites on VSTest.
+* `coverlet.collector` is a VSTest *data collector*. It keeps working only for as long as the suites stay
+  on the platform it plugs into.
 
-Two other constraints bear on the change. The mutation workflow already drives Stryker with its `mtp`
-test runner, but that runner only became usable here at Stryker 5.0.0: 4.16.0 counted every test in the
-solution during a leg's initial run instead of the project's own, tripping its
-own more-than-half-failing guard (upstream `stryker-mutator/stryker-net#3117`). The repository pins
-5.0.0, where a leg's initial run counts its own suite. And `JustDummies.Xunit` compiles against `xunit.v3.extensibility.core`
-and declares it as a **published** dependency, so the adapter's compatibility floor moves with the pin —
-this is not a development-only bump.
+One fact used to make waiting the better option, and no longer does. Stryker's `mtp` runner was unusable
+here until 5.0.0: 4.16.0 counted every test in the solution during a leg's initial run instead of the
+project's own, tripping its own more-than-half-failing guard (upstream
+`stryker-mutator/stryker-net#3117`). That left one mutation leg permanently red on the first attempt at
+this migration. The repository pins 5.0.0, where a leg's initial run counts its own suite.
+
+`JustDummies.Xunit` compiles against `xunit.v3.extensibility.core` and declares it as a **published**
+dependency, so its compatibility floor followed the pin when the bump landed: `main` already declares
+4.0.1. Raising that floor is therefore not part of this decision, and nothing here changes a published
+dependency.
 
 ## Decision
 
@@ -46,11 +55,19 @@ each test application.
 
 ## Rationale
 
-**There is no version of this repository that both keeps VSTest and takes xUnit v4.** The three facts in
-Context close every intermediate state: the bridge is gone on the pinned SDK, 3.2.2 cannot reach MTP 2.x,
-and the collector's successor does not exist below it. A decision that would normally be staged — move
-the runner, then move the framework — has no staging available, so recording it as one decision matches
-what actually happened rather than tidying it after the fact.
+**The shim was a reprieve, and a reprieve is only worth keeping while it still buys something.** It
+bought the xUnit bump: CI was red across every suite, and defaulting one property back cleared that
+without touching the runner, the collector or four CI invocations at the same time. What it buys from
+here is a repository held on a platform its own test framework has left, by overriding a default upstream
+sets on purpose — a cost that recurs at every xUnit release with nothing accruing against it. Migrating
+while the reprieve still holds is the difference between choosing the moment and being forced into it.
+
+**One repository should not run its suites on two platforms.** The mutation legs already drive MTP and
+`dotnet test` drives VSTest, so the same tests execute under two runners depending on which tool asked.
+A discovery or execution difference between the two then surfaces as a mutation result that cannot be
+reconciled with a green suite — and the first attempt at this migration produced exactly that, which is
+how long it took to find the upstream defect behind it. The divergence was tolerable while it was nobody's
+decision; it is not something to keep on purpose.
 
 **Opting in through `global.json` puts the choice where the SDK already looks.** The runner is a
 property of *this repository's toolchain*, not of any one project or command line, and `global.json`
@@ -77,32 +94,34 @@ coverage — the numbers come from the modern leg. Since the collector documents
 supported runtime, wiring it into a leg that neither needs it nor is promised to run it would buy
 nothing and risk a start-up failure in the one job whose whole purpose is to prove the floor still runs.
 
-**The adapter's floor moves because a compile-time dependency cannot be published as an older one.**
-`JustDummies.Xunit` binds to xUnit's extensibility surface; it is built against what the repository
-pins, and shipping a package that claims to work against a version it was not compiled against would be
-a promise nothing checks. Raising the declared floor is the honest reading of what the package now is.
+**The runner is a toolchain choice, so it changes nothing a consumer can observe.** `JustDummies.Xunit`
+binds to xUnit's extensibility surface and its declared floor follows the pin, which the bump already
+moved. How this repository *executes* its own suites reaches no package: the collector, the settings file
+and the four CI invocations are all build-time, so this decision is answerable on its own evidence rather
+than against a compatibility promise.
 
 ## Alternatives Considered
 
-### Stay on VSTest and decline the xUnit major
+### Keep the shim indefinitely
 
-The repository works today, so nothing forces the move *this week*: closing the three pull requests and
-telling Dependabot to ignore the major would cost nothing immediately.
+CI is green with it, the suites pass, and the coverage gate reads the reports it always read. Nothing
+breaks tomorrow if the property simply stays at false.
 
-Rejected because the reprieve is temporary and shrinks. The bridge is already gone on the pinned SDK;
-every subsequent xUnit release is on the far side of it, so the debt grows while the migration stays the
-same size. Declining also freezes the adapter's binding at a version its own upstream has moved past,
-which is the position ADR-0018 gave the companion package precisely to avoid.
+Rejected because it is maintenance with no end and no gain. Every xUnit release arrives on the far side
+of the bridge, so the shim has to keep being right about a default upstream keeps setting the other way,
+while the migration it defers stays the same size. It also keeps the two-platform divergence above as a
+permanent property of the repository rather than an accident of timing.
 
-### Migrate the runner first, take the xUnit major second
+### Migrate the runner in the same change as the xUnit bump
 
-The natural staging: land the risky, cross-cutting change — runner, coverage, four CI invocations — on
-its own so it can be reviewed for itself, then let the three dependency bumps become trivial.
+The tidier history: one pull request moves the framework, the runner, the collector and the four CI
+invocations together, and no shim ever exists.
 
-Rejected as unavailable, not as undesirable. It was the preferred plan until measurement showed
-`coverlet.MTP` has no build against MTP 1.x, and `xunit.v3` 3.2.2 pins the v1 line exactly. The staged
-version would therefore have had to cross the platform boundary with no coverage at all, under a gate
-that blocks on it.
+Rejected on timing, and it is what was attempted first. At that point Stryker 4.16.0 could not run these
+suites on MTP (`stryker-net#3117`), so the combined change carried a permanently red mutation leg and sat
+unmergeable. Meanwhile `dotnet test` was refusing every suite, which is an urgent CI failure and not
+something to hold hostage to a cross-cutting migration. Splitting them let the urgent half land in two
+files and kept this half reviewable on its own.
 
 ### Replace the collector with Microsoft's coverage extension
 
@@ -127,19 +146,16 @@ regression on any editor not yet fluent in the new platform. It is bumped with i
 
 ### Positive
 
-* The three red Dependabot pull requests (#85, #86, #87) are answered by one change, and none of them
-  can be merged on its own.
 * The suites run on the platform xUnit itself targets, so future majors stop being blocked on a bridge
   that no longer exists.
+* One platform, one answer: `dotnet test` and the mutation legs exercise the suites the same way, so a
+  mutation result and a green suite can be compared again.
+* The shim disappears, and with it a default this repository had to keep overriding.
 * Seven copies of the coverage wiring collapse into one shared import, so the suites cannot drift apart
   in what they measure.
 
 ### Negative
 
-* **`JustDummies.Xunit`'s published dependency floor rises to `xunit.v3.extensibility.core` 4.0.1.** A
-  consumer still on the 3.x line cannot take the next adapter release without moving too. This is a
-  consumer-facing change on the `xunit` train, not a build detail, and it is the part of this decision
-  that is not reversible by editing this repository.
 * Every documented `dotnet test` invocation changes shape, so muscle memory and any copy of a command
   outside this repository go stale at once.
 * Contributors on an IDE that cannot yet drive the new platform keep test discovery only through the
@@ -156,9 +172,9 @@ regression on any editor not yet fluent in the new platform. It is bumped with i
 
 ## Follow-up Actions
 
-* Close #85, #86 and #87 as superseded once this lands; none is mergeable alone.
-* Decide, on the `xunit` train's next release, whether the adapter's floor raise warrants its own
-  version signal to consumers.
+* Decide, on the `xunit` train's next release, whether the floor the bump already moved warrants its own
+  version signal to consumers. The latest published adapter still ships against 3.2.2, so that signal has
+  not been owed yet.
 
 ## References
 
@@ -169,5 +185,5 @@ regression on any editor not yet fluent in the new platform. It is bumped with i
 * [ADR-0047](0047-declare-the-adapters-library-dependency-independently.md) — how the adapter's *library*
   dependency is chosen at pack time; its xUnit dependency is not chosen that way and follows the pin.
 * [ADR-0026](0026-measure-justdummies-mutation-against-the-unit-suite-only.md) — the mutation suite,
-  already driven on this platform and unaffected.
+  already driven on this platform, and the half of the two-platform divergence that was there first.
 * [`workflows/sonar`](../workflows/sonar.en.md) — how the coverage report reaches the quality gate.

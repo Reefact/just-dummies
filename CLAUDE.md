@@ -70,8 +70,8 @@ to hold that line. The boundary is about what the library *attempts*, never abou
 
 ```
 dotnet build JustDummies.sln
-dotnet test  JustDummies.sln
-dotnet test  JustDummies.Analyzers.UnitTests     # when touching analyzers
+dotnet test  --solution JustDummies.sln
+dotnet test  --project JustDummies.Analyzers.UnitTests   # when touching analyzers
 ```
 
 Target frameworks: **netstandard2.0** (the floor, widest reach) and **net8.0** (which

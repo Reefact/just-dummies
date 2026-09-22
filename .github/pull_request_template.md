@@ -38,7 +38,7 @@
 <!-- Check only the commands/tests that were actually run. Add details if something was not run. -->
 
 * [ ] `dotnet build JustDummies.sln`
-* [ ] `dotnet test JustDummies.sln`
+* [ ] `dotnet test --solution JustDummies.sln`
 * [ ] Analyzer tests pass (`JustDummies.Analyzers.UnitTests`)
 
 ## Documentation

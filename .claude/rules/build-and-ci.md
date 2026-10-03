@@ -11,7 +11,7 @@ paths:
   - ".githooks/**"
   - ".claude/**"
   - "global.json"
-  - "coverage.runsettings"
+  - "testconfig.json"
 ---
 
 # Build, packaging and CI
@@ -36,6 +36,7 @@ fact several times.** The edit-time hook now checks it; check it yourself too wh
 | `tools/packaging/pack.sh` | the one way a published package is produced, used by `release` and `release-dryrun` |
 | `build/sonar-profile.globalconfig` | **generated** — rewrite with `tools/sonar-profile/sync-profile.sh`, never by hand |
 | `build/PublicApiBaseline.props` | the API baseline wiring, for the two shipping libraries only |
+| `build/TestCoverage.props` + `testconfig.json` | the coverage collector and its settings; a test project **imports** the props rather than declaring either |
 
 ## The warning ratchet
 
@@ -50,6 +51,20 @@ cannot redden every pull request.
 configured in `.editorconfig` emit nothing at build time. It is the switch; `.editorconfig`
 is only the dial.
 
+## The test runner is Microsoft.Testing.Platform
+
+`global.json` opts every caller into it — the same file that pins the SDK, so a bare
+`dotnet test` in a shell and the one in CI cannot diverge (ADR-0103). The command line changed
+shape with it: **`--solution` / `--project` instead of a bare path**, `--output` instead of
+`--logger`, and `--coverlet` instead of `--collect` + `--settings`. A command copied from
+anywhere older than that decision will not run.
+
+Coverage comes from `coverlet.MTP` (still OpenCover, so the Sonar importer is unchanged),
+configured by `testconfig.json` and wired by `build/TestCoverage.props` — a test project
+**imports the props** rather than declaring either. That reference is deliberately not the
+`IncludeAssets` shape the old VSTest collector used: an MTP extension self-registers through
+generated code, so it needs the compile assets too.
+
 ## Deliberately outside the solution
 
 `tools/justdummies-check` (packaged-asset compatibility) and `tools/floor-check` (analyzer
@@ -58,7 +73,7 @@ of `JustDummies.sln`.
 
 ## Workflows
 
-21 workflows; seven have a dedicated page under
+20 workflows; seven have a dedicated page under
 [`doc/handwritten/for-maintainers/workflows/`](../../doc/handwritten/for-maintainers/workflows/README.md),
 the rest one table row each. Shell scripts and workflow YAML are linted by the `lint`
 workflow (shellcheck + actionlint) — run `shellcheck` on any script you touch.

@@ -43,7 +43,7 @@ Changing the **semantics** of a diagnostic id is an architectural decision — r
 ## Tests
 
 Analyzer tests live in `JustDummies.Analyzers.UnitTests` and are run with
-`dotnet test JustDummies.Analyzers.UnitTests`. Update or add one whenever an analyzer
+`dotnet test --project JustDummies.Analyzers.UnitTests`. Update or add one whenever an analyzer
 changes. Their C# fixtures deliberately use `var` inside string literals; the edit-time hook
 and `IDE0008` both ignore those.
 

@@ -300,9 +300,9 @@ dire.
 
 C'est aussi pourquoi aucune valeur n'est écrite dans
 [`justdummies.json`](../../../../build/stryker/justdummies.json). Le réglage qui
-marche projette cette jambe de trois heures et demie à quelque chose autour de
-neuf, contre le plafond de job de cinq heures cinquante. Le levier qui rendrait le
-budget honnête est de **découper la jambe entre plusieurs jobs** — du parallélisme
+marche projette ce job de trois heures et demie à quelque chose autour de
+neuf, contre son plafond de cinq heures cinquante. Le levier qui rendrait le
+budget honnête est de **découper ce job en plusieurs** — du parallélisme
 entre runners plutôt qu'un nombre plus grand dans un seul — et c'est un chantier à
 part entière
 ([ADR-0093](../adr/0093-publish-mutation-statuses-not-a-score.fr.md), Actions de
@@ -357,7 +357,7 @@ mode d'emploi qui occupait cette place le décrivait au futur :
   `solution`, qui nomme désormais `JustDummies.sln` ;
 - [`.config/dotnet-tools.json`](../../../../.config/dotnet-tools.json), l'épinglage de
   Stryker, est arrivé aussi — mais pas au premier passage, ce qui a fait échouer les
-  deux jambes de mutation sur `dotnet tool restore` jusqu'à sa restauration ;
+  deux jobs de mutation sur `dotnet tool restore` jusqu'à sa restauration ;
 - les sections partagées de la page `mutation` amont ont désormais été repliées dans
   celle-ci, qui est donc autonome. Elle ne renvoie plus à une page que ce dépôt ne
   possède pas.

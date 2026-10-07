@@ -145,7 +145,7 @@ le langage définit : types partiels et imbriqués, et le C# écrit dans les lit
 des fixtures de test. Mesurée, une telle heuristique divergeait déjà de la réponse du
 compilateur sur cet arbre.
 
-### Un analyseur de première partie, privé à ce dépôt
+### Un analyseur maison, privé à ce dépôt
 
 Envisagé parce que le dépôt construit, teste et publie déjà des analyseurs Roslyn : l'outillage
 — plancher Roslyn épinglé, projet de tests, conventions établies — existe.
@@ -220,5 +220,5 @@ c'est une décision distincte, et la fondre ici la dissimulerait.
   comme actif de build uniquement.
 * [ADR-0050](0050-name-a-suppressed-rule-through-a-catalogue-constant.fr.md) — comment une
   suppression nomme sa règle, si jamais une devenait nécessaire ici.
-* [ADR-0023](0023-ship-justdummies-analyzers.fr.md) — pourquoi les analyseurs de première partie
+* [ADR-0023](0023-ship-justdummies-analyzers.fr.md) — pourquoi les analyseurs maison
   ne peuvent pas héberger une convention interne au dépôt.

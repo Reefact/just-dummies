@@ -28,9 +28,9 @@ deux populations que le rapport présente à l'identique et qui ne le sont pas :
   projets sont multi-ciblés de part et d'autre de la frontière .NET 6 —
   `netstandard2.0;net8.0` pour la bibliothèque, `net10.0;net472` pour sa suite de
   contrat sur le plancher de support (ADR-0007). `ArgumentNullException.ThrowIfNull`
-  est arrivée avec .NET 6 : l'analyzer la voit sur la jambe moderne et signale
+  est arrivée avec .NET 6 : l'analyzer la voit sur la cible moderne et signale
   chaque garde, alors que *le même fichier source* doit continuer à compiler sur
-  la jambe qui ne l'a pas.
+  la cible qui ne l'a pas.
 * **8 dans `FirstClassErrors.GenDoc`**, qui ne cible que `net8.0`. Là, rien ne
   s'y oppose.
 
@@ -41,7 +41,7 @@ dans son propre assembly et le compilateur le reconnaît. `ThrowIfNull` n'est ni
 l'un ni l'autre. C'est une **méthode statique sur un type BCL qui existe déjà en
 downlevel**, et C# n'a pas de méthodes d'extension statiques : la seule façon de
 la fournir serait de déclarer un `System.ArgumentNullException` concurrent qui
-gagne la résolution de nom sur l'ancienne jambe. Masquer un type d'exception du
+gagne la résolution de nom sur l'ancienne cible. Masquer un type d'exception du
 framework pour satisfaire une règle de style échange un gain cosmétique contre un
 piège.
 
@@ -96,7 +96,7 @@ celui qu'utilise le reste du dépôt.
 
 ### Encadrer chaque garde d'un `#if NET6_0_OR_GREATER`
 
-Strictement correct, et honore la règle sur la jambe moderne.
+Strictement correct, et honore la règle sur la cible moderne.
 
 Rejetée pour la lisibilité : cela transforme une garde d'une ligne en cinq, 315
 fois, dans une bibliothèque dont les gardes d'arguments sont les lignes les plus
@@ -142,7 +142,7 @@ Framework 4.7.2 que consigne l'ADR-0007 — vaut plus qu'une règle de style.
 * Deux fichiers projet portent un `NoWarn` qu'il faudra retirer quand le
   plancher bougera ; rien n'impose ce retrait au-delà de cette ADR.
 * Une nouvelle garde écrite dans `JustDummies` ne sera pas orientée vers l'aide
-  moderne sur la jambe moderne, puisque la règle est éteinte pour tout le projet
+  moderne sur la cible moderne, puisque la règle est éteinte pour tout le projet
   plutôt que pour la seule construction interne downlevel.
 
 ### Risques

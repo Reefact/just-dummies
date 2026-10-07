@@ -92,7 +92,7 @@ celui que ce run vient de packager, et le job dogfooderait une release au lieu d
   l'*échec*. En retirer une laisse un trou.
 - **`CS8032` et `AD0001` sont élevés en erreurs** dans `FloorCheck.csproj`, tandis que le cliquet
   d'avertissements du dépôt y est désactivé. Le vieux SDK émet légitimement des avertissements que
-  les jambes .NET 10 ne voient jamais ; faire rougir ce job pour eux enterrerait son unique vrai
+  les builds .NET 10 ne voient jamais ; faire rougir ce job pour eux enterrerait son unique vrai
   signal.
 - **Ce job n'est pas `tools/justdummies-check`.** Ils consomment le même package et vérifient des
   contrats différents : celui-là demande quel *asset* NuGet résout et construit donc sous le SDK

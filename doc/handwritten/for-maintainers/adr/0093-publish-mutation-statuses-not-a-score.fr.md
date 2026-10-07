@@ -100,8 +100,8 @@ budget par défaut laisse 173 timeouts contre 32 kills ; dix secondes de plus ne
 strictement rien ; trente secondes de plus transforment 112 de ces timeouts en vrais kills
 et coûtent 2,8 fois le temps d'horloge. Le correctif est donc réel — la plupart de ces
 mutants étaient attrapés par un test en échec et n'ont jamais pu le dire — et aucun réglage
-abordable ne le délivre : la valeur qui marche projette la jambe de la bibliothèque au-delà
-du plafond de son job. Découper cette jambe entre plusieurs jobs est le levier, pas un
+abordable ne le délivre : la valeur qui marche projette le job de la bibliothèque au-delà
+de son plafond. Découper ce job en plusieurs est le levier, pas un
 nombre, et c'est un chantier plus grand que cette décision. C'est bien là le point :
 publier les statuts ne l'attend pas.
 
@@ -174,4 +174,4 @@ place.
   précédente du même instrument, et la raison pour laquelle son oracle est désormais celui
   qui est déclaré.
 * [`justdummies-mutation.fr.md`](../workflows/justdummies-mutation.fr.md) — ce que chaque
-  jambe exécute, ce que le résumé publie, et les mesures dont ce record argumente.
+  job exécute, ce que le résumé publie, et les mesures dont ce record argumente.

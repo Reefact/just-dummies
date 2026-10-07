@@ -23,7 +23,7 @@ qu'architecturale ».
 
 Les conditions qui justifiaient la colocation ont expiré :
 
-* La bibliothèque a sa propre surface produit — 28 analyseurs de première partie (ADR-0023), un adaptateur
+* La bibliothèque a sa propre surface produit — 28 analyseurs maison (ADR-0023), un adaptateur
   xUnit v3 (ADR-0018), un banc de tests à deux suites (ADR-0019), un scaffolder spécifié, et un site produit
   `https://justdummies.io` que les packages annoncent déjà comme `PackageProjectUrl`.
 * Sa cadence de publication n'est pas celle de FirstClassErrors. Partager un espace de noms de tags imposait

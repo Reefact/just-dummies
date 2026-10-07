@@ -54,6 +54,17 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   refused at generation, and the message names the subtraction. A recipe without a subtraction
   draws exactly what it drew before.
 
+- **A distinct collection with a comparer and a pinned value no longer fails at random.**
+  `Any.SetOf(Any.Boolean(), EqualityComparer<bool>.Default).Containing(true)` threw an
+  `AnyGenerationException` on about one seed in three. The same happened, at similar rates, to a
+  distinct list, a set or a dictionary's keys over a small domain whenever a comparer was supplied
+  and the pinned value was already inside that domain. Under a comparer, every pin was counted as
+  extending the domain, so the count draw could ask for one more distinct value than existed. The
+  ceiling of the draw now credits only the pins that certainly extend the domain, and under a custom
+  comparer none does. A declared count is unaffected. An open count can reach one element less
+  than before when a pin genuinely lies outside the domain under a comparer, but it no longer
+  fails.
+
 - **Re-declaring the same value set no longer conflicts with itself.** `OneOf` documents duplicates
   as ignored and promises nothing about order, so `OneOf("a", "b")`, `OneOf("b", "a")` and
   `OneOf("a", "b", "b")` all declare one domain. The redeclaration check compared the call as it was

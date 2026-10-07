@@ -673,6 +673,34 @@ public sealed class AnyStringTests {
         }
     }
 
+    [Fact(DisplayName = "A subtraction removes its family from a WithChars pool.")]
+    public void ASubtractionRemovesItsFamilyFromAWithCharsPool() {
+        // Issue #210: the pool was drawn verbatim, so the digits WithoutNumeric() removes came back on every seed.
+        using (Any.UseSeed(0)) {
+            Check.That(Any.String().WithChars("abc123").WithoutNumeric().WithLength(20).Generate().All(character => character is 'a' or 'b' or 'c')).IsTrue();
+        }
+    }
+
+    [Fact(DisplayName = "A subtraction that empties a WithChars pool is refused at declaration, naming both sides.")]
+    public void ASubtractionThatEmptiesAWithCharsPoolIsRefused() {
+        // Issue #210: accepted, then drawn from the untouched pool forever.
+        Check.ThatCode(() => Any.String().WithChars("123").WithoutNumeric())
+             .Throws<ConflictingAnyConstraintException>()
+             .WithMessage("Cannot apply WithoutNumeric() because the declared character family WithChars(\"123\") admits nothing once it is applied.");
+    }
+
+    [Fact(DisplayName = "NotBlank blames the subtraction that left a WithChars pool with only whitespace.")]
+    public void NotBlankBlamesTheSubtractionThatLeftOnlyWhitespace() {
+        // Issue #210: the guaranteed non-blank position was drawn from the unsubtracted pool. WithChars(" 1") alone
+        // would satisfy NotBlank(), so the message names what removed the "1".
+        Check.ThatCode(() => Any.String().WithChars(" 1").WithoutNumeric().NotBlank().WithLength(3).Generate())
+             .Throws<ConflictingAnyConstraintException>()
+             .WithMessage("Cannot apply NotBlank() because WithoutNumeric() removes every character WithChars(\" 1\") offers that is not whitespace.");
+        Check.ThatCode(() => Any.String().WithChars(" a1").WithoutAlpha().WithoutNumeric().NotBlank().Generate())
+             .Throws<ConflictingAnyConstraintException>()
+             .WithMessage("Cannot apply NotBlank() because WithoutAlpha() and WithoutNumeric() remove every character WithChars(\" a1\") offers that is not whitespace.");
+    }
+
     [Fact(DisplayName = "A seeded WithChars draw is reproducible: the same seed yields the same value.")]
     public void SeededWithCharsIsReproducible() {
         string first  = Any.WithSeed(4242).String().WithChars("αβγδεζ").WithLength(5).Generate();

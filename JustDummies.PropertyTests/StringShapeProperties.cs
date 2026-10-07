@@ -325,6 +325,44 @@ public sealed class StringShapeProperties {
             .QuickCheckThrowOnFailure();
     }
 
+    [Fact(DisplayName = "A subtraction narrows a WithChars pool whichever was declared first, and refuses a pool it empties.")]
+    public void ASubtractionNarrowsAWithCharsPool() {
+        Gen<(string Pool, bool WithoutAlpha, bool WithoutNumeric, bool PoolFirst, int Length)> cases =
+            from pool in CharacterPool()
+            from withoutAlpha in Gen.Elements(false, true)
+            from withoutNumeric in Gen.Elements(false, true)
+            from poolFirst in Gen.Elements(false, true)
+            from length in Generators.Count(20)
+            select (Pool: pool, WithoutAlpha: withoutAlpha, WithoutNumeric: withoutNumeric, PoolFirst: poolFirst, Length: length);
+
+        Prop.ForAll(cases.ToArbitrary(),
+                    testCase => {
+                        // Issue #210: the subtraction was accepted beside the pool, then ignored by the draw.
+                        bool Removed(char character) {
+                            return (testCase.WithoutAlpha && IsAsciiLetter(character)) || (testCase.WithoutNumeric && IsAsciiDigit(character));
+                        }
+
+                        AnyString Subtract(AnyString generator) {
+                            if (testCase.WithoutAlpha) { generator = generator.WithoutAlpha(); }
+                            if (testCase.WithoutNumeric) { generator = generator.WithoutNumeric(); }
+
+                            return generator;
+                        }
+
+                        AnyString Declare() {
+                            return testCase.PoolFirst
+                                       ? Subtract(Any.String().WithChars(testCase.Pool))
+                                       : Subtract(Any.String()).WithChars(testCase.Pool);
+                        }
+
+                        if (testCase.Pool.All(Removed)) { return Expect.Throws<ConflictingAnyConstraintException>(() => Declare()); }
+
+                        return Expect.EveryDraw(Declare().WithLength(testCase.Length),
+                                                value => value.All(character => testCase.Pool.Contains(character) && !Removed(character)));
+                    })
+            .QuickCheckThrowOnFailure();
+    }
+
     [Fact(DisplayName = "WithLength and StartingWith hold together exactly when the length leaves room for the prefix.")]
     public void ExactLengthAndPrefixHoldTogetherExactlyWhenThereIsRoom() {
         Gen<(string Prefix, int Length)> cases =

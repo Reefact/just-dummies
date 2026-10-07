@@ -135,6 +135,14 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   neighbourhood it genuinely cannot leave still refuses, still saying it searched near the drawn
   candidate rather than claiming the range holds nothing (ADR-0046).
 
+- **`Any.StringMatching(...)` accepts the whole-string anchors `\A`, `\z` and `\Z` at the pattern's
+  edges.** They were refused at any position, so a production validator written as
+  `new Regex(@"\A[A-Z]{3}\d{4}\z")`, the spelling .NET documents for whole-string validation, could
+  not be reused through `StringMatching(Regex)`. `\A` at the start and `\z` or `\Z` at the end of the
+  pattern, or of a top-level alternation branch, are now no-ops, exactly as `^` and `$` already
+  were. Anywhere else they can never match a whole string and stay refused, and the message names
+  the anchor as written. `\G` stays refused.
+
 ## [1.0.0-preview.6] - 2026-09-02
 
 ### Added

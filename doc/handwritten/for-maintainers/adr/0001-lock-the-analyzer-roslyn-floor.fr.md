@@ -22,7 +22,7 @@ Le plancher Roslyn de l'analyseur est fixé à **4.8.0**, la version de Roslyn d
 
 ## Justification
 
-Le plancher découle directement de la promesse de compatibilité : une version supérieure exclurait silencieusement un hôte pris en charge, tandis qu'une version inférieure n'ajouterait aucun environnement supporté.
+Le plancher découle directement de la promesse de compatibilité : une version supérieure exclurait silencieusement un hôte pris en charge, tandis qu'une version inférieure n'ajouterait aucun environnement pris en charge.
 
 Un simple épinglage de version ne suffit pas, car la dérive des références, le chargement de l'analyseur et son emplacement dans le package sont des modes de panne distincts. Des garde-fous indépendants apportent une défense en profondeur et vérifient l'artefact réellement livré sur le plus ancien compilateur pris en charge, pas seulement dans un environnement de développement moderne.
 

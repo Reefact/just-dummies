@@ -136,4 +136,4 @@ fichier d'emblée, et abandonne là où MSBuild le construit sans broncher.
 * ADR-0025 — Make the per-pull-request mutation gate advisory : pourquoi aucun score ne barre aujourd'hui.
 * ADR-0026 — Measure JustDummies mutation against the deterministic unit suite only : la décision que celle-ci rend effective.
 * ADR-0028 — Drop the JustDummies generator from the per-pull-request mutation matrix : le modèle de coût que celle-ci déplace.
-* [`workflows/justdummies-mutation.fr.md`](../workflows/justdummies-mutation.fr.md) — le câblage des jobs, et les mesures derrière ce record.
+* [`workflows/justdummies-mutation.fr.md`](../workflows/justdummies-mutation.fr.md) — le câblage des jobs, et les mesures derrière cet enregistrement.

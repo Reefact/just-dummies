@@ -35,7 +35,7 @@ propre assembly. Elle ne peut donc pas référencer un framework de test, si bie
 que tout adaptateur est un package compagnon distinct — l'arrangement que
 `FirstClassErrors.Testing` établit déjà comme précédent dans ce dépôt.
 
-Les frameworks diffèrent par ce qu'expose leur extensibilité supportée, et la
+Les frameworks diffèrent par ce qu'expose leur extensibilité prise en charge, et la
 différence est décisive pour la condition « uniquement en cas d'échec » :
 
 * **xUnit v3.** Son point d'accroche avant/après reçoit le test lui-même, et le
@@ -84,7 +84,7 @@ graine pour les tests xUnit v3, et ne vise aucun autre framework de test.
   sait l'exprimer.** Fixer une graine est facile partout ; décider s'il faut
   l'exposer est ce qui sépare un adaptateur utile du bruit. xUnit v3 expose
   l'issue du test terminé dans son extensibilité documentée, si bien que
-  l'adaptateur est une petite quantité de code au-dessus d'un contrat supporté.
+  l'adaptateur est une petite quantité de code au-dessus d'un contrat pris en charge.
   En v2 la même condition est inatteignable depuis le point d'accroche
   correspondant et exige de s'approprier la découverte et l'exécution sur une
   surface semi-interne — un coût permanent et fragile, assumé pour un package
@@ -170,7 +170,7 @@ communs.
   de build et de release.
 * La commodité n'atteint que les utilisateurs de xUnit v3 ; tout autre framework
   conserve l'exécuteur à délégué.
-* Le plancher de frameworks supportés du package est celui du framework de test,
+* Le plancher de frameworks pris en charge du package est celui du framework de test,
   au-dessus du plancher que `JustDummies` conserve — les deux ne peuvent donc pas
   partager une même liste de cibles.
 

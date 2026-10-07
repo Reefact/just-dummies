@@ -45,7 +45,7 @@ domaine déclaré.
 
 **La règle de l'ADR-0029 admet déjà que quelque chose puisse demander davantage.** Sa justification énonce :
 *« a dummy is small unless something explicitly asks for more, and only a minimum, an exact size or a
-required fragment can ask. »* Un minimum de 1000 est une telle demande. Ce que le record ne tranche pas,
+required fragment can ask. »* Un minimum de 1000 est une telle demande. Ce que la décision ne tranche pas,
 c'est de combien — et sa réponse, le minimum plus l'étendue par défaut, est la même constante qu'un maximum
 ait été écrit à côté ou non.
 
@@ -120,7 +120,7 @@ chaînes ; l'étendue reste où elle est jusqu'à ce qu'un cas plaide autrement.
 Le pari que l'ADR-0029 avait lui-même fait : énoncer la règle dans la documentation utilisateur et compter
 sur le lecteur.
 
-Rejetée parce que l'expérience a eu lieu. Le record a prédit la surprise, choisi de la payer, et le premier
+Rejetée parce que l'expérience a eu lieu. L'enregistrement a prédit la surprise, choisi de la payer, et le premier
 usage soutenu de la bibliothèque a produit la réaction annoncée — de la part de celui qui l'avait accepté.
 Un coût accepté qui se révèle plus élevé que son estimation est la raison ordinaire de revisiter une
 décision, et la période de préversion existe pour faire remonter exactement cela.
@@ -195,8 +195,8 @@ compte pas. La lecture uniforme coûte un plafond et achète une règle sans cas
 
 ## Actions de suivi
 
-* Basculer le statut de l'ADR-0029 en *Superseded* avec un lien vers ici, une fois ce record accepté.
-* Revisiter l'étendue du compte de collection sur ses propres preuves ; ce record déplace la politique et
+* Basculer le statut de l'ADR-0029 en *Superseded* avec un lien vers ici, une fois cet enregistrement accepté.
+* Revisiter l'étendue du compte de collection sur ses propres preuves ; cette décision déplace la politique et
   non la magnitude.
 * Revisiter l'[ADR-0031](0031-draw-arbitrary-numbers-within-an-ordinary-magnitude.fr.md), où la même
   question s'applique aux nombres : une borne déclarée hors de la magnitude ordinaire ne pilote pas non plus

@@ -65,7 +65,7 @@ bien formé mais non régulier ou hors périmètre — plutôt que de dépendre 
 Considérée parce qu'elle est éprouvée, large, et livrerait la fonctionnalité plus vite. Rejetée parce qu'elle
 introduit la première dépendance runtime de la bibliothèque — contredisant l'identité zéro-dépendance que garde le
 test d'architecture — pour un dialecte qui n'est lui-même que le sous-ensemble régulier, et parce qu'elle renonce au
-refus first-class des constructs non supportés en les traitant silencieusement. Le niveau de maintenance de la
+refus first-class des constructs non pris en charge en les traitant silencieusement. Le niveau de maintenance de la
 bibliothèque est une préoccupation secondaire.
 
 ### Maison, mais visant le dialecte .NET complet
@@ -88,7 +88,7 @@ via `As`, `OrNull`, `Combine` et les générateurs de collections — tous défi
 
 * La regex de format d'un objet-valeur devient une source de dummies valides en une ligne, sans nouvelle
   dépendance.
-* Un construct non supporté échoue à la déclaration avec un message le nommant, jamais sous forme d'une valeur qui
+* Un construct non pris en charge échoue à la déclaration avec un message le nommant, jamais sous forme d'une valeur qui
   ne matche pas en silence.
 * Le générateur se compose comme tous les autres et reste reproductible sous une graine.
 
@@ -97,7 +97,7 @@ via `As`, `OrNull`, `Combine` et les générateurs de collections — tous défi
 * La bibliothèque porte et doit maintenir son propre parseur et générateur de regex — le plus gros bloc de logique
   qu'elle contienne — et sa correction repose sur la suite de tests (un property test vérifie les valeurs générées
   contre le vrai moteur .NET).
-* Le dialecte supporté est un **contrat** : l'élargir ou le restreindre plus tard est un changement pertinent pour
+* Le dialecte pris en charge est un **contrat** : l'élargir ou le restreindre plus tard est un changement pertinent pour
   la compatibilité, et l'univers de caractères comme l'intervalle du quantifieur non borné sont des comportements
   sur lesquels des consommateurs peuvent finir par compter.
 
@@ -111,9 +111,9 @@ via `As`, `OrNull`, `Combine` et les générateurs de collections — tous défi
 
 ## Actions de suivi
 
-* N'élargir le sous-ensemble supporté qu'en réponse à des motifs réels, en gardant le refus first-class comme filet
+* N'élargir le sous-ensemble pris en charge qu'en réponse à des motifs réels, en gardant le refus first-class comme filet
   de sécurité.
-* Documenter le dialecte supporté dans la documentation utilisateur une fois la surface stabilisée.
+* Documenter le dialecte pris en charge dans la documentation utilisateur une fois la surface stabilisée.
 * Si une génération adossée à un automate et réconciliant la longueur devient nécessaire, réexaminer — l'API
   terminale laisse cette voie ouverte sans casser les appelants.
 

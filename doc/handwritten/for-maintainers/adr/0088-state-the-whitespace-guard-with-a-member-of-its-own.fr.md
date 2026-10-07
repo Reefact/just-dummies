@@ -88,7 +88,7 @@ lisibilité pour laquelle ADR-0075 l'a choisie. Les deux servent des rôles diff
 auquel un tirage est restreint, l'autre un test qu'une valeur doit passer — et un lecteur rencontre la différence
 au seul endroit où elle compte, là où déclarer les deux se contredit et où le message nomme chaque côté.
 
-**Ce n'est pas une famille de caractères, donc la file qu'ADR-0075 a fermée le reste.** Ce record n'admet un
+**Ce n'est pas une famille de caractères, donc la file qu'ADR-0075 a fermée le reste.** Cette décision n'admet un
 alphabet nommé que là où une norme publiée le définit, et renvoie vers `WithChars` tout alphabet qu'un projet
 invente. Ce membre ne nomme aucun alphabet : il contraint la valeur assemblée, sur le même axe qu'une longueur
 plutôt que sur l'axe de l'alphabet, et chaque caractère d'un tirage reste libre. La liste des familles est
@@ -97,7 +97,7 @@ intacte, et la règle voulant que chaque famille rétrécisse l'ASCII aussi.
 **Constructive plutôt que rejective, parce qu'[ADR-0033](0033-decide-a-constraint-surface-by-constructive-versus-rejective.fr.md)
 a déjà décidé comment trancher.** La contrainte décrit une valeur que le générateur doit bâtir, donc elle est
 bâtie — jamais tirée puis retentée. Sur le chemin de l'ensemble de valeurs, la même déclaration filtre le pool
-fourni, ce qui est ce que ce record entend par offrir une contrainte là où le générateur peut la satisfaire.
+fourni, ce qui est ce que cette décision entend par offrir une contrainte là où le générateur peut la satisfaire.
 
 **Un littéral ancré répond pour lui-même.** Un préfixe, un suffixe ou une valeur contenue portant déjà un
 caractère non blanc satisfait la garantie, et la contrainte n'exige alors rien du remplissage et ne juge aucun
@@ -167,7 +167,7 @@ réelle mais elle sépare un alphabet d'un test, deux choses différentes qui pa
   orthographes de bibliothèque cessent de bloquer la compilation.
 * Une classe de défauts se referme à sa source : la valeur que le scaffolder émet satisfait le domaine qui la
   jugera.
-* La prémisse falsifiée de la spécification est retirée plutôt que laissée debout à côté des records qui l'ont
+* La prémisse falsifiée de la spécification est retirée plutôt que laissée debout à côté des enregistrements qui l'ont
   falsifiée.
 * Les appelants qui écrivent leurs générateurs à la main gagnent la contrainte aussi — la garde était
   inénonçable pour eux également.
@@ -193,9 +193,9 @@ réelle mais elle sépare un alphabet d'un test, deux choses différentes qui pa
 * La décision a deux moitiés et elles voyagent sur des trains différents. Le membre est sur celui de la
   bibliothèque ; le scaffolder lisant chaque orthographe de la blancheur comme lui — `Guards.cs` et
   `LibraryGuards.cs`, qui émettent encore `NonEmpty()` — est sur le train `cli` et part avec lui. D'ici là la
-  garde est lue comme le plancher auquel elle survit, c'est-à-dire le défaut sur lequel ce record ouvre.
+  garde est lue comme le plancher auquel elle survit, c'est-à-dire le défaut sur lequel cet enregistrement ouvre.
 * Revoir si la table de base de la spécification doit émettre ce membre pour un paramètre `string` sans aucune
-  garde. C'est une autre question — rien n'y a été lu — et ce record ne la tranche pas.
+  garde. C'est une autre question — rien n'y a été lu — et cette décision ne la tranche pas.
 * Le sous-ensemble régulier tire `\s` de la paire lisible, donc un motif et cette contrainte divergent sur le
   blanc de la même manière que la famille. Signalé plutôt que tranché, à côté de la divergence qu'ADR-0075 a déjà
   laissée ouverte pour les positions libres d'un motif.
@@ -203,7 +203,7 @@ réelle mais elle sépare un alphabet d'un test, deux choses différentes qui pa
 ## Références
 
 * [ADR-0086](0086-read-the-guard-helpers-of-named-libraries.fr.md) — la règle « mesuré, ou pas dans la table », et
-  les deux lignes dont les commentaires nommaient le membre que ce record ajoute.
+  les deux lignes dont les commentaires nommaient le membre que cette décision ajoute.
 * [ADR-0075](0075-draw-characters-from-the-whole-of-ascii.fr.md) — la règle des familles à laquelle ce membre
   n'est pas soumis, et le défaut élargi qui a falsifié la prémisse du repli.
 * [ADR-0033](0033-decide-a-constraint-surface-by-constructive-versus-rejective.fr.md) — pourquoi la contrainte est

@@ -87,7 +87,7 @@ support de test ne devrait trancher. Au-delà, c'est un alphabet fourni par l'ap
 `OneOf` — qui est la forme honnête pour le texte qu'un domaine emploie vraiment.
 
 **Faire du plus large ensemble le défaut est ce qui permet à toute contrainte de rétrécir.** La version
-précédente de ce record gardait lettres et chiffres comme défaut et ajoutait des familles plus larges
+précédente de cet enregistrement gardait lettres et chiffres comme défaut et ajoutait des familles plus larges
 par-dessus ; cela faisait de `Printable()` une contrainte qui *agrandissait* le tirage, ce qu'une
 contrainte n'est pas, et forçait `Whitespaces()` et `NonPrintable()` à devenir des exceptions documentées à
 la règle. Partir de tout l'ASCII referme le modèle : le défaut est le sommet du treillis, toute famille en
@@ -111,7 +111,7 @@ sans troisième membre.
 
 ### Garder lettres et chiffres comme défaut, et ajouter des familles plus larges par-dessus
 
-La version précédente de ce record, et le plus petit changement : aucune graine existante ne bouge, et
+La version précédente de cet enregistrement, et le plus petit changement : aucune graine existante ne bouge, et
 `Punctuation()` répond au signalement d'origine.
 
 Rejetée dès qu'on examine le modèle plutôt que le symptôme. Elle laisse le défaut ne rien certifier, et
@@ -122,7 +122,7 @@ d'exceptions s'allonge n'est pas une règle.
 
 ### Prendre l'ASCII imprimable (0x20–0x7E) comme défaut
 
-Sérieusement envisagée, et adoptée dans une version intermédiaire de ce record : c'est l'univers que le
+Sérieusement envisagée, et adoptée dans une version intermédiaire de cet enregistrement : c'est l'univers que le
 générateur d'expressions régulières emploie déjà, tout dummy reste visible dans un message d'échec, et
 aucun tirage ne peut corrompre un terminal.
 
@@ -207,7 +207,7 @@ L'espace demeure nommable par `Whitespaces()`.
 
 * Décider si `RegexAlphabet` suit cette décision — si les positions libres d'un motif tirent dans l'ASCII
   ou restent imprimables. L'argument coupe des deux côtés : le motif est lui-même une contrainte explicite,
-  donc son défaut peut légitimement différer ; mais deux univers sont ce que ce record entendait supprimer.
+  donc son défaut peut légitimement différer ; mais deux univers sont ce que cette décision entendait supprimer.
 * S'assurer que la bibliothèque échappe les caractères de contrôle partout où elle rend une valeur tirée —
   messages de conflit, inspections de pool, golden master de graine, qui porte déjà un `Escape` pour son
   propre format de fichier.
@@ -218,11 +218,11 @@ L'espace demeure nommable par `Whitespaces()`.
 ## Références
 
 * [ADR-0046](0046-bound-the-generators-ambition-never-its-correctness.fr.md) — la règle qui demande si un
-  refus est la réponse honnête, et la raison pour laquelle ce record énonce où l'univers s'arrête.
+  refus est la réponse honnête, et la raison pour laquelle cet enregistrement énonce où l'univers s'arrête.
 * [ADR-0049](0049-replay-a-seed-across-patch-and-minor-versions.fr.md) — pourquoi c'est une version
   majeure, et la garantie entre frameworks cibles qui écarte Unicode.
 * [ADR-0033](0033-decide-a-constraint-surface-by-constructive-versus-rejective.fr.md) — le refus de laisser
-  une décision de domaine au filtrage de l'appelant, que ce record suit.
+  une décision de domaine au filtrage de l'appelant, que cette décision suit.
 * [ADR-0008](0008-generate-strings-from-a-home-grown-regular-subset.fr.md) — le générateur dont les
   positions libres tirent dans l'ASCII imprimable, et la divergence laissée ouverte ci-dessus.
 * `JustDummies/CharacterPools.cs` et `JustDummies/RegexAlphabet.cs` — les définitions que cette décision

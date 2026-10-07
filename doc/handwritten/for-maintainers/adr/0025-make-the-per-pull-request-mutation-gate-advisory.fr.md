@@ -35,7 +35,7 @@ Deux faits supplémentaires pèsent sur la décision :
   **balayage complet hebdomadaire** (qui remesure tout) plus le **rapport** par-PR des mutants
   survivants.
 * Le job `gate` échoue (`exit 1`) dès que ses legs sont `cancelled`. Le groupe `concurrency` du workflow
-  annule un run en vol dès qu'un commit plus récent atterrit sur la branche — un événement ordinaire
+  annule un run en cours dès qu'un commit plus récent atterrit sur la branche — un événement ordinaire
   (« Update branch », un merge dependabot dans `main`). Chaque supplantation a donc affiché une porte de
   mutation **« failed » fallacieuse** sur une pull request parfaitement saine.
 

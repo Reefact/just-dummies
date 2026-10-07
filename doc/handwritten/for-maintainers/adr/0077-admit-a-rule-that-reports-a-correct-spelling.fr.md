@@ -175,7 +175,7 @@ il le fait déjà — mais si la condition sous laquelle il le peut est écrite 
   bruit même en sévérité information. L'atténuation est que chacune passe encore par une issue, où la
   question est celle du gain contre le coût et non de l'admissibilité.
 * Un lecteur futur pourrait prendre « écriture correcte » pour un blanc-seing sur les règles de style en
-  général. Les trois conditions sont la réponse, et c'est la raison pour laquelle ce record énonce un critère
+  général. Les trois conditions sont la réponse, et c'est la raison pour laquelle cet enregistrement énonce un critère
   plutôt qu'un verdict.
 
 ## Actions de suivi
@@ -189,7 +189,7 @@ il le fait déjà — mais si la condition sous laquelle il le peut est écrite 
 ## Références
 
 * [ADR-0023](0023-ship-justdummies-analyzers.fr.md) — les règles sont embarquées dans le package.
-* [ADR-0038](0038-guard-the-recipe-versus-value-boundary-with-analyzers.fr.md) — le terrain que ce record qualifie.
+* [ADR-0038](0038-guard-the-recipe-versus-value-boundary-with-analyzers.fr.md) — le terrain que cette décision qualifie.
 * [ADR-0046](0046-bound-the-generators-ambition-never-its-correctness.fr.md) — borner la surface, et rendre la frontière désignable.
 * [ADR-0052](0052-publish-the-jd-rules-as-a-first-party-catalogue.fr.md) — le catalogue par lequel chaque nouvel identifiant est publié.
 * [Issue #95](https://github.com/Reefact/just-dummies/issues/95) — la règle que ce critère admet en premier.

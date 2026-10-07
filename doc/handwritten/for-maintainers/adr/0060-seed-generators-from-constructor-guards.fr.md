@@ -55,7 +55,7 @@ qu'une contrainte fausse donne une valeur qui exerce mal le test en silence.
 Pour les paramètres qui restent non résolus, une erreur de compilation est le signal le moins cher
 disponible. Le développeur est dans le fichier, venant de lancer le tool ; le compilateur nomme le
 paramètre dans son propre message, et ce message atteint aussi bien l'éditeur, la liste d'erreurs
-que l'intégration continue. Un signal délivré plus tard coûte plus, et un signal jamais délivré
+que l'intégration continue. Un signal livré plus tard coûte plus, et un signal jamais livré
 coûte le plus.
 
 Publier un fichier qui ne compile pas n'est défendable qu'à cause de [ADR-0056](0056-scaffold-the-generator-once-and-hand-the-file-to-the-developer.fr.md). Un outil qui possède sa

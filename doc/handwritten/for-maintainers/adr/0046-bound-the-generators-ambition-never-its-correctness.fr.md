@@ -72,7 +72,7 @@ diff ne l'explique — le pire échec que ce produit puisse infliger à un utili
 satisfaire un jeu de contraintes que l'utilisateur n'avait pas l'intention d'écrire fera exactement
 cela, masquant une erreur de modélisation que la détection de conflit en fail-fast existe justement
 pour révéler. Une erreur nommée à la déclaration — la forme que l'ADR-0008 a déjà choisie — dit à
-l'utilisateur quel construit n'est pas supporté et quoi faire à la place.
+l'utilisateur quel construit n'est pas pris en charge et quoi faire à la place.
 
 **C'est le fait d'écrire la règle qui la fait tenir.** Sept instances et aucun parent, cela signifie
 que la huitième question est tranchée par le premier qui la tranche — et dans un dépôt écrit en

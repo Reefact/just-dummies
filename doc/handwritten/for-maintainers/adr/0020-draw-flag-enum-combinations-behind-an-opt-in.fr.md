@@ -36,7 +36,7 @@ JustDummies n'a jamais été publié : le sens du tirage non contraint est donc 
 
 **Énumérer l'univers est ce qui préserve les deux garanties permanentes.** Un tirage indépendant par membre serait moins coûteux et sans plafond, mais il est uniforme sur les *sous-ensembles*, pas sur les *valeurs* : en présence d'un composite déclaré, plusieurs sous-ensembles retombent sur une même valeur, qui sort alors bien plus souvent que les autres — et un dummy biaisé est un échec plus grave qu'une contrainte refusée, parce que rien ne le révèle. Matérialiser la clôture garde aussi `ICardinalityHint` exact, ce qui préserve le conflit anticipé sur une collection distincte demandant plus de valeurs qu'il n'en existe. Le prix est que la clôture est exponentielle en nombre de membres : il lui faut un plafond.
 
-**Au-delà du plafond, la contrainte est refusée, pas dégradée.** Un repli silencieux scinderait le générateur en deux régimes — l'un uniforme et vérifié à la déclaration, l'autre ni l'un ni l'autre — que seul le comptage des membres d'un enum permettrait de distinguer. Refuser en nommant la cause, et pointer vers la liste explicite qui sert le cas, est la réponse qu'ADR-0008 a déjà donnée pour les constructions hors du sous-ensemble supporté : une erreur claire vaut mieux qu'une valeur dont l'appelant ne peut prévoir les propriétés. Un enum de drapeaux assez large pour atteindre le plafond est très loin des formes que le vrai code déclare.
+**Au-delà du plafond, la contrainte est refusée, pas dégradée.** Un repli silencieux scinderait le générateur en deux régimes — l'un uniforme et vérifié à la déclaration, l'autre ni l'un ni l'autre — que seul le comptage des membres d'un enum permettrait de distinguer. Refuser en nommant la cause, et pointer vers la liste explicite qui sert le cas, est la réponse qu'ADR-0008 a déjà donnée pour les constructions hors du sous-ensemble pris en charge : une erreur claire vaut mieux qu'une valeur dont l'appelant ne peut prévoir les propriétés. Un enum de drapeaux assez large pour atteindre le plafond est très loin des formes que le vrai code déclare.
 
 ## Alternatives envisagées
 
@@ -81,7 +81,7 @@ Rejetée parce qu'elle fait qu'une méthode signifie deux choses différentes se
 
 ### Risques
 
-* Un enum assez large pour être refusé est un type supporté dont les combinaisons ne peuvent pas être tirées du tout. Mitigation : le message nomme le plafond et pointe vers la liste explicite ; la forme est très loin de ce que le vrai code déclare, et le plafond peut être relevé par une décision ultérieure sur preuves.
+* Un enum assez large pour être refusé est un type pris en charge dont les combinaisons ne peuvent pas être tirées du tout. Mitigation : le message nomme le plafond et pointe vers la liste explicite ; la forme est très loin de ce que le vrai code déclare, et le plafond peut être relevé par une décision ultérieure sur preuves.
 * La sensibilité à l'ordre avec `OneOf` pourrait se lire comme un no-op silencieux. Mitigation : documentée sur les deux membres, et l'ordre inverse — une liste nommant une combinaison avant l'opt-in — échoue avec un message nommant la contrainte manquante plutôt que de l'accepter.
 
 ## Actions de suivi

@@ -14,7 +14,7 @@ Ce dépôt livre deux bibliothèques — `JustDummies` et
 `JustDummies.Xunit` — dont le produit *est* la sémantique : quelle valeur une
 contrainte admet, quelles contraintes s'opposent, quelle graine rejoue une
 exécution. Un défaut à cet endroit n'est pas un plantage que le
-consommateur voit venir ; c'est une réponse fausse délivrée avec assurance.
+consommateur voit venir ; c'est une réponse fausse donnée avec assurance.
 
 Le dépôt impose déjà deux signaux de qualité automatiques sur chaque pull
 request : toute la suite de tests sur deux plateformes (`ci`), et la quality gate
@@ -95,7 +95,7 @@ un détail aggravant. Un rapport consultatif, sur un dépôt maintenu par une se
 personne, est un rapport que personne ne lit ; la pratique qu'il vise à installer
 — écrire l'assertion, pas seulement l'appel — ne survit que si le merge en
 dépend. Le dépôt traite déjà ainsi ses autres invariants : le cliquet de
-warnings, la convention de commit et les floors supportés sont imposés, pas
+warnings, la convention de commit et les planchers pris en charge sont imposés, pas
 suggérés.
 
 Cantonner le barrage à **ce que la pull request modifie** est ce qui rend
@@ -142,7 +142,7 @@ code change. Un seuil n'a de sens que face à un générateur figé.
 Le statut **preview** du runner dont dépend le barrage est la principale
 faiblesse de la décision, et elle est acceptée en connaissance de cause :
 l'alternative est l'absence totale de signal de mutation, puisque le runner
-supporté ne sous-estime pas — il rapporte zéro. L'atténuation tient à ce que le
+pris en charge ne sous-estime pas — il rapporte zéro. L'atténuation tient à ce que le
 mode de défaillance est bruyant et non silencieux : une régression du runner qui
 cesserait d'activer les mutants ramènerait tous les scores à zéro et ferait
 échouer le barrage, au lieu de le laisser passer discrètement.
@@ -209,7 +209,7 @@ deux signaux sont complémentaires, et celui-ci n'a pas de substitut.
 
 ### Conserver le runner VSTest par défaut de Stryker
 
-Envisagée parce que c'est la configuration supportée et non-preview, et que
+Envisagée parce que c'est la configuration prise en charge et non-preview, et que
 préférer un composant en preview dans un check obligatoire n'est pas une décision
 à prendre à la légère.
 

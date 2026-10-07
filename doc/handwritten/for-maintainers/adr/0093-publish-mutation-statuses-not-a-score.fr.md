@@ -93,14 +93,14 @@ corriger le budget rend le nombre à nouveau défendable pour ce composant.
 
 Rejetée comme substitut, pas comme complément : corriger un budget est une estimation à
 maintenir par composant et par machine, et la seconde observation montre que le chiffre peut
-être faux pour des raisons qu'aucun budget n'adresse.
+être faux pour des raisons qu'aucun budget ne traite.
 
 La correction a ensuite été mesurée plutôt que supposée, sur un fichier de 205 mutants. Le
 budget par défaut laisse 173 timeouts contre 32 kills ; dix secondes de plus ne changent
 strictement rien ; trente secondes de plus transforment 112 de ces timeouts en vrais kills
 et coûtent 2,8 fois le temps d'horloge. Le correctif est donc réel — la plupart de ces
 mutants étaient attrapés par un test en échec et n'ont jamais pu le dire — et aucun réglage
-abordable ne le délivre : la valeur qui marche projette le job de la bibliothèque au-delà
+abordable ne l'obtient : la valeur qui marche projette le job de la bibliothèque au-delà
 de son plafond. Découper ce job en plusieurs est le levier, pas un
 nombre, et c'est un chantier plus grand que cette décision. C'est bien là le point :
 publier les statuts ne l'attend pas.
@@ -120,7 +120,7 @@ qu'un score détruit.
 ### Ne rien dire tant que la cause de la divergence n'est pas trouvée
 
 Considérée parce qu'un rapport qui dit « ces nombres sont en partie inexpliqués » est
-inconfortable, et que la tentation est d'attendre une histoire propre.
+inconfortable, et que la tentation est d'attendre un tableau net.
 
 Rejetée : le balayage hebdomadaire publie un chiffre chaque lundi, que quelqu'un l'ait
 expliqué ou non. Attendre ne suspend pas l'affirmation, ça laisse seulement la mauvaise en
@@ -174,4 +174,4 @@ place.
   précédente du même instrument, et la raison pour laquelle son oracle est désormais celui
   qui est déclaré.
 * [`justdummies-mutation.fr.md`](../workflows/justdummies-mutation.fr.md) — ce que chaque
-  job exécute, ce que le résumé publie, et les mesures dont ce record argumente.
+  job exécute, ce que le résumé publie, et les mesures sur lesquelles cette décision s'appuie.

@@ -51,7 +51,7 @@ quand la bibliothèque change, et aucun ne force la publication de l'autre.
 ##### Référencer la bibliothèque et versionner les deux en lockstep
 
 Considérée parce qu'elle laisse le compilateur vérifier l'usage que l'émetteur fait de l'API, et
-parce qu'un numéro de version identique est une histoire de compatibilité évidente à présenter aux
+parce qu'un numéro de version identique est un argument de compatibilité évident à présenter aux
 utilisateurs.
 
 Écartée parce que le lockstep ne garantit que la correspondance du tool avec la bibliothèque publiée

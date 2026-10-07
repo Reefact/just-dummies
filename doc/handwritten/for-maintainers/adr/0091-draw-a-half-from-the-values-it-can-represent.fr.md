@@ -19,7 +19,7 @@ de formatage, ne sont jamais visitées »**.
 Son remède était une fenêtre : une valeur flottante arbitraire se tire dans une magnitude ordinaire
 d'un million. Pour `Double` et `Single`, cette fenêtre rogne un intervalle immense jusqu'à un
 intervalle qu'un test peut raisonner. Pour `Half`, elle ne rogne **rien** — le type s'arrête à 65 504,
-entièrement à l'intérieur de la fenêtre — et le record le dit explicitement, concluant que **« `Half`
+entièrement à l'intérieur de la fenêtre — et l'enregistrement le dit explicitement, concluant que **« `Half`
 n'a besoin d'aucun cas particulier : une règle qui restreint l'extravagant et se tait ailleurs est une
 règle, pas une liste d'exceptions »**.
 
@@ -62,12 +62,12 @@ vu comme un domaine de réels.
 de magnitude ordinaire d'ADR-0031. L'échelle est fournie par la ligne qui la possède, pas adoptée par
 le moteur partagé.
 
-Ce record corrige aussi ADR-0031 : `Half` **est** le cas particulier, et la phrase affirmant qu'il n'en
+Cette décision corrige aussi ADR-0031 : `Half` **est** le cas particulier, et la phrase affirmant qu'il n'en
 faut aucun est remplacée par la mesure ci-dessus.
 
 ## Justification
 
-**Il termine ADR-0031 plutôt qu'il ne le contredit.** Ce record voulait rendre les magnitudes
+**Il termine ADR-0031 plutôt qu'il ne le contredit.** Celui-ci voulait rendre les magnitudes
 ordinaires atteignables et a corrigé les deux types dont l'intervalle était extravagant. `Half` en a
 été exclu au motif que tout son domaine est déjà ordinaire — vrai du domaine, faux du tirage. La mesure
 est la preuve qu'ADR-0031 s'imposait à lui-même : *« les générateurs entiers sont exclus sur preuve,

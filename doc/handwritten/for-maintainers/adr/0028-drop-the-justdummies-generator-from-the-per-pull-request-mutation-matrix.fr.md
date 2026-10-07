@@ -11,17 +11,17 @@
 ## Contexte
 
 L'ADR-0022 conditionne chaque pull request au score de mutation de ce qu'elle a changé.
-`justdummies-mutation.yml` exécute ce gate sous forme d'une matrice à trois pattes — le générateur
+`justdummies-mutation.yml` exécute ce gate sous forme d'une matrice à trois jobs — le générateur
 (`justdummies`), son adaptateur xUnit v3 (`justdummies-xunit`) et ses analyseurs
-(`justdummies-analyzers`) —, chacune limitée au diff par `--since`.
+(`justdummies-analyzers`) —, chacun limité au diff par `--since`.
 
-Deux de ces trois pattes terminent en une quinzaine de secondes à une minute et demie. Celle du
+Deux de ces trois jobs terminent en une quinzaine de secondes à une minute et demie. Celui du
 générateur ne termine pas du tout.
 
 Sur la pull request #337 — un diff de correction en quatre commits, **99 lignes de production
-changées** — la patte `Mutate the diff (justdummies)` a sélectionné **844 mutants** et tournait encore
+changées** — le job `Mutate the diff (justdummies)` a sélectionné **844 mutants** et tournait encore
 après **soixante minutes**, sans avoir produit de score, avant d'être annulée à la main. Ce n'est pas un
-cas isolé : le coût de cette patte est fixé par la taille des *fichiers* que le diff touche, pas par la
+cas isolé : le coût de ce job est fixé par la taille des *fichiers* que le diff touche, pas par la
 taille du diff.
 
 Trois contraintes, chacune enregistrée et mesurée, rendent ce coût structurel et non accidentel :
@@ -37,7 +37,7 @@ Trois contraintes, chacune enregistrée et mesurée, rendent ce coût structurel
 * **JustDummies est la plus grosse bibliothèque du dépôt** — quelques milliers de mutants — ce qui est
   déjà la raison pour laquelle son sweep *complet* porte `timeout-minutes: 350`.
 
-Le débit observé sur `ubuntu-latest` est d'environ **quatorze mutants par minute**. Une patte de deux à
+Le débit observé sur `ubuntu-latest` est d'environ **quatorze mutants par minute**. Un job de deux à
 trois minutes n'admet donc au plus que **quarante-cinq mutants**.
 
 Chaque levier exposé par Stryker 4.16 a été mesuré sur le diff de #337 :
@@ -57,7 +57,7 @@ motifs `mutate` limités à des lignes — le seul levier qui ferait correspondr
 sélectionnent **zéro**, aussi bien dans le fichier de configuration qu'en ligne de commande. Un gate
 configuré ainsi passerait au vert sans avoir rien testé.
 
-Le sharding de la patte sur les fichiers changés a également été envisagé et mesuré. Plusieurs motifs
+Le sharding du job sur les fichiers changés a également été envisagé et mesuré. Plusieurs motifs
 `--mutate` se composent bien en union (34 + 13 = 47 mutants, vérifié), donc le sharding est
 implémentable — mais un shard ne peut pas être plus petit qu'un fichier, et huit des fichiers centraux de
 la bibliothèque dépassent à eux seuls le budget de quarante-cinq mutants : `RegexParser.cs` (507),
@@ -68,7 +68,7 @@ La meilleure combinaison atteignable tourne autour de −50 %, pour une exigence
 
 ## Décision
 
-La patte `justdummies` est **retirée de la matrice par pull request** dans `justdummies-mutation.yml`.
+Le job `justdummies` est **retiré de la matrice par pull request** dans `justdummies-mutation.yml`.
 `justdummies-xunit` et `justdummies-analyzers` conservent la leur. Le score de mutation du générateur
 continue d'être mesuré par le **sweep complet hebdomadaire**, inchangé.
 
@@ -76,21 +76,21 @@ Le job `gate` et son nom de check sont inchangés, donc aucune entrée de branch
 
 ## Justification
 
-* **La patte ne produit rien aujourd'hui.** Elle n'est pas lente, elle est inachevée : soixante minutes
+* **Le job ne produit rien aujourd'hui.** Il n'est pas lent, il est inachevé : soixante minutes
   de runner pour aucun score. Retirer un check qui ne rapporte jamais ne perd aucun signal — cela cesse
   de payer pour son absence.
 * **Les mesures ferment les alternatives.** Chaque levier interne plafonne à −36 %, le sharding est buté
   par le plus gros fichier changé, et le périmètre à la ligne n'existe pas dans cette version de Stryker.
   Ce n'est pas « on n'a pas assez réglé ».
 * **L'ADR-0025 lui a déjà retiré son autorité.** Le gate par PR est consultatif ; la barre appliquée est
-  le sweep hebdomadaire. Cette patte rapportait dans un canal qui ne peut pas refuser une pull request.
-* **Le retrait étroit préserve ce qui marche.** Les pattes adaptateur et analyseurs sont petites,
+  le sweep hebdomadaire. Ce job rapportait dans un canal qui ne peut pas refuser une pull request.
+* **Le retrait étroit préserve ce qui marche.** Les jobs adaptateur et analyseurs sont petits,
   terminent en quatre-vingt-dix secondes, et gardent le retour de mutation par PR là où il est abordable.
   Retirer les trois jetterait un signal fonctionnel pour corriger un problème qui ne le concerne pas.
 
 ## Alternatives envisagées
 
-### Sharder la patte sur les fichiers changés
+### Sharder le job sur les fichiers changés
 
 Envisagée parce qu'elle ne demande aucun ADR — c'est un détail d'implémentation du « gate le diff » de
 l'ADR-0022, et la composition de plusieurs motifs `--mutate` a été vérifiée. Rejetée parce que le
@@ -108,7 +108,7 @@ suppression des gardes d'arguments, qui fait partie des défauts que la mutation
 
 ### Échantillonner un sous-ensemble borné de mutants par pull request
 
-Envisagée parce qu'un signal partiel sur une patte consultative est défendable. Rejetée parce que Stryker
+Envisagée parce qu'un signal partiel sur un job consultatif est défendable. Rejetée parce que Stryker
 n'expose aucun échantillonnage : les mutants sont générés de façon déterministe et exhaustive depuis
 l'arbre syntaxique, donc le seul moyen de borner leur nombre est de borner les *fichiers*. Sélectionner
 les fichiers changés jusqu'à un budget de mutants biaise systématiquement l'échantillon vers les petits,
@@ -117,7 +117,7 @@ le plus — ne seraient jamais couverts par pull request. Faire tourner la séle
 des survivants dans des fichiers que la pull request n'a pas touchés, ce qui n'aide le relecteur à
 décider de rien.
 
-### Exécuter une patte nocturne limitée au diff
+### Exécuter un job nocturne limité au diff
 
 Rejetée parce qu'elle n'existe pas telle que décrite : la limitation au diff a besoin du point de fork
 d'une pull request, et après un merge il n'y a plus de diff auquel se comparer. Une exécution nocturne ne
@@ -126,7 +126,7 @@ qui coûte plus cher, pas moins.
 
 ### Augmenter `timeout-minutes` au-delà de soixante
 
-Rejetée : la patte rapporterait une heure ou plus après que la pull request est prête, sur un check qui
+Rejetée : le job rapporterait une heure ou plus après que la pull request est prête, sur un check qui
 ne peut pas la bloquer. C'est le coût sans le bénéfice.
 
 ## Conséquences
@@ -136,7 +136,7 @@ ne peut pas la bloquer. C'est le coût sans le bénéfice.
 * Une heure de runner par pull request touchant le générateur, dépensée pour aucun résultat, est
   récupérée.
 * La liste des checks de la pull request se stabilise en quatre-vingt-dix secondes environ, au lieu de
-  rester suspendue à une patte qui ne rapporte jamais.
+  rester suspendue à un job qui ne rapporte jamais.
 * Le retour de mutation par PR survit là où il fonctionne — l'adaptateur et les analyseurs.
 
 ### Négatives
@@ -150,13 +150,13 @@ ne peut pas la bloquer. C'est le coût sans le bénéfice.
 ### Risques
 
 * **Le seuil que cela reporte.** `justdummies.json` porte `break: 0` parce qu'aucun score n'a été
-  mesuré ; le premier sweep complet doit publier le chiffre qui le fixera. Le jour où il le fera, la
-  patte par PR redeviendra souhaitable — et cette décision devra être revisitée plutôt que tenue pour
+  mesuré ; le premier sweep complet doit publier le chiffre qui le fixera. Le jour où il le fera, le
+  job par PR redeviendra souhaitable — et cette décision devra être revisitée plutôt que tenue pour
   acquise. Atténuation : l'action de suivi ci-dessous.
 
 ## Actions de suivi
 
-* Mettre à jour `justdummies-mutation.en.md` et sa traduction française : la matrice compte deux pattes
+* Mettre à jour `justdummies-mutation.en.md` et sa traduction française : la matrice compte deux jobs
   sur les pull requests, trois sur le sweep complet, et pourquoi.
 * Rouvrir cette décision si Stryker acquiert des motifs `mutate` limités aux lignes qui fonctionnent, ou
   si la sélection de couverture MTP (stryker-net#3629) est corrigée de sorte que `"coverage-analysis"`
@@ -168,10 +168,10 @@ ne peut pas la bloquer. C'est le coût sans le bénéfice.
 
 * ADR-0022 — Conditionner les pull requests au score de mutation du diff : la décision que celle-ci
   restreint.
-* ADR-0025 — Rendre le gate de mutation par pull request consultatif : pourquoi la patte n'a aucune
+* ADR-0025 — Rendre le gate de mutation par pull request consultatif : pourquoi le job n'a aucune
   autorité à perdre.
 * ADR-0026 — Mesurer la mutation de JustDummies contre la seule suite unitaire : la tentative précédente
-  pour rendre cette patte abordable.
+  pour rendre ce job abordable.
 * ADR-0024 — Garder les arguments publics et internes contre `null` : les gardes que `ignore-mutations`
   cesserait de tester.
 * `.github/workflows/justdummies-mutation.yml`, `build/stryker/justdummies.json`.

@@ -860,7 +860,7 @@ seulement imprécis, et aucun appel que le développeur pourrait écrire ne le r
 (§17).
 
 Et le moteur ne peut pas le savoir à l'avance. D9 lui interdit de référencer la bibliothèque, donc
-il ne peut pas demander à son parser si un motif est supporté, et réimplémenter ce contrôle
+il ne peut pas demander à son parser si un motif est pris en charge, et réimplémenter ce contrôle
 dupliquerait un parser qu'il ne voit pas et en dériverait.
 
 D'où une règle qui mérite d'être énoncée pour elle-même, puisque la ligne motif est la seule à
@@ -2042,7 +2042,7 @@ plus un `dum.json` optionnel à la racine du projet pour un défaut à l'échell
 voit aucun changement. C'est aussi la réponse à l'avertissement de masquage du §7.
 
 **Lire les gardes regex.** Laissé hors du §5.3 pour la v1.0 parce que la bibliothèque ne génère
-qu'à partir du sous-ensemble régulier du langage des motifs, et qu'un motif non supporté lève à la
+qu'à partir du sous-ensemble régulier du langage des motifs, et qu'un motif non pris en charge lève à la
 construction — ce qui rendrait le type émis entièrement inutilisable. Y revenir suppose la question
 du sous-ensemble tranchée d'abord : soit le moteur valide un motif sans référencer la bibliothèque
 (ce que D9 interdit aujourd'hui), soit la bibliothèque offre un moyen de le lui demander.
@@ -2081,8 +2081,8 @@ branchés. Les résultats ci-dessous sont ce que le harnais a affiché.
 | Les bornes complémentaires se composent | §5.3 | `.GreaterThanOrEqualTo(0).LessThanOrEqualTo(100)` et `.NonEmpty().WithMaxLength(10)` tirent tous deux |
 | Les bornes contradictoires sont rejetées deux fois | §5.3 | `ConflictingAnyConstraintException` à l'exécution, et `JD023` à la **compilation** |
 | Un generator de motif n'admet aucune autre contrainte de chaîne | §5.3 | `Any.StringMatching(...).NonEmpty()` ne compile pas — `CS1061`, `AnyPattern` n'a que `DifferentFrom`/`Except` |
-| Les regex de validation réalistes sortent du sous-ensemble supporté | §5.3 | 4 sur 5 rejetées : lookahead, limite de mot, backreference, catégorie Unicode |
-| Un motif non supporté lève à la **construction**, pas au `Generate()` | §5.3 | donc le constructeur sans paramètre émis lèverait avant qu'un `With…` puisse surcharger |
+| Les regex de validation réalistes sortent du sous-ensemble pris en charge | §5.3 | 4 sur 5 rejetées : lookahead, limite de mot, backreference, catégorie Unicode |
+| Un motif non pris en charge lève à la **construction**, pas au `Generate()` | §5.3 | donc le constructeur sans paramètre émis lèverait avant qu'un `With…` puisse surcharger |
 | Les generators de collection ne portent aucune contrainte de longueur | §5.3 | `AnyList<T>` expose `WithCount`, `WithCountBetween`, `WithMinCount`, `WithMaxCount` — pas de `WithLength` |
 | **Chaque ligne du §5.2 compile** | §5.2 | 40 déclarations, chacune affectant l'expression émise à l'`IAny<T>` du paramètre — 0 erreur, 0 warning, nullable activé, warnings-as-errors |
 | **Chaque ligne du §5.2 tient sa promesse** | §5.2 | 3 000 tirages par ligne scalaire : `NonEmpty` jamais vide, `Guid` jamais `Empty`, `Enum` uniquement des membres déclarés, `Uri().Web()` absolue http(s) |

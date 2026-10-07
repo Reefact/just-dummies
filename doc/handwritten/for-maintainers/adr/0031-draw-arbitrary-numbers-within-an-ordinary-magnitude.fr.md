@@ -37,7 +37,7 @@ formatage, ne sont jamais visitées.
 
 Les générateurs entiers partagent la même distribution — `Any.Int32()` tire sous 1e6 dans 0,06 % des cas,
 `Any.Int64()` dans 0 cas sur 5 000 — mais pas la même conséquence : un grand entier reste un entier
-ordinaire, l'arithmétique entière C# wrappe silencieusement au lieu de saturer ou de lever, `x + 1 != x`
+ordinaire, l'arithmétique entière C# déborde silencieusement au lieu de saturer ou de lever, `x + 1 != x`
 tient toujours, et un débordement d'entier dans le code testé est fréquemment un vrai défaut. Les builders
 entiers reposent en outre sur le moteur ordinal partagé, dont quatre familles de builders dépendent.
 

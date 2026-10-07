@@ -77,7 +77,7 @@ posé sur son chemin, elle est le chemin, énoncé un pas plus tôt.
 
 Cela n'affaiblit pas
 l'[ADR-0059](0059-emit-only-members-resolved-in-the-target-compilation.fr.md), et la frontière mérite
-d'être énoncée parce que c'est la première question qu'un lecteur posera. Ce record gouverne les
+d'être énoncée parce que c'est la première question qu'un lecteur posera. Cette décision gouverne les
 membres de la *bibliothèque* : il existe parce qu'un membre absent de l'asset du développeur est une
 erreur de compilation qu'il n'a pas causée et ne peut pas interpréter. Un generator pour son propre
 type de domaine n'est ni l'un ni l'autre — il l'a causée en ne l'ayant pas scaffoldé, et le message
@@ -168,6 +168,6 @@ tool le sait déjà et refuserait de le dire.
 ## Références
 
 * [ADR-0056](0056-scaffold-the-generator-once-and-hand-the-file-to-the-developer.fr.md) — le fichier est remis et jamais régénéré, ce qui explique qu'une copie ne peut que diverger.
-* [ADR-0059](0059-emit-only-members-resolved-in-the-target-compilation.fr.md) — les membres de la bibliothèque, et la frontière que ce record ne franchit pas.
+* [ADR-0059](0059-emit-only-members-resolved-in-the-target-compilation.fr.md) — les membres de la bibliothèque, et la frontière que cette décision ne franchit pas.
 * [ADR-0060](0060-seed-generators-from-constructor-guards.fr.md) — le mécanisme d'erreur de compilation que cette décision épelle comme un nom de type.
 * [ADR-0046](0046-bound-the-generators-ambition-never-its-correctness.fr.md) — borner l'ambition, jamais la correction.

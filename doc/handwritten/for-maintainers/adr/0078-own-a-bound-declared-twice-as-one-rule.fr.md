@@ -113,7 +113,7 @@ constante de catalogue et aucune ligne de table.
 
 Rejetée parce que le message de JD024 est faux dans l'ordre resserrant, où le second appel est celui qui
 rétrécit et le premier celui qui meurt. L'élargir déplacerait par ailleurs le sens d'un identifiant livré,
-ce que ce dépôt traite comme une décision à consigner et non comme un changement à faire — et le record
+ce que ce dépôt traite comme une décision à consigner et non comme un changement à faire — et l'enregistrement
 devrait plaider pour un message qui ne correspond plus à la règle.
 
 ### Signaler en sévérité information, par cohérence avec JD024

@@ -51,7 +51,7 @@ retournée. Épuiser le plafond lève une `AnyGenerationException`.
 * **Le redraw borné est l'idiome maison.** L'ADR-0012 satisfait déjà les exclusions de chaînes par un
   redraw borné : un chemin structurel rapide plus un filet borné. C'est la même forme pour la même
   raison.
-* **Le coût est négligeable.** Un pattern supporté matche à la première construction ; seuls ces coins
+* **Le coût est négligeable.** Un pattern pris en charge matche à la première construction ; seuls ces coins
   rares redessinent, et une valeur valide apparaît en une poignée de tirages. La génération n'est pas une
   boucle chaude, et `Any.StringMatching(Regex)` détient déjà un `Regex` compilé. Le plafond transforme un
   pattern que la construction ne peut jamais satisfaire en une erreur claire au lieu d'une boucle
@@ -67,13 +67,13 @@ Rejeté. Le comportement ci-dessus est ordre-dépendant, forme-dépendant, et n'
 moteur comme un contrat stable ; un modèle serait fragile et devrait être revu à chaque évolution du
 moteur — sans jamais être prouvé complet.
 
-### Refuser les patterns dégénérés comme non supportés
+### Refuser les patterns dégénérés comme non pris en charge
 
 Considéré : refuser un terme quantifié à zéro (`X{0}`) et/ou une alternative nullable sous quantificateur
 par une `UnsupportedRegexException`, en gardant la génération purement structurelle. Rejeté parce que
 détecter **chaque** divergence en amont est presque aussi dur que la modéliser — le risque étant de
 refuser des patterns valides tout en en ratant d'autres — et cela rétrécit une capacité documentée pour
-des patterns simplement inhabituels, pas hors du sous-ensemble supporté. Le redraw borné couvre toute la
+des patterns simplement inhabituels, pas hors du sous-ensemble pris en charge. Le redraw borné couvre toute la
 classe sans détecteur fragile.
 
 ## Conséquences

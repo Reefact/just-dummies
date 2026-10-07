@@ -1,4 +1,4 @@
-# ADR-0092 | Lancer chaque jambe de mutation depuis son propre projet source
+# ADR-0092 | Lancer chaque job de mutation depuis son propre projet source
 
 🌍 🇫🇷 Français (ce fichier) · 🇬🇧 [English](0092-run-every-mutation-leg-from-its-own-source-project.md)
 
@@ -46,7 +46,7 @@ l'[ADR-0025](0025-make-the-per-pull-request-mutation-gate-advisory.fr.md).
 
 ## Décision
 
-Chaque jambe de mutation s'exécute depuis le répertoire du projet qu'elle mute, aucune configuration
+Chaque job de mutation s'exécute depuis le répertoire du projet qu'il mute, aucune configuration
 Stryker ne nomme de solution, et un test de la suite d'exemples fait échouer la construction si l'une
 le fait.
 
@@ -108,7 +108,7 @@ fichier d'emblée, et abandonne là où MSBuild le construit sans broncher.
 
 * Tout score historique est périmé. Les chiffres publiés avant cette décision ont été mesurés contre
   un autre oracle et ne sont pas comparables à ce qui suit.
-* Une jambe s'éloigne d'un cran de l'invocation depuis la racine du dépôt qu'un lecteur pourrait
+* Un job s'éloigne d'un cran de l'invocation depuis la racine du dépôt qu'un lecteur pourrait
   attendre, et la raison vit dans l'en-tête du workflow plutôt que dans la commande.
 
 ### Risques
@@ -123,9 +123,9 @@ fichier d'emblée, et abandonne là où MSBuild le construit sans broncher.
 ## Actions de suivi
 
 * Rouvrir l'[ADR-0028](0028-drop-the-justdummies-generator-from-the-per-pull-request-mutation-matrix.fr.md).
-  Elle a retiré la jambe par pull request du générateur sur un coût mesuré, et ce coût l'a été avec
+  Elle a retiré le job par pull request du générateur sur un coût mesuré, et ce coût l'a été avec
   toutes les suites du dépôt jugeant chaque mutant. L'oracle en est désormais une fraction, la prémisse
-  a donc bougé et la jambe est peut-être redevenue abordable. Cette décision ne la rétablit pas : c'est
+  a donc bougé et le job est peut-être redevenu abordable. Cette décision ne le rétablit pas : c'est
   à l'ADR-0028 de se rouvrir, sur une mesure fraîche.
 * Lire le premier balayage publié après ce changement comme une nouvelle référence, et non comme une
   régression contre les anciens chiffres.
@@ -136,4 +136,4 @@ fichier d'emblée, et abandonne là où MSBuild le construit sans broncher.
 * ADR-0025 — Make the per-pull-request mutation gate advisory : pourquoi aucun score ne barre aujourd'hui.
 * ADR-0026 — Measure JustDummies mutation against the deterministic unit suite only : la décision que celle-ci rend effective.
 * ADR-0028 — Drop the JustDummies generator from the per-pull-request mutation matrix : le modèle de coût que celle-ci déplace.
-* [`workflows/justdummies-mutation.fr.md`](../workflows/justdummies-mutation.fr.md) — le câblage des jambes, et les mesures derrière ce record.
+* [`workflows/justdummies-mutation.fr.md`](../workflows/justdummies-mutation.fr.md) — le câblage des jobs, et les mesures derrière ce record.

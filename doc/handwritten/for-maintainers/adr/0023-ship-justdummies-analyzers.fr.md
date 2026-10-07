@@ -1,4 +1,4 @@
-# ADR-0023 | Fournir des analyseurs JustDummies de première partie, et garder avec eux la surface asynchrone reproductible
+# ADR-0023 | Fournir des analyseurs JustDummies maison, et garder avec eux la surface asynchrone reproductible
 
 🌍 🇫🇷 Français (ce fichier) · 🇬🇧 [English](0023-ship-justdummies-analyzers.md)
 
@@ -38,7 +38,7 @@
 
 ## Décision
 
-`JustDummies` fournit ses propres analyseurs Roslyn de première partie, dans un nouveau projet `JustDummies.Analyzers`
+`JustDummies` fournit ses propres analyseurs Roslyn, dans un nouveau projet `JustDummies.Analyzers`
 empaqueté dans le package NuGet `JustDummies` (`analyzers/dotnet/cs`), agnostique des erreurs et indépendant de
 `FirstClassErrors`, sous un schéma d'identifiants de diagnostic propre à JustDummies (`JDxxx`, en miroir de `FCExxx`).
 
@@ -55,7 +55,7 @@ une lambda `async` passée à `Any.Reproducibly`, et **JD002**, un `Task` de `An
   *ne peut pas* exprimer « ce `Task` doit être attendu » ni « cette lambda async ne doit pas se lier ici », donc un
   analyseur est l'outil légitime — pas un pis-aller, le seul mécanisme disponible. Là où le langage *peut* porter la
   règle, on le préfère ; ici il ne peut pas.
-* Un analyseur de première partie n'est pas exotique pour ce dépôt — il en livre et en teste déjà, avec un contrat de
+* Un analyseur maison n'est pas exotique pour ce dépôt — il en livre et en teste déjà, avec un contrat de
   chargement Roslyn épinglé au plancher et des règles à suivi de version. Étendre cette discipline à JustDummies
   réutilise un patron éprouvé plutôt que d'en inventer un, et garde les règles JustDummies dans le package JustDummies,
   là où est leur public.
@@ -102,7 +102,7 @@ JustDummies par la bibliothèque d'erreurs casse la frontière d'autonomie que g
   `Any.ReproduciblyAsync(…)` jeté (JD002) font tous deux échouer la build, avec un message pointant vers la correction.
 * Le point d'entrée asynchrone est nommé TAP (`ReproduciblyAsync`), donc il se lit correctement et `CS4014` couvre
   gratuitement le cas `await`-dans-une-méthode-async.
-* JustDummies acquiert une histoire d'analyseurs de première partie extensible à de futures règles, dans son propre
+* JustDummies acquiert un socle d'analyseurs maison extensible à de futures règles, dans son propre
   package, sans couplage à FirstClassErrors.
 
 ### Négatives
@@ -124,7 +124,7 @@ JustDummies par la bibliothèque d'erreurs casse la frontière d'autonomie que g
 
 ## Actions de suivi
 
-* Aucune requise pour la surface reproductible. Appliquer le même patron d'analyseur de première partie quand une
+* Aucune requise pour la surface reproductible. Appliquer le même patron d'analyseur maison quand une
   future erreur JustDummies n'est exprimable qu'à la compilation.
 * La provenance des messages de conflit d'`AnyEnum` / `AnyGuid` (issue #314) est sans rapport et non affectée.
 

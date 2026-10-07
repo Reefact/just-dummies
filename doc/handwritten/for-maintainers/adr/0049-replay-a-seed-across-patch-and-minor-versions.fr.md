@@ -21,7 +21,7 @@ tirages passent par lui.
 Il est aussi déjà garanti **à travers les target frameworks**, et cette garantie est vérifiée plutôt
 qu'affirmée : `justdummies.yml` compare octet pour octet la bannière `SEEDBATCH` que
 `tools/justdummies-check` tire de `CrossTfmSeed`, entre les assets `lib/netstandard2.0` et
-`lib/net8.0` du package, de sorte que les deux jambes ne peuvent pas diverger en silence.
+`lib/net8.0` du package, de sorte que les deux cibles ne peuvent pas diverger en silence.
 
 Ce qui n'a jamais été décidé, c'est le troisième axe : la graine `1234` doit-elle tirer les mêmes
 valeurs en `1.0.1` qu'en `1.0.0` ? Le README énonce franchement la position actuelle — *nothing is

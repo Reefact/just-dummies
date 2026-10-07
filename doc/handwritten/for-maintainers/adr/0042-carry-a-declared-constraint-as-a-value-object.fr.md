@@ -104,7 +104,7 @@ de ce genre dans ce dépôt quand rien ne peut agir dessus.
 
 ### Ajouter un analyseur vérifiant la forme des littéraux
 
-Considérée parce que le dépôt livre déjà des analyseurs de première main (ADR-0023) et en emploie un
+Considérée parce que le dépôt livre déjà des analyseurs maison (ADR-0023) et en emploie un
 là où le système de types n'atteint pas (ADR-0038).
 
 Rejetée parce que le système de types *atteint* ici. Un analyseur vérifierait qu'un littéral ressemble
@@ -182,7 +182,7 @@ signifiant moins qu'avant.
 
 * [ADR-0019](0019-split-the-justdummies-test-bed-between-example-and-property-suites.fr.md) — quelle
   suite possède la formulation d'un message.
-* [ADR-0023](0023-ship-justdummies-analyzers.fr.md) — analyseurs de première main.
+* [ADR-0023](0023-ship-justdummies-analyzers.fr.md) — analyseurs maison.
 * [ADR-0035](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0056-state-the-coding-rules-where-an-agent-can-act-on-them.fr.md) — une règle sur
   laquelle rien ne peut agir dérive.
 * [ADR-0038](0038-guard-the-recipe-versus-value-boundary-with-analyzers.fr.md) — analyseurs là où le

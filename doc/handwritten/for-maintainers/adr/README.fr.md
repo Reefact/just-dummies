@@ -148,7 +148,7 @@ que l'option existait le jour où elle compterait.
 | [ADR-0020](0020-draw-flag-enum-combinations-behind-an-opt-in.fr.md) | Tirer les combinaisons d'enums de drapeaux derrière un opt-in | Accepted | déplacé · FCE ADR-0041 |
 | [ADR-0021](0021-serialize-draws-on-a-random-source.fr.md) | Sérialiser les tirages sur une source aléatoire, et borner la reproductibilité à la séquence de tirages | Accepted | déplacé · FCE ADR-0042 |
 | [ADR-0022](0022-gate-pull-requests-on-the-mutation-score-of-the-diff.fr.md) | Conditionner les pull requests au score de mutation de ce qu'elles modifient | Accepted | adopté · FCE ADR-0043 |
-| [ADR-0023](0023-ship-justdummies-analyzers.fr.md) | Fournir des analyseurs JustDummies de première partie, et garder avec eux la surface asynchrone reproductible | Accepted | déplacé · FCE ADR-0044 |
+| [ADR-0023](0023-ship-justdummies-analyzers.fr.md) | Fournir des analyseurs JustDummies maison, et garder avec eux la surface asynchrone reproductible | Accepted | déplacé · FCE ADR-0044 |
 | [ADR-0024](0024-guard-public-and-internal-arguments-against-null.fr.md) | Garder contre le null les arguments publics et internes, imposé par une convention par réflexion | Superseded by ADR-0041 | déplacé · FCE ADR-0045 |
 | [ADR-0025](0025-make-the-per-pull-request-mutation-gate-advisory.fr.md) | Rendre la porte de mutation par pull request consultative | Accepted | adopté · FCE ADR-0046 |
 | [ADR-0026](0026-measure-justdummies-mutation-against-the-unit-suite-only.fr.md) | Mesurer la mutation de JustDummies contre la seule suite unitaire déterministe | Accepted | déplacé · FCE ADR-0047 |
@@ -177,7 +177,7 @@ que l'option existait le jour où elle compterait.
 | [ADR-0049](0049-replay-a-seed-across-patch-and-minor-versions.fr.md) | Rejouer une graine à travers les versions patch et mineures | Accepted | consigné ici |
 | [ADR-0050](0050-name-a-suppressed-rule-through-a-catalogue-constant.fr.md) | Nommer une règle supprimée par une constante de catalogue, pas par une chaîne littérale | Accepted | consigné ici |
 | [ADR-0051](0051-land-pull-requests-by-rebase.fr.md) | Intégrer les pull requests par rebase | Accepted | consigné ici |
-| [ADR-0052](0052-publish-the-jd-rules-as-a-first-party-catalogue.fr.md) | Publier les règles JD comme catalogue first-party, et y lire les descripteurs | Accepted | consigné ici |
+| [ADR-0052](0052-publish-the-jd-rules-as-a-first-party-catalogue.fr.md) | Publier les règles JD comme catalogue maison, et y lire les descripteurs | Accepted | consigné ici |
 | [ADR-0053](0053-rewrite-the-published-history-to-a-single-line.fr.md) | Réécrire l'historique publié en une seule ligne, et y porter les tags de release | Accepted | consigné ici |
 | [ADR-0054](0054-draw-only-valid-values-from-a-typed-builder.fr.md) | Ne tirer que des valeurs valides depuis un builder typé, et ne rien juger dans un pool fourni par l'appelant | Accepted | consigné ici |
 | [ADR-0055](0055-hold-the-user-documentation-to-contracts-the-build-checks.fr.md) | Tenir la documentation utilisateur à des contrats que le build vérifie | Accepted | consigné ici |
@@ -218,7 +218,7 @@ que l'option existait le jour où elle compterait.
 <<<<<<< HEAD
 | [ADR-0090](0090-exempt-dependabot-from-the-contributor-agreement.fr.md) | Exempter Dependabot de l'accord de contribution, uniquement sur son propre commit signé | Accepted | consigné ici |
 | [ADR-0091](0091-draw-a-half-from-the-values-it-can-represent.fr.md) | Tirer un `Half` parmi les valeurs qu'il sait représenter | Accepted | consigné ici |
-| [ADR-0092](0092-run-every-mutation-leg-from-its-own-source-project.fr.md) | Lancer chaque jambe de mutation depuis son propre projet source | Accepted | consigné ici |
+| [ADR-0092](0092-run-every-mutation-leg-from-its-own-source-project.fr.md) | Lancer chaque job de mutation depuis son propre projet source | Accepted | consigné ici |
 | [ADR-0093](0093-publish-mutation-statuses-not-a-score.fr.md) | Publier des statuts de mutation, pas un score | Accepted | consigné ici |
 | [ADR-0094](0094-lift-a-nullable-value-type-rather-than-deriving-it.fr.md) | Lever un type valeur nullable plutôt que le dériver | Accepted | consigné ici |
 | [ADR-0095](0095-read-the-assigned-null-check-as-a-guard-idiom-too.fr.md) | Lire aussi le null-check assigné comme un idiome de garde | Accepted | consigné ici |

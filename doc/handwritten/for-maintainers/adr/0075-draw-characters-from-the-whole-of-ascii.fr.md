@@ -82,7 +82,7 @@ code environnant exige, et le générateur fournit le reste arbitrairement.
 n'est pas un cran d'ambition de plus, c'est un autre problème : le vivier dépendrait de la version
 d'Unicode du runtime, ce qui met en péril la garantie de graine entre frameworks cibles, et les substituts
 font qu'un `char` cesse d'être un caractère. S'arrêter à 128 garde tout tirage explicable, reproductible sur
-chaque jambe, et exempt des questions de marques combinantes et de normalisation qu'aucune bibliothèque de
+chaque cible, et exempt des questions de marques combinantes et de normalisation qu'aucune bibliothèque de
 support de test ne devrait trancher. Au-delà, c'est un alphabet fourni par l'appelant — `WithChars`,
 `OneOf` — qui est la forme honnête pour le texte qu'un domaine emploie vraiment.
 

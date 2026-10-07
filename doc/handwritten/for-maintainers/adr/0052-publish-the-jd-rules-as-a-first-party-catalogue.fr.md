@@ -1,4 +1,4 @@
-# ADR-0052 | Publier les règles JD comme catalogue first-party, et y lire les descripteurs
+# ADR-0052 | Publier les règles JD comme catalogue maison, et y lire les descripteurs
 
 🌍 🇬🇧 [English](0052-publish-the-jd-rules-as-a-first-party-catalogue.md) · 🇫🇷 Français (ce fichier)
 
@@ -42,7 +42,7 @@ règles que JustDummies livre, et quand une règle est retirée ou recatégoris�
 de compiler et ne silence plus rien. Publier le catalogue est le seul moyen de rendre cette panne
 visible à celui à qui elle arrive.
 
-**La boucle est la raison d'être d'un catalogue first-party.** Le descripteur lisant le catalogue, la
+**La boucle est la raison d'être d'un catalogue maison.** Le descripteur lisant le catalogue, la
 règle que l'analyseur *rapporte* et la règle qu'un consommateur *silencie* sont la même valeur par
 construction. La catégorie surtout : c'est une chaîne que seul ce produit publie, que rien ne vérifie,
 et « par diligence » est précisément ce qui échoue.

@@ -90,7 +90,7 @@ l'échec que cette décision existe pour empêcher.
 
 ### S'appuyer sur un analyseur plutôt qu'un test
 
-Considérée parce que le dépôt livre des analyseurs de première main (ADR-0023) et en emploie un là où le système de
+Considérée parce que le dépôt livre des analyseurs maison (ADR-0023) et en emploie un là où le système de
 types ne peut pas exprimer une règle (ADR-0038).
 
 Rejetée parce que la règle porte sur les types propres de la bibliothèque, non sur la façon dont un consommateur
@@ -140,7 +140,7 @@ d'entrée public, là où ces types font délibérément passer la construction 
 ## Références
 
 * [ADR-0003](0003-host-dummies-as-a-standalone-package.fr.md) — JustDummies ne dépend de rien dans ce dépôt.
-* [ADR-0023](0023-ship-justdummies-analyzers.fr.md) — analyseurs de première main.
+* [ADR-0023](0023-ship-justdummies-analyzers.fr.md) — analyseurs maison.
 * [ADR-0024](0024-guard-public-and-internal-arguments-against-null.fr.md) — une convention qui découvre les membres
   au lieu de les nommer.
 * [ADR-0035](https://github.com/Reefact/first-class-errors/blob/main/doc/handwritten/for-maintainers/adr/0056-state-the-coding-rules-where-an-agent-can-act-on-them.fr.md) — une règle sur laquelle rien ne peut

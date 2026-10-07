@@ -34,7 +34,7 @@
   (`numbers.NonEmpty();`) se lit comme une mutation et perd l'invariant déclaré. Vérifié : aucun diagnostic
   compilateur, CA ou IDE ne se déclenche, même en `AnalysisLevel=latest-all`, une invocation étant une instruction
   d'expression légale.
-* L'ADR-0023 a établi les analyseurs JustDummies de première partie comme la réponse du dépôt à une faute que le
+* L'ADR-0023 a établi les analyseurs JustDummies maison comme la réponse du dépôt à une faute que le
   système de types ne peut pas exprimer, et son propre suivi invite à appliquer ce motif aux fautes futures de ce
   genre. L'ADR-0014 trace la frontière en sens inverse pour les conflits de contraintes : le système de types
   porte ce qui est structurel, l'analyseur porte ce qu'il ne peut pas porter.
@@ -42,7 +42,7 @@
 
 ## Décision
 
-La frontière recette/valeur est gardée par des analyseurs JustDummies de première partie dans toute position qui
+La frontière recette/valeur est gardée par des analyseurs JustDummies maison dans toute position qui
 accepte le type statique propre d'un générateur, position que la suppression des conversions implicites n'a pas
 fermée.
 
@@ -148,7 +148,7 @@ que si un humain lit la valeur.
 
 * ADR-0006 — matérialiser les dummies uniquement par `Generate()` ; la décision que celui-ci laisse debout et dont
   il corrige l'affirmation de risque résiduel.
-* ADR-0023 — fournir des analyseurs JustDummies de première partie ; le motif que la présente décision applique, et
+* ADR-0023 — fournir des analyseurs JustDummies maison ; le motif que la présente décision applique, et
   la source du grain de sévérité (« un vert silencieux mérite de faire échouer la compilation »).
 * ADR-0014 — appliquer les conflits `Any` structurels à la compilation, ceux dépendant des valeurs à l'exécution ;
   le même raisonnement « l'application suit ce que le mécanisme peut savoir », appliqué à la surface de

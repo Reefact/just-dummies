@@ -30,7 +30,7 @@ Les trois bancs se répartissent ainsi, et aucun ne remplace un autre :
 | Banc | Demande |
 |---|---|
 | `GuardCorpus` + `GuardedScaffoldsHoldTests` | *le moteur traite-t-il **ce** domaine correctement ?* — une personne a choisi chacun, et chacun est une question |
-| Les jambes de mutation de [`justdummies-mutation`](justdummies-mutation.fr.md) | *y a-t-il du code que rien n'affirme ?* — des cellules qu'aucun test n'a visitées |
+| Les jobs de mutation de [`justdummies-mutation`](justdummies-mutation.fr.md) | *y a-t-il du code que rien n'affirme ?* — des cellules qu'aucun test n'a visitées |
 | Ce balayage | *quelque chose sort-il faux dans un produit large et uniforme ?* — personne n'en a choisi aucun |
 
 ## Les sept règles
@@ -144,7 +144,7 @@ résidu du §9, mesuré.
 * **À la demande**, par `workflow_dispatch`.
 
 Jamais sur une pull request, pour la raison que l'[ADR-0028](../adr/0028-drop-the-justdummies-generator-from-the-per-pull-request-mutation-matrix.fr.md)
-a donnée à la jambe de mutation du générateur : le coût suit la taille du produit, pas celle du diff.
+a donnée au job de mutation du générateur : le coût suit la taille du produit, pas celle du diff.
 
 **Ce qui tourne à chaque build à la place**, c'est la tranche couvrante — le plus petit sous-ensemble
 glouton par préfixe qui touche encore chaque valeur d'axe, environ quatre-vingt-quinze formes — comme une
@@ -156,7 +156,7 @@ est précisément comme les autres bancs de ce dépôt se sont cassés.
 
 Le workflow ajoute exactement une chose à un run de test ordinaire : la variable `JUSTDUMMIES_SWEEP`.
 Sans elle le balayage complet est skippé et la tranche tourne quand même, donc
-`dotnet test JustDummies.sln` reste rapide et la jambe de mutation du générateur ne paie rien pour
+`dotnet test JustDummies.sln` reste rapide et le job de mutation du générateur ne paie rien pour
 l'existence du balayage.
 
 ```

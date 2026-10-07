@@ -333,6 +333,35 @@ public sealed class CollectionProperties {
             .QuickCheckThrowOnFailure();
     }
 
+    [Fact(DisplayName = "A pin inside the domain never lets an open count outgrow it, with or without a comparer.")]
+    public void APinInsideTheDomainNeverLetsAnOpenCountOutgrowIt() {
+        Gen<(int Pool, int Pinned, bool WithComparer, int Shape)> cases =
+            from pool in Gen.Choose(1, 4)
+            from pinned in Gen.Choose(0, pool - 1)
+            from withComparer in Gen.Elements(false, true)
+            from shape in Gen.Choose(0, 2)
+            select (Pool: pool, Pinned: pinned, WithComparer: withComparer, Shape: shape);
+
+        Prop.ForAll(cases.ToArbitrary(),
+                    testCase => {
+                        // Issue #213: under a comparer every pin was credited as outside the domain, so the count draw
+                        // could ask for one more distinct value than exists, and failed on the seeds that landed there.
+                        // The comparer is the default one on purpose: it changes nothing but its own presence.
+                        AnyInt32               element  = Any.Int32().Between(0, testCase.Pool - 1);
+                        IEqualityComparer<int> comparer = EqualityComparer<int>.Default;
+
+                        return testCase.Shape switch {
+                            0 => Expect.EveryDraw((testCase.WithComparer ? Any.SetOf(element, comparer) : Any.SetOf(element)).Containing(testCase.Pinned),
+                                                  set => set.Count <= testCase.Pool && set.Contains(testCase.Pinned)),
+                            1 => Expect.EveryDraw((testCase.WithComparer ? Any.ListOf(element).Distinct(comparer) : Any.ListOf(element).Distinct()).Containing(testCase.Pinned),
+                                                  list => list.Count <= testCase.Pool && list.Distinct().Count() == list.Count && list.Contains(testCase.Pinned)),
+                            _ => Expect.EveryDraw((testCase.WithComparer ? Any.DictionaryOf(element, Any.Boolean(), comparer) : Any.DictionaryOf(element, Any.Boolean())).ContainingKey(testCase.Pinned),
+                                                  dictionary => dictionary.Count <= testCase.Pool && dictionary.ContainsKey(testCase.Pinned))
+                        };
+                    })
+            .QuickCheckThrowOnFailure();
+    }
+
     [Fact(DisplayName = "A generated sequence is fully materialized: enumerating it twice yields the same elements.")]
     public void SequenceIsFullyMaterialized() {
         Prop.ForAll(Generators.Count(30).ToArbitrary(),

@@ -425,6 +425,24 @@ public sealed class AnyCollectionTests {
         Check.ThatCode(() => Any.SetOf(Any.Int32().OneOf(1, 2), modTen).Containing(12).WithCount(3).Generate()).Throws<AnyGenerationException>();
     }
 
+    [Fact(DisplayName = "An open count under a comparer never asks for more distinct values than the domain holds.")]
+    public void AnOpenCountUnderAComparerStaysWithinTheDomain() {
+        // Issue #213, at the seeds it was reported on: the pin is inside the domain, but under a comparer it was
+        // credited as outside, so the count draw reached one past the domain and the fill ran out of values.
+        using (Any.UseSeed(1)) {
+            Check.That(Any.SetOf(Any.Boolean(), EqualityComparer<bool>.Default).Containing(true).Generate()).Contains(true);
+        }
+        using (Any.UseSeed(6)) {
+            Check.That(Any.SetOf(Any.String().OneOf("a", "b", "c"), StringComparer.OrdinalIgnoreCase).Containing("a").Generate()).Contains("a");
+        }
+
+        // A pin outside the domain by value that the comparer merges back (12 ≡ 2 mod 10) is not credited either:
+        // nothing proves it extends the domain, so the open count stays within what the generator supplies.
+        for (int i = 0; i < SampleCount; i++) {
+            Check.That(Any.SetOf(Any.Int32().OneOf(1, 2), new ModuloComparer(10)).Containing(12).Generate().Count).IsStrictlyLessThan(3);
+        }
+    }
+
     [Fact(DisplayName = "The eager perimeter reaches every finite generator: decimal, floating-point and 128-bit allow-lists gate distinct collections too.")]
     public void FiniteScalarGeneratorsGateEagerly() {
         // A finite allow-list or a narrow range over decimal, double, single or Int128 now advertises its cardinality,

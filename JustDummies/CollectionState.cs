@@ -295,15 +295,32 @@ internal sealed class CollectionState<T> {
     }
 
     private int? CardinalityCap() {
-        // The effective ceiling is the generator's own cardinality plus the values pinned outside its domain, which
-        // fill their own slots without drawing on it — so a distinct collection over a small domain can still reach
-        // the size those extra values allow. Guard the cast: a domain wider than int cannot cap an int count anyway,
+        // The effective ceiling is the generator's own cardinality plus the values certainly pinned outside its domain,
+        // which fill their own slots without drawing on it — so a distinct collection over a small domain can still
+        // reach the size those extra values allow. Guard the cast: a domain wider than int cannot cap an int count anyway,
         // and once the generator's cardinality is int-bounded the add stays within long.
         if (_itemCardinality is not long cardinality || cardinality > int.MaxValue) { return null; }
 
-        long effective = cardinality + FixedOutsideCount();
+        long effective = cardinality + FixedCertainlyOutsideCount();
 
         return effective <= int.MaxValue ? (int)effective : null;
+    }
+
+    /// <summary>
+    ///     The pinned values that certainly extend the domain — the lower bound the count draw needs, where the refusal
+    ///     needs the upper one (<see cref="FixedOutsideCount" />). Counting a pin already inside the domain would let
+    ///     the draw ask for one more distinct value than exists, and fail on whichever seeds land on it.
+    /// </summary>
+    /// <remarks>
+    ///     Under a custom comparer no pin is certain either way: the hint answers membership under the default one, so
+    ///     a stricter comparer can split a value it calls inside and a coarser one merge a value it calls outside. None
+    ///     is credited, and the draw never asks for more than the generator itself can supply — a declared floor above
+    ///     that still lifts the count (<see cref="CountSpec.Resolve" />).
+    /// </remarks>
+    private int FixedCertainlyOutsideCount() {
+        if (_fixedContaining.Count == 0 || _comparer is not null || _item is not ICardinalityHint<T> hint) { return 0; }
+
+        return _fixedContaining.Count(value => !hint.Contains(value));
     }
 
     private int FixedOutsideCount() {

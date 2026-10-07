@@ -60,7 +60,7 @@ Ces cinq fabriques sont absentes en deçà parce que les **types** le sont : `Da
 `Int128`, `UInt128` et `Half` sont arrivés après `netstandard2.0`. Rien n'est émulé, et c'est
 pourquoi une valeur tirée sur l'un ou l'autre asset est le vrai type plutôt qu'un substitut.
 
-Le plancher .NET Framework supporté est **4.7.2**, exercé en CI contre l'asset `netstandard2.0` que
+Le plancher .NET Framework pris en charge est **4.7.2**, exercé en CI contre l'asset `netstandard2.0` que
 les consommateurs .NET Framework chargent réellement
 ([ADR-0007](../../for-maintainers/adr/0007-floor-the-library-on-net-framework-4-7-2.fr.md)).
 

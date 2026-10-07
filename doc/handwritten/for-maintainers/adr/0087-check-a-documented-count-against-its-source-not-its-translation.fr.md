@@ -158,7 +158,7 @@ documentation en la rendant moins informative échange le défaut contre une pag
 ## Actions de suivi
 
 * Examiner si d'autres faits que le code possède et que la prose répète — le plancher de framework
-  supporté, le nombre de paquets publiés — méritent le même traitement.
+  pris en charge, le nombre de paquets publiés — méritent le même traitement.
 * Le journal de migration consigne `tools/analyzer-count-check` comme valant d'être réintroduit si le
   README venait à annoncer le décompte. Il l'annonce, et l'invariant est de retour sous une autre
   forme ; le journal reste tel qu'écrit.

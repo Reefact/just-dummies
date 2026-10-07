@@ -10,14 +10,14 @@
 ## Contexte
 
 Ce dépôt porte **83 attributs `[SuppressMessage]`**, et aucun `#pragma warning disable` : l'attribut est
-la façon dont une règle est silenciée ici. Chacun nomme sa règle par deux chaînes littérales — une
+la façon dont une règle est supprimée ici. Chacun nomme sa règle par deux chaînes littérales — une
 catégorie et un identifiant — que rien ne vérifie.
 
 Ces littéraux ne sont pas fragiles de la façon évidente. Un identifiant mal orthographié laisse la
 règle active, le diagnostic se déclenche, et le cliquet des warnings de la CI en fait une erreur : cet
 échec est bruyant. Ce qui est silencieux, c'est le cas inverse. Quand un éditeur renomme ou retire une
-règle, l'attribut continue de compiler, ne silence plus rien, et aucun build ne le dit. Les suppressions
-mortes s'accumulent, et le code prétend silencier ce qu'il ne silence plus.
+règle, l'attribut continue de compiler, ne supprime plus rien, et aucun build ne le dit. Les suppressions
+mortes s'accumulent, et le code prétend supprimer ce qu'il ne supprime plus.
 
 L'exposition est concentrée plutôt que diffuse : **13 règles distinctes couvrent 67 des 83**
 suppressions — `S3267` à elle seule apparaît 14 fois, `S107` 9, `S2436`, `S2325` et `CA1822` 7 chacune.

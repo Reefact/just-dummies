@@ -135,7 +135,7 @@ que sur l'asset `net8.0`. Tout le reste est disponible partout.
 
 ### Cela fonctionne-t-il sur .NET Framework ?
 
-Oui. Le plancher supporté est **.NET Framework 4.7.2**, via l'asset `netstandard2.0`, et la CI y
+Oui. Le plancher pris en charge est **.NET Framework 4.7.2**, via l'asset `netstandard2.0`, et la CI y
 exécute les suites
 ([ADR-0007](../../for-maintainers/adr/0007-floor-the-library-on-net-framework-4-7-2.fr.md)).
 

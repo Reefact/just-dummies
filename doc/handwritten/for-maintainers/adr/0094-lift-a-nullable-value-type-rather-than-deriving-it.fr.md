@@ -35,7 +35,7 @@ Rien dans la bibliothèque n'était faux à aucun moment : le repli fait ce qu'i
 générateur qui annonce ne rien savoir. Ce qui était faux, c'était de scaffolder une chaîne dont le
 seul dénouement possible est ce repli, sur un domaine qui admet manifestement des valeurs — la
 défaillance silencieuse que l'[ADR-0083](0083-block-compilation-on-a-guard-the-engine-cannot-vouch-for.fr.md)
-existe pour empêcher, arrivée par une route que ce record ne couvre pas.
+existe pour empêcher, arrivée par une route que cette décision ne couvre pas.
 
 ## Décision
 

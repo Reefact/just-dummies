@@ -111,7 +111,7 @@ réelle.
 * La posture de test boîte noire délibérée est relâchée : les internes de la bibliothèque sont visibles pour la suite
   de contrats.
 * Un petit volume permanent de code de garde est réparti sur la surface publique et interne.
-* Le test-convention utilise des métadonnées de nullabilité par réflexion .NET 6+, donc il ne tourne que sur la patte
+* Le test-convention utilise des métadonnées de nullabilité par réflexion .NET 6+, donc il ne tourne que sur la cible
   moderne et est exclu du build du plancher net472 ; les gardes qu'il impose sont, elles, en netstandard2.0.
 
 ### Risques

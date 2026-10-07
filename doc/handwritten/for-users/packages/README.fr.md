@@ -73,7 +73,7 @@ pas en deçà — `DateOnly`, `TimeOnly`, `Int128`, `UInt128` et `Half`. Un proj
 au-delà résout cet asset et obtient ces fabriques ; un projet en deçà résout l'asset
 `netstandard2.0`, où elles sont simplement absentes.
 
-Le plancher .NET Framework supporté est **4.7.2**, et la CI y exécute les suites
+Le plancher .NET Framework pris en charge est **4.7.2**, et la CI y exécute les suites
 ([ADR-0007](../../for-maintainers/adr/0007-floor-the-library-on-net-framework-4-7-2.fr.md)).
 
 ## Une note sur la stabilité

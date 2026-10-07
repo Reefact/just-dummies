@@ -18,7 +18,7 @@ mal : il **refuse de se charger**, avec `CS8032`, et toutes ses règles cessent 
 se déclencher. Rien dans un build ordinaire ne l'attrape : `ci` construit les analyseurs via une
 `ProjectReference` sous le SDK moderne, ce qui n'est pas la façon dont un consommateur les
 rencontre. Ce job est le seul endroit où l'artefact livré est chargé comme un consommateur le
-charge : **depuis le package, par le plus vieux compilateur qu'on supporte**.
+charge : **depuis le package, par le plus vieux compilateur qu'on prend en charge**.
 
 Le plancher est `4.8.0` — Roslyn 4.8, c'est-à-dire Visual Studio 2022 17.8 / le SDK .NET 8 —
 déclaré une seule fois comme `RoslynFloorVersion` dans

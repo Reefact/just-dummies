@@ -12,7 +12,7 @@
 
 JustDummies compose des générateurs de types différents en objets plus larges au moyen de `Any.Combine`, en préservant la validation du domaine par les constructeurs sans recourir à la réflexion.
 
-C# ne dispose pas de génériques variadiques hétérogènes ; chaque arité supportée exige donc une surcharge publique distincte. Des arités trop faibles imposent des compositions imbriquées ou des tuples positionnels pour les constructeurs plus larges, tandis qu'une surface illimitée créerait une API et une documentation répétitives pour une valeur décroissante.
+C# ne dispose pas de génériques variadiques hétérogènes ; chaque arité prise en charge exige donc une surcharge publique distincte. Des arités trop faibles imposent des compositions imbriquées ou des tuples positionnels pour les constructeurs plus larges, tandis qu'une surface illimitée créerait une API et une documentation répétitives pour une valeur décroissante.
 
 Des constructeurs très larges peuvent également signaler l'absence de concepts intermédiaires dans le domaine.
 
@@ -68,7 +68,7 @@ Envisagé car cette forme est naturellement variadique. Rejeté parce qu'elle ne
 
 ## Actions de suivi
 
-* Rendre explicite la plage d'arités supportée dans la documentation de JustDummies.
+* Rendre explicite la plage d'arités prise en charge dans la documentation de JustDummies.
 * Étudier séparément une composition variadique homogène si un cas réel apparaît.
 
 ## Références

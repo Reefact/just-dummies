@@ -68,7 +68,7 @@ précisément la propriété que la reproductibilité de la bibliothèque existe
 ##### Un second constructeur prenant un `AnyContext`
 
 Considérée parce qu'elle referme le manque pour un développeur travaillant avec `Any.WithSeed`, qui
-est une façon supportée d'utiliser la bibliothèque.
+est une façon prise en charge d'utiliser la bibliothèque.
 
 Écartée pour la v1.0 parce que `AnyContext` ne reflète qu'une partie de la façade — le second chemin
 ne saurait pas résoudre les paramètres collection ni composés — et parce que la surcharge par

@@ -102,7 +102,7 @@ string currency = Any.ElementOf(currencies).Generate();
 
 Deux surcharges existent, pour `IReadOnlyList<T>` et `IEnumerable<T>`. Le compilateur choisit la plus
 spécifique dès que le type le permet, car une liste s'indexe tandis qu'une séquence générale doit
-être parcourue ; les deux sont supportées pour qu'une méthode utilitaire à `yield` ou une requête
+être parcourue ; les deux sont prises en charge pour qu'une méthode utilitaire à `yield` ou une requête
 LINQ fonctionne sans `.ToList()` sur le site d'appel.
 
 ```csharp

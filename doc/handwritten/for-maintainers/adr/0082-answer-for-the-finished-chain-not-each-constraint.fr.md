@@ -93,7 +93,7 @@ directement, en tirant depuis ce qui a été émis.
 ##### Laisser la composition en l'état et laisser les analyzers en signaler le résultat
 
 Envisagée parce que l'ADR-0058 fait déjà analyser le fichier scaffoldé, et parce qu'un diagnostic dans
-l'éditeur du développeur est un vrai signal délivré à un vrai moment.
+l'éditeur du développeur est un vrai signal livré à un vrai moment.
 
 Rejetée sur la mesure. Quatre des cinq formes ne lèvent rien du tout, donc le filet attrape une partie
 de la classe et ne dit rien du reste ; et là où il se déclenche, il se déclenche sur l'écran du

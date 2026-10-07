@@ -16,7 +16,7 @@ aurait-il remarqué quoi que ce soit si cette ligne avait été fausse ? »*.
 [Stryker.NET](https://stryker-mutator.io/docs/stryker-net/introduction/) réécrit
 la bibliothèque un petit changement à la fois — inverser une comparaison,
 supprimer une instruction, renvoyer l'autre constante, retirer un bloc —, la
-rebuilde, et relance la suite de tests contre chaque réécriture. Un **mutant** sur
+reconstruit, et relance la suite de tests contre chaque réécriture. Un **mutant** sur
 lequel la suite passe encore est un **survivant** : un comportement que le code a
 et que rien n'affirme. Un mutant tué, c'est un test qui fait son travail.
 
@@ -114,7 +114,7 @@ construction si un champ `solution` revient.
 
 ### `changed` — le diff, sur chaque pull request
 
-Une patte de matrice par composant dans le périmètre par PR. Chaque patte :
+Un job de matrice par composant dans le périmètre par PR. Chaque job :
 
 1. Fait un checkout avec **`fetch-depth: 0`** — le `--since` de Stryker diffe
    contre un commit, l'historique doit donc être là.
@@ -125,30 +125,30 @@ Une patte de matrice par composant dans le périmètre par PR. Chaque patte :
 3. Lance Stryker avec `--since:<point de fourche>`, de sorte que seuls les mutants
    **des fichiers touchés par cette pull request** sont testés.
 4. Rend les mutants survivants — statut, fichier, ligne, nature de la réécriture —
-   dans le résumé du run, pour qu'une patte en échec se diagnostique sans quitter
+   dans le résumé du run, pour qu'un job en échec se diagnostique sans quitter
    la page du run.
 5. Téléverse les rapports HTML et JSON en artefact — `if: always()`, parce que la
    vue HTML montre chaque survivant *dans sa source*, ce que le tableau de résumé
    ne peut pas faire.
 
-Une patte dont la pull request n'a pas touché le projet ne sélectionne aucun
+Un job dont la pull request n'a pas touché le projet ne sélectionne aucun
 mutant, rapporte *« unable to calculate a mutation score »*, et sort en 0. C'est
 un succès — et c'est le cas courant.
 
 ### `gate` — le check consultatif unique
 
-Une matrice produit un check par patte. `gate` les regroupe sous un nom de check
+Une matrice produit un check par job. `gate` les regroupe sous un nom de check
 stable — **`JustDummies mutation gate`** — pour que la protection de branche ait
-une seule entrée à viser, au lieu de redéclarer les noms de pattes à chaque
+une seule entrée à viser, au lieu de redéclarer les noms de jobs à chaque
 changement de matrice.
 
 Il est **consultatif**
 ([ADR-0025](../adr/0025-make-the-per-pull-request-mutation-gate-advisory.fr.md)) :
-il rapporte l'agrégat des pattes de diff mais **ne fait jamais échouer la pull
-request**. Un vrai échec de patte est remonté en `::warning::` à investiguer, et
+il rapporte l'agrégat des jobs de diff mais **ne fait jamais échouer la pull
+request**. Un vrai échec de job est remonté en `::warning::` à investiguer, et
 un run annulé par un push qui le supplante est traité comme du bruit, pas comme un
-échec. Il s'exécute en `if: always()` pour rapporter après une patte en échec *ou
-annulée* plutôt que d'être sauté. Le niveau imposé est le balayage `full`
+échec. Il s'exécute en `if: always()` pour rapporter après un job en échec *ou
+annulé* plutôt que d'être sauté. Le niveau imposé est le balayage `full`
 hebdomadaire, pas ce check.
 
 ### `full` — le balayage hebdomadaire
@@ -160,20 +160,20 @@ publier une tendance, pas de faire virer `main` au rouge un lundi matin sur du c
 que personne n'a touché. Lisez-le dans le rapport HTML téléversé.
 
 **Le seul point où ce workflow diffère d'un barrage à matrice pleine : la matrice
-par PR compte deux pattes, pas quatre.** Le générateur et le moteur du scaffolder
+par PR compte deux jobs, pas quatre.** Le générateur et le moteur du scaffolder
 sont balayés chaque semaine mais **ne sont pas** mutés par pull request
 ([ADR-0028](../adr/0028-drop-the-justdummies-generator-from-the-per-pull-request-mutation-matrix.fr.md)).
 Comme `--since` sélectionne par **fichier** changé et non par ligne changée, un
 diff d'une centaine de lignes touchant l'une des grosses sources du générateur
 entraîne ce fichier entier : mesuré à 844 mutants, encore en cours après une
 heure, sans produire aucun score. Ce n'est pas un défaut de réglage — chaque
-levier exposé par Stryker plafonne vers −36 % là où une telle patte aurait besoin
+levier exposé par Stryker plafonne vers −36 % là où un tel job aurait besoin
 de −95 %, le sharding ne peut pas descendre sous un fichier, et les motifs
 `mutate` limités aux lignes ne sélectionnent rien. Le moteur est absent sur la même
 arithmétique plutôt que sur un second argument : `Guards.cs` fait à lui seul
-1580 lignes des 1616 mutants que sa patte teste, et une pull request ici touche
+1580 lignes des 1616 mutants que son job teste, et une pull request ici touche
 d'ordinaire le lecteur de gardes. L'adaptateur et les analyseurs sont petits,
-terminent en quatre-vingt-dix secondes environ, et gardent leur patte.
+terminent en quatre-vingt-dix secondes environ, et gardent leur job.
 
 ## Deux réglages qui n'en sont pas
 
@@ -222,7 +222,7 @@ l'[ADR-0028](../adr/0028-drop-the-justdummies-generator-from-the-per-pull-reques
 ## Le modèle de coût, et pourquoi le barrage est cantonné au diff
 
 **Une exécution complète de la suite de tests du composant par mutant**, plus
-environ deux minutes de coût fixe par patte (analyse de la solution, build,
+environ deux minutes de coût fixe par job (analyse de la solution, build,
 exécution initiale des tests, génération des mutants).
 
 `JustDummies` est le plus gros composant ici — quelques milliers de mutants — et
@@ -269,7 +269,7 @@ l'heure, et **aucun score n'a été mesuré pour elle**. Plutôt que d'inventer 
 chiffre, [`justdummies.json`](../../../../build/stryker/justdummies.json) met
 `break` à **0** — le barrage sur le score est coupé pour ce seul composant.
 
-C'est délibéré et c'est temporaire. La patte s'exécute toujours, échoue toujours
+C'est délibéré et c'est temporaire. Le job s'exécute toujours, échoue toujours
 sur un build cassé ou une suite en échec, et liste toujours ses mutants survivants
 dans le résumé du run ; ce qu'elle ne fait pas encore, c'est refuser une pull
 request sur un score.
@@ -311,7 +311,7 @@ suivi).
 `JustDummies.Xunit` n'appelle pas cette réserve : elle est assez petite pour que
 sa barre vienne d'un balayage complet comme les autres, et elle barre normalement.
 
-La patte des analyseurs part elle aussi avec `break` à **0**, pour une autre
+Le job des analyseurs part lui aussi avec `break` à **0**, pour une autre
 raison : ses survivants résiduels sont des mutants d'infrastructure d'analyseur et
 de chaînes de descripteurs — elle rapporte donc au lieu de bloquer
 ([ADR-0023](../adr/0023-ship-justdummies-analyzers.fr.md)).
@@ -382,7 +382,7 @@ mode d'emploi qui occupait cette place le décrivait au futur :
   de compilation au lieu d'être testés — c'est dans le compte du log de run que
   cela se verrait.
 - **`if: always()` sur `gate` est porteur.** Retirez-le et `gate` est sauté dès
-  qu'une patte échoue ou est annulée, donc il ne rapporte jamais l'agrégat —
+  qu'un job échoue ou est annulé, donc il ne rapporte jamais l'agrégat —
   l'avertissement consultatif
   ([ADR-0025](../adr/0025-make-the-per-pull-request-mutation-gate-advisory.fr.md))
   serait silencieusement perdu exactement quand il y a quelque chose à dire.

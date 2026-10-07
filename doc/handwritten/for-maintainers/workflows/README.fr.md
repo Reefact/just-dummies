@@ -50,7 +50,7 @@ les workflows tels qu'ils sont, pas reprise sur parole :
   un plafond — tous sauf celui de `contributor-agreement`, qui n'en pose aucun.
   Chacun est réglé à quelques fois la durée observée, avec un commentaire à côté.
 - **`concurrency` annule les runs supplantés.** Pousser deux fois sur la même
-  branche ou la même PR annule le run en vol. La seule exception est `release`, qui
+  branche ou la même PR annule le run en cours. La seule exception est `release`, qui
   met `cancel-in-progress: false` — on ne veut jamais annuler une publication à
   moitié faite.
 - **Les scanners de sécurité tournent aussi chaque semaine.** `codeql` et
@@ -72,11 +72,11 @@ les workflows tels qu'ils sont, pas reprise sur parole :
 
 | Workflow | Rôle |
 | --- | --- |
-| `ci` | Build et tests de la solution sur Linux et Windows, avec couverture, plus la patte du plancher .NET Framework 4.7.2. Le barrage principal. |
-| `justdummies` | Prouve que les assets `netstandard2.0` et `net8.0` packagés se comportent bien sur les runtimes qui les chargent réellement — la patte que le projet de tests net10 ne peut pas exercer. |
+| `ci` | Build et tests de la solution sur Linux et Windows, avec couverture, plus le job du plancher .NET Framework 4.7.2. Le barrage principal. |
+| `justdummies` | Prouve que les assets `netstandard2.0` et `net8.0` packagés se comportent bien sur les runtimes qui les chargent réellement — le job que le projet de tests net10 ne peut pas exercer. |
 | [`justdummies-mutation`](justdummies-mutation.fr.md) | Tests de mutation des trois composants avec Stryker.NET — un check consultatif sur ce qu'une PR change, plus le balayage complet hebdomadaire. Publie des comptes par statut, jamais un score (ADR-0093). |
 | [`genany-sweep`](genany-sweep.fr.md) | Hebdomadaire : le balayage génératif du moteur de scaffolding — ~3 600 domaines gardés issus d'un produit d'axes déclaré, chacun scaffoldé, compilé, analysé et tiré. L'instrument qui trouve des défauts ; une tranche couvrante tourne à chaque build. |
-| [`analyzers`](analyzers.fr.md) | Charge les analyseurs embarqués depuis l'artefact packagé sous le plus vieux compilateur supporté (Roslyn 4.8), ce qu'un build ordinaire ne fait jamais. |
+| [`analyzers`](analyzers.fr.md) | Charge les analyseurs embarqués depuis l'artefact packagé sous le plus vieux compilateur pris en charge (Roslyn 4.8), ce qu'un build ordinaire ne fait jamais. |
 | [`sonar`](sonar.fr.md) | Analyse SonarQube Cloud — quality gate et remontée de couverture. |
 | [`sonar-profile`](sonar-profile.fr.md) | Hebdomadaire : échoue quand la liste de règles Sonar C# commitée a dérivé du quality profile SonarCloud. Rapporte, ne répare jamais. |
 | `sonar-gate` | Nocturne : lit le verdict du Quality Gate SonarCloud et échoue quand il est rouge. |

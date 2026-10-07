@@ -155,7 +155,7 @@ est précisément comme les autres bancs de ce dépôt se sont cassés.
 ## Comment il tourne
 
 Le workflow ajoute exactement une chose à un run de test ordinaire : la variable `JUSTDUMMIES_SWEEP`.
-Sans elle le balayage complet est skippé et la tranche tourne quand même, donc
+Sans elle le balayage complet est sauté et la tranche tourne quand même, donc
 `dotnet test JustDummies.sln` reste rapide et le job de mutation du générateur ne paie rien pour
 l'existence du balayage.
 

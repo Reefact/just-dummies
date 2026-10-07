@@ -55,7 +55,7 @@ exercé la couture.
 Deux faits supplémentaires pèsent sur le correctif. Un million est une constante **choisie**, justifiée dans
 l'ADR-0031 par le fait qu'elle laisse à un `double` « environ neuf chiffres significatifs sous la virgule » —
 mesuré, une magnitude de `5e6` en laisse exactement 9,0, et toute valeur de `[1e6, 5e6]` survit à la
-multiplication et au test `x + 1 != x` dont ce record faisait sa preuve. Et `Half` s'arrête à 65 504 : son
+multiplication et au test `x + 1 != x` dont cette décision faisait sa preuve. Et `Half` s'arrête à 65 504 : son
 domaine entier tient dans la fenêtre, la couture y est inatteignable.
 
 ## Décision
@@ -70,7 +70,7 @@ et une borne unilatérale hors de portée de cette largeur retombe sur le domain
 
 * **L'objectif était juste, seul le mécanisme était approximatif.** Toutes les mesures sur lesquelles repose
   l'ADR-0031 restent vraies, et cette décision n'en change aucune : un tirage non contraint, une magnitude
-  simplement permise et une contrainte d'échelle se comportent exactement comme ce record le spécifiait. Ce
+  simplement permise et une contrainte d'échelle se comportent exactement comme cette décision le spécifiait. Ce
   qui change, c'est le traitement d'une forme que sa règle ne distinguait pas — un rétrécissement qui laisse
   une valeur plutôt qu'aucune — et cette forme est un défaut en soi : un générateur dont chaque tirage rend
   le même littéral est précisément la constante choisie à la main que cette bibliothèque existe pour

@@ -101,7 +101,7 @@ spécificité est sa valeur, et une propriété couvrant le même terrain ne la 
 
 Deux projets frères plutôt qu'un projet mixte suit la convention que le dépôt applique
 déjà deux fois, garde la dépendance FsCheck hors de la suite qui n'en a pas besoin, et
-laisse chaque projet énoncer sa propre histoire de plancher applicatif.
+laisse chaque projet énoncer son propre plancher applicatif.
 
 ## Alternatives considérées
 

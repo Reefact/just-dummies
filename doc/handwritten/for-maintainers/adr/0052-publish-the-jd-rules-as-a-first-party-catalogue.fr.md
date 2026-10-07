@@ -37,13 +37,13 @@ lien d'aide de ses descripteurs.
 ## Justification
 
 **La suppression d'un consommateur est le cas que le produit ne peut vérifier autrement.** Les sept
-littéraux d'ici auraient pu rester tels quels. Ceux du code d'un consommateur non : ils silencient des
+littéraux d'ici auraient pu rester tels quels. Ceux du code d'un consommateur non : ils suppriment des
 règles que JustDummies livre, et quand une règle est retirée ou recatégorisée, leur attribut continue
-de compiler et ne silence plus rien. Publier le catalogue est le seul moyen de rendre cette panne
+de compiler et ne supprime plus rien. Publier le catalogue est le seul moyen de rendre cette panne
 visible à celui à qui elle arrive.
 
 **La boucle est la raison d'être d'un catalogue maison.** Le descripteur lisant le catalogue, la
-règle que l'analyseur *rapporte* et la règle qu'un consommateur *silencie* sont la même valeur par
+règle que l'analyseur *rapporte* et la règle qu'un consommateur *supprime* sont la même valeur par
 construction. La catégorie surtout : c'est une chaîne que seul ce produit publie, que rien ne vérifie,
 et « par diligence » est précisément ce qui échoue.
 

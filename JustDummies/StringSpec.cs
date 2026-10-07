@@ -173,8 +173,9 @@ internal sealed class StringSpec {
         _allowedConstraint = allowedConstraint;
         _notBlank          = notBlank;
         // "Constrain once, draw many": the filler alphabet is settled here, never per draw. The universe is the
-        // whole of ASCII and the family, the casing and the subtractions narrow it (ADR-0075).
-        _fillerPool = customPool ?? new string(CharacterPools.Ascii.Where(character => Admits(character, charset, casing, subtractions)).ToArray());
+        // whole of ASCII and the family, the casing and the subtractions narrow it (ADR-0075). A custom pool replaces
+        // the universe and the family, never the subtractions: they remove from whatever would otherwise be drawn.
+        _fillerPool = new string((customPool ?? CharacterPools.Ascii).Where(character => Admits(character, charset, casing, subtractions)).ToArray());
         _nonBlankFillerPool = new string(_fillerPool.Where(character => !CharacterPools.IsBlank(character)).ToArray());
         // Settled here rather than per draw: whether the guaranteed non-blank character has to come from the filler,
         // or an anchored literal already supplies one.
@@ -654,7 +655,7 @@ internal sealed class StringSpec {
         // be what makes such a chain unsatisfiable — removing the family would leave it just as refused. Blaming it
         // there would send the caller to a constraint whose departure changes nothing.
         ConstraintClaim blamed = ceiling > required && _charsetConstraint is not null
-                                     ? ConstraintClaim.Of(_charsetConstraint, "leaves only whitespace to draw")
+                                     ? BlankAlphabetClaim()
                                      : ConstraintClaim.OfPhrase("the declared shape", "leaves no room for one");
 
         // NotBlank() is named as the constraint that cannot be honoured whichever order the chain was written in:
@@ -662,6 +663,24 @@ internal sealed class StringSpec {
         throw ConflictingAnyConstraintException.Contradicts(_notBlank,
                                                             ConstraintClaim.Of(_notBlank, "requires at least one character that is not whitespace"),
                                                             blamed);
+    }
+
+    /// <summary>
+    ///     Who answers for a filler alphabet holding nothing but whitespace: the family when it offers nothing else,
+    ///     the subtractions when they took away what it did offer — <c>WithChars(" 1").WithoutNumeric()</c>, where
+    ///     naming the pool alone would blame a constraint that, on its own, leaves the guarantee buildable.
+    /// </summary>
+    private ConstraintClaim BlankAlphabetClaim() {
+        string offered = new((_customPool ?? CharacterPools.Ascii).Where(character => Admits(character, _charset, _casing, [])).ToArray());
+        List<ConstraintCall> removers = _subtractions.Where(subtraction => offered.Any(character => !CharacterPools.IsBlank(character) && CharacterPools.Belongs(character, subtraction.Removed)))
+                                                     .Select(subtraction => subtraction.Constraint)
+                                                     .ToList();
+
+        if (removers.Count == 0) { return ConstraintClaim.Of(_charsetConstraint!, "leaves only whitespace to draw"); }
+
+        string remove = removers.Count == 1 ? "removes" : "remove";
+
+        return ConstraintClaim.OfPhrase(string.Join(" and ", removers), $"{remove} every character {_charsetConstraint} offers that is not whitespace");
     }
 
     private void ValidateLengthBounds(ConstraintCall applying) {

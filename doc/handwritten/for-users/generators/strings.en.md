@@ -118,7 +118,9 @@ string custom       = Any.String().WithChars("ACGT").WithLength(20).Generate(); 
 
 A family occupies **one slot**: declaring a second one contradicts the first, and the conflict names
 both sides. `WithoutAlpha()` and `WithoutNumeric()` are different — they **subtract** and accumulate,
-so `WithoutAlpha().WithoutNumeric()` leaves the punctuation, the whitespace and the controls.
+so `WithoutAlpha().WithoutNumeric()` leaves the punctuation, the whitespace and the controls. They
+narrow a `WithChars` pool the same way: `WithChars("abc123").WithoutNumeric()` draws from `abc`, and
+a subtraction that empties the pool is a conflict.
 
 Two things to know. `Punctuation()` is the POSIX `[:punct:]` block, which is **broader** than
 `char.IsPunctuation` — that predicate reads `+`, `<` and `$` as symbols, so assert on the invariant

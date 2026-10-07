@@ -45,6 +45,15 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Fixed
 
+- **A subtraction now narrows a `WithChars` pool.** `Any.String().WithChars("abc123").WithoutNumeric()`
+  was accepted, then drew from the whole pool, digits included, on every seed: the subtractions were
+  applied to the ASCII universe only, never to a pool the caller supplied. The pool now loses the
+  subtracted family, as `WithoutAlpha()` and `WithoutNumeric()` document. A subtraction that empties
+  the pool, such as `WithChars("123").WithoutNumeric()`, is refused at declaration and the message
+  names both sides. A `NotBlank()` whose pool keeps only whitespace once the subtractions apply is
+  refused at generation, and the message names the subtraction. A recipe without a subtraction
+  draws exactly what it drew before.
+
 - **Re-declaring the same value set no longer conflicts with itself.** `OneOf` documents duplicates
   as ignored and promises nothing about order, so `OneOf("a", "b")`, `OneOf("b", "a")` and
   `OneOf("a", "b", "b")` all declare one domain. The redeclaration check compared the call as it was

@@ -67,6 +67,7 @@ arbitrary until you know what it was reacting to.
 | --- | --- |
 | [Architecture and design audit](./audit/2026-07-20-dummies-architecture-and-design-audit.md) | a dated assessment, 2026-07-20 — a snapshot, not a rule |
 | [`dum` — first field measurement](./audit/2026-09-02-dum-first-field-measurement.md) | seven repositories that are not this one, 2026-09-02 — what the tool did to code nobody wrote for it |
+| [French documentation calque audit](./audit/2026-10-07-french-documentation-calque-audit.md) | the 179 French pages probed term by term, 2026-10-07 — ten named defects, three term choices left open |
 | [Extraction record](./migration/README.md) | how this repository was split out of `Reefact/first-class-errors`, with the commit map |
 
 ## Conventions at a glance

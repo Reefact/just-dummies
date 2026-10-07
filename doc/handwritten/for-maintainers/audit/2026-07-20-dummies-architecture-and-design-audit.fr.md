@@ -293,7 +293,7 @@ structurelle.
 for (char character = low; character <= high; character++) { set.Add(character); }
 ```
 
-Quand `high == '￿'` (atteignable via l'échappement supporté `\uHHHH`), le `char` 16 bits reboucle à
+Quand `high == '￿'` (atteignable via l'échappement pris en charge `\uHHHH`), le `char` 16 bits reboucle à
 `0x0000` et `character <= high` est toujours vrai. Reproduit indépendamment :
 `Any.StringMatching(@"[ -￿]")` n'a pas rendu la main en cinq secondes (blocage dur), alors que le même
 motif est une regex .NET valide. Un blocage au moment de la déclaration est le pire mode d'échec que
@@ -322,7 +322,7 @@ unbounded quantifier » même quand la vraie cause est un quantificateur *borné
 le vrai moteur accepte sont refusés par prudence (`^*`, `abc$$` — tandis que `^^abc` est accepté, une
 asymétrie évitable ; un `-[` en tête de classe est mal lu comme une soustraction) ; et une classe
 négative bien formée dont les membres sortent de l'univers imprimable est mal classée en *malformée* au
-lieu de *non supportée*. Tous ces cas échouent dans le sens sûr (refus, jamais mauvaise génération) et
+lieu de *non prise en charge*. Tous ces cas échouent dans le sens sûr (refus, jamais mauvaise génération) et
 sont cosmétiques à côté de (c) et (d).
 
 ### 4.2 L'affirmation « ASCII imprimable » est exagérée en trois endroits
@@ -375,8 +375,8 @@ réflexion, *pas* une classe de base générique) sont au §9.2.
 * **Aucune référence utilisateur ne documente la surface de contraintes par générateur.** Où
   l'utilisateur apprend-il que `Except`/`OneOf`/`DifferentFrom` existent sur les numériques, que
   `WithLengthBetween` existe, que `ContainingAny` diffère de `Containing`, ou quel dialecte regex
-  `StringMatching` supporte ? Aujourd'hui : seulement IntelliSense, un générateur à la fois. Le propre
-  suivi de l'ADR-0008 (« documenter le dialecte supporté ») est toujours ouvert.
+  `StringMatching` prend-il en charge ? Aujourd'hui : seulement IntelliSense, un générateur à la fois. Le propre
+  suivi de l'ADR-0008 (« documenter le dialecte pris en charge ») est toujours ouvert.
 * La **surprise du vide-par-défaut** (une collection non contrainte peut avoir 0 élément, une chaîne non
   contrainte peut être vide) est bien documentée dans les remarques XML mais absente du README du paquet,
   là où un utilisateur qui survole en profiterait le plus — c'est un choix délibéré, porteur de

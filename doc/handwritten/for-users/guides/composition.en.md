@@ -134,6 +134,10 @@ you are generating.
 The null-versus-value decision draws from the same random context as the wrapped generator, so a
 seeded run replays it exactly. A `null` draw does not consume a value from the wrapped generator.
 
+Inside a **distinct** collection, `null` counts as one additional value in the wrapped generator's domain.
+`Any.SetOf(Any.Enum<OrderStatus>().OrNull())` therefore holds at most the enum's members and `null`,
+and never asks for more.
+
 ## `.AsNullable()`: a nullable type, never an absent value
 
 The opposite of `.OrNull()`, and the one you want far more often than the name suggests. A parameter

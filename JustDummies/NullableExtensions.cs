@@ -28,6 +28,11 @@ public static class NullableExtensions {
     ///         <c>Any.Reproducibly(...)</c> run replays it exactly. A <c>null</c> draw does not consume a value from
     ///         the wrapped generator.
     ///     </para>
+    ///     <para>
+    ///         The result counts <c>null</c> as one additional value in the wrapped generator's domain, so a distinct
+    ///         collection over it gates its size on that domain: <c>Any.SetOf(Any.Enum&lt;Slot&gt;().OrNull())</c> holds
+    ///         at most the enum's members and <c>null</c>, and never asks for more.
+    ///     </para>
     ///     <example>
     ///         <code>
     ///         int? discount = Any.Int32().Between(0, 100).OrNull().Generate();
@@ -42,14 +47,7 @@ public static class NullableExtensions {
         where T : struct {
         if (generator is null) { throw new ArgumentNullException(nameof(generator)); }
 
-        RandomSource? source       = AnyDerivation.SourceOf(generator);
-        bool          reproducible = AnyDerivation.IsReproducible(generator);
-
-        return new DerivedAny<T?>(source, reproducible, () => {
-            RandomSource working = source ?? AmbientRandomSource.Instance;
-
-            return working.Current.Next(NullDrawOutcomes) == 0 ? (T?)null : generator.Generate();
-        });
+        return new OrNullAny<T>(generator);
     }
 
     /// <summary>

@@ -74,6 +74,17 @@ internal static class AnyDerivation {
     }
 
     /// <summary>
+    ///     A bound widened by the one value an <c>OrNull()</c> generator adds to what it wraps — <c>null</c>.
+    ///     An unknown bound stays unknown, and one already at <see cref="long.MaxValue" /> stays there: no count a
+    ///     collection can ask for comes near it.
+    /// </summary>
+    internal static long? CardinalityWithNull(long? cardinality) {
+        if (cardinality is not long known) { return null; }
+
+        return known == long.MaxValue ? known : known + 1;
+    }
+
+    /// <summary>
     ///     Runs a user-supplied factory or composer and converts its failure into an
     ///     <see cref="AnyGenerationException" /> that names the generated value(s) and, when the random context is
     ///     known, the seed that replays the run. <paramref name="reproducible" /> tells whether the derived value draws

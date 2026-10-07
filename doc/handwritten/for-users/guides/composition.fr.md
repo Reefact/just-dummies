@@ -140,6 +140,10 @@ La décision « null ou valeur » tire du même contexte aléatoire que le gén�
 exécution graînée la rejoue donc exactement. Un tirage `null` ne consomme pas de valeur du
 générateur enveloppé.
 
+Dans une collection **distincte**, `null` compte comme une valeur supplémentaire dans le domaine du
+générateur enveloppé. `Any.SetOf(Any.Enum<OrderStatus>().OrNull())` contient donc au plus les membres de
+l'énumération et `null`, et n'en demande jamais davantage.
+
 ## `.AsNullable()` : un type nullable, jamais une valeur absente
 
 L'opposé de `.OrNull()`, et celui dont vous avez besoin bien plus souvent que le nom ne le laisse

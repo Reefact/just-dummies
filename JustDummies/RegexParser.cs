@@ -17,7 +17,7 @@ namespace JustDummies;
 ///     which strings match; possessive quantifiers do not exist in .NET and are rejected); alternation; grouping
 ///     (capturing, non-capturing and named — the name is validated as the real engine would, then ignored); the dot;
 ///     one exact leading <c>(?i)</c>, the pattern-string spelling of <see cref="RegexOptions.IgnoreCase" /> (a scoped
-///     <c>(?i:…)</c>, a <c>(?i)</c> anywhere else, and every other option group stay outside the subset); and the anchors <c>^ $</c> at the start and end of the pattern or of a top-level alternation branch
+///     <c>(?i:…)</c>, a <c>(?i)</c> anywhere else, and every other option group stay outside the subset); and the anchors <c>^ $</c>, with their whole-string spellings <c>\A \z \Z</c>, at the start and end of the pattern or of a top-level alternation branch
 ///     — including a run of them (<c>^^</c>, <c>$$</c>) or a quantified one (<c>^*</c>, <c>$?</c>), all no-ops there
 ///     since a whole matching string is generated; anywhere else they are refused, because the pattern could never be
 ///     matched by a whole generated string. Case-insensitivity pairs each ASCII letter with its twin the way the real
@@ -184,34 +184,54 @@ internal sealed class RegexParser {
     ///     Consumes a boundary anchor at the current position when one is there, answering whether it did.
     /// </summary>
     /// <remarks>
-    ///     Anchors are no-ops for a whole-string generator, but only where they are guaranteed to match: <c>^</c> at
-    ///     the start and <c>$</c> at the end of the pattern or of a top-level alternation branch. A run of them
+    ///     Anchors are no-ops for a whole-string generator, but only where they are guaranteed to match: <c>^</c> or
+    ///     <c>\A</c> at the start and <c>$</c>, <c>\z</c> or <c>\Z</c> at the end of the pattern or of a top-level
+    ///     alternation branch. The escape spellings are .NET's own whole-string anchors, the ones it documents for
+    ///     validation, and at an edge they match exactly where their one-character twins do. A run of them
     ///     (<c>^^</c>, <c>$$</c>) and a quantified one (<c>^*</c>, <c>$?</c>, <c>^{2}</c>) are equally no-ops there —
     ///     the real engine accepts and matches all of these — so they are consumed and ignored. Anywhere else
     ///     (<c>a^</c>, <c>$a</c>, inside a group) the pattern can never be matched by a whole generated string, so it
     ///     is refused instead of silently mis-generated.
     /// </remarks>
     private bool TryConsumeAnchor(bool atSequenceStart) {
-        if (Peek() == '^') {
-            if (_depth > 0 || !atSequenceStart) { throw UnsupportedRegexException.OutsideRegularSubset(_pattern, "an anchor '^' away from the start of the pattern or of a top-level alternation branch", _index); }
-            _index++;
+        int start = StartAnchorLength();
+        if (start > 0) {
+            string spelling = _pattern.Substring(_index, start);
+            if (_depth > 0 || !atSequenceStart) { throw UnsupportedRegexException.OutsideRegularSubset(_pattern, $"an anchor '{spelling}' away from the start of the pattern or of a top-level alternation branch", _index); }
+            _index += start;
             SkipAnchorQuantifier();
 
             return true;
         }
 
-        if (Peek() == '$') {
-            int position = _index;
-            _index++;
+        int end = EndAnchorLength();
+        if (end > 0) {
+            int    position = _index;
+            string spelling = _pattern.Substring(_index, end);
+            _index += end;
             SkipAnchorQuantifier();
-            // A '$' is a no-op only at the very end: what follows must be end-of-pattern, a branch bar, or
-            // another end-anchor '$'. Inside a group, or before anything else, it can never match a whole string.
-            if (_depth > 0 || (!AtEnd && Peek() != '|' && Peek() != '$')) { throw UnsupportedRegexException.OutsideRegularSubset(_pattern, "an anchor '$' away from the end of the pattern or of a top-level alternation branch", position); }
+            // An end anchor is a no-op only at the very end: what follows must be end-of-pattern, a branch bar, or
+            // another end anchor. Inside a group, or before anything else, it can never match a whole string.
+            if (_depth > 0 || (!AtEnd && Peek() != '|' && EndAnchorLength() == 0)) { throw UnsupportedRegexException.OutsideRegularSubset(_pattern, $"an anchor '{spelling}' away from the end of the pattern or of a top-level alternation branch", position); }
 
             return true;
         }
 
         return false;
+    }
+
+    /// <summary>How many characters spell the start anchor at the current position — one for <c>^</c>, two for <c>\A</c> — or zero.</summary>
+    private int StartAnchorLength() {
+        if (Peek() == '^') { return 1; }
+
+        return Peek() == '\\' && PeekAt(1) == 'A' ? 2 : 0;
+    }
+
+    /// <summary>How many characters spell the end anchor at the current position — one for <c>$</c>, two for <c>\z</c> or <c>\Z</c> — or zero.</summary>
+    private int EndAnchorLength() {
+        if (Peek() == '$') { return 1; }
+
+        return Peek() == '\\' && PeekAt(1) is 'z' or 'Z' ? 2 : 0;
     }
 
     /// <summary>
@@ -448,10 +468,8 @@ internal sealed class RegexParser {
             case '0': return Literal(ReadOctalTail(0));
             case 'b': throw UnsupportedRegexException.OutsideRegularSubset(_pattern, "a word-boundary '\\b'", position);
             case 'B': throw UnsupportedRegexException.OutsideRegularSubset(_pattern, "a non-word-boundary '\\B'", position);
-            case 'A': throw UnsupportedRegexException.OutsideRegularSubset(_pattern, "a start-of-string anchor '\\A'", position);
+            // '\A', '\z' and '\Z' never reach here: ParseSequence hands every anchor to TryConsumeAnchor first.
             case 'G': throw UnsupportedRegexException.OutsideRegularSubset(_pattern, "a contiguous-match anchor '\\G'", position);
-            case 'Z':
-            case 'z': throw UnsupportedRegexException.OutsideRegularSubset(_pattern, "an end-of-string anchor '\\" + escaped + "'", position);
             case 'p':
             case 'P': throw UnsupportedRegexException.OutsideRegularSubset(_pattern, "a Unicode category '\\" + escaped + "{…}'", position);
             case 'k': throw UnsupportedRegexException.OutsideRegularSubset(_pattern, "a named backreference '\\k<…>'", position);

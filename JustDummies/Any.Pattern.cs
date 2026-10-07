@@ -20,7 +20,8 @@ public static partial class Any {
     ///     control characters, <c>\xHH</c>, <c>\uHHHH</c>), the shorthands <c>\d \D \w \W \s \S</c>, character classes
     ///     (ranges, negation), the quantifiers <c>? * + {n} {n,} {n,m}</c> (an unbounded quantifier draws its minimum
     ///     plus 0 to 8 repetitions), alternation, grouping (capturing, non-capturing and named), the dot, and the
-    ///     anchors <c>^ $</c> at the start and end of the pattern or of a top-level alternation branch (no-ops there,
+    ///     anchors <c>^ $</c> and their whole-string spellings <c>\A \z \Z</c> at the start and end of the pattern or of a
+    ///     top-level alternation branch (no-ops there,
     ///     since a whole matching string is generated). Case-insensitivity is spelled with one exact leading
     ///     <c>(?i)</c>, the pattern-string twin of <see cref="RegexOptions.IgnoreCase" /> on the
     ///     <see cref="StringMatching(Regex)" /> overload; a scoped <c>(?i:…)</c>, a <c>(?i)</c> anywhere else, and

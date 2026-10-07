@@ -271,7 +271,7 @@ string same = Any.StringMatching(new Regex("[a-z]{3}", RegexOptions.IgnoreCase))
 | quantificateurs | `*` `+` `?` `{3}` `{2,5}` `{2,}` |
 | groupements | `(…)`, `(?:…)`, `(?<nom>…)` |
 | alternation | `a|b` |
-| ancres aux extrémités | `^…$` |
+| ancres aux extrémités | `^…$`, et les écritures « chaîne entière » de .NET `\A…\z` et `\A…\Z` |
 | insensibilité à la casse sur tout le motif | un `(?i)` en tête, ou `RegexOptions.IgnoreCase` sur la surcharge `Regex` |
 
 ### Constructions refusées
@@ -289,7 +289,7 @@ jamais mal généré :
 | groupes conditionnels `(?(…)…)` | non régulier |
 | commentaires en ligne `(?#…)` | ne font pas partie du langage généré |
 | un `(?i:…)` à portée limitée, un `(?i)` ailleurs qu'en tête, toute autre option de groupe `(?s…)` | seul un unique `(?i)` en tête est honoré ; toute autre option de groupe reste hors du sous-ensemble |
-| une ancre hors extrémité | `^` et `$` n'ont de sens qu'au début et à la fin du motif, ou d'une branche d'alternation de premier niveau |
+| une ancre hors extrémité | `^`, `\A` et `$`, `\z`, `\Z` n'ont de sens qu'au début et à la fin du motif, ou d'une branche d'alternation de premier niveau |
 
 Élargir cet ensemble supposerait une dépendance à un automate d'expressions régulières ; la décision
 de garder un analyseur maison et de refuser bruyamment est

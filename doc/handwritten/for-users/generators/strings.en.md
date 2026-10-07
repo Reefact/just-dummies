@@ -264,7 +264,7 @@ string same = Any.StringMatching(new Regex("[a-z]{3}", RegexOptions.IgnoreCase))
 | quantifiers | `*` `+` `?` `{3}` `{2,5}` `{2,}` |
 | grouping | `(…)`, `(?:…)`, `(?<name>…)` |
 | alternation | `a|b` |
-| anchors at the edges | `^…$` |
+| anchors at the edges | `^…$`, and .NET's whole-string spellings `\A…\z` and `\A…\Z` |
 | whole-pattern case-insensitivity | a leading `(?i)`, or `RegexOptions.IgnoreCase` on the `Regex` overload |
 
 ### Refused constructs
@@ -281,7 +281,7 @@ an `UnsupportedRegexException` naming the construct and its position — never m
 | conditional groups `(?(…)…)` | not regular |
 | inline comments `(?#…)` | not part of the language being generated |
 | a scoped `(?i:…)`, a `(?i)` anywhere but first, any other option group `(?s…)` | only one exact leading `(?i)` is honoured; every other option group stays outside the subset |
-| an anchor away from an edge | `^` and `$` are only meaningful at the start and end of the pattern, or of a top-level alternation branch |
+| an anchor away from an edge | `^`, `\A` and `$`, `\z`, `\Z` are only meaningful at the start and end of the pattern, or of a top-level alternation branch |
 
 Widening this set would mean taking a regex-automaton dependency; the decision to keep a home-grown
 parser and refuse loudly instead is

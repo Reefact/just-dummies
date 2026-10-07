@@ -152,7 +152,7 @@ public sealed class PatternRoundTripProperties {
     /// </summary>
     private static readonly string[] UnsupportedConstructs = {
         "(?=abc)", "(?!abc)", "(?<=abc)", "(?<!abc)", "(?>abc)", "(?#note)", "(?i:abc)", "(?(a)b|c)",
-        @"\bword", @"\Bx", @"\Ax", @"x\z", @"x\Z", @"\Gx", @"\p{L}", @"\P{L}", @"(\w)\1", @"(?<n>a)\k<n>",
+        @"\bword", @"\Bx", @"x\Ay", @"x\zy", @"x\Zy", @"\Gx", @"\p{L}", @"\P{L}", @"(\w)\1", @"(?<n>a)\k<n>",
         "(?<a>y)?(?<-a>x)", "[a-z-[aeiou]]"
     };
 
@@ -423,6 +423,33 @@ public sealed class PatternRoundTripProperties {
                         Regex oracle = Anchored(pattern, RegexOptions.None);
 
                         return Expect.EveryDraw(Any.StringMatching(pattern), oracle.IsMatch);
+                    })
+            .QuickCheckThrowOnFailure();
+    }
+
+    [Fact(DisplayName = "Whole-string anchors at the pattern's edges are no-ops, in every spelling, around every supported pattern.")]
+    public void EdgeAnchorsAreNoOpsInEverySpelling() {
+        Gen<(string Pattern, string Start, string End, int Seed)> cases =
+            from pattern in SupportedPattern()
+            from start in Gen.Elements(string.Empty, "^", @"\A")
+            from end in Gen.Elements(string.Empty, "$", @"\z", @"\Z")
+            from seed in Generators.Seed()
+            select (Pattern: pattern, Start: start, End: end, Seed: seed);
+
+        Prop.ForAll(cases.ToArbitrary(),
+                    testCase => {
+                        // Issue #214: '\A', '\z' and '\Z' were refused at any position, although at an edge they match
+                        // exactly where '^' and '$' do — and they are the spelling .NET documents for whole-string
+                        // validation. The anchors are written straight onto the pattern, never around a group, so the
+                        // pattern keeps its own depth: on a top-level alternation they open the first branch and close
+                        // the last, both edges. A no-op is checked as one: the same seed draws the same values with
+                        // the anchors as without them, and each still matches the real engine.
+                        string       anchored = testCase.Start + testCase.Pattern + testCase.End;
+                        Regex        oracle   = Anchored(anchored, RegexOptions.None);
+                        List<string> withThem = Expect.Draws(Any.WithSeed(testCase.Seed).StringMatching(anchored), 8);
+                        List<string> without  = Expect.Draws(Any.WithSeed(testCase.Seed).StringMatching(testCase.Pattern), 8);
+
+                        return withThem.SequenceEqual(without, StringComparer.Ordinal) && withThem.TrueForAll(oracle.IsMatch);
                     })
             .QuickCheckThrowOnFailure();
     }

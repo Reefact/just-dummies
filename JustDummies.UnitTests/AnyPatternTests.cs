@@ -193,6 +193,23 @@ public sealed class AnyPatternTests {
         Check.That(Any.StringMatching(@"^?abc$?").Generate()).IsEqualTo("abc");
     }
 
+    [Fact(DisplayName = "The escape anchors '\\A', '\\z' and '\\Z' are no-ops at the pattern's edges, and refused anywhere else.")]
+    public void EscapeAnchorsAreNoOpsAtTheEdges() {
+        // Issue #214, at the coordinates it was reported on: .NET's own whole-string anchors were refused at any
+        // position, so a production validator written with them could not be reused through StringMatching(Regex).
+        string code = Any.StringMatching(new Regex(@"\A[A-Z]{3}\d{4}\z")).Generate();
+        Check.That(Regex.IsMatch(code, @"\A[A-Z]{3}\d{4}\z")).IsTrue();
+        Check.That(Regex.IsMatch(Any.StringMatching(@"\A\d{8}\Z").Generate(), @"\A\d{8}\z")).IsTrue();
+        Check.That(Any.StringMatching(@"\Aa\z|\Ab\Z").Generate()).IsOneOf("a", "b");
+        Check.That(Any.StringMatching(@"^\A*abc\z?$").Generate()).IsEqualTo("abc");
+
+        // Away from an edge they can never match a whole string, so they stay refused, naming the spelling written.
+        Check.ThatCode(() => Any.StringMatching(@"a\Ab")).Throws<UnsupportedRegexException>().WhichMember(error => error.Message).Contains("'\\A'");
+        Check.ThatCode(() => Any.StringMatching(@"a\zb")).Throws<UnsupportedRegexException>().WhichMember(error => error.Message).Contains("'\\z'");
+        Check.ThatCode(() => Any.StringMatching(@"(a\Z)b")).Throws<UnsupportedRegexException>();
+        Check.ThatCode(() => Any.StringMatching(@"\Gabc")).Throws<UnsupportedRegexException>();
+    }
+
     [Fact(DisplayName = "An unbounded quantifier whose minimum sits at int.MaxValue overruns the ceiling; it never yields a short value.")]
     public void UnboundedQuantifierAtTheTopOfTheIntRangeNeverYieldsAShortValue() {
         // Regression: the unbounded repetition count was computed as 'min + Next(0, 9)' in int arithmetic, so a

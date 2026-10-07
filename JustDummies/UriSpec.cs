@@ -420,8 +420,17 @@ internal sealed class UriSpec {
         if (host.Any(character => character > MaxAsciiCodePoint)) {
             throw new ArgumentException("The host must be ASCII: an internationalized (IDN) host would not round-trip identically across target frameworks. Pass the punycode form instead (e.g. \"xn--mnchen-3ya.de\").", parameterName);
         }
-        if (Uri.CheckHostName(host) == UriHostNameType.Unknown) {
+        UriHostNameType kind = Uri.CheckHostName(host);
+        if (kind == UriHostNameType.Unknown) {
             throw new ArgumentException($"\"{host}\" is not a valid host name.", parameterName);
+        }
+
+        // CheckHostName classifies the address, not the way a URI writes it: it answers IPv6 for "::1" and "[::1]"
+        // alike, while only the bracketed form can sit in a URI's authority. The bare form used to pass here and fail
+        // at Generate() with a seedless UriFormatException; it is refused instead, naming the spelling to pass, as the
+        // shorthand IPv4 guard below names the canonical dotted-quad.
+        if (kind == UriHostNameType.IPv6 && host[0] != '[') {
+            throw new ArgumentException($"The host \"{host}\" is an IPv6 literal, which a URI writes inside brackets. Pass \"[{host}]\" instead.", parameterName);
         }
 
         // A host of only digits and dots is interpreted as an IPv4 literal by System.Uri, and its shorthand forms

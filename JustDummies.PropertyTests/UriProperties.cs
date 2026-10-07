@@ -1,6 +1,7 @@
 #region Usings declarations
 
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 
 using JustDummies.Diagnostics;
 
@@ -558,6 +559,32 @@ public sealed class UriProperties {
                     // An internationalized host is refused at the call site, pointing at punycode — never silently
                     // accepted, because it would not round-trip identically across target frameworks.
                     spoiled => Expect.Throws<ArgumentException>(() => Any.Uri().Web().WithHost(spoiled)))
+            .QuickCheckThrowOnFailure();
+    }
+
+    [Fact(DisplayName = "An IPv6 host is refused without its brackets and drawn with them, whatever the address and the family.")]
+    public void Ipv6HostsAreWrittenInsideBrackets() {
+        // The full eight-group spelling: one every target framework reads the same way, where a compressed form is
+        // rendered by IPAddress differently across them.
+        Gen<(string Address, int Family)> cases =
+            from groups in Gen.NonEmptyListOf(Gen.Choose(0, ushort.MaxValue)).Select(values => values.ToArray())
+            from family in Gen.Choose(0, 3)
+            select (Address: string.Join(":", Enumerable.Range(0, 8).Select(index => groups[index % groups.Length].ToString("x", CultureInfo.InvariantCulture))),
+                    Family: family);
+
+        // Issue #216: the bare address passed the host check, then every Generate() threw a seedless UriFormatException.
+        static IAny<Uri> WithHost(int family, string host) {
+            return family switch {
+                0 => Any.Uri().Web().WithHost(host),
+                1 => Any.Uri().WebSocket().WithHost(host),
+                2 => Any.Uri().Ftp().WithHost(host),
+                _ => Any.Uri().Mailto().WithDomain(host)
+            };
+        }
+
+        Prop.ForAll(cases.ToArbitrary(),
+                    testCase => Expect.Throws<ArgumentException>(() => WithHost(testCase.Family, testCase.Address))
+                             && Expect.EveryDraw(WithHost(testCase.Family, "[" + testCase.Address + "]"), value => value.HostNameType == UriHostNameType.IPv6))
             .QuickCheckThrowOnFailure();
     }
 

@@ -45,6 +45,13 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Fixed
 
+- **An IPv6 host without its brackets is refused when it is pinned.** `Any.Uri().Web().WithHost("::1")`
+  was accepted, then every `Generate()` threw a raw `UriFormatException` that carried no seed. The
+  same happened on `WebSocket()`, on `Ftp()` and on `Mailto().WithDomain(...)`. A URI writes an IPv6
+  address inside brackets, and the host check accepted the bare address too. That form is now refused
+  with an `ArgumentException` that names the bracketed spelling to pass, as a shorthand IPv4 host
+  already was. `WithHost("[::1]")` draws as it always did.
+
 - **A subtraction now narrows a `WithChars` pool.** `Any.String().WithChars("abc123").WithoutNumeric()`
   was accepted, then drew from the whole pool, digits included, on every seed: the subtractions were
   applied to the ASCII universe only, never to a pool the caller supplied. The pool now loses the

@@ -56,6 +56,11 @@ value is valid by construction. Internationalized (IDN) hosts and the `file` sch
 outside the unconstrained draw: neither round-trips identically across target frameworks, which would
 break the determinism contract.
 
+A host you pin is written the way the URI will carry it. Pass the punycode form of an
+internationalized name, a full dotted-quad for an IPv4 address (`1.2.3.4`, never `1.2`), and an IPv6
+address inside its brackets (`[::1]`). Any other spelling is refused when you declare it, and the
+message names the form to pass.
+
 ### Web URIs
 
 ```csharp

@@ -214,4 +214,4 @@ failure mode of a "not now" is that nobody remembers the option existed on the d
 | [ADR-0100](0100-identify-a-value-set-by-its-values.md) | Identify a declared value set by its values, not by the call that declared it | Accepted | recorded here |
 | [ADR-0101](0101-accept-a-non-finite-exclusion-as-a-no-op.md) | Accept a non-finite exclusion on a floating-point builder as a no-op | Accepted | recorded here |
 | [ADR-0102](0102-let-a-collection-or-composition-inherit-its-operands-source.md) | Let a collection or composition inherit its operands' source rather than a context's | Accepted | recorded here |
-| [ADR-0103](0103-run-the-suites-on-microsoft-testing-platform.md) | Run the test suites on Microsoft.Testing.Platform | Proposed | recorded here |
+| [ADR-0103](0103-run-the-suites-on-microsoft-testing-platform.md) | Run the test suites on Microsoft.Testing.Platform | Accepted | recorded here |

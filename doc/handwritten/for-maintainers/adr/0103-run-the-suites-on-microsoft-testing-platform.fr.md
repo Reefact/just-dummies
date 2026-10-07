@@ -2,8 +2,9 @@
 
 🌍 🇫🇷 Français (ce fichier) · 🇬🇧 [English](0103-run-the-suites-on-microsoft-testing-platform.md)
 
-**Statut :** Proposed
-**Proposé :** 31/08/2026
+**Statut :** Accepted
+**Proposé :** 2026-08-31
+**Accepté :** 2026-10-07
 **Décideurs :** Reefact
 
 ## Contexte

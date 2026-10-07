@@ -229,4 +229,4 @@ que l'option existait le jour où elle compterait.
 | [ADR-0100](0100-identify-a-value-set-by-its-values.fr.md) | Identifier un ensemble de valeurs déclaré par ses valeurs, non par l'appel qui l'a déclaré | Accepted | consigné ici |
 | [ADR-0101](0101-accept-a-non-finite-exclusion-as-a-no-op.fr.md) | Accepter l'exclusion d'une valeur non finie sur un générateur flottant comme une opération sans effet | Accepted | consigné ici |
 | [ADR-0102](0102-let-a-collection-or-composition-inherit-its-operands-source.fr.md) | Laisser une collection ou une composition hériter de la source de ses opérandes plutôt que de celle d'un contexte | Accepted | consigné ici |
-| [ADR-0103](0103-run-the-suites-on-microsoft-testing-platform.fr.md) | Exécuter les suites de tests sur Microsoft.Testing.Platform | Proposed | consigné ici |
+| [ADR-0103](0103-run-the-suites-on-microsoft-testing-platform.fr.md) | Exécuter les suites de tests sur Microsoft.Testing.Platform | Accepted | consigné ici |

@@ -230,4 +230,4 @@ que l'option existait le jour où elle compterait.
 | [ADR-0101](0101-accept-a-non-finite-exclusion-as-a-no-op.fr.md) | Accepter l'exclusion d'une valeur non finie sur un générateur flottant comme une opération sans effet | Accepted | consigné ici |
 | [ADR-0102](0102-let-a-collection-or-composition-inherit-its-operands-source.fr.md) | Laisser une collection ou une composition hériter de la source de ses opérandes plutôt que de celle d'un contexte | Accepted | consigné ici |
 | [ADR-0103](0103-run-the-suites-on-microsoft-testing-platform.fr.md) | Exécuter les suites de tests sur Microsoft.Testing.Platform | Accepted | consigné ici |
-| [ADR-0104](0104-count-null-as-one-additional-value-in-an-optional-generators-domain.fr.md) | Compter `null` comme une valeur supplémentaire dans le domaine d'un générateur optionnel | Proposed | consigné ici |
+| [ADR-0104](0104-count-null-as-one-additional-value-in-an-optional-generators-domain.fr.md) | Compter `null` comme une valeur supplémentaire dans le domaine d'un générateur optionnel | Accepted | consigné ici |

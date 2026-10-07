@@ -2,8 +2,9 @@
 
 🌍 🇫🇷 Français (ce fichier) · 🇬🇧 [English](0104-count-null-as-one-additional-value-in-an-optional-generators-domain.md)
 
-**Statut :** Proposed
+**Statut :** Accepted
 **Proposé :** 2026-10-07
+**Accepté :** 2026-10-07
 **Décideurs :** Reefact
 
 ## Contexte

@@ -244,6 +244,22 @@ public sealed class AnyUriTests {
         Check.ThatCode(() => Any.Uri().Web().WithHost("api.example.com")).DoesNotThrow();
     }
 
+    [Fact(DisplayName = "An IPv6 host is refused without its brackets, naming the bracketed form, on every family.")]
+    public void WithHostRequiresBracketsAroundAnIpv6Literal() {
+        // Issue #216, at the coordinates it was reported on: each of these was accepted, then every Generate() threw a
+        // seedless UriFormatException.
+        ArgumentException error = Assert.Throws<ArgumentException>(() => Any.Uri().Web().WithHost("::1"));
+        Check.That(error.Message).Contains("\"[::1]\"");
+
+        Check.ThatCode(() => Any.Uri().WebSocket().WithHost("::1")).Throws<ArgumentException>();
+        Check.ThatCode(() => Any.Uri().Ftp().WithHost("2001:db8::1")).Throws<ArgumentException>();
+        Check.ThatCode(() => Any.Uri().Mailto().WithDomain("::1")).Throws<ArgumentException>();
+
+        Check.That(Any.Uri().Web().WithHost("[::1]").Generate().Host).IsEqualTo("[::1]");
+        Check.That(Any.Uri().Ftp().WithHost("[2001:db8::1]").Generate().Host).IsEqualTo("[2001:db8::1]");
+        Check.That(Any.Uri().Mailto().WithDomain("[::1]").Generate().Host).IsEqualTo("[::1]");
+    }
+
     [Fact(DisplayName = "A seeded URI draw is reproducible: the same seed yields the same value.")]
     public void SeededDrawIsReproducible() {
         Uri first  = Any.WithSeed(4242).Uri().Web().WithQuery().Generate();

@@ -36,7 +36,7 @@ public sealed class AnyWebUri : IAny<Uri>, IHasRandomSource {
 
     /// <summary>Pins the host. Must be an ASCII host name (pass the punycode form for internationalized hosts).</summary>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="host" /> is <c>null</c>.</exception>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="host" /> is empty, non-ASCII or not a valid host name.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="host" /> is empty, non-ASCII, not a valid host name, or an IPv6 literal written without its brackets.</exception>
     public AnyWebUri WithHost(string host) {
         return new AnyWebUri(_source, _spec.WithHost(UriSpec.RequireHost(host, nameof(host)), UriSpec.Label(nameof(WithHost), host)));
     }

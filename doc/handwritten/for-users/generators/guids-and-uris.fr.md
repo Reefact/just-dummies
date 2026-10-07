@@ -56,6 +56,11 @@ une valeur est donc valide par construction. Les hôtes internationalisés (IDN)
 sont volontairement hors du tirage non contraint : ni l'un ni l'autre ne fait l'aller-retour à
 l'identique selon la cible, ce qui casserait le contrat de déterminisme.
 
+Un hôte que vous épinglez s'écrit comme l'URI le portera. Passez la forme punycode d'un nom
+internationalisé, une adresse IPv4 complète en quatre octets (`1.2.3.4`, jamais `1.2`), et une
+adresse IPv6 entre crochets (`[::1]`). Toute autre écriture est refusée dès la déclaration, et le
+message indique la forme à passer.
+
 ### URI web
 
 ```csharp

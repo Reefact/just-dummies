@@ -33,7 +33,7 @@ public sealed class AnyMailtoUri : IAny<Uri>, IHasRandomSource {
 
     /// <summary>Pins the domain (the text after <c>@</c>). Must be an ASCII host name.</summary>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="domain" /> is <c>null</c>.</exception>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="domain" /> is empty, non-ASCII or not a valid host name.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="domain" /> is empty, non-ASCII, not a valid host name, or an IPv6 literal written without its brackets.</exception>
     public AnyMailtoUri WithDomain(string domain) {
         return new AnyMailtoUri(_source, _spec.WithHost(UriSpec.RequireHost(domain, nameof(domain)), UriSpec.Label(nameof(WithDomain), domain)));
     }

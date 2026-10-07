@@ -122,7 +122,8 @@ string custom       = Any.String().WithChars("ACGT").WithLength(20).Generate(); 
 Une famille occupe **un seul créneau** : en déclarer une seconde contredit la première, et le conflit
 nomme les deux côtés. `WithoutAlpha()` et `WithoutNumeric()` sont différentes — elles **soustraient**
 et s'accumulent, donc `WithoutAlpha().WithoutNumeric()` laisse la ponctuation, les blancs et les
-contrôles.
+contrôles. Elles restreignent de la même façon un pool `WithChars` : `WithChars("abc123").WithoutNumeric()`
+tire dans `abc`, et une soustraction qui vide le pool est un conflit.
 
 Deux choses à savoir. `Punctuation()` est le bloc POSIX `[:punct:]`, donc **plus large** que
 `char.IsPunctuation` — ce prédicat lit `+`, `<` et `$` comme des symboles : appuyez-vous sur

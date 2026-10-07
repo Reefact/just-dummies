@@ -367,7 +367,8 @@ public sealed class AnyString : IAny<string>, IHasRandomSource, ICardinalityHint
     ///     <see cref="Any.StringMatching(string)" /> literal. Declared once per generator: it occupies the same
     ///     character-family slot as the named sets, and because the pool is the whole character definition it cannot
     ///     combine with <see cref="InLowerCase" />/<see cref="InUpperCase" /> — put only the casing you want in the pool.
-    ///     An anchored fragment (prefix, suffix, contained value) is exempt: the pool is what the generator draws
+    ///     A subtraction still narrows it: <see cref="WithoutAlpha" />/<see cref="WithoutNumeric" /> remove their family
+    ///     from the pool, and one that leaves it empty is a conflict. An anchored fragment (prefix, suffix, contained value) is exempt: the pool is what the generator draws
     ///     from, and a literal the caller wrote is not drawn, so it is kept as written even when the pool could not
     ///     produce it (ADR-0079). Duplicate characters collapse and each distinct character is
     ///     equally likely. The pool is a sequence of UTF-16 code units and must stay within the Basic Multilingual

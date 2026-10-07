@@ -50,6 +50,11 @@ internal interface ICardinalityHint<T> {
     long? DistinctCardinality { get; }
 
     /// <summary>Whether the generator, as constrained, could ever produce <paramref name="value" />.</summary>
+    /// <remarks>
+    ///     For a reference type, <c>null</c> is a question like any other, and every implementation answers it rather
+    ///     than rejecting it: <c>true</c> only for a generator that can draw <c>null</c>. <c>OrNull()</c> reads that
+    ///     answer to tell a domain that already holds <c>null</c> from one it extends (ADR-0104).
+    /// </remarks>
     /// <param name="value">The candidate value.</param>
     /// <returns><c>true</c> when <paramref name="value" /> is within the generator's domain; otherwise <c>false</c>.</returns>
     bool Contains(T value);

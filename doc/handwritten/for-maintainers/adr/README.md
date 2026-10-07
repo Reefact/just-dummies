@@ -21,7 +21,7 @@ and the **Origin** column says how each one got here:
   but its record stays live in `Reefact/first-class-errors` too, because that
   repository still applies it. Both copies are now independent: either side can
   supersede its own without touching the other. 9 decisions.
-* **recorded here** — decided in this repository, on its own. 60 decisions.
+* **recorded here** — decided in this repository, on its own. 61 decisions.
 
 The numbers are this base's own, assigned in the order the decisions were
 recorded upstream ([ADR-0045](0045-renumber-the-decision-base.md)); every ADR
@@ -215,3 +215,4 @@ failure mode of a "not now" is that nobody remembers the option existed on the d
 | [ADR-0101](0101-accept-a-non-finite-exclusion-as-a-no-op.md) | Accept a non-finite exclusion on a floating-point builder as a no-op | Accepted | recorded here |
 | [ADR-0102](0102-let-a-collection-or-composition-inherit-its-operands-source.md) | Let a collection or composition inherit its operands' source rather than a context's | Accepted | recorded here |
 | [ADR-0103](0103-run-the-suites-on-microsoft-testing-platform.md) | Run the test suites on Microsoft.Testing.Platform | Accepted | recorded here |
+| [ADR-0104](0104-count-null-as-one-additional-value-in-an-optional-generators-domain.md) | Count `null` as one additional value in an optional generator's domain | Proposed | recorded here |

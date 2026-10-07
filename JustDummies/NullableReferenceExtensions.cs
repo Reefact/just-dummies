@@ -15,6 +15,11 @@ public static class NullableReferenceExtensions {
     /// <remarks>
     ///     The null-versus-value decision draws from the same random context as the wrapped generator, so a
     ///     reproducible run replays it exactly; a <c>null</c> draw does not consume a value from the wrapped generator.
+    ///     <para>
+    ///         The result counts <c>null</c> as one additional value in the wrapped generator's domain, so a distinct
+    ///         collection over it gates its size on that domain: <c>Any.SetOf(Any.String().OneOf("EUR", "USD").OrNull())</c>
+    ///         holds at most the two codes and <c>null</c>, and never asks for more.
+    ///     </para>
     /// </remarks>
     /// <param name="generator">The generator of the non-null values.</param>
     /// <typeparam name="T">The underlying reference type.</typeparam>
@@ -24,14 +29,7 @@ public static class NullableReferenceExtensions {
         where T : class {
         if (generator is null) { throw new ArgumentNullException(nameof(generator)); }
 
-        RandomSource? source       = AnyDerivation.SourceOf(generator);
-        bool          reproducible = AnyDerivation.IsReproducible(generator);
-
-        return new DerivedAny<T?>(source, reproducible, () => {
-            RandomSource working = source ?? AmbientRandomSource.Instance;
-
-            return working.Current.Next(NullableExtensions.NullDrawOutcomes) == 0 ? (T?)null : generator.Generate();
-        });
+        return new OrNullReferenceAny<T>(generator);
     }
 
 }

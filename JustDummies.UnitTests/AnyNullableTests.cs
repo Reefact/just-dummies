@@ -12,6 +12,8 @@ public sealed class AnyNullableTests {
 
     private const int SampleCount = 200;
 
+    private enum Slot { None, Morning, Evening }
+
     // Note: chaining OrNull twice (a nullable of a nullable) is a compile-time error — a Nullable<T> is not a
     // struct and not a class, so neither OrNull overload applies. That guard needs no runtime test.
 
@@ -94,10 +96,77 @@ public sealed class AnyNullableTests {
         Check.That(sawNonNull).IsTrue();
     }
 
+    [Fact(DisplayName = "A distinct collection over OrNull draws within the wrapped domain plus null.")]
+    public void ADistinctCollectionOverOrNullDraws() {
+        // Issue #212, at the coordinates it was reported on: the set had no ceiling, drew a size the four values could
+        // not fill, and exhausted its redraw on more than half the seeds.
+        using (Any.UseSeed(0)) {
+            Check.That(Any.SetOf(Any.Enum<Slot>().OrNull()).NonEmpty().Generate().Count).IsStrictlyLessThan(5);
+        }
+        using (Any.UseSeed(0)) {
+            Check.That(Any.SetOf(Any.String().OneOf("EUR", "USD", "GBP").OrNull()).NonEmpty().Generate().Count).IsStrictlyLessThan(5);
+        }
+    }
+
+    [Fact(DisplayName = "OrNull counts null exactly once: the full domain draws, one more is refused at once.")]
+    public void OrNullCountsNullExactlyOnce() {
+        Check.That(Any.SetOf(Any.Enum<Slot>().OrNull()).WithCount(4).Generate()).Contains((Slot?)null);
+        Check.ThatCode(() => Any.SetOf(Any.Enum<Slot>().OrNull()).WithCount(5).Generate())
+             .Throws<ConflictingAnyConstraintException>();
+
+        // A null pinned into the collection is already inside the domain, so it extends nothing.
+        Check.ThatCode(() => Any.SetOf(Any.Enum<Slot>().OrNull()).Containing(null).WithCount(5).Generate())
+             .Throws<ConflictingAnyConstraintException>();
+
+        // Applying OrNull() twice to a reference generator still compiles, because nullable reference annotations do
+        // not change the runtime type; null is still one value.
+        IAny<string> optional = (IAny<string>)Any.String().OneOf("EUR", "USD").OrNull();
+        Check.That(Any.SetOf(optional.OrNull()).WithCount(3).Generate()).Contains((string?)null);
+        Check.ThatCode(() => Any.SetOf(optional.OrNull()).WithCount(4).Generate())
+             .Throws<ConflictingAnyConstraintException>();
+    }
+
+    [Fact(DisplayName = "OrNull reads null from the domain it wraps, not from the wrapper's type.")]
+    public void OrNullReadsNullFromTheWrappedDomain() {
+        // Review of #212: an optional generator relayed by a wrapper that forwards its domain already holds null, so
+        // OrNull() over the relay must not count it a second time.
+        IAny<string> relayed = new RelayingAny<string>((IAny<string>)Any.String().OneOf("EUR", "USD").OrNull());
+
+        Check.That(Any.SetOf(relayed.OrNull()).WithCount(3).Generate()).Contains((string?)null);
+        Check.ThatCode(() => Any.SetOf(relayed.OrNull()).WithCount(4).Generate())
+             .Throws<ConflictingAnyConstraintException>();
+    }
+
     [Fact(DisplayName = "OrNull validates its argument on both the value-type and reference-type overloads.")]
     public void OrNullValidatesItsArgument() {
         Check.ThatCode(() => ((IAny<int>)null!).OrNull()).Throws<ArgumentNullException>();
         Check.ThatCode(() => ((IAny<string>)null!).OrNull()).Throws<ArgumentNullException>();
     }
+
+    #region Nested types
+
+    // A generator that forwards another one's draws and its whole cardinality hint, adding nothing: the shape of any
+    // wrapper that preserves a domain without being the generator that built it.
+    private sealed class RelayingAny<T> : IAny<T>, ICardinalityHint<T> {
+
+        private readonly IAny<T> _inner;
+
+        public RelayingAny(IAny<T> inner) {
+            _inner = inner;
+        }
+
+        long? ICardinalityHint<T>.DistinctCardinality => ((ICardinalityHint<T>)_inner).DistinctCardinality;
+
+        bool ICardinalityHint<T>.Contains(T value) {
+            return ((ICardinalityHint<T>)_inner).Contains(value);
+        }
+
+        public T Generate() {
+            return _inner.Generate();
+        }
+
+    }
+
+    #endregion
 
 }

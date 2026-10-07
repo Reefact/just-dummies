@@ -65,6 +65,18 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   than before when a pin genuinely lies outside the domain under a comparer, but it no longer
   fails.
 
+- **A distinct collection over an `OrNull()` element no longer fails at random.**
+  `Any.SetOf(Any.Enum<Slot>().OrNull()).NonEmpty()` threw an `AnyGenerationException` on more than
+  half of all seeds, for a declaration that is satisfiable. The same happened to sets, distinct
+  lists and dictionary keys over any small domain made optional, for value and reference types
+  alike. `OrNull()` advertised nothing about its domain, so the collection drew a size the domain
+  could not fill. It now counts `null` as one additional value in the wrapped generator's domain,
+  as `AsNullable()` already forwarded the domain it wraps (ADR-0104). A pinned `null` counts as
+  already inside the domain, and an exact count greater than the domain size including `null` is
+  refused with a `ConflictingAnyConstraintException` before any element is drawn. Previously, the
+  spent budget threw an `AnyGenerationException`. `OrNull()` draws the same values as before under
+  the same seed.
+
 - **Re-declaring the same value set no longer conflicts with itself.** `OneOf` documents duplicates
   as ignored and promises nothing about order, so `OneOf("a", "b")`, `OneOf("b", "a")` and
   `OneOf("a", "b", "b")` all declare one domain. The redeclaration check compared the call as it was

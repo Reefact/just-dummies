@@ -149,6 +149,32 @@ public sealed class CompositionProperties {
             .QuickCheckThrowOnFailure();
     }
 
+    [Fact(DisplayName = "A set over OrNull counts null as one additional value: it draws every count up to the domain size including null.")]
+    public void ASetOverOrNullCountsNullAsOneMoreValue() {
+        Gen<(int Pool, int Count, bool Reference)> cases =
+            from pool in Gen.Choose(1, 4)
+            from count in Gen.Choose(0, 6)
+            from reference in Gen.Elements(false, true)
+            select (Pool: pool, Count: count, Reference: reference);
+
+        // Issue #212: OrNull was a derived generator and advertised no domain, so a set over it with an open count
+        // drew a size the domain could not fill, and one with too large a count was refused only by a spent budget.
+        static bool CountsNullOnce<T>(IAny<T> generator, int pool, int count) {
+            bool open = Expect.EveryDraw(Any.SetOf(generator), set => set.Count <= pool + 1);
+            bool exact = count <= pool + 1
+                             ? Expect.EveryDraw(Any.SetOf(generator).WithCount(count), set => set.Count == count)
+                             : Expect.Throws<ConflictingAnyConstraintException>(() => Any.SetOf(generator).WithCount(count).Generate());
+
+            return open && exact;
+        }
+
+        Prop.ForAll(cases.ToArbitrary(),
+                    testCase => testCase.Reference
+                                    ? CountsNullOnce(Any.String().OneOf(Enumerable.Range(0, testCase.Pool).Select(value => "v" + value)).OrNull(), testCase.Pool, testCase.Count)
+                                    : CountsNullOnce(Any.Int32().Between(0, testCase.Pool - 1).OrNull(), testCase.Pool, testCase.Count))
+            .QuickCheckThrowOnFailure();
+    }
+
     [Fact(DisplayName = "A null draw from OrNull does not consume a value from the wrapped generator.")]
     public void OrNullDoesNotConsumeTheWrappedGeneratorOnANullDraw() {
         // Counting the wrapped generator's draws is the only way to observe this: the wrapped values themselves cannot

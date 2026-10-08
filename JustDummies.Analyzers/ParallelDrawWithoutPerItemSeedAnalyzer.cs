@@ -42,7 +42,7 @@ public sealed class ParallelDrawWithoutPerItemSeedAnalyzer : DiagnosticAnalyzer 
         IInvocationOperation invocation = (IInvocationOperation)context.Operation;
 
         if (!GeneratorFacts.IsGenerateCall(invocation, symbols.IAny!)) { return; }
-        if (!GeneratorFacts.RootsAtAmbientAny(invocation, symbols.Any!)) { return; }
+        if (!GeneratorFacts.RootsAtAmbientAny(invocation, symbols.Any!, symbols.IAny!)) { return; }
 
         IAnonymousFunctionOperation? body = EnclosingParallelBody(invocation, parallel);
         if (body is null) { return; }

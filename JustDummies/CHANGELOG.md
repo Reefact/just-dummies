@@ -45,6 +45,18 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Fixed
 
+- **JD007, JD008, JD009 and JD022 now follow a chain through `As(...)`, `OrNull()` and
+  `AsNullable()`, and stop treating `Any.WithSeed(...)` as ambient.** The four rules decide whether
+  a draw comes from the ambient source by walking the chain back to its first call, and that walk
+  had two blind spots. It stopped at an extension method, so
+  `Any.String().NonEmpty().As(value => new Reference(value)).Generate()` in a static field, a
+  `[Reproducible]` constructor or a theory provider went unreported, although it draws exactly when
+  its underived twin does. It also took every static member of `Any` for an ambient factory, so
+  `Any.WithSeed(seed).Int32().Generate()` inside a `Parallel.For` body was reported by JD022,
+  although it is the per-item seed the rule asks for. The walk now continues through the library's
+  own derivations, and `Any.WithSeed(...)`, which hands back an isolated context, ends it. A
+  consumer's own extension method still ends the walk, so those chains stay unreported.
+
 - **An IPv6 host without its brackets is refused when it is pinned.** `Any.Uri().Web().WithHost("::1")`
   was accepted, then every `Generate()` threw a raw `UriFormatException` that carried no seed. The
   same happened on `WebSocket()`, on `Ftp()` and on `Mailto().WithDomain(...)`. A URI writes an IPv6

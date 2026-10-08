@@ -46,7 +46,7 @@ public sealed class ScalarChainAdmitsNoValueAnalyzer : DiagnosticAnalyzer {
         if (factory is null || !IsIntegerFactory(factory.TargetMethod.Name)) { return; }
         if (NegativeTestGuard.IsSoleBodyOfLambdaArgument(invocation.Syntax)) { return; }
 
-        AnalyzeConstraints(context, constraints);
+        AnalyzeConstraints(context, factory.TargetMethod.Name, constraints);
     }
 
     /// <summary>
@@ -57,8 +57,9 @@ public sealed class ScalarChainAdmitsNoValueAnalyzer : DiagnosticAnalyzer {
     ///     Split from <see cref="Analyze" />, which answers a different question: whether this chain is one the rule
     ///     reasons about at all. Everything below assumes that answer is yes.
     /// </remarks>
-    private static void AnalyzeConstraints(OperationAnalysisContext context, IReadOnlyList<IInvocationOperation> constraints) {
-        ScalarConstraintState state = ScalarConstraintState.Unconstrained();
+    private static void AnalyzeConstraints(OperationAnalysisContext context, string factory, IReadOnlyList<IInvocationOperation> constraints) {
+        (long domainMinimum, long? domainMaximum) = Domain(factory);
+        ScalarConstraintState state = ScalarConstraintState.Unconstrained(domainMinimum, domainMaximum);
         HashSet<string>       seen  = [];
 
         foreach (IInvocationOperation constraint in constraints) {
@@ -162,6 +163,24 @@ public sealed class ScalarChainAdmitsNoValueAnalyzer : DiagnosticAnalyzer {
             case ulong ul when ul <= long.MaxValue: value = (long)ul; return true;
             default:      return false;
         }
+    }
+
+    /// <summary>
+    ///     The values the factory's type holds. A chain is judged against the generator's real domain, not the
+    ///     model's: nothing is greater than <c>int.MaxValue</c> on <c>Any.Int32()</c>, while every value above
+    ///     <c>long.MaxValue</c> remains on <c>Any.UInt64()</c>, whose top the model cannot hold and so leaves open.
+    /// </summary>
+    private static (long Minimum, long? Maximum) Domain(string factory) {
+        return factory switch {
+            "Int32"  => (int.MinValue, int.MaxValue),
+            "Int16"  => (short.MinValue, short.MaxValue),
+            "Byte"   => (byte.MinValue, byte.MaxValue),
+            "SByte"  => (sbyte.MinValue, sbyte.MaxValue),
+            "UInt16" => (ushort.MinValue, ushort.MaxValue),
+            "UInt32" => (uint.MinValue, uint.MaxValue),
+            "UInt64" => (0, null),
+            _        => (long.MinValue, long.MaxValue)
+        };
     }
 
     // Only the integer generators: the model is integer arithmetic, and a floating-point or decimal domain does not

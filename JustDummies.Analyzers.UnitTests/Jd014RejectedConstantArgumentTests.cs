@@ -20,6 +20,15 @@ public class Jd014RejectedConstantArgumentTests {
     [InlineData("Any.String().WithMaxLength(2000000)",          "1,000,000")]
     [InlineData("Any.ListOf(Any.Int32()).WithMaxCount(2000000)", "1,000,000")]
     [InlineData("Any.Int32().MultipleOf(0)",                    "strictly positive")]
+    // Issue #224: every numeric overload carries the guard its Int32 twin does, and only the Int32 one was read.
+    [InlineData("Any.Decimal().Between(100m, 1m)",              "transposed")]
+    [InlineData("Any.Double().Between(10.0, 1.0)",              "transposed")]
+    [InlineData("Any.Single().Between(10f, 1f)",                "transposed")]
+    [InlineData("Any.Int64().Between(10, 1)",                   "transposed")]
+    [InlineData("Any.UInt64().Between(10UL, 1UL)",              "transposed")]
+    [InlineData("Any.Int64().MultipleOf(0)",                    "strictly positive")]
+    [InlineData("Any.Int16().MultipleOf(-3)",                   "strictly positive")]
+    [InlineData("Any.Byte().MultipleOf(0)",                     "strictly positive")]
     [InlineData("Any.Decimal().WithScale(29)",                  "[0, 28]")]
     [InlineData("Any.String().StartingWith(\"\")",              "must not be empty")]
     [InlineData("Any.String().WithChars(\"\")",                 "must not be empty")]
@@ -110,6 +119,12 @@ public class Jd014RejectedConstantArgumentTests {
     [InlineData("Any.String().StartingWith(\"ORD-\")")]
     [InlineData("Any.String().OneOf(\"EUR\")")]
     [InlineData("Any.ListOf(Any.Int32()).WithCountBetween(2, 10)")]
+    [InlineData("Any.Decimal().Between(1m, 100m)")]
+    [InlineData("Any.Double().Between(1.0, 1.0)")]
+    [InlineData("Any.UInt64().MultipleOf(4UL)")]
+    // A non-finite bound is refused by its own guard, with its own message; it is not a transposed pair.
+    [InlineData("Any.Double().Between(double.NaN, 1.0)")]
+    [InlineData("Any.Double().Between(1.0, double.NegativeInfinity)")]
     public async Task Does_not_report_a_legal_argument(string expression) {
         string source = $$"""
             using JustDummies;

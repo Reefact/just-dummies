@@ -263,6 +263,58 @@ public class Jd023ScalarChainRepresentableExtremesTests {
         Check.That(diagnostics[0].Id).IsEqualTo("JD023");
     }
 
+    [Theory]
+    [InlineData("Any.UInt64().GreaterThan(long.MaxValue)")]
+    [InlineData("Any.UInt64().GreaterThan(9223372036854775807UL)")]
+    [InlineData("Any.UInt64().MultipleOf(4).GreaterThan(long.MaxValue)")]
+    [InlineData("Any.UInt64().LessThanOrEqualTo(long.MaxValue)")]
+    [InlineData("Any.UInt64().GreaterThanOrEqualTo(9223372036854775000UL).MultipleOf(500UL).Except(9223372036854775000UL, 9223372036854775500UL)")]
+    public async Task Does_not_report_a_ulong_bound_at_the_models_top(string expression) {
+        // Issue #224: every value in (long.MaxValue, ulong.MaxValue] satisfies these, and the first used to be
+        // reported as admitting none. The model's top is not the type's here, so the chain is not judged. The last
+        // excludes every multiple of 500 the model holds above its floor, and 9223372036854776000 is still one.
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(expression);
+
+        Check.That(diagnostics.Length).IsEqualTo(0);
+    }
+
+    [Theory]
+    [InlineData("Any.Int32().GreaterThan(int.MaxValue)")]
+    [InlineData("Any.Byte().GreaterThan(255)")]
+    [InlineData("Any.UInt32().LessThan(0)")]
+    [InlineData("Any.Int16().LessThan(short.MinValue)")]
+    public async Task Reports_a_bound_beyond_the_types_own_range(string expression) {
+        // Issue #224, the other direction: each of these throws at run time, and was silent because the model only
+        // knew the long-wide edges.
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(expression);
+
+        Check.That(diagnostics.Length).IsEqualTo(1);
+        Check.That(diagnostics[0].Id).IsEqualTo("JD023");
+    }
+
+    [Fact]
+    public async Task Leaves_a_transposed_range_to_JD014() {
+        // Transposed bounds are refused as an argument before any constraint applies: JD014 says so, and an empty
+        // domain would be the wrong diagnosis.
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync("Any.Int64().Between(10, 1)");
+
+        Check.That(diagnostics).IsEmpty();
+    }
+
+    private static async Task<ImmutableArray<Diagnostic>> AnalyzeAsync(string expression) {
+        string source = $$"""
+            using JustDummies;
+
+            public static class Sample {
+                public static void M() {
+                    _ = {{expression}};
+                }
+            }
+            """;
+
+        return await AnalyzerTestHarness.GetDiagnosticsAsync(new ScalarChainAdmitsNoValueAnalyzer(), source, "JD023", "JD024");
+    }
+
 }
 
 public class Jd024NarrowedToItsOwnShapeTests {

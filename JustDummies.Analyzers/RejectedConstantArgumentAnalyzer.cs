@@ -1,5 +1,7 @@
+using System;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Linq;
 
 using Microsoft.CodeAnalysis;
@@ -168,29 +170,33 @@ public sealed class RejectedConstantArgumentAnalyzer : DiagnosticAnalyzer {
         return TryCheckOrderedPair(invocation, out offending, out reason);
     }
 
+    // Every numeric overload carries the same guard — Between on a decimal, a double or a long throws for transposed
+    // bounds exactly as it does on an int — so the pair is read at the parameter's own type, whichever it is.
     private static bool TryCheckOrderedPair(IInvocationOperation invocation, out IOperation? offending, out string? reason) {
         offending = null;
         reason    = null;
 
-        IArgumentOperation[] arguments = NumericArguments(invocation).ToArray();
+        IArgumentOperation[] arguments = ScalarArguments(invocation).ToArray();
         if (arguments.Length != 2) { return false; }
 
-        if (!ConstantFacts.TryGetInt32(arguments[0].Value, out int minimum)) { return false; }
-        if (!ConstantFacts.TryGetInt32(arguments[1].Value, out int maximum)) { return false; }
-        if (minimum <= maximum) { return false; }
+        if (!TryGetComparable(arguments[0].Value, out IComparable minimum)) { return false; }
+        if (!TryGetComparable(arguments[1].Value, out IComparable maximum)) { return false; }
+        if (minimum.GetType() != maximum.GetType() || minimum.CompareTo(maximum) <= 0) { return false; }
 
         offending = arguments[0].Value;
-        reason    = $"the minimum ({minimum}) must be less than or equal to the maximum ({maximum}) — the two arguments look transposed";
+        reason    = $"the minimum ({Render(minimum)}) must be less than or equal to the maximum ({Render(maximum)}) — the two arguments look transposed";
 
         return true;
     }
 
+    // MultipleOf exists on the integer builders only, and every one of them refuses a step that is not strictly
+    // positive, whichever integer type it is declared over.
     private static bool TryCheckStrictlyPositive(IInvocationOperation invocation, out IOperation? offending, out string? reason) {
         offending = null;
         reason    = null;
 
-        foreach (IArgumentOperation argument in NumericArguments(invocation)) {
-            if (!ConstantFacts.TryGetInt32(argument.Value, out int value) || value > 0) { continue; }
+        foreach (IArgumentOperation argument in ScalarArguments(invocation)) {
+            if (!TryGetComparable(argument.Value, out IComparable value) || !IsNotPositive(value)) { continue; }
 
             offending = argument.Value;
             reason    = "it must be strictly positive";
@@ -282,6 +288,45 @@ public sealed class RejectedConstantArgumentAnalyzer : DiagnosticAnalyzer {
     // collection, or Between(DateTime, DateTime), out of the integer checks rather than misreading them.
     private static System.Collections.Generic.IEnumerable<IArgumentOperation> NumericArguments(IInvocationOperation invocation) {
         return invocation.Arguments.Where(argument => argument.Parameter?.Type.SpecialType == SpecialType.System_Int32);
+    }
+
+    // The arguments of a numeric bound or step, at whatever numeric type the overload declares. Dates, durations
+    // and the 128-bit integers stay out: they are not primitive numbers, and their own guards are not this rule's.
+    private static System.Collections.Generic.IEnumerable<IArgumentOperation> ScalarArguments(IInvocationOperation invocation) {
+        return invocation.Arguments.Where(argument => argument.Parameter?.Type.SpecialType is SpecialType.System_SByte or SpecialType.System_Byte
+                                                                                               or SpecialType.System_Int16 or SpecialType.System_UInt16
+                                                                                               or SpecialType.System_Int32 or SpecialType.System_UInt32
+                                                                                               or SpecialType.System_Int64 or SpecialType.System_UInt64
+                                                                                               or SpecialType.System_Single or SpecialType.System_Double
+                                                                                               or SpecialType.System_Decimal);
+    }
+
+    // The argument's constant at the parameter's own type — the conversion Roslyn inserts already folds an int literal
+    // into a long or a decimal. A non-finite floating-point bound is refused by a guard of its own, with its own
+    // message, so it is left to that guard rather than misreported as transposed.
+    private static bool TryGetComparable(IOperation operation, out IComparable value) {
+        value = operation.ConstantValue is { HasValue: true, Value: IComparable constant } ? constant : null!;
+
+        return value switch {
+            null     => false,
+            double d => !double.IsNaN(d) && !double.IsInfinity(d),
+            float f  => !float.IsNaN(f) && !float.IsInfinity(f),
+            _        => true
+        };
+    }
+
+    private static bool IsNotPositive(IComparable value) {
+        return value switch {
+            double d  => d <= 0,
+            float f   => f <= 0,
+            decimal m => m <= 0,
+            ulong u   => u == 0,
+            _         => Convert.ToInt64(value, CultureInfo.InvariantCulture) <= 0
+        };
+    }
+
+    private static string Render(IComparable value) {
+        return Convert.ToString(value, CultureInfo.InvariantCulture) ?? string.Empty;
     }
 
     private static bool IsJustDummiesMember(IMethodSymbol method, KnownSymbols symbols) {

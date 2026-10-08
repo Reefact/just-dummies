@@ -38,6 +38,25 @@ internal static class XunitFacts {
     }
 
     /// <summary>
+    ///     Whether xUnit instantiates <paramref name="type" /> to run a test: it declares a test method, or inherits one.
+    /// </summary>
+    /// <remarks>
+    ///     Only such a type is constructed by xUnit before the <c>[Reproducible]</c> hooks run. Any other type — a
+    ///     test-data builder, a mother object — is constructed by the code that uses it, inside the test body and so
+    ///     inside the scope, whatever level the attribute is declared at.
+    /// </remarks>
+    public static bool IsTestClass(INamedTypeSymbol type, INamedTypeSymbol factAttribute) {
+        for (INamedTypeSymbol? current = type; current is not null; current = current.BaseType) {
+            // A private method is not inherited: a base type's private test makes the base a test class, not its heirs.
+            bool inherited = !SymbolEqualityComparer.Default.Equals(current, type);
+
+            if (current.GetMembers().OfType<IMethodSymbol>().Any(method => !(inherited && method.DeclaredAccessibility == Accessibility.Private) && IsTestMethod(method, factAttribute))) { return true; }
+        }
+
+        return false;
+    }
+
+    /// <summary>
     ///     Whether <paramref name="symbol" /> produces a theory's cases — a member xUnit evaluates at <b>discovery</b>,
     ///     before any test runs and outside every seed scope.
     /// </summary>

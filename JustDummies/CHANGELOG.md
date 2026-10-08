@@ -57,6 +57,15 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   own derivations, and `Any.WithSeed(...)`, which hands back an isolated context, ends it. A
   consumer's own extension method still ends the walk, so those chains stay unreported.
 
+- **JD007 no longer reports a type that xUnit does not instantiate.** The rule reports a draw made
+  before `[Reproducible]` opens its scope, in a test class's constructor, field initializers or
+  `InitializeAsync`. It identified those members by their kind alone, which was enough while the
+  attribute sat on a test class. Under `[assembly: Reproducible]` every type in the assembly is
+  covered, so a test-data builder drawing its defaults in its constructor was reported, although
+  the test body constructs it inside the scope. The rule now requires the type to declare a test,
+  directly or by inheritance, before it judges its members. An `IClassFixture<T>` constructor is
+  not reported, as the rule's page already stated, whatever level the attribute is declared at.
+
 - **An IPv6 host without its brackets is refused when it is pinned.** `Any.Uri().Web().WithHost("::1")`
   was accepted, then every `Generate()` threw a raw `UriFormatException` that carried no seed. The
   same happened on `WebSocket()`, on `Ftp()` and on `Mailto().WithDomain(...)`. A URI writes an IPv6

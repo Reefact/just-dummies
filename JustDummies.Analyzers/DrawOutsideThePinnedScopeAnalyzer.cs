@@ -44,6 +44,9 @@ public sealed class DrawOutsideThePinnedScopeAnalyzer : DiagnosticAnalyzer {
         ISymbol containing = context.ContainingSymbol;
         if (!RunsBeforeTheScopeOpens(containing, out string? phase)) { return; }
         if (!XunitFacts.IsCoveredByReproducible(containing, symbols.ReproducibleAttribute!)) { return; }
+        // The lifecycle above is a test class's: a type xUnit does not instantiate is constructed inside the test.
+        // Under an assembly-level attribute every type is covered, so the member kind alone no longer says enough.
+        if (containing.ContainingType is null || symbols.FactAttribute is null || !XunitFacts.IsTestClass(containing.ContainingType, symbols.FactAttribute)) { return; }
 
         context.ReportDiagnostic(Diagnostic.Create(Descriptors.DrawOutsideThePinnedScope, invocation.Syntax.GetLocation(), phase));
     }

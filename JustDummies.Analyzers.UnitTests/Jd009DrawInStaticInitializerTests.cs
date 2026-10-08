@@ -156,4 +156,64 @@ public class Jd009DrawInStaticInitializerTests {
         Check.That(diagnostics.Length).IsEqualTo(0);
     }
 
+    [Fact]
+    public async Task Does_not_report_a_draw_in_a_body_handed_on_as_a_value() {
+        // Issue #220: a static delegate draws per call, not once for the suite. The second field nests an eager
+        // Select inside a stored lambda: the outer lambda is what decides when anything runs.
+        const string source = """
+            using System;
+            using System.Linq;
+            using JustDummies;
+
+            public static class Sample {
+                private static readonly Func<string> NewTenant = () => Any.String().NonEmpty().Generate();
+                private static readonly Func<int[]> NewBatch = () => Enumerable.Range(0, 3).Select(_ => Any.Int32().Generate()).ToArray();
+                private static readonly Lazy<int> Later = new Lazy<int>(() => Any.Int32().Generate());
+                private static readonly Func<int>[] Factories = new Func<int>[] { () => Any.Int32().Generate() };
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new DrawInStaticInitializerAnalyzer(), source);
+
+        Check.That(diagnostics.Length).IsEqualTo(0);
+    }
+
+    [Fact]
+    public async Task Reports_a_draw_in_a_lambda_the_initializer_runs_itself() {
+        // A lambda handed to an ordinary method, to a constructor or a generic callee that calls it, invoked on the spot,
+        // or stored in a container or a field another initializer then reads runs during the initializer: these values
+        // are drawn once for the suite.
+        const string source = """
+            using System;
+            using System.Collections.Generic;
+            using System.Linq;
+            using JustDummies;
+
+            public sealed class Runner {
+                public Runner(Func<int> next) { Value = next(); }
+                public int Value { get; }
+            }
+
+            public static class Sample {
+                private static readonly int[] Values = Enumerable.Range(0, 3).Select(_ => Any.Int32().Generate()).ToArray();
+                private static readonly Runner Eager = new Runner(() => Any.Int32().Generate());
+                private static readonly int Value = ((Func<int>)(() => Any.Int32().Generate()))();
+                private static readonly object Invoked = Run<Func<int>>(() => Any.Int32().Generate());
+                private static readonly object Cast = Unconstrained<Func<int>>(() => Any.Int32().Generate());
+                private static readonly int FromArray = new Func<int>[] { () => Any.Int32().Generate() }[0]();
+                private static readonly int FromList = new List<Func<int>> { () => Any.Int32().Generate() }[0]();
+                private static readonly int FromLazy = new Lazy<int>(() => Any.Int32().Generate()).Value;
+                private static readonly Func<int> ReadBack = () => Any.Int32().Generate();
+                private static readonly int FromReadBack = ReadBack();
+
+                private static object Run<T>(T body) where T : Delegate => body.DynamicInvoke();
+                private static object Unconstrained<T>(T value) => ((Delegate)(object)value!).DynamicInvoke()!;
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new DrawInStaticInitializerAnalyzer(), source);
+
+        Check.That(diagnostics.Length).IsEqualTo(9);
+    }
+
 }

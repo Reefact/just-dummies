@@ -66,6 +66,22 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   directly or by inheritance, before it judges its members. An `IClassFixture<T>` constructor is
   not reported, as the rule's page already stated, whatever level the attribute is declared at.
 
+- **JD007, JD008 and JD009 no longer report a draw inside a lambda or a local function that is
+  provably kept rather than run.** Each rule judges the member a draw is written in: an instance
+  initializer or constructor, a static initializer, a theory-data provider. Roslyn attributes a
+  lambda's body to the member that encloses it, so `() => Any.String().NonEmpty().Generate()` stored
+  in a field, a `new Lazy<T>(…)` default and a `TheoryData<Func<T>>` datum were all reported as
+  drawing too early, though each draws when it is invoked, inside the pinned scope. A body now counts
+  as deferred only when nothing can run it before the member returns: returned, stored in a field or
+  an auto-property, placed in an array, a `List<T>` or a `TheoryData`, given to `Lazy<T>`, or, for a
+  local function, never called and only kept that way. Whatever might run it stays reported: an
+  ordinary method such as `Enumerable.Range(0, 3).Select(_ => Any.Int32().Generate()).ToArray()` or
+  a generic one, which can cast its argument back to a delegate, any other constructor —
+  `new Service(() => …)` may call its argument —, an invocation on the spot, a container read on the
+  spot such as `new Func<int>[] { … }[0]()`, a local the member then calls, a field or an
+  auto-property an initializer or a constructor of the same phase reads back. A read through a
+  method those call is not followed.
+
 - **An IPv6 host without its brackets is refused when it is pinned.** `Any.Uri().Web().WithHost("::1")`
   was accepted, then every `Generate()` threw a raw `UriFormatException` that carried no seed. The
   same happened on `WebSocket()`, on `Ftp()` and on `Mailto().WithDomain(...)`. A URI writes an IPv6

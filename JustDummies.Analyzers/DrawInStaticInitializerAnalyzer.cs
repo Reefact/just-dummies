@@ -37,6 +37,7 @@ public sealed class DrawInStaticInitializerAnalyzer : DiagnosticAnalyzer {
 
         if (!GeneratorFacts.IsGenerateCall(invocation, symbols.IAny!)) { return; }
         if (!GeneratorFacts.RootsAtAmbientAny(invocation, symbols.Any!, symbols.IAny!)) { return; }
+        if (GeneratorFacts.IsDeferred(invocation)) { return; }
         if (!IsStaticInitialization(context.ContainingSymbol)) { return; }
 
         context.ReportDiagnostic(Diagnostic.Create(Descriptors.DrawInStaticInitializer, invocation.Syntax.GetLocation()));

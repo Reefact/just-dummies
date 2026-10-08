@@ -363,6 +363,50 @@ public class Jd022ParallelDrawWithoutPerItemSeedTests {
     }
 
     [Fact]
+    public async Task Does_not_report_a_draw_from_an_inline_isolated_context() {
+        // Issue #219: the page lists a draw from an isolated Any.WithSeed(...) context as compliant, and a per-item
+        // seed is the very isolation the rule asks for. Written inline, it was mistaken for the ambient generator.
+        const string source = """
+            using System.Threading.Tasks;
+            using JustDummies;
+
+            public static class Sample {
+                public static void M() {
+                    Parallel.For(0, 64, index => {
+                        int value = Any.WithSeed(unchecked(20240501 * 397 ^ index)).Int32().Generate();
+                    });
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new ParallelDrawWithoutPerItemSeedAnalyzer(), source);
+
+        Check.That(diagnostics.Length).IsEqualTo(0);
+    }
+
+    [Fact]
+    public async Task Reports_a_draw_derived_through_a_library_extension() {
+        // Issue #219: OrNull() draws from the ambient generator it wraps, so the race is the same as without it.
+        const string source = """
+            using System.Threading.Tasks;
+            using JustDummies;
+
+            public static class Sample {
+                public static void M() {
+                    Parallel.For(0, 64, index => {
+                        string? note = Any.String().NonEmpty().OrNull().Generate();
+                    });
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new ParallelDrawWithoutPerItemSeedAnalyzer(), source);
+
+        Check.That(diagnostics.Length).IsEqualTo(1);
+        Check.That(diagnostics[0].Id).IsEqualTo("JD022");
+    }
+
+    [Fact]
     public async Task Does_not_report_a_sequential_draw() {
         const string source = """
             using JustDummies;

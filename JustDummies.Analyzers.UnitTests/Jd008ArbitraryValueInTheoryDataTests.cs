@@ -146,4 +146,30 @@ public class Jd008ArbitraryValueInTheoryDataTests {
         Check.That(diagnostics.Length).IsEqualTo(0);
     }
 
+    [Fact]
+    public async Task Reports_a_draw_derived_through_a_library_extension() {
+        // Issue #219: the derived twin of a reported draw, drawn at discovery just the same.
+        const string source = """
+            using JustDummies;
+            using Xunit;
+
+            public sealed class Reference {
+                public Reference(string value) { }
+            }
+
+            public class Sample {
+                public static TheoryData<Reference> Cases => new() { Any.String().NonEmpty().As(value => new Reference(value)).Generate() };
+
+                [Theory]
+                [MemberData(nameof(Cases))]
+                public void T(Reference reference) { }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new ArbitraryValueInTheoryDataAnalyzer(), source);
+
+        Check.That(diagnostics.Length).IsEqualTo(1);
+        Check.That(diagnostics[0].Id).IsEqualTo("JD008");
+    }
+
 }

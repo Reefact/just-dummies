@@ -181,4 +181,59 @@ public class Jd007DrawOutsideThePinnedScopeTests {
         Check.That(diagnostics[0].Id).IsEqualTo("JD007");
     }
 
+    [Fact]
+    public async Task Reports_a_draw_derived_through_a_library_extension() {
+        // Issue #219: As(...) and OrNull() draw from the generator they are called on, so these are drawn before the
+        // scope opens exactly as their underived twins are.
+        const string source = """
+            using JustDummies;
+            using JustDummies.Xunit;
+            using Xunit;
+
+            public sealed class Reference {
+                public Reference(string value) { }
+            }
+
+            [Reproducible]
+            public class Sample {
+                private readonly Reference _reference = Any.String().NonEmpty().As(value => new Reference(value)).Generate();
+                private readonly string? _note;
+
+                public Sample() {
+                    _note = Any.String().NonEmpty().OrNull().Generate();
+                }
+
+                [Fact]
+                public void T() { }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new DrawOutsideThePinnedScopeAnalyzer(), source);
+
+        Check.That(diagnostics.Length).IsEqualTo(2);
+        Check.That(diagnostics.Select(diagnostic => diagnostic.Id)).ContainsOnlyElementsThatMatch(id => id == "JD007");
+    }
+
+    [Fact]
+    public async Task Does_not_report_an_inline_isolated_context() {
+        // Issue #219: the same isolated context as above, written inline rather than held in a local.
+        const string source = """
+            using JustDummies;
+            using JustDummies.Xunit;
+            using Xunit;
+
+            [Reproducible]
+            public class Sample {
+                private readonly string _reference = Any.WithSeed(1234).String().NonEmpty().Generate();
+
+                [Fact]
+                public void T() { }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new DrawOutsideThePinnedScopeAnalyzer(), source);
+
+        Check.That(diagnostics.Length).IsEqualTo(0);
+    }
+
 }

@@ -40,6 +40,7 @@ public sealed class DrawOutsideThePinnedScopeAnalyzer : DiagnosticAnalyzer {
 
         if (!GeneratorFacts.IsGenerateCall(invocation, symbols.IAny!)) { return; }
         if (!GeneratorFacts.RootsAtAmbientAny(invocation, symbols.Any!, symbols.IAny!)) { return; }
+        if (GeneratorFacts.IsDeferred(invocation)) { return; }
 
         ISymbol containing = context.ContainingSymbol;
         if (!RunsBeforeTheScopeOpens(containing, out string? phase)) { return; }

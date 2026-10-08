@@ -307,4 +307,112 @@ public class Jd007DrawOutsideThePinnedScopeTests {
         Check.That(diagnostics[0].Id).IsEqualTo("JD007");
     }
 
+    [Fact]
+    public async Task Does_not_report_a_draw_in_a_body_handed_on_as_a_value() {
+        // Issue #220: each of these bodies draws when it is invoked — in the test, inside the scope — not when the
+        // member declaring it runs. Roslyn attributes them to the enclosing member, which is what the rule judged.
+        const string source = """
+            using System;
+            using System.Collections.Generic;
+            using JustDummies;
+            using JustDummies.Xunit;
+            using Xunit;
+
+            public sealed class Holder {
+                public Func<int> Next { get; set; }
+            }
+
+            [Reproducible]
+            public class Sample {
+                private readonly Func<string> _reference = () => Any.String().NonEmpty().Generate();
+                private readonly Lazy<string> _lazy = new Lazy<string>(() => Any.String().NonEmpty().Generate());
+                private readonly Func<int> _next;
+                private readonly Holder _holder;
+                private readonly List<Func<int>> _factories = new() { () => Any.Int32().Generate() };
+
+                public Sample() {
+                    _next = Draw;
+                    _holder = new Holder { Next = () => Any.Int32().Positive().Generate() };
+
+                    int Draw() => Any.Int32().Positive().Generate();
+                }
+
+                [Fact]
+                public void T() {
+                    int value = _next() + _reference().Length;
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new DrawOutsideThePinnedScopeAnalyzer(), source);
+
+        Check.That(diagnostics.Length).IsEqualTo(0);
+    }
+
+    [Fact]
+    public async Task Reports_a_draw_in_a_body_the_member_runs_itself() {
+        // The other side of issue #220: a body counts as deferred only when nothing can run it before the constructor
+        // returns. An ordinary method, a constructor that calls its argument, an invocation on the spot, a local the
+        // constructor then calls, a setter that calls its value, an array read at once, a field the constructor reads
+        // back, a lambda returned by one run on the spot and an object read back all may — so each draw here stays
+        // reported.
+        const string source = """
+            using System;
+            using System.Linq;
+            using JustDummies;
+            using JustDummies.Xunit;
+            using Xunit;
+
+            public sealed class Runner {
+                public Runner(Func<int> next) { Value = next(); }
+                public int Value { get; }
+            }
+
+            public sealed class Box {
+                public Func<int> Next { get; set; }
+            }
+
+            [Reproducible]
+            public class Sample {
+                private readonly int[] _values;
+                private int _value;
+                private readonly Runner _runner;
+                private readonly Runner _runner2;
+                private readonly Func<int> _readBack;
+                private readonly Func<int> _initialized = () => Any.Int32().Generate();
+                private readonly Box _box;
+
+                public Func<int> Eager { set { _value = value(); } }
+
+                public Sample() {
+                    _values = Enumerable.Range(0, 3).Select(_ => Any.Int32().Generate()).ToArray();
+                    _value = Draw();
+                    _runner = new Runner(() => Any.Int32().Generate());
+                    _runner2 = new Runner(DrawForTheRunner);
+                    _value = ((Func<int>)(() => Any.Int32().Generate()))();
+                    Func<int> next = () => Any.Int32().Generate();
+                    _value = next();
+                    Eager = () => Any.Int32().Generate();
+                    _value = new Func<int>[] { () => Any.Int32().Generate() }[0]();
+                    _readBack = () => Any.Int32().Generate();
+                    _value = _readBack();
+                    _value = _initialized();
+                    _value = ((Func<Func<int>>)(() => () => Any.Int32().Generate()))()();
+                    _box = new Box { Next = () => Any.Int32().Generate() };
+                    _value = _box.Next();
+
+                    int Draw() => Any.Int32().Positive().Generate();
+                    int DrawForTheRunner() => Any.Int32().Positive().Generate();
+                }
+
+                [Fact]
+                public void T() { }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new DrawOutsideThePinnedScopeAnalyzer(), source);
+
+        Check.That(diagnostics.Length).IsEqualTo(12);
+    }
+
 }

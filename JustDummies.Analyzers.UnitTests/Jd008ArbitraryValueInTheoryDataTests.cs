@@ -172,4 +172,50 @@ public class Jd008ArbitraryValueInTheoryDataTests {
         Check.That(diagnostics[0].Id).IsEqualTo("JD008");
     }
 
+    [Fact]
+    public async Task Does_not_report_a_draw_in_a_lambda_datum() {
+        // Issue #220: the datum is the delegate; it draws when the theory invokes it, inside the pinned scope.
+        const string source = """
+            using System;
+            using JustDummies;
+            using Xunit;
+
+            public class Sample {
+                public static TheoryData<Func<string>> Cases => new() { () => Any.String().NonEmpty().Generate() };
+
+                [Theory]
+                [MemberData(nameof(Cases))]
+                public void T(Func<string> reference) { }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new ArbitraryValueInTheoryDataAnalyzer(), source);
+
+        Check.That(diagnostics.Length).IsEqualTo(0);
+    }
+
+    [Fact]
+    public async Task Reports_a_draw_in_a_lambda_the_provider_runs_itself() {
+        // Enumerating the provider runs the Select lambda, at discovery: the rows carry values, not recipes.
+        const string source = """
+            using System.Collections.Generic;
+            using System.Linq;
+            using JustDummies;
+            using Xunit;
+
+            public class Sample {
+                public static IEnumerable<object[]> Cases => Enumerable.Range(0, 3).Select(_ => new object[] { Any.Int32().Generate() });
+
+                [Theory]
+                [MemberData(nameof(Cases))]
+                public void T(int value) { }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new ArbitraryValueInTheoryDataAnalyzer(), source);
+
+        Check.That(diagnostics.Length).IsEqualTo(1);
+        Check.That(diagnostics[0].Id).IsEqualTo("JD008");
+    }
+
 }

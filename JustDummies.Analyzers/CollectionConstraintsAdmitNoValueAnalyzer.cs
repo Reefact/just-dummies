@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
@@ -79,6 +80,8 @@ public sealed class CollectionConstraintsAdmitNoValueAnalyzer : DiagnosticAnalyz
         int?  maximum  = null;
         bool  distinct = factory.TargetMethod.Name is "SetOf" or "DictionaryOf";
         int   contained = 0;
+        // Every value the chain pins, fixed or drawn: one lying outside the element domain fills its own slot.
+        List<IOperation> pinned = [];
         IOperation? at  = null;
 
         foreach (IInvocationOperation constraint in constraints) {
@@ -88,7 +91,8 @@ public sealed class CollectionConstraintsAdmitNoValueAnalyzer : DiagnosticAnalyz
                 case "Empty":       exact   = 0;                                                          break;
                 case "NonEmpty":    minimum = System.Math.Max(minimum ?? 0, 1);                           break;
                 case "Distinct":    distinct = true;                                                      break;
-                case "Containing" or "ContainingKey" or "ContainingEntry": contained++;                   break;
+                case "Containing" or "ContainingKey" or "ContainingEntry": contained++; Pin(constraint, pinned); break;
+                case "ContainingAny" or "ContainingAnyKey":                               Pin(constraint, pinned); break;
 
                 case "WithCount" when TryConstant(constraint, out int count):      exact   = count;       break;
                 case "WithMinCount" when TryConstant(constraint, out int min):     minimum = System.Math.Max(minimum ?? 0, min); break;
@@ -122,12 +126,33 @@ public sealed class CollectionConstraintsAdmitNoValueAnalyzer : DiagnosticAnalyz
         }
 
         // The cardinality gate (ADR-0004): a distinct collection cannot hold more elements than its element
-        // generator has distinct values to give.
+        // generator has distinct values to give, plus the pinned values that lie outside what it gives. A pin is
+        // credited unless it provably sits inside the domain, which mirrors the runtime's own count and can only
+        // defer to it: a value the compiler cannot place must never make the domain look smaller than it is.
         if (!distinct) { return; }
-        if (!TryGetProvableCardinality(factory, out int cardinality)) { return; }
-        if (effectiveMin <= cardinality) { return; }
+        if (!TryGetProvableCardinality(factory, out int cardinality, out Func<IOperation, bool> mayExtend)) { return; }
 
-        Report(context, at, $"{effectiveMin} distinct element(s) are required, but the element generator can produce only {cardinality}");
+        int credited      = CountCredited(pinned.Where(mayExtend));
+        int fromGenerator = effectiveMin - credited;
+        if (fromGenerator <= cardinality) { return; }
+
+        string required = credited == 0
+                              ? $"{effectiveMin} distinct element(s) are required"
+                              : $"{fromGenerator} distinct element(s) must come from the element generator once the {credited} pinned outside its domain are counted";
+
+        Report(context, at, $"{required}, but the element generator can produce only {cardinality}");
+    }
+
+    private static void Pin(IInvocationOperation constraint, List<IOperation> pinned) {
+        if (constraint.Arguments.Length > 0) { pinned.Add(GeneratorFacts.Unwrap(constraint.Arguments[0].Value)); }
+    }
+
+    // The same constant pinned twice is one value — and a distinct collection refuses the repeat outright — so it
+    // fills one slot. A pin the compiler cannot evaluate is credited on its own: nothing proves it equals another.
+    private static int CountCredited(IEnumerable<IOperation> pins) {
+        HashSet<object?> constants = [];
+
+        return pins.Count(pin => !pin.ConstantValue.HasValue || constants.Add(pin.ConstantValue.Value));
     }
 
     private static void Report(OperationAnalysisContext context, IOperation at, string reason) {
@@ -148,8 +173,15 @@ public sealed class CollectionConstraintsAdmitNoValueAnalyzer : DiagnosticAnalyz
     ///     An upper bound on the element generator's distinct domain, for the shapes the compiler can settle. Anything
     ///     else answers <c>false</c>: an unprovable domain must never be treated as a small one.
     /// </summary>
-    private static bool TryGetProvableCardinality(IInvocationOperation factory, out int cardinality) {
+    /// <remarks>
+    ///     <paramref name="mayExtend" /> answers, for a value the chain pins, whether it may lie outside that domain —
+    ///     <c>true</c> unless it provably sits inside. A domain bounded by its type (a <c>bool</c>, a <c>byte</c>, a
+    ///     16-bit integer, a <c>Half</c>) holds every value of the type, so nothing pinned can extend it; a pool, an
+    ///     enum and the ASCII row are extended by a constant they do not hold, and by anything the compiler cannot fold.
+    /// </remarks>
+    private static bool TryGetProvableCardinality(IInvocationOperation factory, out int cardinality, out Func<IOperation, bool> mayExtend) {
         cardinality = 0;
+        mayExtend   = _ => true;
 
         if (factory.Arguments.Length == 0) { return false; }
         if (GeneratorFacts.Unwrap(factory.Arguments[0].Value) is not IInvocationOperation element) { return false; }
@@ -177,7 +209,7 @@ public sealed class CollectionConstraintsAdmitNoValueAnalyzer : DiagnosticAnalyz
             // the shapes this rule exists for, and its own pool is exactly what needs counting, in place of the
             // 128 the Char() factory beneath it would otherwise answer with.
             if (root.TargetMethod.Name == "OneOf" && root.TargetMethod.ContainingType?.Name == "AnyChar") {
-                return TryCountDistinctConstants(root, out cardinality);
+                return TryCountDistinctConstants(root, out cardinality, out mayExtend);
             }
 
             root = inner;
@@ -186,18 +218,19 @@ public sealed class CollectionConstraintsAdmitNoValueAnalyzer : DiagnosticAnalyz
         switch (root.TargetMethod.Name) {
             case "Boolean":
                 cardinality = BooleanValueCount;
+                mayExtend   = _ => false;
 
                 return true;
 
             // DISTINCT constant values, never declared members: `enum Grade { Low = 1, …, Min = 1 }` declares five
             // names for three values, and counting names would bless a floor the element row can never reach.
             case "Enum" when root.TargetMethod.TypeArguments.Length == 1 && root.TargetMethod.TypeArguments[0] is INamedTypeSymbol enumType:
-                cardinality = enumType.GetMembers()
-                                      .OfType<IFieldSymbol>()
-                                      .Where(field => field.HasConstantValue)
-                                      .Select(field => field.ConstantValue)
-                                      .Distinct()
-                                      .Count();
+                HashSet<object?> declared = [.. enumType.GetMembers()
+                                                        .OfType<IFieldSymbol>()
+                                                        .Where(field => field.HasConstantValue)
+                                                        .Select(field => field.ConstantValue)];
+                cardinality = declared.Count;
+                mayExtend   = pin => !IsConstantIn(pin, declared);
 
                 return cardinality > 0;
 
@@ -206,11 +239,13 @@ public sealed class CollectionConstraintsAdmitNoValueAnalyzer : DiagnosticAnalyz
             // count above them is provably unsatisfiable rather than merely large.
             case "Char":
                 cardinality = AsciiValueCount;
+                mayExtend   = pin => !(pin.ConstantValue is { HasValue: true, Value: char character } && character < AsciiValueCount);
 
                 return true;
 
             case "Byte" or "SByte":
                 cardinality = ByteValueCount;
+                mayExtend   = _ => false;
 
                 return true;
 
@@ -221,24 +256,27 @@ public sealed class CollectionConstraintsAdmitNoValueAnalyzer : DiagnosticAnalyz
             // provably unsatisfiable, and one below it is left to the draw.
             case "Half":
                 cardinality = HalfValueCount;
+                mayExtend   = _ => false;
 
                 return true;
 
             case "Int16" or "UInt16":
                 cardinality = Int16ValueCount;
+                mayExtend   = _ => false;
 
                 return true;
 
             case "OneOf" or "ElementOf":
-                return TryCountDistinctConstants(root, out cardinality);
+                return TryCountDistinctConstants(root, out cardinality, out mayExtend);
 
             default:
                 return false;
         }
     }
 
-    private static bool TryCountDistinctConstants(IInvocationOperation pool, out int cardinality) {
+    private static bool TryCountDistinctConstants(IInvocationOperation pool, out int cardinality, out Func<IOperation, bool> mayExtend) {
         cardinality = 0;
+        mayExtend   = _ => true;
 
         foreach (IArgumentOperation argument in pool.Arguments) {
             if (argument.ArgumentKind != ArgumentKind.ParamArray) { continue; }
@@ -253,11 +291,16 @@ public sealed class CollectionConstraintsAdmitNoValueAnalyzer : DiagnosticAnalyz
             }
 
             cardinality = distinct.Count;
+            mayExtend   = pin => !IsConstantIn(pin, distinct);
 
             return cardinality > 0;
         }
 
         return false;
+    }
+
+    private static bool IsConstantIn(IOperation pin, HashSet<object?> values) {
+        return pin.ConstantValue.HasValue && values.Contains(pin.ConstantValue.Value);
     }
 
 }

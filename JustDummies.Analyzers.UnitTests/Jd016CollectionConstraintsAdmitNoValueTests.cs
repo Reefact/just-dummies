@@ -178,6 +178,17 @@ public class Jd016CollectionConstraintsAdmitNoValueTests {
     [InlineData("Any.SetOf(Any.Char().OneOf('a', 'b', 'c')).WithCount(3)")]
     [InlineData("Any.SetOf(Any.Half()).WithCount(100)")]
     [InlineData("Any.SetOf(Any.Int32().OneOf(1, 2)).Containing(3).WithCount(3)")]
+    // Issue #226: a value pinned outside a provable pool, or drawn by a generator the compiler cannot place, fills
+    // its own slot, as the runtime counts it (#188). The gate compared the count with the pool alone and refused
+    // these, although each generates on every seed.
+    [InlineData("Any.SetOf(Any.OneOf(\"EUR\", \"USD\")).Containing(\"GBP\").WithCount(3)")]
+    [InlineData("Any.SetOf(Any.OneOf(1, 2)).Containing(3).WithCount(3)")]
+    [InlineData("Any.SetOf(Any.Char().OneOf('a', 'b')).Containing('c').WithCount(3)")]
+    [InlineData("Any.DictionaryOf(Any.OneOf(1, 2), Any.Int32()).ContainingKey(3).WithCount(3)")]
+    [InlineData("Any.DictionaryOf(Any.OneOf(1, 2), Any.Int32()).ContainingEntry(3, 0).WithCount(3)")]
+    [InlineData("Any.SetOf(Any.OneOf(1, 2)).ContainingAny(Any.OneOf(3)).WithCount(3)")]
+    [InlineData("Any.DictionaryOf(Any.OneOf(1, 2), Any.Int32()).ContainingAnyKey(Any.OneOf(3)).WithCount(3)")]
+    [InlineData("Any.SetOf(Any.Char()).Containing('\\u00e9').WithCount(129)")]
     public async Task Does_not_report_a_satisfiable_chain(string expression) {
         string source = $$"""
             using JustDummies;
@@ -192,6 +203,51 @@ public class Jd016CollectionConstraintsAdmitNoValueTests {
         ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new CollectionConstraintsAdmitNoValueAnalyzer(), source);
 
         Check.That(diagnostics.Length).IsEqualTo(0);
+    }
+
+    [Fact]
+    public async Task Does_not_report_an_undeclared_enum_value_pinned_beside_the_members() {
+        // A cast value the enum does not declare lies outside the members the row draws, so it extends the domain.
+        const string source = """
+            using JustDummies;
+
+            public enum Slot { None, Morning, Evening }
+
+            public static class Sample {
+                public static void M() {
+                    _ = Any.SetOf(Any.Enum<Slot>()).Containing((Slot)9).WithCount(4);
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new CollectionConstraintsAdmitNoValueAnalyzer(), source);
+
+        Check.That(diagnostics.Length).IsEqualTo(0);
+    }
+
+    [Theory]
+    [InlineData("Any.SetOf(Any.OneOf(\"EUR\", \"USD\")).Containing(\"EUR\").WithCount(3)", "3 distinct element(s) are required, but the element generator can produce only 2")]
+    [InlineData("Any.SetOf(Any.Boolean()).Containing(true).WithCount(3)", "only 2")]
+    [InlineData("Any.SetOf(Any.OneOf(1, 2)).Containing(3).WithCount(4)", "3 distinct element(s) must come from the element generator once the 1 pinned outside its domain are counted, but the element generator can produce only 2")]
+    [InlineData("Any.SetOf(Any.OneOf(1, 2)).Containing(3).Containing(3).WithCount(4)", "3 distinct element(s) must come from the element generator once the 1 pinned outside its domain are counted, but the element generator can produce only 2")]
+    public async Task Still_reports_a_pin_that_does_not_widen_the_domain_enough(string expression, string expected) {
+        // The other side of issue #226: a pin inside the pool, or inside a domain its type bounds, fills no extra
+        // slot; one outside fills one, and no more — the same constant pinned twice is still one value.
+        string source = $$"""
+            using JustDummies;
+
+            public static class Sample {
+                public static void M() {
+                    _ = {{expression}};
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new CollectionConstraintsAdmitNoValueAnalyzer(), source);
+
+        Check.That(diagnostics.Length).IsEqualTo(1);
+        Check.That(diagnostics[0].Id).IsEqualTo("JD016");
+        Check.That(diagnostics[0].GetMessage()).Contains(expected);
     }
 
     [Fact]

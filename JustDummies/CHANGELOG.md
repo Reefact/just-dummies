@@ -82,6 +82,16 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   auto-property an initializer or a constructor of the same phase reads back. A read through a
   method those call is not followed.
 
+- **JD016 counts a pinned value that lies outside a provable element domain.**
+  `Any.SetOf(Any.OneOf("EUR", "USD")).Containing("GBP").WithCount(3)` was reported as asking for
+  three distinct elements from a pool of two, although it generates on every seed: the runtime
+  counts a value pinned outside the element domain as filling its own slot (#188), and the rule's
+  cardinality gate ignored it. The gate now credits each value pinned with `Containing`,
+  `ContainingKey`, `ContainingEntry`, `ContainingAny` or `ContainingAnyKey` unless it provably sits
+  inside the domain, and counts the same constant pinned twice once. A domain bounded by its type,
+  such as `bool`, `byte` or a 16-bit integer, gains nothing from a pin, so
+  `Any.SetOf(Any.Boolean()).Containing(true).WithCount(3)` stays reported.
+
 - **An IPv6 host without its brackets is refused when it is pinned.** `Any.Uri().Web().WithHost("::1")`
   was accepted, then every `Generate()` threw a raw `UriFormatException` that carried no seed. The
   same happened on `WebSocket()`, on `Ftp()` and on `Mailto().WithDomain(...)`. A URI writes an IPv6

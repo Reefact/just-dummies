@@ -82,6 +82,19 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   auto-property an initializer or a constructor of the same phase reads back. A read through a
   method those call is not followed.
 
+- **JD023 judges each integer factory against its own range, and JD014 checks every numeric
+  overload.** JD023 reasoned in a single `long` interval, so it reported
+  `Any.UInt64().GreaterThan(long.MaxValue)` as admitting no value, although every value up to
+  `ulong.MaxValue` satisfies it. It also missed `Any.Int32().GreaterThan(int.MaxValue)`,
+  `Any.Byte().GreaterThan(255)` and `Any.UInt32().LessThan(0)`, which all throw. The rule now
+  carries each factory's real bounds and leaves a `UInt64` bound at `long.MaxValue` unjudged, since
+  the model cannot hold that type's top. JD014 read only `int` arguments, so a transposed `Between`
+  on a `decimal`, a `double`, a `float` or a `long`, and a `MultipleOf(0)` on a `long`, a `short` or
+  a `byte`, all went unreported although the builders refuse them. It now reads every numeric
+  overload, and leaves a non-finite floating-point bound to the guard that refuses it. A transposed
+  `Between` is now reported by JD014 alone; JD023 no longer adds an "admits no value" diagnosis on
+  top of it.
+
 - **An IPv6 host without its brackets is refused when it is pinned.** `Any.Uri().Web().WithHost("::1")`
   was accepted, then every `Generate()` threw a raw `UriFormatException` that carried no seed. The
   same happened on `WebSocket()`, on `Ftp()` and on `Mailto().WithDomain(...)`. A URI writes an IPv6

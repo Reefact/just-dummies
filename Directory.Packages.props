@@ -79,7 +79,7 @@
          engine owns none of it (specification §10.2). Restored to this list when that project arrived —
          it was dropped at the extraction because nothing referenced it then, which is what the note above
          records. -->
-    <PackageVersion Include="Spectre.Console.Cli" Version="0.55.0" />
+    <PackageVersion Include="Spectre.Console.Cli" Version="0.57.2" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="4.0.0" />
     <PackageVersion Include="xunit.v3" Version="4.0.1" />
     <PackageVersion Include="xunit.v3.extensibility.core" Version="4.0.1" />

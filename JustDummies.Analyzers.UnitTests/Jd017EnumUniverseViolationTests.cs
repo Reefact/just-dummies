@@ -103,17 +103,23 @@ public class Jd017EnumUniverseViolationTests {
         Check.That(diagnostics.Length).IsEqualTo(0);
     }
 
-    [Fact]
-    public async Task Reports_an_exclusion_that_removes_the_whole_allow_list() {
+    [Theory]
+    [InlineData("Any.Enum<Perm>().OneOf(Perm.Read).Except(Perm.None, Perm.Read, Perm.Write)", "Perm")]
+    [InlineData("Any.Enum<Day>().OneOf(Day.Mon).Except(Day.Mon)", "Day")]
+    [InlineData("Any.Enum<Day>().Except(Day.Mon).OneOf(Day.Mon)", "Day")]
+    [InlineData("Any.Enum<Perm>().OneOf(Perm.Read | Perm.Write).Except(Perm.Read | Perm.Write)", "Perm")]
+    [InlineData("Any.Enum<Perm>().OneOf(Perm.Read, Perm.Write).Except(Perm.Read).DifferentFrom(Perm.Write)", "Perm")]
+    public async Task Reports_an_exclusion_that_removes_the_whole_allow_list(string expression, string type) {
         // The other side of that narrowing: an allow-list every exclusion does carry leaves nothing to draw, and the
         // generator refuses it -- so standing down for the allow-list must not become standing down for all of them.
+        // Issue #227: the pool is what is weighed, however many declared members it leaves out, in either order.
         string source = $$"""
             using JustDummies;
             {{Declarations}}
 
             public static class Sample {
                 public static void M() {
-                    _ = Any.Enum<Perm>().OneOf(Perm.Read).Except(Perm.None, Perm.Read, Perm.Write);
+                    _ = {{expression}};
                 }
             }
             """;
@@ -121,7 +127,7 @@ public class Jd017EnumUniverseViolationTests {
         ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new EnumUniverseViolationAnalyzer(), source);
 
         Check.That(diagnostics.Length).IsEqualTo(1);
-        Check.That(diagnostics[0].GetMessage()).Contains("no declared Perm member remains");
+        Check.That(diagnostics[0].GetMessage()).Contains($"no {type} value the allow-list names remains");
     }
 
     [Fact]

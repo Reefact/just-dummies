@@ -104,8 +104,10 @@ public sealed class EnumUniverseViolationAnalyzer : DiagnosticAnalyzer {
     /// </summary>
     /// <remarks>
     ///     An allow-list is the pool, so the declared members it does not name were never going to be drawn: what
-    ///     decides is whether anything the caller allowed survives, not whether the declared set was emptied — and
-    ///     an allow-list holding one entry the rule cannot read is a pool it cannot decide, not an absent one.
+    ///     decides is whether anything the caller allowed survives, not whether the declared set was emptied. With an
+    ///     allow-list the pool alone is weighed, however many declared members lie outside it; without one, the
+    ///     declared set is the pool. An allow-list holding one entry the rule cannot read is a pool it cannot decide,
+    ///     not an absent one.
     /// </remarks>
     private static void ReportAnExclusionNothingSurvives(OperationAnalysisContext context, IInvocationOperation invocation,
                                                         IReadOnlyList<IInvocationOperation> constraints, HashSet<object?> declared,
@@ -117,13 +119,17 @@ public sealed class EnumUniverseViolationAnalyzer : DiagnosticAnalyzer {
             if (name is OneOfMethodName) { allowed.Add(constant); }
         }
 
-        if (excluded.Count == 0 || !declared.All(excluded.Contains)) { return; }
+        if (excluded.Count == 0) { return; }
         if (NamesAValueItCannotRead(constraints, OneOfMethodName)) { return; }
-        if (allowed.Count > 0 && allowed.Any(value => !excluded.Contains(value))) { return; }
+
+        HashSet<object?> pool = allowed.Count > 0 ? allowed : declared;
+        if (pool.Any(value => !excluded.Contains(value))) { return; }
 
         context.ReportDiagnostic(Diagnostic.Create(
             Descriptors.EnumUniverseViolation, invocation.Syntax.GetLocation(),
-            $"no declared {enumType.Name} member remains once every exclusion is applied"));
+            allowed.Count > 0
+                ? $"no {enumType.Name} value the allow-list names remains once every exclusion is applied"
+                : $"no declared {enumType.Name} member remains once every exclusion is applied"));
     }
 
     /// <summary>

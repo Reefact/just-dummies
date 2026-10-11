@@ -54,6 +54,13 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   it always did
   ([ADR-0105](../doc/handwritten/for-maintainers/adr/0105-accept-an-undeclared-enum-exclusion-as-a-no-op.md)).
 
+- **JD017 reports an exclusion that empties the allow-list, not only one that empties the type.**
+  `Any.Enum<Day>().OneOf(Day.Mon).Except(Day.Mon)` throws on every seed, yet went unreported: the
+  rule only weighed the allow-list once the exclusions already covered every member the type
+  declares, so a `OneOf` narrower than the type hid the conflict. With an allow-list, the pool is
+  now what is weighed, in either order, and the message says the allow-list was emptied rather than
+  that no declared member remains.
+
 - **JD007, JD008, JD009 and JD022 now follow a chain through `As(...)`, `OrNull()` and
   `AsNullable()`, and stop treating `Any.WithSeed(...)` as ambient.** The four rules decide whether
   a draw comes from the ambient source by walking the chain back to its first call, and that walk

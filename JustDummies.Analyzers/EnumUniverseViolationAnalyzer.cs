@@ -9,9 +9,10 @@ using Microsoft.CodeAnalysis.Operations;
 namespace JustDummies.Analyzers;
 
 /// <summary>
-///     JD017 — reports an enum constraint naming a value the type does not define. <c>Any.Enum&lt;T&gt;()</c> yields
-///     a <b>declared</b> member, or on a <c>[Flags]</c> enum a combination of declared members where <c>OneOf</c>
-///     names one; an undeclared numeric value the CLR would still let you write is never among them.
+///     JD017 — reports an allow-list naming a value the enum type does not define, and exclusions that leave nothing
+///     to draw. <c>Any.Enum&lt;T&gt;()</c> yields a <b>declared</b> member, or on a <c>[Flags]</c> enum a combination
+///     of declared members where <c>OneOf</c> names one; an undeclared numeric value the CLR would still let you write
+///     is never among them.
 /// </summary>
 /// <remarks>
 ///     Kept apart from the interval rules because the domain is metadata — what the type declares — rather than
@@ -20,6 +21,8 @@ namespace JustDummies.Analyzers;
 /// </remarks>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public sealed class EnumUniverseViolationAnalyzer : DiagnosticAnalyzer {
+
+    private const string OneOfMethodName = "OneOf";
 
     /// <inheritdoc />
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; } =
@@ -64,17 +67,25 @@ public sealed class EnumUniverseViolationAnalyzer : DiagnosticAnalyzer {
     }
 
     /// <summary>
-    ///     Reports the first constrained value the enum type does not define, and whether it did.
+    ///     Reports the first value an allow-list names that the enum type does not define, and whether it did.
     /// </summary>
     /// <remarks>
-    ///     On a <see cref="FlagsAttribute">[Flags]</see> enum a combination of declared members is defined even
-    ///     without the opt-in, because writing one is asking for it — which is what the generator accepts.
+    ///     <para>
+    ///         On a <see cref="FlagsAttribute">[Flags]</see> enum a combination of declared members is defined even
+    ///         without the opt-in, because writing one is asking for it — which is what the generator accepts.
+    ///     </para>
+    ///     <para>
+    ///         Only <c>OneOf</c> is judged. An exclusion of a value the type does not define removes nothing the
+    ///         generator could draw, and the library accepts it as a no-op — the reading ADR-0101 gives a non-finite
+    ///         exclusion on a floating-point builder. Reporting it would refuse at build time what the run time honours.
+    ///     </para>
     /// </remarks>
     private static bool ReportedAValueTheTypeDoesNotDefine(OperationAnalysisContext context, IReadOnlyList<IInvocationOperation> constraints,
                                                           HashSet<object?> declared, INamedTypeSymbol enumType) {
         bool isFlags = enumType.GetAttributes().Any(IsFlagsAttribute);
 
-        foreach ((string _, IOperation value, object? constant) in ConstrainedValues(constraints)) {
+        foreach ((string name, IOperation value, object? constant) in ConstrainedValues(constraints)) {
+            if (name != OneOfMethodName) { continue; }
             if (declared.Contains(constant)) { continue; }
             if (isFlags && IsCombinationOfDeclared(constant, declared)) { continue; }
 
@@ -103,11 +114,11 @@ public sealed class EnumUniverseViolationAnalyzer : DiagnosticAnalyzer {
         HashSet<object?> allowed  = [];
         foreach ((string name, IOperation _, object? constant) in ConstrainedValues(constraints)) {
             if (name is "Except" or "DifferentFrom") { excluded.Add(constant); }
-            if (name is "OneOf") { allowed.Add(constant); }
+            if (name is OneOfMethodName) { allowed.Add(constant); }
         }
 
         if (excluded.Count == 0 || !declared.All(excluded.Contains)) { return; }
-        if (NamesAValueItCannotRead(constraints, "OneOf")) { return; }
+        if (NamesAValueItCannotRead(constraints, OneOfMethodName)) { return; }
         if (allowed.Count > 0 && allowed.Any(value => !excluded.Contains(value))) { return; }
 
         context.ReportDiagnostic(Diagnostic.Create(
@@ -189,7 +200,7 @@ public sealed class EnumUniverseViolationAnalyzer : DiagnosticAnalyzer {
     private static IEnumerable<(string Name, IOperation Value, object? Constant)> ConstrainedValues(IReadOnlyList<IInvocationOperation> constraints) {
         foreach (IInvocationOperation constraint in constraints) {
             string name = constraint.TargetMethod.Name;
-            if (name is not ("OneOf" or "Except" or "DifferentFrom")) { continue; }
+            if (name is not (OneOfMethodName or "Except" or "DifferentFrom")) { continue; }
 
             foreach (IOperation value in ConstantArguments(constraint)) {
                 Optional<object?> constant = value.ConstantValue;

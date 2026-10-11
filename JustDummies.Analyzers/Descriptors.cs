@@ -181,7 +181,7 @@ internal static class Descriptors {
         category: JustDummiesRule.JD017.Category,
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true,
-        description: "Any.Enum<T>() only ever yields a value T defines: one of its declared members, or — on a [Flags] enum, where OneOf accepts a combination on its own account — an OR of them. It never yields an undeclared numeric value the CLR would still let you write, so naming one is not a narrowing that happens to be empty but a category error. An exclusion that removes every value left to draw is the same error from the other side.",
+        description: "Any.Enum<T>() only ever yields a value T defines: one of its declared members, or — on a [Flags] enum, where OneOf accepts a combination on its own account — an OR of them. It never yields an undeclared numeric value the CLR would still let you write, so naming one in OneOf is not a narrowing that happens to be empty but a category error. Excluding one removes nothing the generator could draw, and the library accepts it as a no-op, so that is not reported. An exclusion that removes every value left to draw is the same error from the other side.",
         helpLinkUri: JustDummiesRule.JD017.HelpLinkUri);
 
     public static readonly DiagnosticDescriptor NestedReproducibilityScope = new(

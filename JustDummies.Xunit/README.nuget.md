@@ -58,6 +58,9 @@ replays a particular seed.
 
 ## Notes
 
+- A test that times out is told its seed as well: it is written the moment xUnit
+  cancels the test, since the output is closed by the time the after-hook runs.
+  A `Dispose` that throws after a passing body is not reported.
 - Values drawn from an explicit `Any.WithSeed(...)` context are unaffected: that
   context is isolated by design and does not draw from the ambient source this
   attribute pins.

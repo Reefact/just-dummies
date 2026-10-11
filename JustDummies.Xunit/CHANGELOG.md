@@ -8,6 +8,17 @@ Releases are cut from the `xunit` train (see [CONTRIBUTING.md](../CONTRIBUTING.m
 
 ## [Unreleased]
 
+### Fixed
+
+- **A test that times out is told its seed.** `[Fact(Timeout = ...)]` fails the test and closes its
+  output before the after-hook runs, so the seed `[Reproducible]` writes there was lost — and a
+  timeout is where it matters most, since a drawn value that makes the code under test hang cannot be
+  inspected from a body that is still running. The attribute now also listens for the test's
+  cancellation, which xUnit raises while the output still accepts a line, and writes the seed then.
+  A test is told its seed once, whichever path writes it, and a green test still stays silent. A
+  `Dispose` or `DisposeAsync` that throws after the body passed is still not reported: the body that
+  drew the values passed.
+
 ## [1.0.0-preview.2] - 2026-09-02
 
 ### Changed

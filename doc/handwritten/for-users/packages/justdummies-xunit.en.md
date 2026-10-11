@@ -111,10 +111,15 @@ that is not there. The adapter supplies its own replay snippet through the secon
 overload — the reason that overload exists
 ([ADR-0017](../../for-maintainers/adr/0017-open-the-ambient-seed-scope-to-adapters.md)).
 
-Three consequences worth knowing:
+Four consequences worth knowing:
 
 * **One seed per test case**, so each case of a `[Theory]` gets its own rather than sharing one.
 * **A green test stays silent.** The seed is a diagnostic aid, not output.
+* **A test that times out is told its seed too.** `[Fact(Timeout = ...)]` fails the test and closes
+  its output before the after-hook runs, so the seed is written the moment xUnit cancels the test
+  instead — a drawn value that makes the code hang is exactly when you need it. A `Dispose` or
+  `DisposeAsync` that throws after the body passed is not reported: the test body that drew the
+  values did pass.
 * **`Any.WithSeed(...)` contexts are unaffected.** That context is isolated by design and does not
   draw from the ambient source this attribute pins.
 

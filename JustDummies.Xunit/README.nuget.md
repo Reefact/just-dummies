@@ -54,7 +54,8 @@ The hooks run once per test *case*, so each case of a theory draws its own seed
 rather than sharing one with its siblings. When several levels apply, the most
 specific one wins for the duration of the test and the outer ones are restored
 after it — an assembly-wide `[Reproducible]` can pin the suite while one test
-replays a particular seed.
+replays a particular seed. Only the winning level's seed is reported on failure:
+the outer ones pinned nothing the test drew.
 
 ## Notes
 

@@ -178,6 +178,62 @@ public sealed class ReproducibleAttributeHookTests {
         Check.That(scope.TryClaimReport()).IsTrue();
     }
 
+    [Fact(DisplayName = "Only the innermost of nested levels reports its seed.")]
+    public void OnlyTheInnermostLevelReports() {
+        // Issue #229: every before-hook runs ahead of the body, so the body's draws all come from the innermost seed.
+        // An outer level printing its own "reproduce this run" names a replay that reproduces nothing.
+        ReproducibleAttribute outer = new() { Seed = 111 };
+        ReproducibleAttribute inner = new() { Seed = 222 };
+
+        outer.Before(null!, null!);
+        ReproducibleAttribute.Scope outerScope = ReproducibleAttribute.Innermost!;
+        try {
+            inner.Before(null!, null!);
+            ReproducibleAttribute.Scope innerScope = ReproducibleAttribute.Innermost!;
+            inner.After(null!, null!);
+
+            Check.That(innerScope.ReportOnOutcome(failed: true)).Contains("[Reproducible(Seed = 222)]");
+            Check.That(outerScope.ReportOnOutcome(failed: true)).IsNull();
+        } finally {
+            outer.After(null!, null!);
+        }
+    }
+
+    [Fact(DisplayName = "A level nothing opened on top of reports its own seed.")]
+    public void ALevelNothingSupersededReports() {
+        // The other side: a class-level attribute alone pinned the body's draws, and its seed is the one to replay.
+        ReproducibleAttribute attribute = new() { Seed = 111 };
+
+        attribute.Before(null!, null!);
+        ReproducibleAttribute.Scope scope = ReproducibleAttribute.Innermost!;
+        try {
+            Check.That(scope.ReportOnOutcome(failed: true)).Contains("[Reproducible(Seed = 111)]");
+            Check.That(scope.ReportOnOutcome(failed: false)).IsNull();
+        } finally {
+            attribute.After(null!, null!);
+        }
+    }
+
+    [Fact(DisplayName = "A superseded level stays silent on a cancellation too.")]
+    public void ASupersededLevelStaysSilentOnACancellation() {
+        // Both reporting paths answer to the same rule: an outer level's seed pinned nothing the test drew, so a
+        // timeout must not print it either -- only the innermost level, which listens on the same token, does.
+        RecordingOutput output = new();
+        using CancellationTokenSource cancellation = new();
+        ReproducibleAttribute.Scope outer = new(NoHandle.Instance, 111, null);
+        ReproducibleAttribute.Scope inner = new(NoHandle.Instance, 222, outer);
+
+        outer.ReportOnCancellation(cancellation.Token, output);
+        outer.Activate();
+        outer.Supersede();
+        inner.ReportOnCancellation(cancellation.Token, output);
+        inner.Activate();
+        cancellation.Cancel();
+
+        Check.That(output.Lines).CountIs(1);
+        Check.That(output.Lines[0]).Contains("[Reproducible(Seed = 222)]");
+    }
+
     #region Nested types
 
     private sealed class NoHandle : IDisposable {

@@ -19,6 +19,13 @@ Releases are cut from the `xunit` train (see [CONTRIBUTING.md](../CONTRIBUTING.m
   `Dispose` or `DisposeAsync` that throws after the body passed is still not reported: the body that
   drew the values passed.
 
+- **Nested `[Reproducible]` levels report one seed, the one that replays the failure.** With
+  `[assembly: Reproducible]`, a `[Reproducible]` class and a `[Reproducible(Seed = N)]` test — the
+  documented "suite-wide default, per-test replay" shape — a failing test printed one seed line per
+  level, all worded alike. Only the innermost seed pinned the body's draws; replaying an outer one
+  reproduced nothing, and with unset seeds nothing told the real line from the others. A level that
+  another opens on top of is now superseded and reports nothing; the innermost one reports as before.
+
 ## [1.0.0-preview.2] - 2026-09-02
 
 ### Changed

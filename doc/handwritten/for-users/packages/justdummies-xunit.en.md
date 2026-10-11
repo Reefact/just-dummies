@@ -44,7 +44,9 @@ public sealed class OrderTests {
 }
 ```
 
-The attribute applies at three levels, and the most specific one wins for the duration of a test:
+The attribute applies at three levels, and the most specific one wins for the duration of a test. Its seed is the one
+every draw in the test body uses, so it is also the only one reported when the test fails — an outer level
+prints nothing, since replaying its seed would reproduce nothing:
 
 <!-- jd:declarations -->
 ```csharp

@@ -45,6 +45,15 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Fixed
 
+- **JD017 no longer reports an exclusion of a value the enum does not define.**
+  `Any.Enum<Day>().Except((Day)99)`, and `DifferentFrom(default)` on an enum that declares no zero,
+  were reported as stepping outside the generator's universe, although the library accepts them as a
+  no-op and draws a declared member on every seed: the value is never drawn, so excluding it removes
+  nothing. Under a warnings-as-errors build that failed a correct chain. JD017 now judges the
+  universe for `OneOf` only, where an undeclared value would be drawn and the library refuses it, as
+  it always did
+  ([ADR-0105](../doc/handwritten/for-maintainers/adr/0105-accept-an-undeclared-enum-exclusion-as-a-no-op.md)).
+
 - **JD007, JD008, JD009 and JD022 now follow a chain through `As(...)`, `OrNull()` and
   `AsNullable()`, and stop treating `Any.WithSeed(...)` as ambient.** The four rules decide whether
   a draw comes from the ambient source by walking the chain back to its first call, and that walk

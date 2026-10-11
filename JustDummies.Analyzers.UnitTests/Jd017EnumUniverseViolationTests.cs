@@ -15,6 +15,8 @@ public class Jd017EnumUniverseViolationTests {
         public enum Perm { None = 0, Read = 1, Write = 2 }
 
         public enum Day { Mon, Tue }
+
+        public enum Status { Active = 1, Inactive = 2 }
         """;
 
     [Fact]
@@ -181,6 +183,31 @@ public class Jd017EnumUniverseViolationTests {
 
         Check.That(diagnostics.Length).IsEqualTo(1);
         Check.That(diagnostics[0].GetMessage()).Contains("not a declared member of Day");
+    }
+
+    [Theory]
+    [InlineData("Any.Enum<Day>().Except((Day)99)")]
+    [InlineData("Any.Enum<Day>().DifferentFrom((Day)99)")]
+    [InlineData("Any.Enum<Status>().DifferentFrom(default)")]
+    [InlineData("Any.Enum<Perm>().Except((Perm)16)")]
+    [InlineData("Any.Enum<Day>().OneOf(Day.Tue).Except((Day)99)")]
+    public async Task Does_not_report_an_exclusion_of_a_value_the_type_does_not_define(string expression) {
+        // Issue #228, ADR-0105: excluding a value the generator never draws removes nothing, and the library accepts
+        // it as a no-op -- refusing it here failed a build the run time honours. Only OneOf is judged.
+        string source = $$"""
+            using JustDummies;
+            {{Declarations}}
+
+            public static class Sample {
+                public static void M() {
+                    _ = {{expression}};
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new EnumUniverseViolationAnalyzer(), source);
+
+        Check.That(diagnostics.Length).IsEqualTo(0);
     }
 
     [Fact]

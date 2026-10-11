@@ -80,7 +80,19 @@ public sealed class ReproducibleAttribute : BeforeAfterTestAttribute {
     public override void Before(MethodInfo methodUnderTest, IXunitTest test) {
         int seed = _seed ?? NewSeed();
 
-        Open.Value = new Scope(Any.UseSeed(seed, ReplaySnippet(seed)), seed, Open.Value);
+        IDisposable handle = Any.UseSeed(seed, ReplaySnippet(seed));
+        Scope       scope;
+        try {
+            scope = new Scope(handle, seed, Open.Value);
+            scope.ReportOnCancellation(TestContext.Current.CancellationToken, TestContext.Current.TestOutputHelper);
+        } catch {
+            // An opening that fails must not leave its seed pinned for whatever runs next.
+            handle.Dispose();
+            throw;
+        }
+
+        Open.Value = scope;
+        scope.Activate();
     }
 
     /// <inheritdoc />
@@ -91,8 +103,11 @@ public sealed class ReproducibleAttribute : BeforeAfterTestAttribute {
         Open.Value = scope.Outer;
 
         try {
+            // Stopped first, and waited for: a report the cancellation is writing finishes before this one is decided.
+            scope.StopListening();
+
             string? report = ReportFor(HasFailed(), scope.Seed);
-            if (report is not null) { TestContext.Current.TestOutputHelper?.WriteLine(report); }
+            if (report is not null && scope.TryClaimReport()) { TestContext.Current.TestOutputHelper?.WriteLine(report); }
         } finally {
             // Restoring the ambient context must happen even if reporting throws: a scope left open would pin
             // the seed for whatever runs next in this execution context.
@@ -139,7 +154,25 @@ public sealed class ReproducibleAttribute : BeforeAfterTestAttribute {
     #region Nested types
 
     /// <summary>One pinned ambient context and the one it displaced, so nested levels unwind in order.</summary>
-    private sealed class Scope {
+    /// <remarks>
+    ///     <para>
+    ///         It also carries the second way a seed reaches the reader. A test that times out is failed, and its output
+    ///         closed, before the after-hook runs: the report written there is lost — and a timeout is where the seed
+    ///         matters most, since a drawn value that makes the code under test hang cannot be inspected from a body
+    ///         that is still running. xUnit cancels the test's token at that moment, while the output still accepts a
+    ///         line, so the scope reports from the cancellation too. A test never cancelled writes nothing.
+    ///     </para>
+    ///     <para>
+    ///         Either path claims the report once, so a cancelled test that the after-hook also sees as failed is not
+    ///         told its seed twice. The cancellation path speaks only once the scope is in place: a cancellation raised
+    ///         while the level is still being set up names a seed no draw used.
+    ///     </para>
+    /// </remarks>
+    internal sealed class Scope {
+
+        private CancellationTokenRegistration _onCancellation;
+        private int                           _reported;
+        private int                           _active;
 
         internal Scope(IDisposable handle, int seed, Scope? outer) {
             Handle = handle;
@@ -150,6 +183,46 @@ public sealed class ReproducibleAttribute : BeforeAfterTestAttribute {
         internal IDisposable Handle { get; }
         internal int         Seed   { get; }
         internal Scope?      Outer  { get; }
+
+        /// <summary>Writes the failure report to <paramref name="output" /> if <paramref name="cancellation" /> fires.</summary>
+        internal void ReportOnCancellation(CancellationToken cancellation, ITestOutputHelper? output) {
+            // A token already cancelled belongs to a run being torn down before this test drew anything.
+            if (output is null || !cancellation.CanBeCanceled || cancellation.IsCancellationRequested) { return; }
+
+            _onCancellation = cancellation.Register(() => ReportCancelled(output));
+        }
+
+        /// <summary>
+        ///     Marks the scope as in place: from here on its seed is the one the test draws from, so a cancellation may
+        ///     report it. Before that, a cancellation came while the level was still being set up, and its seed served
+        ///     no draw.
+        /// </summary>
+        internal void Activate() {
+            Volatile.Write(ref _active, 1);
+        }
+
+        /// <summary>Stops listening for the cancellation, waiting for a report it is writing to finish.</summary>
+        internal void StopListening() {
+            _onCancellation.Dispose();
+        }
+
+        /// <summary>Whether this caller is the one to report: true once, whichever path asks first.</summary>
+        internal bool TryClaimReport() {
+            return Interlocked.Exchange(ref _reported, 1) == 0;
+        }
+
+        private void ReportCancelled(ITestOutputHelper output) {
+            // Registering can run this at once, on a token cancelled just after it was checked: the level is not in
+            // place yet, so its seed served no draw — and the report stays unclaimed for the after-hook to decide.
+            if (Volatile.Read(ref _active) == 0 || !TryClaimReport()) { return; }
+
+            try {
+                output.WriteLine(ReportFor(failed: true, Seed)!);
+            } catch (InvalidOperationException) {
+                // The test's output closed in the meantime. A diagnostic aid must never throw into the cancellation
+                // that xUnit is raising, so the report is dropped rather than propagated.
+            }
+        }
 
     }
 

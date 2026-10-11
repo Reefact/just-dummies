@@ -200,7 +200,6 @@ failure mode of a "not now" is that nobody remembers the option existed on the d
 | [ADR-0087](0087-check-a-documented-count-against-its-source-not-its-translation.md) | Check a documented count against its source, not against its translation | Accepted | recorded here |
 | [ADR-0088](0088-state-the-whitespace-guard-with-a-member-of-its-own.md) | State the whitespace guard with a member of its own | Accepted | recorded here |
 | [ADR-0089](0089-draw-a-composed-parameter-through-the-generator-its-type-owns.md) | Draw a composed parameter through the generator its type owns | Accepted | recorded here |
-<<<<<<< HEAD
 | [ADR-0090](0090-exempt-dependabot-from-the-contributor-agreement.md) | Exempt Dependabot from the contributor agreement, only at its own signed commit | Accepted | recorded here |
 | [ADR-0091](0091-draw-a-half-from-the-values-it-can-represent.md) | Draw a `Half` from the values it can represent | Accepted | recorded here |
 | [ADR-0092](0092-run-every-mutation-leg-from-its-own-source-project.md) | Run every mutation leg from its own source project | Accepted | recorded here |

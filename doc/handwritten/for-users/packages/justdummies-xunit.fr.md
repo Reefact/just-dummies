@@ -44,7 +44,9 @@ public sealed class OrderTests {
 }
 ```
 
-L'attribut s'applique à trois niveaux, et le plus spécifique l'emporte pendant la durée d'un test :
+L'attribut s'applique à trois niveaux, et le plus spécifique l'emporte pendant la durée d'un test. Sa graine est
+celle qu'utilise chaque tirage du corps du test : c'est donc aussi la seule rapportée quand le test échoue —
+un niveau extérieur n'écrit rien, puisque rejouer sa graine ne reproduirait rien :
 
 <!-- jd:declarations -->
 ```csharp

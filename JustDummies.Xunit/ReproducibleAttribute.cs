@@ -22,7 +22,8 @@ namespace JustDummies.Xunit;
 ///         assembly to cover a whole suite. The hooks run once per test <i>case</i>, so each case of a theory gets its
 ///         own seed rather than sharing one with its siblings. When several levels apply, the most specific one wins
 ///         for the duration of the test and the outer ones are restored after it — so an assembly-wide
-///         <c>[Reproducible]</c> can pin the suite while one test replays a particular seed.
+///         <c>[Reproducible]</c> can pin the suite while one test replays a particular seed. Only the winning level's
+///         seed is reported on failure: the outer ones pinned nothing the test drew.
 ///     </para>
 ///     <para>
 ///         Pin <see cref="Seed" /> to replay a reported run. Left unset, a fresh seed is drawn for every test case.
@@ -76,14 +77,21 @@ public sealed class ReproducibleAttribute : BeforeAfterTestAttribute {
         set => _seed = value;
     }
 
+    /// <summary>
+    ///     The scope the current test runs under: the innermost one opened, whose seed every draw in the test body
+    ///     used — or <c>null</c> when none is open.
+    /// </summary>
+    internal static Scope? Innermost => Open.Value;
+
     /// <inheritdoc />
     public override void Before(MethodInfo methodUnderTest, IXunitTest test) {
         int seed = _seed ?? NewSeed();
 
+        Scope?      outer  = Open.Value;
         IDisposable handle = Any.UseSeed(seed, ReplaySnippet(seed));
         Scope       scope;
         try {
-            scope = new Scope(handle, seed, Open.Value);
+            scope = new Scope(handle, seed, outer);
             scope.ReportOnCancellation(TestContext.Current.CancellationToken, TestContext.Current.TestOutputHelper);
         } catch {
             // An opening that fails must not leave its seed pinned for whatever runs next.
@@ -91,6 +99,10 @@ public sealed class ReproducibleAttribute : BeforeAfterTestAttribute {
             throw;
         }
 
+        // Only once the new level is in place does it take the test over. A more specific level hands the test a seed
+        // of its own, so the outer one pinned nothing the body draws and must not name a replay that reproduces
+        // nothing; an opening that failed above has left the outer one reporting as before.
+        outer?.Supersede();
         Open.Value = scope;
         scope.Activate();
     }
@@ -106,7 +118,7 @@ public sealed class ReproducibleAttribute : BeforeAfterTestAttribute {
             // Stopped first, and waited for: a report the cancellation is writing finishes before this one is decided.
             scope.StopListening();
 
-            string? report = ReportFor(HasFailed(), scope.Seed);
+            string? report = scope.ReportOnOutcome(HasFailed());
             if (report is not null && scope.TryClaimReport()) { TestContext.Current.TestOutputHelper?.WriteLine(report); }
         } finally {
             // Restoring the ambient context must happen even if reporting throws: a scope left open would pin
@@ -156,6 +168,12 @@ public sealed class ReproducibleAttribute : BeforeAfterTestAttribute {
     /// <summary>One pinned ambient context and the one it displaced, so nested levels unwind in order.</summary>
     /// <remarks>
     ///     <para>
+    ///         The assembly, class and method levels each open one, and xUnit runs every before-hook ahead of the test
+    ///         body: the body's draws all come from the innermost seed. An outer scope is therefore superseded as soon
+    ///         as another opens on top of it, and a superseded scope reports nothing — its "reproduce this run" would
+    ///         name a seed no draw in the test used.
+    ///     </para>
+    ///     <para>
     ///         It also carries the second way a seed reaches the reader. A test that times out is failed, and its output
     ///         closed, before the after-hook runs: the report written there is lost — and a timeout is where the seed
     ///         matters most, since a drawn value that makes the code under test hang cannot be inspected from a body
@@ -164,8 +182,9 @@ public sealed class ReproducibleAttribute : BeforeAfterTestAttribute {
     ///     </para>
     ///     <para>
     ///         Either path claims the report once, so a cancelled test that the after-hook also sees as failed is not
-    ///         told its seed twice. The cancellation path speaks only once the scope is in place: a cancellation raised
-    ///         while the level is still being set up names a seed no draw used.
+    ///         told its seed twice — and superseding a scope claims its report up front, so neither path writes for it.
+    ///         The cancellation path speaks only once the scope is in place: a cancellation raised while the level is
+    ///         still being set up names a seed no draw used.
     ///     </para>
     /// </remarks>
     internal sealed class Scope {
@@ -180,9 +199,23 @@ public sealed class ReproducibleAttribute : BeforeAfterTestAttribute {
             Outer  = outer;
         }
 
-        internal IDisposable Handle { get; }
-        internal int         Seed   { get; }
-        internal Scope?      Outer  { get; }
+        internal IDisposable Handle     { get; }
+        internal int         Seed       { get; }
+        internal Scope?      Outer      { get; }
+        internal bool        Superseded { get; private set; }
+
+        /// <summary>Records that a more specific level opened on top of this one, taking over the test's draws.</summary>
+        internal void Supersede() {
+            Superseded = true;
+            // Claimed here rather than checked later: a cancellation raised on another thread then finds the report
+            // already taken, with no flag to read across threads.
+            TryClaimReport();
+        }
+
+        /// <summary>What to tell the reader about this scope's seed once the outcome is known.</summary>
+        internal string? ReportOnOutcome(bool failed) {
+            return Superseded ? null : ReproducibleAttribute.ReportFor(failed, Seed);
+        }
 
         /// <summary>Writes the failure report to <paramref name="output" /> if <paramref name="cancellation" /> fires.</summary>
         internal void ReportOnCancellation(CancellationToken cancellation, ITestOutputHelper? output) {

@@ -215,7 +215,6 @@ que l'option existait le jour où elle compterait.
 | [ADR-0087](0087-check-a-documented-count-against-its-source-not-its-translation.fr.md) | Vérifier un décompte documenté contre sa source, non contre sa traduction | Accepted | consigné ici |
 | [ADR-0088](0088-state-the-whitespace-guard-with-a-member-of-its-own.fr.md) | Énoncer la garde de blancheur avec un membre à elle | Accepted | consigné ici |
 | [ADR-0089](0089-draw-a-composed-parameter-through-the-generator-its-type-owns.fr.md) | Tirer un paramètre composé par le generator que son type possède | Accepted | consigné ici |
-<<<<<<< HEAD
 | [ADR-0090](0090-exempt-dependabot-from-the-contributor-agreement.fr.md) | Exempter Dependabot de l'accord de contribution, uniquement sur son propre commit signé | Accepted | consigné ici |
 | [ADR-0091](0091-draw-a-half-from-the-values-it-can-represent.fr.md) | Tirer un `Half` parmi les valeurs qu'il sait représenter | Accepted | consigné ici |
 | [ADR-0092](0092-run-every-mutation-leg-from-its-own-source-project.fr.md) | Lancer chaque job de mutation depuis son propre projet source | Accepted | consigné ici |

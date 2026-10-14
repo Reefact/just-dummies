@@ -7,12 +7,15 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Operations;
 
+// A length a constraint declares, the call it is rendered as, and where in the chain that call sits.
+using DeclaredLength = (int Length, string Rendered, int Position);
+
 namespace JustDummies.Analyzers;
 
 /// <summary>
-///     JD015 — reports an <c>AnyString</c> chain whose constant constraints admit no value: anchored fragments that
-///     cannot fit the declared length, or a declared character constraint that admits none of the values a constant
-///     <c>OneOf(...)</c> supplies.
+///     JD015 — reports an <c>AnyString</c> chain whose constant constraints admit no value: two declared lengths no
+///     length satisfies, anchored fragments that cannot fit the declared length, or declared constraints that admit
+///     none of the values a constant <c>OneOf(...)</c> supplies.
 /// </summary>
 /// <remarks>
 ///     <para>
@@ -63,7 +66,7 @@ public sealed class StringConstraintsAdmitNoValueAnalyzer : DiagnosticAnalyzer {
     }
 
     /// <summary>
-    ///     Reads what the chain declares about the string's layout — its anchored fragments and its length budget —
+    ///     Reads what the chain declares about the string's layout — its anchored fragments and its length bounds —
     ///     then reports the pair no value can satisfy.
     /// </summary>
     /// <remarks>
@@ -71,12 +74,15 @@ public sealed class StringConstraintsAdmitNoValueAnalyzer : DiagnosticAnalyzer {
     ///     reasons about at all. Everything below assumes that answer is yes.
     /// </remarks>
     private static void AnalyzeConstraints(OperationAnalysisContext context, IInvocationOperation invocation, IReadOnlyList<IInvocationOperation> constraints) {
-        IInvocationOperation? valueSet    = null;
-        IOperation?           lastAnchor  = null;
-        int?                  fixedLength = null;
-        int?                  maximum     = null;
+        IInvocationOperation? valueSet   = null;
+        IOperation?           lastAnchor = null;
+        DeclaredLength?       exact      = null;
+        DeclaredLength?       minimum    = null;
+        DeclaredLength?       maximum    = null;
 
-        foreach (IInvocationOperation constraint in constraints) {
+        for (int position = 0; position < constraints.Count; position++) {
+            IInvocationOperation constraint = constraints[position];
+
             switch (constraint.TargetMethod.Name) {
                 // A terminal value set changes what the fragments are checked against: they are matched against the
                 // pooled values rather than laid out side by side, so the length budget below no longer applies.
@@ -87,17 +93,35 @@ public sealed class StringConstraintsAdmitNoValueAnalyzer : DiagnosticAnalyzer {
 
                     break;
 
-                case "WithLength" when constraint.Arguments.Length == 1 && ConstantFacts.TryGetInt32(constraint.Arguments[0].Value, out int length):
-                    fixedLength = length;
+                case "WithLength" when TryGetLength(constraint, 0, out int length):
+                    exact = (length, $"WithLength({length})", position);
 
                     break;
 
-                case "WithMaxLength" when constraint.Arguments.Length == 1 && ConstantFacts.TryGetInt32(constraint.Arguments[0].Value, out int max):
-                    maximum = maximum is null ? max : System.Math.Min(maximum.Value, max);
+                case "WithMinLength" when TryGetLength(constraint, 0, out int min):
+                    minimum = Longer(minimum, (min, $"WithMinLength({min})", position));
+
+                    break;
+
+                case "WithMaxLength" when TryGetLength(constraint, 0, out int max):
+                    maximum = Shorter(maximum, (max, $"WithMaxLength({max})", position));
+
+                    break;
+
+                // The range form sets the same two bounds the single forms do, under its own one name — the name the
+                // run time renders, and the call the reader edits. A range whose ends are reversed throws an argument
+                // error of its own before any bound is set, so it is not read as one.
+                case "WithLengthBetween" when TryGetLength(constraint, 0, out int low) && TryGetLength(constraint, 1, out int high) && low <= high:
+                    minimum = Longer(minimum, (low, $"WithLengthBetween({low}, {high})", position));
+                    maximum = Shorter(maximum, (high, $"WithLengthBetween({low}, {high})", position));
 
                     break;
             }
         }
+
+        // The bounds are weighed against one another before anything else, value set or not: the run time checks
+        // them first, on every constraint it applies.
+        if (ReportContradictoryBounds(context, constraints, exact, minimum, maximum)) { return; }
 
         if (valueSet is not null) {
             ReportEmptiedValueSet(context, constraints, valueSet);
@@ -105,20 +129,89 @@ public sealed class StringConstraintsAdmitNoValueAnalyzer : DiagnosticAnalyzer {
             return;
         }
 
-        ReportLengthBudget(context, invocation, constraints, lastAnchor, fixedLength, maximum);
+        // An exact length below a maximum is the tighter cap, and one above it was reported just now.
+        ReportLengthBudget(context, invocation, constraints, lastAnchor, exact ?? maximum);
     }
 
     /// <summary>
-    ///     Reports a declared character constraint that admits none of the values a constant <c>OneOf(...)</c>
-    ///     supplies, which the run time refuses at declaration.
+    ///     Reports two declared lengths no value can satisfy together: a minimum above a maximum, or an exact length
+    ///     outside either.
+    /// </summary>
+    /// <remarks>
+    ///     Only the bounds a length constraint declares are weighed here. The floor of one <c>NonEmpty()</c> and
+    ///     <c>NotBlank()</c> each set belongs with the anchored fragments, in <see cref="ReportLengthBudget" />, where
+    ///     the sentence can say which of them demands it.
+    /// </remarks>
+    private static bool ReportContradictoryBounds(OperationAnalysisContext context, IReadOnlyList<IInvocationOperation> constraints,
+                                                  DeclaredLength? exact, DeclaredLength? minimum, DeclaredLength? maximum) {
+        if (exact is { } fixedAt && minimum is { } atLeast && fixedAt.Length < atLeast.Length) {
+            return ReportOnTheLater(context, constraints, fixedAt, atLeast, $"{atLeast.Rendered} needs at least {Characters(atLeast.Length)}, which {fixedAt.Rendered} cannot hold");
+        }
+
+        if (exact is { } fixedTo && maximum is { } atMost && fixedTo.Length > atMost.Length) {
+            return ReportOnTheLater(context, constraints, fixedTo, atMost, $"{fixedTo.Rendered} needs exactly {Characters(fixedTo.Length)}, which {atMost.Rendered} cannot hold");
+        }
+
+        if (minimum is { } floor && maximum is { } ceiling && floor.Length > ceiling.Length) {
+            return ReportOnTheLater(context, constraints, floor, ceiling, $"{floor.Rendered} needs at least {Characters(floor.Length)}, which {ceiling.Rendered} cannot hold");
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    ///     Reports on whichever of the two constraints was declared last — the one the run time is applying when it
+    ///     refuses the chain, and so the one its message names first.
+    /// </summary>
+    private static bool ReportOnTheLater(OperationAnalysisContext context, IReadOnlyList<IInvocationOperation> constraints, DeclaredLength first, DeclaredLength second, string reason) {
+        IInvocationOperation applying = constraints[System.Math.Max(first.Position, second.Position)];
+
+        context.ReportDiagnostic(Diagnostic.Create(Descriptors.StringConstraintsAdmitNoValue, applying.Syntax.GetLocation(), reason));
+
+        return true;
+    }
+
+    /// <summary>
+    ///     Keeps the tighter of two minimums, and the earlier of two equal ones: the run time ignores a bound no
+    ///     tighter than the one in force, so the earlier is the one it names.
+    /// </summary>
+    private static DeclaredLength Longer(DeclaredLength? current, DeclaredLength candidate) {
+        return current is { } kept && kept.Length >= candidate.Length ? kept : candidate;
+    }
+
+    /// <summary>The counterpart of <see cref="Longer" /> for a maximum.</summary>
+    private static DeclaredLength Shorter(DeclaredLength? current, DeclaredLength candidate) {
+        return current is { } kept && kept.Length <= candidate.Length ? kept : candidate;
+    }
+
+    /// <summary>
+    ///     Reads a constant length argument. A negative one is left unread: the call throws an argument error of its
+    ///     own, which is not a claim about the chain.
+    /// </summary>
+    private static bool TryGetLength(IInvocationOperation constraint, int ordinal, out int length) {
+        length = 0;
+
+        IArgumentOperation? argument = constraint.Arguments.FirstOrDefault(candidate => candidate.Parameter?.Ordinal == ordinal);
+
+        return argument is not null && ConstantFacts.TryGetInt32(argument.Value, out length) && length >= 0;
+    }
+
+    /// <summary>
+    ///     Reports a declared constraint that admits none of the values a constant <c>OneOf(...)</c> supplies, which
+    ///     the run time refuses at declaration.
     /// </summary>
     /// <remarks>
     ///     <para>
-    ///         The counterpart of the exemption ADR-0079 grants an anchored literal, and the reason the two read
-    ///         differently. A literal claims its own region of a shaped string and the family claims the rest, so the
-    ///         two never meet; a value set claims the WHOLE string and leaves no filler, so the family's region is
-    ///         that supplied value itself and the two must agree. When they cannot, the constraint contributes
-    ///         nothing and the chain throws — the remedy is to drop it.
+    ///         Every constraint the run time applies to an allow-list is weighed — a character family, a length, an
+    ///         anchored fragment, an exclusion — through the predicates JD029 reads too, so the pool this rule calls
+    ///         emptied is exactly the pool that rule stands down on.
+    ///     </para>
+    ///     <para>
+    ///         For a character constraint this is the counterpart of the exemption ADR-0079 grants an anchored
+    ///         literal, and the reason the two read differently. A literal claims its own region of a shaped string
+    ///         and the family claims the rest, so the two never meet; a value set claims the WHOLE string and leaves
+    ///         no filler, so the family's region is that supplied value itself and the two must agree. When they
+    ///         cannot, the constraint contributes nothing and the chain throws — the remedy is to drop it.
     ///     </para>
     ///     <para>
     ///         Reported only when every value the pool writes inline is refused. A pool one value survives is a
@@ -138,7 +231,7 @@ public sealed class StringConstraintsAdmitNoValueAnalyzer : DiagnosticAnalyzer {
 
         if (values.Count == 0) { return; }
 
-        List<(string Rendered, Func<string, bool> Admits)> tests = CharacterTests(constraints).ToList();
+        List<(string Rendered, Func<string, bool> Admits)> tests = StringValueFacts.Tests(constraints);
 
         foreach ((string rendered, Func<string, bool> admits) in tests) {
             if (values.Any(admits)) { continue; }
@@ -192,43 +285,14 @@ public sealed class StringConstraintsAdmitNoValueAnalyzer : DiagnosticAnalyzer {
         return string.Join(", ", names.Take(names.Count - 1)) + " and " + names[names.Count - 1];
     }
 
-    /// <summary>
-    ///     The declared character constraints, each paired with the test a supplied value must pass. Only the
-    ///     character side: a length or an anchored fragment emptying a pool is a different claim, and JD029 already
-    ///     carries it value by value.
-    /// </summary>
-    private static IEnumerable<(string Rendered, Func<string, bool> Admits)> CharacterTests(IReadOnlyList<IInvocationOperation> constraints) {
-        foreach (IInvocationOperation constraint in constraints) {
-            string name = constraint.TargetMethod.Name;
-
-            if (CharacterFamilies.PoolFor(name) is string family) {
-                yield return ($"{name}()", value => value.All(character => family.IndexOf(character) >= 0));
-            } else if (name is "WithoutAlpha" or "WithoutNumeric" && CharacterFamilies.PoolFor(name.Substring("Without".Length)) is string removed) {
-                yield return ($"{name}()", value => value.All(character => removed.IndexOf(character) < 0));
-            } else if (name == "WithChars" && constraint.Arguments.Length == 1 && ConstantFacts.TryGetString(constraint.Arguments[0].Value, out string pool)) {
-                yield return ($"WithChars(\"{pool}\")", value => value.All(character => pool.IndexOf(character) >= 0));
-            } else if (name == "InUpperCase") {
-                yield return ("InUpperCase()", value => !value.Any(char.IsLower));
-            } else if (name == "InLowerCase") {
-                yield return ("InLowerCase()", value => !value.Any(char.IsUpper));
-            } else if (name == "NotBlank") {
-                // Judges the value rather than each of its characters — interior whitespace is legal, and only an
-                // entirely blank value is refused. It belongs here all the same: on the value-set path the supplied
-                // value IS the whole string, so this is the test it has to pass.
-                yield return ("NotBlank()", value => !string.IsNullOrWhiteSpace(value));
-            }
-        }
-    }
-
     private static void ReportLengthBudget(OperationAnalysisContext context, IInvocationOperation invocation, IReadOnlyList<IInvocationOperation> constraints,
-                                           IOperation? lastAnchor, int? fixedLength, int? maximum) {
-        int? cap = fixedLength ?? maximum;
-        if (cap is null) { return; }
+                                           IOperation? lastAnchor, DeclaredLength? cap) {
+        if (cap is not { } capped) { return; }
 
         int required = StringShapeFacts.Floor(constraints);
-        if (required <= cap.Value) { return; }
+        if (required <= capped.Length) { return; }
 
-        string capName = fixedLength is not null ? $"WithLength({fixedLength})" : $"WithMaxLength({maximum})";
+        string capName = capped.Rendered;
 
         // The last anchored literal is what the reader is most likely to shorten; with no anchor at all there is
         // nothing in the chain more specific than the chain itself.

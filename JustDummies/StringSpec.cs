@@ -608,17 +608,42 @@ internal sealed class StringSpec {
     ///     <c>WithoutNumeric()</c>, say. Only a shaped string is judged here: with a value set in force nothing is
     ///     laid out, so an empty alphabet forbids nothing and the surviving values answer for themselves.
     /// </summary>
+    /// <remarks>
+    ///     The family is claimed as the constraint it is, never as a phrase about it: a phrase is never recognised as
+    ///     the constraint being applied, so a family declared after the subtractions that empty it was blamed on
+    ///     itself, and the subtractions went unnamed (issue #211). As a constraint it lets the blame fall on whichever
+    ///     side the caller did not just write.
+    /// </remarks>
     private void ValidateFillerAlphabet(ConstraintCall applying) {
         if (_allowed is not null || _fillerPool.Length > 0) { return; }
 
-        ConstraintCall? family = _charsetConstraint;
-        // Index from the front: the netstandard2.0 floor has no System.Index.
-        ConstraintCall  culprit = _subtractions.Count > 0 ? _subtractions[_subtractions.Count - 1].Constraint : applying;
+        ConstraintClaim emptied = _charsetConstraint is ConstraintCall family
+                                      ? ConstraintClaim.Of(family, "admits nothing once it is applied")
+                                      : ConstraintClaim.OfPhrase("the declared character family", "is left with no character at all");
 
-        throw ConflictingAnyConstraintException.Contradicts(applying,
-                                                            ConstraintClaim.OfPhrase("the declared character family",
-                                                                                     family is null ? "is left with no character at all" : $"{family} admits nothing once it is applied"),
-                                                            ConstraintClaim.Of(culprit, "removes every character that remained"));
+        throw ConflictingAnyConstraintException.Contradicts(applying, emptied, RemoversClaim());
+    }
+
+    /// <summary>
+    ///     Who answers for a family declared after the subtractions that empty it: every subtraction that removes a
+    ///     character the family offers. Naming only the last would blame one that, on its own, may leave the family
+    ///     something to draw — <c>WithoutAlpha().WithoutNumeric().WithChars("a1")</c> needs both to empty it.
+    /// </summary>
+    /// <remarks>
+    ///     Only ever read when the family is the constraint being applied: when a subtraction is, the family is the
+    ///     other side and is named instead.
+    /// </remarks>
+    private ConstraintClaim RemoversClaim() {
+        string offered = new((_customPool ?? CharacterPools.Ascii).Where(character => Admits(character, _charset, _casing, [])).ToArray());
+        List<ConstraintCall> removers = _subtractions.Where(subtraction => offered.Any(character => CharacterPools.Belongs(character, subtraction.Removed)))
+                                                     .Select(subtraction => subtraction.Constraint)
+                                                     .ToList();
+
+        // Never empty: a casing removes only the letters of the other case, and a custom pool refuses one outright,
+        // so whatever emptied a family offering something is a subtraction.
+        if (removers.Count == 1) { return ConstraintClaim.Of(removers[0], $"removes every character {_charsetConstraint} offers"); }
+
+        return ConstraintClaim.OfPhrase(string.Join(" and ", removers), $"remove every character {_charsetConstraint} offers");
     }
 
     /// <summary>

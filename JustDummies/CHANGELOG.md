@@ -84,6 +84,15 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   at a plain `+` and at an interpolated string converted to `string`; a compound assignment and an
   interpolated expression passed to an interpolated-string handler are now checked the same way.
 
+- **JD013 now reports an `IEnumerable<T>` passed as the single argument of `OneOf`, and a `OneOf`
+  imported with `using static`.**
+  `Any.OneOf(ids.Where(id => id > 1))`, or `Any.OneOf(held)` with `held` typed `IEnumerable<int>`,
+  builds a pool of one whose every draw returns the same query object, yet went unreported: the rule
+  looked for a type that implements `IEnumerable<T>` and missed the interface itself. `OneOf(ids)`
+  imported with `using static JustDummies.Any` was mistaken for an explicit type argument, which the
+  rule exempts on purpose. Both are now reported; `OneOf<List<int>>(ids)` stays silent however it is
+  written.
+
 - **JD017 no longer reports an exclusion of a value the enum does not define.**
   `Any.Enum<Day>().Except((Day)99)`, and `DifferentFrom(default)` on an enum that declares no zero,
   were reported as stepping outside the generator's universe, although the library accepts them as a

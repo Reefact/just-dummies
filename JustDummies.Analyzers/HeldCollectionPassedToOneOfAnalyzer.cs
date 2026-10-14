@@ -1,6 +1,7 @@
 using System.Collections.Immutable;
 
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Operations;
 
@@ -53,8 +54,19 @@ public sealed class HeldCollectionPassedToOneOfAnalyzer : DiagnosticAnalyzer {
         context.ReportDiagnostic(Diagnostic.Create(Descriptors.HeldCollectionPassedToOneOf, invocation.Syntax.GetLocation(), method.TypeArguments[0].ToDisplayString()));
     }
 
+    // The method's name is written however the receiver is: Any.OneOf(...), OneOf(...) under using static, or
+    // context?.OneOf(...). Only a name without a type-argument list leaves the type argument to inference.
     private static bool IsTypeArgumentInferred(IInvocationOperation invocation) {
-        return invocation.Syntax is Microsoft.CodeAnalysis.CSharp.Syntax.InvocationExpressionSyntax { Expression: Microsoft.CodeAnalysis.CSharp.Syntax.MemberAccessExpressionSyntax { Name: not Microsoft.CodeAnalysis.CSharp.Syntax.GenericNameSyntax } };
+        if (invocation.Syntax is not InvocationExpressionSyntax call) { return false; }
+
+        SimpleNameSyntax? name = call.Expression switch {
+            MemberAccessExpressionSyntax memberAccess   => memberAccess.Name,
+            MemberBindingExpressionSyntax memberBinding => memberBinding.Name,
+            SimpleNameSyntax simpleName                 => simpleName,
+            _                                           => null
+        };
+
+        return name is IdentifierNameSyntax;
     }
 
     // The params array was built by the compiler from exactly one argument — the shape that silently makes a pool of one.
@@ -79,6 +91,9 @@ public sealed class HeldCollectionPassedToOneOfAnalyzer : DiagnosticAnalyzer {
         if (argumentType is null) { return false; }
         if (argumentType.SpecialType == SpecialType.System_String) { return false; }
         if (inferred.TypeKind == TypeKind.TypeParameter) { return false; }
+
+        // An IEnumerable<T> static type — a LINQ result, a parameter — is not among its own AllInterfaces.
+        if (argumentType.OriginalDefinition.SpecialType == SpecialType.System_Collections_Generic_IEnumerable_T) { return true; }
 
         foreach (INamedTypeSymbol implemented in argumentType.AllInterfaces) {
             if (implemented.OriginalDefinition.SpecialType == SpecialType.System_Collections_Generic_IEnumerable_T) { return true; }

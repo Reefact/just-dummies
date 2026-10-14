@@ -77,6 +77,13 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   the other order the family is still the side named, now as the call you wrote: "Cannot apply
   WithoutNumeric() because WithChars("123") admits nothing once it is applied".
 
+- **JD005 now reports a generator appended with `+=` or handed to an interpolated-string handler.**
+  `message += Any.String().NonEmpty()`, `builder.Append($"order {Any.String().NonEmpty()}")` and
+  `Debug.Assert(ok, $"order {Any.String().NonEmpty()}")` compiled clean, yet each produces the
+  builder's type name as text — the same constant text the rule exists to stop. The rule only looked
+  at a plain `+` and at an interpolated string converted to `string`; a compound assignment and an
+  interpolated expression passed to an interpolated-string handler are now checked the same way.
+
 - **JD017 no longer reports an exclusion of a value the enum does not define.**
   `Any.Enum<Day>().Except((Day)99)`, and `DifferentFrom(default)` on an enum that declares no zero,
   were reported as stepping outside the generator's universe, although the library accepts them as a

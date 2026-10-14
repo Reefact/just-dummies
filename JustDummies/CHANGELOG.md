@@ -43,6 +43,15 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   survivors and rejections through `IPoolInspection<string>`, naming the pattern as the constraint
   that turned a value away, and answers a distinct collection with the size of its surviving set.
 
+### Documentation
+
+- **The packaged readme no longer says a maximum is never capped.** One of its paragraphs still
+  described the rule ADR-0076 replaced: that `WithMaxLength`/`WithMaxCount` only narrow a draw, that
+  `WithMaxLength(100_000)` yields a short string, and that a four-million-character maximum costs
+  nothing. A maximum steers the draw across the whole declared range, and `WithMaxLength(4_000_000)`
+  is refused at declaration, as the same readme said twelve lines earlier. The paragraph now states
+  the rule the library follows.
+
 ### Fixed
 
 - **An allow-list emptied by what was declared before it now names the constraint that emptied it.**

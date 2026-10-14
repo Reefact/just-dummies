@@ -148,18 +148,17 @@ matter — and that is the point.
   and still yields an ordinary one, while `Between(1e300, 1e308)` names a magnitude and
   gets exactly it. `Half`, whose domain stops at 65 504, is unaffected. The integer
   generators deliberately keep their full range — a large `int` is an ordinary `int`.
-- **Dummies stay small unless you ask for more.** A bound is a permission, not a
-  request: `WithMaxLength`/`WithMaxCount` only ever *narrow* a draw, so
-  `Any.String().WithMaxLength(100_000)` still yields the short unconstrained string
-  rather than one sized after the cap. Only a minimum, an exact size or a required
-  fragment enlarges a value — `WithMinLength(90_000)` is how you ask for a large one.
-  `WithLengthBetween(a, b)` is exactly its two bounds declared separately, so a range
-  starting at zero reads as a limit, not as a request to spread across it. A size the
-  generator must actually produce is capped at 1 000 000: past that,
-  `WithLength`/`WithMinLength`/`WithCount`/`WithMinCount` raise an
-  `ArgumentOutOfRangeException` naming your own parameter, instead of hanging or
-  exhausting memory. A pure maximum is never capped — mirror a four-million-character
-  column limit if you like; it costs nothing to honour.
+- **A declared maximum steers the draw, so declare the size the test needs.** A size
+  draw spreads across the whole declared range: `WithMaxLength`/`WithMaxCount` set its
+  top, so `Any.String().WithMaxLength(100_000)` yields anything up to 100 000
+  characters — mirror the size a test exercises, not a column's limit. With no maximum,
+  the draw reaches the family's default spread above the minimum: up to 1024 characters
+  past it for a string, 8 elements for a collection. `WithLengthBetween(a, b)` is exactly
+  its two bounds declared separately. Every size argument, maxima included, is capped at
+  1 000 000: past that, `WithLength`/`WithMinLength`/`WithMaxLength` and
+  `WithCount`/`WithMinCount`/`WithMaxCount` raise an `ArgumentOutOfRangeException` naming
+  your own parameter, instead of hanging or exhausting memory — a test that needs more
+  wanted a load test, not a dummy.
 - **Composition without reflection**: `.As(factory)` turns a constrained primitive
   into a domain value object; `Any.Combine(...)` assembles larger objects through
   constructor lambdas — from two up to eight constrained parts.

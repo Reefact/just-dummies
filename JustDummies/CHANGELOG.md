@@ -45,6 +45,15 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Fixed
 
+- **An allow-list emptied by what was declared before it now names the constraint that emptied it.**
+  `Any.Int32().Between(10, 20).OneOf(1, 2, 3)` was refused with "Cannot apply OneOf(1, 2, 3) because
+  none of the values OneOf(1, 2, 3) allows satisfies the constraints already defined": the allow-list
+  on both sides of "because", and `Between(10, 20)` nowhere. It now reads "Cannot apply OneOf(1, 2, 3)
+  because Between(10, 20) allows none of its values", as a string value set already did. Every
+  constraint that refuses every supplied value is named — a bound, a sign, `MultipleOf`, `WithScale` —
+  on every numeric, date and time generator; when only their combination refuses them, the message
+  says so without blaming one. Declared in the other order, the message is unchanged.
+
 - **A family declared after the subtractions that empty it now names them.**
   `Any.String().WithoutAlpha().Alpha()` was refused with "Cannot apply Alpha() because the declared
   character family Alpha() admits nothing once it is applied": the family blamed on itself, and

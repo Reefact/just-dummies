@@ -93,6 +93,16 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   rule exempts on purpose. Both are now reported; `OneOf<List<int>>(ids)` stays silent however it is
   written.
 
+- **JD015 now reports three string chains that throw on every seed and went unreported.** Two
+  declared lengths that contradict each other — `WithMinLength(10).WithMaxLength(5)`,
+  `WithLength(5).WithMaxLength(3)`, `WithLengthBetween(10, 20).WithLength(5)` — were never compared,
+  and the range form was never read at all, so `StartingWith("ORD-").WithLengthBetween(1, 3)` escaped
+  the budget its `WithMaxLength(3)` twin is held to. A value set emptied by a length, an anchored
+  fragment or an exclusion — `OneOf("EUR", "USD").WithLength(2)`, `OneOf("EUR").Except("EUR")` — was
+  left by JD015 to JD029, which stays silent on a pool from which no value can be drawn, on the
+  premise that JD015 reports it; the two rules now check supplied values against the same list of
+  constraints, so neither can leave a case to the other.
+
 - **JD017 no longer reports an exclusion of a value the enum does not define.**
   `Any.Enum<Day>().Except((Day)99)`, and `DifferentFrom(default)` on an enum that declares no zero,
   were reported as stepping outside the generator's universe, although the library accepts them as a

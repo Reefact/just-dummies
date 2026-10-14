@@ -77,6 +77,32 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   the other order the family is still the side named, now as the call you wrote: "Cannot apply
   WithoutNumeric() because WithChars("123") admits nothing once it is applied".
 
+- **JD005 now reports a generator appended with `+=` or handed to an interpolated-string handler.**
+  `message += Any.String().NonEmpty()`, `builder.Append($"order {Any.String().NonEmpty()}")` and
+  `Debug.Assert(ok, $"order {Any.String().NonEmpty()}")` compiled clean, yet each produces the
+  builder's type name as text — the same constant text the rule exists to stop. The rule only looked
+  at a plain `+` and at an interpolated string converted to `string`; a compound assignment and an
+  interpolated expression passed to an interpolated-string handler are now checked the same way.
+
+- **JD013 now reports an `IEnumerable<T>` passed as the single argument of `OneOf`, and a `OneOf`
+  imported with `using static`.**
+  `Any.OneOf(ids.Where(id => id > 1))`, or `Any.OneOf(held)` with `held` typed `IEnumerable<int>`,
+  builds a pool of one whose every draw returns the same query object, yet went unreported: the rule
+  looked for a type that implements `IEnumerable<T>` and missed the interface itself. `OneOf(ids)`
+  imported with `using static JustDummies.Any` was mistaken for an explicit type argument, which the
+  rule exempts on purpose. Both are now reported; `OneOf<List<int>>(ids)` stays silent however it is
+  written.
+
+- **JD015 now reports three string chains that throw on every seed and went unreported.** Two
+  declared lengths that contradict each other — `WithMinLength(10).WithMaxLength(5)`,
+  `WithLength(5).WithMaxLength(3)`, `WithLengthBetween(10, 20).WithLength(5)` — were never compared,
+  and the range form was never read at all, so `StartingWith("ORD-").WithLengthBetween(1, 3)` escaped
+  the budget its `WithMaxLength(3)` twin is held to. A value set emptied by a length, an anchored
+  fragment or an exclusion — `OneOf("EUR", "USD").WithLength(2)`, `OneOf("EUR").Except("EUR")` — was
+  left by JD015 to JD029, which stays silent on a pool from which no value can be drawn, on the
+  premise that JD015 reports it; the two rules now check supplied values against the same list of
+  constraints, so neither can leave a case to the other.
+
 - **JD017 no longer reports an exclusion of a value the enum does not define.**
   `Any.Enum<Day>().Except((Day)99)`, and `DifferentFrom(default)` on an enum that declares no zero,
   were reported as stepping outside the generator's universe, although the library accepts them as a

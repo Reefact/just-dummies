@@ -11,6 +11,8 @@ namespace JustDummies.Analyzers;
 ///     overrides <see cref="object.ToString" />, so an interpolation hole, a string concatenation or an explicit
 ///     <c>ToString()</c> over a recipe yields the builder's type name — the literal text <c>"JustDummies.AnyString"</c>
 ///     — which is non-empty, plausible, constant on every run, and flows into the assertion as if it were a value.
+///     The concatenation includes <c>+=</c>, and the interpolation includes an interpolated expression passed to an
+///     interpolated-string handler, as in <c>StringBuilder.Append($"...")</c> and <c>Debug.Assert(condition, $"...")</c>.
 /// </summary>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public sealed class GeneratorRenderedAsTextAnalyzer : DiagnosticAnalyzer {
@@ -35,7 +37,9 @@ public sealed class GeneratorRenderedAsTextAnalyzer : DiagnosticAnalyzer {
         INamedTypeSymbol iAny = symbols.IAny;
 
         context.RegisterOperationAction(operationContext => AnalyzeInterpolation(operationContext, iAny), OperationKind.Interpolation);
+        context.RegisterOperationAction(operationContext => AnalyzeHandlerHole(operationContext, iAny), OperationKind.InterpolatedStringAppendFormatted);
         context.RegisterOperationAction(operationContext => AnalyzeConcatenation(operationContext, iAny), OperationKind.Binary);
+        context.RegisterOperationAction(operationContext => AnalyzeAppendingAssignment(operationContext, iAny), OperationKind.CompoundAssignment);
         context.RegisterOperationAction(operationContext => AnalyzeToString(operationContext, iAny), OperationKind.Invocation);
     }
 
@@ -46,6 +50,18 @@ public sealed class GeneratorRenderedAsTextAnalyzer : DiagnosticAnalyzer {
         Report(context, expression, iAny);
     }
 
+    private static void AnalyzeHandlerHole(OperationAnalysisContext context, INamedTypeSymbol iAny) {
+        // An interpolated string converted to a handler type lowers each hole to an AppendFormatted(value, ...) call
+        // rather than to an interpolation operation; the value is the call's first parameter.
+        IInterpolatedStringAppendOperation append = (IInterpolatedStringAppendOperation)context.Operation;
+        if (append.AppendCall is not IInvocationOperation call) { return; }
+
+        IArgumentOperation? value = call.Arguments.FirstOrDefault(argument => argument.Parameter?.Ordinal == 0);
+        if (value is null) { return; }
+
+        Report(context, GeneratorFacts.Unwrap(value.Value), iAny);
+    }
+
     private static void AnalyzeConcatenation(OperationAnalysisContext context, INamedTypeSymbol iAny) {
         IBinaryOperation binary = (IBinaryOperation)context.Operation;
 
@@ -54,6 +70,15 @@ public sealed class GeneratorRenderedAsTextAnalyzer : DiagnosticAnalyzer {
 
         Report(context, GeneratorFacts.Unwrap(binary.LeftOperand), iAny);
         Report(context, GeneratorFacts.Unwrap(binary.RightOperand), iAny);
+    }
+
+    private static void AnalyzeAppendingAssignment(OperationAnalysisContext context, INamedTypeSymbol iAny) {
+        ICompoundAssignmentOperation assignment = (ICompoundAssignmentOperation)context.Operation;
+
+        if (assignment.OperatorKind != BinaryOperatorKind.Add) { return; }
+        if (assignment.Type?.SpecialType != SpecialType.System_String) { return; }
+
+        Report(context, GeneratorFacts.Unwrap(assignment.Value), iAny);
     }
 
     private static void AnalyzeToString(OperationAnalysisContext context, INamedTypeSymbol iAny) {

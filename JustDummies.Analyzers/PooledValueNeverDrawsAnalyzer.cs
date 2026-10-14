@@ -25,8 +25,10 @@ namespace JustDummies.Analyzers;
 ///         false accusation, and this shape cannot produce one.
 ///     </para>
 ///     <para>
-///         The predicates below restate what the run-time specifications apply, because an analyzer references
-///         no JustDummies assembly and cannot call it — the alphabets themselves live in
+///         The predicates restate what the run-time specifications apply, because an analyzer references no
+///         JustDummies assembly and cannot call it. The string ones live in <see cref="StringValueFacts" />, which
+///         JD015 reads too, so the pool one rule calls emptied is the pool the other stands down on. The scalar ones
+///         are below. The alphabets themselves live in
 ///         <see cref="CharacterFamilies" />, mirrored once and kept the single definition any rule needing a family
 ///         must read, since two rules disagreeing about what a family admits would be worse than either being silent. It is bounded on purpose: a constraint
 ///         this switch does not name is not evaluated rather than guessed at.
@@ -88,7 +90,7 @@ public sealed class PooledValueNeverDrawsAnalyzer : DiagnosticAnalyzer {
     }
 
     private static void AnalyzeStrings(OperationAnalysisContext context, IReadOnlyList<IInvocationOperation> constraints, IInvocationOperation valueSet) {
-        List<(string Rendered, Func<string, bool> Admits)> tests = ConstantTests(constraints);
+        List<(string Rendered, Func<string, bool> Admits)> tests = StringValueFacts.Tests(constraints);
         if (tests.Count == 0) { return; }
         // A pool nothing survives is not a narrowing, it is a chain that throws — JD015 says so once, about the
         // chain. Listing every value here as well would report the same defect a second time, in a register that
@@ -146,97 +148,6 @@ public sealed class PooledValueNeverDrawsAnalyzer : DiagnosticAnalyzer {
 
             return;
         }
-    }
-
-    /// <summary>
-    ///     The declared constraints whose argument is a compile-time constant, each paired with the test a pooled
-    ///     value must pass to satisfy it. A constraint that is not named here, or whose argument does not fold, is
-    ///     absent rather than approximated.
-    /// </summary>
-    private static List<(string Rendered, Func<string, bool> Admits)> ConstantTests(IReadOnlyList<IInvocationOperation> constraints) {
-        List<(string Rendered, Func<string, bool> Admits)> tests = [];
-
-        foreach (IInvocationOperation constraint in constraints) {
-            switch (constraint.TargetMethod.Name) {
-                // Every name in these two labels is one PoolFor resolves, so the lookup cannot come back empty.
-                case "Alpha" or "Numeric" or "AlphaNumeric" or "Punctuation" or "Printable" or "NonPrintable" or "Whitespaces" or "Hexadecimal"
-                    when CharacterFamilies.PoolFor(constraint.TargetMethod.Name) is string family:
-                    tests.Add(($"{constraint.TargetMethod.Name}()", DrawnFrom(family)));
-
-                    break;
-
-                case "WithoutAlpha" or "WithoutNumeric"
-                    when CharacterFamilies.PoolFor(constraint.TargetMethod.Name.Substring("Without".Length)) is string removed:
-                    tests.Add(($"{constraint.TargetMethod.Name}()", DrawnNoneOf(removed)));
-
-                    break;
-
-                case "NonEmpty":    tests.Add(("NonEmpty()", value => value.Length >= 1));               break;
-                case "NotBlank":    tests.Add(("NotBlank()", value => !string.IsNullOrWhiteSpace(value))); break;
-                case "InUpperCase": tests.Add(("InUpperCase()", value => !value.Any(char.IsLower)));      break;
-                case "InLowerCase": tests.Add(("InLowerCase()", value => !value.Any(char.IsUpper)));      break;
-
-                case "WithChars" when TryGetSingleString(constraint, out string pool):
-                    tests.Add(($"WithChars({Quote(pool)})", DrawnFrom(pool)));
-
-                    break;
-
-                case "WithLength" when TryGetSingleInt32(constraint, out int exact):
-                    tests.Add(($"WithLength({exact})", value => value.Length == exact));
-
-                    break;
-
-                case "WithMinLength" when TryGetSingleInt32(constraint, out int minimum):
-                    tests.Add(($"WithMinLength({minimum})", value => value.Length >= minimum));
-
-                    break;
-
-                case "WithMaxLength" when TryGetSingleInt32(constraint, out int maximum):
-                    tests.Add(($"WithMaxLength({maximum})", value => value.Length <= maximum));
-
-                    break;
-
-                // One call, two bounds, one name — judged under that one name, exactly as the run time renders it,
-                // so a hint never points at a half of a call the caller cannot loosen on its own.
-                case "WithLengthBetween" when constraint.Arguments.Length == 2
-                                           && ConstantFacts.TryGetInt32(constraint.Arguments[0].Value, out int low)
-                                           && ConstantFacts.TryGetInt32(constraint.Arguments[1].Value, out int high):
-                    tests.Add(($"WithLengthBetween({low}, {high})", value => value.Length >= low && value.Length <= high));
-
-                    break;
-
-                case "StartingWith" when TryGetSingleString(constraint, out string prefix):
-                    tests.Add(($"StartingWith({Quote(prefix)})", value => value.StartsWith(prefix, StringComparison.Ordinal)));
-
-                    break;
-
-                case "EndingWith" when TryGetSingleString(constraint, out string suffix):
-                    tests.Add(($"EndingWith({Quote(suffix)})", value => value.EndsWith(suffix, StringComparison.Ordinal)));
-
-                    break;
-
-                case "Containing" when TryGetSingleString(constraint, out string fragment):
-                    tests.Add(($"Containing({Quote(fragment)})", value => value.IndexOf(fragment, StringComparison.Ordinal) >= 0));
-
-                    break;
-
-                case "DifferentFrom" when TryGetSingleString(constraint, out string excluded):
-                    tests.Add(($"DifferentFrom({Quote(excluded)})", value => !string.Equals(value, excluded, StringComparison.Ordinal)));
-
-                    break;
-
-                case "Except": {
-                    List<string> excluded = ConstantArguments(constraint);
-                    if (excluded.Count == 0) { break; }
-
-                    tests.Add(($"Except({string.Join(", ", excluded.Select(Quote))})", value => !excluded.Contains(value, StringComparer.Ordinal)));
-
-                    break;
-                }
-            }
-        }
-
-        return tests;
     }
 
     /// <summary>
@@ -367,46 +278,10 @@ public sealed class PooledValueNeverDrawsAnalyzer : DiagnosticAnalyzer {
         return value.ToString(CultureInfo.InvariantCulture);
     }
 
-    private static Func<string, bool> DrawnFrom(string pool) {
-        return value => value.All(character => pool.IndexOf(character) >= 0);
-    }
-
-    /// <summary>The counterpart of <see cref="DrawnFrom" /> for a subtraction: no character of the removed family.</summary>
-    private static Func<string, bool> DrawnNoneOf(string removed) {
-        return value => value.All(character => removed.IndexOf(character) < 0);
-    }
-
-    /// <summary>
-    ///     The constants of an <c>Except</c>-shaped call. Empty when any of them does not fold: a partial exclusion
-    ///     list would render a constraint the caller never wrote, and judge against fewer values than are declared.
-    /// </summary>
-    private static List<string> ConstantArguments(IInvocationOperation constraint) {
-        List<string> values = [];
-
-        foreach (IOperation element in ValueSetFacts.ParamArrayElements(constraint)) {
-            if (!ConstantFacts.TryGetString(element, out string value)) { return []; }
-
-            values.Add(value);
-        }
-
-        return values;
-    }
-
-
     private static bool TryGetSingleInt32(IInvocationOperation constraint, out int value) {
         value = 0;
 
         return constraint.Arguments.Length == 1 && ConstantFacts.TryGetInt32(constraint.Arguments[0].Value, out value);
-    }
-
-    private static bool TryGetSingleString(IInvocationOperation constraint, out string value) {
-        value = string.Empty;
-
-        return constraint.Arguments.Length == 1 && ConstantFacts.TryGetString(constraint.Arguments[0].Value, out value);
-    }
-
-    private static string Quote(string value) {
-        return "\"" + value + "\"";
     }
 
 }

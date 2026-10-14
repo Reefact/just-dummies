@@ -578,6 +578,147 @@ public class Jd015StringConstraintsAdmitNoValueTests {
         Check.That(diagnostics.Length).IsEqualTo(0);
     }
 
+    [Theory]
+    [InlineData("Any.String().WithMinLength(10).WithMaxLength(5)",                       "WithMinLength(10) needs at least 10 characters, which WithMaxLength(5) cannot hold")]
+    [InlineData("Any.String().WithMaxLength(5).WithMinLength(10)",                       "WithMinLength(10) needs at least 10 characters, which WithMaxLength(5) cannot hold")]
+    [InlineData("Any.String().WithMinLength(10).WithLength(5)",                          "WithMinLength(10) needs at least 10 characters, which WithLength(5) cannot hold")]
+    [InlineData("Any.String().WithLength(5).WithMinLength(10)",                          "WithMinLength(10) needs at least 10 characters, which WithLength(5) cannot hold")]
+    [InlineData("Any.String().WithLengthBetween(10, 20).WithLength(5)",                  "WithLengthBetween(10, 20) needs at least 10 characters, which WithLength(5) cannot hold")]
+    [InlineData("Any.String().WithLengthBetween(1, 3).WithLength(5)",                    "WithLength(5) needs exactly 5 characters, which WithLengthBetween(1, 3) cannot hold")]
+    [InlineData("Any.String().WithMaxLength(3).WithLength(5)",                           "WithLength(5) needs exactly 5 characters, which WithMaxLength(3) cannot hold")]
+    [InlineData("Any.String().WithLength(5).WithMaxLength(3)",                           "WithLength(5) needs exactly 5 characters, which WithMaxLength(3) cannot hold")]
+    [InlineData("Any.String().WithLengthBetween(10, 20).WithLengthBetween(1, 3)",        "WithLengthBetween(10, 20) needs at least 10 characters, which WithLengthBetween(1, 3) cannot hold")]
+    [InlineData("Any.String().WithMinLength(4).WithMinLength(10).WithMaxLength(5)",      "WithMinLength(10) needs at least 10 characters, which WithMaxLength(5) cannot hold")]
+    // A value set does not exempt the bounds: "abcdefghij" survives the minimum, and the maximum then contradicts it.
+    [InlineData("Any.String().OneOf(\"abcdefghij\").WithMinLength(10).WithMaxLength(5)", "WithMinLength(10) needs at least 10 characters, which WithMaxLength(5) cannot hold")]
+    public async Task Reports_two_declared_lengths_no_length_satisfies(string chain, string reason) {
+        // Issue #225: the rule read a maximum and an exact length but never a minimum, never the range form, and never
+        // compared the bounds with one another. The run time weighs them first, value set or not, whichever spelling
+        // declared them, and refuses each of these at declaration.
+        string source = $$"""
+            using JustDummies;
+
+            public static class Sample {
+                public static string M() {
+                    return {{chain}}.Generate();
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new StringConstraintsAdmitNoValueAnalyzer(), source);
+
+        Check.That(diagnostics.Length).IsEqualTo(1);
+        Check.That(diagnostics[0].Id).IsEqualTo("JD015");
+        Check.That(diagnostics[0].GetMessage()).IsEqualTo($"No string satisfies this chain: {reason}");
+    }
+
+    [Theory]
+    [InlineData("Any.String().StartingWith(\"ORD-\").WithLengthBetween(1, 3)",         "the anchored fragments need at least 4 characters, which WithLengthBetween(1, 3) cannot hold")]
+    [InlineData("Any.String().WithLengthBetween(0, 3).StartingWith(\"ORD-\")",         "the anchored fragments need at least 4 characters, which WithLengthBetween(0, 3) cannot hold")]
+    [InlineData("Any.String().Containing(\"abcdef\").WithLengthBetween(0, 3)",         "the anchored fragments need at least 6 characters, which WithLengthBetween(0, 3) cannot hold")]
+    [InlineData("Any.String().NotBlank().WithLengthBetween(0, 0)",                     "NotBlank() needs at least 1 character, which WithLengthBetween(0, 0) cannot hold")]
+    [InlineData("Any.String().WithLengthBetween(0, 0).NotBlank()",                     "NotBlank() needs at least 1 character, which WithLengthBetween(0, 0) cannot hold")]
+    [InlineData("Any.String().NonEmpty().WithLengthBetween(0, 0)",                     "NonEmpty() needs at least 1 character, which WithLengthBetween(0, 0) cannot hold")]
+    // Under both, the exact length is the cap the fragments are measured against: it is the tighter of the two.
+    [InlineData("Any.String().WithLength(3).WithMaxLength(10).StartingWith(\"ORD-\")", "the anchored fragments need at least 4 characters, which WithLength(3) cannot hold")]
+    public async Task Reports_a_budget_the_range_form_cannot_hold(string chain, string reason) {
+        // Issue #225: the same budget the single forms are held to, spelled as the range JD031 recommends.
+        string source = $$"""
+            using JustDummies;
+
+            public static class Sample {
+                public static string M() {
+                    return {{chain}}.Generate();
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new StringConstraintsAdmitNoValueAnalyzer(), source);
+
+        Check.That(diagnostics.Length).IsEqualTo(1);
+        Check.That(diagnostics[0].GetMessage()).IsEqualTo($"No string satisfies this chain: {reason}");
+    }
+
+    [Theory]
+    [InlineData("Any.String().OneOf(\"EUR\", \"USD\").WithLength(2)",            "WithLength(2)")]
+    [InlineData("Any.String().WithLength(2).OneOf(\"EUR\", \"USD\")",            "WithLength(2)")]
+    [InlineData("Any.String().OneOf(\"EUR\").WithMinLength(5)",                  "WithMinLength(5)")]
+    [InlineData("Any.String().OneOf(\"EUR\").WithMaxLength(2)",                  "WithMaxLength(2)")]
+    [InlineData("Any.String().OneOf(\"EUR\").WithLengthBetween(4, 6)",           "WithLengthBetween(4, 6)")]
+    [InlineData("Any.String().OneOf(\"\").NonEmpty()",                           "NonEmpty()")]
+    [InlineData("Any.String().OneOf(\"EUR\").StartingWith(\"X\")",               "StartingWith(\"X\")")]
+    [InlineData("Any.String().StartingWith(\"X\").OneOf(\"EUR\")",               "StartingWith(\"X\")")]
+    [InlineData("Any.String().OneOf(\"EUR\").EndingWith(\"X\")",                 "EndingWith(\"X\")")]
+    [InlineData("Any.String().OneOf(\"EUR\").Containing(\"Z\")",                 "Containing(\"Z\")")]
+    [InlineData("Any.String().OneOf(\"EUR\").DifferentFrom(\"EUR\")",            "DifferentFrom(\"EUR\")")]
+    [InlineData("Any.String().OneOf(\"EUR\", \"USD\").Except(\"EUR\", \"USD\")", "Except(\"EUR\", \"USD\")")]
+    [InlineData("Any.String().Except(\"EUR\").OneOf(\"EUR\")",                   "Except(\"EUR\")")]
+    [InlineData("Any.String().Alpha().OneOf(\"EUR\", \"US1\").WithLength(2)",    "WithLength(2)")]
+    public async Task Reports_a_value_set_a_length_an_anchor_or_an_exclusion_empties(string chain, string culprit) {
+        // Issue #225: the value-set branch tested character constraints only, while JD029 stood down on the premise
+        // that this rule reports a pool nothing survives — so each rule left these to the other, and both were silent.
+        string source = $$"""
+            using JustDummies;
+
+            public static class Sample {
+                public static string M() {
+                    return {{chain}}.Generate();
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new StringConstraintsAdmitNoValueAnalyzer(), source);
+
+        Check.That(diagnostics.Length).IsEqualTo(1);
+        Check.That(diagnostics[0].GetMessage()).IsEqualTo($"No string satisfies this chain: {culprit} allows none of the values it offers");
+    }
+
+    [Theory]
+    [InlineData("Any.String().WithMinLength(5).WithMaxLength(5)")]
+    [InlineData("Any.String().WithLength(5).WithLengthBetween(5, 10)")]
+    [InlineData("Any.String().WithLengthBetween(4, 6).StartingWith(\"ORD-\")")]
+    [InlineData("Any.String().WithMinLength(10).StartingWith(\"ORD-\")")]
+    [InlineData("Any.String().OneOf(\"EUR\", \"US\").WithLength(2)")]
+    [InlineData("Any.String().OneOf(\"EUR\").WithLengthBetween(3, 3).Except(\"USD\")")]
+    // A transposed range or a negative length throws an argument error of its own before any bound is set, and
+    // JD014 reports it; read as bounds, they would make this rule claim a conflict the run time never reaches.
+    [InlineData("Any.String().WithLengthBetween(10, 5)")]
+    [InlineData("Any.String().WithMaxLength(-1)")]
+    public async Task Does_not_report_lengths_and_a_value_set_some_value_satisfies(string chain) {
+        string source = $$"""
+            using JustDummies;
+
+            public static class Sample {
+                public static string M() {
+                    return {{chain}}.Generate();
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new StringConstraintsAdmitNoValueAnalyzer(), source);
+
+        Check.That(diagnostics.Length).IsEqualTo(0);
+    }
+
+    [Fact]
+    public async Task Reports_two_contradictory_lengths_on_the_later_of_the_two() {
+        // The run time refuses the chain as it applies the later constraint, and names that one first.
+        const string source = """
+            using JustDummies;
+
+            public static class Sample {
+                public static string M() {
+                    return Any.String().WithMinLength(10).WithMaxLength(5).NonEmpty().Generate();
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new StringConstraintsAdmitNoValueAnalyzer(), source);
+
+        Check.That(diagnostics.Length).IsEqualTo(1);
+        Check.That(source.Substring(diagnostics[0].Location.SourceSpan.Start, diagnostics[0].Location.SourceSpan.Length)).IsEqualTo("Any.String().WithMinLength(10).WithMaxLength(5)");
+    }
+
     [Fact]
     public async Task Does_not_report_a_conflict_asserting_negative_test() {
         const string source = """

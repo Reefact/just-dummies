@@ -47,6 +47,58 @@ public class Jd005GeneratorRenderedAsTextTests {
     }
 
     [Fact]
+    public async Task Reports_a_generator_appended_by_compound_assignment() {
+        // `s += gen` binds to a compound assignment, never to a binary operation, yet it is the same concatenation.
+        const string source = """
+            using JustDummies;
+
+            public static class Sample {
+                public static string M() {
+                    string message = "ORD-";
+                    message += Any.String().NonEmpty();
+
+                    return message;
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new GeneratorRenderedAsTextAnalyzer(), source);
+
+        Check.That(diagnostics.Length).IsEqualTo(1);
+        Check.That(diagnostics[0].Id).IsEqualTo("JD005");
+        Check.That(diagnostics[0].GetMessage()).Contains("AnyString");
+    }
+
+    [Fact]
+    public async Task Reports_a_generator_in_an_interpolation_hole_bound_to_a_handler() {
+        // An interpolated string handed to a handler-accepting API lowers to AppendFormatted calls, not to interpolation
+        // holes; StringBuilder.Append and Debug.Assert are the ordinary cases.
+        const string source = """
+            using System.Diagnostics;
+            using System.Text;
+
+            using JustDummies;
+
+            public static class Sample {
+                public static string M(bool ok) {
+                    StringBuilder builder = new StringBuilder();
+                    builder.Append($"order {Any.String().NonEmpty()}");
+                    Debug.Assert(ok, $"order {Any.Int32().Positive(),8:D}");
+
+                    return builder.ToString();
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new GeneratorRenderedAsTextAnalyzer(), source);
+
+        Check.That(diagnostics.Length).IsEqualTo(2);
+        Check.That(diagnostics.Select(diagnostic => diagnostic.Id)).ContainsOnlyElementsThatMatch(id => id == "JD005");
+        Check.That(diagnostics.Select(diagnostic => diagnostic.GetMessage())).HasElementThatMatches(message => message.Contains("AnyString"));
+        Check.That(diagnostics.Select(diagnostic => diagnostic.GetMessage())).HasElementThatMatches(message => message.Contains("AnyInt32"));
+    }
+
+    [Fact]
     public async Task Reports_an_explicit_ToString_on_a_generator() {
         const string source = """
             using JustDummies;
@@ -95,6 +147,52 @@ public class Jd005GeneratorRenderedAsTextTests {
                 public static string M() {
                     return $"order {Any.String().NonEmpty().Generate()}"
                          + Any.Int32().Positive().Generate().ToString();
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new GeneratorRenderedAsTextAnalyzer(), source);
+
+        Check.That(diagnostics.Length).IsEqualTo(0);
+    }
+
+    [Fact]
+    public async Task Does_not_report_a_generated_value_appended_or_bound_to_a_handler() {
+        const string source = """
+            using System.Text;
+
+            using JustDummies;
+
+            public static class Sample {
+                public static string M() {
+                    string message = "ORD-";
+                    message += Any.String().NonEmpty().Generate();
+
+                    StringBuilder builder = new StringBuilder();
+                    builder.Append($"order {Any.String().NonEmpty().Generate()} for {message}");
+
+                    return builder.ToString();
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new GeneratorRenderedAsTextAnalyzer(), source);
+
+        Check.That(diagnostics.Length).IsEqualTo(0);
+    }
+
+    [Fact]
+    public async Task Does_not_report_a_numeric_compound_addition() {
+        // The compound-assignment branch must key on the string result type, as the binary branch does.
+        const string source = """
+            using JustDummies;
+
+            public static class Sample {
+                public static int M() {
+                    int total = 1;
+                    total += Any.Int32().Positive().Generate();
+
+                    return total;
                 }
             }
             """;

@@ -65,23 +65,27 @@ invariant du domaine plutôt qu'un contournement.
 
 `DateOnly` n'a pas de contrainte de granularité — c'est déjà un jour entier.
 
-## `DateTimeOffset` varie sur deux dimensions
+## `DateTimeOffset` ne porte un décalage que si vous en déclarez un
 
-Un `DateTimeOffset` est un instant **et** un décalage par rapport à UTC, et JustDummies fait varier
-les deux. C'est délibéré : un dummy portant toujours `+00:00` ne trouverait jamais le code qui
-suppose l'heure locale
+Un `DateTimeOffset` est un instant **et** un décalage par rapport à UTC. Sans contrainte, JustDummies
+fait varier l'instant et laisse le décalage à `+00:00` : le décalage est une dimension que l'on
+active explicitement, avec `WithOffset` pour un décalage fixe en minutes entières ou
+`WithOffsetBetween` pour un décalage borné
 ([ADR-0016](../../for-maintainers/adr/0016-vary-the-datetimeoffset-offset-dimension.fr.md)).
+Déclarez-en un quand le code testé y est sensible : un tirage sans contrainte n'atteint jamais le
+code qui suppose l'heure locale.
 
 ```csharp
-DateTimeOffset anywhere = Any.DateTimeOffset().Generate();                       // instant et décalage varient
-DateTimeOffset utc      = Any.DateTimeOffset().WithOffset(TimeSpan.Zero).Generate();
-DateTimeOffset european = Any.DateTimeOffset()
-                             .WithOffsetBetween(TimeSpan.FromHours(0), TimeSpan.FromHours(3))
-                             .Generate();
+DateTimeOffset anyUtcInstant      = Any.DateTimeOffset().Generate();                 // le décalage reste +00:00
+DateTimeOffset anyShiftedInstant  = Any.DateTimeOffset().WithOffset(TimeSpan.FromHours(2)).Generate();
+DateTimeOffset anyEuropeanInstant = Any.DateTimeOffset()
+                                       .WithOffsetBetween(TimeSpan.FromHours(0), TimeSpan.FromHours(3))
+                                       .Generate();
 ```
 
-Déclarer un décalage **filtre le vivier** d'instants au lieu de réécrire l'instant tiré : la paire
-obtenue est une paire qui existe réellement ensemble
+Combiné à `OneOf(...)`, un décalage déclaré **filtre le vivier** au lieu de réécrire les valeurs
+qu'il contient : une valeur du vivier est rendue telle quelle, décalage compris, et une valeur dont
+le décalage n'est pas admis par la déclaration n'est jamais tirée
 ([ADR-0030](../../for-maintainers/adr/0030-filter-the-datetimeoffset-pool-by-the-declared-offset.fr.md)).
 
 ## Le piège de `DateTime.Now`

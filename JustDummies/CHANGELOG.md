@@ -52,6 +52,12 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   is refused at declaration, as the same readme said twelve lines earlier. The paragraph now states
   the rule the library follows.
 
+- **The dates and times guide no longer says an unconstrained `DateTimeOffset` varies its offset.**
+  It does not, and never did: the offset stays `+00:00` until `WithOffset` or `WithOffsetBetween`
+  declares one. A reader trusting the page believed a plain draw exercised offset-sensitive code it
+  never reaches. The section, in English and in French, now says to declare an offset where the code
+  under test is sensitive to it.
+
 ### Fixed
 
 - **JD017 no longer reports an exclusion of a value the enum does not define.**

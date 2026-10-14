@@ -45,6 +45,14 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Fixed
 
+- **A family declared after the subtractions that empty it now names them.**
+  `Any.String().WithoutAlpha().Alpha()` was refused with "Cannot apply Alpha() because the declared
+  character family Alpha() admits nothing once it is applied": the family blamed on itself, and
+  `WithoutAlpha()` never named. It now reads "Cannot apply Alpha() because WithoutAlpha() removes every
+  character Alpha() offers", naming every subtraction that removes a character the family offers. In
+  the other order the family is still the side named, now as the call you wrote: "Cannot apply
+  WithoutNumeric() because WithChars("123") admits nothing once it is applied".
+
 - **JD017 no longer reports an exclusion of a value the enum does not define.**
   `Any.Enum<Day>().Except((Day)99)`, and `DifferentFrom(default)` on an enum that declares no zero,
   were reported as stepping outside the generator's universe, although the library accepts them as a

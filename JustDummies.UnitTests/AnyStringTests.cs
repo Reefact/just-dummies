@@ -686,7 +686,31 @@ public sealed class AnyStringTests {
         // Issue #210: accepted, then drawn from the untouched pool forever.
         Check.ThatCode(() => Any.String().WithChars("123").WithoutNumeric())
              .Throws<ConflictingAnyConstraintException>()
-             .WithMessage("Cannot apply WithoutNumeric() because the declared character family WithChars(\"123\") admits nothing once it is applied.");
+             .WithMessage("Cannot apply WithoutNumeric() because WithChars(\"123\") admits nothing once it is applied.");
+    }
+
+    [Fact(DisplayName = "A family declared after the subtraction that empties it is refused, naming the subtraction.")]
+    public void AFamilyDeclaredAfterTheSubtractionThatEmptiesItNamesTheSubtraction() {
+        // Issue #211: the family was claimed as a phrase, which is never recognised as the constraint being applied,
+        // so the message blamed the family on itself and never named the subtraction.
+        Check.ThatCode(() => Any.String().WithoutAlpha().Alpha())
+             .Throws<ConflictingAnyConstraintException>()
+             .WithMessage("Cannot apply Alpha() because WithoutAlpha() removes every character Alpha() offers.");
+        Check.ThatCode(() => Any.String().WithoutNumeric().Numeric())
+             .Throws<ConflictingAnyConstraintException>()
+             .WithMessage("Cannot apply Numeric() because WithoutNumeric() removes every character Numeric() offers.");
+    }
+
+    [Fact(DisplayName = "A family emptied by several subtractions names every one that removes a character it offers.")]
+    public void AFamilyEmptiedBySeveralSubtractionsNamesEveryOneThatRemovesACharacterItOffers() {
+        // Neither subtraction empties WithChars("a1") on its own, so naming only the last would blame one whose
+        // removal leaves the chain just as refused. One that removes nothing the family offers takes no part.
+        Check.ThatCode(() => Any.String().WithoutAlpha().WithoutNumeric().WithChars("a1"))
+             .Throws<ConflictingAnyConstraintException>()
+             .WithMessage("Cannot apply WithChars(\"a1\") because WithoutAlpha() and WithoutNumeric() remove every character WithChars(\"a1\") offers.");
+        Check.ThatCode(() => Any.String().WithoutAlpha().WithoutNumeric().WithChars("a"))
+             .Throws<ConflictingAnyConstraintException>()
+             .WithMessage("Cannot apply WithChars(\"a\") because WithoutAlpha() removes every character WithChars(\"a\") offers.");
     }
 
     [Fact(DisplayName = "NotBlank blames the subtraction that left a WithChars pool with only whitespace.")]

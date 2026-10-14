@@ -137,6 +137,72 @@ public sealed class ConflictMessageProvenanceTests {
         Check.WithCustomMessage($"The applied constraint is echoed after 'because'. Message: {message}").That(message).Not.Contains("because NonZero()");
     }
 
+    // ----- An allow-list emptied by what was declared before it (issue #215). -----
+    // Applied last, the allow-list is the side the caller just wrote; the message used to name it on both sides of
+    // "because" and never name the bound, sign, lattice or scale that turned every value away.
+
+    [Fact(DisplayName = "An allow-list emptied by a bound declared before it names the bound.")]
+    public void AllowListEmptiedByAnEarlierBoundNamesTheBound() {
+        string message = ConflictMessage(() => Any.Int32().Between(10, 20).OneOf(1, 2, 3));
+
+        Check.WithCustomMessage($"The bound was not named. Message: {message}").That(message).Contains("Between(10, 20) allows none of its values");
+    }
+
+    [Fact(DisplayName = "An allow-list emptied by a lattice or a sign names that constraint, and only the one that refuses every value.")]
+    public void AllowListEmptiedByAnEarlierLatticeNamesOnlyTheLattice() {
+        // Positive() and LessThan(1000) admit both 10 and 20; only MultipleOf(7) refuses them all, so only it is
+        // the constraint whose removal changes the verdict.
+        string message = ConflictMessage(() => Any.Int32().Positive().LessThan(1000).MultipleOf(7).OneOf(10, 20));
+
+        Check.WithCustomMessage($"The lattice was not named. Message: {message}").That(message).Contains("MultipleOf(7) allows none of its values");
+        Check.WithCustomMessage($"A constraint admitting every value was named. Message: {message}").That(message).Not.Contains("Positive()", "LessThan(1000)");
+
+        string signed = ConflictMessage(() => Any.Int64().Positive().OneOf(-1L, -2L));
+
+        Check.WithCustomMessage($"The sign was not named. Message: {signed}").That(signed).Contains("Positive() allows none of its values");
+    }
+
+    [Fact(DisplayName = "An allow-list only the combination of earlier constraints empties names no single one.")]
+    public void AllowListEmptiedOnlyByACombinationIsNotPinnedOnOne() {
+        // Positive() refuses -2 and MultipleOf(2) refuses 1: each leaves a value standing, so neither alone is to
+        // blame and naming one would send the caller to a constraint whose removal leaves the chain refused.
+        string message = ConflictMessage(() => Any.Int32().Positive().MultipleOf(2).OneOf(-2, 1));
+
+        Check.WithCustomMessage($"A single constraint was blamed for a combination. Message: {message}").That(message).Not.Contains("allows none of its values");
+        Check.That(message).Contains("no value it offers satisfies the constraints already declared");
+    }
+
+    [Fact(DisplayName = "A decimal allow-list emptied by a scale declared before it names the scale.")]
+    public void DecimalAllowListEmptiedByAnEarlierScaleNamesTheScale() {
+        string message = ConflictMessage(() => Any.Decimal().WithScale(1).OneOf(1.234m));
+
+        Check.WithCustomMessage($"The scale was not named. Message: {message}").That(message).Contains("WithScale(1) allows none of its values");
+    }
+
+    [Fact(DisplayName = "A double allow-list emptied by a bound declared before it names the bound.")]
+    public void DoubleAllowListEmptiedByAnEarlierBoundNamesTheBound() {
+        string message = ConflictMessage(() => Any.Double().Between(10d, 20d).OneOf(1.5d));
+
+        Check.WithCustomMessage($"The bound was not named. Message: {message}").That(message).Contains("Between(10, 20) allows none of its values");
+    }
+
+#if NET8_0_OR_GREATER
+    [Fact(DisplayName = "An Int128 allow-list emptied by a bound declared before it names the bound.")]
+    public void Int128AllowListEmptiedByAnEarlierBoundNamesTheBound() {
+        string message = ConflictMessage(() => Any.Int128().Between(10, 20).OneOf((Int128)1));
+
+        Check.WithCustomMessage($"The bound was not named. Message: {message}").That(message).Contains("Between(10, 20) allows none of its values");
+    }
+#endif
+
+    [Fact(DisplayName = "An allow-list declared first is still named as the other side when a bound empties it.")]
+    public void AllowListDeclaredFirstIsStillTheOtherSide() {
+        string message = ConflictMessage(() => Any.Int32().OneOf(1, 2, 3).Between(10, 20));
+
+        Check.That(message).Contains("Cannot apply Between(10, 20)");
+        Check.That(message).Contains("OneOf(1, 2, 3)");
+    }
+
     // ----- Regression guard: bound-vs-bound messages must stay correct and unchanged. -----
 
     [Fact(DisplayName = "A bound-vs-bound conflict still names the opposing bound (unchanged).")]

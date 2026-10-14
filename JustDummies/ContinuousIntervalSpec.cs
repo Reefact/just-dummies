@@ -549,7 +549,7 @@ internal sealed class ContinuousIntervalSpec {
         IReadOnlyList<ConstraintCall> culprits = ExcludingConstraintsInEffect();
 
         if (_allowed is not null) {
-            if (culprits.Count == 0) { return $"none of the values {_allowedConstraint} allows satisfies the constraints already defined"; }
+            if (culprits.Count == 0) { return DescribeEmptiedAllowList(applying); }
 
             // Only the allow-list values the bounds still permit can be forbidden by an exclusion; if some allowed
             // value was already dropped by a bound, the exclusions do not forbid "every" allowed value, so the claim
@@ -568,6 +568,28 @@ internal sealed class ContinuousIntervalSpec {
         }
 
         return $"{Forbids(culprits, applying)} {_render(_min)}, {PinningClause()}";
+    }
+
+    /// <summary>
+    ///     Why no value the allow-list offers survives when no exclusion is to blame — a bound, a sign, a lattice or a
+    ///     scale turned every one of them away.
+    /// </summary>
+    /// <remarks>
+    ///     Applied last, the allow-list is the side the caller just wrote, so the sentence names the declared
+    ///     constraints that refuse every value it offers, in the words <c>StringSpec</c> uses for its own value set;
+    ///     when only their combination refuses them, no single constraint is the culprit and the sentence stays
+    ///     general. It used to stay general always, which named the allow-list on both sides of "because" and the
+    ///     bound nowhere (issue #215). Applied first, the allow-list is the other side and is named as such.
+    /// </remarks>
+    private string DescribeEmptiedAllowList(ConstraintCall applying) {
+        if (applying != _allowedConstraint) { return $"none of the values {_allowedConstraint} allows satisfies the constraints already defined"; }
+
+        List<ConstraintCall> culprits = DeclaredConstraints().Where(entry => !_allowed!.Any(entry.Admits)).Select(entry => entry.Constraint).ToList();
+
+        if (culprits.Count == 0) { return "no value it offers satisfies the constraints already declared"; }
+        if (culprits.Count == 1) { return $"{culprits[0]} allows none of its values"; }
+
+        return $"{string.Join(", ", culprits)} allow none of its values";
     }
 
     /// <summary>

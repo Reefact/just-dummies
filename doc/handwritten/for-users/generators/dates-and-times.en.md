@@ -65,22 +65,26 @@ rather than a workaround.
 
 `DateOnly` has no granularity constraint — it is already a whole day.
 
-## `DateTimeOffset` varies on two dimensions
+## `DateTimeOffset` carries an offset only when you declare one
 
-A `DateTimeOffset` is an instant **and** an offset from UTC, and JustDummies varies both. That is
-deliberate: a dummy that always carried `+00:00` would never find the code that assumes local time
-([ADR-0016](../../for-maintainers/adr/0016-vary-the-datetimeoffset-offset-dimension.md)).
+A `DateTimeOffset` is an instant **and** an offset from UTC. Unconstrained, JustDummies varies the
+instant and leaves the offset at `+00:00`: the offset is a dimension you opt into, with `WithOffset`
+for a fixed whole-minute offset or `WithOffsetBetween` for a bounded one
+([ADR-0016](../../for-maintainers/adr/0016-vary-the-datetimeoffset-offset-dimension.md)). Declare one
+when the code under test is sensitive to it: a plain draw never reaches the code that assumes local
+time.
 
 ```csharp
-DateTimeOffset anywhere = Any.DateTimeOffset().Generate();                       // instant and offset both vary
-DateTimeOffset utc      = Any.DateTimeOffset().WithOffset(TimeSpan.Zero).Generate();
-DateTimeOffset european = Any.DateTimeOffset()
-                             .WithOffsetBetween(TimeSpan.FromHours(0), TimeSpan.FromHours(3))
-                             .Generate();
+DateTimeOffset anyUtcInstant      = Any.DateTimeOffset().Generate();                 // the offset stays +00:00
+DateTimeOffset anyShiftedInstant  = Any.DateTimeOffset().WithOffset(TimeSpan.FromHours(2)).Generate();
+DateTimeOffset anyEuropeanInstant = Any.DateTimeOffset()
+                                       .WithOffsetBetween(TimeSpan.FromHours(0), TimeSpan.FromHours(3))
+                                       .Generate();
 ```
 
-Declaring an offset **filters the pool** of instants rather than rewriting the instant that was
-drawn: the pair you get is one that genuinely exists together
+Combined with `OneOf(...)`, a declared offset **filters the pool** rather than rewriting the values
+in it: a pooled value is returned as given, offset included, and one whose offset the declaration
+does not admit is never drawn
 ([ADR-0030](../../for-maintainers/adr/0030-filter-the-datetimeoffset-pool-by-the-declared-offset.md)).
 
 ## The `DateTime.Now` trap

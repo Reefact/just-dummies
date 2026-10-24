@@ -61,7 +61,7 @@ The test now states its intent.
 dotnet add package JustDummies
 ```
 
-That is the whole install. The package also carries its 33 analyzer rules inside it, so the guards on correct usage start working on your next build with nothing further to configure.
+That is the whole install. The package also carries its 34 analyzer rules inside it, so the guards on correct usage start working on your next build with nothing further to configure.
 
 ## Your first dummies
 

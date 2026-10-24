@@ -218,9 +218,9 @@ public sealed class StringConstraintsAdmitNoValueAnalyzer : DiagnosticAnalyzer {
     ///     The family or pool the chain draws from, as the caller wrote it, and the characters it offers under the
     ///     declared casing — or <c>null</c> where the rule cannot say: no family at all (the whole of ASCII, which no
     ///     subtraction empties), a pool that is not a constant, or an empty one, which the call rejects as an argument.
-    ///     It is <c>null</c> too where the declarations conflict rather than the values (issue #274): two different
-    ///     calls in the one family or casing slot, or a casing beside a <c>WithChars</c> pool, which cannot combine. The
-    ///     same call repeated is not a conflict — the run time ignores the repetition — so it counts once.
+    ///     It is <c>null</c> too where the declarations conflict rather than the values, which JD034 reports: two
+    ///     different calls in the one family or casing slot, or a casing beside a <c>WithChars</c> pool, which cannot
+    ///     combine. The same call repeated is not a conflict — the run time ignores the repetition — so it counts once.
     /// </summary>
     /// <remarks>
     ///     What is returned therefore always offers a character, so an empty filler is always some subtraction's doing.

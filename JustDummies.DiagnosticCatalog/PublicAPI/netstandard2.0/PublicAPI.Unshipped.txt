@@ -34,6 +34,7 @@ JustDummies.Diagnostics.JustDummiesRule.JD030
 JustDummies.Diagnostics.JustDummiesRule.JD031
 JustDummies.Diagnostics.JustDummiesRule.JD032
 JustDummies.Diagnostics.JustDummiesRule.JD033
+JustDummies.Diagnostics.JustDummiesRule.JD034
 const JustDummies.Diagnostics.JustDummiesCategory.Composition = "JustDummies.Composition" -> string!
 const JustDummies.Diagnostics.JustDummiesCategory.Constraints = "JustDummies.Constraints" -> string!
 const JustDummies.Diagnostics.JustDummiesCategory.Reproducibility = "JustDummies.Reproducibility" -> string!
@@ -170,3 +171,7 @@ const JustDummies.Diagnostics.JustDummiesRule.JD033.Category = "JustDummies.Cons
 const JustDummies.Diagnostics.JustDummiesRule.JD033.HelpLinkUri = "https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/analyzers/JD033.en.md" -> string!
 const JustDummies.Diagnostics.JustDummiesRule.JD033.Id = "JD033" -> string!
 const JustDummies.Diagnostics.JustDummiesRule.JD033.Title = "An anchored literal the declared characters cannot draw" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD034.Category = "JustDummies.Constraints" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD034.HelpLinkUri = "https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/analyzers/JD034.en.md" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD034.Id = "JD034" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD034.Title = "A once-per-generator constraint redeclared with a different call" -> string!

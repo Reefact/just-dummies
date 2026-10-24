@@ -38,3 +38,4 @@ JD030   | JustDummies.Constraints     | Info     | UndeclaredStringLengthAnalyze
 JD031   | JustDummies.Constraints     | Info     | PairedBoundsHaveARangeFormAnalyzer
 JD032   | JustDummies.Constraints     | Warning  | BoundDeclaredTwiceAnalyzer
 JD033   | JustDummies.Constraints     | Info     | AnchoredLiteralOutsideCharacterFamilyAnalyzer
+JD034   | JustDummies.Constraints     | Warning  | ConstraintAlreadyDefinedAnalyzer

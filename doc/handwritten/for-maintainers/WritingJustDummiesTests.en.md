@@ -145,6 +145,29 @@ Rules that keep a property honest:
 * **Keep it fast.** A hundred cases times eight draws is already eight hundred
   draws. Cap lengths and counts in the tens, not the thousands.
 
+## The model-based property
+
+`StringModelProperties` is a property of a different kind. It does not quantify the
+argument of one constraint: it generates whole chains of `Any.String()` calls — up to
+eight, over a small vocabulary — and judges each one against `StringModel`, an
+independent model of the documented semantics. The run time must refuse a chain at the
+same call the model does, and every value it draws must be one the model accepts.
+
+* **Build the model from the documentation, never from `StringSpec`.** Each rule in
+  `StringModel` cites the guide or the XML documentation it restates. A model that copies
+  the implementation can only confirm that the implementation agrees with itself.
+* **Keep it within what the library claims to detect** (ADR-0046). The model lays the
+  literals side by side because the documented layout does, and it judges an exclusion
+  only beside a value set, because on a shaped string an exclusion is met by a bounded
+  redraw at `Generate()`.
+* **A new `AnyString` call joins the vocabulary.** Add it to `StringModelChains` and its
+  rule to `StringModel`; otherwise the property cannot see how the call combines with the
+  others.
+* **A disagreement is a finding, not a flake.** FsCheck shrinks it to the shortest chain
+  that still disagrees and prints the seed. Decide against the documentation which side
+  is wrong, fix the run time or the model, and pin the case in `JustDummies.UnitTests` as
+  a regression.
+
 ## Before you push
 
 * `dotnet test --project JustDummies.PropertyTests` and `dotnet test --project JustDummies.UnitTests`.

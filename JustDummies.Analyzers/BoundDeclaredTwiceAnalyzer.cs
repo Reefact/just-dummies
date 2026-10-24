@@ -46,7 +46,7 @@ public sealed class BoundDeclaredTwiceAnalyzer : DiagnosticAnalyzer {
     ///     bounds belong here where JD031 refuses them: nothing is rewritten, so nothing is unsound about pairing
     ///     two calls to the same name. The exact forms — <c>WithLength</c>, <c>WithCount</c> — deliberately do
     ///     not: they are declared once per generator and a second, different declaration THROWS rather than
-    ///     folding, which is JD034's to report on a string and the run time's on a collection.
+    ///     folding, which is JD034's to report.
     /// </summary>
     internal static readonly ImmutableHashSet<string> FoldingBounds = ImmutableHashSet.Create(
         "WithMinLength", "WithMaxLength",

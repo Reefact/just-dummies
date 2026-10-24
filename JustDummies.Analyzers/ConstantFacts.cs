@@ -1,3 +1,5 @@
+using System.Linq;
+
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Operations;
 
@@ -75,6 +77,100 @@ internal static class ConstantFacts {
         }
 
         return false;
+    }
+
+    /// <summary>
+    ///     Reads the ticks of a statically-known <see cref="System.TimeSpan" />: <c>TimeSpan.Zero</c>,
+    ///     <c>TimeSpan.FromHours(2)</c> and its siblings with every further argument left at zero, and
+    ///     <c>new TimeSpan(...)</c> from ticks or from days, hours, minutes, seconds and milliseconds.
+    /// </summary>
+    /// <remarks>
+    ///     Only integral arguments are read (ADR-0046). A fractional one goes through floating-point conversions whose
+    ///     rounding has changed between .NET versions, and the analyzer does not run on the reader's runtime, so a value
+    ///     it computed could differ from the one the test draws against. An overflow answers <c>false</c> too.
+    /// </remarks>
+    public static bool TryGetTimeSpanTicks(IOperation operation, out long ticks) {
+        IOperation unwrapped = GeneratorFacts.Unwrap(operation);
+        long? read = unwrapped switch {
+            IFieldReferenceOperation { Field.Name: ZeroFieldName } field when IsTimeSpan(field.Field.ContainingType) => 0,
+            IInvocationOperation invocation when IsTimeSpan(invocation.TargetMethod.ContainingType)                => TimeSpanFactoryTicks(invocation),
+            IObjectCreationOperation creation when IsTimeSpan(creation.Type)                                       => TimeSpanConstructorTicks(creation),
+            _                                                                                                      => null
+        };
+        ticks = read ?? 0;
+
+        return read.HasValue;
+    }
+
+    /// <summary><c>TimeSpan.FromXxx(n)</c>, with every further argument, if any, left at zero.</summary>
+    private static long? TimeSpanFactoryTicks(IInvocationOperation invocation) {
+        long? unit = invocation.TargetMethod.Name switch {
+            "FromDays"         => System.TimeSpan.TicksPerDay,
+            "FromHours"        => System.TimeSpan.TicksPerHour,
+            "FromMinutes"      => System.TimeSpan.TicksPerMinute,
+            "FromSeconds"      => System.TimeSpan.TicksPerSecond,
+            "FromMilliseconds" => System.TimeSpan.TicksPerMillisecond,
+            "FromTicks"        => 1,
+            _                  => null
+        };
+        if (unit is not long perUnit || invocation.Arguments.Length == 0) { return null; }
+        if (invocation.Arguments.Skip(1).Any(argument => Integral(argument.Value) != 0)) { return null; }
+
+        return Integral(invocation.Arguments[0].Value) is long count ? Multiplied(count, perUnit) : null;
+    }
+
+    /// <summary><c>new TimeSpan(ticks)</c>, or the days, hours, minutes, seconds and milliseconds forms.</summary>
+    private static long? TimeSpanConstructorTicks(IObjectCreationOperation creation) {
+        long?[] parts = creation.Arguments.Select(argument => Integral(argument.Value)).ToArray();
+        if (parts.Length == 0 || parts.Any(part => part is null)) { return null; }
+        if (parts.Length == 1) { return parts[0]; }
+
+        // (hours, minutes, seconds), (days, hours, minutes, seconds) and (days, hours, minutes, seconds, milliseconds).
+        long[] units = parts.Length switch {
+            3 => [System.TimeSpan.TicksPerHour, System.TimeSpan.TicksPerMinute, System.TimeSpan.TicksPerSecond],
+            4 => [System.TimeSpan.TicksPerDay, System.TimeSpan.TicksPerHour, System.TimeSpan.TicksPerMinute, System.TimeSpan.TicksPerSecond],
+            5 => [System.TimeSpan.TicksPerDay, System.TimeSpan.TicksPerHour, System.TimeSpan.TicksPerMinute, System.TimeSpan.TicksPerSecond, System.TimeSpan.TicksPerMillisecond],
+            _ => []
+        };
+        if (units.Length == 0) { return null; }
+
+        long? total = 0;
+        for (int index = 0; index < units.Length && total is long sum; index++) {
+            total = Multiplied(parts[index]!.Value, units[index]) is long ticks ? Added(sum, ticks) : null;
+        }
+
+        return total;
+    }
+
+    /// <summary>A constant integral value, or a floating-point constant with no fractional part; <c>null</c> otherwise.</summary>
+    private static long? Integral(IOperation operation) {
+        if (operation.ConstantValue is not { HasValue: true, Value: { } value }) { return null; }
+
+        return value switch {
+            int or long or short or sbyte or byte or ushort or uint => System.Convert.ToInt64(value, System.Globalization.CultureInfo.InvariantCulture),
+            double number when System.Math.Abs(number % 1) < double.Epsilon && System.Math.Abs(number) < long.MaxValue => (long)number,
+            _ => null
+        };
+    }
+
+    private static long? Multiplied(long left, long right) {
+        try {
+            return checked(left * right);
+        } catch (System.OverflowException) {
+            return null;
+        }
+    }
+
+    private static long? Added(long left, long right) {
+        try {
+            return checked(left + right);
+        } catch (System.OverflowException) {
+            return null;
+        }
+    }
+
+    private static bool IsTimeSpan(ITypeSymbol? type) {
+        return type?.ToDisplayString() == TimeSpanMetadataName;
     }
 
 }

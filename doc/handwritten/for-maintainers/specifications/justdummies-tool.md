@@ -98,7 +98,7 @@ index; it holds no argument of its own.
 |---|---|---|
 | **D1** | Scaffold once; the file belongs to the developer. | Kills drift, `check`, and the source-generator question in one move. |
 | **D2** | The emitted type implements `IAny<T>` and is **immutable**. | Composability, and it re-arms the `JustDummies.Usage` analyzers on the emitted type. |
-| **D3** | The emitted file is **not** marked as generated code. | All 33 analyzers exempt generated code; marking it would blind the file. |
+| **D3** | The emitted file is **not** marked as generated code. | All 34 analyzers exempt generated code; marking it would blind the file. |
 | **D4** | Never emit a member not resolved in the target compilation. | One rule covers the TFM split, the public-API baseline, version skew and unsigned arithmetic. |
 | **D5** | Read constructor guard clauses to seed each generator. | Without it the emitted code produces values the constructor rejects. |
 | **D6** | An unresolved parameter is emitted as a **compile error**. | The developer is already in the file; a red squiggle is the cheapest possible signal. |
@@ -1810,7 +1810,7 @@ exercised by §17.
 
 ### 14.6 Analyzer inventory
 
-33 diagnostic identifiers over 32 analyzer classes — `JD023` and `JD024` share one.
+34 diagnostic identifiers over 33 analyzer classes — `JD023` and `JD024` share one.
 
 | Range | Category | Severities |
 |---|---|---|
@@ -1833,10 +1833,11 @@ exercised by §17.
 | `JD029`–`JD031` | Constraints | Info |
 | `JD032` | Constraints | Warning |
 | `JD033` | Constraints | Info |
+| `JD034` | Constraints | Warning |
 
 Three facts about them drive decisions in this document:
 
-* **All 32 call `ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None)`** — hence D3.
+* **All 33 call `ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None)`** — hence D3.
 * **The `Usage` rules match any type implementing `IAny<T>`**, not a list of built-in generators —
   hence D2's second benefit.
 * **The `Reproducibility` rules match chains rooted at the static `Any` façade**, deliberately

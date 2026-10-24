@@ -43,6 +43,16 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   survivors and rejections through `IPoolInspection<string>`, naming the pattern as the constraint
   that turned a value away, and answers a distinct collection with the size of its surviving set.
 
+- **JD034 — *A once-per-generator constraint redeclared with a different call*** (category
+  `JustDummies.Constraints`, 🟠 Warning, on by default). An `Any.String()` chain takes its exact length,
+  prefix, suffix, character family or `WithChars` pool, casing and `OneOf(...)` value set once each, and a
+  `WithChars` pool takes no casing. A second, different declaration — `Alpha().Numeric()`,
+  `WithLength(2).WithLength(3)`, `WithChars("ab").InUpperCase()` — throws at that call on every seed, yet no
+  rule reported it: JD015 reports constants that admit no value, and these are refused even where the values
+  agree. Repeating the same call stays silent, since the run time ignores the repetition, and so does a
+  redeclaration whose arguments the compiler cannot compare. The other generators' once-per-generator
+  constraints are not read yet.
+
 ### Documentation
 
 - **The packaged readme no longer says a maximum is never capped.** One of its paragraphs still

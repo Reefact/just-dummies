@@ -3,7 +3,7 @@
 🌍 **Languages:**  
 🇬🇧 English (this file) | 🇫🇷 [Français](./README.fr.md)
 
-The `JustDummies` package ships 33 Roslyn rules (`JD001`–`JD033`) inside itself, under
+The `JustDummies` package ships 34 Roslyn rules (`JD001`–`JD034`) inside itself, under
 `analyzers/dotnet/cs`. Any project that references the package picks them up automatically,
 with no extra install. They run while your project compiles, turning mistakes the run time
 would otherwise report late — or never — into build-time diagnostics.
@@ -67,6 +67,7 @@ These rules front-load, to build time, the subset of the library's run-time cons
 | [JD031 PairedBoundsHaveARangeForm](JD031.en.md) | 🔵 Info | on | A chain declares both inclusive bounds of a range separately, where the same generator names that range in one call. Nothing is wrong — this closes a discoverability gap. Inclusive pairs only: a strict pair has no exact range form. |
 | [JD032 BoundDeclaredTwice](JD032.en.md) | 🟠 Warning | on | A chain declares the same bound twice; bounds fold silently, so only the tighter one survives and the looser call is dead. Matched on the name, so the aliases stay silent, and a bound held under a name is never followed. |
 | [JD033 AnchoredLiteralOutsideCharacterFamily](JD033.en.md) | 🔵 Info | on | An anchored literal holds a character the declared family, subtraction or casing cannot draw. Legal and deliberate in a fixed-prefix format, so it reports the consequence — that character appears only where you wrote it. |
+| [JD034 ConstraintAlreadyDefined](JD034.en.md) | 🟠 Warning | on | An AnyString chain declares a constraint the generator takes once — an exact length, a prefix, a suffix, a character family or pool, a casing, a value set — a second time with a different call, or a casing beside a WithChars pool, which the run time refuses at that call. Repeating the same call stays silent. |
 
 ## Composition
 

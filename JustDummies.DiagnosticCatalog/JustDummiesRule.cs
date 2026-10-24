@@ -631,4 +631,22 @@ public static class JustDummiesRule {
 
     }
 
+    /// <summary>A constraint the generator takes once, declared again with a different call, which the run time refuses</summary>
+    [DiagnosticRule]
+    public static class JD034 {
+
+        /// <summary>The canonical identifier of this diagnostic.</summary>
+        public const string Id = nameof(JD034);
+
+        /// <summary>The category this diagnostic is grouped under.</summary>
+        public const string Category = JustDummiesCategory.Constraints;
+
+        /// <summary>The one-line summary the IDE shows beside the rule.</summary>
+        public const string Title = "A once-per-generator constraint redeclared with a different call";
+
+        /// <summary>The page explaining the condition this diagnostic detects.</summary>
+        public const string HelpLinkUri = HelpLinkBase + nameof(JD034) + HelpLinkSuffix;
+
+    }
+
 }

@@ -3,7 +3,7 @@
 🌍 **Langues :**  
 🇬🇧 [English](./README.md) | 🇫🇷 Français (ce fichier)
 
-Le package `JustDummies` embarque 33 règles Roslyn (`JD001`–`JD033`), sous
+Le package `JustDummies` embarque 34 règles Roslyn (`JD001`–`JD034`), sous
 `analyzers/dotnet/cs`. Tout projet qui référence le package les récupère automatiquement, sans
 installation supplémentaire. Elles s'exécutent pendant la compilation et transforment en
 diagnostics de build des erreurs que l'exécution signalerait tard — ou jamais.
@@ -69,6 +69,7 @@ Ces règles anticipent, à la compilation, le sous-ensemble des vérifications d
 | [JD031 PairedBoundsHaveARangeForm](JD031.fr.md) | 🔵 Info | on | Une chaîne déclare séparément les deux bornes inclusives d'un intervalle, alors que le même générateur nomme cet intervalle en un seul appel. Rien n'est faux — elle comble un manque de découvrabilité. Paires inclusives uniquement : une paire stricte n'a pas de forme intervalle exacte. |
 | [JD032 BoundDeclaredTwice](JD032.fr.md) | 🟠 Warning | on | Une chaîne déclare deux fois la même borne ; les bornes se replient silencieusement, donc seule la plus serrée survit et l'appel le plus lâche est mort. Appariée sur le nom, donc les alias restent muets, et une borne détenue sous un nom n'est jamais suivie. |
 | [JD033 AnchoredLiteralOutsideCharacterFamily](JD033.fr.md) | 🔵 Info | on | Un littéral ancré porte un caractère que la famille, la soustraction ou la casse déclarée ne peut pas tirer. Légal et délibéré dans un format à préfixe fixe : la règle rapporte donc la conséquence — ce caractère n'apparaît que là où vous l'avez écrit. |
+| [JD034 ConstraintAlreadyDefined](JD034.fr.md) | 🟠 Avertissement | on | Une chaîne `AnyString` déclare une seconde fois, avec un appel différent, une contrainte que le générateur ne prend qu'une fois — longueur exacte, préfixe, suffixe, famille de caractères ou pool, casse, ensemble de valeurs — ou place une casse à côté d'un pool `WithChars`, ce que l'exécution refuse à cet appel. Répéter le même appel n'est pas signalé. |
 
 ## Composition
 

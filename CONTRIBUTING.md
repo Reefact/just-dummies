@@ -35,7 +35,8 @@ upstream release
 * Target framework: **.NET Standard 2.0**.
 * Build: `dotnet build JustDummies.sln`
 * Test: `dotnet test --solution JustDummies.sln`
-* Analyzer tests, when touching analyzers: `dotnet test --project JustDummies.Analyzers.UnitTests`
+* Analyzer tests, when touching analyzers: `dotnet test --project JustDummies.Analyzers.UnitTests` and
+  `dotnet test --project JustDummies.Analyzers.PropertyTests`
 * `JustDummies` tests are split across two suites — properties for invariants that
   hold for every constraint argument, examples for specific named cases. See
   [Writing JustDummies tests](doc/handwritten/for-maintainers/WritingJustDummiesTests.en.md)

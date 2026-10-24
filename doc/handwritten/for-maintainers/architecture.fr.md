@@ -19,6 +19,7 @@ d'un type donné. Écrit pour qui s'apprête à modifier la bibliothèque, non �
 | `JustDummies.UnitTests` | — | — | cas nommés : messages, validation d'arguments, conventions, régressions |
 | `JustDummies.PropertyTests` | — | — | invariants valables pour tout argument de contrainte légal |
 | `JustDummies.Analyzers.UnitTests` | — | — | une suite par règle, sur des extraits compilés |
+| `JustDummies.Analyzers.PropertyTests` | — | — | confronte les diagnostics de chaque règle à l'exécution, sur des chaînes générées ([ADR-0106](./adr/0106-test-the-analyzers-against-the-run-time-in-a-sibling-suite.fr.md)) |
 | `JustDummies.Xunit.UnitTests` | — | — | le cycle de vie de l'adaptateur |
 | `JustDummies.Documentation.UnitTests` | — | — | les contrats propres à la documentation |
 | `JustDummies.GenAny.UnitTests` | — | — | le plancher du moteur et ses frontières |

@@ -3,6 +3,7 @@ paths:
   - "JustDummies.UnitTests/**/*.cs"
   - "JustDummies.PropertyTests/**/*.cs"
   - "JustDummies.Analyzers.UnitTests/**/*.cs"
+  - "JustDummies.Analyzers.PropertyTests/**/*.cs"
   - "JustDummies.Xunit.UnitTests/**/*.cs"
   - "JustDummies.Cli.UnitTests/**/*.cs"
   - "JustDummies.GenAny.UnitTests/**/*.cs"
@@ -24,13 +25,16 @@ The answer is never "either". Read
 before adding one — it carries the question to ask and the worked cases. The decision behind
 the split is ADR-0019.
 
-The other projects have one suite each and no such question.
+`JustDummies.Analyzers` is split the same way (ADR-0106): `.UnitTests` for named cases per rule,
+`.PropertyTests` for checking each rule against the run time over generated chains. The other
+projects have one suite each and no such question.
 
 ## Running them
 
 ```
 dotnet test --solution JustDummies.sln
 dotnet test --project JustDummies.Analyzers.UnitTests
+dotnet test --project JustDummies.Analyzers.PropertyTests
 ```
 
 Report a suite as passing only if you actually ran it. If you did not run a relevant

@@ -19,6 +19,7 @@ of a given kind belongs. Written for someone about to modify the library, not to
 | `JustDummies.UnitTests` | — | — | named cases: messages, argument validation, conventions, regressions |
 | `JustDummies.PropertyTests` | — | — | invariants that hold for every legal constraint argument |
 | `JustDummies.Analyzers.UnitTests` | — | — | one suite per rule, over compiled snippets |
+| `JustDummies.Analyzers.PropertyTests` | — | — | checks each rule's diagnostics against the run time, over generated chains ([ADR-0106](./adr/0106-test-the-analyzers-against-the-run-time-in-a-sibling-suite.md)) |
 | `JustDummies.Xunit.UnitTests` | — | — | the adapter's lifecycle |
 | `JustDummies.Documentation.UnitTests` | — | — | the documentation's own contracts |
 | `JustDummies.GenAny.UnitTests` | — | — | the engine's floor and its boundaries |

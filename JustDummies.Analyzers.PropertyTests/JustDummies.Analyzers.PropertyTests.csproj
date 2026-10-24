@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Coverage wiring: the coverlet.MTP collector and the testconfig.json that configures it. -->
+  <Import Project="..\build\TestCoverage.props" />
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- FsCheck generates the chains whose diagnostics are compared with what the run time does with them. -->
+    <PackageReference Include="FsCheck" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit.runner.visualstudio">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="xunit.v3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The analyzers under test, as a plain library reference: their DiagnosticAnalyzer types are instantiated by the
+         harness, and they are deliberately NOT run over this project, for the reason JustDummies.Analyzers.UnitTests
+         gives — the analyzer under test must not also be the analyzer running. -->
+    <ProjectReference Include="..\JustDummies.Analyzers\JustDummies.Analyzers.csproj" />
+    <!-- The core twice over: as the run time that is the oracle, and as the metadata the generated snippets compile
+         against, so the analyzers see the very API the oracle executes. -->
+    <ProjectReference Include="..\JustDummies\JustDummies.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+</Project>

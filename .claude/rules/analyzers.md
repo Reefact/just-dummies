@@ -2,6 +2,7 @@
 paths:
   - "JustDummies.Analyzers/**"
   - "JustDummies.Analyzers.UnitTests/**"
+  - "JustDummies.Analyzers.PropertyTests/**"
   - "JustDummies.DiagnosticCatalog/**"
   - "doc/handwritten/for-users/analyzers/**"
 ---
@@ -42,10 +43,15 @@ Changing the **semantics** of a diagnostic id is an architectural decision — r
 
 ## Tests
 
-Analyzer tests live in `JustDummies.Analyzers.UnitTests` and are run with
-`dotnet test --project JustDummies.Analyzers.UnitTests`. Update or add one whenever an analyzer
-changes. Their C# fixtures deliberately use `var` inside string literals; the edit-time hook
-and `IDE0008` both ignore those.
+Analyzer tests live in two sibling projects (ADR-0106). `JustDummies.Analyzers.UnitTests` holds
+the named cases, one suite per rule — update or add one whenever an analyzer changes.
+`JustDummies.Analyzers.PropertyTests` compiles generated chains and checks each rule's diagnostics
+against what happens when those chains run: a rule that reports chains as throwing must report
+exactly the chains that throw. When a rule's scope grows, extend its generated chains to cover it.
+If the run time refuses a chain the rule does not claim to cover, exclude that chain explicitly
+and reference the issue that tracks it; never drop it silently. Run each with
+`dotnet test --project <project>`. The fixtures deliberately use `var` inside string literals;
+the edit-time hook and `IDE0008` both ignore those.
 
 ## `JustDummies.DiagnosticCatalog`
 

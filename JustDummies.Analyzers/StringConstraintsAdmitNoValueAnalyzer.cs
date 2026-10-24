@@ -79,14 +79,28 @@ public sealed class StringConstraintsAdmitNoValueAnalyzer : DiagnosticAnalyzer {
         DeclaredLength?       exact      = null;
         DeclaredLength?       minimum    = null;
         DeclaredLength?       maximum    = null;
+        // What the calls declared before the value set had made of the string by the time it arrived.
+        int             valueSetAt   = -1;
+        IOperation?     anchorBefore = null;
+        DeclaredLength? capBefore    = null;
 
         for (int position = 0; position < constraints.Count; position++) {
             IInvocationOperation constraint = constraints[position];
 
             switch (constraint.TargetMethod.Name) {
                 // A terminal value set changes what the fragments are checked against: they are matched against the
-                // pooled values rather than laid out side by side, so the length budget below no longer applies.
-                case "OneOf": valueSet = constraint; break;
+                // pooled values rather than laid out side by side, so the length budget below no longer applies to
+                // anything declared after it.
+                case "OneOf":
+                    if (valueSet is null) {
+                        valueSetAt   = position;
+                        anchorBefore = lastAnchor;
+                        capBefore    = exact ?? maximum;
+                    }
+
+                    valueSet = constraint;
+
+                    break;
 
                 case "StartingWith" or "EndingWith" or "Containing" when constraint.Arguments.Length == 1 && ConstantFacts.TryGetString(constraint.Arguments[0].Value, out string _):
                     lastAnchor = constraint.Arguments[0].Value;
@@ -124,13 +138,135 @@ public sealed class StringConstraintsAdmitNoValueAnalyzer : DiagnosticAnalyzer {
         if (ReportContradictoryBounds(context, constraints, exact, minimum, maximum)) { return; }
 
         if (valueSet is not null) {
+            if (ReportDeclaredBeforeTheValueSet(context, invocation, constraints.Take(valueSetAt).ToList(), anchorBefore, capBefore)) { return; }
+
             ReportEmptiedValueSet(context, constraints, valueSet);
 
             return;
         }
 
+        if (ReportEmptiedAlphabet(context, invocation, constraints)) { return; }
+
         // An exact length below a maximum is the tighter cap, and one above it was reported just now.
-        ReportLengthBudget(context, invocation, constraints, lastAnchor, exact ?? maximum);
+        if (ReportLengthBudget(context, invocation, constraints, lastAnchor, exact ?? maximum, atTheDraw: true)) { return; }
+
+        ReportBlankAlphabet(context, invocation, constraints);
+    }
+
+    /// <summary>
+    ///     Reports what the calls declared before a value set make impossible on their own. Until the value set
+    ///     arrives, the run time judges each call as a shaped string the moment it is declared, so such a chain is
+    ///     refused there and then — the value set cannot reinterpret it.
+    /// </summary>
+    /// <remarks>
+    ///     Only the draw asks for the position <c>NotBlank()</c> is owed, and the draw sees the value set, so that
+    ///     position is not counted here.
+    /// </remarks>
+    private static bool ReportDeclaredBeforeTheValueSet(OperationAnalysisContext context, IInvocationOperation invocation, IReadOnlyList<IInvocationOperation> declaredBefore,
+                                                        IOperation? lastAnchor, DeclaredLength? cap) {
+        return ReportEmptiedAlphabet(context, invocation, declaredBefore)
+            || ReportLengthBudget(context, invocation, declaredBefore, lastAnchor, cap, atTheDraw: false);
+    }
+
+    /// <summary>
+    ///     Reports a shaped string its declared family or pool and its subtractions leave with no character to draw —
+    ///     <c>Numeric().WithoutNumeric()</c> — which the run time refuses at the call that empties it.
+    /// </summary>
+    /// <remarks>
+    ///     Named the way the run time names it: every subtraction that removes a character the family offers, since
+    ///     naming only one would point at a call whose removal can leave the alphabet just as empty.
+    /// </remarks>
+    private static bool ReportEmptiedAlphabet(OperationAnalysisContext context, IInvocationOperation invocation, IReadOnlyList<IInvocationOperation> constraints) {
+        if (DeclaredAlphabet(constraints) is not (string family, string offered)) { return false; }
+
+        List<(string Rendered, string Removed)> subtractions = Subtractions(constraints).ToList();
+        if (Filler(offered, subtractions).Length > 0) { return false; }
+
+        List<string> removers = subtractions.Where(subtraction => offered.Any(subtraction.Removed.Contains)).Select(subtraction => subtraction.Rendered).ToList();
+        string       remove   = removers.Count == 1 ? "removes" : "remove";
+
+        context.ReportDiagnostic(Diagnostic.Create(
+            Descriptors.StringConstraintsAdmitNoValue, invocation.Syntax.GetLocation(),
+            $"{Conjoin(removers)} {remove} every character {family} offers"));
+
+        return true;
+    }
+
+    /// <summary>
+    ///     Reports a <c>NotBlank()</c> whose non-whitespace character has nowhere to come from: no anchored literal
+    ///     carries one, and the filler has only whitespace to draw — <c>Whitespaces().NotBlank()</c>. The run time
+    ///     refuses it at the draw. Where the filler has no room at all, the length budget has already said so.
+    /// </summary>
+    private static void ReportBlankAlphabet(OperationAnalysisContext context, IInvocationOperation invocation, IReadOnlyList<IInvocationOperation> constraints) {
+        if (!StringShapeFacts.FillerMustCarryNonBlank(constraints) || StringShapeFacts.HasUnreadableAnchor(constraints)) { return; }
+        if (DeclaredAlphabet(constraints) is not (string family, string offered)) { return; }
+
+        List<(string Rendered, string Removed)> subtractions = Subtractions(constraints).ToList();
+        if (Filler(offered, subtractions).Any(character => !char.IsWhiteSpace(character))) { return; }
+
+        string   nonBlank = new(offered.Where(character => !char.IsWhiteSpace(character)).ToArray());
+        string[] removers = subtractions.Where(subtraction => nonBlank.Any(subtraction.Removed.Contains)).Select(subtraction => subtraction.Rendered).ToArray();
+        string   remove   = removers.Length == 1 ? "removes" : "remove";
+        string   reason   = removers.Length == 0 ? $"{family} offers none" : $"{Conjoin(removers)} {remove} every one {family} offers";
+
+        context.ReportDiagnostic(Diagnostic.Create(
+            Descriptors.StringConstraintsAdmitNoValue, invocation.Syntax.GetLocation(),
+            $"NotBlank() needs a character that is not whitespace, and {reason}"));
+    }
+
+    /// <summary>
+    ///     The family or pool the chain draws from, as the caller wrote it, and the characters it offers under the
+    ///     declared casing — or <c>null</c> where the rule cannot say: no family at all (the whole of ASCII, which no
+    ///     subtraction empties), a pool that is not a constant, or an empty one, which the call rejects as an argument.
+    ///     It is <c>null</c> too where the declarations conflict rather than the values (issue #274): two different
+    ///     calls in the one family or casing slot, or a casing beside a <c>WithChars</c> pool, which cannot combine. The
+    ///     same call repeated is not a conflict — the run time ignores the repetition — so it counts once.
+    /// </summary>
+    /// <remarks>
+    ///     What is returned therefore always offers a character, so an empty filler is always some subtraction's doing.
+    ///     Reading a casing beside a pool as narrowing it would break that: <c>WithChars("abc").InUpperCase()</c> left
+    ///     nothing, with no subtraction to name.
+    /// </remarks>
+    private static (string Family, string Offered)? DeclaredAlphabet(IReadOnlyList<IInvocationOperation> constraints) {
+        List<(string Family, string Offered)> slot   = [];
+        bool                                  pooled = false;
+        foreach (IInvocationOperation constraint in constraints) {
+            string name = constraint.TargetMethod.Name;
+
+            if (CharacterFamilies.PoolFor(name) is string family) {
+                slot.Add(($"{name}()", family));
+            } else if (name == "WithChars") {
+                if (constraint.Arguments.Length != 1 || !ConstantFacts.TryGetString(constraint.Arguments[0].Value, out string pool) || pool.Length == 0) { return null; }
+
+                pooled = true;
+                slot.Add(($"WithChars(\"{pool}\")", pool));
+            }
+        }
+
+        bool upper = StringShapeFacts.Declares(constraints, "InUpperCase");
+        bool lower = StringShapeFacts.Declares(constraints, "InLowerCase");
+        List<(string Family, string Offered)> distinct = slot.Distinct().ToList();
+        if (distinct.Count != 1 || (upper && lower) || (pooled && (upper || lower))) { return null; }
+
+        (string declared, string offered) = distinct[0];
+        if (upper) { offered = new string(offered.Where(character => CharacterFamilies.LowerLetters.IndexOf(character) < 0).ToArray()); }
+        if (lower) { offered = new string(offered.Where(character => CharacterFamilies.UpperLetters.IndexOf(character) < 0).ToArray()); }
+
+        return (declared, offered);
+    }
+
+    /// <summary>The subtractions the chain declares, each with the family it removes.</summary>
+    private static IEnumerable<(string Rendered, string Removed)> Subtractions(IReadOnlyList<IInvocationOperation> constraints) {
+        foreach (IInvocationOperation constraint in constraints) {
+            string name = constraint.TargetMethod.Name;
+            if (name is "WithoutAlpha" or "WithoutNumeric" && CharacterFamilies.PoolFor(name.Substring("Without".Length)) is string removed) {
+                yield return ($"{name}()", removed);
+            }
+        }
+    }
+
+    private static string Filler(string offered, IEnumerable<(string Rendered, string Removed)> subtractions) {
+        return new string(offered.Where(character => subtractions.All(subtraction => subtraction.Removed.IndexOf(character) < 0)).ToArray());
     }
 
     /// <summary>
@@ -285,12 +421,17 @@ public sealed class StringConstraintsAdmitNoValueAnalyzer : DiagnosticAnalyzer {
         return string.Join(", ", names.Take(names.Count - 1)) + " and " + names[names.Count - 1];
     }
 
-    private static void ReportLengthBudget(OperationAnalysisContext context, IInvocationOperation invocation, IReadOnlyList<IInvocationOperation> constraints,
-                                           IOperation? lastAnchor, DeclaredLength? cap) {
-        if (cap is not { } capped) { return; }
+    /// <summary>
+    ///     Reports anchored fragments, or the floor of one <c>NonEmpty()</c> and <c>NotBlank()</c> each set, that the
+    ///     cap cannot hold. <paramref name="atTheDraw" /> adds the position <c>NotBlank()</c> is owed where no literal
+    ///     carries its character — a question the run time asks only of a string it is about to draw.
+    /// </summary>
+    private static bool ReportLengthBudget(OperationAnalysisContext context, IInvocationOperation invocation, IReadOnlyList<IInvocationOperation> constraints,
+                                           IOperation? lastAnchor, DeclaredLength? cap, bool atTheDraw) {
+        if (cap is not { } capped) { return false; }
 
-        int required = StringShapeFacts.Floor(constraints);
-        if (required <= capped.Length) { return; }
+        int required = atTheDraw ? StringShapeFacts.Floor(constraints) : StringShapeFacts.DeclaredFloor(constraints);
+        if (required <= capped.Length) { return false; }
 
         string capName = capped.Rendered;
 
@@ -298,7 +439,9 @@ public sealed class StringConstraintsAdmitNoValueAnalyzer : DiagnosticAnalyzer {
         // nothing in the chain more specific than the chain itself.
         context.ReportDiagnostic(Diagnostic.Create(
             Descriptors.StringConstraintsAdmitNoValue, (lastAnchor ?? invocation).Syntax.GetLocation(),
-            $"{Claimant(constraints, lastAnchor is not null)} at least {Characters(required)}, which {capName} cannot hold"));
+            $"{Claimant(constraints, lastAnchor is not null, atTheDraw)} at least {Characters(required)}, which {capName} cannot hold"));
+
+        return true;
     }
 
     /// <summary>
@@ -306,14 +449,15 @@ public sealed class StringConstraintsAdmitNoValueAnalyzer : DiagnosticAnalyzer {
     ///     its own is named beside the anchors rather than folded into them, because it is the one the reader can
     ///     remove.
     /// </summary>
-    private static string Claimant(IReadOnlyList<IInvocationOperation> constraints, bool anchored) {
-        bool notBlankOwnsAPosition = StringShapeFacts.FillerMustCarryNonBlank(constraints);
-
+    private static string Claimant(IReadOnlyList<IInvocationOperation> constraints, bool anchored, bool atTheDraw) {
         if (anchored) {
+            bool notBlankOwnsAPosition = atTheDraw && StringShapeFacts.FillerMustCarryNonBlank(constraints);
+
             return notBlankOwnsAPosition ? "the anchored fragments and NotBlank() need" : "the anchored fragments need";
         }
 
-        return notBlankOwnsAPosition ? "NotBlank() needs" : "NonEmpty() needs";
+        // With no anchor, the floor is the one character NonEmpty() or NotBlank() sets; the latter names it when declared.
+        return StringShapeFacts.Declares(constraints, "NotBlank") ? "NotBlank() needs" : "NonEmpty() needs";
     }
 
     private static string Characters(int count) {

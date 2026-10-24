@@ -33,9 +33,22 @@ internal static class StringShapeFacts {
         (int required, bool anchorsCarryNonBlank) = AnchorBudget(constraints);
 
         bool ownsAPosition = Declares(constraints, "NotBlank") && !anchorsCarryNonBlank;
-        int  minimum       = Declares(constraints, "NonEmpty") || Declares(constraints, "NotBlank") ? 1 : 0;
 
-        return System.Math.Max(minimum, ownsAPosition ? required + 1 : required);
+        return System.Math.Max(DeclaredMinimum(constraints), ownsAPosition ? required + 1 : required);
+    }
+
+    /// <summary>
+    ///     The fewest characters the run time asks for as each call is declared: what the anchored literals occupy,
+    ///     and the floor of one <c>NonEmpty()</c> and <c>NotBlank()</c> each set — without the position
+    ///     <c>NotBlank()</c> is owed, which only a string about to be drawn is asked for.
+    /// </summary>
+    internal static int DeclaredFloor(IReadOnlyList<IInvocationOperation> constraints) {
+        return System.Math.Max(DeclaredMinimum(constraints), AnchorBudget(constraints).Required);
+    }
+
+    /// <summary>The floor of one character <c>NonEmpty()</c> and <c>NotBlank()</c> each set, or none.</summary>
+    private static int DeclaredMinimum(IReadOnlyList<IInvocationOperation> constraints) {
+        return Declares(constraints, "NonEmpty") || Declares(constraints, "NotBlank") ? 1 : 0;
     }
 
     /// <summary>
@@ -44,6 +57,20 @@ internal static class StringShapeFacts {
     /// </summary>
     internal static bool FillerMustCarryNonBlank(IReadOnlyList<IInvocationOperation> constraints) {
         return Declares(constraints, "NotBlank") && !AnchorBudget(constraints).CarryNonBlank;
+    }
+
+    /// <summary>
+    ///     Whether an anchor's argument cannot be resolved to a constant. Such an anchor may carry the non-blank
+    ///     character <c>NotBlank()</c> asks for, so a rule cannot conclude that the filler alone has to supply it.
+    /// </summary>
+    /// <remarks>
+    ///     <see cref="AnchorBudget" /> leaves such an anchor out, which is safe for the length it counts and not for
+    ///     whether the anchors carry a non-blank character: <c>Whitespaces().NotBlank().StartingWith(prefix)</c> draws
+    ///     whenever <c>prefix</c> does carry one.
+    /// </remarks>
+    internal static bool HasUnreadableAnchor(IReadOnlyList<IInvocationOperation> constraints) {
+        return constraints.Any(constraint => constraint.TargetMethod.Name is "StartingWith" or "EndingWith" or "Containing"
+                                          && (constraint.Arguments.Length != 1 || !ConstantFacts.TryGetString(constraint.Arguments[0].Value, out string _)));
     }
 
     /// <summary>

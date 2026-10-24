@@ -361,11 +361,54 @@ public sealed class AnyChar : IAny<char>, IHasRandomSource, ICardinalityHint<cha
     private AnyChar Validated(AnyChar candidate, ConstraintCall applying) {
         if (candidate._pool.Count > 0) { return candidate; }
 
-        string pool = candidate._allowedConstraint is null
-                          ? "no character remains in the pool the declared constraints allow"
-                          : $"no character {candidate._allowedConstraint} allows satisfies the constraints already defined";
+        throw ConflictingAnyConstraintException.NoValueRemains(applying, candidate.DescribeExhaustion(applying));
+    }
 
-        throw ConflictingAnyConstraintException.NoValueRemains(applying, pool);
+    /// <summary>
+    ///     Why no character survives, naming the side the caller did not just write — the rule
+    ///     <c>StringSpec</c> and the interval engines follow for the same two shapes.
+    /// </summary>
+    /// <remarks>
+    ///     A family applied last is answered for by whatever took away every character it offers; anything applied
+    ///     after a family is answered for by the family. The general sentence is kept for a pool emptied with no
+    ///     family declared, where no single call is the other side.
+    /// </remarks>
+    private string DescribeExhaustion(ConstraintCall applying) {
+        if (_allowedConstraint is not null) { return DescribeEmptiedAllowList(applying); }
+        if (_charsetConstraint is null) { return "no character remains in the pool the declared constraints allow"; }
+        if (applying != _charsetConstraint) { return $"{_charsetConstraint} admits nothing once it is applied"; }
+
+        char[] offered = CharacterPools.Ascii.Where(MatchesCharset).ToArray();
+        // Never empty: the family offers a character, and the pool emptied, so some other constraint refused it.
+        List<(ConstraintCall Constraint, Func<char, bool> Admits)> removers = DeclaredConstraints()
+                                                                             .Where(entry => entry.Constraint != _charsetConstraint && offered.Any(character => !entry.Admits(character)))
+                                                                             .ToList();
+        // A remover the others already cover took nothing they leave, so naming it would point at a call whose
+        // removal changes nothing: WithoutAlpha() before Except('a'). Each one the rest still empty the family
+        // without is dropped, the last listed first, and what remains has no member that can go.
+        for (int index = removers.Count - 1; index >= 0; index--) {
+            List<(ConstraintCall Constraint, Func<char, bool> Admits)> others = removers.Where((_, position) => position != index).ToList();
+            if (offered.All(character => others.Any(other => !other.Admits(character)))) { removers.RemoveAt(index); }
+        }
+        string remove = removers.Count == 1 ? "removes" : "remove";
+
+        return $"{string.Join(" and ", removers.Select(remover => remover.Constraint))} {remove} every character {_charsetConstraint} offers";
+    }
+
+    /// <summary>
+    ///     Why no character the allow-list offers survives. Applied last, the allow-list is the side just written,
+    ///     so the declared constraints that refuse every character it offers are named; when only their combination
+    ///     refuses them, the sentence stays general. Applied first, the allow-list is the other side.
+    /// </summary>
+    private string DescribeEmptiedAllowList(ConstraintCall applying) {
+        if (applying != _allowedConstraint) { return $"no character {_allowedConstraint} allows satisfies the constraints already defined"; }
+
+        List<ConstraintCall> culprits = DeclaredConstraints().Where(entry => !_allowed!.Any(entry.Admits)).Select(entry => entry.Constraint).ToList();
+
+        if (culprits.Count == 0) { return "no character it offers satisfies the constraints already declared"; }
+        if (culprits.Count == 1) { return $"{culprits[0]} allows none of its values"; }
+
+        return $"{string.Join(", ", culprits)} allow none of its values";
     }
 
     private bool MatchesCharset(char character) {

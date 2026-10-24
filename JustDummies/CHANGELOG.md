@@ -60,6 +60,17 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Fixed
 
+- **`Any.Char()` now names the other side of a conflict that empties its pool.** It was the one
+  generator the two fixes below had not reached. `Any.Char().Numeric().OneOf('a', 'b')` was refused
+  with "…because no character OneOf('a', 'b') allows satisfies the constraints already defined", and
+  `Any.Char().WithoutAlpha().Alpha()` with "…because no character remains in the pool the declared
+  constraints allow": neither named `Numeric()` or `WithoutAlpha()`. They now read "Cannot apply
+  OneOf('a', 'b') because Numeric() allows none of its values" and "Cannot apply Alpha() because
+  WithoutAlpha() removes every character Alpha() offers"; a constraint that removes only characters
+  another has already removed is left out, so `WithoutAlpha().Except('a').Alpha()` names
+  `WithoutAlpha()` alone. A constraint that empties a previously selected family identifies that
+  family: "Cannot apply WithoutAlpha() because Alpha() admits nothing once it is applied".
+
 - **An allow-list emptied by what was declared before it now names the constraint that emptied it.**
   `Any.Int32().Between(10, 20).OneOf(1, 2, 3)` was refused with "Cannot apply OneOf(1, 2, 3) because
   none of the values OneOf(1, 2, 3) allows satisfies the constraints already defined": the allow-list

@@ -61,6 +61,9 @@ internal static class DiagnosticIds {
     /// <summary>JD033 — an anchored literal holding a character the declared characters cannot draw.</summary>
     public const string AnchoredLiteralOutsideCharacterFamily = JustDummiesRule.JD033.Id;
 
+    /// <summary>JD034 — a constraint the generator takes once, declared again with a different call.</summary>
+    public const string ConstraintAlreadyDefined = JustDummiesRule.JD034.Id;
+
     // Category: Composition — a part that reaches no result, a constraint that cannot bind
     public const string UnusedCombineOperand = JustDummiesRule.JD027.Id;
     public const string InertDistinctness = JustDummiesRule.JD028.Id;

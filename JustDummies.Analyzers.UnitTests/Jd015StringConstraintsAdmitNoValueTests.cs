@@ -658,6 +658,8 @@ public class Jd015StringConstraintsAdmitNoValueTests {
     [InlineData("Any.String().OneOf(\"EUR\", \"USD\").Except(\"EUR\", \"USD\")", "Except(\"EUR\", \"USD\")")]
     [InlineData("Any.String().Except(\"EUR\").OneOf(\"EUR\")",                   "Except(\"EUR\")")]
     [InlineData("Any.String().Alpha().OneOf(\"EUR\", \"US1\").WithLength(2)",    "WithLength(2)")]
+    // A value set written as a collection expression is read like one written as arguments, by every rule alike.
+    [InlineData("Any.String().OneOf([\"EUR\", \"USD\"]).WithLength(2)",          "WithLength(2)")]
     public async Task Reports_a_value_set_a_length_an_anchor_or_an_exclusion_empties(string chain, string culprit) {
         // Issue #225: the value-set branch tested character constraints only, while JD029 stood down on the premise
         // that this rule reports a pool nothing survives — so each rule left these to the other, and both were silent.

@@ -9,9 +9,9 @@ commande que vous installez globalement et ne référencez jamais.
 
 | Paquet | Ce que c'est | En ai-je besoin ? |
 | --- | --- | --- |
-| [`JustDummies`](./justdummies.fr.md) | la bibliothèque, avec ses 33 règles embarquées | **Oui** — c'est le produit |
+| [`JustDummies`](./justdummies.fr.md) | la bibliothèque, avec ses 34 règles embarquées | **Oui** — c'est le produit |
 | [`JustDummies.Xunit`](./justdummies-xunit.fr.md) | l'adaptateur xUnit v3 : `[Reproducible]` | Seulement avec xUnit v3, et seulement si vous voulez l'attribut |
-| [`JustDummies.DiagnosticCatalog`](./justdummies-diagnosticcatalog.fr.md) | les règles `JD001`–`JD033` en constantes vérifiées par le compilateur | Seulement pour supprimer une règle sans littéral de chaîne |
+| [`JustDummies.DiagnosticCatalog`](./justdummies-diagnosticcatalog.fr.md) | les règles `JD001`–`JD034` en constantes vérifiées par le compilateur | Seulement pour supprimer une règle sans littéral de chaîne |
 | [`JustDummies.Cli`](./justdummies-cli.fr.md) | `dum`, le scaffolder : écrit le générateur d'un de vos types | Seulement pour en scaffolder un — outil global, jamais une référence |
 
 ## Comment ils s'articulent
@@ -19,8 +19,8 @@ commande que vous installez globalement et ne référencez jamais.
 ```mermaid
 flowchart TD
     accTitle: Comment les quatre paquets s'articulent
-    accDescr: JustDummies, la bibliothèque, embarque les 33 règles sous analyzers/dotnet/cs. JustDummies.Xunit dépend de la bibliothèque. JustDummies.DiagnosticCatalog nomme ces règles sans en dépendre, et dum, le scaffolder, émet du code appelant la bibliothèque.
-    L["JustDummies<br/><i>la bibliothèque</i>"] -->|"embarque"| A["33 règles<br/><i>analyzers/dotnet/cs</i>"]
+    accDescr: JustDummies, la bibliothèque, embarque les 34 règles sous analyzers/dotnet/cs. JustDummies.Xunit dépend de la bibliothèque. JustDummies.DiagnosticCatalog nomme ces règles sans en dépendre, et dum, le scaffolder, émet du code appelant la bibliothèque.
+    L["JustDummies<br/><i>la bibliothèque</i>"] -->|"embarque"| A["34 règles<br/><i>analyzers/dotnet/cs</i>"]
     X["JustDummies.Xunit<br/><i>[Reproducible]</i>"] -->|"dépend de"| L
     C["JustDummies.DiagnosticCatalog<br/><i>JustDummiesRule.JD0NN</i>"]
     C -.->|"nomme les règles de"| A

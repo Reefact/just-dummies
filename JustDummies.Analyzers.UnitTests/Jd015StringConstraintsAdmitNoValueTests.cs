@@ -621,6 +621,10 @@ public class Jd015StringConstraintsAdmitNoValueTests {
     [InlineData("Any.String().NonEmpty().WithLengthBetween(0, 0)",                     "NonEmpty() needs at least 1 character, which WithLengthBetween(0, 0) cannot hold")]
     // Under both, the exact length is the cap the fragments are measured against: it is the tighter of the two.
     [InlineData("Any.String().WithLength(3).WithMaxLength(10).StartingWith(\"ORD-\")", "the anchored fragments need at least 4 characters, which WithLength(3) cannot hold")]
+    // Declared before a value set, the calls are laid out as a shaped string and refused as they are declared: the
+    // value set that follows cannot rescue them, though "aba" carries both fragments in three characters.
+    [InlineData("Any.String().WithLengthBetween(0, 3).Containing(\"ab\").Containing(\"ba\").OneOf(\"aba\")", "the anchored fragments need at least 4 characters, which WithLengthBetween(0, 3) cannot hold")]
+    [InlineData("Any.String().WithLengthBetween(0, 0).NotBlank().OneOf(\"\")",                                  "NotBlank() needs at least 1 character, which WithLengthBetween(0, 0) cannot hold")]
     public async Task Reports_a_budget_the_range_form_cannot_hold(string chain, string reason) {
         // Issue #225: the same budget the single forms are held to, spelled as the range JD031 recommends.
         string source = $$"""
@@ -684,6 +688,16 @@ public class Jd015StringConstraintsAdmitNoValueTests {
     // JD014 reports it; read as bounds, they would make this rule claim a conflict the run time never reaches.
     [InlineData("Any.String().WithLengthBetween(10, 5)")]
     [InlineData("Any.String().WithMaxLength(-1)")]
+    // A shaped string with a character left to draw: an anchor that carries a non-whitespace character settles
+    // NotBlank() whatever the filler draws, and the whole of ASCII is never emptied by the two subtractions.
+    [InlineData("Any.String().AlphaNumeric().WithoutAlpha()")]
+    [InlineData("Any.String().Whitespaces().NotBlank().StartingWith(\"A\")")]
+    [InlineData("Any.String().WithChars(\" a\").NotBlank()")]
+    [InlineData("Any.String().WithoutAlpha().WithoutNumeric().NotBlank()")]
+    // Before a value set, NotBlank() is not owed a position of its own — only the draw asks for one, and the draw sees
+    // the value set — and after one, the calls are matched against the pooled values rather than laid out.
+    [InlineData("Any.String().StartingWith(\" \").Containing(\" \").WithLength(2).NotBlank().OneOf(\" a\")")]
+    [InlineData("Any.String().OneOf(\"\").Alpha().WithoutAlpha()")]
     public async Task Does_not_report_lengths_and_a_value_set_some_value_satisfies(string chain) {
         string source = $$"""
             using JustDummies;
@@ -717,6 +731,87 @@ public class Jd015StringConstraintsAdmitNoValueTests {
 
         Check.That(diagnostics.Length).IsEqualTo(1);
         Check.That(source.Substring(diagnostics[0].Location.SourceSpan.Start, diagnostics[0].Location.SourceSpan.Length)).IsEqualTo("Any.String().WithMinLength(10).WithMaxLength(5)");
+    }
+
+    [Theory]
+    [InlineData("Any.String().Numeric().WithoutNumeric()",                    "WithoutNumeric() removes every character Numeric() offers")]
+    [InlineData("Any.String().WithoutAlpha().Alpha()",                        "WithoutAlpha() removes every character Alpha() offers")]
+    [InlineData("Any.String().Hexadecimal().WithoutNumeric().WithoutAlpha()", "WithoutNumeric() and WithoutAlpha() remove every character Hexadecimal() offers")]
+    [InlineData("Any.String().WithChars(\"ab\").WithoutAlpha()",              "WithoutAlpha() removes every character WithChars(\"ab\") offers")]
+    [InlineData("Any.String().Whitespaces().NotBlank()",                      "NotBlank() needs a character that is not whitespace, and Whitespaces() offers none")]
+    [InlineData("Any.String().NotBlank().WithChars(\"\\t \")",                "NotBlank() needs a character that is not whitespace, and WithChars(\"\t \") offers none")]
+    [InlineData("Any.String().WithChars(\" 1\").WithoutNumeric().NotBlank()",  "NotBlank() needs a character that is not whitespace, and WithoutNumeric() removes every one WithChars(\" 1\") offers")]
+    // The same family declared twice is one family: the run time ignores the repetition, so the alphabet is as empty.
+    [InlineData("Any.String().Numeric().Numeric().WithoutNumeric()",          "WithoutNumeric() removes every character Numeric() offers")]
+    [InlineData("Any.String().Whitespaces().Whitespaces().NotBlank()",        "NotBlank() needs a character that is not whitespace, and Whitespaces() offers none")]
+    // Emptied before a value set arrives: the run time refuses the subtraction there, and the value set never applies.
+    [InlineData("Any.String().Alpha().WithoutAlpha().OneOf(\"\", \"a\")",     "WithoutAlpha() removes every character Alpha() offers")]
+    public async Task Reports_a_shaped_string_left_with_no_character_to_draw(string chain, string reason) {
+        // Found by the differential property of issue #232: the run time refuses each of these — at the call that
+        // empties the alphabet, or at the draw for NotBlank() — and the rule read no character constraint on a shaped
+        // string at all.
+        string source = $$"""
+            using JustDummies;
+
+            public static class Sample {
+                public static string M() {
+                    return {{chain}}.Generate();
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new StringConstraintsAdmitNoValueAnalyzer(), source);
+
+        Check.That(diagnostics.Length).IsEqualTo(1);
+        Check.That(diagnostics[0].GetMessage()).IsEqualTo($"No string satisfies this chain: {reason}");
+        // No single call is the one to remove — the family, a subtraction or NotBlank() would each do — so the report
+        // sits on the chain as a whole.
+        Check.That(source.Substring(diagnostics[0].Location.SourceSpan.Start, diagnostics[0].Location.SourceSpan.Length)).IsEqualTo($"{chain}.Generate()");
+    }
+
+    [Theory]
+    [InlineData("Any.String().WithChars(\"abc\").InUpperCase()")]
+    [InlineData("Any.String().InLowerCase().WithChars(\"AB\").NotBlank()")]
+    [InlineData("Any.String().WithChars(\"\").WithoutAlpha()")]
+    public async Task Stands_down_without_failing_on_a_pool_it_does_not_judge(string chain) {
+        // A casing beside a WithChars pool is a conflict of declaration (issue #274), and an empty pool an argument
+        // the call itself rejects: neither leaves an alphabet to judge. Read as one, the casing or the empty pool left
+        // no character and no subtraction to blame, and the rule threw — which Roslyn surfaces as AD0001.
+        string source = $$"""
+            using JustDummies;
+
+            public static class Sample {
+                public static string M() {
+                    return {{chain}}.Generate();
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new StringConstraintsAdmitNoValueAnalyzer(), source);
+
+        Check.That(diagnostics.Select(diagnostic => diagnostic.Id)).IsEmpty();
+    }
+
+    [Theory]
+    [InlineData("StartingWith(anchor)")]
+    [InlineData("EndingWith(anchor)")]
+    [InlineData("Containing(anchor)")]
+    public async Task Does_not_infer_a_blank_only_shape_from_an_anchor_it_cannot_read(string anchoring) {
+        // Found in review: an anchor the compiler cannot resolve may carry the character NotBlank() asks for — this
+        // chain draws whenever anchor is "A" — so the filler is not the only place that character can come from.
+        string source = $$"""
+            using JustDummies;
+
+            public static class Sample {
+                public static string M(string anchor) {
+                    return Any.String().Whitespaces().NotBlank().{{anchoring}}.Generate();
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new StringConstraintsAdmitNoValueAnalyzer(), source);
+
+        Check.That(diagnostics.Select(diagnostic => diagnostic.Id)).IsEmpty();
     }
 
     [Fact]

@@ -71,6 +71,20 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   `WithoutAlpha()` alone. A constraint that empties a previously selected family identifies that
   family: "Cannot apply WithoutAlpha() because Alpha() admits nothing once it is applied".
 
+- **JD015 now reports a shaped string whose declared characters leave nothing to draw.**
+  `Any.String().Numeric().WithoutNumeric()`, `WithChars("ab").WithoutAlpha()` and
+  `Whitespaces().NotBlank()` throw on every seed (the first two at the call that empties the
+  alphabet, the third at the draw), yet went unreported, because the rule ignored character
+  constraints on a shaped string. It now reports a character family or `WithChars` pool that its
+  subtractions empty, naming every subtraction that removes a character the family offers. It also
+  reports `NotBlank()` when the filler can only produce whitespace and no anchored literal contains
+  a non-whitespace character. These checks, and the length budget, now also apply to the calls
+  declared before a `OneOf(...)`: the run time checks those calls as a shaped string as soon as they
+  are declared, so `Alpha().WithoutAlpha().OneOf("", "a")` and
+  `WithMaxLength(3).Containing("ab").Containing("ba").OneOf("aba")` throw before the value set is
+  applied, and were not reported either. Found by the new differential tests, which compare the
+  rule's diagnostics with the run time's behaviour.
+
 - **An allow-list emptied by what was declared before it now names the constraint that emptied it.**
   `Any.Int32().Between(10, 20).OneOf(1, 2, 3)` was refused with "Cannot apply OneOf(1, 2, 3) because
   none of the values OneOf(1, 2, 3) allows satisfies the constraints already defined": the allow-list

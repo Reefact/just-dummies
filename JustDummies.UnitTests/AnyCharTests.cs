@@ -52,4 +52,54 @@ public sealed class AnyCharTests {
              .WhichMember(conflict => conflict.Message).Contains("InLowerCase()", "InUpperCase()");
     }
 
+    [Fact(DisplayName = "An allow-list emptied by what was declared before it names the constraint that emptied it.")]
+    public void AnAllowListEmptiedByAnEarlierConstraintNamesIt() {
+        // The allow-list applied last is the side the caller just wrote; the message used to quote it on both sides
+        // of "because" and never name the family that refused every character it offers.
+        Check.ThatCode(() => Any.Char().Numeric().OneOf('a', 'b'))
+             .Throws<ConflictingAnyConstraintException>()
+             .WithMessage("Cannot apply OneOf('a', 'b') because Numeric() allows none of its values.");
+        Check.ThatCode(() => Any.Char().Numeric().Except('1').OneOf('1', 'a'))
+             .Throws<ConflictingAnyConstraintException>()
+             .WithMessage("Cannot apply OneOf('1', 'a') because no character it offers satisfies the constraints already declared.");
+    }
+
+    [Fact(DisplayName = "A family declared after the subtractions that empty it names them.")]
+    public void AFamilyDeclaredAfterTheSubtractionsThatEmptyItNamesThem() {
+        Check.ThatCode(() => Any.Char().WithoutAlpha().Alpha())
+             .Throws<ConflictingAnyConstraintException>()
+             .WithMessage("Cannot apply Alpha() because WithoutAlpha() removes every character Alpha() offers.");
+        // Neither alone empties AlphaNumeric(); a constraint that removes nothing the family offers is not named.
+        Check.ThatCode(() => Any.Char().WithoutAlpha().Except('!').WithoutNumeric().AlphaNumeric())
+             .Throws<ConflictingAnyConstraintException>()
+             .WithMessage("Cannot apply AlphaNumeric() because WithoutAlpha() and WithoutNumeric() remove every character AlphaNumeric() offers.");
+    }
+
+    [Fact(DisplayName = "A constraint that removes only what another already removed is not named among those that emptied a family.")]
+    public void AConstraintRemovingOnlyWhatAnotherRemovedIsNotNamed() {
+        // Except('a') and InLowerCase() each refuse a letter Alpha() offers, but WithoutAlpha() already removes it:
+        // naming them would point at calls whose removal leaves the family just as empty.
+        Check.ThatCode(() => Any.Char().WithoutAlpha().Except('a').WithoutNumeric().AlphaNumeric())
+             .Throws<ConflictingAnyConstraintException>()
+             .WithMessage("Cannot apply AlphaNumeric() because WithoutAlpha() and WithoutNumeric() remove every character AlphaNumeric() offers.");
+        Check.ThatCode(() => Any.Char().InLowerCase().WithoutAlpha().Alpha())
+             .Throws<ConflictingAnyConstraintException>()
+             .WithMessage("Cannot apply Alpha() because WithoutAlpha() removes every character Alpha() offers.");
+        // Neither covers the other here, so both are named.
+        Check.ThatCode(() => Any.Char().InLowerCase().Except('a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
+                                                              'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z').Alpha())
+             .Throws<ConflictingAnyConstraintException>()
+             .WhichMember(conflict => conflict.Message).StartsWith("Cannot apply Alpha() because InLowerCase() and Except('a', ");
+    }
+
+    [Fact(DisplayName = "A subtraction or an exclusion that empties a declared family names the family.")]
+    public void ASubtractionThatEmptiesADeclaredFamilyNamesTheFamily() {
+        Check.ThatCode(() => Any.Char().Alpha().WithoutAlpha())
+             .Throws<ConflictingAnyConstraintException>()
+             .WithMessage("Cannot apply WithoutAlpha() because Alpha() admits nothing once it is applied.");
+        Check.ThatCode(() => Any.Char().Numeric().Except('0', '1', '2', '3', '4', '5', '6', '7', '8', '9'))
+             .Throws<ConflictingAnyConstraintException>()
+             .WhichMember(conflict => conflict.Message).Contains("because Numeric() admits nothing once it is applied");
+    }
+
 }

@@ -155,6 +155,30 @@ Les règles qui gardent une propriété honnête :
 * **Restez rapide.** Cent cas fois huit tirages font déjà huit cents tirages. Plafonnez
   longueurs et cardinalités dans les dizaines, pas les milliers.
 
+## La propriété à base de modèle
+
+`StringModelProperties` est une propriété d'un autre genre. Elle ne quantifie pas
+l'argument d'une contrainte : elle génère des chaînes entières d'appels `Any.String()`
+— jusqu'à huit, sur un petit vocabulaire — et confronte chacune à `StringModel`, un
+modèle indépendant de la sémantique documentée. L'exécution doit refuser une chaîne au
+même appel que le modèle, et chaque valeur tirée doit être acceptée par le modèle.
+
+* **Construisez le modèle à partir de la documentation, jamais de `StringSpec`.** Chaque
+  règle de `StringModel` cite le guide ou la documentation XML qu'elle reprend. Un modèle
+  qui recopie l'implémentation ne peut que confirmer que l'implémentation est d'accord
+  avec elle-même.
+* **Restez dans ce que la bibliothèque prétend détecter** (ADR-0046). Le modèle juxtapose
+  les littéraux parce que la disposition documentée le fait, et ne juge une exclusion
+  qu'à côté d'un ensemble de valeurs, parce que sur une chaîne façonnée une exclusion est
+  traitée par un nouveau tirage borné au moment de `Generate()`.
+* **Un nouvel appel d'`AnyString` entre dans le vocabulaire.** Ajoutez-le à
+  `StringModelChains` et sa règle à `StringModel` ; sinon la propriété ne voit pas comment
+  il se combine avec les autres.
+* **Un désaccord est une découverte, pas une instabilité.** FsCheck le réduit à la plus
+  courte chaîne qui est toujours en désaccord et affiche la graine. Tranchez d'après la
+  documentation quel côté a tort, corrigez l'exécution ou le modèle, et figez le cas dans
+  `JustDummies.UnitTests` comme régression.
+
 ## Avant de pousser
 
 * `dotnet test --project JustDummies.PropertyTests` et `dotnet test --project JustDummies.UnitTests`.

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Globalization;
 using System.Linq;
 
 using Microsoft.CodeAnalysis;
@@ -12,23 +13,31 @@ using Microsoft.CodeAnalysis.Text;
 namespace JustDummies.Analyzers;
 
 /// <summary>
-///     JD034 — reports an <c>Any.String()</c> chain that declares a constraint the generator takes once a second
-///     time with a different call: an exact length, a prefix, a suffix, a character family or pool, a casing or a
-///     value set — or a casing beside a <c>WithChars</c> pool, which cannot combine with one.
+///     JD034 — reports a chain that declares a constraint its generator accepts only once a second time with a
+///     different call — a string's exact length, prefix or suffix, a character family, a casing, a value set, a
+///     multiple, a decimal scale, a granularity, a <c>DateTimeOffset</c> offset, a collection's exact count, a URI's
+///     scheme, host, port, user info, path, domain or local part — or that combines a <c>WithChars</c> pool with a
+///     casing constraint.
 /// </summary>
 /// <remarks>
 ///     <para>
-///         The run time refuses each of these at the call, on every seed, with a message saying the first
-///         declaration is already defined. It refuses them whatever the values would make of them —
-///         <c>Alpha().AlphaNumeric()</c> is refused although every letter satisfies both — so this is a conflict of
+///         The run time rejects each of these at the call, regardless of the seed, with a message saying the first
+///         declaration is already defined. It rejects them even when both would allow the same values —
+///         <c>Alpha().AlphaNumeric()</c> is rejected although every letter satisfies both — so this is a conflict of
 ///         declaration, not of values, and it is not <c>JD015</c>'s: that rule reports constants that admit no value
 ///         (issue #274).
 ///     </para>
 ///     <para>
 ///         The same call repeated is a no-op the run time ignores, so it is not reported: "the same" means the same
-///         method and the same constant arguments, and, for a value set, the same values in any order (ADR-0100). An
-///         argument the compiler cannot resolve leaves that question open, and the rule stays silent rather than
-///         guess.
+///         method and the same constant arguments, and, for a value set, the same values in any order (ADR-0100). Two
+///         readings follow the run time rather than the call: a granularity is identified by its length, whatever
+///         <c>TimeSpan</c> spelling wrote it, and an offset by the range it declares, so <c>WithOffset(x)</c> and
+///         <c>WithOffsetBetween(x, x)</c> are the same declaration. An argument the compiler cannot resolve leaves
+///         that question open, and the rule stays silent rather than guess.
+///     </para>
+///     <para>
+///         One constraint the run time also takes once is left out: a <c>Distinct</c> comparer, which the run time
+///         compares by reference, so no reading of the source can tell a repetition from a conflict (issue #278).
 ///     </para>
 /// </remarks>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
@@ -38,6 +47,13 @@ public sealed class ConstraintAlreadyDefinedAnalyzer : DiagnosticAnalyzer {
     private const string FamilyOrPool      = "character family or pool";
     private const string PoolName          = "WithChars";
     private const string ValueSetName      = "OneOf";
+    private const string MultipleName      = "MultipleOf";
+    private const string GranularityName   = "WithGranularity";
+    private const string OffsetName        = "WithOffset";
+    private const string OffsetRangeName   = "WithOffsetBetween";
+    private const string ExactCount        = "exact count";
+    private const string StringOwner       = "AnyString";
+    private const string LibraryNamespace  = "JustDummies";
     private const string PoolTakesNoCasing = "a WithChars pool completely defines the allowed characters and cannot be combined with a casing constraint";
 
     /// <inheritdoc />
@@ -64,24 +80,28 @@ public sealed class ConstraintAlreadyDefinedAnalyzer : DiagnosticAnalyzer {
         // Analyse each chain once, from its outermost call.
         if (invocation.Parent is IInvocationOperation) { return; }
         if (!AnyChainFacts.TryGetChain(invocation, symbols, out IReadOnlyList<IInvocationOperation> constraints, out IInvocationOperation? factory)) { return; }
-        if (factory is null || factory.TargetMethod.Name != "String") { return; }
+        if (factory is null) { return; }
         if (NegativeTestGuard.IsSoleBodyOfLambdaArgument(invocation.Syntax)) { return; }
 
-        AnalyzeConstraints(context, constraints);
+        AnalyzeConstraints(context, context.Compilation, constraints);
     }
 
     /// <summary>
-    ///     Walks the chain in the order the run time applies it and reports the first call it would refuse as already
+    ///     Walks the chain in the order the run time applies it and reports the first call it would reject as already
     ///     defined — the one its message names first. Nothing after that call is ever applied.
     /// </summary>
-    private static void AnalyzeConstraints(OperationAnalysisContext context, IReadOnlyList<IInvocationOperation> constraints) {
+    private static void AnalyzeConstraints(OperationAnalysisContext context, Compilation compilation, IReadOnlyList<IInvocationOperation> constraints) {
         Dictionary<string, IInvocationOperation> slots = [];
         foreach (IInvocationOperation call in constraints) {
-            if (SlotOf(call.TargetMethod.Name) is not string slot) { continue; }
+            if (SlotOf(call.TargetMethod) is not string slot) { continue; }
+            // The call throws on its own argument before any slot is read, and nothing after it is applied.
+            if (IsRefused(call, compilation)) { return; }
+            if (IsIgnored(call)) { continue; }
 
-            if (slots.TryGetValue(slot, out IInvocationOperation? first)) {
+            string key = Key(call.TargetMethod, slot);
+            if (slots.TryGetValue(key, out IInvocationOperation? first)) {
                 if (IsSameDeclaration(first, call) == false) {
-                    Report(context, call, first, $"a string generator accepts only one {slot}");
+                    Report(context, call, first, $"the generator accepts only one {slot}");
 
                     return;
                 }
@@ -95,68 +115,176 @@ public sealed class ConstraintAlreadyDefinedAnalyzer : DiagnosticAnalyzer {
                 return;
             }
 
-            slots.Add(slot, call);
+            slots.Add(key, call);
         }
     }
 
     /// <summary>
-    ///     The once-per-generator constraint a method declares, as the message names it, or <c>null</c> for one that
-    ///     accumulates or folds instead — a bound, a contained value, a subtraction, an exclusion.
+    ///     The once-per-generator constraint a library method declares, as the message names it, or <c>null</c> for
+    ///     one that accumulates or folds instead — a bound, a contained value, a subtraction, an exclusion — and for
+    ///     the comparer this rule leaves out (see the remarks on the class).
     /// </summary>
-    private static string? SlotOf(string name) {
-        return name switch {
-            "WithLength"                                       => "exact length",
-            "StartingWith"                                     => "prefix",
-            "EndingWith"                                       => "suffix",
-            "InUpperCase" or "InLowerCase"                     => Casing,
-            ValueSetName                                       => "value set",
-            PoolName                                           => FamilyOrPool,
-            _ when CharacterFamilies.PoolFor(name) is not null => FamilyOrPool,
-            _                                                  => null
+    private static string? SlotOf(IMethodSymbol method) {
+        if (method.ContainingNamespace?.ToDisplayString() != LibraryNamespace) { return null; }
+
+        string owner = method.ContainingType.Name;
+
+        return method.Name switch {
+            ValueSetName                                              => "value set",
+            "WithLength"                                              => "exact length",
+            "StartingWith"                                            => "prefix",
+            "EndingWith"                                              => "suffix",
+            "InUpperCase" or "InLowerCase"                            => Casing,
+            PoolName                                                  => FamilyOrPool,
+            _ when CharacterFamilies.PoolFor(method.Name) is not null => owner == StringOwner ? FamilyOrPool : "character family",
+            MultipleName                                              => "MultipleOf constraint",
+            "WithScale"                                               => "scale",
+            GranularityName                                           => "granularity",
+            OffsetName or OffsetRangeName                             => "offset",
+            "WithCount"                                               => ExactCount,
+            "Empty" when owner is "AnyCollection" or "AnyDictionary"  => ExactCount,
+            "UsingHttp" or "UsingHttps" or "UsingWs" or "UsingWss"    => "scheme",
+            "WithHost"                                                => "host",
+            "WithDomain"                                              => "domain",
+            "WithUserInfo"                                            => "user info",
+            "WithLocalPart"                                           => "local part",
+            "WithPort"                                                => "port",
+            "WithPathSegments" or "WithoutPath"                       => "path",
+            _                                                         => null
+        };
+    }
+
+    /// <summary>The slot a call fills, on the generator type that declares it.</summary>
+    private static string Key(IMethodSymbol method, string slot) {
+        return $"{method.ContainingType.Name}.{slot}";
+    }
+
+    /// <summary>
+    ///     Whether the call rejects its own argument — a size, a step, a scale or a port out of range, an empty text, an
+    ///     empty value set, the guards JD014 reports; a <c>null</c>, a URI component or a value set element its guard
+    ///     refuses (<see cref="ArgumentGuardFacts" />); a granularity that is not strictly positive, an offset that is
+    ///     not whole minutes within ±14:00. The guard runs before the slot is read, and that refusal is not a second
+    ///     declaration, so it is not this rule's to report.
+    /// </summary>
+    private static bool IsRefused(IInvocationOperation call, Compilation compilation) {
+        if (RejectedConstantArgumentAnalyzer.TryFindViolation(call, compilation, out _, out _) || ArgumentGuardFacts.MayRefuse(call)) { return true; }
+
+        return call.TargetMethod.Name switch {
+            GranularityName               => Granularity(call) <= 0,
+            OffsetName or OffsetRangeName => OffsetRange(call) is { } range && !IsValidOffset(range),
+            _                             => false
         };
     }
 
     /// <summary>
+    ///     Whether the call narrows nothing, so the run time ignores it without filling its slot: <c>MultipleOf(1)</c>
+    ///     or a granularity of one tick, since every value is on that lattice.
+    /// </summary>
+    private static bool IsIgnored(IInvocationOperation call) {
+        return call.TargetMethod.Name switch {
+            MultipleName    => Step(call) == 1,
+            GranularityName => Granularity(call) == 1,
+            _               => false
+        };
+    }
+
+    /// <summary>The step a <c>MultipleOf(...)</c> declares, or <c>null</c> if it is not a constant.</summary>
+    private static decimal? Step(IInvocationOperation call) {
+        return ConstantArguments(call) is { Count: 1 } arguments && arguments[0] is IConvertible step ? step.ToDecimal(CultureInfo.InvariantCulture) : null;
+    }
+
+    /// <summary>
     ///     The declaration a casing or a <c>WithChars</c> pool cannot stand beside: the pool is the whole character
-    ///     definition, so the run time refuses a casing with it in either order.
+    ///     definition, so the run time rejects a casing with it in either order.
     /// </summary>
     private static IInvocationOperation? RivalOf(IInvocationOperation call, string slot, IReadOnlyDictionary<string, IInvocationOperation> slots) {
-        if (slot == Casing && slots.TryGetValue(FamilyOrPool, out IInvocationOperation? family) && family.TargetMethod.Name == PoolName) { return family; }
-        if (call.TargetMethod.Name == PoolName && slots.TryGetValue(Casing, out IInvocationOperation? casing)) { return casing; }
+        if (call.TargetMethod.ContainingType.Name != StringOwner) { return null; }
+
+        if (slot == Casing && slots.TryGetValue($"{StringOwner}.{FamilyOrPool}", out IInvocationOperation? family) && family.TargetMethod.Name == PoolName) { return family; }
+        if (call.TargetMethod.Name == PoolName && slots.TryGetValue($"{StringOwner}.{Casing}", out IInvocationOperation? casing)) { return casing; }
 
         return null;
     }
 
     /// <summary>
     ///     Whether two calls in one slot declare the same thing — <c>true</c> for a repetition the run time ignores,
-    ///     <c>false</c> for a second declaration it refuses, <c>null</c> where an argument the compiler cannot resolve
+    ///     <c>false</c> for a second declaration it rejects, <c>null</c> where an argument the compiler cannot resolve
     ///     leaves it open.
     /// </summary>
     private static bool? IsSameDeclaration(IInvocationOperation first, IInvocationOperation second) {
+        // Two methods declare an offset, and the run time compares the range they declare, not the call.
+        if (first.TargetMethod.Name is OffsetName or OffsetRangeName) { return AreEqual(OffsetRange(first), OffsetRange(second)); }
         if (first.TargetMethod.Name != second.TargetMethod.Name) { return false; }
-        if (first.TargetMethod.Name == ValueSetName) { return ValueSet(first) is { } before && ValueSet(second) is { } after ? before.SetEquals(after) : null; }
 
-        return ConstantArguments(first) is { } written && ConstantArguments(second) is { } rewritten ? written.SequenceEqual(rewritten) : null;
+        return first.TargetMethod.Name switch {
+            ValueSetName    => ValueSet(first) is { } before && ValueSet(second) is { } after ? before.SetEquals(after) : null,
+            GranularityName => AreEqual(Granularity(first), Granularity(second)),
+            _               => ConstantArguments(first) is { } written && ConstantArguments(second) is { } rewritten ? written.SequenceEqual(rewritten) : null
+        };
+    }
+
+    /// <summary>Whether two readings are equal, or <c>null</c> if either could not be read.</summary>
+    private static bool? AreEqual<T>(T? before, T? after) where T : struct {
+        return before.HasValue && after.HasValue ? before.Value.Equals(after.Value) : null;
     }
 
     /// <summary>The constant value of every argument, in parameter order, or <c>null</c> if any is not a constant.</summary>
     private static List<object?>? ConstantArguments(IInvocationOperation call) {
-        List<Optional<object?>> constants = call.Arguments.Select(argument => argument.Value.ConstantValue).ToList();
+        List<Optional<object?>> constants = InParameterOrder(call).Select(argument => argument.Value.ConstantValue).ToList();
 
         return constants.All(constant => constant.HasValue) ? constants.Select(constant => constant.Value).ToList() : null;
     }
 
     /// <summary>
-    ///     The values a <c>OneOf(...)</c> lists inline — as arguments, an array or a collection expression — as a set:
-    ///     the run time identifies a value set by its values, ignoring order and duplicates (ADR-0100). <c>null</c>
-    ///     where a collection held elsewhere, a spread or a value that is not a constant leaves it unknown.
+    ///     The call's arguments in parameter order: Roslyn lists them in evaluation order, which named arguments can
+    ///     change without changing the call.
     /// </summary>
-    private static HashSet<string>? ValueSet(IInvocationOperation call) {
-        if (!ValueSetFacts.IsWrittenInline(call)) { return null; }
+    private static IEnumerable<IArgumentOperation> InParameterOrder(IInvocationOperation call) {
+        return call.Arguments.OrderBy(argument => argument.Parameter?.Ordinal ?? int.MaxValue);
+    }
 
-        HashSet<string> values = new(StringComparer.Ordinal);
+    /// <summary>The ticks of the granularity a <c>WithGranularity(...)</c> declares, or <c>null</c> if it cannot be read.</summary>
+    private static long? Granularity(IInvocationOperation call) {
+        return call.Arguments.Length == 1 ? Ticks(call.Arguments[0]) : null;
+    }
+
+    /// <summary>The ticks of a <c>TimeSpan</c> argument, or <c>null</c> if it cannot be read.</summary>
+    private static long? Ticks(IArgumentOperation argument) {
+        return ConstantFacts.TryGetTimeSpanTicks(argument.Value, out long ticks) ? ticks : null;
+    }
+
+    /// <summary>
+    ///     The range of offsets, in ticks, a <c>WithOffset(...)</c> or a <c>WithOffsetBetween(...)</c> declares — one
+    ///     offset is the range from it to itself, as the run time records it — or <c>null</c> if an argument cannot be
+    ///     read.
+    /// </summary>
+    private static (long Minimum, long Maximum)? OffsetRange(IInvocationOperation call) {
+        long?[] offsets = InParameterOrder(call).Select(Ticks).ToArray();
+        if (offsets.Length is 0 or > 2 || offsets.Any(offset => offset is null)) { return null; }
+
+        return (offsets[0]!.Value, offsets[offsets.Length - 1]!.Value);
+    }
+
+    /// <summary>Whether the run time accepts the range: whole minutes, within ±14:00, the minimum not after the maximum.</summary>
+    private static bool IsValidOffset((long Minimum, long Maximum) range) {
+        const long limit = 14 * TimeSpan.TicksPerHour;
+
+        return range.Minimum % TimeSpan.TicksPerMinute == 0 && range.Maximum % TimeSpan.TicksPerMinute == 0
+            && range.Minimum >= -limit && range.Maximum <= limit && range.Minimum <= range.Maximum;
+    }
+
+    /// <summary>
+    ///     The values a <c>OneOf(...)</c> lists inline — as arguments, an array or a collection expression — as a set
+    ///     of values of the generator's own type: the run time identifies a value set by its values, ignoring order
+    ///     and duplicates (ADR-0100), so <c>OneOf(1.0)</c> and <c>OneOf([1])</c> on a <c>double</c> are the same set.
+    ///     <c>null</c> where a collection held elsewhere, a spread or a value that is not a constant leaves it unknown.
+    /// </summary>
+    private static HashSet<object>? ValueSet(IInvocationOperation call) {
+        if (!ValueSetFacts.IsWrittenInline(call) || ElementType(call.TargetMethod) is not { } elementType) { return null; }
+
+        HashSet<object> values = [];
         foreach (IOperation element in ValueSetFacts.Elements(call)) {
-            if (!ConstantFacts.TryGetString(element, out string value)) { return null; }
+            if (element.ConstantValue is not { HasValue: true, Value: { } constant } || Converted(constant, elementType) is not { } value) { return null; }
 
             values.Add(value);
         }
@@ -165,7 +293,47 @@ public sealed class ConstraintAlreadyDefinedAnalyzer : DiagnosticAnalyzer {
     }
 
     /// <summary>
-    ///     Reports the call the run time refuses, naming the declaration already in place as the run time does.
+    ///     The run-time type of the values a <c>OneOf(...)</c> takes — its parameter array's element, or the type
+    ///     argument of its sequence — with an enumeration read as its underlying type, or <c>null</c> for a type no
+    ///     compile-time constant can hold, such as a <c>Guid</c> or a <c>DateTime</c>.
+    /// </summary>
+    private static Type? ElementType(IMethodSymbol method) {
+        ITypeSymbol? element = method.Parameters.FirstOrDefault()?.Type switch {
+            IArrayTypeSymbol array                              => array.ElementType,
+            INamedTypeSymbol { TypeArguments.Length: 1 } sequence => sequence.TypeArguments[0],
+            _                                                   => null
+        };
+        if (element is INamedTypeSymbol { EnumUnderlyingType: { } underlying }) { element = underlying; }
+
+        return element?.SpecialType switch {
+            SpecialType.System_Char    => typeof(char),
+            SpecialType.System_String  => typeof(string),
+            SpecialType.System_SByte   => typeof(sbyte),
+            SpecialType.System_Byte    => typeof(byte),
+            SpecialType.System_Int16   => typeof(short),
+            SpecialType.System_UInt16  => typeof(ushort),
+            SpecialType.System_Int32   => typeof(int),
+            SpecialType.System_UInt32  => typeof(uint),
+            SpecialType.System_Int64   => typeof(long),
+            SpecialType.System_UInt64  => typeof(ulong),
+            SpecialType.System_Single  => typeof(float),
+            SpecialType.System_Double  => typeof(double),
+            SpecialType.System_Decimal => typeof(decimal),
+            _                          => null
+        };
+    }
+
+    /// <summary>A constant converted to the generator's own type, the value the run time compares, or <c>null</c> if it does not convert.</summary>
+    private static object? Converted(object constant, Type elementType) {
+        try {
+            return Convert.ChangeType(constant, elementType, CultureInfo.InvariantCulture);
+        } catch (Exception exception) when (exception is InvalidCastException or OverflowException or FormatException) {
+            return null;
+        }
+    }
+
+    /// <summary>
+    ///     Reports the call the run time rejects, naming the declaration already in place as the run time does.
     /// </summary>
     private static void Report(OperationAnalysisContext context, IInvocationOperation refused, IInvocationOperation defined, string reason) {
         context.ReportDiagnostic(Diagnostic.Create(Descriptors.ConstraintAlreadyDefined, LocationOf(refused), Rendered(refused), Rendered(defined), reason));

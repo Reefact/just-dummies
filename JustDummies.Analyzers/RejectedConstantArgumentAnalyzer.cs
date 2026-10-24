@@ -63,7 +63,11 @@ public sealed class RejectedConstantArgumentAnalyzer : DiagnosticAnalyzer {
         }
     }
 
-    private static bool TryFindViolation(IInvocationOperation invocation, Compilation compilation, out IOperation? offending, out string? reason) {
+    /// <summary>
+    ///     Finds the constant argument the call's guard rejects, if any. Shared with JD034, which must know where a chain
+    ///     stops: the guard throws before the call reads anything the chain declared.
+    /// </summary>
+    internal static bool TryFindViolation(IInvocationOperation invocation, Compilation compilation, out IOperation? offending, out string? reason) {
         offending = null;
         reason    = null;
 

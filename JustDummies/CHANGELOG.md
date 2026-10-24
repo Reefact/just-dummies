@@ -44,16 +44,21 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   that turned a value away, and answers a distinct collection with the size of its surviving set.
 
 - **JD034 — *A once-per-generator constraint redeclared with a different call*** (category
-  `JustDummies.Constraints`, 🟠 Warning, on by default). Each `Any.String()` generator accepts only one
-  declaration of its exact length, prefix, suffix, character family or `WithChars` pool, casing, and
-  `OneOf(...)` value set, and a `WithChars` pool cannot be combined with a casing. The library rejects a
-  second, different declaration — `Alpha().Numeric()`, `WithLength(2).WithLength(3)`,
-  `WithChars("ab").InUpperCase()` — immediately, regardless of the random seed, yet no rule reported it:
-  JD015 reports constants that admit no value, and these are refused even where the values agree.
-  Repeating the same call stays silent, since the run time ignores the repetition, and so does a
-  redeclaration whose arguments the compiler cannot compare. The other generators' once-per-generator
-  constraints are not read yet. A value set written as a collection expression, such as `OneOf(["a"])`, is
-  read too, and JD015 and JD029 now read it the same way.
+  `JustDummies.Constraints`, 🟠 Warning, on by default). Every generator accepts only one declaration of
+  some of its constraints — a string's exact length, prefix or suffix, a character family or `WithChars`
+  pool, a casing, a `OneOf(...)` value set, an integer's `MultipleOf`, a decimal's scale, a granularity, a
+  `DateTimeOffset` offset, a collection's exact count, a URI's scheme, host, port, user info or path — and a
+  `WithChars` pool cannot be combined with a casing. The library rejects a second, different declaration —
+  `Alpha().Numeric()`, `WithLength(2).WithLength(3)`, `WithChars("ab").InUpperCase()`,
+  `MultipleOf(5).MultipleOf(10)`, `Empty().WithCount(0)`, `UsingHttp().UsingHttps()` — immediately,
+  regardless of the random seed, yet no rule reported it: JD015 reports constants that admit no value, and
+  these are refused even where the values agree. Repeating the same call stays silent, since the run time
+  ignores the repetition, and so does a redeclaration whose arguments the compiler cannot compare. A
+  granularity or an offset written as `TimeSpan.FromHours(1)`, `new TimeSpan(1, 0, 0)` or `TimeSpan.Zero`
+  is compared by its value, and `WithOffset(x)` and `WithOffsetBetween(x, x)` are the same declaration. A
+  second `Distinct` comparer is not reported: the run time compares comparers by reference. A value set
+  written as a collection expression, such as `OneOf(["a"])`, is read too, and JD015 and JD029 now read it
+  the same way.
 
 ### Documentation
 

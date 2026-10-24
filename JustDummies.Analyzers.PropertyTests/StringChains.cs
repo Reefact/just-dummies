@@ -9,11 +9,11 @@ namespace JustDummies.Analyzers.PropertyTests;
 /// </summary>
 /// <remarks>
 ///     <para>
-///         The vocabulary is JD015's stated scope and nothing wider. Every argument is a constant, the chain is one
-///         expression, and each once-per-generator slot holds one call, or that call repeated — a second, different
-///         family or prefix is a conflict of declaration the rule does not claim to report, and that no rule reports
-///         yet (issue #274); the slot filter comes off when that is decided. An exclusion appears only beside a value set:
-///         on a shaped string it is met by a bounded redraw at the draw (ADR-0012), which no build-time rule judges.
+///         Every argument is a constant and the chain is one expression. <see cref="Arbitrary" /> holds the chains to
+///         JD015's stated scope: each once-per-generator slot holds one call, or that call repeated. A second, different
+///         family, prefix, length, casing or value set is a conflict of declaration, which is JD034's to report (issue
+///         #274), and <see cref="Unscoped" /> lets it through. An exclusion appears only beside a value set: on a
+///         shaped string it is met by a bounded redraw at the draw (ADR-0012), which no build-time rule judges.
 ///     </para>
 ///     <para>
 ///         Chains stay within the arity cap of eight (ADR-0005). The generator is this suite's own, independent of
@@ -42,8 +42,8 @@ internal static class StringChains {
     }
 
     /// <summary>
-    ///     The same chains with the slot filter off, the declaration conflicts outside the rule's scope included. A rule
-    ///     claims nothing about them, but it still has to read them without failing.
+    ///     The same chains with the slot filter off, the conflicting declarations included — the ones JD034 reports and
+    ///     JD015 leaves to it.
     /// </summary>
     public static Arbitrary<StringChain> Unscoped() {
         return Arb.From(Chain(calls => new StringChain(calls.ToList())), chain => chain.Shrink());
@@ -58,9 +58,10 @@ internal static class StringChains {
         Gen<StringChain> pooled = from count in Gen.Choose(0, MaximumArity - 1)
                                   from drawn in Gen.Frequency((3, Shape()), (1, Exclusion())).ListOf(count)
                                   from calls in Repeating(drawn, MaximumArity - 1)
-                                  from valueSet in ValueSet()
+                                  from values in ValueSetValues()
                                   from position in Gen.Choose(0, calls.Count)
-                                  select scope(calls.Take(position).Append(valueSet).Concat(calls.Skip(position)));
+                                  from placed in Redeclaring(calls.Take(position).Append(OneOf(values)).Concat(calls.Skip(position)).ToList(), position, values)
+                                  select scope(placed);
 
         return Gen.OneOf(shaped, pooled);
     }
@@ -133,14 +134,28 @@ internal static class StringChains {
             (1, Gen.Constant(Call("InLowerCase()", g => g.InLowerCase(), StringChainSlot.Casing))));
     }
 
-    private static Gen<StringChainCall> ValueSet() {
-        return Gen.SubListOf(Values)
-                  .Where(values => values.Count > 0)
-                  .Select(values => {
-                      string[] supplied = values.ToArray();
+    private static Gen<string[]> ValueSetValues() {
+        return Gen.SubListOf(Values).Where(values => values.Count > 0).Select(values => values.ToArray());
+    }
 
-                      return Call($"OneOf({Join(supplied)})", g => g.OneOf(supplied), StringChainSlot.ValueSet);
-                  });
+    private static StringChainCall OneOf(string[] supplied) {
+        return Call($"OneOf({Join(supplied)})", g => g.OneOf(supplied), StringChainSlot.ValueSet);
+    }
+
+    /// <summary>
+    ///     The chain, sometimes with a second value set declared after the first, within the arity cap: the same values
+    ///     reordered and repeated, which the run time ignores (ADR-0100), or another set, which it refuses.
+    /// </summary>
+    private static Gen<List<StringChainCall>> Redeclaring(List<StringChainCall> calls, int first, string[] values) {
+        if (calls.Count >= MaximumArity) { return Gen.Constant(calls); }
+
+        string[]                   same       = [.. Enumerable.Reverse(values), values[0]];
+        Gen<StringChainCall>       second     = Gen.OneOf(Gen.Constant(OneOf(same)), ValueSetValues().Select(OneOf));
+        Gen<List<StringChainCall>> redeclared = from call in second
+                                                from position in Gen.Choose(first + 1, calls.Count)
+                                                select calls.Take(position).Append(call).Concat(calls.Skip(position)).ToList();
+
+        return Gen.Frequency((3, Gen.Constant(calls)), (1, redeclared));
     }
 
     private static Gen<StringChainCall> Exclusion() {

@@ -316,6 +316,16 @@ internal static class Descriptors {
         description: "A character family, a custom pool, a subtraction and a casing govern the characters the generator DRAWS; an anchored literal is kept as written and is exempt (ADR-0079). That is what makes AlphaNumeric().StartingWith(\"ORD-\") the way to express a fixed separator, so this is a fact rather than a fault, and it is reported as information: the separator appears in the prefix and nowhere else. The same sentence covers the case that was not meant -- a lowercase prefix beside InUpperCase(), a family chosen out of habit -- which the run time no longer refuses, and which only the author can tell apart from the deliberate one. Silent once OneOf(...) is declared: nothing is drawn beside a pooled value, and a pooled value a constraint refuses is JD029's to report.",
         helpLinkUri: JustDummiesRule.JD033.HelpLinkUri);
 
+    public static readonly DiagnosticDescriptor ConstraintAlreadyDefined = new(
+        id: JustDummiesRule.JD034.Id,
+        title: JustDummiesRule.JD034.Title,
+        messageFormat: "{0} conflicts with {1}, declared before it: {2}",
+        category: JustDummiesRule.JD034.Category,
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true,
+        description: "An Any.String() chain takes its exact length, prefix, suffix, character family or WithChars pool, casing and OneOf(...) value set once each, and a WithChars pool cannot combine with a casing. A second, different declaration is refused the moment the arrange line runs, with a ConflictingAnyConstraintException saying the first is already defined -- on every seed, whatever the values would make of it: Alpha().AlphaNumeric() is refused although every letter would satisfy both. Repeating the same call is not a conflict, since the run time ignores the repetition; a value set counts as the same when it lists the same values, in any order (ADR-0100). An argument the compiler cannot resolve to a constant leaves the comparison open, so the rule stays silent rather than guess. Keep the declaration you meant and delete the other.",
+        helpLinkUri: JustDummiesRule.JD034.HelpLinkUri);
+
     public static readonly DiagnosticDescriptor EmptyRelativeUri = new(
         id: JustDummiesRule.JD026.Id,
         title: JustDummiesRule.JD026.Title,

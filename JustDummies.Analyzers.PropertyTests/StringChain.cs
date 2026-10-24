@@ -36,6 +36,11 @@ internal sealed class StringChain {
 
     /// <summary>Whether <paramref name="analyzer" /> reports <paramref name="id" /> anywhere on the chain.</summary>
     public bool IsReportedBy(DiagnosticAnalyzer analyzer, string id) {
+        return ReportedBy(analyzer).Contains(id);
+    }
+
+    /// <summary>The ids <paramref name="analyzers" /> report anywhere on the chain, read together in one compilation.</summary>
+    public ISet<string> ReportedBy(params DiagnosticAnalyzer[] analyzers) {
         string source = $$"""
             using JustDummies;
 
@@ -46,18 +51,19 @@ internal sealed class StringChain {
             }
             """;
 
-        return AnalyzerHarness.Diagnose(analyzer, source).Any(diagnostic => diagnostic.Id == id);
+        return new HashSet<string>(AnalyzerHarness.Diagnose([.. analyzers], source).Select(diagnostic => diagnostic.Id), StringComparer.Ordinal);
     }
 
     /// <summary>
-    ///     The chains one call shorter, so FsCheck reports the smallest chain that still disagrees. Dropping the value
+    ///     The chains one call shorter, so FsCheck reports the smallest chain that still disagrees. Dropping the last value
     ///     set drops the exclusions with it: an exclusion is generated only beside a value set.
     /// </summary>
     public IEnumerable<StringChain> Shrink() {
+        int valueSets = Calls.Count(call => call.Slot == StringChainSlot.ValueSet);
         for (int call = 0; call < Calls.Count; call++) {
             int removed = call;
 
-            yield return Calls[removed].Slot == StringChainSlot.ValueSet
+            yield return Calls[removed].Slot == StringChainSlot.ValueSet && valueSets == 1
                              ? new StringChain(Calls.Where(kept => kept.Slot is not (StringChainSlot.ValueSet or StringChainSlot.Exclusion)).ToList())
                              : new StringChain(Calls.Where((_, index) => index != removed).ToList());
         }

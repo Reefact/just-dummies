@@ -10,7 +10,7 @@ namespace JustDummies.Analyzers.PropertyTests;
 
 /// <summary>
 ///     Compiles a generated snippet against the running runtime and the JustDummies core — the same assembly the
-///     oracle executes — and returns what one analyzer reports on it.
+///     oracle executes — and returns what the analyzers report on it.
 /// </summary>
 internal static class AnalyzerHarness {
 
@@ -21,7 +21,7 @@ internal static class AnalyzerHarness {
 
     #region Statics members declarations
 
-    public static ImmutableArray<Diagnostic> Diagnose(DiagnosticAnalyzer analyzer, string source) {
+    public static ImmutableArray<Diagnostic> Diagnose(ImmutableArray<DiagnosticAnalyzer> analyzers, string source) {
         SyntaxTree         syntaxTree  = CSharpSyntaxTree.ParseText(source, new CSharpParseOptions(LanguageVersion.Latest));
         CSharpCompilation compilation = CSharpCompilation.Create("JustDummies.Analyzers.PropertyTests.Snippet", [syntaxTree], References,
                                                                   new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
@@ -35,7 +35,7 @@ internal static class AnalyzerHarness {
 
         // An analyzer that throws is reported as AD0001 in place of its own diagnostics, so its silence would read as
         // agreement too. Fail loudly on that as well.
-        ImmutableArray<Diagnostic> diagnostics = compilation.WithAnalyzers([analyzer]).GetAnalyzerDiagnosticsAsync().GetAwaiter().GetResult();
+        ImmutableArray<Diagnostic> diagnostics = compilation.WithAnalyzers(analyzers).GetAnalyzerDiagnosticsAsync().GetAwaiter().GetResult();
         if (diagnostics.FirstOrDefault(diagnostic => diagnostic.Id == AnalyzerFailure) is Diagnostic failure) {
             throw new InvalidOperationException($"The analyzer failed on the generated snippet:{Environment.NewLine}{source}{Environment.NewLine}{failure}");
         }

@@ -57,7 +57,11 @@ internal sealed class RepetitionChain {
         return ignored;
     }
 
-    /// <summary>The positions of the calls <paramref name="analyzer" /> reports JD035 on, read from where each diagnostic starts.</summary>
+    /// <summary>
+    ///     The positions of the calls <paramref name="analyzer" /> reports JD035 on, read from where each diagnostic starts.
+    ///     A value listed twice in one exclusion list is reported on the value, inside a call the run time does apply; the
+    ///     oracle here judges whole calls, so that diagnostic is left to the unit cases.
+    /// </summary>
     public ISet<int> ReportedCalls(DiagnosticAnalyzer analyzer) {
         string source = Prelude + Expression + ";\n    }\n}\n";
         Dictionary<int, int> positions = [];
@@ -68,7 +72,7 @@ internal sealed class RepetitionChain {
         }
 
         return new HashSet<int>(AnalyzerHarness.Diagnose([analyzer], source)
-                                               .Where(diagnostic => diagnostic.Id == "JD035")
+                                               .Where(diagnostic => diagnostic.Id == "JD035" && positions.ContainsKey(diagnostic.Location.SourceSpan.Start))
                                                .Select(diagnostic => positions[diagnostic.Location.SourceSpan.Start]));
     }
 

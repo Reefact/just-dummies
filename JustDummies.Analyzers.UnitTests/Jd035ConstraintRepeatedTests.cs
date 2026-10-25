@@ -103,6 +103,15 @@ public class Jd035ConstraintRepeatedTests {
     [InlineData("Any.Uri().Mailto().WithHeaders().WithHeaders()",              "WithHeaders()", "WithHeaders()")]
     // Calls between the two do not separate them.
     [InlineData("Any.String().WithLength(4).Alpha().NotBlank().WithLength(4)", "WithLength(4)", "WithLength(4)")]
+    // A value one exclusion list already holds is the same exclusion declared twice, in one call (issue #280).
+    [InlineData("Any.String().Except(\"a\", \"a\")",                       "\"a\"", "\"a\"")]
+    [InlineData("Any.String().Except(\"a\", \"b\", \"a\")",              "\"a\"", "\"a\"")]
+    [InlineData("Any.String().Except([\"a\", \"a\"])",                     "\"a\"", "\"a\"")]
+    [InlineData("Any.Char().Except('a', 'a')",                                 "'a'", "'a'")]
+    [InlineData("Any.Int32().Except(5, 5)",                                    "5", "5")]
+    [InlineData("Any.Double().Except(1, 1.0)",                                 "1.0", "1")]
+    [InlineData("Any.Enum<DayOfWeek>().Except(DayOfWeek.Monday, DayOfWeek.Monday)", "DayOfWeek.Monday", "DayOfWeek.Monday")]
+    [InlineData("Any.OneOf(1, 2, 3).Except(1, 1)",                             "1", "1")]
     public async Task Reports_a_constraint_declared_again_identically(string chain, string repeated, string first) {
         // Issue #279: the run time ignores each second call, so the chain draws exactly what it would without it, and
         // no rule reported it.
@@ -123,6 +132,18 @@ public class Jd035ConstraintRepeatedTests {
         Check.That(diagnostics[0].Location.SourceTree!.ToString().Substring(diagnostics[0].Location.SourceSpan.Start, diagnostics[0].Location.SourceSpan.Length))
              .IsEqualTo("Alpha()");
         Check.That(diagnostics[0].Location.SourceSpan.Start).IsStrictlyGreaterThan(diagnostics[0].Location.SourceTree!.ToString().IndexOf("WithLength", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task Reports_a_value_listed_twice_on_the_value_and_a_repeated_list_on_the_call() {
+        // Each is a repetition of its own: the second "a" in the first list — the one followed by the closing
+        // parenthesis — then the whole second call.
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync("        _ = Any.String().Except(\"a\", \"a\").Except(\"a\").Generate();");
+
+        Check.That(diagnostics.Select(diagnostic => diagnostic.GetMessage())).ContainsExactly(
+            Message("\"a\"", "\"a\""), Message("Except(\"a\")", "Except(\"a\", \"a\")"));
+        Check.That(diagnostics[0].Location.SourceTree!.ToString().Substring(diagnostics[0].Location.SourceSpan.Start, diagnostics[0].Location.SourceSpan.Length + 1))
+             .IsEqualTo("\"a\")");
     }
 
     [Fact]
@@ -157,6 +178,8 @@ public class Jd035ConstraintRepeatedTests {
     [InlineData("Any.ListOf(Any.Int32()).WithCount(3).Containing(1).Containing(1)")]
     // A call that narrows nothing fills no slot, so there is nothing to repeat.
     [InlineData("Any.Int32().MultipleOf(1).MultipleOf(1)")]
+    // A value listed twice in a value set reads as a weighting, which is JD025's to refuse.
+    [InlineData("Any.String().OneOf(\"a\", \"a\")")]
     public async Task Does_not_report_what_is_not_a_repetition(string chain) {
         await NothingReportedAsync(chain);
     }
@@ -169,6 +192,7 @@ public class Jd035ConstraintRepeatedTests {
     [InlineData("Any.Guid().DifferentFrom(Guid.Empty).DifferentFrom(Guid.Empty)")]
     [InlineData("Any.DateTime().Except(DateTime.MinValue).Except(DateTime.MinValue)")]
     [InlineData("Any.ListOf(Any.String()).Distinct(StringComparer.Ordinal).Distinct(StringComparer.Ordinal)")]
+    [InlineData("Any.String().Except(\"a\", anchor, \"a\")")]
     public async Task Does_not_guess_about_an_argument_it_cannot_read(string chain) {
         // An argument the compiler cannot resolve to a constant may hold another value on the second call, and a
         // comparer is compared by reference: the rule stays silent rather than guess.

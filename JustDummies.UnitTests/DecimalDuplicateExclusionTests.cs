@@ -1,5 +1,7 @@
 #region Usings declarations
 
+using System.Diagnostics.CodeAnalysis;
+
 using NFluent;
 
 #endregion
@@ -29,6 +31,7 @@ public sealed class DecimalDuplicateExclusionTests {
     }
 
     [Fact(DisplayName = "A duplicate inside one Except call weighs once too.")]
+    [SuppressMessage(JustDummiesRule.JD035.Category, JustDummiesRule.JD035.Id, Justification = SuppressionJustification.JD035.RepetitionIsTheSubject)]
     public void DuplicateWithinOneCallWeighsOnce() {
         // Grid {0.00, 0.01, 0.02}: one distinct exclusion, listed three times, still leaves two drawable values.
         AnyDecimal generator = Any.Decimal().Between(0.00m, 0.02m).WithScale(2).Except(0.01m, 0.01m, 0.01m);

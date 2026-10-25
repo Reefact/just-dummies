@@ -64,8 +64,13 @@ internal static class DeclarationWalk {
             // The call throws on its own argument before it reads anything the chain declared.
             if (IsRefused(call, compilation)) { yield break; }
 
-            DeclarationFinding? finding = SlotOf(call.TargetMethod) is string slot ? InSlot(call, slot, slots) : AmongRepeatables(call, repeatables);
-            if (finding is null) { continue; }
+            if (SlotOf(call.TargetMethod) is not string slot) {
+                foreach (DeclarationFinding repetition in AmongRepeatables(call, repeatables)) { yield return repetition; }
+
+                continue;
+            }
+
+            if (InSlot(call, slot, slots) is not DeclarationFinding finding) { continue; }
 
             yield return finding;
             if (!finding.IsRepetition) { yield break; }
@@ -76,17 +81,22 @@ internal static class DeclarationWalk {
     ///     The refused call's name and argument list — <c>Numeric()</c> — rather than the whole chain up to it, which on
     ///     a long chain hides which declaration is meant.
     /// </summary>
-    internal static Location LocationOf(IInvocationOperation call) {
+    internal static Location LocationOf(IOperation call) {
         return call.Syntax is InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax access } invocation
                    ? Location.Create(invocation.SyntaxTree, TextSpan.FromBounds(access.Name.SpanStart, invocation.Span.End))
                    : call.Syntax.GetLocation();
     }
 
-    /// <summary>A call as the caller wrote it — its name and its argument list — the way the run time quotes it.</summary>
-    internal static string Rendered(IInvocationOperation call) {
-        return call.Syntax is InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax access } invocation
-                   ? $"{access.Name}{invocation.ArgumentList}"
-                   : $"{call.TargetMethod.Name}(...)";
+    /// <summary>
+    ///     A call as the caller wrote it — its name and its argument list — the way the run time quotes it; a value as the
+    ///     caller wrote it.
+    /// </summary>
+    internal static string Rendered(IOperation call) {
+        return call switch {
+            { Syntax: InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax access } invocation } => $"{access.Name}{invocation.ArgumentList}",
+            IInvocationOperation invocation                                                                     => $"{invocation.TargetMethod.Name}(...)",
+            _                                                                                                   => call.Syntax.ToString()
+        };
     }
 
     private static bool IsLibraryMethod(IMethodSymbol method) {
@@ -113,15 +123,40 @@ internal static class DeclarationWalk {
         return null;
     }
 
-    /// <summary>A call whose repetition changes nothing, compared with the same calls before it.</summary>
-    private static DeclarationFinding? AmongRepeatables(IInvocationOperation call, List<IInvocationOperation> repeatables) {
-        if (!IsRepeatable(call.TargetMethod)) { return null; }
+    /// <summary>
+    ///     A call whose repetition changes nothing, compared with the same calls before it — and, for an exclusion list,
+    ///     each value compared with the ones before it in the same list (issue #280).
+    /// </summary>
+    private static IEnumerable<DeclarationFinding> AmongRepeatables(IInvocationOperation call, List<IInvocationOperation> repeatables) {
+        if (!IsRepeatable(call.TargetMethod)) { yield break; }
 
-        if (repeatables.FirstOrDefault(earlier => IsSameCall(earlier, call) == true) is IInvocationOperation repeated) { return DeclarationFinding.Repeating(call, repeated); }
+        foreach (DeclarationFinding value in RepeatedValues(call)) { yield return value; }
 
-        repeatables.Add(call);
+        if (repeatables.FirstOrDefault(earlier => IsSameCall(earlier, call) == true) is IInvocationOperation repeated) {
+            yield return DeclarationFinding.Repeating(call, repeated);
+        } else {
+            repeatables.Add(call);
+        }
+    }
 
-        return null;
+    /// <summary>
+    ///     Each value an <c>Except(...)</c> lists a second time, which removes nothing the first did not. A list with a
+    ///     value that is not a constant is left alone, as a value set is: what it holds is not fully known.
+    /// </summary>
+    private static IEnumerable<DeclarationFinding> RepeatedValues(IInvocationOperation call) {
+        if (call.TargetMethod.Name != ExclusionName || !ValueSetFacts.IsWrittenInline(call) || ValueSetFacts.ElementType(call.TargetMethod) is not { } elementType) { yield break; }
+
+        List<(IOperation Element, object? Value)> elements = ValueSetFacts.Elements(call).Select(element => (element, ValueSetFacts.RunTimeValue(element, elementType))).ToList();
+        if (elements.Any(element => element.Value is null)) { yield break; }
+
+        Dictionary<object, IOperation> first = [];
+        foreach ((IOperation element, object? value) in elements) {
+            if (first.TryGetValue(value!, out IOperation? earlier)) {
+                yield return DeclarationFinding.Repeating(element, earlier);
+            } else {
+                first.Add(value!, element);
+            }
+        }
     }
 
     /// <summary>
@@ -312,56 +347,16 @@ internal static class DeclarationWalk {
     ///     a constant leaves it unknown.
     /// </summary>
     private static HashSet<object>? ValueSet(IInvocationOperation call) {
-        if (!ValueSetFacts.IsWrittenInline(call) || ElementType(call.TargetMethod) is not { } elementType) { return null; }
+        if (!ValueSetFacts.IsWrittenInline(call) || ValueSetFacts.ElementType(call.TargetMethod) is not { } elementType) { return null; }
 
         HashSet<object> values = [];
         foreach (IOperation element in ValueSetFacts.Elements(call)) {
-            if (element.ConstantValue is not { HasValue: true, Value: { } constant } || Converted(constant, elementType) is not { } value) { return null; }
+            if (ValueSetFacts.RunTimeValue(element, elementType) is not { } value) { return null; }
 
             values.Add(value);
         }
 
         return values.Count > 0 ? values : null;
-    }
-
-    /// <summary>
-    ///     The run-time type of the values a <c>OneOf(...)</c> or an <c>Except(...)</c> takes — its parameter array's
-    ///     element, or the type argument of its sequence — with an enumeration read as its underlying type, or
-    ///     <c>null</c> for a type no compile-time constant can hold, such as a <c>Guid</c> or a <c>DateTime</c>.
-    /// </summary>
-    private static Type? ElementType(IMethodSymbol method) {
-        ITypeSymbol? element = method.Parameters.FirstOrDefault()?.Type switch {
-            IArrayTypeSymbol array                              => array.ElementType,
-            INamedTypeSymbol { TypeArguments.Length: 1 } sequence => sequence.TypeArguments[0],
-            _                                                   => null
-        };
-        if (element is INamedTypeSymbol { EnumUnderlyingType: { } underlying }) { element = underlying; }
-
-        return element?.SpecialType switch {
-            SpecialType.System_Char    => typeof(char),
-            SpecialType.System_String  => typeof(string),
-            SpecialType.System_SByte   => typeof(sbyte),
-            SpecialType.System_Byte    => typeof(byte),
-            SpecialType.System_Int16   => typeof(short),
-            SpecialType.System_UInt16  => typeof(ushort),
-            SpecialType.System_Int32   => typeof(int),
-            SpecialType.System_UInt32  => typeof(uint),
-            SpecialType.System_Int64   => typeof(long),
-            SpecialType.System_UInt64  => typeof(ulong),
-            SpecialType.System_Single  => typeof(float),
-            SpecialType.System_Double  => typeof(double),
-            SpecialType.System_Decimal => typeof(decimal),
-            _                          => null
-        };
-    }
-
-    /// <summary>A constant converted to the generator's own type, the value the run time compares, or <c>null</c> if it does not convert.</summary>
-    private static object? Converted(object constant, Type elementType) {
-        try {
-            return Convert.ChangeType(constant, elementType, CultureInfo.InvariantCulture);
-        } catch (Exception exception) when (exception is InvalidCastException or OverflowException or FormatException) {
-            return null;
-        }
     }
 
     #endregion

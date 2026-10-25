@@ -13,6 +13,12 @@ public class Jd025DuplicatePoolValueTests {
     [InlineData("Any.OneOf(\"EUR\", \"USD\", \"EUR\")")]
     [InlineData("Any.Int32().OneOf(3, 3)")]
     [InlineData("Any.OneOf(true, false, true)")]
+    // A collection expression is read like arguments, each value as the pool's own type (issue #280).
+    [InlineData("Any.String().OneOf([\"a\", \"b\", \"a\"])")]
+    [InlineData("Any.Double().OneOf([1, 1.0])")]
+    // A WithChars pool is deduplicated the same way, character by character.
+    [InlineData("Any.String().WithChars(\"aab\").WithLength(4)")]
+    [InlineData("Any.String().WithChars(\"a\\tb\\t\").WithLength(4)")]
     public async Task Reports_a_value_listed_twice(string expression) {
         string source = $$"""
             using JustDummies;
@@ -34,6 +40,9 @@ public class Jd025DuplicatePoolValueTests {
     [InlineData("Any.OneOf(1, 2, 3)")]
     [InlineData("Any.OneOf(\"a\", \"A\")")]
     [InlineData("Any.Int32().OneOf(3, 4)")]
+    [InlineData("Any.String().OneOf([\"a\", \"b\"])")]
+    [InlineData("Any.String().WithChars(\"abc\").WithLength(4)")]
+    [InlineData("Any.String().WithChars(\"aA\").WithLength(4)")]
     public async Task Does_not_report_a_pool_of_distinct_values(string expression) {
         string source = $$"""
             using JustDummies;
@@ -48,6 +57,30 @@ public class Jd025DuplicatePoolValueTests {
         ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new DuplicatePoolValueAnalyzer(), source);
 
         Check.That(diagnostics.Length).IsEqualTo(0);
+    }
+
+    [Theory]
+    // A plain literal holds one character per column, so the diagnostic covers the repeated one.
+    [InlineData("\"abca\"", 4, 1)]
+    // An escape or a verbatim literal breaks that correspondence, so the diagnostic covers the whole literal.
+    [InlineData("\"a\\tb\\t\"", 0, 8)]
+    [InlineData("@\"abca\"", 0, 7)]
+    public async Task Places_a_repeated_character_on_the_character_when_it_can(string pool, int offset, int length) {
+        string source = $$"""
+            using JustDummies;
+
+            public static class Sample {
+                public static void M() {
+                    _ = Any.String().WithChars({{pool}}).WithLength(4);
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new DuplicatePoolValueAnalyzer(), source);
+
+        Check.That(diagnostics.Length).IsEqualTo(1);
+        Check.That(diagnostics[0].Location.SourceSpan.Start).IsEqualTo(source.IndexOf(pool, StringComparison.Ordinal) + offset);
+        Check.That(diagnostics[0].Location.SourceSpan.Length).IsEqualTo(length);
     }
 
     [Fact]

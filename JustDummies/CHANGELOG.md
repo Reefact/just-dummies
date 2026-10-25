@@ -71,7 +71,9 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   `NotBlank` and the toggles whose repetition changes nothing; "the same" is what JD034 means by it, so a
   second declaration is reported by exactly one of the two rules. Bounds and their aliases stay with JD032
   and JD024, a collection's `Containing` is not a repetition (a list requires the element twice), and an
-  argument the compiler cannot resolve leaves the rule silent.
+  argument the compiler cannot resolve leaves the rule silent. A value listed twice in one exclusion list,
+  such as `Except("a", "a")`, is the same exclusion declared twice in a single call, and is reported on the
+  repeated value.
 
 ### Changed
 
@@ -80,6 +82,12 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   is a repetition, which JD035 now reports at warning severity in every generator family, so one mistake
   draws one diagnostic. JD024 keeps an exclusion made inert by a *different* call, such as
   `Except(5).DifferentFrom(5)` or `Except(5, 6).Except(5)`.
+- **JD025 reads a `WithChars` pool and a collection expression.** A character written twice in a string's
+  `WithChars("aab")` pool collapses exactly as a value written twice in a `OneOf(...)` does, so the pool is
+  one character smaller than it reads, and JD025 now reports it, on the repeated character itself when the
+  pool is a plain string literal. A value set written as a collection expression, such as
+  `OneOf(["EUR", "USD", "EUR"])`, is read too, each value compared as the pool's own type, as JD015, JD029
+  and JD034 already read it.
 
 ### Documentation
 

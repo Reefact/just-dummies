@@ -663,6 +663,7 @@ public sealed class AnyStringTests {
     }
 
     [Fact(DisplayName = "WithChars collapses duplicate characters in the pool.")]
+    [SuppressMessage(JustDummiesRule.JD025.Category, JustDummiesRule.JD025.Id, Justification = SuppressionJustification.JD025.DuplicateIsTheSubject)]
     public void WithCharsCollapsesDuplicates() {
         foreach (string value in Samples(Any.String().WithChars("aaabbb").WithLength(4))) {
             Check.That(value.All(character => character is 'a' or 'b')).IsTrue();

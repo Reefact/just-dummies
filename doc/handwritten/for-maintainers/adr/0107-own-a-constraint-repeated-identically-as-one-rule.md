@@ -2,8 +2,9 @@
 
 🌍 🇬🇧 English (this file) · 🇫🇷 [Français](0107-own-a-constraint-repeated-identically-as-one-rule.fr.md)
 
-**Status:** Proposed
+**Status:** Accepted
 **Proposed:** 2026-10-25
+**Accepted:** 2026-10-25
 **Decision Makers:** Reefact
 
 ## Context

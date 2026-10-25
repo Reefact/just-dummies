@@ -217,4 +217,4 @@ failure mode of a "not now" is that nobody remembers the option existed on the d
 | [ADR-0104](0104-count-null-as-one-additional-value-in-an-optional-generators-domain.md) | Count `null` as one additional value in an optional generator's domain | Accepted | recorded here |
 | [ADR-0105](0105-accept-an-undeclared-enum-exclusion-as-a-no-op.md) | Accept an undeclared value in an enum exclusion as a no-op | Accepted | recorded here |
 | [ADR-0106](0106-test-the-analyzers-against-the-run-time-in-a-sibling-suite.md) | Test the analyzers against the run time in a sibling suite | Accepted | recorded here |
-| [ADR-0107](0107-own-a-constraint-repeated-identically-as-one-rule.md) | Own a constraint repeated identically as one rule, and narrow JD024 out of it | Proposed | recorded here |
+| [ADR-0107](0107-own-a-constraint-repeated-identically-as-one-rule.md) | Own a constraint repeated identically as one rule, and narrow JD024 out of it | Accepted | recorded here |

@@ -26,6 +26,7 @@ public sealed class NonFiniteRecipeTests {
     ///     cannot run one of them on its own. The key travels instead, and it is what names the row: a failure then
     ///     says WHICH entry point stopped refusing rather than that one of them did.
     /// </summary>
+    [SuppressMessage(JustDummiesRule.JD014.Category, JustDummiesRule.JD014.Id, Justification = "The refused value IS the subject: each entry pins that its builder refuses it. NegativeTestGuard cannot reach it, and is right not to — the lambda is a dictionary value rather than an argument.")]
     private static readonly Dictionary<string, Func<object>> Declarations = new() {
         ["Any.Double().GreaterThan(double.NegativeInfinity)"] = () => Any.Double().GreaterThan(double.NegativeInfinity),
         ["Any.Double().LessThan(double.NaN)"]                 = () => Any.Double().LessThan(double.NaN),

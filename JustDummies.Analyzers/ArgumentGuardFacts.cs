@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 
 using Microsoft.CodeAnalysis;
@@ -7,35 +9,129 @@ using Microsoft.CodeAnalysis.Operations;
 namespace JustDummies.Analyzers;
 
 /// <summary>
-///     The argument guards of the once-per-generator calls that JD014's table does not hold: a constant <c>null</c>, a
-///     URI's user info or local part outside the unreserved characters, a host or a domain, and a value set element the
-///     generator refuses. Each guard runs before the call reads anything the chain declared, so a call it refuses ends
-///     the chain there.
+///     The library's argument guards that need more than a range or a non-empty check to read: an offset, a URI's user
+///     info, local part, host or domain, and a value set element. Each guard runs before its call reads anything the
+///     chain declared.
 /// </summary>
 /// <remarks>
-///     A host is checked at run time by <c>System.Uri</c>, whose parsing differs across target frameworks and is not the
-///     analyzer's to replicate. Only a plain DNS name — dot-separated labels of ASCII letters, digits and inner hyphens,
-///     with a letter somewhere — is vouched for; anything else answers that the guard may refuse it. A rule that stops
-///     early can only under-report, which is the right direction for one claiming that a call certainly throws.
+///     <para>
+///         Two kinds of answer live here. The <c>TryFind…</c> readers replicate a guard exactly — the same characters,
+///         the same arithmetic — so JD014 reports what they find as an argument the call certainly rejects.
+///         <see cref="MayRefuse" /> answers for what cannot be replicated: a <c>null</c>, which JD014 leaves to nullable
+///         analysis; a host or a domain that is not a plain DNS name, which the run time checks through
+///         <c>System.Uri</c>, whose parsing differs across target frameworks; and a user-info character whose invariant
+///         lower case differs across runtimes. JD034 and JD035 stop their walk at either kind, since a call that may
+///         throw on its argument may apply nothing after it.
+///     </para>
+///     <para>
+///         Only a plain DNS name — dot-separated labels of ASCII letters, digits and inner hyphens, with a letter
+///         somewhere — is vouched for. A rule that stops early can only under-report, which is the right direction for
+///         one claiming that a call certainly throws.
+///     </para>
 /// </remarks>
 internal static class ArgumentGuardFacts {
 
     /// <summary>The characters a user-info part or a local part may hold, compared case-insensitively.</summary>
     private const string Unreserved = "abcdefghijklmnopqrstuvwxyz0123456789-._~";
 
-    private const int MaxLabelLength = 63;
-    private const int MaxHostLength  = 253;
+    /// <summary>
+    ///     The two non-ASCII characters whose invariant lower case is an ASCII letter — <c>İ</c> to <c>i</c> and the
+    ///     Kelvin sign to <c>k</c> — under some runtimes and globalization modes but not all, so a user-info part holding
+    ///     one is accepted or refused depending on where the test runs.
+    /// </summary>
+    private const string AmbiguousCase = "İK";
+
+    private const int  MaxLabelLength   = 63;
+    private const int  MaxHostLength    = 253;
+    private const int  Ipv4OctetCount   = 4;
+    private const int  MaxOctetDigits   = 3;
+    private const int  MaxOctetValue    = 255;
+    private const char HighestAsciiChar = '\u007f';
+    private const long OffsetLimitTicks = 14 * TimeSpan.TicksPerHour;
 
     #region Statics members declarations
 
-    /// <summary>Whether the call's guard refuses, or may refuse, one of its constant arguments.</summary>
+    /// <summary>
+    ///     The first user-info part or local part holding a character outside the unreserved ones, which the call rejects
+    ///     whatever the chain declared.
+    /// </summary>
+    internal static bool TryFindRejectedUserInfo(IInvocationOperation call, out IOperation? offending, out string? reason) {
+        return TryFindRejectedText(call, UserInfoRejection, out offending, out reason);
+    }
+
+    /// <summary>
+    ///     The first host or domain the call certainly rejects: an empty one, one that is not ASCII, or one of digits and
+    ///     dots that is not a canonical dotted-quad. Anything else <c>System.Uri</c> judges, which is not replicated.
+    /// </summary>
+    internal static bool TryFindRejectedHost(IInvocationOperation call, out IOperation? offending, out string? reason) {
+        return TryFindRejectedText(call, HostRejection, out offending, out reason);
+    }
+
+    /// <summary>
+    ///     The first offset the call rejects — not a whole number of minutes, or beyond ±14:00 — in the order the guard
+    ///     checks them, then, for a range, a minimum after its maximum.
+    /// </summary>
+    internal static bool TryFindRejectedOffset(IInvocationOperation call, out IOperation? offending, out string? reason) {
+        IArgumentOperation[] arguments = call.Arguments.OrderBy(argument => argument.Parameter?.Ordinal ?? int.MaxValue).ToArray();
+        long?[]              offsets   = arguments.Select(argument => ConstantFacts.TryGetTimeSpanTicks(argument.Value, out long ticks) ? ticks : (long?)null).ToArray();
+
+        for (int index = 0; index < arguments.Length; index++) {
+            if (offsets[index] is not long offset || OffsetRejection(offset) is not string rejection) { continue; }
+
+            offending = arguments[index].Value;
+            reason    = rejection;
+
+            return true;
+        }
+
+        if (offsets.Length == 2 && offsets[0] is long minimum && offsets[1] is long maximum && minimum > maximum) {
+            offending = arguments[0].Value;
+            reason    = "the minimum offset must be at or before the maximum — the two arguments look transposed";
+
+            return true;
+        }
+
+        offending = null;
+        reason    = null;
+
+        return false;
+    }
+
+    /// <summary>
+    ///     The first value set element a floating-point or an enumeration generator rejects: a value that is not finite,
+    ///     or one that is neither a declared member nor, on a <c>[Flags]</c> enumeration, a combination of declared
+    ///     members. <c>Any.OneOf(...)</c> carries no such rule, by construction.
+    /// </summary>
+    internal static bool TryFindRejectedElement(IInvocationOperation call, out IOperation? offending, out string? reason) {
+        offending = null;
+        reason    = null;
+
+        if (call.TargetMethod.ContainingType.Name is not ("AnyDouble" or "AnySingle" or "AnyEnum")) { return false; }
+
+        foreach (IOperation element in ValueSetFacts.Elements(call)) {
+            if (element.ConstantValue is not { HasValue: true, Value: { } value } || ElementRejection(element, value) is not string rejection) { continue; }
+
+            offending = element;
+            reason    = rejection;
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    ///     Whether the call's guard may refuse one of its constant arguments where no reader here can say so for certain:
+    ///     a <c>null</c> the caller wrote, a <c>null</c> in a value set, a host or a domain that is not a plain DNS name, a
+    ///     user-info character whose case mapping depends on the runtime.
+    /// </summary>
     internal static bool MayRefuse(IInvocationOperation call) {
         if (call.Arguments.Any(IsNullConstant)) { return true; }
 
         return call.TargetMethod.Name switch {
-            "WithUserInfo" or "WithLocalPart" => ConstantStrings(call).Any(part => !part.All(IsUnreserved)),
+            "WithUserInfo" or "WithLocalPart" => ConstantStrings(call).Any(part => part.Any(character => AmbiguousCase.IndexOf(character) >= 0)),
             "WithHost" or "WithDomain"        => ConstantStrings(call).Any(host => !IsPlainHostName(host)),
-            "OneOf"                           => ValueSetFacts.IsWrittenInline(call) && ValueSetFacts.Elements(call).Any(IsRefusedElement),
+            "OneOf"                           => ValueSetFacts.IsWrittenInline(call) && ValueSetFacts.Elements(call).Any(element => element.ConstantValue is { HasValue: true, Value: null }),
             _                                 => false
         };
     }
@@ -45,12 +141,54 @@ internal static class ArgumentGuardFacts {
         return argument.ArgumentKind != ArgumentKind.DefaultValue && argument.Value.ConstantValue is { HasValue: true, Value: null };
     }
 
+    private static bool TryFindRejectedText(IInvocationOperation call, Func<string, string?> rejectionOf, out IOperation? offending, out string? reason) {
+        foreach (IOperation value in call.Arguments.Select(argument => argument.Value)) {
+            if (value.ConstantValue is not { HasValue: true, Value: string text } || rejectionOf(text) is not string rejection) { continue; }
+
+            offending = value;
+            reason    = rejection;
+
+            return true;
+        }
+
+        offending = null;
+        reason    = null;
+
+        return false;
+    }
+
     private static IEnumerable<string> ConstantStrings(IInvocationOperation call) {
         return call.Arguments.Select(argument => argument.Value.ConstantValue).Where(constant => constant.HasValue).Select(constant => constant.Value).OfType<string>();
     }
 
-    private static bool IsUnreserved(char character) {
-        return Unreserved.IndexOf(char.ToLowerInvariant(character)) >= 0;
+    /// <summary>
+    ///     Why the user-info guard rejects <paramref name="part" /> wherever it runs, or <c>null</c>: a character outside
+    ///     the unreserved ones once lower-cased, and not one of the two that lower-case to ASCII under some runtimes only.
+    /// </summary>
+    private static string? UserInfoRejection(string part) {
+        return part.Where(character => AmbiguousCase.IndexOf(character) < 0 && Unreserved.IndexOf(char.ToLowerInvariant(character)) < 0).Select(character => (char?)character).FirstOrDefault() is char rejected
+                   ? $"it may only contain unreserved characters (letters, digits, '-', '.', '_', '~'), and '{rejected}' is not one"
+                   : null;
+    }
+
+    /// <summary>Why the host guard rejects <paramref name="host" /> whatever the target framework, or <c>null</c>.</summary>
+    private static string? HostRejection(string host) {
+        if (host.Length == 0) { return "it must not be empty"; }
+        if (host.Any(character => character > HighestAsciiChar)) { return "it must be ASCII: pass the punycode form of an internationalized host"; }
+        if (host.All(character => character is >= '0' and <= '9' or '.') && !IsCanonicalIpv4(host)) {
+            return "a host of digits and dots is read as an IPv4 literal, which must be a canonical dotted-quad such as \"1.2.3.4\"";
+        }
+
+        return null;
+    }
+
+    private static bool IsCanonicalIpv4(string host) {
+        string[] parts = host.Split('.');
+
+        return parts.Length == Ipv4OctetCount
+            && parts.All(part => part.Length is > 0 and <= MaxOctetDigits
+                              && (part.Length == 1 || part[0] != '0')
+                              && int.Parse(part, NumberStyles.None, CultureInfo.InvariantCulture) <= MaxOctetValue);
     }
 
     private static bool IsPlainHostName(string host) {
@@ -67,24 +205,51 @@ internal static class ArgumentGuardFacts {
         return character is >= 'a' and <= 'z' or >= 'A' and <= 'Z';
     }
 
-    /// <summary>
-    ///     A value set element the generator refuses: a <c>null</c>, a floating-point value that is not finite, or an
-    ///     enumeration value that is not one of its declared members — which a <c>[Flags]</c> combination may still be,
-    ///     so that case only answers that the guard may refuse it.
-    /// </summary>
-    private static bool IsRefusedElement(IOperation element) {
-        if (element.ConstantValue is not { HasValue: true } constant) { return false; }
+    /// <summary>Why the offset guard rejects <paramref name="ticks" />, in the order it checks, or <c>null</c>.</summary>
+    private static string? OffsetRejection(long ticks) {
+        if (ticks % TimeSpan.TicksPerMinute != 0) { return "it must be a whole number of minutes"; }
+        if (ticks is < -OffsetLimitTicks or > OffsetLimitTicks) { return "it must be within ±14:00"; }
 
-        return constant.Value switch {
-            null         => true,
-            double value => double.IsNaN(value) || double.IsInfinity(value),
-            float value  => float.IsNaN(value) || float.IsInfinity(value),
-            _            => element.Type is INamedTypeSymbol { TypeKind: TypeKind.Enum } enumeration && !IsDeclaredMember(enumeration, constant.Value)
+        return null;
+    }
+
+    /// <summary>Why a value set guard rejects an element, or <c>null</c> where it accepts it or no reading is certain.</summary>
+    private static string? ElementRejection(IOperation element, object value) {
+        return value switch {
+            double number when double.IsNaN(number) || double.IsInfinity(number) => "it must be finite: NaN and the infinities are never generated",
+            float number when float.IsNaN(number) || float.IsInfinity(number)    => "it must be finite: NaN and the infinities are never generated",
+            _ when element.Type is INamedTypeSymbol { TypeKind: TypeKind.Enum } enumeration => EnumValueRejection(enumeration, value),
+            _                                                                                 => null
         };
     }
 
-    private static bool IsDeclaredMember(INamedTypeSymbol enumeration, object value) {
-        return enumeration.GetMembers().OfType<IFieldSymbol>().Any(member => member.HasConstantValue && value.Equals(member.ConstantValue));
+    /// <summary>
+    ///     Why the enumeration rejects the value in a value set, or <c>null</c>: it accepts a declared member, and on a
+    ///     <c>[Flags]</c> enumeration the OR of the declared members whose bits the value carries.
+    /// </summary>
+    private static string? EnumValueRejection(INamedTypeSymbol enumeration, object value) {
+        object[] declared = enumeration.GetMembers().OfType<IFieldSymbol>().Where(member => member.HasConstantValue).Select(member => member.ConstantValue!).ToArray();
+        string   written  = Convert.ToString(value, CultureInfo.InvariantCulture);
+        if (declared.Contains(value)) { return null; }
+        if (!enumeration.GetAttributes().Any(attribute => attribute.AttributeClass?.ToDisplayString() == "System.FlagsAttribute")) { return $"{written} is not a declared member of {enumeration.Name}"; }
+
+        return IsCombinationOfDeclaredMembers(declared.Select(Bits).ToArray(), Bits(value)) ? null : $"{written} is neither a declared member of {enumeration.Name} nor a combination of declared members";
+    }
+
+    /// <summary>Whether OR-ing the declared members whose bits the value carries gives the value itself, as the run time decides it.</summary>
+    private static bool IsCombinationOfDeclaredMembers(ulong[] declared, ulong bits) {
+        // The empty combination is a value only where the enumeration declares it.
+        if (bits == 0UL) { return declared.Contains(0UL); }
+
+        return declared.Where(member => member != 0UL && (member & bits) == member).Aggregate(0UL, (union, member) => union | member) == bits;
+    }
+
+    /// <summary>
+    ///     An enumeration value's bits as the run time reads them: a signed value widened to 64 bits with its sign, so
+    ///     <c>-1</c> carries every bit.
+    /// </summary>
+    private static ulong Bits(object value) {
+        return value is ulong unsigned ? unsigned : unchecked((ulong)Convert.ToInt64(value, CultureInfo.InvariantCulture));
     }
 
     #endregion

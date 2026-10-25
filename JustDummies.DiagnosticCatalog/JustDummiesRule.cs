@@ -649,4 +649,22 @@ public static class JustDummiesRule {
 
     }
 
+    /// <summary>A constraint declared again identically on one chain, which the run time ignores</summary>
+    [DiagnosticRule]
+    public static class JD035 {
+
+        /// <summary>The canonical identifier of this diagnostic.</summary>
+        public const string Id = nameof(JD035);
+
+        /// <summary>The category this diagnostic is grouped under.</summary>
+        public const string Category = JustDummiesCategory.Constraints;
+
+        /// <summary>The one-line summary the IDE shows beside the rule.</summary>
+        public const string Title = "A constraint repeated identically, which changes nothing";
+
+        /// <summary>The page explaining the condition this diagnostic detects.</summary>
+        public const string HelpLinkUri = HelpLinkBase + nameof(JD035) + HelpLinkSuffix;
+
+    }
+
 }

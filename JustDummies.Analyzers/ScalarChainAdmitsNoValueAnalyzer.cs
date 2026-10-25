@@ -61,14 +61,17 @@ public sealed class ScalarChainAdmitsNoValueAnalyzer : DiagnosticAnalyzer {
         (long domainMinimum, long? domainMaximum) = Domain(factory);
         ScalarConstraintState state = ScalarConstraintState.Unconstrained(domainMinimum, domainMaximum);
         HashSet<string>       seen  = [];
+        // The exclusions written so far, so that one written again is left to JD035.
+        List<(string Name, IReadOnlyList<long> Values)> declared = [];
 
         foreach (IInvocationOperation constraint in constraints) {
             if (!TryReadArguments(constraint, out IReadOnlyList<long> arguments)) { return; }
 
             string name = constraint.TargetMethod.Name;
 
-            // The exclusion that removes nothing: silent at run time, and the reason JD024 exists.
-            if (name is "Except" or "DifferentFrom" && state.ExclusionIsInert(arguments)) {
+            // The exclusion that removes nothing: silent at run time, and the reason JD024 exists. The same exclusion
+            // written twice is JD035's, as a repetition in every generator family (issue #279).
+            if (IsInertExclusion(name, arguments, state, declared)) {
                 context.ReportDiagnostic(Diagnostic.Create(
                     Descriptors.ConstraintWithNoEffect, constraint.Syntax.GetLocation(),
                     $"{name} removes no value the generator could produce"));
@@ -99,8 +102,19 @@ public sealed class ScalarChainAdmitsNoValueAnalyzer : DiagnosticAnalyzer {
             }
 
             seen.Add(name);
+            declared.Add((name, arguments));
             state = next;
         }
+    }
+
+    /// <summary>
+    ///     Whether the call is an exclusion that removes nothing, and not the same exclusion written again — that one,
+    ///     listing the same values as an earlier call of the same name, is JD035's.
+    /// </summary>
+    private static bool IsInertExclusion(string name, IReadOnlyList<long> arguments, ScalarConstraintState state, List<(string Name, IReadOnlyList<long> Values)> declared) {
+        return name is "Except" or "DifferentFrom"
+            && state.ExclusionIsInert(arguments)
+            && !declared.Any(earlier => earlier.Name == name && new HashSet<long>(earlier.Values).SetEquals(arguments));
     }
 
     /// <summary>Whether JD032 owns this call: a single-argument folding bound whose name the chain already used.</summary>

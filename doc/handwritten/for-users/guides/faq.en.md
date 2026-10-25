@@ -136,7 +136,7 @@ the suites on it
 
 ### Do I have to install the analyzers separately?
 
-No. The 34 rules ship inside the `JustDummies` package itself and start working on your next build.
+No. The 35 rules ship inside the `JustDummies` package itself and start working on your next build.
 The separate `JustDummies.DiagnosticCatalog` package is only needed if you want to name a rule in a
 `[SuppressMessage]` without a string literal — see
 [its page](../packages/justdummies-diagnosticcatalog.en.md).

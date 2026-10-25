@@ -1,5 +1,7 @@
 #region Usings declarations
 
+using System.Diagnostics.CodeAnalysis;
+
 using NFluent;
 
 #endregion
@@ -98,6 +100,7 @@ public sealed class AnyEnumCombinationTests {
     }
 
     [Fact(DisplayName = "AllowingCombinations: applying it twice is a no-op, not a conflict.")]
+    [SuppressMessage(JustDummiesRule.JD035.Category, JustDummiesRule.JD035.Id, Justification = SuppressionJustification.JD035.RepetitionIsTheSubject)]
     public void CombinationsAreIdempotent() {
         AnyEnum<Permissions> generator = Any.Enum<Permissions>().AllowingCombinations().AllowingCombinations();
 

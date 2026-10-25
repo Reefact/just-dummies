@@ -35,6 +35,7 @@ JustDummies.Diagnostics.JustDummiesRule.JD031
 JustDummies.Diagnostics.JustDummiesRule.JD032
 JustDummies.Diagnostics.JustDummiesRule.JD033
 JustDummies.Diagnostics.JustDummiesRule.JD034
+JustDummies.Diagnostics.JustDummiesRule.JD035
 const JustDummies.Diagnostics.JustDummiesCategory.Composition = "JustDummies.Composition" -> string!
 const JustDummies.Diagnostics.JustDummiesCategory.Constraints = "JustDummies.Constraints" -> string!
 const JustDummies.Diagnostics.JustDummiesCategory.Reproducibility = "JustDummies.Reproducibility" -> string!
@@ -175,3 +176,7 @@ const JustDummies.Diagnostics.JustDummiesRule.JD034.Category = "JustDummies.Cons
 const JustDummies.Diagnostics.JustDummiesRule.JD034.HelpLinkUri = "https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/analyzers/JD034.en.md" -> string!
 const JustDummies.Diagnostics.JustDummiesRule.JD034.Id = "JD034" -> string!
 const JustDummies.Diagnostics.JustDummiesRule.JD034.Title = "A once-per-generator constraint redeclared with a different call" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD035.Category = "JustDummies.Constraints" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD035.HelpLinkUri = "https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/analyzers/JD035.en.md" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD035.Id = "JD035" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD035.Title = "A constraint repeated identically, which changes nothing" -> string!

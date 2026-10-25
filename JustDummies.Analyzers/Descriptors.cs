@@ -326,6 +326,16 @@ internal static class Descriptors {
         description: "Each generator accepts only one declaration of some of its constraints: a string's exact length, prefix and suffix, a character family or WithChars pool, a casing, a OneOf(...) value set, an integer's MultipleOf step, a decimal's scale, a granularity, a DateTimeOffset offset, a collection's exact count, and a URI's scheme, host, port, user info, path, domain and local part. A WithChars pool cannot be combined with a casing constraint either. The library rejects a second, different declaration the moment the arrange line runs, regardless of the random seed and whatever the values would make of it, with a ConflictingAnyConstraintException saying the first is already defined: Alpha().AlphaNumeric() is refused although every letter would satisfy both, and Empty().WithCount(0) although both declare no element. Repeating the same call is not a conflict, since the run time ignores the repetition; a value set counts as the same when it lists the same values, in any order (ADR-0100), a granularity when it has the same length, and an offset when it declares the same range. An argument the compiler cannot resolve to a constant leaves the comparison open, so the rule stays silent rather than guess. Keep the declaration you meant and delete the other.",
         helpLinkUri: JustDummiesRule.JD034.HelpLinkUri);
 
+    public static readonly DiagnosticDescriptor ConstraintRepeated = new(
+        id: JustDummiesRule.JD035.Id,
+        title: JustDummiesRule.JD035.Title,
+        messageFormat: "{0} repeats {1}, declared before it, and changes nothing",
+        category: JustDummiesRule.JD035.Category,
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true,
+        description: "A constraint declared again identically on the same chain does nothing: the library keeps the declaration it already holds, or removes again what is already gone, and returns the generator unchanged. Nothing throws and no draw differs, so the second call reads as though it were written for a reason, and nobody dares delete it. It is usually a copy-paste or a merge. The rule reads a constraint the generator takes once (a character family, an exact length, a prefix, a value set, a multiple, a scale, a granularity, an offset, an exact count, a URI component) and one whose repetition changes nothing (an exclusion, a subtraction, a string's contained fragment, NotBlank, a toggle). A value set or an exclusion list counts as the same when it lists the same values in any order (ADR-0100), a granularity when it has the same length, and an offset when it declares the same range. Bounds are left to JD032. An argument the compiler cannot resolve leaves the comparison open, so the rule stays silent rather than guess. Delete the repeated call.",
+        helpLinkUri: JustDummiesRule.JD035.HelpLinkUri);
+
     public static readonly DiagnosticDescriptor EmptyRelativeUri = new(
         id: JustDummiesRule.JD026.Id,
         title: JustDummiesRule.JD026.Title,

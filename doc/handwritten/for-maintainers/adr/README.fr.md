@@ -22,7 +22,7 @@ n'existe, et la colonne **Origine** dit comment chacune est arrivée ici :
   aussi, car ce dépôt l'applique encore. Les deux copies sont désormais
   indépendantes : chaque côté peut remplacer la sienne sans toucher à l'autre.
   9 décisions.
-* **consigné ici** — décidé dans ce dépôt, de son propre chef. 63 décisions.
+* **consigné ici** — décidé dans ce dépôt, de son propre chef. 64 décisions.
 
 Les numéros appartiennent à cette base, attribués dans l'ordre où les décisions
 ont été consignées en amont
@@ -232,3 +232,4 @@ que l'option existait le jour où elle compterait.
 | [ADR-0104](0104-count-null-as-one-additional-value-in-an-optional-generators-domain.fr.md) | Compter `null` comme une valeur supplémentaire dans le domaine d'un générateur optionnel | Accepted | consigné ici |
 | [ADR-0105](0105-accept-an-undeclared-enum-exclusion-as-a-no-op.fr.md) | Accepter l'exclusion d'une valeur non déclarée sur un enum comme une opération sans effet | Accepted | consigné ici |
 | [ADR-0106](0106-test-the-analyzers-against-the-run-time-in-a-sibling-suite.fr.md) | Tester les analyseurs contre l'exécution dans une suite sœur | Accepted | consigné ici |
+| [ADR-0107](0107-own-a-constraint-repeated-identically-as-one-rule.fr.md) | Confier à une seule règle la contrainte répétée à l'identique, et en retirer JD024 | Proposed | consigné ici |

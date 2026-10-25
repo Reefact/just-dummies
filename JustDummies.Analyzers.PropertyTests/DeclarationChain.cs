@@ -33,7 +33,7 @@ internal sealed class DeclarationChain {
     ///     to spell no such chain, so it fails loudly rather than pass as a chain the rule rightly leaves alone.
     /// </exception>
     public bool RuntimeRefusesAsAlreadyDefined() {
-        object generator = Vocabulary.Create();
+        object generator = Vocabulary.Create(Any.WithSeed(0));
         try {
             foreach (DeclarationCall call in Calls) {
                 generator = call.ApplyTo(generator);

@@ -6,9 +6,9 @@ namespace JustDummies.Analyzers.PropertyTests;
 /// </summary>
 internal sealed class DeclarationVocabulary {
 
-    private readonly Func<object> _create;
+    private readonly Func<AnyContext, object> _create;
 
-    public DeclarationVocabulary(string factory, Func<object> create, params DeclarationCall[] calls) {
+    public DeclarationVocabulary(string factory, Func<AnyContext, object> create, params DeclarationCall[] calls) {
         Factory = factory;
         Calls   = calls;
         _create = create;
@@ -19,8 +19,9 @@ internal sealed class DeclarationVocabulary {
 
     public IReadOnlyList<DeclarationCall> Calls { get; }
 
-    public object Create() {
-        return _create();
+    /// <summary>The generator the factory builds, drawing from <paramref name="context" />.</summary>
+    public object Create(AnyContext context) {
+        return _create(context);
     }
 
     /// <inheritdoc />

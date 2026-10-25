@@ -1,5 +1,7 @@
 #region Usings declarations
 
+using System.Diagnostics.CodeAnalysis;
+
 using NFluent;
 
 #endregion
@@ -134,6 +136,7 @@ public sealed class AnyDateTimeOffsetOffsetTests {
     }
 
     [Fact(DisplayName = "WithOffset: a second, different offset is rejected as already declared.")]
+    [SuppressMessage(JustDummiesRule.JD035.Category, JustDummiesRule.JD035.Id, Justification = SuppressionJustification.JD035.RepetitionIsTheSubject)]
     public void WithOffsetDeclaredOnce() {
         Check.ThatCode(() => Any.DateTimeOffset().WithOffset(TimeSpan.FromHours(2)).WithOffset(TimeSpan.FromHours(3)))
              .Throws<ConflictingAnyConstraintException>();

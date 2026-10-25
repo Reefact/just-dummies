@@ -3,7 +3,7 @@
 🌍 **Languages:**  
 🇬🇧 English (this file) | 🇫🇷 [Français](./README.fr.md)
 
-The `JustDummies` package ships 34 Roslyn rules (`JD001`–`JD034`) inside itself, under
+The `JustDummies` package ships 35 Roslyn rules (`JD001`–`JD035`) inside itself, under
 `analyzers/dotnet/cs`. Any project that references the package picks them up automatically,
 with no extra install. They run while your project compiles, turning mistakes the run time
 would otherwise report late — or never — into build-time diagnostics.
@@ -67,7 +67,8 @@ These rules front-load, to build time, the subset of the library's run-time cons
 | [JD031 PairedBoundsHaveARangeForm](JD031.en.md) | 🔵 Info | on | A chain declares both inclusive bounds of a range separately, where the same generator names that range in one call. Nothing is wrong — this closes a discoverability gap. Inclusive pairs only: a strict pair has no exact range form. |
 | [JD032 BoundDeclaredTwice](JD032.en.md) | 🟠 Warning | on | A chain declares the same bound twice; bounds fold silently, so only the tighter one survives and the looser call is dead. Matched on the name, so the aliases stay silent, and a bound held under a name is never followed. |
 | [JD033 AnchoredLiteralOutsideCharacterFamily](JD033.en.md) | 🔵 Info | on | An anchored literal holds a character the declared family, subtraction or casing cannot draw. Legal and deliberate in a fixed-prefix format, so it reports the consequence — that character appears only where you wrote it. |
-| [JD034 ConstraintAlreadyDefined](JD034.en.md) | 🟠 Warning | on | A chain redeclares a once-only constraint (a string's exact length, prefix or suffix, a character family, a casing, a value set, a multiple, a scale, a granularity, an offset, a collection's exact count, a URI's scheme, host, port, user info or path), or combines a `WithChars` pool with a casing constraint. JD034 reports the incompatible declaration; identical repetitions remain silent. |
+| [JD034 ConstraintAlreadyDefined](JD034.en.md) | 🟠 Warning | on | A chain redeclares a once-only constraint (a string's exact length, prefix or suffix, a character family, a casing, a value set, a multiple, a scale, a granularity, an offset, a collection's exact count, a URI's scheme, host, port, user info or path), or combines a `WithChars` pool with a casing constraint. JD034 reports the incompatible declaration; an identical repetition is JD035's. |
+| [JD035 ConstraintRepeated](JD035.en.md) | 🟠 Warning | on | A chain declares a constraint again exactly as it already declared it — a once-only constraint with the same arguments, or an exclusion, a subtraction, a string's fragment or a toggle written twice. The library ignores the second call, so it changes nothing; bounds stay JD032's. |
 
 ## Composition
 

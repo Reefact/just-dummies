@@ -320,7 +320,15 @@ public class Jd023ScalarChainRepresentableExtremesTests {
 public class Jd024NarrowedToItsOwnShapeTests {
 
     private static async Task<ImmutableArray<Diagnostic>> AnalyzeAsync(string expression) {
-        string source = $$"""
+        return await AnalyzerTestHarness.GetDiagnosticsAsync(new ScalarChainAdmitsNoValueAnalyzer(), Source(expression), "JD023", "JD024");
+    }
+
+    private static async Task<ImmutableArray<Diagnostic>> RepetitionsAsync(string expression) {
+        return await AnalyzerTestHarness.GetDiagnosticsAsync(new ConstraintRepeatedAnalyzer(), Source(expression));
+    }
+
+    private static string Source(string expression) {
+        return $$"""
             using JustDummies;
 
             public static class Sample {
@@ -329,8 +337,6 @@ public class Jd024NarrowedToItsOwnShapeTests {
                 }
             }
             """;
-
-        return await AnalyzerTestHarness.GetDiagnosticsAsync(new ScalarChainAdmitsNoValueAnalyzer(), source, "JD023", "JD024");
     }
 
     [Theory]
@@ -366,6 +372,33 @@ public class Jd024NarrowedToItsOwnShapeTests {
 
         Check.That(diagnostics.Length).IsEqualTo(1);
         Check.That(diagnostics[0].Id).IsEqualTo("JD024");
+    }
+
+    [Theory]
+    [InlineData("Any.Int32().Except(5).Except(5)")]
+    [InlineData("Any.Int32().Except(5, 6).Except(6, 5)")]
+    [InlineData("Any.Int32().DifferentFrom(5).DifferentFrom(5)")]
+    public async Task Stands_down_on_an_exclusion_the_chain_already_wrote(string expression) {
+        // The same exclusion written twice is a repetition, which JD035 reports in every generator family (issue
+        // #279, ADR-0107), so that one mistake draws one diagnostic, as with a bound written twice and JD032.
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(expression);
+        ImmutableArray<Diagnostic> repetitions = await RepetitionsAsync(expression);
+
+        Check.That(diagnostics).IsEmpty();
+        Check.That(repetitions.Select(diagnostic => diagnostic.Id)).ContainsExactly("JD035");
+    }
+
+    [Theory]
+    [InlineData("Any.Int32().Except(5, 6).Except(5)")]
+    [InlineData("Any.Int32().Except(5).DifferentFrom(5)")]
+    public async Task Still_reports_an_exclusion_an_earlier_different_one_made_inert(string expression) {
+        // Not the same call written again, so not a repetition: what JD024's message describes, and nothing JD035
+        // reports.
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync(expression);
+        ImmutableArray<Diagnostic> repetitions = await RepetitionsAsync(expression);
+
+        Check.That(diagnostics.Select(diagnostic => diagnostic.Id)).ContainsExactly("JD024");
+        Check.That(repetitions).IsEmpty();
     }
 
     [Fact]

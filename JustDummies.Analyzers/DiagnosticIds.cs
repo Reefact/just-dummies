@@ -64,6 +64,9 @@ internal static class DiagnosticIds {
     /// <summary>JD034 — a constraint the generator takes once, declared again with a different call.</summary>
     public const string ConstraintAlreadyDefined = JustDummiesRule.JD034.Id;
 
+    /// <summary>JD035 — a constraint declared again identically, which the run time ignores.</summary>
+    public const string ConstraintRepeated = JustDummiesRule.JD035.Id;
+
     // Category: Composition — a part that reaches no result, a constraint that cannot bind
     public const string UnusedCombineOperand = JustDummiesRule.JD027.Id;
     public const string InertDistinctness = JustDummiesRule.JD028.Id;

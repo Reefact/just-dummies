@@ -209,6 +209,10 @@ public class Jd034ConstraintAlreadyDefinedTests {
     [InlineData("Any.Uri().Mailto().WithLocalPart(\"a\").WithLocalPart(\"a b\")")]
     // The refused call comes first, so the two declarations after it are never applied.
     [InlineData("Any.Int32().MultipleOf(0).MultipleOf(3).MultipleOf(5)")]
+    // So does a call that is not itself a once-per-generator constraint: its guard throws all the same.
+    [InlineData("Any.String().Alpha().WithMinLength(-1).Numeric()")]
+    [InlineData("Any.String().Alpha().Containing(\"\").Numeric()")]
+    [InlineData("Any.Int32().MultipleOf(2).Between(10, 1).MultipleOf(3)")]
     [InlineData("Any.DateTime().WithGranularity(TimeSpan.Zero).WithGranularity(TimeSpan.FromHours(1)).WithGranularity(TimeSpan.FromMinutes(1))")]
     [InlineData("Any.DateTimeOffset().WithOffset(TimeSpan.FromSeconds(30)).WithOffset(TimeSpan.FromHours(1)).WithOffset(TimeSpan.FromHours(2))")]
     [InlineData("Any.DateTimeOffset().WithOffset(TimeSpan.FromHours(15)).WithOffset(TimeSpan.FromHours(1)).WithOffset(TimeSpan.FromHours(2))")]

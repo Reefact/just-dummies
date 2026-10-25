@@ -9,7 +9,7 @@ paths:
 
 # Analyzers
 
-The `JustDummies` package ships 34 Roslyn rules (`JD001`–`JD034`) inside itself, under
+The `JustDummies` package ships 35 Roslyn rules (`JD001`–`JD035`) inside itself, under
 `analyzers/dotnet/cs`; any project referencing the package picks them up with no extra
 install (ADR-0023). They exist because the type system cannot reach where those mistakes
 live — a recipe and a drawn value satisfy the same signatures, a seed pinned outside its

@@ -104,6 +104,17 @@ internal static class SuppressionJustification {
 
     }
 
+    /// <summary>Justifications for JD035 — the repeated-constraint diagnostic.</summary>
+    internal static class JD035 {
+
+        /// <summary>
+        ///     The repetition IS the subject. The test pins what JD035 relies on — that the run time ignores a constraint
+        ///     declared again identically rather than refusing it or narrowing twice — so the second call has to be written.
+        /// </summary>
+        internal const string RepetitionIsTheSubject = "The repetition IS the subject: the test pins that the run time ignores it, so the second call has to be written. See the constant's summary.";
+
+    }
+
     /// <summary>Justifications for S125 — "Sections of code should not be commented out".</summary>
     internal static class S125 {
 

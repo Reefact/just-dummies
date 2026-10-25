@@ -1,5 +1,7 @@
 #region Usings declarations
 
+using System.Diagnostics.CodeAnalysis;
+
 using NFluent;
 
 #endregion
@@ -90,6 +92,7 @@ public sealed class AnyLatticeConstraintTests {
     }
 
     [Fact(DisplayName = "MultipleOf: a second, different step is rejected as already declared.")]
+    [SuppressMessage(JustDummiesRule.JD035.Category, JustDummiesRule.JD035.Id, Justification = SuppressionJustification.JD035.RepetitionIsTheSubject)]
     public void MultipleOfDeclaredOnce() {
         Check.ThatCode(() => Any.Int32().MultipleOf(4).MultipleOf(6)).Throws<ConflictingAnyConstraintException>();
         // The same step twice is idempotent, not a conflict.

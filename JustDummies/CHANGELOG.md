@@ -52,13 +52,34 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   `Alpha().Numeric()`, `WithLength(2).WithLength(3)`, `WithChars("ab").InUpperCase()`,
   `MultipleOf(5).MultipleOf(10)`, `Empty().WithCount(0)`, `UsingHttp().UsingHttps()` — immediately,
   regardless of the random seed, yet no rule reported it: JD015 reports constants that admit no value, and
-  these are refused even where the values agree. Repeating the same call stays silent, since the run time
-  ignores the repetition, and so does a redeclaration whose arguments the compiler cannot compare. A
-  granularity or an offset written as `TimeSpan.FromHours(1)`, `new TimeSpan(1, 0, 0)` or `TimeSpan.Zero`
-  is compared by its value, and `WithOffset(x)` and `WithOffsetBetween(x, x)` are the same declaration. A
-  second `Distinct` comparer is not reported: the run time compares comparers by reference. A value set
-  written as a collection expression, such as `OneOf(["a"])`, is read too, and JD015 and JD029 now read it
-  the same way.
+  these are refused even where the values agree. Repeating the same call is JD035's, below, and a
+  redeclaration whose arguments the compiler cannot compare stays silent. A granularity or an offset
+  written as `TimeSpan.FromHours(1)`, `new TimeSpan(1, 0, 0)` or `TimeSpan.Zero` is compared by its value,
+  and `WithOffset(x)` and `WithOffsetBetween(x, x)` are the same declaration. A call that rejects its own
+  argument — `WithCount(-1)`, `WithMinLength(-1)`, an empty prefix, a port of `0` — ends the chain, since
+  the run time applies nothing after it. A second `Distinct` comparer is not reported: the run time compares
+  comparers by reference. A value set written as a collection expression, such as `OneOf(["a"])`, is read
+  too, and JD015 and JD029 now read it the same way.
+
+- **JD035 — *A constraint repeated identically, which changes nothing*** (category
+  `JustDummies.Constraints`, 🟠 Warning, on by default). A chain that declares a constraint again exactly as
+  it already declared it — `Alpha().Alpha()`, `WithLength(4).WithLength(4)`,
+  `OneOf("EUR", "USD").OneOf("USD", "EUR")`, `Except(13).Except(13)`, `Distinct().Distinct()` — carries a
+  call the library ignores: it keeps the declaration it already holds, or removes again what is already
+  gone, so nothing throws and no draw changes, yet the line reads as though it were written for a reason.
+  The rule reads every constraint JD034 reads, and the exclusions, subtractions, a string's `Containing`,
+  `NotBlank` and the toggles whose repetition changes nothing; "the same" is what JD034 means by it, so a
+  second declaration is reported by exactly one of the two rules. Bounds and their aliases stay with JD032
+  and JD024, a collection's `Containing` is not a repetition (a list requires the element twice), and an
+  argument the compiler cannot resolve leaves the rule silent.
+
+### Changed
+
+- **JD024 leaves an exclusion written twice identically to JD035.** `Any.Int32().Except(5).Except(5)` was
+  reported as an exclusion that removes nothing, at information severity, on integer generators only; it
+  is a repetition, which JD035 now reports at warning severity in every generator family, so one mistake
+  draws one diagnostic. JD024 keeps an exclusion made inert by a *different* call, such as
+  `Except(5).DifferentFrom(5)` or `Except(5, 6).Except(5)`.
 
 ### Documentation
 

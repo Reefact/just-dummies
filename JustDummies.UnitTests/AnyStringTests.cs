@@ -1,5 +1,7 @@
 #region Usings declarations
 
+using System.Diagnostics.CodeAnalysis;
+
 using JetBrains.Annotations;
 
 using NFluent;
@@ -232,6 +234,7 @@ public sealed class AnyStringTests {
     }
 
     [Fact(DisplayName = "Containing: an identical fragment redeclared is a no-op, on the shaped path and the pooled one alike (issue #181).")]
+    [SuppressMessage(JustDummiesRule.JD035.Category, JustDummiesRule.JD035.Id, Justification = SuppressionJustification.JD035.RepetitionIsTheSubject)]
     public void IdenticalFragmentRedeclaredIsANoOp() {
         // Before the fix, two identical "ab" fragments cost 4 characters on the shaped path (RequiredLength summed
         // both) but only 1 on the pooled path (DeclaredConstraints groups by the same ConstraintCall) — a budget that

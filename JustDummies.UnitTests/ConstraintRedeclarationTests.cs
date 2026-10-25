@@ -1,5 +1,7 @@
 #region Usings declarations
 
+using System.Diagnostics.CodeAnalysis;
+
 using NFluent;
 
 #endregion
@@ -172,6 +174,7 @@ public sealed class ConstraintRedeclarationTests {
     }
 
     [Fact(DisplayName = "A no-op re-declaration leaves the generator's domain untouched.")]
+    [SuppressMessage(JustDummiesRule.JD035.Category, JustDummiesRule.JD035.Id, Justification = SuppressionJustification.JD035.RepetitionIsTheSubject)]
     public void ANoOpRedeclarationDoesNotWidenTheDomain() {
         // The no-op must be a no-op: returning `this` rather than rebuilding means the second declaration cannot
         // loosen anything. Asserted on the observable domain, not on object identity.

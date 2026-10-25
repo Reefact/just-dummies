@@ -16,8 +16,10 @@ retired, a category changed — which is not when the library or the adapter mov
 
 - `JustDummiesRule.JD034` — *A once-per-generator constraint redeclared with a different call*, category
   `JustDummies.Constraints`.
+- `JustDummiesRule.JD035` — *A constraint repeated identically, which changes nothing*, category
+  `JustDummies.Constraints`.
 
-  The rule set moves from 33 identifiers, `1.0.0-preview.5`'s count, to 34.
+  The rule set moves from 33 identifiers, `1.0.0-preview.5`'s count, to 35.
 
 ## [1.0.0-preview.5] - 2026-09-02
 

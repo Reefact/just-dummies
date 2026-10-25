@@ -8,6 +8,26 @@ namespace JustDummies.Analyzers.UnitTests;
 
 public class Jd014RejectedConstantArgumentTests {
 
+    private static async Task<ImmutableArray<Diagnostic>> AnalyzeWithDeclarationsAsync(string expression) {
+        string source = $$"""
+            using System;
+            using JustDummies;
+
+            public enum Status { Active, Pending, Closed }
+
+            [Flags]
+            public enum Access { None = 0, Read = 1, Write = 2, Exec = 4 }
+
+            public static class Sample {
+                public static void M() {
+                    _ = {{expression}};
+                }
+            }
+            """;
+
+        return await AnalyzerTestHarness.GetDiagnosticsAsync(new RejectedConstantArgumentAnalyzer(), source);
+    }
+
     [Theory]
     [InlineData("Any.String().WithLengthBetween(10, 5)",        "transposed")]
     [InlineData("Any.Int32().Between(10, 5)",                   "transposed")]
@@ -103,6 +123,70 @@ public class Jd014RejectedConstantArgumentTests {
 
         Check.That(diagnostics.Length).IsEqualTo(1);
         Check.That(diagnostics[0].GetMessage()).Contains("strictly positive");
+    }
+
+    [Theory]
+    // A URI component the guard refuses wherever it runs: a host that is empty, not ASCII, or digits and dots that are
+    // not a canonical dotted-quad — all checked before System.Uri reads it — and a user-info part outside the
+    // unreserved characters.
+    [InlineData("Any.Uri().Web().WithHost(\"\")",                   "must not be empty")]
+    [InlineData("Any.Uri().Web().WithHost(\"münchen.de\")",         "punycode")]
+    [InlineData("Any.Uri().Ftp().WithHost(\"1.2.3\")",              "canonical dotted-quad")]
+    [InlineData("Any.Uri().Mailto().WithDomain(\"01.2.3.4\")",      "canonical dotted-quad")]
+    [InlineData("Any.Uri().Web().WithUserInfo(\"user\", \"p@ss\")", "'@' is not one")]
+    [InlineData("Any.Uri().Web().WithUserInfo(\"josé\")",           "'é' is not one")]
+    [InlineData("Any.Uri().Mailto().WithLocalPart(\"first+last\")", "'+' is not one")]
+    // An offset outside whole minutes or ±14:00, or a range whose ends are transposed.
+    [InlineData("Any.DateTimeOffset().WithOffset(TimeSpan.FromSeconds(30))",                                              "whole number of minutes")]
+    [InlineData("Any.DateTimeOffset().WithOffset(new TimeSpan(-15, 0, 0))",                                               "within ±14:00")]
+    [InlineData("Any.DateTimeOffset().WithOffsetBetween(TimeSpan.FromHours(-1), TimeSpan.FromHours(15))",                 "within ±14:00")]
+    [InlineData("Any.DateTimeOffset().WithOffsetBetween(TimeSpan.FromHours(2), TimeSpan.FromHours(1))",                   "transposed")]
+    [InlineData("Any.DateTimeOffset().WithOffsetBetween(maximum: TimeSpan.FromHours(1), minimum: TimeSpan.FromHours(2))", "transposed")]
+    // A granularity is read through every spelling of a TimeSpan, not only TimeSpan.Zero and the FromXxx factories.
+    [InlineData("Any.DateTime().WithGranularity(new TimeSpan(0, 0, 0))",  "strictly positive")]
+    [InlineData("Any.TimeSpan().WithGranularity(new TimeSpan(-1))",       "strictly positive")]
+    // A value set element a floating-point or an enumeration generator refuses.
+    [InlineData("Any.Double().OneOf(1.0, double.NaN)",                 "finite")]
+    [InlineData("Any.Single().OneOf([float.PositiveInfinity])",        "finite")]
+    [InlineData("Any.Enum<Status>().OneOf(Status.Active, (Status)99)", "99 is not a declared member of Status")]
+    [InlineData("Any.Enum<Access>().OneOf((Access)8)",                 "8 is neither a declared member of Access nor a combination of declared members")]
+    [InlineData("Any.Enum<Access>().OneOf((Access)(-1))",              "-1 is neither a declared member of Access nor a combination of declared members")]
+    public async Task Reports_a_uri_component_an_offset_or_a_value_the_guard_rejects(string expression, string expectedFragment) {
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeWithDeclarationsAsync(expression);
+
+        Check.That(diagnostics.Length).IsEqualTo(1);
+        Check.That(diagnostics[0].Id).IsEqualTo("JD014");
+        Check.That(diagnostics[0].GetMessage()).Contains(expectedFragment);
+    }
+
+    [Theory]
+    [InlineData("Any.Uri().Web().WithHost(\"1.2.3.4\")")]
+    [InlineData("Any.Uri().Web().WithHost(\"[::1]\")")]
+    [InlineData("Any.Uri().Mailto().WithDomain(\"example.com\")")]
+    // An empty user-info part passes its guard.
+    [InlineData("Any.Uri().Web().WithUserInfo(\"\")")]
+    [InlineData("Any.Uri().Web().WithUserInfo(\"A-b.c_d~9\")")]
+    [InlineData("Any.DateTimeOffset().WithOffset(TimeSpan.FromHours(-14))")]
+    [InlineData("Any.DateTimeOffset().WithOffsetBetween(maximum: TimeSpan.FromHours(2), minimum: TimeSpan.FromHours(1))")]
+    [InlineData("Any.DateTime().WithGranularity(TimeSpan.FromTicks(1))")]
+    // The generic entry points carry no finiteness rule and no membership rule, by construction.
+    [InlineData("Any.OneOf(double.NaN, 1.0)")]
+    [InlineData("Any.OneOf((Status)99)")]
+    // On a [Flags] enumeration a combination of declared members is accepted, and the zero value when it is declared.
+    [InlineData("Any.Enum<Access>().OneOf(Access.Read | Access.Exec)")]
+    [InlineData("Any.Enum<Access>().OneOf((Access)0)")]
+    // An exclusion is not checked against the members.
+    [InlineData("Any.Enum<Status>().Except((Status)99)")]
+    // Refused here, but not wherever the test may run. System.Uri judges every other host, and its parsing differs
+    // across target frameworks; the invariant lower case of İ is i under some runtimes and globalization modes, and İ
+    // under others.
+    [InlineData("Any.Uri().Web().WithHost(\"::1\")")]
+    [InlineData("Any.Uri().Web().WithHost(\"a b\")")]
+    [InlineData("Any.Uri().Web().WithUserInfo(\"\\u0130\")")]
+    public async Task Does_not_report_a_uri_component_an_offset_or_a_value_the_guard_may_accept(string expression) {
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzeWithDeclarationsAsync(expression);
+
+        Check.That(diagnostics.Length).IsEqualTo(0);
     }
 
     [Theory]

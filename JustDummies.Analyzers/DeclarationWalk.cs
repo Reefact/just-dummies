@@ -219,19 +219,12 @@ internal static class DeclarationWalk {
     }
 
     /// <summary>
-    ///     Whether the call rejects its own argument — a size, a step, a scale or a port out of range, an empty text, an
-    ///     empty value set, the guards JD014 reports; a <c>null</c>, a URI component or a value set element its guard
-    ///     refuses (<see cref="ArgumentGuardFacts" />); a granularity that is not strictly positive, an offset that is
-    ///     not whole minutes within ±14:00. The guard runs before the call reads what the chain declared.
+    ///     Whether the call rejects, or may reject, its own argument — every guard JD014 reports, and the ones
+    ///     <see cref="ArgumentGuardFacts.MayRefuse" /> cannot settle. The guard runs before the call reads what the chain
+    ///     declared.
     /// </summary>
     private static bool IsRefused(IInvocationOperation call, Compilation compilation) {
-        if (RejectedConstantArgumentAnalyzer.TryFindViolation(call, compilation, out _, out _) || ArgumentGuardFacts.MayRefuse(call)) { return true; }
-
-        return call.TargetMethod.Name switch {
-            GranularityName               => Granularity(call) <= 0,
-            OffsetName or OffsetRangeName => OffsetRange(call) is { } range && !IsValidOffset(range),
-            _                             => false
-        };
+        return RejectedConstantArgumentAnalyzer.TryFindViolation(call, compilation, out _, out _) || ArgumentGuardFacts.MayRefuse(call);
     }
 
     /// <summary>
@@ -329,14 +322,6 @@ internal static class DeclarationWalk {
         if (offsets.Length is 0 or > 2 || offsets.Any(offset => offset is null)) { return null; }
 
         return (offsets[0]!.Value, offsets[offsets.Length - 1]!.Value);
-    }
-
-    /// <summary>Whether the run time accepts the range: whole minutes, within ±14:00, the minimum not after the maximum.</summary>
-    private static bool IsValidOffset((long Minimum, long Maximum) range) {
-        const long limit = 14 * TimeSpan.TicksPerHour;
-
-        return range.Minimum % TimeSpan.TicksPerMinute == 0 && range.Maximum % TimeSpan.TicksPerMinute == 0
-            && range.Minimum >= -limit && range.Maximum <= limit && range.Minimum <= range.Maximum;
     }
 
     /// <summary>

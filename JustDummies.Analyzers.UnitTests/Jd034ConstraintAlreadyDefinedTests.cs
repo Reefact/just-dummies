@@ -77,6 +77,8 @@ public class Jd034ConstraintAlreadyDefinedTests {
     [InlineData("Any.Uri().Ftp().WithPort(21).WithPort(22)",                "WithPort(22) conflicts with WithPort(21), declared before it: the generator accepts only one port")]
     [InlineData("Any.Uri().Mailto().WithDomain(\"a.example\").WithDomain(\"b.example\")", "WithDomain(\"b.example\") conflicts with WithDomain(\"a.example\"), declared before it: the generator accepts only one domain")]
     [InlineData("Any.Uri().Mailto().WithLocalPart(\"a\").WithLocalPart(\"b\")", "WithLocalPart(\"b\") conflicts with WithLocalPart(\"a\"), declared before it: the generator accepts only one local part")]
+    // A combination of a [Flags] enumeration's members passes its guard, so it reaches the slot.
+    [InlineData("Any.Enum<AttributeTargets>().OneOf(AttributeTargets.Class | AttributeTargets.Struct).OneOf(AttributeTargets.Class)", "OneOf(AttributeTargets.Class) conflicts with OneOf(AttributeTargets.Class | AttributeTargets.Struct), declared before it: the generator accepts only one value set")]
     // An empty local part passes its guard, so it reaches the slot.
     [InlineData("Any.Uri().Mailto().WithLocalPart(\"a\").WithLocalPart(\"\")", "WithLocalPart(\"\") conflicts with WithLocalPart(\"a\"), declared before it: the generator accepts only one local part")]
     [InlineData("Any.Uri().Relative().WithPathSegments(1).WithPathSegments(2)", "WithPathSegments(2) conflicts with WithPathSegments(1), declared before it: the generator accepts only one path")]
@@ -207,6 +209,8 @@ public class Jd034ConstraintAlreadyDefinedTests {
     [InlineData("Any.Uri().Relative().WithPathSegments(1).WithPathSegments(-1)")]
     [InlineData("Any.Uri().Mailto().WithDomain(\"a.example\").WithDomain(\"\")")]
     [InlineData("Any.Uri().Mailto().WithLocalPart(\"a\").WithLocalPart(\"a b\")")]
+    // A user-info character whose invariant lower case depends on the runtime may be refused.
+    [InlineData("Any.Uri().Web().WithUserInfo(\"a\").WithUserInfo(\"\\u0130\")")]
     // The refused call comes first, so the two declarations after it are never applied.
     [InlineData("Any.Int32().MultipleOf(0).MultipleOf(3).MultipleOf(5)")]
     // So does a call that is not itself a once-per-generator constraint: its guard throws all the same.

@@ -107,10 +107,22 @@ public sealed class RejectedConstantArgumentAnalyzer : DiagnosticAnalyzer {
             case "WithPort":
                 return TryCheckRange(invocation, MinPort, MaxPort, "the port must be between 1 and 65535", out offending, out reason);
 
-            case "StartingWith" or "EndingWith" or "Containing" or "WithChars" or "WithHost":
+            case "StartingWith" or "EndingWith" or "Containing" or "WithChars":
                 return TryCheckNonEmptyText(invocation, out offending, out reason);
 
-            case "OneOf" or "Except":
+            case "WithHost" or "WithDomain":
+                return ArgumentGuardFacts.TryFindRejectedHost(invocation, out offending, out reason);
+
+            case "WithUserInfo" or "WithLocalPart":
+                return ArgumentGuardFacts.TryFindRejectedUserInfo(invocation, out offending, out reason);
+
+            case "WithOffset" or "WithOffsetBetween":
+                return ArgumentGuardFacts.TryFindRejectedOffset(invocation, out offending, out reason);
+
+            case "OneOf":
+                return TryCheckNonEmptyPool(invocation, out offending, out reason) || ArgumentGuardFacts.TryFindRejectedElement(invocation, out offending, out reason);
+
+            case "Except":
                 return TryCheckNonEmptyPool(invocation, out offending, out reason);
 
             default:
@@ -216,7 +228,7 @@ public sealed class RejectedConstantArgumentAnalyzer : DiagnosticAnalyzer {
         reason    = null;
 
         foreach (IArgumentOperation argument in invocation.Arguments) {
-            if (!ConstantFacts.IsNonPositiveTimeSpan(argument.Value, compilation)) { continue; }
+            if (!ConstantFacts.IsNonPositiveTimeSpan(argument.Value, compilation) && !(ConstantFacts.TryGetTimeSpanTicks(argument.Value, out long ticks) && ticks <= 0)) { continue; }
 
             offending = argument.Value;
             reason    = "the granularity must be strictly positive";

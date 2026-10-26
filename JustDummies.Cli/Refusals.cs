@@ -68,7 +68,7 @@ internal static class Refusals {
     }
 
     /// <summary>
-    ///     A <c>dum.json</c> the tool could not read, or whose values it refuses (§3.3).
+    ///     An <c>any.json</c> the tool could not read, or whose values it refuses (§3.3).
     /// </summary>
     /// <remarks>
     ///     The sentence comes from whoever found the problem — the reader of the file, or the same validation
@@ -92,7 +92,7 @@ internal static class Refusals {
     ///     does not decide it: the <c>extension</c> member compiles for <c>netstandard2.0</c> as readily as for
     ///     <c>net10.0</c> — verified — and what it needs is the language version the project is built at. And
     ///     refused rather than quietly downgraded to a static root: a developer who asked for
-    ///     <c>Any.Order()</c> and silently got <c>Dummies.Order()</c> would find out at the call site.
+    ///     <c>Any.Order()</c> and silently got <c>Arbitrary.Order()</c> would find out at the call site.
     /// </remarks>
     internal static void LanguageVersionTooLow(string projectPath, string current, IAnsiConsole console) {
         ArgumentNullException.ThrowIfNull(projectPath);
@@ -187,7 +187,7 @@ internal static class Refusals {
             List<string> tied = [Mark + $"{typeArgument}: no constructor to call, and several static factories qualify."];
 
             tied.AddRange(Listed(factories));
-            tied.Add("  dum does not pick between them; leave one, or write the generator by hand.");
+            tied.Add("  The scaffolder does not pick between them; leave one, or write the generator by hand.");
 
             return tied;
         }

@@ -24,7 +24,7 @@ internal static class ToolConsole {
     /// <summary>
     ///     Below this, a reported width is not a narrow terminal but an absent one — a pipe, a file, a CI log,
     ///     a test's <see cref="StringWriter" />. Taken literally it wraps every line to nothing, so a redirected
-    ///     `dum --help` prints `……` and stops. Measured, not guessed.
+    ///     `any --help` prints `……` and stops. Measured, not guessed.
     /// </summary>
     private const int NarrowestRealTerminal = 20;
 

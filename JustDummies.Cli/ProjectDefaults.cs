@@ -7,12 +7,12 @@ using System.Text.Json;
 namespace JustDummies.Cli;
 
 /// <summary>
-///     The optional <c>dum.json</c> beside the project, and the defaults it sets (§3.3).
+///     The optional <c>any.json</c> beside the project, and the defaults it sets (§3.3).
 /// </summary>
 /// <remarks>
 ///     §3 said "there is no config file", and meant it for as long as every option was a per-invocation
 ///     decision. What changed is that some of them stopped being one: a team that wants its generators in
-///     <c>./Dummies</c>, reached through one root, is stating a property of the project, and re-typing it on
+///     <c>./Arbitrary</c>, reached through one root, is stating a property of the project, and re-typing it on
 ///     every invocation is how it comes to be typed differently on one of them.
 ///     <para>
 ///         Read by the shell and folded into the settings before the engine is called, so the engine keeps
@@ -22,7 +22,7 @@ namespace JustDummies.Cli;
 internal sealed class ProjectDefaults {
 
     /// <summary>The file's name, fixed by §16 when it reserved it.</summary>
-    internal const string FileName = "dum.json";
+    internal const string FileName = "any.json";
 
     /// <summary>
     ///     The keys this version reads.
@@ -51,7 +51,7 @@ internal sealed class ProjectDefaults {
     internal bool Understood => Refusal is null;
 
     /// <summary>
-    ///     Reads the <c>dum.json</c> beside <paramref name="projectPath" />, if there is one.
+    ///     Reads the <c>any.json</c> beside <paramref name="projectPath" />, if there is one.
     /// </summary>
     /// <remarks>
     ///     Beside the project file rather than in the current directory, because that is what makes it a
@@ -108,7 +108,7 @@ internal sealed class ProjectDefaults {
         using JsonDocument document = JsonDocument.Parse(json);
 
         if (document.RootElement.ValueKind != JsonValueKind.Object) {
-            return Refused($"{path} has to be a JSON object: {{ \"output\": \"./Dummies\" }}.");
+            return Refused($"{path} has to be a JSON object: {{ \"output\": \"./Arbitrary\" }}.");
         }
 
         foreach (JsonProperty property in document.RootElement.EnumerateObject()) {

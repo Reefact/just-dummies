@@ -9,7 +9,7 @@ namespace JustDummies.GenAny.UnitTests;
 /// </summary>
 /// <remarks>
 ///     The specification writes that example out in full — the source under analysis, and the file
-///     <c>dum generate Order</c> emits from it — and says it is not a sketch: it was compiled and run against
+///     <c>any generate Order</c> emits from it — and says it is not a sketch: it was compiled and run against
 ///     the real library. This runs the engine over that same source and compares the result against the
 ///     approved file, byte for byte.
 ///     <para>

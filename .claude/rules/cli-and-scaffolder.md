@@ -7,14 +7,14 @@ paths:
   - "tools/packaging/**"
 ---
 
-# The `dum` scaffolder and its CLI
+# The `any` scaffolder and its CLI
 
 Two projects, and the constraints that shape them are not incidental.
 
 * **`JustDummies.GenAny`** — the scaffolding engine. **netstandard2.0 on the Roslyn floor**
   so a compiler host can load it (ADR-0065); it **references no JustDummies assembly**
   (ADR-0063) and knows nothing of MSBuild or the console.
-* **`JustDummies.Cli`** — the `dum` tool itself, the shell around that engine.
+* **`JustDummies.Cli`** — the `any` tool itself, the shell around that engine.
 
 The specification is
 [`doc/handwritten/for-maintainers/specifications/justdummies-tool.md`](../../doc/handwritten/for-maintainers/specifications/justdummies-tool.md).
@@ -35,7 +35,7 @@ It is long; read the section you need, not the file.
   runs the specification writes out. Exit codes are a contract: report a run as data without
   moving them (ADR-0071).
 * **§11.1** entire — `MSBuildLocator`, `MSBuildWorkspace`, and the file writing, so
-  `dum generate` opens a real project and writes a real file. MSBuild is loaded from the
+  `any generate` opens a real project and writes a real file. MSBuild is loaded from the
   installed SDK, never from the tool's own files (ADR-0066).
 
 Other decisions that govern this area: emit only members resolved in the target compilation
@@ -70,7 +70,7 @@ alone passes on an empty dependency list. Do not weaken either assertion.
 The train's first release was **`cli-v1.0.0-beta.1`** — 1.0.0 because the tool implements its
 specification entire, and a beta rather than a preview because a tool takes no public-API
 baseline (§13.4): what a version commits to here is the command line, not a set of types. It
-has since gained `--entry-point`, `--entry-point-namespace`, `--format json` and a `dum.json`
+has since gained `--entry-point`, `--entry-point-namespace`, `--format json` and an `any.json`
 of project defaults, all additive; `git tag --list 'cli-v*'` is the record of what has shipped.
 
 Cutting a release is the `release-train` skill.

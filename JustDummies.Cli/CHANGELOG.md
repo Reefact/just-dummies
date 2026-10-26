@@ -8,6 +8,18 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ## [Unreleased]
 
+### Changed
+
+- **Breaking: the command is now `any`, not `dum`, and its project defaults file is `any.json`, not `dum.json`
+  (ADR-0108).** What the tool writes is a generator of arbitrary values — `AnyOrder` for `Order` — and whether a
+  value it draws is a dummy is decided by the test, not by the tool: a test that pins, through a `With…` method,
+  a value its outcome depends on gets back an object that is not one. The tool was the only surface named after that role; it is now
+  named like everything else it touches, `Any`, `AnyX`, `IAny<T>`. The package is still `JustDummies.Cli`. To
+  migrate, type `any generate` where you typed `dum generate`, and rename a `dum.json` to `any.json` — the old
+  name is not read. The emitted header and `TODO(any)` markers, and the `tool` field of `--format json`, follow
+  the command. The example static root, in the documentation and in the hint a malformed `--entry-point`
+  receives, is now `Arbitrary` rather than `Dummies` — `Any` itself stays refused there (ADR-0070).
+
 ### Fixed
 
 - **A null-check fused into an assignment — `Field = value ?? throw new ArgumentNullException(nameof(value));`

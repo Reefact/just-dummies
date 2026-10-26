@@ -8,7 +8,7 @@ using Spectre.Console;
 namespace JustDummies.Cli.UnitTests;
 
 /// <summary>
-///     The optional <c>dum.json</c> beside the project (§3.3).
+///     The optional <c>any.json</c> beside the project (§3.3).
 /// </summary>
 /// <remarks>
 ///     Two properties carry it, and every case below is one of them. The command line always wins, because a
@@ -18,7 +18,7 @@ namespace JustDummies.Cli.UnitTests;
 /// </remarks>
 public sealed class ProjectDefaultsTests : IDisposable {
 
-    private readonly string directory = Directory.CreateTempSubdirectory("dum-defaults-").FullName;
+    private readonly string directory = Directory.CreateTempSubdirectory("any-defaults-").FullName;
 
     /// <inheritdoc />
     public void Dispose() {
@@ -36,11 +36,11 @@ public sealed class ProjectDefaultsTests : IDisposable {
     [Fact(DisplayName = "The file sets what the command line did not.")]
     public void TheFileSetsWhatTheCommandLineDidNot() {
         GenerateSettings settings = Settings("""
-                                             { "namespace": "Shop.Tests.Dummies", "entryPoint": "static:Dummies" }
+                                             { "namespace": "Shop.Tests.Arbitrary", "entryPoint": "static:Arbitrary" }
                                              """);
 
-        Check.That(settings.Namespace).IsEqualTo("Shop.Tests.Dummies");
-        Check.That(settings.EntryPoint).IsEqualTo("static:Dummies");
+        Check.That(settings.Namespace).IsEqualTo("Shop.Tests.Arbitrary");
+        Check.That(settings.EntryPoint).IsEqualTo("static:Arbitrary");
     }
 
     // The whole precedence rule, and it is one sentence: what was typed is already there, and nothing here
@@ -50,7 +50,7 @@ public sealed class ProjectDefaultsTests : IDisposable {
         GenerateSettings settings = new() { Types = ["Order"], Namespace = "Typed.On.The.Line" };
 
         Written("""
-                { "namespace": "Shop.Tests.Dummies", "format": "json" }
+                { "namespace": "Shop.Tests.Arbitrary", "format": "json" }
                 """);
         ProjectDefaults.Beside(Project()).ApplyTo(settings, Project());
 
@@ -68,16 +68,16 @@ public sealed class ProjectDefaultsTests : IDisposable {
     [Fact(DisplayName = "A relative output is rooted at the project, not at the current directory.")]
     public void ARelativeOutputIsRootedAtTheProject() {
         GenerateSettings settings = Settings("""
-                                             { "output": "./Dummies" }
+                                             { "output": "./Arbitrary" }
                                              """);
 
-        Check.That(settings.Output).IsEqualTo(Path.Combine(directory, "Dummies"));
+        Check.That(settings.Output).IsEqualTo(Path.Combine(directory, "Arbitrary"));
     }
 
     [Fact(DisplayName = "A key the file does not read is refused, and named.")]
     public void AnUnknownKeyIsRefused() {
         Written("""
-                { "outpout": "./Dummies" }
+                { "outpout": "./Arbitrary" }
                 """);
 
         ProjectDefaults defaults = ProjectDefaults.Beside(Project());
@@ -112,7 +112,7 @@ public sealed class ProjectDefaultsTests : IDisposable {
 
     [Fact(DisplayName = "A file that is not JSON is refused, with the parser's own reason.")]
     public void AFileThatIsNotJsonIsRefused() {
-        Written("output: ./Dummies");
+        Written("output: ./Arbitrary");
 
         ProjectDefaults defaults = ProjectDefaults.Beside(Project());
 

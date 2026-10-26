@@ -27,7 +27,7 @@ internal sealed class SweepShape(string name,
     /// <summary>Which product this shape came out of.</summary>
     internal string Family { get; } = family;
 
-    /// <summary>The type argument a developer would type after <c>dum generate</c>.</summary>
+    /// <summary>The type argument a developer would type after <c>any generate</c>.</summary>
     internal string Target { get; } = target;
 
     /// <summary>The whole source the engine reads, vocabulary included.</summary>

@@ -16,7 +16,7 @@ using Spectre.Console;
 namespace JustDummies.Cli.UnitTests;
 
 /// <summary>
-///     <c>dum generate</c>, end to end over a compilation built here: the exit codes of §7 and where each
+///     <c>any generate</c>, end to end over a compilation built here: the exit codes of §7 and where each
 ///     stream's text goes.
 /// </summary>
 /// <remarks>
@@ -50,7 +50,7 @@ public sealed class GenerateCommandTests : IDisposable {
                                   }
                                   """;
 
-    private readonly string directory = Directory.CreateTempSubdirectory("dum-generate-").FullName;
+    private readonly string directory = Directory.CreateTempSubdirectory("any-generate-").FullName;
 
     /// <inheritdoc />
     public void Dispose() {
@@ -82,7 +82,7 @@ public sealed class GenerateCommandTests : IDisposable {
         Run run = await Generate(settings);
 
         Check.That(run.ExitCode).IsEqualTo(0);
-        Check.That(run.Output).StartsWith("// Scaffolded by dum");
+        Check.That(run.Output).StartsWith("// Scaffolded by `any`");
         Check.That(run.Error).Contains("✓ AnyOrder.cs");
         Check.That(Directory.GetFiles(directory)).IsEmpty();
     }
@@ -139,26 +139,26 @@ public sealed class GenerateCommandTests : IDisposable {
     public async Task ANamespaceOverrideIsHonoured() {
         GenerateSettings settings = Settings("Order");
 
-        settings.Namespace = "Shop.Tests.Dummies";
+        settings.Namespace = "Shop.Tests.Arbitrary";
 
         await Generate(settings);
 
         Check.That(await File.ReadAllTextAsync(Path.Combine(directory, "AnyOrder.cs"), TestContext.Current.CancellationToken))
-             .Contains("namespace Shop.Tests.Dummies;");
+             .Contains("namespace Shop.Tests.Arbitrary;");
     }
 
     [Fact(DisplayName = "--entry-point static:<Name> writes a second file and recaps the call it opens.")]
     public async Task AStaticEntryPointWritesASecondFile() {
         GenerateSettings settings = Settings("Order");
 
-        settings.EntryPoint = "static:Dummies";
+        settings.EntryPoint = "static:Arbitrary";
 
         Run run = await Generate(settings);
 
         Check.That(run.ExitCode).IsEqualTo(0);
-        Check.That(run.Output).Contains("✓ AnyOrder.Entry.cs — entry point Dummies.Order()");
+        Check.That(run.Output).Contains("✓ AnyOrder.Entry.cs — entry point Arbitrary.Order()");
         Check.That(await File.ReadAllTextAsync(Path.Combine(directory, "AnyOrder.Entry.cs"), TestContext.Current.CancellationToken))
-             .Contains("public static partial class Dummies {");
+             .Contains("public static partial class Arbitrary {");
     }
 
     [Fact(DisplayName = "--entry-point any writes the extension member, on a project that can compile it.")]
@@ -202,7 +202,7 @@ public sealed class GenerateCommandTests : IDisposable {
     public async Task AStaticEntryPointNeedsNoCSharp14() {
         GenerateSettings settings = Settings("Order");
 
-        settings.EntryPoint = "static:Dummies";
+        settings.EntryPoint = "static:Arbitrary";
 
         Run run = await Generate(settings, Compilation(Domain, language: LanguageVersion.CSharp12));
 
@@ -221,7 +221,7 @@ public sealed class GenerateCommandTests : IDisposable {
     public async Task AnExistingEntryPointFileStopsTheWholeScaffold() {
         GenerateSettings settings = Settings("Order");
 
-        settings.EntryPoint = "static:Dummies";
+        settings.EntryPoint = "static:Arbitrary";
 
         await File.WriteAllTextAsync(Path.Combine(directory, "AnyOrder.Entry.cs"), "// mine",
                                      TestContext.Current.CancellationToken);
@@ -255,8 +255,8 @@ public sealed class GenerateCommandTests : IDisposable {
     public async Task AnEntryPointNamespaceMovesOnlyTheEntryPoint() {
         GenerateSettings settings = Settings("Order");
 
-        settings.EntryPoint          = "static:Dummies";
-        settings.EntryPointNamespace = "Shop.Tests.Dummies";
+        settings.EntryPoint          = "static:Arbitrary";
+        settings.EntryPointNamespace = "Shop.Tests.Arbitrary";
 
         await Generate(settings);
 
@@ -266,7 +266,7 @@ public sealed class GenerateCommandTests : IDisposable {
         string entry = await File.ReadAllTextAsync(Path.Combine(directory, "AnyOrder.Entry.cs"),
                                                    TestContext.Current.CancellationToken);
 
-        Check.That(entry).Contains("namespace Shop.Tests.Dummies;");
+        Check.That(entry).Contains("namespace Shop.Tests.Arbitrary;");
         Check.That(entry).Contains("using Shop.Domain;");
     }
 
@@ -412,14 +412,14 @@ public sealed class GenerateCommandTests : IDisposable {
         GenerateSettings settings = Settings("Order");
 
         settings.Format     = "json";
-        settings.EntryPoint = "static:Dummies";
+        settings.EntryPoint = "static:Arbitrary";
 
         Run         run   = await Generate(settings);
         JsonElement entry = JsonDocument.Parse(run.Output).RootElement
                                         .GetProperty("results")[0].GetProperty("entryPoint");
 
         Check.That(entry.GetProperty("file").GetString()).IsEqualTo("AnyOrder.Entry.cs");
-        Check.That(entry.GetProperty("call").GetString()).IsEqualTo("Dummies.Order()");
+        Check.That(entry.GetProperty("call").GetString()).IsEqualTo("Arbitrary.Order()");
     }
 
     [Fact(DisplayName = "--format json records a refused argument, with its candidates.")]
@@ -451,29 +451,29 @@ public sealed class GenerateCommandTests : IDisposable {
         Check.That(JsonDocument.Parse(run.Output).RootElement.GetProperty("refusal").GetString()).IsEqualTo("NoProject");
     }
 
-    [Fact(DisplayName = "A dum.json beside the project sets what the command line did not.")]
-    public async Task ADumJsonBesideTheProjectSetsTheDefaults() {
+    [Fact(DisplayName = "An any.json beside the project sets what the command line did not.")]
+    public async Task AnAnyJsonBesideTheProjectSetsTheDefaults() {
         GenerateSettings settings = Settings("Order");
 
-        await File.WriteAllTextAsync(Path.Combine(Path.GetDirectoryName(settings.Project)!, "dum.json"),
-                                     """{ "namespace": "Shop.Tests.Dummies", "entryPoint": "static:Dummies" }""",
+        await File.WriteAllTextAsync(Path.Combine(Path.GetDirectoryName(settings.Project)!, "any.json"),
+                                     """{ "namespace": "Shop.Tests.Arbitrary", "entryPoint": "static:Arbitrary" }""",
                                      TestContext.Current.CancellationToken);
 
         Run run = await Generate(settings);
 
         Check.That(run.ExitCode).IsEqualTo(0);
         Check.That(await File.ReadAllTextAsync(Path.Combine(directory, "AnyOrder.cs"), TestContext.Current.CancellationToken))
-             .Contains("namespace Shop.Tests.Dummies;");
+             .Contains("namespace Shop.Tests.Arbitrary;");
         Check.That(File.Exists(Path.Combine(directory, "AnyOrder.Entry.cs"))).IsTrue();
     }
 
     // Refused, not ignored: a default someone believes is in force and is not would be worse than no file. It
     // is exit 2 because the tool never got as far as scaffolding — what it could not read is an instruction.
-    [Fact(DisplayName = "A dum.json the tool cannot read stops the run, at exit 2.")]
-    public async Task AnUnreadableDumJsonStopsTheRun() {
+    [Fact(DisplayName = "An any.json the tool cannot read stops the run, at exit 2.")]
+    public async Task AnUnreadableAnyJsonStopsTheRun() {
         GenerateSettings settings = Settings("Order");
 
-        await File.WriteAllTextAsync(Path.Combine(Path.GetDirectoryName(settings.Project)!, "dum.json"),
+        await File.WriteAllTextAsync(Path.Combine(Path.GetDirectoryName(settings.Project)!, "any.json"),
                                      """{ "entryPoint": "static:Any" }""",
                                      TestContext.Current.CancellationToken);
 
@@ -481,7 +481,7 @@ public sealed class GenerateCommandTests : IDisposable {
 
         Check.That(run.ExitCode).IsEqualTo(2);
         Check.That(run.Error).Contains("Any.Int32()");
-        Check.That(run.Error).Contains("dum.json");
+        Check.That(run.Error).Contains("any.json");
         Check.That(Directory.GetFiles(directory)).IsEmpty();
     }
 

@@ -14,7 +14,7 @@ public enum EntryPointKind {
     None = 0,
 
     /// <summary>
-    ///     A static root the developer owns — <c>Dummies.Order()</c>.
+    ///     A static root the developer owns — <c>Arbitrary.Order()</c>.
     /// </summary>
     /// <remarks>
     ///     The root is <c>partial</c> and each scaffold contributes its own part, so no file is ever read and

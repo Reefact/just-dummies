@@ -1,5 +1,5 @@
-// Scaffolded by dum (JustDummies). This file is yours: read it, edit it, commit it.
-// `dum generate Order --force` overwrites it. This type is partial, so members you add in a
+// Scaffolded by `any` (JustDummies). This file is yours: read it, edit it, commit it.
+// `any generate Order --force` overwrites it. This type is partial, so members you add in a
 // neighbouring file survive.
 
 using System;
@@ -34,8 +34,8 @@ public sealed partial class AnyOrder : IAny<Order> {
                placedAt:  Any.DateTime()) { }
 
     private static IAny<Customer> AnyValidCustomer() {
-        // TODO(dum): no generator inferred for 'Customer customer'.
-        //   Scaffold one:  dum generate Customer
+        // TODO(any): no generator inferred for 'Customer customer'.
+        //   Scaffold one:  any generate Customer
         //   or write one here, or replace it and always pass .WithCustomer(...) instead.
         return TODO_supply_a_generator_for_customer;
     }

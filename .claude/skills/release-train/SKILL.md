@@ -13,7 +13,7 @@ Commit scopes, a NuGet label and a changelog file:
 | library | `lib-v*` | `core` | `JustDummies/CHANGELOG.md` |
 | xUnit adapter | `xunit-v*` | `xunit` | `JustDummies.Xunit/CHANGELOG.md` |
 | diagnostic catalogue | `catalog-v*` | `catalog` | `JustDummies.DiagnosticCatalog/CHANGELOG.md` |
-| `dum` tool | `cli-v*` | `cli` | `JustDummies.Cli/CHANGELOG.md` |
+| `any` tool | `cli-v*` | `cli` | `JustDummies.Cli/CHANGELOG.md` |
 
 **`tools/trains.sh` is the single source of truth for that mapping.** It is *sourced*, never
 executed. Read it before assuming anything about the partition — `release-notes.sh` and

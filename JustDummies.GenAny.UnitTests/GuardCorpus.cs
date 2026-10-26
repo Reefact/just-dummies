@@ -1343,7 +1343,7 @@ internal static class GuardCorpus {
         /// <summary>The row's name, which is what a failure names.</summary>
         internal string Name { get; }
 
-        /// <summary>The type argument a developer would type after <c>dum generate</c>.</summary>
+        /// <summary>The type argument a developer would type after <c>any generate</c>.</summary>
         internal string Target { get; }
 
         /// <summary>The whole source the engine reads, preamble included.</summary>

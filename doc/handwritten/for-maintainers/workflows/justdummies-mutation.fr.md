@@ -25,7 +25,7 @@ JustDummies** : `JustDummies`, son adaptateur xUnit v3 `JustDummies.Xunit`
 ([ADR-0018](../adr/0018-adapt-dummies-to-xunit-v3-through-a-companion-package.fr.md)),
 les analyseurs livrés dans le package
 ([ADR-0023](../adr/0023-ship-justdummies-analyzers.fr.md)), et `JustDummies.GenAny`,
-le moteur de lecture de gardes sur lequel repose le scaffolder `dum`. Sur une pull
+le moteur de lecture de gardes sur lequel repose le scaffolder `any`. Sur une pull
 request, il ne mute que les fichiers modifiés par celle-ci, pour l'adaptateur et les
 analyseurs ; le générateur et le moteur sont mesurés par le seul balayage hebdomadaire
 ([ADR-0028](../adr/0028-drop-the-justdummies-generator-from-the-per-pull-request-mutation-matrix.fr.md)).

@@ -7,7 +7,7 @@ using NFluent;
 namespace JustDummies.Cli.UnitTests;
 
 /// <summary>
-///     The surface around the one verb: what <c>dum</c> answers before any project is opened.
+///     The surface around the one verb: what <c>any</c> answers before any project is opened.
 /// </summary>
 /// <remarks>
 ///     What <c>generate</c> then does is <see cref="GenerateCommandTests" />' subject, over a compilation built
@@ -17,7 +17,7 @@ namespace JustDummies.Cli.UnitTests;
 public sealed class ToolCommandLineTests {
 
     /// <summary>A project that is not there, so no run reaches MSBuild or the directory the suite runs from.</summary>
-    private static readonly string Absent = Path.Combine(Path.GetTempPath(), "dum-absent", "Nothing.csproj");
+    private static readonly string Absent = Path.Combine(Path.GetTempPath(), "any-absent", "Nothing.csproj");
 
     [Fact(DisplayName = "--version reports the version, on stdout, and succeeds.")]
     public void VersionIsReportedOnStandardOutput() {

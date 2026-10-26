@@ -332,7 +332,7 @@ When present it MUST be lowercase and MUST be one of:
 | `analyzers` | `JustDummies.Analyzers` — the Roslyn analyzers and their `JDxxx` diagnostics |
 | `xunit` | `JustDummies.Xunit` — the xUnit v3 adapter |
 | `catalog` | `JustDummies.DiagnosticCatalog` — the `JDxxx` rules as constants a suppression can name |
-| `cli` | `dum` — the scaffolder: `JustDummies.Cli` and its engine `JustDummies.GenAny` |
+| `cli` | `any` — the scaffolder: `JustDummies.Cli` and its engine `JustDummies.GenAny` |
 
 This list lives here, in the repository, where a tool can check it. A scope
 MUST NOT be a file name or a class name: those move; the zone they inhabit does
@@ -342,7 +342,7 @@ The scope is load-bearing for the release record. The tooling partitions commits
 into **release trains** by scope — `tools/trains.sh` is the single source of
 truth — and each train publishes independently: `lib` (scopes `core`, `analyzers` → `JustDummies`, analyzers bundled in),
 `xunit` (scope `xunit` → `JustDummies.Xunit`), `catalog` (scope `catalog` →
-`JustDummies.DiagnosticCatalog`) and `cli` (scope `cli` → the `dum` scaffolder,
+`JustDummies.DiagnosticCatalog`) and `cli` (scope `cli` → the `any` scaffolder,
 packed as a .NET tool). A commit's scope decides which train's
 release notes and changelog it lands in; see
 [Adding a release train](doc/handwritten/for-maintainers/AddingAReleaseTrain.en.md).

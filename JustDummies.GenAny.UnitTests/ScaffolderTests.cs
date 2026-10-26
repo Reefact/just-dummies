@@ -77,7 +77,7 @@ public sealed class ScaffolderTests {
     }
 
     /// <summary>
-    ///     The TODO names <c>dum generate</c> only where that command would take the name.
+    ///     The TODO names <c>any generate</c> only where that command would take the name.
     /// </summary>
     /// <remarks>
     ///     §3.2 refuses a generic target, so telling the developer to run it on one would be an instruction
@@ -97,7 +97,7 @@ public sealed class ScaffolderTests {
         string emitted = outcome.File!.SourceText;
 
         Check.That(emitted).Contains("no generator inferred for 'Repository<Customer> one'.");
-        Check.That(emitted).Not.Contains("dum generate Repository");
+        Check.That(emitted).Not.Contains("any generate Repository");
         Check.That(emitted).Contains("Write one here, or replace it and always pass .WithOne(...) instead.");
     }
 

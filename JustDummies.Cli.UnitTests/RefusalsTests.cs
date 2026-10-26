@@ -19,7 +19,7 @@ namespace JustDummies.Cli.UnitTests;
 /// </remarks>
 public sealed class RefusalsTests : IDisposable {
 
-    private readonly string directory = Directory.CreateTempSubdirectory("dum-refuse-").FullName;
+    private readonly string directory = Directory.CreateTempSubdirectory("any-refuse-").FullName;
 
     /// <inheritdoc />
     public void Dispose() {

@@ -53,7 +53,7 @@ Look-up material, organised by the type you need.
 | [`JustDummies`](./packages/justdummies.en.md) | the library and its bundled analyzers |
 | [`JustDummies.Xunit`](./packages/justdummies-xunit.en.md) | the xUnit v3 `[Reproducible]` attribute |
 | [`JustDummies.DiagnosticCatalog`](./packages/justdummies-diagnosticcatalog.en.md) | rule constants for `[SuppressMessage]` |
-| [`JustDummies.Cli`](./packages/justdummies-cli.en.md) | `dum`, the scaffolder: a generator for your own type, written once |
+| [`JustDummies.Cli`](./packages/justdummies-cli.en.md) | `any`, the scaffolder: a generator for your own type, written once |
 
 ## Analyzer rules
 

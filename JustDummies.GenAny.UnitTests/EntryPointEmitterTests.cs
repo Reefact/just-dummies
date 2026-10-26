@@ -18,10 +18,10 @@ public sealed class EntryPointEmitterTests {
 
     [Fact(DisplayName = "A static root, beside the generator it reaches.")]
     public void AStaticRoot() {
-        ScaffoldedEntryPoint entry = Emitted(Shapes.Order(), EntryPointOptions.OnStaticRoot("Dummies"));
+        ScaffoldedEntryPoint entry = Emitted(Shapes.Order(), EntryPointOptions.OnStaticRoot("Arbitrary"));
 
         GoldenFile.Approve("AnyOrder.Entry.Static", entry.File.SourceText);
-        Check.That(entry.Call).IsEqualTo("Dummies.Order()");
+        Check.That(entry.Call).IsEqualTo("Arbitrary.Order()");
     }
 
     [Fact(DisplayName = "An extension member on the library's own Any.")]
@@ -37,10 +37,10 @@ public sealed class EntryPointEmitterTests {
     [Fact(DisplayName = "A root moved into its own namespace opens the generator's.")]
     public void ARootMovedIntoItsOwnNamespace() {
         ScaffoldedEntryPoint entry = Emitted(Shapes.Pattern(),
-                                             EntryPointOptions.OnStaticRoot("Dummies").InNamespace("Shop.Tests.Generators"));
+                                             EntryPointOptions.OnStaticRoot("Arbitrary").InNamespace("Shop.Tests.Generators"));
 
         GoldenFile.Approve("AnyPattern.Entry.Moved", entry.File.SourceText);
-        Check.That(entry.Call).IsEqualTo("Dummies.Pattern()");
+        Check.That(entry.Call).IsEqualTo("Arbitrary.Pattern()");
     }
 
     [Fact(DisplayName = "The global namespace, which has no declaration to copy.")]
@@ -77,15 +77,15 @@ public sealed class EntryPointEmitterTests {
                                   ["JustDummies"],
                                   [ScaffoldedParameter.DrawnFrom("sku", "string", "Any.String().NonEmpty()")]);
 
-        ScaffoldedEntryPoint entry = Emitted(nested, EntryPointOptions.OnStaticRoot("Dummies"));
+        ScaffoldedEntryPoint entry = Emitted(nested, EntryPointOptions.OnStaticRoot("Arbitrary"));
 
-        Check.That(entry.Call).IsEqualTo("Dummies.Line()");
+        Check.That(entry.Call).IsEqualTo("Arbitrary.Line()");
         Check.That(entry.File.SourceText).Contains("public static AnyLine Line() {");
     }
 
     [Fact(DisplayName = "Every line ends in a single newline, on every platform.")]
     public void EveryLineEndsInASingleNewline() {
-        string emitted = Emitted(Shapes.Order(), EntryPointOptions.OnStaticRoot("Dummies")).File.SourceText;
+        string emitted = Emitted(Shapes.Order(), EntryPointOptions.OnStaticRoot("Arbitrary")).File.SourceText;
 
         Check.That(emitted).Not.Contains("\r");
         Check.That(emitted.EndsWith('\n')).IsTrue();

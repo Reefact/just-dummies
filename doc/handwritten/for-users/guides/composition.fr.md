@@ -166,7 +166,7 @@ combien de valeurs distinctes il a le droit de puiser, et en demanderait plus qu
 ISet<OrderStatus?> statuses = Any.SetOf(Any.Enum<OrderStatus>().AsNullable()).NonEmpty().Generate();
 ```
 
-Un générateur scaffoldé par `dum` écrit `.AsNullable()` pour chaque paramètre nullable de type
+Un générateur scaffoldé par `any` écrit `.AsNullable()` pour chaque paramètre nullable de type
 valeur, exactement pour cette raison.
 
 ## Construire un agrégat entier

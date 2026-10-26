@@ -89,8 +89,8 @@ relevant command, say so explicitly.
 | `JustDummies.Analyzers` | Roslyn analyzers, bundled inside the library package (+ `.UnitTests` for named cases, `.PropertyTests` for checking diagnostics against the run time) |
 | `JustDummies.DiagnosticCatalog` | the constants a `[SuppressMessage]` names its rule with; its own `catalog` train |
 | `JustDummies.Xunit` | xUnit v3 adapter (+ `.UnitTests`) |
-| `JustDummies.GenAny` | the `dum` scaffolding engine, pinned to the Roslyn floor (+ `.UnitTests`) |
-| `JustDummies.Cli` | the `dum` tool itself, the shell around that engine (+ `.UnitTests`) |
+| `JustDummies.GenAny` | the `any` scaffolding engine, pinned to the Roslyn floor (+ `.UnitTests`) |
+| `JustDummies.Cli` | the `any` tool itself, the shell around that engine (+ `.UnitTests`) |
 | `JustDummies.Documentation.UnitTests` | compiles the documentation's C# samples, checks link and EN/FR parity |
 | `build/`, `tools/` | shared MSBuild props, the Sonar profile, packaging and lint scripts |
 | `doc/handwritten/` | `for-users/` and `for-maintainers/` (ADRs, specifications, workflow pages) |
@@ -139,7 +139,7 @@ Loaded automatically when you touch matching files — `.claude/rules/`:
 | `tests.md` | which of the two `JustDummies` suites a test belongs to (ADR-0019); what mutation testing does and does not gate |
 | `analyzers.md` | the five things a `JDxxx` change keeps in step; the Roslyn floor; the catalogue |
 | `documentation.md` | EN/FR twins, the two naming conventions, where each kind of page lives |
-| `cli-and-scaffolder.md` | the `dum` specification, golden files, the engine's constraints, the `cli` train |
+| `cli-and-scaffolder.md` | the `any` specification, golden files, the engine's constraints, the `cli` train |
 | `build-and-ci.md` | the solution's `NestedProjects` section, the single sources of truth, the warning ratchet |
 | `assets.md` | why an image is never modified |
 | `session-economics.md` | always loaded: choosing context, model and effort proportionately |
@@ -160,6 +160,6 @@ Canonical documentation, shared with other agents and with humans:
 
 * [`doc/handwritten/for-maintainers/README.md`](doc/handwritten/for-maintainers/README.md) — the hub: architecture, conventions, records.
 * [`adr/README.md`](doc/handwritten/for-maintainers/adr/README.md) — the decisions and their index.
-* [`specifications/`](doc/handwritten/for-maintainers/specifications/) — the `dum` specification; what each accepted decision enforces and where.
+* [`specifications/`](doc/handwritten/for-maintainers/specifications/) — the `any` specification; what each accepted decision enforces and where.
 * [`CONTRIBUTING.md`](CONTRIBUTING.md) — branches, commit messages, pull-request titles, the public API baseline.
 * [`AGENTS.md`](AGENTS.md) — the same rules for agents that do not read `.claude/`.

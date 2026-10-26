@@ -7,7 +7,7 @@ namespace JustDummies.GenAny;
 
 /// <summary>
 ///     Renders the entry-point file of §4.5 — the one that lets a scaffolded generator be reached as
-///     <c>Dummies.Order()</c> or <c>Any.Order()</c> rather than only as <c>new AnyOrder()</c>.
+///     <c>Arbitrary.Order()</c> or <c>Any.Order()</c> rather than only as <c>new AnyOrder()</c>.
 /// </summary>
 /// <remarks>
 ///     A file of its own, never a member folded into the generator, and that is the whole design. One scaffold
@@ -79,8 +79,8 @@ public static class EntryPointEmitter {
                             ? "any"
                             : "static:" + entryPoint.Root;
 
-        Line(file, "// Scaffolded by dum (JustDummies). This file is yours: read it, edit it, commit it.");
-        Line(file, $"// `dum generate {plan.Target.Name} --entry-point {option} --force` overwrites it.");
+        Line(file, "// Scaffolded by `any` (JustDummies). This file is yours: read it, edit it, commit it.");
+        Line(file, $"// `any generate {plan.Target.Name} --entry-point {option} --force` overwrites it.");
 
         Line(file, entryPoint.Kind == EntryPointKind.Any
                        ? "// It needs C# 14: a static extension member is what reaches this spelling without touching the library."

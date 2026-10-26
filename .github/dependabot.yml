@@ -29,7 +29,7 @@ updates:
       # The workspace layer follows JustDummies.Cli's target framework, and Roslyn 5.9.0 dropped net8.0:
       # 5.6.0 shipped a lib/net8.0 for each of these, 5.9.0 ships net10.0 and netstandard2.0 — and for
       # Workspaces.MSBuild not even that, net10.0 and net472 alone. JustDummies.Cli is the only project
-      # still on net8.0, deliberately, so `dum` installs for a developer on .NET 8 and rolls forward.
+      # still on net8.0, deliberately, so `any` installs for a developer on .NET 8 and rolls forward.
       # Restore does NOT report the mismatch: the package stays compatible through its contentFiles/any/any
       # BuildHost payload, so the lib assets resolve to nothing and MSBuildWorkspace simply disappears —
       # three CS0234 in the shell, measured on pull request #82. Ignoring Microsoft.CodeAnalysis.CSharp

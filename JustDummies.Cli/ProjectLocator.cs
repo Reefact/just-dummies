@@ -41,7 +41,7 @@ internal static class ProjectLocator {
 
         return found.Length switch {
             1 => ProjectChoice.At(found[0]),
-            0 => ProjectChoice.None($"No {ProjectPattern} in {directory}. Run dum from a project directory, "
+            0 => ProjectChoice.None($"No {ProjectPattern} in {directory}. Run any from a project directory, "
                                   + "or name one with --project."),
             _ => ProjectChoice.Between(found)
         };

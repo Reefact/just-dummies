@@ -15,7 +15,7 @@ namespace JustDummies.Cli.UnitTests;
 /// </remarks>
 public sealed class ProjectLocatorTests : IDisposable {
 
-    private readonly string directory = Directory.CreateTempSubdirectory("dum-locate-").FullName;
+    private readonly string directory = Directory.CreateTempSubdirectory("any-locate-").FullName;
 
     /// <inheritdoc />
     public void Dispose() {

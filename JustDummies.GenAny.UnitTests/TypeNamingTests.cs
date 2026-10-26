@@ -26,7 +26,7 @@ public sealed class TypeNamingTests {
     }
 
     // §3.2: a nested type scaffolds to a TOP-LEVEL generator named after the nested type alone, so
-    // `dum generate Order.Line` writes AnyLine and not AnyOrderLine.
+    // `any generate Order.Line` writes AnyLine and not AnyOrderLine.
     [Fact(DisplayName = "A nested type is named after itself alone: Order.Line becomes AnyLine.")]
     public void ANestedTypeIsNamedAfterItselfAlone() {
         ITypeSymbol line = TypeIn(Source, "Shop.Domain.Order+Line");

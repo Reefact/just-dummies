@@ -11,19 +11,19 @@ exactly one of them; the fourth is a command-line tool you install globally and 
 | [`JustDummies`](./justdummies.en.md) | the library, with its 35 rules bundled in | **Yes** — this is the product |
 | [`JustDummies.Xunit`](./justdummies-xunit.en.md) | the xUnit v3 adapter: `[Reproducible]` | Only with xUnit v3, and only if you want the attribute |
 | [`JustDummies.DiagnosticCatalog`](./justdummies-diagnosticcatalog.en.md) | the `JD001`–`JD035` rules as compile-checked constants | Only to suppress a rule without a string literal |
-| [`JustDummies.Cli`](./justdummies-cli.en.md) | `dum`, the scaffolder: writes a generator for one of your types | Only to scaffold one — a global tool, never a reference |
+| [`JustDummies.Cli`](./justdummies-cli.en.md) | `any`, the scaffolder: writes a generator for one of your types | Only to scaffold one — a global tool, never a reference |
 
 ## How they relate
 
 ```mermaid
 flowchart TD
     accTitle: How the four packages relate
-    accDescr: JustDummies, the library, bundles the 35 rules under analyzers/dotnet/cs. JustDummies.Xunit depends on the library. JustDummies.DiagnosticCatalog names those rules without depending on them, and dum, the scaffolder, emits code calling the library.
+    accDescr: JustDummies, the library, bundles the 35 rules under analyzers/dotnet/cs. JustDummies.Xunit depends on the library. JustDummies.DiagnosticCatalog names those rules without depending on them, and any, the scaffolder, emits code calling the library.
     L["JustDummies<br/><i>the library</i>"] -->|"bundles"| A["35 rules<br/><i>analyzers/dotnet/cs</i>"]
     X["JustDummies.Xunit<br/><i>[Reproducible]</i>"] -->|"depends on"| L
     C["JustDummies.DiagnosticCatalog<br/><i>JustDummiesRule.JD0NN</i>"]
     C -.->|"names the rules in"| A
-    D["dum<br/><i>the scaffolder</i>"] -.->|"emits code calling"| L
+    D["any<br/><i>the scaffolder</i>"] -.->|"emits code calling"| L
     style L fill:#e8eaf6,stroke:#3f51b5,color:#1a237e
     style X fill:#e8f5e9,stroke:#43a047,color:#1b5e20
     style C fill:#fff8e1,stroke:#f9a825,color:#e65100
@@ -36,7 +36,7 @@ adding the package is all it takes to get them.
 `JustDummies.Xunit` depends on the library and on xUnit v3. `JustDummies.DiagnosticCatalog` is
 standalone — it carries no generator, only the rule identifiers.
 
-`dum` is the odd one out: it references **nothing**. It resolves every library symbol by name against
+`any` is the odd one out: it references **nothing**. It resolves every library symbol by name against
 your own compilation, so the code it writes calls JustDummies without the tool ever depending on it
 ([ADR-0063](../../for-maintainers/adr/0063-give-the-scaffolder-no-dependency-on-the-package.md)).
 
@@ -60,7 +60,7 @@ a release: read [the package listing](https://www.nuget.org/packages/JustDummies
 
 ## Target frameworks
 
-The three libraries target **`netstandard2.0`**, which is what gives them their reach. `dum` is a
+The three libraries target **`netstandard2.0`**, which is what gives them their reach. `any` is a
 tool rather than a library, so reach does not apply to it the same way: it targets **`net8.0`** and
 rolls forward onto any newer runtime you have installed, whatever the project it analyzes targets.
 

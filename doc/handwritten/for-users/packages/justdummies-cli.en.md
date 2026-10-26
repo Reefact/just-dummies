@@ -41,6 +41,11 @@ Analyzing Shop.Domain.Order
 `AnyOrder.cs` is a `partial class` implementing `IAny<Order>`, with a `With…` method per constructor
 parameter. It is yours from that moment: read it, edit it, commit it.
 
+What it draws is arbitrary — hence `Any`, and hence the tool's name. A value you set through a `With…`
+method is not drawn but chosen; whether the object carrying it is still a dummy depends on whether
+your test's outcome depends on that value, not on the call: see
+[Arbitrary does not mean dummy](../guides/core-concepts.en.md#arbitrary-does-not-mean-dummy).
+
 ## What the last column means
 
 It is the point of the recap, not decoration — it separates what was **inferred** from what was
@@ -125,7 +130,7 @@ That writes a second file, `AnyOrder.Entry.cs`, beside the generator:
 
 <!-- jd:skip -->
 ```csharp
-Order order = Any.Order().WithStatus(OrderStatus.Pending).Generate();
+Order anyPendingOrder = Any.Order().WithStatus(OrderStatus.Pending).Generate();
 ```
 
 It uses a C# 14 extension member, so the project has to compile at C# 14; below that `any` says so

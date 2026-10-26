@@ -40,6 +40,11 @@ Analyzing Shop.Domain.Order
 `AnyOrder.cs` est une `partial class` implémentant `IAny<Order>`, avec une méthode `With…` par
 paramètre du constructeur. Il vous appartient dès cet instant : lisez-le, modifiez-le, commitez-le.
 
+Ce qu'il tire est arbitraire — d'où `Any`, et d'où le nom de l'outil. Une valeur que vous fixez par une
+méthode `With…` n'est pas tirée mais choisie ; que l'objet qui la porte reste un dummy dépend de ce
+que le résultat de votre test dépende ou non de cette valeur, et non de l'appel : voir
+[Arbitraire ne veut pas dire dummy](../guides/core-concepts.fr.md#arbitraire-ne-veut-pas-dire-dummy).
+
 ## Ce que dit la dernière colonne
 
 C'est tout l'intérêt du récapitulatif, pas une décoration — elle sépare ce qui a été **inféré** de ce
@@ -124,7 +129,7 @@ Cela écrit un second fichier, `AnyOrder.Entry.cs`, à côté du generator :
 
 <!-- jd:skip -->
 ```csharp
-Order order = Any.Order().WithStatus(OrderStatus.Pending).Generate();
+Order anyPendingOrder = Any.Order().WithStatus(OrderStatus.Pending).Generate();
 ```
 
 Il utilise un membre d'extension C# 14, donc le projet doit compiler en C# 14 ; en deçà, `any` le dit

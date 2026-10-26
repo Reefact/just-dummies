@@ -30,8 +30,8 @@ No `cli` release has left beta: the train stands at `cli-v1.1.0-beta.6`, and its
 the name of its project defaults file (ADR-0072) are not yet a stable contract.
 
 Issue #272 reported the contradiction from a reader's side: the tool's description promises a dummy
-generator, and the library's own definition says the object it returns, once a value is pinned, is
-not a dummy.
+generator, and the library's own definition says the object it returns, once a test pins a value on
+which its outcome depends, is not a dummy.
 
 ## Decision
 

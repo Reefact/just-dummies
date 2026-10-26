@@ -240,10 +240,12 @@ un dummy dans son ensemble, et son nom dit les deux moitiés : `any` pour ce qui
 pour ce qui a été choisi.
 
 Fixez le même statut dans un test qui porte sur autre chose — la commande doit être en attente pour
-que la remise s'applique, et l'assertion porte sur le montant remisé — et `Pending` devient une
-contrainte dont le scénario a besoin, comme `Between(1, 100)` sur une quantité, et non ce que le test
-vérifie. La commande y joue toujours le rôle de dummy. Ce qui décide, c'est que le résultat dépende
-ou non de la valeur, jamais l'appel à `With…`.
+que la remise s'applique, et l'assertion porte sur le montant remisé — et `Pending` n'est qu'une
+condition préalable du scénario, comme `Between(1, 100)` sur une quantité, et non la valeur vérifiée.
+D'autres propriétés de la commande comptent toujours pour cette assertion — à commencer par son
+montant —, si bien que fixer un statut dont l'assertion ne dépend pas ne fait pas, à lui seul, de la
+commande entière un dummy. Ce qui décide, valeur par valeur, c'est que le résultat en dépende ou non,
+jamais l'appel à `With…`.
 
 Et si rien dans le test ne dépend du statut, laissez-le tiré : une valeur fixée qui ne compte pas est
 un littéral qui a l'air délibéré, c'est-à-dire précisément ce que cette bibliothèque existe pour

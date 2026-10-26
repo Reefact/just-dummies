@@ -231,10 +231,11 @@ is about it, and only the rest of the order is arbitrary. So this order is not a
 and its name says both halves: `any` for what was drawn, `Pending` for what was chosen.
 
 Pin the same status in a test about something else — the order has to be pending for the discount to
-apply at all, and the assertion is about the discounted amount — and `Pending` is a constraint the
-scenario needs, like `Between(1, 100)` on a quantity, not what the test verifies. The order still
-plays the role of a dummy there. What decides is whether the outcome depends on the value, never the
-call to `With…`.
+apply at all, and the assertion is about the discounted amount — and `Pending` is only a prerequisite for that
+scenario, like `Between(1, 100)` on a quantity, not the value being verified. Other properties of the
+order still matter to that assertion — its amount first — so pinning a status the assertion does not
+depend on does not, by itself, make the whole order a dummy. What decides, value by value, is whether
+the outcome depends on it, never the call to `With…`.
 
 And if nothing in the test depends on the status, leave it drawn: a pinned value that does not matter
 is a literal that looks deliberate, which is the very thing this library exists to remove.

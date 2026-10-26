@@ -21,7 +21,7 @@ and the **Origin** column says how each one got here:
   but its record stays live in `Reefact/first-class-errors` too, because that
   repository still applies it. Both copies are now independent: either side can
   supersede its own without touching the other. 9 decisions.
-* **recorded here** — decided in this repository, on its own. 64 decisions.
+* **recorded here** — decided in this repository, on its own. 65 decisions.
 
 The numbers are this base's own, assigned in the order the decisions were
 recorded upstream ([ADR-0045](0045-renumber-the-decision-base.md)); every ADR
@@ -218,3 +218,4 @@ failure mode of a "not now" is that nobody remembers the option existed on the d
 | [ADR-0105](0105-accept-an-undeclared-enum-exclusion-as-a-no-op.md) | Accept an undeclared value in an enum exclusion as a no-op | Accepted | recorded here |
 | [ADR-0106](0106-test-the-analyzers-against-the-run-time-in-a-sibling-suite.md) | Test the analyzers against the run time in a sibling suite | Accepted | recorded here |
 | [ADR-0107](0107-own-a-constraint-repeated-identically-as-one-rule.md) | Own a constraint repeated identically as one rule, and narrow JD024 out of it | Accepted | recorded here |
+| [ADR-0108](0108-name-the-scaffolder-after-what-it-draws.md) | Name the scaffolder after what it draws, not after the role a value plays | Accepted | recorded here |

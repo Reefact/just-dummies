@@ -12,10 +12,10 @@ les booléens.
 `Any.Enum<TEnum>()` tire l'un des membres déclarés sur le type :
 
 ```csharp
-OrderStatus status    = Any.Enum<OrderStatus>().Generate();
-OrderStatus notDraft  = Any.Enum<OrderStatus>().DifferentFrom(OrderStatus.Draft).Generate();
-OrderStatus openState = Any.Enum<OrderStatus>().Except(OrderStatus.Shipped, OrderStatus.Cancelled).Generate();
-OrderStatus terminal  = Any.Enum<OrderStatus>().OneOf(OrderStatus.Shipped, OrderStatus.Cancelled).Generate();
+OrderStatus anyStatus    = Any.Enum<OrderStatus>().Generate();
+OrderStatus anyNotDraft  = Any.Enum<OrderStatus>().DifferentFrom(OrderStatus.Draft).Generate();
+OrderStatus anyOpenState = Any.Enum<OrderStatus>().Except(OrderStatus.Shipped, OrderStatus.Cancelled).Generate();
+OrderStatus anyTerminal  = Any.Enum<OrderStatus>().OneOf(OrderStatus.Shipped, OrderStatus.Cancelled).Generate();
 ```
 
 Le tirage reste à l'intérieur des membres déclarés. Il n'invente jamais de valeur numérique non
@@ -32,15 +32,15 @@ ce tirage se demande explicitement :
 
 ```csharp
 // Un membre déclaré : None, Read, Write ou Delete.
-Permissions single = Any.Enum<Permissions>().Generate();
+Permissions anySingle = Any.Enum<Permissions>().Generate();
 
 // N'importe quelle combinaison : Read | Delete, Read | Write | Delete, ...
-Permissions combined = Any.Enum<Permissions>().AllowingCombinations().Generate();
+Permissions anyCombined = Any.Enum<Permissions>().AllowingCombinations().Generate();
 
 // L'une des deux combinaisons que vous nommez : une liste blanche est le vivier, rien à activer.
-Permissions writable = Any.Enum<Permissions>()
-                          .OneOf(Permissions.Read | Permissions.Write, Permissions.Write | Permissions.Delete)
-                          .Generate();
+Permissions anyWritable = Any.Enum<Permissions>()
+                             .OneOf(Permissions.Read | Permissions.Write, Permissions.Write | Permissions.Delete)
+                             .Generate();
 ```
 
 Ce caractère explicite est délibéré
@@ -61,12 +61,12 @@ deux cas, et signalée par [JD017](../analyzers/JD017.fr.md).
 `Any.OneOf` tire uniformément parmi les valeurs que vous listez :
 
 ```csharp
-string  currency = Any.OneOf("EUR", "USD", "GBP").Generate();
-int     httpPort = Any.OneOf(80, 443, 8080).Generate();
-decimal vatRate  = Any.OneOf(0.055m, 0.10m, 0.20m).Generate();
+string  anyCurrency = Any.OneOf("EUR", "USD", "GBP").Generate();
+int     anyHttpPort = Any.OneOf(80, 443, 8080).Generate();
+decimal anyVatRate  = Any.OneOf(0.055m, 0.10m, 0.20m).Generate();
 
 // Un vivier se restreint comme le reste.
-string notEuro = Any.OneOf("EUR", "USD", "GBP").DifferentFrom("EUR").Generate();
+string anyNotEuro = Any.OneOf("EUR", "USD", "GBP").DifferentFrom("EUR").Generate();
 ```
 
 Deux erreurs sont assez fréquentes pour avoir leur propre diagnostic.
@@ -97,7 +97,7 @@ IAny<List<string>> wrong = Any.OneOf(currencies);
 ```csharp
 List<string> currencies = ["EUR", "USD", "GBP"];
 
-string currency = Any.ElementOf(currencies).Generate();
+string anyCurrency = Any.ElementOf(currencies).Generate();
 ```
 
 Deux surcharges existent, pour `IReadOnlyList<T>` et `IEnumerable<T>`. Le compilateur choisit la plus
@@ -109,8 +109,8 @@ LINQ fonctionne sans `.ToList()` sur le site d'appel.
 List<OrderStatus>       open      = [OrderStatus.Draft, OrderStatus.Submitted];
 IEnumerable<OrderStatus> lazyOpen = open.Where(status => status != OrderStatus.Draft);
 
-OrderStatus fromList     = Any.ElementOf(open).Generate();
-OrderStatus fromSequence = Any.ElementOf(lazyOpen).Generate();
+OrderStatus anyFromList     = Any.ElementOf(open).Generate();
+OrderStatus anyFromSequence = Any.ElementOf(lazyOpen).Generate();
 ```
 
 Un vivier vide n'admet aucune valeur et est refusé, plutôt que de renvoyer une valeur par défaut.
@@ -124,7 +124,7 @@ se lier silencieusement à la collection elle-même. Le `OneOf` d'un **construct
 ```csharp
 List<int> allowedPorts = [80, 443, 8080];
 
-int port = Any.Int32().OneOf(allowedPorts).Generate();
+int anyPort = Any.Int32().OneOf(allowedPorts).Generate();
 ```
 
 Ce n'est pas le même appel que `Any.ElementOf(allowedPorts)`, et c'est pourquoi les deux existent.
@@ -135,7 +135,7 @@ restreindre l'ensemble.
 ```csharp
 List<decimal> rates = [0.055m, 0.10m, 0.20m];
 
-decimal standardRate = Any.Decimal().OneOf(rates).GreaterThan(0.09m).Generate();
+decimal anyStandardRate = Any.Decimal().OneOf(rates).GreaterThan(0.09m).Generate();
 ```
 
 Tout générateur qui propose `OneOf` propose les deux formes : cette uniformité est la règle, et un
@@ -144,16 +144,16 @@ forme séquence de `Any.Char()` en accepte une directement, et elle se lit comme
 caractères autorisés :
 
 ```csharp
-char separator = Any.Char().OneOf("-_.").Generate();
+char anySeparator = Any.Char().OneOf("-_.").Generate();
 ```
 
 ## Booléens
 
 ```csharp
-bool flag       = Any.Boolean().Generate();
-bool always     = Any.Boolean().True().Generate();
-bool never      = Any.Boolean().False().Generate();
-bool notTheSame = Any.Boolean().DifferentFrom(true).Generate();
+bool anyFlag       = Any.Boolean().Generate();
+bool anyAlways     = Any.Boolean().True().Generate();
+bool anyNever      = Any.Boolean().False().Generate();
+bool anyNotTheSame = Any.Boolean().DifferentFrom(true).Generate();
 ```
 
 `True()` et `False()` existent pour qu'un site d'appel qui fige le drapeau se lise comme ceux qui ne

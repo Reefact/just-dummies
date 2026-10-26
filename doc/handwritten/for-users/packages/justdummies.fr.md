@@ -68,18 +68,18 @@ les consommateurs .NET Framework chargent réellement
 
 ```csharp
 // Un scalaire, contraint par les invariants de son domaine.
-int quantity = Any.Int32().Between(1, 100).Generate();
+int anyQuantity = Any.Int32().Between(1, 100).Generate();
 
 // Un objet-valeur, construit via sa vraie fabrique.
-OrderReference reference = Any.String().StartingWith("ORD-").WithLength(12)
-                              .As(OrderReference.Create)
-                              .Generate();
+OrderReference anyReference = Any.String().StartingWith("ORD-").WithLength(12)
+                                 .As(OrderReference.Create)
+                                 .Generate();
 
 // Une collection de ces objets.
-List<OrderReference> basket = Any.ListOf(Any.String().StartingWith("ORD-").WithLength(12)
-                                            .As(OrderReference.Create))
-                                 .WithCountBetween(1, 4)
-                                 .Generate();
+List<OrderReference> anyBasket = Any.ListOf(Any.String().StartingWith("ORD-").WithLength(12)
+                                               .As(OrderReference.Create))
+                                    .WithCountBetween(1, 4)
+                                    .Generate();
 
 // Le tout rejouable depuis un seul entier.
 Any.Reproducibly(() => Assert.InRange(Any.Int32().Between(1, 100).Generate(), 1, 100));

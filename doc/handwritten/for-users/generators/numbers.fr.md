@@ -34,14 +34,14 @@ Cinq contraintes resserrent l'intervalle, et elles se composent :
 
 <!-- jd:allow=JD031 -->
 ```csharp
-int quantity   = Any.Int32().Between(1, 100).Generate();          // inclusif des deux côtés
-int positive   = Any.Int32().GreaterThan(0).Generate();
-int atLeastTen = Any.Int32().GreaterThanOrEqualTo(10).Generate();
-int belowMax   = Any.Int32().LessThan(1_000).Generate();
-int atMostMax  = Any.Int32().LessThanOrEqualTo(999).Generate();
+int anyQuantity   = Any.Int32().Between(1, 100).Generate();          // inclusif des deux côtés
+int anyPositive   = Any.Int32().GreaterThan(0).Generate();
+int anyAtLeastTen = Any.Int32().GreaterThanOrEqualTo(10).Generate();
+int anyBelowMax   = Any.Int32().LessThan(1_000).Generate();
+int anyAtMostMax  = Any.Int32().LessThanOrEqualTo(999).Generate();
 
 // Composé : une quantité de ligne de commande, bornée des deux côtés par deux appels distincts.
-int lineQuantity = Any.Int32().GreaterThanOrEqualTo(1).LessThanOrEqualTo(50).Generate();
+int anyLineQuantity = Any.Int32().GreaterThanOrEqualTo(1).LessThanOrEqualTo(50).Generate();
 ```
 
 `Between` est inclusif aux deux extrémités. Des bornes qui se croisent sont refusées immédiatement,
@@ -66,11 +66,11 @@ borne quand votre domaine en a une.
 ## Signe et zéro
 
 ```csharp
-int     positive = Any.Int32().Positive().Generate();   // > 0
-int     negative = Any.Int32().Negative().Generate();   // < 0
-int     nonZero  = Any.Int32().NonZero().Generate();    // != 0
-int     zero     = Any.Int32().Zero().Generate();       // toujours 0
-decimal price    = Any.Decimal().Positive().Generate();
+int     anyPositive = Any.Int32().Positive().Generate();   // > 0
+int     anyNegative = Any.Int32().Negative().Generate();   // < 0
+int     anyNonZero  = Any.Int32().NonZero().Generate();    // != 0
+int     anyZero     = Any.Int32().Zero().Generate();       // toujours 0
+decimal anyPrice    = Any.Decimal().Positive().Generate();
 ```
 
 `Positive()` et `Negative()` n'existent que là où le type a un signe. `byte`, `ushort`, `uint`,
@@ -84,9 +84,9 @@ en gardant un site d'appel qui se lit comme tous les autres.
 ## Appartenance et exclusion
 
 ```csharp
-int      httpPort   = Any.Int32().OneOf(80, 443, 8080).Generate();
-int      notReserved = Any.Int32().Between(1, 10).Except(3, 7).Generate();
-int      notTheSame = Any.Int32().Between(1, 100).DifferentFrom(42).Generate();
+int      anyHttpPort   = Any.Int32().OneOf(80, 443, 8080).Generate();
+int      anyNotReserved = Any.Int32().Between(1, 10).Except(3, 7).Generate();
+int      anyNotTheSame = Any.Int32().Between(1, 100).DifferentFrom(42).Generate();
 ```
 
 `OneOf` restreint le tirage à un vivier explicite. `Except` retire des valeurs du domaine ;
@@ -103,17 +103,17 @@ Deux contraintes placent la valeur sur une grille plutôt que simplement dans un
 `MultipleOf` s'applique aux types **entiers** :
 
 ```csharp
-int    evenQuantity = Any.Int32().Between(1, 100).MultipleOf(2).Generate();
-int    onTheHour    = Any.Int32().Between(0, 1_440).MultipleOf(60).Generate();
-long   pageOffset   = Any.Int64().GreaterThanOrEqualTo(0).MultipleOf(25).Generate();
+int    anyEvenQuantity = Any.Int32().Between(1, 100).MultipleOf(2).Generate();
+int    anyOnTheHour    = Any.Int32().Between(0, 1_440).MultipleOf(60).Generate();
+long   anyPageOffset   = Any.Int64().GreaterThanOrEqualTo(0).MultipleOf(25).Generate();
 ```
 
 `WithScale` s'applique à `decimal` et fixe le nombre de décimales — ce qui fait qu'un dummy de
 montant se comporte comme un montant :
 
 ```csharp
-decimal amount = Any.Decimal().Between(0m, 10_000m).WithScale(2).Generate(); // p. ex. 4172,35
-decimal rate   = Any.Decimal().Between(0m, 1m).WithScale(4).Generate();      // p. ex. 0,0725
+decimal anyAmount = Any.Decimal().Between(0m, 10_000m).WithScale(2).Generate(); // p. ex. 4172,35
+decimal anyRate   = Any.Decimal().Between(0m, 1m).WithScale(4).Generate();      // p. ex. 0,0725
 ```
 
 Combiner `Between` et `MultipleOf` est le seul endroit à surveiller : un intervalle ne contenant
@@ -162,7 +162,7 @@ Quand un test a réellement besoin d'un NaN, demandez-le explicitement via le vi
 ne porte aucune règle de finitude :
 
 ```csharp
-double maybeNaN = Any.OneOf(double.NaN, 1.0, 2.0).Generate();
+double anyMaybeNaN = Any.OneOf(double.NaN, 1.0, 2.0).Generate();
 ```
 
 ## Matrice de disponibilité

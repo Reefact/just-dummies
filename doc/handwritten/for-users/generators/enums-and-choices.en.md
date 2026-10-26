@@ -11,10 +11,10 @@ enumerations, explicit pools, elements of an existing collection, and booleans.
 `Any.Enum<TEnum>()` draws one of the members declared on the type:
 
 ```csharp
-OrderStatus status    = Any.Enum<OrderStatus>().Generate();
-OrderStatus notDraft  = Any.Enum<OrderStatus>().DifferentFrom(OrderStatus.Draft).Generate();
-OrderStatus openState = Any.Enum<OrderStatus>().Except(OrderStatus.Shipped, OrderStatus.Cancelled).Generate();
-OrderStatus terminal  = Any.Enum<OrderStatus>().OneOf(OrderStatus.Shipped, OrderStatus.Cancelled).Generate();
+OrderStatus anyStatus    = Any.Enum<OrderStatus>().Generate();
+OrderStatus anyNotDraft  = Any.Enum<OrderStatus>().DifferentFrom(OrderStatus.Draft).Generate();
+OrderStatus anyOpenState = Any.Enum<OrderStatus>().Except(OrderStatus.Shipped, OrderStatus.Cancelled).Generate();
+OrderStatus anyTerminal  = Any.Enum<OrderStatus>().OneOf(OrderStatus.Shipped, OrderStatus.Cancelled).Generate();
 ```
 
 The draw stays inside the declared members. It never invents an undeclared numeric value, even
@@ -30,15 +30,15 @@ For a `[Flags]` enum, a plain draw still yields **one declared member**. Widenin
 
 ```csharp
 // One declared member: None, Read, Write or Delete.
-Permissions single = Any.Enum<Permissions>().Generate();
+Permissions anySingle = Any.Enum<Permissions>().Generate();
 
 // Any combination of them: Read | Delete, Read | Write | Delete, ...
-Permissions combined = Any.Enum<Permissions>().AllowingCombinations().Generate();
+Permissions anyCombined = Any.Enum<Permissions>().AllowingCombinations().Generate();
 
 // One of two combinations you name: an allow-list is the pool itself, so it needs no opt-in.
-Permissions writable = Any.Enum<Permissions>()
-                          .OneOf(Permissions.Read | Permissions.Write, Permissions.Write | Permissions.Delete)
-                          .Generate();
+Permissions anyWritable = Any.Enum<Permissions>()
+                             .OneOf(Permissions.Read | Permissions.Write, Permissions.Write | Permissions.Delete)
+                             .Generate();
 ```
 
 The opt-in is deliberate
@@ -59,12 +59,12 @@ combination in `OneOf` needs none of it, since an allow-list is the pool itself 
 `Any.OneOf` draws uniformly from values you list:
 
 ```csharp
-string  currency = Any.OneOf("EUR", "USD", "GBP").Generate();
-int     httpPort = Any.OneOf(80, 443, 8080).Generate();
-decimal vatRate  = Any.OneOf(0.055m, 0.10m, 0.20m).Generate();
+string  anyCurrency = Any.OneOf("EUR", "USD", "GBP").Generate();
+int     anyHttpPort = Any.OneOf(80, 443, 8080).Generate();
+decimal anyVatRate  = Any.OneOf(0.055m, 0.10m, 0.20m).Generate();
 
 // Pools narrow like anything else.
-string notEuro = Any.OneOf("EUR", "USD", "GBP").DifferentFrom("EUR").Generate();
+string anyNotEuro = Any.OneOf("EUR", "USD", "GBP").DifferentFrom("EUR").Generate();
 ```
 
 Two mistakes are common enough to have their own diagnostics.
@@ -94,7 +94,7 @@ IAny<List<string>> wrong = Any.OneOf(currencies);
 ```csharp
 List<string> currencies = ["EUR", "USD", "GBP"];
 
-string currency = Any.ElementOf(currencies).Generate();
+string anyCurrency = Any.ElementOf(currencies).Generate();
 ```
 
 Two overloads exist, for `IReadOnlyList<T>` and `IEnumerable<T>`. The compiler picks the more
@@ -106,8 +106,8 @@ walked; both are supported so a `yield`-returning helper or a LINQ query works w
 List<OrderStatus>       open      = [OrderStatus.Draft, OrderStatus.Submitted];
 IEnumerable<OrderStatus> lazyOpen = open.Where(status => status != OrderStatus.Draft);
 
-OrderStatus fromList     = Any.ElementOf(open).Generate();
-OrderStatus fromSequence = Any.ElementOf(lazyOpen).Generate();
+OrderStatus anyFromList     = Any.ElementOf(open).Generate();
+OrderStatus anyFromSequence = Any.ElementOf(lazyOpen).Generate();
 ```
 
 An empty pool admits no value and is refused rather than returning a default.
@@ -121,7 +121,7 @@ shapes and there is nothing to get wrong:
 ```csharp
 List<int> allowedPorts = [80, 443, 8080];
 
-int port = Any.Int32().OneOf(allowedPorts).Generate();
+int anyPort = Any.Int32().OneOf(allowedPorts).Generate();
 ```
 
 That is not the same call as `Any.ElementOf(allowedPorts)`, which is why both exist. `ElementOf`
@@ -131,7 +131,7 @@ so the type's own constraints keep narrowing the set:
 ```csharp
 List<decimal> rates = [0.055m, 0.10m, 0.20m];
 
-decimal standardRate = Any.Decimal().OneOf(rates).GreaterThan(0.09m).Generate();
+decimal anyStandardRate = Any.Decimal().OneOf(rates).GreaterThan(0.09m).Generate();
 ```
 
 Every generator that offers `OneOf` offers both shapes — that uniformity is the rule, and a test holds
@@ -139,16 +139,16 @@ the surface to it. One consequence is worth knowing: a `string` is an `IEnumerab
 `Any.Char()` the sequence form accepts one directly, and it reads as the characters it lists:
 
 ```csharp
-char separator = Any.Char().OneOf("-_.").Generate();
+char anySeparator = Any.Char().OneOf("-_.").Generate();
 ```
 
 ## Booleans
 
 ```csharp
-bool flag       = Any.Boolean().Generate();
-bool always     = Any.Boolean().True().Generate();
-bool never      = Any.Boolean().False().Generate();
-bool notTheSame = Any.Boolean().DifferentFrom(true).Generate();
+bool anyFlag       = Any.Boolean().Generate();
+bool anyAlways     = Any.Boolean().True().Generate();
+bool anyNever      = Any.Boolean().False().Generate();
+bool anyNotTheSame = Any.Boolean().DifferentFrom(true).Generate();
 ```
 
 `True()` and `False()` exist so a call site that pins the flag still reads like the ones that do not,

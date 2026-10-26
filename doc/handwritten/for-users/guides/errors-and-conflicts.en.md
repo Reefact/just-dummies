@@ -96,7 +96,7 @@ attempts, then a refusal:
 decimal[] excluded = Enumerable.Range(0, 100).Select(index => index / 100m).ToArray();
 
 try {
-    decimal awkward = Any.Decimal().Between(0m, 1m).WithScale(2).Except(excluded).Generate();
+    decimal anyAwkward = Any.Decimal().Between(0m, 1m).WithScale(2).Except(excluded).Generate();
 } catch (AnyGenerationException exception) {
     // exception.Seed carries the seed of the run, when one was pinned — so the failure replays.
     Console.Error.WriteLine($"{exception.Message} (seed: {exception.Seed})");

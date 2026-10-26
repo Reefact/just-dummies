@@ -9,11 +9,11 @@ the structured one.
 ## Guids
 
 ```csharp
-Guid id       = Any.Guid().Generate();
-Guid nonEmpty = Any.Guid().NonEmpty().Generate();
-Guid empty    = Any.Guid().Empty().Generate();        // always Guid.Empty
-Guid notThis  = Any.Guid().DifferentFrom(Guid.Empty).Generate();
-Guid oneOf    = Any.Guid().OneOf(Guid.Parse("11111111-1111-1111-1111-111111111111"),
+Guid anyId       = Any.Guid().Generate();
+Guid anyNonEmpty = Any.Guid().NonEmpty().Generate();
+Guid anyEmpty    = Any.Guid().Empty().Generate();        // always Guid.Empty
+Guid anyNotThis  = Any.Guid().DifferentFrom(Guid.Empty).Generate();
+Guid anyOneOf    = Any.Guid().OneOf(Guid.Parse("11111111-1111-1111-1111-111111111111"),
                                  Guid.Parse("22222222-2222-2222-2222-222222222222")).Generate();
 ```
 
@@ -32,7 +32,7 @@ not have.
 web, WebSocket, FTP or mailto URI, or a relative reference:
 
 ```csharp
-Uri anything = Any.Uri().Generate();
+Uri anyUri = Any.Uri().Generate();
 ```
 
 Narrowing to a **family** returns a builder exposing only the components that family actually has.
@@ -64,15 +64,15 @@ message names the form to pass.
 ### Web URIs
 
 ```csharp
-Uri page     = Any.Uri().Web().Generate();
-Uri secure   = Any.Uri().Web().UsingHttps().WithHost("api.example.com").Generate();
-Uri insecure = Any.Uri().Web().UsingHttp().Generate();
-Uri deep     = Any.Uri().Web().WithPathSegments(3).Generate();          // /a/b/c
-Uri bare     = Any.Uri().Web().WithoutPath().Generate();
-Uri onAPort  = Any.Uri().Web().WithPort(8080).Generate();
-Uri anyPort  = Any.Uri().Web().WithPort().Generate();                   // some port, unspecified
-Uri queried  = Any.Uri().Web().WithQuery().WithFragment().Generate();
-Uri withAuth = Any.Uri().Web().WithUserInfo("alice", "secret").Generate();
+Uri anyPage     = Any.Uri().Web().Generate();
+Uri anySecure   = Any.Uri().Web().UsingHttps().WithHost("api.example.com").Generate();
+Uri anyInsecure = Any.Uri().Web().UsingHttp().Generate();
+Uri anyDeep     = Any.Uri().Web().WithPathSegments(3).Generate();          // /a/b/c
+Uri anyBare     = Any.Uri().Web().WithoutPath().Generate();
+Uri anyOnAPort  = Any.Uri().Web().WithPort(8080).Generate();
+Uri anyPort     = Any.Uri().Web().WithPort().Generate();                   // some port, unspecified
+Uri anyQueried  = Any.Uri().Web().WithQuery().WithFragment().Generate();
+Uri anyWithAuth = Any.Uri().Web().WithUserInfo("alice", "secret").Generate();
 ```
 
 `WithPort()` without an argument asks for *a* port to be present without saying which — the
@@ -82,9 +82,9 @@ irrelevant. `WithUserInfo` has three forms: no argument, a user, or a user and a
 ### WebSocket URIs
 
 ```csharp
-Uri socket = Any.Uri().WebSocket().Generate();                    // ws:// or wss://
-Uri secure = Any.Uri().WebSocket().UsingWss().WithHost("live.example.com").Generate();
-Uri plain  = Any.Uri().WebSocket().UsingWs().WithPathSegments(2).WithQuery().Generate();
+Uri anySocket = Any.Uri().WebSocket().Generate();                    // ws:// or wss://
+Uri anySecure = Any.Uri().WebSocket().UsingWss().WithHost("live.example.com").Generate();
+Uri anyPlain  = Any.Uri().WebSocket().UsingWs().WithPathSegments(2).WithQuery().Generate();
 ```
 
 A WebSocket URI has no fragment, so there is no `WithFragment` to call.
@@ -92,18 +92,18 @@ A WebSocket URI has no fragment, so there is no `WithFragment` to call.
 ### FTP URIs
 
 ```csharp
-Uri archive = Any.Uri().Ftp().Generate();
-Uri hosted  = Any.Uri().Ftp().WithHost("files.example.com").WithPathSegments(2).Generate();
-Uri account = Any.Uri().Ftp().WithUserInfo("alice").WithPort(2121).Generate();
-Uri root    = Any.Uri().Ftp().WithoutPath().Generate();
+Uri anyArchive = Any.Uri().Ftp().Generate();
+Uri anyHosted  = Any.Uri().Ftp().WithHost("files.example.com").WithPathSegments(2).Generate();
+Uri anyAccount = Any.Uri().Ftp().WithUserInfo("alice").WithPort(2121).Generate();
+Uri anyRoot    = Any.Uri().Ftp().WithoutPath().Generate();
 ```
 
 ### Mailto URIs
 
 ```csharp
-Uri mail    = Any.Uri().Mailto().Generate();
-Uri toAlice = Any.Uri().Mailto().WithLocalPart("alice").WithDomain("example.com").Generate();
-Uri withCc  = Any.Uri().Mailto().WithHeaders().Generate();
+Uri anyMail    = Any.Uri().Mailto().Generate();
+Uri anyToAlice = Any.Uri().Mailto().WithLocalPart("alice").WithDomain("example.com").Generate();
+Uri anyWithCc  = Any.Uri().Mailto().WithHeaders().Generate();
 ```
 
 A `mailto:` has no host, port or path — it has a local part, a domain and optional headers — and the
@@ -112,10 +112,10 @@ builder exposes exactly that.
 ### Relative references
 
 ```csharp
-Uri relative = Any.Uri().Relative().Generate();
-Uri rooted   = Any.Uri().Relative().Rooted().Generate();                    // /a/b/c
-Uri deep     = Any.Uri().Relative().WithPathSegments(3).Generate();
-Uri queried  = Any.Uri().Relative().WithPathSegments(1).WithQuery().WithFragment().Generate();
+Uri anyRelative = Any.Uri().Relative().Generate();
+Uri anyRooted   = Any.Uri().Relative().Rooted().Generate();                    // /a/b/c
+Uri anyDeep     = Any.Uri().Relative().WithPathSegments(3).Generate();
+Uri anyQueried  = Any.Uri().Relative().WithPathSegments(1).WithQuery().WithFragment().Generate();
 ```
 
 One combination is worth knowing: a relative reference with zero path segments and no query,
@@ -128,13 +128,13 @@ failure lands at act time rather than at the arrange line, which is why the anal
 Both generators feed `.As(...)` like any other:
 
 ```csharp
-IAny<Customer> anyCustomer = Any.Combine(
+IAny<Customer> customerGenerator = Any.Combine(
     Any.Guid().NonEmpty(),
     Any.String().Alpha().WithLengthBetween(3, 20),
     Any.Uri().Mailto().WithDomain("example.test"),
     (id, name, mail) => new Customer(id, name, mail.ToString()));
 
-Customer customer = anyCustomer.Generate();
+Customer anyCustomer = customerGenerator.Generate();
 ```
 
 ---

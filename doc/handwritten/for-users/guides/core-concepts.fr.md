@@ -19,8 +19,8 @@ nouveau :
 ```csharp
 AnyInt32 anyQuantity = Any.Int32().Between(1, 100);
 
-int first  = anyQuantity.Generate();
-int second = anyQuantity.Generate();
+int anyFirst  = anyQuantity.Generate();
+int anySecond = anyQuantity.Generate();
 
 // first et second sont tous deux dans 1..100, et sont généralement différents.
 ```
@@ -57,8 +57,8 @@ Une contrainte ne modifie jamais le générateur sur lequel elle est appelée. E
 AnyString anyCode     = Any.String().Alpha().WithLength(8);
 AnyString anyUpperCode = anyCode.InUpperCase();
 
-string mixed = anyCode.Generate();      // 8 lettres, casse quelconque
-string upper = anyUpperCode.Generate(); // 8 lettres, majuscules
+string anyMixed = anyCode.Generate();      // 8 lettres, casse quelconque
+string anyUpper = anyUpperCode.Generate(); // 8 lettres, majuscules
 ```
 
 Deux conséquences en découlent, toutes deux utiles.
@@ -73,11 +73,11 @@ commettre quand une chaîne est répartie sur plusieurs lignes ; elle a donc son
 
 <!-- jd:allow=JD006 -->
 ```csharp
-AnyString anyReference = Any.String().WithLength(12);
+AnyString referenceGenerator = Any.String().WithLength(12);
 
-anyReference.StartingWith("ORD-"); // JD006 : le résultat est jeté, le préfixe est donc perdu
+referenceGenerator.StartingWith("ORD-"); // JD006 : le résultat est jeté, le préfixe est donc perdu
 
-string reference = anyReference.Generate(); // 12 caractères, sans préfixe
+string anyReference = referenceGenerator.Generate(); // 12 caractères, sans préfixe
 ```
 
 ## `IAny<T>` est la couture sur laquelle tout se compose
@@ -109,9 +109,9 @@ port sont offerts au-delà d'un seuil :
 
 ```csharp
 // Anti-patron : la contrainte a été choisie pour rendre l'assertion vraie.
-decimal orderTotal = Any.Decimal().GreaterThan(100m).Generate();
+decimal anyOrderTotal = Any.Decimal().GreaterThan(100m).Generate();
 
-Assert.Equal(0m, Shipping.FeeFor(orderTotal));
+Assert.Equal(0m, Shipping.FeeFor(anyOrderTotal));
 ```
 
 Le test ne prouve plus rien sur le seuil — il prouve que le code est d'accord avec la contrainte que
@@ -122,15 +122,15 @@ tirée. N'en faites rien : cela échoue de la même façon, et y ajoute un défa
 
 ```csharp
 // Toujours faux, d'une manière qui a l'air soigneuse.
-decimal orderTotal = Any.Decimal().Between(0m, 10_000m).WithScale(2).Generate();
+decimal anyOrderTotal = Any.Decimal().Between(0m, 10_000m).WithScale(2).Generate();
 
-decimal expected = orderTotal > 100m ? 0m : 4.90m;   // la règle, recopiée dans le test
+decimal expected = anyOrderTotal > 100m ? 0m : 4.90m;   // la règle, recopiée dans le test
 
-Assert.Equal(expected, Shipping.FeeFor(orderTotal));
+Assert.Equal(expected, Shipping.FeeFor(anyOrderTotal));
 ```
 
 Ce test affirme que `Shipping.FeeFor` est d'accord avec une seconde copie de `Shipping.FeeFor`
-écrite dans le corps du test : lui aussi survit donc au passage du seuil à 200. Et `orderTotal`
+écrite dans le corps du test : lui aussi survit donc au passage du seuil à 200. Et `anyOrderTotal`
 n'a jamais été un dummy : les frais sont exactement ce qu'il décide, ce qui en fait une donnée
 qui intervient dans ce que le test vérifie.
 

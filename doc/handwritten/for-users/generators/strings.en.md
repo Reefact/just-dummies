@@ -11,8 +11,8 @@ interact, `Any.Char()`, and pattern-driven generation with `Any.StringMatching`.
 
 <!-- jd:allow=JD030 -->
 ```csharp
-string anything = Any.String().Generate();   // 0 to 1024 characters, anywhere in ASCII
-string nonEmpty = Any.String().NonEmpty().Generate();
+string anyString   = Any.String().Generate();   // 0 to 1024 characters, anywhere in ASCII
+string anyNonEmpty = Any.String().NonEmpty().Generate();
 ```
 
 An unconstrained draw yields **0 to 1024 characters drawn from the whole of ASCII** — control
@@ -32,7 +32,7 @@ being a dummy — see [Getting started](../guides/getting-started.en.md#careful-
 So constrain it — with the invariants your code actually has:
 
 ```csharp
-string reference = Any.String().Printable().WithMaxLength(32).NonEmpty().Generate();
+string anyReference = Any.String().Printable().WithMaxLength(32).NonEmpty().Generate();
 ```
 
 `NonEmpty()` when content is required, `WithMaxLength(...)` for the length your column or contract
@@ -45,12 +45,12 @@ a fact about the surrounding code, written where it belongs
 
 <!-- jd:allow=JD030 -->
 ```csharp
-string exact     = Any.String().WithLength(12).Generate();
-string ranged    = Any.String().WithLengthBetween(3, 20).Generate();
-string atLeast   = Any.String().WithMinLength(8).Generate();
-string atMost    = Any.String().WithMaxLength(50).Generate();
-string withStuff = Any.String().NonEmpty().Generate();
-string realText  = Any.String().NotBlank().Generate();
+string anyExact     = Any.String().WithLength(12).Generate();
+string anyRanged    = Any.String().WithLengthBetween(3, 20).Generate();
+string anyAtLeast   = Any.String().WithMinLength(8).Generate();
+string anyAtMost    = Any.String().WithMaxLength(50).Generate();
+string anyWithStuff = Any.String().NonEmpty().Generate();
+string anyRealText  = Any.String().NotBlank().Generate();
 ```
 
 `NonEmpty()` is the odd one in that list: it raises the floor to one and leaves the ceiling where it
@@ -105,15 +105,15 @@ exception to that rule.
 | `Hexadecimal()` | `0-9 A-F a-f` | 22 |
 
 ```csharp
-string letters      = Any.String().Alpha().WithLength(10).Generate();          // A-Z a-z
-string alphanumeric = Any.String().AlphaNumeric().WithLength(10).Generate();   // A-Z a-z 0-9
-string digits       = Any.String().Numeric().WithLength(6).Generate();         // 0-9
-string symbols      = Any.String().Punctuation().WithLength(4).Generate();     // !"#$%&'()*+,-./ etc.
-string sha          = Any.String().Hexadecimal().InLowerCase().WithLength(40).Generate();
-string anyText      = Any.String().Printable().WithLength(20).Generate();      // no control characters
-string shouting     = Any.String().Alpha().InUpperCase().WithLength(4).Generate();
-string noDigits     = Any.String().Printable().WithoutNumeric().WithLength(8).Generate();
-string custom       = Any.String().WithChars("ACGT").WithLength(20).Generate(); // your own pool
+string anyLetters      = Any.String().Alpha().WithLength(10).Generate();          // A-Z a-z
+string anyAlphanumeric = Any.String().AlphaNumeric().WithLength(10).Generate();   // A-Z a-z 0-9
+string anyDigits       = Any.String().Numeric().WithLength(6).Generate();         // 0-9
+string anySymbols      = Any.String().Punctuation().WithLength(4).Generate();     // !"#$%&'()*+,-./ etc.
+string anySha          = Any.String().Hexadecimal().InLowerCase().WithLength(40).Generate();
+string anyText         = Any.String().Printable().WithLength(20).Generate();      // no control characters
+string anyShouting     = Any.String().Alpha().InUpperCase().WithLength(4).Generate();
+string anyNoDigits     = Any.String().Printable().WithoutNumeric().WithLength(8).Generate();
+string anyCustom       = Any.String().WithChars("ACGT").WithLength(20).Generate(); // your own pool
 ```
 
 A family occupies **one slot**: declaring a second one contradicts the first, and the conflict names
@@ -137,9 +137,9 @@ DNA sequence, a base-32 alphabet, accented text, a set of allowed separators.
 ## Shape: prefixes, suffixes, fragments
 
 ```csharp
-string reference = Any.String().StartingWith("ORD-").WithLength(12).Generate();
-string filename  = Any.String().EndingWith(".txt").WithMaxLength(30).Generate();
-string path      = Any.String().Alpha().Containing("admin").WithMinLength(20).Generate();
+string anyReference = Any.String().StartingWith("ORD-").WithLength(12).Generate();
+string anyFilename  = Any.String().EndingWith(".txt").WithMaxLength(30).Generate();
+string anyPath      = Any.String().Alpha().Containing("admin").WithMinLength(20).Generate();
 ```
 
 ## How the layout works
@@ -165,7 +165,7 @@ named call:
 
 <!-- jd:allow=JD033 -->
 ```csharp
-string reference = Any.String().StartingWith("ORD-").AlphaNumeric().InUpperCase().WithLengthBetween(8, 20).Generate();
+string anyReference = Any.String().StartingWith("ORD-").AlphaNumeric().InUpperCase().WithLengthBetween(8, 20).Generate();
 // ORD-7K2P9QW, ORD-XZ4M1TB, ORD-B8N3TVJ2 — the hyphen separates, and the body stays alphanumeric
 ```
 
@@ -189,10 +189,10 @@ constants, so the failure usually arrives before the test ever runs.
 
 <!-- jd:allow=JD029 -->
 ```csharp
-string currency = Any.String().OneOf("EUR", "USD", "GBP").Generate();
-string status   = Any.String().OneOf(["draft", "sent", "paid"]).Generate();
-string notDraft = Any.String().OneOf("draft", "sent", "paid").DifferentFrom("draft").Generate();
-string notEmpty = Any.String().WithLengthBetween(1, 5).Except("aaa", "bbb").Generate();
+string anyCurrency = Any.String().OneOf("EUR", "USD", "GBP").Generate();
+string anyStatus   = Any.String().OneOf(["draft", "sent", "paid"]).Generate();
+string anyNotDraft = Any.String().OneOf("draft", "sent", "paid").DifferentFrom("draft").Generate();
+string anyNotEmpty = Any.String().WithLengthBetween(1, 5).Except("aaa", "bbb").Generate();
 ```
 
 `OneOf` is the one constraint that **replaces** the layout rather than shaping it: you supply the
@@ -212,15 +212,15 @@ produce ends in an explicit `AnyGenerationException` rather than a hang
 `Any.Char()` carries the alphabet family and the membership family:
 
 ```csharp
-char letter      = Any.Char().Alpha().Generate();
-char upper       = Any.Char().Alpha().InUpperCase().Generate();
-char digit       = Any.Char().Numeric().Generate();
-char punctuation = Any.Char().Punctuation().Generate();
-char printable   = Any.Char().Printable().Generate();
-char control     = Any.Char().NonPrintable().Generate();
-char hex         = Any.Char().Hexadecimal().InLowerCase().Generate();
-char separator   = Any.Char().OneOf('-', '_', '.').Generate();
-char notVowel    = Any.Char().Alpha().InLowerCase().Except('a', 'e', 'i', 'o', 'u').Generate();
+char anyLetter      = Any.Char().Alpha().Generate();
+char anyUpper       = Any.Char().Alpha().InUpperCase().Generate();
+char anyDigit       = Any.Char().Numeric().Generate();
+char anyPunctuation = Any.Char().Punctuation().Generate();
+char anyPrintable   = Any.Char().Printable().Generate();
+char anyControl     = Any.Char().NonPrintable().Generate();
+char anyHex         = Any.Char().Hexadecimal().InLowerCase().Generate();
+char anySeparator   = Any.Char().OneOf('-', '_', '.').Generate();
+char anyNotVowel    = Any.Char().Alpha().InLowerCase().Except('a', 'e', 'i', 'o', 'u').Generate();
 ```
 
 The families are the same ones `Any.String()` declares, they mean the same thing here, and the
@@ -236,9 +236,9 @@ allowed separators, not all thirty-two — `OneOf` says so and says it exactly.
 which is what lets it guarantee a match. Both a string and a `Regex` are accepted:
 
 ```csharp
-string sku       = Any.StringMatching(@"[A-Z]{3}-\d{4}").Generate();
-string reference = Any.StringMatching(new Regex(@"ORD-\d{8}")).Generate();
-string flag      = Any.StringMatching("(true|false)").Generate();
+string anySku       = Any.StringMatching(@"[A-Z]{3}-\d{4}").Generate();
+string anyReference = Any.StringMatching(new Regex(@"ORD-\d{8}")).Generate();
+string anyFlag      = Any.StringMatching("(true|false)").Generate();
 ```
 
 Case-insensitivity has two spellings in .NET, and both express the same requirement here: a
@@ -248,8 +248,8 @@ exactly as the engine's are: under a Turkish or Azeri culture `I` and `i` are no
 `Regex` also carries `RegexOptions.CultureInvariant`, which is honoured too.
 
 ```csharp
-string code = Any.StringMatching("(?i)[a-z]{3}").Generate();                                   // "aBc"
-string same = Any.StringMatching(new Regex("[a-z]{3}", RegexOptions.IgnoreCase)).Generate();
+string anyCode = Any.StringMatching("(?i)[a-z]{3}").Generate();                                   // "aBc"
+string anySame = Any.StringMatching(new Regex("[a-z]{3}", RegexOptions.IgnoreCase)).Generate();
 ```
 
 ### Supported constructs
@@ -293,7 +293,7 @@ An `AnyPattern` carries the type-agnostic trio — `OneOf`, `Except` and `Differ
 wherever the generator would otherwise build the value:
 
 ```csharp
-string sku = Any.StringMatching(@"[A-Z]{3}-\d{4}").DifferentFrom("ABC-0000").Generate();
+string anySku = Any.StringMatching(@"[A-Z]{3}-\d{4}").DifferentFrom("ABC-0000").Generate();
 ```
 
 Length, alphabet or prefix constraints are deliberately absent: applying them would mean building a
@@ -311,7 +311,7 @@ string       theOneAlreadyUsed = "ABC-0001";
 
 static AnyPattern AnySku() => Any.StringMatching(@"[A-Z]{3}-\d{4}");
 
-string knownSku = AnySku().OneOf(skusAlreadySeeded).DifferentFrom(theOneAlreadyUsed).Generate();
+string anyKnownSku = AnySku().OneOf(skusAlreadySeeded).DifferentFrom(theOneAlreadyUsed).Generate();
 ```
 
 A value the pattern does not match is not one the generator may yield, so it is dropped from the set
@@ -320,7 +320,7 @@ A value the pattern does not match is not one the generator may yield, so it is 
 <!-- jd:allow=JD006 -->
 ```csharp
 // "abcd" is not in the language, so it is not a value this generator may yield.
-string alwaysTheDigits = Any.StringMatching(@"\d{3}").OneOf("123", "abcd").Generate();
+string anyAlwaysTheDigits = Any.StringMatching(@"\d{3}").OneOf("123", "abcd").Generate();
 
 // Nothing supplied matches, so there is no domain left: refused where it is declared.
 Any.StringMatching(@"\d{3}").OneOf("abcd");

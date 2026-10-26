@@ -29,7 +29,11 @@ more often than it is written:
 * **Name every drawn value `anyXxxx`** — `anyReference`, not `reference`. A reader then tells
   a dummy from a chosen value at a glance, and the page's central rule becomes checkable by
   eye: *an `anyXxxx` in an assertion is not a dummy, it is a property with a sample size of
-  one* (`getting-started`, "Careful not to misuse a dummy").
+  one* (`getting-started`, "Careful not to misuse a dummy"). The reference pages are not
+  exempt: they teach the same habit, and a reader who learns it on one page must not see it
+  dropped on the next. Two cases keep another name — a declaration that exists to be
+  refused (`impossible`), which never draws anything; and a generator shown beside its own
+  draw, which becomes `xGenerator` so the drawn value can keep `anyX`.
 * **Split the body Arrange / Act / Assert**, with those comments. It is what makes the `any`
   names visibly confined to the Arrange.
 

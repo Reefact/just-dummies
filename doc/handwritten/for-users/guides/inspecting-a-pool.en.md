@@ -14,7 +14,7 @@ With four values written at the call site that is harmless — you can see them.
 // 2,417 names, one per line, maintained by someone who has never seen this test.
 string[] firstNames = System.IO.File.ReadAllLines("first-names.txt");
 
-string name = Any.String().OneOf(firstNames).Alpha().WithLengthBetween(2, 64).Generate();
+string anyName = Any.String().OneOf(firstNames).Alpha().WithLengthBetween(2, 64).Generate();
 ```
 
 That arrange line looks right, and it runs. But `Alpha()` means ASCII letters, so every *Anne-Marie*,

@@ -14,7 +14,7 @@ est un **catalogue** que vous ne pouvez pas lire d'un coup d'œil, ça cesse de 
 // 2 417 prénoms, un par ligne, maintenus par quelqu'un qui n'a jamais vu ce test.
 string[] firstNames = System.IO.File.ReadAllLines("first-names.txt");
 
-string name = Any.String().OneOf(firstNames).Alpha().WithLengthBetween(2, 64).Generate();
+string anyName = Any.String().OneOf(firstNames).Alpha().WithLengthBetween(2, 64).Generate();
 ```
 
 Cette ligne d'arrange a l'air juste, et elle s'exécute. Mais `Alpha()` signifie lettres ASCII : chaque

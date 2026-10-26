@@ -22,7 +22,7 @@ n'existe, et la colonne **Origine** dit comment chacune est arrivée ici :
   aussi, car ce dépôt l'applique encore. Les deux copies sont désormais
   indépendantes : chaque côté peut remplacer la sienne sans toucher à l'autre.
   9 décisions.
-* **consigné ici** — décidé dans ce dépôt, de son propre chef. 64 décisions.
+* **consigné ici** — décidé dans ce dépôt, de son propre chef. 65 décisions.
 
 Les numéros appartiennent à cette base, attribués dans l'ordre où les décisions
 ont été consignées en amont
@@ -233,3 +233,4 @@ que l'option existait le jour où elle compterait.
 | [ADR-0105](0105-accept-an-undeclared-enum-exclusion-as-a-no-op.fr.md) | Accepter l'exclusion d'une valeur non déclarée sur un enum comme une opération sans effet | Accepted | consigné ici |
 | [ADR-0106](0106-test-the-analyzers-against-the-run-time-in-a-sibling-suite.fr.md) | Tester les analyseurs contre l'exécution dans une suite sœur | Accepted | consigné ici |
 | [ADR-0107](0107-own-a-constraint-repeated-identically-as-one-rule.fr.md) | Confier à une seule règle la contrainte répétée à l'identique, et en retirer JD024 | Accepted | consigné ici |
+| [ADR-0108](0108-name-the-scaffolder-after-what-it-draws.fr.md) | Nommer le scaffolder d'après ce qu'il tire, non d'après le rôle d'une valeur | Accepted | consigné ici |

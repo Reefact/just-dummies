@@ -17,12 +17,12 @@ primitif pour qu'il satisfasse la fabrique, puis passez la fabrique à `.As(...)
 // OrderReference.Create exige le préfixe « ORD- » et une longueur de 12. Les contraintes
 // sont choisies pour que toute chaîne tirée franchisse cette barre — jamais pour faire
 // passer une assertion.
-IAny<OrderReference> anyReference = Any.String()
-                                       .StartingWith("ORD-")
-                                       .WithLength(12)
-                                       .As(OrderReference.Create);
+IAny<OrderReference> referenceGenerator = Any.String()
+                                             .StartingWith("ORD-")
+                                             .WithLength(12)
+                                             .As(OrderReference.Create);
 
-OrderReference reference = anyReference.Generate();
+OrderReference anyReference = referenceGenerator.Generate();
 ```
 
 `.As(...)` prend un `IAny<TSource>` et un `Func<TSource, TResult>` et renvoie un `IAny<TResult>` —
@@ -57,7 +57,7 @@ IAny<Money> anyMoney = Any.Combine(
     Any.OneOf("EUR", "USD", "GBP"),
     Money.Create);
 
-Money price = anyMoney.Generate();
+Money anyPrice = anyMoney.Generate();
 ```
 
 Le composeur peut être un groupe de méthodes, comme ci-dessus, ou une lambda quand la forme demande
@@ -120,15 +120,15 @@ a été déclaré en amont :
 
 ```csharp
 // Types valeur : int?, DateTime?, Guid?, une énumération...
-int?      discount  = Any.Int32().Between(0, 100).OrNull().Generate();
-DateTime? cancelled = Any.DateTime().Before(new DateTime(2030, 1, 1)).OrNull().Generate();
+int?      anyDiscount  = Any.Int32().Between(0, 100).OrNull().Generate();
+DateTime? anyCancelled = Any.DateTime().Before(new DateTime(2030, 1, 1)).OrNull().Generate();
 
 // Types référence : une chaîne nullable, ou un objet-valeur construit via .As(...)
-string?         note      = Any.String().Alpha().WithLengthBetween(1, 40).OrNull().Generate();
-OrderReference? reference = Any.String().StartingWith("ORD-").WithLength(12)
-                               .As(OrderReference.Create)
-                               .OrNull()
-                               .Generate();
+string?         anyNote      = Any.String().Alpha().WithLengthBetween(1, 40).OrNull().Generate();
+OrderReference? anyReference = Any.String().StartingWith("ORD-").WithLength(12)
+                                  .As(OrderReference.Create)
+                                  .OrNull()
+                                  .Generate();
 ```
 
 Deux classes d'extension se cachent derrière cette écriture unique — `NullableExtensions` pour les
@@ -153,8 +153,8 @@ branche que le test n'a jamais demandée. `.AsNullable()` élargit le type et la
 tranquilles :
 
 ```csharp
-OrderStatus? status = Any.Enum<OrderStatus>().AsNullable().Generate();   // jamais null
-int?         units  = Any.Int32().Between(1, 10).AsNullable().Generate();
+OrderStatus? anyStatus = Any.Enum<OrderStatus>().AsNullable().Generate();   // jamais null
+int?         anyUnits  = Any.Int32().Between(1, 10).AsNullable().Generate();
 ```
 
 Ça compte surtout à l'intérieur d'une collection **distincte**. `.As(value => (OrderStatus?)value)`
@@ -163,7 +163,7 @@ combien de valeurs distinctes il a le droit de puiser, et en demanderait plus qu
 
 ```csharp
 // L'énum a un nombre de membres fixe, donc un ensemble en contient au plus autant — et ceci le sait.
-ISet<OrderStatus?> statuses = Any.SetOf(Any.Enum<OrderStatus>().AsNullable()).NonEmpty().Generate();
+ISet<OrderStatus?> anyStatuses = Any.SetOf(Any.Enum<OrderStatus>().AsNullable()).NonEmpty().Generate();
 ```
 
 Un générateur scaffoldé par `any` écrit `.AsNullable()` pour chaque paramètre nullable de type
@@ -175,16 +175,16 @@ En rassemblant tout, voici un dummy pour un enregistrement à trois champs, dont
 primitif nu sur le site d'appel :
 
 ```csharp
-IAny<Customer> anyCustomer = Any.Combine(
+IAny<Customer> customerGenerator = Any.Combine(
     Any.Guid().NonEmpty(),
     Any.String().Alpha().WithLengthBetween(3, 20),
     Any.String().Alpha().InLowerCase().WithLengthBetween(3, 12),
     (id, name, localPart) => new Customer(id, name, $"{localPart}@example.test"));
 
-Customer customer = anyCustomer.Generate();
+Customer anyCustomer = customerGenerator.Generate();
 
 // Un générateur est une recette : le même produit donc toute une liste de clients distincts.
-List<Customer> customers = Any.ListOf(anyCustomer).WithCountBetween(2, 5).Generate();
+List<Customer> anyCustomers = Any.ListOf(customerGenerator).WithCountBetween(2, 5).Generate();
 ```
 
 Conservez un tel générateur dans un champ `static readonly` de votre classe de test et chaque test

@@ -19,8 +19,8 @@ again:
 ```csharp
 AnyInt32 anyQuantity = Any.Int32().Between(1, 100);
 
-int first  = anyQuantity.Generate();
-int second = anyQuantity.Generate();
+int anyFirst  = anyQuantity.Generate();
+int anySecond = anyQuantity.Generate();
 
 // first and second are both in 1..100, and are usually different numbers.
 ```
@@ -56,8 +56,8 @@ one more requirement, leaving the original exactly as it was:
 AnyString anyCode     = Any.String().Alpha().WithLength(8);
 AnyString anyUpperCode = anyCode.InUpperCase();
 
-string mixed = anyCode.Generate();      // 8 letters, any casing
-string upper = anyUpperCode.Generate(); // 8 letters, upper case
+string anyMixed = anyCode.Generate();      // 8 letters, any casing
+string anyUpper = anyUpperCode.Generate(); // 8 letters, upper case
 ```
 
 Two consequences follow, and both are useful.
@@ -71,11 +71,11 @@ make when a chain is split across lines, so it has its own diagnostic,
 
 <!-- jd:allow=JD006 -->
 ```csharp
-AnyString anyReference = Any.String().WithLength(12);
+AnyString referenceGenerator = Any.String().WithLength(12);
 
-anyReference.StartingWith("ORD-"); // JD006: the result is discarded, so the prefix is lost
+referenceGenerator.StartingWith("ORD-"); // JD006: the result is discarded, so the prefix is lost
 
-string reference = anyReference.Generate(); // 12 characters, no prefix
+string anyReference = referenceGenerator.Generate(); // 12 characters, no prefix
 ```
 
 ## `IAny<T>` is the seam everything composes on
@@ -107,9 +107,9 @@ a threshold:
 
 ```csharp
 // Anti-pattern: the constraint was chosen to make the assertion true.
-decimal orderTotal = Any.Decimal().GreaterThan(100m).Generate();
+decimal anyOrderTotal = Any.Decimal().GreaterThan(100m).Generate();
 
-Assert.Equal(0m, Shipping.FeeFor(orderTotal));
+Assert.Equal(0m, Shipping.FeeFor(anyOrderTotal));
 ```
 
 The test now proves nothing about the threshold — it proves the code agrees with the constraint the
@@ -120,15 +120,15 @@ value. Do not: it fails in the same way, and adds one of its own.
 
 ```csharp
 // Still wrong, in a way that looks careful.
-decimal orderTotal = Any.Decimal().Between(0m, 10_000m).WithScale(2).Generate();
+decimal anyOrderTotal = Any.Decimal().Between(0m, 10_000m).WithScale(2).Generate();
 
-decimal expected = orderTotal > 100m ? 0m : 4.90m;   // the rule, copied into the test
+decimal expected = anyOrderTotal > 100m ? 0m : 4.90m;   // the rule, copied into the test
 
-Assert.Equal(expected, Shipping.FeeFor(orderTotal));
+Assert.Equal(expected, Shipping.FeeFor(anyOrderTotal));
 ```
 
 That test asserts that `Shipping.FeeFor` agrees with a second copy of `Shipping.FeeFor` written in
-the test body, so it too survives the threshold moving to 200. And `orderTotal` was never a dummy to
+the test body, so it too survives the threshold moving to 200. And `anyOrderTotal` was never a dummy to
 begin with: the fee is exactly what it decides, which makes it data taking part in what the test
 verifies.
 

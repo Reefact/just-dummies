@@ -177,9 +177,9 @@ d'un corps de test, comme une fixture ou un benchmark :
 ```csharp
 AnyContext context = Any.WithSeed(1743029518);
 
-int      quantity  = context.Int32().Between(1, 100).Generate();
-string   reference = context.String().StartingWith("ORD-").WithLength(12).Generate();
-int      seed      = context.Seed;
+int      anyQuantity  = context.Int32().Between(1, 100).Generate();
+string   anyReference = context.String().StartingWith("ORD-").WithLength(12).Generate();
+int      seed         = context.Seed;
 
 // La même graine reconstruit exactement les mêmes données, où que cela s'exécute.
 ```
@@ -195,8 +195,8 @@ est déterministe avec la graine du contexte, exactement comme ses éléments :
 ```csharp
 AnyContext context = Any.WithSeed(1743029518);
 
-List<int>          quantities = Any.ListOf(context.Int32().Between(1, 100)).NonEmpty().Generate();
-(string, DateTime) stamped    = Any.PairOf(context.String().WithLength(8), context.DateTime()).Generate();
+List<int>          anyQuantities = Any.ListOf(context.Int32().Between(1, 100)).NonEmpty().Generate();
+(string, DateTime) stamped       = Any.PairOf(context.String().WithLength(8), context.DateTime()).Generate();
 ```
 
 La règle de résolution, replis compris : une collection réutilise la source de son générateur

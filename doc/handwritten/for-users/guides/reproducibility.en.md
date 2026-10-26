@@ -172,9 +172,9 @@ such as a fixture or a benchmark:
 ```csharp
 AnyContext context = Any.WithSeed(1743029518);
 
-int      quantity  = context.Int32().Between(1, 100).Generate();
-string   reference = context.String().StartingWith("ORD-").WithLength(12).Generate();
-int      seed      = context.Seed;
+int      anyQuantity  = context.Int32().Between(1, 100).Generate();
+string   anyReference = context.String().StartingWith("ORD-").WithLength(12).Generate();
+int      seed         = context.Seed;
 
 // The same seed rebuilds exactly the same data, wherever this runs.
 ```
@@ -190,8 +190,8 @@ exactly as its elements are:
 ```csharp
 AnyContext context = Any.WithSeed(1743029518);
 
-List<int>          quantities = Any.ListOf(context.Int32().Between(1, 100)).NonEmpty().Generate();
-(string, DateTime) stamped    = Any.PairOf(context.String().WithLength(8), context.DateTime()).Generate();
+List<int>          anyQuantities = Any.ListOf(context.Int32().Between(1, 100)).NonEmpty().Generate();
+(string, DateTime) stamped       = Any.PairOf(context.String().WithLength(8), context.DateTime()).Generate();
 ```
 
 The resolution, fallbacks included: a collection reuses its element generator's source; a dictionary

@@ -49,9 +49,9 @@ one twice:
 ```csharp
 AnyInt32 anyQuantity = Any.Int32().Between(1, 100);
 
-int drawnOnce = anyQuantity.Generate();
-int sameValue = drawnOnce;        // the same number
-int another   = anyQuantity.Generate(); // usually a different number
+int anyDrawnOnce = anyQuantity.Generate();
+int sameValue    = anyDrawnOnce;        // the same number
+int anyAnother   = anyQuantity.Generate(); // usually a different number
 ```
 
 See [Core concepts](./core-concepts.en.md).
@@ -73,8 +73,8 @@ is not a genuine domain invariant. See [Errors and conflicts](./errors-and-confl
 Yes — `.OrNull()` yields `null` about half the time and a constrained value otherwise:
 
 ```csharp
-int?    discount = Any.Int32().Between(0, 100).OrNull().Generate();
-string? note     = Any.String().Alpha().WithLengthBetween(1, 40).OrNull().Generate();
+int?    anyDiscount = Any.Int32().Between(0, 100).OrNull().Generate();
+string? anyNote     = Any.String().Alpha().WithLengthBetween(1, 40).OrNull().Generate();
 ```
 
 ## Reproducibility
@@ -102,8 +102,8 @@ using (IDisposable scope = Any.UseSeed(1743029518)) {
 }
 
 // 3. Build an isolated deterministic context, outside any test body.
-AnyContext context  = Any.WithSeed(1743029518);
-int        quantity = context.Int32().Between(1, 100).Generate();
+AnyContext context     = Any.WithSeed(1743029518);
+int        anyQuantity = context.Int32().Between(1, 100).Generate();
 ```
 
 ### Is the sequence of drawn values stable across versions?

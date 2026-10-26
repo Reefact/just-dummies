@@ -22,21 +22,21 @@ Instants order rather than compare in size, so the vocabulary reads temporally â
 `Before` rather than `GreaterThan` and `LessThan`:
 
 ```csharp
-DateTime ordered   = Any.DateTime().Between(new DateTime(2020, 1, 1), new DateTime(2025, 12, 31)).Generate();
-DateTime recent    = Any.DateTime().After(new DateTime(2024, 1, 1)).Generate();
-DateTime onOrAfter = Any.DateTime().AfterOrEqualTo(new DateTime(2024, 1, 1)).Generate();
-DateTime past      = Any.DateTime().Before(new DateTime(2030, 1, 1)).Generate();
-DateTime onOrBefore = Any.DateTime().BeforeOrEqualTo(new DateTime(2030, 1, 1)).Generate();
+DateTime anyOrdered   = Any.DateTime().Between(new DateTime(2020, 1, 1), new DateTime(2025, 12, 31)).Generate();
+DateTime anyRecent    = Any.DateTime().After(new DateTime(2024, 1, 1)).Generate();
+DateTime anyOnOrAfter = Any.DateTime().AfterOrEqualTo(new DateTime(2024, 1, 1)).Generate();
+DateTime anyPast      = Any.DateTime().Before(new DateTime(2030, 1, 1)).Generate();
+DateTime anyOnOrBefore = Any.DateTime().BeforeOrEqualTo(new DateTime(2030, 1, 1)).Generate();
 ```
 
 `TimeSpan` is a duration rather than an instant, so it keeps the numeric vocabulary and adds the
 sign family:
 
 ```csharp
-TimeSpan timeout  = Any.TimeSpan().Between(TimeSpan.FromSeconds(1), TimeSpan.FromMinutes(5)).Generate();
-TimeSpan positive = Any.TimeSpan().Positive().Generate();
-TimeSpan nonZero  = Any.TimeSpan().NonZero().Generate();
-TimeSpan shorter  = Any.TimeSpan().LessThan(TimeSpan.FromHours(1)).Generate();
+TimeSpan anyTimeout  = Any.TimeSpan().Between(TimeSpan.FromSeconds(1), TimeSpan.FromMinutes(5)).Generate();
+TimeSpan anyPositive = Any.TimeSpan().Positive().Generate();
+TimeSpan anyNonZero  = Any.TimeSpan().NonZero().Generate();
+TimeSpan anyShorter  = Any.TimeSpan().LessThan(TimeSpan.FromHours(1)).Generate();
 ```
 
 ## Granularity
@@ -46,16 +46,16 @@ domain would actually store:
 
 ```csharp
 // Whole minutes: no stray seconds or ticks to break an equality assertion.
-DateTime appointment = Any.DateTime()
-                          .Between(new DateTime(2025, 1, 1), new DateTime(2025, 12, 31))
-                          .WithGranularity(TimeSpan.FromMinutes(1))
-                          .Generate();
+DateTime anyAppointment = Any.DateTime()
+                             .Between(new DateTime(2025, 1, 1), new DateTime(2025, 12, 31))
+                             .WithGranularity(TimeSpan.FromMinutes(1))
+                             .Generate();
 
 // Whole days.
-DateTime businessDay = Any.DateTime().WithGranularity(TimeSpan.FromDays(1)).Generate();
+DateTime anyBusinessDay = Any.DateTime().WithGranularity(TimeSpan.FromDays(1)).Generate();
 
 // A duration in whole seconds.
-TimeSpan retryAfter = Any.TimeSpan().Positive().WithGranularity(TimeSpan.FromSeconds(1)).Generate();
+TimeSpan anyRetryAfter = Any.TimeSpan().Positive().WithGranularity(TimeSpan.FromSeconds(1)).Generate();
 ```
 
 Without it, a drawn instant carries sub-second precision, and a test that round-trips it through a
@@ -93,7 +93,7 @@ This is the mistake worth naming, because it survives review and fails at midnig
 
 ```csharp
 // Fragile: the dummy is drawn relative to a clock the test does not control.
-DateTime createdAt = Any.DateTime().Before(DateTime.Now).Generate();
+DateTime anyCreatedAt = Any.DateTime().Before(DateTime.Now).Generate();
 ```
 
 The test now depends on when it runs. Worse, it is not reproducible: replaying the seed replays the
@@ -102,8 +102,8 @@ draw, not the clock.
 Pin an instant the test owns, and constrain relative to that:
 
 ```csharp
-DateTime now       = new DateTime(2025, 6, 15, 12, 0, 0, DateTimeKind.Utc);
-DateTime createdAt = Any.DateTime().Before(now).AfterOrEqualTo(now.AddYears(-1)).Generate();
+DateTime now          = new DateTime(2025, 6, 15, 12, 0, 0, DateTimeKind.Utc);
+DateTime anyCreatedAt = Any.DateTime().Before(now).AfterOrEqualTo(now.AddYears(-1)).Generate();
 ```
 
 ## Membership and exclusion
@@ -111,14 +111,14 @@ DateTime createdAt = Any.DateTime().Before(now).AfterOrEqualTo(now.AddYears(-1))
 Every temporal generator carries the usual pool and exclusion family:
 
 ```csharp
-DateTime quarterEnd = Any.DateTime()
-                         .OneOf(new DateTime(2025, 3, 31), new DateTime(2025, 6, 30), new DateTime(2025, 9, 30))
-                         .Generate();
+DateTime anyQuarterEnd = Any.DateTime()
+                            .OneOf(new DateTime(2025, 3, 31), new DateTime(2025, 6, 30), new DateTime(2025, 9, 30))
+                            .Generate();
 
-DateTime notEpoch = Any.DateTime()
-                       .Between(new DateTime(2020, 1, 1), new DateTime(2025, 1, 1))
-                       .DifferentFrom(new DateTime(2020, 1, 1))
-                       .Generate();
+DateTime anyNotEpoch = Any.DateTime()
+                          .Between(new DateTime(2020, 1, 1), new DateTime(2025, 1, 1))
+                          .DifferentFrom(new DateTime(2020, 1, 1))
+                          .Generate();
 ```
 
 ## `DateOnly` and `TimeOnly`
@@ -127,14 +127,14 @@ Available on .NET 8 and above, with the same ordering vocabulary:
 
 <!-- jd:net8 -->
 ```csharp
-DateOnly dueDate = Any.DateOnly()
-                      .Between(new DateOnly(2025, 1, 1), new DateOnly(2025, 12, 31))
-                      .Generate();
+DateOnly anyDueDate = Any.DateOnly()
+                         .Between(new DateOnly(2025, 1, 1), new DateOnly(2025, 12, 31))
+                         .Generate();
 
-TimeOnly openingTime = Any.TimeOnly()
-                          .Between(new TimeOnly(8, 0), new TimeOnly(20, 0))
-                          .WithGranularity(TimeSpan.FromMinutes(15))
-                          .Generate();
+TimeOnly anyOpeningTime = Any.TimeOnly()
+                             .Between(new TimeOnly(8, 0), new TimeOnly(20, 0))
+                             .WithGranularity(TimeSpan.FromMinutes(15))
+                             .Generate();
 ```
 
 On `netstandard2.0` those types do not exist, so neither do their factories. Everything else on this

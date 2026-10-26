@@ -51,9 +51,9 @@ faut deux fois la même :
 ```csharp
 AnyInt32 anyQuantity = Any.Int32().Between(1, 100);
 
-int drawnOnce = anyQuantity.Generate();
-int sameValue = drawnOnce;        // le même nombre
-int another   = anyQuantity.Generate(); // généralement un autre nombre
+int anyDrawnOnce = anyQuantity.Generate();
+int sameValue    = anyDrawnOnce;        // le même nombre
+int anyAnother   = anyQuantity.Generate(); // généralement un autre nombre
 ```
 
 Voir [Concepts fondamentaux](./core-concepts.fr.md).
@@ -77,8 +77,8 @@ Retirez celle des deux qui n'est pas un véritable invariant du domaine. Voir
 Oui — `.OrNull()` produit `null` environ une fois sur deux, et sinon une valeur contrainte :
 
 ```csharp
-int?    discount = Any.Int32().Between(0, 100).OrNull().Generate();
-string? note     = Any.String().Alpha().WithLengthBetween(1, 40).OrNull().Generate();
+int?    anyDiscount = Any.Int32().Between(0, 100).OrNull().Generate();
+string? anyNote     = Any.String().Alpha().WithLengthBetween(1, 40).OrNull().Generate();
 ```
 
 ## Reproductibilité
@@ -107,8 +107,8 @@ using (IDisposable scope = Any.UseSeed(1743029518)) {
 }
 
 // 3. Construire un contexte déterministe isolé, hors de tout corps de test.
-AnyContext context  = Any.WithSeed(1743029518);
-int        quantity = context.Int32().Between(1, 100).Generate();
+AnyContext context     = Any.WithSeed(1743029518);
+int        anyQuantity = context.Int32().Between(1, 100).Generate();
 ```
 
 ### La séquence des valeurs tirées est-elle stable d'une version à l'autre ?

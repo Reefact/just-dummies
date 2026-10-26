@@ -18,10 +18,10 @@ Tout ce que vous savez déjà sur la contrainte d'un scalaire s'applique à l'é
 | `Any.DictionaryOf(keys, values)` | `Dictionary<TKey, TValue>` | contraintes de clés |
 
 ```csharp
-int[]            quantities = Any.ArrayOf(Any.Int32().Between(1, 100)).WithCount(5).Generate();
-List<string>     references = Any.ListOf(Any.String().StartingWith("ORD-").WithLength(12)).NonEmpty().Generate();
-IEnumerable<Guid> ids       = Any.SequenceOf(Any.Guid().NonEmpty()).WithCountBetween(2, 6).Generate();
-HashSet<OrderStatus> states = Any.SetOf(Any.Enum<OrderStatus>()).WithMaxCount(3).Generate();
+int[]            anyQuantities = Any.ArrayOf(Any.Int32().Between(1, 100)).WithCount(5).Generate();
+List<string>     anyReferences = Any.ListOf(Any.String().StartingWith("ORD-").WithLength(12)).NonEmpty().Generate();
+IEnumerable<Guid> anyIds       = Any.SequenceOf(Any.Guid().NonEmpty()).WithCountBetween(2, 6).Generate();
+HashSet<OrderStatus> anyStates = Any.SetOf(Any.Enum<OrderStatus>()).WithMaxCount(3).Generate();
 ```
 
 ## Le vocabulaire d'effectif partagé
@@ -31,12 +31,12 @@ Tout générateur de collection porte les mêmes six contraintes d'effectif :
 ```csharp
 IAny<int> anyQuantity = Any.Int32().Between(1, 100);
 
-int[] exactly5   = Any.ArrayOf(anyQuantity).WithCount(5).Generate();
-int[] two2Six    = Any.ArrayOf(anyQuantity).WithCountBetween(2, 6).Generate();
-int[] atLeast3   = Any.ArrayOf(anyQuantity).WithMinCount(3).Generate();
-int[] atMost10   = Any.ArrayOf(anyQuantity).WithMaxCount(10).Generate();
-int[] notEmpty   = Any.ArrayOf(anyQuantity).NonEmpty().Generate();
-int[] empty      = Any.ArrayOf(anyQuantity).Empty().Generate();
+int[] anyExactly5 = Any.ArrayOf(anyQuantity).WithCount(5).Generate();
+int[] anyTwo2Six  = Any.ArrayOf(anyQuantity).WithCountBetween(2, 6).Generate();
+int[] anyAtLeast3 = Any.ArrayOf(anyQuantity).WithMinCount(3).Generate();
+int[] anyAtMost10 = Any.ArrayOf(anyQuantity).WithMaxCount(10).Generate();
+int[] anyNotEmpty = Any.ArrayOf(anyQuantity).NonEmpty().Generate();
+int[] anyEmpty    = Any.ArrayOf(anyQuantity).Empty().Generate();
 ```
 
 `Empty()` n'est pas une curiosité : la collection vide est le cas le plus susceptible de casser le
@@ -55,16 +55,16 @@ Deux contraintes placent quelque chose de connu dans une collection par ailleurs
 
 ```csharp
 // Une valeur précise doit être présente.
-List<OrderStatus> withDraft = Any.ListOf(Any.Enum<OrderStatus>())
-                                 .WithCountBetween(3, 6)
-                                 .Containing(OrderStatus.Draft)
-                                 .Generate();
+List<OrderStatus> anyWithDraft = Any.ListOf(Any.Enum<OrderStatus>())
+                                    .WithCountBetween(3, 6)
+                                    .Containing(OrderStatus.Draft)
+                                    .Generate();
 
 // Une valeur satisfaisant un second générateur doit être présente.
-List<int> withABigOne = Any.ListOf(Any.Int32().Between(1, 100))
-                           .WithCountBetween(3, 6)
-                           .ContainingAny(Any.Int32().Between(90, 100))
-                           .Generate();
+List<int> anyWithABigOne = Any.ListOf(Any.Int32().Between(1, 100))
+                              .WithCountBetween(3, 6)
+                              .ContainingAny(Any.Int32().Between(90, 100))
+                              .Generate();
 ```
 
 `ContainingAny` est la contrainte à saisir quand le test a besoin d'« au moins un élément qui
@@ -78,14 +78,14 @@ contraindre plutôt que d'affirmer.
 une séquence est une exigence que le générateur doit activement satisfaire :
 
 ```csharp
-int[]        distinctIds = Any.ArrayOf(Any.Int32().Between(1, 1_000)).WithCount(10).Distinct().Generate();
-List<string> distinctRefs = Any.ListOf(Any.String().Alpha().WithLength(6)).WithCount(4).Distinct().Generate();
+int[]        anyDistinctIds = Any.ArrayOf(Any.Int32().Between(1, 1_000)).WithCount(10).Distinct().Generate();
+List<string> anyDistinctRefs = Any.ListOf(Any.String().Alpha().WithLength(6)).WithCount(4).Distinct().Generate();
 
 // Avec un comparateur explicite, quand l'égalité par défaut n'est pas celle qui compte.
-List<string> caseInsensitive = Any.ListOf(Any.String().Alpha().WithLength(6))
-                                  .WithCount(4)
-                                  .Distinct(StringComparer.OrdinalIgnoreCase)
-                                  .Generate();
+List<string> anyCaseInsensitive = Any.ListOf(Any.String().Alpha().WithLength(6))
+                                     .WithCount(4)
+                                     .Distinct(StringComparer.OrdinalIgnoreCase)
+                                     .Generate();
 ```
 
 Deux points méritent d'être compris ici.
@@ -110,11 +110,11 @@ diagnostic [JD028](../analyzers/JD028.fr.md).
 `Any.DictionaryOf` prend un générateur pour les clés et un pour les valeurs :
 
 ```csharp
-Dictionary<string, int> stock = Any.DictionaryOf(
-                                       Any.String().Alpha().InUpperCase().WithLength(3),
-                                       Any.Int32().Between(0, 500))
-                                   .WithCountBetween(2, 5)
-                                   .Generate();
+Dictionary<string, int> anyStock = Any.DictionaryOf(
+                                          Any.String().Alpha().InUpperCase().WithLength(3),
+                                          Any.Int32().Between(0, 500))
+                                      .WithCountBetween(2, 5)
+                                      .Generate();
 ```
 
 Les clés sont distinctes par construction. Une seconde surcharge prend un
@@ -127,22 +127,22 @@ IAny<string> anyCode  = Any.String().Alpha().InUpperCase().WithLength(3);
 IAny<int>    anyLevel = Any.Int32().Between(0, 500);
 
 // Une clé qui doit être présente.
-Dictionary<string, int> withKey = Any.DictionaryOf(anyCode, anyLevel)
-                                     .WithCountBetween(2, 5)
-                                     .ContainingKey("ABC")
-                                     .Generate();
+Dictionary<string, int> anyWithKey = Any.DictionaryOf(anyCode, anyLevel)
+                                        .WithCountBetween(2, 5)
+                                        .ContainingKey("ABC")
+                                        .Generate();
 
 // Une entrée entière qui doit être présente.
-Dictionary<string, int> withEntry = Any.DictionaryOf(anyCode, anyLevel)
-                                       .WithCountBetween(2, 5)
-                                       .ContainingEntry("ABC", 42)
-                                       .Generate();
+Dictionary<string, int> anyWithEntry = Any.DictionaryOf(anyCode, anyLevel)
+                                          .WithCountBetween(2, 5)
+                                          .ContainingEntry("ABC", 42)
+                                          .Generate();
 
 // Une clé satisfaisant un autre générateur doit être présente.
-Dictionary<string, int> withAnyKey = Any.DictionaryOf(anyCode, anyLevel)
-                                        .WithCountBetween(2, 5)
-                                        .ContainingAnyKey(Any.String().OneOf("ABC", "XYZ"))
-                                        .Generate();
+Dictionary<string, int> anyWithAnyKey = Any.DictionaryOf(anyCode, anyLevel)
+                                           .WithCountBetween(2, 5)
+                                           .ContainingAnyKey(Any.String().OneOf("ABC", "XYZ"))
+                                           .Generate();
 ```
 
 ## Collections de vos propres types
@@ -156,7 +156,7 @@ IAny<OrderReference> anyReference = Any.String()
                                        .WithLength(12)
                                        .As(OrderReference.Create);
 
-List<OrderReference> basket = Any.ListOf(anyReference).WithCountBetween(1, 4).Generate();
+List<OrderReference> anyBasket = Any.ListOf(anyReference).WithCountBetween(1, 4).Generate();
 ```
 
 ---

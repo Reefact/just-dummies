@@ -32,7 +32,7 @@ sa commande ni celui de son fichier de défauts de projet (ADR-0072) ne sont enc
 
 L'issue #272 a signalé la contradiction du point de vue d'un lecteur : la description de l'outil
 promet un générateur de dummy, et la définition de la bibliothèque elle-même dit que l'objet qu'il
-rend, dès qu'une valeur y est fixée, n'est pas un dummy.
+rend, dès qu'une valeur dont dépend le résultat du test y est fixée, n'est pas un dummy.
 
 ## Décision
 

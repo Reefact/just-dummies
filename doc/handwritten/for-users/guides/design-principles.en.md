@@ -26,6 +26,11 @@ property, which this library runs with a sample size of one and cannot defend. T
 [getting-started guide](./getting-started.en.md#careful-not-to-misuse-a-dummy) shows exactly where that line
 runs.
 
+The name states the library's purpose, not what each value is. A generator only knows that what it
+draws is arbitrary, so that is what everything it exposes is named after — `Any`, `IAny<T>`, the
+`any` tool; whether a drawn value is a dummy is the test's call
+([Arbitrary does not mean dummy](./core-concepts.en.md#arbitrary-does-not-mean-dummy)).
+
 That is narrower than it could be, deliberately. The library's job is to make a test say what it
 means and stay reproducible; anything beyond that competes for the same complexity budget and pays
 for itself in surprises.

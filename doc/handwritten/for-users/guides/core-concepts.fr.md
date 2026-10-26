@@ -208,6 +208,68 @@ rend prévisible.
 Ces limites sont volontaires et argumentées dans
 [Principes de conception](./design-principles.fr.md).
 
+## Arbitraire ne veut pas dire dummy
+
+Un générateur sait une chose de la valeur qu'il tire : elle est arbitraire, et elle satisfait les
+contraintes déclarées. Que cette valeur soit un *dummy*, le générateur ne peut pas le savoir. C'est le
+test qui l'utilise qui en décide, par ce qu'il vérifie — le même `Any.String()` tire un dummy dans un
+test qui ne le regarde jamais, et n'en tire pas dans un test dont le résultat en dépend.
+
+C'est pourquoi tout ce que la bibliothèque tire est nommé *any* — `Any`, `IAny<T>`, `AnyInt32`, et
+l'`AnyOrder` que le [scaffolder `any`](../packages/justdummies-cli.fr.md) écrit pour vous — et jamais
+*dummy*. Le nom dit ce qu'est la valeur, arbitraire, et laisse son rôle au test.
+
+Cela compte surtout quand un test fixe une partie d'un objet généré, car fixer une valeur et en
+dépendre sont deux choses différentes :
+
+<!-- jd:skip -->
+```csharp
+// Arrange
+Order anyPendingOrder = Any.Order().WithStatus(OrderStatus.Pending).Generate();
+
+// Act
+bool cancelled = anyPendingOrder.TryCancel();
+
+// Assert
+Assert.True(cancelled);   // la règle testée : seule une commande en attente peut être annulée
+```
+
+Ici, l'assertion dépend de `Pending`. C'est un littéral que le test a choisi parce que la règle qu'il
+vérifie porte sur lui, et seul le reste de la commande est arbitraire. Cette commande n'est donc pas
+un dummy dans son ensemble, et son nom dit les deux moitiés : `any` pour ce qui a été tiré, `Pending`
+pour ce qui a été choisi.
+
+Fixez le même statut dans un test qui porte sur autre chose — la commande doit être en attente pour
+que la remise s'applique, et l'assertion porte sur le montant remisé — et `Pending` devient une
+contrainte dont le scénario a besoin, comme `Between(1, 100)` sur une quantité, et non ce que le test
+vérifie. La commande y joue toujours le rôle de dummy. Ce qui décide, c'est que le résultat dépende
+ou non de la valeur, jamais l'appel à `With…`.
+
+Et si rien dans le test ne dépend du statut, laissez-le tiré : une valeur fixée qui ne compte pas est
+un littéral qui a l'air délibéré, c'est-à-dire précisément ce que cette bibliothèque existe pour
+supprimer.
+
+## Rapport avec *xUnit Test Patterns*
+
+Les lecteurs familiers de [*xUnit Test Patterns*](http://xunitpatterns.com/), de Gerard Meszaros,
+connaissent déjà sa terminologie, et *dummy* n'y a pas tout à fait le même sens.
+
+JustDummies prend le mot dans son sens premier — une valeur qui doit être là et ne prend aucune part
+à ce que le test vérifie — qui est aussi le sens que lui donne le livre. Au-delà, la bibliothèque ne
+suit pas la classification du livre, et n'essaie pas de la suivre : il fallait un nom à la
+bibliothèque, et un seul mot est plus simple pour ses lecteurs que cinq. Pour ceux qui pensent dans les termes du
+livre :
+
+| Dans *xUnit Test Patterns* | Dans JustDummies |
+| --- | --- |
+| [Dummy Object](http://xunitpatterns.com/Dummy%20Object.html) — une doublure de test passée et jamais utilisée, souvent `null` ou un objet sans implémentation | pas produit : toute valeur tirée est réelle et valide, et le code testé peut la lire, la valider ou la stocker. JustDummies ne fabrique pas de doublures de test |
+| Dummy Argument, Dummy Attribute — une valeur dont le test a besoin et qui ne le concerne pas | ce que JustDummies appelle un dummy : un **rôle** que joue une valeur dans un test |
+| [Generated Value](http://xunitpatterns.com/Generated%20Value.html) — une valeur produite à l'exécution du test, parce qu'elle doit tout de même satisfaire une contrainte | la façon dont une valeur est produite ici : `Any.X()` et les contraintes qui y sont déclarées |
+| [Creation Method](http://xunitpatterns.com/Creation%20Method.html), anonyme et paramétrée — construit un objet à partir de valeurs arbitraires, dont le test peut fixer certaines | l'`AnyX` qu'écrit le scaffolder `any`, ses méthodes `With…` en étant les paramètres |
+
+Une valeur que le code testé valide peut donc tout à fait être un dummy ici : ce qui décide, c'est
+que le résultat du test en dépende ou non, pas que le code y touche.
+
 ---
 
 [← Sommaire de la documentation](../README.fr.md)

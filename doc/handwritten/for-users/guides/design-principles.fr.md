@@ -26,6 +26,11 @@ test et vous avez écrit une propriété — que cette bibliothèque exécute av
 un et ne peut pas défendre. Le [guide de démarrage](./getting-started.fr.md#attention-à-ne-pas-détourner-un-dummy-de-son-rôle)
 montre précisément où passe cette ligne.
 
+Le nom énonce la raison d'être de la bibliothèque, non ce qu'est chaque valeur. Un générateur sait
+seulement que ce qu'il tire est arbitraire, et c'est d'après cela qu'est nommé tout ce qu'il expose —
+`Any`, `IAny<T>`, l'outil `any` ; qu'une valeur tirée soit un dummy, c'est au test d'en décider
+([Arbitraire ne veut pas dire dummy](./core-concepts.fr.md#arbitraire-ne-veut-pas-dire-dummy)).
+
 C'est plus étroit que ce que ce pourrait être, volontairement. Le travail de la bibliothèque est de
 faire dire à un test ce qu'il veut dire et de le garder reproductible ; tout le reste dispute le
 même budget de complexité et se paie en surprises.

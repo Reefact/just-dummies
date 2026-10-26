@@ -200,6 +200,65 @@ the call site**. Being clear about what it does *not* promise is what keeps it p
 
 Those boundaries are deliberate and argued in [Design principles](./design-principles.en.md).
 
+## Arbitrary does not mean dummy
+
+A generator knows one thing about the value it draws: it is arbitrary, and it satisfies the
+constraints declared. Whether that value is a *dummy* is something the generator cannot know. The
+test that uses it decides, by what it verifies — the same `Any.String()` draws a dummy in a test
+that never looks at it, and does not in a test whose outcome depends on it.
+
+That is why everything the library draws is named *any* — `Any`, `IAny<T>`, `AnyInt32`, and the
+`AnyOrder` the [`any` scaffolder](../packages/justdummies-cli.en.md) writes for you — and never
+*dummy*. The name says what the value is, arbitrary, and leaves its role to the test.
+
+It matters most when a test pins part of a generated object, because pinning a value and depending
+on it are not the same thing:
+
+<!-- jd:skip -->
+```csharp
+// Arrange
+Order anyPendingOrder = Any.Order().WithStatus(OrderStatus.Pending).Generate();
+
+// Act
+bool cancelled = anyPendingOrder.TryCancel();
+
+// Assert
+Assert.True(cancelled);   // the rule under test: only a pending order can be cancelled
+```
+
+Here the assertion depends on `Pending`. It is a literal the test chose because the rule it verifies
+is about it, and only the rest of the order is arbitrary. So this order is not a dummy as a whole,
+and its name says both halves: `any` for what was drawn, `Pending` for what was chosen.
+
+Pin the same status in a test about something else — the order has to be pending for the discount to
+apply at all, and the assertion is about the discounted amount — and `Pending` is a constraint the
+scenario needs, like `Between(1, 100)` on a quantity, not what the test verifies. The order still
+plays the role of a dummy there. What decides is whether the outcome depends on the value, never the
+call to `With…`.
+
+And if nothing in the test depends on the status, leave it drawn: a pinned value that does not matter
+is a literal that looks deliberate, which is the very thing this library exists to remove.
+
+## Relation to *xUnit Test Patterns*
+
+Readers of Gerard Meszaros' [*xUnit Test Patterns*](http://xunitpatterns.com/) bring its vocabulary
+with them, and *dummy* there does not cover quite the same ground.
+
+JustDummies takes the word in its basic sense — a value that has to be there and plays no part in
+what the test verifies — which is the sense the book gives it too. Beyond that, it does not follow
+the book's classification, and does not try to: a library had to be named, and one word serves its
+readers better than five. For those who think in the book's terms:
+
+| In *xUnit Test Patterns* | In JustDummies |
+| --- | --- |
+| [Dummy Object](http://xunitpatterns.com/Dummy%20Object.html) — a Test Double passed in and never used, often `null` or an object with no implementation | not produced: every drawn value is real and valid, and the code under test may read it, validate it or store it. JustDummies makes no test doubles |
+| Dummy Argument, Dummy Attribute — a value the test needs and that is not relevant to it | what JustDummies calls a dummy: a **role** a value plays in one test |
+| [Generated Value](http://xunitpatterns.com/Generated%20Value.html) — a value produced when the test runs, because it must still satisfy a constraint | how a value is produced here: `Any.X()` and the constraints declared on it |
+| [Creation Method](http://xunitpatterns.com/Creation%20Method.html), anonymous and parameterized — builds an object from arbitrary values, some of which the test can set | the `AnyX` the `any` scaffolder writes, its `With…` methods being the parameters |
+
+So a value the code under test validates can still be a dummy here: what decides is whether the
+test's outcome depends on it, not whether the code touches it.
+
 ---
 
 [← Documentation index](../README.md)

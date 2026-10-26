@@ -6,9 +6,9 @@ using Spectre.Console.Cli;
 namespace JustDummies.Cli;
 
 /// <summary>
-///     The command line of <c>dum generate</c>, as specified in §3 — and the whole of it: there is no
+///     The command line of <c>any generate</c>, as specified in §3 — and the whole of it: there is no
 ///     <c>init</c>, no <c>list</c>, no <c>--all</c> and no <c>check</c>. The one file read besides it,
-///     <c>dum.json</c> (§3.3), supplies defaults for these same options and is validated through the same
+///     <c>any.json</c> (§3.3), supplies defaults for these same options and is validated through the same
 ///     <see cref="Validate" /> — it can never widen this surface.
 /// </summary>
 internal sealed class GenerateSettings : CommandSettings {
@@ -89,7 +89,7 @@ internal sealed class GenerateSettings : CommandSettings {
                      ("--format", Format)
                  }) {
             if (value is not null && value.Trim().Length == 0) {
-                // "Omit it to take its default" stopped being true the day a dum.json could set the same
+                // "Omit it to take its default" stopped being true the day an any.json could set the same
                 // option: omitting it now takes that file's value where there is one (§3.3).
                 string advice = option == "--project"
                                     ? "Omit it to take its default."

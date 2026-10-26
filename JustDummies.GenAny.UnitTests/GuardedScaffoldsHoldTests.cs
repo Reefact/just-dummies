@@ -139,7 +139,7 @@ public sealed class GuardedScaffoldsHoldTests {
     /// </summary>
     /// <remarks>
     ///     The other theories above prove a golden file's <i>shape</i>; this one proves the claim behind
-    ///     it — and the claim was never "dum's guess is correct". It is "dum's guess is real, not a stub", and
+    ///     it — and the claim was never "the scaffolder's guess is correct". It is "its guess is real, not a stub", and
     ///     that a generator this unverified, shipped as ordinary code, is exactly the silent failure ADR-0083
     ///     exists to stop.
     /// </remarks>

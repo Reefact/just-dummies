@@ -47,11 +47,11 @@ public sealed class EntryPointOptions {
     /// <summary>Where the entry-point file is declared, or null to follow the generator.</summary>
     public string? NamespaceOverride { get; }
 
-    /// <summary>What the developer writes before the type's name — <c>Dummies</c>, or <c>Any</c>.</summary>
+    /// <summary>What the developer writes before the type's name — <c>Arbitrary</c>, or <c>Any</c>.</summary>
     public string Root => Kind == EntryPointKind.Any ? ReservedRootName : RootName ?? string.Empty;
 
     /// <summary>
-    ///     The entry point is a static root the developer owns — <c>Dummies.Order()</c>.
+    ///     The entry point is a static root the developer owns — <c>Arbitrary.Order()</c>.
     /// </summary>
     /// <param name="rootName">The root class's name.</param>
     /// <exception cref="ArgumentNullException"><paramref name="rootName" /> is null.</exception>

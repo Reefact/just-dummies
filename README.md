@@ -99,12 +99,12 @@ seed replays across every patch and minor of a major version, enforced by a gold
 
 ## 🛠 Scaffold one for your own type
 
-Writing an `IAny<T>` by hand for each of your domain types is the tedious part. `dum` writes the
+Writing an `IAny<T>` by hand for each of your domain types is the tedious part. `any` writes the
 first draft:
 
 ```bash
 dotnet tool install --global JustDummies.Cli
-dum generate Order
+any generate Order
 ```
 
 ```text
@@ -143,12 +143,12 @@ of a plausible value being drawn behind your back.
 | [`JustDummies`](doc/handwritten/for-users/packages/justdummies.en.md) | the library, with its 35 rules bundled in |
 | [`JustDummies.Xunit`](doc/handwritten/for-users/packages/justdummies-xunit.en.md) | the xUnit v3 adapter: `[Reproducible]` |
 | [`JustDummies.DiagnosticCatalog`](doc/handwritten/for-users/packages/justdummies-diagnosticcatalog.en.md) | the `JD001`–`JD035` rules as compile-checked constants |
-| [`JustDummies.Cli`](doc/handwritten/for-users/packages/justdummies-cli.en.md) | `dum`, the scaffolder — a global tool, never a project reference |
+| [`JustDummies.Cli`](doc/handwritten/for-users/packages/justdummies-cli.en.md) | `any`, the scaffolder — a global tool, never a project reference |
 
 The three libraries target `netstandard2.0`; `JustDummies` additionally carries a `net8.0` asset with
 the modern generators (`DateOnly`, `TimeOnly`, `Int128`, `UInt128`, `Half`). The supported .NET
 Framework floor is **4.7.2** ([ADR-0007](doc/handwritten/for-maintainers/adr/0007-floor-the-library-on-net-framework-4-7-2.md)).
-`dum` is a tool rather than a library: it targets `net8.0` and rolls forward, whatever the project it
+`any` is a tool rather than a library: it targets `net8.0` and rolls forward, whatever the project it
 analyzes targets.
 
 > **Preview.** The public surface is declared in `PublicAPI.Unshipped.txt`: nothing about it is

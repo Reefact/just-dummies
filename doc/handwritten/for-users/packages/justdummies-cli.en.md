@@ -3,7 +3,8 @@
 🌍 **Languages:**  
 🇬🇧 English (this file) | 🇫🇷 [Français](./justdummies-cli.fr.md)
 
-`dum` writes the dummy generator for one of your types, **once**, as ordinary code you own and edit.
+`any` writes the generator of arbitrary values for one of your types — `AnyOrder` for `Order` —
+**once**, as ordinary code you own and edit.
 It is not a source generator and it does not run at build time: it reads your compilation, emits a
 file, and gets out of the way.
 
@@ -13,7 +14,7 @@ file, and gets out of the way.
 dotnet tool install --global JustDummies.Cli
 ```
 
-The package installs one command, `dum`. Unlike the three libraries, you never reference it from a
+The package installs one command, `any`. Unlike the three libraries, you never reference it from a
 project — it is a tool, not a dependency.
 
 ## What it produces
@@ -22,7 +23,7 @@ Run it from your **test** project: that is where the file belongs, and where the
 from.
 
 ```text
-$ dum generate Order
+$ any generate Order
 
 Analyzing Shop.Domain.Order
   constructor Order(OrderReference, Customer, int, OrderStatus, IReadOnlyList<string>, DateTime)
@@ -71,8 +72,8 @@ line that does not compile above it:
 <!-- jd:skip -->
 ```csharp
 private static IAny<string> AnyValidValue() {
-    // TODO(dum): 'string value' may be guarded by something dum could not read (§9).
-    //   This is dum's best generator for the type; verify it honours the real invariant,
+    // TODO(any): 'string value' may be guarded by something the scaffolder could not read (§9).
+    //   This is the scaffolder's best generator for the type; verify it honours the real invariant,
     //   or replace it, then delete the line below.
     _ = TODO_verify_the_generator_for_value;
 
@@ -102,8 +103,8 @@ error CS0246: The type or namespace name 'AnyOrderReference' could not be found
 Which is the work list, at the line that needs it:
 
 ```bash
-dum generate OrderReference
-dum generate Order --force
+any generate OrderReference
+any generate Order --force
 ```
 
 The recap does not repeat that — a file that will not build is not a silence. The only composed
@@ -117,7 +118,7 @@ halves of an arrange block read alike — `Any.Int32()` on one line and `Any.Ord
 ask for an entry point:
 
 ```bash
-dum generate Order --entry-point any
+any generate Order --entry-point any
 ```
 
 That writes a second file, `AnyOrder.Entry.cs`, beside the generator:
@@ -127,24 +128,24 @@ That writes a second file, `AnyOrder.Entry.cs`, beside the generator:
 Order order = Any.Order().WithStatus(OrderStatus.Pending).Generate();
 ```
 
-It uses a C# 14 extension member, so the project has to compile at C# 14; below that `dum` says so
+It uses a C# 14 extension member, so the project has to compile at C# 14; below that `any` says so
 and stops rather than quietly giving you something else. If you cannot raise the language version —
 or you would rather the root were yours — name one:
 
 ```bash
-dum generate Order --entry-point static:Dummies    # Dummies.Order()
+any generate Order --entry-point static:Arbitrary    # Arbitrary.Order()
 ```
 
 That form needs no C# 14. The root is `partial` and each type contributes its own file, so
-`dum generate Order Customer Invoice --entry-point static:Dummies` gives you `Dummies.Order()`,
-`Dummies.Customer()` and `Dummies.Invoice()` without any file being written twice.
+`any generate Order Customer Invoice --entry-point static:Arbitrary` gives you `Arbitrary.Order()`,
+`Arbitrary.Customer()` and `Arbitrary.Invoice()` without any file being written twice.
 
 By default the entry point is declared beside the generator, which costs your tests no import.
 `--entry-point-namespace` moves that file — and only that file — so one root can gather types from
 several namespaces:
 
 ```bash
-dum generate Order --entry-point static:Dummies --entry-point-namespace Shop.Tests.Dummies
+any generate Order --entry-point static:Arbitrary --entry-point-namespace Shop.Tests.Arbitrary
 ```
 
 The generator itself does not move, and `AnyOrder.cs` is byte-identical whichever of the three you
@@ -155,11 +156,11 @@ ask for. A root named `Any` is refused: a static class by that name in your own 
 
 ## Reporting to a script
 
-`dum` reports itself to a reader by default. `--format json` reports it to a script instead — one
+`any` reports itself to a reader by default. `--format json` reports it to a script instead — one
 JSON document on stdout, and nothing else there:
 
 ```bash
-dum generate Order Customer Invoice --format json > report.json
+any generate Order Customer Invoice --format json > report.json
 ```
 
 It exists because the exit code cannot say everything. A file written with open `TODO`s is a
@@ -188,14 +189,14 @@ The exit codes are unchanged: this adds a channel rather than redefining one. De
 
 ## Setting defaults once
 
-Options that describe your project rather than this invocation belong in a `dum.json` **beside your
+Options that describe your project rather than this invocation belong in an `any.json` **beside your
 project file**, committed with it:
 
 ```json
-{ "output": "./Dummies", "entryPoint": "static:Dummies", "entryPointNamespace": "Shop.Tests.Dummies" }
+{ "output": "./Arbitrary", "entryPoint": "static:Arbitrary", "entryPointNamespace": "Shop.Tests.Arbitrary" }
 ```
 
-Then `dum generate Order` gives you what the long command line would have. Five keys are read —
+Then `any generate Order` gives you what the long command line would have. Five keys are read —
 `output`, `namespace`, `entryPoint`, `entryPointNamespace`, `format` — and **the command line always
 wins** over any of them, so one invocation can differ without editing the file. `--force` and
 `--dry-run` are not among the keys: they say what this run is for, not what the project is.
@@ -218,23 +219,23 @@ means the same thing wherever you run the tool from. Decision:
 | `--dry-run` | off | print the file to stdout; write nothing |
 | `--format <f>` | `human` | how the run reports itself: `human` or `json` |
 
-`dum generate Order Customer Invoice` scaffolds several. They are processed independently, and the
+`any generate Order Customer Invoice` scaffolds several. They are processed independently, and the
 exit code is the worst of them: `0` a file written (TODOs and all), `1` a scaffolding run that
-failed, `2` an instruction the tool could not read — a command line, or a `dum.json`.
+failed, `2` an instruction the tool could not read — a command line, or an `any.json`.
 
 ## It never references JustDummies
 
 The tool resolves every library symbol **by name against your compilation**, and declares no
 dependency on the library
 ([ADR-0063](../../for-maintainers/adr/0063-give-the-scaffolder-no-dependency-on-the-package.md)). The
-tool and the library therefore version independently, and `dum` cannot drag a JustDummies upgrade
+tool and the library therefore version independently, and `any` cannot drag a JustDummies upgrade
 into your project. If a generator does not exist in the asset you resolve, it says so rather than
 emitting a call that will not compile.
 
 ## Requires
 
 The [`JustDummies`](./justdummies.en.md) package in the project being analyzed — without it nothing
-can be resolved, and `dum` says so rather than emitting anything.
+can be resolved, and `any` says so rather than emitting anything.
 
 The tool itself targets **.NET 8** and rolls forward, so any newer runtime you have installed runs
 it.

@@ -126,7 +126,7 @@ public sealed class TypeLookupTests {
     ///     The type a developer points the tool at is normally not in the source it is run over.
     /// </summary>
     /// <remarks>
-    ///     §3.1 has <c>dum</c> run from the <b>test</b> project, so <c>Warehouse</c> reaches that compilation
+    ///     §3.1 has <c>any</c> run from the <b>test</b> project, so <c>Warehouse</c> reaches that compilation
     ///     through a project reference and its own source declares nothing of the sort. Both halves of this
     ///     failed against a real project before this case was written down: the lookup answered "no such type"
     ///     for every type the tool exists to scaffold, and once it found one, reading its guards threw —
@@ -158,7 +158,7 @@ public sealed class TypeLookupTests {
     ///     constraint, no constraint at all, and no <c>unread guards</c> either, since a guard naming no
     ///     parameter is indistinguishable from ordinary logic. A recap reporting every parameter inferred over
     ///     an invariant nobody honoured is the silent failure ADR-0083 exists to stop, and it took pointing
-    ///     <c>dum</c> at real repositories to find it: every shape the generative sweep draws lives in one
+    ///     <c>any</c> at real repositories to find it: every shape the generative sweep draws lives in one
     ///     compilation, so no number of them can reach this.
     /// </remarks>
     [Fact(DisplayName = "A type in a referenced assembly built on another framework has its guards read too.")]

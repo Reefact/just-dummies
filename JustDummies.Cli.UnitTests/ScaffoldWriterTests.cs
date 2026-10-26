@@ -13,7 +13,7 @@ namespace JustDummies.Cli.UnitTests;
 /// </summary>
 public sealed class ScaffoldWriterTests : IDisposable {
 
-    private readonly string directory = Directory.CreateTempSubdirectory("dum-write-").FullName;
+    private readonly string directory = Directory.CreateTempSubdirectory("any-write-").FullName;
 
     /// <inheritdoc />
     public void Dispose() {
@@ -80,7 +80,7 @@ public sealed class ScaffoldWriterTests : IDisposable {
     // generators under a folder it has not created yet is the ordinary case.
     [Fact(DisplayName = "An output directory that is not there yet is created.")]
     public void AnAbsentOutputDirectoryIsCreated() {
-        string below = Path.Combine(directory, "Generators", "Dummies");
+        string below = Path.Combine(directory, "Generators", "Arbitrary");
 
         WriteOutcome written = ScaffoldWriter.Write(Emitted(), below, force: false);
 

@@ -5,7 +5,7 @@ namespace JustDummies.GenAny;
 /// </summary>
 /// <remarks>
 ///     v1.0 offers exactly one pattern, <see cref="Default" />, and no way to choose another: naming options
-///     (<c>--name</c>, <c>--pattern</c>, a project-wide <c>dum.json</c>) are deferred to v1.1 (specification §16).
+///     (<c>--name</c>, <c>--pattern</c>, a project-wide <c>any.json</c>) are deferred to v1.1 (specification §16).
 ///     <para>
 ///         This type exists now anyway, and carries the pattern rather than the prefix, because §11.3 asks that
 ///         v1.1 be a change to <see cref="TypeNaming.GeneratorNameFor" /> plus an options binding — not a sweep

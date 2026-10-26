@@ -6,7 +6,7 @@ on:
     #   lib-v1.2.3   -> JustDummies (the library, with its analyzers bundled in)
     #   xunit-v1.2.3 -> JustDummies.Xunit (the xUnit v3 adapter)
     #   catalog-v1.2.3 -> JustDummies.DiagnosticCatalog (the JD rules as constants)
-    #   cli-v1.2.3   -> dum (the scaffolder, packed as a .NET tool)
+    #   cli-v1.2.3   -> any (the scaffolder, packed as a .NET tool)
     tags:
       - 'lib-v*.*.*'
       - 'xunit-v*.*.*'
@@ -175,7 +175,7 @@ jobs:
         run: dotnet test --solution JustDummies.sln -c Release --no-build --output Detailed
 
       # Pack only the train this release targets (lib -> JustDummies; xunit -> JustDummies.Xunit;
-      # cli -> the dum scaffolder), so a library release never republishes the adapter and vice versa.
+      # cli -> the `any` scaffolder), so a library release never republishes the adapter and vice versa.
       # JustDummies.Analyzers is bundled inside the library package (analyzers/dotnet/cs) rather than
       # published on its own, so it has no train; pack.sh asserts it is actually in there.
       # GenerateSBOM activates Microsoft.Sbom.Targets in each packable project: each package embeds its SPDX

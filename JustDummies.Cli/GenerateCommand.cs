@@ -16,7 +16,7 @@ using Spectre.Console.Cli;
 namespace JustDummies.Cli;
 
 /// <summary>
-///     <c>dum generate</c>: the pipeline of §11.1, from a directory to a file the developer then owns.
+///     <c>any generate</c>: the pipeline of §11.1, from a directory to a file the developer then owns.
 /// </summary>
 /// <remarks>
 ///     The shell's half of it, and only that half. Steps 1 to 3 are here because they need MSBuild, a disk and
@@ -89,7 +89,7 @@ internal sealed class GenerateCommand : AsyncCommand<GenerateSettings> {
         EntryPointArgument entryPoint = settings.ReadEntryPoint();
 
         // Asked once for the run, not once per type: it is a fact about the project, so repeating it under
-        // `dum generate Order Customer Invoice` would print the same two lines three times.
+        // `any generate Order Customer Invoice` would print the same two lines three times.
         if (!CanCompileEntryPoint(loaded.Compilation!, entryPoint, out string languageVersion)) {
             Refusals.LanguageVersionTooLow(project.Path!, languageVersion, consoles.Error);
 
@@ -114,7 +114,7 @@ internal sealed class GenerateCommand : AsyncCommand<GenerateSettings> {
     }
 
     /// <summary>
-    ///     A <c>dum.json</c> that could not be read, or whose values the merged command line refuses (§3.3).
+    ///     An <c>any.json</c> that could not be read, or whose values the merged command line refuses (§3.3).
     /// </summary>
     /// <remarks>
     ///     Exit <c>2</c> rather than <c>1</c>, on the same rule §7 already draws: the tool never got as far as

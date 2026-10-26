@@ -60,8 +60,8 @@ public static class GeneratorEmitter {
     ///     produce a diff that means nothing.
     /// </summary>
     private static void WriteHeader(StringBuilder file, ScaffoldPlan plan) {
-        Line(file, "// Scaffolded by dum (JustDummies). This file is yours: read it, edit it, commit it.");
-        Line(file, $"// `dum generate {plan.Target.Name} --force` overwrites it. This type is partial, so members you add in a");
+        Line(file, "// Scaffolded by `any` (JustDummies). This file is yours: read it, edit it, commit it.");
+        Line(file, $"// `any generate {plan.Target.Name} --force` overwrites it. This type is partial, so members you add in a");
         Line(file, "// neighbouring file survive.");
         Line(file, string.Empty);
     }
@@ -220,10 +220,10 @@ public static class GeneratorEmitter {
     ///     build reports it at this line, in the IDE and in CI, the minute the file is written.
     /// </summary>
     private static void WriteTodo(StringBuilder file, ScaffoldedParameter parameter, string indent) {
-        Line(file, $"{indent}// TODO(dum): no generator inferred for '{parameter.TypeDisplay} {parameter.Name}'.");
+        Line(file, $"{indent}// TODO(any): no generator inferred for '{parameter.TypeDisplay} {parameter.Name}'.");
 
         if (ScaffoldableByName(parameter.TypeDisplay)) {
-            Line(file, $"{indent}//   Scaffold one:  dum generate {parameter.TypeDisplay}");
+            Line(file, $"{indent}//   Scaffold one:  any generate {parameter.TypeDisplay}");
             Line(file, $"{indent}//   or write one here, or replace it and always pass .With{parameter.PascalCasedName}(...) instead.");
 
             return;
@@ -233,7 +233,7 @@ public static class GeneratorEmitter {
     }
 
     /// <summary>
-    ///     Whether <c>dum generate</c> would accept this type's name (§3.2).
+    ///     Whether <c>any generate</c> would accept this type's name (§3.2).
     /// </summary>
     /// <remarks>
     ///     It refuses a generic or constructed type, so naming one on the line above would send the developer
@@ -255,8 +255,8 @@ public static class GeneratorEmitter {
     ///     to check rather than thrown away over a doubt the engine cannot resolve on its own (ADR-0082).
     /// </summary>
     private static void WriteVerify(StringBuilder file, ScaffoldedParameter parameter, string indent) {
-        Line(file, $"{indent}// TODO(dum): '{parameter.TypeDisplay} {parameter.Name}' may be guarded by something dum could not read (§9).");
-        Line(file, $"{indent}//   This is dum's best generator for the type; verify it honours the real invariant,");
+        Line(file, $"{indent}// TODO(any): '{parameter.TypeDisplay} {parameter.Name}' may be guarded by something the scaffolder could not read (§9).");
+        Line(file, $"{indent}//   This is the scaffolder's best generator for the type; verify it honours the real invariant,");
         Line(file, $"{indent}//   or replace it, then delete the line below.");
     }
 

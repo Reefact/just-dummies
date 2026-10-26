@@ -1,4 +1,4 @@
-# Tool JustDummies (`dum`) — spécification v1.0
+# Tool JustDummies (`any`) — spécification v1.0
 
 🌍 🇫🇷 Français (ce fichier) · 🇬🇧 [English](justdummies-tool.md)
 
@@ -6,7 +6,7 @@
 portent les contraintes projet des §10 et §13. Écrites : la §3, la ligne de commande, et la résolution de type
 du §3.2 ; la §4, le fichier émis ; **toute la §5** — choix du constructeur, table de base, guards, composition et
 paramètre ouvert — ainsi que la provenance que rapporte la §6 ; la §6, le récapitulatif console ; les codes de
-sortie et l'avertissement de masquage de la §7 ; et tout le pipeline du §11.1, si bien que `dum generate` ouvre un
+sortie et l'avertissement de masquage de la §7 ; et tout le pipeline du §11.1, si bien que `any generate` ouvre un
 vrai projet et écrit un vrai fichier. L'exemple travaillé du §4.1 est produit de bout en bout depuis sa propre
 source, au caractère près. Le train de release `cli` l'empaquette et asserte la D9 sur le paquet produit
 (§13.6). **Publié :** d'abord sorti en `cli-v1.0.0-beta.1`, et publié sur le train `cli` depuis —
@@ -45,9 +45,9 @@ explicitement marqué ouvert. Aucune question ouverte ne bloque l'implémentatio
 
 ---
 
-## 1. Ce qu'est `dum`
+## 1. Ce qu'est `any`
 
-`dum` est un **scaffolder**, pas un générateur de code.
+`any` est un **scaffolder**, pas un générateur de code.
 
 À partir d'un type du code du développeur, il écrit **un fichier C#, une fois**, contenant un
 generator nommé et composable pour ce type. Dès que le fichier est écrit il appartient au
@@ -55,7 +55,7 @@ développeur : il le lit, le modifie, le commite, et ne relance jamais le tool d
 
 ```console
 $ cd Shop.Tests
-$ dum generate Order
+$ any generate Order
 ✓ AnyOrder.cs
 ```
 
@@ -116,11 +116,11 @@ table en est l'index ; elle ne porte aucun argument propre.
 
 ## 3. Surface de commande
 
-Le tool est distribué comme .NET tool dont la commande est **`dum`**.
+Le tool est distribué comme .NET tool dont la commande est **`any`**.
 
 ```console
 dotnet tool install --global JustDummies.Cli
-dum generate <Type> [<Type>...] [options]
+any generate <Type> [<Type>...] [options]
 ```
 
 `generate` est le seul verbe de la v1.0.
@@ -157,7 +157,7 @@ pointant `--project`.
 1. par nom de métadonnée complet, si l'argument contient un `.` (`Shop.Domain.Order`) ;
 2. par nom simple parmi les types source de la compilation et les assemblies référencées.
 
-Un type **imbriqué** s'écrit comme un développeur le taperait — `dum generate Order.Line` — et le
+Un type **imbriqué** s'écrit comme un développeur le taperait — `any generate Order.Line` — et le
 moteur le traduit pour la recherche, où le séparateur est `+` et non `.`
 (`Shop.Domain.Order+Line`). Passer la forme pointée telle quelle à une recherche par nom de
 métadonnée ne renvoie rien, ce qui signalerait comme absent un type bien réel. Le generator émis est
@@ -169,12 +169,12 @@ erreur, avec les noms complets, en demandant lequel. Les deux sortent en `1`.
 
 ### 3.3 Défauts de projet *(v1.1)*
 
-Un `dum.json` optionnel **à côté du fichier projet** fixe ce que la ligne de commande répéterait
+Un `any.json` optionnel **à côté du fichier projet** fixe ce que la ligne de commande répéterait
 sinon. Décision :
 [ADR-0072](../adr/0072-read-project-defaults-from-a-file-the-command-line-overrides.fr.md).
 
 ```json
-{ "output": "./Dummies", "entryPoint": "static:Dummies", "entryPointNamespace": "Shop.Tests.Dummies" }
+{ "output": "./Arbitrary", "entryPoint": "static:Arbitrary", "entryPointNamespace": "Shop.Tests.Arbitrary" }
 ```
 
 Il lit cinq clés — `output`, `namespace`, `entryPoint`, `entryPointNamespace`, `format` — une par
@@ -234,12 +234,12 @@ public sealed class OrderReference {
 }
 ```
 
-`dum generate Order`, avec `AnyOrderReference` et `AnyCustomer` déjà scaffoldés dans le projet,
+`any generate Order`, avec `AnyOrderReference` et `AnyCustomer` déjà scaffoldés dans le projet,
 émet :
 
 ```csharp
-// Scaffolded by dum (JustDummies). This file is yours: read it, edit it, commit it.
-// `dum generate Order --force` overwrites it. This type is partial, so members you add in a
+// Scaffolded by `any` (JustDummies). This file is yours: read it, edit it, commit it.
+// `any generate Order --force` overwrites it. This type is partial, so members you add in a
 // neighbouring file survive.
 
 using System;
@@ -461,7 +461,7 @@ Décision : [ADR-0070](../adr/0070-emit-an-entry-point-on-request-as-a-file-of-i
 | Valeur | Ce qui est émis | Écriture |
 |---|---|---|
 | `none` *(défaut)* | rien | — |
-| `static:<Name>` | `public static partial class <Name>` portant une fabrique | `Dummies.Order()` |
+| `static:<Name>` | `public static partial class <Name>` portant une fabrique | `Arbitrary.Order()` |
 | `any` | `extension(Any)` portant une fabrique statique | `Any.Order()` |
 
 **Le fichier du generator ne change pas.** `Any{Type}.cs` est identique octet pour octet sous les
@@ -470,7 +470,7 @@ touché. Ce qui est ajouté l'est à côté, dans `Any{Type}.Entry.cs`.
 
 **Une part par scaffold, jamais un fichier partagé.** La racine statique est `partial`, et chaque
 scaffold écrit sa propre part. Rien n'est lu pour être réécrit, donc le §8.1 tient et D1 n'est pas
-discrètement renversée : `dum generate Order Customer Invoice --entry-point static:Dummies` écrit six
+discrètement renversée : `any generate Order Customer Invoice --entry-point static:Arbitrary` écrit six
 fichiers et aucun deux fois.
 
 **`any` exige C# 14, et le framework cible n'a rien à y voir.** Un membre d'extension statique
@@ -1130,7 +1130,7 @@ comme pour tout autre paramètre :
                ...) { }
 
     private static IAny<Crate<int>> AnyValidCrates() {
-        // TODO(dum): no generator inferred for 'Crate<int> crates'.
+        // TODO(any): no generator inferred for 'Crate<int> crates'.
         //   Write one here, or replace it and always pass .WithCrates(...) instead.
         return TODO_supply_a_generator_for_crates;
     }
@@ -1143,7 +1143,7 @@ compilateur lui-même — *« The name 'TODO_supply_a_generator_for_crates' does
 current context »* — est l'instruction, et il apparaît dans l'IDE, dans la liste d'erreurs et en
 intégration continue, à la ligne propre à `AnyValidCrates`.
 
-Le commentaire ne nomme `dum generate` que là où cette commande accepterait le nom. Le §3.2 refuse
+Le commentaire ne nomme `any generate` que là où cette commande accepterait le nom. Le §3.2 refuse
 une cible générique : y envoyer le développeur serait une instruction que le tool lui-même décline
 — pire que pas d'instruction du tout. Cette distinction gagne son coût maintenant que le §5.4 nomme
 un generator pour tout type simple : ce qui atteint cette branche est surtout les types construits.
@@ -1162,8 +1162,8 @@ fabrique plutôt que d'être jeté.
 
 ```csharp
     private static IAny<string> AnyValidName() {
-        // TODO(dum): 'string name' may be guarded by something dum could not read (§9).
-        //   This is dum's best generator for the type; verify it honours the real invariant,
+        // TODO(any): 'string name' may be guarded by something the scaffolder could not read (§9).
+        //   This is the scaffolder's best generator for the type; verify it honours the real invariant,
         //   or replace it, then delete the line below.
         _ = TODO_verify_the_generator_for_name;
 
@@ -1174,7 +1174,7 @@ fabrique plutôt que d'être jeté.
 L'identifiant sur la ligne écartée n'existe pas, le build échoue donc à cette ligne exacte, comme
 au §5.5 — l'affectation à `_` est ce qui évite qu'un second `CS0201` sans rapport ne brouille ce
 que le développeur doit lire. Le `return` en dessous est réel : supprimer une seule ligne laisse
-exactement ce que dum aurait écrit en silence sinon, à garder ou à remplacer.
+exactement ce que le scaffolder aurait écrit en silence sinon, à garder ou à remplacer.
 
 Un generator qui compile et tire une valeur que le vrai constructeur rejette encore est un échec
 pire que celui qui ne compile jamais : il passe la run d'aujourd'hui et échoue plus tard,
@@ -1196,7 +1196,7 @@ ce type.
 
 Le récapitulatif se lit à l'identique, que la compilation porte déjà ces deux generators ou non, et
 c'est délibéré. Quand l'un manque, le fichier émis le nomme quand même et ne compile pas : le
-développeur rencontre `CS0246` à cette ligne, qui nomme le type à scaffolder — `dum generate
+développeur rencontre `CS0246` à cette ligne, qui nomme le type à scaffolder — `any generate
 OrderReference`, puis relancer avec `--force`, et ce deux-temps est la façon prévue de traverser un
 graphe d'agrégats. Le récapitulatif ne double pas le compilateur ici : un fichier qui ne build pas
 n'est pas un silence.
@@ -1206,7 +1206,7 @@ constructeur : un type construit par la règle de factory du §5.1 imprime cet a
 `factory Email.Create(string)` — puisque c'est celui que le fichier émis écrit.
 
 ```console
-$ dum generate Order
+$ any generate Order
 
 Analyzing Shop.Domain.Order
   constructor Order(OrderReference, Customer, int, OrderStatus, IReadOnlyList<string>, DateTime)
@@ -1269,7 +1269,7 @@ lieu d'être assemblée par la console :
 
 ```console
 ✓ AnyOrder.cs       — 6 of 6 parameters inferred.
-✓ AnyOrder.Entry.cs — entry point Dummies.Order()
+✓ AnyOrder.Entry.cs — entry point Arbitrary.Order()
 ```
 
 `--dry-run` affiche le même récapitulatif sur stderr et le fichier sur stdout. Avec un point
@@ -1343,7 +1343,7 @@ réponses.
 | `--entry-point` reçoit une valeur hors des trois | `2` | Liste les trois. |
 | `--entry-point-namespace` sans point d'entrée à placer | `2` | Dit quelle option manque. |
 | `--format` reçoit une valeur qui n'est ni `human` ni `json` | `2` | Nomme les deux. |
-| `dum.json` illisible, ou fixant une clé non lue | `2` | Nomme la clé, et celles qui sont lues. |
+| `any.json` illisible, ou fixant une clé non lue | `2` | Nomme la clé, et celles qui sont lues. |
 | `Any{Type}` masque un type `JustDummies.Any*` | `0` | **Avertissement**, puis génération. |
 
 **Plusieurs lignes peuvent décrire un même type à la fois, et c'est la plus actionnable qui répond.**
@@ -1391,7 +1391,7 @@ trace déjà. Seule la première est un échec de scaffolding : le tool a lu la 
 le projet, et constaté qu'il ne peut pas compiler ce qui lui est demandé. Les trois autres sont des
 lignes de commande que le tool n'a jamais réussi à exécuter, ce qui est `2`. La première est en outre
 posée **une fois par exécution** plutôt qu'une fois par type, puisque c'est un fait sur le projet —
-`dum generate Order Customer Invoice` l'affiche une fois et s'arrête.
+`any generate Order Customer Invoice` l'affiche une fois et s'arrête.
 
 Un scaffold est une unité de travail sur le disque. Là où un point d'entrée a été demandé, l'existence
 de son fichier est vérifiée en même temps que celle du generator avant que l'un ou l'autre ne soit
@@ -1399,7 +1399,7 @@ de son fichier est vérifiée en même temps que celle du generator avant que l'
 laisser `Any{Type}.cs` derrière lui. `--force` porte sur les deux, et perd les éditions du développeur
 sur l'un comme sur l'autre par la même phrase.
 
-Plusieurs arguments de type (`dum generate Order Customer Invoice`) sont traités indépendamment ; le
+Plusieurs arguments de type (`any generate Order Customer Invoice`) sont traités indépendamment ; le
 code de sortie est le pire d'entre eux, et un échec n'empêche pas l'écriture des autres.
 
 ---
@@ -1545,7 +1545,7 @@ Rien dans le modèle n'est une chaîne destinée à une console.
 
 ### 10.4 Packaging
 
-`JustDummies.Cli` est packagé comme le .NET tool (`PackAsTool`, `ToolCommandName=dum`,
+`JustDummies.Cli` est packagé comme le .NET tool (`PackAsTool`, `ToolCommandName=any`,
 `PackageId=JustDummies.Cli`). `JustDummies.GenAny` n'est **pas publié comme package propre** en
 v1.0 : il voyage dans le package du tool comme dépendance managée ordinaire, exactement comme le
 dépôt frère publie son moteur `GenDoc`. Le publier plus tard, quand un consommateur IDE existera,
@@ -2029,11 +2029,11 @@ bon marché.
 **Nommage.** `AnyOrder` → `OrderFactory`, ou tout autre motif. Forme :
 
 ```console
-dum generate Order --name OrderFactory        # ce type uniquement
-dum generate Order --pattern "{Type}Factory"  # cette exécution
+any generate Order --name OrderFactory        # ce type uniquement
+any generate Order --pattern "{Type}Factory"  # cette exécution
 ```
 
-plus un `dum.json` optionnel à la racine du projet pour un défaut à l'échelle du projet :
+plus un `any.json` optionnel à la racine du projet pour un défaut à l'échelle du projet :
 
 ```json
 { "naming": { "pattern": "Any{Type}" } }

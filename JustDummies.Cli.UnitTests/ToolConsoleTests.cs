@@ -11,7 +11,7 @@ namespace JustDummies.Cli.UnitTests;
 /// </summary>
 /// <remarks>
 ///     A regression, not a preference. Built from the defaults, a console asks the terminal for its width and is
-///     told there is none — a pipe, a file, a CI log — and then wraps every line to that. `dum --help` printed
+///     told there is none — a pipe, a file, a CI log — and then wraps every line to that. `any --help` printed
 ///     `……` and six bytes, with a zero exit code: a run that looks successful and says nothing. Every output the
 ///     specification describes, the §6 recap included, travels this way.
 /// </remarks>

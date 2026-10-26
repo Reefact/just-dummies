@@ -50,7 +50,7 @@
     <PackageVersion Include="Microsoft.CodeAnalysis.Analyzers" Version="5.9.0" />
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="5.6.0" />
     <PackageVersion Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" Version="5.6.0" />
-    <!-- The dum tool's project loading (§11.1), JustDummies.Cli only. Workspaces.MSBuild is kept at the same
+    <!-- The `any` tool's project loading (§11.1), JustDummies.Cli only. Workspaces.MSBuild is kept at the same
          version as Microsoft.CodeAnalysis.CSharp above: the two ship together and a workspace built against a
          different Roslyn than the compilation it produces is the classic way this fails at run time. The
          engine takes neither — it is handed a Compilation and knows nothing of MSBuild (ADR-0065). 5.6.0 is
@@ -75,7 +75,7 @@
     <PackageVersion Include="NFluent" Version="3.1.0" />
     <PackageVersion Include="SonarAnalyzer.CSharp" Version="10.35.0.4138" />
     <PackageVersion Include="StyleCop.Analyzers" Version="1.2.0-beta.556" />
-    <!-- The dum tool's command line: JustDummies.Cli owns the command definitions and settings, and the
+    <!-- The `any` tool's command line: JustDummies.Cli owns the command definitions and settings, and the
          engine owns none of it (specification §10.2). Restored to this list when that project arrived —
          it was dropped at the extraction because nothing referenced it then, which is what the note above
          records. -->

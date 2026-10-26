@@ -1,11 +1,11 @@
-# dum — the JustDummies scaffolder
+# any — the JustDummies scaffolder
 
-`dum` writes the dummy generator for one of your types, **once**, as ordinary
-code you own and edit. It is not a source generator and it does not run at build
+`any` writes the generator of arbitrary values for one of your types — `AnyOrder`
+for `Order` — **once**, as ordinary code you own and edit. It is not a source generator and it does not run at build
 time: it reads your compilation, emits a file, and gets out of the way.
 
     dotnet tool install --global JustDummies.Cli
-    dum generate Order
+    any generate Order
 
 ## What it produces
 
@@ -13,7 +13,7 @@ Run from your **test** project — that is where the file belongs, and where the
 type is reachable from:
 
 ```console
-$ dum generate Order
+$ any generate Order
 
 Analyzing Shop.Domain.Order
   constructor Order(OrderReference, Customer, int, OrderStatus, IReadOnlyList<string>, DateTime)
@@ -49,7 +49,7 @@ what was **guessed**:
 type is drawn through the generator it owns — `new AnyOrderReference()` — which
 is where that type's recipe belongs, so no two files carry their own copy of it.
 Where you have not scaffolded it yet, the emitted file names it anyway and your
-build says `CS0246` at that line: run `dum generate OrderReference`, then re-run
+build says `CS0246` at that line: run `any generate OrderReference`, then re-run
 with `--force`. That two-step is the intended way through a graph of aggregates,
 and the recap does not duplicate the compiler — a file that will not build is
 not a silence.
@@ -65,8 +65,8 @@ worse.
 throughout — `Any.Int32()` on one line and `Any.Order()` on the next — ask for an
 entry point, and a second file lands beside the generator:
 
-    dum generate Order --entry-point any               # Any.Order()      needs C# 14
-    dum generate Order --entry-point static:Dummies    # Dummies.Order()  needs nothing
+    any generate Order --entry-point any                 # Any.Order()        needs C# 14
+    any generate Order --entry-point static:Arbitrary    # Arbitrary.Order()  needs nothing
 
 `AnyOrder.cs` is byte-identical either way, so nothing about the generator
 changes. Below C# 14 the first form is refused rather than quietly swapped for
@@ -81,7 +81,7 @@ per parameter. The exit codes are unchanged; this adds a channel.
 
 ## Setting defaults once
 
-Options that describe the project rather than the invocation go in a `dum.json`
+Options that describe the project rather than the invocation go in an `any.json`
 beside the project file — `output`, `namespace`, `entryPoint`,
 `entryPointNamespace`, `format`. The command line always wins over it, and a key
 it does not read is refused rather than ignored.
@@ -99,23 +99,23 @@ it does not read is refused rather than ignored.
 | `--dry-run` | off | print the file to stdout; write nothing |
 | `--format <f>` | `human` | how the run reports itself: `human` or `json` |
 
-`dum generate Order Customer Invoice` scaffolds several; they are processed
+`any generate Order Customer Invoice` scaffolds several; they are processed
 independently, and the exit code is the worst of them. Exit `0` is a file
 written (TODOs and all), `1` a scaffolding run that failed, `2` an instruction the
-tool could not read — a command line, or a `dum.json`.
+tool could not read — a command line, or an `any.json`.
 
 ## It never references JustDummies
 
 The tool resolves every library symbol **by name against your compilation**, and
 declares no dependency on the library. So the tool and the library version
-independently, and `dum` will not drag a JustDummies upgrade into your project —
+independently, and `any` will not drag a JustDummies upgrade into your project —
 if a generator does not exist in the asset you resolve, it says so rather than
 emitting a call that will not compile.
 
 ## Requires
 
 The [`JustDummies`](https://www.nuget.org/packages/JustDummies) package in the
-project being analyzed — without it nothing can be resolved, and `dum` says so.
+project being analyzed — without it nothing can be resolved, and `any` says so.
 The tool itself targets .NET 8 and rolls forward, so any newer runtime you have
 installed will run it.
 

@@ -44,7 +44,7 @@ internal static class ToolCommandLine {
         CommandApp app = new(registrar);
 
         app.Configure(config => {
-            config.SetApplicationName("dum");
+            config.SetApplicationName("any");
             config.SetApplicationVersion(Version);
             config.ConfigureConsole(output);
 
@@ -61,14 +61,14 @@ internal static class ToolCommandLine {
             });
 
             config.AddCommand<GenerateCommand>("generate")
-                  .WithDescription("Write the dummy generator for a type, as code you then own.");
+                  .WithDescription("Write the generator of arbitrary values for a type, as code you then own.");
         });
 
         return app.Run(args);
     }
 
     /// <summary>
-    ///     What <c>dum --version</c> answers: the informational version, without the commit hash a deterministic
+    ///     What <c>any --version</c> answers: the informational version, without the commit hash a deterministic
     ///     build appends to it. A developer comparing their tool against a release note wants the number they can
     ///     find on nuget.org, not the build it came from.
     /// </summary>

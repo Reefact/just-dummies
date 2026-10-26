@@ -18,7 +18,7 @@
 #               lib     -> JustDummies (the library; its analyzers ride inside it)
 #               xunit   -> JustDummies.Xunit (the xUnit v3 adapter)
 #               catalog -> JustDummies.DiagnosticCatalog (the JD rules as constants)
-#               cli     -> JustDummies.Cli (dum, the scaffolder, packed as a .NET tool)
+#               cli     -> JustDummies.Cli (any, the scaffolder, packed as a .NET tool)
 
 set -eu
 
@@ -68,7 +68,7 @@ case "$scope" in
     projects='JustDummies.DiagnosticCatalog/JustDummies.DiagnosticCatalog.csproj'
     ;;
   cli)
-    # The `dum` scaffolder, packed as a .NET tool (PackAsTool, command name `dum`). Unlike the three
+    # The `any` scaffolder, packed as a .NET tool (PackAsTool, command name `any`). Unlike the three
     # library packages, this one ships its whole dependency closure as FILES under tools/net8.0/any/ --
     # Roslyn, the workspace layer, Spectre -- because that is what a tool package is. Its nuspec therefore
     # declares no dependencies at all, which is why the ADR-0063 guard below reads the payload as well as

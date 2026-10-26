@@ -6,7 +6,7 @@ using JustDummies.GenAny;
 namespace JustDummies.Cli;
 
 /// <summary>
-///     One <c>dum generate</c> run, as data — what <c>--format json</c> puts on stdout (§6.1).
+///     One <c>any generate</c> run, as data — what <c>--format json</c> puts on stdout (§6.1).
 /// </summary>
 /// <remarks>
 ///     It exists because the exit code cannot carry it. §7 makes a file written with open parameters a
@@ -32,13 +32,13 @@ internal sealed record RunReport(string Tool,
     ///     a contract with a hole in it.
     /// </remarks>
     internal static RunReport Refused(string refusal) {
-        return new RunReport("dum", refusal, [],
+        return new RunReport("any", refusal, [],
                              new RunSummary(Scaffolded: 0, Failed: 0, OpenParameters: 0, ParametersToVerify: 0));
     }
 
     /// <summary>A run that scaffolded, whatever each of its arguments came to.</summary>
     internal static RunReport Of(IReadOnlyList<ScaffoldReport> results) {
-        return new RunReport("dum",
+        return new RunReport("any",
                              Refusal: null,
                              results,
                              new RunSummary(results.Count(result => result.Status == nameof(ScaffoldStatus.Scaffolded)),

@@ -20,7 +20,7 @@ internal static class SuppressionJustification {
         /// <summary>
         ///     The rule looks for unfinished work a developer left behind. These occurrences are the opposite:
         ///     documentation of a marker this tool <b>emits on purpose</b>. §5.5 has an unresolved parameter
-        ///     become a <c>TODO(dum)</c> comment and an identifier that does not exist, so the developer's own
+        ///     become a <c>TODO(any)</c> comment and an identifier that does not exist, so the developer's own
         ///     build reports it — that refusal to guess is the feature (ADR-0060), and naming it anything other
         ///     than what it emits would make the documentation harder to search than the code it describes.
         ///     <para>

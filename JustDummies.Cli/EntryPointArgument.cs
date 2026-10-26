@@ -25,7 +25,7 @@ internal sealed class EntryPointArgument {
     /// <summary>The value that asks for nothing, which is also what omitting the option means.</summary>
     private const string NoneValue = "none";
 
-    /// <summary>What a static root is spelled with: <c>static:Dummies</c>.</summary>
+    /// <summary>What a static root is spelled with: <c>static:Arbitrary</c>.</summary>
     private const string StaticPrefix = "static:";
 
     private EntryPointArgument(EntryPointOptions options, string? refusal) {
@@ -78,7 +78,7 @@ internal sealed class EntryPointArgument {
 
         if (root.Length == 0) {
             return Refused($"--entry-point {StaticPrefix}<Name> names the static class the entry points hang off, "
-                         + $"as in {StaticPrefix}Dummies.");
+                         + $"as in {StaticPrefix}Arbitrary.");
         }
 
         // The engine owns both rules — an identifier is an identifier, and 'Any' is the one name that hides the

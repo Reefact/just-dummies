@@ -159,7 +159,7 @@ values it had to draw from and would ask for more than exist:
 ISet<OrderStatus?> statuses = Any.SetOf(Any.Enum<OrderStatus>().AsNullable()).NonEmpty().Generate();
 ```
 
-A generator scaffolded by `dum` writes `.AsNullable()` for every nullable value-type parameter, for
+A generator scaffolded by `any` writes `.AsNullable()` for every nullable value-type parameter, for
 exactly that reason.
 
 ## Building a whole aggregate

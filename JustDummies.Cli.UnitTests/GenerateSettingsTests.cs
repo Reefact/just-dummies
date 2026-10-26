@@ -44,7 +44,7 @@ public sealed class GenerateSettingsTests {
         Check.That(types.PropertyType).IsEqualTo(typeof(string[]));
     }
 
-    // Every option carries a [Description]: it is what `dum generate --help` prints, and the defaults of §3 are
+    // Every option carries a [Description]: it is what `any generate --help` prints, and the defaults of §3 are
     // only discoverable there.
     [Fact(DisplayName = "Every part of the command line describes itself in the help.")]
     public void EveryPartOfTheCommandLineDescribesItself() {

@@ -241,7 +241,7 @@ public sealed class CompositionTests {
     ///     opens a namespace for anything but the composed type's own (ADR-0062), which is deterministic from
     ///     the type being composed and never from a lookup. If the developer's own convention does not put
     ///     <c>AnyEmail</c> where the composed type lives, the resulting <c>CS0246</c> is the answer, not a bug —
-    ///     adding the <c>using</c> by hand is the developer's call, never dum's.
+    ///     adding the <c>using</c> by hand is the developer's call, never the scaffolder's.
     /// </summary>
     [Fact(DisplayName = "A real generator in another namespace earns no using: the call stays blind.")]
     public void ARealGeneratorInAnotherNamespaceEarnsNoUsing() {

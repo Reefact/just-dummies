@@ -102,12 +102,12 @@ garanti par un golden master
 
 ## 🛠 En scaffolder un pour vos propres types
 
-Écrire un `IAny<T>` à la main pour chacun de vos types métier, c'est la partie fastidieuse. `dum` en
+Écrire un `IAny<T>` à la main pour chacun de vos types métier, c'est la partie fastidieuse. `any` en
 écrit le premier jet :
 
 ```bash
 dotnet tool install --global JustDummies.Cli
-dum generate Order
+any generate Order
 ```
 
 ```text
@@ -147,13 +147,13 @@ dos.
 | [`JustDummies`](doc/handwritten/for-users/packages/justdummies.fr.md) | la bibliothèque, avec ses 35 règles embarquées |
 | [`JustDummies.Xunit`](doc/handwritten/for-users/packages/justdummies-xunit.fr.md) | l'adaptateur xUnit v3 : `[Reproducible]` |
 | [`JustDummies.DiagnosticCatalog`](doc/handwritten/for-users/packages/justdummies-diagnosticcatalog.fr.md) | les règles `JD001`–`JD035` en constantes vérifiées par le compilateur |
-| [`JustDummies.Cli`](doc/handwritten/for-users/packages/justdummies-cli.fr.md) | `dum`, le scaffolder — outil global, jamais une référence de projet |
+| [`JustDummies.Cli`](doc/handwritten/for-users/packages/justdummies-cli.fr.md) | `any`, le scaffolder — outil global, jamais une référence de projet |
 
 Les trois bibliothèques ciblent `netstandard2.0` ; `JustDummies` publie en plus un asset `net8.0`
 avec les générateurs modernes (`DateOnly`, `TimeOnly`, `Int128`, `UInt128`, `Half`). Le plancher .NET
 Framework supporté est **4.7.2**
 ([ADR-0007](doc/handwritten/for-maintainers/adr/0007-floor-the-library-on-net-framework-4-7-2.fr.md)).
-`dum` est un outil et non une bibliothèque : il cible `net8.0` et roule vers l'avant, quelle que soit
+`any` est un outil et non une bibliothèque : il cible `net8.0` et roule vers l'avant, quelle que soit
 la cible du projet qu'il analyse.
 
 > **Préversion.** La surface publique est déclarée dans `PublicAPI.Unshipped.txt` : rien n'en est

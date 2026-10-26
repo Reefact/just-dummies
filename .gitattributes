@@ -4,7 +4,7 @@
 # the compiler does not care, and .editorconfig's `end_of_line = lf` governs what an editor writes
 # back. For the scaffolder's approved files it is not: those are BYTE-EXACT fixtures.
 #
-# The dum emitter writes LF on every platform, deliberately, because §8.1 of the tool specification
+# The `any` emitter writes LF on every platform, deliberately, because §8.1 of the tool specification
 # promises the same bytes from the same type on any machine — Environment.NewLine promises the
 # opposite. GoldenFile.Approve therefore compares raw text, with no normalisation, since normalising
 # would stop checking the very thing the constant exists for. Left to Git's default, that comparison

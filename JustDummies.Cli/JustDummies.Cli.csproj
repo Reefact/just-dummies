@@ -15,10 +15,10 @@
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
 
-    <!-- .NET tool identity. The package is JustDummies.Cli; the command a developer types is `dum`
+    <!-- .NET tool identity. The package is JustDummies.Cli; the command a developer types is `any`
          (specification §10.4). -->
     <PackAsTool>true</PackAsTool>
-    <ToolCommandName>dum</ToolCommandName>
+    <ToolCommandName>any</ToolCommandName>
 
     <!-- Version. A local/dev fallback only: the cli release train overrides it with -p:Version from the
          Git tag (cli-v*, see tools/packaging/pack.sh). Nothing is ever published from this number — every
@@ -32,7 +32,7 @@
 
     <!-- Description -->
     <Description>
-      dum, the JustDummies scaffolder: it writes the dummy generator for one of your types, once, as ordinary code you own and edit. It reads your compilation only — it never references JustDummies itself, so the tool and the library version independently.
+      any, the JustDummies scaffolder: it writes the generator of arbitrary values for one of your types — AnyOrder for Order — once, as ordinary code you own and edit. It reads your compilation only — it never references JustDummies itself, so the tool and the library version independently.
     </Description>
 
     <!-- Metadata -->

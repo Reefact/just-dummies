@@ -165,7 +165,7 @@ public sealed class EmittedCodeCompilesTests {
     /// </summary>
     /// <remarks>
     ///     The difference from §5.5 is what the developer reads. <c>TODO_supply_a_generator_for_reference</c>
-    ///     says something is missing; <c>AnyOrderReference</c> says which type to run <c>dum generate</c> on.
+    ///     says something is missing; <c>AnyOrderReference</c> says which type to run <c>any generate</c> on.
     ///     So this file carries no sentinel and no comment — there is nothing left for one to add — and the
     ///     recap does not flag it either, because a file that does not compile is not a silence.
     /// </remarks>

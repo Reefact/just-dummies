@@ -39,10 +39,10 @@ public sealed class EntryPointArgumentTests {
 
     [Fact(DisplayName = "'static:<Name>' names a root the developer owns.")]
     public void StaticNamesARootTheDeveloperOwns() {
-        EntryPointOptions options = Parsed("static:Dummies");
+        EntryPointOptions options = Parsed("static:Arbitrary");
 
         Check.That(options.Kind).IsEqualTo(EntryPointKind.StaticRoot);
-        Check.That(options.Root).IsEqualTo("Dummies");
+        Check.That(options.Root).IsEqualTo("Arbitrary");
     }
 
     /// <summary>
@@ -64,7 +64,7 @@ public sealed class EntryPointArgumentTests {
     }
 
     [Theory(DisplayName = "A root that is not an identifier is refused, by name.")]
-    [InlineData("static:2Dummies")]
+    [InlineData("static:2Arbitrary")]
     [InlineData("static:my dummies")]
     [InlineData("static:class")]
     [InlineData("static:")]
@@ -91,7 +91,7 @@ public sealed class EntryPointArgumentTests {
     [InlineData(null)]
     [InlineData("none")]
     public void ANamespaceWithNothingToPlaceIsRefused(string? entryPoint) {
-        EntryPointArgument read = EntryPointArgument.Parse(entryPoint, "Shop.Tests.Dummies");
+        EntryPointArgument read = EntryPointArgument.Parse(entryPoint, "Shop.Tests.Arbitrary");
 
         Check.That(read.Understood).IsFalse();
         Check.That(read.Refusal).Contains("--entry-point");
@@ -99,10 +99,10 @@ public sealed class EntryPointArgumentTests {
 
     [Fact(DisplayName = "A namespace is carried through to the options.")]
     public void ANamespaceIsCarriedThrough() {
-        EntryPointArgument read = EntryPointArgument.Parse("any", "Shop.Tests.Dummies");
+        EntryPointArgument read = EntryPointArgument.Parse("any", "Shop.Tests.Arbitrary");
 
         Check.That(read.Understood).IsTrue();
-        Check.That(read.Options.NamespaceOverride).IsEqualTo("Shop.Tests.Dummies");
+        Check.That(read.Options.NamespaceOverride).IsEqualTo("Shop.Tests.Arbitrary");
     }
 
     [Fact(DisplayName = "The settings refuse an unreadable pair before the command runs.")]
@@ -130,8 +130,8 @@ public sealed class EntryPointArgumentTests {
     public void AReadablePairPassesValidation() {
         GenerateSettings settings = new() {
             Types               = ["Order"],
-            EntryPoint          = "static:Dummies",
-            EntryPointNamespace = "Shop.Tests.Dummies"
+            EntryPoint          = "static:Arbitrary",
+            EntryPointNamespace = "Shop.Tests.Arbitrary"
         };
 
         Check.That(settings.Validate().Successful).IsTrue();

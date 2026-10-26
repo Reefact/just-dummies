@@ -7,7 +7,7 @@
 # labels or by the pull request title:
 #   lib   -> scopes core, analyzers (JustDummies, analyzers bundled in)
 #   xunit -> scope xunit            (JustDummies.Xunit, the xUnit v3 adapter)
-#   cli   -> scope cli              (the dum scaffolder, specified but not built yet)
+#   cli   -> scope cli              (the `any` scaffolder, specified but not built yet)
 # A pull request is kept when at least one of its commits carries a scope in the
 # train's set. Pull requests whose commits are all scopeless infrastructure
 # (bare `ci:` / `chore:` / `docs:` ...) belong to neither train and are dropped —

@@ -17,7 +17,7 @@ aujourd'hui :
 | `lib` | `lib-v*` | `core`, `analyzers` (plus les historiques `dummies`, `justdummies`) | JustDummies, analyzers embarqués dedans | `JustDummies/CHANGELOG.md` |
 | `xunit` | `xunit-v*` | `xunit` | JustDummies.Xunit (l'adaptateur xUnit v3) | `JustDummies.Xunit/CHANGELOG.md` |
 | `catalog` | `catalog-v*` | `catalog` | JustDummies.DiagnosticCatalog (les règles JD en constantes) | `JustDummies.DiagnosticCatalog/CHANGELOG.md` |
-| `cli` | `cli-v*` | `cli` | `dum`, le scaffolder, empaqueté en outil .NET | `JustDummies.Cli/CHANGELOG.md` |
+| `cli` | `cli-v*` | `cli` | `any`, le scaffolder, empaqueté en outil .NET | `JustDummies.Cli/CHANGELOG.md` |
 
 Le mapping train → (préfixe, scopes, paquet, fichier changelog) vit à **un seul
 endroit**, [`tools/trains.sh`](../../../tools/trains.sh), que le générateur de notes de

@@ -54,7 +54,7 @@ De quoi chercher, organisé par le type dont vous avez besoin.
 | [`JustDummies`](./packages/justdummies.fr.md) | la bibliothèque et ses analyzers embarqués |
 | [`JustDummies.Xunit`](./packages/justdummies-xunit.fr.md) | l'attribut `[Reproducible]` pour xUnit v3 |
 | [`JustDummies.DiagnosticCatalog`](./packages/justdummies-diagnosticcatalog.fr.md) | les constantes de règles pour `[SuppressMessage]` |
-| [`JustDummies.Cli`](./packages/justdummies-cli.fr.md) | `dum`, le scaffolder : le générateur d'un de vos types, écrit une fois |
+| [`JustDummies.Cli`](./packages/justdummies-cli.fr.md) | `any`, le scaffolder : le générateur d'un de vos types, écrit une fois |
 
 ## Règles des analyzers
 

@@ -25,7 +25,7 @@ components** — `JustDummies`, its xUnit v3 adapter `JustDummies.Xunit`
 ([ADR-0018](../adr/0018-adapt-dummies-to-xunit-v3-through-a-companion-package.md)),
 the analyzers that ship inside the package
 ([ADR-0023](../adr/0023-ship-justdummies-analyzers.md)), and `JustDummies.GenAny`,
-the guard-reading engine the `dum` scaffolder is built on. On a pull request it
+the guard-reading engine the `any` scaffolder is built on. On a pull request it
 mutates only the files the pull request changed, for the adapter and the
 analyzers; the generator and the engine are measured by the weekly sweep alone
 ([ADR-0028](../adr/0028-drop-the-justdummies-generator-from-the-per-pull-request-mutation-matrix.md)).

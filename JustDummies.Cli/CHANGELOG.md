@@ -39,6 +39,15 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Fixed
 
+- **A guard written below the first assignment to state is now marked `unread guards` instead of passed over in
+  silence.** The leading-guard scan (§5.3) stopped at that assignment and never looked at what followed, so
+  `Rate = rate; if (currency.Length != 3) { throw … }` reported `currency` as inferred, the file compiled, and
+  the constructor rejected nearly every draw; `ThrowIfNegativeOrZero(rack); Rack = rack;
+  ThrowIfGreaterThan(rack, 99);` kept `.Positive()` and lost the ceiling under a plain `guard`. Such a guard is
+  still not *read* — it is not placed where the engine can vouch for it — but a statement below the scan that
+  throws, or a call the set recognises as a guard, now marks every parameter it would have constrained, and the
+  file stops at the `TODO(any)` line until you confirm the generator. A null-check there stays silent, as above
+  it. A generator already scaffolded does not change; re-scaffold with `--force` to see the mark.
 - **A null-check fused into an assignment — `Field = value ?? throw new ArgumentNullException(nameof(value));`
   — is now read as the same guard `ArgumentNullException.ThrowIfNull(value)` and `if (value is null) { throw
   … }` already were, and reading it no longer stops at the first parameter guarded that way.** The leading-guard

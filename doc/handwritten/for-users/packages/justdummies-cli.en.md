@@ -72,7 +72,7 @@ that quietly drew a plausible value there would be far worse.
 
 **`to verify` works the same way, and for the same reason.** Where your constructor delegates its
 validation to a helper, guards in a shape the tool does not parse, or guards in a place it cannot
-vouch for — below a write to the parameter, or under something deciding whether the guard runs at
+vouch for — below a write to the parameter or to state, or under something deciding whether the guard runs at
 all — it cannot promise the recipe it inferred honours your real invariant — so it writes that recipe as your working base and adds one
 line that does not compile above it:
 

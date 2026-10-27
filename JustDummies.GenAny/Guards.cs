@@ -138,8 +138,18 @@ internal static class Guards {
         // guards below it leaves every one of them unrun on some path the constructor still returns from.
         // It never lifts again: once a path can skip one statement, it can skip all of them.
         bool unskipped = true;
+        bool ended     = false;
 
         foreach (StatementSyntax statement in declaration.Body.Statements) {
+            // Past the end of the leading scan nothing is read any more, but the body is still walked: a guard
+            // written below a write to state rejects values exactly as much as one above it, and passing over it
+            // in silence reported a generator as inferred that the constructor still refuses.
+            if (ended) {
+                MarkIfItRejectsBelowTheScan(statement, model, declared, reading, names, writes);
+
+                continue;
+            }
+
             // A second assignment is exempt for the same reason as ADR-0086's: `Field = param ?? throw new
             // ArgumentNullException(nameof(param));` states the same null-check `ArgumentNullException
             // .ThrowIfNull(param)` and `if (param is null) { throw … }` already read (§5.3) — a third
@@ -160,13 +170,14 @@ internal static class Guards {
             // so leaves everything below it exactly as leading as it was. The call itself is read by the
             // marking pass below, through the same placement questions as any other.
             if (AssignsState(statement, model) && !IsGuardAssignment(statement, model)) {
-                // The scan still ends here — everything below stays out of reach, exactly as before. But a
-                // throw carried inside the assignment's own right side (`Code = code.Length switch { < 8 =>
-                // throw ..., ... };`) is asked about before that happens: the statement rejects a value on
-                // some path, and the developer deserves the mark for that even though nothing reads past it.
+                // The scan ends here — nothing below is read as a guard any more. A throw carried inside the
+                // assignment's own right side (`Code = code.Length switch { < 8 => throw ..., ... };`) is asked
+                // about first: the statement rejects a value on some path, and the developer deserves the mark.
                 MarkIfItRejects(statement, model, declared, reading);
 
-                break;
+                ended = true;
+
+                continue;
             }
 
             if (statement is IfStatementSyntax guard) {
@@ -513,6 +524,54 @@ internal static class Guards {
         if (!Throws(statement)) { return; }
 
         foreach (IParameterSymbol parameter in Mentioned(statement, model, method)) { reading.MarkUnread(parameter.Name); }
+    }
+
+    /// <summary>
+    ///     Marks every parameter a statement below the end of the leading scan would have constrained, had it
+    ///     stood above it.
+    /// </summary>
+    /// <remarks>
+    ///     Nothing here is read: a guard below a write to state is not placed where §5.3 can vouch for it, so
+    ///     the most it earns is <c>unread guards</c> — a louder refusal, never a new inference (ADR-0046). What
+    ///     earns it is a statement that throws, and a call the closed set recognises as a guard; both are run
+    ///     through the ordinary reading into a reading of their own, and only a parameter that reading would have
+    ///     narrowed or marked is marked here. A check satisfied by construction — the null-check in each of its
+    ///     spellings, a generator never drawing null (ADR-0064) — narrows nothing and so stays silent, as it
+    ///     would above the scan.
+    ///     <para>
+    ///         A call the set does not recognise is left alone below the scan, unlike above it: there,
+    ///         <c>_items.AddRange(items);</c> is the ordinary filling of state the scan has just ended on, and
+    ///         marking it would block the compilation of constructors carrying no guard at all. That residue is
+    ///         named in §9.
+    ///     </para>
+    /// </remarks>
+    private static void MarkIfItRejectsBelowTheScan(StatementSyntax statement,
+                                                    SemanticModel model,
+                                                    IMethodSymbol method,
+                                                    GuardReading reading,
+                                                    TypeNames names,
+                                                    ParameterWrites writes) {
+        if (TryRecogniseCoalesceThrowNullCheck(statement, model, method, out _)) { return; }
+
+        GuardReading wouldHaveRead = GuardReading.FromSource();
+
+        foreach (InvocationExpressionSyntax invocation in statement.DescendantNodesAndSelf().OfType<InvocationExpressionSyntax>()) {
+            foreach (IParameterSymbol parameter in Mentioned(invocation, model, method)) {
+                if (!TryRecogniseCall(invocation, model, parameter, out IReadOnlyList<GuardConstraint> read)) { continue; }
+
+                foreach (GuardConstraint constraint in read) { wouldHaveRead.Add(parameter.Name, constraint); }
+            }
+        }
+
+        if (statement is IfStatementSyntax chain && Throws(chain)) {
+            ReadChain(chain, model, method, wouldHaveRead, names, writes, unskipped: true);
+        } else {
+            MarkIfItRejects(statement, model, method, wouldHaveRead);
+        }
+
+        foreach (IParameterSymbol parameter in method.Parameters) {
+            if (wouldHaveRead.Unread(parameter.Name) || wouldHaveRead.For(parameter.Name).Count > 0) { reading.MarkUnread(parameter.Name); }
+        }
     }
 
     /// <summary>Whether anything anywhere in <paramref name="statement" /> refuses to go on.</summary>

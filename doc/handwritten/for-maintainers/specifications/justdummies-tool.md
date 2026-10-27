@@ -887,6 +887,21 @@ exactly like a parameter nobody had constrained. A parameter named only inside t
 throw's own message does not count — that names the rejected parameter for a reader rather than
 testing anything, and every real guard of this shape names its subject in the condition too.
 
+**Below the first assignment to state, nothing is read, but the body is still walked.** "Leading" is
+what lets a guard be *read*: past a write to state, the engine can no longer vouch for what a
+condition says about the drawn value. It still rejects that value, though, and passing over it in
+silence reported the neutral generator as inferred while the constructor refused most of its draws:
+`Rate = rate; if (currency.Length != 3) { throw … }` left `currency` at `Any.String().NonEmpty()`,
+"2 of 2 parameters inferred". So every statement below the end of the scan is asked what it *would*
+have said had it stood above it, and a parameter it would have narrowed or marked is marked `unread
+guards` instead — a statement that throws, and a call the set recognises as a guard
+(`ThrowIfNegativeOrZero(rack); Rack = rack; ThrowIfGreaterThan(rack, 99);` keeps `.Positive()` and
+marks the ceiling it cannot read). A check satisfied by construction — a null-check in any of its
+spellings — narrows nothing and stays silent there, as it would above. A call the set does *not*
+recognise is left alone below the scan: there, `_items.AddRange(items);` is the ordinary filling of
+the state the scan has just ended on, and marking it would block constructors carrying no guard at
+all (§9).
+
 **A leading statement need not be an `if` to matter either.** A guard delegated entirely to a helper —
 `Ensure.NotBlank(value);`, called plainly, with no `if` in the constructor at all — throws from
 inside a call the closed set above does not parse, so it used to pass unnoticed: the parameter read
@@ -1423,7 +1438,7 @@ Named explicitly so they are not mistaken for oversights.
   than of the one the generator draws, and a guard the engine cannot show runs on every path — because
   something encloses it deciding that, or because a statement above it can jump past it — which would
   otherwise state an invariant of the paths that reach it rather than of the parameter (§5.3).
-  Two shapes still escape it, and both are silent rather than merely unread — the tool sees no
+  Three shapes still escape it, and all three are silent rather than merely unread — the tool sees no
   rejection to be uncertain about. A guard helper that **returns** the value it checked — `_name =
   Ensure.Valid(value);` — is indistinguishable from normalisation, and reading it as doubt would
   mean reading `_name = value.Trim();` as doubt too, which blocks the compilation of constructors
@@ -1431,7 +1446,9 @@ Named explicitly so they are not mistaken for oversights.
   (ADR-0086) are the measured exception, and every other returning validator keeps this answer. And
   a guard reached only through a level of indirection the tool does not follow — a local copy of the
   parameter (`var v = value; Validate(v);`), a lambda closing over it, a call reached through a
-  member rather than the parameter's own name. In both the tool still
+  member rather than the parameter's own name. And a guard helper the set does not recognise, called
+  below the first assignment to state (§5.3), where it is indistinguishable from filling that state. In
+  all three the tool still
   cannot tell the parameter from an unconstrained one, and it does not guess — which is the residue
   this non-goal is about: not what happens once doubt is established, but the doubt the tool never
   sees.

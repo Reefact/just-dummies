@@ -213,9 +213,16 @@ public sealed class GuardBoundaryTests {
         Check.That(parameter.Provenance.HasFlag(Provenance.Guard)).IsTrue();
     }
 
-    // "Leading" is what makes a guard a guard. Past the first assignment to state, an `if` that throws is
-    // ordinary logic and says nothing about what the parameter may be.
-    [Fact(DisplayName = "A throwing check after the first assignment is not a guard.")]
+    /// <summary>
+    ///     A throwing check below the first assignment to state is not read, and says so.
+    /// </summary>
+    /// <remarks>
+    ///     "Leading" is what lets a guard be <b>read</b>: below a write to state, §5.3 can no longer vouch for
+    ///     what a condition says about the drawn value. It still rejects that value, though, and passing over it
+    ///     in silence reported the neutral generator as inferred while the constructor refused most of its draws
+    ///     (issue #297).
+    /// </remarks>
+    [Fact(DisplayName = "A throwing check after the first assignment is not read, and is marked unread.")]
     public void AThrowingCheckAfterTheFirstAssignmentIsNotAGuard() {
         ScaffoldOutcome outcome = Subject.Scaffold("""
                                                    public sealed class Subject {
@@ -232,6 +239,61 @@ public sealed class GuardBoundaryTests {
                                                    """);
 
         Check.That(outcome.Plan!.Parameters[0].Expression).IsEqualTo("Any.Int32()");
+        Check.That(outcome.Plan.Parameters[0].Provenance.HasFlag(Provenance.UnreadGuards)).IsTrue();
+    }
+
+    /// <summary>
+    ///     A guard helper below the first assignment to state is not read either: the guard above it still
+    ///     stands, and the bound below it is reported rather than lost.
+    /// </summary>
+    [Fact(DisplayName = "A throw helper after the first assignment keeps the guard above it and is marked unread.")]
+    public void AThrowHelperAfterTheFirstAssignmentIsMarkedUnread() {
+        ScaffoldOutcome outcome = Subject.Scaffold("""
+                                                   public sealed class Subject {
+
+                                                       public Subject(int rack) {
+                                                           ArgumentOutOfRangeException.ThrowIfNegativeOrZero(rack);
+                                                           Rack = rack;
+                                                           ArgumentOutOfRangeException.ThrowIfGreaterThan(rack, 99);
+                                                       }
+
+                                                       public int Rack { get; }
+
+                                                   }
+                                                   """);
+
+        Check.That(outcome.Plan!.Parameters[0].Expression).IsEqualTo("Any.Int32().Positive()");
+        Check.That(outcome.Plan.Parameters[0].Provenance.HasFlag(Provenance.UnreadGuards)).IsTrue();
+    }
+
+    /// <summary>
+    ///     What below the scan narrows nothing stays silent: a null-check is satisfied by construction, and an
+    ///     unrecognised call there is the ordinary filling of state rather than a guard.
+    /// </summary>
+    [Theory(DisplayName = "A statement after the first assignment that would narrow nothing marks nothing.")]
+    [InlineData("if (name is null) { throw new ArgumentNullException(nameof(name)); }")]
+    [InlineData("Other = name ?? throw new ArgumentNullException(nameof(name));")]
+    [InlineData("ArgumentNullException.ThrowIfNull(name);")]
+    [InlineData("names.Add(name);")]
+    public void AStatementAfterTheFirstAssignmentThatWouldNarrowNothingMarksNothing(string below) {
+        ScaffoldOutcome outcome = Subject.Scaffold($$"""
+                                                     public sealed class Subject {
+
+                                                         private readonly System.Collections.Generic.List<string> names = new();
+
+                                                         public Subject(string name) {
+                                                             Name = name;
+                                                             {{below}}
+                                                         }
+
+                                                         public string Name { get; }
+
+                                                         public string Other { get; }
+
+                                                     }
+                                                     """);
+
+        Check.That(outcome.Plan!.Parameters[0].Provenance.HasFlag(Provenance.UnreadGuards)).IsFalse();
     }
 
     /// <summary>

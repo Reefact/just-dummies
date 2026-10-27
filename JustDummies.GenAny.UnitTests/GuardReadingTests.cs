@@ -688,9 +688,10 @@ public sealed class GuardReadingTests {
     /// <summary>
     ///     The carve-out reaches only a right side the set recognises: any other assignment to state ends the
     ///     scan exactly as it always did, which is what keeps <c>_name = value.Trim();</c> ordinary
-    ///     production rather than doubt (ADR-0083, Follow-up).
+    ///     production rather than doubt (ADR-0083, Follow-up). The guard below it is no longer read — but it
+    ///     is no longer passed over in silence either (issue #297).
     /// </summary>
-    [Fact(DisplayName = "An assignment the set does not recognise still ends the scan, in silence.")]
+    [Fact(DisplayName = "An assignment the set does not recognise still ends the scan, and the guard below it is marked.")]
     public void AnUnrecognisedAssignmentStillEndsTheScan() {
         ScaffoldOutcome outcome = Subject.Scaffold("""
                                                    public sealed class Subject {
@@ -716,7 +717,7 @@ public sealed class GuardReadingTests {
 
         Check.That(quantity.Expression).IsEqualTo("Any.Int32()");
         Check.That(quantity.Provenance.HasFlag(Provenance.Guard)).IsFalse();
-        Check.That(quantity.RequiresVerification).IsFalse();
+        Check.That(quantity.RequiresVerification).IsTrue();
     }
 
     /// <summary>

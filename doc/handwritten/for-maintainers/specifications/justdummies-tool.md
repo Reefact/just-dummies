@@ -1101,6 +1101,18 @@ works from the type's name, which drops its arguments, so `Repository<Order>` an
 would both be told to write `AnyRepository` and neither is the name to write. A sentinel that says
 nothing beats a name that says the wrong thing.
 
+**A parameter that reaches the type being scaffolded is left open too, with its reason.**
+`Node(string name, IReadOnlyList<Node> children)` would otherwise compose `children` into
+`Any.ListOf(new AnyNode())` inside `AnyNode`'s own constructor — a recursion that runs on
+construction, so even a test pinning `children` through `With…` never escapes it, and the run ends
+in a stack overflow before any test reports. The same holds directly (`Employee? manager`), through
+an array or through any type argument composition would follow. The parameter takes the §5.5
+sentinel, its line says the value reaches the type being scaffolded, and the recap column reads
+`self-referencing` (§6). An empty collection, a null or a depth parameter would each be the engine
+choosing how deep the developer's data goes — a cleverer generator, not an honest one (ADR-0046) —
+so the bound is the developer's to write. Only the target itself is checked: two types reaching each
+other through their own scaffolded generators are not detected here.
+
 Convention, not attribute, not configuration: an attribute would mean touching the developer's
 production code to please a test tool, and a configuration file breaks design rule 2.
 
@@ -1213,7 +1225,8 @@ constructor body was unavailable so no guard could be read, `unread guards` when
 throws or calls in a way the recognised set did not match, or in a place the engine cannot vouch for —
 below a write to the parameter, or under something deciding whether it runs at all —,
 `constraint unavailable` when a guard was
-read and understood and this generator carries no member to say it with, and `unavailable` when the
+read and understood and this generator carries no member to say it with, `self-referencing` when an
+open parameter reaches the type being scaffolded (§5.4), and `unavailable` when the
 generator exists in the library but not in the asset this project resolves.
 
 `guard` is computed from the constraints **applied**, never from the constraints read. The

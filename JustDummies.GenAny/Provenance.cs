@@ -78,6 +78,18 @@ public enum Provenance {
     ///         the two under one word would make the recap ambiguous precisely where it is trying to be exact.
     ///     </para>
     /// </remarks>
-    ConstraintUnavailable = 128
+    ConstraintUnavailable = 128,
+
+    /// <summary>
+    ///     The parameter reaches the very type being scaffolded — directly, through a nullable, or through a
+    ///     collection's elements — so it is left open.
+    /// </summary>
+    /// <remarks>
+    ///     Composing it would write <c>new AnyNode()</c> inside <c>AnyNode</c>'s own constructor, which recurses
+    ///     on construction and ends the test run in a stack overflow before any test reports. An empty list, a
+    ///     null or a depth parameter would each be the engine deciding how deep the developer's data goes, which
+    ///     is a cleverer generator rather than an honest one (ADR-0046); the bound is the developer's to write.
+    /// </remarks>
+    SelfReferencing = 256
 
 }

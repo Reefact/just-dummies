@@ -39,6 +39,13 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Fixed
 
+- **A parameter that reaches the type being scaffolded is now a `TODO` marked `self-referencing`, instead of a
+  generator that overflows the stack.** `Node(string name, IReadOnlyList<Node> children)` was scaffolded with
+  `Any.ListOf(new AnyNode())` inside `AnyNode`'s own constructor, reported as inferred: the first test to touch it
+  ended the run with "Stack overflow." and no test reported, and even `.WithChildren(...)` could not escape it.
+  The same held for `Employee(string name, Employee? manager)`. Such a parameter now stops the build at a line
+  saying the value reaches the type being scaffolded; write its generator with the depth bound you choose. Two
+  types reaching each other through their own generators are not detected.
 - **A guard written below the first assignment to state is now marked `unread guards` instead of passed over in
   silence.** The leading-guard scan (§5.3) stopped at that assignment and never looked at what followed, so
   `Rate = rate; if (currency.Length != 3) { throw … }` reported `currency` as inferred, the file compiled, and

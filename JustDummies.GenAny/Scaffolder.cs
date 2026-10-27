@@ -134,7 +134,7 @@ public static class Scaffolder {
         List<ScaffoldedParameter> parameters = [];
 
         foreach (IParameterSymbol parameter in chosen.Parameters) {
-            parameters.Add(Resolve(parameter, names, generators, guards));
+            parameters.Add(Resolve(parameter, target, names, generators, guards));
         }
 
         ScaffoldPlan plan = new(new TargetType(targetName, fileNamespace, StyleOf(target, fileNamespace)),
@@ -153,11 +153,12 @@ public static class Scaffolder {
     ///     One parameter: the table's answer for its type, tightened by whatever its guards said (§5.3).
     /// </summary>
     private static ScaffoldedParameter Resolve(IParameterSymbol parameter,
+                                               INamedTypeSymbol target,
                                                TypeNames names,
                                                GeneratorFor generators,
                                                GuardReading guards) {
         string         typeDisplay = names.Of(parameter.Type);
-        DrawnGenerator drawn       = generators.Draw(parameter.Type);
+        DrawnGenerator drawn       = generators.Draw(parameter.Type, target);
 
         Provenance provenance = drawn.Provenance
                               | (guards.SourceAvailable ? Provenance.None : Provenance.NoSource)

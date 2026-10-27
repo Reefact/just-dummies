@@ -345,6 +345,54 @@ public sealed class CompositionTests {
         Check.That(outcome.File!.SourceText).Contains("TODO_verify_the_generator_for_value");
     }
 
+    /// <summary>
+    ///     A parameter reaching the type being scaffolded is left open with its reason, never composed into a
+    ///     recursion.
+    /// </summary>
+    /// <remarks>
+    ///     <c>new AnyNode()</c> inside <c>AnyNode</c>'s own constructor recursed on construction: a stack
+    ///     overflow ended the run before any test reported, under a recap claiming every parameter inferred
+    ///     (issue #299). Directly, through a nullable, or through a collection — the bound on how deep the value
+    ///     goes is the developer's to write.
+    /// </remarks>
+    [Theory(DisplayName = "A parameter reaching the type being scaffolded is left open as self-referencing.")]
+    [InlineData("Node")]
+    [InlineData("Node?")]
+    [InlineData("IReadOnlyList<Node>")]
+    [InlineData("Node[]")]
+    [InlineData("IReadOnlyDictionary<string, IReadOnlyList<Node>>")]
+    public void AParameterReachingTheTypeBeingScaffoldedIsLeftOpen(string parameterType) {
+        ScaffoldOutcome outcome = Subject.Scaffold($$"""
+                                                   namespace Shop.Domain;
+
+                                                   using System.Collections.Generic;
+
+                                                   public sealed class Node {
+                                                       public Node(string name, {{parameterType}} children) { }
+                                                   }
+                                                   """,
+                                                   metadataName: "Shop.Domain.Node");
+
+        Check.That(outcome.Status).IsEqualTo(ScaffoldStatus.Scaffolded);
+
+        ScaffoldedParameter name     = outcome.Plan!.Parameters[0];
+        ScaffoldedParameter children = outcome.Plan.Parameters[1];
+
+        Check.That(name.IsUnresolved).IsFalse();
+        Check.That(children.IsUnresolved).IsTrue();
+        Check.That(children.Provenance.HasFlag(Provenance.SelfReferencing)).IsTrue();
+        Check.That(outcome.File!.SourceText).Not.Contains("new AnyNode()");
+        Check.That(outcome.File.SourceText).Contains("reaches the type being scaffolded");
+    }
+
+    /// <summary>A collection of another composed type is not mistaken for the target.</summary>
+    [Fact(DisplayName = "A parameter composing a different type is not self-referencing.")]
+    public void AParameterComposingADifferentTypeIsNotSelfReferencing() {
+        ScaffoldedParameter parameter = Composed("public sealed class Email { public Email() { } }", "IReadOnlyList<Email>");
+
+        Check.That(parameter.Provenance.HasFlag(Provenance.SelfReferencing)).IsFalse();
+    }
+
     /// <summary>Scaffolds a <c>Subject</c> whose single parameter is of <paramref name="parameterType" />.</summary>
     private static ScaffoldedParameter Composed(string declarations, string parameterType) {
         ScaffoldOutcome outcome = Subject.Scaffold($$"""

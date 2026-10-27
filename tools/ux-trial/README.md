@@ -17,8 +17,9 @@ The findings, verified and deduplicated, are in [`REPORT.md`](REPORT.md).
 | `domains/NN-name/NOTES.md` | the participant's log: CLI recaps, hand fixes, findings, a fluency score |
 | `repros/` | the minimal reproductions left by the verification pass |
 
-A test named `Bug_…` demonstrates a defect reported in `REPORT.md` and is **expected to fail** until
-that defect is fixed.
+A test named `Bug_…` demonstrates a defect reported in `REPORT.md` and is **expected to fail**. Some
+turn green once the library is fixed and re-packed; those about the scaffolder replay the recipe `any`
+emitted at the time, so they are confirmed by re-scaffolding instead — `REPORT.md` says which is which.
 
 ## Running it
 

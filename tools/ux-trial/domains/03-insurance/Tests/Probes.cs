@@ -76,12 +76,13 @@ public sealed class Probes {
     }
 
     [Fact]
-    public void Bug_WithScale_2_near_decimal_MaxValue_returns_values_with_fewer_decimal_places() {
-        // No decimal above ~7.92e26 can carry two decimal places, so the chain admits no value. Observed: it
-        // draws values of scale 1 (7900000000000000000001454003.8) instead of refusing.
+    public void WithScale_2_near_decimal_MaxValue_stays_on_the_lattice_without_trailing_zeros() {
+        // First reported as a bug: values such as 7900000000000000000001454003.8 carry scale 1. Verification showed
+        // WithScale is a value lattice (ADR-0015), not a representation contract: the value is a multiple of 0.01,
+        // and a decimal this large has no room left for the trailing zero. The user page is what misleads.
         decimal anyHuge = Any.Decimal().GreaterThanOrEqualTo(7.9e27m).WithScale(2).Generate();
 
-        Assert.Equal(2, anyHuge.Scale);
+        Assert.Equal(0m, anyHuge % 0.01m);
     }
 
     [Fact]

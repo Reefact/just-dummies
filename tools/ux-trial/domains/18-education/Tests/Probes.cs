@@ -35,11 +35,12 @@ public sealed class Probes {
     }
 
     [Fact]
-    public void Bug_WithScale_is_not_applied_when_the_range_holds_a_single_value() {
-        // Every ordinary draw of WithScale(2) carries exactly two decimal places (test above); a range of one value does not.
+    public void WithScale_on_a_single_value_range_keeps_the_value_on_the_lattice() {
+        // First reported as a bug: 20 comes back rather than 20.0. Verification showed WithScale is a value lattice
+        // (ADR-0015), not a representation contract: 20 is on the 0.1 grid. The user page is what misleads.
         decimal anyMaximumGrade = Any.Decimal().Between(20m, 20m).WithScale(1).Generate();
 
-        Assert.Equal(1, ScaleOf(anyMaximumGrade));   // observed: 0, the value comes back as 20 rather than 20.0
+        Assert.Equal(0m, anyMaximumGrade % 0.1m);
     }
 
     [Fact]

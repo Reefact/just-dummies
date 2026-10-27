@@ -48,6 +48,13 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   throws, or a call the set recognises as a guard, now marks every parameter it would have constrained, and the
   file stops at the `TODO(any)` line until you confirm the generator. A null-check there stays silent, as above
   it. A generator already scaffolded does not change; re-scaffold with `--force` to see the mark.
+- **A guard that tests a local computed from a parameter is now marked `unread guards` instead of reported as
+  inferred.** `bool ok = value.StartsWith("LOT-"); if (!ok) { throw … }` — or a `Match` on a regex, an
+  `int.Parse`, a `switch` into a `bool` — names no parameter in its condition, so the tool marked nothing and the
+  constructor rejected nearly every draw of a file that compiled. A throwing statement now follows each local it
+  tests one step back to its declaration and marks the parameters it was initialised from; it still never reads
+  such a guard. A local copy handed to a helper (`var v = value; Validate(v);`) still escapes, and the `any`
+  page now names what does.
 - **A null-check fused into an assignment — `Field = value ?? throw new ArgumentNullException(nameof(value));`
   — is now read as the same guard `ArgumentNullException.ThrowIfNull(value)` and `if (value is null) { throw
   … }` already were, and reading it no longer stops at the first parameter guarded that way.** The leading-guard

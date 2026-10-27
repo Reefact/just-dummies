@@ -902,6 +902,15 @@ recognise is left alone below the scan: there, `_items.AddRange(items);` is the 
 the state the scan has just ended on, and marking it would block constructors carrying no guard at
 all (§9).
 
+**A guard testing a local initialised from a parameter is marked too.** `bool ok =
+value.StartsWith("LOT-"); if (!ok) { throw … }` rejects `value` exactly as much as testing it in place
+would, yet its condition names no parameter, so it used to mark nothing and the recap reported a
+generator the constructor refused on nearly every draw as inferred. A statement that throws now
+follows each local it names one step, to that local's own declaration, and marks every parameter the
+initializer names `unread guards` — never reads it: what a computed value admits is not a constraint
+the closed set can state about the parameter, and following the value further would be propagation
+(ADR-0046). The `nameof` of the message is excluded as it is everywhere else.
+
 **A leading statement need not be an `if` to matter either.** A guard delegated entirely to a helper —
 `Ensure.NotBlank(value);`, called plainly, with no `if` in the constructor at all — throws from
 inside a call the closed set above does not parse, so it used to pass unnoticed: the parameter read
@@ -1445,7 +1454,8 @@ Named explicitly so they are not mistaken for oversights.
   carrying no guard at all; the helpers of the two libraries §5.3 reads by resolved symbol
   (ADR-0086) are the measured exception, and every other returning validator keeps this answer. And
   a guard reached only through a level of indirection the tool does not follow — a local copy of the
-  parameter (`var v = value; Validate(v);`), a lambda closing over it, a call reached through a
+  parameter handed to a helper (`var v = value; Validate(v);`; a throwing statement testing such a copy
+  is marked, §5.3), a lambda closing over it, a call reached through a
   member rather than the parameter's own name. And a guard helper the set does not recognise, called
   below the first assignment to state (§5.3), where it is indistinguishable from filling that state. In
   all three the tool still

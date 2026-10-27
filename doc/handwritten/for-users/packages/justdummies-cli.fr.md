@@ -59,7 +59,7 @@ qui a été **deviné** :
 | `AnyX` | tiré par le generator que ce type possède |
 | `TODO` | rien n'a pu être inféré ; le fichier nomme ce qu'il reste à faire |
 | `to verify` | un générateur *a bien* été inféré, mais quelque chose près de ce paramètre n'a pas pu être lu — vérifiez-le |
-| `unread guards` | ce « quelque chose » : une garde que l'outil ne reconnaît pas, un helper dans lequel il ne voit pas, ou une garde qu'il lit sans pouvoir la situer — sous une écriture du paramètre, ou sous quelque chose qui décide si elle s'exécute |
+| `unread guards` | ce « quelque chose » : une garde que l'outil ne reconnaît pas, un helper dans lequel il ne voit pas, ou une garde qu'il lit sans pouvoir la situer — après une affectation du paramètre ou de l'état, testant une variable locale calculée à partir du paramètre, ou sous quelque chose qui décide si elle s'exécute |
 | `constraint unavailable` | une garde a été comprise, et ce générateur n'a aucun membre pour l'exprimer |
 | `no source` | le type vient d'un package, il n'y avait donc aucun corps de constructeur à lire |
 | `unavailable` | le générateur existe dans JustDummies, mais pas dans l'asset que votre projet résout |
@@ -91,6 +91,14 @@ Gardez la recette ou remplacez-la, supprimez cette seule ligne, et c'est réglé
 fichier qui compile et tire une valeur que votre constructeur rejette lors d'une exécution
 ultérieure — est l'échec qui coûte le plus cher, parce qu'il surgit loin de sa cause
 ([ADR-0083](../../for-maintainers/adr/0083-block-compilation-on-a-guard-the-engine-cannot-vouch-for.fr.md)).
+
+**Ce que l'outil ne voit toujours pas reste silencieux.** Quelques formes rejettent une valeur sans que
+l'outil y voie le moindre rejet, et ne reçoivent donc aucune marque : un validateur qui *retourne* la
+valeur vérifiée (`_name = Ensure.Valid(name);`), une copie locale confiée à un helper (`var v = value;
+Validate(v);`), un lambda qui capture le paramètre, et un helper que l'outil ne reconnaît pas appelé
+après la première affectation de l'état. Si votre constructeur valide ainsi, relisez vous-même la
+recette de ce paramètre. La liste complète est le §9 de la
+[spécification d'`any`](../../for-maintainers/specifications/justdummies-tool.fr.md).
 
 ## À travers un graphe d'agrégats
 

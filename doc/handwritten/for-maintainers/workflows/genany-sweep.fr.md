@@ -99,11 +99,13 @@ l'instrument de mutation, où un timeout était fondu dans « tué ».
 | `SweepBug` | un domaine généré ne compile pas seul — le nôtre, pas celui du moteur |
 
 `KnownResidue` est celui qui mérite deux lectures. §9 déclare, comme non-objectif, qu'une garde atteinte
-par un niveau d'indirection que l'outil ne suit pas — *une copie locale du paramètre* avant tout — est
-une garde que l'outil ne distingue pas d'une absence de garde : il ne marque rien, ne bloque rien, et
-tire librement. Les seize formes `delegate-computed-*` sont là exprès, chacune portant la phrase qui
-l'excuse. **C'est le seul instrument du dépôt qui met un nombre sur la largeur de ce résidu**, et une
-forme qui cesse d'y atterrir déplace les comptes versionnés — donc le résidu qui rétrécit s'annonce aussi.
+par un niveau d'indirection que l'outil ne suit pas est une garde que l'outil ne distingue pas d'une
+absence de garde : il ne marque rien, ne bloque rien, et tire librement. Une forme qui y atterrit porte
+la phrase qui l'excuse. **C'est le seul instrument du dépôt qui met un nombre sur la largeur de ce
+résidu**, et une forme qui cesse d'y atterrir déplace les comptes versionnés — donc le résidu qui
+rétrécit s'annonce aussi. C'est arrivé : les seize formes `delegate-computed-*`, qui testent une copie
+locale du paramètre, en étaient la totalité jusqu'à ce qu'une telle garde soit marquée `unread guards`
+(issue #300), et elles comptent désormais comme `BlockedForVerification`.
 
 ## Ce que le premier passage a trouvé
 

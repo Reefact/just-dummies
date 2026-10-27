@@ -137,6 +137,16 @@ public sealed class RecapTests {
         Check.That(Rendered(Plan([Inferred("value", "string", "AnyString", "Any.String().NonEmpty()", provenance)]))).Contains(word);
     }
 
+    // An open parameter carries its reason in the column too: a TODO that says why is one a developer can act
+    // on without opening the file.
+    [Fact(DisplayName = "A self-referencing parameter is open, and says why.")]
+    public void ASelfReferencingParameterIsOpenAndSaysWhy() {
+        string rendered = Rendered(Plan([ScaffoldedParameter.Unresolved("children", "IReadOnlyList<Node>", Provenance.SelfReferencing)]));
+
+        Check.That(rendered).Contains("self-referencing");
+        Check.That(rendered).Contains("TODO");
+    }
+
     // The base table has nothing to say, and saying nothing is the point: a column that always spoke would
     // stop meaning anything.
     [Fact(DisplayName = "A parameter straight from the base table leaves the column empty.")]

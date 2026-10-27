@@ -1160,6 +1160,19 @@ nommage (§11.3) travaille depuis le nom du type, qui perd ses arguments : `Repo
 `Repository<Line>` s'entendraient tous deux dire d'écrire `AnyRepository`, et aucun n'est le nom à
 écrire. Une sentinelle qui ne dit rien vaut mieux qu'un nom qui dit faux.
 
+**Un paramètre qui atteint le type en cours de scaffolding reste ouvert lui aussi, avec sa raison.**
+`Node(string name, IReadOnlyList<Node> children)` composerait sinon `children` en
+`Any.ListOf(new AnyNode())` dans le propre constructeur d'`AnyNode` — une récursion qui s'exécute à
+la construction, si bien que même un test qui fixe `children` par `With…` n'y échappe pas, et
+l'exécution finit en dépassement de pile avant qu'aucun test ne rapporte. Il en va de même
+directement (`Employee? manager`), à travers un tableau ou à travers tout argument de type que la
+composition suivrait. Le paramètre prend la sentinelle du §5.5, sa ligne dit que la valeur atteint
+le type en cours de scaffolding, et la colonne du récapitulatif lit `self-referencing` (§6). Une
+collection vide, un null ou un paramètre de profondeur seraient chacun le moteur choisissant jusqu'où
+vont les données du développeur — un generator plus malin, pas un generator honnête (ADR-0046) — donc
+la borne revient au développeur. Seule la cible elle-même est vérifiée : deux types qui s'atteignent
+l'un l'autre par leurs propres generators scaffoldés ne sont pas détectés ici.
+
 Convention, pas attribut, pas configuration : un attribut supposerait de toucher au code de
 production du développeur pour plaire à un outil de test, et un fichier de configuration casserait
 la règle de conception 2.
@@ -1275,7 +1288,8 @@ corps du constructeur était indisponible et qu'aucune garde n'a pu être lue, `
 une instruction de tête lève ou appelle d'une façon que l'ensemble reconnu n'a pas appariée, ou à un
 endroit dont le moteur ne peut pas répondre — sous une écriture du paramètre, ou sous quelque chose qui
 décide s'il s'exécute —, `constraint unavailable` quand
-une garde a été lue et comprise et que ce generator ne porte aucun membre pour l'exprimer, et
+une garde a été lue et comprise et que ce generator ne porte aucun membre pour l'exprimer,
+`self-referencing` quand un paramètre ouvert atteint le type en cours de scaffolding (§5.4), et
 `unavailable` quand le generator existe dans la bibliothèque mais pas dans l'asset que ce projet
 résout.
 

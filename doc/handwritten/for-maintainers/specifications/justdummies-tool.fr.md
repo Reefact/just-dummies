@@ -947,6 +947,16 @@ au-dessus. Un appel que l'ensemble ne reconnaît *pas* est laissé tel quel apr�
 `_items.AddRange(items);` est le remplissage ordinaire de l'état sur lequel le parcours vient de
 s'arrêter, et le marquer bloquerait des constructeurs ne portant aucune garde (§9).
 
+**Une garde qui teste une variable locale initialisée à partir d'un paramètre est marquée elle aussi.** `bool ok =
+value.StartsWith("LOT-"); if (!ok) { throw … }` rejette `value` exactement autant que le tester sur
+place, et pourtant sa condition ne nomme aucun paramètre : elle ne marquait donc rien, et le
+récapitulatif présentait comme inféré un generator que le constructeur refusait à presque chaque
+tirage. Une instruction qui lève suit désormais chaque variable locale qu'elle nomme d'un pas, jusqu'à la
+déclaration de cette variable, et marque `unread guards` chaque paramètre que l'initialiseur nomme —
+sans jamais le lire : ce qu'une valeur calculée admet n'est pas une contrainte que l'ensemble clos
+sait énoncer sur le paramètre, et suivre la valeur plus loin serait de la propagation (ADR-0046). Le
+`nameof` du message est exclu, comme partout ailleurs.
+
 **Une instruction de tête n'a pas besoin non plus d'être un `if` pour compter.** Une garde entièrement
 déléguée à un helper — `Ensure.NotBlank(value);`, appelé tel quel, sans aucun `if` dans le
 constructeur — lève depuis l'intérieur d'un appel que l'ensemble clos ci-dessus n'analyse pas, et
@@ -1522,8 +1532,8 @@ Nommés explicitement pour ne pas être pris pour des oublis.
   la compilation de constructeurs ne portant aucune garde ; les aides des deux bibliothèques que le
   §5.3 lit par symbole résolu (ADR-0086) sont l'exception mesurée, et tout autre validateur qui
   retourne sa valeur garde cette réponse. Et une garde atteinte seulement par un niveau
-  d'indirection que le tool ne suit pas — une copie locale du paramètre (`var v = value;
-  Validate(v);`), un lambda qui le capture, un appel atteint via un membre plutôt que par le nom
+  d'indirection que le tool ne suit pas — une copie locale du paramètre confiée à un helper (`var v =
+  value; Validate(v);` ; une instruction qui lève en testant une telle copie est marquée, §5.3), un lambda qui le capture, un appel atteint via un membre plutôt que par le nom
   propre du paramètre. Et une garde-helper que l'ensemble ne reconnaît pas, appelée après la première
   affectation à l'état (§5.3), où elle est indiscernable du remplissage de cet état. Dans les trois
   cas, le tool ne peut toujours pas distinguer ce paramètre d'un

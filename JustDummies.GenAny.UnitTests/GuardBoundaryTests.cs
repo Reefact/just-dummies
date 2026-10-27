@@ -202,6 +202,37 @@ public sealed class GuardBoundaryTests {
         Check.That(outcome.Plan.Parameters[1].Provenance.HasFlag(Provenance.Guard)).IsFalse();
     }
 
+    /// <summary>
+    ///     A guard reaching its parameter through a local initialised from it is marked unread, not passed over.
+    /// </summary>
+    /// <remarks>
+    ///     The condition names no parameter, so reading it for what it names marked nothing and the recap
+    ///     reported the neutral generator as inferred while the constructor refused nearly every draw (issue
+    ///     #300). The local is followed one step, to its own declaration, and the parameter is marked — never
+    ///     read.
+    /// </remarks>
+    [Theory(DisplayName = "A guard reaching its parameter through a local is marked unread.")]
+    [InlineData("string", """bool ok = value.StartsWith("LOT-"); if (!ok) { throw new ArgumentException(nameof(value)); }""")]
+    [InlineData("string", """System.Text.RegularExpressions.Match m = System.Text.RegularExpressions.Regex.Match(value, "^[A-Z]{3}$"); if (!m.Success) { throw new ArgumentException(nameof(value)); }""")]
+    [InlineData("string", "int parsed = int.Parse(value); if (parsed > 53) { throw new ArgumentOutOfRangeException(nameof(value)); }")]
+    [InlineData("string", "bool valid = value switch { null => false, { Length: > 7 } => false, _ => true }; if (!valid) { throw new ArgumentException(nameof(value)); }")]
+    [InlineData("int", "int size = value; if (size < 2) { throw new ArgumentOutOfRangeException(nameof(value)); }")]
+    public void AGuardReachingItsParameterThroughALocalIsMarkedUnread(string type, string guard) {
+        ScaffoldedParameter parameter = Subject.GuardedBy(type, guard);
+
+        Check.That(parameter.Provenance.HasFlag(Provenance.UnreadGuards)).IsTrue();
+    }
+
+    /// <summary>A local the throwing statement does not test sends nobody looking.</summary>
+    [Fact(DisplayName = "A local only named in the message of a throw marks nothing.")]
+    public void ALocalOnlyNamedInTheMessageOfAThrowMarksNothing() {
+        ScaffoldedParameter parameter = Subject.GuardedBy(
+            "int",
+            "string label = value.ToString(); if (DateTime.Now.Hour > 5) { throw new InvalidOperationException(nameof(label)); }");
+
+        Check.That(parameter.Provenance.HasFlag(Provenance.UnreadGuards)).IsFalse();
+    }
+
     /// <summary>The parentheses a writer is free to add do not make the subject something else.</summary>
     [Theory(DisplayName = "Parentheses around the subject leave the guard readable.")]
     [InlineData("if ((value).Length < 8) { throw new ArgumentException(nameof(value)); }")]

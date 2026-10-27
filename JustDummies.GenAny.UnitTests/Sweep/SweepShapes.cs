@@ -284,22 +284,6 @@ internal static class SweepShapes {
 
     private static readonly IReadOnlyList<string> Delegations = ["this", "factory", "computed"];
 
-    /// <summary>
-    ///     Why the `computed` hop is expected to draw a value its own domain rejects.
-    /// </summary>
-    /// <remarks>
-    ///     The condition tests a local, so the only place the statement names the parameter is inside the
-    ///     `nameof` of its own message — which §5.3 excludes by name, since it labels the rejected parameter
-    ///     for a reader rather than testing anything. And the statement that produced the local uses its
-    ///     result, so it is production rather than a guard by the same section's one structural test. The
-    ///     engine therefore marks nothing, blocks nothing, and draws freely: the residue §9 calls the doubt
-    ///     the tool never sees. Sixteen shapes sit here on purpose, so the size of that residue is a number
-    ///     rather than an impression.
-    /// </remarks>
-    private const string ComputedResidue = "the guard tests a local holding items.Count, so the condition names "
-                                         + "no parameter and the statement that made it uses its result: §9's "
-                                         + "declared residue, not a defect.";
-
     private static IEnumerable<SweepShape> Delegation() {
         foreach (string hop in Delegations) {
             foreach (Collection collection in Named(SweepAxes.Collections, "rolist", "array", "iset", "idict")) {
@@ -355,8 +339,7 @@ internal static class SweepShapes {
         return Shape(name, "delegation", target, body,
                      distinctDemand: collection.Distinct ? 2 : 0,
                      distinctCapacity: element.Cardinality,
-                     element: element,
-                     residue: hop == "computed" ? ComputedResidue : null);
+                     element: element);
     }
 
     // ---- delegated-count: the same hop, crossed with the size guards instead of with the collections. -

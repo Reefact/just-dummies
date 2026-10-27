@@ -562,6 +562,12 @@ le paramètre non résolu.
    soit écrit (§7). La vérification est ici plutôt que dans l'émetteur : un fichier que le
    développeur ne peut pas compiler, écrit sous un récapitulatif affirmant que tous les paramètres
    ont été inférés, est pire que pas de fichier du tout.
+   Une **énumération** y est refusée aussi, pour la raison inverse : Roslyn lui synthétise un
+   constructeur sans paramètre, donc la recherche ci-dessus en trouve un, et `new TEnum()` compile et
+   tire `(TEnum)0` à chaque appel — une constante là où l'énumération déclare un membre nul, une valeur
+   non déclarée là où elle n'en déclare pas. La bibliothèque tire déjà les énumérations par
+   `Any.Enum<TEnum>()`, donc le refus nomme cet appel plutôt que d'écrire un fichier qui ne ferait que
+   l'envelopper.
 
 ### 5.2 La table de base
 
@@ -1398,6 +1404,7 @@ réponses.
 | Rien ne construit le type cible (§5.1) | `1` | Nomme les deux portes qu'ouvre le §5.1 : un constructeur d'instance public passant tous ses paramètres par valeur, ou une fabrique statique reconnue. Quand plusieurs fabriques **éligibles** sont ex æquo — le type ne déclarant aucun constructeur public qui ferme cette route — ce sont elles qui sont listées. |
 | Le type cible est abstrait | `1` | Refusé qu'il déclare ou non un constructeur à lui — le type abstrait ordinaire déclare les siens `protected` et s'entendrait sinon répondre la ligne du dessus, dont le remède est le mauvais. Une fabrique reconnue qui l'atteint est l'exception : `CS0144` porte sur `new`. Suggère un type concret qui en dérive. |
 | Le type cible est générique, ou imbriqué dans un générique | `1` | Rien n'en fournit l'argument de type, donc le fichier émis ne pourrait pas le nommer. |
+| Le type cible est une énumération | `1` | Nomme `Any.Enum<TEnum>()`, que la bibliothèque utilise déjà pour générer les valeurs d'une énumération ; rien n'est écrit. |
 | Les membres `required` du type cible ne sont pas assignés par le constructeur retenu | `1` | Reporté au §16 ; nomme `[SetsRequiredMembers]`, scaffoldé comme n'importe quel autre constructeur. |
 | `--entry-point any`, projet en deçà de C# 14 | `1` | Nomme la version que le projet a résolue, et `static:<Name>`. |
 | `--entry-point static:Any` | `2` | Nomme ce qui cesserait de compiler, et renvoie vers `--entry-point any`. |
@@ -1419,6 +1426,9 @@ Le refus est décidé dans cet ordre, qui est une règle et non un accident de t
 4. **rien ne le construit**, qui est un fait sur ce que la recherche de §5.1 a trouvé, pas sur le
    type ;
 5. **membres `required` non assignés**, qui ne se pose qu'une fois un constructeur retenu.
+
+Le cas des **énumérations** est traité immédiatement après l'étape 1, avant toute question sur ses constructeurs : celui
+qu'elle a est synthétisé, donc chaque ligne suivante décrirait une construction qui ne veut rien dire.
 
 L'ordre compte parce que le 4 est le moins coûteux à calculer et le moins utile à entendre : un type
 abstrait déclare ses constructeurs `protected`, donc décider le 4 d'abord revenait à dire à chacun

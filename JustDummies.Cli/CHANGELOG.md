@@ -39,6 +39,12 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Fixed
 
+- **`any generate` on an enum is now refused, naming `Any.Enum<TEnum>()`, instead of reporting success.** The
+  synthesised parameterless constructor of an enum was taken for a real one, so the tool wrote
+  `return new Currency();` and exited 0 with `no constructor parameters to infer`: every draw was `(Currency)0`,
+  a constant, or a value the enum does not declare when it has no zero member. The run now exits 1, writes
+  nothing, and tells you to use `Any.Enum<Currency>()`. A generator already scaffolded for an enum does not
+  change; replace its uses with that call.
 - **A parameter that reaches the type being scaffolded is now a `TODO` marked `self-referencing`, instead of a
   generator that overflows the stack.** `Node(string name, IReadOnlyList<Node> children)` was scaffolded with
   `Any.ListOf(new AnyNode())` inside `AnyNode`'s own constructor, reported as inferred: the first test to touch it

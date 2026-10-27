@@ -103,6 +103,12 @@ public sealed class ConstructorChoiceTests {
     [InlineData("public sealed class Subject { public required string Name { get; init; } public Subject(int one) { } }",
                 "Shop.Domain.Subject",
                 ScaffoldStatus.RequiredMembersUnset)]
+    [InlineData("public enum Subject { One = 1, Two = 2 }",
+                "Shop.Domain.Subject",
+                ScaffoldStatus.TypeIsEnum)]
+    [InlineData("public enum Subject { None, One }",
+                "Shop.Domain.Subject",
+                ScaffoldStatus.TypeIsEnum)]
     public void ATypeTheEmittedFileCouldNotConstructIsRefused(string declaration, string metadataName, ScaffoldStatus expected) {
         ScaffoldOutcome outcome = Subject.Scaffold(declaration, metadataName: metadataName);
 

@@ -406,32 +406,33 @@ public sealed partial class AnyOrder : IAny<Order> {
   déclaration.
 * Un **constructeur public sans paramètre** portant la recette inférée, écrit avec des arguments
   nommés pour que le lecteur associe chaque appel à son paramètre sans compter.
-* Une **fabrique privée statique** par paramètre — `AnyValid{Param}()` — portant sa **base
-  valide**, et nommée pour ce qu'elle retourne : une valeur que le constructeur du type accepte.
-  Elle est typée par le generator concret sur lequel sa chaîne se termine — `AnyInt32`,
-  `AnyEnum<OrderStatus>`, `AnyList<string>`, `AnyOrderReference` — lu sur le dernier appel de la
-  chaîne, puisqu'une contrainte peut retourner un autre generator (`Any.Uri().Web()` est un
+* Une **fabrique privée statique** par paramètre — `AnyValid{Param}()` — qui contient sa **base
+  valide**, et dont le nom dit ce qu'elle retourne : une valeur que le constructeur du type accepte.
+  Son type de retour est le generator concret sur lequel se termine sa chaîne — `AnyInt32`,
+  `AnyEnum<OrderStatus>`, `AnyList<string>`, `AnyOrderReference` —, déterminé d'après le dernier
+  appel de la chaîne, car une contrainte peut retourner un autre generator (`Any.Uri().Web()` est un
   `AnyWebUri`). L'initialiseur du constructeur public appelle chaque fabrique par son nom, suivie de
   la conversion du paramètre s'il en a une (`AnyValidDiscount().AsNullable()` pour un `decimal?`) :
-  la fabrique s'arrête avant le saut, pour qu'un affinage puisse encore appeler les contraintes du
-  generator. La surcharge d'affinage ci-dessous appelle la même fabrique, ce qui en fait l'adresse
-  unique de la base : ce que le développeur y écrit — une règle demandée par la §5.6, une règle
-  qu'ajoute le type composant — vaut à la fois pour la recette par défaut et pour chaque affinage
+  la fabrique s'arrête avant cette conversion, pour qu'un affinage puisse encore appeler les
+  contraintes du generator. La surcharge d'affinage ci-dessous appelle la même fabrique, qui devient
+  ainsi le seul endroit où la base est définie : ce que le développeur y écrit — une règle demandée
+  par la §5.6, une règle imposée par le type composant — s'applique à la fois à la recette par
+  défaut et à chaque affinage
   ([ADR-0109](../adr/0109-let-a-test-refine-a-parameters-valid-base-rather-than-replace-it.fr.md)).
   La fabrique d'un paramètre non résolu retourne `IAny<TParam>`, et son TODO (§5.5) vit à
   l'intérieur plutôt qu'au point d'appel.
 * Un **constructeur privé complet** réalisant la copie.
-* Par paramètre, **deux** surcharges `With{Param}` retournant une nouvelle instance, une par
-  intention : `With{Param}(TParam value)`, pour un test qui tient à la valeur entière, et
-  `With{Param}(Func<G, G> configure)`, où `G` est le type de la fabrique, pour un test qui tient à
-  une partie de la valeur. La seconde tire de `configure(AnyValid{Param}())`, puis de la
-  conversion : la lambda du test part de la base valide et ne dit que ce qu'elle ajoute. Il n'y a
-  **pas** de surcharge `With{Param}(IAny<TParam>)` — remplacer la base était la façon dont un test
-  perdait une règle tout en compilant ; un generator passé là où une valeur est attendue est
-  désormais une erreur de compilation, plus bruyante que l'erreur `JD011`/`JD012` qu'elle évitait.
-  Un développeur qui doit remplacer la recette d'un paramètre ajoute cette surcharge dans une partie
-  voisine de la classe partielle. Un paramètre non résolu n'a pas de base à affiner, et ne garde que
-  la surcharge par valeur.
+* Par paramètre, **deux** surcharges `With{Param}` retournant une nouvelle instance, chacune pour
+  un usage : `With{Param}(TParam value)`, pour un test qui s'intéresse à la valeur entière, et
+  `With{Param}(Func<G, G> configure)`, où `G` est le type de la fabrique, pour un test qui ne
+  s'intéresse qu'à une partie de la valeur. La seconde tire de `configure(AnyValid{Param}())`, puis
+  applique la conversion : la lambda du test part de la base valide et n'exprime que ce qu'elle
+  ajoute. Il n'y a **pas** de surcharge `With{Param}(IAny<TParam>)` : c'est en remplaçant la base
+  qu'un test perdait une règle sans que la compilation le signale. Passer un generator là où une
+  valeur est attendue provoque désormais une erreur de compilation, plus visible encore que
+  l'erreur `JD011`/`JD012` que cette surcharge évitait. Un développeur qui doit remplacer la recette
+  d'un paramètre ajoute lui-même cette surcharge dans une autre partie de la classe partielle. Un
+  paramètre non résolu n'a pas de base à affiner : il ne conserve que la surcharge par valeur.
 * `using System;` est ouvert dès qu'une surcharge d'affinage est émise, pour son `Func<,>`.
 * `public {Type} Generate()` appelant le constructeur avec le `Generate()` de chaque champ.
 * Le helper privé imbriqué `FixedValue<TValue>`. Justification : il accepte `null` (ce que

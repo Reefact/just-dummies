@@ -211,8 +211,9 @@ bool together = anyShipmentOnLyonParis.CanTravelWith(anyOtherShipmentOnLyonParis
 Assert.True(together);
 ```
 
-Two lambdas would have drawn two different routes. A pinned value skips the base too, but it is yours,
-and it is fixed: if it breaks a rule, the test fails on its first run, and on every run after.
+Two lambdas would have drawn routes independently, without guaranteeing that they are the same. A pinned
+value skips the base too, but it is yours, and it is fixed: if it breaks a rule, the test fails on its
+first run, and on every run after.
 
 ### Where the valid base lives
 

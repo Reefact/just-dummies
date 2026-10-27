@@ -31,9 +31,12 @@ more often than it is written:
   eye: *an `anyXxxx` in an assertion is not a dummy, it is a property with a sample size of
   one* (`getting-started`, "Careful not to misuse a dummy"). The reference pages are not
   exempt: they teach the same habit, and a reader who learns it on one page must not see it
-  dropped on the next. Two cases keep another name — a declaration that exists to be
-  refused (`impossible`), which never draws anything; and a generator shown beside its own
-  draw, which becomes `xGenerator` so the drawn value can keep `anyX`.
+  dropped on the next. Three cases keep another name — a declaration that exists to be
+  refused (`impossible`), which never draws anything; a generator shown beside its own
+  draw, which becomes `xGenerator` so the drawn value can keep `anyX`; and the parameter of
+  a lambda refining a scaffolded parameter's base, which is a generator already prepared by
+  that base rather than a drawn value, and takes a short name — `r => r.WithDistanceKm(240)`,
+  never `anyRoute => …` (ADR-0109).
 * **Split the body Arrange / Act / Assert**, with those comments. It is what makes the `any`
   names visibly confined to the Arrange.
 

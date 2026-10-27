@@ -37,8 +37,10 @@ Analyzing Shop.Domain.Order
 ✓ AnyOrder.cs — 6 of 6 parameters inferred.
 ```
 
-`AnyOrder.cs` est une `partial class` implémentant `IAny<Order>`, avec une méthode `With…` par
-paramètre du constructeur. Il vous appartient dès cet instant : lisez-le, modifiez-le, commitez-le.
+`AnyOrder.cs` est une `partial class` implémentant `IAny<Order>`, avec deux méthodes `With…` par
+paramètre du constructeur — l'une pour fixer sa valeur, l'autre pour affiner sa base valide
+([Ajuster un paramètre](#ajuster-un-paramètre)). Il vous appartient dès cet instant : lisez-le,
+modifiez-le, commitez-le.
 
 Ce qu'il tire est arbitraire — d'où `Any`, et d'où le nom de l'outil. Une valeur que vous fixez par une
 méthode `With…` n'est pas tirée mais choisie ; que l'objet qui la porte reste un dummy dépend de ce
@@ -75,7 +77,7 @@ travail et ajoute au-dessus une ligne qui ne compile pas :
 
 <!-- jd:skip -->
 ```csharp
-private static IAny<string> AnyValidValue() {
+private static AnyString AnyValidValue() {
     // TODO(any): 'string value' may be guarded by something the scaffolder could not read (§9).
     //   This is the scaffolder's best generator for the type; verify it honours the real invariant,
     //   or replace it, then delete the line below.
@@ -157,6 +159,182 @@ valeur demandée. Une racine nommée `Any` est refusée : une classe statique de
 projet masquerait `JustDummies.Any` pour tout son namespace, et `Any.Int32()` cesserait de compiler —
 ce que `--entry-point any` existe précisément pour éviter. Décision :
 [ADR-0070](../../for-maintainers/adr/0070-emit-an-entry-point-on-request-as-a-file-of-its-own.fr.md).
+
+## Ajuster un paramètre
+
+Chaque paramètre d'un generator scaffoldé vient avec deux méthodes `With…`. Elles répondent à deux
+questions différentes, et la première chose à se demander est laquelle votre test pose.
+
+Les exemples ci-dessous utilisent un `Shipment` qui n'accepte qu'une `Route` nationale — une règle qui
+appartient à l'expédition, puisqu'une route seule peut très bien franchir une frontière — et les
+`AnyShipment` et `AnyRoute` que `any` a scaffoldés pour eux, atteints par `--entry-point any`.
+
+### La valeur entière, ou une partie seulement ?
+
+Si votre test tient à **une partie** d'une valeur, donnez une lambda à la méthode. Elle reçoit la base
+valide de ce paramètre, et vous n'énoncez que ce que vous y ajoutez :
+
+```csharp
+// Arrange
+Shipment anyLongShipment = Any.Shipment()
+    .WithRoute(r => r.WithDistanceKm(240))
+    .Generate();
+
+// Act
+bool needsRestStop = anyLongShipment.NeedsRestStop;
+
+// Assert
+Assert.True(needsRestStop);
+```
+
+La route reste arbitraire, et reste nationale : le test n'a pas à savoir qu'une expédition en exige
+une, donc il ne le dit pas. Deux noms portent cette lecture. `anyLongShipment` dit les deux moitiés —
+`any` pour ce qui a été tiré, `Long` pour ce que le test a choisi
+([Arbitraire ne veut pas dire dummy](../guides/core-concepts.fr.md#arbitraire-ne-veut-pas-dire-dummy)).
+Le paramètre de la lambda s'appelle `r`, pas `anyRoute` : c'est un generator déjà préparé par la base,
+pas une valeur tirée, et `any` ne nomme que ce qui a été tiré.
+
+Si votre test tient à la valeur **entière** — quelle route, exactement — fixez-la :
+
+```csharp
+// Arrange
+Route lyonParis = new Route("Lyon", "Paris", 465, domestic: true);
+
+Shipment anyShipmentOnLyonParis      = Any.Shipment().WithRoute(lyonParis).Generate();
+Shipment anyOtherShipmentOnLyonParis = Any.Shipment().WithRoute(lyonParis).Generate();
+
+// Act
+bool together = anyShipmentOnLyonParis.CanTravelWith(anyOtherShipmentOnLyonParis);
+
+// Assert
+Assert.True(together);
+```
+
+Deux lambdas auraient tiré deux routes différentes. Une valeur fixée contourne elle aussi la base, mais
+elle est la vôtre, et elle est fixe : si elle viole une règle, le test échoue dès sa première
+exécution, et à chacune des suivantes.
+
+### Où vit la base valide
+
+Chaque paramètre a une fabrique dans le fichier généré, nommée `AnyValid…()`. Le constructeur du
+generator tire d'elle, et chaque lambda part d'elle : c'est l'adresse unique de ce paramètre.
+
+C'est aussi là que vous écrivez une règle que l'outil n'a pas su appliquer. Ici, `Shipment` vérifie
+sur sa route quelque chose que `any` n'a pas su lire ; il a donc marqué le paramètre `to verify`, et la
+base est devenue :
+
+<!-- jd:declarations -->
+```csharp
+public sealed partial class AnyShipment {
+
+    private static AnyRoute AnyValidRoute() {
+        // A shipment only accepts a domestic route; a route on its own may cross a border.
+        return new AnyRoute().WithDomestic(true);
+    }
+
+}
+```
+
+Écrite là une fois, la règle vaut pour chaque test qui tire une expédition, avec ou sans lambda.
+Changée là, elle change pour tous à la fois — aucun test ne l'a répétée, donc aucun test n'est à
+retrouver.
+
+### Ce qu'un affinage peut faire, et ce qu'il ne peut pas
+
+* **Il resserre une feuille.** Sur un nombre, une chaîne, une date ou une collection, la lambda ajoute
+  des contraintes à la base, et la bibliothèque les vérifie ensemble :
+  `WithParcels(p => p.LessThanOrEqualTo(10))` tire de 1 à 10, parce que la base est déjà
+  `Positive()`. Un affinage qui contredit la base — `p => p.Negative()` — est refusé à cette ligne, à
+  chaque exécution, par une exception qui nomme à la fois `Positive()` et `Negative()`.
+* **Il fixe une partie d'une valeur composée.** Sur une route, la lambda appelle les propres méthodes
+  `With…` d'`AnyRoute`, et ce que vous fixez remplace ce que la base avait fixé pour cette partie.
+  `r => r.WithDomestic(false)` est accepté par la route et refusé par l'expédition — à chaque
+  exécution, puisque la valeur est fixée. Une lambda garantit d'où elle part, pas où vous l'emmenez.
+* **Le dernier appel l'emporte**, comme pour chaque `With…`. Un second `WithParcels(…)` repart de la
+  base ; il ne s'ajoute pas au premier.
+* **Il n'élargit jamais la base.** Aucune lambda ne peut tirer une étiquette vide quand la base dit
+  `NonEmpty()`.
+
+### Quand la lambda ne suffit pas
+
+Aucune méthode `With…` ne prend un generator pour le mettre à la place de la base : c'était ainsi
+qu'un test perdait une règle tout en compilant. `WithParcels(Any.Int32().LessThanOrEqualTo(10))` ne
+compile plus — et ne doit pas compiler, puisqu'il tirait zéro et des nombres négatifs que l'expédition
+refuse à certaines exécutions, pas à toutes.
+
+Cinq besoins passaient par cette surcharge. Chacun a un autre chemin.
+
+**Des valeurs déterministes hors d'un test.** Plutôt que de passer les generators d'un contexte
+`Any.WithSeed(…)` paramètre par paramètre, ouvrez la portée ambiante. Elle atteint chaque tirage, y
+compris celui de la route :
+
+```csharp
+using (Any.UseSeed(20261027)) {
+    List<Shipment> anyShipments = Any.ListOf(Any.Shipment()).WithCount(50).Generate();
+}
+```
+
+**Les éléments d'une collection, tirés autrement.** Une lambda peut changer la collection —
+`l => l.WithCount(3)` — mais pas la recette de ses éléments. Si chaque test a besoin d'étiquettes
+alphabétiques, cette règle appartient à la base : changez `AnyValidLabels()`. Si un seul test en a
+besoin, ajoutez la surcharge vous-même (ci-dessous) et passez `Any.ListOf(Any.String().Alpha())`.
+
+**Une valeur parmi quelques-unes choisies.** `Any.OneOf(lyonParis, parisLille)` signifie d'ordinaire
+que le résultat dépend de celle qui est tirée — une propriété, testée sur un seul tirage. Fixez celle
+dont parle le test. Si cela n'a vraiment aucune importance, ajoutez la surcharge.
+
+**Parfois `null`.** Une lambda ne peut pas le dire : elle reçoit un `AnyDecimal` et doit en rendre
+un, alors que `OrNull()` renvoie un generator de `decimal?`. *Toujours* `null` tient en un appel, le
+cast distinguant la valeur d'une lambda :
+
+```csharp
+Shipment anyUndeclaredShipment = Any.Shipment().WithDeclaredValue((decimal?)null).Generate();
+```
+
+*Parfois* `null` est la surcharge que vous ajoutez.
+
+**Plus que la base ne permet.** Si le domaine accepte une étiquette vide, c'est la base qui est
+fausse : corrigez `AnyValidLabels()`. Si un seul test a besoin d'une étiquette vide précisément,
+fixez-la.
+
+### Ajouter la surcharge vous-même
+
+Le fichier généré est le vôtre, et la classe est `partial`. Ajoutez à côté un fichier qui porte la
+surcharge dont vous avez besoin :
+
+<!-- jd:skip -->
+```csharp
+// AnyShipment.Custom.cs: written by you, never touched by `any generate --force`.
+public sealed partial class AnyShipment {
+
+    public AnyShipment WithDeclaredValue(IAny<decimal?> generator) {
+        return new AnyShipment(_route, _parcels, _labels, generator);
+    }
+
+}
+```
+
+Le test dit alors ce qu'il veut dire :
+
+```csharp
+Shipment anyShipment = Any.Shipment()
+    .WithDeclaredValue(Any.Decimal().Positive().OrNull())
+    .Generate();
+```
+
+Trois choses à savoir sur ce fichier :
+
+1. Il appelle le constructeur privé du fichier généré, chaque champ à sa place — le même appel que
+   fait chaque `With…` généré.
+2. `any generate Shipment --force` ne réécrit que `AnyShipment.cs`, donc votre fichier survit à un
+   nouveau scaffold.
+3. Si le constructeur de `Shipment` change, un nouveau scaffold change ce constructeur privé, et votre
+   méthode cesse de compiler à sa propre ligne. Elle ne se trompe jamais en silence.
+
+Et une chose à retenir : cette surcharge **remplace** la base. Quelle que soit la règle que
+`AnyValid…()` garde pour ce paramètre, le generator que vous passez doit la garder aussi — c'est
+pourquoi l'outil ne l'écrit pas pour vous. Décision :
+[ADR-0109](../../for-maintainers/adr/0109-let-a-test-refine-a-parameters-valid-base-rather-than-replace-it.fr.md).
 
 ## Rendre compte à un script
 

@@ -1,3 +1,5 @@
+using Microsoft.CodeAnalysis;
+
 namespace JustDummies.GenAny;
 
 /// <summary>
@@ -16,15 +18,34 @@ namespace JustDummies.GenAny;
 /// </remarks>
 internal sealed class ChainReport {
 
-    internal ChainReport(string expression, bool guardApplied, bool guardsNotCombined, bool constraintUnavailable) {
-        Expression            = expression;
+    internal ChainReport(string @base,
+                         string conversion,
+                         ITypeSymbol? returned,
+                         bool guardApplied,
+                         bool guardsNotCombined,
+                         bool constraintUnavailable) {
+        Base                  = @base;
+        Conversion            = conversion;
+        Returned              = returned;
         GuardApplied          = guardApplied;
         GuardsNotCombined     = guardsNotCombined;
         ConstraintUnavailable = constraintUnavailable;
     }
 
+    /// <summary>
+    ///     The type <see cref="Base" /> evaluates to, read off its last call, or null where no builder was known —
+    ///     a composed parameter, whose generator this compilation may not carry yet.
+    /// </summary>
+    internal ITypeSymbol? Returned { get; }
+
     /// <summary>The chain as the emitted file spells it.</summary>
-    internal string Expression { get; }
+    internal string Expression => Base + Conversion;
+
+    /// <summary>The chain up to its constraints — what the parameter's factory returns (ADR-0109).</summary>
+    internal string Base { get; }
+
+    /// <summary>The hop after the constraints, applied where the factory is called, or nothing.</summary>
+    internal string Conversion { get; }
 
     /// <summary>
     ///     Whether anything a guard said reached the chain.

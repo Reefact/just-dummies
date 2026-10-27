@@ -93,7 +93,7 @@ public sealed class ScaffoldWriterTests : IDisposable {
                                                       "AnySubject",
                                                       ["JustDummies"],
                                                       [
-                                                          ScaffoldedParameter.DrawnFrom("value", "string",
+                                                          ScaffoldedParameter.DrawnFrom("value", "string", "AnyString",
                                                                                         "Any.String().NonEmpty()",
                                                                                         Provenance.None)
                                                       ]));

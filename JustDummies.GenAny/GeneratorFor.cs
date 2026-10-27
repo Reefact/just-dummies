@@ -288,7 +288,13 @@ internal sealed class GeneratorFor {
                                                                                             constraint.Member,
                                                                                             constraint.Arity))];
 
-        string chain = string.Concat(Ranged(written, drawn.Builder).Select(constraint => constraint.Render()));
+        IReadOnlyList<GuardConstraint> rendered = Ranged(written, drawn.Builder);
+
+        string chain = string.Concat(rendered.Select(constraint => constraint.Render()));
+
+        // The type the factory returns is the one the LAST call returns, never assumed from the first: a
+        // constraint may hand back another generator (`Web()` returns an `AnyWebUri`).
+        ITypeSymbol? returned = rendered.Aggregate(drawn.Builder, (type, constraint) => LibrarySurface.Returned(type, constraint.Member));
 
         // Read against what was WRITTEN, never against what was read: a guard whose member this generator does
         // not carry survived composition and still reached nothing, and the recap has to say which of the two
@@ -297,7 +303,7 @@ internal sealed class GeneratorFor {
         bool unavailable = kept.Any(constraint => !written.Contains(constraint)
                                                && declared.Contains(constraint, GuardConstraint.SameCall));
 
-        return new ChainReport(drawn.Core + chain + drawn.Suffix, applied, dropped, unavailable);
+        return new ChainReport(drawn.Core + chain, drawn.Suffix, returned, applied, dropped, unavailable);
     }
 
     /// <summary>
@@ -348,13 +354,6 @@ internal sealed class GeneratorFor {
         }
 
         return written;
-    }
-
-    /// <summary>The complete expression for a type nothing further will constrain — an element, a key.</summary>
-    private string? Resolve(ITypeSymbol type, int remaining, IReadOnlyCollection<ITypeSymbol> underway) {
-        DrawnGenerator drawn = Draw(type, remaining, underway);
-
-        return drawn.Resolved ? Chain(drawn, []).Expression : null;
     }
 
     private DrawnGenerator Draw(ITypeSymbol type, int remaining, IReadOnlyCollection<ITypeSymbol> underway) {
@@ -408,7 +407,7 @@ internal sealed class GeneratorFor {
                                                  : Provenance.None);
         }
 
-        return DrawnGenerator.From($"Any.{factory}()", generator, Refinement(factory, generator));
+        return DrawnGenerator.From($"Any.{factory}()", generator, names.Of(generator), type, Refinement(factory, generator));
     }
 
     /// <summary>
@@ -441,8 +440,12 @@ internal sealed class GeneratorFor {
         // type this compilation cannot see — and a guard that wanted to be is reported, not dropped (ADR-0059).
         names.Open(NamespaceOf(type));
 
-        return DrawnGenerator.From($"new {TypeNaming.GeneratorNameFor(type, naming)}()",
+        string generator = TypeNaming.GeneratorNameFor(type, naming);
+
+        return DrawnGenerator.From($"new {generator}()",
                                    builder: null,
+                                   generatorType: generator,
+                                   draws: type,
                                    provenance: Provenance.Scaffolded);
     }
 
@@ -487,11 +490,11 @@ internal sealed class GeneratorFor {
             return DrawnGenerator.Unresolved();
         }
 
-        ITypeSymbol? generator = library.Returned("Enum", typeArguments: 1);
+        ITypeSymbol? built = library.ReturnedFor("Enum", parameters: 0, type);
 
-        return generator is null
+        return built is null
                    ? DrawnGenerator.Unresolved()
-                   : DrawnGenerator.From($"Any.Enum<{names.Of(type)}>()", generator);
+                   : DrawnGenerator.From($"Any.Enum<{names.Of(type)}>()", built, names.Of(built), type);
     }
 
     private DrawnGenerator Collection(string factory,
@@ -499,21 +502,33 @@ internal sealed class GeneratorFor {
                                       int remaining,
                                       IReadOnlyCollection<ITypeSymbol> underway,
                                       ITypeSymbol self) {
-        ITypeSymbol? generator = library.Returned(factory, typeArguments: 1, parameters: 1);
+        if (library.Returned(factory, typeArguments: 1, parameters: 1) is null) { return DrawnGenerator.Unresolved(); }
 
-        if (generator is null) { return DrawnGenerator.Unresolved(); }
+        (string Expression, ITypeSymbol Draws)? item = Item(element, ConvertsOnItsOwn(self, index: 0), remaining - 1, [.. underway, self]);
 
-        string? item = AsDeclared(element,
-                                  ConvertsOnItsOwn(self, index: 0),
-                                  Resolve(element, remaining - 1, [.. underway, self]));
+        if (item is null) { return DrawnGenerator.Unresolved(); }
 
-        return item is null
-                   ? DrawnGenerator.Unresolved()
-                   : DrawnGenerator.From($"Any.{factory}({item})", generator);
+        ITypeSymbol built = library.ReturnedFor(factory, parameters: 1, item.Value.Draws)!;
+
+        return DrawnGenerator.From($"Any.{factory}({item.Value.Expression})",
+                                   built,
+                                   names.Of(built),
+                                   library.DrawnBy(built) ?? self);
+    }
+
+    /// <summary>An element or a key: the complete expression for a type nothing further will constrain.</summary>
+    private (string Expression, ITypeSymbol Draws)? Item(ITypeSymbol declared,
+                                                          bool covariant,
+                                                          int remaining,
+                                                          IReadOnlyCollection<ITypeSymbol> underway) {
+        DrawnGenerator drawn = Draw(declared, remaining, underway);
+
+        return drawn.Resolved ? AsDeclared(declared, covariant, Chain(drawn, []).Expression, drawn.Draws!) : null;
     }
 
     /// <summary>
-    ///     The element expression, converted to the type the parameter declared — where the position needs it.
+    ///     The element expression, converted to the type the parameter declared — where the position needs it —
+    ///     and what it then draws, which is what the collection around it is built for.
     /// </summary>
     /// <remarks>
     ///     Two conditions, and both are necessary. The row must be one whose factory produces a concrete
@@ -528,16 +543,16 @@ internal sealed class GeneratorFor {
     ///         the hop is the difference between a file that compiles and one that does not.
     ///     </para>
     /// </remarks>
-    private string? AsDeclared(ITypeSymbol declared, bool covariant, string? expression) {
-        if (expression is null || covariant) { return expression; }
+    private (string Expression, ITypeSymbol Draws)? AsDeclared(ITypeSymbol declared, bool covariant, string expression, ITypeSymbol draws) {
+        if (covariant) { return (expression, draws); }
 
         if (declared is not INamedTypeSymbol named || Definition(named) is not { } definition || !NeedARow.Contains(definition)) {
-            return expression;
+            return (expression, draws);
         }
 
         // Same refusal the nullable row makes: without `As` on the resolved asset there is no hop to write,
         // and a chain that does not compile is not an improvement on one that says it could not be built.
-        return library.CarriesAs() ? $"{expression}.As(value => ({names.Of(declared)})value)" : null;
+        return library.CarriesAs() ? ($"{expression}.As(value => ({names.Of(declared)})value)", declared) : null;
     }
 
     /// <summary>
@@ -553,20 +568,19 @@ internal sealed class GeneratorFor {
     }
 
     private DrawnGenerator Dictionary(INamedTypeSymbol type, int remaining, IReadOnlyCollection<ITypeSymbol> underway) {
-        ITypeSymbol? generator = library.Returned("DictionaryOf", typeArguments: 2, parameters: 2);
+        if (library.Returned("DictionaryOf", typeArguments: 2, parameters: 2) is null) { return DrawnGenerator.Unresolved(); }
 
-        if (generator is null) { return DrawnGenerator.Unresolved(); }
+        (string Expression, ITypeSymbol Draws)? keys   = Item(type.TypeArguments[0], ConvertsOnItsOwn(type, index: 0), remaining - 1, [.. underway, type]);
+        (string Expression, ITypeSymbol Draws)? values = Item(type.TypeArguments[1], ConvertsOnItsOwn(type, index: 1), remaining - 1, [.. underway, type]);
 
-        string? keys = AsDeclared(type.TypeArguments[0],
-                                  ConvertsOnItsOwn(type, index: 0),
-                                  Resolve(type.TypeArguments[0], remaining - 1, [.. underway, type]));
-        string? values = AsDeclared(type.TypeArguments[1],
-                                    ConvertsOnItsOwn(type, index: 1),
-                                    Resolve(type.TypeArguments[1], remaining - 1, [.. underway, type]));
+        if (keys is null || values is null) { return DrawnGenerator.Unresolved(); }
 
-        return keys is null || values is null
-                   ? DrawnGenerator.Unresolved()
-                   : DrawnGenerator.From($"Any.DictionaryOf({keys}, {values})", generator);
+        ITypeSymbol built = library.ReturnedFor("DictionaryOf", parameters: 2, keys.Value.Draws, values.Value.Draws)!;
+
+        return DrawnGenerator.From($"Any.DictionaryOf({keys.Value.Expression}, {values.Value.Expression})",
+                                   built,
+                                   names.Of(built),
+                                   library.DrawnBy(built) ?? type);
     }
 
     /// <summary>
@@ -594,7 +608,7 @@ internal sealed class GeneratorFor {
         string         hop   = lift ? ".AsNullable()" : $".As(value => ({names.Of(type)})value)";
 
         return inner.Resolved
-                   ? inner.Then(hop, Provenance.None)
+                   ? inner.Then(hop, type, Provenance.None)
                    : DrawnGenerator.Unresolved(inner.Provenance);
     }
 

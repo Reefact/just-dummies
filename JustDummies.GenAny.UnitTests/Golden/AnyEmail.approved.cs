@@ -2,15 +2,16 @@
 // `any generate Email --force` overwrites it. This type is partial, so members you add in a
 // neighbouring file survive.
 
+using System;
+
 using JustDummies;
 
 namespace Shop.Domain;
 
 /// <summary>
 ///     A generator of arbitrary <see cref="Email" /> values. It draws from the ambient random
-///     context, so a reproducibility scope pins it; to draw from an isolated
-///     <c>Any.WithSeed(...)</c> context, pass that context's generators through the
-///     <c>With…</c> overloads.
+///     context, so a reproducibility scope pins every draw it makes; outside a test,
+///     <c>Any.UseSeed(...)</c> opens one.
 /// </summary>
 public sealed partial class AnyEmail : IAny<Email> {
 
@@ -18,7 +19,11 @@ public sealed partial class AnyEmail : IAny<Email> {
 
     /// <summary>Creates the generator with a default recipe for every constructor parameter.</summary>
     public AnyEmail()
-        : this(value: Any.String().NonEmpty()) { }
+        : this(value: AnyValidValue()) { }
+
+    private static AnyString AnyValidValue() {
+        return Any.String().NonEmpty();
+    }
 
     private AnyEmail(IAny<string> value) {
         _value = value;
@@ -26,12 +31,12 @@ public sealed partial class AnyEmail : IAny<Email> {
 
     /// <summary>Pins <c>value</c> to a fixed value.</summary>
     public AnyEmail WithValue(string value) {
-        return WithValue(new FixedValue<string>(value));
+        return new AnyEmail(new FixedValue<string>(value));
     }
 
-    /// <summary>Draws <c>value</c> from <paramref name="generator" />.</summary>
-    public AnyEmail WithValue(IAny<string> generator) {
-        return new AnyEmail(generator);
+    /// <summary>Draws <c>value</c> from <c>AnyValidValue()</c>, refined by <paramref name="configure" />.</summary>
+    public AnyEmail WithValue(Func<AnyString, AnyString> configure) {
+        return new AnyEmail(configure(AnyValidValue()));
     }
 
     /// <summary>Produces one arbitrary <see cref="Email" />.</summary>

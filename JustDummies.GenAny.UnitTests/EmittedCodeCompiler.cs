@@ -50,6 +50,10 @@ internal static class EmittedCodeCompiler {
                                           public Money(decimal amount) { }
                                       }
 
+                                      public sealed class Quote {
+                                          public Quote(decimal amount, decimal? discount) { }
+                                      }
+
                                       public sealed record Address(string Street, string City);
 
                                       public sealed class Email {

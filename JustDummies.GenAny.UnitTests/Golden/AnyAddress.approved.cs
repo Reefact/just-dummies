@@ -2,15 +2,16 @@
 // `any generate Address --force` overwrites it. This type is partial, so members you add in a
 // neighbouring file survive.
 
+using System;
+
 using JustDummies;
 
 namespace Shop.Domain;
 
 /// <summary>
 ///     A generator of arbitrary <see cref="Address" /> values. It draws from the ambient random
-///     context, so a reproducibility scope pins it; to draw from an isolated
-///     <c>Any.WithSeed(...)</c> context, pass that context's generators through the
-///     <c>With…</c> overloads.
+///     context, so a reproducibility scope pins every draw it makes; outside a test,
+///     <c>Any.UseSeed(...)</c> opens one.
 /// </summary>
 public sealed partial class AnyAddress : IAny<Address> {
 
@@ -19,8 +20,16 @@ public sealed partial class AnyAddress : IAny<Address> {
 
     /// <summary>Creates the generator with a default recipe for every constructor parameter.</summary>
     public AnyAddress()
-        : this(street: Any.String().NonEmpty(),
-               city:   Any.String().NonEmpty()) { }
+        : this(street: AnyValidStreet(),
+               city:   AnyValidCity()) { }
+
+    private static AnyString AnyValidStreet() {
+        return Any.String().NonEmpty();
+    }
+
+    private static AnyString AnyValidCity() {
+        return Any.String().NonEmpty();
+    }
 
     private AnyAddress(IAny<string> street,
                        IAny<string> city) {
@@ -30,22 +39,22 @@ public sealed partial class AnyAddress : IAny<Address> {
 
     /// <summary>Pins <c>street</c> to a fixed value.</summary>
     public AnyAddress WithStreet(string value) {
-        return WithStreet(new FixedValue<string>(value));
+        return new AnyAddress(new FixedValue<string>(value), _city);
     }
 
-    /// <summary>Draws <c>street</c> from <paramref name="generator" />.</summary>
-    public AnyAddress WithStreet(IAny<string> generator) {
-        return new AnyAddress(generator, _city);
+    /// <summary>Draws <c>street</c> from <c>AnyValidStreet()</c>, refined by <paramref name="configure" />.</summary>
+    public AnyAddress WithStreet(Func<AnyString, AnyString> configure) {
+        return new AnyAddress(configure(AnyValidStreet()), _city);
     }
 
     /// <summary>Pins <c>city</c> to a fixed value.</summary>
     public AnyAddress WithCity(string value) {
-        return WithCity(new FixedValue<string>(value));
+        return new AnyAddress(_street, new FixedValue<string>(value));
     }
 
-    /// <summary>Draws <c>city</c> from <paramref name="generator" />.</summary>
-    public AnyAddress WithCity(IAny<string> generator) {
-        return new AnyAddress(_street, generator);
+    /// <summary>Draws <c>city</c> from <c>AnyValidCity()</c>, refined by <paramref name="configure" />.</summary>
+    public AnyAddress WithCity(Func<AnyString, AnyString> configure) {
+        return new AnyAddress(_street, configure(AnyValidCity()));
     }
 
     /// <summary>Produces one arbitrary <see cref="Address" />.</summary>

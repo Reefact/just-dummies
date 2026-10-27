@@ -70,11 +70,17 @@ public static class GeneratorEmitter {
     ///     The <c>System</c> namespaces first, then everything else, each group ordered and separated by a blank
     ///     line — the layout the repository's own files use.
     /// </summary>
+    /// <remarks>
+    ///     <c>System</c> is opened whenever a parameter has a refining overload: its <c>Func&lt;,&gt;</c> is the
+    ///     emitter's own text (ADR-0109), and nothing in the plan's types need have opened the namespace for it.
+    /// </remarks>
     private static void WriteUsings(StringBuilder file, ScaffoldPlan plan) {
-        if (plan.Usings.Count == 0) { return; }
+        IEnumerable<string> usings = plan.Parameters.Any(parameter => !parameter.IsUnresolved) ? [.. plan.Usings, "System"] : plan.Usings;
 
-        string[] system = Ordered(plan.Usings.Where(IsSystem));
-        string[] rest   = Ordered(plan.Usings.Where(@using => !IsSystem(@using)));
+        string[] system = Ordered(usings.Where(IsSystem));
+        string[] rest   = Ordered(usings.Where(@using => !IsSystem(@using)));
+
+        if (system.Length == 0 && rest.Length == 0) { return; }
 
         foreach (string @using in system) { Line(file, $"using {@using};"); }
 
@@ -132,17 +138,15 @@ public static class GeneratorEmitter {
     }
 
     /// <summary>
-    ///     The one sentence a developer on <c>Any.WithSeed(…)</c> needs, in the place they will read it. An
-    ///     <c>AnyContext</c> carries its own random source and the emitted expressions all come from the static
-    ///     façade, so that developer passes their context's generators in through the <c>With</c> overloads
-    ///     (ADR-0061).
+    ///     The one sentence a developer reaching for determinism needs, in the place they will read it. The
+    ///     emitted expressions all come from the static façade, so an ambient scope pins every draw, composed
+    ///     parameters included, and <c>Any.UseSeed(…)</c> is how to open one outside a test (ADR-0061, ADR-0109).
     /// </summary>
     private static void WriteTypeDocumentation(StringBuilder file, ScaffoldPlan plan, string indent) {
         Line(file, $"{indent}/// <summary>");
         Line(file, $"{indent}///     A generator of arbitrary <see cref=\"{plan.Target.Name}\" /> values. It draws from the ambient random");
-        Line(file, $"{indent}///     context, so a reproducibility scope pins it; to draw from an isolated");
-        Line(file, $"{indent}///     <c>Any.WithSeed(...)</c> context, pass that context's generators through the");
-        Line(file, $"{indent}///     <c>With…</c> overloads.");
+        Line(file, $"{indent}///     context, so a reproducibility scope pins every draw it makes; outside a test,");
+        Line(file, $"{indent}///     <c>Any.UseSeed(...)</c> opens one.");
         Line(file, $"{indent}/// </summary>");
     }
 
@@ -157,10 +161,9 @@ public static class GeneratorEmitter {
     }
 
     /// <summary>
-    ///     Named arguments, aligned, so a reader maps each call to its parameter without counting (§4.2). A
-    ///     parameter with a factory is a call to it — never the chain itself, which is written once, in that
-    ///     factory's body — and a parameter with nothing to put in a body (ADR-0089) is its one call, written
-    ///     here instead.
+    ///     Named arguments, aligned, so a reader maps each call to its parameter without counting (§4.2). Each is
+    ///     a call to the parameter's factory — never the chain itself, which is written once, in that factory's
+    ///     body — followed by the conversion the factory leaves out, if the parameter has one.
     /// </summary>
     private static void WritePublicConstructor(StringBuilder file, ScaffoldPlan plan, string indent) {
         Line(file, $"{indent}/// <summary>Creates the generator with a default recipe for every constructor parameter.</summary>");
@@ -174,7 +177,7 @@ public static class GeneratorEmitter {
             ScaffoldedParameter parameter = plan.Parameters[index];
             bool                last      = index == plan.Parameters.Count - 1;
             string              lead      = index == 0 ? opening : continuing;
-            string              drawn     = parameter.DrawnInline ? parameter.Expression! : parameter.FactoryMethodName + "()";
+            string              drawn     = parameter.FactoryMethodName + "()" + parameter.Conversion;
             string              argument  = $"{(parameter.Identifier + ":").PadRight(width)} {drawn}";
 
             Line(file, lead + argument + (last ? ") { }" : ","));
@@ -184,19 +187,22 @@ public static class GeneratorEmitter {
     }
 
     /// <summary>
-    ///     One factory per parameter that has one (§4.2): the method the public constructor calls, and the place
-    ///     a parameter with something to say for itself says it, right beside the chain it is about. A parameter
-    ///     drawn inline has nothing to put in a body — no guard tightened its draw, and it blocks compilation
-    ///     for neither §5.5 nor §5.6 — so it gets no method, whether its one call composes through the type's
-    ///     own generator or reads straight off the base table (ADR-0089).
+    ///     One factory per parameter (§4.2): the valid base the public constructor draws from and the refining
+    ///     overload starts from, and the place a parameter with something to say for itself says it, right
+    ///     beside the chain it is about (ADR-0109).
     /// </summary>
+    /// <remarks>
+    ///     A resolved factory returns the concrete generator its chain builds, so a refining lambda can call
+    ///     that generator's constraints; an unresolved one has no generator to name, and returns the recipe
+    ///     interface its sentinel stands in for.
+    /// </remarks>
     private static void WriteFactories(StringBuilder file, ScaffoldPlan plan, string indent) {
         string body = indent + Indent;
 
         foreach (ScaffoldedParameter parameter in plan.Parameters) {
-            if (parameter.DrawnInline) { continue; }
+            string returned = parameter.IsUnresolved ? GeneratorTypeOf(parameter) : parameter.GeneratorType!;
 
-            Line(file, $"{indent}private static IAny<{parameter.TypeDisplay}> {parameter.FactoryMethodName}() {{");
+            Line(file, $"{indent}private static {returned} {parameter.FactoryMethodName}() {{");
 
             if (parameter.IsUnresolved) {
                 WriteTodo(file, parameter, body);
@@ -205,9 +211,9 @@ public static class GeneratorEmitter {
                 WriteVerify(file, parameter, body);
                 Line(file, $"{body}_ = {parameter.VerifyIdentifier};");
                 Line(file, string.Empty);
-                Line(file, $"{body}return {parameter.Expression};");
+                Line(file, $"{body}return {parameter.BaseExpression};");
             } else {
-                Line(file, $"{body}return {parameter.Expression};");
+                Line(file, $"{body}return {parameter.BaseExpression};");
             }
 
             Line(file, $"{indent}}}");
@@ -224,12 +230,12 @@ public static class GeneratorEmitter {
 
         if (ScaffoldableByName(parameter.TypeDisplay)) {
             Line(file, $"{indent}//   Scaffold one:  any generate {parameter.TypeDisplay}");
-            Line(file, $"{indent}//   or write one here, or replace it and always pass .With{parameter.PascalCasedName}(...) instead.");
+            Line(file, $"{indent}//   or write one here, or replace it and always pass .With{parameter.PascalCasedName}(value) instead.");
 
             return;
         }
 
-        Line(file, $"{indent}//   Write one here, or replace it and always pass .With{parameter.PascalCasedName}(...) instead.");
+        Line(file, $"{indent}//   Write one here, or replace it and always pass .With{parameter.PascalCasedName}(value) instead.");
     }
 
     /// <summary>
@@ -284,27 +290,41 @@ public static class GeneratorEmitter {
     }
 
     /// <summary>
-    ///     Two overloads per parameter. The value one is the ergonomic one; the generator one is what keeps
-    ///     composition possible, and is why passing a constrained chain is not the JD011/JD012 mistake of
-    ///     generating a value where a recipe was wanted.
+    ///     Two overloads per parameter, one per intent (ADR-0109). The value one pins the whole value, for a test
+    ///     that cares about all of it. The refining one hands the test's lambda the parameter's valid base and
+    ///     draws from what the lambda returns, for a test that cares about one part of it — so the test states
+    ///     that part and nothing else, and never restates a rule the base already keeps.
     /// </summary>
+    /// <remarks>
+    ///     No overload takes an <c>IAny&lt;T&gt;</c>: replacing the base is how a test lost a rule without a
+    ///     word, compiling and then failing on the draws that broke it. A developer who needs one for a
+    ///     particular parameter adds it in a neighbouring part of this partial class, where it is their choice
+    ///     rather than the default. An unresolved parameter has no base to refine, and keeps the value overload
+    ///     alone.
+    /// </remarks>
     private static void WriteWithMethods(StringBuilder file, ScaffoldPlan plan, string indent) {
         foreach (ScaffoldedParameter parameter in plan.Parameters) {
             Line(file, $"{indent}/// <summary>Pins <c>{parameter.Name}</c> to a fixed value.</summary>");
             Line(file, $"{indent}public {plan.GeneratorName} With{parameter.PascalCasedName}({parameter.TypeDisplay} value) {{");
-            Line(file, $"{indent}{Indent}return With{parameter.PascalCasedName}(new FixedValue<{parameter.TypeDisplay}>(value));");
+            Line(file, $"{indent}{Indent}return new {plan.GeneratorName}({Arguments(plan, parameter, $"new FixedValue<{parameter.TypeDisplay}>(value)")});");
             Line(file, $"{indent}}}");
             Line(file, string.Empty);
 
-            string arguments = string.Join(", ", plan.Parameters.Select(other =>
-                                                     ReferenceEquals(other, parameter) ? "generator" : other.FieldName));
+            if (parameter.IsUnresolved) { continue; }
 
-            Line(file, $"{indent}/// <summary>Draws <c>{parameter.Name}</c> from <paramref name=\"generator\" />.</summary>");
-            Line(file, $"{indent}public {plan.GeneratorName} With{parameter.PascalCasedName}({GeneratorTypeOf(parameter)} generator) {{");
-            Line(file, $"{indent}{Indent}return new {plan.GeneratorName}({arguments});");
+            string refined = $"configure({parameter.FactoryMethodName}()){parameter.Conversion}";
+
+            Line(file, $"{indent}/// <summary>Draws <c>{parameter.Name}</c> from <c>{parameter.FactoryMethodName}()</c>, refined by <paramref name=\"configure\" />.</summary>");
+            Line(file, $"{indent}public {plan.GeneratorName} With{parameter.PascalCasedName}(Func<{parameter.GeneratorType}, {parameter.GeneratorType}> configure) {{");
+            Line(file, $"{indent}{Indent}return new {plan.GeneratorName}({Arguments(plan, parameter, refined)});");
             Line(file, $"{indent}}}");
             Line(file, string.Empty);
         }
+    }
+
+    /// <summary>The private constructor's arguments, with <paramref name="drawn" /> in <paramref name="parameter" />'s place.</summary>
+    private static string Arguments(ScaffoldPlan plan, ScaffoldedParameter parameter, string drawn) {
+        return string.Join(", ", plan.Parameters.Select(other => ReferenceEquals(other, parameter) ? drawn : other.FieldName));
     }
 
     private static void WriteDegenerateConstructor(StringBuilder file, ScaffoldPlan plan, string indent) {

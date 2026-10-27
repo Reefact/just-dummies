@@ -278,8 +278,8 @@ public sealed class CompositionTests {
 
     /// <summary>
     ///     A null-check on a composed parameter adds nothing to verify: the generator it draws through never
-    ///     returns <c>null</c> (§5.3), so the parameter is exactly as clean as one with no guard at all — inline,
-    ///     with no method of its own (§4.2).
+    ///     returns <c>null</c> (§5.3), so the parameter is exactly as clean as one with no guard at all — a factory
+    ///     returning its own generator, with no sentinel above it (§4.2).
     /// </summary>
     [Fact(DisplayName = "A composed parameter's own recognised null-check needs no verification.")]
     public void ARecognisedNullCheckOnAComposedParameterNeedsNoVerification() {
@@ -306,8 +306,8 @@ public sealed class CompositionTests {
 
         Check.That(parameter.Expression).IsEqualTo("new AnyEmail()");
         Check.That(parameter.RequiresVerification).IsFalse();
-        Check.That(parameter.DrawnInline).IsTrue();
-        Check.That(outcome.File!.SourceText).Not.Contains("AnyValidValue");
+        Check.That(outcome.File!.SourceText).Contains("private static AnyEmail AnyValidValue() {\n        return new AnyEmail();\n    }");
+        Check.That(outcome.File.SourceText).Not.Contains("TODO_verify_the_generator_for_value");
     }
 
     /// <summary>
@@ -342,8 +342,7 @@ public sealed class CompositionTests {
 
         Check.That(parameter.Expression).IsEqualTo("new AnyEmail()");
         Check.That(parameter.RequiresVerification).IsTrue();
-        Check.That(parameter.DrawnInline).IsFalse();
-        Check.That(outcome.File!.SourceText).Contains("AnyValidValue");
+        Check.That(outcome.File!.SourceText).Contains("TODO_verify_the_generator_for_value");
     }
 
     /// <summary>Scaffolds a <c>Subject</c> whose single parameter is of <paramref name="parameterType" />.</summary>

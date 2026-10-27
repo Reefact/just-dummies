@@ -23,7 +23,10 @@ public sealed class AnyCustomerName : IAny<string> {
 
 }
 
-/// <summary>Hangs <see cref="AnyOrderReference" /> and <see cref="AnyCustomerName" /> off the library's own entry point.</summary>
+/// <summary>
+///     Hangs <see cref="AnyOrderReference" />, <see cref="AnyCustomerName" /> and the two scaffolded generators off the
+///     library's own entry point, as <c>any generate --entry-point any</c> would.
+/// </summary>
 public static class AnyEntry {
 
     extension(Any) {
@@ -36,6 +39,16 @@ public static class AnyEntry {
         /// <summary>Starts an arbitrary customer name.</summary>
         public static AnyCustomerName CustomerName() {
             return new AnyCustomerName();
+        }
+
+        /// <summary>Starts an arbitrary route, through the generator <c>any</c> scaffolded for it.</summary>
+        public static AnyRoute Route() {
+            return new AnyRoute();
+        }
+
+        /// <summary>Starts an arbitrary shipment, through the generator <c>any</c> scaffolded for it.</summary>
+        public static AnyShipment Shipment() {
+            return new AnyShipment();
         }
 
     }

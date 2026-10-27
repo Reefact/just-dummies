@@ -93,7 +93,7 @@ valeurs valides ; le **tool** rend le test concis.
 
 ## 2. Décisions
 
-Ce sont les décisions porteuses. Les douze sont couvertes par les onze enregistrements de décision du
+Ce sont les décisions porteuses. Les treize sont couvertes par les douze enregistrements de décision du
 §15 — contexte, argument, alternatives écartées, conséquences ; D5 et D6 en partagent un. Cette
 table en est l'index ; elle ne porte aucun argument propre.
 
@@ -111,6 +111,7 @@ table en est l'index ; elle ne porte aucun argument propre.
 | **D10** | Ne jamais émettre `.OrNull()`. | Un dummy aléatoirement `null` est précisément l'instabilité que la bibliothèque existe pour supprimer. |
 | **D11** | Le **moteur de scaffolding est une bibliothèque séparée** au plancher Roslyn ; la CLI est une coquille. | Le second consommateur plausible du moteur est un refactoring IDE, qui n'est pas une CLI et ne peut pas charger un assembly `net8.0`. |
 | **D12** *(v1.1)* | Un point d'entrée est **optionnel**, émis dans un fichier à lui. | Le fichier du generator ne change jamais, donc le plancher du §4.4 reste sa propriété et `new Any{Type}()` continue de fonctionner. |
+| **D13** | Un test **affine** la base valide d'un paramètre par une lambda, ou fixe une valeur ; il ne remplace jamais la base. | Une base remplacée perd ses règles et compile quand même ; une base affinée les garde à une seule adresse. |
 
 ---
 
@@ -251,9 +252,8 @@ namespace Shop.Domain;
 
 /// <summary>
 ///     A generator of arbitrary <see cref="Order" /> values. It draws from the ambient random
-///     context, so a reproducibility scope pins it; to draw from an isolated
-///     <c>Any.WithSeed(...)</c> context, pass that context's generators through the
-///     <c>With…</c> overloads.
+///     context, so a reproducibility scope pins every draw it makes; outside a test,
+///     <c>Any.UseSeed(...)</c> opens one.
 /// </summary>
 public sealed partial class AnyOrder : IAny<Order> {
 
@@ -266,26 +266,34 @@ public sealed partial class AnyOrder : IAny<Order> {
 
     /// <summary>Creates the generator with a default recipe for every constructor parameter.</summary>
     public AnyOrder()
-        : this(reference: new AnyOrderReference(),
-               customer:  new AnyCustomer(),
+        : this(reference: AnyValidReference(),
+               customer:  AnyValidCustomer(),
                quantity:  AnyValidQuantity(),
                status:    AnyValidStatus(),
                tags:      AnyValidTags(),
                placedAt:  AnyValidPlacedAt()) { }
 
-    private static IAny<int> AnyValidQuantity() {
+    private static AnyOrderReference AnyValidReference() {
+        return new AnyOrderReference();
+    }
+
+    private static AnyCustomer AnyValidCustomer() {
+        return new AnyCustomer();
+    }
+
+    private static AnyInt32 AnyValidQuantity() {
         return Any.Int32().Positive();
     }
 
-    private static IAny<OrderStatus> AnyValidStatus() {
+    private static AnyEnum<OrderStatus> AnyValidStatus() {
         return Any.Enum<OrderStatus>();
     }
 
-    private static IAny<IReadOnlyList<string>> AnyValidTags() {
+    private static AnyList<string> AnyValidTags() {
         return Any.ListOf(Any.String().NonEmpty());
     }
 
-    private static IAny<DateTime> AnyValidPlacedAt() {
+    private static AnyDateTime AnyValidPlacedAt() {
         return Any.DateTime();
     }
 
@@ -305,62 +313,62 @@ public sealed partial class AnyOrder : IAny<Order> {
 
     /// <summary>Pins <c>reference</c> to a fixed value.</summary>
     public AnyOrder WithReference(OrderReference value) {
-        return WithReference(new FixedValue<OrderReference>(value));
+        return new AnyOrder(new FixedValue<OrderReference>(value), _customer, _quantity, _status, _tags, _placedAt);
     }
 
-    /// <summary>Draws <c>reference</c> from <paramref name="generator" />.</summary>
-    public AnyOrder WithReference(IAny<OrderReference> generator) {
-        return new AnyOrder(generator, _customer, _quantity, _status, _tags, _placedAt);
+    /// <summary>Draws <c>reference</c> from <c>AnyValidReference()</c>, refined by <paramref name="configure" />.</summary>
+    public AnyOrder WithReference(Func<AnyOrderReference, AnyOrderReference> configure) {
+        return new AnyOrder(configure(AnyValidReference()), _customer, _quantity, _status, _tags, _placedAt);
     }
 
     /// <summary>Pins <c>customer</c> to a fixed value.</summary>
     public AnyOrder WithCustomer(Customer value) {
-        return WithCustomer(new FixedValue<Customer>(value));
+        return new AnyOrder(_reference, new FixedValue<Customer>(value), _quantity, _status, _tags, _placedAt);
     }
 
-    /// <summary>Draws <c>customer</c> from <paramref name="generator" />.</summary>
-    public AnyOrder WithCustomer(IAny<Customer> generator) {
-        return new AnyOrder(_reference, generator, _quantity, _status, _tags, _placedAt);
+    /// <summary>Draws <c>customer</c> from <c>AnyValidCustomer()</c>, refined by <paramref name="configure" />.</summary>
+    public AnyOrder WithCustomer(Func<AnyCustomer, AnyCustomer> configure) {
+        return new AnyOrder(_reference, configure(AnyValidCustomer()), _quantity, _status, _tags, _placedAt);
     }
 
     /// <summary>Pins <c>quantity</c> to a fixed value.</summary>
     public AnyOrder WithQuantity(int value) {
-        return WithQuantity(new FixedValue<int>(value));
+        return new AnyOrder(_reference, _customer, new FixedValue<int>(value), _status, _tags, _placedAt);
     }
 
-    /// <summary>Draws <c>quantity</c> from <paramref name="generator" />.</summary>
-    public AnyOrder WithQuantity(IAny<int> generator) {
-        return new AnyOrder(_reference, _customer, generator, _status, _tags, _placedAt);
+    /// <summary>Draws <c>quantity</c> from <c>AnyValidQuantity()</c>, refined by <paramref name="configure" />.</summary>
+    public AnyOrder WithQuantity(Func<AnyInt32, AnyInt32> configure) {
+        return new AnyOrder(_reference, _customer, configure(AnyValidQuantity()), _status, _tags, _placedAt);
     }
 
     /// <summary>Pins <c>status</c> to a fixed value.</summary>
     public AnyOrder WithStatus(OrderStatus value) {
-        return WithStatus(new FixedValue<OrderStatus>(value));
+        return new AnyOrder(_reference, _customer, _quantity, new FixedValue<OrderStatus>(value), _tags, _placedAt);
     }
 
-    /// <summary>Draws <c>status</c> from <paramref name="generator" />.</summary>
-    public AnyOrder WithStatus(IAny<OrderStatus> generator) {
-        return new AnyOrder(_reference, _customer, _quantity, generator, _tags, _placedAt);
+    /// <summary>Draws <c>status</c> from <c>AnyValidStatus()</c>, refined by <paramref name="configure" />.</summary>
+    public AnyOrder WithStatus(Func<AnyEnum<OrderStatus>, AnyEnum<OrderStatus>> configure) {
+        return new AnyOrder(_reference, _customer, _quantity, configure(AnyValidStatus()), _tags, _placedAt);
     }
 
     /// <summary>Pins <c>tags</c> to a fixed value.</summary>
     public AnyOrder WithTags(IReadOnlyList<string> value) {
-        return WithTags(new FixedValue<IReadOnlyList<string>>(value));
+        return new AnyOrder(_reference, _customer, _quantity, _status, new FixedValue<IReadOnlyList<string>>(value), _placedAt);
     }
 
-    /// <summary>Draws <c>tags</c> from <paramref name="generator" />.</summary>
-    public AnyOrder WithTags(IAny<IReadOnlyList<string>> generator) {
-        return new AnyOrder(_reference, _customer, _quantity, _status, generator, _placedAt);
+    /// <summary>Draws <c>tags</c> from <c>AnyValidTags()</c>, refined by <paramref name="configure" />.</summary>
+    public AnyOrder WithTags(Func<AnyList<string>, AnyList<string>> configure) {
+        return new AnyOrder(_reference, _customer, _quantity, _status, configure(AnyValidTags()), _placedAt);
     }
 
     /// <summary>Pins <c>placedAt</c> to a fixed value.</summary>
     public AnyOrder WithPlacedAt(DateTime value) {
-        return WithPlacedAt(new FixedValue<DateTime>(value));
+        return new AnyOrder(_reference, _customer, _quantity, _status, _tags, new FixedValue<DateTime>(value));
     }
 
-    /// <summary>Draws <c>placedAt</c> from <paramref name="generator" />.</summary>
-    public AnyOrder WithPlacedAt(IAny<DateTime> generator) {
-        return new AnyOrder(_reference, _customer, _quantity, _status, _tags, generator);
+    /// <summary>Draws <c>placedAt</c> from <c>AnyValidPlacedAt()</c>, refined by <paramref name="configure" />.</summary>
+    public AnyOrder WithPlacedAt(Func<AnyDateTime, AnyDateTime> configure) {
+        return new AnyOrder(_reference, _customer, _quantity, _status, _tags, configure(AnyValidPlacedAt()));
     }
 
     /// <summary>Produces one arbitrary <see cref="Order" />.</summary>
@@ -398,21 +406,33 @@ public sealed partial class AnyOrder : IAny<Order> {
   déclaration.
 * Un **constructeur public sans paramètre** portant la recette inférée, écrit avec des arguments
   nommés pour que le lecteur associe chaque appel à son paramètre sans compter.
-* Une **fabrique privée statique** par paramètre qui en a besoin — `AnyValid{Param}()` — logeant sa
-  recette, et nommée pour ce qu'elle retourne : une valeur que le constructeur du type accepte.
-  L'initialiseur du constructeur public les appelle par leur nom plutôt que d'inliner chaque chaîne,
-  et le TODO d'un paramètre non résolu (§5.5) vit dans sa propre fabrique, pas au point d'appel.
-  Un paramètre **composé** n'a pas de fabrique : toute sa recette est l'unique appel au generator
-  que son type possède, écrit dans l'initialiseur, et une méthode l'enveloppant ne dirait rien que
-  l'appel ne dise (§5.4). Il n'en garde une que s'il y a quelque chose à mettre dans le corps — les
-  sentinelles des §5.5 et §5.6 sont des instructions, et une instruction a besoin d'un endroit où
-  se tenir.
+* Une **fabrique privée statique** par paramètre — `AnyValid{Param}()` — portant sa **base
+  valide**, et nommée pour ce qu'elle retourne : une valeur que le constructeur du type accepte.
+  Elle est typée par le generator concret sur lequel sa chaîne se termine — `AnyInt32`,
+  `AnyEnum<OrderStatus>`, `AnyList<string>`, `AnyOrderReference` — lu sur le dernier appel de la
+  chaîne, puisqu'une contrainte peut retourner un autre generator (`Any.Uri().Web()` est un
+  `AnyWebUri`). L'initialiseur du constructeur public appelle chaque fabrique par son nom, suivie de
+  la conversion du paramètre s'il en a une (`AnyValidDiscount().AsNullable()` pour un `decimal?`) :
+  la fabrique s'arrête avant le saut, pour qu'un affinage puisse encore appeler les contraintes du
+  generator. La surcharge d'affinage ci-dessous appelle la même fabrique, ce qui en fait l'adresse
+  unique de la base : ce que le développeur y écrit — une règle demandée par la §5.6, une règle
+  qu'ajoute le type composant — vaut à la fois pour la recette par défaut et pour chaque affinage
+  ([ADR-0109](../adr/0109-let-a-test-refine-a-parameters-valid-base-rather-than-replace-it.fr.md)).
+  La fabrique d'un paramètre non résolu retourne `IAny<TParam>`, et son TODO (§5.5) vit à
+  l'intérieur plutôt qu'au point d'appel.
 * Un **constructeur privé complet** réalisant la copie.
-* Par paramètre, **deux** surcharges `With{Param}` retournant une nouvelle instance :
-  `With{Param}(TParam value)` et `With{Param}(IAny<TParam> generator)`.
-  La surcharge par valeur est l'ergonomique ; la surcharge par generator est ce qui maintient la
-  composition possible, et c'est pourquoi passer `Any.String().StartingWith("ORD-")` ne devient pas
-  une erreur `JD011`/`JD012`.
+* Par paramètre, **deux** surcharges `With{Param}` retournant une nouvelle instance, une par
+  intention : `With{Param}(TParam value)`, pour un test qui tient à la valeur entière, et
+  `With{Param}(Func<G, G> configure)`, où `G` est le type de la fabrique, pour un test qui tient à
+  une partie de la valeur. La seconde tire de `configure(AnyValid{Param}())`, puis de la
+  conversion : la lambda du test part de la base valide et ne dit que ce qu'elle ajoute. Il n'y a
+  **pas** de surcharge `With{Param}(IAny<TParam>)` — remplacer la base était la façon dont un test
+  perdait une règle tout en compilant ; un generator passé là où une valeur est attendue est
+  désormais une erreur de compilation, plus bruyante que l'erreur `JD011`/`JD012` qu'elle évitait.
+  Un développeur qui doit remplacer la recette d'un paramètre ajoute cette surcharge dans une partie
+  voisine de la classe partielle. Un paramètre non résolu n'a pas de base à affiner, et ne garde que
+  la surcharge par valeur.
+* `using System;` est ouvert dès qu'une surcharge d'affinage est émise, pour son `Func<,>`.
 * `public {Type} Generate()` appelant le constructeur avec le `Generate()` de chaque champ.
 * Le helper privé imbriqué `FixedValue<TValue>`. Justification : il accepte `null` (ce que
   `Any.OneOf(value)` refuse) et ne consomme aucun tirage de la source ambiante, donc épingler un
@@ -1125,17 +1145,17 @@ comme pour tout autre paramètre :
 
 ```csharp
     public AnyWarehouse()
-        : this(reference: new AnyOrderReference(),
+        : this(reference: AnyValidReference(),
                crates:    AnyValidCrates(),
                ...) { }
 
     private static IAny<Crate<int>> AnyValidCrates() {
         // TODO(any): no generator inferred for 'Crate<int> crates'.
-        //   Write one here, or replace it and always pass .WithCrates(...) instead.
+        //   Write one here, or replace it and always pass .WithCrates(value) instead.
         return TODO_supply_a_generator_for_crates;
     }
 
-    // ... une fabrique par paramètre qui en a besoin ...
+    // ... une fabrique par paramètre ...
 ```
 
 Le fichier ne compile pas tant que le développeur n'a pas agi. C'est le but (D6). Le message du
@@ -1161,7 +1181,7 @@ différence près : un generator **a bien été** inféré ici, et il reste comm
 fabrique plutôt que d'être jeté.
 
 ```csharp
-    private static IAny<string> AnyValidName() {
+    private static AnyString AnyValidName() {
         // TODO(any): 'string name' may be guarded by something the scaffolder could not read (§9).
         //   This is the scaffolder's best generator for the type; verify it honours the real invariant,
         //   or replace it, then delete the line below.
@@ -1434,9 +1454,13 @@ vérifié (§17).
 
 **`Any.WithSeed(seed)` est hors périmètre (D7).** Un `AnyContext` porte sa propre source aléatoire
 fixe et n'est pas affecté par le scope ambiant, donc un generator construit à partir de `Any.*` ne
-peut pas y tirer. Un développeur sur `WithSeed` fournit les generators de ce contexte paramètre par
-paramètre via la surcharge `.With{Param}(IAny<TParam>)`, et la doc XML émise le dit en une phrase
-(§4.1). Le raisonnement, et les alternatives pesées contre lui, sont dans D7.
+peut pas y tirer. Un développeur qui veut des valeurs déterministes hors d'un test ouvre plutôt le
+scope ambiant — `Any.UseSeed(seed)` — qui atteint chaque tirage du generator, paramètres composés
+compris, et la doc XML émise le dit en une phrase (§4.1). Celui qui a besoin du generator d'un
+contexte pour un paramètre ajoute une surcharge `With{Param}(IAny<TParam>)` dans une partie voisine de
+la classe partielle : l'émetteur n'en écrit aucune
+([ADR-0109](../adr/0109-let-a-test-refine-a-parameters-valid-base-rather-than-replace-it.fr.md)).
+Le raisonnement, et les alternatives pesées contre lui, sont dans D7.
 
 L'émetteur ne produit jamais d'état statique, donc `JD009` et `JD020` n'ont rien sur quoi se
 déclencher.
@@ -1994,6 +2018,7 @@ celui-ci — et les enregistrements sont entrés dans sa base d'ADR, chacun cons
 | **D10** | [ADR-0064](../adr/0064-never-draw-null-for-a-nullable-parameter.fr.md) — Ne jamais tirer null pour un paramètre nullable |
 | **D11** | [ADR-0065](../adr/0065-keep-the-scaffolding-engine-loadable-by-a-roslyn-host.fr.md) — Garder le moteur de scaffolding chargeable par un hôte Roslyn |
 | **D12** | [ADR-0070](../adr/0070-emit-an-entry-point-on-request-as-a-file-of-its-own.fr.md) — Émettre un point d'entrée à la demande, dans un fichier à lui |
+| **D13** | [ADR-0109](../adr/0109-let-a-test-refine-a-parameters-valid-base-rather-than-replace-it.fr.md) — Laisser un test affiner la base valide d'un paramètre plutôt que la remplacer |
 
 Trois de ces enregistrements ont été écrits après le tableau des décisions, et la raison mérite
 d'être conservée. D7, D8 et D10 ont chacun été jugés trop petits au départ — une limite de périmètre
@@ -2099,6 +2124,18 @@ branchés. Les résultats ci-dessous sont ce que le harnais a affiché.
 | La sortie scaffoldée ne lève aucun avertissement JD | D3, §12 | 0 diagnostic de niveau avertissement ou au-dessus sur les fichiers émis |
 | Les analyzers étaient réellement chargés | D3 | un fichier de contrôle a levé `JD006` et `JD005` dans le même build |
 | `<auto-generated/>` les éteint | D3, §15 | le même fichier de contrôle, ainsi marqué, en a levé **0** — l'erreur `JD005` comprise |
+
+L'ADR-0109 a modifié le §4.2 après cette exécution, et la ligne `.WithX(IAny<T>)` ci-dessus décrit une
+surcharge que l'émetteur n'écrit plus. La surcharge d'affinage qui l'a remplacée est vérifiée par
+`RefiningOverloadTests`, sur des fichiers générés compilés avec la bibliothèque et exécutés :
+
+| Affirmation | Où | Résultat |
+|---|---|---|
+| Une fabrique retourne le generator sur lequel sa chaîne se termine | §4.2 | 14 lignes, dont `Any.Uri().Web()` en `AnyWebUri`, chaque fichier compilant |
+| Un affinage part de la base valide | §4.2 | 500 tirages via `WithQuantity(q => q.LessThanOrEqualTo(3))` sur une base `Positive()`, tous entre 1 et 3 |
+| Un affinage qui contredit la base échoue là où il est écrit | §4.2 | `WithQuantity(q => q.Negative())` lève `ConflictingAnyConstraintException` en nommant `Positive()` et `Negative()` |
+| Un paramètre nullable est affiné avant sa conversion | §4.2, §5.2 | 200 tirages via `WithDiscount(d => d.Between(1m, 50m))`, aucun null, tous dans l'intervalle |
+| Un affinage composé garde la base écrite par le développeur | §4.2, §5.6 | 200 expéditions via `WithRoute(r => r.WithDistance(240))` sur une base uniquement nationale, toutes acceptées |
 
 ### 17.2 Comment le rejouer
 

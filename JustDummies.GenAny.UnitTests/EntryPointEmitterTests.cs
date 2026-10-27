@@ -75,7 +75,7 @@ public sealed class EntryPointEmitterTests {
         ScaffoldPlan nested = new(new TargetType("Order.Line", "Shop.Domain", NamespaceStyle.FileScoped),
                                   "AnyLine",
                                   ["JustDummies"],
-                                  [ScaffoldedParameter.DrawnFrom("sku", "string", "Any.String().NonEmpty()")]);
+                                  [ScaffoldedParameter.DrawnFrom("sku", "string", "AnyString", "Any.String().NonEmpty()")]);
 
         ScaffoldedEntryPoint entry = Emitted(nested, EntryPointOptions.OnStaticRoot("Arbitrary"));
 

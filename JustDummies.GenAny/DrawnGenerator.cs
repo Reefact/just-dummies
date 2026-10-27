@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.CodeAnalysis;
 
@@ -17,27 +18,52 @@ namespace JustDummies.GenAny;
 /// </remarks>
 internal sealed class DrawnGenerator {
 
+    [SuppressMessage(SonarRule.S107.Category, SonarRule.S107.Id, Justification = "The private constructor threads the expression's whole immutable state for From, Unresolved and Then; no caller writes this argument list, and a parameter object would only rename it.")]
     private DrawnGenerator(string? core,
                            ITypeSymbol? builder,
+                           string? generatorType,
+                           ITypeSymbol? draws,
                            string suffix,
                            IReadOnlyList<GuardConstraint> seeded,
                            IReadOnlyList<GuardConstraint> tightening,
                            Provenance provenance) {
-        Core       = core;
-        Builder    = builder;
-        Suffix     = suffix;
-        Seeded     = seeded;
-        Tightening = tightening;
-        Provenance = provenance;
+        Core          = core;
+        Builder       = builder;
+        GeneratorType = generatorType;
+        Draws         = draws;
+        Suffix        = suffix;
+        Seeded        = seeded;
+        Tightening    = tightening;
+        Provenance    = provenance;
     }
 
     /// <summary>The expression before any constraint — <c>Any.Int32()</c>.</summary>
     internal string? Core { get; }
 
     /// <summary>
-    ///     The builder type the constraints are checked against, or null when nothing more may be added.
+    ///     The builder type the constraints are checked against, built for its arguments —
+    ///     <c>AnyList&lt;string&gt;</c>, never the factory's open <c>AnyList&lt;T&gt;</c> — or null when nothing
+    ///     more may be added.
     /// </summary>
     internal ITypeSymbol? Builder { get; }
+
+    /// <summary>
+    ///     The type of <see cref="Core" />, as the emitted file spells it — <c>AnyInt32</c>,
+    ///     <c>AnyList&lt;string&gt;</c>, <c>AnyOrderReference</c>.
+    /// </summary>
+    /// <remarks>
+    ///     Where a <see cref="Builder" /> is known, the type the parameter's factory returns is read off the
+    ///     chain's last call instead, since a constraint may return another generator (ADR-0109). This is the
+    ///     answer where none is: a composed parameter, whose generator this compilation may not carry yet — yet
+    ///     whose name is known all the same, since composition writes it blind.
+    /// </remarks>
+    internal string? GeneratorType { get; }
+
+    /// <summary>
+    ///     The type the whole expression draws, its conversion included — what a collection over it is built
+    ///     for.
+    /// </summary>
+    internal ITypeSymbol? Draws { get; }
 
     /// <summary>What follows the constraints — the conversion or composition hop.</summary>
     internal string Suffix { get; }
@@ -72,24 +98,39 @@ internal sealed class DrawnGenerator {
 
     internal static DrawnGenerator From(string core,
                                         ITypeSymbol? builder,
+                                        string generatorType,
+                                        ITypeSymbol draws,
                                         IReadOnlyList<GuardConstraint>? seeded = null,
                                         string suffix = "",
                                         Provenance provenance = Provenance.None) {
-        return new DrawnGenerator(core, builder, suffix, seeded ?? [], tightening: [], provenance);
+        return new DrawnGenerator(core, builder, generatorType, draws, suffix, seeded ?? [], tightening: [], provenance);
     }
 
     /// <summary>No row matched, and <paramref name="why" /> says what the recap should report.</summary>
     internal static DrawnGenerator Unresolved(Provenance why = Provenance.None) {
-        return new DrawnGenerator(core: null, builder: null, suffix: string.Empty, seeded: [], tightening: [], why);
+        return new DrawnGenerator(core: null,
+                                  builder: null,
+                                  generatorType: null,
+                                  draws: null,
+                                  suffix: string.Empty,
+                                  seeded: [],
+                                  tightening: [],
+                                  why);
     }
 
-    /// <summary>The same expression with one more hop after its constraints.</summary>
-    internal DrawnGenerator Then(string suffix, Provenance added, IReadOnlyList<GuardConstraint>? more = null) {
+    /// <summary>
+    ///     The same expression with one more hop after its constraints, now drawing <paramref name="draws" />.
+    /// </summary>
+    /// <remarks>
+    ///     <see cref="GeneratorType" /> does not move: the hop comes after the factory, so the factory still
+    ///     returns the generator the constraints were written on.
+    /// </remarks>
+    internal DrawnGenerator Then(string suffix, ITypeSymbol draws, Provenance added, IReadOnlyList<GuardConstraint>? more = null) {
         List<GuardConstraint> tightening = [.. Tightening];
 
         if (more is not null) { tightening.AddRange(more); }
 
-        return new DrawnGenerator(Core, Builder, Suffix + suffix, Seeded, tightening, Provenance | added);
+        return new DrawnGenerator(Core, Builder, GeneratorType, draws, Suffix + suffix, Seeded, tightening, Provenance | added);
     }
 
 }

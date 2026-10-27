@@ -2,9 +2,9 @@
 
 🌍 **Langues :** [English](./REPORT.md) | 🇫🇷 Français (ce fichier)
 
-**Périmètre.** Cet essai a mis JustDummies et son échafaudeur `any` à l'épreuve comme les découvre un
+**Périmètre.** Cet essai a mis JustDummies et son scaffolder `any` à l'épreuve comme les découvre un
 premier utilisateur. Vingt domaines métier inventés ont chacun été modélisés avec des gardes de
-constructeur ordinaires, échafaudés avec `any`, puis testés avec xUnit. Les domaines sont listés au
+constructeur ordinaires, scaffoldés avec `any`, puis testés avec xUnit. Les domaines sont listés au
 [§11](#11-résultats-par-domaine). Les packages empaquetés `1.0.0-uxtrial.1` ont été consommés comme
 ceux d'un vrai utilisateur, depuis un flux local, en dehors de `JustDummies.sln` (voir
 [`README.md`](README.md)). Les participants ont appris l'API uniquement à partir de la documentation
@@ -25,12 +25,12 @@ vérificateur, l'élément le dit.
 
 > **Principes convenus avec le mainteneur**
 >
-> * **La ligne d'honnêteté de l'échafaudeur.** `any` produit une *base de travail* que le développeur
+> * **La ligne d'honnêteté de le scaffolder.** `any` produit une *base de travail* que le développeur
 >   possède et modifie ; elle peut être incomplète. C'est acceptable tant que la CLI dit où — `to verify`,
 >   un TODO qui ne compile pas. Un récapitulatif qui dit « inferred » ou « guard », ou un ✓, sur une
 >   recette fausse est un bogue. Une lacune signalée honnêtement n'en est pas un.
 > * **Les invariants entre paramètres** signalés `to verify` sont le comportement attendu de
->   l'échafaudeur (ADR-0060), pas un défaut. Les améliorations ne sont bienvenues que si elles guident
+>   le scaffolder (ADR-0060), pas un défaut. Les améliorations ne sont bienvenues que si elles guident
 >   la retouche manuelle sans rendre la génération plus astucieuse.
 > * **Un refus n'est une frontière assumée que lorsqu'une ADR ou la documentation le décide.** Un refus
 >   clair mais non décidé dont un vrai domaine a besoin est un candidat à une décision, jamais un bogue.
@@ -57,8 +57,8 @@ négatif d'un analyseur) ou `C` (candidat à une décision).
 
 La bibliothèque n'a jamais franchi sa ligne de correction. Sur 20 domaines, aucune valeur tirée n'a
 violé une contrainte déclarée. Les contraintes contradictoires ont échoué immédiatement. Chaque
-réplique synchrone depuis la graine (seed) qui a été tentée a reproduit son exécution. Les problèmes
-sérieux se situent dans l'échafaudeur. Dans quelques formes précises, `any` se porte garant d'un code
+rejeu synchrone depuis la graine qui a été tentée a reproduit son exécution. Les problèmes
+sérieux se situent dans le scaffolder. Dans quelques formes précises, `any` se porte garant d'un code
 qu'il n'a pas vérifié : il annonce « inferred », ou ✓, sur un fichier qui compile puis produit des
 valeurs rejetées, une constante ou un dépassement de pile. Cela rompt la ligne d'honnêteté fixée par
 le mainteneur (voir les principes ci-dessus). C'est aussi l'échec que l'ADR-0083 classe comme le plus
@@ -70,21 +70,21 @@ coûteux.
 |---|---|---|---|---|
 | 1 | [CLI-B1](#cli-b1) | `cli` | élevée | Une garde qui lève une exception sous la première écriture d'état n'est ni lue ni signalée. Le récapitulatif dit « inferred » (ou « guard » avec une borne perdue), le fichier compile, et chaque tirage est rejeté. Rencontré dans 4 domaines. |
 | 2 | [CLI-B2](#cli-b2) | `cli` | élevée | `any generate <Enum>` affiche ✓ et émet `return new TEnum();` : une constante, et une valeur non déclarée quand l'énumération n'a pas de membre zéro. Rencontré dans 6 domaines. |
-| 3 | [CLI-B3](#cli-b3) | `cli` | élevée | Un agrégat autoréférent est échafaudé en `new AnyT()` dans le propre constructeur de `AnyT`. Le récapitulatif l'annonce « inferred », et la première instanciation fait déborder la pile et tue l'hôte de test. |
+| 3 | [CLI-B3](#cli-b3) | `cli` | élevée | Un agrégat autoréférent est scaffoldé en `new AnyT()` dans le propre constructeur de `AnyT`. Le récapitulatif l'annonce « inferred », et la première instanciation fait déborder la pile et tue l'hôte de test. |
 | 4 | [CLI-B4](#cli-b4) | `cli` | élevée | Une garde atteinte via une variable locale dérivée du paramètre est silencieuse. Le récapitulatif dit « inferred » alors que 200 tirages sur 200 sont rejetés. La spécification de maintenance la liste comme un résidu, et c'est là le défaut. |
 | 5 | [CORE-B1](#core-b1) | `core` | moyenne | Hors d'une portée, un premier tirage dans un helper attendu par `await` perd sa graine. Le message d'échec nomme alors une graine qui ne rejoue pas l'exécution. |
 | 6 | [CORE-B2](#core-b2) | `core` | moyenne | Les messages d'échec de `As(...)`/`Combine(...)` affichent les chaînes tirées brutes, NUL et ESC compris, contrairement à l'ADR-0075. |
-| 7 | [CLI-B5](#cli-b5) | `cli` | moyenne | `--format json` rapporte `Scaffolded` avec `failed: 0` pour une écriture refusée, alors que l'exécution sort en 1. Cela rompt l'ADR-0071. |
+| 7 | [CLI-B5](#cli-b5) | `cli` | moyenne | `--format json` rapporte `Scaffolded` avec `failed: 0` pour une écriture refusée, alors que l'exécution se termine avec le code 1. Cela rompt l'ADR-0071. |
 | 8 | [CORE-D1](#core-d1) | `core` | moyenne | Les messages de conflit décimaux énoncent des contre-vérités : ils présentent une borne stricte comme inclusive, et nomment « the only value left » un point qu'aucune des deux bornes n'admet. |
 | 9 | [XU-D1](#xu-d1) | `xunit` | moyenne | Aucune page utilisateur ne montre `using JustDummies.Xunit;`, si bien que 13 domaines sur 20 ont raté leur premier build. La cause est un prélude caché dans le compilateur d'exemples de la documentation. |
-| 10 | [AN-D1](#an-d1) | `analyzers` | moyenne | JD014 et JD017 signalent la même valeur d'énumération non déclarée sur la même étendue, contre le « one phenomenon, one id » de l'ADR-0078. |
+| 10 | [AN-D1](#an-d1) | `analyzers` | moyenne | JD014 et JD017 signalent la même valeur d'énumération non déclarée sur la même étendue, contrairement au « one phenomenon, one id » de l'ADR-0078. |
 
 Ensuite : [CLI-B6](#cli-b6) (l'en-tête nomme une commande de régénération qui échoue) et
 [CORE-B3](#core-b3) (`Between(-ε, ε)` ne tire jamais que 0).
 
 ---
 
-## 2. `cli` — l'échafaudeur `any` (JustDummies.Cli + JustDummies.GenAny)
+## 2. `cli` — le scaffolder `any` (JustDummies.Cli + JustDummies.GenAny)
 
 ### Bogues
 
@@ -109,7 +109,7 @@ public FreightRate(decimal rate, string currency) {
 // any: rack  int  Any.Int32().Positive()  guard         — the <= 99 bound is lost under "guard"
 ```
 
-Le vérificateur a tiré 200 valeurs par échafaudage. Chaque variante a été rejetée 200 fois sur 200.
+Le vérificateur a tiré 200 valeurs par scaffolding. Chaque variante a été rejetée 200 fois sur 200.
 Une expression `throw` ou une expression `switch` est correctement marquée lorsqu'elle *est* la
 première écriture d'état. Elle est manquée dès qu'une affectation antérieure la précède, ce qu'ont
 rencontré les domaines 06 et 14.
@@ -119,15 +119,15 @@ rencontré les domaines 06 et 14.
 | Domaines | 06 (`BinLocation.level`, expression `switch` après deux écritures), 07 (`FreightRate.currency`), 14 (`PromoCode.maxUses`, expression `throw` après cinq écritures), 19 (`RoleSet`, vérification sur la copie dans le champ) |
 | Repro | [`repros/cli-silent-guard-miss`](repros/cli-silent-guard-miss) (variantes a1, a2, d) |
 | Source | `JustDummies.GenAny/Guards.cs:162-169` (le `break` à la première affectation d'état), `JustDummies.GenAny.UnitTests/GuardBoundaryTests.cs:216-236` (fige l'expression mais ne vérifie jamais la provenance, et sa justification est fausse) |
-| Test rouge | `JustDummies.GenAny.UnitTests`, à côté de `AThrowingCheckAfterTheFirstAssignmentIsNotAGuard`. Échafauder `kept = value; if (value <= 0) { throw …; }` et vérifier `Provenance.HasFlag(Provenance.UnreadGuards)`. Ajouter un second cas, `ThrowIfNegativeOrZero(v); Kept = v; ThrowIfGreaterThan(v, 99);`, et vérifier `UnreadGuards` plutôt qu'un simple `Guard`. |
-| Correctif | À la première écriture d'état qui n'est pas une garde, cesser de *lire* les gardes mais continuer à *parcourir* le corps. Marquer `UnreadGuards` chaque paramètre qu'une instruction ultérieure qui lève une exception (ou un appel dont le résultat est ignoré) mentionne, pour que la ligne bloquante existante de l'ADR-0083 se déclenche. Cela refuse plus fort sans rien inférer de nouveau, ce qui reste dans le cadre de l'ADR-0046. |
-| Tests `Bug_` de l'essai | `06 Bug_Scaffolded_level_recipe_for_BinLocation_ignores_its_guard`, `07 Bug_Scaffolded_currency_recipe_ignores_a_guard_written_below_a_property_assignment`, `14 Bug_Scaffolded_AnyPromoCode_misses_the_throw_expression_guard_on_maxUses`, `19 Bug_Scaffolded_AnyRoleSet_ignores_a_distinctness_guard_written_against_a_field`. **Ils ne passeront pas au vert d'eux-mêmes.** 06 et 07 rejouent la recette émise figée. 14 et 19 utilisent le fichier tel qu'émis. Après le correctif, confirmer en échafaudant à nouveau : le récapitulatif doit afficher `to verify, unread guards` et le build doit s'arrêter sur la ligne TODO. Retirer ou réécrire ensuite ces tests. |
+| Test rouge | `JustDummies.GenAny.UnitTests`, à côté de `AThrowingCheckAfterTheFirstAssignmentIsNotAGuard`. Scaffolder `kept = value; if (value <= 0) { throw …; }` et vérifier `Provenance.HasFlag(Provenance.UnreadGuards)`. Ajouter un second cas, `ThrowIfNegativeOrZero(v); Kept = v; ThrowIfGreaterThan(v, 99);`, et vérifier `UnreadGuards` plutôt qu'un simple `Guard`. |
+| Correctif | À la première écriture d'état qui n'est pas une garde, cesser de *lire* les gardes mais continuer à *parcourir* le corps. Marquer `UnreadGuards` chaque paramètre qu'une instruction ultérieure qui lève une exception (ou un appel dont le résultat est ignoré) mentionne, pour que la ligne bloquante existante de l'ADR-0083 se déclenche. Cela refuse plus bruyamment sans rien inférer de nouveau, ce qui reste dans le cadre de l'ADR-0046. |
+| Tests `Bug_` de l'essai | `06 Bug_Scaffolded_level_recipe_for_BinLocation_ignores_its_guard`, `07 Bug_Scaffolded_currency_recipe_ignores_a_guard_written_below_a_property_assignment`, `14 Bug_Scaffolded_AnyPromoCode_misses_the_throw_expression_guard_on_maxUses`, `19 Bug_Scaffolded_AnyRoleSet_ignores_a_distinctness_guard_written_against_a_field`. **Ils ne passeront pas au vert d'eux-mêmes.** 06 et 07 rejouent la recette émise figée. 14 et 19 utilisent le fichier tel qu'émis. Après le correctif, confirmer en relançant le scaffolding : le récapitulatif doit afficher `to verify, unread guards` et le build doit s'arrêter sur la ligne TODO. Retirer ou réécrire ensuite ces tests. |
 
 <a id="cli-b2"></a>
 #### CLI-B2 — `any generate <Enum>` annonce ✓ et émet `return new TEnum();` (élevée)
 
 Roslyn synthétise un constructeur sans paramètre pour une énumération. L'exclusion des constructeurs
-synthétisés ne teste que `TypeKind.Struct`, si bien qu'une énumération est « échafaudée » en
+synthétisés ne teste que `TypeKind.Struct`, si bien qu'une énumération est « scaffoldée » en
 `new TEnum()`. Cela renvoie toujours `(TEnum)0`. La valeur est non déclarée quand l'énumération n'a
 pas de membre zéro, et constante quand elle en a un. Le récapitulatif affiche
 `✓ AnyCurrency.cs — no constructor parameters to infer.`, et l'exécution sort avec le code 0. Le §5.1.3
@@ -146,10 +146,10 @@ public enum Currency { Eur = 1, Usd = 2, Gbp = 3 }
 | Source | `JustDummies.GenAny/Scaffolder.cs:283` (`ChosenConstructor`) et `:251-252` (`EligibleFactories`) : l'exclusion du constructeur implicite se limite à `TypeKind.Struct` |
 | Test rouge | `JustDummies.GenAny.UnitTests/ConstructorChoiceTests.cs` : ajouter `public enum Subject { One = 1, Two = 2 }` à `ATypeTheEmittedFileCouldNotConstructIsRefused`, en vérifiant un statut de refus et `outcome.File == null`. Aujourd'hui, le statut est `Scaffolded`. |
 | Correctif | Refuser `TypeKind.Enum` avant le choix du constructeur, avec un message qui nomme `Any.Enum<TEnum>()` (sortie 1, rien d'écrit). À défaut, émettre un générateur qui délègue à `Any.Enum<TEnum>()`. Choisir entre les deux est une petite décision de spécification pour les §5.1/§7, plus le jumeau français. Au minimum, étendre l'exclusion des structures aux énumérations. |
-| Tests `Bug_` de l'essai | `01 Bug_Scaffolded_AnyTransferStatus_never_varies`, `01 Bug_Scaffolded_AnyChargeBearer_draws_an_undeclared_enum_value`, `03 Bug_Scaffolded_AnyResponsibility_draws_more_than_the_zero_member`, `04 Bug_Scaffolded_AnyShiftKind_draws_an_undeclared_member`, `05 Bug_Scaffolded_AnyProjectionMethod_draws_an_undeclared_enum_value`, `06 Bug_Scaffolded_AnyPalletType_draws_an_undeclared_member`, `06 Bug_Scaffolded_AnyReceiptStatus_never_varies`, `19 Bug_Scaffolded_AnyRole_for_an_enum_only_ever_draws_the_default_member`. Ils passent au vert après un nouvel échafaudage avec `--force` seulement si l'option de délégation est retenue. Si c'est l'option du refus, confirmer sur le refus et réécrire ces tests avec `Any.Enum<T>()`. |
+| Tests `Bug_` de l'essai | `01 Bug_Scaffolded_AnyTransferStatus_never_varies`, `01 Bug_Scaffolded_AnyChargeBearer_draws_an_undeclared_enum_value`, `03 Bug_Scaffolded_AnyResponsibility_draws_more_than_the_zero_member`, `04 Bug_Scaffolded_AnyShiftKind_draws_an_undeclared_member`, `05 Bug_Scaffolded_AnyProjectionMethod_draws_an_undeclared_enum_value`, `06 Bug_Scaffolded_AnyPalletType_draws_an_undeclared_member`, `06 Bug_Scaffolded_AnyReceiptStatus_never_varies`, `19 Bug_Scaffolded_AnyRole_for_an_enum_only_ever_draws_the_default_member`. Ils passent au vert après un nouvel scaffolding avec `--force` seulement si l'option de délégation est retenue. Si c'est l'option du refus, confirmer sur le refus et réécrire ces tests avec `Any.Enum<T>()`. |
 
 <a id="cli-b3"></a>
-#### CLI-B3 — Un type autoréférent est échafaudé en une récursion non bornée (élevée)
+#### CLI-B3 — Un type autoréférent est scaffoldé en une récursion non bornée (élevée)
 
 ```csharp
 public Node(string name, IReadOnlyList<Node> children) { … }
@@ -170,9 +170,9 @@ aucune ADR ne mentionnent l'autoréférence.
 | Domaines | 05 (nomenclature récursive) |
 | Repro | [`repros/cli-recursive-aggregate`](repros/cli-recursive-aggregate) |
 | Source | `JustDummies.GenAny/GeneratorFor.cs:270` (`Draw` racine avec un `underway` vide), `:366` (détection de cycle), `:431-450` (`Composed` écrit `new AnyT()` inconditionnellement) |
-| Test rouge | `JustDummies.GenAny.UnitTests/CompositionTests.cs` : échafauder `Node(string name, IReadOnlyList<Node> children)` et vérifier que `children` n'est pas résolu en une expression contenant `new AnyNode()`, et qu'il est rapporté comme non résolu ou à vérifier. Ajouter un cas jumeau pour `Employee(string, Employee?)`. |
+| Test rouge | `JustDummies.GenAny.UnitTests/CompositionTests.cs` : scaffolder `Node(string name, IReadOnlyList<Node> children)` et vérifier que `children` n'est pas résolu en une expression contenant `new AnyNode()`, et qu'il est rapporté comme non résolu ou à vérifier. Ajouter un cas jumeau pour `Employee(string, Employee?)`. |
 | Correctif | Amorcer la détection de cycle avec la cible, sous la forme `Draw(type, MaximumDepth, [target])`. Un paramètre qui atteint la cible directement, via un nullable ou via une collection devient un TODO explicite, avec pour raison dans le récapitulatif « self-referencing: recursion needs a depth bound you write ». Émettre à la place une liste vide, un null ou un paramètre de profondeur serait un générateur plus astucieux, et demanderait une ADR ou un amendement du §5.4 plutôt qu'un correctif. |
-| Tests `Bug_` de l'essai | Aucun : le domaine 05 a écrit `WithDepth` à la main. Confirmer sur la repro : échafauder `Node` à nouveau et vérifier le TODO. |
+| Tests `Bug_` de l'essai | Aucun : le domaine 05 a écrit `WithDepth` à la main. Confirmer sur la repro : scaffolder `Node` à nouveau et vérifier le TODO. |
 
 <a id="cli-b4"></a>
 #### CLI-B4 — Une garde atteinte via une variable locale dérivée est silencieuse alors que le récapitulatif dit « inferred » (élevée)
@@ -193,7 +193,7 @@ rejetés sur 200 (l'une lève `FormatException` à la place) : `Match m = Regex.
 
 **Note de classement.** Le vérificateur a classé ce cas comme le résidu documenté du §9 (« a local copy
 of the parameter »), que `GuardBoundaryTests.cs:167` fige. Selon la ligne d'honnêteté de
-l'échafaudeur, un récapitulatif qui dit « inferred » alors que la recette est fausse est un bogue, quoi
+le scaffolder, un récapitulatif qui dit « inferred » alors que la recette est fausse est un bogue, quoi
 qu'en dise une page. C'est donc la liste du §9 de la spécification qui est le défaut. De plus, le
 correctif *marque* la garde sans la *lire*, ce qui reste dans le cadre de l'ADR-0046.
 
@@ -202,15 +202,15 @@ correctif *marque* la garde sans la *lire*, ce qui reste dans le cadre de l'ADR-
 | Domaines | 04 (`BatchCode`, un `Match` sur une regex), 16 (`AircraftRegistration`) |
 | Repro | [`repros/cli-silent-guard-miss`](repros/cli-silent-guard-miss) (variantes b1–b4) |
 | Source | `JustDummies.GenAny/Guards.cs:512-515` (`MarkIfItRejects` ne voit que les paramètres mentionnés syntaxiquement) ; spécification `justdummies-tool.md` §9 (liste le résidu) ; `JustDummies.GenAny.UnitTests/GuardBoundaryTests.cs:167` |
-| Test rouge | `JustDummies.GenAny.UnitTests/GuardBoundaryTests.cs` : échafauder `bool ok = value.StartsWith("LOT-"); if (!ok) { throw …; }` sans écriture d'état qui le précède, et vérifier `UnreadGuards` sur `value`. |
+| Test rouge | `JustDummies.GenAny.UnitTests/GuardBoundaryTests.cs` : scaffolder `bool ok = value.StartsWith("LOT-"); if (!ok) { throw …; }` sans écriture d'état qui le précède, et vérifier `UnreadGuards` sur `value`. |
 | Correctif | Quand la condition d'une instruction qui lève atteint un paramètre via une variable locale initialisée à partir de ce paramètre (un flux de données d'une seule étape), marquer ce paramètre `UnreadGuards`. Retirer le résidu du §9 de la spécification (EN/FR). La page utilisateur de la CLI doit nommer le résidu qui subsiste. |
-| Tests `Bug_` de l'essai | `04 Bug_Scaffolded_AnyBatchCode_recipe_misses_the_format_guard_silently` (rejoue la recette figée, il reste donc rouge par construction), `16 Bug_Scaffolded_AnyAircraftRegistration_as_emitted_draws_marks_the_constructor_rejects` (utilise `AsScaffolded/`, également figé). Confirmer en échafaudant à nouveau, puis retirer les deux. |
+| Tests `Bug_` de l'essai | `04 Bug_Scaffolded_AnyBatchCode_recipe_misses_the_format_guard_silently` (rejoue la recette figée, il reste donc rouge par construction), `16 Bug_Scaffolded_AnyAircraftRegistration_as_emitted_draws_marks_the_constructor_rejects` (utilise `AsScaffolded/`, également figé). Confirmer en relançant le scaffolding, puis retirer les deux. |
 
 <a id="cli-b5"></a>
 #### CLI-B5 — `--format json` rapporte une écriture refusée comme `Scaffolded` (moyenne)
 
 Quand le fichier de sortie existe déjà et que `--force` n'est pas fourni, stderr affiche
-`✗ … already exists. Re-run with --force`, et l'exécution sort en 1. Stdout, en revanche, porte
+`✗ … already exists. Re-run with --force`, et l'exécution se termine avec le code 1. Stdout, en revanche, porte
 `{"status":"Scaffolded","files":[],…,"summary":{"scaffolded":1,"failed":0}}`. Le shell recopie le
 statut du *moteur* dans le rapport. L'ADR-0071 et le §6.1 de la spécification exigent que le résumé
 soit « checkable against the rows rather than believed », avec des codes de sortie qui ne bougent pas.
@@ -257,7 +257,7 @@ le porte. Tous les domaines ont lancé `dotnet restore` d'abord à cause de lui.
 Le commentaire émis dit `// TODO(any): 'string value' may be guarded by something the scaffolder
 could not read (§9).` Quand un paramètre a trois gardes, rien n'indique laquelle n'a pas été lue. Le
 récapitulatif et la provenance JSON n'en disent pas plus, et « §9 » renvoie à « Non-goals for v1.0 »
-dans une page de maintenance qu'aucune page utilisateur ne lie. Domaines : 02, 09, 11, 12. Repro :
+dans une page de maintenance vers laquelle aucune page utilisateur ne renvoie. Domaines : 02, 09, 11, 12. Repro :
 [`repros/cli-todo-wording`](repros/cli-todo-wording). Source : `GeneratorEmitter.cs:263-267`
 (`WriteVerify`), `GuardReading.cs:54` (ne stocke que des noms, jamais le nœud), `Cli/Recap.cs:132,179`.
 Test rouge (`JustDummies.GenAny.UnitTests`) : un paramètre avec une garde `Length > 7` lue et une garde
@@ -273,7 +273,7 @@ l'idée d'amélioration (b) de [CLI-E1](#cli-e1).
 Remplacer `Any.String()…` par `Any.StringMatching(...)` (qui renvoie `AnyPattern`), ou par `.As(...)`
 (qui renvoie `IAny<T>`), échoue avec `CS0029`. Le type de retour de `AnyValidX()` et la surcharge
 `WithX(Func<TBuilder, TBuilder>)` doivent être retypés à la main. C'est la friction la plus répandue :
-16 domaines (01, 02, 03, 04, 05, 06, 07, 10, 11, 13, 14, 16, 17, 18, 19, 20). L'échafaudeur a raison de
+16 domaines (01, 02, 03, 04, 05, 06, 07, 10, 11, 13, 14, 16, 17, 18, 19, 20). Le scaffolder a raison de
 laisser au développeur une base à modifier (voir les principes en tête). Le défaut, c'est la page et le
 §5.6 de la spécification qui promettent une résolution en une ligne. Source :
 `doc/handwritten/for-users/packages/justdummies-cli.en.md:82-91` et le §5.6 de la spécification.
@@ -283,7 +283,7 @@ aucune surcharge d'affinage n'en dépend, ce qui est une décision de spécifica
 
 <a id="cli-d3"></a>
 **CLI-D3 — Un paramètre de type référence nullable perd son `?` dans la méthode qui fixe sa valeur, le récapitulatif et le JSON (moyenne).**
-Pour `Party(Bic? agent, string? note, int? priority)`, l'échafaudage émet `WithAgent(Bic value)`. La
+Pour `Party(Bic? agent, string? note, int? priority)`, le scaffolding émet `WithAgent(Bic value)`. La
 voie documentée « toujours null », `.WithAgent((Bic?)null)`, déclenche alors l'avertissement `CS8625`,
 qui casse le build sous `TreatWarningsAsErrors`. Le récapitulatif affiche
 `constructor Party(string, Bic, string, int?)`, et le JSON rapporte `"type": "Bic"`. `int?` est
@@ -294,8 +294,7 @@ explicitement. Domaines : 01, 02, 05, 15 (et l'`Employee?` du 05, voir CLI-B3). 
 (perd `NullableAnnotation`), `GeneratorEmitter.cs:307-309`. Test rouge (`JustDummies.GenAny.UnitTests`,
 à côté de `BaseTableTests`) : un paramètre `Customer? agent` émet `WithAgent(Customer? value)`, et un
 appelant qui passe `(Customer?)null` compile sans `CS8625`. Correctif : typer `T?` la méthode qui fixe
-la valeur, le champ et le paramètre du constructeur privé. La covariance garde la base jamais nulle
-assignable. Afficher `T?` dans le récapitulatif et le JSON, et documenter le cast en type référence à
+la valeur, le champ et le paramètre du constructeur privé. La covariance permet toujours d'affecter la base, qui n'est jamais nulle. Afficher `T?` dans le récapitulatif et le JSON, et documenter le cast en type référence à
 côté de `(decimal?)null`.
 
 <a id="cli-d4"></a>
@@ -317,7 +316,7 @@ a comparison would », mais la ligne correspondant à la comparaison manque. C'e
 tableau ci-dessous qui soit une incohérence plutôt qu'une frontière. Elle échoue bruyamment, d'où sa
 faible gravité. Domaine : 20. Repro : [`repros/20-3`](repros/20-3). Source : `Guards.cs:1172-1184`
 (`Numeric` : les lignes `>=`/`<=` seulement `when value == 0`) face à `Guards.cs:882-892`. Test rouge
-(`JustDummies.GenAny.UnitTests`) : une garde `value >= 180.0` s'échafaude en `.LessThan(180d)` avec le
+(`JustDummies.GenAny.UnitTests`) : une garde `value >= 180.0` donne au scaffolding `.LessThan(180d)` avec le
 statut `guard`. Correctif : ajouter les deux lignes à `Numeric` et au tableau du §5.3 de la
 spécification (EN/FR), plus une ligne `GuardCorpus` et un fichier de référence. Garder les lignes à zéro
 comme correspondance plus spécifique.
@@ -349,7 +348,7 @@ donne `.LessThanOrEqualTo(32500d)`, domaine 07). La valeur est correcte : c'est 
 ### Candidats à une décision
 
 Détaillés au [§8](#8-candidats-à-une-décision) : [CLI-C1](#cli-c1) (les grands plafonds de comptage
-orientent les agrégats échafaudés), [CLI-C2](#cli-c2) (les plafonds de comptage au-delà de la limite du
+orientent les agrégats scaffoldés), [CLI-C2](#cli-c2) (les plafonds de comptage au-delà de la limite du
 million rapportés comme non lus), [CLI-C3](#cli-c3) (privilégier les types des projets référencés dans
 la recherche par nom court), [CLI-C4](#cli-c4) (lire les gardes d'intervalle en motif `or` de
 CLI-G1/G2), [CLI-C5](#cli-c5) (transformer une garde par regex littérale en `Any.StringMatching`).
@@ -360,7 +359,7 @@ CLI-G1/G2), [CLI-C5](#cli-c5) (transformer une garde par regex littérale en `An
 **CLI-E1 — Les invariants entre paramètres sont signalés « to verify » (ADR-0060).**
 `start < end`, des sinistres compris dans la période d'une police, `stop < limit`, une péremption
 postérieure à la fabrication : chacun des 20 domaines avait au moins un invariant de ce genre.
-L'échafaudeur a marqué chacun d'eux `to verify` et bloqué le build, comme le décident l'ADR-0060 et le
+Le scaffolder a marqué chacun d'eux `to verify` et bloqué le build, comme le décident l'ADR-0060 et le
 §16 de la spécification. Ce n'est ni un défaut ni une friction majeure. Le générateur est une base de
 travail que le développeur possède. Les participants ont résolu ces invariants avec des fenêtres
 disjointes, un `Generate()` écrit à la main, ou `Any.Combine`.
@@ -377,7 +376,7 @@ conviennent, et aucune ne rend la génération plus astucieuse :
 * **(b) Un commentaire TODO qui cite la garde non lue**, et qui le dit quand la garde lit deux
   paramètres. C'est [CLI-D1](#cli-d1).
 * **(c) Seulement comme éventuelle ADR ultérieure : un point d'extension `partial` qui survive à un
-  nouvel échafaudage pour l'assemblage final**, afin que `--force` n'efface pas une règle entre
+  nouvel scaffolding pour l'assemblage final**, afin que `--force` n'efface pas une règle entre
   paramètres écrite à la main. Les domaines 09, 10 et 12 ont perdu de telles retouches, ou ont craint de
   les perdre. L'écrasement actuel est annoncé dans le message de refus et dans l'en-tête : ce n'est donc
   pas un défaut aujourd'hui.
@@ -387,7 +386,7 @@ conviennent, et aucune ne rend la génération plus astucieuse :
 ## 3. `core` — JustDummies (générateurs, contraintes, messages, reproductibilité)
 
 **Aucune valeur tirée n'a violé une contrainte déclarée, dans aucun des 20 domaines.** Les éléments
-ci-dessous concernent les messages, la documentation et un chemin de réplique.
+ci-dessous concernent les messages, la documentation et un chemin de rejeu.
 
 - *WithScale.* Le vérificateur a contrôlé `WithScale` exactement, sur `decimal.GetBits` avec
   `BigInteger`, pour des magnitudes de 0 à `decimal.MaxValue`. Chaque valeur est restée sur la grille
@@ -419,7 +418,7 @@ exécution séquentielle.
 L'essentiel de ce qui a été remonté ici est voulu (variantes V1, V2 et V4 du vérificateur) :
 
 - la même graine est rapportée pour chaque échec d'un test ;
-- la réplique redémarre au premier tirage du test ;
+- le rejeu redémarre au premier tirage du test ;
 - chaque test séquentiel reçoit sa propre graine.
 
 La page des erreurs décrit aussi ce comportement de façon incomplète. Elle ne mentionne `Seed` qu'« à
@@ -429,9 +428,9 @@ l'intérieur d'une portée reproductible », alors que `Seed` est aussi renseign
 |---|---|
 | Domaines | 05 (a remonté la partie voulue), 08 (la partie documentation) ; la variante asynchrone a été trouvée par le vérificateur |
 | Repro | [`repros/core-seed-outside-scope`](repros/core-seed-outside-scope) (V3 et V3b échouent) |
-| Source | `JustDummies/AmbientRandomSource.cs:38-46` (graine `AsyncLocal` paresseuse), `:51`, `:65` (indications de réplique) ; `doc/handwritten/for-users/guides/errors-and-conflicts.en.md:101-108` |
+| Source | `JustDummies/AmbientRandomSource.cs:38-46` (graine `AsyncLocal` paresseuse), `:51`, `:65` (indications de rejeu) ; `doc/handwritten/for-users/guides/errors-and-conflicts.en.md:101-108` |
 | Test rouge | `JustDummies.UnitTests`, à côté de `AmbientSeedScopeTests.cs`. Hors de toute portée, tirer `a` dans un helper attendu par `await` puis `b`, déclencher une `AnyGenerationException`, rejouer sous `Any.ReproduciblyAsync(ex.Seed!.Value, …)`, et vérifier `(ra, rb) == (a, b)`. |
-| Correctif | Soit conserver la graine paresseuse dans un conteneur que le flux extérieur possède déjà, soit cesser de promettre la réplique hors d'une portée (« this flow drew from seed S; wrap the body in `Reproducibly`/`ReproduciblyAsync` to make it replayable »). Dans les deux cas, corriger la page des erreurs (EN/FR). |
+| Correctif | Soit conserver la graine paresseuse dans un conteneur que le flux extérieur possède déjà, soit cesser de promettre le rejeu hors d'une portée (« this flow drew from seed S; wrap the body in `Reproducibly`/`ReproduciblyAsync` to make it replayable »). Dans les deux cas, corriger la page des erreurs (EN/FR). |
 | Tests `Bug_` de l'essai | Aucun. |
 
 <a id="core-b2"></a>
@@ -449,7 +448,7 @@ La bibliothèque dispose déjà de l'échappeur, `CharacterPools.Escape`, et `An
 | Domaines | 04 |
 | Repro | [`repros/core-raw-control-chars`](repros/core-raw-control-chars) (2 sur 2 échouent) |
 | Source | `JustDummies/AnyDerivation.cs:120-133` (`Display`) ; appelants `AnyExtensions.cs:46`, `Any.Combine.cs:46-302` |
-| Test rouge | `JustDummies.UnitTests` : `Any.String().WithChars("\0\r\u001b").WithLength(3).As<string, object>(v => throw new ArgumentException()).Generate()` lève un message qui contient `\0`, `\r` et `\x1b` sous forme d'échappements et aucun caractère inférieur à 0x20. Ajouter un jumeau pour `Combine`. |
+| Test rouge | `JustDummies.UnitTests` : `Any.String().WithChars("\0\r\u001b").WithLength(3).As<string, object>(v => throw new ArgumentException()).Generate()` lève une exception dont le message contient `\0`, `\r` et `\x1b` sous forme d'échappements et aucun caractère inférieur à 0x20. Ajouter un jumeau pour `Combine`. |
 | Correctif | Rendre chaînes et caractères via `CharacterPools.Escape`, et échapper aussi le repli `ToString()`. |
 | Tests `Bug_` de l'essai | Aucun. |
 
@@ -457,10 +456,10 @@ La bibliothèque dispose déjà de l'échappeur, `CharacterPools.Escape`, et `An
 #### CORE-B3 — `Any.Double().Between(-double.Epsilon, double.Epsilon)` ne tire jamais que 0 (faible)
 
 L'intervalle contient trois doubles, mais dans `CandidateIn` la demi-étendue `upper/2 - lower/2`
-sous-déborde vers 0, si bien que chaque tirage est le point milieu. La valeur tirée est valide. Ce qui
+s'annule par dépassement de capacité par le bas (underflow), si bien que chaque tirage est le point milieu. La valeur tirée est valide. Ce qui
 casse, c'est que la demande réalisable `ArrayOf(...).WithCount(2).Distinct()` est refusée. L'ADR-0097
 énonce « two values the type represents must be two values a draw can land on ». C'est un recoin
-infime, mais c'est un refus de correction sur une demande réalisable, pas une borne sur l'ambition.
+infime, mais c'est un défaut de correction (le refus d'une demande réalisable), pas une borne sur l'ambition.
 
 | | |
 |---|---|
@@ -484,7 +483,7 @@ Repro : [`repros/core-decimal-conflict-messages`](repros/core-decimal-conflict-m
 `JustDummies/DecimalIntervalSpec.cs:132-157`, `:740-750` (`PinningClause`) ;
 `ConflictingAnyConstraintException.cs:182-191`. Test rouge (`JustDummies.UnitTests`, tests de conflits
 décimaux) : une théorie sur les trois chaînes vérifiant le message exact, par exemple « …GreaterThan(100)
-already requires values greater than 100. » Correctif : mémoriser la stricte inégalité par borne,
+already requires values greater than 100. » Correctif : mémoriser pour chaque borne si elle est stricte,
 ajouter des fabriques « greater/less than {bound} », et traiter deux bornes strictes au même point
 comme un intervalle vide avant le contrôle d'exclusion. Tests `Bug_` de l'essai :
 `12 Bug_Decimal_crossed_bounds_message_misstates_what_GreaterThan_requires`,
@@ -505,24 +504,24 @@ spécification ordinale, et donner la clause d'épinglage à la branche d'épuis
 
 <a id="core-d3"></a>
 **CORE-D3 — L'épuisement de `Distinct` sur un `IAny<T>` étranger affirme comme un fait que ses valeurs « are not reproducible » (moyenne).**
-Sur n'importe quel générateur échafaudé par `any`, le message dit que certaines valeurs « come from a
+Sur n'importe quel générateur scaffoldé par `any`, le message dit que certaines valeurs « come from a
 generator that does not draw from this source, so they are not reproducible from this seed alone ». Le
-rapporteur `Reproducibly` de la même exécution affiche une ligne de réplique complète, et le générateur
-échafaudé tire bien depuis la source ambiante, et rejoue exactement. L'ADR-0102 décide la *réserve*
+rapporteur `Reproducibly` de la même exécution affiche une ligne de rejeu complète, et le générateur
+scaffoldé tire bien depuis la source ambiante, et rejoue exactement. L'ADR-0102 décide la *réserve*
 prudente, parce que la bibliothèque ne peut pas voir à l'intérieur d'un générateur étranger. Rien ne
 décide d'affirmer comme un fait ce qui est inconnaissable. Domaines : 06, 18. Repro :
 [`repros/core-distinct-not-reproducible-msg`](repros/core-distinct-not-reproducible-msg). Source :
 `AmbientRandomSource.cs:54-56`, `FixedRandomSource.cs:22-24`, sélectionnés via
 `CollectionState.cs:378-388` et `AnyDerivation.cs:27-33`. Test rouge (`JustDummies.UnitTests`) : sur un
 `IAny<int>` écrit à la main qui tire via `Any`, le message ne contient pas « does not draw from this
-source » et énonce bien la réplique conditionnelle. Correctif : reformuler en « its values replay from
+source » et énonce bien le rejeu conditionnel. Correctif : reformuler en « its values replay from
 this seed only if it draws through `Any` (as a generator scaffolded by `any` does) ». Un moyen public
 pour un générateur de déclarer qu'il tire depuis la source ambiante relève de [CORE-C10](#core-c10).
 
 <a id="core-d4"></a>
 **CORE-D4 — Les messages de conflit en virgule flottante reformulent une borne stricte comme la valeur représentable suivante (faible).**
 `Any.Double().GreaterThan(10).LessThan(5)` donne « …greater than or equal to 10.000000000000002 », et
-`Positive()` donne « ≥ 5E-324 ». Le message est littéralement vrai, et sa véracité est gardée par
+`Positive()` donne « ≥ 5E-324 ». Le message est littéralement vrai, et sa véracité est garantie par
 `ConflictMessageTruthfulnessProperties`, mais il est formulé dans des termes du moteur que
 l'utilisateur n'a jamais écrits. Domaines : 05, 07, 17. Repro :
 [`repros/core-double-conflict-wording`](repros/core-double-conflict-wording). Source :
@@ -562,7 +561,7 @@ utilisateur `dates-and-times` (EN/FR) n'en mentionne rien. **La conséquence est
 situe hors des instants des bornes. Sous `TZ=Europe/Paris`, des bornes à 00:00:00 et 00:00:01 en heure
 locale donnent une valeur `Utc` dont les ticks sont entre les deux, ce qui, en tant qu'instant, est une
 heure *plus tard*. La valeur satisfait `start <= value && value <= end` selon la comparaison que
-ferait le propre `<=` d'un test, donc aucune contrainte déclarée n'est violée. **Le mainteneur doit
+ferait le propre `<=` d'un test, donc aucune contrainte déclarée n'est violée. **Le mainteneur devrait
 juger si le contrat documenté est le bon.** L'alternative est [CORE-C7](#core-c7). Domaines : 02, 04,
 06, 11, 16, 17. Repro : [`repros/core-datetime-kind`](repros/core-datetime-kind). Test rouge
 (`JustDummies.Documentation.UnitTests`) : un exemple compilé sur `dates-and-times` montrant un résultat
@@ -618,7 +617,7 @@ Sans objet : la bibliothèque n'infère rien. Les tirages bornés qu'elle refuse
 
 ### Candidats à une décision
 
-Détaillés au [§8](#8-candidats-à-une-décision) : CORE-C1 (TimeOnly au-delà de minuit), CORE-C2
+Détaillés au [§8](#8-candidats-à-une-décision) : CORE-C1 (TimeOnly à cheval sur minuit), CORE-C2
 (tirage dépendant), CORE-C3 (jour de semaine / jour ouvré), CORE-C4 (pas décimal), CORE-C5 (Guid v4),
 CORE-C6 (séries ordonnées), CORE-C7 (héritage du Kind de DateTime), CORE-C8 (granularité sur
 l'horloge locale), CORE-C9 (un `OneOf` sous-ensemble qui intersecte), CORE-C10 (une déclaration
@@ -793,11 +792,11 @@ s'applique à la page anglaise **et** à son jumeau français.
 | <a id="doc-8"></a>DOC-8 | `packages/justdummies-cli` | Aucune section sur l'endroit où placer un invariant entre paramètres | `cli` | Idée (a) de [CLI-E1](#cli-e1), y compris la ligne unique Luhn |
 | <a id="doc-9"></a>DOC-9 | `packages/justdummies-cli:243-247` (affinage) | Ne dit pas qu'une contrainte déclarable une seule fois (`OneOf`, familles, `WithLength`, `MultipleOf`, `WithScale`) ne peut pas être redéclarée dans la lambda ; que `Except`/`DifferentFrom` restreignent un ensemble ; que JD034 ne voit pas dans la lambda | `cli` | Une puce plus un exemple compilé `z => z.Except(...)` |
 | <a id="doc-10"></a>DOC-10 | `packages/justdummies-cli` (affinage) | Pour réutiliser un affinage préparé, conserver un `Func<AnyX, AnyX>`, pas un `IAny<T>` construit (ADR-0109 ; CS0266 ne l'enseigne pas) | `cli` | Une ligne |
-| <a id="doc-11"></a>DOC-11 | `packages/justdummies-cli` | Une ligne de chaîne échafaudée déclenche JD030 (Info) par conception | `cli` | Une ligne invitant le développeur à déclarer la longueur |
+| <a id="doc-11"></a>DOC-11 | `packages/justdummies-cli` | Une ligne de chaîne scaffoldée déclenche JD030 (Info) par conception | `cli` | Une ligne invitant le développeur à déclarer la longueur |
 | <a id="doc-12"></a>DOC-12 | `guides/errors-and-conflicts` | Un appel unique aux bornes inversées (`Between(10, 1)`) est une erreur d'argument, pas un conflit | `core` | Une ligne sous « bounds that cross » |
 | <a id="doc-13"></a>DOC-13 | `analyzers/JD007`, `JD009` | « Written inline from `Any` » laisse entendre que `Any.X()` issu de `--entry-point any` est vu ; il ne l'est pas | `analyzers` | Dépend de [AN-C3](#an-c3) |
 
-Gardes suggérées pour `JustDummies.Documentation.UnitTests` : résoudre les extraits en ligne
+Garde-fous suggérés pour `JustDummies.Documentation.UnitTests` : résoudre les extraits en ligne
 `Any.<Factory>().<Member>(` contre la référence PublicAPI (rouge sur DOC-1), et échouer sur un lien vers
 une ADR remplacée (rouge sur DOC-3). L'issue #296 ([CLI-B7](#cli-b7)) est un défaut de message de la
 CLI, pas un défaut de page : elle n'a donc pas de ligne ici.
@@ -821,7 +820,7 @@ donc pas une frontière assumée. Le `TimeOnly.IsBetween` de la BCL boucle. *Opt
 existant, et JD014 ne peut plus détecter un `Between` inversé sur `TimeOnly`.
 **(B)** Ajouter un membre explicite (`BetweenAcrossMidnight`, ou une forme `Wrapping`) et conserver le
 refus, avec un message de refus qui renvoie vers le nouveau membre.
-Le responsable de l'essai penche pour **B** : elle préserve le sens de chaque appel existant et la
+Le responsable de l'essai penche pour **B**, qui préserve le sens de chaque appel existant et la
 détection de la faute de frappe, et refuse bruyamment en offrant une issue. C'est au mainteneur de
 trancher. Dans les deux cas, la page des dates devrait nommer le refus actuel et le contournement par
 un `OneOf` de deux `Between`.
@@ -831,9 +830,9 @@ un `OneOf` de deux `Between`.
 *Qui :* 01, 02, 07, 17. *Aujourd'hui :* il n'y a ni `Bind` ni `SelectMany`. Les participants ont imbriqué
 `Generate()` dans `As`/`Combine`. Leurs sondes montrent que cela rejoue sous une graine ambiante, mais
 rien ne le documente, et sous un `AnyContext` le tirage imbriqué viendrait de la source ambiante (le cas
-de réplique partielle de l'ADR-0102). *Clair ?* Il n'y a pas de refus : la lacune est silencieuse.
+de rejeu partiel de l'ADR-0102). *Clair ?* Il n'y a pas de refus : la lacune est silencieuse.
 *Options :* documenter le `Generate()` imbriqué comme un idiome pris en charge, avec ses limites de
-réplique / ajouter un combinateur de liaison (bind) / faire les deux. Un premier pas plus modeste est
+rejeu / ajouter un combinateur de liaison (bind) / faire les deux. Un premier pas plus modeste est
 l'idée (a) de CLI-E1.
 
 <a id="core-c3"></a>
@@ -885,13 +884,13 @@ et documenter `Except` ([DOC-9](#doc-9)) / rouvrir l'ADR-0100 pour qu'un sous-en
 le fait une borne.
 
 <a id="core-c10"></a>
-**CORE-C10 — Un moyen public pour un générateur utilisateur ou échafaudé de déclarer qu'il tire depuis la source ambiante.**
+**CORE-C10 — Un moyen public pour un générateur utilisateur ou scaffoldé de déclarer qu'il tire depuis la source ambiante.**
 *Qui :* 06, 18. *Aujourd'hui :* `IHasRandomSource` et `IReproducibilityHint` sont internes, si bien que
-l'indication de réplique complète ne peut jamais s'appliquer à un générateur `any`. *Options :* un
-marqueur public émis par l'échafaudeur / garder seulement la réserve ([CORE-D3](#core-d3)).
+l'indication de rejeu complet ne peut jamais s'appliquer à un générateur `any`. *Options :* un
+marqueur public émis par le scaffolder / garder seulement la réserve ([CORE-D3](#core-d3)).
 
 <a id="cli-c1"></a>
-**CLI-C1 — Les grands plafonds de comptage orientent les agrégats échafaudés.**
+**CLI-C1 — Les grands plafonds de comptage orientent les agrégats scaffoldés.**
 *Qui :* 20. *Aujourd'hui :* la garde `readings.Count > 500_000` devient `.WithMaxCount(500000)`, et sous
 l'ADR-0076 un maximum oriente le tirage. Un `AnyReadingBatch` par défaut a tiré 406 641 relevés en
 environ 2 s, et il a fallu tuer le banc d'essai. Le récapitulatif dit seulement `guard`. Restreindre
@@ -900,7 +899,7 @@ environ 2 s, et il a fallu tuer le banc d'essai. Le récapitulatif dit seulement
 l'argument du constructeur par défaut a fonctionné. *Clair ?* Aucun avertissement. *Options :* le
 récapitulatif signale un plafond issu d'une garde au-delà d'un seuil et suggère de restreindre le
 constructeur par défaut / émettre une fenêtre de taille par défaut à l'intérieur de toute la base /
-réexaminer la clause de l'ADR-0076 sur les collections pour les éléments composites. Non rejoué par le
+réexaminer la clause de l'ADR-0076 sur les collections pour les éléments composites. Non réexécuté par le
 vérificateur : le mécanisme est montré dans [`repros/20-4`](repros/20-4).
 
 <a id="cli-c2"></a>
@@ -952,12 +951,12 @@ documenté. *Options :* étendre aux ordinaux décimaux et temporels, qui se rep
 les entiers seulement, et laisser la virgule flottante à l'écart.
 
 <a id="an-c3"></a>
-**AN-C3 — Les membres échafaudés `--entry-point any` sont invisibles pour JD007/JD009.**
+**AN-C3 — Les membres scaffoldés `--entry-point any` sont invisibles pour JD007/JD009.**
 *Qui :* 03, 07, 11, 14, 16. *Aujourd'hui :* `Any.Leg()` se compile en un membre de `AnyLegEntry`, et le
 parcours s'arrête aux extensions du consommateur par conception (`GeneratorFacts.cs:71, 87-94`).
 `new AnyX()` et les variables locales sont des limites documentées, et un `Any.Combine` en ligne *est*
 vu. *Options :* faire confiance à un membre C# 14 `extension(Any)` dont le corps renvoie un nouvel
-`IAny<T>`, ou qui porte un marqueur d'échafaudage / documenter la limitation ([DOC-13](#doc-13)). Repro :
+`IAny<T>`, ou qui porte un marqueur de scaffolding / documenter la limitation ([DOC-13](#doc-13)). Repro :
 [`repros/analyzers-scaffolded-iany-blind`](repros/analyzers-scaffolded-iany-blind).
 
 <a id="an-c4"></a>
@@ -994,28 +993,28 @@ La dernière colonne juge le message de refus que les participants ont effective
 
 | Frontière | Décidée par | Domaines | Refus clair ? |
 |---|---|---|---|
-| Constructions regex hors du sous-ensemble régulier (lookarounds, `\b`, `\p{…}`, références arrière, soustraction de classes, groupes atomiques, `(?i:)` à portée) | ADR-0008 | les 20 ont sondé | **Oui** : construction et position. La liste finale est figée plutôt que spécifique ([DOC-4](#doc-4)). |
+| Constructions regex hors du sous-ensemble régulier (lookarounds, `\b`, `\p{…}`, références arrière, soustraction de classes, groupes atomiques, `(?i:)` à portée) | ADR-0008 | sondé dans les 20 | **Oui** : construction et position. La liste finale est figée plutôt que spécifique ([DOC-4](#doc-4)). |
 | `RegexOptions.IgnorePatternWhitespace` | `Any.Pattern.cs:71` | 03, 06, 08, 10, 11, 13 | Oui, en `ArgumentException`. Absent de la page ([DOC-4](#doc-4)). |
-| Un élément chaîne ou motif sans cardinalité annoncée échoue via le tirage borné | ADR-0004, ADR-0009, ADR-0027 | 01, 04, 10, 19 | Oui, en `AnyGenerationException` avec la graine et un extrait de réplique. |
+| Un élément chaîne ou motif sans cardinalité annoncée échoue via le tirage borné | ADR-0004, ADR-0009, ADR-0027 | 01, 04, 10, 19 | Oui, en `AnyGenerationException` avec la graine et un extrait de rejeu. |
 | Les fabriques statiques à deux arguments ne sont pas reconnues | Spécification §5.1 règle 2, ADR-0089 | 10 (`ExpiryMonth.Of(year, month)`) | Oui, nomme la règle. L'ADR-0085 est l'écrit à rouvrir face à ce rapport. |
 | Les gardes par regex ne sont pas lues | Spécification §5.3 (ligne 827), candidat v1.1 | 02, 03, 05, 06, 07, 11, 12, 15 | Signalées `to verify`. La page utilisateur est muette ([DOC-7](#doc-7)). |
 | Règles entre paramètres | ADR-0060, ADR-0083, spécification §16 | les 20 | Signalées et bloquantes. Voir [CLI-E1](#cli-e1). |
 | `Any.Int32().Between(10, 1)` lève `ArgumentException`, pas un conflit | `errors-and-conflicts` (« Ordinary argument mistakes »), page JD014 | 11 | Oui, et JD014 le signale au build ([DOC-12](#doc-12) ajoute une ligne). |
 | Tailles au-delà de 1 000 000 | ADR-0076 | 17, 20 | Oui, à la déclaration ; JD014 signale les constantes. |
-| Tirages en virgule flottante dans une magnitude ordinaire (`Between(-MaxValue, MaxValue)` reste à environ 1e6) | ADR-0031 | 05, 20 | Pas un refus ; documenté. |
+| Tirages en virgule flottante dans une magnitude ordinaire (`Between(-MaxValue, MaxValue)` reste en deçà d'environ 1e6) | ADR-0031 | 05, 20 | Pas un refus ; documenté. |
 | `WithScale` déclaré une seule fois ; pas de grille en virgule flottante binaire | ADR-0015 | 02, 17 | Oui. |
 | Un ensemble de valeurs (`OneOf`) déclaré une seule fois par générateur | ADR-0100, JD034 | 05 | « Is already defined » : clair sur la règle, mais la page de la CLI ne prépare pas le lecteur ([DOC-9](#doc-9)). |
 | La surcharge d'affinage ne prend pas d'`IAny<T>` | ADR-0109 | 20 | `CS0266` ne l'enseigne pas ([DOC-10](#doc-10)). |
-| Un `IAny<T>` étranger compte comme une source distincte pour la réplique | ADR-0102 | 06, 18 | La réserve est voulue ; sa formulation en dit trop ([CORE-D3](#core-d3)). |
+| Un `IAny<T>` étranger compte comme une source distincte pour le rejeu | ADR-0102 | 06, 18 | La réserve est voulue ; sa formulation en dit trop ([CORE-D3](#core-d3)). |
 | La recette par défaut d'un paramètre nullable ne tire jamais null | ADR-0064 | 01, 02, 05, 15 | Respecté. Le type de la méthode qui fixe la valeur relève de [CLI-D3](#cli-d3). |
-| Une ligne de chaîne échafaudée déclenche JD030 (Info) | Spécification §5.2 et §17 (les tests qui compilent la sortie excusent JD030 nommément) | 04 | Voulu ([DOC-11](#doc-11)). |
-| JD028 est muet sur les générateurs échafaudés ou conservés ; JD007/JD009 sont muets sur `new AnyX()` et les variables locales | Pages JD028/JD007/JD009, « What it does not flag » | 01, 06, 11, 14, 15, 17, 18 | Documenté. La graphie `Any.X()` relève de [AN-C3](#an-c3). |
+| Une ligne de chaîne scaffoldée déclenche JD030 (Info) | Spécification §5.2 et §17 (les tests qui compilent la sortie excusent JD030 nommément) | 04 | Voulu ([DOC-11](#doc-11)). |
+| JD028 est muet sur les générateurs scaffoldés ou conservés ; JD007/JD009 sont muets sur `new AnyX()` et les variables locales | Pages JD028/JD007/JD009, « What it does not flag » | 01, 06, 11, 14, 15, 17, 18 | Documenté. La graphie `Any.X()` relève de [AN-C3](#an-c3). |
 | JD032 ne couvre pas `Between` | Page JD032, ADR-0078 | 14 | Documenté (« still covered by JD024 »). |
 | Les règles de conflit sur constantes sont muettes dans `Assert.Throws` | Pages JD014/JD016/JD023 | 04, 15 | Documenté. L'incohérence JD014/JD023 relève de [AN-D3](#an-d3). |
 | JD023 ne couvre que les générateurs entiers | Page JD023 | 02, 09, 13, 17, 18 | Documenté ([AN-C2](#an-c2)). |
 | `--force` écrase le fichier généré | Message de refus et en-tête | 09, 10, 12 | Oui, annoncé. Idée (c) de [CLI-E1](#cli-e1). |
 
-`TimeOnly` au-delà de minuit n'est **pas** listé : aucune ADR ne le décide ([CORE-C1](#core-c1)).
+`TimeOnly` à cheval sur minuit n'est **pas** listé : aucune ADR ne le décide ([CORE-C1](#core-c1)).
 
 ---
 
@@ -1023,7 +1022,7 @@ La dernière colonne juge le message de refus que les participants ont effective
 
 Chaque point ci-dessous s'appuie sur les notes et les sondes d'au moins un domaine.
 
-* **Les messages de conflit nomment les deux côtés, y compris entre une base échafaudée et un affinage
+* **Les messages de conflit nomment les deux côtés, y compris entre une base scaffoldée et un affinage
   de test.** Par exemple : « Cannot apply GreaterThan(400) because Between(1, 365) already requires
   values less than or equal to 365. » (03), et « Cannot apply Before(1890-01-01) because
   Between(1900-01-01, 2025-12-31) already requires… » (08). Les 20 domaines l'ont salué. Les exceptions
@@ -1032,10 +1031,10 @@ Chaque point ci-dessous s'appuie sur les notes et les sondes d'au moins un domai
   at position 8 » (18). Chaque format dont les domaines avaient réellement besoin a été généré
   correctement. Exemples : IBAN et BIC (01), chaînes GS1 avec `\x1D` (10), E.164 (11), SSCC avec groupes
   nommés et `\A..\z` (06), et ISIN et horodatages FIX (02). `\d` ne tire que des chiffres ASCII.
-* **La réplique depuis la graine fonctionne de bout en bout.** `[Reproducible]` affiche un
+* **Le rejeu depuis la graine fonctionne de bout en bout.** `[Reproducible]` affiche un
   `[Reproducible(Seed = …)]` prêt à copier-coller. Le fixer a reproduit la valeur fautive exacte dans
   01, 04, 06, 07, 08, 11, 13, 14, 16, 17 et 19. `Any.UseSeed`, `WithSeed` et `Reproducibly` ont rejoué des
-  graphes échafaudés entiers : une nomenclature de profondeur 3 (05), un `PaymentBatch` avec des tirages
+  graphes scaffoldés entiers : une nomenclature de profondeur 3 (05), un `PaymentBatch` avec des tirages
   imbriqués (01), et un `Flight` (16). Un lot de 100 000 relevés a été rejoué champ par champ (20).
 * **L'inspection des ensembles explique pourquoi une valeur n'est jamais tirée :** par exemple
   « 376012345678 rejected by WithLength(13) » (06), « N12345 by StringMatching(…) » (16), et « 12.025
@@ -1053,7 +1052,7 @@ Chaque point ci-dessous s'appuie sur les notes et les sondes d'au moins un domai
   nommant les deux côtés (07, 10, 14). Le domaine 02 l'a qualifiée de « a real improvement over
   replacing a generator ».
 * **La composition via `AnyX` (ADR-0089)** a fonctionné du premier coup à travers des agrégats imbriqués
-  (14), et un constructeur à dix paramètres a été échafaudé sans heurter le plafond d'arité (15).
+  (14), et un constructeur à dix paramètres a été scaffoldé sans heurter le plafond d'arité (15).
 * **Le traitement des cas limites des nombres et du temps est exact.** Le zéro signé n'est jamais tiré
   par `NonZero`/`Negative`. Les intervalles d'un ulp, les intervalles sous-normaux, les échelles de
   `Half`, `DateOnly`/`DateTime` à `Min`/`MaxValue`, `Between(d, d)`, et les grilles de granularité sans
@@ -1062,7 +1061,7 @@ Chaque point ci-dessous s'appuie sur les notes et les sondes d'au moins un domai
 * **Le rapport `--format json` est propre et vérifiable par lui-même**, hormis [CLI-B5](#cli-b5) (03,
   05, 09, 12, 18). Les réexécutions avec `--force` sont identiques à l'octet près (15).
 * **Les analyseurs se déclenchent avec précision sur les erreurs de constantes**, sans faux positif sur
-  le code échafaudé ou réel. Parmi les règles qui se sont déclenchées : JD004, JD006, JD013–JD018,
+  le code scaffoldé ou réel. Parmi les règles qui se sont déclenchées : JD004, JD006, JD013–JD018,
   JD023, JD025–JD027, JD034 et JD035. JD018 a détecté un `Any.Reproducibly` imbriqué sous
   `[Reproducible]` (08, 13, 17). JD014 a dit « the two arguments look transposed » (13).
 * **Des valeurs arbitraires ont révélé de vrais défauts dans les propres domaines des participants**,
@@ -1082,22 +1081,22 @@ mesure. Les nombres de tests proviennent d'une exécution mesurée.
 | 01 payments | Virement SEPA : IBAN mod-97, BIC, Money, date en jour ouvré, lot pain.001 | 55 / 57 (2 `Bug_`) | 4 | Côté tests très fluide ; les chiffres de contrôle et les règles entre champs ont demandé le travail manuel | [NOTES](domains/01-payments/NOTES.md) |
 | 02 trading | Carnet d'ordres : ticker, prix limite/stop, pas de cotation, séance | 59 / 59 | 4 | Les littéraux et les affinages par lambda disent ce qu'ils veulent dire ; la grille de pas et les liens entre prix demandent des retouches manuelles | [NOTES](domains/02-trading/NOTES.md) |
 | 03 insurance | Police auto : période de couverture, franchise, bonus-malus, sinistres | 47 / 49 (2 `Bug_`) | 4 | Affinages imbriqués agréables ; les deux règles entre paramètres corrigées à la main | [NOTES](domains/03-insurance/NOTES.md) |
-| 04 manufacturing | Ordre de fabrication MES : code de lot, cadence, tolérances, états machine | 66 / 68 (2 `Bug_`) | 4 | Réplique triviale, messages excellents ; une recette silencieuse et l'échafaudage d'énumération ont coûté de la confiance | [NOTES](domains/04-manufacturing/NOTES.md) |
-| 05 CAD drawing | Ajustements ISO 286, références de plans, nomenclature récursive | 57 / 58 (1 `Bug_`) | 3 | DSL scalaire et de motifs bon ; l'échafaudage récursif a fait planter l'hôte | [NOTES](domains/05-cad-drawing/NOTES.md) |
+| 04 manufacturing | Ordre de fabrication MES : code de lot, cadence, tolérances, états machine | 66 / 68 (2 `Bug_`) | 4 | Rejeu trivial, messages excellents ; une recette silencieuse et le scaffolding d'énumération ont coûté de la confiance | [NOTES](domains/04-manufacturing/NOTES.md) |
+| 05 CAD drawing | Ajustements ISO 286, références de plans, nomenclature récursive | 57 / 58 (1 `Bug_`) | 3 | Bon DSL scalaire et de motifs ; le scaffolding récursif a fait planter l'hôte | [NOTES](domains/05-cad-drawing/NOTES.md) |
 | 06 warehouse | Réception de palettes : SSCC, EAN-13, emplacement, quantités | 64 / 67 (3 `Bug_`) | 4 | Le DSL de base se lit comme le domaine ; deux manques silencieux de la CLI | [NOTES](domains/06-warehouse/NOTES.md) |
 | 07 freight | Expédition : poids, volume, ISO 6346, ETA entre fuseaux | 62 / 63 (1 `Bug_`) | 4 | Fluide ; 3 générateurs sur 7 restructurés ; une garde silencieuse | [NOTES](domains/07-freight/NOTES.md) |
-| 08 patient record | Prescription : NIR, molécule, posologie, voie, date de naissance | 55 / 55 | 4 | Messages et réplique excellents ; somme de contrôle et règles entre champs réécrites | [NOTES](domains/08-patient-record/NOTES.md) |
+| 08 patient record | Prescription : NIR, molécule, posologie, voie, date de naissance | 55 / 55 | 4 | Messages et rejeu excellents ; somme de contrôle et règles entre champs réécrites | [NOTES](domains/08-patient-record/NOTES.md) |
 | 09 laboratory | Résultats de laboratoire, plages de référence, unités, heures de prélèvement | 67 / 67 | 4 | Contraintes fluides ; invariants entre champs dans un fichier que `--force` écrase | [NOTES](domains/09-laboratory/NOTES.md) |
 | 10 pharma serialisation | Boîtes : GTIN, lot, péremption, unicité des numéros de série | 57 / 57 | 4 | Chaque nom deviné existait ; le chiffre de contrôle GTIN a imposé des retouches de signature | [NOTES](domains/10-pharma-serialisation/NOTES.md) |
 | 11 telecom | Ligne mobile : MSISDN, IMEI (Luhn), ICCID, forfait, consommation | 49 / 49 | 4 | Les blocs Arrange montrent le choisi face à l'arbitraire ; résoudre « to verify » réécrit plus que ce qui est documenté | [NOTES](domains/11-telecom/NOTES.md) |
 | 12 smart grid | Index de compteur, point de livraison, courbe de charge à la demi-heure | 37 / 39 (2 `Bug_`) | 3 | Affinages imbriqués exacts ; séries ordonnées et règles entre champs ont réécrit 4 fichiers sur 8 | [NOTES](domains/12-smart-grid/NOTES.md) |
-| 13 payroll | Bulletin de paie : contrat, heures, primes, retenues | 43 / 44 (1 `Bug_`) | 4 | Se lit comme le domaine ; fixer une valeur ou passer une lambda a causé une exécution rouge | [NOTES](domains/13-payroll/NOTES.md) |
+| 13 payroll | Bulletin de paie : contrat, heures, primes, retenues | 43 / 44 (1 `Bug_`) | 4 | Se lit comme le domaine ; la confusion entre valeur fixée et lambda a causé une exécution rouge | [NOTES](domains/13-payroll/NOTES.md) |
 | 14 e-commerce | Panier et commande : SKU, quantité, remise, adresse | 47 / 48 (1 `Bug_`) | 4 | Naturel ; un manque silencieux ; les règles entre éléments ont perdu des cas | [NOTES](domains/14-ecommerce/NOTES.md) |
 | 15 hotel booking | Séjour, chambre, clients, conditions d'annulation | 48 / 48 | 4 | Fluide ; l'intervalle du séjour a exigé des générateurs restructurés à la main | [NOTES](domains/15-hotel-booking/NOTES.md) |
 | 16 aviation | Vol : codes IATA/OACI, immatriculation, créneau | 66 / 67 (1 `Bug_`) | 4 | Le vocabulaire temporel convient aux créneaux ; une recette silencieuse ; gardes temporelles non lues | [NOTES](domains/16-aviation/NOTES.md) |
 | 17 real estate | Cadastre, diagnostic énergétique, annonces | 50 / 50 | 3 | Les objets valeur se lisent bien ; chaque agrégat avait une règle entre champs | [NOTES](domains/17-real-estate/NOTES.md) |
 | 18 education | Inscription, notes au demi-point, semestres | 51 / 51 | 4 | Contraintes et graines fluides ; la note au demi-point exige un ensemble de 41 valeurs | [NOTES](domains/18-education/NOTES.md) |
-| 19 IAM | Jeton d'accès, rôles, scopes, expiration, URI de redirection | 61 / 63 (2 `Bug_`) | 4 | `Any.Uri()` est excellent ; un récapitulatif « guard » silencieux et l'échafaudage d'énumération | [NOTES](domains/19-iam/NOTES.md) |
+| 19 IAM | Jeton d'accès, rôles, scopes, expiration, URI de redirection | 61 / 63 (2 `Bug_`) | 4 | `Any.Uri()` est excellent ; un récapitulatif « guard » silencieux et le scaffolding d'énumération | [NOTES](domains/19-iam/NOTES.md) |
 | 20 agritech IoT | Capteurs de terrain : GPS, humidité, batterie en `Half`, lots de 500k | 56 / 58 (2 `Bug_`) | 4 | Le vocabulaire numérique colle à la géodésie ; un grand plafond rend le dummy par défaut énorme | [NOTES](domains/20-agritech-iot/NOTES.md) |
 | **Total** | | **1097 / 1117** (20 rouges, tous `Bug_`) | | | |
 
@@ -1107,12 +1106,12 @@ mesure. Les nombres de tests proviennent d'une exécution mesurée.
 
 | Remonté comme | Verdict | Pourquoi |
 |---|---|---|
-| `WithScale(2)` au-delà d'environ 7,92e26 renvoie une échelle inférieure, « bogue grave » (03) | Déclassé en défaut de documentation ([CORE-D8](#core-d8)) | Chaque valeur est sur la grille de 10⁻ⁿ que décide l'ADR-0015 ; le complément de `decimal.Scale` par des zéros y a été rejeté. Le test de l'essai qui vérifiait `decimal.Scale` a été réécrit en contrôle de grille (`WithScale_2_near_decimal_MaxValue_stays_on_the_lattice_without_trailing_zeros`), et passe. |
+| `WithScale(2)` au-delà d'environ 7,92e26 renvoie une échelle inférieure, « bogue de gravité élevée » (03) | Déclassé en défaut de documentation ([CORE-D8](#core-d8)) | Chaque valeur est sur la grille de 10⁻ⁿ que décide l'ADR-0015 ; le complément de `decimal.Scale` par des zéros y a été rejeté. Le test de l'essai qui vérifiait `decimal.Scale` a été réécrit en contrôle de grille (`WithScale_2_near_decimal_MaxValue_stays_on_the_lattice_without_trailing_zeros`), et passe. |
 | `WithScale` ignoré quand l'intervalle ne contient qu'une valeur (18) | Idem | `Between(20m, 20m).WithScale(1)` renvoie `20`, qui est sur la grille de 0,1. Le test de l'essai a été réécrit de même (`WithScale_on_a_single_value_range_keeps_the_value_on_the_lattice`), et passe. |
-| L'échafaudeur émet une chaîne que son propre analyseur signale, JD030 (04) | Voulu | Spécification §5.2/§17. Inventer une longueur reviendrait à revendiquer un invariant que le domaine n'a jamais déclaré ([DOC-11](#doc-11)). |
+| Le scaffolder émet une chaîne que son propre analyseur signale, JD030 (04) | Voulu | Spécification §5.2/§17. Inventer une longueur reviendrait à revendiquer un invariant que le domaine n'a jamais déclaré ([DOC-11](#doc-11)). |
 | `Between(10, 1)` devrait lever un conflit, pas `ArgumentException` (11) | Voulu | Erreur d'argument documentée, détectée par JD014. |
 | `PublicAPI.Shipped.txt` est vide (05, 17) | Pas un défaut visible de l'utilisateur | Un artefact pré-1.0 du banc d'essai : la surface vit dans `Unshipped` jusqu'à la première version publiée. |
-| JD028 muet sur les générateurs échafaudés ou conservés (01, 06, 14, 15, 17, 18) | Voulu | Documenté : « only a chain that provably builds a new value here qualifies ». L'utilisateur possède le fichier et peut renvoyer des instances partagées. |
+| JD028 muet sur les générateurs scaffoldés ou conservés (01, 06, 14, 15, 17, 18) | Voulu | Documenté : « only a chain that provably builds a new value here qualifies ». L'utilisateur possède le fichier et peut renvoyer des instances partagées. |
 | `Any.Combine` invisible pour JD007/JD009/JD028 (07) | Réfuté pour l'usage en ligne | Un `Combine` en ligne déclenche les trois. Un générateur conservé dans une variable locale est une limite documentée. |
 | JD032 ne couvre pas `Between` (14) | Voulu | Page JD032 et ADR-0078 : « still covered by JD024 ». |
 | `Double().Between(0, 100).Between(50, 200)` « échoue toujours » | Réfuté | Il se replie en [50, 100]. |
@@ -1146,11 +1145,11 @@ mesure. Les nombres de tests proviennent d'une exécution mesurée.
    le test et le correctif dans le même commit `fix(<scope>)`, avec `Refs: #NN`. Le texte de
    spécification ou d'ADR que modifie un correctif (spécification §5.1/§5.3/§5.6/§6.1/§7/§9, ADR-0004)
    change avec lui, ainsi que son jumeau français.
-3. **Confirmer sur l'essai.** Réempaqueter (`tools/ux-trial/prepare.sh`) et rejouer les domaines
+3. **Confirmer sur l'essai.** Réempaqueter (`tools/ux-trial/prepare.sh`) et relancer les domaines
    concernés.
    * Les tests `Bug_` listés pour CORE-B3, CORE-D1 et CORE-D2 devraient passer au vert en l'état.
    * Pour CLI-B1, CLI-B2 et CLI-B4, les tests `Bug_` rejouent des recettes ou des fichiers émis figés.
-     Confirmer plutôt sur un nouvel échafaudage avec `--force` : le récapitulatif doit marquer le
+     Confirmer plutôt sur un nouvel scaffolding avec `--force` : le récapitulatif doit marquer le
      paramètre, ou refuser l'énumération. Retirer ou réécrire ensuite ces tests.
    * Les deux tests `WithScale` (03, 18) qui vérifiaient un contrat rejeté ont déjà été réécrits en
      contrôles de grille (§12).
@@ -1159,4 +1158,4 @@ mesure. Les nombres de tests proviennent d'une exécution mesurée.
    * le texte du commentaire au §5.6 de la spécification ([CLI-D1](#cli-d1)) ;
    * le propriétaire de l'appartenance à une énumération ([AN-D1](#an-d1)) ;
    * l'ADR qui amende l'ADR-0004 ([CORE-D10](#core-d10)) ;
-   * `TimeOnly` au-delà de minuit ([CORE-C1](#core-c1)).
+   * `TimeOnly` à cheval sur minuit ([CORE-C1](#core-c1)).

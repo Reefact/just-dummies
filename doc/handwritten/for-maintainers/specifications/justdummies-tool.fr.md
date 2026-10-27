@@ -415,8 +415,8 @@ public sealed partial class AnyOrder : IAny<Order> {
   la conversion du paramètre s'il en a une (`AnyValidDiscount().AsNullable()` pour un `decimal?`) :
   la fabrique s'arrête avant cette conversion, pour qu'un affinage puisse encore appeler les
   contraintes du generator. La surcharge d'affinage ci-dessous appelle la même fabrique, qui devient
-  ainsi le seul endroit où la base est définie : ce que le développeur y écrit — une règle demandée
-  par la §5.6, une règle imposée par le type composant — s'applique à la fois à la recette par
+  ainsi le seul endroit où la base est définie : ce que le développeur y écrit — une règle prévue
+  à la section 5.6, une règle imposée par le type composant — s'applique à la fois à la recette par
   défaut et à chaque affinage
   ([ADR-0109](../adr/0109-let-a-test-refine-a-parameters-valid-base-rather-than-replace-it.fr.md)).
   La fabrique d'un paramètre non résolu retourne `IAny<TParam>`, et son TODO (§5.5) vit à

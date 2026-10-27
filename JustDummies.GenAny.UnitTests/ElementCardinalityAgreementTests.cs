@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 
 using NFluent;
 
@@ -67,6 +68,7 @@ public sealed class ElementCardinalityAgreementTests {
     }
 
     /// <summary>The mirror of the aliased enum above, declared here so the library can be called on it.</summary>
+    [SuppressMessage(NetAnalyzersRule.CA1069.Category, NetAnalyzersRule.CA1069.Id, Justification = "The aliased members ARE the subject: the engine must count this enum by its distinct values, which only an enum holding duplicates can show.")]
     public enum Grade {
 
         Low    = 1,

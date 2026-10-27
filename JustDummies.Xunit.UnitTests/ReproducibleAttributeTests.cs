@@ -1,7 +1,10 @@
 #region Usings declarations
 
 using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+
+using JustDummies.Diagnostics;
 
 using JetBrains.Annotations;
 
@@ -27,6 +30,7 @@ public sealed class ReproducibleAttributeTests {
 
     private static readonly ConcurrentDictionary<int, (int, string)> DrawnByCase = new();
 
+    [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
     internal static (int, string) Batch() {
         return (Any.Int32().Generate(), Any.String().NonEmpty().Generate());
     }

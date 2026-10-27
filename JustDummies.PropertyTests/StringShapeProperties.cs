@@ -2,6 +2,8 @@
 
 using System.Diagnostics.CodeAnalysis;
 
+using JustDummies.Diagnostics;
+
 using FsCheck;
 using FsCheck.Fluent;
 
@@ -260,6 +262,7 @@ public sealed class StringShapeProperties {
     }
 
     [Fact(DisplayName = "NotBlank holds behind any anchored prefix, blank or not.")]
+    [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
     public void NotBlankHoldsBehindAnyPrefix() {
         Prop.ForAll(Affix(DefaultAlphabet, 8).ToArbitrary(),
                     prefix => Expect.EveryDraw(Any.String().StartingWith(prefix).NotBlank(),
@@ -269,6 +272,7 @@ public sealed class StringShapeProperties {
     }
 
     [Fact(DisplayName = "StartingWith anchors the prefix, whatever the prefix.")]
+    [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
     public void StartingWithAnchorsThePrefix() {
         Prop.ForAll(Affix(DefaultAlphabet, 8).ToArbitrary(),
                     prefix => Expect.EveryDraw(Any.String().StartingWith(prefix),
@@ -277,6 +281,7 @@ public sealed class StringShapeProperties {
     }
 
     [Fact(DisplayName = "EndingWith anchors the suffix, whatever the suffix.")]
+    [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
     public void EndingWithAnchorsTheSuffix() {
         Prop.ForAll(Affix(DefaultAlphabet, 8).ToArbitrary(),
                     suffix => Expect.EveryDraw(Any.String().EndingWith(suffix),
@@ -286,6 +291,7 @@ public sealed class StringShapeProperties {
 
     [Fact(DisplayName = "Containing embeds the value, whatever the value.")]
     [SuppressMessage(NetAnalyzersRule.CA2249.Category, NetAnalyzersRule.CA2249.Id, Justification = SuppressionJustification.CA2249.NoContainsWithComparisonDownlevel)]
+    [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
     public void ContainingEmbedsTheValue() {
         Prop.ForAll(Affix(DefaultAlphabet, 8).ToArbitrary(),
                     fragment => Expect.EveryDraw(Any.String().Containing(fragment),
@@ -296,6 +302,7 @@ public sealed class StringShapeProperties {
     }
 
     [Fact(DisplayName = "Every character family draws only from its own alphabet, at every length.")]
+    [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
     public void CharacterFamiliesDrawOnlyFromTheirOwnAlphabet() {
         Gen<(int Family, string Pool, int Length)> cases =
             from family in Gen.Choose(0, 8)
@@ -310,6 +317,7 @@ public sealed class StringShapeProperties {
     }
 
     [Fact(DisplayName = "A casing constrains every cased character, at every length.")]
+    [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
     public void ACasingConstrainsEveryCasedCharacter() {
         Gen<(bool Upper, int Length)> cases =
             from upper in Gen.Elements(false, true)
@@ -326,6 +334,7 @@ public sealed class StringShapeProperties {
     }
 
     [Fact(DisplayName = "A subtraction narrows a WithChars pool whichever was declared first, and refuses a pool it empties.")]
+    [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
     public void ASubtractionNarrowsAWithCharsPool() {
         Gen<(string Pool, bool WithoutAlpha, bool WithoutNumeric, bool PoolFirst, int Length)> cases =
             from pool in CharacterPool()
@@ -388,6 +397,7 @@ public sealed class StringShapeProperties {
     }
 
     [Fact(DisplayName = "A character family governs the drawn characters and exempts the anchored literal, whatever the family and the literal.")]
+    [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
     public void ACharacterFamilyGovernsTheDrawAndExemptsTheLiteral() {
         // The affixes come from an alphabet reaching well beyond any single family — punctuation included — so the
         // exemption is exercised rather than merely permitted. Where this property used to branch on whether the
@@ -412,6 +422,7 @@ public sealed class StringShapeProperties {
     }
 
     [Fact(DisplayName = "A casing governs the drawn characters and exempts the anchored literal, whatever the casing and the literal.")]
+    [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
     public void ACasingGovernsTheDrawAndExemptsTheLiteral() {
         // The affix alphabet carries both cases, so half the draws anchor a literal the casing would have refused
         // before ADR-0079 — InUpperCase().StartingWith("abc") among them.
@@ -455,6 +466,7 @@ public sealed class StringShapeProperties {
     }
 
     [Fact(DisplayName = "A second character family conflicts unless it repeats the first, whichever two are combined.")]
+    [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
     public void ASecondCharacterFamilyConflictsUnlessItRepeatsTheFirst() {
         Gen<(int First, int Second, string Pool)> cases =
             from first in Gen.Choose(0, 8)
@@ -477,6 +489,7 @@ public sealed class StringShapeProperties {
     }
 
     [Fact(DisplayName = "A second casing conflicts unless it repeats the first, whichever two are combined.")]
+    [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
     public void ASecondCasingConflictsUnlessItRepeatsTheFirst() {
         Gen<(bool First, bool Second)> cases =
             from first in Gen.Elements(false, true)
@@ -514,6 +527,7 @@ public sealed class StringShapeProperties {
     }
 
     [Fact(DisplayName = "A second prefix or a second suffix conflicts unless it repeats the first, whatever the two values.")]
+    [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
     public void ASecondPrefixOrSuffixConflictsUnlessItRepeatsTheFirst() {
         Gen<(bool AsSuffix, string First, string Second)> cases =
             from asSuffix in Gen.Elements(false, true)

@@ -39,7 +39,7 @@ namespace JustDummies.GenAny.UnitTests;
 ///         not derivable without restructuring the walk, and ADR-0084 governs it separately.
 ///     </para>
 /// </remarks>
-public sealed class RecognisedIdiomCoverageTests {
+public sealed partial class RecognisedIdiomCoverageTests {
 
     /// <summary>The heading each table sits under, and the count each is expected to carry.</summary>
     /// <remarks>
@@ -59,7 +59,8 @@ public sealed class RecognisedIdiomCoverageTests {
     private static readonly IReadOnlyDictionary<string, string> Unexercised = new Dictionary<string, string>(StringComparer.Ordinal);
 
     /// <summary>A constraint member as the second column writes it — <c>.NonEmpty(</c>, <c>.Between(</c>.</summary>
-    private static readonly Regex Constraint = new(@"\.[A-Za-z]+\(", RegexOptions.Compiled);
+    [GeneratedRegex(@"\.[A-Za-z]+\(")]
+    private static partial Regex Constraint();
 
     /// <summary>The member a promised bound may legitimately be written as instead.</summary>
     /// <remarks>
@@ -179,9 +180,9 @@ public sealed class RecognisedIdiomCoverageTests {
         if (at < 0) { yield break; }
 
         // Skip forward to the header row, then past it and its separator: what follows is the body.
-        while (at < lines.Length && !lines[at].StartsWith("|", StringComparison.Ordinal)) { at++; }
+        while (at < lines.Length && !lines[at].StartsWith('|')) { at++; }
 
-        for (int row = at + 2; row < lines.Length && lines[row].StartsWith("|", StringComparison.Ordinal); row++) {
+        for (int row = at + 2; row < lines.Length && lines[row].StartsWith('|'); row++) {
             string[] columns = lines[row].Split('|');
 
             yield return (columns[1].Trim(), ConstraintsIn(columns[2]));
@@ -198,7 +199,7 @@ public sealed class RecognisedIdiomCoverageTests {
     ///     depending on signedness) is satisfied by either.
     /// </remarks>
     private static IReadOnlyList<string> ConstraintsIn(string column) {
-        return Constraint.Matches(column).Select(match => match.Value).Distinct(StringComparer.Ordinal).ToList();
+        return Constraint().Matches(column).Select(match => match.Value).Distinct(StringComparer.Ordinal).ToList();
     }
 
     private static string Specification() {

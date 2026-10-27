@@ -1,6 +1,7 @@
 #region Usings declarations
 
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using System.Reflection;
 
@@ -397,6 +398,7 @@ public sealed class NullArgumentGuardConventionTests {
 
     // The shapes AnyContext's parameterless factories cannot reach: everything that needs an element generator, a
     // type argument or a pattern to exist at all.
+    [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
     private static void SeedRepresentativeGenerators(Action<object?> seed) {
         IAny<string> strings = Any.String();
         void Try(Func<object?> build) {

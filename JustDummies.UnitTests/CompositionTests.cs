@@ -293,6 +293,7 @@ public sealed class CompositionTests {
     }
 
     [Fact(DisplayName = "As and Combine validate their arguments.")]
+    [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
     public void CompositionValidatesArguments() {
         Check.ThatCode(() => Any.String().As<string, OrderReference>(null!)).Throws<ArgumentNullException>();
         Check.ThatCode(() => AnyExtensions.As(null!, (string value) => value)).Throws<ArgumentNullException>();

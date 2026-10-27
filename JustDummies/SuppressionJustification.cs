@@ -46,6 +46,12 @@ internal static class SuppressionJustification {
         /// </summary>
         internal const string NoContainsWithComparisonDownlevel = "string.Contains(string, StringComparison) is absent from the netstandard2.0 asset this library ships (ADR-0007); IndexOf with StringComparison.Ordinal is the same comparison. See the constant's summary.";
 
+        /// <summary>
+        ///     <c>string.Contains(char)</c> does not exist on netstandard2.0, which this library targets (ADR-0007).
+        ///     <c>IndexOf(char)</c> is the same test and the only spelling that compiles on the shipped asset.
+        /// </summary>
+        internal const string NoContainsCharDownlevel = "string.Contains(char) is absent from the netstandard2.0 asset this library ships (ADR-0007); IndexOf(char) is the same test. See the constant's summary.";
+
     }
 
     /// <summary>Justifications for S107 — "Methods should not have too many parameters".</summary>

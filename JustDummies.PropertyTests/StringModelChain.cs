@@ -1,3 +1,7 @@
+using System.Diagnostics.CodeAnalysis;
+
+using JustDummies.Diagnostics;
+
 namespace JustDummies.PropertyTests;
 
 /// <summary>
@@ -29,6 +33,7 @@ internal sealed class StringModelChain {
     ///     <c>null</c> when the run time agrees with the model on this chain under <paramref name="seed" />; otherwise
     ///     what they disagree on, which is the counter-example's explanation.
     /// </summary>
+    [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
     public string? Disagreement(int seed) {
         StringModel model        = new();
         int?        modelRefusal = null;

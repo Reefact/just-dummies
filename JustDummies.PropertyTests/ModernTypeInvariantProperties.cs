@@ -2,6 +2,8 @@
 
 using System.Diagnostics.CodeAnalysis;
 
+using JustDummies.Diagnostics;
+
 using FsCheck;
 using FsCheck.Fluent;
 
@@ -394,6 +396,7 @@ public sealed class ModernTypeInvariantProperties {
     }
 
     [Fact(DisplayName = "DateOnly: AfterOrEqualTo and BeforeOrEqualTo keep their own bound, for every date.")]
+    [SuppressMessage(JustDummiesRule.JD031.Category, JustDummiesRule.JD031.Id, Justification = SuppressionJustification.JD031.SeparateBoundsAreTheSubject)]
     public void DateOnlyInclusiveBoundsKeepTheirEdge() {
         Prop.ForAll(Dates().ToArbitrary(),
                     date => {
@@ -426,6 +429,7 @@ public sealed class ModernTypeInvariantProperties {
     }
 
     [Fact(DisplayName = "TimeOnly: After and Before are exclusive, AfterOrEqualTo and BeforeOrEqualTo inclusive, at every time of day.")]
+    [SuppressMessage(JustDummiesRule.JD031.Category, JustDummiesRule.JD031.Id, Justification = SuppressionJustification.JD031.SeparateBoundsAreTheSubject)]
     public void TimeOnlyBoundsCarryTheirInclusivity() {
         Prop.ForAll(Times().ToArbitrary(),
                     time => {

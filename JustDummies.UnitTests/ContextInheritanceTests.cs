@@ -1,5 +1,7 @@
 #region Usings declarations
 
+using System.Diagnostics.CodeAnalysis;
+
 using NFluent;
 
 #endregion
@@ -46,6 +48,7 @@ public sealed class ContextInheritanceTests {
     }
 
     [Fact(DisplayName = "A combinator reuses the source resolved from its operands: the element generator's, the key generator's or else the value generator's, the source of the first operand that carries one.")]
+    [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
     public void ACombinatorReusesTheSourceResolvedFromItsOperands() {
         AnyContext    context       = Any.WithSeed(Seed);
         RandomSource? contextSource = SourceOf(context.Int32());

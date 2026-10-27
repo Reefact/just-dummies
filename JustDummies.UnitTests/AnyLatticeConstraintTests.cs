@@ -65,6 +65,7 @@ public sealed class AnyLatticeConstraintTests {
     }
 
     [Fact(DisplayName = "MultipleOf: filters a OneOf allow-list to its members on the grid.")]
+    [SuppressMessage(JustDummiesRule.JD029.Category, JustDummiesRule.JD029.Id, Justification = SuppressionJustification.JD029.RefusedValueIsTheSubject)]
     public void MultipleOfFiltersAllowList() {
         for (int i = 0; i < SampleCount; i++) {
             int value = Any.Int32().OneOf(5, 10, 15, 20).MultipleOf(10).Generate();

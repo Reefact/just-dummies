@@ -40,6 +40,9 @@
                       OutputItemType="Analyzer"
                       ReferenceOutputAssembly="false"
                       PrivateAssets="all" />
+
+    <!-- The catalogue of this product's own JD rules, so a [SuppressMessage] here names its rule through a constant. -->
+    <ProjectReference Include="..\JustDummies.DiagnosticCatalog\JustDummies.DiagnosticCatalog.csproj" />
   </ItemGroup>
 
   <ItemGroup>

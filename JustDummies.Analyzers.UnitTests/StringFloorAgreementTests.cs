@@ -26,7 +26,7 @@ namespace JustDummies.Analyzers.UnitTests;
 ///         are the same floor.
 ///     </para>
 /// </remarks>
-public sealed class StringFloorAgreementTests {
+public sealed partial class StringFloorAgreementTests {
 
     /// <summary>Above every floor the shapes below reach, so a search that ran away is a failure rather than a pass.</summary>
     private const int PastEveryShapesFloor = 16;
@@ -95,11 +95,14 @@ public sealed class StringFloorAgreementTests {
 
         Check.WithCustomMessage($"{text}: JD030 reported nothing, so there is no floor to compare.").That(diagnostics.Length).IsEqualTo(1);
 
-        Match interval = Regex.Match(diagnostics[0].GetMessage(), @"it draws (\d+) to \d+ characters");
+        Match interval = DrawnInterval().Match(diagnostics[0].GetMessage());
 
         Check.WithCustomMessage($"{text}: JD030's message no longer states an interval — \"{diagnostics[0].GetMessage()}\".").That(interval.Success).IsTrue();
 
         return int.Parse(interval.Groups[1].Value, CultureInfo.InvariantCulture);
     }
+
+    [GeneratedRegex(@"it draws (\d+) to \d+ characters")]
+    private static partial Regex DrawnInterval();
 
 }

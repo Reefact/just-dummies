@@ -1,5 +1,6 @@
 #region Usings declarations
 
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
 using NFluent;
@@ -67,6 +68,7 @@ public sealed class SizeGuardConventionTests {
     ///     that a shape added later is picked up here automatically. Generic factories are closed over
     ///     <see cref="int" />, and the item generators a collection factory needs are supplied from the same source.
     /// </summary>
+    [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
     private static IEnumerable<object> Generators() {
         List<object> generators = [Any.String()];
 

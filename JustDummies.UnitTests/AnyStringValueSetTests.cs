@@ -127,6 +127,7 @@ public sealed class AnyStringValueSetTests {
     }
 
     [Fact(DisplayName = "The advertised cardinality is the surviving pool, not the declared one.")]
+    [SuppressMessage(JustDummiesRule.JD029.Category, JustDummiesRule.JD029.Id, Justification = SuppressionJustification.JD029.RefusedValueIsTheSubject)]
     public void CardinalityCountsTheSurvivingPool() {
         // Only "abc" and "xyz" are three characters long, so the domain a distinct set may draw from holds two
         // values — the shape narrowed the pool before the collection ever gated on it.
@@ -158,6 +159,7 @@ public sealed class AnyStringValueSetTests {
     }
 
     [Fact(DisplayName = "A shape constraint narrows the value set instead of conflicting with it.")]
+    [SuppressMessage(JustDummiesRule.JD029.Category, JustDummiesRule.JD029.Id, Justification = SuppressionJustification.JD029.RefusedValueIsTheSubject)]
     public void AShapeConstraintNarrowsTheSet() {
         // The example the composable form exists for: "abc" satisfies both, so both hold at once.
         foreach (string value in Samples(Any.String().OneOf("abc", "de").WithLength(3))) {
@@ -166,6 +168,7 @@ public sealed class AnyStringValueSetTests {
     }
 
     [Fact(DisplayName = "Every string constraint composes with a value set, narrowing it to the values that satisfy it.")]
+    [SuppressMessage(JustDummiesRule.JD029.Category, JustDummiesRule.JD029.Id, Justification = SuppressionJustification.JD029.RefusedValueIsTheSubject)]
     public void EveryConstraintNarrowsTheSet() {
         // Each case pins the whole surviving domain, not one draw: a single draw from a two-value pool would still
         // land on the expected value about half the time with the constraint's filter removed, which is a test that
@@ -198,6 +201,7 @@ public sealed class AnyStringValueSetTests {
     }
 
     [Fact(DisplayName = "A value set and a shape reach the same verdict whichever order they are declared in.")]
+    [SuppressMessage(JustDummiesRule.JD029.Category, JustDummiesRule.JD029.Id, Justification = SuppressionJustification.JD029.RefusedValueIsTheSubject)]
     public void OrderOfDeclarationDoesNotChangeTheVerdict() {
         Check.That(Any.String().WithLength(3).OneOf("abc", "de").Generate()).IsEqualTo("abc");
         Check.That(Any.String().OneOf("abc", "de").WithLength(3).Generate()).IsEqualTo("abc");
@@ -274,6 +278,7 @@ public sealed class AnyStringValueSetTests {
     }
 
     [Fact(DisplayName = "A casing constraint judges a pooled value on its actual case, accents included.")]
+    [SuppressMessage(JustDummiesRule.JD029.Category, JustDummiesRule.JD029.Id, Justification = SuppressionJustification.JD029.RefusedValueIsTheSubject)]
     public void CasingJudgesNonAsciiLettersToo() {
         // The constructive filler is ASCII, but a supplied value is the caller's own text: 'É' is an uppercase
         // letter, so InLowerCase() must refuse it rather than wave it through and emit a value violating itself.
@@ -311,6 +316,7 @@ public sealed class AnyStringValueSetTests {
     }
 
     [Fact(DisplayName = "An exclusion on a value set never defers to a redraw: the surviving pool is drawn directly.")]
+    [SuppressMessage(JustDummiesRule.JD029.Category, JustDummiesRule.JD029.Id, Justification = SuppressionJustification.JD029.RefusedValueIsTheSubject)]
     public void AnExclusionOnAValueSetIsResolvedEagerly() {
         foreach (string value in Samples(Any.String().OneOf("keep", "drop").Except("drop"))) {
             Check.That(value).IsEqualTo("keep");

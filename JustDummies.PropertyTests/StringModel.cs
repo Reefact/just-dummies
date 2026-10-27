@@ -1,3 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace JustDummies.PropertyTests;
 
 /// <summary>
@@ -45,10 +47,12 @@ internal sealed class StringModel {
         };
     }
 
+    [SuppressMessage(NetAnalyzersRule.CA2249.Category, NetAnalyzersRule.CA2249.Id, Justification = SuppressionJustification.CA2249.NoContainsCharDownlevel)]
     private static bool IsLetter(char character) {
         return Letters.IndexOf(character) >= 0;
     }
 
+    [SuppressMessage(NetAnalyzersRule.CA2249.Category, NetAnalyzersRule.CA2249.Id, Justification = SuppressionJustification.CA2249.NoContainsCharDownlevel)]
     private static bool IsDigit(char character) {
         return Digits.IndexOf(character) >= 0;
     }
@@ -327,7 +331,7 @@ internal sealed class StringModel {
     ///     order is accepted.
     /// </remarks>
     private bool FitsTheLayout(string value) {
-        HashSet<char> alphabet = new(FillerAlphabet());
+        HashSet<char> alphabet = [..FillerAlphabet()];
         int           start    = _prefix?.Length ?? 0;
         string        middle   = value.Substring(start, value.Length - (_suffix?.Length ?? 0) - start);
         int           block    = _fragments.Sum(fragment => fragment.Length);

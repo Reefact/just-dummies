@@ -95,11 +95,7 @@ public static class Scaffolder {
         // and the coarser refusal used to win — sending the developer to add a public constructor, which
         // changes nothing about instantiating an abstract type. Measured over seven repositories, 12 of 55
         // such refusals were really one of these two (`audit/2026-09-02-dum-first-field-measurement.md`).
-        if (IsGeneric(target)) { return ScaffoldOutcome.Refused(ScaffoldStatus.TypeIsGeneric); }
-
-        // An enum has a synthesised parameterless constructor, so the search below finds one — and `new TEnum()`
-        // is `(TEnum)0` on every draw. The library already draws enums; the refusal names how.
-        if (target.TypeKind == TypeKind.Enum) { return ScaffoldOutcome.Refused(ScaffoldStatus.TypeIsEnum); }
+        if (RefusedForWhatItIs(target) is { } refusal) { return ScaffoldOutcome.Refused(refusal); }
 
         // Only the generic refusal reaches the factory path: `CS0144` and `CS9035` are both about `new`,
         // which a factory call site never writes, so an abstract type behind a recognised factory is
@@ -184,6 +180,20 @@ public static class Scaffolder {
         string generatorType = written.Returned is { } returned ? names.Of(returned) : drawn.GeneratorType!;
 
         return ScaffoldedParameter.DrawnFrom(parameter.Name, typeDisplay, generatorType, written.Base, provenance, written.Conversion);
+    }
+
+    /// <summary>
+    ///     The refusal a type earns for what it is, before any of its constructors is asked about.
+    /// </summary>
+    /// <remarks>
+    ///     Generic first: nothing supplies the type argument, whatever else is true. An enum next: it has a
+    ///     synthesised parameterless constructor, so the search would find one — and <c>new TEnum()</c> is
+    ///     <c>(TEnum)0</c> on every draw. The library already draws enums, and the refusal names how.
+    /// </remarks>
+    private static ScaffoldStatus? RefusedForWhatItIs(INamedTypeSymbol target) {
+        if (IsGeneric(target)) { return ScaffoldStatus.TypeIsGeneric; }
+
+        return target.TypeKind == TypeKind.Enum ? ScaffoldStatus.TypeIsEnum : null;
     }
 
     /// <summary>

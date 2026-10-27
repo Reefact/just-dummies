@@ -1,5 +1,7 @@
 # Developer-UX trial — final report
 
+🌍 **Languages:** English (this file) | 🇫🇷 [Français](./REPORT.fr.md)
+
 **Scope.** This trial tested JustDummies and its `any` scaffolder the way a first-time user meets them.
 Twenty invented business domains were each modelled with ordinary constructor guards, scaffolded with
 `any`, and tested with xUnit. The domains are listed in [§11](#11-per-domain-results). The packed

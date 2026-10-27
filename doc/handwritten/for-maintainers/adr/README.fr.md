@@ -221,7 +221,7 @@ que l'option existait le jour où elle compterait.
 | [ADR-0093](0093-publish-mutation-statuses-not-a-score.fr.md) | Publier des statuts de mutation, pas un score | Accepted | consigné ici |
 | [ADR-0094](0094-lift-a-nullable-value-type-rather-than-deriving-it.fr.md) | Lever un type valeur nullable plutôt que le dériver | Accepted | consigné ici |
 | [ADR-0095](0095-read-the-assigned-null-check-as-a-guard-idiom-too.fr.md) | Lire aussi le null-check assigné comme un idiome de garde | Accepted | consigné ici |
-| [ADR-0096](0096-emit-a-parameter-inline-whenever-it-has-nothing-to-report.fr.md) | Émettre un paramètre en ligne dès qu'il n'a rien à rapporter | Accepted | consigné ici |
+| [ADR-0096](0096-emit-a-parameter-inline-whenever-it-has-nothing-to-report.fr.md) | Émettre un paramètre en ligne dès qu'il n'a rien à rapporter | Superseded by ADR-0109 | consigné ici |
 | [ADR-0097](0097-follow-the-declared-bounds-with-the-ordinary-magnitude-window.fr.md) | Faire suivre les bornes déclarées par la fenêtre de magnitude ordinaire | Accepted | consigné ici |
 | [ADR-0098](0098-offer-every-oneof-in-both-shapes.fr.md) | Offrir chaque OneOf sous les deux formes, params et séquence | Accepted | consigné ici |
 | [ADR-0099](0099-offer-oneof-wherever-the-generator-would-otherwise-build.fr.md) | Offrir OneOf partout où le générateur construirait sinon la valeur | Accepted | consigné ici |
@@ -234,4 +234,4 @@ que l'option existait le jour où elle compterait.
 | [ADR-0106](0106-test-the-analyzers-against-the-run-time-in-a-sibling-suite.fr.md) | Tester les analyseurs contre l'exécution dans une suite sœur | Accepted | consigné ici |
 | [ADR-0107](0107-own-a-constraint-repeated-identically-as-one-rule.fr.md) | Confier à une seule règle la contrainte répétée à l'identique, et en retirer JD024 | Accepted | consigné ici |
 | [ADR-0108](0108-name-the-scaffolder-after-what-it-draws.fr.md) | Nommer le scaffolder d'après ce qu'il tire, non d'après le rôle d'une valeur | Accepted | consigné ici |
-| [ADR-0109](0109-let-a-test-refine-a-parameters-valid-base-rather-than-replace-it.fr.md) | Laisser un test affiner la base valide d'un paramètre plutôt que la remplacer | Proposed | consigné ici |
+| [ADR-0109](0109-let-a-test-refine-a-parameters-valid-base-rather-than-replace-it.fr.md) | Laisser un test affiner la base valide d'un paramètre plutôt que la remplacer | Accepted | consigné ici |

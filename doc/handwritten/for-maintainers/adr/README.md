@@ -206,7 +206,7 @@ failure mode of a "not now" is that nobody remembers the option existed on the d
 | [ADR-0093](0093-publish-mutation-statuses-not-a-score.md) | Publish mutation statuses, not a score | Accepted | recorded here |
 | [ADR-0094](0094-lift-a-nullable-value-type-rather-than-deriving-it.md) | Lift a nullable value type rather than deriving it | Accepted | recorded here |
 | [ADR-0095](0095-read-the-assigned-null-check-as-a-guard-idiom-too.md) | Read the assigned null-check as a guard idiom too | Accepted | recorded here |
-| [ADR-0096](0096-emit-a-parameter-inline-whenever-it-has-nothing-to-report.md) | Emit a parameter inline whenever it has nothing to report | Accepted | recorded here |
+| [ADR-0096](0096-emit-a-parameter-inline-whenever-it-has-nothing-to-report.md) | Emit a parameter inline whenever it has nothing to report | Superseded by ADR-0109 | recorded here |
 | [ADR-0097](0097-follow-the-declared-bounds-with-the-ordinary-magnitude-window.md) | Follow the declared bounds with the ordinary-magnitude window | Accepted | recorded here |
 | [ADR-0098](0098-offer-every-oneof-in-both-shapes.md) | Offer every OneOf in both the params and the sequence shape | Accepted | recorded here |
 | [ADR-0099](0099-offer-oneof-wherever-the-generator-would-otherwise-build.md) | Offer OneOf wherever the generator would otherwise build the value | Accepted | recorded here |
@@ -219,4 +219,4 @@ failure mode of a "not now" is that nobody remembers the option existed on the d
 | [ADR-0106](0106-test-the-analyzers-against-the-run-time-in-a-sibling-suite.md) | Test the analyzers against the run time in a sibling suite | Accepted | recorded here |
 | [ADR-0107](0107-own-a-constraint-repeated-identically-as-one-rule.md) | Own a constraint repeated identically as one rule, and narrow JD024 out of it | Accepted | recorded here |
 | [ADR-0108](0108-name-the-scaffolder-after-what-it-draws.md) | Name the scaffolder after what it draws, not after the role a value plays | Accepted | recorded here |
-| [ADR-0109](0109-let-a-test-refine-a-parameters-valid-base-rather-than-replace-it.md) | Let a test refine a parameter's valid base rather than replace it | Proposed | recorded here |
+| [ADR-0109](0109-let-a-test-refine-a-parameters-valid-base-rather-than-replace-it.md) | Let a test refine a parameter's valid base rather than replace it | Accepted | recorded here |

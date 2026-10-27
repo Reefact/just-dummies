@@ -2,7 +2,7 @@
 
 🌍 🇬🇧 [English](0096-emit-a-parameter-inline-whenever-it-has-nothing-to-report.md) · 🇫🇷 Français (ce fichier)
 
-**Status:** Accepted
+**Status:** Superseded by [ADR-0109](0109-let-a-test-refine-a-parameters-valid-base-rather-than-replace-it.fr.md)
 **Proposed:** 2026-09-03
 **Accepted:** 2026-09-03
 **Decision Makers:** Reefact

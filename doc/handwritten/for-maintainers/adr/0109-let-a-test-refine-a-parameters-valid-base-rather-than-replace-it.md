@@ -2,8 +2,9 @@
 
 🌍 🇬🇧 English (this file) · 🇫🇷 [Français](0109-let-a-test-refine-a-parameters-valid-base-rather-than-replace-it.fr.md)
 
-**Status:** Proposed
+**Status:** Accepted
 **Proposed:** 2026-10-27
+**Accepted:** 2026-10-27
 **Decision Makers:** Reefact
 
 Supersedes [ADR-0096](0096-emit-a-parameter-inline-whenever-it-has-nothing-to-report.md).

@@ -59,6 +59,7 @@
        net10-only by construction; the rest of the suite proves the netstandard2.0 contract on the floor. -->
   <ItemGroup Condition="'$(TargetFramework)' == 'net472'">
     <Compile Remove="ModernTypeInvariantProperties.cs" />
+    <Compile Remove="PoolInspectionModernEngineProperties.cs" />
   </ItemGroup>
 
 </Project>

@@ -40,9 +40,9 @@ internal sealed class GenerateCommand : AsyncCommand<GenerateSettings> {
     }
 
     /// <inheritdoc />
-    protected override Task<int> ExecuteAsync(CommandContext context,
-                                              GenerateSettings settings,
-                                              CancellationToken cancellationToken) {
+    public override Task<int> ExecuteAsync(CommandContext context,
+                                           GenerateSettings settings,
+                                           CancellationToken cancellationToken) {
         return RunAsync(settings, cancellationToken);
     }
 

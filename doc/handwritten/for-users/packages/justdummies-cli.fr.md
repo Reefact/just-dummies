@@ -71,7 +71,7 @@ générateur qui tirerait discrètement une valeur plausible à cet endroit sera
 
 **`to verify` fonctionne pareil, et pour la même raison.** Là où votre constructeur délègue sa
 validation à un helper, garde dans une forme que l'outil n'analyse pas, ou garde à un endroit dont il
-ne peut pas répondre — sous une écriture du paramètre, ou sous quelque chose qui décide si la garde
+ne peut pas répondre — après une affectation du paramètre ou de l'état, ou sous quelque chose qui décide si la garde
 s'exécute —, il ne peut pas promettre que la recette inférée honore votre véritable invariant — alors il écrit cette recette comme base de
 travail et ajoute au-dessus une ligne qui ne compile pas :
 

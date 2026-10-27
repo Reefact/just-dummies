@@ -931,6 +931,22 @@ seulement dans le `nameof` du message du `throw` ne compte pas — cela nomme le
 l'intention d'un lecteur plutôt que de tester quoi que ce soit, et toute garde réelle de cette forme
 nomme aussi son sujet dans la condition.
 
+**Après la première affectation de l'état, rien n'est lu, mais le corps est encore parcouru.** « En
+tête » est ce qui permet de *lire* une garde : passé une écriture de l'état, le moteur ne peut plus
+garantir ce qu'une condition dit de la valeur tirée. Elle rejette pourtant toujours cette valeur, et
+la passer sous silence présentait le generator neutre comme inféré alors que le constructeur
+refusait la plupart de ses tirages : `Rate = rate; if (currency.Length != 3) { throw … }` laissait
+`currency` à `Any.String().NonEmpty()`, « 2 of 2 parameters inferred ». Chaque instruction après
+l'arrêt de l'analyse est donc interrogée sur ce qu'elle *aurait* dit si elle s'était trouvée au-dessus,
+et un paramètre qu'elle aurait restreint ou marqué est marqué `unread guards` à la place — une
+instruction qui lève, et un appel que l'ensemble reconnaît comme une garde
+(`ThrowIfNegativeOrZero(rack); Rack = rack; ThrowIfGreaterThan(rack, 99);` garde `.Positive()` et
+marque le plafond qu'il ne peut pas lire). Une vérification satisfaite par construction — un
+null-check, quelle que soit son écriture — ne restreint rien et reste silencieuse là, comme
+au-dessus. Un appel que l'ensemble ne reconnaît *pas* est laissé tel quel après l'arrêt de l'analyse : là,
+`_items.AddRange(items);` est le remplissage ordinaire de l'état sur lequel le parcours vient de
+s'arrêter, et le marquer bloquerait des constructeurs ne portant aucune garde (§9).
+
 **Une instruction de tête n'a pas besoin non plus d'être un `if` pour compter.** Une garde entièrement
 déléguée à un helper — `Ensure.NotBlank(value);`, appelé tel quel, sans aucun `if` dans le
 constructeur — lève depuis l'intérieur d'un appel que l'ensemble clos ci-dessus n'analyse pas, et
@@ -1499,7 +1515,7 @@ Nommés explicitement pour ne pas être pris pour des oublis.
   generator tire ; et il atteint une garde dont le moteur ne peut pas montrer qu'elle s'exécute sur
   tout chemin — parce que quelque chose l'entoure qui en décide, ou parce qu'une instruction au-dessus
   d'elle peut la sauter — et qui énoncerait sinon un invariant des chemins qui l'atteignent et non du
-  paramètre (§5.3). Deux formes lui échappent encore, et toutes deux sont silencieuses plutôt que
+  paramètre (§5.3). Trois formes lui échappent encore, et toutes trois sont silencieuses plutôt que
   simplement non lues — le tool n'y voit aucun rejet dont douter. Une garde-helper qui **retourne**
   la valeur vérifiée — `_name = Ensure.Valid(value);` — est indiscernable d'une normalisation, et la
   lire comme un doute reviendrait à lire `_name = value.Trim();` comme un doute aussi, ce qui bloque
@@ -1508,7 +1524,9 @@ Nommés explicitement pour ne pas être pris pour des oublis.
   retourne sa valeur garde cette réponse. Et une garde atteinte seulement par un niveau
   d'indirection que le tool ne suit pas — une copie locale du paramètre (`var v = value;
   Validate(v);`), un lambda qui le capture, un appel atteint via un membre plutôt que par le nom
-  propre du paramètre. Dans les deux cas, le tool ne peut toujours pas distinguer ce paramètre d'un
+  propre du paramètre. Et une garde-helper que l'ensemble ne reconnaît pas, appelée après la première
+  affectation à l'état (§5.3), où elle est indiscernable du remplissage de cet état. Dans les trois
+  cas, le tool ne peut toujours pas distinguer ce paramètre d'un
   paramètre non contraint, et il ne devine pas — c'est de ce résidu que parle ce non-objectif : non
   pas ce qui arrive une fois le doute établi, mais le doute que le tool ne voit jamais.
 * **L'aller-retour.** Le tool ne relit jamais un fichier qu'il a écrit.

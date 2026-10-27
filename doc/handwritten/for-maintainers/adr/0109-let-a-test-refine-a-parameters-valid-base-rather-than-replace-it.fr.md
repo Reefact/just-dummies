@@ -13,211 +13,218 @@ Supersède l'[ADR-0096](0096-emit-a-parameter-inline-whenever-it-has-nothing-to-
 
 ## Contexte
 
-Un `AnyX` scaffoldé tire chaque paramètre de constructeur d'une recette que le moteur a inférée : une
-ligne de la table de base resserrée par les gardes du constructeur (§5.2, §5.3), ou, pour un paramètre
-composé, le générateur que ce type possède (§5.4, [ADR-0089](0089-draw-a-composed-parameter-through-the-generator-its-type-owns.fr.md)).
-Cette recette est la **base valide** du paramètre : ce que le constructeur accepte.
+Un `AnyX` scaffoldé tire chaque paramètre du constructeur à partir d'une recette inférée par le
+moteur : une ligne de la table de base, resserrée par les gardes du constructeur (§5.2, §5.3), ou,
+pour un paramètre composé, le générateur propre à son type (§5.4, [ADR-0089](0089-draw-a-composed-parameter-through-the-generator-its-type-owns.fr.md)). Cette recette constitue
+la **base valide** du paramètre : ce que le constructeur accepte.
 
-L'endroit où la base est écrite dépend de ce que le paramètre a à signaler
-([ADR-0096](0096-emit-a-parameter-inline-whenever-it-has-nothing-to-report.fr.md)) : un paramètre
-dont une garde a resserré la chaîne, ou que retient l'un des deux marqueurs bloquants des §5.5 et
-§5.6, reçoit une fabrique privée que le constructeur appelle ; tout autre est écrit en ligne, comme
-un appel dans l'initialiseur du constructeur, parce qu'une méthode enveloppant cet appel ne dirait
-rien que l'appel ne dise.
+L'endroit où cette base est écrite dépend de ce que le paramètre a à signaler ([ADR-0096](0096-emit-a-parameter-inline-whenever-it-has-nothing-to-report.fr.md)). Un paramètre
+dont une garde a resserré la chaîne, ou que bloque l'un des deux marqueurs des §5.5 et §5.6, reçoit
+une fabrique privée appelée par le constructeur ; tous les autres sont écrits directement dans
+l'initialiseur du constructeur, sous la forme d'un appel unique, car une méthode qui ne ferait
+qu'envelopper cet appel n'apporterait rien.
 
 Une règle peut appartenir au type composant plutôt qu'au type composé. Un `Shipment` peut n'accepter
-qu'une `Route` nationale, alors qu'une `Route` seule peut être internationale. Le moteur ne sait pas
-appliquer une telle règle à un paramètre composé : il marque le paramètre (§5.6), et le développeur
-écrit la règle dans le fichier, qui lui appartient
-([ADR-0056](0056-scaffold-the-generator-once-and-hand-the-file-to-the-developer.fr.md)).
+qu'une `Route` nationale, alors qu'une `Route` prise isolément peut être internationale. Le moteur ne
+sait pas appliquer une telle règle à un paramètre composé : il marque le paramètre (§5.6), et le
+développeur écrit la règle dans le fichier, qui lui appartient ([ADR-0056](0056-scaffold-the-generator-once-and-hand-the-file-to-the-developer.fr.md)).
 
-Chaque paramètre portait deux surcharges `With` : l'une fixant une valeur, l'autre prenant un
-`IAny<T>` qui **remplace** la recette. Un test qui tient à une partie d'une valeur — la distance d'une
-route, une borne haute sur une quantité — ne pouvait l'atteindre que par la seconde, en construisant
-un générateur de zéro. Ce générateur ne porte pas la base : le test doit répéter la règle, ou la perd.
+Chaque paramètre disposait de deux surcharges `With` : l'une fixait une valeur, l'autre acceptait un
+`IAny<T>` qui **remplaçait** la recette. Un test qui ne s'intéressait qu'à une partie d'une valeur —
+la distance d'une route, une borne maximale pour une quantité — n'avait d'autre choix que la seconde,
+et devait construire un générateur de toutes pièces. Ce générateur ne reprend pas la base : le test
+doit répéter la règle, ou il la perd.
 
-Un test qui la perd compile toujours, et tire : il passe chaque fois que le tirage satisfait la règle
-par hasard, et échoue aux autres exécutions, pour une raison sans rapport avec ce qu'il vérifie. Un
-test qui n'échoue qu'à certaines exécutions est l'échec que la bibliothèque existe pour éliminer.
+Un test qui la perd compile quand même, et tire des valeurs : il réussit chaque fois que le tirage
+respecte la règle par hasard, et échoue lors des autres exécutions, pour une raison sans rapport avec
+ce qu'il vérifie. Or un test qui n'échoue que de temps en temps est précisément ce que la bibliothèque
+cherche à éliminer.
 
-Les générateurs de la bibliothèque sont des recettes immuables, chaque contrainte renvoyant une
-nouvelle instance ([ADR-0057](0057-make-the-emitted-generator-a-first-class-iany.fr.md)). Sur un
-générateur de la bibliothèque, les contraintes s'additionnent, et deux contraintes qui se contredisent
-sont refusées là où elles sont déclarées, le message nommant les deux côtés. Une contrainte peut
-renvoyer un autre type de générateur que celui sur lequel elle est appelée.
+Les générateurs de la bibliothèque sont des recettes immuables : chaque contrainte renvoie une
+nouvelle instance ([ADR-0057](0057-make-the-emitted-generator-a-first-class-iany.fr.md)). Sur un générateur de la bibliothèque, les contraintes se cumulent, et
+deux contraintes contradictoires sont refusées dès leur déclaration, avec un message qui cite les
+deux. Une contrainte peut renvoyer un type de générateur différent de celui sur lequel elle est
+appelée.
 
-L'analyseur qui signale une contrainte jetée, `JD006`, exempte un appel qui forme tout le corps d'une
-lambda passée en argument, pour qu'un test qui affirme un refus puisse y écrire l'appel.
+L'analyseur qui signale une contrainte dont le résultat est ignoré, `JD006`, ne signale pas un appel
+qui constitue à lui seul le corps d'une lambda passée en argument, afin qu'un test qui vérifie un
+refus puisse écrire l'appel à cet endroit.
 
-La justification d'[ADR-0061](0061-draw-from-the-ambient-context-and-hold-no-state.fr.md) s'appuyait
-sur la surcharge `IAny<T>` pour servir un développeur qui tire depuis un contexte isolé
-`Any.WithSeed`, paramètre par paramètre ; la portée ambiante, `Any.UseSeed`, atteint chaque tirage du
-générateur émis, paramètres composés compris. La justification
-d'[ADR-0064](0064-never-draw-null-for-a-nullable-parameter.fr.md) s'appuyait sur la même surcharge
-comme moyen, pour un test, d'opter pour un générateur qui tire parfois `null`.
+La justification de l'[ADR-0061](0061-draw-from-the-ambient-context-and-hold-no-state.fr.md) comptait sur la surcharge `IAny<T>` pour un développeur qui tire ses
+valeurs d'un contexte isolé `Any.WithSeed`, paramètre par paramètre ; la portée ambiante,
+`Any.UseSeed`, couvre tous les tirages du générateur émis, y compris ceux des paramètres composés. La
+justification de l'[ADR-0064](0064-never-draw-null-for-a-nullable-parameter.fr.md) comptait sur la même surcharge pour permettre à un test d'utiliser un
+générateur qui renvoie parfois `null`.
 
 La bibliothèque fait correspondre un `AnyX` scaffoldé à la Creation Method anonyme et paramétrée
 d'*xUnit Test Patterns* (`core-concepts`) : ses méthodes `With` en sont les paramètres.
 
 ## Décision
 
-Chaque paramètre résolu d'un générateur scaffoldé est tiré d'une fabrique unique qui porte sa base
-valide, et un test en fixe la valeur ou affine cette base par une lambda, sans jamais la remplacer.
+Chaque paramètre résolu d'un générateur scaffoldé est tiré d'une fabrique unique qui contient sa base
+valide ; un test fixe sa valeur ou affine cette base au moyen d'une lambda, mais ne la remplace jamais.
 
 ## Justification
 
-Le défaut n'était pas qu'un test puisse construire un générateur ; c'était qu'en construire un
-revenait à repartir de zéro. Une Creation Method existe pour qu'un test n'ait pas à savoir construire
-un objet valide, y compris les objets dont il dépend. La surcharge de remplacement faisait refluer ce
-savoir dans chaque test qui paramétrait une valeur : une règle de construction écrite une fois dans le
-générateur était recopiée dans chacun de ces tests, où elle paraît aussi délibérée que la valeur dont
-le test parle — et où l'oublier compile. Affiner part de la base, au contraire : le test ne dit que ce
-qui lui importe, et la règle garde son adresse unique.
+Le problème n'était pas qu'un test puisse construire un générateur, mais qu'en construire un
+l'obligeait à repartir de zéro. Une Creation Method existe pour qu'un test n'ait pas à savoir
+construire un objet valide, ni les objets dont celui-ci dépend. Avec la surcharge de remplacement,
+chaque test qui paramétrait une valeur était obligé de connaître et de répéter ces règles de
+construction : une règle écrite une seule fois dans le générateur se retrouvait recopiée dans chacun
+de ces tests, où elle paraît aussi délibérée que la valeur réellement testée — et où l'oublier ne
+provoque aucune erreur de compilation. Affiner part au contraire de la base : le test n'exprime que
+ce qui l'intéresse, et la règle reste définie à un seul endroit.
 
-Une fabrique unique est ce qui rend cette adresse réelle. La recette par défaut et l'affinage doivent
-partir du même endroit, sinon le développeur qui resserre l'une laisse l'autre lâche. Cet endroit doit
-être celui que le développeur modifie déjà : la base écrite par le moteur, ou la règle qu'il a écrite
-là où le moteur le lui demandait. Un affinage partant d'un générateur neuf compilerait, se lirait
-comme s'il partait d'une base valide, et reproduirait l'échec intermittent dans le code généré au lieu
-du test.
+C'est la fabrique unique qui garantit cet endroit unique. La recette par défaut et l'affinage doivent
+partir de la même base, faute de quoi le développeur qui renforce l'une laisse l'autre inchangée. Et
+cette base doit se trouver là où le développeur intervient déjà : la base écrite par le moteur, ou la
+règle qu'il a ajoutée là où le moteur le lui demandait. Un affinage partant d'un générateur neuf
+compilerait, laisserait croire qu'il part d'une base valide, et ne ferait que déplacer l'échec
+intermittent du test vers le code généré.
 
-C'est aussi pourquoi chaque paramètre résolu a désormais une fabrique, et pourquoi cette décision
-supersède l'ADR-0096. L'ADR-0096 avait raison : une méthode enveloppant un seul appel ne disait rien
-que l'appel ne dise — tant que le constructeur était son seul appelant. Avec un second appelant, la
-fabrique dit la chose qu'un lecteur a le plus besoin de trouver : où est la base du paramètre, pour le
-défaut comme pour chaque affinage. Un paramètre en ligne dans l'initialiseur laisserait à l'affinage
-soit une seconde copie de cet appel, soit rien d'où partir.
+C'est aussi pourquoi chaque paramètre résolu dispose désormais d'une fabrique, et pourquoi cette
+décision remplace l'ADR-0096. L'ADR-0096 avait raison de considérer qu'une méthode enveloppant un seul
+appel n'apportait rien, tant que le constructeur était son unique appelant. Dès qu'un second appelant
+existe, la fabrique indique ce qu'un lecteur a le plus besoin de trouver : l'emplacement de la base du
+paramètre, pour la valeur par défaut comme pour chaque affinage. Un paramètre écrit directement dans
+l'initialiseur obligerait l'affinage soit à dupliquer cet appel, soit à partir de rien.
 
-La lambda renvoie le générateur affiné plutôt que de modifier celui qu'elle reçoit, parce que les
-générateurs sont immuables et qu'un `With` mutable contredirait le contrat que le type émis implémente
-(ADR-0057). Elle garde aussi visible la seule erreur qui reste possible : une lambda qui jette une
-contrainte doit le faire par une instruction dans un bloc, que `JD006` signale, alors qu'une forme
-mutable jetterait l'affinage entier précisément sous la forme que `JD006` exempte.
+La lambda renvoie le générateur affiné au lieu de modifier celui qu'elle reçoit, car les générateurs
+sont immuables et une méthode `With` qui modifierait l'instance contredirait le contrat implémenté
+par le type émis (ADR-0057). Ce choix rend aussi visible la seule erreur encore possible : pour
+ignorer une contrainte, une lambda doit l'écrire comme une instruction dans un bloc, ce que `JD006`
+signale, alors qu'une forme mutable ferait disparaître tout l'affinage, précisément sous la forme
+que `JD006` ne signale pas.
 
-Sur une feuille, affiner est plus sûr que répéter, pas seulement plus court : les contraintes de la
-bibliothèque s'additionnent, donc un affinage qui contredit la base échoue là où il est écrit, en
-nommant les deux côtés, à chaque exécution. C'est la ligne de correction de la bibliothèque appliquée
-au site d'appel ([ADR-0046](0046-bound-the-generators-ambition-never-its-correctness.fr.md)).
+Pour une valeur simple, affiner est plus sûr que répéter, et pas seulement plus court : les
+contraintes de la bibliothèque se cumulent, si bien qu'un affinage qui contredit la base échoue là où
+il est écrit, à chaque exécution, avec un message qui cite les deux contraintes. C'est l'exigence de
+correction de la bibliothèque, appliquée au site d'appel ([ADR-0046](0046-bound-the-generators-ambition-never-its-correctness.fr.md)).
 
-Supprimer la surcharge de remplacement plutôt que la garder à côté de celle d'affinage, c'est ce qui
-fait de l'échec une erreur de compilation. Avec les deux, rien au site d'appel ne les distingue, et
-celle qui perd la règle reste celle vers laquelle un lecteur se tourne. Les besoins qu'elle servait
-ont tous un autre chemin : fixer une valeur couvre un test qui tient à la valeur entière, `null`
-compris ; la portée de seed ambiante couvre le déterminisme hors d'un test mieux que les générateurs de
-contexte paramètre par paramètre, puisqu'elle atteint aussi les paramètres composés ; et le reste —
-tirer parmi quelques valeurs choisies, une collection dont les éléments demandent une autre recette,
-un paramètre nullable tiré `null` de temps en temps — est assez rare pour que le développeur ajoute la
-surcharge dans son propre fichier partiel, où elle devient un choix fait pour un paramètre plutôt que
-le défaut offert sur tous.
+Supprimer la surcharge de remplacement, plutôt que de la conserver à côté de la surcharge
+d'affinage, est ce qui transforme l'échec en erreur de compilation. Si les deux coexistaient, rien au
+site d'appel ne permettrait de les distinguer, et celle qui perd la règle resterait celle vers
+laquelle un lecteur se tourne naturellement. Les besoins qu'elle couvrait disposent tous d'une autre
+solution : fixer une valeur couvre le test qui s'intéresse à la valeur entière, `null` compris ; la
+portée de seed ambiante couvre le déterminisme hors d'un test mieux que des générateurs de contexte
+passés paramètre par paramètre, puisqu'elle atteint aussi les paramètres composés ; enfin, les autres
+cas — tirer parmi quelques valeurs choisies, tirer autrement les éléments d'une collection, tirer
+`null` de temps en temps pour un paramètre nullable — sont assez rares pour que le développeur ajoute
+la surcharge dans son propre fichier partiel. Elle y devient un choix fait pour un paramètre précis,
+et non un comportement proposé par défaut pour tous.
 
-La surcharge de valeur reste. Un test qui tient à la valeur entière doit pouvoir le dire, et une valeur
-fixée qui viole une règle échoue à chaque exécution plutôt qu'à certaines, ce qui est l'échec visible
-que cette décision recherche.
+La surcharge par valeur est conservée. Un test qui s'intéresse à la valeur entière doit pouvoir le
+dire, et une valeur fixée qui enfreint une règle échoue à chaque exécution, et non de temps en
+temps : c'est exactement l'échec visible que recherche cette décision.
 
 ## Alternatives considérées
 
-### Un `Action<T>` de configuration, la forme du patron options
+### Un `Action<T>` de configuration, sur le modèle du patron options
 
-Envisagé parce que c'est la forme familière de la configuration imbriquée en .NET, et qu'elle permet à
-une lambda à bloc d'enchaîner des ajustements sans rien renvoyer.
+Envisagé parce que c'est la forme habituelle de la configuration imbriquée en .NET, et qu'une lambda
+à bloc peut alors enchaîner plusieurs ajustements sans rien renvoyer.
 
-Rejeté parce que les générateurs émis sont immuables : l'appel naturel compile et jette l'ajustement
-en silence, sous la seule forme que `JD006` exempte. Rendre `With` mutable rouvrirait ADR-0057.
+Rejeté parce que les générateurs émis sont immuables : l'appel le plus naturel compile, mais
+l'ajustement est perdu sans avertissement, sous la forme même que `JD006` ne signale pas. Rendre
+`With` mutable remettrait en cause l'ADR-0057.
 
-### Faire partir la lambda d'un `new AnyX()` neuf
+### Faire partir la lambda d'un nouveau `new AnyX()`
 
-Envisagé parce que cela ne demande aucune fabrique pour un paramètre composé, et garde la forme émise
-d'ADR-0089.
+Envisagé parce qu'aucune fabrique ne serait alors nécessaire pour un paramètre composé, ce qui
+préserverait la forme émise décrite par l'ADR-0089.
 
-Rejeté parce que cela ignore la base écrite par le développeur. La lambda remettrait au test une valeur
-arbitraire tout en se lisant comme si elle partait d'une base valide.
+Rejeté parce que la base écrite par le développeur serait ignorée. La lambda fournirait au test une
+valeur arbitraire tout en laissant croire qu'elle part d'une base valide.
 
-### Garder les paramètres en ligne de l'ADR-0096, et répéter leur appel dans la surcharge d'affinage
+### Conserver les paramètres écrits en ligne de l'ADR-0096 et répéter leur appel dans la surcharge d'affinage
 
-Envisagé parce que cela garde le fichier émis aussi court qu'avant, une fabrique seulement là où un
-paramètre a quelque chose à signaler.
+Envisagé parce que le fichier émis resterait aussi court qu'avant, avec une fabrique uniquement pour
+les paramètres qui ont quelque chose à signaler.
 
-Rejeté parce que cela écrit la base deux fois dans un même fichier. Un développeur qui modifie
-l'appel dans l'initialiseur du constructeur laisse la copie de l'affinage telle quelle, ce qui est la
-dérive qu'une adresse unique existe pour empêcher.
+Rejeté parce que la base serait écrite deux fois dans le même fichier. Le développeur qui modifie
+l'appel dans l'initialiseur du constructeur laisserait la copie de l'affinage inchangée : c'est
+précisément la divergence qu'un emplacement unique doit empêcher.
 
 ### Partir de la recette courante, après un appel `With` antérieur
 
-Envisagé parce que des affinages successifs se composeraient alors.
+Envisagé parce que des affinages successifs pourraient alors se combiner.
 
-Rejeté parce que le champ devrait garder le type concret du générateur, et qu'une fois une valeur
-fixée il ne reste aucun générateur d'où partir. Toutes les autres méthodes `With` laissent le dernier
-appel l'emporter, et celle-ci aussi.
+Rejeté parce que le champ devrait conserver le type concret du générateur, et qu'une fois une valeur
+fixée, il ne reste plus de générateur d'où partir. Pour toutes les autres méthodes `With`, c'est le
+dernier appel qui l'emporte ; il en va de même pour celle-ci.
 
-### Garder la surcharge de remplacement à côté de celle d'affinage
+### Conserver la surcharge de remplacement à côté de celle d'affinage
 
-Envisagé parce que cela laisse compiler tous les appels existants.
+Envisagé parce que tous les appels existants continueraient de compiler.
 
-Rejeté parce que la surcharge qui perd la règle resterait à une frappe de celle qui la garde, sans rien
-au site d'appel pour les distinguer.
+Rejeté parce que la surcharge qui perd la règle resterait à portée de main de celle qui la conserve,
+sans que rien au site d'appel permette de les distinguer.
 
-### Garder la surcharge de remplacement sur les seuls paramètres nullables
+### Conserver la surcharge de remplacement pour les seuls paramètres nullables
 
-Envisagé parce qu'un type valeur nullable tiré `null` de temps en temps n'a aucun chemin par une lambda
-qui doit renvoyer le générateur qu'elle reçoit.
+Envisagé parce qu'un type valeur nullable tiré `null` de temps en temps ne peut pas passer par une
+lambda qui doit renvoyer le générateur qu'elle reçoit.
 
-Rejeté parce que le fichier partiel couvre ce besoin en quelques lignes, et qu'une seule forme pour
-tous les paramètres se lit et s'enseigne plus simplement qu'une forme qui dépend du type du paramètre.
+Rejeté parce que le fichier partiel couvre ce besoin en quelques lignes, et qu'une forme identique
+pour tous les paramètres est plus simple à lire et à enseigner qu'une forme qui dépend du type du
+paramètre.
 
-### Les paramètres composés seulement
+### Limiter la décision aux paramètres composés
 
-Envisagé parce que la règle du type composant est l'endroit où le problème a d'abord été vu.
+Envisagé parce que c'est sur la règle d'un type composant que le problème est d'abord apparu.
 
-Rejeté parce qu'une feuille a le même défaut : remplacer un `Positive()` issu d'une garde le perd
-exactement comme remplacer une base composée perd une règle écrite par le développeur.
+Rejeté parce qu'une valeur simple présente le même défaut : remplacer un `Positive()` issu d'une
+garde le fait disparaître exactement comme remplacer une base composée fait disparaître une règle
+écrite par le développeur.
 
-### Faire descendre un contexte isolé à travers les générateurs
+### Propager un contexte isolé à travers les générateurs
 
-Envisagé parce que cela laisserait `Any.WithSeed` atteindre chaque paramètre, le cas que la surcharge
-de remplacement servait.
+Envisagé parce que `Any.WithSeed` pourrait alors atteindre chaque paramètre, ce qui était le cas
+couvert par la surcharge de remplacement.
 
-Rejeté parce que cela demande une seconde copie de chaque recette et renverse ADR-0061, alors que la
-portée ambiante `Any.UseSeed` atteint déjà tout l'arbre.
+Rejeté parce qu'il faudrait une seconde copie de chaque recette et revenir sur l'ADR-0061, alors que
+la portée ambiante `Any.UseSeed` atteint déjà l'ensemble de l'arbre.
 
 ## Conséquences
 
 ### Positives
 
-* Un test ne dit que ce qui lui importe ; une règle qu'un paramètre doit satisfaire est écrite une
-  fois, dans le générateur, et la changer là change tous les tests à la fois.
+* Un test n'exprime que ce qui l'intéresse ; une règle qu'un paramètre doit respecter est écrite une
+  seule fois, dans le générateur, et la modifier à cet endroit modifie tous les tests à la fois.
 * L'appel qui remplace la base et perd la règle ne compile plus.
-* Sur une feuille, un affinage qui contredit la base est refusé là où il est écrit, à chaque exécution.
-* La surface émise ne grandit pas : chaque paramètre garde deux surcharges `With`.
+* Pour une valeur simple, un affinage qui contredit la base est refusé là où il est écrit, à chaque
+  exécution.
+* La surface émise n'augmente pas : chaque paramètre conserve deux surcharges `With`.
 
 ### Négatives
 
-* Chaque paramètre résolu porte une fabrique, donc le fichier émis est plus long. Cela renverse la
-  décision de l'ADR-0096, et la conséquence de l'ADR-0089 selon laquelle un paramètre composé ne porte
-  aucune méthode.
+* Chaque paramètre résolu dispose d'une fabrique, ce qui allonge le fichier émis. Cela revient sur la
+  décision de l'ADR-0096, ainsi que sur la conséquence de l'ADR-0089 selon laquelle un paramètre
+  composé ne porte aucune méthode.
 * Un paramètre composé dont le générateur n'existe pas encore est nommé à plusieurs endroits du
-  fichier, donc le build signale le type manquant plus d'une fois.
-* Tirer parmi des valeurs choisies, changer la recette des éléments d'une collection et tirer `null`
-  de temps en temps demandent une surcharge que le développeur écrit dans son fichier partiel.
-* Les fichiers scaffoldés avant cette décision gardent la surcharge de remplacement ; un nouveau
-  scaffold la retire, et un appel qui l'utilise encore cesse alors de compiler.
-* Les justifications d'ADR-0061 et d'ADR-0064 nomment la surcharge de remplacement ; leurs décisions
-  tiennent, mais les chemins qu'elles décrivaient passent désormais par la portée ambiante, la
-  surcharge de valeur et le fichier partiel.
+  fichier : le build signale donc le type manquant plusieurs fois.
+* Tirer parmi des valeurs choisies, tirer autrement les éléments d'une collection et tirer `null` de
+  temps en temps nécessitent une surcharge que le développeur écrit dans son fichier partiel.
+* Les fichiers scaffoldés avant cette décision conservent la surcharge de remplacement ; une nouvelle
+  génération la supprime, et tout appel qui l'utilise encore cesse alors de compiler.
+* Les justifications des ADR-0061 et ADR-0064 mentionnent la surcharge de remplacement ; leurs
+  décisions restent valables, mais les solutions qu'elles décrivaient passent désormais par la portée
+  ambiante, la surcharge par valeur et le fichier partiel.
 
 ### Risques
 
-* Un développeur qui comptait sur la surcharge de remplacement peut lire son absence comme une
-  régression. La documentation doit enseigner chaque chemin restant, pas à pas.
-* Un affinage garantit son point de départ, pas son résultat : une lambda qui écrase ce que la base a
-  fixé pour une valeur composée est le choix du test, et peut encore produire une valeur que le
-  constructeur composant refuse.
+* Un développeur qui utilisait la surcharge de remplacement peut percevoir sa disparition comme une
+  régression. La documentation doit présenter chaque solution restante, étape par étape.
+* Un affinage garantit son point de départ, pas son résultat : une lambda qui écrase ce que la base
+  avait fixé pour une valeur composée relève du choix du test, et peut encore produire une valeur que
+  le constructeur du type composant refuse.
 
 ## Actions de suivi
 
-* Enseigner les deux surcharges et chaque chemin que servait celle de remplacement sur la page
-  `justdummies-cli`.
-* Guetter un retour du terrain sur un besoin que les chemins restants servent mal ; la liste des
-  besoins jugés rares est ci-dessus.
+* Présenter sur la page `justdummies-cli` les deux surcharges, ainsi que chaque solution qui prend le
+  relais de la surcharge de remplacement.
+* Rester attentif aux retours du terrain sur un besoin que les solutions restantes couvriraient mal ;
+  la liste des besoins jugés rares figure ci-dessus.
 
 ## Références
 
@@ -227,5 +234,5 @@ portée ambiante `Any.UseSeed` atteint déjà tout l'arbre.
 * [ADR-0061](0061-draw-from-the-ambient-context-and-hold-no-state.fr.md) — le contexte ambiant.
 * [ADR-0064](0064-never-draw-null-for-a-nullable-parameter.fr.md) — ne jamais tirer null par défaut.
 * [ADR-0089](0089-draw-a-composed-parameter-through-the-generator-its-type-owns.fr.md) — le générateur que possède un type composé.
-* [ADR-0096](0096-emit-a-parameter-inline-whenever-it-has-nothing-to-report.fr.md) — l'émission en ligne que cet enregistrement supersède.
+* [ADR-0096](0096-emit-a-parameter-inline-whenever-it-has-nothing-to-report.fr.md) — l'émission en ligne que cette décision remplace.
 * Issue [#273](https://github.com/Reefact/just-dummies/issues/273).

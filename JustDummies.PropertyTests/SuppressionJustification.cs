@@ -64,6 +64,7 @@ internal static class SuppressionJustification {
 
     }
 
+#if NET8_0_OR_GREATER
     /// <summary>Justifications for JD031 — two bounds that are the range form.</summary>
     internal static class JD031 {
 
@@ -74,6 +75,7 @@ internal static class SuppressionJustification {
         internal const string SeparateBoundsAreTheSubject = "The two bounds written separately ARE the subject: the test pins how each is honoured on its own. See the constant's summary.";
 
     }
+#endif
 
     /// <summary>Justifications for S1854 — "Unused assignments should be removed".</summary>
     internal static class S1854 {

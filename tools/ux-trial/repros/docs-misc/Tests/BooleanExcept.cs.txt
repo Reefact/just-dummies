@@ -1,0 +1,1 @@
+// Item 1: compiled separately (kept out of the build): bool b = JustDummies.Any.Boolean().Except(true, false).Generate();

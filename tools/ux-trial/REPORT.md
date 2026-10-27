@@ -86,153 +86,32 @@ Next in line: [CLI-B6](#cli-b6) (the header names a regeneration command that fa
 <a id="cli-b1"></a>
 #### CLI-B1 — A throwing guard below the first state write is neither read nor marked (high)
 
-The guard reader stops at the first assignment to a field or property. Only that one statement is
-checked for a throw. Every statement after it is never visited, so a guard written there gets no
-`unread guards` mark. ADR-0083 and spec §5.6 require exactly that mark ("a statement that throws is
-a guard whatever its shape"). Spec §9 lists the shapes known to escape, and a guard below a state
-write is not among them.
-
-```csharp
-public FreightRate(decimal rate, string currency) {
-    Rate = rate;
-    if (currency.Length != 3) { throw new ArgumentException("ISO 4217", nameof(currency)); }
-    Currency = currency;
-}
-// any: currency  string  Any.String().NonEmpty()        — "2 of 2 parameters inferred", compiles
-// ThrowIfNegativeOrZero(rack); Aisle = aisle; ThrowIfGreaterThan(rack, 99);
-// any: rack  int  Any.Int32().Positive()  guard         — the <= 99 bound is lost under "guard"
-```
-
-The verifier drew 200 values per scaffold. Every variant was rejected 200 of 200 times. A throw
-expression or switch expression is correctly marked when it *is* the first state write. It is
-missed whenever an earlier assignment precedes it, which is what domains 06 and 14 hit.
-
-| | |
-|---|---|
-| Domains | 06 (`BinLocation.level`, switch expression after two writes), 07 (`FreightRate.currency`), 14 (`PromoCode.maxUses`, throw expression after five writes), 19 (`RoleSet`, check on the field copy) |
-| Repro | [`repros/cli-silent-guard-miss`](repros/cli-silent-guard-miss) (variants a1, a2, d) |
-| Source | `JustDummies.GenAny/Guards.cs:162-169` (the `break` at the first state assignment), `JustDummies.GenAny.UnitTests/GuardBoundaryTests.cs:216-236` (pins the expression but never checks provenance, and its rationale is wrong) |
-| Red test | `JustDummies.GenAny.UnitTests`, next to `AThrowingCheckAfterTheFirstAssignmentIsNotAGuard`. Scaffold `kept = value; if (value <= 0) { throw …; }` and assert `Provenance.HasFlag(Provenance.UnreadGuards)`. Add a second case, `ThrowIfNegativeOrZero(v); Kept = v; ThrowIfGreaterThan(v, 99);`, and assert `UnreadGuards` rather than a bare `Guard`. |
-| Fix | At the first non-guard state write, stop *reading* guards but keep *walking* the body. Mark every parameter that a later throwing statement (or discarded-result call) mentions as `UnreadGuards`, so that the existing ADR-0083 blocking line fires. This refuses louder and infers nothing new, which stays inside ADR-0046. |
-| Trial `Bug_` tests | `06 Bug_Scaffolded_level_recipe_for_BinLocation_ignores_its_guard`, `07 Bug_Scaffolded_currency_recipe_ignores_a_guard_written_below_a_property_assignment`, `14 Bug_Scaffolded_AnyPromoCode_misses_the_throw_expression_guard_on_maxUses`, `19 Bug_Scaffolded_AnyRoleSet_ignores_a_distinctness_guard_written_against_a_field`. **These do not turn green on their own.** 06 and 07 replay the frozen emitted recipe. 14 and 19 use the file as emitted. After the fix, confirm by re-scaffolding: the recap must show `to verify, unread guards` and the build must stop at the TODO line. Then retire or rewrite these tests. |
+Tracked in [#297](https://github.com/Reefact/just-dummies/issues/297).
 
 <a id="cli-b2"></a>
 #### CLI-B2 — `any generate <Enum>` reports ✓ and emits `return new TEnum();` (high)
 
-Roslyn synthesizes a parameterless constructor for an enum. The exclusion of synthesized
-constructors only checks `TypeKind.Struct`, so an enum is "scaffolded" as `new TEnum()`. That always
-returns `(TEnum)0`. The value is undeclared when the enum has no zero member, and constant when it
-has one. The recap reads `✓ AnyCurrency.cs — no constructor parameters to infer.`, and the run exits
-with code 0. Spec §5.1.3 promises the parameterless path yields a *valid* value, and no spec row or
-ADR treats an enum as a target.
-
-```csharp
-public enum Currency { Eur = 1, Usd = 2, Gbp = 3 }
-// AnyCurrency.Generate() { return new Currency(); }  → 200 draws, 1 distinct value, Enum.IsDefined == false
-```
-
-| | |
-|---|---|
-| Domains | 01, 03, 04, 05, 06, 19 |
-| Repro | [`repros/cli-enum-scaffold`](repros/cli-enum-scaffold) (its own `Bug_scaffolded_enum_generator_draws_an_undeclared_constant`) |
-| Source | `JustDummies.GenAny/Scaffolder.cs:283` (`ChosenConstructor`) and `:251-252` (`EligibleFactories`): the implicit-constructor exclusion is limited to `TypeKind.Struct` |
-| Red test | `JustDummies.GenAny.UnitTests/ConstructorChoiceTests.cs`: add `public enum Subject { One = 1, Two = 2 }` to `ATypeTheEmittedFileCouldNotConstructIsRefused`, asserting a refusal status and `outcome.File == null`. Today the status is `Scaffolded`. |
-| Fix | Refuse `TypeKind.Enum` before constructor choice, with a message that names `Any.Enum<TEnum>()` (exit 1, nothing written). Alternatively, emit a generator that delegates to `Any.Enum<TEnum>()`. Choosing between the two is a small spec decision for §5.1/§7, plus the French twin. At a minimum, extend the struct exclusion to enums. |
-| Trial `Bug_` tests | `01 Bug_Scaffolded_AnyTransferStatus_never_varies`, `01 Bug_Scaffolded_AnyChargeBearer_draws_an_undeclared_enum_value`, `03 Bug_Scaffolded_AnyResponsibility_draws_more_than_the_zero_member`, `04 Bug_Scaffolded_AnyShiftKind_draws_an_undeclared_member`, `05 Bug_Scaffolded_AnyProjectionMethod_draws_an_undeclared_enum_value`, `06 Bug_Scaffolded_AnyPalletType_draws_an_undeclared_member`, `06 Bug_Scaffolded_AnyReceiptStatus_never_varies`, `19 Bug_Scaffolded_AnyRole_for_an_enum_only_ever_draws_the_default_member`. They turn green after `--force` re-scaffolding only if the delegation option is chosen. If the refusal option is chosen, confirm on the refusal and rewrite these tests against `Any.Enum<T>()`. |
+Tracked in [#298](https://github.com/Reefact/just-dummies/issues/298).
 
 <a id="cli-b3"></a>
 #### CLI-B3 — A self-referencing type is scaffolded into unbounded recursion (high)
 
-```csharp
-public Node(string name, IReadOnlyList<Node> children) { … }
-// any:  children  IReadOnlyList<Node>  Any.ListOf(new AnyNode())     ✓ AnyNode.cs — 2 of 2 parameters inferred
-// public AnyNode() : this(name: AnyValidName(), children: AnyValidChildren()) { }
-// dotnet test → "Stack overflow." exit 134, zero tests ran
-```
-
-The recursion is eager: the public constructor itself recurses, so even
-`new AnyNode().WithChildren(...)` cannot escape it. A direct `Employee(string name, Employee? manager)`
-gives the same result, and the recap also drops the `?`. The cycle check in `GeneratorFor` never
-contains the target type. The remarks at `GeneratorFor.cs:38-40` say that this guard "belongs with
-§5.4", but it was never implemented. Neither the spec nor any ADR mentions self-reference.
-
-| | |
-|---|---|
-| Domains | 05 (recursive bill of materials) |
-| Repro | [`repros/cli-recursive-aggregate`](repros/cli-recursive-aggregate) |
-| Source | `JustDummies.GenAny/GeneratorFor.cs:270` (root `Draw` with an empty `underway`), `:366` (cycle check), `:431-450` (`Composed` writes `new AnyT()` unconditionally) |
-| Red test | `JustDummies.GenAny.UnitTests/CompositionTests.cs`: scaffold `Node(string name, IReadOnlyList<Node> children)` and assert that `children` is not resolved to an expression containing `new AnyNode()`, and that it is reported as unresolved or to verify. Add a sibling case for `Employee(string, Employee?)`. |
-| Fix | Seed the cycle check with the target, as `Draw(type, MaximumDepth, [target])`. A parameter that reaches the target directly, through a nullable, or through a collection becomes an explicit TODO with the recap reason "self-referencing: recursion needs a depth bound you write". Emitting an empty list, a null or a depth parameter instead is a cleverer generator, and needs an ADR or a §5.4 amendment rather than a patch. |
-| Trial `Bug_` tests | None: domain 05 hand-wrote `WithDepth`. Confirm on the repro: re-scaffold `Node` and check the TODO. |
+Tracked in [#299](https://github.com/Reefact/just-dummies/issues/299).
 
 <a id="cli-b4"></a>
 #### CLI-B4 — A guard reached through a derived local is silent while the recap says "inferred" (high)
 
-```csharp
-public AircraftRegistration(string mark) {
-    bool valid = mark switch { null => false, { Length: > 7 } => false, _ => Hyphenated.IsMatch(mark) };
-    if (!valid) { throw new ArgumentException(…, nameof(mark)); }
-    Mark = mark!;
-}
-// any: "1 of 1 parameters inferred", no "to verify"; the file compiles; most draws are rejected
-```
-
-`MarkIfItRejects` marks only the parameters that the throwing statement names syntactically, and
-`if (!valid)` names none. The verifier reproduced four shapes, with 197 to 200 of 200 draws rejected
-(one shape throws `FormatException` instead): `Match m = Regex.Match(value, …)`,
-`bool ok = value.StartsWith(…)`, `int parsed = int.Parse(week)` and a `switch` into `bool`.
-
-**Classification note.** The verifier classified this as the documented §9 residue ("a local copy of
-the parameter"), which `GuardBoundaryTests.cs:167` pins. Under the scaffolder's honesty line, a recap that
-says "inferred" while the recipe is wrong is a bug, whatever a page states. The spec's §9 listing is
-therefore the defect. Moreover, the fix *marks* the guard and does not *read* it, which stays inside
-ADR-0046.
-
-| | |
-|---|---|
-| Domains | 04 (`BatchCode`, a `Match` on a regex), 16 (`AircraftRegistration`) |
-| Repro | [`repros/cli-silent-guard-miss`](repros/cli-silent-guard-miss) (variants b1–b4) |
-| Source | `JustDummies.GenAny/Guards.cs:512-515` (`MarkIfItRejects` only sees parameters mentioned syntactically); spec `justdummies-tool.md` §9 (lists the residue); `JustDummies.GenAny.UnitTests/GuardBoundaryTests.cs:167` |
-| Red test | `JustDummies.GenAny.UnitTests/GuardBoundaryTests.cs`: scaffold `bool ok = value.StartsWith("LOT-"); if (!ok) { throw …; }` with no state write before it, and assert `UnreadGuards` on `value`. |
-| Fix | When a throwing statement's condition reaches a parameter through a local initialised from that parameter (a one-step data flow), mark that parameter `UnreadGuards`. Remove the residue from spec §9 (EN/FR). The user CLI page should name whatever residue remains. |
-| Trial `Bug_` tests | `04 Bug_Scaffolded_AnyBatchCode_recipe_misses_the_format_guard_silently` (replays the frozen recipe, so it stays red by construction), `16 Bug_Scaffolded_AnyAircraftRegistration_as_emitted_draws_marks_the_constructor_rejects` (uses `AsScaffolded/`, which is also frozen). Confirm by re-scaffolding, then retire both. |
+Tracked in [#300](https://github.com/Reefact/just-dummies/issues/300).
 
 <a id="cli-b5"></a>
 #### CLI-B5 — `--format json` reports a refused write as `Scaffolded` (medium)
 
-When the output file already exists and `--force` is not given, stderr says
-`✗ … already exists. Re-run with --force`, and the run exits 1. Stdout, however, carries
-`{"status":"Scaffolded","files":[],…,"summary":{"scaffolded":1,"failed":0}}`. The shell copies the
-*engine's* status into the report. ADR-0071 and spec §6.1 require the summary to be "checkable
-against the rows rather than believed", with exit codes that do not move.
-
-| | |
-|---|---|
-| Domains | 01, 19 |
-| Repro | [`repros/cli-json-status`](repros/cli-json-status) |
-| Source | `JustDummies.Cli/GenerateCommand.cs:216-221`, `JustDummies.Cli/ScaffoldReport.cs:25-27`, `JustDummies.Cli/RunReport.cs:44-45` |
-| Red test | `JustDummies.Cli.UnitTests/GenerateCommandTests.cs`, `JsonRecordsAnExistingFileAsAFailure`: pre-write `AnyOrder.cs`, run with `Format = "json"`, and assert exit code 1, `status != "Scaffolded"`, `summary.scaffolded == 0`, `summary.failed == 1`, and that the file is untouched. |
-| Fix | Give the write-refused branch a shell-level status (e.g. `"FileExists"`). Keep the path in `files` with `written: false`. Document the status in spec §6.1/§7 (EN/FR). |
-| Trial `Bug_` tests | None. Confirm with the repro's second run. |
+Tracked in [#301](https://github.com/Reefact/just-dummies/issues/301).
 
 <a id="cli-b6"></a>
 #### CLI-B6 — The short-name lookup lists candidates C# could never bind, and the header names a command that fails (medium)
 
-`any generate Measurement` refuses as ambiguous because of `System.Diagnostics.Metrics.Measurement<T>`,
-which has arity 1. `any generate Scope` lists `JustDummies.Xunit.ReproducibleAttribute.Scope`, an
-`internal` type, and a `ref struct`. After a successful `any generate Ambig.Domain.Meter`, line 2 of
-the generated file says ``// `any generate Meter --force` overwrites it.``, but that command fails
-with the same ambiguity refusal. Refusing a *real* ambiguity is specified (§3.2) and the refusal
-message is clear. Neither the over-wide pool nor the false header is specified.
-
-| | |
-|---|---|
-| Domains | 03 (`Claim`), 09 (`Measurement`), 12 (header), 17 (header, transitive packages), 19 (inaccessible types) |
-| Repro | [`repros/cli-ambiguous-names`](repros/cli-ambiguous-names) |
-| Source | `JustDummies.GenAny/TypeLookup.cs` (`Matching`/`Named`), `Scaffolder.cs:53-62`, `GeneratorEmitter.cs:64`, `EntryPointEmitter.cs:83` |
-| Red test | `JustDummies.GenAny.UnitTests/TypeLookupTests.cs`. (1) Source `Shop.Measurement`, plus metadata with an internal `Other.Measurement` and a public `Other.Measurement<T>`: `"Measurement"` resolves to `Shop.Measurement`. (2) For an ambiguous short name given in full, line 2 of the header names a command that `TypeLookup.Find` resolves to exactly that type. |
-| Fix | Filter candidates by construction: arity 0 when no type-argument list is given, and accessible from `compilation.Assembly`. Write a spelling that resolves into the header (the full name when the short name is ambiguous), and update the golden files. Whether project types should be preferred over framework ones is [CLI-C3](#cli-c3). |
-| Trial `Bug_` tests | None. |
+Tracked in [#302](https://github.com/Reefact/just-dummies/issues/302).
 
 <a id="cli-b7"></a>
 #### CLI-B7 — `any generate` on an unrestored project claims the project does not reference JustDummies (already filed)
@@ -245,68 +124,23 @@ carries it. Every domain ran `dotnet restore` first because of it.
 
 <a id="cli-d1"></a>
 **CLI-D1 — "to verify" never says which guard went unread, and cites the maintainer spec's "§9" (medium).**
-The emitted comment reads `// TODO(any): 'string value' may be guarded by something the scaffolder
-could not read (§9).` When a parameter has three guards, nothing says which one was not read. The
-recap and the JSON provenance say no more, and "§9" points to "Non-goals for v1.0" in a maintainer
-page that no user page links to. Domains: 02, 09, 11, 12. Repro:
-[`repros/cli-todo-wording`](repros/cli-todo-wording). Source: `GeneratorEmitter.cs:263-267`
-(`WriteVerify`), `GuardReading.cs:54` (stores names only, never the node), `Cli/Recap.cs:132,179`.
-Red test (`JustDummies.GenAny.UnitTests`): a parameter with a read `Length > 7` guard and an unread
-`Regex.IsMatch` guard. Assert that the TODO contains the unread guard's text or line and does not
-contain "§9". Add a `Recap` twin in `JustDummies.Cli.UnitTests`. Fix: keep the first unread guard's
-location and a one-line excerpt per parameter, print it in the TODO, the recap and the JSON, and
-replace "§9" with a link to the user CLI page. The comment text is specified in spec §5.6, so the
-spec changes with it. This is also improvement idea (b) of [CLI-E1](#cli-e1).
+Tracked in [#303](https://github.com/Reefact/just-dummies/issues/303).
 
 <a id="cli-d2"></a>
 **CLI-D2 — "Delete that one line, and you are done" is false when the right base has another builder type (medium).**
-Replacing `Any.String()…` with `Any.StringMatching(...)` (which returns `AnyPattern`), or with
-`.As(...)` (which returns `IAny<T>`), fails with `CS0029`. The `AnyValidX()` return type and the
-`WithX(Func<TBuilder, TBuilder>)` overload must be retyped by hand. This was the single most
-widespread friction: 16 domains (01, 02, 03, 04, 05, 06, 07, 10, 11, 13, 14, 16, 17, 18, 19, 20).
-The scaffolder is right to leave the developer a base to edit (see the principles at the top). The defect is the page
-and spec §5.6 promising a one-line resolution. Source: `doc/handwritten/for-users/packages/justdummies-cli.en.md:82-91`
-and spec §5.6. Fix: say what else to retype when the replacement has another type, with a compiled
-sample in `JustDummies.Documentation.UnitTests`. Alternatively, emit the factory as `IAny<T>` where
-no refine overload depends on it, which is a spec decision.
+Tracked in [#304](https://github.com/Reefact/just-dummies/issues/304).
 
 <a id="cli-d3"></a>
 **CLI-D3 — A nullable reference parameter loses its `?` in the value pin, the recap and the JSON (medium).**
-For `Party(Bic? agent, string? note, int? priority)`, the scaffold emits `WithAgent(Bic value)`. The
-documented "always null" route, `.WithAgent((Bic?)null)`, then warns `CS8625`, which is a build break
-under `TreatWarningsAsErrors`. The recap prints `constructor Party(string, Bic, string, int?)`, and
-the JSON reports `"type": "Bic"`. `int?` is kept correctly. ADR-0064 rules out drawing null *by
-default*. It does not rule out letting the pin accept null, which is exactly where the ADR says a
-test opts in. Domains: 01, 02, 05, 15 (and 05's `Employee?`, see CLI-B3). Repro:
-[`repros/cli-nullable-parameter`](repros/cli-nullable-parameter). Source: `TypeNames.cs:66-74`
-(drops `NullableAnnotation`), `GeneratorEmitter.cs:307-309`. Red test (`JustDummies.GenAny.UnitTests`,
-next to `BaseTableTests`): a `Customer? agent` parameter emits `WithAgent(Customer? value)`, and a
-caller passing `(Customer?)null` compiles with no `CS8625`. Fix: type the pin, the field and the
-private constructor parameter `T?`. Covariance keeps the never-null base assignable. Print `T?` in
-the recap and the JSON, and document the reference-type cast next to `(decimal?)null`.
+Tracked in [#305](https://github.com/Reefact/just-dummies/issues/305).
 
 <a id="cli-d4"></a>
 **CLI-D4 — `--namespace` rewrites the analysed type's name in the recap and the JSON (low).**
-With `--namespace Foo.Bar`, the recap shows `Analyzing Foo.Bar.Sku` and the JSON shows
-`"type": "Foo.Bar.Sku"`. That type does not exist. The emitted file is correct. Domains: 14, 16.
-Repro: [`repros/cli-namespace-recap`](repros/cli-namespace-recap). Source: `Scaffolder.cs:127,140`
-(fills `TargetType.Namespace`, documented as "the namespace the type is declared in", with the
-override), `Cli/Recap.cs:60,212`, `Cli/ScaffoldReport.cs:45,58`. Red test
-(`JustDummies.Cli.UnitTests/RecapTests.cs` plus a JSON twin): with an override, the first line still
-reads `Analyzing Shop.Domain.Order`. Fix: keep the declared namespace on `TargetType`, and carry the
-file namespace separately.
+Tracked in [#306](https://github.com/Reefact/just-dummies/issues/306).
 
 <a id="cli-d5"></a>
 **CLI-D5 — `p >= N` / `p <= N` with N ≠ 0 are unread, while `ThrowIfGreaterThanOrEqual(p, N)` is read (low).**
-`if (longitude >= 180.0) throw` stays `to verify, unread guards`. The helper form yields
-`.LessThan(180d)`. Spec line 928 says the helpers "map to the same numeric rows a comparison would",
-but the comparison row is missing. This is the one gap in the table below that is an inconsistency
-rather than a boundary. It fails loudly, so it is low severity. Domain: 20. Repro:
-[`repros/20-3`](repros/20-3). Source: `Guards.cs:1172-1184` (`Numeric`: the `>=`/`<=` rows only
-`when value == 0`) against `Guards.cs:882-892`. Red test (`JustDummies.GenAny.UnitTests`): a guard
-`value >= 180.0` scaffolds to `.LessThan(180d)` with status `guard`. Fix: add the two rows to
-`Numeric` and to the spec §5.3 table (EN/FR), plus a `GuardCorpus` row and a golden file. Keep the
-zero rows as the more specific match.
+Tracked in [#307](https://github.com/Reefact/just-dummies/issues/307).
 
 ### Inference gaps honestly flagged (not bugs)
 
@@ -386,206 +220,59 @@ about messages, documentation and one replay path.
 <a id="core-b1"></a>
 #### CORE-B1 — Outside a scope, a seed picked inside an awaited helper does not flow back, so the reported seed does not replay the run (medium)
 
-```csharp
-static async Task<int> DrawAsync() { await Task.Yield(); return Any.Int32().Generate(); }
-int a = await DrawAsync();          // first draw: lazy seed S1, set in the helper's flow, then lost
-int b = Any.Int32().Generate();     // the caller picks a second lazy seed, S2
-// a later failure says "reproduce this run with Any.Reproducibly(S2, ...)";
-// replaying under ReproduciblyAsync(S2, …) gives every value shifted by one
-```
-
-The lazy ambient seed is assigned to an `AsyncLocal` in whichever execution context draws first. A
-value assigned inside an awaited method does not flow back to the caller. The exception's XML doc
-promises "the seed that replays the run", and CLAUDE.md says "any sequential run replays from the
-seed it reports". An awaited helper is a sequential run.
-
-Most of what was reported here is by design (verifier variants V1, V2 and V4):
-
-- the same seed is reported for every failure in a test;
-- replay restarts at the test's first draw;
-- each sequential test gets its own seed.
-
-The errors page also under-describes the behaviour. It mentions `Seed` only "inside a reproducible
-scope", but `Seed` is also set outside one (domain 08).
-
-| | |
-|---|---|
-| Domains | 05 (reported the by-design part), 08 (the documentation part); the async variant was found by the verifier |
-| Repro | [`repros/core-seed-outside-scope`](repros/core-seed-outside-scope) (V3 and V3b fail) |
-| Source | `JustDummies/AmbientRandomSource.cs:38-46` (lazy `AsyncLocal` seed), `:51`, `:65` (replay guidance); `doc/handwritten/for-users/guides/errors-and-conflicts.en.md:101-108` |
-| Red test | `JustDummies.UnitTests`, next to `AmbientSeedScopeTests.cs`. Outside any scope, draw `a` in an awaited helper and then `b`, trigger an `AnyGenerationException`, replay under `Any.ReproduciblyAsync(ex.Seed!.Value, …)`, and assert `(ra, rb) == (a, b)`. |
-| Fix | Either keep the lazy seed in a holder that the outer flow already owns, or stop promising replay outside a scope ("this flow drew from seed S; wrap the body in `Reproducibly`/`ReproduciblyAsync` to make it replayable"). Either way, correct the errors page (EN/FR). |
-| Trial `Bug_` tests | None. |
+Tracked in [#308](https://github.com/Reefact/just-dummies/issues/308).
 
 <a id="core-b2"></a>
 #### CORE-B2 — `As(...)`/`Combine(...)` failure messages print drawn strings raw, contrary to ADR-0075 (medium)
 
-`AnyDerivation.Display` wraps a string in quotes without escaping it, so NUL, CR, FF and ESC reach
-`AnyGenerationException.Message`. As a result, consoles drop characters, `grep` treats the
-`dotnet test` output as a binary file, and an ESC can start an ANSI sequence. ADR-0075 requires the
-library to "escape control characters wherever it renders a drawn value". The library already has
-the escaper, `CharacterPools.Escape`, and `AnyChar` uses it. The default `Any.String()` covers the
-whole of ASCII, so this message is commonly hit.
-
-| | |
-|---|---|
-| Domains | 04 |
-| Repro | [`repros/core-raw-control-chars`](repros/core-raw-control-chars) (2 of 2 fail) |
-| Source | `JustDummies/AnyDerivation.cs:120-133` (`Display`); callers `AnyExtensions.cs:46`, `Any.Combine.cs:46-302` |
-| Red test | `JustDummies.UnitTests`: `Any.String().WithChars("\0\r\u001b").WithLength(3).As<string, object>(v => throw new ArgumentException()).Generate()` throws a message that contains `\0`, `\r` and `\x1b` as escapes and no character below 0x20. Add a twin for `Combine`. |
-| Fix | Render strings and chars through `CharacterPools.Escape`, and escape the `ToString()` fallback too. |
-| Trial `Bug_` tests | None. |
+Tracked in [#309](https://github.com/Reefact/just-dummies/issues/309).
 
 <a id="core-b3"></a>
 #### CORE-B3 — `Any.Double().Between(-double.Epsilon, double.Epsilon)` only ever draws 0 (low)
 
-The interval holds three doubles, but in `CandidateIn` the half-span `upper/2 - lower/2` underflows
-to 0, so every draw is the midpoint. The drawn value is valid. What breaks is that the feasible
-request `ArrayOf(...).WithCount(2).Distinct()` is refused. ADR-0097 states "two values the type
-represents must be two values a draw can land on". This is a vanishingly small corner, but it is a
-correctness refusal of a feasible request, not a bound on ambition.
-
-| | |
-|---|---|
-| Domains | 20 |
-| Repro | [`repros/20-1`](repros/20-1) |
-| Source | `JustDummies/ContinuousIntervalSpec.cs:438-446` (`CandidateIn`) |
-| Red test | `JustDummies.UnitTests`: a seeded loop over `Any.Double().Between(-double.Epsilon, double.Epsilon)` reaches each of {-ε, 0, ε}, or `ArrayOf(...).WithCount(3).Distinct()` succeeds. A `JustDummies.PropertyTests` invariant over a few-ulp spans is a natural follow-up. |
-| Fix | When `half == 0` but `lower < upper`, pick by index among the enumerable representable values. Consume exactly one unit sample, as ADR-0049 requires. |
-| Trial `Bug_` tests | `20 Bug_Double_between_minus_and_plus_epsilon_only_ever_draws_zero`, `20 Bug_Two_distinct_doubles_from_minus_to_plus_epsilon_are_refused`. Both should turn green after re-packing. |
+Tracked in [#310](https://github.com/Reefact/just-dummies/issues/310).
 
 ### Defects (messages, wording, documentation of a contract)
 
 <a id="core-d1"></a>
 **CORE-D1 — Decimal conflict messages misstate strict bounds (medium).**
-`Any.Decimal().GreaterThan(100m).LessThan(10m)` gives "…GreaterThan(100) already requires values
-greater than **or equal to 100**". `GreaterThan(36m).LessThan(36m)` gives "…forbids 36, **the only
-value** GreaterThan(36) and LessThan(36) leave". `Positive().Negative()` says the same of 0. These
-are false statements, where `Int32` and `Double` are worded correctly. The cause: a strict decimal
-bound is stored as inclusive plus a point exclusion. Domains: 01, 02, 12, 13. Repro:
-[`repros/core-decimal-conflict-messages`](repros/core-decimal-conflict-messages). Source:
-`JustDummies/DecimalIntervalSpec.cs:132-157`, `:740-750` (`PinningClause`);
-`ConflictingAnyConstraintException.cs:182-191`. Red test (`JustDummies.UnitTests`, decimal conflict
-tests): a theory over the three chains asserting the exact message, for example "…GreaterThan(100)
-already requires values greater than 100." Fix: remember strictness per bound, add "greater/less
-than {bound}" factories, and treat two strict bounds at one point as an empty interval before the
-exclusion check. Trial `Bug_` tests: `12 Bug_Decimal_crossed_bounds_message_misstates_what_GreaterThan_requires`,
-`12 Bug_Decimal_empty_open_interval_message_claims_a_value_is_left`,
-`13 Bug_Decimal_sign_conflict_message_claims_zero_is_left`.
+Tracked in [#311](https://github.com/Reefact/just-dummies/issues/311).
 
 <a id="core-d2"></a>
 **CORE-D2 — A decimal strict bound that empties a `WithScale` lattice names only one side (medium).**
-`Any.Decimal().Between(0m, 5000m).WithScale(2).Negative()` gives "Cannot apply Negative() because it
-forbids every WithScale(2) value between 0 and 0." `Between` is never named. `Int32` gives the clean
-two-sided form. A second variant names the applying constraint on both sides of "because" (domain 10).
-Domains: 03, 10. Repro: [`repros/core-scaled-range-message`](repros/core-scaled-range-message).
-Source: `DecimalIntervalSpec.cs:148-159`, `:669-672`, `:734`. Red test
-(`JustDummies.UnitTests/ConflictMessageProvenanceTests.cs`): the message contains "Between(0, 5000)".
-Fix: refuse the bound before splitting it into a bound and an exclusion, as the ordinal spec does,
-and give the scaled exhaustion branch the pinning clause. Trial `Bug_` test:
-`03 Bug_Negative_on_a_scaled_deductible_range_names_neither_Between_nor_the_real_conflict`.
+Tracked in [#312](https://github.com/Reefact/just-dummies/issues/312).
 
 <a id="core-d3"></a>
 **CORE-D3 — Distinct exhaustion over a foreign `IAny<T>` states as fact that its values "are not reproducible" (medium).**
-Over any `any`-scaffolded generator, the message says that some values "come from a generator that
-does not draw from this source, so they are not reproducible from this seed alone". The same run's
-`Reproducibly` reporter prints a full replay line, and the scaffolded generator does draw ambient,
-replaying exactly. ADR-0102 decides the conservative *hedge*, because the library cannot see inside
-a foreign generator. Nothing decides stating the unknowable as fact. Domains: 06, 18. Repro:
-[`repros/core-distinct-not-reproducible-msg`](repros/core-distinct-not-reproducible-msg). Source:
-`AmbientRandomSource.cs:54-56`, `FixedRandomSource.cs:22-24`, selected through
-`CollectionState.cs:378-388` and `AnyDerivation.cs:27-33`. Red test (`JustDummies.UnitTests`): over a
-hand-written `IAny<int>` that draws through `Any`, the message does not contain "does not draw from
-this source" and does state the conditional replay. Fix: reword to "its values replay from this seed
-only if it draws through `Any` (as a generator scaffolded by `any` does)". A public way for a
-generator to declare that it draws ambient is [CORE-C10](#core-c10).
+Tracked in [#313](https://github.com/Reefact/just-dummies/issues/313).
 
 <a id="core-d4"></a>
 **CORE-D4 — Floating-point conflict messages restate a strict bound as the next representable value (low).**
-`Any.Double().GreaterThan(10).LessThan(5)` gives "…greater than or equal to 10.000000000000002", and
-`Positive()` gives "≥ 5E-324". The message is literally true and guarded for truthfulness by
-`ConflictMessageTruthfulnessProperties`, but it is worded in engine terms the user never wrote.
-Domains: 05, 07, 17. Repro: [`repros/core-double-conflict-wording`](repros/core-double-conflict-wording).
-Source: `ContinuousIntervalSpec.cs:160-198`. Red test
-(`JustDummies.UnitTests/ConflictMessageProvenanceTests`): the message contains "GreaterThan(10)
-already requires values greater than 10" and not "10.000000000000002". Fix: keep the declared value
-and a strict flag per bound, and share the strict factories with CORE-D1.
+Tracked in [#314](https://github.com/Reefact/just-dummies/issues/314).
 
 <a id="core-d5"></a>
 **CORE-D5 — An offset refused near `DateTimeOffset.MaxValue`/`MinValue` does not state the limit it implies (low).**
-`After(MaxValue.AddHours(-1)).WithOffset(14h)` is correctly refused and names both constraints. It
-never gives the derived instant limit (UTC ≤ MaxValue − 14 h) or the reason (the local time would
-leave 0001..9999). The wording also differs with declaration order. Domain: 19. Repro:
-[`repros/core-dto-maxvalue-offset`](repros/core-dto-maxvalue-offset). Source:
-`AnyDateTimeOffset.cs:386-409` (`WithOffsetRange`). Red test
-(`JustDummies.UnitTests/AnyDateTimeOffsetOffsetTests.cs`): the message contains
-"9999-12-31T09:59:59.9999999+00:00", or says that the local time would leave the range. Fix: give
-the conflict a dedicated factory that names the derived limit and the reason, in both orders.
+Tracked in [#315](https://github.com/Reefact/just-dummies/issues/315).
 
 <a id="core-d6"></a>
 **CORE-D6 — The `SetOf` cardinality refusal names no count (low).**
-"The generator can produce only 10 distinct value(s), not enough for the 11 elements…" names neither
-`WithCount(11)` nor the element chain. CLAUDE.md asks for a message that names both sides. Domains:
-05. Source: `ConflictingAnyConstraintException.cs:152-154`. Red test
-(`JustDummies.UnitTests/ConflictMessageProvenanceTests`): the message for `SetOf(Any.Boolean()).WithCount(5)`
-contains "WithCount(5)". Fix: pass the count call into `SetElementsExceedCardinality` and
-`DictionaryKeysExceedCardinality`.
+Tracked in [#316](https://github.com/Reefact/just-dummies/issues/316).
 
 <a id="core-d7"></a>
 **CORE-D7 — `DateTime` draws are always `Kind = Utc` and compare by ticks: decided in XML docs, absent from the user page (medium, documentation).**
-The XML remarks on `AnyDateTime` (lines 18-20) decide this: generated values carry `DateTimeKind.Utc`,
-bounds compare by `Ticks` and ignore their `Kind` (as `DateTime`'s own operators do), and `OneOf`
-keeps the `Kind` of the values passed to it. The user page `dates-and-times` (EN/FR) mentions none of
-it. **The consequence is surprising and should be stated plainly:** `Between(Local, Local)` can return
-a `Utc` value whose *instant* lies outside the bounds' instants. Under `TZ=Europe/Paris`, bounds of
-00:00:00 and 00:00:01 local yield a `Utc` value with ticks between them, which is one hour *later* as
-an instant. The value satisfies `start <= value && value <= end` under the comparison a test's own
-`<=` would use, so no declared constraint is broken. **The maintainer should judge whether the
-documented contract is the right one.** The alternative is [CORE-C7](#core-c7). Domains: 02, 04, 06,
-11, 16, 17. Repro: [`repros/core-datetime-kind`](repros/core-datetime-kind). Red test
-(`JustDummies.Documentation.UnitTests`): a compiled sample on `dates-and-times` showing a `Utc` result
-between `Local` bounds by ticks. Fix: add a "DateTime and Kind" paragraph (EN/FR) that also states the
-unconstrained range (`MinValue`..`MaxValue`), and advise `Utc` bounds, or `DateTimeOffset` when the
-instant matters.
+Tracked in [#317](https://github.com/Reefact/just-dummies/issues/317).
 
 <a id="core-d8"></a>
 **CORE-D8 — The `WithScale` user page says it "fixes the number of decimal places"; ADR-0015 decides a value lattice (medium, documentation).**
-Every draw is a multiple of 10⁻ⁿ (verified exactly, 500 draws × 5 magnitudes). A `OneOf` value or a
-single-point range comes back as written (`20`, not `20.0`). Near 7.9e27, 29 significant digits leave
-no room for two fractional digits, yet the value is still on the lattice. ADR-0015 rejects a padded
-`decimal.Scale` contract explicitly, and requires the builder docs to "state it as a value lattice".
-Domains: 03, 08, 11, 12, 13, 15, 18. Repro: [`repros/core-withscale`](repros/core-withscale). Source:
-`doc/handwritten/for-users/generators/numbers.en.md:106`, `numbers.fr.md:111`. Fix: say "keeps the
-value expressible in at most n decimal places (a multiple of 10⁻ⁿ); `decimal.Scale` is not padded",
-and link ADR-0015. A `JustDummies.PropertyTests` invariant `decimal.Round(v, n) == v` up to
-`decimal.MaxValue` would pin the contract. It passes today.
+Tracked in [#318](https://github.com/Reefact/just-dummies/issues/318).
 
 <a id="core-d9"></a>
 **CORE-D9 — `DateTimeOffset.WithGranularity` grids the UTC instant, not the local clock; the user docs never say so (medium, documentation).**
-`WithGranularity(FromDays(1)).WithOffset(FromHours(2))` yields local 02:00, and with `+05:30` "whole
-hours" fall at :30. The XML docs say "the instant", which is honoured, but their examples ("a whole
-day", "a quarter-hour") read as local time. Neither the granularity section nor the offset section
-of the user page says how the two interact. Domains: 07, 09, 19. Repro:
-[`repros/core-dto-granularity`](repros/core-dto-granularity). Source: `AnyDateTimeOffset.cs:201-207`,
-`:334-340`; `dates-and-times.en.md:42-88`. Fix: document the behaviour now (EN/FR plus the XML
-summary). Whether to change the semantics is [CORE-C8](#core-c8).
+Tracked in [#319](https://github.com/Reefact/just-dummies/issues/319).
 
 <a id="core-d10"></a>
 **CORE-D10 — The distinct-cardinality refusal moved to `Generate()` without a record; ADR-0004, JD016 and the collections page still promise declaration time (medium, documentation + ADR).**
-`CollectionState.cs:166` runs the check when the specification is whole, deliberately: checking in
-the middle of a chain refused one declaration order and accepted another. The behaviour is sound,
-and it still fails before any draw. The records disagree with it:
-
-- ADR-0004 ("rejects … immediately"; it even rejects "always fail at generation");
-- the context sections of ADR-0009 and ADR-0011;
-- `JD016.en.md:14` ("Both throw at declaration time");
-- `collections.en.md:93-95` ("refused immediately").
-
-Domains: 01, 04, 05, 10. Repro: [`repros/core-cardinality-gate`](repros/core-cardinality-gate). Fix:
-record the move in an ADR that amends ADR-0004, then update the pages (EN/FR). The red test goes in
-`JustDummies.UnitTests`: it asserts that `SetOf(Boolean()).WithCount(5)` does not throw at
-declaration and throws `ConflictingAnyConstraintException` at `Generate()`. The string and pattern
-bounded-draw fallback is ADR-0004's decided boundary and stays as it is (see §9).
+Tracked in [#320](https://github.com/Reefact/just-dummies/issues/320).
 
 ### Inference gaps
 
@@ -615,84 +302,33 @@ CORE-C9 (a subset `OneOf` intersecting), CORE-C10 (a public "draws ambient" decl
 
 <a id="an-d1"></a>
 **AN-D1 — JD014 and JD017 both report one undeclared enum value in `Any.Enum<T>().OneOf(...)` (medium).**
-`OneOf((Currency)42)`, a `[Flags]` non-combination, and `(Currency)0` in a mixed pool each produce
-two warnings at the identical line and column. Commit `37ff3ff` added enum membership to JD014
-without making either rule stand down. ADR-0078: "two diagnostics on one expression for one mistake
-is noise that trains a reader to disable both." Domains: 01, 04, 12. Repro:
-[`repros/analyzers-jd014-jd017-double`](repros/analyzers-jd014-jd017-double). Source:
-`RejectedConstantArgumentAnalyzer.cs` (~l.117, `case "OneOf"`), `ArgumentGuardFacts.cs:109, 217-234`,
-overlapping `EnumUniverseViolationAnalyzer.cs`. Red test (`JustDummies.Analyzers.UnitTests`): run
-both analyzers on `Any.Enum<Status>().OneOf((Status)99)` and assert exactly one diagnostic at the
-span. Fix: give membership one owner. JD017 is suggested, because its message teaches the category
-error. Keep the refusal in the walk that JD034/JD035 share, update JD014 (EN/FR), and write a short
-decision note in the spirit of ADR-0078.
+Tracked in [#321](https://github.com/Reefact/just-dummies/issues/321).
 
 <a id="an-d2"></a>
 **AN-D2 — JD023 names only the constraint that empties the domain, without its arguments (low).**
-The analyzer reports "No value satisfies this chain once GreaterThan is applied". The run time says
-"Cannot apply GreaterThan(10) because Between(1, 6) already requires values less than or equal to 6".
-The analyzer already holds the earlier state and the folded arguments. Domains: 08, 12. Repro:
-[`repros/analyzers-jd023-message`](repros/analyzers-jd023-message). Source: `Descriptors.cs:242`,
-`ScalarChainAdmitsNoValueAnalyzer.cs:86-87`. Red test (`Jd023Jd024ScalarChainTests.cs`): the message
-contains both "GreaterThan(10)" and "Between(1, 6)". Fix: use a two-sided message that mirrors the
-run-time wording, and show it on the JD023 pages.
+Tracked in [#322](https://github.com/Reefact/just-dummies/issues/322).
 
 <a id="an-d3"></a>
 **AN-D3 — JD014 and JD023 suppress different negative-test shapes (low).**
-Inside `Assert.Throws(() => chain.Generate())`, JD014 still warns because it checks the guarded call
-itself, while JD023 is silent because it judges only the outermost invocation. Silence inside
-`Assert.Throws` is documented. The inconsistency is not. Domains: 02, 04 (reported), verified in
-[`repros/analyzers-constant-misses`](repros/analyzers-constant-misses) (V8b against line 50).
-Source: `RejectedConstantArgumentAnalyzer.cs:59`, `ScalarChainAdmitsNoValueAnalyzer.cs:44-47`.
-Red test (`JustDummies.Analyzers.UnitTests`): JD023 gives the same verdict as JD014 on
-`Assert.ThrowsAny<Exception>(() => <conflicting chain>.Generate())`. Fix: align the two rules, and
-state the suppressed shape on both pages.
+Tracked in [#323](https://github.com/Reefact/just-dummies/issues/323).
 
 <a id="an-d4"></a>
 **AN-D4 — The JD014 page claims to mirror the guards "exactly", and a test files a refused argument under "legal" (low).**
-The Scope section says "the table mirrors SizeGuard and the per-generator guards exactly". That is
-untrue: see AN-F2 and AN-C4. `Jd014RejectedConstantArgumentTests.cs:209-210` lists
-`Any.Double().Between(double.NaN, 1.0)` under `Does_not_report_a_legal_argument`, although the
-comment beside it says the guard refuses it. Fix: list what the rule really covers (EN/FR), and move
-that row to a correctly named "not covered" case.
+Tracked in [#324](https://github.com/Reefact/just-dummies/issues/324).
 
 <a id="an-d5"></a>
 **AN-D5 — Info rules (JD020, JD022, JD024, JD029, JD030, JD031, JD033) never appear in `dotnet build` output, and no user page says so (medium, documentation).**
-The rules fire: they show up in a SARIF error log, and are printed once raised to `warning` in
-`.editorconfig`. Hiding Info diagnostics from the console is standard MSBuild behaviour, and
-ADR-0077 decided the severity. The user pages ("active on your next build", "at the call site,
-which is the one place you can act on it") assume a reader who uses an IDE. In a terminal-only or CI
-workflow, the remedy JD030 is meant to teach never reaches the user. Domains: 02, 12, 17 (20 also
-notes it). Repro: [`repros/analyzers-info-invisible`](repros/analyzers-info-invisible). Fix: add one
-sentence plus an `.editorconfig` snippet to `analyzers/README.md` and `packages/justdummies` (EN/FR),
-for example `dotnet_analyzer_diagnostic.category-JustDummies.Constraints.severity = warning`. Do not
-change the default severities. Red test (`JustDummies.Documentation.UnitTests`): both pages state
-this and carry the snippet.
+Tracked in [#325](https://github.com/Reefact/just-dummies/issues/325).
 
 ### False negatives against a rule's documented scope
 
 <a id="an-f1"></a>
 **AN-F1 — JD016 ignores a typed numeric `OneOf` pool (low).**
-`Any.SetOf(Any.Int32().OneOf(1, 2)).WithCount(3)` and `Any.ArrayOf(Any.Double().OneOf(1.0, 2.0)).WithCount(3).Distinct()`
-compile silently and throw at run time. The generic `Any.OneOf(...)` and `Any.Char().OneOf(...)` are
-flagged. The page lists "a OneOf/ElementOf pool of constants", and the comment at
-`CollectionConstraintsAdmitNoValueAnalyzer.cs:205-209` claims the case is handled, which is false.
-Domain: 20. Repro: [`repros/20-6`](repros/20-6). Source: same file, `:200-215, 269`. Red test
-(`JustDummies.Analyzers.UnitTests`, JD016): the pool above reports JD016, and a negative case keeps
-the shape that #188 made legal (widened by `Containing`). Fix: count the first typed `OneOf` met
-while walking down, and route a later widening through the existing `mayExtend` hook.
+Tracked in [#326](https://github.com/Reefact/just-dummies/issues/326).
 
 <a id="an-f2"></a>
 **AN-F2 — JD014 misses non-finite constant bounds, and `Half` in `OneOf` (low).**
-`Between(double.NaN, 90.0)`, `LessThan(double.PositiveInfinity)`, `LessThanOrEqualTo(double.NaN)` and
-`Any.Half().OneOf((Half)1, Half.NaN)` always throw at declaration, and get no diagnostic.
-`Single().OneOf(1f, float.NaN)` is flagged. The page lists non-finite `OneOf` only for `Double` and
-`Single`, so strictly this sits at the edge of the documented scope. It is classed here because the
-page also claims to mirror the guards exactly (AN-D4). Domains: 09, 20. Repro:
-[`repros/20-5`](repros/20-5). Source: `ArgumentGuardFacts.cs:109` (`AnyHalf` missing),
-`RejectedConstantArgumentAnalyzer.cs` (no bound-finiteness case). Red test (JD014 suite): JD014 on
-both the `NaN` bound and the `Half.NaN` element. Fix: add both checks, update the JD014 pages (EN/FR),
-and extend the property-test chains.
+Tracked in [#327](https://github.com/Reefact/just-dummies/issues/327).
 
 ### Candidates (outside every rule's documented scope)
 
@@ -712,23 +348,7 @@ is experienced outside an IDE.
 
 <a id="xu-d1"></a>
 **XU-D1 — No user page shows `using JustDummies.Xunit;` (medium; 13 of 20 domains).**
-A `[Fact, Reproducible]` test copied from `packages/justdummies-xunit.en.md` fails with `CS0246` on
-`Reproducible`. No user page shows *any* `using JustDummies…` directive, nor does the NuGet readme.
-**Root cause:** `JustDummies.Documentation.UnitTests/DocumentationSampleCompiler.cs:31-48` silently
-adds `using JustDummies; using JustDummies.Diagnostics; using JustDummies.Xunit; using Xunit;` to
-every sample. The samples therefore compile in CI, and the compiler's own remark ("if it binds, it
-binds in a consumer's test project too") does not hold for namespaces.
-
-| | |
-|---|---|
-| Domains | 03, 04, 05, 06, 07, 09, 11, 12, 13, 15, 16, 18, 19 |
-| Repro | [`repros/docs-xunit-namespace`](repros/docs-xunit-namespace) |
-| Red test | `JustDummies.Documentation.UnitTests`: compile the first full sample of `justdummies-xunit.{en,fr}.md` with a prelude that does not inject `JustDummies.Xunit`, and expect no `CS0246`. |
-| Fix | Show the three `using` lines in the first sample of the xunit page (EN/FR), in `JustDummies.Xunit/README.nuget.md` and on the getting-started page. Name the namespace under "The whole surface". Stop the prelude from injecting `JustDummies.Xunit`, so the docs cannot drift again. A `buildTransitive` global `<Using>` would be a packaging decision, not this fix. |
-
-No defect was found in the adapter's own behaviour. `[Reproducible]` printed a copy-pasteable
-`[Reproducible(Seed = …)]` on failure in every domain that used it, and pinning that seed reproduced
-the failing value each time it was tried.
+Tracked in [#328](https://github.com/Reefact/just-dummies/issues/328).
 
 ---
 
@@ -753,18 +373,18 @@ Rows that carry a component ID are described in their section. Every fix applies
 | [CORE-D9](#core-d9) | `generators/dates-and-times` | Granularity under an offset grids the UTC instant | `core` | State it; XML summary too |
 | [CORE-D10](#core-d10) | ADR-0004, ADR-0009/0011, `analyzers/JD016`, `generators/collections` | Cardinality refusal documented at declaration; it runs at `Generate()` | `core` | Amending ADR, then the pages |
 | [AN-D5](#an-d5) | `analyzers/README`, `packages/justdummies` | Info rules invisible in console builds | `analyzers` | One sentence plus an `.editorconfig` snippet |
-| <a id="doc-1"></a>DOC-1 | `generators/enums-and-choices:157`, `guides/errors-and-conflicts:63` | `Any.Boolean().Except(true, false)` does not exist in the public API | `core` | Use an existing member, e.g. `Any.Boolean().True().DifferentFrom(true)` |
-| <a id="doc-2"></a>DOC-2 | `generators/strings:56`, `analyzers/JD030:24` | "`NonEmpty()` leaves the ceiling where it was"; it gives 1 to 1025 (JD030's own sentence says so) | `core` | "raises floor and ceiling by one" |
-| <a id="doc-3"></a>DOC-3 | `generators/collections:50`, `guides/design-principles:72` | Cite ADR-0029 for the million cap; superseded by ADR-0076 | `core` | Point at ADR-0076; add a link check for superseded ADRs |
-| <a id="doc-4"></a>DOC-4 | `generators/strings` (regex tables) | `\xNN`/`\uNNNN` work but are unlisted; `\b`, `\B`, `\G`, `\p{…}`, `\k<…>` and class subtraction are refused but unlisted; `IgnorePatternWhitespace` throws `ArgumentException`, unmentioned; the 65,536-character limit is absent; every refusal ends with the same fixed list | `core` | Complete both tables, add the two notes; optionally make the message tail specific to the construct (`UnsupportedRegexException.cs:22`) |
-| <a id="doc-5"></a>DOC-5 | `packages/justdummies-cli:254` | "A lambda never widens the base"; `_ => Any.Int32()` replaces it | `cli` | "One that builds on its argument never widens it; one that ignores it replaces the base" |
-| <a id="doc-6"></a>DOC-6 | `guides/errors-and-conflicts:101-108` | `Seed` documented "inside a reproducible scope" only; it is also set outside | `core` | With [CORE-B1](#core-b1) |
-| <a id="doc-7"></a>DOC-7 | `packages/justdummies-cli` | Silent on regex guards never being read (spec §5.3 decides it) | `cli` | Say so; point to `Any.StringMatching` and the regular subset |
-| <a id="doc-8"></a>DOC-8 | `packages/justdummies-cli` | No section on where a cross-parameter invariant goes | `cli` | Idea (a) of [CLI-E1](#cli-e1), including the Luhn one-liner |
-| <a id="doc-9"></a>DOC-9 | `packages/justdummies-cli:243-247` (refinement) | Does not say a once-only constraint (`OneOf`, families, `WithLength`, `MultipleOf`, `WithScale`) cannot be declared again in the lambda; `Except`/`DifferentFrom` narrow a pool; JD034 cannot see into the lambda | `cli` | One bullet plus a compiled `z => z.Except(...)` sample |
-| <a id="doc-10"></a>DOC-10 | `packages/justdummies-cli` (refinement) | To reuse a prepared refinement, hold a `Func<AnyX, AnyX>`, not a built `IAny<T>` (ADR-0109; CS0266 does not teach it) | `cli` | One line |
-| <a id="doc-11"></a>DOC-11 | `packages/justdummies-cli` | A scaffolded string row raises JD030 (Info) by design | `cli` | One line inviting the developer to declare the length |
-| <a id="doc-12"></a>DOC-12 | `guides/errors-and-conflicts` | A transposed single call (`Between(10, 1)`) is an argument mistake, not a conflict | `core` | One line under "bounds that cross" |
+| <a id="doc-1"></a>DOC-1 | `generators/enums-and-choices:157`, `guides/errors-and-conflicts:63` | `Any.Boolean().Except(true, false)` does not exist in the public API | `core` | [#329](https://github.com/Reefact/just-dummies/issues/329) |
+| <a id="doc-2"></a>DOC-2 | `generators/strings:56`, `analyzers/JD030:24` | "`NonEmpty()` leaves the ceiling where it was"; it gives 1 to 1025 (JD030's own sentence says so) | `core` | [#329](https://github.com/Reefact/just-dummies/issues/329) |
+| <a id="doc-3"></a>DOC-3 | `generators/collections:50`, `guides/design-principles:72` | Cite ADR-0029 for the million cap; superseded by ADR-0076 | `core` | [#329](https://github.com/Reefact/just-dummies/issues/329) |
+| <a id="doc-4"></a>DOC-4 | `generators/strings` (regex tables) | `\xNN`/`\uNNNN` work but are unlisted; `\b`, `\B`, `\G`, `\p{…}`, `\k<…>` and class subtraction are refused but unlisted; `IgnorePatternWhitespace` throws `ArgumentException`, unmentioned; the 65,536-character limit is absent; every refusal ends with the same fixed list | `core` | [#329](https://github.com/Reefact/just-dummies/issues/329) |
+| <a id="doc-5"></a>DOC-5 | `packages/justdummies-cli:254` | "A lambda never widens the base"; `_ => Any.Int32()` replaces it | `cli` | [#330](https://github.com/Reefact/just-dummies/issues/330) |
+| <a id="doc-6"></a>DOC-6 | `guides/errors-and-conflicts:101-108` | `Seed` documented "inside a reproducible scope" only; it is also set outside | `core` | [#308](https://github.com/Reefact/just-dummies/issues/308) (with [CORE-B1](#core-b1)) |
+| <a id="doc-7"></a>DOC-7 | `packages/justdummies-cli` | Silent on regex guards never being read (spec §5.3 decides it) | `cli` | [#330](https://github.com/Reefact/just-dummies/issues/330) |
+| <a id="doc-8"></a>DOC-8 | `packages/justdummies-cli` | No section on where a cross-parameter invariant goes | `cli` | [#330](https://github.com/Reefact/just-dummies/issues/330) |
+| <a id="doc-9"></a>DOC-9 | `packages/justdummies-cli:243-247` (refinement) | Does not say a once-only constraint (`OneOf`, families, `WithLength`, `MultipleOf`, `WithScale`) cannot be declared again in the lambda; `Except`/`DifferentFrom` narrow a pool; JD034 cannot see into the lambda | `cli` | [#330](https://github.com/Reefact/just-dummies/issues/330) |
+| <a id="doc-10"></a>DOC-10 | `packages/justdummies-cli` (refinement) | To reuse a prepared refinement, hold a `Func<AnyX, AnyX>`, not a built `IAny<T>` (ADR-0109; CS0266 does not teach it) | `cli` | [#330](https://github.com/Reefact/just-dummies/issues/330) |
+| <a id="doc-11"></a>DOC-11 | `packages/justdummies-cli` | A scaffolded string row raises JD030 (Info) by design | `cli` | [#330](https://github.com/Reefact/just-dummies/issues/330) |
+| <a id="doc-12"></a>DOC-12 | `guides/errors-and-conflicts` | A transposed single call (`Between(10, 1)`) is an argument mistake, not a conflict | `core` | [#329](https://github.com/Reefact/just-dummies/issues/329) |
 | <a id="doc-13"></a>DOC-13 | `analyzers/JD007`, `JD009` | "Written inline from `Any`" suggests `Any.X()` from `--entry-point any` is seen; it is not | `analyzers` | Depends on [AN-C3](#an-c3) |
 
 Suggested `JustDummies.Documentation.UnitTests` guards: resolve inline `Any.<Factory>().<Member>(`
@@ -1087,15 +707,16 @@ filled in from a measured run.
 
 ## 13. Next steps
 
-1. **Issues.** Open one issue per root cause, grouped by scope, citing these IDs. Do so **only with
-   the maintainer's approval**.
-   * `cli`: CLI-B1–B6 (B7 is #296), CLI-D1–D5.
-   * `core`: CORE-B1–B3, CORE-D1–D10.
-   * `analyzers`: AN-D1–D5, AN-F1–F2.
-   * `xunit`: XU-D1.
-   * Documentation: DOC-1–13. Each row belongs to the train its component names.
-   * Candidates (§8) go to the maintainer as decision requests, not as bugs. Most would end in an ADR
-     or a documented refusal.
+1. **Issues.** Opened with the maintainer's approval, one per root cause; the sections above link
+   to them.
+   * `cli`: [#297](https://github.com/Reefact/just-dummies/issues/297)–[#307](https://github.com/Reefact/just-dummies/issues/307), plus [#296](https://github.com/Reefact/just-dummies/issues/296) (CLI-B7, filed during the pilot).
+   * `core`: [#308](https://github.com/Reefact/just-dummies/issues/308)–[#320](https://github.com/Reefact/just-dummies/issues/320).
+   * `analyzers`: [#321](https://github.com/Reefact/just-dummies/issues/321)–[#327](https://github.com/Reefact/just-dummies/issues/327).
+   * `xunit`: [#328](https://github.com/Reefact/just-dummies/issues/328).
+   * Documentation: [#329](https://github.com/Reefact/just-dummies/issues/329) (generators and errors pages: DOC-1–4, DOC-12) and [#330](https://github.com/Reefact/just-dummies/issues/330) (CLI page:
+     DOC-5, DOC-7–11); DOC-6 rides with [#308](https://github.com/Reefact/just-dummies/issues/308).
+   * Not opened, because each waits on a decision: the candidates of §8, and DOC-13 (depends on
+     AN-C3). They go to the maintainer as decision requests, not as bugs.
 2. **Bugs, red then green.** For each bug, write the red test named in its row in the suite named
    there (ADR-0019 decides `JustDummies.UnitTests` versus `.PropertyTests`). Put the test and the fix
    in the same `fix(<scope>)` commit, with `Refs: #NN`. Spec or ADR text that a fix changes (spec

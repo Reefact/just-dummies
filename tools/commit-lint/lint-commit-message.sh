@@ -109,6 +109,11 @@ else
     esac
   else
     # --- targeted diagnostics so the author knows exactly what to fix ---
+    # Each one names a single defect, and together they do not cover every way the
+    # canonical shape can fail ('fix garbage: …', 'fix(core)garbage: …', 'fix(core): 123').
+    # The count taken here lets the generic error below guarantee the rejection.
+    errors_before_diagnostics=$errors
+
     if ! printf '%s' "$subject" | grep -Eq '^[^:]+: .'; then
       err "expected '<type>[(scope)][!]: <description>' — no ': ' after the type"
     fi
@@ -140,6 +145,10 @@ else
       [A-Z]) err "the description must start with a lowercase letter (imperative: 'add', not 'Add'/'Added')" ;;
       *) ;; # already lowercase (or non-letter): nothing to report
     esac
+
+    if [ "$errors" -eq "$errors_before_diagnostics" ]; then
+      err "expected '<type>[(scope)][!]: <description>', with the description starting with a lowercase letter"
+    fi
   fi
 
   # trailing period

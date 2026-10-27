@@ -138,17 +138,11 @@ internal static class Guards {
         // guards below it leaves every one of them unrun on some path the constructor still returns from.
         // It never lifts again: once a path can skip one statement, it can skip all of them.
         bool unskipped = true;
-        bool ended     = false;
 
-        foreach (StatementSyntax statement in declaration.Body.Statements) {
-            // Past the end of the leading scan nothing is read any more, but the body is still walked: a guard
-            // written below a write to state rejects values exactly as much as one above it, and passing over it
-            // in silence reported a generator as inferred that the constructor still refuses.
-            if (ended) {
-                MarkIfItRejectsBelowTheScan(statement, model, declared, reading, names, writes);
+        SyntaxList<StatementSyntax> statements = declaration.Body.Statements;
 
-                continue;
-            }
+        for (int index = 0; index < statements.Count; index++) {
+            StatementSyntax statement = statements[index];
 
             // A second assignment is exempt for the same reason as ADR-0086's: `Field = param ?? throw new
             // ArgumentNullException(nameof(param));` states the same null-check `ArgumentNullException
@@ -175,9 +169,12 @@ internal static class Guards {
                 // about first: the statement rejects a value on some path, and the developer deserves the mark.
                 MarkIfItRejects(statement, model, declared, reading);
 
-                ended = true;
+                // Past the end of the leading scan nothing is read any more, but the body is still walked: a
+                // guard written below a write to state rejects values exactly as much as one above it, and
+                // passing over it in silence reported a generator as inferred that the constructor still refuses.
+                MarkWhatRejectsBelowTheScan(statements.Skip(index + 1), model, declared, reading, names, writes);
 
-                continue;
+                break;
             }
 
             if (statement is IfStatementSyntax guard) {
@@ -581,6 +578,16 @@ internal static class Guards {
     ///         named in §9.
     ///     </para>
     /// </remarks>
+    private static void MarkWhatRejectsBelowTheScan(IEnumerable<StatementSyntax> below,
+                                                    SemanticModel model,
+                                                    IMethodSymbol method,
+                                                    GuardReading reading,
+                                                    TypeNames names,
+                                                    ParameterWrites writes) {
+        foreach (StatementSyntax statement in below) { MarkIfItRejectsBelowTheScan(statement, model, method, reading, names, writes); }
+    }
+
+    /// <summary>One statement of <see cref="MarkWhatRejectsBelowTheScan" />.</summary>
     private static void MarkIfItRejectsBelowTheScan(StatementSyntax statement,
                                                     SemanticModel model,
                                                     IMethodSymbol method,
@@ -591,13 +598,7 @@ internal static class Guards {
 
         GuardReading wouldHaveRead = GuardReading.FromSource();
 
-        foreach (InvocationExpressionSyntax invocation in statement.DescendantNodesAndSelf().OfType<InvocationExpressionSyntax>()) {
-            foreach (IParameterSymbol parameter in Mentioned(invocation, model, method)) {
-                if (!TryRecogniseCall(invocation, model, parameter, out IReadOnlyList<GuardConstraint> read)) { continue; }
-
-                foreach (GuardConstraint constraint in read) { wouldHaveRead.Add(parameter.Name, constraint); }
-            }
-        }
+        ReadRecognisedCalls(statement, model, method, wouldHaveRead);
 
         if (statement is IfStatementSyntax chain && Throws(chain)) {
             ReadChain(chain, model, method, wouldHaveRead, names, writes, unskipped: true);
@@ -605,8 +606,20 @@ internal static class Guards {
             MarkIfItRejects(statement, model, method, wouldHaveRead);
         }
 
-        foreach (IParameterSymbol parameter in method.Parameters) {
-            if (wouldHaveRead.Unread(parameter.Name) || wouldHaveRead.For(parameter.Name).Count > 0) { reading.MarkUnread(parameter.Name); }
+        foreach (string narrowed in method.Parameters.Select(parameter => parameter.Name)
+                                         .Where(name => wouldHaveRead.Unread(name) || wouldHaveRead.For(name).Count > 0)) {
+            reading.MarkUnread(narrowed);
+        }
+    }
+
+    /// <summary>Reads every call under <paramref name="statement" /> the closed set recognises as a guard.</summary>
+    private static void ReadRecognisedCalls(StatementSyntax statement, SemanticModel model, IMethodSymbol method, GuardReading reading) {
+        foreach (InvocationExpressionSyntax invocation in statement.DescendantNodesAndSelf().OfType<InvocationExpressionSyntax>()) {
+            foreach (IParameterSymbol parameter in Mentioned(invocation, model, method)) {
+                if (!TryRecogniseCall(invocation, model, parameter, out IReadOnlyList<GuardConstraint> read)) { continue; }
+
+                foreach (GuardConstraint constraint in read) { reading.Add(parameter.Name, constraint); }
+            }
         }
     }
 

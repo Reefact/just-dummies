@@ -26,6 +26,7 @@ public sealed class AnyStringTests {
     #endregion
 
     [Fact(DisplayName = "An unconstrained String yields 0 to 1024 characters drawn from the whole of ASCII.")]
+    [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
     public void UnconstrainedYieldsAsciiUpToTheSpread() {
         HashSet<char> seen = [];
         foreach (string value in Samples(Any.String())) {
@@ -40,6 +41,7 @@ public sealed class AnyStringTests {
     }
 
     [Fact(DisplayName = "NonEmpty yields at least one character.")]
+    [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
     public void NonEmptyHasAtLeastOneCharacter() {
         foreach (string value in Samples(Any.String().NonEmpty())) {
             Check.That(value.Length).IsStrictlyGreaterThan(0);
@@ -126,29 +128,44 @@ public sealed class AnyStringTests {
 
     [Theory(DisplayName = "An anchor satisfies NotBlank wherever in the chain it was declared.")]
     [MemberData(nameof(AnchorRescuesNotBlankCases))]
-    public void AnchorRescuesNotBlankWhateverTheOrder(string because, Func<AnyString> chain, char anchored) {
+    public void AnchorRescuesNotBlankWhateverTheOrder(string because, char anchored) {
         // The six shapes an exhaustive permutation sweep of the string surface found order-sensitive: a filler
         // alphabet holding no non-blank character, NotBlank(), and an anchor that carries one. Declared before the
         // other two the anchor was honoured; declared after, the chain was refused -- the same constraint set,
         // answered two ways. A specification is answered for once it is whole, so all of these draw.
-        foreach (string value in Samples(chain())) {
+        foreach (string value in Samples(AnchorRescuesNotBlankChains[because]())) {
             Check.WithCustomMessage(because).That(value).Contains(anchored.ToString());
             Check.WithCustomMessage(because).That(value.Any(character => !char.IsWhiteSpace(character))).IsTrue();
         }
     }
 
-    public static TheoryData<string, Func<AnyString>, char> AnchorRescuesNotBlankCases() {
-        return new TheoryData<string, Func<AnyString>, char> {
-            { "Whitespaces + prefix", () => Any.String().Whitespaces().NotBlank().StartingWith("A"), 'A' },
-            { "Whitespaces + suffix", () => Any.String().Whitespaces().NotBlank().EndingWith("Z"), 'Z' },
-            { "Whitespaces + fragment", () => Any.String().Whitespaces().NotBlank().Containing("x"), 'x' },
-            { "WithChars + prefix", () => Any.String().WithChars(" \t").NotBlank().StartingWith("A"), 'A' },
-            { "WithChars + suffix", () => Any.String().WithChars(" \t").NotBlank().EndingWith("Z"), 'Z' },
-            { "WithChars + fragment", () => Any.String().WithChars(" \t").NotBlank().Containing("x"), 'x' },
+    // Keyed by the case name rather than carried through the theory data: a Func is not serializable, and one that is
+    // not makes Test Explorer collapse every case into a single row (xUnit1044).
+    [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
+    [SuppressMessage(JustDummiesRule.JD033.Category, JustDummiesRule.JD033.Id, Justification = SuppressionJustification.JD033.UnreachableLiteralIsTheSubject)]
+    private static readonly Dictionary<string, Func<AnyString>> AnchorRescuesNotBlankChains = new() {
+        ["Whitespaces + prefix"] = () => Any.String().Whitespaces().NotBlank().StartingWith("A"),
+        ["Whitespaces + suffix"] = () => Any.String().Whitespaces().NotBlank().EndingWith("Z"),
+        ["Whitespaces + fragment"] = () => Any.String().Whitespaces().NotBlank().Containing("x"),
+        ["WithChars + prefix"] = () => Any.String().WithChars(" \t").NotBlank().StartingWith("A"),
+        ["WithChars + suffix"] = () => Any.String().WithChars(" \t").NotBlank().EndingWith("Z"),
+        ["WithChars + fragment"] = () => Any.String().WithChars(" \t").NotBlank().Containing("x")
+    };
+
+    public static TheoryData<string, char> AnchorRescuesNotBlankCases() {
+        return new TheoryData<string, char> {
+            { "Whitespaces + prefix", 'A' },
+            { "Whitespaces + suffix", 'Z' },
+            { "Whitespaces + fragment", 'x' },
+            { "WithChars + prefix", 'A' },
+            { "WithChars + suffix", 'Z' },
+            { "WithChars + fragment", 'x' },
         };
     }
 
     [Fact(DisplayName = "NotBlank draws the same values whichever order its chain was written in.")]
+    [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
+    [SuppressMessage(JustDummiesRule.JD033.Category, JustDummiesRule.JD033.Id, Justification = SuppressionJustification.JD033.UnreachableLiteralIsTheSubject)]
     public void NotBlankIsIndifferentToDeclarationOrder() {
         // The three orders that reach a value must reach the SAME values, not merely all succeed: an anchor that
         // arrives late has to constrain the draw exactly as one that arrived early.
@@ -177,6 +194,7 @@ public sealed class AnyStringTests {
     }
 
     [Fact(DisplayName = "WithMinLength and WithMaxLength bound the length inclusively.")]
+    [SuppressMessage(JustDummiesRule.JD031.Category, JustDummiesRule.JD031.Id, Justification = SuppressionJustification.JD031.SeparateBoundsAreTheSubject)]
     public void MinAndMaxLengthAreInclusiveBounds() {
         foreach (string value in Samples(Any.String().WithMinLength(3).WithMaxLength(5))) {
             Check.That(value.Length).IsGreaterOrEqualThan(3);
@@ -198,6 +216,7 @@ public sealed class AnyStringTests {
     }
 
     [Fact(DisplayName = "StartingWith anchors the prefix.")]
+    [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
     public void StartingWithAnchorsThePrefix() {
         foreach (string value in Samples(Any.String().StartingWith("ORD-"))) {
             Check.That(value).StartsWith("ORD-");
@@ -205,6 +224,7 @@ public sealed class AnyStringTests {
     }
 
     [Fact(DisplayName = "EndingWith anchors the suffix.")]
+    [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
     public void EndingWithAnchorsTheSuffix() {
         foreach (string value in Samples(Any.String().EndingWith("-FR"))) {
             Check.That(value).EndsWith("-FR");
@@ -212,6 +232,7 @@ public sealed class AnyStringTests {
     }
 
     [Fact(DisplayName = "Containing embeds the value.")]
+    [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
     public void ContainingEmbedsTheValue() {
         foreach (string value in Samples(Any.String().Containing("ABC"))) {
             Check.That(value).Contains("ABC");
@@ -235,6 +256,7 @@ public sealed class AnyStringTests {
 
     [Fact(DisplayName = "Containing: an identical fragment redeclared is a no-op, on the shaped path and the pooled one alike (issue #181).")]
     [SuppressMessage(JustDummiesRule.JD035.Category, JustDummiesRule.JD035.Id, Justification = SuppressionJustification.JD035.RepetitionIsTheSubject)]
+    [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
     public void IdenticalFragmentRedeclaredIsANoOp() {
         // Before the fix, two identical "ab" fragments cost 4 characters on the shaped path (RequiredLength summed
         // both) but only 1 on the pooled path (DeclaredConstraints groups by the same ConstraintCall) — a budget that
@@ -276,6 +298,7 @@ public sealed class AnyStringTests {
     }
 
     [Fact(DisplayName = "Alpha yields ASCII letters only.")]
+    [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
     public void AlphaYieldsLettersOnly() {
         foreach (string value in Samples(Any.String().Alpha().NonEmpty())) {
             Check.That(value.All(character => character is >= 'A' and <= 'Z' or >= 'a' and <= 'z')).IsTrue();
@@ -283,6 +306,7 @@ public sealed class AnyStringTests {
     }
 
     [Fact(DisplayName = "Numeric yields ASCII digits only.")]
+    [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
     public void NumericYieldsDigitsOnly() {
         foreach (string value in Samples(Any.String().Numeric().NonEmpty())) {
             Check.That(value.All(character => character is >= '0' and <= '9')).IsTrue();
@@ -290,6 +314,7 @@ public sealed class AnyStringTests {
     }
 
     [Fact(DisplayName = "AlphaNumeric yields ASCII letters and digits only.")]
+    [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
     public void AlphaNumericYieldsLettersAndDigitsOnly() {
         foreach (string value in Samples(Any.String().AlphaNumeric().NonEmpty())) {
             Check.That(value.All(character => character is >= 'A' and <= 'Z' or >= 'a' and <= 'z' or >= '0' and <= '9')).IsTrue();
@@ -297,6 +322,7 @@ public sealed class AnyStringTests {
     }
 
     [Fact(DisplayName = "Punctuation yields printable non-alphanumerics only.")]
+    [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
     public void PunctuationYieldsPrintableNonAlphaNumericsOnly() {
         foreach (string value in Samples(Any.String().Punctuation().NonEmpty())) {
             Check.That(value.All(CharacterPools.IsAsciiPunctuation)).IsTrue();
@@ -317,6 +343,7 @@ public sealed class AnyStringTests {
     }
 
     [Fact(DisplayName = "Printable admits a punctuated fragment, which the narrower families refuse.")]
+    [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
     public void PrintableAdmitsAPunctuatedFragment() {
         foreach (string value in Samples(Any.String().Printable().StartingWith("ORD-").NonEmpty())) {
             Check.That(value).StartsWith("ORD-");
@@ -324,6 +351,7 @@ public sealed class AnyStringTests {
     }
 
     [Fact(DisplayName = "WithoutAlpha yields no letter; WithoutAlpha().WithoutNumeric() yields neither a letter nor a digit.")]
+    [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
     public void WithoutAlphaAndWithoutNumericSubtractFromTheFiller() {
         foreach (string value in Samples(Any.String().WithoutAlpha().NonEmpty())) {
             Check.That(value.Any(char.IsLetter)).IsFalse();
@@ -335,6 +363,7 @@ public sealed class AnyStringTests {
     }
 
     [Fact(DisplayName = "WithoutAlpha keeps a contained value holding a letter: a subtraction governs the filler alone.")]
+    [SuppressMessage(JustDummiesRule.JD033.Category, JustDummiesRule.JD033.Id, Justification = SuppressionJustification.JD033.UnreachableLiteralIsTheSubject)]
     public void WithoutAlphaKeepsAContainedValueHoldingALetter() {
         foreach (string value in Samples(Any.String().WithoutAlpha().Containing("abc").WithLengthBetween(6, 12))) {
             Check.That(value).Contains("abc");
@@ -345,6 +374,7 @@ public sealed class AnyStringTests {
     }
 
     [Fact(DisplayName = "InLowerCase yields no uppercase letter; digits stay allowed.")]
+    [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
     public void LowerCaseForbidsUppercaseLetters() {
         foreach (string value in Samples(Any.String().InLowerCase().NonEmpty())) {
             Check.That(value.Any(character => character is >= 'A' and <= 'Z')).IsFalse();
@@ -352,6 +382,7 @@ public sealed class AnyStringTests {
     }
 
     [Fact(DisplayName = "InUpperCase draws no lowercase letter, and keeps a lowercase literal as written.")]
+    [SuppressMessage(JustDummiesRule.JD033.Category, JustDummiesRule.JD033.Id, Justification = SuppressionJustification.JD033.UnreachableLiteralIsTheSubject)]
     public void UpperCaseForbidsLowercaseLetters() {
         foreach (string value in Samples(Any.String().InUpperCase().StartingWith("ord-").WithLengthBetween(6, 12))) {
             Check.That(value).StartsWith("ord-");
@@ -364,6 +395,7 @@ public sealed class AnyStringTests {
     // written before: a fixed separator in the prefix, and a body the family still governs on its own.
 
     [Fact(DisplayName = "AlphaNumeric with an anchored prefix draws the separator nowhere but the prefix.")]
+    [SuppressMessage(JustDummiesRule.JD033.Category, JustDummiesRule.JD033.Id, Justification = SuppressionJustification.JD033.UnreachableLiteralIsTheSubject)]
     public void AlphaNumericWithAPrefixDrawsTheSeparatorNowhereElse() {
         foreach (string value in Samples(Any.String().AlphaNumeric().StartingWith("ORD-").WithLengthBetween(8, 20))) {
             Check.That(value).StartsWith("ORD-");
@@ -373,6 +405,7 @@ public sealed class AnyStringTests {
     }
 
     [Fact(DisplayName = "An order reference keeps its four rules as named calls: prefix, family, casing and length.")]
+    [SuppressMessage(JustDummiesRule.JD033.Category, JustDummiesRule.JD033.Id, Justification = SuppressionJustification.JD033.UnreachableLiteralIsTheSubject)]
     public void AnOrderReferenceKeepsItsFourRulesNamed() {
         foreach (string value in Samples(Any.String().StartingWith("ORD-").AlphaNumeric().InUpperCase().WithLengthBetween(8, 20))) {
             Check.That(value).StartsWith("ORD-");
@@ -383,6 +416,8 @@ public sealed class AnyStringTests {
     }
 
     [Fact(DisplayName = "A family and an anchored suffix compose the same way whichever is declared first.")]
+    [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
+    [SuppressMessage(JustDummiesRule.JD033.Category, JustDummiesRule.JD033.Id, Justification = SuppressionJustification.JD033.UnreachableLiteralIsTheSubject)]
     public void AFamilyAndASuffixAreOrderIndependent() {
         foreach (AnyString generator in new[] { Any.String().Alpha().EndingWith("-42"), Any.String().EndingWith("-42").Alpha() }) {
             foreach (string value in Samples(generator.WithLengthBetween(6, 12))) {
@@ -393,6 +428,7 @@ public sealed class AnyStringTests {
     }
 
     [Fact(DisplayName = "WithChars keeps a contained value its pool cannot draw, and still draws only from the pool.")]
+    [SuppressMessage(JustDummiesRule.JD033.Category, JustDummiesRule.JD033.Id, Justification = SuppressionJustification.JD033.UnreachableLiteralIsTheSubject)]
     public void WithCharsKeepsAContainedValueOutsideItsPool() {
         foreach (string value in Samples(Any.String().WithChars("0123456789").Containing("-OK-").WithLengthBetween(8, 16))) {
             Check.That(value).Contains("-OK-");
@@ -402,6 +438,7 @@ public sealed class AnyStringTests {
     }
 
     [Fact(DisplayName = "A length the prefix fills exactly draws nothing, so the family governs nothing.")]
+    [SuppressMessage(JustDummiesRule.JD033.Category, JustDummiesRule.JD033.Id, Justification = SuppressionJustification.JD033.UnreachableLiteralIsTheSubject)]
     public void APrefixFillingTheWholeLengthDrawsNothing() {
         Check.That(Any.String().Numeric().WithLength(4).StartingWith("ORD-").Generate()).IsEqualTo("ORD-");
     }
@@ -428,6 +465,7 @@ public sealed class AnyStringTests {
     }
 
     [Fact(DisplayName = "A numeric string anchors a non-numeric prefix: the family governs the draw, not the literal.")]
+    [SuppressMessage(JustDummiesRule.JD033.Category, JustDummiesRule.JD033.Id, Justification = SuppressionJustification.JD033.UnreachableLiteralIsTheSubject)]
     public void NumericAnchorsANonNumericPrefix() {
         foreach (string value in Samples(Any.String().Numeric().StartingWith("ORD-").WithLengthBetween(8, 20))) {
             Check.That(value).StartsWith("ORD-");
@@ -445,6 +483,7 @@ public sealed class AnyStringTests {
     }
 
     [Fact(DisplayName = "Declaring the charset after the prefix exempts it too: order does not matter.")]
+    [SuppressMessage(JustDummiesRule.JD033.Category, JustDummiesRule.JD033.Id, Justification = SuppressionJustification.JD033.UnreachableLiteralIsTheSubject)]
     public void CharsetAfterAPrefixExemptsItToo() {
         foreach (string value in Samples(Any.String().StartingWith("ORD-").Numeric().WithLengthBetween(8, 20))) {
             Check.That(value).StartsWith("ORD-");
@@ -477,6 +516,7 @@ public sealed class AnyStringTests {
     }
 
     [Fact(DisplayName = "A lowercase string anchors an uppercase prefix, kept verbatim.")]
+    [SuppressMessage(JustDummiesRule.JD033.Category, JustDummiesRule.JD033.Id, Justification = SuppressionJustification.JD033.UnreachableLiteralIsTheSubject)]
     public void LowerCaseAnchorsAnUppercasePrefix() {
         foreach (string value in Samples(Any.String().InLowerCase().StartingWith("ORD-").WithLengthBetween(8, 20))) {
             Check.That(value).StartsWith("ORD-");
@@ -608,6 +648,7 @@ public sealed class AnyStringTests {
     }
 
     [Fact(DisplayName = "A seeded exclusion is reproducible: the same seed yields the same value.")]
+    [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
     public void SeededExclusionIsReproducible() {
         string first  = Any.WithSeed(4242).String().NonEmpty().Alpha().DifferentFrom("Q").Generate();
         string second = Any.WithSeed(4242).String().NonEmpty().Alpha().DifferentFrom("Q").Generate();
@@ -616,6 +657,7 @@ public sealed class AnyStringTests {
     }
 
     [Fact(DisplayName = "An exclusion composes with OneOf, removing the excluded value from the set.")]
+    [SuppressMessage(JustDummiesRule.JD029.Category, JustDummiesRule.JD029.Id, Justification = SuppressionJustification.JD029.RefusedValueIsTheSubject)]
     public void AnExclusionComposesWithOneOf() {
         Check.That(Any.String().DifferentFrom("x").OneOf("a", "x").Generate()).IsEqualTo("a");
     }
@@ -629,6 +671,7 @@ public sealed class AnyStringTests {
     }
 
     [Fact(DisplayName = "WithChars draws every character from the supplied pool.")]
+    [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
     public void WithCharsDrawsFromThePool() {
         const string pool = "0123456789ABCDEF";
         foreach (string value in Samples(Any.String().WithChars(pool).NonEmpty())) {
@@ -648,6 +691,7 @@ public sealed class AnyStringTests {
     }
 
     [Fact(DisplayName = "WithChars reaches non-ASCII characters a named charset cannot.")]
+    [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
     public void WithCharsReachesNonAscii() {
         const string pool = "àâäéèêëîïôùûüç";
         foreach (string value in Samples(Any.String().WithChars(pool).NonEmpty())) {
@@ -766,6 +810,7 @@ public sealed class AnyStringTests {
     }
 
     [Fact(DisplayName = "A WithChars pool anchors a prefix its pool cannot draw, and keeps drawing from the pool alone.")]
+    [SuppressMessage(JustDummiesRule.JD033.Category, JustDummiesRule.JD033.Id, Justification = SuppressionJustification.JD033.UnreachableLiteralIsTheSubject)]
     public void WithCharsAnchorsAPrefixOutsideItsPool() {
         foreach (string value in Samples(Any.String().WithChars("0123456789").StartingWith("ID-").WithLengthBetween(6, 14))) {
             Check.That(value).StartsWith("ID-");
@@ -774,6 +819,7 @@ public sealed class AnyStringTests {
     }
 
     [Fact(DisplayName = "Declaring WithChars after the fragment exempts it too: order does not matter.")]
+    [SuppressMessage(JustDummiesRule.JD033.Category, JustDummiesRule.JD033.Id, Justification = SuppressionJustification.JD033.UnreachableLiteralIsTheSubject)]
     public void WithCharsAfterAFragmentExemptsItToo() {
         foreach (string value in Samples(Any.String().StartingWith("ID-").WithChars("0123456789").WithLengthBetween(6, 14))) {
             Check.That(value).StartsWith("ID-");

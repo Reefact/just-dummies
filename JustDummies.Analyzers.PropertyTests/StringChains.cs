@@ -73,7 +73,7 @@ internal static class StringChains {
     ///     rule that miscounted it as a second declaration would stand down where it should not.
     /// </summary>
     private static StringChain OneCallPerSlot(IEnumerable<StringChainCall> calls) {
-        Dictionary<StringChainSlot, string> taken = new();
+        Dictionary<StringChainSlot, string> taken = [];
         bool                                pool  = false;
         List<StringChainCall>               kept  = [];
         foreach (StringChainCall call in calls) {

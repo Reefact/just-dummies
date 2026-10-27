@@ -22,6 +22,7 @@ public sealed class MaterializationTests {
     #endregion
 
     [Fact(DisplayName = "Generate materializes a valid string value.")]
+    [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
     public void GenerateMaterializesAString() {
         string value = Any.String().NonEmpty().Generate();
 
@@ -59,6 +60,7 @@ public sealed class MaterializationTests {
     }
 
     [Fact(DisplayName = "Generic inference flows through IAny<T>, materializing without any implicit conversion.")]
+    [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
     public void GenericInferenceMaterializesThroughIAny() {
         string text  = Materialize(Any.String().NonEmpty());
         int    value = Materialize(Any.Int32().Positive());

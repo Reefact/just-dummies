@@ -1,5 +1,7 @@
 #region Usings declarations
 
+using System.Diagnostics.CodeAnalysis;
+
 using JetBrains.Annotations;
 
 using NFluent;
@@ -20,6 +22,7 @@ public sealed class AmbientSeedScopeTests {
 
     #region Statics members declarations
 
+    [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
     private static (int, string) Batch() {
         return (Any.Int32().Generate(), Any.String().NonEmpty().Generate());
     }

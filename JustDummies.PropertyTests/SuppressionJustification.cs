@@ -43,6 +43,36 @@ internal static class SuppressionJustification {
         /// </summary>
         internal const string NoContainsWithComparisonDownlevel = "string.Contains(string, StringComparison) is absent from the floor this suite runs against (ADR-0007); IndexOf with StringComparison.Ordinal is the identical comparison. See the constant's summary.";
 
+        /// <summary>
+        ///     <c>string.Contains(char)</c> is not on the .NET Framework 4.7.2 support floor this suite also runs on
+        ///     (ADR-0007); <c>IndexOf(char)</c> carries the identical test and compiles on both legs. The rule is right
+        ///     on net10.0 only.
+        /// </summary>
+        internal const string NoContainsCharDownlevel = "string.Contains(char) does not compile on the net472 support floor this suite also runs on (ADR-0007). See the constant's summary.";
+
+    }
+
+    /// <summary>Justifications for JD030 — the undeclared-string-length diagnostic.</summary>
+    internal static class JD030 {
+
+        /// <summary>
+        ///     The length is not what these properties pin. Either the default spread is itself the draw under test, or the string
+        ///     only has to exist and be well-formed while the test is about something else. Declaring a length would narrow
+        ///     the sample the suite is meant to exercise, or add a number that looks as though it mattered.
+        /// </summary>
+        internal const string LengthIsNotWhatThisPins = "The length is not what this test pins: the default spread is the draw under test, or the string is incidental. See the constant's summary.";
+
+    }
+
+    /// <summary>Justifications for JD031 — two bounds that are the range form.</summary>
+    internal static class JD031 {
+
+        /// <summary>
+        ///     The two bounds written separately ARE the subject. The test pins how each bound is honoured on its own, which
+        ///     the range form the rule suggests would hide.
+        /// </summary>
+        internal const string SeparateBoundsAreTheSubject = "The two bounds written separately ARE the subject: the test pins how each is honoured on its own. See the constant's summary.";
+
     }
 
     /// <summary>Justifications for S1854 — "Unused assignments should be removed".</summary>

@@ -104,6 +104,53 @@ internal static class SuppressionJustification {
 
     }
 
+    /// <summary>Justifications for JD029 — a value no draw can ever yield.</summary>
+    internal static class JD029 {
+
+        /// <summary>
+        ///     The refused value IS the subject. These tests pin what the pool reports, names or does with a value that a
+        ///     declared constraint refuses, so the value has to be written into the pool. The rule is right to report it,
+        ///     which is why it is silenced here rather than avoided.
+        /// </summary>
+        internal const string RefusedValueIsTheSubject = "The refused value IS the subject: the test pins what the pool does with a value the constraint refuses, so it has to be written. See the constant's summary.";
+
+    }
+
+    /// <summary>Justifications for JD030 — the undeclared-string-length diagnostic.</summary>
+    internal static class JD030 {
+
+        /// <summary>
+        ///     The length is not what these tests pin. Either the default spread is itself the draw under test, or the string
+        ///     only has to exist and be well-formed while the test is about something else. Declaring a length would narrow
+        ///     the sample the suite is meant to exercise, or add a number that looks as though it mattered.
+        /// </summary>
+        internal const string LengthIsNotWhatThisPins = "The length is not what this test pins: the default spread is the draw under test, or the string is incidental. See the constant's summary.";
+
+    }
+
+    /// <summary>Justifications for JD031 — two bounds that are the range form.</summary>
+    internal static class JD031 {
+
+        /// <summary>
+        ///     The two bounds written separately ARE the subject. The test pins how each bound is honoured on its own, which
+        ///     the range form the rule suggests would hide.
+        /// </summary>
+        internal const string SeparateBoundsAreTheSubject = "The two bounds written separately ARE the subject: the test pins how each is honoured on its own. See the constant's summary.";
+
+    }
+
+    /// <summary>Justifications for JD033 — a literal the pool cannot draw.</summary>
+    internal static class JD033 {
+
+        /// <summary>
+        ///     The literal the pool cannot draw IS the subject. The test pins that such a literal appears only where it was
+        ///     written and neither widens the pool nor changes what else is drawn. The rule is right to report it, which is
+        ///     why it is silenced here rather than avoided.
+        /// </summary>
+        internal const string UnreachableLiteralIsTheSubject = "The literal the pool cannot draw IS the subject: the test pins that it appears only where written. See the constant's summary.";
+
+    }
+
     /// <summary>Justifications for JD035 — the repeated-constraint diagnostic.</summary>
     internal static class JD035 {
 

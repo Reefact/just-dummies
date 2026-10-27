@@ -267,9 +267,12 @@ public sealed class AnyDateTimeOffset : IAny<DateTimeOffset>, IHasRandomSource, 
         Dictionary<ulong, List<DateTimeOffset>> originals = [];
         foreach (DateTimeOffset value in values) {
             ulong ordinal = Ord(value);
-            if (!originals.ContainsKey(ordinal)) { originals.Add(ordinal, []); }
+            if (!originals.TryGetValue(ordinal, out List<DateTimeOffset>? bucket)) {
+                bucket = [];
+                originals.Add(ordinal, bucket);
+            }
 
-            originals[ordinal].Add(value);
+            bucket.Add(value);
         }
 
         Dictionary<ulong, DateTimeOffset[]> supplied = originals.ToDictionary(entry => entry.Key, entry => entry.Value.ToArray());

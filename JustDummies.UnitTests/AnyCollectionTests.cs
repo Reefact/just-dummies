@@ -504,6 +504,7 @@ public sealed class AnyCollectionTests {
     }
 
     [Fact(DisplayName = "DictionaryOf: builds unique-keyed dictionaries and gates the count by the key domain.")]
+    [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
     public void DictionaryOfBehaves() {
         for (int i = 0; i < SampleCount; i++) {
             Dictionary<int, string> dictionary = Any.DictionaryOf(Any.Int32().Between(1, 1000), Any.String().NonEmpty()).WithCount(8).Generate();
@@ -516,6 +517,7 @@ public sealed class AnyCollectionTests {
     }
 
     [Fact(DisplayName = "ContainingKey: a key outside the key domain extends the effective cardinality (issue #225).")]
+    [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
     public void DictionaryContainingKeyOutsideDomainExtendsCardinality() {
         // Mirrors ContainingOutsideDomainExtendsCardinality on the dictionary surface: {1, 2} is all the key
         // generator can produce, and 3 is supplied directly from outside that domain, so a three-entry dictionary is
@@ -530,6 +532,7 @@ public sealed class AnyCollectionTests {
     }
 
     [Fact(DisplayName = "ContainingKey: a within-domain key is present, an out-of-capacity one is still refused before any entry is drawn.")]
+    [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
     public void DictionaryContainingKeyInsideDomainDoesNotInflate() {
         // A within-domain fixed key is present and adds no capacity of its own.
         for (int i = 0; i < SampleCount; i++) {
@@ -547,6 +550,7 @@ public sealed class AnyCollectionTests {
     }
 
     [Fact(DisplayName = "ContainingAnyKey: a key drawn from a generator is forced into the dictionary; null is rejected (issue #287).")]
+    [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
     public void DictionaryContainingAnyKeyForcesADrawnKey() {
         // The drawn key (4242) lies outside the key generator's own {1..9} domain, so it is supplied directly and
         // extends the effective cardinality — the ContainingAny path, now reaching dictionary keys.
@@ -585,6 +589,7 @@ public sealed class AnyCollectionTests {
     }
 
     [Fact(DisplayName = "SetOf and DictionaryOf: a conflict never names Distinct(), a call neither surface has (issue #179).")]
+    [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
     public void SetAndDictionaryConflictsNeverNameDistinct() {
         // A set is distinct by nature: the caller can loosen the count or the element generator, never a Distinct()
         // they never wrote.
@@ -627,6 +632,7 @@ public sealed class AnyCollectionTests {
     }
 
     [Fact(DisplayName = "PairOf and TripleOf assemble value tuples from constrained parts.")]
+    [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
     public void PairAndTriple() {
         for (int i = 0; i < SampleCount; i++) {
             (int first, string second) pair = Any.PairOf(Any.Int32().Positive(), Any.String().NonEmpty()).Generate();

@@ -889,6 +889,7 @@ internal sealed class StringSpec {
     }
 
     /// <summary>Whether the declared pool — a custom one or a named family — admits the character. True when neither is declared.</summary>
+    [SuppressMessage(NetAnalyzersRule.CA2249.Category, NetAnalyzersRule.CA2249.Id, Justification = SuppressionJustification.CA2249.NoContainsCharDownlevel)]
     private bool AllowedByPool(char character) {
         if (_customPool is not null) { return _customPool.IndexOf(character) >= 0; }
 

@@ -1,6 +1,7 @@
 #region Usings declarations
 
 using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
 
 using JetBrains.Annotations;
@@ -89,6 +90,7 @@ public sealed class ConcurrentDrawTests {
     }
 
     [Fact(DisplayName = "A concurrent burst does not poison the other generators of the same source.")]
+    [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
     public void AConcurrentBurstDoesNotPoisonSiblingGenerators() {
         string text  = string.Empty;
         Guid   guid  = Guid.Empty;

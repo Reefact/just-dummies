@@ -1,5 +1,7 @@
 #region Usings declarations
 
+using System.Diagnostics.CodeAnalysis;
+
 using JetBrains.Annotations;
 
 using NFluent;
@@ -19,6 +21,7 @@ public sealed class SeedReproducibilityTests {
 
     #region Statics members declarations
 
+    [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
     private static string Batch() {
         int      full     = Any.Int32().Generate();
         int      bounded  = Any.Int32().Between(1, 1000).Generate();
@@ -71,6 +74,7 @@ public sealed class SeedReproducibilityTests {
     }
 
     [Fact(DisplayName = "Reproducibly does not report when the body succeeds.")]
+    [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
     public void ReproduciblyIsSilentOnSuccess() {
         bool reported = false;
 

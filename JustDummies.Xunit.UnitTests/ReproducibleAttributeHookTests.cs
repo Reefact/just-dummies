@@ -1,5 +1,9 @@
 #region Usings declarations
 
+using System.Diagnostics.CodeAnalysis;
+
+using JustDummies.Diagnostics;
+
 using JetBrains.Annotations;
 
 using NFluent;
@@ -28,6 +32,7 @@ public sealed class ReproducibleAttributeHookTests {
 
     #region Statics members declarations
 
+    [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
     private static (int, string) Batch() {
         return (Any.Int32().Generate(), Any.String().NonEmpty().Generate());
     }

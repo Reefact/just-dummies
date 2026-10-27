@@ -1,5 +1,6 @@
 #region Usings declarations
 
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 using System.Text;
@@ -72,6 +73,7 @@ public sealed class SeedGoldenMasterTests {
     ///     One case per factory: a name, and how to draw it. The name is the reference file's key, so renaming one
     ///     rewrites a line of the file — deliberate, since a rename is how a factory's identity changes.
     /// </summary>
+    [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
     private static IEnumerable<(string Name, Func<string> Draw)> Cases() {
         // Scalars, unconstrained: the plainest draw each factory makes.
         yield return ("Boolean", () => Any.Boolean().Generate().ToString());

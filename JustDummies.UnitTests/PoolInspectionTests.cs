@@ -87,6 +87,7 @@ public sealed class PoolInspectionTests {
     }
 
     [Fact(DisplayName = "On an integer pool the bound that removed a value is the one the rejection names.")]
+    [SuppressMessage(JustDummiesRule.JD029.Category, JustDummiesRule.JD029.Id, Justification = SuppressionJustification.JD029.RefusedValueIsTheSubject)]
     public void AnIntegerPoolNamesTheBoundThatRefusedTheValue() {
         IPoolInspection<int> inspection = Any.Int32().OneOf(1, 5, 42).Between(1, 10);
 
@@ -96,6 +97,7 @@ public sealed class PoolInspectionTests {
     }
 
     [Fact(DisplayName = "A two-bound call is named once, under the name the caller wrote.")]
+    [SuppressMessage(JustDummiesRule.JD029.Category, JustDummiesRule.JD029.Id, Justification = SuppressionJustification.JD029.RefusedValueIsTheSubject)]
     public void ATwoBoundCallIsNamedOnce() {
         // Between sets a minimum and a maximum under one name, and the caller can only loosen the call. Naming a
         // half would point at something they cannot edit on its own.
@@ -119,6 +121,7 @@ public sealed class PoolInspectionTests {
     }
 
     [Fact(DisplayName = "A decimal pool names the scale that refused a value.")]
+    [SuppressMessage(JustDummiesRule.JD029.Category, JustDummiesRule.JD029.Id, Justification = SuppressionJustification.JD029.RefusedValueIsTheSubject)]
     public void ADecimalPoolNamesTheScaleThatRefusedTheValue() {
         IPoolInspection<decimal> inspection = Any.Decimal().OneOf(1.5m, 2.25m).WithScale(1);
 
@@ -322,6 +325,7 @@ public sealed class PoolInspectionTests {
     }
 
     [Fact(DisplayName = "The survivors are the exact domain the draw picks from, in the order they were supplied.")]
+    [SuppressMessage(JustDummiesRule.JD029.Category, JustDummiesRule.JD029.Id, Justification = SuppressionJustification.JD029.RefusedValueIsTheSubject)]
     public void SurvivorsAreTheDomainTheDrawPicksFrom() {
         IPoolInspection<string> inspection = Inspect(Any.String().OneOf("Camille", "X", "Ada").WithMinLength(2));
 
@@ -330,6 +334,7 @@ public sealed class PoolInspectionTests {
     }
 
     [Fact(DisplayName = "A rejection names the constraint that refused the value.")]
+    [SuppressMessage(JustDummiesRule.JD029.Category, JustDummiesRule.JD029.Id, Justification = SuppressionJustification.JD029.RefusedValueIsTheSubject)]
     public void ARejectionNamesTheConstraintThatRefusedTheValue() {
         IReadOnlyList<PoolRejection<string>> rejections = Inspect(Any.String().OneOf("abc", "de").WithLength(3)).GetRejections();
 
@@ -339,6 +344,7 @@ public sealed class PoolInspectionTests {
     }
 
     [Fact(DisplayName = "A rejection names every constraint that refuses the value, not the first one met.")]
+    [SuppressMessage(JustDummiesRule.JD029.Category, JustDummiesRule.JD029.Id, Justification = SuppressionJustification.JD029.RefusedValueIsTheSubject)]
     public void ARejectionNamesEveryConstraintThatRefusesTheValue() {
         // "abcd" misses on both counts. Naming only one would send a reader at a constraint they could loosen
         // without changing the verdict — the value would still be rejected by the other.
@@ -350,6 +356,7 @@ public sealed class PoolInspectionTests {
     }
 
     [Fact(DisplayName = "A declared constraint carries its name and its rendered arguments apart, not one string to parse.")]
+    [SuppressMessage(JustDummiesRule.JD029.Category, JustDummiesRule.JD029.Id, Justification = SuppressionJustification.JD029.RefusedValueIsTheSubject)]
     public void ADeclaredConstraintKeepsItsNameAndArgumentsApart() {
         DeclaredConstraint constraint = Inspect(Any.String().OneOf("abc", "de").WithLength(3)).GetRejections()[0].RejectedBy[0];
 
@@ -399,6 +406,7 @@ public sealed class PoolInspectionTests {
     }
 
     [Fact(DisplayName = "The reported lists cannot be cast back to something mutable.")]
+    [SuppressMessage(JustDummiesRule.JD029.Category, JustDummiesRule.JD029.Id, Justification = SuppressionJustification.JD029.RefusedValueIsTheSubject)]
     public void TheReportedListsAreNotAMutableHandle() {
         // A report a caller can edit is a report about nothing. The survivors in particular are the live domain the
         // draw samples, so handing the inner list out would let a caller change what the generator produces.

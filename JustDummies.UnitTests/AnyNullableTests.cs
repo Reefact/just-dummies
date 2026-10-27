@@ -1,5 +1,7 @@
 #region Usings declarations
 
+using System.Diagnostics.CodeAnalysis;
+
 using NFluent;
 
 #endregion
@@ -44,6 +46,7 @@ public sealed class AnyNullableTests {
     }
 
     [Fact(DisplayName = "OrNull on a reference type yields both null and non-null values satisfying the inner constraints.")]
+    [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
     public void ReferenceTypeOrNullYieldsBothCases() {
         IAny<string?> generator = Any.String().NonEmpty().OrNull();
 

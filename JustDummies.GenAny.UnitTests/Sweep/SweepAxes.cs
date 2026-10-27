@@ -146,7 +146,7 @@ internal static class SweepAxes {
         ///     Carried rather than assumed: a null test against a non-nullable value type does not compile,
         ///     and emitting one anyway is half of how the August survey manufactured its own error rows.
         /// </remarks>
-        internal bool Nullable { get; } = type.EndsWith("?", StringComparison.Ordinal) || !NotNullable.Contains(type);
+        internal bool Nullable { get; } = type.EndsWith('?') || !NotNullable.Contains(type);
 
         /// <summary>
         ///     Whether a parameter of this type draws through a generator of its own (§5.4, ADR-0089).

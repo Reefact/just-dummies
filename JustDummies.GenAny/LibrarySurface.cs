@@ -20,7 +20,7 @@ namespace JustDummies.GenAny;
 /// </remarks>
 internal sealed class LibrarySurface {
 
-    private readonly Dictionary<string, ITypeSymbol?> factories = [];
+    private readonly Dictionary<string, IMethodSymbol?> factories = [];
 
     private readonly Compilation compilation;
 
@@ -70,9 +70,29 @@ internal sealed class LibrarySurface {
     /// <param name="typeArguments">How many type arguments it takes.</param>
     /// <param name="parameters">How many value arguments it takes.</param>
     internal ITypeSymbol? Returned(string factory, int typeArguments = 0, int parameters = 0) {
+        return Factory(factory, typeArguments, parameters)?.ReturnType;
+    }
+
+    /// <summary>
+    ///     The builder type <c>Any.<paramref name="factory" />(…)</c> returns once its type parameters are
+    ///     <paramref name="typeArguments" /> — <c>AnyList&lt;string&gt;</c> for <c>ListOf</c> over a string — or null
+    ///     when this compilation has no such factory.
+    /// </summary>
+    /// <remarks>
+    ///     Built through the method rather than through the type it returns. That type is open over the method's
+    ///     own type parameters, and constructing the method substitutes them wherever they appear, whatever shape
+    ///     a later library gives it (ADR-0063 lets the two version apart). The arguments are what the compiler
+    ///     infers from the emitted operands, so the type the factory returns and the type its refining lambda
+    ///     receives (ADR-0109) are one type.
+    /// </remarks>
+    internal ITypeSymbol? ReturnedFor(string factory, int parameters, params ITypeSymbol[] typeArguments) {
+        return Factory(factory, typeArguments.Length, parameters)?.Construct(typeArguments).ReturnType;
+    }
+
+    private IMethodSymbol? Factory(string factory, int typeArguments, int parameters) {
         string key = $"{factory}`{typeArguments}({parameters})";
 
-        if (factories.TryGetValue(key, out ITypeSymbol? cached)) { return cached; }
+        if (factories.TryGetValue(key, out IMethodSymbol? cached)) { return cached; }
 
         IMethodSymbol? method = Any.GetMembers(factory)
                                    .OfType<IMethodSymbol>()
@@ -81,9 +101,40 @@ internal sealed class LibrarySurface {
                                                              && candidate.TypeParameters.Length == typeArguments
                                                              && candidate.Parameters.Length == parameters);
 
-        factories[key] = method?.ReturnType;
+        factories[key] = method;
 
-        return method?.ReturnType;
+        return method;
+    }
+
+    /// <summary>
+    ///     What <paramref name="generator" /> draws: the <c>T</c> of the <c>IAny&lt;T&gt;</c> it implements, or
+    ///     null when it implements none.
+    /// </summary>
+    internal ITypeSymbol? DrawnBy(ITypeSymbol generator) {
+        return generator.AllInterfaces
+                        .FirstOrDefault(implemented => SymbolEqualityComparer.Default.Equals(implemented.OriginalDefinition, AnyOfT))
+                       ?.TypeArguments[0];
+    }
+
+    /// <summary>
+    ///     What <paramref name="generator" />'s <paramref name="constraint" /> returns — inherited members
+    ///     included — or null when it carries no such member.
+    /// </summary>
+    /// <remarks>
+    ///     Not always <paramref name="generator" /> itself: <c>Any.Uri().Web()</c> returns an <c>AnyWebUri</c>, so
+    ///     the type a chain ends on is read off its last call rather than assumed from its first. Looked up on a
+    ///     generator built for its arguments, a shared base's <c>TSelf</c> comes back as the concrete type.
+    /// </remarks>
+    internal static ITypeSymbol? Returned(ITypeSymbol? generator, string constraint) {
+        for (ITypeSymbol? type = generator; type is not null; type = type.BaseType) {
+            IMethodSymbol? declared = type.GetMembers(constraint)
+                                          .OfType<IMethodSymbol>()
+                                          .FirstOrDefault(candidate => candidate.DeclaredAccessibility == Accessibility.Public && !candidate.IsStatic);
+
+            if (declared is not null) { return declared.ReturnType; }
+        }
+
+        return null;
     }
 
     /// <summary>

@@ -204,3 +204,88 @@ public enum Permissions {
     Delete = 4
 
 }
+
+/// <summary>
+///     A value object that is valid on its own whether or not it crosses a border, so a page can show a rule that
+///     belongs to the type composing it rather than to this one: <see cref="Shipment" /> accepts only a domestic
+///     route.
+/// </summary>
+public sealed record Route {
+
+    /// <summary>Builds a route.</summary>
+    /// <exception cref="ArgumentNullException">The origin or the destination is <see langword="null" />.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The distance is not positive.</exception>
+    public Route(string origin, string destination, int distanceKm, bool domestic) {
+        ArgumentNullException.ThrowIfNull(origin);
+        ArgumentNullException.ThrowIfNull(destination);
+        if (distanceKm <= 0) { throw new ArgumentOutOfRangeException(nameof(distanceKm), distanceKm, "A route has a positive length."); }
+
+        Origin      = origin;
+        Destination = destination;
+        DistanceKm  = distanceKm;
+        Domestic    = domestic;
+    }
+
+    /// <summary>Where the route starts.</summary>
+    public string Origin { get; }
+
+    /// <summary>Where the route ends.</summary>
+    public string Destination { get; }
+
+    /// <summary>The route's length, in kilometres.</summary>
+    public int DistanceKm { get; }
+
+    /// <summary>Whether the route stays within one country.</summary>
+    public bool Domestic { get; }
+
+}
+
+/// <summary>
+///     An aggregate with a rule on a value it composes — its route must be domestic — and a leaf guarded by its own
+///     constructor, so a page can show a test refining a parameter's valid base rather than rebuilding it.
+/// </summary>
+public sealed class Shipment {
+
+    /// <summary>The route length above which the driver has to stop on the way.</summary>
+    public const int RestStopDistanceKm = 200;
+
+    /// <summary>Builds a shipment.</summary>
+    /// <exception cref="ArgumentNullException">The route or the labels are <see langword="null" />.</exception>
+    /// <exception cref="ArgumentException">The route crosses a border.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The shipment carries no parcel.</exception>
+    public Shipment(Route route, int parcels, IReadOnlyList<string> labels, decimal? declaredValue) {
+        ArgumentNullException.ThrowIfNull(route);
+        ArgumentNullException.ThrowIfNull(labels);
+        if (!route.Domestic) { throw new ArgumentException("A shipment route must be domestic.", nameof(route)); }
+        if (parcels <= 0) { throw new ArgumentOutOfRangeException(nameof(parcels), parcels, "A shipment carries at least one parcel."); }
+
+        Route         = route;
+        Parcels       = parcels;
+        Labels        = labels;
+        DeclaredValue = declaredValue;
+    }
+
+    /// <summary>The route the shipment follows.</summary>
+    public Route Route { get; }
+
+    /// <summary>How many parcels it carries.</summary>
+    public int Parcels { get; }
+
+    /// <summary>The labels printed on it.</summary>
+    public IReadOnlyList<string> Labels { get; }
+
+    /// <summary>The value declared for insurance, if any.</summary>
+    public decimal? DeclaredValue { get; }
+
+    /// <summary>Whether the driver has to stop on the way.</summary>
+    public bool NeedsRestStop => Route.DistanceKm > RestStopDistanceKm;
+
+    /// <summary>Whether this shipment can share a truck with <paramref name="other" />: they follow the same route.</summary>
+    /// <exception cref="ArgumentNullException"><paramref name="other" /> is <see langword="null" />.</exception>
+    public bool CanTravelWith(Shipment other) {
+        ArgumentNullException.ThrowIfNull(other);
+
+        return Route == other.Route;
+    }
+
+}

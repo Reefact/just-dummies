@@ -2,15 +2,16 @@
 // `any generate Pattern --force` overwrites it. This type is partial, so members you add in a
 // neighbouring file survive.
 
+using System;
+
 using JustDummies;
 
 namespace Shop.Legacy {
 
     /// <summary>
     ///     A generator of arbitrary <see cref="Pattern" /> values. It draws from the ambient random
-    ///     context, so a reproducibility scope pins it; to draw from an isolated
-    ///     <c>Any.WithSeed(...)</c> context, pass that context's generators through the
-    ///     <c>With…</c> overloads.
+    ///     context, so a reproducibility scope pins every draw it makes; outside a test,
+    ///     <c>Any.UseSeed(...)</c> opens one.
     /// </summary>
     public sealed partial class AnyPattern : IAny<Pattern> {
 
@@ -18,7 +19,11 @@ namespace Shop.Legacy {
 
         /// <summary>Creates the generator with a default recipe for every constructor parameter.</summary>
         public AnyPattern()
-            : this(text: Any.String().NonEmpty()) { }
+            : this(text: AnyValidText()) { }
+
+        private static AnyString AnyValidText() {
+            return Any.String().NonEmpty();
+        }
 
         private AnyPattern(IAny<string> text) {
             _text = text;
@@ -26,12 +31,12 @@ namespace Shop.Legacy {
 
         /// <summary>Pins <c>text</c> to a fixed value.</summary>
         public AnyPattern WithText(string value) {
-            return WithText(new FixedValue<string>(value));
+            return new AnyPattern(new FixedValue<string>(value));
         }
 
-        /// <summary>Draws <c>text</c> from <paramref name="generator" />.</summary>
-        public AnyPattern WithText(IAny<string> generator) {
-            return new AnyPattern(generator);
+        /// <summary>Draws <c>text</c> from <c>AnyValidText()</c>, refined by <paramref name="configure" />.</summary>
+        public AnyPattern WithText(Func<AnyString, AnyString> configure) {
+            return new AnyPattern(configure(AnyValidText()));
         }
 
         /// <summary>Produces one arbitrary <see cref="Pattern" />.</summary>

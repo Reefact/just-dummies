@@ -90,7 +90,7 @@ The value proposition stays distinct from the library's: the **library** makes v
 
 ## 2. Decisions
 
-These are the load-bearing decisions. All twelve are covered by the eleven decision records in §15 —
+These are the load-bearing decisions. All thirteen are covered by the twelve decision records in §15 —
 context, argument, alternatives rejected, consequences; D5 and D6 share one. This table is the
 index; it holds no argument of its own.
 
@@ -108,6 +108,7 @@ index; it holds no argument of its own.
 | **D10** | Never emit `.OrNull()`. | A dummy that is randomly `null` is the flakiness the library exists to remove. |
 | **D11** | The scaffolding **engine is a separate library** at the Roslyn floor; the CLI is a shell. | The engine's plausible second consumer is an IDE refactoring, which is not a CLI and cannot load a `net8.0` assembly. |
 | **D12** *(v1.1)* | An entry point is **opt-in**, emitted as a file of its own. | The generator file never changes, so §4.4's floor stays its property and `new Any{Type}()` keeps working. |
+| **D13** | A test **refines** a parameter's valid base through a lambda, or pins a value; it never replaces the base. | A replaced base loses its rules and still compiles; a refined one keeps them at one address. |
 
 ---
 
@@ -242,9 +243,8 @@ namespace Shop.Domain;
 
 /// <summary>
 ///     A generator of arbitrary <see cref="Order" /> values. It draws from the ambient random
-///     context, so a reproducibility scope pins it; to draw from an isolated
-///     <c>Any.WithSeed(...)</c> context, pass that context's generators through the
-///     <c>With…</c> overloads.
+///     context, so a reproducibility scope pins every draw it makes; outside a test,
+///     <c>Any.UseSeed(...)</c> opens one.
 /// </summary>
 public sealed partial class AnyOrder : IAny<Order> {
 
@@ -257,26 +257,34 @@ public sealed partial class AnyOrder : IAny<Order> {
 
     /// <summary>Creates the generator with a default recipe for every constructor parameter.</summary>
     public AnyOrder()
-        : this(reference: new AnyOrderReference(),
-               customer:  new AnyCustomer(),
+        : this(reference: AnyValidReference(),
+               customer:  AnyValidCustomer(),
                quantity:  AnyValidQuantity(),
                status:    AnyValidStatus(),
                tags:      AnyValidTags(),
                placedAt:  AnyValidPlacedAt()) { }
 
-    private static IAny<int> AnyValidQuantity() {
+    private static AnyOrderReference AnyValidReference() {
+        return new AnyOrderReference();
+    }
+
+    private static AnyCustomer AnyValidCustomer() {
+        return new AnyCustomer();
+    }
+
+    private static AnyInt32 AnyValidQuantity() {
         return Any.Int32().Positive();
     }
 
-    private static IAny<OrderStatus> AnyValidStatus() {
+    private static AnyEnum<OrderStatus> AnyValidStatus() {
         return Any.Enum<OrderStatus>();
     }
 
-    private static IAny<IReadOnlyList<string>> AnyValidTags() {
+    private static AnyList<string> AnyValidTags() {
         return Any.ListOf(Any.String().NonEmpty());
     }
 
-    private static IAny<DateTime> AnyValidPlacedAt() {
+    private static AnyDateTime AnyValidPlacedAt() {
         return Any.DateTime();
     }
 
@@ -296,62 +304,62 @@ public sealed partial class AnyOrder : IAny<Order> {
 
     /// <summary>Pins <c>reference</c> to a fixed value.</summary>
     public AnyOrder WithReference(OrderReference value) {
-        return WithReference(new FixedValue<OrderReference>(value));
+        return new AnyOrder(new FixedValue<OrderReference>(value), _customer, _quantity, _status, _tags, _placedAt);
     }
 
-    /// <summary>Draws <c>reference</c> from <paramref name="generator" />.</summary>
-    public AnyOrder WithReference(IAny<OrderReference> generator) {
-        return new AnyOrder(generator, _customer, _quantity, _status, _tags, _placedAt);
+    /// <summary>Draws <c>reference</c> from <c>AnyValidReference()</c>, refined by <paramref name="configure" />.</summary>
+    public AnyOrder WithReference(Func<AnyOrderReference, AnyOrderReference> configure) {
+        return new AnyOrder(configure(AnyValidReference()), _customer, _quantity, _status, _tags, _placedAt);
     }
 
     /// <summary>Pins <c>customer</c> to a fixed value.</summary>
     public AnyOrder WithCustomer(Customer value) {
-        return WithCustomer(new FixedValue<Customer>(value));
+        return new AnyOrder(_reference, new FixedValue<Customer>(value), _quantity, _status, _tags, _placedAt);
     }
 
-    /// <summary>Draws <c>customer</c> from <paramref name="generator" />.</summary>
-    public AnyOrder WithCustomer(IAny<Customer> generator) {
-        return new AnyOrder(_reference, generator, _quantity, _status, _tags, _placedAt);
+    /// <summary>Draws <c>customer</c> from <c>AnyValidCustomer()</c>, refined by <paramref name="configure" />.</summary>
+    public AnyOrder WithCustomer(Func<AnyCustomer, AnyCustomer> configure) {
+        return new AnyOrder(_reference, configure(AnyValidCustomer()), _quantity, _status, _tags, _placedAt);
     }
 
     /// <summary>Pins <c>quantity</c> to a fixed value.</summary>
     public AnyOrder WithQuantity(int value) {
-        return WithQuantity(new FixedValue<int>(value));
+        return new AnyOrder(_reference, _customer, new FixedValue<int>(value), _status, _tags, _placedAt);
     }
 
-    /// <summary>Draws <c>quantity</c> from <paramref name="generator" />.</summary>
-    public AnyOrder WithQuantity(IAny<int> generator) {
-        return new AnyOrder(_reference, _customer, generator, _status, _tags, _placedAt);
+    /// <summary>Draws <c>quantity</c> from <c>AnyValidQuantity()</c>, refined by <paramref name="configure" />.</summary>
+    public AnyOrder WithQuantity(Func<AnyInt32, AnyInt32> configure) {
+        return new AnyOrder(_reference, _customer, configure(AnyValidQuantity()), _status, _tags, _placedAt);
     }
 
     /// <summary>Pins <c>status</c> to a fixed value.</summary>
     public AnyOrder WithStatus(OrderStatus value) {
-        return WithStatus(new FixedValue<OrderStatus>(value));
+        return new AnyOrder(_reference, _customer, _quantity, new FixedValue<OrderStatus>(value), _tags, _placedAt);
     }
 
-    /// <summary>Draws <c>status</c> from <paramref name="generator" />.</summary>
-    public AnyOrder WithStatus(IAny<OrderStatus> generator) {
-        return new AnyOrder(_reference, _customer, _quantity, generator, _tags, _placedAt);
+    /// <summary>Draws <c>status</c> from <c>AnyValidStatus()</c>, refined by <paramref name="configure" />.</summary>
+    public AnyOrder WithStatus(Func<AnyEnum<OrderStatus>, AnyEnum<OrderStatus>> configure) {
+        return new AnyOrder(_reference, _customer, _quantity, configure(AnyValidStatus()), _tags, _placedAt);
     }
 
     /// <summary>Pins <c>tags</c> to a fixed value.</summary>
     public AnyOrder WithTags(IReadOnlyList<string> value) {
-        return WithTags(new FixedValue<IReadOnlyList<string>>(value));
+        return new AnyOrder(_reference, _customer, _quantity, _status, new FixedValue<IReadOnlyList<string>>(value), _placedAt);
     }
 
-    /// <summary>Draws <c>tags</c> from <paramref name="generator" />.</summary>
-    public AnyOrder WithTags(IAny<IReadOnlyList<string>> generator) {
-        return new AnyOrder(_reference, _customer, _quantity, _status, generator, _placedAt);
+    /// <summary>Draws <c>tags</c> from <c>AnyValidTags()</c>, refined by <paramref name="configure" />.</summary>
+    public AnyOrder WithTags(Func<AnyList<string>, AnyList<string>> configure) {
+        return new AnyOrder(_reference, _customer, _quantity, _status, configure(AnyValidTags()), _placedAt);
     }
 
     /// <summary>Pins <c>placedAt</c> to a fixed value.</summary>
     public AnyOrder WithPlacedAt(DateTime value) {
-        return WithPlacedAt(new FixedValue<DateTime>(value));
+        return new AnyOrder(_reference, _customer, _quantity, _status, _tags, new FixedValue<DateTime>(value));
     }
 
-    /// <summary>Draws <c>placedAt</c> from <paramref name="generator" />.</summary>
-    public AnyOrder WithPlacedAt(IAny<DateTime> generator) {
-        return new AnyOrder(_reference, _customer, _quantity, _status, _tags, generator);
+    /// <summary>Draws <c>placedAt</c> from <c>AnyValidPlacedAt()</c>, refined by <paramref name="configure" />.</summary>
+    public AnyOrder WithPlacedAt(Func<AnyDateTime, AnyDateTime> configure) {
+        return new AnyOrder(_reference, _customer, _quantity, _status, _tags, configure(AnyValidPlacedAt()));
     }
 
     /// <summary>Produces one arbitrary <see cref="Order" />.</summary>
@@ -388,20 +396,31 @@ public sealed partial class AnyOrder : IAny<Order> {
 * One `private readonly IAny<TParam> _param;` per constructor parameter, in declaration order.
 * A **public parameterless constructor** carrying the inferred recipe, written with named
   arguments so the reader maps each call to its parameter without counting.
-* One **private static factory** per parameter that needs one — `AnyValid{Param}()` — housing its
-  recipe, and named for what it returns: a value the type's own constructor accepts. The public
-  constructor's initializer calls these by name instead of inlining each chain, and an unresolved
-  parameter's TODO (§5.5) lives inside its own factory rather than at the call site.
-  A **composed** parameter has no factory: its whole recipe is the one call to the generator its
-  type owns, written into the initializer, and a method wrapping it would say nothing the call does
-  not (§5.4). It keeps one only when there is something to put in the body — the sentinels of §5.5
-  and §5.6 are statements, and a statement needs somewhere to stand.
+* One **private static factory** per parameter — `AnyValid{Param}()` — holding its **valid base**,
+  and named for what it returns: a value the type's own constructor accepts. It is typed with the
+  concrete generator its chain ends on — `AnyInt32`, `AnyEnum<OrderStatus>`, `AnyList<string>`,
+  `AnyOrderReference` — read off the chain's last call, since a constraint may return another
+  generator (`Any.Uri().Web()` is an `AnyWebUri`). The public constructor's initializer calls each
+  factory by name, followed by the parameter's conversion where it has one
+  (`AnyValidDiscount().AsNullable()` for a `decimal?`): the factory stops before the hop, so a
+  refinement can still call the generator's constraints. The refining overload below calls the same
+  factory, which is what makes it the one address of the base: whatever the developer writes there —
+  a rule §5.6 asked for, a rule the composing type adds — holds for the default recipe and for every
+  refinement at once ([ADR-0109](../adr/0109-let-a-test-refine-a-parameters-valid-base-rather-than-replace-it.md)).
+  An unresolved parameter's factory returns `IAny<TParam>`, and its TODO (§5.5) lives inside it
+  rather than at the call site.
 * A **private all-arguments constructor** performing the copy.
-* Per parameter, **two** `With{Param}` overloads returning a new instance:
-  `With{Param}(TParam value)` and `With{Param}(IAny<TParam> generator)`.
-  The value overload is the ergonomic one; the generator overload is what keeps composition
-  possible and is why passing `Any.String().StartingWith("ORD-")` does not become a `JD011`/`JD012`
-  mistake.
+* Per parameter, **two** `With{Param}` overloads returning a new instance, one per intent:
+  `With{Param}(TParam value)`, for a test that cares about the whole value, and
+  `With{Param}(Func<G, G> configure)`, where `G` is the factory's type, for a test that cares about
+  one part of it. The second draws from `configure(AnyValid{Param}())`, then the conversion: the
+  test's lambda starts from the valid base and states only what it adds. There is **no**
+  `With{Param}(IAny<TParam>)` overload — replacing the base was how a test lost a rule and still
+  compiled; a generator passed where a value is expected is now a compile error, louder than the
+  `JD011`/`JD012` mistake it used to avoid. A developer who needs to replace the recipe for one
+  parameter adds that overload in a neighbouring part of the partial class. An unresolved parameter
+  has no base to refine, and keeps the value overload alone.
+* `using System;` is opened whenever a refining overload is emitted, for its `Func<,>`.
 * `public {Type} Generate()` calling the constructor with each field's `Generate()`.
 * The private nested `FixedValue<TValue>` helper. Rationale: it accepts `null` (which
   `Any.OneOf(value)` rejects) and consumes no draw from the ambient source, so pinning a
@@ -1069,17 +1088,17 @@ other parameter's:
 
 ```csharp
     public AnyWarehouse()
-        : this(reference: new AnyOrderReference(),
+        : this(reference: AnyValidReference(),
                crates:    AnyValidCrates(),
                ...) { }
 
     private static IAny<Crate<int>> AnyValidCrates() {
         // TODO(any): no generator inferred for 'Crate<int> crates'.
-        //   Write one here, or replace it and always pass .WithCrates(...) instead.
+        //   Write one here, or replace it and always pass .WithCrates(value) instead.
         return TODO_supply_a_generator_for_crates;
     }
 
-    // ... one factory per parameter that needs one ...
+    // ... one factory per parameter ...
 ```
 
 The file does not compile until the developer acts. That is the point (D6). The compiler's own
@@ -1105,7 +1124,7 @@ difference: a generator **was** inferred here, and it stays as the factory's wor
 than being thrown away.
 
 ```csharp
-    private static IAny<string> AnyValidName() {
+    private static AnyString AnyValidName() {
         // TODO(any): 'string name' may be guarded by something the scaffolder could not read (§9).
         //   This is the scaffolder's best generator for the type; verify it honours the real invariant,
         //   or replace it, then delete the line below.
@@ -1364,9 +1383,12 @@ verified (§17).
 
 **`Any.WithSeed(seed)` is out of scope (D7).** An `AnyContext` carries its own fixed random source
 and is unaffected by the ambient scope, so a generator built from `Any.*` cannot draw from it. A
-developer on `WithSeed` supplies that context's generators parameter by parameter through the
-`.With{Param}(IAny<TParam>)` overload, and the emitted XML doc says so in one sentence (§4.1). The
-reasoning, and the alternatives weighed against it, are in D7.
+developer who wants deterministic values outside a test opens the ambient scope instead —
+`Any.UseSeed(seed)` — which reaches every draw the generator makes, composed parameters included, and
+the emitted XML doc says so in one sentence (§4.1). One who needs a context's generator at one
+parameter adds a `With{Param}(IAny<TParam>)` overload in a neighbouring part of the partial class: the
+emitter writes none ([ADR-0109](../adr/0109-let-a-test-refine-a-parameters-valid-base-rather-than-replace-it.md)).
+The reasoning, and the alternatives weighed against it, are in D7.
 
 The emitter never produces static state, so `JD009` and `JD020` have nothing to fire on.
 
@@ -1907,6 +1929,7 @@ exists — it is this one — and the records have been entered into its ADR bas
 | **D10** | [ADR-0064](../adr/0064-never-draw-null-for-a-nullable-parameter.md) — Never draw null for a nullable parameter |
 | **D11** | [ADR-0065](../adr/0065-keep-the-scaffolding-engine-loadable-by-a-roslyn-host.md) — Keep the scaffolding engine loadable by a Roslyn host |
 | **D12** | [ADR-0070](../adr/0070-emit-an-entry-point-on-request-as-a-file-of-its-own.md) — Emit an entry point on request, as a file of its own |
+| **D13** | [ADR-0109](../adr/0109-let-a-test-refine-a-parameters-valid-base-rather-than-replace-it.md) — Let a test refine a parameter's valid base rather than replace it |
 
 Three of these records were written after the decision table was, and why is worth keeping. D7, D8
 and D10 were each judged too small at first — a scope limit already scheduled for revisiting, a
@@ -2007,6 +2030,18 @@ in. The results below are what the harness printed.
 | The scaffolded output raises no JD warning | D3, §12 | 0 warning-or-above diagnostics on the emitted files |
 | The analyzers were genuinely loaded | D3 | a control file raised `JD006` and `JD005` in the same build |
 | `<auto-generated/>` silences them | D3, §15 | the same control file, so marked, raised **0** — including the `JD005` error |
+
+ADR-0109 changed §4.2 after that run, and the `.WithX(IAny<T>)` row above describes an overload the
+emitter no longer writes. The refining overload that took its place is checked by
+`RefiningOverloadTests`, against generated files compiled with the library and run:
+
+| Claim | Where | Result |
+|---|---|---|
+| A factory returns the generator its chain ends on | §4.2 | 14 rows, `Any.Uri().Web()` an `AnyWebUri` among them, each file compiling |
+| A refinement starts from the valid base | §4.2 | 500 draws through `WithQuantity(q => q.LessThanOrEqualTo(3))` over a `Positive()` base, all in 1–3 |
+| A refinement contradicting the base fails where it is written | §4.2 | `WithQuantity(q => q.Negative())` throws `ConflictingAnyConstraintException` naming `Positive()` and `Negative()` |
+| A nullable parameter is refined before its conversion | §4.2, §5.2 | 200 draws through `WithDiscount(d => d.Between(1m, 50m))`, none null, all in range |
+| A composed refinement keeps the base the developer wrote | §4.2, §5.6 | 200 shipments through `WithRoute(r => r.WithDistance(240))` over a domestic-only base, every one accepted |
 
 ### 17.2 How to re-run it
 

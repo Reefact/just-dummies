@@ -98,7 +98,7 @@ public sealed class ScaffolderTests {
 
         Check.That(emitted).Contains("no generator inferred for 'Repository<Customer> one'.");
         Check.That(emitted).Not.Contains("any generate Repository");
-        Check.That(emitted).Contains("Write one here, or replace it and always pass .WithOne(...) instead.");
+        Check.That(emitted).Contains("Write one here, or replace it and always pass .WithOne(value) instead.");
     }
 
     [Fact(DisplayName = "The file opens the namespaces its short names lean on, and no others.")]

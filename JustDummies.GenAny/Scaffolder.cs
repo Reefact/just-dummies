@@ -176,7 +176,9 @@ public static class Scaffolder {
         if (written.GuardsNotCombined) { provenance |= Provenance.GuardsNotCombined; }
         if (written.ConstraintUnavailable) { provenance |= Provenance.ConstraintUnavailable; }
 
-        return ScaffoldedParameter.DrawnFrom(parameter.Name, typeDisplay, written.Expression, provenance);
+        string generatorType = written.Returned is { } returned ? names.Of(returned) : drawn.GeneratorType!;
+
+        return ScaffoldedParameter.DrawnFrom(parameter.Name, typeDisplay, generatorType, written.Base, provenance, written.Conversion);
     }
 
     /// <summary>

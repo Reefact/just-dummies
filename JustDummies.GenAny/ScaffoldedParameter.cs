@@ -18,11 +18,18 @@ namespace JustDummies.GenAny;
 /// </remarks>
 public sealed class ScaffoldedParameter {
 
-    private ScaffoldedParameter(string name, string typeDisplay, string? expression, Provenance provenance) {
-        Name        = name;
-        TypeDisplay = typeDisplay;
-        Expression  = expression;
-        Provenance  = provenance;
+    private ScaffoldedParameter(string name,
+                                string typeDisplay,
+                                string? generatorType,
+                                string? baseExpression,
+                                string conversion,
+                                Provenance provenance) {
+        Name           = name;
+        TypeDisplay    = typeDisplay;
+        GeneratorType  = generatorType;
+        BaseExpression = baseExpression;
+        Conversion     = conversion;
+        Provenance     = provenance;
     }
 
     /// <summary>The parameter's name, exactly as the constructor declares it.</summary>
@@ -32,7 +39,35 @@ public sealed class ScaffoldedParameter {
     public string TypeDisplay { get; }
 
     /// <summary>The inferred generator expression, or null when none was inferred.</summary>
-    public string? Expression { get; }
+    public string? Expression => BaseExpression is null ? null : BaseExpression + Conversion;
+
+    /// <summary>
+    ///     The type of the parameter's valid base, as the emitted file spells it — <c>AnyInt32</c>,
+    ///     <c>AnyList&lt;string&gt;</c>, <c>AnyOrderReference</c> — or null when none was inferred.
+    /// </summary>
+    /// <remarks>
+    ///     What the parameter's factory returns and what its refining <c>With</c> overload hands the test's
+    ///     lambda (ADR-0109). The concrete generator rather than <c>IAny&lt;T&gt;</c>, because the lambda refines
+    ///     the base through that generator's own constraints, and <c>IAny&lt;T&gt;</c> carries none.
+    /// </remarks>
+    public string? GeneratorType { get; }
+
+    /// <summary>
+    ///     The inferred expression up to its constraints — the valid base the factory returns — or null when none
+    ///     was inferred.
+    /// </summary>
+    public string? BaseExpression { get; }
+
+    /// <summary>
+    ///     The hop that turns the base into a generator of the parameter's own type — <c>.AsNullable()</c> for an
+    ///     <c>int?</c> — or the empty string when the base already draws that type.
+    /// </summary>
+    /// <remarks>
+    ///     Applied wherever the factory is called, never inside it: the factory returns the generator the
+    ///     constraints were written on, so that a lambda refining it can write more of them, and the hop follows
+    ///     the lambda as it follows the constraints (§5.3).
+    /// </remarks>
+    public string Conversion { get; }
 
     /// <summary>
     ///     Where that expression came from, and what could not be read while producing it (§6).
@@ -62,7 +97,7 @@ public sealed class ScaffoldedParameter {
     public bool RequiresVerification => !IsUnresolved && Provenance.HasFlag(Provenance.UnreadGuards);
 
     /// <summary>
-    ///     The name of the <c>With</c> methods that pin or replace this parameter.
+    ///     The name of the <c>With</c> methods that pin or refine this parameter.
     /// </summary>
     /// <remarks>
     ///     The parameter's name with its first letter upper-cased, invariant culture, after a leading <c>_</c> or
@@ -102,33 +137,19 @@ public sealed class ScaffoldedParameter {
     public string FieldName => "_" + Bare();
 
     /// <summary>
-    ///     The name of the private static method that draws this parameter's generator (§4.2).
+    ///     The name of the private static method that holds this parameter's valid base (§4.2).
     /// </summary>
     /// <remarks>
-    ///     One method per parameter that needs one, called from the public constructor's initializer rather than
-    ///     the chain being built inline there: the constructor then reads as a list of names, and whatever a
-    ///     parameter has to say for itself is said inside the method that owns it.
+    ///     One method per parameter, called from the public constructor's initializer and from the refining
+    ///     <c>With</c> overload alike (ADR-0109). That is what makes it the one address of the base: the
+    ///     developer who tightens it there — a guard the engine could not read, a rule the composing type adds —
+    ///     tightens the default and every refinement at once.
     ///     <para>
     ///         Named for what it returns — a value the type's own constructor accepts — because that is the
     ///         claim the method makes and the one a reader has to check.
     ///     </para>
     /// </remarks>
     public string FactoryMethodName => "AnyValid" + PascalCasedName;
-
-    /// <summary>
-    ///     Whether this parameter is written straight into the initializer, with no method of its own (§4.2).
-    /// </summary>
-    /// <remarks>
-    ///     A method earns its place only when there is something for it to hold: a guard tightened the base
-    ///     draw into a chain worth naming on its own, or the sentinel of §5.5/§5.6 needs a statement to stand
-    ///     on. A parameter with neither — resolved, no verification pending, no guard combined into it — is one
-    ///     call and nothing else, whether that call composes through the type's own generator
-    ///     (<c>new AnyOrderReference()</c>, ADR-0089) or reads straight off the base table
-    ///     (<c>Any.Enum&lt;OrderStatus&gt;()</c>); a method wrapping either would say nothing the call does not.
-    /// </remarks>
-    public bool DrawnInline => !IsUnresolved
-                            && !RequiresVerification
-                            && !Provenance.HasFlag(GenAny.Provenance.Guard);
 
     /// <summary>The identifier §5.5 emits in place of a generator, which is deliberately undefined.</summary>
     public string TodoIdentifier => "TODO_supply_a_generator_for_" + Bare();
@@ -152,26 +173,48 @@ public sealed class ScaffoldedParameter {
     }
 
     /// <summary>A parameter the engine inferred a generator for.</summary>
+    /// <param name="name">The parameter's name.</param>
+    /// <param name="typeDisplay">The parameter's type, as the emitted file spells it.</param>
+    /// <param name="generatorType">The type of <paramref name="expression" />, as the emitted file spells it.</param>
+    /// <param name="expression">The inferred expression up to its constraints, without <paramref name="conversion" />.</param>
+    /// <param name="provenance">Where the expression came from.</param>
+    /// <param name="conversion">The hop after the constraints, if the base does not draw the parameter's own type.</param>
     /// <exception cref="ArgumentNullException">Any argument is null.</exception>
-    /// <exception cref="ArgumentException"><paramref name="name" /> or <paramref name="typeDisplay" /> is blank.</exception>
+    /// <exception cref="ArgumentException">
+    ///     <paramref name="name" />, <paramref name="typeDisplay" />, <paramref name="generatorType" /> or
+    ///     <paramref name="expression" /> is blank.
+    /// </exception>
     public static ScaffoldedParameter DrawnFrom(string name,
                                                 string typeDisplay,
+                                                string generatorType,
                                                 string expression,
-                                                Provenance provenance = Provenance.None) {
+                                                Provenance provenance = Provenance.None,
+                                                string conversion = "") {
         if (expression is null) { throw new ArgumentNullException(nameof(expression)); }
+        if (conversion is null) { throw new ArgumentNullException(nameof(conversion)); }
         if (expression.Trim().Length == 0) {
             throw new ArgumentException("An inferred parameter carries an expression; use Unresolved for one that does not.",
                                         nameof(expression));
         }
 
-        return new ScaffoldedParameter(Checked(name, nameof(name)), Checked(typeDisplay, nameof(typeDisplay)), expression, provenance);
+        return new ScaffoldedParameter(Checked(name, nameof(name)),
+                                       Checked(typeDisplay, nameof(typeDisplay)),
+                                       Checked(generatorType, nameof(generatorType)),
+                                       expression,
+                                       conversion,
+                                       provenance);
     }
 
     /// <summary>A parameter the engine inferred no generator for (§5.5).</summary>
     /// <exception cref="ArgumentNullException">Any argument is null.</exception>
     /// <exception cref="ArgumentException"><paramref name="name" /> or <paramref name="typeDisplay" /> is blank.</exception>
     public static ScaffoldedParameter Unresolved(string name, string typeDisplay, Provenance provenance = Provenance.None) {
-        return new ScaffoldedParameter(Checked(name, nameof(name)), Checked(typeDisplay, nameof(typeDisplay)), expression: null, provenance);
+        return new ScaffoldedParameter(Checked(name, nameof(name)),
+                                       Checked(typeDisplay, nameof(typeDisplay)),
+                                       generatorType: null,
+                                       baseExpression: null,
+                                       conversion: string.Empty,
+                                       provenance);
     }
 
     private static string Checked(string value, string parameterName) {

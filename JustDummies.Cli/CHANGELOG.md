@@ -19,6 +19,23 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   name is not read. The emitted header and `TODO(any)` markers, and the `tool` field of `--format json`, follow
   the command. The example static root, in the documentation and in the hint a malformed `--entry-point`
   receives, is now `Arbitrary` rather than `Dummies` — `Any` itself stays refused there (ADR-0070).
+- **Breaking: a scaffolded generator lets a test refine a parameter's valid base, and no longer lets it replace
+  it (ADR-0109).** Each parameter now comes with `With…(value)`, to pin it, and `With…(x => …)`, to refine it:
+  the lambda receives the parameter's valid base — the `AnyValid…()` factory the constructor draws from too — and
+  the test states only what it adds, `.WithRoute(r => r.WithDistanceKm(240))` or
+  `.WithQuantity(q => q.LessThanOrEqualTo(100))`. On a number, a string, a date or a collection, the lambda's
+  constraints add to the base's, so one that contradicts it is refused at that line, naming both. The
+  `With…(IAny<T>)` overload is gone: it replaced the base, so a test that built a generator from scratch lost the
+  rules the base kept — a guarded `Positive()`, a rule written for a composed value — and compiled anyway,
+  failing only on the draws that broke them. Such a call is now a compile error. Files already scaffolded are
+  yours and do not change; re-scaffolding with `--force` gives the new shape, and a call that passed a generator
+  then takes a lambda, a value, or — to draw among chosen values, change a collection's element recipe, or draw
+  `null` some of the time — an overload you add in a neighbouring part of the partial class. The `justdummies-cli`
+  page, "Adjusting a parameter", walks through each case. Outside a test, `Any.UseSeed(…)` takes the place of an
+  `Any.WithSeed(…)` context's generators passed parameter by parameter, and reaches composed parameters too.
+  Every resolved parameter now has its factory, typed with the concrete generator its chain ends on, so the
+  emitted file is longer; this supersedes the inline emission of unreported parameters (ADR-0096), which had not
+  shipped.
 
 ### Fixed
 
@@ -32,19 +49,6 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   already exempted (ADR-0086) — it does not end the scan. Measured on
   `Order(OrderReference reference, CustomerId customerId, Money total, OrderStatus status)`, a constructor
   validating three of its four parameters this way: only `reference` was ever read before this fix.
-
-### Changed
-
-- **A parameter with nothing to report — resolved, no verification pending, no guard combined into it — is now
-  written inline, with no factory method, whether it composes through its own type's generator or reads
-  straight off the base table (ADR-0096).** Previously only a composed parameter earned this: a guard-free
-  primitive always went through a private factory returning exactly the base table's own call, tightened by
-  nothing. The fix above made the gap visible on a composed parameter too — a null-check now read as satisfied
-  routed through a factory anyway, purely to hold a verification marker that, once resolved, left a method
-  wrapping one call and saying nothing it did not. Both shapes are now the same: `status: Any.Enum<OrderStatus>()`
-  reads exactly like `customerId: new AnyCustomerId()`, right beside each other in the same constructor. A
-  parameter that still has something to say — a guard tightened its chain, or one of the two blocking markers of
-  §5.5/§5.6 applies — keeps its factory exactly as before.
 
 ## [1.1.0-beta.6] - 2026-09-03
 

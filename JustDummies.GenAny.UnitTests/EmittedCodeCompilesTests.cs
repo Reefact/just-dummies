@@ -168,6 +168,12 @@ public sealed class EmittedCodeCompilesTests {
     ///     says something is missing; <c>AnyOrderReference</c> says which type to run <c>any generate</c> on.
     ///     So this file carries no sentinel and no comment — there is nothing left for one to add — and the
     ///     recap does not flag it either, because a file that does not compile is not a silence.
+    ///     <para>
+    ///         The name is reported at every place the file spells it — the factory and the refining overload
+    ///         both name the generator (ADR-0109) — so the build reports it more than once. What must hold is
+    ///         that every error is that one, and names that one type: a second kind would mean the emitter broke
+    ///         something else while naming a generator the compilation does not carry.
+    ///     </para>
     /// </remarks>
     [Fact(DisplayName = "A composed parameter with no generator yet fails the build, naming the type to scaffold.")]
     public void AComposedParameterWithNoGeneratorYetFailsTheBuild() {
@@ -189,9 +195,9 @@ public sealed class EmittedCodeCompilesTests {
 
         string emitted = outcome.File!.SourceText;
 
-        // Straight into the initializer, with no method wrapping one call and no sentinel above it.
-        Check.That(emitted).Contains("reference: new AnyOrderReference()");
-        Check.That(emitted).Not.Contains("AnyValidReference");
+        // A factory returning the one call, with no sentinel above it.
+        Check.That(emitted).Contains("private static AnyOrderReference AnyValidReference() {");
+        Check.That(emitted).Contains("return new AnyOrderReference();");
         Check.That(outcome.File.ContainsTodo).IsFalse();
 
         Diagnostic[] errors = EmittedCodeCompiler.CompileWith(emitted, domain)
@@ -199,10 +205,9 @@ public sealed class EmittedCodeCompilesTests {
                                                  .Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error)
                                                  .ToArray();
 
-        // Exactly one, and about the name: a second error would mean the emitter broke something else while
-        // naming a generator the compilation does not carry.
-        Check.That(errors.Select(error => error.Id)).IsEquivalentTo("CS0246");
-        Check.That(errors.Single().GetMessage()).Contains("AnyOrderReference");
+        Check.That(errors).Not.IsEmpty();
+        Check.That(errors.Select(error => error.Id).Distinct()).IsEquivalentTo("CS0246");
+        Check.That(errors.Where(error => !error.GetMessage().Contains("AnyOrderReference"))).IsEmpty();
     }
 
     /// <summary>

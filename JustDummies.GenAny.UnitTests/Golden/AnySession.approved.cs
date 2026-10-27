@@ -6,9 +6,8 @@ using JustDummies;
 
 /// <summary>
 ///     A generator of arbitrary <see cref="Session" /> values. It draws from the ambient random
-///     context, so a reproducibility scope pins it; to draw from an isolated
-///     <c>Any.WithSeed(...)</c> context, pass that context's generators through the
-///     <c>With…</c> overloads.
+///     context, so a reproducibility scope pins every draw it makes; outside a test,
+///     <c>Any.UseSeed(...)</c> opens one.
 /// </summary>
 public sealed partial class AnySession : IAny<Session> {
 

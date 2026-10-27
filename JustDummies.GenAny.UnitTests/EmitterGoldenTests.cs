@@ -58,6 +58,11 @@ public sealed class EmitterGoldenTests {
         GoldenFile.Approve("AnyAddress", GeneratorEmitter.Emit(Shapes.Address()).SourceText);
     }
 
+    [Fact(DisplayName = "A nullable value-type parameter, whose conversion follows its factory.")]
+    public void ANullableValueTypeParameter() {
+        GoldenFile.Approve("AnyQuote", GeneratorEmitter.Emit(Shapes.Quote()).SourceText);
+    }
+
     [Fact(DisplayName = "A static-factory target, whose Generate() calls the factory.")]
     public void AStaticFactoryTarget() {
         GoldenFile.Approve("AnyEmail", GeneratorEmitter.Emit(Shapes.Email()).SourceText);

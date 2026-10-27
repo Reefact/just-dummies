@@ -21,7 +21,7 @@ internal static class Shapes {
         return new ScaffoldPlan(new TargetType("Order", "Shop.Domain", NamespaceStyle.FileScoped),
                                 "AnyOrder",
                                 ["System", "System.Collections.Generic", "JustDummies"],
-                                OrderParameters(customer: Composed("customer", "Customer", "new AnyCustomer()")));
+                                OrderParameters(customer: Composed("customer", "Customer", "AnyCustomer")));
     }
 
     /// <summary>The same with one parameter the engine will not name at all: the open parameter of §5.5.</summary>
@@ -40,7 +40,7 @@ internal static class Shapes {
         return new ScaffoldPlan(new TargetType("Order", "Shop.Domain", NamespaceStyle.FileScoped),
                                 "AnyOrder",
                                 ["System", "System.Collections.Generic", "JustDummies"],
-                                OrderParameters(customer: Composed("customer", "Customer", "new AnyCustomer()",
+                                OrderParameters(customer: Composed("customer", "Customer", "AnyCustomer",
                                                                    Provenance.UnreadGuards)));
     }
 
@@ -49,7 +49,7 @@ internal static class Shapes {
         return new ScaffoldPlan(new TargetType("Money", "Shop.Domain", NamespaceStyle.FileScoped),
                                 "AnyMoney",
                                 LibraryOnly,
-                                [ScaffoldedParameter.DrawnFrom("amount", "decimal", "Any.Decimal()")]);
+                                [ScaffoldedParameter.DrawnFrom("amount", "decimal", "AnyDecimal", "Any.Decimal()")]);
     }
 
     /// <summary>
@@ -75,7 +75,7 @@ internal static class Shapes {
         return new ScaffoldPlan(new TargetType("Pattern", "Shop.Legacy", NamespaceStyle.Block),
                                 "AnyPattern",
                                 LibraryOnly,
-                                [ScaffoldedParameter.DrawnFrom("text", "string", "Any.String().NonEmpty()")]);
+                                [ScaffoldedParameter.DrawnFrom("text", "string", "AnyString", "Any.String().NonEmpty()")]);
     }
 
     /// <summary>A positional record: its primary constructor is an ordinary one, and needs no special handling.</summary>
@@ -83,8 +83,8 @@ internal static class Shapes {
         return new ScaffoldPlan(new TargetType("Address", "Shop.Domain", NamespaceStyle.FileScoped),
                                 "AnyAddress",
                                 LibraryOnly,
-                                [ScaffoldedParameter.DrawnFrom("street", "string", "Any.String().NonEmpty()"),
-                                 ScaffoldedParameter.DrawnFrom("city", "string", "Any.String().NonEmpty()")]);
+                                [ScaffoldedParameter.DrawnFrom("street", "string", "AnyString", "Any.String().NonEmpty()"),
+                                 ScaffoldedParameter.DrawnFrom("city", "string", "AnyString", "Any.String().NonEmpty()")]);
     }
 
     /// <summary>A type with no accessible constructor: <c>Generate()</c> calls the static factory (§5.1).</summary>
@@ -92,29 +92,40 @@ internal static class Shapes {
         return new ScaffoldPlan(new TargetType("Email", "Shop.Domain", NamespaceStyle.FileScoped),
                                 "AnyEmail",
                                 LibraryOnly,
-                                [ScaffoldedParameter.DrawnFrom("value", "string", "Any.String().NonEmpty()")],
+                                [ScaffoldedParameter.DrawnFrom("value", "string", "AnyString", "Any.String().NonEmpty()")],
                                 factory: "Email.Create");
     }
 
     /// <summary>
-    ///     A parameter drawn through the generator its own type owns, which is every composed parameter
-    ///     (ADR-0089). Spelled here because the provenance is what decides whether the parameter has a method of
-    ///     its own (§4.2) — the same question <c>quantity</c>'s explicit <see cref="Provenance.Guard" /> below
-    ///     answers for a primitive — and a shape that left it off would pin the emitter against a plan the
-    ///     engine cannot produce.
+    ///     A nullable value-type parameter, whose conversion follows its factory rather than ending it: the
+    ///     factory returns the generator its constraints were written on, so a refining lambda can write more
+    ///     of them, and the hop comes after the lambda as it comes after the constraints (ADR-0109).
     /// </summary>
-    private static ScaffoldedParameter Composed(string name, string type, string expression, Provenance also = Provenance.None) {
-        return ScaffoldedParameter.DrawnFrom(name, type, expression, Provenance.Scaffolded | also);
+    internal static ScaffoldPlan Quote() {
+        return new ScaffoldPlan(new TargetType("Quote", "Shop.Domain", NamespaceStyle.FileScoped),
+                                "AnyQuote",
+                                LibraryOnly,
+                                [ScaffoldedParameter.DrawnFrom("amount", "decimal", "AnyDecimal", "Any.Decimal().Positive()", Provenance.Guard),
+                                 ScaffoldedParameter.DrawnFrom("discount", "decimal?", "AnyDecimal", "Any.Decimal()", conversion: ".AsNullable()")]);
+    }
+
+    /// <summary>
+    ///     A parameter drawn through the generator its own type owns, which is every composed parameter
+    ///     (ADR-0089). Spelled with its provenance because that is what the recap reports for it, and a shape
+    ///     that left it off would pin the emitter against a plan the engine cannot produce.
+    /// </summary>
+    private static ScaffoldedParameter Composed(string name, string type, string generator, Provenance also = Provenance.None) {
+        return ScaffoldedParameter.DrawnFrom(name, type, generator, $"new {generator}()", Provenance.Scaffolded | also);
     }
 
     private static IReadOnlyList<ScaffoldedParameter> OrderParameters(ScaffoldedParameter customer) {
         return [
-            Composed("reference", "OrderReference", "new AnyOrderReference()"),
+            Composed("reference", "OrderReference", "AnyOrderReference"),
             customer,
-            ScaffoldedParameter.DrawnFrom("quantity", "int", "Any.Int32().Positive()", Provenance.Guard),
-            ScaffoldedParameter.DrawnFrom("status", "OrderStatus", "Any.Enum<OrderStatus>()"),
-            ScaffoldedParameter.DrawnFrom("tags", "IReadOnlyList<string>", "Any.ListOf(Any.String().NonEmpty())"),
-            ScaffoldedParameter.DrawnFrom("placedAt", "DateTime", "Any.DateTime()")
+            ScaffoldedParameter.DrawnFrom("quantity", "int", "AnyInt32", "Any.Int32().Positive()", Provenance.Guard),
+            ScaffoldedParameter.DrawnFrom("status", "OrderStatus", "AnyEnum<OrderStatus>", "Any.Enum<OrderStatus>()"),
+            ScaffoldedParameter.DrawnFrom("tags", "IReadOnlyList<string>", "AnyList<string>", "Any.ListOf(Any.String().NonEmpty())"),
+            ScaffoldedParameter.DrawnFrom("placedAt", "DateTime", "AnyDateTime", "Any.DateTime()")
         ];
     }
 

@@ -542,6 +542,11 @@ marks the parameter unresolved.
    (`CS0246`). Both are refused before anything is written (§7). The check belongs here rather
    than in the emitter: a file the developer cannot compile, written under a recap claiming every
    parameter inferred, is worse than no file.
+   An **enum** is refused there too, for the opposite reason: Roslyn synthesises a parameterless
+   constructor for it, so the search above finds one, and `new TEnum()` compiles and draws `(TEnum)0`
+   on every call — a constant where the enum declares a zero member, an undeclared value where it does
+   not. The library already draws enums through `Any.Enum<TEnum>()`, so the refusal names that call
+   rather than writing a file that would only wrap it.
 
 ### 5.2 The base table
 
@@ -1328,6 +1333,7 @@ The provenance words are the recap's own (§6), read from one table rather than 
 | Nothing constructs the target (§5.1) | `1` | Names both doors §5.1 opens: a public instance constructor passing every parameter by value, or one recognised static factory. Where several **eligible** factories tie — the type declaring no public constructor to close that route — they are listed instead. |
 | The target is abstract | `1` | Refused whether or not it declares a constructor of its own — the ordinary abstract type declares `protected` ones and would otherwise hear the row above, whose remedy is the wrong one. A recognised factory reaching it is the exception: `CS0144` is about `new`. Suggests a concrete type that derives from it. |
 | The target is generic, or nested in a generic type | `1` | Nothing supplies the type argument, so the emitted file could not name it. |
+| The target is an enum | `1` | Names `Any.Enum<TEnum>()`, which the library already uses to generate enum values; nothing is written. |
 | The target's `required` members are unset by the chosen constructor | `1` | Deferred to §16; names `[SetsRequiredMembers]`, which is scaffolded like any other constructor. |
 | `--entry-point any`, project below C# 14 | `1` | Names the version the project resolved, and `static:<Name>`. |
 | `--entry-point static:Any` | `2` | Names what would stop compiling, and points at `--entry-point any`. |
@@ -1348,6 +1354,9 @@ is decided in this order, which is a rule rather than a pipeline's accident:
 4. **nothing constructs it**, which is a fact about what §5.1's search found rather than about the
    type;
 5. **`required` members unset**, which only arises once a constructor has been chosen.
+
+An **enum** is decided right after 1, before anything about its constructors is asked: the one it has
+is synthesised, so every later row would describe a construction that does not mean anything.
 
 The order matters because 4 is the cheapest to compute and the least useful to hear: an abstract type
 declares its constructors `protected`, so deciding 4 first told every one of them to add a public

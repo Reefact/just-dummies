@@ -121,6 +121,7 @@ internal static class Refusals {
             ScaffoldStatus.TypeIsAbstract        => Abstract(typeArgument),
             ScaffoldStatus.TypeIsGeneric         => Generic(typeArgument),
             ScaffoldStatus.RequiredMembersUnset  => RequiredMembers(typeArgument),
+            ScaffoldStatus.TypeIsEnum            => Enum(typeArgument),
             _                                    => [Mark + $"{typeArgument}: {outcome.Status}."]
         };
     }
@@ -208,6 +209,17 @@ internal static class Refusals {
         return [
             Mark + $"{typeArgument} is abstract, so Generate() has nothing to instantiate.",
             "  Scaffold a concrete type that derives from it instead."
+        ];
+    }
+
+    /// <summary>
+    ///     An enum needs no scaffolded generator: the library draws one already, and the sentence names it so
+    ///     the developer leaves with the call to write rather than a file to maintain.
+    /// </summary>
+    private static IReadOnlyList<string> Enum(string typeArgument) {
+        return [
+            Mark + $"{typeArgument} is an enum, and JustDummies already draws its declared members.",
+            $"  Use Any.Enum<{typeArgument}>() where you need one; nothing was written."
         ];
     }
 

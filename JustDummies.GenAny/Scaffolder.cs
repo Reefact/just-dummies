@@ -97,6 +97,10 @@ public static class Scaffolder {
         // such refusals were really one of these two (`audit/2026-09-02-dum-first-field-measurement.md`).
         if (IsGeneric(target)) { return ScaffoldOutcome.Refused(ScaffoldStatus.TypeIsGeneric); }
 
+        // An enum has a synthesised parameterless constructor, so the search below finds one — and `new TEnum()`
+        // is `(TEnum)0` on every draw. The library already draws enums; the refusal names how.
+        if (target.TypeKind == TypeKind.Enum) { return ScaffoldOutcome.Refused(ScaffoldStatus.TypeIsEnum); }
+
         // Only the generic refusal reaches the factory path: `CS0144` and `CS9035` are both about `new`,
         // which a factory call site never writes, so an abstract type behind a recognised factory is
         // scaffolded through it — the very design §5.1.2 exists to serve.

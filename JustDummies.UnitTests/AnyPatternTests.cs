@@ -84,6 +84,7 @@ public sealed class AnyPatternTests {
     [InlineData(@"[\b]")]
     [InlineData(@"[\1]")]
     [InlineData(@"[\x30-\x39]{3}")]
+    [InlineData(@"[\a-\e]{3}")]     // a range whose two endpoints are escapes
     [InlineData(@"(a|aa|aaa)")]
     [InlineData(@"a+?b*?")]
     [InlineData(@"\x41\x2DB")]
@@ -620,6 +621,8 @@ public sealed class AnyPatternTests {
         Check.ThatCode(() => Any.StringMatching(@"\c1")).Throws<ArgumentException>();      // \c expects a letter
         Check.ThatCode(() => Any.StringMatching(@"{2}")).Throws<ArgumentException>();      // quantifier following nothing
         Check.ThatCode(() => Any.StringMatching(@"(?<>a)")).Throws<ArgumentException>();   // empty group name
+        Check.ThatCode(() => Any.StringMatching(@"a{99999999999}")).Throws<ArgumentException>();   // a bound beyond int.MaxValue
+        Check.ThatCode(() => Any.StringMatching(@"a{1,99999999999}")).Throws<ArgumentException>(); // ...the upper one too
     }
 
     [Fact(DisplayName = "An invalid group name is rejected as malformed, matching the real engine — both syntaxes.")]
@@ -641,6 +644,10 @@ public sealed class AnyPatternTests {
     [Fact(DisplayName = "Escape sequences generate the real characters, not their letter.")]
     public void EscapesGenerateTheRealCharacters() {
         Check.That(Any.StringMatching(@"\a").Generate()).IsEqualTo("\a");
+        Check.That(Any.StringMatching(@"\n").Generate()).IsEqualTo("\n");
+        Check.That(Any.StringMatching(@"\r").Generate()).IsEqualTo("\r");
+        Check.That(Any.StringMatching(@"\f").Generate()).IsEqualTo("\f");
+        Check.That(Any.StringMatching(@"\v").Generate()).IsEqualTo("\v");
         Check.That(Any.StringMatching(@"\e").Generate()).IsEqualTo("\u001B");
         Check.That(Any.StringMatching(@"\x41").Generate()).IsEqualTo("A");
         Check.That(Any.StringMatching(@"\u0042").Generate()).IsEqualTo("B");
@@ -649,11 +656,36 @@ public sealed class AnyPatternTests {
         Check.That(Any.StringMatching(@"\0").Generate()).IsEqualTo("\0");
     }
 
+    // A class reads its escapes with a parser of its own, so the escapes above prove nothing about it -- and \b is
+    // where the two must differ: a word boundary outside, the backspace character inside.
+    [Theory(DisplayName = "Inside a character class an escape stands for the one character it names, \\b as the backspace.")]
+    [InlineData(@"[\t]", '\t')]
+    [InlineData(@"[\n]", '\n')]
+    [InlineData(@"[\r]", '\r')]
+    [InlineData(@"[\f]", '\f')]
+    [InlineData(@"[\v]", '\v')]
+    [InlineData(@"[\a]", '\a')]
+    [InlineData(@"[\e]", '\u001B')]
+    [InlineData(@"[\b]", '\b')]
+    [InlineData(@"[\cA]", '\u0001')]
+    [InlineData(@"[\0]", '\0')]
+    [InlineData(@"[\012]", '\n')]
+    [InlineData(@"[\x41]", 'A')]
+    public void ClassEscapesGenerateTheRealCharacter(string pattern, char expected) {
+        string value = Any.StringMatching(pattern).Generate();
+
+        Check.That(value).IsEqualTo(expected.ToString());
+        AssertMatches(value, pattern);
+    }
+
     [Fact(DisplayName = "A brace that is not a well-formed quantifier is a literal, exactly as in the real engine.")]
     public void BraceLiteralsGenerate() {
         Check.That(Any.StringMatching(@"a{x}").Generate()).IsEqualTo("a{x}");
         Check.That(Any.StringMatching(@"{abc}").Generate()).IsEqualTo("{abc}");
         Check.That(Any.StringMatching(@"a{2,").Generate()).IsEqualTo("a{2,");
+        Check.That(Any.StringMatching(@"a{,3}").Generate()).IsEqualTo("a{,3}");
+        Check.That(Any.StringMatching(@"a{2,3").Generate()).IsEqualTo("a{2,3");
+        Check.That(Any.StringMatching(@"a{2x}").Generate()).IsEqualTo("a{2x}");
     }
 
     [Fact(DisplayName = "Nesting groups beyond the parser's depth ceiling fails cleanly instead of overflowing the stack.")]

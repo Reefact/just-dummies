@@ -119,6 +119,14 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Fixed
 
+- **A decimal conflict on a `WithScale` grid no longer names the constraint it refuses as its own
+  cause.** `Any.Decimal().Positive().WithScale(2).LessThan(0.01m)` was refused with "Cannot apply
+  LessThan(0.01) because Positive(), LessThan(0.01) forbid every WithScale(2) value between 0 and
+  0.01." It now reads "…because Positive() forbids every WithScale(2) value between 0 and 0.01
+  except 0.01, which LessThan(0.01) forbids.", which names the constraints declared before it, the
+  grid points they leave, and the constraint that forbids those; the same holds when the constraint
+  applied last is an exclusion such as `Except(...)`, which may forbid several of them.
+
 - **Failure messages no longer print control characters, claim a value is left where none is, or
   assert that a generator cannot replay.** A string drawn into an `As(...)` or `Combine(...)` failure
   is escaped like every other drawn value, so NUL or ESC no longer reach the console. A crossed or

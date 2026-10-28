@@ -131,6 +131,32 @@ public sealed class ConflictMessageProvenanceTests {
         Check.That(message).Contains("Between(0, 5000)");
     }
 
+    [Fact(DisplayName = "A decimal strict bound emptying a scale lattice does not name itself as its own cause.")]
+    public void DecimalStrictBoundEmptyingALatticeIsNotItsOwnCause() {
+        // LessThan(0.01) excludes 0.01, the last point Positive() left on the WithScale(2) grid. Listing it among the
+        // constraints that forbid the grid named it on both sides of "because" (issue #340).
+        string message = ConflictMessage(() => Any.Decimal().Positive().WithScale(2).LessThan(0.01m));
+
+        Check.WithCustomMessage($"The applied constraint is echoed after 'because'. Message: {message}").That(message).Not.Contains("because Positive(), LessThan(0.01)");
+        Check.That(message).Contains("Positive() forbids every WithScale(2) value between 0 and 0.01 except 0.01, which LessThan(0.01) forbids");
+    }
+
+    [Fact(DisplayName = "A decimal exclusion emptying a scale lattice names only the exclusions declared before it.")]
+    public void DecimalExclusionEmptyingALatticeNamesOnlyTheEarlierExclusions() {
+        string message = ConflictMessage(() => Any.Decimal().Between(0m, 0.01m).WithScale(2).Except(0m).DifferentFrom(0.01m));
+
+        Check.That(message).Contains("because Except(0) forbids every WithScale(2) value between 0 and 0.01 except 0.01, which DifferentFrom(0.01) forbids");
+    }
+
+    [Fact(DisplayName = "A decimal exclusion of several points emptying a scale lattice lists the points the earlier ones left.")]
+    public void DecimalExclusionsOfSeveralPointsEmptyingALatticeListTheLeftPoints() {
+        // Each Except removes two of the four grid points: the earlier one forbids neither "every other" value nor
+        // every value but one, so the message names exactly the points it leaves to the applied one.
+        string message = ConflictMessage(() => Any.Decimal().Between(0m, 0.03m).WithScale(2).Except(0m, 0.01m).Except(0.02m, 0.03m));
+
+        Check.That(message).Contains("because Except(0, 0.01) forbids every WithScale(2) value between 0 and 0.03 except 0.02 and 0.03, which Except(0.02, 0.03) forbids");
+    }
+
     // ----- ContinuousIntervalSpec: double (and, by sharing the engine, Single/Half) -----
 
     [Fact(DisplayName = "A double pin emptied by DifferentFrom names DifferentFrom.")]

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -79,7 +80,9 @@ internal static class ProjectCompilation {
                 return LoadedProject.Failed([.. Reported(), $"{projectPath} produced no C# compilation."]);
             }
 
-            return LoadedProject.Opened(compilation, Reported());
+            return Restored(project)
+                       ? LoadedProject.Opened(compilation, Reported())
+                       : LoadedProject.Unrestored(compilation, Reported());
         } catch (Exception failure) when (failure is InvalidOperationException or System.IO.IOException) {
             return LoadedProject.Failed([.. Reported(), failure.Message]);
         }
@@ -87,6 +90,37 @@ internal static class ProjectCompilation {
         List<string> Reported() {
             lock (reporting) { return [.. diagnostics]; }
         }
+    }
+
+    /// <summary>How many folders above the intermediate output the assets file may sit.</summary>
+    /// <remarks>
+    ///     <c>obj/Debug/net8.0/</c> puts it two levels up, a runtime identifier one more; the artifacts layout
+    ///     puts it one. Four covers each with a level to spare, and stops well short of a neighbouring project.
+    /// </remarks>
+    private const int AssetsSearchDepth = 4;
+
+    /// <summary>
+    ///     Whether NuGet has restored the project: whether its <c>project.assets.json</c> stands above the
+    ///     intermediate output, where restore writes it.
+    /// </summary>
+    /// <remarks>
+    ///     An unrestored project opens without a single diagnostic, and opens without its package references:
+    ///     the compilation looks exactly like one whose project file never named JustDummies, and telling that
+    ///     developer to add a reference they can see in their own <c>.csproj</c> is the wrong remedy (§7).
+    ///     Where the intermediate output is unknown, nothing is claimed: the project counts as restored.
+    /// </remarks>
+    private static bool Restored(Project project) {
+        string? intermediate = Path.GetDirectoryName(project.CompilationOutputInfo.AssemblyPath);
+
+        if (intermediate is null) { return true; }
+
+        DirectoryInfo? folder = new(intermediate);
+
+        for (int level = 0; folder is not null && level <= AssetsSearchDepth; level++, folder = folder.Parent) {
+            if (File.Exists(Path.Combine(folder.FullName, "project.assets.json"))) { return true; }
+        }
+
+        return false;
     }
 
 }

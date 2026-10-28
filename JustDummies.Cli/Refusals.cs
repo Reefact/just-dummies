@@ -56,6 +56,19 @@ internal static class Refusals {
     }
 
     /// <summary>
+    ///     The library resolved nowhere, and the project has never been restored — so its package references
+    ///     were never read, and whether it names JustDummies is not something this run can tell (§7).
+    /// </summary>
+    internal static void NotRestored(string typeArgument, IAnsiConsole console) {
+        ArgumentNullException.ThrowIfNull(typeArgument);
+
+        Say(console, [
+            Mark + $"{typeArgument}: this project has not been restored, so its package references cannot be read.",
+            "  Restore it, then run the command again: dotnet restore"
+        ]);
+    }
+
+    /// <summary>
     ///     Something is already there, and this tool does not silently replace a developer's file.
     /// </summary>
     internal static void FileExists(string path, IAnsiConsole console) {

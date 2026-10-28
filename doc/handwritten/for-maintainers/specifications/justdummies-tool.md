@@ -920,8 +920,8 @@ to the assignments of it that precede the statement in the same body. A null-che
 stays silent only where every assignment followed is the parameter itself (`Name = name;`, a built-in
 cast or a `!` aside): the generator never draws null, so neither does a member holding it unchanged. A
 member computed from the parameter can be null — `Name = name.Length < 5 ? null : name;`, or a
-user-defined conversion such as `(ProductCode)raw`, which is a method free to return null — and its
-null-check is marked like any other guard. The `nameof` of the message is excluded as it is everywhere else.
+user-defined conversion, written as a cast `(ProductCode)raw` or applied implicitly by `Code = raw;`,
+which is a method free to return null — and its null-check is marked like any other guard. The `nameof` of the message is excluded as it is everywhere else.
 
 **A leading statement need not be an `if` to matter either.** A guard delegated entirely to a helper —
 `Ensure.NotBlank(value);`, called plainly, with no `if` in the constructor at all — throws from

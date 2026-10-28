@@ -967,8 +967,9 @@ qui précèdent l'instruction dans le même corps. Un null-check sur un tel memb
 si chaque affectation suivie est le paramètre lui-même (`Name = name;`, à un cast prédéfini ou un `!`
 près) : le générateur ne tire jamais null, donc un membre qui le contient tel quel non plus. Un membre
 calculé à partir du paramètre peut être null — `Name = name.Length < 5 ? null : name;`, ou une
-conversion définie par l'utilisateur comme `(ProductCode)raw`, qui est une méthode libre de renvoyer
-null — et son null-check est marqué comme toute autre garde. Le `nameof` du message est exclu, comme partout ailleurs.
+conversion définie par l'utilisateur, écrite comme un cast `(ProductCode)raw` ou appliquée
+implicitement par `Code = raw;`, qui est une méthode libre de renvoyer null — et son null-check est
+marqué comme toute autre garde. Le `nameof` du message est exclu, comme partout ailleurs.
 
 **Une instruction de tête n'a pas besoin non plus d'être un `if` pour compter.** Une garde entièrement
 déléguée à un helper — `Ensure.NotBlank(value);`, appelé tel quel, sans aucun `if` dans le

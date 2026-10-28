@@ -40,9 +40,9 @@ internal abstract class RandomSource {
     ///     The reproduction guidance for a failure whose seeded draws this source drove but whose result also depends on
     ///     a generator that does not draw from this source — a foreign <see cref="IAny{T}" />, or a derivation built over
     ///     one (including a <c>Combine</c> that mixes a foreign operand with a sourced one). It names the same replay
-    ///     mechanism as <see cref="ReplayGuidance" /> for the seeded part, but scopes the promise to it: the foreign values
-    ///     are not reproducible from this seed alone, so claiming a full replay would be the misleading diagnostic the
-    ///     seed reporting exists to avoid.
+    ///     mechanism as <see cref="ReplayGuidance" /> for the seeded part, but scopes the promise to it: the library cannot
+    ///     see inside a foreign generator, so it states the condition under which the foreign values replay — that they
+    ///     draw through <c>Any</c> — rather than claiming a full replay, or asserting that they cannot.
     /// </summary>
     internal abstract string PartialReplayGuidance(int seed);
 

@@ -27,6 +27,16 @@ public sealed class AmbientSeedScopeTests {
         return (Any.Int32().Generate(), Any.String().NonEmpty().Generate());
     }
 
+    private static async Task<int> DrawInAHelperAsync() {
+        await Task.Yield();
+
+        return Any.Int32().Generate();
+    }
+
+    private static object Throw() {
+        throw new InvalidOperationException("rejected");
+    }
+
     #endregion
 
     [Fact(DisplayName = "UseSeed pins the ambient context, so the same seed yields the same values.")]
@@ -227,9 +237,34 @@ public sealed class AmbientSeedScopeTests {
                 () => Any.Combine<int, int, int>(Any.Int32(), foreign, (_, _) => throw new InvalidOperationException("rejected")).Generate());
         }
 
-        Check.That(caught.Message).Contains("not reproducible from this seed alone");
+        Check.That(caught.Message).Contains("replay from this seed only if it draws");
         Check.That(caught.Message).Contains("[Reproducible(Seed = 777)]");
         Check.That(caught.Message).Not.Contains("Any.Reproducibly");
+    }
+
+    [Fact(DisplayName = "Outside any scope, a failure after an awaited helper drew first does not promise a replay from the reported seed.")]
+    public async Task AnUnscopedFailureAfterAnAwaitedHelperDoesNotPromiseAReplay() {
+        // The lazy seed is assigned in the execution context of whichever flow draws first, and a value assigned inside an
+        // awaited method does not flow back to its caller: the helper's draw and the caller's are seeded apart, so the
+        // seed reported here cannot replay the helper's value (issue #308). Only a scope makes that promise.
+        await DrawInAHelperAsync();
+
+        Check.ThatCode(() => Any.Int32().As<int, object>(_ => Throw()).Generate())
+             .Throws<AnyGenerationException>()
+             .WhichMember(caught => caught.Message)
+             .Contains("no scope pinned", "Any.Reproducibly(", "Any.ReproduciblyAsync")
+             .And.Not.Contains("reproduce this run with");
+    }
+
+    [Fact(DisplayName = "Inside a scope, the failure still promises the replay it can keep.")]
+    public void AScopedFailureStillPromisesTheReplay() {
+        using (Any.UseSeed(4321)) {
+            Check.ThatCode(() => Any.Int32().As<int, object>(_ => Throw()).Generate())
+                 .Throws<AnyGenerationException>()
+                 .WhichMember(caught => caught.Message)
+                 .Contains("reproduce this run with Any.Reproducibly(4321")
+                 .And.Not.Contains("no scope pinned");
+        }
     }
 
     [Fact(DisplayName = "The replay snippet is scoped: it does not outlive the scope that supplied it.")]

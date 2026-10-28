@@ -15,6 +15,10 @@ public sealed class CompositionTests {
 
     #region Statics members declarations
 
+    private static object Throwing() {
+        throw new ArgumentException("rejected");
+    }
+
     private static T Materialize<T>(IAny<T> generator) {
         return generator.Generate();
     }
@@ -154,7 +158,7 @@ public sealed class CompositionTests {
              .WithProperty(caught => caught.Seed, 31415)
              .And.WhichMember(caught => caught.Message)
              .Contains("Combine(...)")
-             .And.Contains("not reproducible from this seed alone")
+             .And.Contains("replay from this seed only if it draws")
              .And.Not.Contains("The arbitrary values were seeded with");
     }
 
@@ -174,7 +178,7 @@ public sealed class CompositionTests {
         Check.WithCustomMessage($"The hint over-promised a full replay. Message: {caught.Message}")
              .That(caught.Message).Not.Contains("already replays deterministically");
         Check.WithCustomMessage($"The hint did not qualify the replay promise. Message: {caught.Message}")
-             .That(caught.Message).Contains("not reproducible from this seed alone");
+             .That(caught.Message).Contains("replay from this seed only if it draws");
     }
 
     [Fact(DisplayName = "Combine composes four through eight parts, passing every constrained part to the lambda.")]
@@ -268,6 +272,35 @@ public sealed class CompositionTests {
         Check.That(caught.Message).Contains(nameof(Unrenderable));       // the fallback rendering
         Check.That(caught.Message).Not.Contains("ToString() exploded");  // never the renderer's own failure
         Check.That(caught.InnerException).IsInstanceOf<InvalidOperationException>();
+    }
+
+    [Theory(DisplayName = "A factory failure over a string carrying a control character renders it escaped (ADR-0075).")]
+    [InlineData('\0', "\\0")]
+    [InlineData('\r', "\\r")]
+    [InlineData('\u001b', "\\x1b")]
+    public void AFactoryFailureEscapesControlCharactersOfTheDrawnString(char control, string escaped) {
+        // The message used to wrap the raw string in quotes: NUL and ESC reached the exception text, where a console
+        // drops them, grep takes the output for binary and ESC may open an ANSI sequence.
+        IAny<object> failing = Any.String().WithChars(control.ToString()).WithLength(3).As<string, object>(_ => Throwing());
+
+        Check.ThatCode(() => failing.Generate())
+             .Throws<AnyGenerationException>()
+             .WhichMember(failure => failure.Message).Contains(escaped);
+        Check.ThatCode(() => failing.Generate())
+             .Throws<AnyGenerationException>()
+             .WhichMember(failure => failure.Message.Any(character => character < ' ')).IsFalse();
+    }
+
+    [Theory(DisplayName = "A composer failure over a string carrying a control character renders it escaped (ADR-0075).")]
+    [InlineData('\0', "\\0")]
+    [InlineData('\r', "\\r")]
+    [InlineData('\u001b', "\\x1b")]
+    public void AComposerFailureEscapesControlCharactersOfTheDrawnString(char control, string escaped) {
+        IAny<string> source = Any.String().WithChars(control.ToString()).WithLength(3);
+
+        Check.ThatCode(() => Any.Combine(source, Any.Int32(), (string _, int _) => Throwing()).Generate())
+             .Throws<AnyGenerationException>()
+             .WhichMember(failure => failure.Message).Contains(escaped);
     }
 
     [Fact(DisplayName = "A collection constraint over a value whose ToString() throws reports the conflict, not the rendering.")]

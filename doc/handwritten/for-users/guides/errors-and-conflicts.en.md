@@ -98,7 +98,7 @@ decimal[] excluded = Enumerable.Range(0, 100).Select(index => index / 100m).ToAr
 try {
     decimal anyAwkward = Any.Decimal().Between(0m, 1m).WithScale(2).Except(excluded).Generate();
 } catch (AnyGenerationException exception) {
-    // exception.Seed carries the seed of the run, when one was pinned — so the failure replays.
+    // exception.Seed is the seed the failing draw used; a reproducible scope makes every draw replayable.
     Console.Error.WriteLine($"{exception.Message} (seed: {exception.Seed})");
 }
 ```
@@ -106,6 +106,12 @@ try {
 `AnyGenerationException` carries a nullable `Seed`. When the draw happened inside a reproducible
 scope, the seed that produced it is on the exception, so a bounded-redraw failure is as replayable
 as any other failure.
+
+`Seed` is also set outside a scope, where the draws seed themselves lazily. That seed belongs to the
+flow that drew first and does not travel back to its caller, so a value drawn in an awaited helper
+and a later one in the test body are seeded apart. The message therefore says that the flow drew
+from that seed and that no scope pinned it, and asks you to wrap the body in `Any.Reproducibly` (or
+`Any.ReproduciblyAsync`) to make the run replayable: only a scope promises a replay.
 
 Meeting one usually means the specification is tighter than intended rather than that the library
 gave up early. Widen the interval, drop an exclusion, or ask for fewer distinct elements.

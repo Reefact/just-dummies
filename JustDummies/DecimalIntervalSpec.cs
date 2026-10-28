@@ -38,7 +38,7 @@ internal sealed class DecimalIntervalSpec {
         if (typeName is null) { throw new ArgumentNullException(nameof(typeName)); }
         if (render is null) { throw new ArgumentNullException(nameof(render)); }
 
-        return new DecimalIntervalSpec(typeName, render, decimal.MinValue, null, decimal.MaxValue, null, null, null, [], NoScale, null);
+        return new DecimalIntervalSpec(typeName, render, decimal.MinValue, null, false, decimal.MaxValue, null, false, null, null, [], NoScale, null);
     }
 
     /// <summary>Ten raised to <paramref name="power" /> as an exact <see cref="decimal" /> (<paramref name="power" /> in <c>[0, 28]</c>).</summary>
@@ -64,8 +64,10 @@ internal sealed class DecimalIntervalSpec {
     private readonly bool                    _latticeHasPoint;
     private readonly decimal                 _max;
     private readonly ConstraintCall?         _maxConstraint;
+    private readonly bool                    _maxStrict;
     private readonly decimal                 _min;
     private readonly ConstraintCall?         _minConstraint;
+    private readonly bool                    _minStrict;
     private readonly Func<decimal, string>   _render;
     private readonly int                     _scale;
     private readonly ConstraintCall?         _scaleConstraint;
@@ -76,8 +78,8 @@ internal sealed class DecimalIntervalSpec {
 
     [SuppressMessage(SonarRule.S107.Category, SonarRule.S107.Id, Justification = SuppressionJustification.S107.EngineImmutableState)]
     private DecimalIntervalSpec(string  typeName, Func<decimal, string> render,
-                                decimal min,      ConstraintCall? minConstraint,
-                                decimal max,      ConstraintCall? maxConstraint,
+                                decimal min,      ConstraintCall? minConstraint, bool minStrict,
+                                decimal max,      ConstraintCall? maxConstraint, bool maxStrict,
                                 IReadOnlyList<decimal>? allowed, ConstraintCall? allowedConstraint,
                                 IReadOnlyList<(ConstraintCall Constraint, decimal[] Ordinals)> exclusions,
                                 int     scale,    ConstraintCall? scaleConstraint) {
@@ -85,8 +87,10 @@ internal sealed class DecimalIntervalSpec {
         _render            = render;
         _min               = min;
         _minConstraint     = minConstraint;
+        _minStrict         = minStrict;
         _max               = max;
         _maxConstraint     = maxConstraint;
+        _maxStrict         = maxStrict;
         _allowed           = allowed;
         _allowedConstraint = allowedConstraint;
         _exclusions        = exclusions;
@@ -118,44 +122,60 @@ internal sealed class DecimalIntervalSpec {
 
     /// <summary>Tightens the lower bound; a looser bound than the current one is a no-op.</summary>
     internal DecimalIntervalSpec WithMinimum(decimal minimum, ConstraintCall applying) {
-        if (applying is null) { throw new ArgumentNullException(nameof(applying)); }
-        if (minimum <= _min) { return this; }
-
-        if (minimum > _max) {
-            if (_maxConstraint is null) { throw ConflictingAnyConstraintException.NoValueSatisfies(applying, _typeName); }
-
-            throw ConflictingAnyConstraintException.AlreadyBoundedAbove(applying, _maxConstraint, _render(_max));
-        }
-
-        return Validated(new DecimalIntervalSpec(_typeName, _render, minimum, applying, _max, _maxConstraint, _allowed, _allowedConstraint, _exclusions, _scale, _scaleConstraint), applying);
+        return WithLowerBound(minimum, false, applying);
     }
 
     /// <summary>Tightens the upper bound; a looser bound than the current one is a no-op.</summary>
     internal DecimalIntervalSpec WithMaximum(decimal maximum, ConstraintCall applying) {
+        return WithUpperBound(maximum, false, applying);
+    }
+
+    /// <summary>
+    ///     Tightens the lower bound to strictly above <paramref name="bound" /> — the inclusive bound plus a point
+    ///     exclusion, the bound remembered as strict so that a conflict is refused, and worded, as the bound it is.
+    /// </summary>
+    internal DecimalIntervalSpec WithMinimumAbove(decimal bound, ConstraintCall applying) {
+        return WithLowerBound(bound, true, applying);
+    }
+
+    /// <summary>
+    ///     Tightens the upper bound to strictly below <paramref name="bound" /> — the inclusive bound plus a point
+    ///     exclusion, the bound remembered as strict so that a conflict is refused, and worded, as the bound it is.
+    /// </summary>
+    internal DecimalIntervalSpec WithMaximumBelow(decimal bound, ConstraintCall applying) {
+        return WithUpperBound(bound, true, applying);
+    }
+
+    private DecimalIntervalSpec WithLowerBound(decimal bound, bool strict, ConstraintCall applying) {
         if (applying is null) { throw new ArgumentNullException(nameof(applying)); }
-        if (maximum >= _max) { return this; }
+        if (bound < _min || (bound == _min && (_minStrict || !strict))) { return this; }
 
-        if (maximum < _min) {
-            if (_minConstraint is null) { throw ConflictingAnyConstraintException.NoValueSatisfies(applying, _typeName); }
+        // The interval is refused here, before a strict bound is split into a bound and an exclusion: once split, the
+        // emptiness would surface as an exhausted exclusion and be worded as one (issue #311).
+        if (bound > _max || (bound == _max && (strict || _maxStrict))) {
+            if (_maxConstraint is null) { throw ConflictingAnyConstraintException.NoValueSatisfies(applying, _typeName); }
 
-            throw ConflictingAnyConstraintException.AlreadyBoundedBelow(applying, _minConstraint, _render(_min));
+            throw ConflictingAnyConstraintException.AlreadyBoundedAbove(applying, _maxConstraint, _render(_max), _maxStrict);
         }
 
-        return Validated(new DecimalIntervalSpec(_typeName, _render, _min, _minConstraint, maximum, applying, _allowed, _allowedConstraint, _exclusions, _scale, _scaleConstraint), applying);
+        return Validated(new DecimalIntervalSpec(_typeName, _render, bound, applying, strict, _max, _maxConstraint, _maxStrict, _allowed, _allowedConstraint, strict ? ExclusionsWith(applying, bound) : _exclusions, _scale, _scaleConstraint), applying);
     }
 
-    /// <summary>Tightens the lower bound to strictly above <paramref name="bound" /> — the inclusive bound plus a point exclusion.</summary>
-    internal DecimalIntervalSpec WithMinimumAbove(decimal bound, ConstraintCall applying) {
+    private DecimalIntervalSpec WithUpperBound(decimal bound, bool strict, ConstraintCall applying) {
         if (applying is null) { throw new ArgumentNullException(nameof(applying)); }
+        if (bound > _max || (bound == _max && (_maxStrict || !strict))) { return this; }
 
-        return WithMinimum(bound, applying).WithExcluded([bound], applying);
+        if (bound < _min || (bound == _min && (strict || _minStrict))) {
+            if (_minConstraint is null) { throw ConflictingAnyConstraintException.NoValueSatisfies(applying, _typeName); }
+
+            throw ConflictingAnyConstraintException.AlreadyBoundedBelow(applying, _minConstraint, _render(_min), _minStrict);
+        }
+
+        return Validated(new DecimalIntervalSpec(_typeName, _render, _min, _minConstraint, _minStrict, bound, applying, strict, _allowed, _allowedConstraint, strict ? ExclusionsWith(applying, bound) : _exclusions, _scale, _scaleConstraint), applying);
     }
 
-    /// <summary>Tightens the upper bound to strictly below <paramref name="bound" /> — the inclusive bound plus a point exclusion.</summary>
-    internal DecimalIntervalSpec WithMaximumBelow(decimal bound, ConstraintCall applying) {
-        if (applying is null) { throw new ArgumentNullException(nameof(applying)); }
-
-        return WithMaximum(bound, applying).WithExcluded([bound], applying);
+    private List<(ConstraintCall Constraint, decimal[] Ordinals)> ExclusionsWith(ConstraintCall applying, decimal value) {
+        return [.. _exclusions, (applying, [value])];
     }
 
     /// <summary>Restricts the domain to an explicit allow-list; declared once per generator.</summary>
@@ -172,7 +192,7 @@ internal sealed class DecimalIntervalSpec {
         if (_allowed is not null && new HashSet<decimal>(_allowed).SetEquals(distinct)) { return this; }
         if (_allowedConstraint is not null) { throw ConflictingAnyConstraintException.AlreadyDefined(applying, _allowedConstraint); }
 
-        return Validated(new DecimalIntervalSpec(_typeName, _render, _min, _minConstraint, _max, _maxConstraint, distinct, applying, _exclusions, _scale, _scaleConstraint), applying);
+        return Validated(new DecimalIntervalSpec(_typeName, _render, _min, _minConstraint, _minStrict, _max, _maxConstraint, _maxStrict, distinct, applying, _exclusions, _scale, _scaleConstraint), applying);
     }
 
     /// <summary>Adds values the generator must never produce.</summary>
@@ -184,7 +204,7 @@ internal sealed class DecimalIntervalSpec {
         // that actually emptied the domain rather than a bound that merely happens to border it.
         List<(ConstraintCall Constraint, decimal[] Ordinals)> exclusions = [.. _exclusions, (applying, values)];
 
-        return Validated(new DecimalIntervalSpec(_typeName, _render, _min, _minConstraint, _max, _maxConstraint, _allowed, _allowedConstraint, exclusions, _scale, _scaleConstraint), applying);
+        return Validated(new DecimalIntervalSpec(_typeName, _render, _min, _minConstraint, _minStrict, _max, _maxConstraint, _maxStrict, _allowed, _allowedConstraint, exclusions, _scale, _scaleConstraint), applying);
     }
 
     /// <summary>
@@ -202,7 +222,7 @@ internal sealed class DecimalIntervalSpec {
             throw ConflictingAnyConstraintException.AlreadyDefined(applying, _scaleConstraint!);
         }
 
-        return Validated(new DecimalIntervalSpec(_typeName, _render, _min, _minConstraint, _max, _maxConstraint, _allowed, _allowedConstraint, _exclusions, scale, applying), applying);
+        return Validated(new DecimalIntervalSpec(_typeName, _render, _min, _minConstraint, _minStrict, _max, _maxConstraint, _maxStrict, _allowed, _allowedConstraint, _exclusions, scale, applying), applying);
     }
 
     /// <summary>

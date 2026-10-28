@@ -677,10 +677,22 @@ public sealed class AnyCollectionTests {
              .WithProperty(caught => caught.Seed, 2026)
              .And.WhichMember(caught => caught.Message)
              .Contains("the element generator")
-             .And.Contains("not reproducible from this seed alone")
+             .And.Contains("replay from this seed only if it draws")
              .And.Contains("Any.Reproducibly(2026")
              // The faithful full-replay sentence must be gone — it is the false promise this fix removes.
              .And.Not.Contains("The arbitrary values were seeded with");
+    }
+
+    [Fact(DisplayName = "Exhaustion over a hand-written generator that draws through Any states the condition under which it replays, not that it cannot.")]
+    public void ExhaustionOverAnAmbientDrawingForeignGeneratorStatesTheReplayCondition() {
+        // The library cannot see inside a hand-written IAny: one that draws through Any replays exactly, as a generator
+        // scaffolded by `any` does. The message therefore hedges ("only if it draws through Any") and never asserts, as
+        // a fact, that its values do not draw from the reported source (issue #313).
+        Check.ThatCode(() => Any.Reproducibly(2026, () => Any.SetOf(new AmbientDrawingPair()).WithCount(5).Generate(), _ => { }))
+             .Throws<AnyGenerationException>()
+             .WhichMember(caught => caught.Message)
+             .Contains("replay from this seed only if it draws through Any")
+             .And.Not.Contains("does not draw from this source");
     }
 
     [Fact(DisplayName = "A derivation built over a foreign generator is qualified too: the discriminator is a null source, not the IHasRandomSource type.")]
@@ -693,7 +705,7 @@ public sealed class AnyCollectionTests {
         Check.ThatCode(() => Any.SetOf(derivedOverForeign).WithCount(5).Generate())
              .Throws<AnyGenerationException>()
              .WhichMember(caught => caught.Message)
-             .Contains("not reproducible from this seed alone")
+             .Contains("replay from this seed only if it draws")
              .And.Not.Contains("The arbitrary values were seeded with");
     }
 
@@ -710,7 +722,7 @@ public sealed class AnyCollectionTests {
              .And.WhichMember(caught => caught.Message)
              .Contains("a ContainingAny(...) generator")
              .And.Contains("Any.WithSeed(4242)")
-             .And.Contains("not reproducible from this seed alone")
+             .And.Contains("replay from this seed only if it draws")
              .And.Not.Contains("Any.Reproducibly(");
     }
 
@@ -727,7 +739,7 @@ public sealed class AnyCollectionTests {
              .And.WhichMember(caught => caught.Message)
              .Contains("The arbitrary values were seeded with 1234")
              .And.Contains("Any.Reproducibly(1234")
-             .And.Not.Contains("not reproducible from this seed alone");
+             .And.Not.Contains("replay from this seed only if it draws");
     }
 
     [Fact(DisplayName = "Exhaustion over a Combine that mixes a foreign operand is qualified, even though a library operand supplies a non-null source.")]
@@ -741,7 +753,7 @@ public sealed class AnyCollectionTests {
              .Throws<AnyGenerationException>()
              .WithProperty(caught => caught.Seed, 777)
              .And.WhichMember(caught => caught.Message)
-             .Contains("not reproducible from this seed alone")
+             .Contains("replay from this seed only if it draws")
              .And.Not.Contains("The arbitrary values were seeded with");
     }
 
@@ -813,6 +825,15 @@ public sealed class AnyCollectionTests {
 
         public int GetHashCode(int obj) {
             return obj % _modulus;
+        }
+
+    }
+
+    private sealed class AmbientDrawingPair : IAny<int> {
+
+        // Foreign to the library's source reporting, yet it draws through Any, so its values do replay from the seed.
+        public int Generate() {
+            return Any.Int32().Between(0, 1).Generate();
         }
 
     }

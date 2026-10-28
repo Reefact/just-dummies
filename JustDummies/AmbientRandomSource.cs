@@ -39,7 +39,7 @@ internal sealed class AmbientRandomSource : RandomSource {
         get {
             AmbientState? current = State.Value;
             if (current is null) {
-                current     = new AmbientState(new SeededRandom(NewSeed()), null, null);
+                current     = new AmbientState(new SeededRandom(NewSeed()), null, null, true);
                 State.Value = current;
             }
 
@@ -48,11 +48,27 @@ internal sealed class AmbientRandomSource : RandomSource {
     }
 
     internal override string ReplayGuidance(int seed) {
+        if (IsUnscoped) { return UnscopedGuidance(seed); }
+
         return $"The arbitrary values were seeded with {seed}; reproduce this run with {ReplaySnippet(seed)}.";
     }
 
     internal override string PartialReplayGuidance(int seed) {
-        return $"The seeded draws were made with {seed} ({ReplaySnippet(seed)}), but some values come from a generator that does not draw from this source, so they are not reproducible from this seed alone.";
+        if (IsUnscoped) { return $"{UnscopedGuidance(seed)} The values of a generator that does not report this source replay from this seed only if it draws through Any (as a generator scaffolded by `any` does)."; }
+
+        return $"The seeded draws were made with {seed} ({ReplaySnippet(seed)}), but the library cannot see inside every generator: the values of one that does not report this source replay from this seed only if it draws through Any (as a generator scaffolded by `any` does).";
+    }
+
+    /// <summary>
+    ///     Whether the draws were seeded lazily — no scope pinned them. That seed lives in the execution context of the
+    ///     flow that drew first and does not flow back to its caller, so a draw made in an awaited helper and a later
+    ///     one in the caller are seeded apart: the seed this run reports is the one in effect where the failure
+    ///     happened, and it cannot promise to replay what was drawn before. Only a scope makes that promise.
+    /// </summary>
+    private static bool IsUnscoped => State.Value?.Implicit ?? true;
+
+    private static string UnscopedGuidance(int seed) {
+        return $"This flow drew from seed {seed}, which no scope pinned; wrap the body in Any.Reproducibly({seed}, ...) (or Any.ReproduciblyAsync) to make the run replayable.";
     }
 
     /// <summary>
@@ -76,12 +92,13 @@ internal sealed class AmbientRandomSource : RandomSource {
     /// </summary>
     private sealed class AmbientState {
 
-        internal AmbientState(SeededRandom random, string? replaySnippet, AmbientState? parent) {
+        internal AmbientState(SeededRandom random, string? replaySnippet, AmbientState? parent, bool isImplicit = false) {
             if (random is null) { throw new ArgumentNullException(nameof(random)); }
 
             Random  = random;
             Snippet = replaySnippet;
             Parent  = parent;
+            Implicit = isImplicit;
         }
 
         internal SeededRandom  Random   { get; }
@@ -94,6 +111,9 @@ internal sealed class AmbientRandomSource : RandomSource {
         internal string?       Snippet  { get; }
         internal AmbientState? Parent   { get; }
         internal bool          Disposed { get; set; }
+
+        /// <summary>Whether this frame was seeded lazily by the first draw rather than pinned by a scope.</summary>
+        internal bool          Implicit { get; }
 
     }
 

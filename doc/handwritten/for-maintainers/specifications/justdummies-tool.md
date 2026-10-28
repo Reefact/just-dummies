@@ -726,6 +726,7 @@ The recognised set is closed:
 | `p < N` | `.GreaterThanOrEqualTo(N)` |
 | `p == Guid.Empty` | `.NonEmpty()` |
 | `!Enum.IsDefined(typeof(E), p)`, `!Enum.IsDefined(p)` | none — `Any.Enum<E>()` already draws only declared members, **where `p` is of type `E`** |
+| `!double.IsFinite(p)`, `!float.IsFinite(p)` | none — `Any.Double()` and `Any.Single()` draw only finite values (ADR-0031), **where `p` is of that type** |
 | `p == E.Member` | `.DifferentFrom(E.Member)`, **where `p` is of type `E`** |
 
 **The assigned null-check does not end the leading scan, unlike an ordinary write to state.** `f =

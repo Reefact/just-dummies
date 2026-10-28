@@ -755,6 +755,7 @@ L'ensemble reconnu est clos :
 | `p < N` | `.GreaterThanOrEqualTo(N)` |
 | `p == Guid.Empty` | `.NonEmpty()` |
 | `!Enum.IsDefined(typeof(E), p)`, `!Enum.IsDefined(p)` | aucune — `Any.Enum<E>()` ne tire déjà que des membres déclarés, **là où `p` est de type `E`** |
+| `!double.IsFinite(p)`, `!float.IsFinite(p)` | aucune — `Any.Double()` et `Any.Single()` ne tirent que des valeurs finies (ADR-0031), **là où `p` est de ce type** |
 | `p == E.Member` | `.DifferentFrom(E.Member)`, **là où `p` est de type `E`** |
 
 **Le null-check assigné ne termine pas le scan des instructions en tête, contrairement à une

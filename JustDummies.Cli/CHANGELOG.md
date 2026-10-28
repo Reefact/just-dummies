@@ -39,6 +39,12 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Fixed
 
+- **A finiteness guard on a `double` or `float` parameter no longer blocks the build.** `if
+  (!double.IsFinite(kilograms)) { throw … }` was marked `unread guards`, so the scaffold stopped at a `TODO(any)`
+  line over a guard its generator can never fail: `Any.Double()` and `Any.Single()` draw only finite values. The
+  guard is now read as satisfied by construction, like a null-check, where the parameter is of the type whose
+  `IsFinite` is called. A generator already scaffolded does not change; delete its `TODO(any)` line, or
+  re-scaffold with `--force`.
 - **A guard reached past one copy of its parameter is now marked `unread guards` instead of reported as
   inferred, and one decided by a value the tool cannot follow marks every parameter (ADR-0110).** The tool
   followed a local, a field or a property one step back to the parameter it came from, and no further:

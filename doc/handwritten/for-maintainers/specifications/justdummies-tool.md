@@ -1135,8 +1135,15 @@ an array or through any type argument composition would follow. The parameter ta
 sentinel, its line says the value reaches the type being scaffolded, and the recap column reads
 `self-referencing` (§6). An empty collection, a null or a depth parameter would each be the engine
 choosing how deep the developer's data goes — a cleverer generator, not an honest one (ADR-0046) —
-so the bound is the developer's to write. Only the target itself is checked: two types reaching each
-other through their own scaffolded generators are not detected here.
+so the bound is the developer's to write. **The same holds through another type.**
+`Department(string name, Employee? head)` beside `Employee(string name, Department department)` would
+compose `head` into `new AnyEmployee()`, whose own constructor builds `new AnyDepartment()` in turn — the
+same recursion one type further (#332). A composed type is therefore followed through the construction a
+scaffold of it would call (§5.1), and a parameter whose composed type comes back to the type being
+scaffolded, through any number of types, is left open the same way. Each scaffold is written on its
+own, so each side of the cycle leaves its own closing parameter open. Each type is followed once,
+which ends the walk without a bound on how many types a cycle spans; a cycle that never comes back to
+the target is left to the generators on it.
 
 Convention, not attribute, not configuration: an attribute would mean touching the developer's
 production code to please a test tool, and a configuration file breaks design rule 2.

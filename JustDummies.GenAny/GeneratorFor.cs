@@ -37,7 +37,8 @@ internal sealed class GeneratorFor {
     ///     <para>
     ///         A cycle cannot form while the table reads types only — a domain type has no row, so following
     ///         one ends immediately. The one composition can form is a parameter reaching the type being
-    ///         scaffolded, which <see cref="Draw(ITypeSymbol, ITypeSymbol)" /> refuses before anything is drawn.
+    ///         scaffolded, directly or through the construction of a type it composes, which
+    ///         <see cref="Draw(ITypeSymbol, ITypeSymbol)" /> refuses before anything is drawn.
     ///     </para>
     /// </remarks>
     private const int MaximumDepth = 3;
@@ -271,28 +272,54 @@ internal sealed class GeneratorFor {
     ///     children)</c>, <c>Employee(string name, Employee? manager)</c> — is left open with the reason, rather
     ///     than composed into <c>new AnyNode()</c> inside <c>AnyNode</c>'s own constructor: that recursion is
     ///     eager, so even a test pinning the parameter through <c>With…</c> never escapes it, and the run ends
-    ///     in a stack overflow with no test reported (§5.4).
+    ///     in a stack overflow with no test reported (§5.4). <c>Department(string name, Employee? head)</c>
+    ///     beside <c>Employee(string name, Department department)</c> is the same recursion one type further:
+    ///     <c>new AnyEmployee()</c> builds <c>new AnyDepartment()</c> in turn (#332).
     /// </remarks>
     internal DrawnGenerator Draw(ITypeSymbol type, ITypeSymbol target) {
-        if (Reaches(type, target, MaximumDepth)) { return DrawnGenerator.Unresolved(Provenance.SelfReferencing); }
+        if (Reaches(type, target, MaximumDepth, new HashSet<ITypeSymbol>(SymbolEqualityComparer.Default))) {
+            return DrawnGenerator.Unresolved(Provenance.SelfReferencing);
+        }
 
         return Draw(type, MaximumDepth, []);
     }
 
     /// <summary>
     ///     Whether <paramref name="type" /> is <paramref name="target" />, or holds it through the element and
-    ///     argument types composition would follow, within the same depth.
+    ///     argument types composition would follow, within the same depth — or through the construction of a
+    ///     type composed through <c>new AnyX()</c>, which runs as soon as that generator is built.
     /// </summary>
-    private static bool Reaches(ITypeSymbol type, ITypeSymbol target, int remaining) {
+    /// <remarks>
+    ///     A composed type is followed through the construction a scaffold of it would call (§5.1), with a fresh
+    ///     depth, since its generator draws its own parameters within its own. Each composed type is followed
+    ///     once: the type graph is finite, so the walk ends without a bound on how many types a cycle spans, and a
+    ///     cycle that never comes back to <paramref name="target" /> is left to the generators on it. This walks
+    ///     types; it decides nothing about values (ADR-0046).
+    /// </remarks>
+    private static bool Reaches(ITypeSymbol type, ITypeSymbol target, int remaining, HashSet<ITypeSymbol> composed) {
         if (remaining < 0) { return false; }
 
         if (SymbolEqualityComparer.Default.Equals(type, target)) { return true; }
 
         return type switch {
-            IArrayTypeSymbol array   => Reaches(array.ElementType, target, remaining - 1),
-            INamedTypeSymbol generic => generic.TypeArguments.Any(argument => Reaches(argument, target, remaining - 1)),
-            _                        => false
+            IArrayTypeSymbol array                           => Reaches(array.ElementType, target, remaining - 1, composed),
+            INamedTypeSymbol { IsGenericType: true } generic => generic.TypeArguments.Any(argument => Reaches(argument, target, remaining - 1, composed)),
+            INamedTypeSymbol named when IsComposed(named)     => composed.Add(named) && ReachesThroughItsConstruction(named, target, composed),
+            _                                                => false
         };
+    }
+
+    /// <summary>Whether a parameter of the construction a scaffold of <paramref name="type" /> would call reaches <paramref name="target" />.</summary>
+    private static bool ReachesThroughItsConstruction(INamedTypeSymbol type, ITypeSymbol target, HashSet<ITypeSymbol> composed) {
+        return Scaffolder.ConstructionOf(type) is { } construction
+            && construction.Parameters.Any(parameter => Reaches(parameter.Type, target, MaximumDepth, composed));
+    }
+
+    /// <summary>Whether <paramref name="type" /> is drawn through <c>new AnyX()</c> rather than a row of the base table (§5.4).</summary>
+    private static bool IsComposed(INamedTypeSymbol type) {
+        return type.TypeKind != TypeKind.Enum
+            && !ByMetadataName.ContainsKey(MetadataName(type))
+            && !BySpecialType.ContainsKey(type.SpecialType);
     }
 
     /// <summary>

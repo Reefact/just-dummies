@@ -1199,8 +1199,16 @@ composition suivrait. Le paramètre prend la sentinelle du §5.5, sa ligne dit q
 le type en cours de scaffolding, et la colonne du récapitulatif lit `self-referencing` (§6). Une
 collection vide, un null ou un paramètre de profondeur seraient chacun le moteur choisissant jusqu'où
 vont les données du développeur — un generator plus malin, pas un generator honnête (ADR-0046) — donc
-la borne revient au développeur. Seule la cible elle-même est vérifiée : deux types qui s'atteignent
-l'un l'autre par leurs propres generators scaffoldés ne sont pas détectés ici.
+la borne revient au développeur. **Il en va de même à travers un autre type.**
+`Department(string name, Employee? head)` à côté de `Employee(string name, Department department)`
+composerait `head` en `new AnyEmployee()`, dont le propre constructeur construit à son tour
+`new AnyDepartment()` — la même récursion, un type plus loin (#332). Un type composé est donc suivi à
+travers la construction qu'appellerait un scaffold de ce type (§5.1), et un paramètre dont le type composé
+revient au type en cours de scaffolding, à travers un nombre quelconque de types, est laissé ouvert de la
+même façon. Chaque scaffold est écrit seul, si bien que chaque côté du cycle laisse ouvert son propre
+paramètre de fermeture. Chaque type n'est suivi qu'une fois, ce qui termine le parcours sans borne sur
+le nombre de types qu'un cycle traverse ; un cycle qui ne revient jamais à la cible est laissé aux
+generators qui le composent.
 
 Convention, pas attribut, pas configuration : un attribut supposerait de toucher au code de
 production du développeur pour plaire à un outil de test, et un fichier de configuration casserait

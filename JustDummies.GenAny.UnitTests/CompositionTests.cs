@@ -393,6 +393,108 @@ public sealed class CompositionTests {
         Check.That(parameter.Provenance.HasFlag(Provenance.SelfReferencing)).IsFalse();
     }
 
+    /// <summary>
+    ///     A parameter whose composed type reaches the type being scaffolded back through its own construction is
+    ///     left open as self-referencing, on whichever side of the cycle is scaffolded.
+    /// </summary>
+    /// <remarks>
+    ///     <c>AnyDepartment</c> composing <c>new AnyEmployee()</c>, which composes <c>new AnyDepartment()</c>,
+    ///     recursed on construction exactly as <c>AnyNode</c> did, one type further, under two recaps saying every
+    ///     parameter was inferred (issue #332). Each scaffold is written on its own, so each side leaves its own
+    ///     closing parameter open; the last two rows close the cycle through three types and through a recognised
+    ///     static factory.
+    /// </remarks>
+    [Theory(DisplayName = "A parameter closing a cycle through another type is left open as self-referencing.")]
+    [InlineData("Shop.Domain.Department", "head", "new AnyEmployee()")]
+    [InlineData("Shop.Domain.Employee", "department", "new AnyDepartment()")]
+    [InlineData("Shop.Domain.Team", "project", "new AnyProject()")]
+    [InlineData("Shop.Domain.Badge", "holder", "new AnyHolder()")]
+    public void AParameterClosingACycleThroughAnotherTypeIsLeftOpen(string target, string closing, string composed) {
+        ScaffoldOutcome outcome = Subject.Scaffold(Cycles, metadataName: target);
+
+        Check.That(outcome.Status).IsEqualTo(ScaffoldStatus.Scaffolded);
+
+        ScaffoldedParameter parameter = outcome.Plan!.Parameters.Single(candidate => candidate.Name == closing);
+
+        Check.That(parameter.IsUnresolved).IsTrue();
+        Check.That(parameter.Provenance.HasFlag(Provenance.SelfReferencing)).IsTrue();
+        Check.That(outcome.File!.SourceText).Not.Contains(composed);
+    }
+
+    /// <summary>
+    ///     A composed type is still composed when its construction never comes back to the type being
+    ///     scaffolded, even when it sits on a cycle of its own.
+    /// </summary>
+    /// <remarks>
+    ///     <c>Company</c> composes <c>Department</c>, which closes a cycle with <c>Employee</c> without ever
+    ///     reaching <c>Company</c>: that cycle is <c>AnyDepartment</c>'s to leave open, and composing it here
+    ///     recurses no more than composing any other generator does.
+    /// </remarks>
+    [Theory(DisplayName = "A composed type whose construction never reaches the target is composed.")]
+    [InlineData("Shop.Domain.Order", "customer", "new AnyCustomer()")]
+    [InlineData("Shop.Domain.Company", "department", "new AnyDepartment()")]
+    public void AComposedTypeWhoseConstructionNeverReachesTheTargetIsComposed(string target, string parameterName, string composed) {
+        ScaffoldOutcome outcome = Subject.Scaffold(Cycles, metadataName: target);
+
+        ScaffoldedParameter parameter = outcome.Plan!.Parameters.Single(candidate => candidate.Name == parameterName);
+
+        Check.That(parameter.Provenance.HasFlag(Provenance.SelfReferencing)).IsFalse();
+        Check.That(parameter.Expression).IsEqualTo(composed);
+    }
+
+    /// <summary>The types the two cycle theories scaffold, one at a time.</summary>
+    private const string Cycles = """
+                                  namespace Shop.Domain;
+
+                                  using System.Collections.Generic;
+
+                                  public sealed class Department {
+                                      public Department(string name, Employee? head) { }
+                                  }
+
+                                  public sealed class Employee {
+                                      public Employee(string name, Department department) { }
+                                  }
+
+                                  public sealed class Team {
+                                      public Team(string name, Project project) { }
+                                  }
+
+                                  public sealed class Project {
+                                      public Project(string code, Sponsor sponsor) { }
+                                  }
+
+                                  public sealed class Sponsor {
+                                      public Sponsor(string name, IReadOnlyList<Team> teams) { }
+                                  }
+
+                                  public sealed class Badge {
+                                      public Badge(string number, Holder holder) { }
+                                  }
+
+                                  public sealed class Holder {
+                                      private Holder(Badge badge) { }
+
+                                      public static Holder Create(Badge badge) { return new Holder(badge); }
+                                  }
+
+                                  public sealed class Order {
+                                      public Order(string reference, Customer customer) { }
+                                  }
+
+                                  public sealed class Customer {
+                                      public Customer(string name, Address address) { }
+                                  }
+
+                                  public sealed class Address {
+                                      public Address(string city) { }
+                                  }
+
+                                  public sealed class Company {
+                                      public Company(string name, Department department) { }
+                                  }
+                                  """;
+
     /// <summary>Scaffolds a <c>Subject</c> whose single parameter is of <paramref name="parameterType" />.</summary>
     private static ScaffoldedParameter Composed(string declarations, string parameterType) {
         ScaffoldOutcome outcome = Subject.Scaffold($$"""

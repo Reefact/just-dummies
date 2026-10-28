@@ -147,8 +147,8 @@ L'essai d'expérience développeur d'octobre 2026 a trouvé quatre façons dont 
 paramètre depuis un endroit où le §5.3 ne peut pas la lire, et ce banc n'en connaissait aucune : une
 garde placée après la première affectation de l'état, et une garde qui atteint le paramètre par une
 copie — une variable locale, un champ, une propriété — ou par un null-check sur une valeur calculée à
-partir de lui. #331 les a toutes les quatre marquées, et la famille **`placement`** tient désormais le
-moteur à cette règle. Chacun des huit placements est croisé avec trois types de paramètre (`string`,
+partir de lui. Depuis #331, ces cas sont signalés ; la famille **`placement`** vérifie désormais que le
+moteur respecte cette règle. Chacun des huit placements est croisé avec trois types de paramètre (`string`,
 `int`, `IReadOnlyList<int>`) :
 
 | Placement | Ce qu'il déclare | Verdict que la spécification impose |
@@ -158,10 +158,10 @@ moteur à cette règle. Chacun des huit placements est croisé avec trois types 
 | `helper` | un helper non reconnu, appelé après la première affectation | `KnownResidue` (§9) |
 | `setter` | un null-check sur une propriété dont l'accesseur `set` réécrit la valeur | `KnownDefect` — #333 |
 
-La famille vérifie les deux sens : une marque là où elle est due, aucune là où elle ne l'est pas. Elle a
-aussi été éprouvée contre le moteur d'**avant** #331 : là, les quinze formes de la première ligne
-reviennent toutes en findings, un tirage que le domaine rejette derrière un récapitulatif qui dit
-« inferred ». Les gardes sont choisies pour que presque chaque tirage les déclenche. `Any.String()` tire
+La famille vérifie les deux sens : une marque là où elle est due, aucune là où elle ne l'est pas. Sur la
+version antérieure à #331, les quinze formes de la première ligne sont détectées comme des anomalies : le
+générateur produit des valeurs rejetées par le constructeur alors que le récapitulatif indique
+`inferred`. Les gardes sont choisies pour que presque chaque tirage les déclenche. `Any.String()` tire
 jusqu'à un millier de caractères environ, donc la garde sur les chaînes rejette les valeurs *longues* ;
 un plancher de huit laisserait passer trente tirages par chance.
 

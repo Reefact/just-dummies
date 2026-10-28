@@ -88,27 +88,37 @@ internal static class TypeLookup {
     ///     one they meant, and widening past it would report an ambiguity against the framework's; while a
     ///     type that lives in a referenced project — which is most of them, since the tool is run from the
     ///     test project — is not in source at all and would otherwise read as missing.
+    ///     <para>
+    ///         Nameable first, source second. A bare name does not spell a generic type — C# would need its type
+    ///         argument — and a type the project cannot access is one the emitted file could not name either, so
+    ///         neither makes a short name ambiguous: <c>Measurement</c> means the domain's, not
+    ///         <c>System.Diagnostics.Metrics.Measurement&lt;T&gt;</c>. And neither may hide one that can be named:
+    ///         a generic <c>Measurement&lt;T&gt;</c> in source does not stand in front of a referenced
+    ///         <c>Measurement</c>, so the preference for source is applied among nameable matches only.
+    ///     </para>
+    ///     <para>
+    ///         When nothing nameable matches anywhere, every match is kept, source first as before, so a generic
+    ///         type named alone still meets the refusal written for it (§7) rather than being reported missing.
+    ///     </para>
     /// </remarks>
     private static IEnumerable<INamedTypeSymbol> Matching(Compilation compilation, string argument) {
         List<INamedTypeSymbol> inSource = [.. Named(Within(compilation.Assembly.GlobalNamespace), argument)];
+        List<INamedTypeSymbol> nameable = [.. inSource.Where(type => Nameable(compilation, type))];
 
-        return Nameable(compilation, inSource.Count > 0 ? [.. inSource] : [.. Named(Within(compilation.GlobalNamespace), argument)]);
+        if (nameable.Count > 0) { return nameable; }
+
+        List<INamedTypeSymbol> anywhere = [.. Named(Within(compilation.GlobalNamespace), argument)];
+
+        nameable = [.. anywhere.Where(type => Nameable(compilation, type))];
+
+        if (nameable.Count > 0) { return nameable; }
+
+        return inSource.Count > 0 ? inSource : anywhere;
     }
 
-    /// <summary>
-    ///     The matches the argument can actually name from the analysed project, when there are any.
-    /// </summary>
-    /// <remarks>
-    ///     A bare name does not spell a generic type — C# would need its type argument — and a type the
-    ///     project cannot access is one the emitted file could not name either, so neither makes a short name
-    ///     ambiguous: <c>Measurement</c> means the domain's, not <c>System.Diagnostics.Metrics.Measurement&lt;T&gt;</c>.
-    ///     When nothing else matches they are kept, so a generic type named alone still meets the refusal
-    ///     written for it (§7) rather than being reported missing.
-    /// </remarks>
-    private static IReadOnlyList<INamedTypeSymbol> Nameable(Compilation compilation, IReadOnlyList<INamedTypeSymbol> matches) {
-        List<INamedTypeSymbol> nameable = [.. matches.Where(type => !IsGeneric(type) && compilation.IsSymbolAccessibleWithin(type, compilation.Assembly))];
-
-        return nameable.Count > 0 ? nameable : matches;
+    /// <summary>Whether a bare name can reach <paramref name="type" /> from the analysed project.</summary>
+    private static bool Nameable(Compilation compilation, INamedTypeSymbol type) {
+        return !IsGeneric(type) && compilation.IsSymbolAccessibleWithin(type, compilation.Assembly);
     }
 
     /// <summary>Whether <paramref name="type" />, or a type it is nested in, takes type arguments.</summary>

@@ -957,15 +957,27 @@ s'arrêter, et le marquer bloquerait des constructeurs ne portant aucune garde (
 value.StartsWith("LOT-"); if (!ok) { throw … }` rejette `value` exactement autant que le tester sur
 place, et pourtant sa condition ne nomme aucun paramètre : elle ne marquait donc rien, et le
 récapitulatif présentait comme inféré un generator que le constructeur refusait à presque chaque
-tirage. Une instruction qui lève suit désormais chaque variable locale qu'elle nomme d'un pas, jusqu'à la
-déclaration de cette variable, et marque `unread guards` chaque paramètre que l'initialiseur nomme —
-sans jamais le lire : ce qu'une valeur calculée admet n'est pas une contrainte que l'ensemble clos
-sait énoncer sur le paramètre, et suivre la valeur plus loin serait de la propagation (ADR-0046). Un
-champ ou une propriété copié à partir d'un paramètre est suivi de la même façon : `_name = name; if
-(_name.Length > 5) { throw … }` marque `name`, le membre étant suivi d'un pas jusqu'aux affectations
-qui précèdent l'instruction dans le même corps. Un null-check sur un tel membre ne reste silencieux que
-si chaque affectation suivie est le paramètre lui-même (`Name = name;`, à un cast prédéfini ou un `!`
-près) et que chaque membre suivi contient ce qu'on lui affecte — une variable locale, un champ ou une
+tirage. Une instruction qui lève suit désormais chaque variable locale qu'elle nomme jusqu'à l'origine
+de sa valeur — sa déclaration, y compris un argument `out`, une déconstruction ou un `foreach`, et chaque
+écriture dans le constructeur — à travers un nombre quelconque de copies, et marque `unread guards`
+chaque paramètre trouvé au bout (ADR-0110). Elle ne les lit jamais : ce qu'une valeur calculée admet
+n'est pas une contrainte que l'ensemble clos sait énoncer sur le paramètre, et en tirer une serait de
+la propagation (ADR-0046) ; marquer ne tire rien, et c'est pourquoi le marquage peut suivre plus loin
+que la lecture. Un champ ou une propriété copié à partir d'un paramètre est suivi de la même façon :
+`_name = name; if (_name.Length > 5) { throw … }` marque `name`. **Là où la piste se perd, chaque
+paramètre est marqué.** Quand ce qui décide un `throw` vient d'une propriété dont les accesseurs sont
+écrits à la main, d'une méthode ou d'une fonction locale de l'objet en construction, de l'objet lui-même
+passé plus loin, d'un membre qu'un constructeur de base affecte, d'une variable locale que rien
+n'écrit dans le constructeur, ou d'un membre de l'objet dès que le constructeur appelle une de ses
+méthodes ou délègue par `: this(…)` — du code qui peut écrire ce membre lui aussi —, le moteur ne peut
+pas dire quels paramètres le rejet implique, et il les
+marque tous plutôt qu'aucun (ADR-0110). Seul ce qui décide le `throw` compte alors — les conditions,
+en-têtes de boucle, sujets de `switch` et opérandes court-circuités entre lui et l'instruction, ou
+l'instruction entière pour une construction dont l'ordre n'est pas modélisé, comme un `try` — jamais
+l'exception qu'il construit. Un null-check sur un tel membre ne reste silencieux que si chaque
+affectation suivie est le paramètre lui-même, à travers un nombre quelconque de copies simples
+(`Name = name;`, à un cast prédéfini ou un `!` près) et que chaque membre suivi contient ce qu'on lui
+affecte — une variable locale, un champ ou une
 propriété auto-implémentée, jamais une propriété dont l'accesseur `set` peut réécrire la valeur (#333) :
 le générateur ne tire jamais null, donc un membre qui le contient tel quel non plus. Un membre
 calculé à partir du paramètre peut être null — `Name = name.Length < 5 ? null : name;`, ou une

@@ -140,17 +140,23 @@ The developer-UX trial of October 2026 found four ways a guard rejects a paramet
 cannot read it, and this bench knew none of them: a guard below the first write to state, and a
 guard reaching the parameter through a copy — a local, a field, a property — or through a null-check
 on a value computed from it. #331 marked all four, and the **`placement`** family now holds the
-engine to that. Each of eight placements is crossed with three parameter types (`string`, `int`,
+engine to that. Each of twelve placements is crossed with three parameter types (`string`, `int`,
 `IReadOnlyList<int>`):
 
 | Placement | What it declares | Verdict the specification owes |
 |---|---|---|
 | `below`, `local`, `field`, `property`, `computed`, `setter` | a guard that rejects the parameter from where §5.3 cannot read it — `setter` through a property whose `set` accessor rewrites the value | `BlockedForVerification` |
 | `copynull` | a null-check on a plain copy, which the generator satisfies by construction | `Held` |
+| `chain`, `outvar`, `deconstruct`, `getter` | a guard reaching the parameter past one copy: two locals, an `out` argument, a deconstruction, a getter the engine cannot read | `BlockedForVerification` |
 | `helper` | an unrecognised helper called below the first write | `KnownResidue` (§9) |
 
 The `setter` placement was initially tracked as a known defect in `SweepDefects`. It is no longer listed
 because null-checks on non-auto-implemented properties are now marked as unread (#333).
+
+The `chain`, `outvar`, `deconstruct` and `getter` placements came with ADR-0110. Before it, a copy was
+followed one step and no further, and all twelve shapes came back as findings: a draw rejected behind a
+recap saying "inferred". The guard behind `getter` is decided by a property the engine does not read, so
+it is marked through the rule that marks every parameter where the trail is lost.
 
 The family checks both directions: a mark where one is due, and none where it is not. It was proven
 against the engine from **before** #331 too: there, the fifteen shapes the trial found come back as

@@ -911,13 +911,23 @@ all (§9).
 value.StartsWith("LOT-"); if (!ok) { throw … }` rejects `value` exactly as much as testing it in place
 would, yet its condition names no parameter, so it used to mark nothing and the recap reported a
 generator the constructor refused on nearly every draw as inferred. A statement that throws now
-follows each local it names one step, to that local's own declaration, and marks every parameter the
-initializer names `unread guards` — never reads it: what a computed value admits is not a constraint
-the closed set can state about the parameter, and following the value further would be propagation
-(ADR-0046). A field or a property copied from a parameter is followed the same way:
-`_name = name; if (_name.Length > 5) { throw … }` marks `name`, the member being followed one step back
-to the assignments of it that precede the statement in the same body. A null-check on such a member
-stays silent only where every assignment followed is the parameter itself (`Name = name;`, a built-in
+follows each local it names back to where its value came from — its declaration, an `out` argument, a
+deconstruction or a `foreach` included, and every write to it in the constructor — through any number
+of copies, and marks every parameter found at the end `unread guards` (ADR-0110). It never reads them:
+what a computed value admits is not a constraint the closed set can state about the parameter, and
+deriving one would be propagation (ADR-0046); marking derives nothing, which is why it may follow
+further than reading does. A field or a property copied from a parameter is followed the same way:
+`_name = name; if (_name.Length > 5) { throw … }` marks `name`. **Where the trail is lost, every
+parameter is marked.** When what decides a throw comes from a property whose accessors are written by
+hand, a method or local function of the object being built, the object itself handed on, a member a base
+constructor sets, a local nothing in the constructor writes, or a member of the object once the
+constructor calls a method of it or delegates with `: this(…)` — code that may write that member too —
+the engine cannot say which parameters
+the rejection involves, and it marks them all rather than none (ADR-0110). Only what decides the throw
+counts there — the conditions, loop headers, switch subjects and short-circuited operands between it and
+the statement, or the whole statement for a construct whose order is not modelled, such as a `try` —
+never the exception it builds. A null-check on such a member stays silent only where every assignment
+followed is the parameter itself, through any number of plain copies (`Name = name;`, a built-in
 cast or a `!` aside) and every member followed holds what it is assigned — a local, a field or an
 auto-implemented property, never one whose `set` accessor can rewrite the value (#333): the generator
 never draws null, so neither does a member holding it unchanged. A

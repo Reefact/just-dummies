@@ -110,6 +110,13 @@ try {
 portée reproductible, la graine qui l'a produit figure sur l'exception : un échec de retirage borné
 est donc aussi rejouable que n'importe quel autre échec.
 
+`Seed` est aussi renseignée hors d'une portée, où les tirages s'initialisent paresseusement. Cette
+graine appartient au flux qui a tiré en premier et ne remonte pas à son appelant : une valeur tirée
+dans un assistant attendu et une autre, plus tard, dans le corps du test sont donc initialisées
+séparément. Le message indique alors que le flux a tiré depuis cette graine, qu'aucune portée ne l'a
+épinglée, et vous demande d'envelopper le corps dans `Any.Reproducibly` (ou `Any.ReproduciblyAsync`)
+pour rendre l'exécution rejouable : seule une portée promet un rejeu.
+
 En rencontrer un signifie généralement que la spécification est plus serrée que prévu, et non que la
 bibliothèque a abandonné trop tôt. Élargissez l'intervalle, retirez une exclusion, ou demandez moins
 d'éléments distincts.

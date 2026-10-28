@@ -39,6 +39,30 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Fixed
 
+- **A finiteness guard on a `double` or `float` parameter no longer blocks the build.** `if
+  (!double.IsFinite(kilograms)) { throw … }` was marked `unread guards`, so the scaffold stopped at a `TODO(any)`
+  line over a guard its generator can never fail: `Any.Double()` and `Any.Single()` draw only finite values. The
+  guard is now read as satisfied by construction, like a null-check, where the parameter is of the type whose
+  `IsFinite` is called. A generator already scaffolded does not change; delete its `TODO(any)` line, or
+  re-scaffold with `--force`.
+- **A guard reached past one copy of its parameter is now marked `unread guards` instead of reported as
+  inferred, and one decided by a value the tool cannot follow marks every parameter (ADR-0110).** The tool
+  followed a local, a field or a property one step back to the parameter it came from, and no further:
+  `string trimmed = value.Trim(); string upper = trimmed.ToUpperInvariant(); if (upper.Length > 8) { throw … }`
+  marked nothing, and neither did a guard on a value written through an `out` argument or a deconstruction. The
+  recap said `inferred`, the file compiled, and the constructor rejected the draws. Such a value is now followed
+  through any number of copies to the parameters it came from, and those are marked. Where what decides a throw
+  comes from code the tool does not read — a property whose getter computes its value, a method of the object
+  being built, the object itself handed to a helper — every parameter is marked, since the tool cannot say which
+  ones the rejection involves. No mark the tool gave before is removed. A generator already scaffolded does not
+  change; re-scaffold with `--force` to see the mark.
+- **Two null-checks that reject real values are now marked `unread guards` instead of read as satisfied.** A
+  comparison to `null` through a user-defined `==` — an operator free to answer `true` for a value it rejects — was
+  read as the null-check the generator always satisfies, whether on the parameter (`if (code == null) throw …`) or
+  on a copy of it. And a null-check on a property whose `set` accessor rewrites the value (`set { stored =
+  value.Length >= 5 ? value : null; }`) was read as one on a plain copy. Both reported the parameter inferred while
+  the constructor rejected some of its draws. `is null`, and a copy through a field, a local or an auto-implemented
+  property, stay silent as before.
 - **`any generate` on an enum is now refused, naming `Any.Enum<TEnum>()`, instead of reporting success.** The
   synthesised parameterless constructor of an enum was taken for a real one, so the tool wrote
   `return new Currency();` and exited 0 with `no constructor parameters to infer`: every draw was `(Currency)0`,
@@ -50,8 +74,11 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   `Any.ListOf(new AnyNode())` inside `AnyNode`'s own constructor, reported as inferred: the first test to touch it
   ended the run with "Stack overflow." and no test reported, and even `.WithChildren(...)` could not escape it.
   The same held for `Employee(string name, Employee? manager)`. Such a parameter now stops the build at a line
-  saying the value reaches the type being scaffolded; write its generator with the depth bound you choose. Two
-  types reaching each other through their own generators are not detected.
+  saying the value reaches the type being scaffolded; write its generator with the depth bound you choose. The
+  same holds when the parameter reaches it through another type: `Department(string name, Employee? head)` beside
+  `Employee(string name, Department department)` composed `new AnyEmployee()` into `AnyDepartment`, which builds
+  `new AnyDepartment()` in turn. Each side of such a cycle, over any number of types, now leaves its closing
+  parameter open as `self-referencing`.
 - **A guard written below the first assignment to state is now marked `unread guards` instead of passed over in
   silence.** The leading-guard scan (§5.3) stopped at that assignment and never looked at what followed, so
   `Rate = rate; if (currency.Length != 3) { throw … }` reported `currency` as inferred, the file compiled, and

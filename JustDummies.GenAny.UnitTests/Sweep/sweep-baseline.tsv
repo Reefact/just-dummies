@@ -18,5 +18,8 @@ delegation	Held	32
 delegation	BlockedForVerification	16
 element	BlockedForVerification	78
 nested	Held	144
+placement	Held	3
+placement	BlockedForVerification	30
+placement	KnownResidue	3
 string	Held	6
 string	BlockedForVerification	10

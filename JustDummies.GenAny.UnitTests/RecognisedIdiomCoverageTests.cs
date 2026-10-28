@@ -47,7 +47,7 @@ public sealed partial class RecognisedIdiomCoverageTests {
     ///     otherwise make this suite greener, which is the one direction a coverage test must never fail in.
     /// </remarks>
     private static readonly (string Marker, int Rows)[] Tables = [
-        ("The recognised set is closed:", 15),
+        ("The recognised set is closed:", 16),
         ("The mapped rows are exactly these:", 13)
     ];
 

@@ -73,10 +73,16 @@ internal static class EmittedAssembly {
     }
 
     /// <summary>What stopped a draw: the thrown type when there was one, and the sentence to print.</summary>
-    internal sealed class DrawFailure(string? kind, string text) {
+    internal sealed class DrawFailure(string? kind, string text, bool duringDraw = false) {
 
         /// <summary>The name of the exception thrown, or null when nothing was thrown.</summary>
         internal string? Kind { get; } = kind;
+
+        /// <summary>
+        ///     Whether a draw threw — <c>Generate()</c> on a generator that constructed — rather than the
+        ///     generator's own construction or the emission before it.
+        /// </summary>
+        internal bool DuringDraw { get; } = duringDraw;
 
         /// <inheritdoc />
         public override string ToString() {
@@ -114,7 +120,8 @@ internal static class EmittedAssembly {
                 generate.Invoke(instance, parameters: null);
             } catch (TargetInvocationException invocation) {
                 return new DrawFailure(KindOf(invocation.InnerException),
-                                       $"draw {draw + 1} of {count} threw " + Describe(invocation.InnerException));
+                                       $"draw {draw + 1} of {count} threw " + Describe(invocation.InnerException),
+                                       duringDraw: true);
             }
         }
 

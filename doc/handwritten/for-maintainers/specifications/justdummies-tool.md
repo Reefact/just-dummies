@@ -712,7 +712,7 @@ The recognised set is closed:
 
 | Condition that throws | Constraint added |
 |---|---|
-| `p is null`, `p == null`, or the assigned `f = p ?? throw new ArgumentNullException(nameof(p));` | none — the generator never returns `null` anyway |
+| `p is null`, `p == null`, or the assigned `f = p ?? throw new ArgumentNullException(nameof(p));` | none — the generator never returns `null` anyway. A user-defined `==` is a method free to answer `true` for a non-null value, so that comparison is not this row (#333) |
 | `string.IsNullOrEmpty(p)`, `p.Length == 0`, `p.Length < 1` | `.NonEmpty()` |
 | `string.IsNullOrWhiteSpace(p)` | `.NotBlank()` |
 | `p.Length > N` | `.WithMaxLength(N)` |
@@ -726,6 +726,7 @@ The recognised set is closed:
 | `p < N` | `.GreaterThanOrEqualTo(N)` |
 | `p == Guid.Empty` | `.NonEmpty()` |
 | `!Enum.IsDefined(typeof(E), p)`, `!Enum.IsDefined(p)` | none — `Any.Enum<E>()` already draws only declared members, **where `p` is of type `E`** |
+| `!double.IsFinite(p)`, `!float.IsFinite(p)` | none — `Any.Double()` and `Any.Single()` draw only finite values (ADR-0031), **where `p` is of that type** |
 | `p == E.Member` | `.DifferentFrom(E.Member)`, **where `p` is of type `E`** |
 
 **The assigned null-check does not end the leading scan, unlike an ordinary write to state.** `f =
@@ -911,14 +912,26 @@ all (§9).
 value.StartsWith("LOT-"); if (!ok) { throw … }` rejects `value` exactly as much as testing it in place
 would, yet its condition names no parameter, so it used to mark nothing and the recap reported a
 generator the constructor refused on nearly every draw as inferred. A statement that throws now
-follows each local it names one step, to that local's own declaration, and marks every parameter the
-initializer names `unread guards` — never reads it: what a computed value admits is not a constraint
-the closed set can state about the parameter, and following the value further would be propagation
-(ADR-0046). A field or a property copied from a parameter is followed the same way:
-`_name = name; if (_name.Length > 5) { throw … }` marks `name`, the member being followed one step back
-to the assignments of it that precede the statement in the same body. A null-check on such a member
-stays silent only where every assignment followed is the parameter itself (`Name = name;`, a built-in
-cast or a `!` aside): the generator never draws null, so neither does a member holding it unchanged. A
+follows each local it names back to where its value came from — its declaration, an `out` argument, a
+deconstruction or a `foreach` included, and every write to it in the constructor — through any number
+of copies, and marks every parameter found at the end `unread guards` (ADR-0110). It never reads them:
+what a computed value admits is not a constraint the closed set can state about the parameter, and
+deriving one would be propagation (ADR-0046); marking derives nothing, which is why it may follow
+further than reading does. A field or a property copied from a parameter is followed the same way:
+`_name = name; if (_name.Length > 5) { throw … }` marks `name`. **Where the trail is lost, every
+parameter is marked.** When what decides a throw comes from a property whose accessors are written by
+hand, a method or local function of the object being built, the object itself handed on, a member a base
+constructor sets, a local nothing in the constructor writes, or a member of the object once the
+constructor calls a method of it or delegates with `: this(…)` — code that may write that member too —
+the engine cannot say which parameters
+the rejection involves, and it marks them all rather than none (ADR-0110). Only what decides the throw
+counts there — the conditions, loop headers, switch subjects and short-circuited operands between it and
+the statement, or the whole statement for a construct whose order is not modelled, such as a `try` —
+never the exception it builds. A null-check on such a member stays silent only where every assignment
+followed is the parameter itself, through any number of plain copies (`Name = name;`, a built-in
+cast or a `!` aside) and every member followed holds what it is assigned — a local, a field or an
+auto-implemented property, never one whose `set` accessor can rewrite the value (#333): the generator
+never draws null, so neither does a member holding it unchanged. A
 member computed from the parameter can be null — `Name = name.Length < 5 ? null : name;`, or a
 user-defined conversion, written as a cast `(ProductCode)raw` or applied implicitly by `Code = raw;`,
 which is a method free to return null — and its null-check is marked like any other guard. The `nameof` of the message is excluded as it is everywhere else.
@@ -1122,8 +1135,15 @@ an array or through any type argument composition would follow. The parameter ta
 sentinel, its line says the value reaches the type being scaffolded, and the recap column reads
 `self-referencing` (§6). An empty collection, a null or a depth parameter would each be the engine
 choosing how deep the developer's data goes — a cleverer generator, not an honest one (ADR-0046) —
-so the bound is the developer's to write. Only the target itself is checked: two types reaching each
-other through their own scaffolded generators are not detected here.
+so the bound is the developer's to write. **The same holds through another type.**
+`Department(string name, Employee? head)` beside `Employee(string name, Department department)` would
+compose `head` into `new AnyEmployee()`, whose own constructor builds `new AnyDepartment()` in turn — the
+same recursion one type further (#332). A composed type is therefore followed through the construction a
+scaffold of it would call (§5.1), and a parameter whose composed type comes back to the type being
+scaffolded, through any number of types, is left open the same way. Each scaffold is written on its
+own, so each side of the cycle leaves its own closing parameter open. Each type is followed once,
+which ends the walk without a bound on how many types a cycle spans; a cycle that never comes back to
+the target is left to the generators on it.
 
 Convention, not attribute, not configuration: an attribute would mean touching the developer's
 production code to please a test tool, and a configuration file breaks design rule 2.

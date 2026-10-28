@@ -62,7 +62,7 @@ It is the point of the recap, not decoration — it separates what was **inferre
 | `to verify` | a generator *was* inferred, but something near that parameter could not be read — check it |
 | `unread guards` | that "something": a guard the tool does not recognise, a helper it cannot see into, or a guard it reads but cannot place — below a write to the parameter or to state, testing a local or a field computed from the parameter, or under something deciding whether it runs |
 | `constraint unavailable` | a guard was understood, and this generator has no member to express it with |
-| `self-referencing` | the parameter reaches the type being scaffolded (a tree, a manager of the same type), so it is a `TODO`: drawing it would recurse forever, and how deep it goes is yours to write |
+| `self-referencing` | the parameter reaches the type being scaffolded (a tree, a manager of the same type, or a type whose constructor comes back to it), so it is a `TODO`: drawing it would recurse forever, and how deep it goes is yours to write |
 | `no source` | the type comes from a package, so there was no constructor body to read |
 | `unavailable` | the generator exists in JustDummies, but not in the asset your project resolves |
 
@@ -93,6 +93,14 @@ Keep the recipe or replace it, delete that one line, and you are done. The alter
 compiles and draws a value your constructor rejects on some later run — is the failure that costs
 most, because it surfaces far from its cause
 ([ADR-0083](../../for-maintainers/adr/0083-block-compilation-on-a-guard-the-engine-cannot-vouch-for.md)).
+
+**A throw decided by something the tool cannot follow marks every parameter.** The tool follows a
+value back through any number of copies — locals, fields, an `out` argument, a deconstruction — to the
+parameters it came from, and marks those. Where going on would mean reading code it does not read — a
+property whose getter computes its value, a method of the object being built, the object itself handed
+to a helper — it cannot say which parameters the rejection involves, so it marks them all rather than
+none ([ADR-0110](../../for-maintainers/adr/0110-mark-every-parameter-a-throw-may-depend-on.md)).
+Confirm each recipe as above.
 
 **What the tool still cannot see stays silent.** A few shapes reject a value without the tool seeing a
 rejection at all, so they earn no mark: a validator that *returns* the value it checked

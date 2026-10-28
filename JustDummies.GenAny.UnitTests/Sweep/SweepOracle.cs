@@ -169,7 +169,7 @@ internal static class SweepOracle {
             return Finding(shape, status, provenance, "ok",
                            "the generator produced a value its own domain rejects, or failed outside the library's "
                          + "own refusal: " + failure,
-                           rules: "ok", draw: failure.ToString());
+                           rules: "ok", draw: failure.ToString(), failure: failure);
         }
 
         // ---- Rule 6, and only where the domain's own text fixes the demand and the source fixes the pool. ----
@@ -277,9 +277,10 @@ internal static class SweepOracle {
                                         string compiles,
                                         string reason,
                                         string rules = "-",
-                                        string draw = "-") {
+                                        string draw = "-",
+                                        EmittedAssembly.DrawFailure? failure = null) {
         return new SweepOutcome(shape.Name, shape.Family, status, provenance, compiles, rules, draw,
-                                SweepVerdict.Finding, reason);
+                                SweepVerdict.Finding, reason, failure);
     }
 
 }

@@ -26,11 +26,14 @@ internal static class SweepDefects {
     ///     Every open defect, and the shapes each one claims. Empty, and that is a state rather than an oversight.
     /// </summary>
     /// <remarks>
-    ///     The two entries this table was created with — a distinct collection over a nullable element refusing a
-    ///     domain that admits values, and a collection of interface-typed collections emitting <c>CS0029</c> —
-    ///     were both fixed, and both came off here in the change that fixed them. That is the contract working:
-    ///     an entry no shape reproduces fails the run, so a defect cannot be quietly repaired and left on the
-    ///     record, and a defect cannot be recorded and quietly forgotten.
+    ///     Every entry this table has held came off in the change that fixed it: the two it was created with — a
+    ///     distinct collection over a nullable element refusing a domain that admits values, and a collection of
+    ///     interface-typed collections emitting <c>CS0029</c> — and <c>setter-transforms-copy</c>, a null-check
+    ///     through a property whose <c>set</c> accessor rewrites the value, read as a plain copy until #333. That
+    ///     is the contract working: an entry no shape reproduces fails the run, so a defect cannot be quietly
+    ///     repaired and left on the record, and a defect cannot be recorded and quietly forgotten. An entry claims
+    ///     its recorded symptom only — <see cref="SweepOutcome.Failure" /> keeps a draw failure typed for that —
+    ///     because the baseline counts verdicts, and a broader claim would let a new failure hide behind it.
     /// </remarks>
     internal static IReadOnlyList<SweepDefect> Open { get; } = [];
 

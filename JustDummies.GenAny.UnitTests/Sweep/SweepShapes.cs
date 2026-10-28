@@ -71,6 +71,7 @@ internal static class SweepShapes {
         foreach (SweepShape shape in DelegatedCount()) { yield return shape; }
         foreach (SweepShape shape in Nested()) { yield return shape; }
         foreach (SweepShape shape in Strings()) { yield return shape; }
+        foreach (SweepShape shape in Placement()) { yield return shape; }
     }
 
     // ---- bare: one scalar parameter, no collection and no guard. --------------------------------------
@@ -461,6 +462,147 @@ internal static class SweepShapes {
                                                               }
                                                               """);
         }
+    }
+
+    // ---- placement: a guard that rejects the parameter from where §5.3 cannot read it. ---------------
+    //
+    // The shapes the developer-UX trial of October 2026 found and this bench did not know: a guard written
+    // below a write to state, one that reaches the parameter through a copy — a local, a field, a property —
+    // and a null-check on a value computed from it, or on a property whose setter rewrites it (#333). Then
+    // the shapes a copy followed one step and no further left silent: a chain of two copies, an `out`
+    // argument, a deconstruction, and a getter the engine cannot read (ADR-0110). None of them is READ;
+    // each must be MARKED, which this bench sees as a sentinel. Two controls ride along,
+    // because a mark is only honest where it is due: a null-check on a plain copy, which the generator
+    // satisfies by construction, must stay silent; and the one shape still out of reach is named rather than
+    // hidden — an unrecognised helper below the first write, §9's residue.
+
+    /// <summary>A parameter type, and the guard a developer writes against it.</summary>
+    private sealed record PlacementSubject(string Name, string Type, string Nullable, string Rejects);
+
+    private static readonly IReadOnlyList<PlacementSubject> PlacementSubjects = [
+        new("str", "string", "string?", "{0}.Length > 8"),
+        new("int", "int", "int?", "{0} < 3"),
+        new("list", "IReadOnlyList<int>", "IReadOnlyList<int>?", "{0}.Count < 2")
+    ];
+
+    private static readonly IReadOnlyList<string> Placements = ["below", "local", "field", "property", "computed", "copynull", "helper", "setter",
+                                                                "chain", "outvar", "deconstruct", "getter"];
+
+    /// <summary>Why the <c>helper</c> placement is expected to draw a value its own domain rejects.</summary>
+    private const string HelperBelowTheScanResidue = "the guard is a helper the closed set does not recognise, called below the "
+                                                   + "first assignment to state, where it reads exactly like filling that state: "
+                                                   + "§9's declared residue, not a defect.";
+
+    private static IEnumerable<SweepShape> Placement() {
+        foreach (string placement in Placements) {
+            foreach (PlacementSubject subject in PlacementSubjects) {
+                yield return Placed(placement, subject);
+            }
+        }
+    }
+
+    private static SweepShape Placed(string placement, PlacementSubject subject) {
+        string name   = $"placement-{placement}-{subject.Name}";
+        string target = Identifier(name);
+        string type   = subject.Type;
+
+        string Rejects(string on) {
+            return string.Format(CultureInfo.InvariantCulture, subject.Rejects, on);
+        }
+
+        string body = placement switch {
+            "below" => $$"""
+                             kept = value;
+                             if ({{Rejects("value")}}) { throw new ArgumentException(nameof(value)); }
+                     """,
+            "local" => $$"""
+                             {{type}} local = value;
+                             if ({{Rejects("local")}}) { throw new ArgumentException(nameof(value)); }
+                             kept = local;
+                     """,
+            "field" => $$"""
+                             kept = value;
+                             if ({{Rejects("kept")}}) { throw new ArgumentException(nameof(value)); }
+                     """,
+            "property" => $$"""
+                                Kept = value;
+                                if ({{Rejects("Kept")}}) { throw new ArgumentException(nameof(value)); }
+                        """,
+            "computed" => $$"""
+                                Maybe = {{Rejects("value")}} ? null : value;
+                                if (Maybe is null) { throw new ArgumentException(nameof(value)); }
+                        """,
+            "copynull" => """
+                                  Maybe = value;
+                                  if (Maybe is null) { throw new ArgumentNullException(nameof(value)); }
+                          """,
+            "helper" => """
+                                kept = value;
+                                Ensure(value);
+                        """,
+            "chain" => $$"""
+                             {{type}} first = value;
+                             {{type}} second = first;
+                             if ({{Rejects("second")}}) { throw new ArgumentException(nameof(value)); }
+                             kept = second;
+                     """,
+            "outvar" => $$"""
+                              _ = TryCopy(value, out {{type}} copied);
+                              if ({{Rejects("copied")}}) { throw new ArgumentException(nameof(value)); }
+                              kept = copied;
+                      """,
+            "deconstruct" => $$"""
+                                   ({{type}} first, {{type}} other) = (value, value);
+                                   if ({{Rejects("first")}}) { throw new ArgumentException(nameof(value)); }
+                                   kept = other;
+                           """,
+            "getter" => $$"""
+                              kept = value;
+                              if ({{Rejects("Exposed")}}) { throw new ArgumentException(nameof(value)); }
+                      """,
+            _ => """
+                         Shaped = value;
+                         if (Shaped is null) { throw new ArgumentException(nameof(value)); }
+                 """
+        };
+
+        string declarations = $$"""
+                                public sealed class {{target}} {
+
+                                    private readonly {{type}} kept = default!;
+
+                                    private {{subject.Nullable}} shaped;
+
+                                    public {{target}}({{type}} value) {
+                                {{body}}
+                                    }
+
+                                    public {{type}} Kept { get; } = default!;
+
+                                    public {{subject.Nullable}} Maybe { get; }
+
+                                    public {{subject.Nullable}} Shaped {
+                                        get { return shaped; }
+                                        private set { shaped = value is null || {{Rejects("value")}} ? null : value; }
+                                    }
+
+                                    public {{type}} Exposed => kept;
+
+                                    private static void Ensure({{type}} candidate) {
+                                        if ({{Rejects("candidate")}}) { throw new ArgumentException(nameof(candidate)); }
+                                    }
+
+                                    private static bool TryCopy({{type}} source, out {{type}} copy) {
+                                        copy = source;
+
+                                        return true;
+                                    }
+
+                                }
+                                """;
+
+        return Shape(name, "placement", target, declarations,
+                     residue: placement == "helper" ? HelperBelowTheScanResidue : null);
     }
 
     // ---- the plumbing. -------------------------------------------------------------------------------

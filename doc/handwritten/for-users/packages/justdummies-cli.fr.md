@@ -61,7 +61,7 @@ qui a été **deviné** :
 | `to verify` | un générateur *a bien* été inféré, mais quelque chose près de ce paramètre n'a pas pu être lu — vérifiez-le |
 | `unread guards` | ce « quelque chose » : une garde que l'outil ne reconnaît pas, un helper dans lequel il ne voit pas, ou une garde qu'il lit sans pouvoir la situer — après une affectation du paramètre ou de l'état, testant une variable locale ou un champ calculé à partir du paramètre, ou sous quelque chose qui décide si elle s'exécute |
 | `constraint unavailable` | une garde a été comprise, et ce générateur n'a aucun membre pour l'exprimer |
-| `self-referencing` | le paramètre fait référence au type en cours de génération (par exemple, un nœud enfant ou un supérieur hiérarchique du même type) : il reste donc à compléter (`TODO`), car sa génération automatique provoquerait une récursion infinie. C'est à vous d'en fixer la profondeur. |
+| `self-referencing` | le paramètre fait référence au type en cours de génération (par exemple, un nœud enfant, un supérieur hiérarchique du même type, ou un type dont le constructeur y revient) : il reste donc à compléter (`TODO`), car sa génération automatique provoquerait une récursion infinie. C'est à vous d'en fixer la profondeur. |
 | `no source` | le type vient d'un package, il n'y avait donc aucun corps de constructeur à lire |
 | `unavailable` | le générateur existe dans JustDummies, mais pas dans l'asset que votre projet résout |
 
@@ -92,6 +92,15 @@ Gardez la recette ou remplacez-la, supprimez cette seule ligne, et c'est réglé
 fichier qui compile et tire une valeur que votre constructeur rejette lors d'une exécution
 ultérieure — est l'échec qui coûte le plus cher, parce qu'il surgit loin de sa cause
 ([ADR-0083](../../for-maintainers/adr/0083-block-compilation-on-a-guard-the-engine-cannot-vouch-for.fr.md)).
+
+**Un `throw` décidé par quelque chose que l'outil ne sait pas suivre marque chaque paramètre.** L'outil
+remonte une valeur à travers un nombre quelconque de copies — variables locales, champs, un argument
+`out`, une déconstruction — jusqu'aux paramètres dont elle vient, et marque ceux-là. Là où continuer
+demanderait de lire du code qu'il ne lit pas — une propriété dont le getter calcule sa valeur, une
+méthode de l'objet en construction, l'objet lui-même passé à un helper —, il ne peut pas dire quels
+paramètres le rejet implique ; il les marque donc tous plutôt qu'aucun
+([ADR-0110](../../for-maintainers/adr/0110-mark-every-parameter-a-throw-may-depend-on.fr.md)).
+Confirmez chaque recette comme ci-dessus.
 
 **Ce que l'outil ne voit toujours pas reste silencieux.** Quelques formes rejettent une valeur sans que
 l'outil y voie le moindre rejet, et ne reçoivent donc aucune marque : un validateur qui *retourne* la

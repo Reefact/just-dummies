@@ -43,6 +43,9 @@ négatif d'un analyseur) ou `C` (candidat à une décision).
 
 ## 1. Synthèse
 
+> **État.** CLI-B1 à CLI-B4 sont corrigés dans [#331](https://github.com/Reefact/just-dummies/pull/331), fusionnée et revérifiée sur l'essai en
+> relançant le scaffolding des domaines concernés. Les autres éléments ci-dessous restent ouverts dans leurs issues.
+
 | | |
 |---|---|
 | Domaines | 20 |
@@ -91,22 +94,22 @@ Ensuite : [CLI-B6](#cli-b6) (l'en-tête nomme une commande de régénération qu
 <a id="cli-b1"></a>
 #### CLI-B1 — Une garde qui lève une exception sous la première écriture d'état n'est ni lue ni marquée (élevée)
 
-Suivi dans [#297](https://github.com/Reefact/just-dummies/issues/297).
+**Corrigé dans [#331](https://github.com/Reefact/just-dummies/pull/331)** (suivi dans [#297](https://github.com/Reefact/just-dummies/issues/297)).
 
 <a id="cli-b2"></a>
 #### CLI-B2 — `any generate <Enum>` annonce ✓ et émet `return new TEnum();` (élevée)
 
-Suivi dans [#298](https://github.com/Reefact/just-dummies/issues/298).
+**Corrigé dans [#331](https://github.com/Reefact/just-dummies/pull/331)** (suivi dans [#298](https://github.com/Reefact/just-dummies/issues/298)).
 
 <a id="cli-b3"></a>
 #### CLI-B3 — Un type autoréférent est scaffoldé en une récursion non bornée (élevée)
 
-Suivi dans [#299](https://github.com/Reefact/just-dummies/issues/299).
+**Corrigé dans [#331](https://github.com/Reefact/just-dummies/pull/331)** (suivi dans [#299](https://github.com/Reefact/just-dummies/issues/299)).
 
 <a id="cli-b4"></a>
 #### CLI-B4 — Une garde atteinte via une variable locale dérivée est silencieuse alors que le récapitulatif dit « inferred » (élevée)
 
-Suivi dans [#300](https://github.com/Reefact/just-dummies/issues/300).
+**Corrigé dans [#331](https://github.com/Reefact/just-dummies/pull/331)** (suivi dans [#300](https://github.com/Reefact/just-dummies/issues/300)).
 
 <a id="cli-b5"></a>
 #### CLI-B5 — `--format json` rapporte une écriture refusée comme `Scaffolded` (moyenne)
@@ -673,31 +676,33 @@ Chaque point ci-dessous s'appuie sur les notes et les sondes d'au moins un domai
 ## 11. Résultats par domaine
 
 L'aisance est le score que le participant s'attribue lui-même, de 1 à 5 : un signal relatif, pas une
-mesure. Les nombres de tests proviennent d'une exécution mesurée.
+mesure. Les nombres de tests proviennent d'une exécution mesurée, refaite après la fusion de #331 : les
+tests `Bug_` du `cli` et les générateurs d'enum scaffoldés que ce correctif a rendus obsolètes ont été
+retirés (voir la section « After #331 » du NOTES.md de chaque domaine).
 
 | Domaine | Modèle | Tests | Aisance | Commentaire | Notes |
 |---|---|---|---|---|---|
-| 01 payments | Virement SEPA : IBAN mod-97, BIC, Money, date en jour ouvré, lot pain.001 | 55 / 57 (2 `Bug_`) | 4 | Côté tests très fluide ; les chiffres de contrôle et les règles entre champs ont demandé le travail manuel | [NOTES](domains/01-payments/NOTES.md) |
+| 01 payments | Virement SEPA : IBAN mod-97, BIC, Money, date en jour ouvré, lot pain.001 | 55 / 55 | 4 | Côté tests très fluide ; les chiffres de contrôle et les règles entre champs ont demandé le travail manuel | [NOTES](domains/01-payments/NOTES.md) |
 | 02 trading | Carnet d'ordres : ticker, prix limite/stop, pas de cotation, séance | 59 / 59 | 4 | Les littéraux et les affinages par lambda disent ce qu'ils veulent dire ; la grille de pas et les liens entre prix demandent des retouches manuelles | [NOTES](domains/02-trading/NOTES.md) |
-| 03 insurance | Police auto : période de couverture, franchise, bonus-malus, sinistres | 47 / 49 (2 `Bug_`) | 4 | Affinages imbriqués agréables ; les deux règles entre paramètres corrigées à la main | [NOTES](domains/03-insurance/NOTES.md) |
-| 04 manufacturing | Ordre de fabrication MES : code de lot, cadence, tolérances, états machine | 66 / 68 (2 `Bug_`) | 4 | Rejeu trivial, messages excellents ; une recette silencieuse et le scaffolding d'énumération ont coûté de la confiance | [NOTES](domains/04-manufacturing/NOTES.md) |
-| 05 CAD drawing | Ajustements ISO 286, références de plans, nomenclature récursive | 57 / 58 (1 `Bug_`) | 3 | Bon DSL scalaire et de motifs ; le scaffolding récursif a fait planter l'hôte | [NOTES](domains/05-cad-drawing/NOTES.md) |
-| 06 warehouse | Réception de palettes : SSCC, EAN-13, emplacement, quantités | 64 / 67 (3 `Bug_`) | 4 | Le DSL de base se lit comme le domaine ; deux manques silencieux de la CLI | [NOTES](domains/06-warehouse/NOTES.md) |
-| 07 freight | Expédition : poids, volume, ISO 6346, ETA entre fuseaux | 62 / 63 (1 `Bug_`) | 4 | Fluide ; 3 générateurs sur 7 restructurés ; une garde silencieuse | [NOTES](domains/07-freight/NOTES.md) |
+| 03 insurance | Police auto : période de couverture, franchise, bonus-malus, sinistres | 47 / 48 (1 `Bug_`) | 4 | Affinages imbriqués agréables ; les deux règles entre paramètres corrigées à la main | [NOTES](domains/03-insurance/NOTES.md) |
+| 04 manufacturing | Ordre de fabrication MES : code de lot, cadence, tolérances, états machine | 65 / 65 | 4 | Rejeu trivial, messages excellents ; une recette silencieuse et le scaffolding d'énumération ont coûté de la confiance | [NOTES](domains/04-manufacturing/NOTES.md) |
+| 05 CAD drawing | Ajustements ISO 286, références de plans, nomenclature récursive | 57 / 57 | 3 | Bon DSL scalaire et de motifs ; le scaffolding récursif a fait planter l'hôte | [NOTES](domains/05-cad-drawing/NOTES.md) |
+| 06 warehouse | Réception de palettes : SSCC, EAN-13, emplacement, quantités | 63 / 63 | 4 | Le DSL de base se lit comme le domaine ; deux manques silencieux de la CLI | [NOTES](domains/06-warehouse/NOTES.md) |
+| 07 freight | Expédition : poids, volume, ISO 6346, ETA entre fuseaux | 62 / 62 | 4 | Fluide ; 3 générateurs sur 7 restructurés ; une garde silencieuse | [NOTES](domains/07-freight/NOTES.md) |
 | 08 patient record | Prescription : NIR, molécule, posologie, voie, date de naissance | 55 / 55 | 4 | Messages et rejeu excellents ; somme de contrôle et règles entre champs réécrites | [NOTES](domains/08-patient-record/NOTES.md) |
 | 09 laboratory | Résultats de laboratoire, plages de référence, unités, heures de prélèvement | 67 / 67 | 4 | Contraintes fluides ; invariants entre champs dans un fichier que `--force` écrase | [NOTES](domains/09-laboratory/NOTES.md) |
 | 10 pharma serialisation | Boîtes : GTIN, lot, péremption, unicité des numéros de série | 57 / 57 | 4 | Chaque nom deviné existait ; le chiffre de contrôle GTIN a imposé des retouches de signature | [NOTES](domains/10-pharma-serialisation/NOTES.md) |
 | 11 telecom | Ligne mobile : MSISDN, IMEI (Luhn), ICCID, forfait, consommation | 49 / 49 | 4 | Les blocs Arrange montrent le choisi face à l'arbitraire ; résoudre « to verify » réécrit plus que ce qui est documenté | [NOTES](domains/11-telecom/NOTES.md) |
 | 12 smart grid | Index de compteur, point de livraison, courbe de charge à la demi-heure | 37 / 39 (2 `Bug_`) | 3 | Affinages imbriqués exacts ; séries ordonnées et règles entre champs ont réécrit 4 fichiers sur 8 | [NOTES](domains/12-smart-grid/NOTES.md) |
 | 13 payroll | Bulletin de paie : contrat, heures, primes, retenues | 43 / 44 (1 `Bug_`) | 4 | Se lit comme le domaine ; la confusion entre valeur fixée et lambda a causé une exécution rouge | [NOTES](domains/13-payroll/NOTES.md) |
-| 14 e-commerce | Panier et commande : SKU, quantité, remise, adresse | 47 / 48 (1 `Bug_`) | 4 | Naturel ; un manque silencieux ; les règles entre éléments ont perdu des cas | [NOTES](domains/14-ecommerce/NOTES.md) |
+| 14 e-commerce | Panier et commande : SKU, quantité, remise, adresse | 47 / 47 | 4 | Naturel ; un manque silencieux ; les règles entre éléments ont perdu des cas | [NOTES](domains/14-ecommerce/NOTES.md) |
 | 15 hotel booking | Séjour, chambre, clients, conditions d'annulation | 48 / 48 | 4 | Fluide ; l'intervalle du séjour a exigé des générateurs restructurés à la main | [NOTES](domains/15-hotel-booking/NOTES.md) |
-| 16 aviation | Vol : codes IATA/OACI, immatriculation, créneau | 66 / 67 (1 `Bug_`) | 4 | Le vocabulaire temporel convient aux créneaux ; une recette silencieuse ; gardes temporelles non lues | [NOTES](domains/16-aviation/NOTES.md) |
+| 16 aviation | Vol : codes IATA/OACI, immatriculation, créneau | 66 / 66 | 4 | Le vocabulaire temporel convient aux créneaux ; une recette silencieuse ; gardes temporelles non lues | [NOTES](domains/16-aviation/NOTES.md) |
 | 17 real estate | Cadastre, diagnostic énergétique, annonces | 50 / 50 | 3 | Les objets valeur se lisent bien ; chaque agrégat avait une règle entre champs | [NOTES](domains/17-real-estate/NOTES.md) |
 | 18 education | Inscription, notes au demi-point, semestres | 51 / 51 | 4 | Contraintes et graines fluides ; la note au demi-point exige un ensemble de 41 valeurs | [NOTES](domains/18-education/NOTES.md) |
-| 19 IAM | Jeton d'accès, rôles, scopes, expiration, URI de redirection | 61 / 63 (2 `Bug_`) | 4 | `Any.Uri()` est excellent ; un récapitulatif « guard » silencieux et le scaffolding d'énumération | [NOTES](domains/19-iam/NOTES.md) |
+| 19 IAM | Jeton d'accès, rôles, scopes, expiration, URI de redirection | 61 / 61 | 4 | `Any.Uri()` est excellent ; un récapitulatif « guard » silencieux et le scaffolding d'énumération | [NOTES](domains/19-iam/NOTES.md) |
 | 20 agritech IoT | Capteurs de terrain : GPS, humidité, batterie en `Half`, lots de 500k | 56 / 58 (2 `Bug_`) | 4 | Le vocabulaire numérique colle à la géodésie ; un grand plafond rend le dummy par défaut énorme | [NOTES](domains/20-agritech-iot/NOTES.md) |
-| **Total** | | **1097 / 1117** (20 rouges, tous `Bug_`) | | | |
+| **Total** | | **1095 / 1101** (6 rouges, tous des `Bug_` du cœur de la bibliothèque) | | | |
 
 ---
 

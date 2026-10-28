@@ -138,3 +138,7 @@ reads exactly as the test means, `WithWindow(w => w.WithLength(...))` refines wi
 `[Reproducible]` plus the seed in the exception message made replay trivial. Conflict messages are excellent.
 It loses a point for the scaffolder: one silently wrong recipe (BatchCode), a broken enum scaffold, and the
 manual restructuring needed for regex formats and cross-field invariants.
+
+## After #331
+
+The CLI fixes merged in [#331](https://github.com/Reefact/just-dummies/pull/331) were re-checked on this domain by re-scaffolding with `--dry-run`. `any generate ShiftKind` is now refused, naming `Any.Enum<ShiftKind>()` (#298). `BatchCode`'s guard through a `Match` local is now marked: `value  string  Any.String().NotBlank()  to verify, guard, unread guards` (#300). `AnyShiftKind.cs`, the hand-resolved `AnyMachineState.cs` (a user would no longer get one) and the matching tests are removed.

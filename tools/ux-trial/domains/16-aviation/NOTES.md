@@ -146,3 +146,7 @@ exactly what matters, the `TimeSpan`/`DateTime` vocabulary and `WithGranularity`
 messages name both sides (`Cannot apply Negative() because Positive() already requires …`), and regex refusals are
 precise. One point off for the scaffolding side: one silently wrong recipe, all temporal guards unread, cross-field
 rules handled by hand, and the `AnyString` → `AnyPattern` switch touching several signatures.
+
+## After #331
+
+The CLI fixes merged in [#331](https://github.com/Reefact/just-dummies/pull/331) were re-checked on this domain by re-scaffolding with `--dry-run`. `AircraftRegistration`'s guard through a `switch` into a `bool` local is now marked: `mark  string  Any.String().NonEmpty()  to verify, unread guards` (#300). The frozen copy `AsScaffolded/` and its `Bug_` test are removed.

@@ -100,3 +100,7 @@ Writing tests with the scaffolded `Arbitrary.X().WithY(y => ...)` reads very wel
 quiet and precise. It costs points where a payments domain is most demanding: check-digit identifiers,
 business dates and cross-field invariants all needed hand-written structure the scaffold shape resists
 (`AnyString`-typed bases, per-parameter factories, no dependent draw).
+
+## After #331
+
+The CLI fixes merged in [#331](https://github.com/Reefact/just-dummies/pull/331) were re-checked on this domain by re-scaffolding with `--dry-run`. `any generate TransferStatus` and `any generate ChargeBearer` are now refused with `Use Any.Enum<…>() where you need one; nothing was written.` (#298). `AnyTransferStatus.cs`, `AnyChargeBearer.cs` and their `Bug_` tests are removed.

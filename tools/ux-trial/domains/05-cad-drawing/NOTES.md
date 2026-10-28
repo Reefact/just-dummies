@@ -143,3 +143,7 @@ scaffolded to a constant, every cross-field rule forces hand-editing `Generate()
 refinement lambda trips on `OneOf`. A BOM tree needed a hand-written depth-bounded generator; the
 library offers nothing for recursive shapes (reasonable under "the name is the scope", but the CLI
 should then refuse or leave a TODO rather than emit a self-recursive recipe).
+
+## After #331
+
+The CLI fixes merged in [#331](https://github.com/Reefact/just-dummies/pull/331) were re-checked on this domain by re-scaffolding with `--dry-run`. `any generate ProjectionMethod` is now refused, naming `Any.Enum<ProjectionMethod>()` (#298). `BomItem` no longer recurses: `children  IReadOnlyList<BomItem>  —  TODO, unread guards, self-referencing` (#299). `AnyProjectionMethod.cs`, its entry point and its `Bug_` test are removed.

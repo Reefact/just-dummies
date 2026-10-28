@@ -44,13 +44,4 @@ public sealed class ScaffoldedGeneratorTests {
     [Fact]
     public void Scaffolded_AnyGiftCard_always_builds_a_valid_GiftCard() => AlwaysBuilds(Any.GiftCard());
 
-    /// <summary>
-    ///     The recap reported 'maxUses  int  Any.Int32()' with no provenance at all — neither 'guard' nor
-    ///     'to verify' — although the constructor guards it with a throw expression:
-    ///     <c>MaxUses = maxUses &gt; 0 ? maxUses : throw new ArgumentOutOfRangeException(...)</c>.
-    ///     The emitted base compiles and draws zero or a negative number about half the time.
-    /// </summary>
-    [Fact]
-    public void Bug_Scaffolded_AnyPromoCode_misses_the_throw_expression_guard_on_maxUses() => AlwaysBuilds(Any.PromoCode());
-
 }

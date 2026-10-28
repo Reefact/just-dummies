@@ -42,20 +42,4 @@ public sealed class ScaffoldedGeneratorTests {
     [Fact]
     public void Scaffolded_AnyPostLogoutRedirects_always_builds_a_valid_PostLogoutRedirects() => DrawRepeatedly(new AnyPostLogoutRedirects());
 
-    // `any generate RoleSet` reported "1 of 1 parameters inferred" with no "to verify", yet RoleSet
-    // refuses a duplicated role through a check on the field it copied the parameter into.
-    [Fact]
-    public void Bug_Scaffolded_AnyRoleSet_ignores_a_distinctness_guard_written_against_a_field() => DrawRepeatedly(new AnyRoleSet());
-
-    // `any generate Role` scaffolded `new Role()` for an enum: every "arbitrary" Role is Role.Reader.
-    [Fact]
-    public void Bug_Scaffolded_AnyRole_for_an_enum_only_ever_draws_the_default_member() {
-        HashSet<Role> drawn = new HashSet<Role>();
-        for (int draw = 0; draw < 200; draw++) {
-            drawn.Add(new AnyRole().Generate());
-        }
-
-        Assert.True(drawn.Count > 1, $"200 draws of AnyRole only produced: {string.Join(", ", drawn)}");
-    }
-
 }

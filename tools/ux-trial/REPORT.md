@@ -40,6 +40,9 @@ IDs are stable so that issues can cite them: `CLI-`, `CORE-`, `AN-`, `XU-`, `DOC
 
 ## 1. Summary
 
+> **Status.** CLI-B1 to CLI-B4 are fixed in [#331](https://github.com/Reefact/just-dummies/pull/331), merged and re-checked on the trial
+> by re-scaffolding the affected domains. The other items below are open in their issues.
+
 | | |
 |---|---|
 | Domains | 20 |
@@ -86,22 +89,22 @@ Next in line: [CLI-B6](#cli-b6) (the header names a regeneration command that fa
 <a id="cli-b1"></a>
 #### CLI-B1 — A throwing guard below the first state write is neither read nor marked (high)
 
-Tracked in [#297](https://github.com/Reefact/just-dummies/issues/297).
+**Fixed in [#331](https://github.com/Reefact/just-dummies/pull/331)** (tracked in [#297](https://github.com/Reefact/just-dummies/issues/297)).
 
 <a id="cli-b2"></a>
 #### CLI-B2 — `any generate <Enum>` reports ✓ and emits `return new TEnum();` (high)
 
-Tracked in [#298](https://github.com/Reefact/just-dummies/issues/298).
+**Fixed in [#331](https://github.com/Reefact/just-dummies/pull/331)** (tracked in [#298](https://github.com/Reefact/just-dummies/issues/298)).
 
 <a id="cli-b3"></a>
 #### CLI-B3 — A self-referencing type is scaffolded into unbounded recursion (high)
 
-Tracked in [#299](https://github.com/Reefact/just-dummies/issues/299).
+**Fixed in [#331](https://github.com/Reefact/just-dummies/pull/331)** (tracked in [#299](https://github.com/Reefact/just-dummies/issues/299)).
 
 <a id="cli-b4"></a>
 #### CLI-B4 — A guard reached through a derived local is silent while the recap says "inferred" (high)
 
-Tracked in [#300](https://github.com/Reefact/just-dummies/issues/300).
+**Fixed in [#331](https://github.com/Reefact/just-dummies/pull/331)** (tracked in [#300](https://github.com/Reefact/just-dummies/issues/300)).
 
 <a id="cli-b5"></a>
 #### CLI-B5 — `--format json` reports a refused write as `Scaffolded` (medium)
@@ -650,31 +653,32 @@ Each point below is backed by at least one domain's notes and probes.
 ## 11. Per-domain results
 
 Fluency is the participant's own 1–5 score: a relative signal, not a measurement. Test counts are
-filled in from a measured run.
+filled in from a measured run, re-measured after #331 merged: the `cli` `Bug_` tests and the scaffolded
+enum generators that fix made obsolete were removed (each domain's NOTES.md, "After #331").
 
 | Domain | Model | Tests | Fluency | Comment | Notes |
 |---|---|---|---|---|---|
-| 01 payments | SEPA transfer: IBAN mod-97, BIC, Money, business-day date, pain.001 batch | 55 / 57 (2 `Bug_`) | 4 | Test side very fluent; check digits and cross-field rules took the hand work | [NOTES](domains/01-payments/NOTES.md) |
+| 01 payments | SEPA transfer: IBAN mod-97, BIC, Money, business-day date, pain.001 batch | 55 / 55 | 4 | Test side very fluent; check digits and cross-field rules took the hand work | [NOTES](domains/01-payments/NOTES.md) |
 | 02 trading | Order book: ticker, limit/stop prices, tick size, session | 59 / 59 | 4 | Literals and lambda refinements say what they mean; tick grid and price links need hand edits | [NOTES](domains/02-trading/NOTES.md) |
-| 03 insurance | Car policy: coverage period, deductible, bonus-malus, claims | 47 / 49 (2 `Bug_`) | 4 | Nested refinements pleasant; both cross-parameter rules hand-patched | [NOTES](domains/03-insurance/NOTES.md) |
-| 04 manufacturing | MES work order: batch code, cadence, tolerances, machine states | 66 / 68 (2 `Bug_`) | 4 | Replay trivial, messages excellent; a silent recipe and the enum scaffold cost trust | [NOTES](domains/04-manufacturing/NOTES.md) |
-| 05 CAD drawing | ISO 286 fits, drawing references, recursive bill of materials | 57 / 58 (1 `Bug_`) | 3 | Scalar and pattern DSL good; recursive scaffold crashed the host | [NOTES](domains/05-cad-drawing/NOTES.md) |
-| 06 warehouse | Pallet receipt: SSCC, EAN-13, bin location, quantities | 64 / 67 (3 `Bug_`) | 4 | Core DSL reads like the domain; two silent CLI misses | [NOTES](domains/06-warehouse/NOTES.md) |
-| 07 freight | Shipment: weight, volume, ISO 6346, ETA across zones | 62 / 63 (1 `Bug_`) | 4 | Smooth; 3 of 7 generators restructured; one silent guard | [NOTES](domains/07-freight/NOTES.md) |
+| 03 insurance | Car policy: coverage period, deductible, bonus-malus, claims | 47 / 48 (1 `Bug_`) | 4 | Nested refinements pleasant; both cross-parameter rules hand-patched | [NOTES](domains/03-insurance/NOTES.md) |
+| 04 manufacturing | MES work order: batch code, cadence, tolerances, machine states | 65 / 65 | 4 | Replay trivial, messages excellent; a silent recipe and the enum scaffold cost trust | [NOTES](domains/04-manufacturing/NOTES.md) |
+| 05 CAD drawing | ISO 286 fits, drawing references, recursive bill of materials | 57 / 57 | 3 | Scalar and pattern DSL good; recursive scaffold crashed the host | [NOTES](domains/05-cad-drawing/NOTES.md) |
+| 06 warehouse | Pallet receipt: SSCC, EAN-13, bin location, quantities | 63 / 63 | 4 | Core DSL reads like the domain; two silent CLI misses | [NOTES](domains/06-warehouse/NOTES.md) |
+| 07 freight | Shipment: weight, volume, ISO 6346, ETA across zones | 62 / 62 | 4 | Smooth; 3 of 7 generators restructured; one silent guard | [NOTES](domains/07-freight/NOTES.md) |
 | 08 patient record | Prescription: NIR, molecule, dosage, route, birth date | 55 / 55 | 4 | Messages and replay excellent; checksum and cross-field rules rewritten | [NOTES](domains/08-patient-record/NOTES.md) |
 | 09 laboratory | Lab results, reference ranges, units, sampling times | 67 / 67 | 4 | Constraints fluent; cross-field invariants in a file `--force` overwrites | [NOTES](domains/09-laboratory/NOTES.md) |
 | 10 pharma serialisation | Packs: GTIN, batch, expiry, serial uniqueness | 57 / 57 | 4 | Every guessed name existed; GTIN check digit forced signature edits | [NOTES](domains/10-pharma-serialisation/NOTES.md) |
 | 11 telecom | Mobile line: MSISDN, IMEI (Luhn), ICCID, plan, usage | 49 / 49 | 4 | Arrange blocks show chosen versus arbitrary; resolving "to verify" rewrites more than documented | [NOTES](domains/11-telecom/NOTES.md) |
 | 12 smart grid | Meter index, delivery point, half-hourly load curve | 37 / 39 (2 `Bug_`) | 3 | Nested refinements exact; ordered series and cross-field rules rewrote 4 of 8 files | [NOTES](domains/12-smart-grid/NOTES.md) |
 | 13 payroll | Payslip: contract, hours, bonuses, deductions | 43 / 44 (1 `Bug_`) | 4 | Reads like the domain; value pin versus lambda caused one red run | [NOTES](domains/13-payroll/NOTES.md) |
-| 14 e-commerce | Cart and order: SKU, quantity, discount, address | 47 / 48 (1 `Bug_`) | 4 | Natural; one silent miss; cross-element rules lost cases | [NOTES](domains/14-ecommerce/NOTES.md) |
+| 14 e-commerce | Cart and order: SKU, quantity, discount, address | 47 / 47 | 4 | Natural; one silent miss; cross-element rules lost cases | [NOTES](domains/14-ecommerce/NOTES.md) |
 | 15 hotel booking | Stay, room, guests, cancellation policy | 48 / 48 | 4 | Fluent; the stay interval needed hand-restructured generators | [NOTES](domains/15-hotel-booking/NOTES.md) |
-| 16 aviation | Flight: IATA/ICAO codes, registration, slot | 66 / 67 (1 `Bug_`) | 4 | Temporal vocabulary fits slots; one silent recipe; temporal guards unread | [NOTES](domains/16-aviation/NOTES.md) |
+| 16 aviation | Flight: IATA/ICAO codes, registration, slot | 66 / 66 | 4 | Temporal vocabulary fits slots; one silent recipe; temporal guards unread | [NOTES](domains/16-aviation/NOTES.md) |
 | 17 real estate | Land registry, energy diagnosis, listings | 50 / 50 | 3 | Value objects read well; every aggregate had a cross-field rule | [NOTES](domains/17-real-estate/NOTES.md) |
 | 18 education | Enrolment, grades on a half-point grid, semesters | 51 / 51 | 4 | Constraints and seeds fluent; half-point grade needs a 41-value pool | [NOTES](domains/18-education/NOTES.md) |
-| 19 IAM | Access token, roles, scopes, expiry, redirect URI | 61 / 63 (2 `Bug_`) | 4 | `Any.Uri()` is excellent; a silent "guard" recap and the enum scaffold | [NOTES](domains/19-iam/NOTES.md) |
+| 19 IAM | Access token, roles, scopes, expiry, redirect URI | 61 / 61 | 4 | `Any.Uri()` is excellent; a silent "guard" recap and the enum scaffold | [NOTES](domains/19-iam/NOTES.md) |
 | 20 agritech IoT | Field sensors: GPS, humidity, `Half` battery, batches of 500k | 56 / 58 (2 `Bug_`) | 4 | Numeric vocabulary maps onto geodesy; a large ceiling makes the default dummy huge | [NOTES](domains/20-agritech-iot/NOTES.md) |
-| **Total** | | **1097 / 1117** (20 red, all `Bug_`) | | | |
+| **Total** | | **1095 / 1101** (6 red, all `Bug_` of the library core) | | | |
 
 ---
 

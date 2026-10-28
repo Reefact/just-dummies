@@ -65,16 +65,4 @@ public sealed class ScaffoldedGeneratorTests {
         AlwaysBuilds(Arbitrary.Drawing());
     }
 
-    /// <summary>
-    ///     `any generate ProjectionMethod` (an enum) emitted <c>return new ProjectionMethod();</c>: the
-    ///     default value 0, which is not a declared member of this enum. Drawing's constructor rejects it.
-    /// </summary>
-    [Fact]
-    public void Bug_Scaffolded_AnyProjectionMethod_draws_an_undeclared_enum_value() {
-        for (int draw = 0; draw < Draws; draw++) {
-            ProjectionMethod value = Arbitrary.ProjectionMethod().Generate();
-            Assert.True(Enum.IsDefined(value), $"Drew undeclared value {(int)value}.");
-        }
-    }
-
 }

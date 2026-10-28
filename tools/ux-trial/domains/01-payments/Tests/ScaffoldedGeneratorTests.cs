@@ -45,23 +45,4 @@ public sealed class ScaffoldedGeneratorTests {
         }
     }
 
-    [Fact]
-    public void Bug_Scaffolded_AnyTransferStatus_never_varies() {
-        HashSet<TransferStatus> seen = [];
-        for (int i = 0; i < Draws; i++) {
-            seen.Add(new AnyTransferStatus().Generate());
-        }
-
-        Assert.True(seen.Count > 1, $"AnyTransferStatus drew only: {string.Join(", ", seen)}");
-    }
-
-    [Fact]
-    public void Bug_Scaffolded_AnyChargeBearer_draws_an_undeclared_enum_value() {
-        for (int i = 0; i < Draws; i++) {
-            ChargeBearer drawn = new AnyChargeBearer().Generate();
-
-            Assert.True(Enum.IsDefined(drawn), $"AnyChargeBearer drew {(int)drawn}, which ChargeBearer does not declare.");
-        }
-    }
-
 }

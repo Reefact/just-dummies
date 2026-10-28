@@ -125,3 +125,7 @@ fast and name both sides, the pattern subset covers every warehouse format I nee
 `.As(...)` made check digits a one-liner. The CLI was honest on every guard it could not read — except the two silent
 cases above, which are exactly the ones that cost most. Points lost for the scaffolded generators' rigidity (type-locked
 refinement lambdas, no place for cross-field rules) and for the missing adapter namespace in the docs.
+
+## After #331
+
+The CLI fixes merged in [#331](https://github.com/Reefact/just-dummies/pull/331) were re-checked on this domain by re-scaffolding with `--dry-run`. `any generate PalletType` and `any generate ReceiptStatus` are now refused, naming `Any.Enum<…>()` (#298). `BinLocation` now reads `rack  int  Any.Int32().Positive().LessThanOrEqualTo(99)  guard` and marks `level  int  Any.Int32()  to verify, unread guards` (#297). The three enum generators (including `AnyStorageZone.cs`), the replayed `level` recipe and the matching tests are removed.

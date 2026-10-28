@@ -209,7 +209,7 @@ public sealed class Probes {
         Assert.Equal(first, second);
     }
 
-    // The seed below is the one the failing Bug_Scaffolded_AnyBatchCode_... test reported; its first
+    // The seed below is the one a since-removed test reported on the emitted AnyBatchCode recipe; its first
     // draw is the string the FormatException quoted. The console showed it as "\n3PTKPZUsc[WT),..."
     // because the NUL, form-feed and carriage-return characters it holds are not rendered.
     private const string ReportedDrawStart = "\0\n3PTKPZUs\fc[WT)\f,\fTGjx\r6,.lZ0bFX\0]";

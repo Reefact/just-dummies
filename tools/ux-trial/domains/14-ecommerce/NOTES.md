@@ -182,3 +182,7 @@ Writing the tests read naturally: `Any.Order().WithLines([...]).WithShippingMeth
 exactly what matters, and the `With…(lambda)` refinement (`address => address.WithCountryCode("FR")`) composes well
 through the nested graph. Error messages are excellent. The point lost is the scaffolder: one silent miss (high), and
 the per-parameter model forces lossy workarounds for the cross-field rules every order aggregate has.
+
+## After #331
+
+The CLI fixes merged in [#331](https://github.com/Reefact/just-dummies/pull/331) were re-checked on this domain by re-scaffolding with `--dry-run`. `PromoCode`'s `maxUses` guard, a throw expression written after the first assignments, is now marked: `maxUses  int  Any.Int32()  to verify, unread guards` (#297). Its `Bug_` test is removed. `PromotionTests` keeps its hand refinement.

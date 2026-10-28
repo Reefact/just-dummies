@@ -128,3 +128,7 @@ says exactly what matters, and the lambda refinements (`WithDriver(d => d.WithYe
 are pleasant. I took one point off because the aggregate generators needed real hand-rewriting:
 both cross-parameter rules of this domain (date range, claims within the period) fall outside the
 scaffold's per-parameter model. The missing `using JustDummies.Xunit;` was another small papercut.
+
+## After #331
+
+The CLI fixes merged in [#331](https://github.com/Reefact/just-dummies/pull/331) were re-checked on this domain by re-scaffolding with `--dry-run`. `any generate Responsibility` is now refused, naming `Any.Enum<Responsibility>()` (#298). `AnyResponsibility.cs` and its `Bug_` test are removed. The `Bug_` test on the scaled `Negative()` message stays: it belongs to #312.

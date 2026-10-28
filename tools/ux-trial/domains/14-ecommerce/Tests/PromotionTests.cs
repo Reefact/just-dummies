@@ -10,7 +10,7 @@ namespace Shop.Tests;
 [Reproducible]
 public sealed class PromotionTests {
 
-    // The scaffolded base for maxUses is unguarded (see Bug_Scaffolded_AnyPromoCode_...); refine it here.
+    // The scaffolded base for maxUses was emitted unguarded (fixed in #331, which now marks it); refine it here.
     private static AnyPromoCode AnyPromo() => Any.PromoCode().WithMaxUses(uses => uses.Positive());
 
     [Fact]

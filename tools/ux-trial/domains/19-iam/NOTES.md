@@ -146,3 +146,7 @@ regex refusals name the construct and position, and seeds replayed exactly (`[Re
 (`WithPolicy(p => p.WithMaximumScopes(s => s.GreaterThanOrEqualTo(2)))`) felt natural. One point off for
 cross-field invariants with no story, a silently missed guard that broke the trust the recap asks for,
 and the enum scaffold.
+
+## After #331
+
+The CLI fixes merged in [#331](https://github.com/Reefact/just-dummies/pull/331) were re-checked on this domain by re-scaffolding with `--dry-run`. `any generate Role` is now refused, naming `Any.Enum<Role>()` (#298). `RoleSet`'s guard on the field copy is now marked: `roles  IReadOnlyCollection<Role>  Any.ListOf(Any.Enum<Role>())  to verify, unread guards` (#297). `AnyRole.cs` and both `Bug_` tests are removed.

@@ -44,14 +44,4 @@ public sealed class ScaffoldedGeneratorTests {
     [Fact]
     public void Scaffolded_AnyFlight_always_builds_a_valid_Flight() => AlwaysBuilds(Any.Flight());
 
-    /// <summary>
-    /// The generator exactly as `any generate AircraftRegistration` emitted it (AsScaffolded/), untouched.
-    /// The recap said "1 of 1 parameters inferred" with no "to verify": the file compiled at once, yet the
-    /// constructor guards the mark with a switch expression into a local, which the scaffolder never saw.
-    /// </summary>
-    [Fact]
-    public void Bug_Scaffolded_AnyAircraftRegistration_as_emitted_draws_marks_the_constructor_rejects() {
-        AlwaysBuilds(new AsScaffolded.AnyAircraftRegistration());
-    }
-
 }

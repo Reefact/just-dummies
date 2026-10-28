@@ -169,3 +169,7 @@ Writing the domain tests was fluent: `Arbitrary.Shipment().WithGrossWeight(new W
 reads exactly as intended, the refine lambdas compose with the base, and everything compiled on the first try except the
 missing `using JustDummies.Xunit;`. The point lost is the scaffolding of a real aggregate: three of seven generators needed
 structural rewrites (pattern/combination bases, dependent parameters), and one guard was silently missed.
+
+## After #331
+
+The CLI fixes merged in [#331](https://github.com/Reefact/just-dummies/pull/331) were re-checked on this domain by re-scaffolding with `--dry-run`. `FreightRate`'s currency guard below the property assignment is now marked: `currency  string  Any.String().NonEmpty()  to verify, unread guards` (#297). The `Bug_` test replaying the old recipe is removed.

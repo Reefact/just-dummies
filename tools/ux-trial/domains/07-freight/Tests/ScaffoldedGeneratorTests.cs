@@ -38,18 +38,4 @@ public sealed class ScaffoldedGeneratorTests {
     [Fact]
     public void Scaffolded_AnyShipment_always_builds_a_valid_Shipment() => AlwaysBuilds(Arbitrary.Shipment());
 
-    /// <summary>
-    ///     The recipe `any generate FreightRate` emitted for 'currency', verbatim, with no "to verify" mark:
-    ///     Any.String().NonEmpty(). The constructor checks ^[A-Z]{3}$ below an assignment to a property,
-    ///     and that guard was neither read nor flagged.
-    /// </summary>
-    [Fact]
-    public void Bug_Scaffolded_currency_recipe_ignores_a_guard_written_below_a_property_assignment() {
-        IAny<string> emittedCurrencyRecipe = Any.String().NonEmpty();
-
-        for (int draw = 0; draw < Draws; draw++) {
-            new FreightRate(100m, emittedCurrencyRecipe.Generate());
-        }
-    }
-
 }

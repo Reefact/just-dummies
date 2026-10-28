@@ -40,15 +40,4 @@ public sealed class ScaffoldedGeneratorTests {
     [Fact]
     public void Scaffolded_AnyCarPolicy_always_builds_a_valid_CarPolicy() => DrawsWithoutThrowing(Any.CarPolicy());
 
-    [Fact]
-    public void Bug_Scaffolded_AnyResponsibility_draws_more_than_the_zero_member() {
-        // `any generate Responsibility` emits `return new Responsibility();`, i.e. always Responsibility.None.
-        HashSet<Responsibility> seen = [];
-        for (int draw = 0; draw < Draws; draw++) {
-            seen.Add(new AnyResponsibility().Generate());
-        }
-
-        Assert.True(seen.Count > 1, $"Only ever drew: {string.Join(", ", seen)}");
-    }
-
 }

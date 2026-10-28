@@ -46,7 +46,7 @@ public sealed class Probes {
         ConflictingAnyConstraintException refusal = Assert.Throws<ConflictingAnyConstraintException>(
             () => Any.Decimal().Positive().WithScale(2).LessThan(oneCent));
 
-        Assert.Equal("Cannot apply LessThan(0.01) because Positive(), LessThan(0.01) forbid every WithScale(2) value between 0 and 0.01.", refusal.Message);
+        Assert.Equal("Cannot apply LessThan(0.01) because Positive() forbids every WithScale(2) value between 0 and 0.01 except 0.01, which LessThan(0.01) forbids.", refusal.Message);
     }
 
     [Fact]

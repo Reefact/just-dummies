@@ -34,7 +34,7 @@ public sealed class Probes {
     public void A_positive_price_to_the_cent_below_one_cent_is_refused() {
         ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(() => Any.Decimal().Positive().WithScale(2).LessThan(0.01m));
 
-        // Observed: "Cannot apply LessThan(0.01) because Positive(), LessThan(0.01) forbid every WithScale(2) value between 0 and 0.01."
+        // Observed: "Cannot apply LessThan(0.01) because Positive() forbids every WithScale(2) value between 0 and 0.01 except 0.01, which LessThan(0.01) forbids."
         Assert.Contains("Positive()", conflict.Message);
     }
 

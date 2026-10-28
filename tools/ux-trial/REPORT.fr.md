@@ -47,7 +47,8 @@ négatif d'un analyseur) ou `C` (candidat à une décision).
 > aussi : la récursion mutuelle ([#332](https://github.com/Reefact/just-dummies/issues/332)), et le lecteur de gardes marque désormais tout paramètre
 > dont un `throw` peut dépendre ([#333](https://github.com/Reefact/just-dummies/issues/333), ADR-0110). Toutes les formes de constructeur réunies pendant
 > la revue de #331 sont marquées ou lues comme il se doit. La milestone 8 (CORE-B1, CORE-B2, CORE-D1 à CORE-D3)
-> est fusionnée elle aussi. Sur cet état, l'essai passe 1099 tests sur 1101, les 2 rouges étant les tests `Bug_`
+> est fusionnée elle aussi, de même que [#341](https://github.com/Reefact/just-dummies/pull/341) : un conflit décimal sur une
+> grille `WithScale` ne cite plus la contrainte refusée comme sa propre cause ([#340](https://github.com/Reefact/just-dummies/issues/340)). Sur cet état, l'essai passe 1099 tests sur 1101, les 2 rouges étant les tests `Bug_`
 > de [#310](https://github.com/Reefact/just-dummies/issues/310). Les autres éléments ci-dessous restent ouverts dans leurs issues.
 
 | | |

@@ -145,3 +145,7 @@ Writing the tests read naturally: `Arbitrary.Batch().WithPlannedQuantity(q => q.
 and `Any.ListOf(...).WithCount(3).Distinct()` say exactly what a test needs. Every guess I made at
 an API name was right. What it costs a point: the GTIN check digit and the two cross-field date rules
 needed hand edits of the generated signatures or arbitrary disjoint ranges, and `--force` erases those edits.
+
+## After #341
+
+The refusal of `Positive().WithScale(2).LessThan(0.01m)` no longer names `LessThan(0.01)` as its own cause ([#340](https://github.com/Reefact/just-dummies/issues/340)). It now reads "Cannot apply LessThan(0.01) because Positive() forbids every WithScale(2) value between 0 and 0.01 except 0.01, which LessThan(0.01) forbids." The probe pinning the message is updated and passes.

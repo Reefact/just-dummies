@@ -43,7 +43,9 @@ IDs are stable so that issues can cite them: `CLI-`, `CORE-`, `AN-`, `XU-`, `DOC
 > **Status.** Milestone 7 is closed. CLI-B1 to CLI-B4 are fixed in [#331](https://github.com/Reefact/just-dummies/pull/331). The follow-ups are
 > fixed too: mutual recursion ([#332](https://github.com/Reefact/just-dummies/issues/332)), and the guard reader now marks every parameter a throw
 > may depend on ([#333](https://github.com/Reefact/just-dummies/issues/333), ADR-0110). Every constructor shape gathered in the review of #331 is
-> marked or read as it should be. Milestone 8 (CORE-B1, CORE-B2, CORE-D1 to CORE-D3) is merged too. On that
+> marked or read as it should be. Milestone 8 (CORE-B1, CORE-B2, CORE-D1 to CORE-D3) is merged too, and so is
+> [#341](https://github.com/Reefact/just-dummies/pull/341), which stopped a decimal conflict on a `WithScale` grid naming the refused
+> constraint as its own cause ([#340](https://github.com/Reefact/just-dummies/issues/340)). On that
 > state the trial passes 1099 of 1101 tests, the 2 red ones being the `Bug_` tests of [#310](https://github.com/Reefact/just-dummies/issues/310).
 > The other items below are open in their issues.
 

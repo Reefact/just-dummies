@@ -167,3 +167,7 @@ run), the missing `using JustDummies.Xunit;`, and the decimal conflict wording.
 ## After milestone 8
 
 Re-run on the packages built after the core fixes of milestone 8 were merged. `Positive().Negative()` on a decimal no longer claims 0 is left ([#311](https://github.com/Reefact/just-dummies/issues/311)). The `Bug_` test is renamed `Decimal_sign_conflict_message_does_not_claim_zero_is_left` and passes.
+
+## After #341
+
+The refusal of `Positive().WithScale(2).LessThan(0.01m)` no longer names `LessThan(0.01)` as its own cause ([#340](https://github.com/Reefact/just-dummies/issues/340)). It now reads "Cannot apply LessThan(0.01) because Positive() forbids every WithScale(2) value between 0 and 0.01 except 0.01, which LessThan(0.01) forbids." The probe pinning the message is updated and passes.

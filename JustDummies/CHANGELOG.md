@@ -119,6 +119,16 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Fixed
 
+- **Failure messages no longer print control characters, claim a value is left where none is, or
+  assert that a generator cannot replay.** A string drawn into an `As(...)` or `Combine(...)` failure
+  is escaped like every other drawn value, so NUL or ESC no longer reach the console. A crossed or
+  empty decimal interval (`GreaterThan(100m).LessThan(10m)`, `Positive().Negative()`) is refused as
+  the bounds it is, naming the bound that already forbids it, instead of "forbids 36, the only value
+  left". The replay hint of a distinct collection over a generator the library cannot see into now
+  says its values replay "only if it draws through `Any`" rather than that they do not. Outside any
+  `Reproducibly` scope, a failure no longer promises "reproduce this run with" a seed that an awaited
+  helper's earlier draws need not share: it says which seed the flow drew from and asks for a scope.
+
 - **`Any.Char()` now names the other side of a conflict that empties its pool.** It was the one
   generator the two fixes below had not reached. `Any.Char().Numeric().OneOf('a', 'b')` was refused
   with "…because no character OneOf('a', 'b') allows satisfies the constraints already defined", and

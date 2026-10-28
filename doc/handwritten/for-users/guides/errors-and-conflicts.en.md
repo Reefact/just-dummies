@@ -107,6 +107,12 @@ try {
 scope, the seed that produced it is on the exception, so a bounded-redraw failure is as replayable
 as any other failure.
 
+`Seed` is also set outside a scope, where the draws seed themselves lazily. That seed belongs to the
+flow that drew first and does not travel back to its caller, so a value drawn in an awaited helper
+and a later one in the test body are seeded apart. The message therefore says that the flow drew
+from that seed and that no scope pinned it, and asks you to wrap the body in `Any.Reproducibly` (or
+`Any.ReproduciblyAsync`) to make the run replayable: only a scope promises a replay.
+
 Meeting one usually means the specification is tighter than intended rather than that the library
 gave up early. Widen the interval, drop an exclusion, or ask for fewer distinct elements.
 

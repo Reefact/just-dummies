@@ -272,6 +272,23 @@ public static class Scaffolder {
     }
 
     /// <summary>
+    ///     The construction a scaffold of <paramref name="type" /> would call — its chosen constructor, or its one
+    ///     recognised factory — or null where a scaffold of it would call none.
+    /// </summary>
+    /// <remarks>
+    ///     What a composed type's generator runs as soon as it is built, which is the question a cycle through
+    ///     it asks (§5.4). Answered by the same rules as the scaffold itself, so the two cannot disagree on which
+    ///     parameters a composed type has.
+    /// </remarks>
+    internal static IMethodSymbol? ConstructionOf(INamedTypeSymbol type) {
+        if (RefusedForWhatItIs(type) is not null) { return null; }
+
+        IReadOnlyList<IMethodSymbol> factories = EligibleFactories(type);
+
+        return ChosenConstructor(type) ?? (factories.Count == 1 ? factories[0] : null);
+    }
+
+    /// <summary>
     ///     The constructor <c>Generate()</c> will call: the public instance one taking the most parameters,
     ///     ties broken by source order (§5.1).
     /// </summary>

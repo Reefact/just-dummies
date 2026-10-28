@@ -81,8 +81,8 @@ public enum Provenance {
     ConstraintUnavailable = 128,
 
     /// <summary>
-    ///     The parameter reaches the very type being scaffolded — directly, through a nullable, or through a
-    ///     collection's elements — so it is left open.
+    ///     The parameter reaches the very type being scaffolded — directly, through a nullable, through a
+    ///     collection's elements, or through the construction of a type it composes — so it is left open.
     /// </summary>
     /// <remarks>
     ///     Composing it would write <c>new AnyNode()</c> inside <c>AnyNode</c>'s own constructor, which recurses

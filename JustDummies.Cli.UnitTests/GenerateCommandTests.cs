@@ -147,6 +147,33 @@ public sealed class GenerateCommandTests : IDisposable {
              .Contains("namespace Shop.Tests.Arbitrary;");
     }
 
+    // --namespace moves the file, not the type: the recap and the report name what was analysed, and
+    // `Shop.Tests.Arbitrary.Order` is a type nobody declared.
+    [Fact(DisplayName = "--namespace leaves the recap naming the type where it is declared.")]
+    public async Task ANamespaceOverrideLeavesTheRecapNamingTheDeclaredType() {
+        GenerateSettings settings = Settings("Order");
+
+        settings.Namespace = "Shop.Tests.Arbitrary";
+
+        Run run = await Generate(settings);
+
+        Check.That(run.Output).Contains("Analyzing Shop.Domain.Order");
+        Check.That(run.Output).Not.Contains("Shop.Tests.Arbitrary.Order");
+    }
+
+    [Fact(DisplayName = "--namespace leaves the JSON report naming the type where it is declared.")]
+    public async Task ANamespaceOverrideLeavesTheJsonNamingTheDeclaredType() {
+        GenerateSettings settings = Settings("Order");
+
+        settings.Namespace = "Shop.Tests.Arbitrary";
+        settings.Format    = "json";
+
+        Run         run    = await Generate(settings);
+        JsonElement result = JsonDocument.Parse(run.Output).RootElement.GetProperty("results")[0];
+
+        Check.That(result.GetProperty("type").GetString()).IsEqualTo("Shop.Domain.Order");
+    }
+
     [Fact(DisplayName = "--entry-point static:<Name> writes a second file and recaps the call it opens.")]
     public async Task AStaticEntryPointWritesASecondFile() {
         GenerateSettings settings = Settings("Order");

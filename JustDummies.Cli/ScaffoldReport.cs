@@ -59,7 +59,7 @@ internal sealed record ScaffoldReport(string Argument,
 
         return new ScaffoldReport(argument,
                                   FileExists,
-                                  FullNameOf(plan),
+                                  plan.Target.FullName,
                                   plan.GeneratorName,
                                   files,
                                   Parameters: [],
@@ -76,7 +76,7 @@ internal sealed record ScaffoldReport(string Argument,
 
         return new ScaffoldReport(argument,
                                   outcome.Status.ToString(),
-                                  FullNameOf(plan),
+                                  plan.Target.FullName,
                                   plan.GeneratorName,
                                   files,
                                   [.. plan.Parameters.Select(ParameterReport.Of)],
@@ -87,10 +87,6 @@ internal sealed record ScaffoldReport(string Argument,
                                       : new EntryPointReport(outcome.EntryPoint.File.FileName, outcome.EntryPoint.Call),
                                   [.. outcome.Warnings.Select(WarningReport.Of)],
                                   Candidates: []);
-    }
-
-    private static string FullNameOf(ScaffoldPlan plan) {
-        return plan.Target.Namespace is null ? plan.Target.Name : plan.Target.Namespace + "." + plan.Target.Name;
     }
 
 }

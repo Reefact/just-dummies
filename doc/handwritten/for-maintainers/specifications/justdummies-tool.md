@@ -712,7 +712,7 @@ The recognised set is closed:
 
 | Condition that throws | Constraint added |
 |---|---|
-| `p is null`, `p == null`, or the assigned `f = p ?? throw new ArgumentNullException(nameof(p));` | none — the generator never returns `null` anyway |
+| `p is null`, `p == null`, or the assigned `f = p ?? throw new ArgumentNullException(nameof(p));` | none — the generator never returns `null` anyway. A user-defined `==` is a method free to answer `true` for a non-null value, so that comparison is not this row (#333) |
 | `string.IsNullOrEmpty(p)`, `p.Length == 0`, `p.Length < 1` | `.NonEmpty()` |
 | `string.IsNullOrWhiteSpace(p)` | `.NotBlank()` |
 | `p.Length > N` | `.WithMaxLength(N)` |
@@ -918,7 +918,9 @@ the closed set can state about the parameter, and following the value further wo
 `_name = name; if (_name.Length > 5) { throw … }` marks `name`, the member being followed one step back
 to the assignments of it that precede the statement in the same body. A null-check on such a member
 stays silent only where every assignment followed is the parameter itself (`Name = name;`, a built-in
-cast or a `!` aside): the generator never draws null, so neither does a member holding it unchanged. A
+cast or a `!` aside) and every member followed holds what it is assigned — a local, a field or an
+auto-implemented property, never one whose `set` accessor can rewrite the value (#333): the generator
+never draws null, so neither does a member holding it unchanged. A
 member computed from the parameter can be null — `Name = name.Length < 5 ? null : name;`, or a
 user-defined conversion, written as a cast `(ProductCode)raw` or applied implicitly by `Code = raw;`,
 which is a method free to return null — and its null-check is marked like any other guard. The `nameof` of the message is excluded as it is everywhere else.

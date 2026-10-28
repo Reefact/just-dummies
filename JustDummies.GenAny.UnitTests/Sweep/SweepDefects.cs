@@ -23,31 +23,19 @@ namespace JustDummies.GenAny.UnitTests.Sweep;
 internal static class SweepDefects {
 
     /// <summary>
-    ///     Every open defect, and the shapes each one claims.
+    ///     Every open defect, and the shapes each one claims. Empty, and that is a state rather than an oversight.
     /// </summary>
     /// <remarks>
-    ///     The two entries this table was created with — a distinct collection over a nullable element refusing a
-    ///     domain that admits values, and a collection of interface-typed collections emitting <c>CS0029</c> —
-    ///     were both fixed, and both came off here in the change that fixed them. That is the contract working:
-    ///     an entry no shape reproduces fails the run, so a defect cannot be quietly repaired and left on the
-    ///     record, and a defect cannot be recorded and quietly forgotten.
+    ///     Every entry this table has held came off in the change that fixed it: the two it was created with — a
+    ///     distinct collection over a nullable element refusing a domain that admits values, and a collection of
+    ///     interface-typed collections emitting <c>CS0029</c> — and <c>setter-transforms-copy</c>, a null-check
+    ///     through a property whose <c>set</c> accessor rewrites the value, read as a plain copy until #333. That
+    ///     is the contract working: an entry no shape reproduces fails the run, so a defect cannot be quietly
+    ///     repaired and left on the record, and a defect cannot be recorded and quietly forgotten. An entry claims
+    ///     its recorded symptom only — <see cref="SweepOutcome.Failure" /> keeps a draw failure typed for that —
+    ///     because the baseline counts verdicts, and a broader claim would let a new failure hide behind it.
     /// </remarks>
-    internal static IReadOnlyList<SweepDefect> Open { get; } = [
-        // Guards.IsTheParameterItself reads `Shaped = value;` as a plain copy because its right side IS the
-        // parameter, and so exempts the null-check below it; the property's own `set` accessor rewrites short
-        // values to null, which the constructor then rejects on nearly every draw. Issue #333.
-        //
-        // Claimed on that symptom alone: the file compiles, no library rule fires, and a DRAW throws the
-        // constructor's ArgumentException. Anything else on these shapes is a different failure and stays a
-        // finding — the baseline counts verdicts only, so a broader claim would let one hide behind this.
-        new("setter-transforms-copy",
-            "a null-check on a property whose set accessor transforms the value is exempted as a plain copy (#333)",
-            (shape, finding) => shape.Family == "placement"
-                             && shape.Name.StartsWith("placement-setter-", StringComparison.Ordinal)
-                             && finding.Compiles == "ok"
-                             && finding.Rules == "ok"
-                             && finding.Failure is { DuringDraw: true, Kind: nameof(ArgumentException) })
-    ];
+    internal static IReadOnlyList<SweepDefect> Open { get; } = [];
 
     /// <summary>The open defect that accounts for this finding, or null when nothing does.</summary>
     internal static SweepDefect? Claiming(SweepShape shape, SweepOutcome finding) {

@@ -153,13 +153,16 @@ moteur respecte cette règle. Chacun des huit placements est croisé avec trois 
 
 | Placement | Ce qu'il déclare | Verdict que la spécification impose |
 |---|---|---|
-| `below`, `local`, `field`, `property`, `computed` | une garde qui rejette le paramètre depuis un endroit où le §5.3 ne peut pas la lire | `BlockedForVerification` |
+| `below`, `local`, `field`, `property`, `computed`, `setter` | une garde qui rejette le paramètre depuis un endroit où le §5.3 ne peut pas la lire — `setter` via une propriété dont l'accesseur `set` réécrit la valeur | `BlockedForVerification` |
 | `copynull` | un null-check sur une copie simple, que le générateur satisfait par construction | `Held` |
 | `helper` | un helper non reconnu, appelé après la première affectation | `KnownResidue` (§9) |
-| `setter` | un null-check sur une propriété dont l'accesseur `set` réécrit la valeur | `KnownDefect` — #333 |
+
+Le placement `setter` est entré comme une entrée ouverte de `SweepDefects`, et il en est sorti quand une
+propriété a dû être auto-implémentée pour qu'un null-check à travers elle compte comme un null-check sur
+une copie simple (#333).
 
 La famille vérifie les deux sens : une marque là où elle est due, aucune là où elle ne l'est pas. Sur la
-version antérieure à #331, les quinze formes de la première ligne sont détectées comme des anomalies : le
+version antérieure à #331, les quinze formes trouvées par l'essai sont détectées comme des anomalies : le
 générateur produit des valeurs rejetées par le constructeur alors que le récapitulatif indique
 `inferred`. Les gardes sont choisies pour que presque chaque tirage les déclenche. `Any.String()` tire
 jusqu'à un millier de caractères environ, donc la garde sur les chaînes rejette les valeurs *longues* ;

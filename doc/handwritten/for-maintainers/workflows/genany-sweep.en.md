@@ -145,13 +145,15 @@ engine to that. Each of eight placements is crossed with three parameter types (
 
 | Placement | What it declares | Verdict the specification owes |
 |---|---|---|
-| `below`, `local`, `field`, `property`, `computed` | a guard that rejects the parameter from where §5.3 cannot read it | `BlockedForVerification` |
+| `below`, `local`, `field`, `property`, `computed`, `setter` | a guard that rejects the parameter from where §5.3 cannot read it — `setter` through a property whose `set` accessor rewrites the value | `BlockedForVerification` |
 | `copynull` | a null-check on a plain copy, which the generator satisfies by construction | `Held` |
 | `helper` | an unrecognised helper called below the first write | `KnownResidue` (§9) |
-| `setter` | a null-check on a property whose `set` accessor rewrites the value | `KnownDefect` — #333 |
+
+The `setter` placement came in as an open entry of `SweepDefects` and came off when a property had to be
+auto-implemented before a null-check through it counts as one on a plain copy (#333).
 
 The family checks both directions: a mark where one is due, and none where it is not. It was proven
-against the engine from **before** #331 too: there, all fifteen shapes of the first row come back as
+against the engine from **before** #331 too: there, the fifteen shapes the trial found come back as
 findings, a draw the domain rejects behind a recap saying "inferred". The guards are chosen so that
 almost every draw trips them. `Any.String()` draws up to about a thousand characters, so the string
 guard rejects *long* values; a floor of eight would let thirty draws pass by luck.

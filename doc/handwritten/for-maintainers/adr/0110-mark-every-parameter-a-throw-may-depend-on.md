@@ -2,8 +2,9 @@
 
 🌍 🇬🇧 English (this file) · 🇫🇷 [Français](0110-mark-every-parameter-a-throw-may-depend-on.fr.md)
 
-**Status:** Proposed
+**Status:** Accepted
 **Proposed:** 2026-10-28
+**Accepted:** 2026-10-28
 **Decision Makers:** Reefact
 
 > Section references (§N) point into the [`any` specification](../specifications/justdummies-tool.md).

@@ -565,13 +565,17 @@ internal static class Guards {
     }
 
     /// <summary>
-    ///     Whether <paramref name="source" /> is a parameter itself, unchanged — through parentheses, a cast or
-    ///     a null-forgiving <c>!</c>, none of which can turn a non-null value into null.
+    ///     Whether <paramref name="source" /> is a parameter itself, unchanged — through parentheses, a built-in
+    ///     cast or a null-forgiving <c>!</c>, none of which can turn a non-null value into null.
     /// </summary>
+    /// <remarks>
+    ///     A user-defined conversion is not unwrapped: <c>explicit operator ProductCode(string raw)</c> is a
+    ///     method, free to return null for a value it rejects, so a null-check on its result is a real guard.
+    /// </remarks>
     private static bool IsTheParameterItself(ExpressionSyntax source, SemanticModel model) {
         ExpressionSyntax unwrapped = source switch {
             ParenthesizedExpressionSyntax parenthesized                                          => parenthesized.Expression,
-            CastExpressionSyntax cast                                                            => cast.Expression,
+            CastExpressionSyntax cast when !IsUserDefinedConversion(cast, model)                 => cast.Expression,
             PostfixUnaryExpressionSyntax forgiven when forgiven.IsKind(SyntaxKind.SuppressNullableWarningExpression) => forgiven.Operand,
             _                                                                                    => source
         };
@@ -579,6 +583,11 @@ internal static class Guards {
         return unwrapped == source
                    ? model.GetSymbolInfo(source).Symbol is IParameterSymbol
                    : IsTheParameterItself(unwrapped, model);
+    }
+
+    /// <summary>Whether <paramref name="cast" /> calls a conversion operator someone wrote.</summary>
+    private static bool IsUserDefinedConversion(CastExpressionSyntax cast, SemanticModel model) {
+        return model.GetSymbolInfo(cast).Symbol is IMethodSymbol { MethodKind: MethodKind.Conversion };
     }
 
     /// <summary>

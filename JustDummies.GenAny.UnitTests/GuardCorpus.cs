@@ -952,6 +952,16 @@ internal static class GuardCorpus {
                                                            }
                                                            """, idioms: ["`!Enum.IsDefined(typeof(E), p)`, `!Enum.IsDefined(p)`"]),
 
+        new GuardedShape("bcl-finite", "Weight", """
+                                                 public sealed class Weight {
+                                                     public Weight(double kilograms) {
+                                                         if (!double.IsFinite(kilograms)) { throw new ArgumentOutOfRangeException(nameof(kilograms)); }
+                                                         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(kilograms);
+                                                         ArgumentOutOfRangeException.ThrowIfGreaterThan(kilograms, 32_500d);
+                                                     }
+                                                 }
+                                                 """, idioms: ["`!double.IsFinite(p)`, `!float.IsFinite(p)`"]),
+
         new GuardedShape("ardalis-null", "Envelope", """
                                                      public sealed class Envelope {
 

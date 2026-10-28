@@ -1598,8 +1598,13 @@ internal static class Guards {
             // only where the parameter IS E. On an int-backed status column the row's own justification fails:
             // nothing narrows Any.Int32(), and the outcome is indistinguishable from a guard there was nothing
             // to read — worse than a lost constraint, because it does not even say it lost one.
-            return IsCall(negation.Operand, model, "System.Enum", "IsDefined")
-                && NamesTheParametersOwnUniverse(negation.Operand, model, parameter);
+            //
+            // `!double.IsFinite(p)` is the same case for a value type: Any.Double() and Any.Single() draw within an
+            // ordinary magnitude and never NaN or an infinity (ADR-0031), which again holds only where the
+            // parameter IS the type whose IsFinite is called.
+            return (IsCall(negation.Operand, model, "System.Enum", "IsDefined")
+                 && NamesTheParametersOwnUniverse(negation.Operand, model, parameter))
+                || IsAFinitenessCheckOnTheParameter(negation.Operand, model, parameter);
         }
 
         if (condition is InvocationExpressionSyntax invocation) {
@@ -1882,6 +1887,23 @@ internal static class Guards {
             && arguments[0].Expression is TypeOfExpressionSyntax universe
             && SymbolEqualityComparer.Default.Equals(model.GetTypeInfo(universe.Type).Type, Underlying(parameter.Type))
             && IsParameter(arguments[1].Expression, model, parameter);
+    }
+
+    /// <summary>
+    ///     Whether <paramref name="call" /> is <c>double.IsFinite</c> on a <c>double</c> parameter itself, or
+    ///     <c>float.IsFinite</c> on a <c>float</c> one.
+    /// </summary>
+    private static bool IsAFinitenessCheckOnTheParameter(ExpressionSyntax call, SemanticModel model, IParameterSymbol parameter) {
+        string? owner = parameter.Type.SpecialType switch {
+            SpecialType.System_Double => "System.Double",
+            SpecialType.System_Single => "System.Single",
+            _                         => null
+        };
+
+        return owner is not null
+            && call is InvocationExpressionSyntax { ArgumentList.Arguments.Count: 1 } invocation
+            && IsCall(invocation, model, owner, "IsFinite")
+            && IsParameter(invocation.ArgumentList.Arguments[0].Expression, model, parameter);
     }
 
     /// <summary>The parameter itself, or the one derived form the table has rows for: its length or its count.</summary>

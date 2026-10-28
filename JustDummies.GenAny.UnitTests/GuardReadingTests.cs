@@ -314,6 +314,28 @@ public sealed class GuardReadingTests {
         Check.That(Subject.GuardedBy(parameterType, guard).Expression).IsEqualTo(expected);
     }
 
+    /// <summary>
+    ///     A finiteness guard on a floating-point parameter is satisfied by construction, and marks nothing.
+    /// </summary>
+    /// <remarks>
+    ///     <c>Any.Double()</c> and <c>Any.Single()</c> draw within an ordinary magnitude and never NaN or an
+    ///     infinity (ADR-0031), so <c>!double.IsFinite(p)</c> rejects nothing they draw — the null-check's case,
+    ///     for a value type. It holds only where the parameter is the type whose <c>IsFinite</c> is called, and
+    ///     only on the parameter itself: the last two rows stay marked. The report it answers is a weight from
+    ///     the developer-UX trial of October 2026, blocked on a guard its generator could never fail.
+    /// </remarks>
+    [Theory(DisplayName = "A finiteness guard on the parameter's own floating-point type is satisfied by construction.")]
+    [InlineData("double", "if (!double.IsFinite(value)) { throw new ArgumentOutOfRangeException(nameof(value)); }", "Any.Double()", false)]
+    [InlineData("float", "if (!float.IsFinite(value)) { throw new ArgumentOutOfRangeException(nameof(value)); }", "Any.Single()", false)]
+    [InlineData("float", "if (!double.IsFinite(value)) { throw new ArgumentOutOfRangeException(nameof(value)); }", "Any.Single()", true)]
+    [InlineData("double", "if (!double.IsFinite(value * 2)) { throw new ArgumentOutOfRangeException(nameof(value)); }", "Any.Double()", true)]
+    public void AFinitenessGuardOnTheParametersOwnTypeIsSatisfiedByConstruction(string parameterType, string guard, string expected, bool marked) {
+        ScaffoldedParameter parameter = Subject.GuardedBy(parameterType, guard);
+
+        Check.That(parameter.Expression).IsEqualTo(expected);
+        Check.That(parameter.Provenance.HasFlag(Provenance.UnreadGuards)).IsEqualTo(marked);
+    }
+
     [Fact(DisplayName = "An empty Guid guard is read as NonEmpty.")]
     public void AnEmptyGuidGuardIsReadAsNonEmpty() {
         string guard = "if (value == Guid.Empty) { throw new ArgumentException(nameof(value)); }";

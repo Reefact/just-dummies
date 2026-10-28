@@ -120,12 +120,12 @@ internal static class AnyDerivation {
     internal static string Display(object? value) {
         switch (value) {
             case null:        return "null";
-            case string text: return "\"" + text + "\"";
+            case string text: return "\"" + CharacterPools.Escape(text) + "\"";
             default:
                 try {
-                    return value is IFormattable formattable
-                               ? formattable.ToString(null, CultureInfo.InvariantCulture)
-                               : value.ToString() ?? value.GetType().Name;
+                    return CharacterPools.Escape(value is IFormattable formattable
+                                                     ? formattable.ToString(null, CultureInfo.InvariantCulture)
+                                                     : value.ToString() ?? value.GetType().Name);
                 } catch (Exception) {
                     return value.GetType().Name;
                 }

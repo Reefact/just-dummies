@@ -23,8 +23,13 @@ internal sealed record ScaffoldReport(string Argument,
     ///     the developer to settle — type names for §3.2, tied static factories for §5.1.2.
     /// </summary>
     internal static ScaffoldReport Refused(string argument, ScaffoldOutcome outcome) {
+        return Refused(argument, outcome.Status.ToString(), outcome);
+    }
+
+    /// <summary>The same, under a status the shell settled rather than the engine.</summary>
+    internal static ScaffoldReport Refused(string argument, string status, ScaffoldOutcome outcome) {
         return new ScaffoldReport(argument,
-                                  outcome.Status.ToString(),
+                                  status,
                                   Type: null,
                                   Generator: null,
                                   Files: [],
@@ -45,6 +50,13 @@ internal sealed record ScaffoldReport(string Argument,
     ///     <c>Scaffolded</c> into the report counted a success the exit code had already called a failure.
     /// </remarks>
     internal const string FileExists = "FileExists";
+
+    /// <summary>
+    ///     The status of an argument the engine refused for want of the library, in a project that was never
+    ///     restored — the shell's reading of the engine's <c>LibraryNotReferenced</c>, which cannot tell the two
+    ///     apart (§7).
+    /// </summary>
+    internal const string ProjectNotRestored = "ProjectNotRestored";
 
     /// <summary>
     ///     An argument whose files were not written, each kept with the path it would have taken — and at

@@ -582,6 +582,42 @@ public sealed class GenerateCommandTests : IDisposable {
         Check.That(Occurrences(run.Error, "dotnet add package JustDummies")).IsEqualTo(1);
     }
 
+    // An unrestored project opens without its packages and looks exactly like one that never named the
+    // library; telling its developer to add a reference they can see in their .csproj is the wrong remedy.
+    [Fact(DisplayName = "A project that was never restored is told to restore, not to add the package.")]
+    public async Task AnUnrestoredProjectIsToldToRestore() {
+        Run run = await Run.Of(Settings("Order", "Basket"),
+                               (_, _) => Task.FromResult(LoadedProject.Unrestored(Compilation(Domain, withLibrary: false), [])));
+
+        Check.That(run.ExitCode).IsEqualTo(1);
+        Check.That(Occurrences(run.Error, "dotnet restore")).IsEqualTo(1);
+        Check.That(run.Error).Not.Contains("dotnet add package");
+    }
+
+    [Fact(DisplayName = "--format json records a project that was never restored as such.")]
+    public async Task JsonRecordsAnUnrestoredProject() {
+        GenerateSettings settings = Settings("Order");
+
+        settings.Format = "json";
+
+        Run run = await Run.Of(settings,
+                               (_, _) => Task.FromResult(LoadedProject.Unrestored(Compilation(Domain, withLibrary: false), [])));
+        JsonElement result = JsonDocument.Parse(run.Output).RootElement.GetProperty("results")[0];
+
+        Check.That(run.ExitCode).IsEqualTo(1);
+        Check.That(result.GetProperty("status").GetString()).IsEqualTo("ProjectNotRestored");
+    }
+
+    // A project that resolves the library scaffolds whatever the assets file says: the check only ever
+    // changes which refusal a missing library gets.
+    [Fact(DisplayName = "A project that resolves the library scaffolds, restored or not.")]
+    public async Task AProjectResolvingTheLibraryScaffoldsRestoredOrNot() {
+        Run run = await Run.Of(Settings("Order"),
+                               (_, _) => Task.FromResult(LoadedProject.Unrestored(Compilation(Domain), [])));
+
+        Check.That(run.ExitCode).IsEqualTo(0);
+    }
+
     [Fact(DisplayName = "A project that will not open fails with the diagnostics, verbatim.")]
     public async Task AProjectThatWillNotOpenFails() {
         Run run = await Run.Of(Settings("Order"),

@@ -39,6 +39,12 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Fixed
 
+- **A project that has not been restored is told to restore, not to add JustDummies.** Run on a fresh clone,
+  `any generate` refused with "this project does not reference JustDummies" and suggested
+  `dotnet add package JustDummies`, though the project did reference it: an unrestored project opens without its
+  package references. When no `project.assets.json` stands above the project's intermediate output, the refusal
+  now says the project has not been restored and suggests `dotnet restore`; `--format json` reports it as
+  `ProjectNotRestored`. The tool still does not restore on its own.
 - **A short type name is no longer made ambiguous by types it cannot name, and the generated header names a
   command that works.** `any generate Measurement` was refused as ambiguous because of the framework's generic
   `System.Diagnostics.Metrics.Measurement<T>`, and an `internal` type of another assembly was listed among the

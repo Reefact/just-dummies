@@ -21,7 +21,7 @@ and the **Origin** column says how each one got here:
   but its record stays live in `Reefact/first-class-errors` too, because that
   repository still applies it. Both copies are now independent: either side can
   supersede its own without touching the other. 9 decisions.
-* **recorded here** — decided in this repository, on its own. 66 decisions.
+* **recorded here** — decided in this repository, on its own. 67 decisions.
 
 The numbers are this base's own, assigned in the order the decisions were
 recorded upstream ([ADR-0045](0045-renumber-the-decision-base.md)); every ADR
@@ -220,3 +220,4 @@ failure mode of a "not now" is that nobody remembers the option existed on the d
 | [ADR-0107](0107-own-a-constraint-repeated-identically-as-one-rule.md) | Own a constraint repeated identically as one rule, and narrow JD024 out of it | Accepted | recorded here |
 | [ADR-0108](0108-name-the-scaffolder-after-what-it-draws.md) | Name the scaffolder after what it draws, not after the role a value plays | Accepted | recorded here |
 | [ADR-0109](0109-let-a-test-refine-a-parameters-valid-base-rather-than-replace-it.md) | Let a test refine a parameter's valid base rather than replace it | Accepted | recorded here |
+| [ADR-0110](0110-mark-every-parameter-a-throw-may-depend-on.md) | Mark every parameter a throw may depend on, and all of them where the trail is lost | Proposed | recorded here |

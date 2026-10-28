@@ -160,8 +160,19 @@ the engine translates it for the lookup, where the separator is `+` rather than 
 nothing, which would report a real type as missing. The generator it emits is a top-level type in
 the containing namespace, named after the nested type alone: `AnyLine`.
 
+**A simple name counts only the types it can name.** `Measurement` does not spell a generic
+`Measurement<T>`, which C# would need a type argument for, nor a type the analysed project cannot
+access, which the emitted file could not name either — so neither makes a simple name ambiguous, and
+a domain `Measurement` is not refused because the framework declares
+`System.Diagnostics.Metrics.Measurement<T>`. When nothing else matches they are kept, so a generic
+type named alone still meets its own refusal (§7) rather than being reported missing.
+
 Zero matches → error, listing the closest names by edit distance. More than one match → error,
 listing the full names, asking for one of them. Both exit `1`.
+
+**The header names an argument that resolves (§4.3).** Its second line tells the developer how to
+re-run the tool, so it spells the type the way this lookup reaches exactly that type again: the
+simple name where it is unambiguous, the full name where it is not.
 
 ### 3.3 Project defaults *(v1.1)*
 

@@ -62,6 +62,31 @@ public sealed class TypeLookupTests {
                                     }
                                     """;
 
+    /// <summary>
+    ///     A referenced assembly declaring the domain's <c>Measurement</c> beside two that cannot be scaffolded
+    ///     under that name: a generic one, which the bare name does not spell, and an internal one, which the
+    ///     analysed project cannot reach.
+    /// </summary>
+    private const string Crowded = """
+                                   namespace Shop {
+                                       public sealed class Measurement {
+                                           public Measurement(int value) { }
+                                       }
+                                   }
+
+                                   namespace Other {
+                                       public readonly struct Measurement<T> {
+                                           public Measurement(T value) { }
+                                       }
+                                   }
+
+                                   namespace Other.Hidden {
+                                       internal sealed class Measurement {
+                                           public Measurement(int value) { }
+                                       }
+                                   }
+                                   """;
+
     [Theory(DisplayName = "A type is found by the name a developer would type.")]
     [InlineData("Basket", "AnyBasket.cs")]
     [InlineData("Shop.Sales.Basket", "AnyBasket.cs")]
@@ -96,6 +121,47 @@ public sealed class TypeLookupTests {
 
         Check.That(outcome.Status).IsEqualTo(ScaffoldStatus.TypeAmbiguous);
         Check.That(outcome.Candidates).ContainsExactly("Shop.Archive.Order", "Shop.Sales.Order");
+    }
+
+    /// <summary>
+    ///     A short name is matched against the types it could actually name.
+    /// </summary>
+    /// <remarks>
+    ///     <c>Measurement</c> does not spell <c>Measurement&lt;T&gt;</c> — C# would need a type argument — and an
+    ///     internal type of another assembly is one the emitted file could not name at all. Counting either made
+    ///     a real domain type ambiguous with the framework's <c>System.Diagnostics.Metrics.Measurement&lt;T&gt;</c>.
+    /// </remarks>
+    [Fact(DisplayName = "A short name ignores generic and inaccessible types it cannot name.")]
+    public void AShortNameIgnoresTypesItCannotName() {
+        ScaffoldOutcome outcome = Subject.ScaffoldByNameReferencing(Crowded, "Measurement", Nearby);
+
+        Check.That(outcome.Status).IsEqualTo(ScaffoldStatus.Scaffolded);
+        Check.That(outcome.Plan!.Target.FullName).IsEqualTo("Shop.Measurement");
+    }
+
+    // The same name on its own still meets the refusal written for it: a generic type is told why, rather
+    // than that it does not exist.
+    [Fact(DisplayName = "A generic type named alone is still refused as generic.")]
+    public void AGenericTypeNamedAloneIsStillRefusedAsGeneric() {
+        ScaffoldOutcome outcome = Scaffold("Crate", "namespace Shop; public sealed class Crate<T> { public Crate(T item) { } }");
+
+        Check.That(outcome.Status).IsEqualTo(ScaffoldStatus.TypeIsGeneric);
+    }
+
+    // The header tells the developer how to re-run the tool; a short name that is ambiguous would send them
+    // into the very refusal the full name was typed to avoid.
+    [Fact(DisplayName = "The header names a command that resolves to the scaffolded type.")]
+    public void TheHeaderNamesACommandThatResolves() {
+        ScaffoldOutcome outcome = Scaffold("Shop.Archive.Order", Domain, Elsewhere);
+
+        Check.That(outcome.File!.SourceText).Contains("// `any generate Shop.Archive.Order --force` overwrites it.");
+    }
+
+    [Fact(DisplayName = "The header keeps the short name where it resolves.")]
+    public void TheHeaderKeepsTheShortNameWhereItResolves() {
+        ScaffoldOutcome outcome = Scaffold("Shop.Sales.Basket", Domain, Elsewhere);
+
+        Check.That(outcome.File!.SourceText).Contains("// `any generate Basket --force` overwrites it.");
     }
 
     // Fully qualified, the same name settles it.

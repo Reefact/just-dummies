@@ -92,7 +92,43 @@ internal static class TypeLookup {
     private static IEnumerable<INamedTypeSymbol> Matching(Compilation compilation, string argument) {
         List<INamedTypeSymbol> inSource = [.. Named(Within(compilation.Assembly.GlobalNamespace), argument)];
 
-        return inSource.Count > 0 ? inSource : Named(Within(compilation.GlobalNamespace), argument);
+        return Nameable(compilation, inSource.Count > 0 ? [.. inSource] : [.. Named(Within(compilation.GlobalNamespace), argument)]);
+    }
+
+    /// <summary>
+    ///     The matches the argument can actually name from the analysed project, when there are any.
+    /// </summary>
+    /// <remarks>
+    ///     A bare name does not spell a generic type — C# would need its type argument — and a type the
+    ///     project cannot access is one the emitted file could not name either, so neither makes a short name
+    ///     ambiguous: <c>Measurement</c> means the domain's, not <c>System.Diagnostics.Metrics.Measurement&lt;T&gt;</c>.
+    ///     When nothing else matches they are kept, so a generic type named alone still meets the refusal
+    ///     written for it (§7) rather than being reported missing.
+    /// </remarks>
+    private static IReadOnlyList<INamedTypeSymbol> Nameable(Compilation compilation, IReadOnlyList<INamedTypeSymbol> matches) {
+        List<INamedTypeSymbol> nameable = [.. matches.Where(type => !IsGeneric(type) && compilation.IsSymbolAccessibleWithin(type, compilation.Assembly))];
+
+        return nameable.Count > 0 ? nameable : matches;
+    }
+
+    /// <summary>Whether <paramref name="type" />, or a type it is nested in, takes type arguments.</summary>
+    private static bool IsGeneric(INamedTypeSymbol type) {
+        for (INamedTypeSymbol? current = type; current is not null; current = current.ContainingType) {
+            if (current.Arity > 0) { return true; }
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    ///     The argument a developer can type to reach exactly <paramref name="type" /> again: the short spelling
+    ///     where it resolves to that type alone, the full name where it does not.
+    /// </summary>
+    internal static string ArgumentFor(Compilation compilation, INamedTypeSymbol type) {
+        string                          spelling = Spelling(type);
+        IReadOnlyList<INamedTypeSymbol> found    = Find(compilation, spelling);
+
+        return found.Count == 1 && SymbolEqualityComparer.Default.Equals(found[0], type) ? spelling : type.ToDisplayString();
     }
 
     private static IEnumerable<INamedTypeSymbol> Named(IEnumerable<INamedTypeSymbol> types, string argument) {

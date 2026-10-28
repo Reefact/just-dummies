@@ -28,9 +28,12 @@ public sealed class TargetType {
     ///     The type's full name where it is declared; when null, <paramref name="name" /> read inside
     ///     <paramref name="namespace" />, which is what it is unless the file was moved to another namespace.
     /// </param>
+    /// <param name="argument">
+    ///     The type argument <c>any generate</c> resolves to exactly this type; when null, <paramref name="name" />.
+    /// </param>
     /// <exception cref="ArgumentNullException"><paramref name="name" /> is null.</exception>
     /// <exception cref="ArgumentException"><paramref name="name" /> is blank.</exception>
-    public TargetType(string name, string? @namespace, NamespaceStyle style, string? fullName = null) {
+    public TargetType(string name, string? @namespace, NamespaceStyle style, string? fullName = null, string? argument = null) {
         if (name is null) { throw new ArgumentNullException(nameof(name)); }
         if (name.Trim().Length == 0) { throw new ArgumentException("A target type has a name.", nameof(name)); }
 
@@ -38,6 +41,7 @@ public sealed class TargetType {
         Namespace = @namespace;
         Style     = style;
         FullName  = fullName ?? (@namespace is null ? name : @namespace + "." + name);
+        Argument  = argument ?? name;
     }
 
     /// <summary>The type name as written from inside its own namespace.</summary>
@@ -54,5 +58,11 @@ public sealed class TargetType {
 
     /// <summary>The type's full name where it is declared — <c>Shop.Domain.Order</c>, whatever file it lands in.</summary>
     public string FullName { get; }
+
+    /// <summary>
+    ///     What to type after <c>any generate</c> to reach this type again — <c>Order</c>, or its full name where
+    ///     the short one is ambiguous.
+    /// </summary>
+    public string Argument { get; }
 
 }

@@ -80,7 +80,7 @@ public static class EntryPointEmitter {
                             : "static:" + entryPoint.Root;
 
         Line(file, "// Scaffolded by `any` (JustDummies). This file is yours: read it, edit it, commit it.");
-        Line(file, $"// `any generate {plan.Target.Name} --entry-point {option} --force` overwrites it.");
+        Line(file, $"// `any generate {plan.Target.Argument} --entry-point {option} --force` overwrites it.");
 
         Line(file, entryPoint.Kind == EntryPointKind.Any
                        ? "// It needs C# 14: a static extension member is what reaches this spelling without touching the library."

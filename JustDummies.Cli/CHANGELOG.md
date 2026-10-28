@@ -39,6 +39,12 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Fixed
 
+- **A short type name is no longer made ambiguous by types it cannot name, and the generated header names a
+  command that works.** `any generate Measurement` was refused as ambiguous because of the framework's generic
+  `System.Diagnostics.Metrics.Measurement<T>`, and an `internal` type of another assembly was listed among the
+  candidates. A bare name now counts only non-generic types the project can access, when there are any. After
+  scaffolding a type whose short name is ambiguous, the file's second line named `any generate <ShortName>
+  --force`, which the tool then refused; it now names the full name in that case.
 - **`--namespace` no longer renames the analysed type in the recap and the JSON report.** With
   `--namespace Foo.Bar`, the recap opened with `Analyzing Foo.Bar.Sku` and the report carried
   `"type": "Foo.Bar.Sku"`, a type that does not exist. Both now name the type where it is declared; the option

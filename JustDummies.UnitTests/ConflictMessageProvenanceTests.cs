@@ -93,6 +93,44 @@ public sealed class ConflictMessageProvenanceTests {
         Check.WithCustomMessage($"The exclusion was not named. Message: {message}").That(message).Contains("DifferentFrom(1)");
     }
 
+    [Fact(DisplayName = "A decimal strict bound crossing an inclusive one says the strict bound excludes its own value.")]
+    public void DecimalStrictLowerBoundAboveAnUpperBoundIsWordedAsStrict() {
+        string message = ConflictMessage(() => Any.Decimal().GreaterThan(100m).LessThan(10m));
+
+        Check.That(message).Contains("GreaterThan(100) already requires values greater than 100");
+        Check.That(message).Not.Contains("or equal to");
+    }
+
+    [Fact(DisplayName = "A decimal empty open interval is refused as crossed bounds, not as an exhausted exclusion.")]
+    public void DecimalEmptyOpenIntervalIsRefusedAsCrossedBounds() {
+        string message = ConflictMessage(() => Any.Decimal().GreaterThan(36m).LessThan(36m));
+
+        Check.That(message).Contains("GreaterThan(36) already requires values greater than 36");
+        Check.That(message).Not.Contains("the only value");
+    }
+
+    [Fact(DisplayName = "A decimal Negative after Positive is refused as crossed bounds, not as excluded zero.")]
+    public void DecimalPositiveThenNegativeIsRefusedAsCrossedBounds() {
+        string message = ConflictMessage(() => Any.Decimal().Positive().Negative());
+
+        Check.That(message).Contains("Positive() already requires values greater than 0");
+        Check.That(message).Not.Contains("the only value");
+    }
+
+    [Fact(DisplayName = "A decimal inclusive bound meeting a strict one at the same point is refused and says so.")]
+    public void DecimalInclusiveBoundMeetingAStrictOneIsRefused() {
+        string message = ConflictMessage(() => Any.Decimal().GreaterThan(5m).LessThanOrEqualTo(5m));
+
+        Check.That(message).Contains("GreaterThan(5) already requires values greater than 5");
+    }
+
+    [Fact(DisplayName = "A decimal strict bound refused over a scaled range names the Between that bounds it.")]
+    public void DecimalStrictBoundOverAScaledRangeNamesTheBetween() {
+        string message = ConflictMessage(() => Any.Decimal().Between(0m, 5000m).WithScale(2).Negative());
+
+        Check.That(message).Contains("Between(0, 5000)");
+    }
+
     // ----- ContinuousIntervalSpec: double (and, by sharing the engine, Single/Half) -----
 
     [Fact(DisplayName = "A double pin emptied by DifferentFrom names DifferentFrom.")]

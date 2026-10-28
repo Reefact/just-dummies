@@ -36,8 +36,8 @@ internal sealed class GeneratorFor {
     ///     than by an expression nobody can read.
     ///     <para>
     ///         A cycle cannot form while the table reads types only — a domain type has no row, so following
-    ///         one ends immediately. The guard against it belongs with §5.4, where composing through a
-    ///         scaffolded generator or a factory is what could make a type reach itself.
+    ///         one ends immediately. The one composition can form is a parameter reaching the type being
+    ///         scaffolded, which <see cref="Draw(ITypeSymbol, ITypeSymbol)" /> refuses before anything is drawn.
     ///     </para>
     /// </remarks>
     private const int MaximumDepth = 3;
@@ -266,8 +266,33 @@ internal sealed class GeneratorFor {
     /// <summary>
     ///     The generator for <paramref name="type" />, in the three parts a guard can be slotted between.
     /// </summary>
-    internal DrawnGenerator Draw(ITypeSymbol type) {
+    /// <remarks>
+    ///     A parameter that reaches <paramref name="target" /> — <c>Node(string name, IReadOnlyList&lt;Node&gt;
+    ///     children)</c>, <c>Employee(string name, Employee? manager)</c> — is left open with the reason, rather
+    ///     than composed into <c>new AnyNode()</c> inside <c>AnyNode</c>'s own constructor: that recursion is
+    ///     eager, so even a test pinning the parameter through <c>With…</c> never escapes it, and the run ends
+    ///     in a stack overflow with no test reported (§5.4).
+    /// </remarks>
+    internal DrawnGenerator Draw(ITypeSymbol type, ITypeSymbol target) {
+        if (Reaches(type, target, MaximumDepth)) { return DrawnGenerator.Unresolved(Provenance.SelfReferencing); }
+
         return Draw(type, MaximumDepth, []);
+    }
+
+    /// <summary>
+    ///     Whether <paramref name="type" /> is <paramref name="target" />, or holds it through the element and
+    ///     argument types composition would follow, within the same depth.
+    /// </summary>
+    private static bool Reaches(ITypeSymbol type, ITypeSymbol target, int remaining) {
+        if (remaining < 0) { return false; }
+
+        if (SymbolEqualityComparer.Default.Equals(type, target)) { return true; }
+
+        return type switch {
+            IArrayTypeSymbol array   => Reaches(array.ElementType, target, remaining - 1),
+            INamedTypeSymbol generic => generic.TypeArguments.Any(argument => Reaches(argument, target, remaining - 1)),
+            _                        => false
+        };
     }
 
     /// <summary>

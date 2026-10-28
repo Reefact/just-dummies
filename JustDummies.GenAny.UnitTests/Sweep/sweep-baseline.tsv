@@ -15,7 +15,7 @@ count-distinct	Unresolved	160
 delegated-count	Held	64
 delegated-count	BlockedForVerification	8
 delegation	Held	32
-delegation	KnownResidue	16
+delegation	BlockedForVerification	16
 element	BlockedForVerification	78
 nested	Held	144
 string	Held	6

@@ -562,6 +562,12 @@ le paramètre non résolu.
    soit écrit (§7). La vérification est ici plutôt que dans l'émetteur : un fichier que le
    développeur ne peut pas compiler, écrit sous un récapitulatif affirmant que tous les paramètres
    ont été inférés, est pire que pas de fichier du tout.
+   Une **énumération** y est refusée aussi, pour la raison inverse : Roslyn lui synthétise un
+   constructeur sans paramètre, donc la recherche ci-dessus en trouve un, et `new TEnum()` compile et
+   tire `(TEnum)0` à chaque appel — une constante là où l'énumération déclare un membre nul, une valeur
+   non déclarée là où elle n'en déclare pas. La bibliothèque tire déjà les énumérations par
+   `Any.Enum<TEnum>()`, donc le refus nomme cet appel plutôt que d'écrire un fichier qui ne ferait que
+   l'envelopper.
 
 ### 5.2 La table de base
 
@@ -931,6 +937,40 @@ seulement dans le `nameof` du message du `throw` ne compte pas — cela nomme le
 l'intention d'un lecteur plutôt que de tester quoi que ce soit, et toute garde réelle de cette forme
 nomme aussi son sujet dans la condition.
 
+**Après la première affectation de l'état, rien n'est lu, mais le corps est encore parcouru.** « En
+tête » est ce qui permet de *lire* une garde : passé une écriture de l'état, le moteur ne peut plus
+garantir ce qu'une condition dit de la valeur tirée. Elle rejette pourtant toujours cette valeur, et
+la passer sous silence présentait le generator neutre comme inféré alors que le constructeur
+refusait la plupart de ses tirages : `Rate = rate; if (currency.Length != 3) { throw … }` laissait
+`currency` à `Any.String().NonEmpty()`, « 2 of 2 parameters inferred ». Chaque instruction après
+l'arrêt de l'analyse est donc interrogée sur ce qu'elle *aurait* dit si elle s'était trouvée au-dessus,
+et un paramètre qu'elle aurait restreint ou marqué est marqué `unread guards` à la place — une
+instruction qui lève, et un appel que l'ensemble reconnaît comme une garde
+(`ThrowIfNegativeOrZero(rack); Rack = rack; ThrowIfGreaterThan(rack, 99);` garde `.Positive()` et
+marque le plafond qu'il ne peut pas lire). Une vérification satisfaite par construction — un
+null-check, quelle que soit son écriture — ne restreint rien et reste silencieuse là, comme
+au-dessus. Un appel que l'ensemble ne reconnaît *pas* est laissé tel quel après l'arrêt de l'analyse : là,
+`_items.AddRange(items);` est le remplissage ordinaire de l'état sur lequel le parcours vient de
+s'arrêter, et le marquer bloquerait des constructeurs ne portant aucune garde (§9).
+
+**Une garde qui teste une variable locale initialisée à partir d'un paramètre est marquée elle aussi.** `bool ok =
+value.StartsWith("LOT-"); if (!ok) { throw … }` rejette `value` exactement autant que le tester sur
+place, et pourtant sa condition ne nomme aucun paramètre : elle ne marquait donc rien, et le
+récapitulatif présentait comme inféré un generator que le constructeur refusait à presque chaque
+tirage. Une instruction qui lève suit désormais chaque variable locale qu'elle nomme d'un pas, jusqu'à la
+déclaration de cette variable, et marque `unread guards` chaque paramètre que l'initialiseur nomme —
+sans jamais le lire : ce qu'une valeur calculée admet n'est pas une contrainte que l'ensemble clos
+sait énoncer sur le paramètre, et suivre la valeur plus loin serait de la propagation (ADR-0046). Un
+champ ou une propriété copié à partir d'un paramètre est suivi de la même façon : `_name = name; if
+(_name.Length > 5) { throw … }` marque `name`, le membre étant suivi d'un pas jusqu'aux affectations
+qui précèdent l'instruction dans le même corps. Un null-check sur un tel membre ne reste silencieux que
+si chaque affectation suivie est le paramètre lui-même (`Name = name;`, à un cast prédéfini ou un `!`
+près) : le générateur ne tire jamais null, donc un membre qui le contient tel quel non plus. Un membre
+calculé à partir du paramètre peut être null — `Name = name.Length < 5 ? null : name;`, ou une
+conversion définie par l'utilisateur, écrite comme un cast `(ProductCode)raw` ou appliquée
+implicitement par `Code = raw;`, qui est une méthode libre de renvoyer null — et son null-check est
+marqué comme toute autre garde. Le `nameof` du message est exclu, comme partout ailleurs.
+
 **Une instruction de tête n'a pas besoin non plus d'être un `if` pour compter.** Une garde entièrement
 déléguée à un helper — `Ensure.NotBlank(value);`, appelé tel quel, sans aucun `if` dans le
 constructeur — lève depuis l'intérieur d'un appel que l'ensemble clos ci-dessus n'analyse pas, et
@@ -1134,6 +1174,19 @@ nommage (§11.3) travaille depuis le nom du type, qui perd ses arguments : `Repo
 `Repository<Line>` s'entendraient tous deux dire d'écrire `AnyRepository`, et aucun n'est le nom à
 écrire. Une sentinelle qui ne dit rien vaut mieux qu'un nom qui dit faux.
 
+**Un paramètre qui atteint le type en cours de scaffolding reste ouvert lui aussi, avec sa raison.**
+`Node(string name, IReadOnlyList<Node> children)` composerait sinon `children` en
+`Any.ListOf(new AnyNode())` dans le propre constructeur d'`AnyNode` — une récursion qui s'exécute à
+la construction, si bien que même un test qui fixe `children` par `With…` n'y échappe pas, et
+l'exécution finit en dépassement de pile avant qu'aucun test ne rapporte. Il en va de même
+directement (`Employee? manager`), à travers un tableau ou à travers tout argument de type que la
+composition suivrait. Le paramètre prend la sentinelle du §5.5, sa ligne dit que la valeur atteint
+le type en cours de scaffolding, et la colonne du récapitulatif lit `self-referencing` (§6). Une
+collection vide, un null ou un paramètre de profondeur seraient chacun le moteur choisissant jusqu'où
+vont les données du développeur — un generator plus malin, pas un generator honnête (ADR-0046) — donc
+la borne revient au développeur. Seule la cible elle-même est vérifiée : deux types qui s'atteignent
+l'un l'autre par leurs propres generators scaffoldés ne sont pas détectés ici.
+
 Convention, pas attribut, pas configuration : un attribut supposerait de toucher au code de
 production du développeur pour plaire à un outil de test, et un fichier de configuration casserait
 la règle de conception 2.
@@ -1249,7 +1302,8 @@ corps du constructeur était indisponible et qu'aucune garde n'a pu être lue, `
 une instruction de tête lève ou appelle d'une façon que l'ensemble reconnu n'a pas appariée, ou à un
 endroit dont le moteur ne peut pas répondre — sous une écriture du paramètre, ou sous quelque chose qui
 décide s'il s'exécute —, `constraint unavailable` quand
-une garde a été lue et comprise et que ce generator ne porte aucun membre pour l'exprimer, et
+une garde a été lue et comprise et que ce generator ne porte aucun membre pour l'exprimer,
+`self-referencing` quand un paramètre ouvert atteint le type en cours de scaffolding (§5.4), et
 `unavailable` quand le generator existe dans la bibliothèque mais pas dans l'asset que ce projet
 résout.
 
@@ -1358,6 +1412,7 @@ réponses.
 | Rien ne construit le type cible (§5.1) | `1` | Nomme les deux portes qu'ouvre le §5.1 : un constructeur d'instance public passant tous ses paramètres par valeur, ou une fabrique statique reconnue. Quand plusieurs fabriques **éligibles** sont ex æquo — le type ne déclarant aucun constructeur public qui ferme cette route — ce sont elles qui sont listées. |
 | Le type cible est abstrait | `1` | Refusé qu'il déclare ou non un constructeur à lui — le type abstrait ordinaire déclare les siens `protected` et s'entendrait sinon répondre la ligne du dessus, dont le remède est le mauvais. Une fabrique reconnue qui l'atteint est l'exception : `CS0144` porte sur `new`. Suggère un type concret qui en dérive. |
 | Le type cible est générique, ou imbriqué dans un générique | `1` | Rien n'en fournit l'argument de type, donc le fichier émis ne pourrait pas le nommer. |
+| Le type cible est une énumération | `1` | Nomme `Any.Enum<TEnum>()`, que la bibliothèque utilise déjà pour générer les valeurs d'une énumération ; rien n'est écrit. |
 | Les membres `required` du type cible ne sont pas assignés par le constructeur retenu | `1` | Reporté au §16 ; nomme `[SetsRequiredMembers]`, scaffoldé comme n'importe quel autre constructeur. |
 | `--entry-point any`, projet en deçà de C# 14 | `1` | Nomme la version que le projet a résolue, et `static:<Name>`. |
 | `--entry-point static:Any` | `2` | Nomme ce qui cesserait de compiler, et renvoie vers `--entry-point any`. |
@@ -1379,6 +1434,9 @@ Le refus est décidé dans cet ordre, qui est une règle et non un accident de t
 4. **rien ne le construit**, qui est un fait sur ce que la recherche de §5.1 a trouvé, pas sur le
    type ;
 5. **membres `required` non assignés**, qui ne se pose qu'une fois un constructeur retenu.
+
+Le cas des **énumérations** est traité immédiatement après l'étape 1, avant toute question sur ses constructeurs : celui
+qu'elle a est synthétisé, donc chaque ligne suivante décrirait une construction qui ne veut rien dire.
 
 L'ordre compte parce que le 4 est le moins coûteux à calculer et le moins utile à entendre : un type
 abstrait déclare ses constructeurs `protected`, donc décider le 4 d'abord revenait à dire à chacun
@@ -1499,16 +1557,18 @@ Nommés explicitement pour ne pas être pris pour des oublis.
   generator tire ; et il atteint une garde dont le moteur ne peut pas montrer qu'elle s'exécute sur
   tout chemin — parce que quelque chose l'entoure qui en décide, ou parce qu'une instruction au-dessus
   d'elle peut la sauter — et qui énoncerait sinon un invariant des chemins qui l'atteignent et non du
-  paramètre (§5.3). Deux formes lui échappent encore, et toutes deux sont silencieuses plutôt que
+  paramètre (§5.3). Trois formes lui échappent encore, et toutes trois sont silencieuses plutôt que
   simplement non lues — le tool n'y voit aucun rejet dont douter. Une garde-helper qui **retourne**
   la valeur vérifiée — `_name = Ensure.Valid(value);` — est indiscernable d'une normalisation, et la
   lire comme un doute reviendrait à lire `_name = value.Trim();` comme un doute aussi, ce qui bloque
   la compilation de constructeurs ne portant aucune garde ; les aides des deux bibliothèques que le
   §5.3 lit par symbole résolu (ADR-0086) sont l'exception mesurée, et tout autre validateur qui
   retourne sa valeur garde cette réponse. Et une garde atteinte seulement par un niveau
-  d'indirection que le tool ne suit pas — une copie locale du paramètre (`var v = value;
-  Validate(v);`), un lambda qui le capture, un appel atteint via un membre plutôt que par le nom
-  propre du paramètre. Dans les deux cas, le tool ne peut toujours pas distinguer ce paramètre d'un
+  d'indirection que le tool ne suit pas — une copie locale du paramètre confiée à un helper (`var v =
+  value; Validate(v);` ; une instruction qui lève en testant une telle copie est marquée, §5.3), un lambda qui le capture, un appel atteint via un membre plutôt que par le nom
+  propre du paramètre. Et une garde-helper que l'ensemble ne reconnaît pas, appelée après la première
+  affectation à l'état (§5.3), où elle est indiscernable du remplissage de cet état. Dans les trois
+  cas, le tool ne peut toujours pas distinguer ce paramètre d'un
   paramètre non contraint, et il ne devine pas — c'est de ce résidu que parle ce non-objectif : non
   pas ce qui arrive une fois le doute établi, mais le doute que le tool ne voit jamais.
 * **L'aller-retour.** Le tool ne relit jamais un fichier qu'il a écrit.

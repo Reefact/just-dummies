@@ -95,12 +95,13 @@ instrument, where a timeout was folded into "killed".
 | `SweepBug` | a generated domain does not compile on its own — ours, not the engine's |
 
 `KnownResidue` is the one worth reading twice. §9 declares, as a non-goal, that a guard reached
-through a level of indirection the tool does not follow — *a local copy of the parameter* above all —
-is one the tool cannot tell from no guard at all: it marks nothing, blocks nothing, and draws freely.
-The sixteen `delegate-computed-*` shapes sit there on purpose, each carrying the sentence that excuses
-it. **This is the only instrument in the repository that puts a number on how wide that residue is**,
-and a shape that stops landing there moves the committed counts — so the residue shrinking announces
-itself too.
+through a level of indirection the tool does not follow is one the tool cannot tell from no guard at
+all: it marks nothing, blocks nothing, and draws freely. A shape that lands there carries the sentence
+that excuses it. **This is the only instrument in the repository that puts a number on how wide that
+residue is**, and a shape that stops landing there moves the committed counts — so the residue
+shrinking announces itself too. It did: the sixteen `delegate-computed-*` shapes, which test a local
+copy of the parameter, were the whole of it until such a guard was marked `unread guards` (issue
+#300), and they now count as `BlockedForVerification`.
 
 ## What the first run found
 

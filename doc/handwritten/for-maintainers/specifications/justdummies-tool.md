@@ -542,6 +542,11 @@ marks the parameter unresolved.
    (`CS0246`). Both are refused before anything is written (§7). The check belongs here rather
    than in the emitter: a file the developer cannot compile, written under a recap claiming every
    parameter inferred, is worse than no file.
+   An **enum** is refused there too, for the opposite reason: Roslyn synthesises a parameterless
+   constructor for it, so the search above finds one, and `new TEnum()` compiles and draws `(TEnum)0`
+   on every call — a constant where the enum declares a zero member, an undeclared value where it does
+   not. The library already draws enums through `Any.Enum<TEnum>()`, so the refusal names that call
+   rather than writing a file that would only wrap it.
 
 ### 5.2 The base table
 
@@ -887,6 +892,37 @@ exactly like a parameter nobody had constrained. A parameter named only inside t
 throw's own message does not count — that names the rejected parameter for a reader rather than
 testing anything, and every real guard of this shape names its subject in the condition too.
 
+**Below the first assignment to state, nothing is read, but the body is still walked.** "Leading" is
+what lets a guard be *read*: past a write to state, the engine can no longer vouch for what a
+condition says about the drawn value. It still rejects that value, though, and passing over it in
+silence reported the neutral generator as inferred while the constructor refused most of its draws:
+`Rate = rate; if (currency.Length != 3) { throw … }` left `currency` at `Any.String().NonEmpty()`,
+"2 of 2 parameters inferred". So every statement below the end of the scan is asked what it *would*
+have said had it stood above it, and a parameter it would have narrowed or marked is marked `unread
+guards` instead — a statement that throws, and a call the set recognises as a guard
+(`ThrowIfNegativeOrZero(rack); Rack = rack; ThrowIfGreaterThan(rack, 99);` keeps `.Positive()` and
+marks the ceiling it cannot read). A check satisfied by construction — a null-check in any of its
+spellings — narrows nothing and stays silent there, as it would above. A call the set does *not*
+recognise is left alone below the scan: there, `_items.AddRange(items);` is the ordinary filling of
+the state the scan has just ended on, and marking it would block constructors carrying no guard at
+all (§9).
+
+**A guard testing a local initialised from a parameter is marked too.** `bool ok =
+value.StartsWith("LOT-"); if (!ok) { throw … }` rejects `value` exactly as much as testing it in place
+would, yet its condition names no parameter, so it used to mark nothing and the recap reported a
+generator the constructor refused on nearly every draw as inferred. A statement that throws now
+follows each local it names one step, to that local's own declaration, and marks every parameter the
+initializer names `unread guards` — never reads it: what a computed value admits is not a constraint
+the closed set can state about the parameter, and following the value further would be propagation
+(ADR-0046). A field or a property copied from a parameter is followed the same way:
+`_name = name; if (_name.Length > 5) { throw … }` marks `name`, the member being followed one step back
+to the assignments of it that precede the statement in the same body. A null-check on such a member
+stays silent only where every assignment followed is the parameter itself (`Name = name;`, a built-in
+cast or a `!` aside): the generator never draws null, so neither does a member holding it unchanged. A
+member computed from the parameter can be null — `Name = name.Length < 5 ? null : name;`, or a
+user-defined conversion, written as a cast `(ProductCode)raw` or applied implicitly by `Code = raw;`,
+which is a method free to return null — and its null-check is marked like any other guard. The `nameof` of the message is excluded as it is everywhere else.
+
 **A leading statement need not be an `if` to matter either.** A guard delegated entirely to a helper —
 `Ensure.NotBlank(value);`, called plainly, with no `if` in the constructor at all — throws from
 inside a call the closed set above does not parse, so it used to pass unnoticed: the parameter read
@@ -1077,6 +1113,18 @@ works from the type's name, which drops its arguments, so `Repository<Order>` an
 would both be told to write `AnyRepository` and neither is the name to write. A sentinel that says
 nothing beats a name that says the wrong thing.
 
+**A parameter that reaches the type being scaffolded is left open too, with its reason.**
+`Node(string name, IReadOnlyList<Node> children)` would otherwise compose `children` into
+`Any.ListOf(new AnyNode())` inside `AnyNode`'s own constructor — a recursion that runs on
+construction, so even a test pinning `children` through `With…` never escapes it, and the run ends
+in a stack overflow before any test reports. The same holds directly (`Employee? manager`), through
+an array or through any type argument composition would follow. The parameter takes the §5.5
+sentinel, its line says the value reaches the type being scaffolded, and the recap column reads
+`self-referencing` (§6). An empty collection, a null or a depth parameter would each be the engine
+choosing how deep the developer's data goes — a cleverer generator, not an honest one (ADR-0046) —
+so the bound is the developer's to write. Only the target itself is checked: two types reaching each
+other through their own scaffolded generators are not detected here.
+
 Convention, not attribute, not configuration: an attribute would mean touching the developer's
 production code to please a test tool, and a configuration file breaks design rule 2.
 
@@ -1189,7 +1237,8 @@ constructor body was unavailable so no guard could be read, `unread guards` when
 throws or calls in a way the recognised set did not match, or in a place the engine cannot vouch for —
 below a write to the parameter, or under something deciding whether it runs at all —,
 `constraint unavailable` when a guard was
-read and understood and this generator carries no member to say it with, and `unavailable` when the
+read and understood and this generator carries no member to say it with, `self-referencing` when an
+open parameter reaches the type being scaffolded (§5.4), and `unavailable` when the
 generator exists in the library but not in the asset this project resolves.
 
 `guard` is computed from the constraints **applied**, never from the constraints read. The
@@ -1291,6 +1340,7 @@ The provenance words are the recap's own (§6), read from one table rather than 
 | Nothing constructs the target (§5.1) | `1` | Names both doors §5.1 opens: a public instance constructor passing every parameter by value, or one recognised static factory. Where several **eligible** factories tie — the type declaring no public constructor to close that route — they are listed instead. |
 | The target is abstract | `1` | Refused whether or not it declares a constructor of its own — the ordinary abstract type declares `protected` ones and would otherwise hear the row above, whose remedy is the wrong one. A recognised factory reaching it is the exception: `CS0144` is about `new`. Suggests a concrete type that derives from it. |
 | The target is generic, or nested in a generic type | `1` | Nothing supplies the type argument, so the emitted file could not name it. |
+| The target is an enum | `1` | Names `Any.Enum<TEnum>()`, which the library already uses to generate enum values; nothing is written. |
 | The target's `required` members are unset by the chosen constructor | `1` | Deferred to §16; names `[SetsRequiredMembers]`, which is scaffolded like any other constructor. |
 | `--entry-point any`, project below C# 14 | `1` | Names the version the project resolved, and `static:<Name>`. |
 | `--entry-point static:Any` | `2` | Names what would stop compiling, and points at `--entry-point any`. |
@@ -1311,6 +1361,9 @@ is decided in this order, which is a rule rather than a pipeline's accident:
 4. **nothing constructs it**, which is a fact about what §5.1's search found rather than about the
    type;
 5. **`required` members unset**, which only arises once a constructor has been chosen.
+
+An **enum** is decided right after 1, before anything about its constructors is asked: the one it has
+is synthesised, so every later row would describe a construction that does not mean anything.
 
 The order matters because 4 is the cheapest to compute and the least useful to hear: an abstract type
 declares its constructors `protected`, so deciding 4 first told every one of them to add a public
@@ -1423,15 +1476,18 @@ Named explicitly so they are not mistaken for oversights.
   than of the one the generator draws, and a guard the engine cannot show runs on every path — because
   something encloses it deciding that, or because a statement above it can jump past it — which would
   otherwise state an invariant of the paths that reach it rather than of the parameter (§5.3).
-  Two shapes still escape it, and both are silent rather than merely unread — the tool sees no
+  Three shapes still escape it, and all three are silent rather than merely unread — the tool sees no
   rejection to be uncertain about. A guard helper that **returns** the value it checked — `_name =
   Ensure.Valid(value);` — is indistinguishable from normalisation, and reading it as doubt would
   mean reading `_name = value.Trim();` as doubt too, which blocks the compilation of constructors
   carrying no guard at all; the helpers of the two libraries §5.3 reads by resolved symbol
   (ADR-0086) are the measured exception, and every other returning validator keeps this answer. And
   a guard reached only through a level of indirection the tool does not follow — a local copy of the
-  parameter (`var v = value; Validate(v);`), a lambda closing over it, a call reached through a
-  member rather than the parameter's own name. In both the tool still
+  parameter handed to a helper (`var v = value; Validate(v);`; a throwing statement testing such a copy
+  is marked, §5.3), a lambda closing over it, a call reached through a
+  member rather than the parameter's own name. And a guard helper the set does not recognise, called
+  below the first assignment to state (§5.3), where it is indistinguishable from filling that state. In
+  all three the tool still
   cannot tell the parameter from an unconstrained one, and it does not guess — which is the residue
   this non-goal is about: not what happens once doubt is established, but the doubt the tool never
   sees.

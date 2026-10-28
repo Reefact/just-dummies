@@ -95,7 +95,7 @@ public static class Scaffolder {
         // and the coarser refusal used to win — sending the developer to add a public constructor, which
         // changes nothing about instantiating an abstract type. Measured over seven repositories, 12 of 55
         // such refusals were really one of these two (`audit/2026-09-02-dum-first-field-measurement.md`).
-        if (IsGeneric(target)) { return ScaffoldOutcome.Refused(ScaffoldStatus.TypeIsGeneric); }
+        if (RefusedForWhatItIs(target) is { } refusal) { return ScaffoldOutcome.Refused(refusal); }
 
         // Only the generic refusal reaches the factory path: `CS0144` and `CS9035` are both about `new`,
         // which a factory call site never writes, so an abstract type behind a recognised factory is
@@ -134,7 +134,7 @@ public static class Scaffolder {
         List<ScaffoldedParameter> parameters = [];
 
         foreach (IParameterSymbol parameter in chosen.Parameters) {
-            parameters.Add(Resolve(parameter, names, generators, guards));
+            parameters.Add(Resolve(parameter, target, names, generators, guards));
         }
 
         ScaffoldPlan plan = new(new TargetType(targetName, fileNamespace, StyleOf(target, fileNamespace)),
@@ -153,11 +153,12 @@ public static class Scaffolder {
     ///     One parameter: the table's answer for its type, tightened by whatever its guards said (§5.3).
     /// </summary>
     private static ScaffoldedParameter Resolve(IParameterSymbol parameter,
+                                               INamedTypeSymbol target,
                                                TypeNames names,
                                                GeneratorFor generators,
                                                GuardReading guards) {
         string         typeDisplay = names.Of(parameter.Type);
-        DrawnGenerator drawn       = generators.Draw(parameter.Type);
+        DrawnGenerator drawn       = generators.Draw(parameter.Type, target);
 
         Provenance provenance = drawn.Provenance
                               | (guards.SourceAvailable ? Provenance.None : Provenance.NoSource)
@@ -179,6 +180,20 @@ public static class Scaffolder {
         string generatorType = written.Returned is { } returned ? names.Of(returned) : drawn.GeneratorType!;
 
         return ScaffoldedParameter.DrawnFrom(parameter.Name, typeDisplay, generatorType, written.Base, provenance, written.Conversion);
+    }
+
+    /// <summary>
+    ///     The refusal a type earns for what it is, before any of its constructors is asked about.
+    /// </summary>
+    /// <remarks>
+    ///     Generic first: nothing supplies the type argument, whatever else is true. An enum next: it has a
+    ///     synthesised parameterless constructor, so the search would find one — and <c>new TEnum()</c> is
+    ///     <c>(TEnum)0</c> on every draw. The library already draws enums, and the refusal names how.
+    /// </remarks>
+    private static ScaffoldStatus? RefusedForWhatItIs(INamedTypeSymbol target) {
+        if (IsGeneric(target)) { return ScaffoldStatus.TypeIsGeneric; }
+
+        return target.TypeKind == TypeKind.Enum ? ScaffoldStatus.TypeIsEnum : null;
     }
 
     /// <summary>

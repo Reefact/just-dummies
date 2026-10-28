@@ -60,8 +60,9 @@ It is the point of the recap, not decoration — it separates what was **inferre
 | `AnyX` | drawn through the generator that type owns |
 | `TODO` | nothing could be inferred; the file names what to do |
 | `to verify` | a generator *was* inferred, but something near that parameter could not be read — check it |
-| `unread guards` | that "something": a guard the tool does not recognise, a helper it cannot see into, or a guard it reads but cannot place — below a write to the parameter, or under something deciding whether it runs |
+| `unread guards` | that "something": a guard the tool does not recognise, a helper it cannot see into, or a guard it reads but cannot place — below a write to the parameter or to state, testing a local or a field computed from the parameter, or under something deciding whether it runs |
 | `constraint unavailable` | a guard was understood, and this generator has no member to express it with |
+| `self-referencing` | the parameter reaches the type being scaffolded (a tree, a manager of the same type), so it is a `TODO`: drawing it would recurse forever, and how deep it goes is yours to write |
 | `no source` | the type comes from a package, so there was no constructor body to read |
 | `unavailable` | the generator exists in JustDummies, but not in the asset your project resolves |
 
@@ -72,7 +73,7 @@ that quietly drew a plausible value there would be far worse.
 
 **`to verify` works the same way, and for the same reason.** Where your constructor delegates its
 validation to a helper, guards in a shape the tool does not parse, or guards in a place it cannot
-vouch for — below a write to the parameter, or under something deciding whether the guard runs at
+vouch for — below a write to the parameter or to state, or under something deciding whether the guard runs at
 all — it cannot promise the recipe it inferred honours your real invariant — so it writes that recipe as your working base and adds one
 line that does not compile above it:
 
@@ -92,6 +93,14 @@ Keep the recipe or replace it, delete that one line, and you are done. The alter
 compiles and draws a value your constructor rejects on some later run — is the failure that costs
 most, because it surfaces far from its cause
 ([ADR-0083](../../for-maintainers/adr/0083-block-compilation-on-a-guard-the-engine-cannot-vouch-for.md)).
+
+**What the tool still cannot see stays silent.** A few shapes reject a value without the tool seeing a
+rejection at all, so they earn no mark: a validator that *returns* the value it checked
+(`_name = Ensure.Valid(name);`), a local copy handed to a helper (`var v = value; Validate(v);`), a
+lambda closing over the parameter, and a helper the tool does not recognise called below the first
+assignment to state. If your constructor validates that way, read the recipe for that parameter
+yourself. The full list is §9 of the
+[`any` specification](../../for-maintainers/specifications/justdummies-tool.md).
 
 ## Through a graph of aggregates
 

@@ -139,7 +139,11 @@ internal static class Guards {
         // It never lifts again: once a path can skip one statement, it can skip all of them.
         bool unskipped = true;
 
-        foreach (StatementSyntax statement in declaration.Body.Statements) {
+        SyntaxList<StatementSyntax> statements = declaration.Body.Statements;
+
+        for (int index = 0; index < statements.Count; index++) {
+            StatementSyntax statement = statements[index];
+
             // A second assignment is exempt for the same reason as ADR-0086's: `Field = param ?? throw new
             // ArgumentNullException(nameof(param));` states the same null-check `ArgumentNullException
             // .ThrowIfNull(param)` and `if (param is null) { throw … }` already read (§5.3) — a third
@@ -160,11 +164,15 @@ internal static class Guards {
             // so leaves everything below it exactly as leading as it was. The call itself is read by the
             // marking pass below, through the same placement questions as any other.
             if (AssignsState(statement, model) && !IsGuardAssignment(statement, model)) {
-                // The scan still ends here — everything below stays out of reach, exactly as before. But a
-                // throw carried inside the assignment's own right side (`Code = code.Length switch { < 8 =>
-                // throw ..., ... };`) is asked about before that happens: the statement rejects a value on
-                // some path, and the developer deserves the mark for that even though nothing reads past it.
+                // The scan ends here — nothing below is read as a guard any more. A throw carried inside the
+                // assignment's own right side (`Code = code.Length switch { < 8 => throw ..., ... };`) is asked
+                // about first: the statement rejects a value on some path, and the developer deserves the mark.
                 MarkIfItRejects(statement, model, declared, reading);
+
+                // Past the end of the leading scan nothing is read any more, but the body is still walked: a
+                // guard written below a write to state rejects values exactly as much as one above it, and
+                // passing over it in silence reported a generator as inferred that the constructor still refuses.
+                MarkWhatRejectsBelowTheScan(statements.Skip(index + 1), model, declared, reading, names, writes);
 
                 break;
             }
@@ -513,6 +521,167 @@ internal static class Guards {
         if (!Throws(statement)) { return; }
 
         foreach (IParameterSymbol parameter in Mentioned(statement, model, method)) { reading.MarkUnread(parameter.Name); }
+        foreach (IParameterSymbol parameter in ReachedThroughACopy(statement, model, method)) { reading.MarkUnread(parameter.Name); }
+    }
+
+    /// <summary>
+    ///     The parameters a local, field or property that <paramref name="node" /> names was copied from — one
+    ///     step of data flow, and no more.
+    /// </summary>
+    /// <remarks>
+    ///     <c>bool ok = value.StartsWith("LOT-"); if (!ok) { throw … }</c> rejects <c>value</c> exactly as
+    ///     much as testing it in place would, and yet the condition names no parameter: read only for what it
+    ///     names, it marked nothing, and the recap reported a generator the constructor refused on nearly
+    ///     every draw as inferred. <c>_name = name; if (_name.Length &gt; 5) { throw … }</c> is the same guard
+    ///     through a member rather than a local. A local is followed to its own declaration, and a field or a
+    ///     property to every assignment of it that precedes <paramref name="node" /> in the same body, so the
+    ///     parameter it came from is <b>marked</b> — never read: what a copied or computed value admits is not
+    ///     a constraint the closed set can state about the parameter, and following it further would be the
+    ///     propagation ADR-0046 refuses. Following one step too few costs a silence §9 names, never a wrong
+    ///     bound. The <c>nameof</c> of a message is excluded here for the reason <see cref="Mentioned" /> gives.
+    /// </remarks>
+    private static IParameterSymbol[] ReachedThroughACopy(SyntaxNode node, SemanticModel model, IMethodSymbol method) {
+        return CopySources(node, model)
+                   .SelectMany(source => Mentioned(source, model, method))
+                   .Distinct(SymbolEqualityComparer.Default)
+                   .OfType<IParameterSymbol>()
+                   .ToArray();
+    }
+
+    /// <summary>
+    ///     The expressions every local, field or property <paramref name="node" /> names took its value from,
+    ///     past any <c>nameof</c> inside it.
+    /// </summary>
+    private static IEnumerable<ExpressionSyntax> CopySources(SyntaxNode node, SemanticModel model) {
+        InvocationExpressionSyntax[] spelled = [.. node.DescendantNodesAndSelf()
+                                                       .OfType<InvocationExpressionSyntax>()
+                                                       .Where(IsNameOf)];
+
+        return node.DescendantNodesAndSelf()
+                   .OfType<IdentifierNameSyntax>()
+                   .Where(identifier => !spelled.Any(name => name.Contains(identifier)))
+                   .Select(identifier => model.GetSymbolInfo(identifier).Symbol)
+                   .SelectMany(symbol => CopiedFrom(symbol, node, model));
+    }
+
+    /// <summary>
+    ///     Whether <paramref name="source" /> is a parameter itself, unchanged — through parentheses, a built-in
+    ///     cast or a null-forgiving <c>!</c>, none of which can turn a non-null value into null.
+    /// </summary>
+    /// <remarks>
+    ///     A user-defined conversion is not unwrapped: <c>explicit operator ProductCode(string raw)</c> is a
+    ///     method, free to return null for a value it rejects, so a null-check on its result is a real guard.
+    ///     The same holds when the assignment applies it implicitly — <c>Code = raw;</c> through an
+    ///     <c>implicit operator</c> — which is the conversion <see cref="SemanticModel" /> reports on the
+    ///     right side itself, where no cast is written to look at.
+    /// </remarks>
+    private static bool IsTheParameterItself(ExpressionSyntax source, SemanticModel model) {
+        if (model.GetConversion(source).IsUserDefined) { return false; }
+
+        ExpressionSyntax unwrapped = source switch {
+            ParenthesizedExpressionSyntax parenthesized                                          => parenthesized.Expression,
+            CastExpressionSyntax cast when !IsUserDefinedConversion(cast, model)                 => cast.Expression,
+            PostfixUnaryExpressionSyntax forgiven when forgiven.IsKind(SyntaxKind.SuppressNullableWarningExpression) => forgiven.Operand,
+            _                                                                                    => source
+        };
+
+        return unwrapped == source
+                   ? model.GetSymbolInfo(source).Symbol is IParameterSymbol
+                   : IsTheParameterItself(unwrapped, model);
+    }
+
+    /// <summary>Whether <paramref name="cast" /> calls a conversion operator someone wrote.</summary>
+    private static bool IsUserDefinedConversion(CastExpressionSyntax cast, SemanticModel model) {
+        return model.GetSymbolInfo(cast).Symbol is IMethodSymbol { MethodKind: MethodKind.Conversion };
+    }
+
+    /// <summary>
+    ///     The expressions <paramref name="symbol" /> took its value from before <paramref name="node" />: a
+    ///     local's initializer, or the right side of each earlier assignment to a field or property.
+    /// </summary>
+    private static IEnumerable<ExpressionSyntax> CopiedFrom(ISymbol? symbol, SyntaxNode node, SemanticModel model) {
+        if (symbol is ILocalSymbol local) {
+            return local.DeclaringSyntaxReferences
+                        .Select(reference => reference.GetSyntax())
+                        .OfType<VariableDeclaratorSyntax>()
+                        .Where(declarator => declarator.SyntaxTree == node.SyntaxTree && declarator.Initializer is not null)
+                        .Select(declarator => declarator.Initializer!.Value);
+        }
+
+        if (symbol is not (IFieldSymbol or IPropertySymbol)
+         || node.FirstAncestorOrSelf<BaseMethodDeclarationSyntax>()?.Body is not { } body) {
+            return [];
+        }
+
+        return body.DescendantNodes()
+                   .OfType<AssignmentExpressionSyntax>()
+                   .Where(assignment => assignment.SpanStart < node.SpanStart
+                                     && SymbolEqualityComparer.Default.Equals(model.GetSymbolInfo(assignment.Left).Symbol, symbol))
+                   .Select(assignment => assignment.Right);
+    }
+
+    /// <summary>
+    ///     Marks every parameter a statement below the end of the leading scan would have constrained, had it
+    ///     stood above it.
+    /// </summary>
+    /// <remarks>
+    ///     Nothing here is read: a guard below a write to state is not placed where §5.3 can vouch for it, so
+    ///     the most it earns is <c>unread guards</c> — a louder refusal, never a new inference (ADR-0046). What
+    ///     earns it is a statement that throws, and a call the closed set recognises as a guard; both are run
+    ///     through the ordinary reading into a reading of their own, and only a parameter that reading would have
+    ///     narrowed or marked is marked here. A check satisfied by construction — the null-check in each of its
+    ///     spellings, a generator never drawing null (ADR-0064) — narrows nothing and so stays silent, as it
+    ///     would above the scan.
+    ///     <para>
+    ///         A call the set does not recognise is left alone below the scan, unlike above it: there,
+    ///         <c>_items.AddRange(items);</c> is the ordinary filling of state the scan has just ended on, and
+    ///         marking it would block the compilation of constructors carrying no guard at all. That residue is
+    ///         named in §9.
+    ///     </para>
+    /// </remarks>
+    private static void MarkWhatRejectsBelowTheScan(IEnumerable<StatementSyntax> below,
+                                                    SemanticModel model,
+                                                    IMethodSymbol method,
+                                                    GuardReading reading,
+                                                    TypeNames names,
+                                                    ParameterWrites writes) {
+        foreach (StatementSyntax statement in below) { MarkIfItRejectsBelowTheScan(statement, model, method, reading, names, writes); }
+    }
+
+    /// <summary>One statement of <see cref="MarkWhatRejectsBelowTheScan" />.</summary>
+    private static void MarkIfItRejectsBelowTheScan(StatementSyntax statement,
+                                                    SemanticModel model,
+                                                    IMethodSymbol method,
+                                                    GuardReading reading,
+                                                    TypeNames names,
+                                                    ParameterWrites writes) {
+        if (TryRecogniseCoalesceThrowNullCheck(statement, model, method, out _)) { return; }
+
+        GuardReading wouldHaveRead = GuardReading.FromSource();
+
+        ReadRecognisedCalls(statement, model, method, wouldHaveRead);
+
+        if (statement is IfStatementSyntax chain && Throws(chain)) {
+            ReadChain(chain, model, method, wouldHaveRead, names, writes, unskipped: true);
+        } else {
+            MarkIfItRejects(statement, model, method, wouldHaveRead);
+        }
+
+        foreach (string narrowed in method.Parameters.Select(parameter => parameter.Name)
+                                         .Where(name => wouldHaveRead.Unread(name) || wouldHaveRead.For(name).Count > 0)) {
+            reading.MarkUnread(narrowed);
+        }
+    }
+
+    /// <summary>Reads every call under <paramref name="statement" /> the closed set recognises as a guard.</summary>
+    private static void ReadRecognisedCalls(StatementSyntax statement, SemanticModel model, IMethodSymbol method, GuardReading reading) {
+        foreach (InvocationExpressionSyntax invocation in statement.DescendantNodesAndSelf().OfType<InvocationExpressionSyntax>()) {
+            foreach (IParameterSymbol parameter in Mentioned(invocation, model, method)) {
+                if (!TryRecogniseCall(invocation, model, parameter, out IReadOnlyList<GuardConstraint> read)) { continue; }
+
+                foreach (GuardConstraint constraint in read) { reading.Add(parameter.Name, constraint); }
+            }
+        }
     }
 
     /// <summary>Whether anything anywhere in <paramref name="statement" /> refuses to go on.</summary>
@@ -933,6 +1102,13 @@ internal static class Guards {
                                 bool unskipped) {
         IParameterSymbol[] mentioned = Mentioned(condition, model, method);
 
+        // A null-check on a plain copy narrows nothing, exactly as one on the parameter itself: the generator
+        // never draws null (ADR-0064), so neither does a member holding it unchanged. A value COMPUTED from the
+        // parameter can be null — `name.Length < 5 ? null : name` — and its null-check is a real guard.
+        if (!IsNullCheck(condition) || !CopySources(condition, model).All(source => IsTheParameterItself(source, model))) {
+            foreach (IParameterSymbol reached in ReachedThroughACopy(condition, model, method)) { reading.MarkUnread(reached.Name); }
+        }
+
         // Exactly one, or the engine cannot say whose invariant this is. A cross-parameter rule is precisely
         // the case §9 names as out of reach — and §9 says how it ends, too: `unread guards`, on every
         // parameter it spans. Silence there measured 5008 throws in 10 000 draws on `Range(min, max)`, under
@@ -985,6 +1161,17 @@ internal static class Guards {
         }
 
         if (constraint is not null) { reading.Add(parameter.Name, constraint); }
+    }
+
+    /// <summary>Whether <paramref name="condition" /> tests one value against null and nothing else.</summary>
+    private static bool IsNullCheck(ExpressionSyntax condition) {
+        return condition switch {
+            IsPatternExpressionSyntax { Pattern: ConstantPatternSyntax { Expression: LiteralExpressionSyntax literal } } =>
+                literal.IsKind(SyntaxKind.NullLiteralExpression),
+            BinaryExpressionSyntax binary when binary.IsKind(SyntaxKind.EqualsExpression) =>
+                binary.Left.IsKind(SyntaxKind.NullLiteralExpression) || binary.Right.IsKind(SyntaxKind.NullLiteralExpression),
+            _ => false
+        };
     }
 
     /// <summary>

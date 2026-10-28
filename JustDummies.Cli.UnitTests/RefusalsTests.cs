@@ -54,6 +54,12 @@ public sealed class RefusalsTests : IDisposable {
         Check.That(said).Contains("OrderLine, OrderStatus");
     }
 
+    // An enum is drawn by the library already, so the answer is the call to write, not a file.
+    [Fact(DisplayName = "An enum is answered with the generator the library already has.")]
+    public void AnEnumIsAnsweredWithTheGeneratorTheLibraryAlreadyHas() {
+        Check.That(Rendered(ScaffoldOutcome.Refused(ScaffoldStatus.TypeIsEnum))).Contains("Any.Enum<Order>()");
+    }
+
     // Nothing close is a different situation, and points at the likelier cause: the wrong project.
     [Fact(DisplayName = "A type nothing resembles points at --project rather than at the spelling.")]
     public void ATypeNothingResemblesPointsAtTheProject() {

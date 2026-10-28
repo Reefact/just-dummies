@@ -39,6 +39,37 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Fixed
 
+- **`any generate` on an enum is now refused, naming `Any.Enum<TEnum>()`, instead of reporting success.** The
+  synthesised parameterless constructor of an enum was taken for a real one, so the tool wrote
+  `return new Currency();` and exited 0 with `no constructor parameters to infer`: every draw was `(Currency)0`,
+  a constant, or a value the enum does not declare when it has no zero member. The run now exits 1, writes
+  nothing, and tells you to use `Any.Enum<Currency>()`. A generator already scaffolded for an enum does not
+  change; replace its uses with that call.
+- **A parameter that reaches the type being scaffolded is now a `TODO` marked `self-referencing`, instead of a
+  generator that overflows the stack.** `Node(string name, IReadOnlyList<Node> children)` was scaffolded with
+  `Any.ListOf(new AnyNode())` inside `AnyNode`'s own constructor, reported as inferred: the first test to touch it
+  ended the run with "Stack overflow." and no test reported, and even `.WithChildren(...)` could not escape it.
+  The same held for `Employee(string name, Employee? manager)`. Such a parameter now stops the build at a line
+  saying the value reaches the type being scaffolded; write its generator with the depth bound you choose. Two
+  types reaching each other through their own generators are not detected.
+- **A guard written below the first assignment to state is now marked `unread guards` instead of passed over in
+  silence.** The leading-guard scan (§5.3) stopped at that assignment and never looked at what followed, so
+  `Rate = rate; if (currency.Length != 3) { throw … }` reported `currency` as inferred, the file compiled, and
+  the constructor rejected nearly every draw; `ThrowIfNegativeOrZero(rack); Rack = rack;
+  ThrowIfGreaterThan(rack, 99);` kept `.Positive()` and lost the ceiling under a plain `guard`; and
+  `_name = name; if (_name.Length > 5) { throw … }`, testing the field the parameter was copied into, said
+  nothing at all. Such a guard is still not *read* — it is not placed where the engine can vouch for it — but a statement below the scan that
+  throws, or a call the set recognises as a guard, now marks every parameter it would have constrained, and the
+  file stops at the `TODO(any)` line until you confirm the generator. A null-check there stays silent, as above
+  it, unless it tests a value computed from the parameter (`Name = name.Length < 5 ? null : name;`), which can be
+  null. A generator already scaffolded does not change; re-scaffold with `--force` to see the mark.
+- **A guard that tests a local computed from a parameter is now marked `unread guards` instead of reported as
+  inferred.** `bool ok = value.StartsWith("LOT-"); if (!ok) { throw … }` — or a `Match` on a regex, an
+  `int.Parse`, a `switch` into a `bool` — names no parameter in its condition, so the tool marked nothing and the
+  constructor rejected nearly every draw of a file that compiled. A throwing statement now follows each local it
+  tests one step back to its declaration and marks the parameters it was initialised from; it still never reads
+  such a guard. A local copy handed to a helper (`var v = value; Validate(v);`) still escapes, and the `any`
+  page now names what does.
 - **A null-check fused into an assignment — `Field = value ?? throw new ArgumentNullException(nameof(value));`
   — is now read as the same guard `ArgumentNullException.ThrowIfNull(value)` and `if (value is null) { throw
   … }` already were, and reading it no longer stops at the first parameter guarded that way.** The leading-guard

@@ -64,6 +64,18 @@ public enum ScaffoldStatus {
     ///     the developer's build with <c>CS9035</c>. A constructor marked <c>[SetsRequiredMembers]</c> sets
     ///     them, and is scaffolded like any other.
     /// </remarks>
-    RequiredMembersUnset = 7
+    RequiredMembersUnset = 7,
+
+    /// <summary>
+    ///     The target is an enum, which the library already draws through <c>Any.Enum&lt;TEnum&gt;()</c> (§5.1).
+    /// </summary>
+    /// <remarks>
+    ///     Roslyn synthesises a parameterless constructor for an enum, so §5.1's choice found one and the file
+    ///     emitted <c>new TEnum()</c> under a recap reporting success: always <c>(TEnum)0</c>, a constant where
+    ///     the enum has a zero member and an undeclared value where it has none. Delegating to
+    ///     <c>Any.Enum&lt;TEnum&gt;()</c> instead would wrap a generator the library already ships in a file
+    ///     that adds nothing, so the honest answer is to name it.
+    /// </remarks>
+    TypeIsEnum = 8
 
 }

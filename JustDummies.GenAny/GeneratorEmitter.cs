@@ -226,6 +226,16 @@ public static class GeneratorEmitter {
     ///     build reports it at this line, in the IDE and in CI, the minute the file is written.
     /// </summary>
     private static void WriteTodo(StringBuilder file, ScaffoldedParameter parameter, string indent) {
+        // Scaffolding the type named would be scaffolding this very file again, so the line says what is
+        // actually missing: a bound on how deep the value goes, which only the developer can choose (§5.4).
+        if (parameter.Provenance.HasFlag(Provenance.SelfReferencing)) {
+            Line(file, $"{indent}// TODO(any): '{parameter.TypeDisplay} {parameter.Name}' reaches the type being scaffolded, so drawing it here would recurse forever.");
+            Line(file, $"{indent}//   Write one here with a depth bound you choose (an empty collection or null ends it),");
+            Line(file, $"{indent}//   or replace it and always pass .With{parameter.PascalCasedName}(value) instead.");
+
+            return;
+        }
+
         Line(file, $"{indent}// TODO(any): no generator inferred for '{parameter.TypeDisplay} {parameter.Name}'.");
 
         if (ScaffoldableByName(parameter.TypeDisplay)) {

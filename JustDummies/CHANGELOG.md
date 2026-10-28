@@ -123,9 +123,9 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   cause.** `Any.Decimal().Positive().WithScale(2).LessThan(0.01m)` was refused with "Cannot apply
   LessThan(0.01) because Positive(), LessThan(0.01) forbid every WithScale(2) value between 0 and
   0.01." It now reads "…because Positive() forbids every WithScale(2) value between 0 and 0.01
-  except 0.01, and it forbids that one.", which names the constraints declared before it and the
-  grid points they leave; the same holds when the constraint applied last is an exclusion such as
-  `Except(...)`, which may leave it several points to forbid.
+  except 0.01, which LessThan(0.01) forbids.", which names the constraints declared before it, the
+  grid points they leave, and the constraint that forbids those; the same holds when the constraint
+  applied last is an exclusion such as `Except(...)`, which may forbid several of them.
 
 - **Failure messages no longer print control characters, claim a value is left where none is, or
   assert that a generator cannot replay.** A string drawn into an `As(...)` or `Combine(...)` failure

@@ -317,6 +317,9 @@ un appel suffit ; le cast permet de distinguer la valeur d'une lambda :
 Shipment anyUndeclaredShipment = Any.Shipment().WithDeclaredValue((decimal?)null).Generate();
 ```
 
+Un paramètre de type référence nullable prend le même cast — `.WithAgent((Customer?)null)` — et son
+pin est typé `Customer?` précisément pour cela, partout où votre projet lit les annotations nullables.
+
 Pour obtenir `null` *de temps en temps*, ajoutez la surcharge.
 
 **Plus que ce que la base autorise.** Si le domaine accepte une étiquette vide, c'est la base qui est

@@ -521,25 +521,26 @@ internal static class Guards {
         if (!Throws(statement)) { return; }
 
         foreach (IParameterSymbol parameter in Mentioned(statement, model, method)) { reading.MarkUnread(parameter.Name); }
-        foreach (IParameterSymbol parameter in ReachedThroughALocal(statement, model, method)) { reading.MarkUnread(parameter.Name); }
+        foreach (IParameterSymbol parameter in ReachedThroughACopy(statement, model, method)) { reading.MarkUnread(parameter.Name); }
     }
 
     /// <summary>
-    ///     The parameters a local that <paramref name="node" /> names was initialised from — one step of data
-    ///     flow, and no more.
+    ///     The parameters a local, field or property that <paramref name="node" /> names was copied from — one
+    ///     step of data flow, and no more.
     /// </summary>
     /// <remarks>
     ///     <c>bool ok = value.StartsWith("LOT-"); if (!ok) { throw … }</c> rejects <c>value</c> exactly as
     ///     much as testing it in place would, and yet the condition names no parameter: read only for what it
     ///     names, it marked nothing, and the recap reported a generator the constructor refused on nearly
-    ///     every draw as inferred. The local is followed to its own declaration so the parameter it came from
-    ///     is <b>marked</b> — never read: what a computed value admits is not a constraint the closed set can
-    ///     state about the parameter, and following it further would be the propagation ADR-0046 refuses.
-    ///     A local assigned again after its declaration is still followed to that declaration only; the mark
-    ///     it earns is a refusal, so following one step too few costs a silence §9 names, never a wrong bound.
-    ///     The <c>nameof</c> of a message is excluded here for the reason <see cref="Mentioned" /> gives.
+    ///     every draw as inferred. <c>_name = name; if (_name.Length &gt; 5) { throw … }</c> is the same guard
+    ///     through a member rather than a local. A local is followed to its own declaration, and a field or a
+    ///     property to every assignment of it that precedes <paramref name="node" /> in the same body, so the
+    ///     parameter it came from is <b>marked</b> — never read: what a copied or computed value admits is not
+    ///     a constraint the closed set can state about the parameter, and following it further would be the
+    ///     propagation ADR-0046 refuses. Following one step too few costs a silence §9 names, never a wrong
+    ///     bound. The <c>nameof</c> of a message is excluded here for the reason <see cref="Mentioned" /> gives.
     /// </remarks>
-    private static IParameterSymbol[] ReachedThroughALocal(SyntaxNode node, SemanticModel model, IMethodSymbol method) {
+    private static IParameterSymbol[] ReachedThroughACopy(SyntaxNode node, SemanticModel model, IMethodSymbol method) {
         InvocationExpressionSyntax[] spelled = [.. node.DescendantNodesAndSelf()
                                                        .OfType<InvocationExpressionSyntax>()
                                                        .Where(IsNameOf)];
@@ -547,16 +548,37 @@ internal static class Guards {
         return node.DescendantNodesAndSelf()
                    .OfType<IdentifierNameSyntax>()
                    .Where(identifier => !spelled.Any(name => name.Contains(identifier)))
-                   .Select(identifier => model.GetSymbolInfo(identifier).Symbol as ILocalSymbol)
-                   .Where(local => local is not null)
-                   .SelectMany(local => local!.DeclaringSyntaxReferences)
-                   .Select(reference => reference.GetSyntax())
-                   .OfType<VariableDeclaratorSyntax>()
-                   .Where(declarator => declarator.SyntaxTree == node.SyntaxTree && declarator.Initializer is not null)
-                   .SelectMany(declarator => Mentioned(declarator.Initializer!.Value, model, method))
+                   .Select(identifier => model.GetSymbolInfo(identifier).Symbol)
+                   .SelectMany(symbol => CopiedFrom(symbol, node, model))
+                   .SelectMany(source => Mentioned(source, model, method))
                    .Distinct(SymbolEqualityComparer.Default)
                    .OfType<IParameterSymbol>()
                    .ToArray();
+    }
+
+    /// <summary>
+    ///     The expressions <paramref name="symbol" /> took its value from before <paramref name="node" />: a
+    ///     local's initializer, or the right side of each earlier assignment to a field or property.
+    /// </summary>
+    private static IEnumerable<ExpressionSyntax> CopiedFrom(ISymbol? symbol, SyntaxNode node, SemanticModel model) {
+        if (symbol is ILocalSymbol local) {
+            return local.DeclaringSyntaxReferences
+                        .Select(reference => reference.GetSyntax())
+                        .OfType<VariableDeclaratorSyntax>()
+                        .Where(declarator => declarator.SyntaxTree == node.SyntaxTree && declarator.Initializer is not null)
+                        .Select(declarator => declarator.Initializer!.Value);
+        }
+
+        if (symbol is not (IFieldSymbol or IPropertySymbol)
+         || node.FirstAncestorOrSelf<BaseMethodDeclarationSyntax>()?.Body is not { } body) {
+            return [];
+        }
+
+        return body.DescendantNodes()
+                   .OfType<AssignmentExpressionSyntax>()
+                   .Where(assignment => assignment.SpanStart < node.SpanStart
+                                     && SymbolEqualityComparer.Default.Equals(model.GetSymbolInfo(assignment.Left).Symbol, symbol))
+                   .Select(assignment => assignment.Right);
     }
 
     /// <summary>
@@ -1041,7 +1063,11 @@ internal static class Guards {
                                 bool unskipped) {
         IParameterSymbol[] mentioned = Mentioned(condition, model, method);
 
-        foreach (IParameterSymbol reached in ReachedThroughALocal(condition, model, method)) { reading.MarkUnread(reached.Name); }
+        // A null-check on a copy narrows nothing, exactly as one on the parameter itself: the generator never
+        // draws null (ADR-0064), so the copy it was assigned from cannot be null either.
+        if (!IsNullCheck(condition)) {
+            foreach (IParameterSymbol reached in ReachedThroughACopy(condition, model, method)) { reading.MarkUnread(reached.Name); }
+        }
 
         // Exactly one, or the engine cannot say whose invariant this is. A cross-parameter rule is precisely
         // the case §9 names as out of reach — and §9 says how it ends, too: `unread guards`, on every
@@ -1095,6 +1121,17 @@ internal static class Guards {
         }
 
         if (constraint is not null) { reading.Add(parameter.Name, constraint); }
+    }
+
+    /// <summary>Whether <paramref name="condition" /> tests one value against null and nothing else.</summary>
+    private static bool IsNullCheck(ExpressionSyntax condition) {
+        return condition switch {
+            IsPatternExpressionSyntax { Pattern: ConstantPatternSyntax { Expression: LiteralExpressionSyntax literal } } =>
+                literal.IsKind(SyntaxKind.NullLiteralExpression),
+            BinaryExpressionSyntax binary when binary.IsKind(SyntaxKind.EqualsExpression) =>
+                binary.Left.IsKind(SyntaxKind.NullLiteralExpression) || binary.Right.IsKind(SyntaxKind.NullLiteralExpression),
+            _ => false
+        };
     }
 
     /// <summary>

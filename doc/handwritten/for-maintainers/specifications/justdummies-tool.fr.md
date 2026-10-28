@@ -960,8 +960,11 @@ récapitulatif présentait comme inféré un generator que le constructeur refus
 tirage. Une instruction qui lève suit désormais chaque variable locale qu'elle nomme d'un pas, jusqu'à la
 déclaration de cette variable, et marque `unread guards` chaque paramètre que l'initialiseur nomme —
 sans jamais le lire : ce qu'une valeur calculée admet n'est pas une contrainte que l'ensemble clos
-sait énoncer sur le paramètre, et suivre la valeur plus loin serait de la propagation (ADR-0046). Le
-`nameof` du message est exclu, comme partout ailleurs.
+sait énoncer sur le paramètre, et suivre la valeur plus loin serait de la propagation (ADR-0046). Un
+champ ou une propriété copié à partir d'un paramètre est suivi de la même façon : `_name = name; if
+(_name.Length > 5) { throw … }` marque `name`, le membre étant suivi d'un pas jusqu'aux affectations
+qui précèdent l'instruction dans le même corps. Le `nameof` du message est exclu, comme partout
+ailleurs.
 
 **Une instruction de tête n'a pas besoin non plus d'être un `if` pour compter.** Une garde entièrement
 déléguée à un helper — `Ensure.NotBlank(value);`, appelé tel quel, sans aucun `if` dans le

@@ -179,15 +179,15 @@ public sealed class ConflictingAnyConstraintException : DummyException {
     /// <summary>
     ///     Builds the exception for a constraint that contradicts an upper bound already declared.
     /// </summary>
-    internal static ConflictingAnyConstraintException AlreadyBoundedAbove(ConstraintCall applying, ConstraintCall existingConstraint, string bound) {
-        return Sentence(applying, $"{existingConstraint} already requires values less than or equal to {bound}");
+    internal static ConflictingAnyConstraintException AlreadyBoundedAbove(ConstraintCall applying, ConstraintCall existingConstraint, string bound, bool exclusive = false) {
+        return Sentence(applying, $"{existingConstraint} already requires values less than {(exclusive ? "" : "or equal to ")}{bound}");
     }
 
     /// <summary>
     ///     Builds the exception for a constraint that contradicts a lower bound already declared.
     /// </summary>
-    internal static ConflictingAnyConstraintException AlreadyBoundedBelow(ConstraintCall applying, ConstraintCall existingConstraint, string bound) {
-        return Sentence(applying, $"{existingConstraint} already requires values greater than or equal to {bound}");
+    internal static ConflictingAnyConstraintException AlreadyBoundedBelow(ConstraintCall applying, ConstraintCall existingConstraint, string bound, bool exclusive = false) {
+        return Sentence(applying, $"{existingConstraint} already requires values greater than {(exclusive ? "" : "or equal to ")}{bound}");
     }
 
     /// <summary>

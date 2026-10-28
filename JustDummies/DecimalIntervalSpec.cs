@@ -703,14 +703,14 @@ internal sealed class DecimalIntervalSpec {
 
         // The constraint being applied forbids the last grid points itself — a strict bound through its point
         // exclusion, an exclusion directly — so the earlier ones are named for the rest of the grid, the points
-        // they leave are listed, and the applied one is not listed as its own cause (issue #340).
+        // they leave are listed, and the applied one is named for those points only, never as a pronoun a reader
+        // would bind to the earlier subject (issue #340).
         List<ConstraintCall> earlier = culprits.Where(culprit => culprit != applying).ToList();
         List<decimal>        left    = PointsOnlyTheAppliedConstraintForbids(applying);
         if (earlier.Count > 0 && earlier.Count < culprits.Count && left.Count > 0) {
             string points = string.Join(" and ", left.Select(_render));
-            string those  = left.Count == 1 ? "that one" : "those";
 
-            return $"{Forbids(earlier, applying)} every {_scaleConstraint} value between {_render(_min)} and {_render(_max)} except {points}, and it forbids {those}";
+            return $"{Forbids(earlier, applying)} every {_scaleConstraint} value between {_render(_min)} and {_render(_max)} except {points}, which {applying} forbids";
         }
 
         return $"{Forbids(culprits, applying)} every {_scaleConstraint} value between {_render(_min)} and {_render(_max)}";

@@ -23,7 +23,7 @@ namespace JustDummies.GenAny.UnitTests.Sweep;
 internal static class SweepDefects {
 
     /// <summary>
-    ///     Every open defect, and the shapes each one claims. Empty, and that is a state rather than an oversight.
+    ///     Every open defect, and the shapes each one claims.
     /// </summary>
     /// <remarks>
     ///     The two entries this table was created with — a distinct collection over a nullable element refusing a
@@ -32,7 +32,14 @@ internal static class SweepDefects {
     ///     an entry no shape reproduces fails the run, so a defect cannot be quietly repaired and left on the
     ///     record, and a defect cannot be recorded and quietly forgotten.
     /// </remarks>
-    internal static IReadOnlyList<SweepDefect> Open { get; } = [];
+    internal static IReadOnlyList<SweepDefect> Open { get; } = [
+        // Guards.IsTheParameterItself reads `Shaped = value;` as a plain copy because its right side IS the
+        // parameter, and so exempts the null-check below it; the property's own `set` accessor rewrites short
+        // values to null, which the constructor then rejects on nearly every draw. Issue #333.
+        new("setter-transforms-copy",
+            "a null-check on a property whose set accessor transforms the value is exempted as a plain copy (#333)",
+            (shape, _) => shape.Family == "placement" && shape.Name.StartsWith("placement-setter-", StringComparison.Ordinal))
+    ];
 
     /// <summary>The open defect that accounts for this finding, or null when nothing does.</summary>
     internal static SweepDefect? Claiming(SweepShape shape, SweepOutcome finding) {

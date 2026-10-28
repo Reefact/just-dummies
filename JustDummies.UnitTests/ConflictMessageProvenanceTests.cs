@@ -138,14 +138,23 @@ public sealed class ConflictMessageProvenanceTests {
         string message = ConflictMessage(() => Any.Decimal().Positive().WithScale(2).LessThan(0.01m));
 
         Check.WithCustomMessage($"The applied constraint is echoed after 'because'. Message: {message}").That(message).Not.Contains("because Positive(), LessThan(0.01)");
-        Check.That(message).Contains("Positive() forbids every other WithScale(2) value");
+        Check.That(message).Contains("Positive() forbids every WithScale(2) value between 0 and 0.01 except 0.01, and it forbids that one");
     }
 
     [Fact(DisplayName = "A decimal exclusion emptying a scale lattice names only the exclusions declared before it.")]
     public void DecimalExclusionEmptyingALatticeNamesOnlyTheEarlierExclusions() {
         string message = ConflictMessage(() => Any.Decimal().Between(0m, 0.01m).WithScale(2).Except(0m).DifferentFrom(0.01m));
 
-        Check.That(message).Contains("because Except(0) forbids every other WithScale(2) value");
+        Check.That(message).Contains("because Except(0) forbids every WithScale(2) value between 0 and 0.01 except 0.01, and it forbids that one");
+    }
+
+    [Fact(DisplayName = "A decimal exclusion of several points emptying a scale lattice lists the points the earlier ones left.")]
+    public void DecimalExclusionsOfSeveralPointsEmptyingALatticeListTheLeftPoints() {
+        // Each Except removes two of the four grid points: the earlier one forbids neither "every other" value nor
+        // every value but one, so the message names exactly the points it leaves to the applied one.
+        string message = ConflictMessage(() => Any.Decimal().Between(0m, 0.03m).WithScale(2).Except(0m, 0.01m).Except(0.02m, 0.03m));
+
+        Check.That(message).Contains("because Except(0, 0.01) forbids every WithScale(2) value between 0 and 0.03 except 0.02 and 0.03, and it forbids those");
     }
 
     // ----- ContinuousIntervalSpec: double (and, by sharing the engine, Single/Half) -----

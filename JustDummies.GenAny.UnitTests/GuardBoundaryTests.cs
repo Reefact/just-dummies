@@ -314,6 +314,7 @@ public sealed class GuardBoundaryTests {
     [InlineData("Name = value.Length < 5 ? null : value; if (Name is null) { throw new ArgumentException(nameof(value)); }")]
     [InlineData("Name = Normalise(value); if (Name is null) { throw new ArgumentException(nameof(value)); }")]
     [InlineData("uri = Uri.TryCreate(value, UriKind.Absolute, out Uri? parsed) ? parsed : null; if (uri == null) { throw new ArgumentException(nameof(value)); }")]
+    [InlineData("Code = (ProductCode)value; if (Code is null) { throw new ArgumentException(nameof(value)); }")]
     public void ANullCheckOnAMemberComputedFromTheParameterIsMarkedUnread(string body) {
         ScaffoldOutcome outcome = Subject.Scaffold($$"""
                                                      public sealed class Subject {
@@ -326,7 +327,15 @@ public sealed class GuardBoundaryTests {
 
                                                          public string? Name { get; }
 
+                                                         public ProductCode? Code { get; }
+
                                                          private static string? Normalise(string candidate) { return candidate.Length < 3 ? null : candidate; }
+
+                                                     }
+
+                                                     public sealed class ProductCode {
+
+                                                         public static explicit operator ProductCode(string raw) { return raw.Length < 5 ? null! : new ProductCode(); }
 
                                                      }
                                                      """);
@@ -372,6 +381,7 @@ public sealed class GuardBoundaryTests {
     [InlineData("ArgumentNullException.ThrowIfNull(Name);")]
     [InlineData("Other = name!; if (Other is null) { throw new ArgumentNullException(nameof(name)); }")]
     [InlineData("Other = (string)name; if (Other == null) { throw new ArgumentNullException(nameof(name)); }")]
+    [InlineData("Boxed = (object)name; if (Boxed is null) { throw new ArgumentNullException(nameof(name)); }")]
     public void AStatementAfterTheFirstAssignmentThatWouldNarrowNothingMarksNothing(string below) {
         ScaffoldOutcome outcome = Subject.Scaffold($$"""
                                                      public sealed class Subject {
@@ -386,6 +396,8 @@ public sealed class GuardBoundaryTests {
                                                          public string Name { get; }
 
                                                          public string Other { get; }
+
+                                                         public object Boxed { get; }
 
                                                      }
                                                      """);

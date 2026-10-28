@@ -553,6 +553,11 @@ internal static class Guards {
     ///     past any <c>nameof</c> inside it.
     /// </summary>
     private static IEnumerable<ExpressionSyntax> CopySources(SyntaxNode node, SemanticModel model) {
+        return NamedSymbols(node, model).SelectMany(symbol => CopiedFrom(symbol, node, model));
+    }
+
+    /// <summary>Every symbol <paramref name="node" /> names, past any <c>nameof</c> inside it.</summary>
+    private static IEnumerable<ISymbol?> NamedSymbols(SyntaxNode node, SemanticModel model) {
         InvocationExpressionSyntax[] spelled = [.. node.DescendantNodesAndSelf()
                                                        .OfType<InvocationExpressionSyntax>()
                                                        .Where(IsNameOf)];
@@ -560,8 +565,24 @@ internal static class Guards {
         return node.DescendantNodesAndSelf()
                    .OfType<IdentifierNameSyntax>()
                    .Where(identifier => !spelled.Any(name => name.Contains(identifier)))
-                   .Select(identifier => model.GetSymbolInfo(identifier).Symbol)
-                   .SelectMany(symbol => CopiedFrom(symbol, node, model));
+                   .Select(identifier => model.GetSymbolInfo(identifier).Symbol);
+    }
+
+    /// <summary>
+    ///     Whether reading <paramref name="symbol" /> gives back what was assigned to it: true of anything but a
+    ///     property with a hand-written accessor.
+    /// </summary>
+    /// <remarks>
+    ///     An auto-implemented property is the one property the compiler backs with a field of its own, which is
+    ///     how it is recognised — whatever spelling its accessors take. Any other property runs code on the way
+    ///     in or out, and <c>set { stored = value.Length &gt;= 5 ? value : null; }</c> turns a non-null value
+    ///     into null (#333).
+    /// </remarks>
+    private static bool HoldsWhatItIsAssigned(ISymbol? symbol) {
+        return symbol is not IPropertySymbol property
+            || property.ContainingType.GetMembers()
+                       .OfType<IFieldSymbol>()
+                       .Any(field => SymbolEqualityComparer.Default.Equals(field.AssociatedSymbol, property));
     }
 
     /// <summary>
@@ -1102,10 +1123,7 @@ internal static class Guards {
                                 bool unskipped) {
         IParameterSymbol[] mentioned = Mentioned(condition, model, method);
 
-        // A null-check on a plain copy narrows nothing, exactly as one on the parameter itself: the generator
-        // never draws null (ADR-0064), so neither does a member holding it unchanged. A value COMPUTED from the
-        // parameter can be null — `name.Length < 5 ? null : name` — and its null-check is a real guard.
-        if (!IsNullCheck(condition) || !CopySources(condition, model).All(source => IsTheParameterItself(source, model))) {
+        if (!IsANullCheckOnAPlainCopy(condition, model)) {
             foreach (IParameterSymbol reached in ReachedThroughACopy(condition, model, method)) { reading.MarkUnread(reached.Name); }
         }
 
@@ -1163,15 +1181,44 @@ internal static class Guards {
         if (constraint is not null) { reading.Add(parameter.Name, constraint); }
     }
 
-    /// <summary>Whether <paramref name="condition" /> tests one value against null and nothing else.</summary>
-    private static bool IsNullCheck(ExpressionSyntax condition) {
+    /// <summary>
+    ///     Whether <paramref name="condition" /> is a null-check on members that hold a parameter unchanged — one
+    ///     the generator satisfies by construction, so it narrows nothing.
+    /// </summary>
+    /// <remarks>
+    ///     The generator never draws null (ADR-0064), so neither does a member holding the value unchanged. Each
+    ///     half of "unchanged" is asked of the compiler: the right side of every copy is the parameter itself,
+    ///     and every member followed holds what it is assigned — a local, a field or an auto-implemented
+    ///     property, never one whose <c>set</c> accessor can rewrite the value (#333). A value COMPUTED from
+    ///     the parameter can be null — <c>name.Length &lt; 5 ? null : name</c> — and its null-check is a real guard.
+    /// </remarks>
+    private static bool IsANullCheckOnAPlainCopy(ExpressionSyntax condition, SemanticModel model) {
+        return IsNullCheck(condition, model)
+            && NamedSymbols(condition, model).All(HoldsWhatItIsAssigned)
+            && CopySources(condition, model).All(source => IsTheParameterItself(source, model));
+    }
+
+    /// <summary>
+    ///     Whether <paramref name="condition" /> tests one value against null and nothing else.
+    /// </summary>
+    /// <remarks>
+    ///     <c>is null</c> cannot be overloaded. <c>== null</c> can, and a user-defined operator is a method, free to
+    ///     answer <c>true</c> for a non-null value it rejects — so that spelling is a null-check only when the
+    ///     comparison the compiler resolved is the built-in one (#333).
+    /// </remarks>
+    private static bool IsNullCheck(ExpressionSyntax condition, SemanticModel model) {
         return condition switch {
             IsPatternExpressionSyntax { Pattern: ConstantPatternSyntax { Expression: LiteralExpressionSyntax literal } } =>
                 literal.IsKind(SyntaxKind.NullLiteralExpression),
             BinaryExpressionSyntax binary when binary.IsKind(SyntaxKind.EqualsExpression) =>
-                binary.Left.IsKind(SyntaxKind.NullLiteralExpression) || binary.Right.IsKind(SyntaxKind.NullLiteralExpression),
+                (IsNull(binary.Left) || IsNull(binary.Right)) && !IsUserDefinedOperator(binary, model),
             _ => false
         };
+    }
+
+    /// <summary>Whether <paramref name="comparison" /> calls an operator someone wrote.</summary>
+    private static bool IsUserDefinedOperator(BinaryExpressionSyntax comparison, SemanticModel model) {
+        return model.GetSymbolInfo(comparison).Symbol is IMethodSymbol { MethodKind: MethodKind.UserDefinedOperator };
     }
 
     /// <summary>
@@ -1243,7 +1290,7 @@ internal static class Guards {
 
         // `p == null`, `p == Guid.Empty` and `p == E.Member` are the comparisons whose right side is not a
         // number.
-        if (@operator == SyntaxKind.EqualsExpression && IsNull(other)) { return true; }
+        if (@operator == SyntaxKind.EqualsExpression && IsNull(other)) { return !IsUserDefinedOperator(comparison, model); }
         if (@operator == SyntaxKind.EqualsExpression && IsEmptyGuid(other, model)) {
             constraint = new GuardConstraint("NonEmpty", argument: null, Bound.Emptiness);
 

@@ -39,6 +39,13 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Fixed
 
+- **Two null-checks that reject real values are now marked `unread guards` instead of read as satisfied.** A
+  comparison to `null` through a user-defined `==` — an operator free to answer `true` for a value it rejects — was
+  read as the null-check the generator always satisfies, whether on the parameter (`if (code == null) throw …`) or
+  on a copy of it. And a null-check on a property whose `set` accessor rewrites the value (`set { stored =
+  value.Length >= 5 ? value : null; }`) was read as one on a plain copy. Both reported the parameter inferred while
+  the constructor rejected some of its draws. `is null`, and a copy through a field, a local or an auto-implemented
+  property, stay silent as before.
 - **`any generate` on an enum is now refused, naming `Any.Enum<TEnum>()`, instead of reporting success.** The
   synthesised parameterless constructor of an enum was taken for a real one, so the tool wrote
   `return new Currency();` and exited 0 with `no constructor parameters to infer`: every draw was `(Currency)0`,

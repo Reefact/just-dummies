@@ -468,11 +468,11 @@ internal static class SweepShapes {
     //
     // The shapes the developer-UX trial of October 2026 found and this bench did not know: a guard written
     // below a write to state, one that reaches the parameter through a copy — a local, a field, a property —
-    // and a null-check on a value computed from it. None of them is READ; each must be MARKED, which this
-    // bench sees as a sentinel. Two controls ride along, because a mark is only honest where it is due: a
-    // null-check on a plain copy, which the generator satisfies by construction, must stay silent; and the
-    // two shapes still out of reach are named rather than hidden — an unrecognised helper below the first
-    // write (§9's residue) and a copy through a setter that transforms it (an open defect, #333).
+    // and a null-check on a value computed from it, or on a property whose setter rewrites it (#333). None
+    // of them is READ; each must be MARKED, which this bench sees as a sentinel. Two controls ride along,
+    // because a mark is only honest where it is due: a null-check on a plain copy, which the generator
+    // satisfies by construction, must stay silent; and the one shape still out of reach is named rather than
+    // hidden — an unrecognised helper below the first write, §9's residue.
 
     /// <summary>A parameter type, and the guard a developer writes against it.</summary>
     private sealed record PlacementSubject(string Name, string Type, string Nullable, string Rejects);

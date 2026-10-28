@@ -741,7 +741,7 @@ L'ensemble reconnu est clos :
 
 | Condition qui lève | Contrainte ajoutée |
 |---|---|
-| `p is null`, `p == null`, ou l'assignation `f = p ?? throw new ArgumentNullException(nameof(p));` | aucune — le generator ne retourne jamais `null` de toute façon |
+| `p is null`, `p == null`, ou l'assignation `f = p ?? throw new ArgumentNullException(nameof(p));` | aucune — le generator ne retourne jamais `null` de toute façon. Un `==` défini par l'utilisateur est une méthode libre de répondre `true` pour une valeur non nulle, donc cette comparaison ne relève pas de cette ligne (#333) |
 | `string.IsNullOrEmpty(p)`, `p.Length == 0`, `p.Length < 1` | `.NonEmpty()` |
 | `string.IsNullOrWhiteSpace(p)` | `.NotBlank()` |
 | `p.Length > N` | `.WithMaxLength(N)` |
@@ -965,7 +965,9 @@ champ ou une propriété copié à partir d'un paramètre est suivi de la même 
 (_name.Length > 5) { throw … }` marque `name`, le membre étant suivi d'un pas jusqu'aux affectations
 qui précèdent l'instruction dans le même corps. Un null-check sur un tel membre ne reste silencieux que
 si chaque affectation suivie est le paramètre lui-même (`Name = name;`, à un cast prédéfini ou un `!`
-près) : le générateur ne tire jamais null, donc un membre qui le contient tel quel non plus. Un membre
+près) et que chaque membre suivi contient ce qu'on lui affecte — une variable locale, un champ ou une
+propriété auto-implémentée, jamais une propriété dont l'accesseur `set` peut réécrire la valeur (#333) :
+le générateur ne tire jamais null, donc un membre qui le contient tel quel non plus. Un membre
 calculé à partir du paramètre peut être null — `Name = name.Length < 5 ? null : name;`, ou une
 conversion définie par l'utilisateur, écrite comme un cast `(ProductCode)raw` ou appliquée
 implicitement par `Code = raw;`, qui est une méthode libre de renvoyer null — et son null-check est

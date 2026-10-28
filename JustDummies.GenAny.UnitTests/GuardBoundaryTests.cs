@@ -302,6 +302,79 @@ public sealed class GuardBoundaryTests {
         Check.That(outcome.Plan!.Parameters[0].Provenance.HasFlag(Provenance.UnreadGuards)).IsTrue();
     }
 
+    /// <summary>A type whose <c>==</c> answers <c>true</c> against <c>null</c> for a short, non-null value.</summary>
+    private const string Sku = """
+                               public sealed class Sku {
+                                   public Sku(string value) { Value = value; }
+                                   public string Value { get; }
+                                   public static bool operator ==(Sku? x, Sku? y) { return y is null ? x is null || x.Value.Length < 5 : ReferenceEquals(x, y); }
+                                   public static bool operator !=(Sku? x, Sku? y) { return !(x == y); }
+                                   public override bool Equals(object? obj) { return ReferenceEquals(this, obj); }
+                                   public override int GetHashCode() { return Value.GetHashCode(); }
+                               }
+                               """;
+
+    /// <summary>
+    ///     A comparison to <c>null</c> through a user-defined <c>==</c> is not a null-check: the operator is a
+    ///     method, free to reject a non-null value, so it is marked like any guard the set cannot read (#333).
+    /// </summary>
+    /// <remarks>
+    ///     <c>is null</c> cannot be overloaded, so it stays the null-check the generator satisfies by
+    ///     construction — the control row, which must stay silent.
+    /// </remarks>
+    [Theory(DisplayName = "A comparison to null through a user-defined == is marked unread; is null is not.")]
+    [InlineData("if (code == null) { throw new ArgumentException(nameof(code)); } Code = code;", true)]
+    [InlineData("Code = code; if (Code == null) { throw new ArgumentException(nameof(code)); }", true)]
+    [InlineData("if (code is null) { throw new ArgumentException(nameof(code)); } Code = code;", false)]
+    [InlineData("Code = code; if (Code is null) { throw new ArgumentException(nameof(code)); }", false)]
+    public void AComparisonToNullThroughAUserDefinedEqualityIsMarkedUnread(string body, bool marked) {
+        ScaffoldOutcome outcome = Subject.Scaffold($$"""
+                                                     {{Sku}}
+
+                                                     public sealed class Subject {
+
+                                                         public Subject(Sku code) {
+                                                             {{body}}
+                                                         }
+
+                                                         public Sku Code { get; }
+
+                                                     }
+                                                     """);
+
+        Check.That(outcome.Plan!.Parameters[0].Provenance.HasFlag(Provenance.UnreadGuards)).IsEqualTo(marked);
+    }
+
+    /// <summary>
+    ///     A null-check through a property whose <c>set</c> accessor rewrites the value is a real guard; through
+    ///     an auto-implemented property, which holds what it was given, it is not (#333).
+    /// </summary>
+    [Theory(DisplayName = "A null-check through a transforming setter is marked unread; through an auto-property it is not.")]
+    [InlineData("""
+                private string? stored;
+                public string? Name {
+                    get { return stored; }
+                    private set { stored = value is { Length: >= 5 } ? value : null; }
+                }
+                """, true)]
+    [InlineData("public string? Name { get; }", false)]
+    public void ANullCheckThroughATransformingSetterIsMarkedUnread(string property, bool marked) {
+        ScaffoldOutcome outcome = Subject.Scaffold($$"""
+                                                     public sealed class Subject {
+
+                                                         {{property}}
+
+                                                         public Subject(string name) {
+                                                             Name = name;
+                                                             if (Name is null) { throw new ArgumentException(nameof(name)); }
+                                                         }
+
+                                                     }
+                                                     """);
+
+        Check.That(outcome.Plan!.Parameters[0].Provenance.HasFlag(Provenance.UnreadGuards)).IsEqualTo(marked);
+    }
+
     /// <summary>
     ///     A null-check on a member <b>computed</b> from the parameter is a real guard, and is marked unread.
     /// </summary>

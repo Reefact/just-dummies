@@ -149,8 +149,8 @@ engine to that. Each of eight placements is crossed with three parameter types (
 | `copynull` | a null-check on a plain copy, which the generator satisfies by construction | `Held` |
 | `helper` | an unrecognised helper called below the first write | `KnownResidue` (§9) |
 
-The `setter` placement came in as an open entry of `SweepDefects` and came off when a property had to be
-auto-implemented before a null-check through it counts as one on a plain copy (#333).
+The `setter` placement was initially tracked as a known defect in `SweepDefects`. It is no longer listed
+because null-checks on non-auto-implemented properties are now marked as unread (#333).
 
 The family checks both directions: a mark where one is due, and none where it is not. It was proven
 against the engine from **before** #331 too: there, the fifteen shapes the trial found come back as

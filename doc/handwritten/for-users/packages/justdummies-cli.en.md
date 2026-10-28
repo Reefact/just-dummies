@@ -80,16 +80,20 @@ line that does not compile above it:
 <!-- jd:skip -->
 ```csharp
 private static AnyString AnyValidValue() {
-    // TODO(any): 'string value' may be guarded by something the scaffolder could not read (§9).
+    // TODO(any): 'string value' may be guarded by something the scaffolder could not read,
+    //   first at Currency.cs, line 9: if (!Regex.IsMatch(value, "^[A-Z]{3}$")) { throw new ArgumentException(nameof(value)); }
     //   This is the scaffolder's best generator for the type; verify it honours the real invariant,
-    //   or replace it, then delete the line below.
+    //   or replace it, then delete the line below. What the scaffolder reads, and what it cannot:
+    //   https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/packages/justdummies-cli.en.md#what-the-last-column-means
     _ = TODO_verify_the_generator_for_value;
 
     return Any.String().NonEmpty();
 }
 ```
 
-Keep the recipe or replace it, delete that one line, and you are done. The alternative — a file that
+The second line names the first guard `any` could not vouch for and where it is, so you do not have
+to search the constructor for it; the recap prints the same under its rows. Keep the recipe or
+replace it, delete that one line, and you are done. The alternative — a file that
 compiles and draws a value your constructor rejects on some later run — is the failure that costs
 most, because it surfaces far from its cause
 ([ADR-0083](../../for-maintainers/adr/0083-block-compilation-on-a-guard-the-engine-cannot-vouch-for.md)).

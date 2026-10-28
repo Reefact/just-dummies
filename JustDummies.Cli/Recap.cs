@@ -71,6 +71,8 @@ internal static class Recap {
             Line(console, string.Empty);
 
             foreach (string row in Rows(plan)) { Line(console, row); }
+
+            Unread(plan, console);
         }
 
         Line(console, string.Empty);
@@ -107,6 +109,22 @@ internal static class Recap {
                .Append(provenance.Length == 0 ? string.Empty : "  " + provenance);
 
             yield return row.ToString();
+        }
+    }
+
+    /// <summary>
+    ///     Under the rows, which guard earned each <c>unread guards</c> and where it sits — the file says the
+    ///     same in its <c>TODO(any)</c>, and the recap is read first.
+    /// </summary>
+    private static void Unread(ScaffoldPlan plan, IAnsiConsole console) {
+        List<ScaffoldedParameter> marked = [.. plan.Parameters.Where(parameter => parameter.UnreadGuard is not null)];
+
+        if (marked.Count == 0) { return; }
+
+        Line(console, string.Empty);
+
+        foreach (ScaffoldedParameter parameter in marked) {
+            Line(console, $"  {parameter.Name}: unread guard at {parameter.UnreadGuard!.Place()}: {parameter.UnreadGuard.Excerpt}");
         }
     }
 

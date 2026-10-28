@@ -23,13 +23,15 @@ public sealed class ScaffoldedParameter {
                                 string? generatorType,
                                 string? baseExpression,
                                 string conversion,
-                                Provenance provenance) {
+                                Provenance provenance,
+                                UnreadGuard? unreadGuard) {
         Name           = name;
         TypeDisplay    = typeDisplay;
         GeneratorType  = generatorType;
         BaseExpression = baseExpression;
         Conversion     = conversion;
         Provenance     = provenance;
+        UnreadGuard    = unreadGuard;
     }
 
     /// <summary>The parameter's name, exactly as the constructor declares it.</summary>
@@ -78,6 +80,12 @@ public sealed class ScaffoldedParameter {
     ///     and "guessed".
     /// </remarks>
     public Provenance Provenance { get; }
+
+    /// <summary>
+    ///     Where the first guard the engine could not vouch for sits, when <see cref="Provenance" /> carries
+    ///     <see cref="Provenance.UnreadGuards" /> and the source was there to point into; null otherwise.
+    /// </summary>
+    public UnreadGuard? UnreadGuard { get; }
 
     /// <summary>Whether the emitted file will carry a TODO for this parameter.</summary>
     [SuppressMessage(SonarRule.S1135.Category, SonarRule.S1135.Id, Justification = SuppressionJustification.S1135.DocumentsTheMarkerTheToolEmits)]
@@ -179,6 +187,7 @@ public sealed class ScaffoldedParameter {
     /// <param name="expression">The inferred expression up to its constraints, without <paramref name="conversion" />.</param>
     /// <param name="provenance">Where the expression came from.</param>
     /// <param name="conversion">The hop after the constraints, if the base does not draw the parameter's own type.</param>
+    /// <param name="unreadGuard">Where the first guard the engine could not read sits, if any.</param>
     /// <exception cref="ArgumentNullException">Any argument is null.</exception>
     /// <exception cref="ArgumentException">
     ///     <paramref name="name" />, <paramref name="typeDisplay" />, <paramref name="generatorType" /> or
@@ -189,7 +198,8 @@ public sealed class ScaffoldedParameter {
                                                 string generatorType,
                                                 string expression,
                                                 Provenance provenance = Provenance.None,
-                                                string conversion = "") {
+                                                string conversion = "",
+                                                UnreadGuard? unreadGuard = null) {
         if (expression is null) { throw new ArgumentNullException(nameof(expression)); }
         if (conversion is null) { throw new ArgumentNullException(nameof(conversion)); }
         if (expression.Trim().Length == 0) {
@@ -202,19 +212,24 @@ public sealed class ScaffoldedParameter {
                                        Checked(generatorType, nameof(generatorType)),
                                        expression,
                                        conversion,
-                                       provenance);
+                                       provenance,
+                                       unreadGuard);
     }
 
     /// <summary>A parameter the engine inferred no generator for (§5.5).</summary>
     /// <exception cref="ArgumentNullException">Any argument is null.</exception>
     /// <exception cref="ArgumentException"><paramref name="name" /> or <paramref name="typeDisplay" /> is blank.</exception>
-    public static ScaffoldedParameter Unresolved(string name, string typeDisplay, Provenance provenance = Provenance.None) {
+    public static ScaffoldedParameter Unresolved(string name,
+                                                 string typeDisplay,
+                                                 Provenance provenance = Provenance.None,
+                                                 UnreadGuard? unreadGuard = null) {
         return new ScaffoldedParameter(Checked(name, nameof(name)),
                                        Checked(typeDisplay, nameof(typeDisplay)),
                                        generatorType: null,
                                        baseExpression: null,
                                        conversion: string.Empty,
-                                       provenance);
+                                       provenance,
+                                       unreadGuard);
     }
 
     private static string Checked(string value, string parameterName) {

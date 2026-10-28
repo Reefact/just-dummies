@@ -1207,9 +1207,11 @@ than being thrown away.
 
 ```csharp
     private static AnyString AnyValidName() {
-        // TODO(any): 'string name' may be guarded by something the scaffolder could not read (§9).
+        // TODO(any): 'string name' may be guarded by something the scaffolder could not read,
+        //   first at Customer.cs, line 12: if (!Regex.IsMatch(name, "^[A-Z][a-z]+$")) { throw new ArgumentException(nameof(name)); }
         //   This is the scaffolder's best generator for the type; verify it honours the real invariant,
-        //   or replace it, then delete the line below.
+        //   or replace it, then delete the line below. What the scaffolder reads, and what it cannot:
+        //   https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/packages/justdummies-cli.en.md#what-the-last-column-means
         _ = TODO_verify_the_generator_for_name;
 
         return Any.String().NonEmpty();
@@ -1220,6 +1222,14 @@ The identifier on the discarded line does not exist, so the build fails at that 
 same as §5.5 — the discard assignment is what keeps a second, unrelated `CS0201` from muddying
 what the developer needs to read. The `return` beneath it is real: deleting one line leaves
 exactly what the scaffolder would otherwise have written silently, for the developer to keep or replace.
+
+**The comment names the guard that earned the mark, and where it sits.** On a parameter with three
+guards, a mark alone sends the developer to read the whole constructor for the one the engine could
+not vouch for. The second line gives the earliest such place — file and line — and the first line of
+the statement holding it, shortened past a hundred characters; the recap prints the same under its
+rows (§6), and the machine report carries it as `unreadGuard` (§6.1). The closing link is to the user
+page that says what `to verify` means: the comment is read by someone who has this file open, not
+this specification. Where no source position is known, the second line is left out.
 
 A generator that compiles and draws a value the real constructor still rejects is a worse failure
 than one that never compiles: it passes today's run and fails a later one, indistinguishable from
@@ -1296,11 +1306,15 @@ since the row and the closing line describe the same parameter:
   crates  Crate<int>  —                        TODO
   name    string      Any.String().NonEmpty()  to verify, unread guards
 
+  name: unread guard at Warehouse.cs, line 18: if (!Naming.IsValid(name)) { throw new ArgumentException(nameof(name)); }
+
 ✓ AnyWarehouse.cs — 5 of 6 parameters inferred, 1 TODO, 1 to verify.
   The file will not compile until you resolve it. That is deliberate.
 ```
 
-Both counts read in the order a developer acts on them: supply the one, check the other.
+Both counts read in the order a developer acts on them: supply the one, check the other. A line
+under the rows names, for each parameter marked `unread guards`, the earliest guard that earned it
+and where it sits — the same place its `TODO(any)` gives (§5.6).
 
 **Provenance is data, not output.** The engine returns it in its result model (§10.3); the CLI
 renders it. That is what makes the recap testable without a console.
@@ -1362,6 +1376,10 @@ status had the summary count a success the exit code called a failure.
 
 The provenance words are the recap's own (§6), read from one table rather than spelled a second time
 — two renderings of one set of facts, which is what keeps them from drifting into two answers.
+
+**A parameter marked `unread guards` carries where.** Its row's `unreadGuard` holds the `file`, the
+one-based `line` and an `excerpt` of the earliest guard the engine could not vouch for (§5.6), and is
+`null` on every other row.
 
 ---
 

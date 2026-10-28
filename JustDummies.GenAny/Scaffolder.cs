@@ -166,7 +166,7 @@ public static class Scaffolder {
                               | (guards.Unread(parameter.Name) ? Provenance.UnreadGuards : Provenance.None);
 
         if (!drawn.Resolved) {
-            return ScaffoldedParameter.Unresolved(parameter.Name, typeDisplay, provenance);
+            return ScaffoldedParameter.Unresolved(parameter.Name, typeDisplay, provenance, guards.UnreadAt(parameter.Name));
         }
 
         IReadOnlyList<GuardConstraint> tightening = guards.For(parameter.Name);
@@ -180,7 +180,8 @@ public static class Scaffolder {
 
         string generatorType = written.Returned is { } returned ? names.Of(returned) : drawn.GeneratorType!;
 
-        return ScaffoldedParameter.DrawnFrom(parameter.Name, typeDisplay, generatorType, written.Base, provenance, written.Conversion);
+        return ScaffoldedParameter.DrawnFrom(parameter.Name, typeDisplay, generatorType, written.Base, provenance, written.Conversion,
+                                             guards.UnreadAt(parameter.Name));
     }
 
     /// <summary>

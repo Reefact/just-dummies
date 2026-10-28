@@ -1274,9 +1274,11 @@ fabrique plutôt que d'être jeté.
 
 ```csharp
     private static AnyString AnyValidName() {
-        // TODO(any): 'string name' may be guarded by something the scaffolder could not read (§9).
+        // TODO(any): 'string name' may be guarded by something the scaffolder could not read,
+        //   first at Customer.cs, line 12: if (!Regex.IsMatch(name, "^[A-Z][a-z]+$")) { throw new ArgumentException(nameof(name)); }
         //   This is the scaffolder's best generator for the type; verify it honours the real invariant,
-        //   or replace it, then delete the line below.
+        //   or replace it, then delete the line below. What the scaffolder reads, and what it cannot:
+        //   https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/packages/justdummies-cli.en.md#what-the-last-column-means
         _ = TODO_verify_the_generator_for_name;
 
         return Any.String().NonEmpty();
@@ -1287,6 +1289,15 @@ L'identifiant sur la ligne écartée n'existe pas, le build échoue donc à cett
 au §5.5 — l'affectation à `_` est ce qui évite qu'un second `CS0201` sans rapport ne brouille ce
 que le développeur doit lire. Le `return` en dessous est réel : supprimer une seule ligne laisse
 exactement ce que le scaffolder aurait écrit en silence sinon, à garder ou à remplacer.
+
+**Le commentaire nomme la garde qui a valu la marque, et où elle se trouve.** Sur un paramètre à
+trois gardes, une marque seule envoie le développeur lire tout le constructeur pour trouver celle dont
+le moteur n'a pas pu répondre. La deuxième ligne donne le premier de ces endroits — fichier et ligne —
+et la première ligne de l'instruction qui la porte, raccourcie au-delà de cent caractères ; le
+récapitulatif imprime la même chose sous ses lignes (§6), et le rapport machine la porte en
+`unreadGuard` (§6.1). Le lien final mène à la page utilisateur qui dit ce que signifie `to verify` :
+le commentaire est lu par quelqu'un qui a ce fichier ouvert, pas cette spécification. Quand aucune
+position dans la source n'est connue, la deuxième ligne est omise.
 
 Un generator qui compile et tire une valeur que le vrai constructeur rejette encore est un échec
 pire que celui qui ne compile jamais : il passe la run d'aujourd'hui et échoue plus tard,
@@ -1366,12 +1377,16 @@ jamais `TODO`, puisque la ligne et la ligne de clôture décrivent le même para
   crates  Crate<int>  —                        TODO
   name    string      Any.String().NonEmpty()  to verify, unread guards
 
+  name: unread guard at Warehouse.cs, line 18: if (!Naming.IsValid(name)) { throw new ArgumentException(nameof(name)); }
+
 ✓ AnyWarehouse.cs — 5 of 6 parameters inferred, 1 TODO, 1 to verify.
   The file will not compile until you resolve it. That is deliberate.
 ```
 
 Les deux comptes se lisent dans l'ordre où un développeur agit dessus : fournir l'un, vérifier
-l'autre.
+l'autre. Une ligne sous les lignes de paramètres nomme, pour chaque paramètre marqué
+`unread guards`, la première garde qui lui a valu la marque et où elle se trouve — l'endroit même
+que donne son `TODO(any)` (§5.6).
 
 **La provenance est une donnée, pas une sortie.** Le moteur la retourne dans son modèle de résultat
 (§10.3) ; la CLI la rend. C'est ce qui rend le récapitulatif testable sans console.
@@ -1439,6 +1454,10 @@ de sortie déclarait un échec.
 Les mots de provenance sont ceux du récapitulatif (§6), lus dans une seule table plutôt qu'épelés une
 seconde fois — deux rendus d'un même ensemble de faits, ce qui les empêche de dériver vers deux
 réponses.
+
+**Un paramètre marqué `unread guards` porte l'endroit.** Le `unreadGuard` de sa ligne contient le
+`file`, la `line` comptée à partir de un et un `excerpt` de la première garde dont le moteur n'a pas
+pu répondre (§5.6), et vaut `null` sur toutes les autres lignes.
 
 ---
 

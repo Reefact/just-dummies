@@ -449,6 +449,29 @@ public sealed class GenerateCommandTests : IDisposable {
         Check.That(entry.GetProperty("call").GetString()).IsEqualTo("Arbitrary.Order()");
     }
 
+    [Fact(DisplayName = "--format json names the guard a parameter to verify could not have read.")]
+    public async Task JsonNamesTheUnreadGuard() {
+        GenerateSettings settings = Settings("Gauge");
+
+        settings.Format = "json";
+
+        Run run = await Generate(settings, Compilation("""
+                                                       namespace Shop.Domain;
+
+                                                       public sealed class Gauge {
+                                                           public Gauge(int level) {
+                                                               if (level % 2 == 1) { throw new System.ArgumentOutOfRangeException(nameof(level)); }
+                                                           }
+                                                       }
+                                                       """));
+
+        JsonElement unread = JsonDocument.Parse(run.Output).RootElement
+                                         .GetProperty("results")[0].GetProperty("parameters")[0].GetProperty("unreadGuard");
+
+        Check.That(unread.GetProperty("line").GetInt32()).IsEqualTo(5);
+        Check.That(unread.GetProperty("excerpt").GetString()).StartsWith("if (level % 2 == 1)");
+    }
+
     [Fact(DisplayName = "--format json records a refused argument, with its candidates.")]
     public async Task JsonRecordsARefusedArgument() {
         GenerateSettings settings = Settings("Ordr");

@@ -274,6 +274,35 @@ public sealed class GuardBoundaryTests {
     }
 
     /// <summary>
+    ///     A throwing check on a field or property copied from the parameter is marked unread too.
+    /// </summary>
+    /// <remarks>
+    ///     The condition names the member rather than the parameter, so it used to pass in silence: one step
+    ///     back to the assignment that filled the member is what reaches the parameter (issue #297).
+    /// </remarks>
+    [Theory(DisplayName = "A throwing check on a member copied from the parameter is marked unread.")]
+    [InlineData("kept = value; if (kept.Length > 5) { throw new ArgumentException(nameof(value)); }")]
+    [InlineData("Kept = value; if (Kept.Length > 5) { throw new ArgumentException(nameof(value)); }")]
+    [InlineData("this.kept = value; if (this.kept.Length > 5) { throw new ArgumentException(nameof(value)); }")]
+    public void AThrowingCheckOnAMemberCopiedFromTheParameterIsMarkedUnread(string body) {
+        ScaffoldOutcome outcome = Subject.Scaffold($$"""
+                                                     public sealed class Subject {
+
+                                                         private readonly string kept;
+
+                                                         public Subject(string value) {
+                                                             {{body}}
+                                                         }
+
+                                                         public string Kept { get; }
+
+                                                     }
+                                                     """);
+
+        Check.That(outcome.Plan!.Parameters[0].Provenance.HasFlag(Provenance.UnreadGuards)).IsTrue();
+    }
+
+    /// <summary>
     ///     A guard helper below the first assignment to state is not read either: the guard above it still
     ///     stands, and the bound below it is reported rather than lost.
     /// </summary>
@@ -306,6 +335,9 @@ public sealed class GuardBoundaryTests {
     [InlineData("Other = name ?? throw new ArgumentNullException(nameof(name));")]
     [InlineData("ArgumentNullException.ThrowIfNull(name);")]
     [InlineData("names.Add(name);")]
+    [InlineData("if (Name is null) { throw new ArgumentNullException(nameof(name)); }")]
+    [InlineData("if (Name == null) { throw new ArgumentNullException(nameof(name)); }")]
+    [InlineData("ArgumentNullException.ThrowIfNull(Name);")]
     public void AStatementAfterTheFirstAssignmentThatWouldNarrowNothingMarksNothing(string below) {
         ScaffoldOutcome outcome = Subject.Scaffold($$"""
                                                      public sealed class Subject {

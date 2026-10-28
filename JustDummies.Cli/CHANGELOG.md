@@ -56,8 +56,9 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   silence.** The leading-guard scan (§5.3) stopped at that assignment and never looked at what followed, so
   `Rate = rate; if (currency.Length != 3) { throw … }` reported `currency` as inferred, the file compiled, and
   the constructor rejected nearly every draw; `ThrowIfNegativeOrZero(rack); Rack = rack;
-  ThrowIfGreaterThan(rack, 99);` kept `.Positive()` and lost the ceiling under a plain `guard`. Such a guard is
-  still not *read* — it is not placed where the engine can vouch for it — but a statement below the scan that
+  ThrowIfGreaterThan(rack, 99);` kept `.Positive()` and lost the ceiling under a plain `guard`; and
+  `_name = name; if (_name.Length > 5) { throw … }`, testing the field the parameter was copied into, said
+  nothing at all. Such a guard is still not *read* — it is not placed where the engine can vouch for it — but a statement below the scan that
   throws, or a call the set recognises as a guard, now marks every parameter it would have constrained, and the
   file stops at the `TODO(any)` line until you confirm the generator. A null-check there stays silent, as above
   it. A generator already scaffolded does not change; re-scaffold with `--force` to see the mark.

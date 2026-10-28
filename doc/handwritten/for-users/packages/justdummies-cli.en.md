@@ -60,7 +60,7 @@ It is the point of the recap, not decoration — it separates what was **inferre
 | `AnyX` | drawn through the generator that type owns |
 | `TODO` | nothing could be inferred; the file names what to do |
 | `to verify` | a generator *was* inferred, but something near that parameter could not be read — check it |
-| `unread guards` | that "something": a guard the tool does not recognise, a helper it cannot see into, or a guard it reads but cannot place — below a write to the parameter or to state, testing a local computed from the parameter, or under something deciding whether it runs |
+| `unread guards` | that "something": a guard the tool does not recognise, a helper it cannot see into, or a guard it reads but cannot place — below a write to the parameter or to state, testing a local or a field computed from the parameter, or under something deciding whether it runs |
 | `constraint unavailable` | a guard was understood, and this generator has no member to express it with |
 | `self-referencing` | the parameter reaches the type being scaffolded (a tree, a manager of the same type), so it is a `TODO`: drawing it would recurse forever, and how deep it goes is yours to write |
 | `no source` | the type comes from a package, so there was no constructor body to read |

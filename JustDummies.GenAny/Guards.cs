@@ -541,6 +541,18 @@ internal static class Guards {
     ///     bound. The <c>nameof</c> of a message is excluded here for the reason <see cref="Mentioned" /> gives.
     /// </remarks>
     private static IParameterSymbol[] ReachedThroughACopy(SyntaxNode node, SemanticModel model, IMethodSymbol method) {
+        return CopySources(node, model)
+                   .SelectMany(source => Mentioned(source, model, method))
+                   .Distinct(SymbolEqualityComparer.Default)
+                   .OfType<IParameterSymbol>()
+                   .ToArray();
+    }
+
+    /// <summary>
+    ///     The expressions every local, field or property <paramref name="node" /> names took its value from,
+    ///     past any <c>nameof</c> inside it.
+    /// </summary>
+    private static IEnumerable<ExpressionSyntax> CopySources(SyntaxNode node, SemanticModel model) {
         InvocationExpressionSyntax[] spelled = [.. node.DescendantNodesAndSelf()
                                                        .OfType<InvocationExpressionSyntax>()
                                                        .Where(IsNameOf)];
@@ -549,11 +561,24 @@ internal static class Guards {
                    .OfType<IdentifierNameSyntax>()
                    .Where(identifier => !spelled.Any(name => name.Contains(identifier)))
                    .Select(identifier => model.GetSymbolInfo(identifier).Symbol)
-                   .SelectMany(symbol => CopiedFrom(symbol, node, model))
-                   .SelectMany(source => Mentioned(source, model, method))
-                   .Distinct(SymbolEqualityComparer.Default)
-                   .OfType<IParameterSymbol>()
-                   .ToArray();
+                   .SelectMany(symbol => CopiedFrom(symbol, node, model));
+    }
+
+    /// <summary>
+    ///     Whether <paramref name="source" /> is a parameter itself, unchanged — through parentheses, a cast or
+    ///     a null-forgiving <c>!</c>, none of which can turn a non-null value into null.
+    /// </summary>
+    private static bool IsTheParameterItself(ExpressionSyntax source, SemanticModel model) {
+        ExpressionSyntax unwrapped = source switch {
+            ParenthesizedExpressionSyntax parenthesized                                          => parenthesized.Expression,
+            CastExpressionSyntax cast                                                            => cast.Expression,
+            PostfixUnaryExpressionSyntax forgiven when forgiven.IsKind(SyntaxKind.SuppressNullableWarningExpression) => forgiven.Operand,
+            _                                                                                    => source
+        };
+
+        return unwrapped == source
+                   ? model.GetSymbolInfo(source).Symbol is IParameterSymbol
+                   : IsTheParameterItself(unwrapped, model);
     }
 
     /// <summary>
@@ -1063,9 +1088,10 @@ internal static class Guards {
                                 bool unskipped) {
         IParameterSymbol[] mentioned = Mentioned(condition, model, method);
 
-        // A null-check on a copy narrows nothing, exactly as one on the parameter itself: the generator never
-        // draws null (ADR-0064), so the copy it was assigned from cannot be null either.
-        if (!IsNullCheck(condition)) {
+        // A null-check on a plain copy narrows nothing, exactly as one on the parameter itself: the generator
+        // never draws null (ADR-0064), so neither does a member holding it unchanged. A value COMPUTED from the
+        // parameter can be null — `name.Length < 5 ? null : name` — and its null-check is a real guard.
+        if (!IsNullCheck(condition) || !CopySources(condition, model).All(source => IsTheParameterItself(source, model))) {
             foreach (IParameterSymbol reached in ReachedThroughACopy(condition, model, method)) { reading.MarkUnread(reached.Name); }
         }
 

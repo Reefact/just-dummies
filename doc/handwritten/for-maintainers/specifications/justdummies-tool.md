@@ -916,8 +916,11 @@ initializer names `unread guards` — never reads it: what a computed value admi
 the closed set can state about the parameter, and following the value further would be propagation
 (ADR-0046). A field or a property copied from a parameter is followed the same way:
 `_name = name; if (_name.Length > 5) { throw … }` marks `name`, the member being followed one step back
-to the assignments of it that precede the statement in the same body. The `nameof` of the message is
-excluded as it is everywhere else.
+to the assignments of it that precede the statement in the same body. A null-check on such a member
+stays silent only where every assignment followed is the parameter itself (`Name = name;`, a cast or a
+`!` aside): the generator never draws null, so neither does a member holding it unchanged. A member
+computed from the parameter can be null — `Name = name.Length < 5 ? null : name;` — and its null-check is
+marked like any other guard. The `nameof` of the message is excluded as it is everywhere else.
 
 **A leading statement need not be an `if` to matter either.** A guard delegated entirely to a helper —
 `Ensure.NotBlank(value);`, called plainly, with no `if` in the constructor at all — throws from

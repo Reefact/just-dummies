@@ -963,8 +963,11 @@ sans jamais le lire : ce qu'une valeur calculée admet n'est pas une contrainte 
 sait énoncer sur le paramètre, et suivre la valeur plus loin serait de la propagation (ADR-0046). Un
 champ ou une propriété copié à partir d'un paramètre est suivi de la même façon : `_name = name; if
 (_name.Length > 5) { throw … }` marque `name`, le membre étant suivi d'un pas jusqu'aux affectations
-qui précèdent l'instruction dans le même corps. Le `nameof` du message est exclu, comme partout
-ailleurs.
+qui précèdent l'instruction dans le même corps. Un null-check sur un tel membre ne reste silencieux que
+si chaque affectation suivie est le paramètre lui-même (`Name = name;`, à un cast ou un `!` près) : le
+générateur ne tire jamais null, donc un membre qui le contient tel quel non plus. Un membre calculé à
+partir du paramètre peut être null — `Name = name.Length < 5 ? null : name;` — et son null-check est
+marqué comme toute autre garde. Le `nameof` du message est exclu, comme partout ailleurs.
 
 **Une instruction de tête n'a pas besoin non plus d'être un `if` pour compter.** Une garde entièrement
 déléguée à un helper — `Ensure.NotBlank(value);`, appelé tel quel, sans aucun `if` dans le

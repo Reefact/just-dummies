@@ -42,9 +42,10 @@ IDs are stable so that issues can cite them: `CLI-`, `CORE-`, `AN-`, `XU-`, `DOC
 
 > **Status.** Milestone 7 is closed. CLI-B1 to CLI-B4 are fixed in [#331](https://github.com/Reefact/just-dummies/pull/331). The follow-ups are
 > fixed too: mutual recursion ([#332](https://github.com/Reefact/just-dummies/issues/332)), and the guard reader now marks every parameter a throw
-> may depend on ([#333](https://github.com/Reefact/just-dummies/issues/333), ADR-0110). The trial was re-run on that state: 1095 of 1101 tests
-> pass, the six red ones being core `Bug_` tests. Every constructor shape gathered in the review of #331 is
-> marked or read as it should be. The other items below are open in their issues.
+> may depend on ([#333](https://github.com/Reefact/just-dummies/issues/333), ADR-0110). Every constructor shape gathered in the review of #331 is
+> marked or read as it should be. Milestone 8 (CORE-B1, CORE-B2, CORE-D1 to CORE-D3) is merged too. On that
+> state the trial passes 1099 of 1101 tests, the 2 red ones being the `Bug_` tests of [#310](https://github.com/Reefact/just-dummies/issues/310).
+> The other items below are open in their issues.
 
 | | |
 |---|---|
@@ -663,7 +664,7 @@ enum generators that fix made obsolete were removed (each domain's NOTES.md, "Af
 |---|---|---|---|---|---|
 | 01 payments | SEPA transfer: IBAN mod-97, BIC, Money, business-day date, pain.001 batch | 55 / 55 | 4 | Test side very fluent; check digits and cross-field rules took the hand work | [NOTES](domains/01-payments/NOTES.md) |
 | 02 trading | Order book: ticker, limit/stop prices, tick size, session | 59 / 59 | 4 | Literals and lambda refinements say what they mean; tick grid and price links need hand edits | [NOTES](domains/02-trading/NOTES.md) |
-| 03 insurance | Car policy: coverage period, deductible, bonus-malus, claims | 47 / 48 (1 `Bug_`) | 4 | Nested refinements pleasant; both cross-parameter rules hand-patched | [NOTES](domains/03-insurance/NOTES.md) |
+| 03 insurance | Car policy: coverage period, deductible, bonus-malus, claims | 48 / 48 | 4 | Nested refinements pleasant; both cross-parameter rules hand-patched | [NOTES](domains/03-insurance/NOTES.md) |
 | 04 manufacturing | MES work order: batch code, cadence, tolerances, machine states | 65 / 65 | 4 | Replay trivial, messages excellent; a silent recipe and the enum scaffold cost trust | [NOTES](domains/04-manufacturing/NOTES.md) |
 | 05 CAD drawing | ISO 286 fits, drawing references, recursive bill of materials | 57 / 57 | 3 | Scalar and pattern DSL good; recursive scaffold crashed the host | [NOTES](domains/05-cad-drawing/NOTES.md) |
 | 06 warehouse | Pallet receipt: SSCC, EAN-13, bin location, quantities | 63 / 63 | 4 | Core DSL reads like the domain; two silent CLI misses | [NOTES](domains/06-warehouse/NOTES.md) |
@@ -672,8 +673,8 @@ enum generators that fix made obsolete were removed (each domain's NOTES.md, "Af
 | 09 laboratory | Lab results, reference ranges, units, sampling times | 67 / 67 | 4 | Constraints fluent; cross-field invariants in a file `--force` overwrites | [NOTES](domains/09-laboratory/NOTES.md) |
 | 10 pharma serialisation | Packs: GTIN, batch, expiry, serial uniqueness | 57 / 57 | 4 | Every guessed name existed; GTIN check digit forced signature edits | [NOTES](domains/10-pharma-serialisation/NOTES.md) |
 | 11 telecom | Mobile line: MSISDN, IMEI (Luhn), ICCID, plan, usage | 49 / 49 | 4 | Arrange blocks show chosen versus arbitrary; resolving "to verify" rewrites more than documented | [NOTES](domains/11-telecom/NOTES.md) |
-| 12 smart grid | Meter index, delivery point, half-hourly load curve | 37 / 39 (2 `Bug_`) | 3 | Nested refinements exact; ordered series and cross-field rules rewrote 4 of 8 files | [NOTES](domains/12-smart-grid/NOTES.md) |
-| 13 payroll | Payslip: contract, hours, bonuses, deductions | 43 / 44 (1 `Bug_`) | 4 | Reads like the domain; value pin versus lambda caused one red run | [NOTES](domains/13-payroll/NOTES.md) |
+| 12 smart grid | Meter index, delivery point, half-hourly load curve | 39 / 39 | 3 | Nested refinements exact; ordered series and cross-field rules rewrote 4 of 8 files | [NOTES](domains/12-smart-grid/NOTES.md) |
+| 13 payroll | Payslip: contract, hours, bonuses, deductions | 44 / 44 | 4 | Reads like the domain; value pin versus lambda caused one red run | [NOTES](domains/13-payroll/NOTES.md) |
 | 14 e-commerce | Cart and order: SKU, quantity, discount, address | 47 / 47 | 4 | Natural; one silent miss; cross-element rules lost cases | [NOTES](domains/14-ecommerce/NOTES.md) |
 | 15 hotel booking | Stay, room, guests, cancellation policy | 48 / 48 | 4 | Fluent; the stay interval needed hand-restructured generators | [NOTES](domains/15-hotel-booking/NOTES.md) |
 | 16 aviation | Flight: IATA/ICAO codes, registration, slot | 66 / 66 | 4 | Temporal vocabulary fits slots; one silent recipe; temporal guards unread | [NOTES](domains/16-aviation/NOTES.md) |
@@ -681,7 +682,7 @@ enum generators that fix made obsolete were removed (each domain's NOTES.md, "Af
 | 18 education | Enrolment, grades on a half-point grid, semesters | 51 / 51 | 4 | Constraints and seeds fluent; half-point grade needs a 41-value pool | [NOTES](domains/18-education/NOTES.md) |
 | 19 IAM | Access token, roles, scopes, expiry, redirect URI | 61 / 61 | 4 | `Any.Uri()` is excellent; a silent "guard" recap and the enum scaffold | [NOTES](domains/19-iam/NOTES.md) |
 | 20 agritech IoT | Field sensors: GPS, humidity, `Half` battery, batches of 500k | 56 / 58 (2 `Bug_`) | 4 | Numeric vocabulary maps onto geodesy; a large ceiling makes the default dummy huge | [NOTES](domains/20-agritech-iot/NOTES.md) |
-| **Total** | | **1095 / 1101** (6 red, all `Bug_` of the library core) | | | |
+| **Total** | | **1099 / 1101** (2 red, both `Bug_` tests of [#310](https://github.com/Reefact/just-dummies/issues/310)) | | | |
 
 ---
 

@@ -163,3 +163,7 @@ reads like the domain, collection expressions flow into `WithLines`, and conflic
 handling, distinctness gating and seed replay all behaved as documented. One point off for the cross-field invariants
 (two of my six generators needed hand-written logic in a "generated" method, and the pinned-vs-lambda trap cost a red
 run), the missing `using JustDummies.Xunit;`, and the decimal conflict wording.
+
+## After milestone 8
+
+Re-run on the packages built after the core fixes of milestone 8 were merged. `Positive().Negative()` on a decimal no longer claims 0 is left ([#311](https://github.com/Reefact/just-dummies/issues/311)). The `Bug_` test is renamed `Decimal_sign_conflict_message_does_not_claim_zero_is_left` and passes.

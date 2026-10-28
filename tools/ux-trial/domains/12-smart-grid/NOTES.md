@@ -89,3 +89,7 @@ says exactly the premise, the grid constraints (`WithGranularity`, `WithScale`) 
 conflict messages are mostly excellent. It loses two points on the scaffolded generators of this
 domain: a time series and three cross-field rules meant rewriting the shape of four of eight files,
 and the missing `using` for the adapter cost a build round-trip.
+
+## After milestone 8
+
+Re-run on the packages built after the core fixes of milestone 8 were merged. The decimal conflict messages state strict bounds correctly and no longer claim a value is left ([#311](https://github.com/Reefact/just-dummies/issues/311)). The two `Bug_Decimal_*` tests are renamed `Decimal_crossed_bounds_message_states_GreaterThan_as_strict` and `Decimal_empty_open_interval_message_claims_no_value_is_left`, and pass.

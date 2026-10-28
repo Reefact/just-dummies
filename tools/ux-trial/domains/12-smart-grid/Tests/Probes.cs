@@ -80,20 +80,20 @@ public sealed class Probes {
     }
 
     [Fact]
-    public void Bug_Decimal_crossed_bounds_message_misstates_what_GreaterThan_requires() {
+    public void Decimal_crossed_bounds_message_states_GreaterThan_as_strict() {
         ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(() => Any.Decimal().GreaterThan(36m).LessThan(35m));
 
-        // Actual: "Cannot apply LessThan(35) because GreaterThan(36) already requires values greater than or equal to 36."
-        // GreaterThan(36) excludes 36; the Int32 and DateOnly messages state the bound correctly.
+        // Before #311: "... GreaterThan(36) already requires values greater than or equal to 36.", although
+        // GreaterThan(36) excludes 36. The Int32 and DateOnly messages always stated the bound correctly.
         Assert.DoesNotContain("greater than or equal to 36.", conflict.Message);
     }
 
     [Fact]
-    public void Bug_Decimal_empty_open_interval_message_claims_a_value_is_left() {
+    public void Decimal_empty_open_interval_message_claims_no_value_is_left() {
         ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(() => Any.Decimal().GreaterThan(36m).LessThan(36m));
 
-        // Actual: "Cannot apply LessThan(36) because GreaterThan(36) forbids 36, the only value GreaterThan(36) and LessThan(36) leave."
-        // No value is left; the Int32 equivalent says "GreaterThan(36) already requires values greater than or equal to 37."
+        // Before #311: "... GreaterThan(36) forbids 36, the only value GreaterThan(36) and LessThan(36) leave."
+        // No value is left at all; the Int32 equivalent says "already requires values greater than or equal to 37."
         Assert.DoesNotContain("the only value GreaterThan(36) and LessThan(36) leave", conflict.Message);
     }
 

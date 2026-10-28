@@ -50,12 +50,12 @@ public sealed class Probes {
     }
 
     [Fact]
-    public void Bug_Decimal_sign_conflict_message_claims_zero_is_left() {
+    public void Decimal_sign_conflict_message_does_not_claim_zero_is_left() {
         // Int32 says: "Cannot apply Negative() because Positive() already requires values greater than or equal to 1."
         ConflictingAnyConstraintException refusal = Assert.Throws<ConflictingAnyConstraintException>(() => Any.Decimal().Positive().Negative());
 
-        // Observed: "Cannot apply Negative() because Positive() forbids 0, the only value Positive() and Negative() leave."
-        // Positive() and Negative() leave no value at all; 0 is not one they leave.
+        // Before #311: "... Positive() forbids 0, the only value Positive() and Negative() leave." They leave no
+        // value at all; 0 is not one they leave.
         Assert.DoesNotContain("the only value Positive() and Negative() leave", refusal.Message);
     }
 

@@ -231,19 +231,20 @@ public sealed class Probes {
 
     /// <summary>
     ///     Outside any scope, a bounded-redraw failure reports the seed the ambient source lazily picked
-    ///     for the whole flow, and says "reproduce this run with Any.Reproducibly(seed, ...)". Two failures
-    ///     at different points of the flow report the same number; replaying it restarts the stream at
-    ///     its first draw, not at the failing one.
+    ///     for the whole flow. Since #308 it no longer promises that this seed replays the run: it says no
+    ///     scope pinned it and asks for one. Two failures at different points of the flow report the same
+    ///     number, and replaying it restarts the stream at its first draw, not at the failing one.
     /// </summary>
     [Fact]
-    public void Outside_a_scope_the_reported_seed_names_the_flow_not_the_failing_draw() {
+    public void Outside_a_scope_the_reported_seed_names_the_flow_and_asks_for_a_scope() {
         int firstDraw = Any.Int32().Generate();
         AnyGenerationException early = Assert.Throws<AnyGenerationException>(() => Any.ListOf(Any.StringMatching("^A$")).WithCount(2).Distinct().Generate());
         int laterDraw = Any.Int32().Generate();
         AnyGenerationException late = Assert.Throws<AnyGenerationException>(() => Any.ListOf(Any.StringMatching("^A$")).WithCount(2).Distinct().Generate());
 
         Assert.Equal(early.Seed, late.Seed);
-        Assert.Contains($"reproduce this run with Any.Reproducibly({late.Seed}, ...)", late.Message);
+        Assert.Contains($"This flow drew from seed {late.Seed}, which no scope pinned", late.Message);
+        Assert.DoesNotContain("reproduce this run", late.Message);
 
         int replayed = 0;
         Any.Reproducibly(late.Seed!.Value, () => replayed = Any.Int32().Generate());

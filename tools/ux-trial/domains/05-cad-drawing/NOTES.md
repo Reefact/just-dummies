@@ -147,3 +147,7 @@ should then refuse or leave a TODO rather than emit a self-recursive recipe).
 ## After #331
 
 The CLI fixes merged in [#331](https://github.com/Reefact/just-dummies/pull/331) were re-checked on this domain by re-scaffolding with `--dry-run`. `any generate ProjectionMethod` is now refused, naming `Any.Enum<ProjectionMethod>()` (#298). `BomItem` no longer recurses: `children  IReadOnlyList<BomItem>  —  TODO, unread guards, self-referencing` (#299). `AnyProjectionMethod.cs`, its entry point and its `Bug_` test are removed.
+
+## After milestone 8
+
+Re-run on the packages built after the core fixes of milestone 8 were merged. Outside a scope, the failure message no longer promises a replay ([#308](https://github.com/Reefact/just-dummies/issues/308)): it now reads "This flow drew from seed S, which no scope pinned; wrap the body in Any.Reproducibly(S, ...) ...". The probe is renamed `Outside_a_scope_the_reported_seed_names_the_flow_and_asks_for_a_scope` and asserts that wording.

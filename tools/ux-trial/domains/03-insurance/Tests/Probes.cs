@@ -44,9 +44,9 @@ public sealed class Probes {
     }
 
     [Fact]
-    public void Bug_Negative_on_a_scaled_deductible_range_names_neither_Between_nor_the_real_conflict() {
-        // Observed: "Cannot apply Negative() because it forbids every WithScale(2) value between 0 and 0."
-        // Between(0, 5000) is the other side of the conflict; "between 0 and 0" is an intermediate state.
+    public void Negative_on_a_scaled_deductible_range_names_Between_as_the_other_side() {
+        // Before #312 the message read "Cannot apply Negative() because it forbids every WithScale(2) value
+        // between 0 and 0.", which never named Between(0, 5000), the other side of the conflict.
         ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
             () => Any.Deductible().WithAmount(amount => amount.Negative()));
 

@@ -132,3 +132,7 @@ scaffold's per-parameter model. The missing `using JustDummies.Xunit;` was anoth
 ## After #331
 
 The CLI fixes merged in [#331](https://github.com/Reefact/just-dummies/pull/331) were re-checked on this domain by re-scaffolding with `--dry-run`. `any generate Responsibility` is now refused, naming `Any.Enum<Responsibility>()` (#298). `AnyResponsibility.cs` and its `Bug_` test are removed. The `Bug_` test on the scaled `Negative()` message stays: it belongs to #312.
+
+## After milestone 8
+
+Re-run on the packages built after the core fixes of milestone 8 were merged. The scaled `Negative()` conflict now names `Between(0, 5000)` ([#312](https://github.com/Reefact/just-dummies/issues/312)). The `Bug_` test is renamed `Negative_on_a_scaled_deductible_range_names_Between_as_the_other_side` and passes.

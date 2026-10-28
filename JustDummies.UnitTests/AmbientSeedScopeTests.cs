@@ -227,7 +227,7 @@ public sealed class AmbientSeedScopeTests {
                 () => Any.Combine<int, int, int>(Any.Int32(), foreign, (_, _) => throw new InvalidOperationException("rejected")).Generate());
         }
 
-        Check.That(caught.Message).Contains("not reproducible from this seed alone");
+        Check.That(caught.Message).Contains("replay from this seed only if it draws");
         Check.That(caught.Message).Contains("[Reproducible(Seed = 777)]");
         Check.That(caught.Message).Not.Contains("Any.Reproducibly");
     }

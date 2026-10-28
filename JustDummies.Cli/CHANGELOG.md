@@ -39,6 +39,11 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Fixed
 
+- **A comparison guard `p >= N` or `p <= N` is now read for any constant, not only zero.** `if (longitude >=
+  180.0) { throw … }` was marked `unread guards`, while the equivalent `ArgumentOutOfRangeException
+  .ThrowIfGreaterThanOrEqual(longitude, 180.0)` was read as `.LessThan(180d)`. Both spellings now give the same
+  strict bound — `.LessThan(N)` and `.GreaterThan(N)`; `p >= 0` and `p <= 0` keep their sign rows. A generator
+  already scaffolded does not change; re-scaffold with `--force` to drop its `TODO(any)` line.
 - **A finiteness guard on a `double` or `float` parameter no longer blocks the build.** `if
   (!double.IsFinite(kilograms)) { throw … }` was marked `unread guards`, so the scaffold stopped at a `TODO(any)`
   line over a guard its generator can never fail: `Any.Double()` and `Any.Single()` draw only finite values. The

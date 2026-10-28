@@ -1761,6 +1761,9 @@ internal static class Guards {
     ///     type; on <c>decimal</c>, <c>double</c> or <c>float</c> it is a floor of one, because
     ///     <c>Positive</c> would admit the values between zero and one that the guard rejects — a rare draw for
     ///     an otherwise unconstrained decimal, and a common one as soon as the parameter carries another bound.
+    ///     The same rule keeps <c>p &lt;= 0</c> and <c>p &gt;= 0</c> on their sign rows ahead of the general
+    ///     strict bounds below them, which <c>ThrowIfLessThanOrEqual</c> and <c>ThrowIfGreaterThanOrEqual</c>
+    ///     already read into.
     /// </remarks>
     internal static GuardConstraint? Numeric(SyntaxKind @operator, decimal value, ITypeSymbol type, string literal) {
         bool integral = IsIntegral(type);
@@ -1772,6 +1775,8 @@ internal static class Guards {
             SyntaxKind.EqualsExpression when value == 0                 => new GuardConstraint("NonZero", null, Bound.Zero),
             SyntaxKind.GreaterThanExpression                            => new GuardConstraint("LessThanOrEqualTo", literal, Bound.Upper, value),
             SyntaxKind.LessThanExpression                               => new GuardConstraint("GreaterThanOrEqualTo", literal, Bound.Lower, value),
+            SyntaxKind.GreaterThanOrEqualExpression                     => new GuardConstraint("LessThan", literal, Bound.Upper, value, exclusive: true),
+            SyntaxKind.LessThanOrEqualExpression                        => new GuardConstraint("GreaterThan", literal, Bound.Lower, value, exclusive: true),
             _                                                           => null
         };
     }

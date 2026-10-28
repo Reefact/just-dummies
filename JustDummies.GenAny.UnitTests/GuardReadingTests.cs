@@ -56,6 +56,10 @@ public sealed class GuardReadingTests {
     [InlineData("int", "if (value > 100) { throw new ArgumentOutOfRangeException(nameof(value)); }", "Any.Int32().LessThanOrEqualTo(100)")]
     [InlineData("int", "if (value < 18) { throw new ArgumentOutOfRangeException(nameof(value)); }", "Any.Int32().GreaterThanOrEqualTo(18)")]
     [InlineData("long", "if (value <= 0) { throw new ArgumentOutOfRangeException(nameof(value)); }", "Any.Int64().Positive()")]
+    [InlineData("int", "if (value >= 100) { throw new ArgumentOutOfRangeException(nameof(value)); }", "Any.Int32().LessThan(100)")]
+    [InlineData("int", "if (value <= 18) { throw new ArgumentOutOfRangeException(nameof(value)); }", "Any.Int32().GreaterThan(18)")]
+    [InlineData("double", "if (value >= 180.0) { throw new ArgumentOutOfRangeException(nameof(value)); }", "Any.Double().LessThan(180d)")]
+    [InlineData("double", "if (value <= -180.0) { throw new ArgumentOutOfRangeException(nameof(value)); }", "Any.Double().GreaterThan(-180d)")]
     public void AGuardOnANumberIsReadIntoTheNumericFamily(string parameterType, string guard, string expected) {
         Check.That(Subject.GuardedBy(parameterType, guard).Expression).IsEqualTo(expected);
     }

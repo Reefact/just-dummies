@@ -65,6 +65,15 @@ internal static class GuardCorpus {
                                                          }
                                                          """, idioms: ["`p < N`"]),
 
+        new GuardedShape("sound-strict-bounds", "Longitude", """
+                                                             public sealed class Longitude {
+                                                                 public Longitude(double degrees) {
+                                                                     if (degrees <= -180.0) { throw new ArgumentOutOfRangeException(nameof(degrees)); }
+                                                                     if (degrees >= 180.0) { throw new ArgumentOutOfRangeException(nameof(degrees)); }
+                                                                 }
+                                                             }
+                                                             """, idioms: ["`p >= N`", "`p <= N`"]),
+
         // ---- D16: both bounds of a range declared separately, in all three families. ----
 
         new GuardedShape("range-length", "Reference", """

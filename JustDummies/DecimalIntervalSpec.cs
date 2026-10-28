@@ -686,19 +686,7 @@ internal sealed class DecimalIntervalSpec {
             return $"{Forbids(culprits, applying)} {allowed}";
         }
 
-        if (_scale >= 0) {
-            if (!_latticeHasPoint || culprits.Count == 0) { return $"no {_typeName} value {_scaleConstraint} allows remains between {_render(_min)} and {_render(_max)}"; }
-
-            // The constraint being applied forbids the last grid points itself — a strict bound through its point
-            // exclusion, an exclusion directly — so the earlier ones are named for the rest of the grid, and the
-            // applied one is not listed as its own cause (issue #340).
-            List<ConstraintCall> earlier = culprits.Where(culprit => culprit != applying).ToList();
-            if (earlier.Count > 0 && earlier.Count < culprits.Count) {
-                return $"{Forbids(earlier, applying)} every other {_scaleConstraint} value between {_render(_min)} and {_render(_max)}";
-            }
-
-            return $"{Forbids(culprits, applying)} every {_scaleConstraint} value between {_render(_min)} and {_render(_max)}";
-        }
+        if (_scale >= 0) { return DescribeScaledExhaustion(culprits, applying); }
 
         if (culprits.Count == 0) {
             string pinning = _minConstraint?.ToString() ?? _maxConstraint?.ToString() ?? "the declared bounds";
@@ -707,6 +695,25 @@ internal sealed class DecimalIntervalSpec {
         }
 
         return $"{Forbids(culprits, applying)} {_render(_min)}, {PinningClause()}";
+    }
+
+    /// <summary>Why no grid point of <see cref="_scaleConstraint" /> survives between the bounds.</summary>
+    private string DescribeScaledExhaustion(IReadOnlyList<ConstraintCall> culprits, ConstraintCall applying) {
+        if (!_latticeHasPoint || culprits.Count == 0) { return $"no {_typeName} value {_scaleConstraint} allows remains between {_render(_min)} and {_render(_max)}"; }
+
+        // The constraint being applied forbids the last grid points itself — a strict bound through its point
+        // exclusion, an exclusion directly — so the earlier ones are named for the rest of the grid, the points
+        // they leave are listed, and the applied one is not listed as its own cause (issue #340).
+        List<ConstraintCall> earlier = culprits.Where(culprit => culprit != applying).ToList();
+        List<decimal>        left    = PointsOnlyTheAppliedConstraintForbids(applying);
+        if (earlier.Count > 0 && earlier.Count < culprits.Count && left.Count > 0) {
+            string points = string.Join(" and ", left.Select(_render));
+            string those  = left.Count == 1 ? "that one" : "those";
+
+            return $"{Forbids(earlier, applying)} every {_scaleConstraint} value between {_render(_min)} and {_render(_max)} except {points}, and it forbids {those}";
+        }
+
+        return $"{Forbids(culprits, applying)} every {_scaleConstraint} value between {_render(_min)} and {_render(_max)}";
     }
 
     /// <summary>
@@ -744,6 +751,21 @@ internal sealed class DecimalIntervalSpec {
         }
 
         return names;
+    }
+
+    /// <summary>
+    ///     The grid points left by every exclusion but those of <paramref name="applying" />, which forbids them — the
+    ///     points the earlier constraints did not reach, in ascending order.
+    /// </summary>
+    private List<decimal> PointsOnlyTheAppliedConstraintForbids(ConstraintCall applying) {
+        HashSet<decimal> forbiddenEarlier = new(_exclusions.Where(entry => entry.Constraint != applying).SelectMany(entry => entry.Ordinals));
+
+        return _exclusions.Where(entry => entry.Constraint == applying)
+                          .SelectMany(entry => entry.Ordinals)
+                          .Where(value => WouldAllowIgnoringExclusions(value) && !forbiddenEarlier.Contains(value))
+                          .Distinct()
+                          .OrderBy(value => value)
+                          .ToList();
     }
 
     /// <summary>Whether <paramref name="value" /> would be in the domain if no exclusion were applied.</summary>

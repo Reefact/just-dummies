@@ -101,7 +101,7 @@ decimal[] excluded = Enumerable.Range(0, 100).Select(index => index / 100m).ToAr
 try {
     decimal anyAwkward = Any.Decimal().Between(0m, 1m).WithScale(2).Except(excluded).Generate();
 } catch (AnyGenerationException exception) {
-    // exception.Seed porte la graine de l'exécution, si une graine était épinglée — l'échec se rejoue donc.
+    // exception.Seed indique la graine utilisée lors de l'échec ; une portée reproductible permet de rejouer l'ensemble des tirages.
     Console.Error.WriteLine($"{exception.Message} (seed: {exception.Seed})");
 }
 ```
@@ -110,12 +110,13 @@ try {
 portée reproductible, la graine qui l'a produit figure sur l'exception : un échec de retirage borné
 est donc aussi rejouable que n'importe quel autre échec.
 
-`Seed` est aussi renseignée hors d'une portée, où les tirages s'initialisent paresseusement. Cette
-graine appartient au flux qui a tiré en premier et ne remonte pas à son appelant : une valeur tirée
-dans un assistant attendu et une autre, plus tard, dans le corps du test sont donc initialisées
-séparément. Le message indique alors que le flux a tiré depuis cette graine, qu'aucune portée ne l'a
-épinglée, et vous demande d'envelopper le corps dans `Any.Reproducibly` (ou `Any.ReproduciblyAsync`)
-pour rendre l'exécution rejouable : seule une portée promet un rejeu.
+`Seed` est également renseignée lorsqu'aucune portée de reproductibilité n'est active : la graine est
+alors initialisée à la demande. Une graine créée dans une méthode asynchrone appelée avec `await`
+n'est pas nécessairement propagée au code appelant. Ainsi, un tirage effectué dans cette méthode et
+un autre effectué ensuite dans le test peuvent utiliser des graines différentes. Le message précise
+donc la graine utilisée lors de l'échec, sans garantir qu'elle permettra de reproduire les tirages
+précédents. Pour rendre l'ensemble de l'exécution reproductible, placez-la dans `Any.Reproducibly`
+ou `Any.ReproduciblyAsync`.
 
 En rencontrer un signifie généralement que la spécification est plus serrée que prévu, et non que la
 bibliothèque a abandonné trop tôt. Élargissez l'intervalle, retirez une exclusion, ou demandez moins

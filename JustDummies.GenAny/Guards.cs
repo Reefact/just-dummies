@@ -571,8 +571,13 @@ internal static class Guards {
     /// <remarks>
     ///     A user-defined conversion is not unwrapped: <c>explicit operator ProductCode(string raw)</c> is a
     ///     method, free to return null for a value it rejects, so a null-check on its result is a real guard.
+    ///     The same holds when the assignment applies it implicitly — <c>Code = raw;</c> through an
+    ///     <c>implicit operator</c> — which is the conversion <see cref="SemanticModel" /> reports on the
+    ///     right side itself, where no cast is written to look at.
     /// </remarks>
     private static bool IsTheParameterItself(ExpressionSyntax source, SemanticModel model) {
+        if (model.GetConversion(source).IsUserDefined) { return false; }
+
         ExpressionSyntax unwrapped = source switch {
             ParenthesizedExpressionSyntax parenthesized                                          => parenthesized.Expression,
             CastExpressionSyntax cast when !IsUserDefinedConversion(cast, model)                 => cast.Expression,

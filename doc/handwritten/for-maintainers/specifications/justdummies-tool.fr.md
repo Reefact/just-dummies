@@ -753,6 +753,8 @@ L'ensemble reconnu est clos :
 | `p == 0` | `.NonZero()` |
 | `p > N` | `.LessThanOrEqualTo(N)` |
 | `p < N` | `.GreaterThanOrEqualTo(N)` |
+| `p >= N` | `.LessThan(N)` |
+| `p <= N` | `.GreaterThan(N)` |
 | `p == Guid.Empty` | `.NonEmpty()` |
 | `!Enum.IsDefined(typeof(E), p)`, `!Enum.IsDefined(p)` | aucune — `Any.Enum<E>()` ne tire déjà que des membres déclarés, **là où `p` est de type `E`** |
 | `!double.IsFinite(p)`, `!float.IsFinite(p)` | aucune — `Any.Double()` et `Any.Single()` ne tirent que des valeurs finies (ADR-0031), **là où `p` est de ce type** |
@@ -902,7 +904,8 @@ intégral relève de la ligne `.Positive()` ; sur `decimal`, `double` ou `float`
 `.GreaterThanOrEqualTo(N)`, parce que `.Positive()` admettrait les valeurs entre zéro et un que la
 garde rejette. C'est un tirage rare pour un `decimal` par ailleurs non contraint — mesuré à un sur
 cinq mille — et fréquent dès que le paramètre porte une autre borne (§17). Exactement le profil d'un
-défaut qui survit à un test superficiel.
+défaut qui survit à un test superficiel. Par la même règle, `p <= 0` et `p >= 0` restent sur leurs
+lignes de signe plutôt que sur les lignes strictes `p <= N` et `p >= N`.
 
 **Où les contraintes s'attachent.** Une contrainte dérivée d'une garde appartient au generator du
 type propre du paramètre, *avant* toute conversion ou composition. Un paramètre `int?` gardé par

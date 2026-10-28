@@ -724,6 +724,8 @@ The recognised set is closed:
 | `p == 0` | `.NonZero()` |
 | `p > N` | `.LessThanOrEqualTo(N)` |
 | `p < N` | `.GreaterThanOrEqualTo(N)` |
+| `p >= N` | `.LessThan(N)` |
+| `p <= N` | `.GreaterThan(N)` |
 | `p == Guid.Empty` | `.NonEmpty()` |
 | `!Enum.IsDefined(typeof(E), p)`, `!Enum.IsDefined(p)` | none — `Any.Enum<E>()` already draws only declared members, **where `p` is of type `E`** |
 | `!double.IsFinite(p)`, `!float.IsFinite(p)` | none — `Any.Double()` and `Any.Single()` draw only finite values (ADR-0031), **where `p` is of that type** |
@@ -860,7 +862,8 @@ the `.Positive()` row; on `decimal`, `double` or `float` it is the `.GreaterThan
 because `.Positive()` would admit the values between zero and one that the guard rejects. That is a
 rare draw for an otherwise unconstrained decimal — measured at one in five thousand — and a common
 one as soon as the parameter carries another bound (§17). Exactly the profile of a defect that
-survives casual testing.
+survives casual testing. By the same rule `p <= 0` and `p >= 0` stay on their sign rows rather than
+the strict `p <= N` and `p >= N` rows.
 
 **Where the constraints attach.** A guard-derived constraint belongs to the generator for the
 parameter's own type, *before* any conversion or composition. An `int?` parameter guarded by

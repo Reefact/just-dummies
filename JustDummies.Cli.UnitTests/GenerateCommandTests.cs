@@ -436,6 +436,32 @@ public sealed class GenerateCommandTests : IDisposable {
         Check.That(result.GetProperty("candidates")[0].GetString()).IsEqualTo("Order");
     }
 
+    // The engine scaffolded, the shell refused to write: the report has to say what the exit code says, or a
+    // script reading the summary believes in a file that was never written.
+    [Fact(DisplayName = "--format json records a file it refused to overwrite as a failure.")]
+    public async Task JsonRecordsAnExistingFileAsAFailure() {
+        string           path     = Path.Combine(directory, "AnyOrder.cs");
+        GenerateSettings settings = Settings("Order");
+
+        settings.Format = "json";
+
+        await File.WriteAllTextAsync(path, "// mine", TestContext.Current.CancellationToken);
+
+        Run         run     = await Generate(settings);
+        JsonElement report  = JsonDocument.Parse(run.Output).RootElement;
+        JsonElement result  = report.GetProperty("results")[0];
+        JsonElement file    = result.GetProperty("files")[0];
+        JsonElement summary = report.GetProperty("summary");
+
+        Check.That(run.ExitCode).IsEqualTo(1);
+        Check.That(result.GetProperty("status").GetString()).IsEqualTo("FileExists");
+        Check.That(file.GetProperty("path").GetString()).IsEqualTo(path);
+        Check.That(file.GetProperty("written").GetBoolean()).IsFalse();
+        Check.That(summary.GetProperty("scaffolded").GetInt32()).IsEqualTo(0);
+        Check.That(summary.GetProperty("failed").GetInt32()).IsEqualTo(1);
+        Check.That(await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken)).IsEqualTo("// mine");
+    }
+
     // "stdout carries one JSON document" with no exception to remember: a run that stopped before its first
     // scaffold produces one too, naming why, rather than leaving a script to parse nothing.
     [Fact(DisplayName = "--format json still produces a document when the run never started.")]

@@ -148,17 +148,24 @@ paramètre depuis un endroit où le §5.3 ne peut pas la lire, et ce banc n'en c
 garde placée après la première affectation de l'état, et une garde qui atteint le paramètre par une
 copie — une variable locale, un champ, une propriété — ou par un null-check sur une valeur calculée à
 partir de lui. Depuis #331, ces cas sont signalés ; la famille **`placement`** vérifie désormais que le
-moteur respecte cette règle. Chacun des huit placements est croisé avec trois types de paramètre (`string`,
+moteur respecte cette règle. Chacun des douze placements est croisé avec trois types de paramètre (`string`,
 `int`, `IReadOnlyList<int>`) :
 
 | Placement | Ce qu'il déclare | Verdict que la spécification impose |
 |---|---|---|
 | `below`, `local`, `field`, `property`, `computed`, `setter` | une garde qui rejette le paramètre depuis un endroit où le §5.3 ne peut pas la lire — `setter` via une propriété dont l'accesseur `set` réécrit la valeur | `BlockedForVerification` |
 | `copynull` | un null-check sur une copie simple, que le générateur satisfait par construction | `Held` |
+| `chain`, `outvar`, `deconstruct`, `getter` | une garde qui atteint le paramètre au-delà d'une copie : deux variables locales, un argument `out`, une déconstruction, un getter que le moteur ne lit pas | `BlockedForVerification` |
 | `helper` | un helper non reconnu, appelé après la première affectation | `KnownResidue` (§9) |
 
 Le placement `setter` a d'abord été suivi comme un défaut connu dans `SweepDefects`. Il n'y figure plus,
 car un null-check sur une propriété non auto-implémentée est désormais marqué comme non lu (#333).
+
+Les placements `chain`, `outvar`, `deconstruct` et `getter` sont arrivés avec l'ADR-0110. Avant elle, une
+copie était suivie d'un pas et pas davantage, et les douze formes revenaient comme des constats : un
+tirage rejeté derrière un récapitulatif disant « inferred ». La garde derrière `getter` est décidée par
+une propriété que le moteur ne lit pas ; elle est donc marquée par la règle qui marque chaque paramètre
+là où la piste se perd.
 
 La famille vérifie les deux sens : une marque là où elle est due, aucune là où elle ne l'est pas. Sur la
 version antérieure à #331, les quinze formes trouvées par l'essai sont détectées comme des anomalies : le

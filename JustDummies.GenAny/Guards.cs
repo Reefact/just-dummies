@@ -521,31 +521,356 @@ internal static class Guards {
         if (!Throws(statement)) { return; }
 
         foreach (IParameterSymbol parameter in Mentioned(statement, model, method)) { reading.MarkUnread(parameter.Name); }
-        foreach (IParameterSymbol parameter in ReachedThroughACopy(statement, model, method)) { reading.MarkUnread(parameter.Name); }
+        foreach (IParameterSymbol parameter in ReachedThroughCopies(statement, model, method)) { reading.MarkUnread(parameter.Name); }
+
+        MarkEveryParameterIfTheTrailIsLost(DecidingParts(statement), model, method, reading);
     }
 
     /// <summary>
-    ///     The parameters a local, field or property that <paramref name="node" /> names was copied from — one
-    ///     step of data flow, and no more.
+    ///     The parameters a local, field or property that <paramref name="node" /> names was computed from,
+    ///     followed back through every copy (ADR-0110).
     /// </summary>
     /// <remarks>
     ///     <c>bool ok = value.StartsWith("LOT-"); if (!ok) { throw … }</c> rejects <c>value</c> exactly as
     ///     much as testing it in place would, and yet the condition names no parameter: read only for what it
     ///     names, it marked nothing, and the recap reported a generator the constructor refused on nearly
     ///     every draw as inferred. <c>_name = name; if (_name.Length &gt; 5) { throw … }</c> is the same guard
-    ///     through a member rather than a local. A local is followed to its own declaration, and a field or a
-    ///     property to every assignment of it that precedes <paramref name="node" /> in the same body, so the
-    ///     parameter it came from is <b>marked</b> — never read: what a copied or computed value admits is not
-    ///     a constraint the closed set can state about the parameter, and following it further would be the
-    ///     propagation ADR-0046 refuses. Following one step too few costs a silence §9 names, never a wrong
-    ///     bound. The <c>nameof</c> of a message is excluded here for the reason <see cref="Mentioned" /> gives.
+    ///     through a member rather than a local, and <c>string trimmed = value.Trim(); string upper =
+    ///     trimmed.ToUpperInvariant();</c> the same again, two copies away. The parameter each chain starts from
+    ///     is <b>marked</b> — never read: what a copied or computed value admits is not a constraint the closed
+    ///     set can state about the parameter, and deriving one would be the propagation ADR-0046 refuses. Marking
+    ///     derives nothing, so it follows the copy to the end, which was one step only until ADR-0110 and left a
+    ///     chain of two silent. The <c>nameof</c> of a message is excluded here for the reason
+    ///     <see cref="Mentioned" /> gives.
     /// </remarks>
-    private static IParameterSymbol[] ReachedThroughACopy(SyntaxNode node, SemanticModel model, IMethodSymbol method) {
-        return CopySources(node, model)
-                   .SelectMany(source => Mentioned(source, model, method))
-                   .Distinct(SymbolEqualityComparer.Default)
-                   .OfType<IParameterSymbol>()
-                   .ToArray();
+    private static IEnumerable<IParameterSymbol> ReachedThroughCopies(SyntaxNode node, SemanticModel model, IMethodSymbol method) {
+        return Trail.Follow([node], model, method, ignoresWhatIsThrown: false).Reached();
+    }
+
+    /// <summary>
+    ///     Marks every parameter unread when a value deciding a throw comes from where the trail is lost
+    ///     (ADR-0110).
+    /// </summary>
+    /// <remarks>
+    ///     Where <see cref="Trail" /> cannot follow a value — a getter written by hand, a method of the object
+    ///     being built — the engine cannot say which parameters the rejection involves, and silence would read
+    ///     "none of them". Only what decides a throw counts, never what the exception is built from: a message
+    ///     rejects nothing.
+    /// </remarks>
+    private static void MarkEveryParameterIfTheTrailIsLost(IEnumerable<SyntaxNode> deciding, SemanticModel model, IMethodSymbol method, GuardReading reading) {
+        if (!Trail.Follow(deciding, model, method, ignoresWhatIsThrown: true).Lost) { return; }
+
+        foreach (IParameterSymbol parameter in method.Parameters) { reading.MarkUnread(parameter.Name); }
+    }
+
+    /// <summary>
+    ///     What decides whether each throw of <paramref name="statement" /> runs: the conditions, loop headers,
+    ///     switch subjects and labels, and left operands between it and the statement.
+    /// </summary>
+    /// <remarks>
+    ///     A throw inside a lambda or a local function is not one the constructor runs by evaluating this
+    ///     statement, and is passed over. A construct whose order is not modelled here — a <c>try</c>, a
+    ///     <c>using</c>, a <c>lock</c> — is asked about entire, the polarity ADR-0084 gives placement: a superset
+    ///     can only add refusals.
+    /// </remarks>
+    private static IEnumerable<SyntaxNode> DecidingParts(StatementSyntax statement) {
+        return statement.DescendantNodesAndSelf(node => node is not (AnonymousFunctionExpressionSyntax or LocalFunctionStatementSyntax))
+                        .Where(node => node is ThrowStatementSyntax or ThrowExpressionSyntax)
+                        .SelectMany(thrown => Deciding(thrown, statement));
+    }
+
+    /// <summary>One throw of <see cref="DecidingParts" />.</summary>
+    private static IReadOnlyList<SyntaxNode> Deciding(SyntaxNode thrown, StatementSyntax statement) {
+        if (thrown == statement) { return []; }
+
+        List<SyntaxNode> parts = [];
+        SyntaxNode       child = thrown;
+
+        foreach (SyntaxNode ancestor in thrown.Ancestors()) {
+            if (!AddWhatDecides(ancestor, child, parts)) { return [statement]; }
+            if (ancestor == statement) { break; }
+
+            child = ancestor;
+        }
+
+        return parts;
+    }
+
+    /// <summary>
+    ///     Adds what <paramref name="ancestor" /> decides about reaching <paramref name="child" />, or answers
+    ///     false for a construct this does not model.
+    /// </summary>
+    private static bool AddWhatDecides(SyntaxNode ancestor, SyntaxNode child, List<SyntaxNode> parts) {
+        switch (ancestor) {
+            case IfStatementSyntax branch:
+                if (branch.Condition != child) { parts.Add(branch.Condition); }
+
+                return true;
+            case ConditionalExpressionSyntax conditional:
+                if (conditional.Condition != child) { parts.Add(conditional.Condition); }
+
+                return true;
+            case BinaryExpressionSyntax binary when binary.Right == child
+                                                 && (binary.IsKind(SyntaxKind.CoalesceExpression)
+                                                  || binary.IsKind(SyntaxKind.LogicalAndExpression)
+                                                  || binary.IsKind(SyntaxKind.LogicalOrExpression)):
+                parts.Add(binary.Left);
+
+                return true;
+            case ConditionalAccessExpressionSyntax access when access.WhenNotNull == child:
+                parts.Add(access.Expression);
+
+                return true;
+            case SwitchExpressionSyntax switched:
+                parts.Add(switched.GoverningExpression);
+                parts.AddRange(switched.Arms.SelectMany(arm => arm.ChildNodes().Where(part => part != arm.Expression)));
+
+                return true;
+            case SwitchStatementSyntax switched:
+                parts.Add(switched.Expression);
+                parts.AddRange(switched.Sections.SelectMany(section => section.Labels));
+
+                return true;
+            case WhileStatementSyntax loop:
+                parts.Add(loop.Condition);
+
+                return true;
+            case DoStatementSyntax loop:
+                parts.Add(loop.Condition);
+
+                return true;
+            case ForStatementSyntax loop:
+                parts.AddRange(loop.ChildNodes().Where(part => part != loop.Statement));
+
+                return true;
+            case CommonForEachStatementSyntax loop:
+                parts.Add(loop.Expression);
+
+                return true;
+            case BlockSyntax or ElseClauseSyntax or ExpressionStatementSyntax or LocalDeclarationStatementSyntax
+              or ReturnStatementSyntax or ThrowStatementSyntax or SwitchSectionSyntax or SwitchExpressionArmSyntax:
+                return true;
+            default:
+                return ancestor is not (StatementSyntax or CatchClauseSyntax or FinallyClauseSyntax);
+        }
+    }
+
+    /// <summary>
+    ///     A walk back from what an expression names to the parameters its value was computed from, through any
+    ///     number of copies (ADR-0110).
+    /// </summary>
+    /// <remarks>
+    ///     Marking through a copy derives no bound — it only declines to vouch — so nothing ADR-0046 refuses is
+    ///     built here, and following further can only add refusals. Every write to a local, field or property
+    ///     anywhere in the constructor is taken, not only the writes above the expression: a superset, as
+    ///     ADR-0084 asks of a region, and the one that covers a value a loop carries back above its own test.
+    ///     The walk is <b>lost</b> where it would have to look inside code it does not read: a property whose
+    ///     accessors are written by hand, a method or local function of the object being built, the object itself
+    ///     handed on, a member a base constructor sets, a local nothing in the constructor writes — and a member
+    ///     of the object as soon as code it does not read may write it too: a method of the object the
+    ///     constructor calls, or the constructor it delegates to with <c>: this(…)</c>.
+    /// </remarks>
+    private sealed class Trail {
+
+        private readonly HashSet<ISymbol>          followed = new(SymbolEqualityComparer.Default);
+        private readonly bool                      ignoresWhatIsThrown;
+        private readonly IMethodSymbol             method;
+        private readonly SemanticModel             model;
+        private readonly Stack<(SyntaxNode Node, bool Copied)> pending = new();
+        private readonly HashSet<IParameterSymbol> reached  = new(SymbolEqualityComparer.Default);
+        private readonly SyntaxNode?               within;
+        private readonly bool                      writtenUnread;
+
+        private Trail(SemanticModel model, IMethodSymbol method, SyntaxNode? within, bool ignoresWhatIsThrown) {
+            this.model               = model;
+            this.method              = method;
+            this.within              = within;
+            this.ignoresWhatIsThrown = ignoresWhatIsThrown;
+            writtenUnread            = WritesTheObjectUnread();
+        }
+
+        /// <summary>Whether some value on the way comes from where the walk cannot follow it.</summary>
+        internal bool Lost { get; private set; }
+
+        /// <summary>
+        ///     Follows <paramref name="roots" /> back to the parameters, past the exception a throw builds when
+        ///     <paramref name="ignoresWhatIsThrown" /> says only what decides the throw counts.
+        /// </summary>
+        internal static Trail Follow(IEnumerable<SyntaxNode> roots, SemanticModel model, IMethodSymbol method, bool ignoresWhatIsThrown) {
+            SyntaxNode[] starts = [.. roots];
+            Trail        trail  = new(model, method, starts.FirstOrDefault()?.FirstAncestorOrSelf<BaseMethodDeclarationSyntax>(), ignoresWhatIsThrown);
+
+            foreach (SyntaxNode start in starts) { trail.pending.Push((start, false)); }
+
+            while (trail.pending.Count > 0) {
+                (SyntaxNode node, bool copied) = trail.pending.Pop();
+
+                trail.Visit(node, copied);
+            }
+
+            return trail;
+        }
+
+        /// <summary>The parameters of the constructor the walk reached through at least one copy.</summary>
+        internal IReadOnlyCollection<IParameterSymbol> Reached() {
+            return [.. reached];
+        }
+
+        /// <summary>
+        ///     Steps through every value <paramref name="node" /> names; a parameter named in a starting node
+        ///     itself is not reached through a copy, and is <see cref="Mentioned" />'s to report.
+        /// </summary>
+        private void Visit(SyntaxNode node, bool copied) {
+            InvocationExpressionSyntax[] spelled = [.. node.DescendantNodesAndSelf()
+                                                           .OfType<InvocationExpressionSyntax>()
+                                                           .Where(IsNameOf)];
+            SyntaxNode[] counted = [.. node.DescendantNodesAndSelf(descendant => !IsSkipped(descendant, spelled))
+                                           .Where(descendant => !IsSkipped(descendant, spelled))];
+
+            Lost |= counted.Any(HandsOnTheObject);
+
+            foreach (IdentifierNameSyntax identifier in counted.OfType<IdentifierNameSyntax>()) { Step(identifier, copied); }
+        }
+
+        /// <summary>A <c>nameof</c>, or the exception a throw builds when only what decides it counts.</summary>
+        private bool IsSkipped(SyntaxNode node, InvocationExpressionSyntax[] spelled) {
+            return spelled.Contains(node)
+                || (ignoresWhatIsThrown && node.Parent is ThrowStatementSyntax or ThrowExpressionSyntax);
+        }
+
+        /// <summary>The object being built, handed on as a value rather than reached a member of.</summary>
+        private static bool HandsOnTheObject(SyntaxNode node) {
+            return node is ThisExpressionSyntax or BaseExpressionSyntax
+                && node.Parent is not MemberAccessExpressionSyntax;
+        }
+
+        private void Step(IdentifierNameSyntax identifier, bool copied) {
+            ISymbol? symbol = model.GetSymbolInfo(identifier).Symbol;
+
+            if (symbol is IParameterSymbol parameter) {
+                if (copied && method.Parameters.Contains(parameter, SymbolEqualityComparer.Default)) { reached.Add(parameter); }
+
+                return;
+            }
+
+            if (symbol is null || symbol.IsStatic || HasAReceiverOfItsOwn(identifier) || !followed.Add(symbol)) { return; }
+
+            switch (symbol) {
+                case ILocalSymbol:
+                    Lost |= !PushSources(symbol);
+
+                    break;
+                case IFieldSymbol or IPropertySymbol when SymbolEqualityComparer.Default.Equals(symbol.ContainingType, method.ContainingType)
+                                                       && HoldsWhatItIsAssigned(symbol):
+                    Lost |= writtenUnread;
+                    PushSources(symbol);
+
+                    break;
+                case IFieldSymbol or IPropertySymbol or IMethodSymbol or IEventSymbol:
+                    Lost |= IsOfTheObject(symbol);
+
+                    break;
+            }
+        }
+
+        /// <summary>
+        ///     Whether the constructor runs code the walk does not read that may write the object's members: a
+        ///     method or local function of the object it calls, or the constructor it delegates to.
+        /// </summary>
+        private bool WritesTheObjectUnread() {
+            if (within is ConstructorDeclarationSyntax { Initializer: { } initializer }
+             && initializer.IsKind(SyntaxKind.ThisConstructorInitializer)) {
+                return true;
+            }
+
+            return within?.DescendantNodes()
+                          .OfType<InvocationExpressionSyntax>()
+                          .Select(invocation => invocation.Expression)
+                          .Any(called => called is IdentifierNameSyntax or MemberAccessExpressionSyntax { Expression: ThisExpressionSyntax or BaseExpressionSyntax }
+                                      && model.GetSymbolInfo(called).Symbol is IMethodSymbol { IsStatic: false } target
+                                      && (target.MethodKind == MethodKind.LocalFunction || IsOfTheObject(target)))
+                ?? false;
+        }
+
+        /// <summary>A member reached through some other value, which the walk follows instead.</summary>
+        private static bool HasAReceiverOfItsOwn(IdentifierNameSyntax identifier) {
+            return identifier.Parent switch {
+                MemberAccessExpressionSyntax access => access.Name == identifier && access.Expression is not (ThisExpressionSyntax or BaseExpressionSyntax),
+                MemberBindingExpressionSyntax       => true,
+                _                                   => false
+            };
+        }
+
+        /// <summary>A member of the object being built, or of a type it derives from, or a local function.</summary>
+        private bool IsOfTheObject(ISymbol symbol) {
+            for (INamedTypeSymbol? type = method.ContainingType; type is not null; type = type.BaseType) {
+                if (SymbolEqualityComparer.Default.Equals(symbol.ContainingType, type)) { return true; }
+            }
+
+            return false;
+        }
+
+        /// <summary>Queues every expression <paramref name="symbol" /> takes its value from; false when there is none.</summary>
+        private bool PushSources(ISymbol symbol) {
+            SyntaxNode[] sources = [.. symbol.DeclaringSyntaxReferences
+                                             .Select(reference => reference.GetSyntax())
+                                             .Where(declaring => declaring.SyntaxTree == model.SyntaxTree)
+                                             .Select(DeclaredFrom)
+                                             .OfType<SyntaxNode>()
+                                             .Concat(WritesTo(symbol))];
+
+            foreach (SyntaxNode source in sources) { pending.Push((source, true)); }
+
+            return sources.Length > 0;
+        }
+
+        /// <summary>The right side of every write to <paramref name="symbol" /> in the constructor, or the call writing it.</summary>
+        private IEnumerable<SyntaxNode> WritesTo(ISymbol symbol) {
+            if (within is null) { return []; }
+
+            IEnumerable<SyntaxNode> assigned = within.DescendantNodes()
+                                                     .OfType<AssignmentExpressionSyntax>()
+                                                     .Where(assignment => Names(assignment.Left, symbol))
+                                                     .Select(assignment => assignment.Right);
+            IEnumerable<SyntaxNode> passed = within.DescendantNodes()
+                                                   .OfType<ArgumentSyntax>()
+                                                   .Where(argument => !argument.RefKindKeyword.IsKind(SyntaxKind.None) && Names(argument.Expression, symbol))
+                                                   .Select(argument => argument.Parent?.Parent)
+                                                   .OfType<SyntaxNode>();
+
+            return assigned.Concat(passed);
+        }
+
+        /// <summary>Whether <paramref name="target" /> is <paramref name="symbol" />, or a tuple naming it.</summary>
+        private bool Names(ExpressionSyntax target, ISymbol symbol) {
+            return target is TupleExpressionSyntax tuple
+                       ? tuple.Arguments.Any(element => Names(element.Expression, symbol))
+                       : SymbolEqualityComparer.Default.Equals(model.GetSymbolInfo(target).Symbol, symbol);
+        }
+
+        /// <summary>The expression a declaration takes its value from, whatever form the declaration takes.</summary>
+        private static SyntaxNode? DeclaredFrom(SyntaxNode declaring) {
+            switch (declaring) {
+                case VariableDeclaratorSyntax declarator:  return declarator.Initializer?.Value;
+                case PropertyDeclarationSyntax property:   return property.Initializer?.Value;
+                case CommonForEachStatementSyntax loop:     return loop.Expression;
+            }
+
+            foreach (SyntaxNode ancestor in declaring.Ancestors()) {
+                switch (ancestor) {
+                    case ArgumentSyntax { Parent.Parent: { } call }: return call;
+                    case IsPatternExpressionSyntax pattern:         return pattern.Expression;
+                    case SwitchExpressionSyntax switched:           return switched.GoverningExpression;
+                    case SwitchStatementSyntax switched:            return switched.Expression;
+                    case AssignmentExpressionSyntax assignment:     return assignment.Right;
+                    case CommonForEachStatementSyntax loop:         return loop.Expression;
+                    case StatementSyntax:                           return null;
+                }
+            }
+
+            return null;
+        }
+
     }
 
     /// <summary>
@@ -587,7 +912,8 @@ internal static class Guards {
 
     /// <summary>
     ///     Whether <paramref name="source" /> is a parameter itself, unchanged — through parentheses, a built-in
-    ///     cast or a null-forgiving <c>!</c>, none of which can turn a non-null value into null.
+    ///     cast or a null-forgiving <c>!</c>, none of which can turn a non-null value into null, and through any
+    ///     number of plain copies.
     /// </summary>
     /// <remarks>
     ///     A user-defined conversion is not unwrapped: <c>explicit operator ProductCode(string raw)</c> is a
@@ -595,8 +921,18 @@ internal static class Guards {
     ///     The same holds when the assignment applies it implicitly — <c>Code = raw;</c> through an
     ///     <c>implicit operator</c> — which is the conversion <see cref="SemanticModel" /> reports on the
     ///     right side itself, where no cast is written to look at.
+    ///     <para>
+    ///         <c>string first = value; string second = first;</c> holds the parameter as surely as one copy
+    ///         does: since marking follows a copy to the end (ADR-0110), so does the proof that a null-check on
+    ///         it is satisfied by construction, or a chain of two would earn a mark one copy does not.
+    ///     </para>
     /// </remarks>
     private static bool IsTheParameterItself(ExpressionSyntax source, SemanticModel model) {
+        return IsTheParameterItself(source, model, new HashSet<ISymbol>(SymbolEqualityComparer.Default));
+    }
+
+    /// <summary>One step of <see cref="IsTheParameterItself(ExpressionSyntax, SemanticModel)" />, past the copies already followed.</summary>
+    private static bool IsTheParameterItself(ExpressionSyntax source, SemanticModel model, HashSet<ISymbol> followed) {
         if (model.GetConversion(source).IsUserDefined) { return false; }
 
         ExpressionSyntax unwrapped = source switch {
@@ -607,8 +943,24 @@ internal static class Guards {
         };
 
         return unwrapped == source
-                   ? model.GetSymbolInfo(source).Symbol is IParameterSymbol
-                   : IsTheParameterItself(unwrapped, model);
+                   ? IsAParameterOrAPlainCopy(model.GetSymbolInfo(source).Symbol, source, model, followed)
+                   : IsTheParameterItself(unwrapped, model, followed);
+    }
+
+    /// <summary>
+    ///     Whether <paramref name="symbol" /> is a parameter, or a member holding what it is assigned whose every
+    ///     earlier assignment is the parameter itself.
+    /// </summary>
+    private static bool IsAParameterOrAPlainCopy(ISymbol? symbol, ExpressionSyntax read, SemanticModel model, HashSet<ISymbol> followed) {
+        if (symbol is IParameterSymbol) { return true; }
+
+        if (symbol is not (ILocalSymbol or IFieldSymbol or IPropertySymbol) || !HoldsWhatItIsAssigned(symbol) || !followed.Add(symbol)) {
+            return false;
+        }
+
+        ExpressionSyntax[] sources = [.. CopiedFrom(symbol, read, model)];
+
+        return sources.Length > 0 && sources.All(copied => IsTheParameterItself(copied, model, followed));
     }
 
     /// <summary>Whether <paramref name="cast" /> calls a conversion operator someone wrote.</summary>
@@ -1124,7 +1476,9 @@ internal static class Guards {
         IParameterSymbol[] mentioned = Mentioned(condition, model, method);
 
         if (!IsANullCheckOnAPlainCopy(condition, model)) {
-            foreach (IParameterSymbol reached in ReachedThroughACopy(condition, model, method)) { reading.MarkUnread(reached.Name); }
+            foreach (IParameterSymbol reached in ReachedThroughCopies(condition, model, method)) { reading.MarkUnread(reached.Name); }
+
+            MarkEveryParameterIfTheTrailIsLost([condition], model, method, reading);
         }
 
         // Exactly one, or the engine cannot say whose invariant this is. A cross-parameter rule is precisely

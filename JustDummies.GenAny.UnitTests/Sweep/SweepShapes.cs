@@ -468,8 +468,10 @@ internal static class SweepShapes {
     //
     // The shapes the developer-UX trial of October 2026 found and this bench did not know: a guard written
     // below a write to state, one that reaches the parameter through a copy — a local, a field, a property —
-    // and a null-check on a value computed from it, or on a property whose setter rewrites it (#333). None
-    // of them is READ; each must be MARKED, which this bench sees as a sentinel. Two controls ride along,
+    // and a null-check on a value computed from it, or on a property whose setter rewrites it (#333). Then
+    // the shapes a copy followed one step and no further left silent: a chain of two copies, an `out`
+    // argument, a deconstruction, and a getter the engine cannot read (ADR-0110). None of them is READ;
+    // each must be MARKED, which this bench sees as a sentinel. Two controls ride along,
     // because a mark is only honest where it is due: a null-check on a plain copy, which the generator
     // satisfies by construction, must stay silent; and the one shape still out of reach is named rather than
     // hidden — an unrecognised helper below the first write, §9's residue.
@@ -483,7 +485,8 @@ internal static class SweepShapes {
         new("list", "IReadOnlyList<int>", "IReadOnlyList<int>?", "{0}.Count < 2")
     ];
 
-    private static readonly IReadOnlyList<string> Placements = ["below", "local", "field", "property", "computed", "copynull", "helper", "setter"];
+    private static readonly IReadOnlyList<string> Placements = ["below", "local", "field", "property", "computed", "copynull", "helper", "setter",
+                                                                "chain", "outvar", "deconstruct", "getter"];
 
     /// <summary>Why the <c>helper</c> placement is expected to draw a value its own domain rejects.</summary>
     private const string HelperBelowTheScanResidue = "the guard is a helper the closed set does not recognise, called below the "
@@ -537,6 +540,26 @@ internal static class SweepShapes {
                                 kept = value;
                                 Ensure(value);
                         """,
+            "chain" => $$"""
+                             {{type}} first = value;
+                             {{type}} second = first;
+                             if ({{Rejects("second")}}) { throw new ArgumentException(nameof(value)); }
+                             kept = second;
+                     """,
+            "outvar" => $$"""
+                              _ = TryCopy(value, out {{type}} copied);
+                              if ({{Rejects("copied")}}) { throw new ArgumentException(nameof(value)); }
+                              kept = copied;
+                      """,
+            "deconstruct" => $$"""
+                                   ({{type}} first, {{type}} other) = (value, value);
+                                   if ({{Rejects("first")}}) { throw new ArgumentException(nameof(value)); }
+                                   kept = other;
+                           """,
+            "getter" => $$"""
+                              kept = value;
+                              if ({{Rejects("Exposed")}}) { throw new ArgumentException(nameof(value)); }
+                      """,
             _ => """
                          Shaped = value;
                          if (Shaped is null) { throw new ArgumentException(nameof(value)); }
@@ -563,8 +586,16 @@ internal static class SweepShapes {
                                         private set { shaped = value is null || {{Rejects("value")}} ? null : value; }
                                     }
 
+                                    public {{type}} Exposed => kept;
+
                                     private static void Ensure({{type}} candidate) {
                                         if ({{Rejects("candidate")}}) { throw new ArgumentException(nameof(candidate)); }
+                                    }
+
+                                    private static bool TryCopy({{type}} source, out {{type}} copy) {
+                                        copy = source;
+
+                                        return true;
                                     }
 
                                 }

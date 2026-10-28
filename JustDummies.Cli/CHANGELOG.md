@@ -39,6 +39,17 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Fixed
 
+- **A guard reached past one copy of its parameter is now marked `unread guards` instead of reported as
+  inferred, and one decided by a value the tool cannot follow marks every parameter (ADR-0110).** The tool
+  followed a local, a field or a property one step back to the parameter it came from, and no further:
+  `string trimmed = value.Trim(); string upper = trimmed.ToUpperInvariant(); if (upper.Length > 8) { throw … }`
+  marked nothing, and neither did a guard on a value written through an `out` argument or a deconstruction. The
+  recap said `inferred`, the file compiled, and the constructor rejected the draws. Such a value is now followed
+  through any number of copies to the parameters it came from, and those are marked. Where what decides a throw
+  comes from code the tool does not read — a property whose getter computes its value, a method of the object
+  being built, the object itself handed to a helper — every parameter is marked, since the tool cannot say which
+  ones the rejection involves. No mark the tool gave before is removed. A generator already scaffolded does not
+  change; re-scaffold with `--force` to see the mark.
 - **Two null-checks that reject real values are now marked `unread guards` instead of read as satisfied.** A
   comparison to `null` through a user-defined `==` — an operator free to answer `true` for a value it rejects — was
   read as the null-check the generator always satisfies, whether on the parameter (`if (code == null) throw …`) or

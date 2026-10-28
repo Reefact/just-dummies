@@ -233,6 +233,99 @@ public sealed class GuardBoundaryTests {
         Check.That(parameter.Provenance.HasFlag(Provenance.UnreadGuards)).IsFalse();
     }
 
+    /// <summary>
+    ///     A guard reaching its parameter through more than one copy is marked unread, however the copy is made.
+    /// </summary>
+    /// <remarks>
+    ///     Following a copy one step and no further left a chain of two silent, and an <c>out</c> argument or a
+    ///     deconstruction silent at the first step: the recap said inferred over a constructor rejecting most
+    ///     draws. Marking through a copy derives no bound, so it is followed to the end (ADR-0110). The last row
+    ///     is the control: a null-check on a chain of plain copies is satisfied by construction, as on one copy
+    ///     (ADR-0064), and stays silent.
+    /// </remarks>
+    [Theory(DisplayName = "A guard reaching its parameter past one copy is marked unread.")]
+    [InlineData("string", "string first = value.Trim(); string second = first.ToUpperInvariant(); if (second.Length > 8) { throw new ArgumentException(nameof(value)); }", true)]
+    [InlineData("int", "int total = value + 1; int doubled = total * 2; if (doubled > 100) { throw new ArgumentOutOfRangeException(nameof(value)); }", true)]
+    [InlineData("string", "_ = int.TryParse(value, out int parsed); if (parsed < 0) { throw new ArgumentException(nameof(value)); }", true)]
+    [InlineData("int", "(int half, _) = (value / 2, value % 2); if (half > 3) { throw new ArgumentOutOfRangeException(nameof(value)); }", true)]
+    [InlineData("string", "string first = value; string second = first; if (second is null) { throw new ArgumentNullException(nameof(value)); }", false)]
+    public void AGuardReachingItsParameterPastOneCopyIsMarkedUnread(string type, string guard, bool marked) {
+        ScaffoldedParameter parameter = Subject.GuardedBy(type, guard);
+
+        Check.That(parameter.Provenance.HasFlag(Provenance.UnreadGuards)).IsEqualTo(marked);
+    }
+
+    /// <summary>
+    ///     A throw decided by a value the engine cannot trace back to the parameters marks every parameter.
+    /// </summary>
+    /// <remarks>
+    ///     Where the chase would have to look inside a getter or a method of the object being built, it stops,
+    ///     and silence there would read "these parameters are free" (ADR-0110). Only what <b>decides</b> the
+    ///     throw counts: the value a message is built from rejects nothing. A field reached through another
+    ///     field is followed to the end like a local, and marks only the parameter it came from.
+    /// </remarks>
+    [Theory(DisplayName = "A throw decided by a value the engine cannot trace marks every parameter.")]
+    [InlineData("", "_low = low; copy = _low; _high = high; if (copy > 10) { throw new ArgumentOutOfRangeException(nameof(low)); }", true, false)]
+    [InlineData("private int Sum => _low + _high;", "_low = low; _high = high; if (Sum > 10) { throw new ArgumentOutOfRangeException(nameof(high)); }", true, true)]
+    [InlineData("private bool Fits() { return _low + _high <= 10; }", "_low = low; _high = high; if (!Fits()) { throw new ArgumentOutOfRangeException(nameof(high)); }", true, true)]
+    [InlineData("private static bool Fits(Subject subject) { return subject._low + subject._high <= 10; }", "_low = low; _high = high; if (!Fits(this)) { throw new ArgumentOutOfRangeException(nameof(high)); }", true, true)]
+    [InlineData("private int Sum => _low + _high;", "_low = low; _high = high; if (_low > 10) { throw new ArgumentOutOfRangeException(Sum.ToString()); }", true, false)]
+    [InlineData("private void Keep(int value) { _low = value; }", "Keep(low); _high = high; if (_low > 10) { throw new ArgumentOutOfRangeException(nameof(low)); }", true, true)]
+    public void AThrowDecidedByAValueTheEngineCannotTraceMarksEveryParameter(string members, string body, bool lowMarked, bool highMarked) {
+        ScaffoldOutcome outcome = Subject.Scaffold($$"""
+                                                     public sealed class Subject {
+
+                                                         private readonly int _low;
+
+                                                         private readonly int _high;
+
+                                                         private readonly int copy;
+
+                                                         public Subject(int low, int high) {
+                                                             {{body}}
+                                                         }
+
+                                                         {{members}}
+
+                                                     }
+                                                     """);
+
+        Check.That(outcome.Plan!.Parameters[0].Provenance.HasFlag(Provenance.UnreadGuards)).IsEqualTo(lowMarked);
+        Check.That(outcome.Plan.Parameters[1].Provenance.HasFlag(Provenance.UnreadGuards)).IsEqualTo(highMarked);
+    }
+
+    /// <summary>
+    ///     A member the constructor this one delegates to may have written is not traced from this body alone.
+    /// </summary>
+    /// <remarks>
+    ///     <c>: this(low)</c> runs a body the walk does not read before this one, so a throw this body decides on
+    ///     a member it never writes itself has lost its trail, and marks every parameter (ADR-0110).
+    /// </remarks>
+    [Fact(DisplayName = "A throw decided by a member the delegated constructor writes marks every parameter.")]
+    public void AThrowDecidedByAMemberTheDelegatedConstructorWritesMarksEveryParameter() {
+        ScaffoldOutcome outcome = Subject.Scaffold("""
+                                                   public sealed class Subject {
+
+                                                       private readonly int _low;
+
+                                                       private readonly int _high;
+
+                                                       public Subject(int low, int high) : this(low) {
+                                                           _high = high;
+                                                           if (_low > 10) { throw new ArgumentOutOfRangeException(nameof(low)); }
+                                                       }
+
+                                                       private Subject(int low) {
+                                                           _low = low;
+                                                       }
+
+                                                   }
+                                                   """);
+
+        Check.That(outcome.Plan!.Parameters[0].Provenance.HasFlag(Provenance.UnreadGuards)).IsTrue();
+        Check.That(outcome.Plan.Parameters[1].Provenance.HasFlag(Provenance.UnreadGuards)).IsTrue();
+    }
+
     /// <summary>The parentheses a writer is free to add do not make the subject something else.</summary>
     [Theory(DisplayName = "Parentheses around the subject leave the guard readable.")]
     [InlineData("if ((value).Length < 8) { throw new ArgumentException(nameof(value)); }")]

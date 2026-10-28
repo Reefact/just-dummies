@@ -94,6 +94,14 @@ compiles and draws a value your constructor rejects on some later run — is the
 most, because it surfaces far from its cause
 ([ADR-0083](../../for-maintainers/adr/0083-block-compilation-on-a-guard-the-engine-cannot-vouch-for.md)).
 
+**A throw decided by something the tool cannot follow marks every parameter.** The tool follows a
+value back through any number of copies — locals, fields, an `out` argument, a deconstruction — to the
+parameters it came from, and marks those. Where going on would mean reading code it does not read — a
+property whose getter computes its value, a method of the object being built, the object itself handed
+to a helper — it cannot say which parameters the rejection involves, so it marks them all rather than
+none ([ADR-0110](../../for-maintainers/adr/0110-mark-every-parameter-a-throw-may-depend-on.md)).
+Confirm each recipe as above.
+
 **What the tool still cannot see stays silent.** A few shapes reject a value without the tool seeing a
 rejection at all, so they earn no mark: a validator that *returns* the value it checked
 (`_name = Ensure.Valid(name);`), a local copy handed to a helper (`var v = value; Validate(v);`), a

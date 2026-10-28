@@ -93,6 +93,15 @@ fichier qui compile et tire une valeur que votre constructeur rejette lors d'une
 ultérieure — est l'échec qui coûte le plus cher, parce qu'il surgit loin de sa cause
 ([ADR-0083](../../for-maintainers/adr/0083-block-compilation-on-a-guard-the-engine-cannot-vouch-for.fr.md)).
 
+**Un `throw` décidé par quelque chose que l'outil ne sait pas suivre marque chaque paramètre.** L'outil
+remonte une valeur à travers un nombre quelconque de copies — variables locales, champs, un argument
+`out`, une déconstruction — jusqu'aux paramètres dont elle vient, et marque ceux-là. Là où continuer
+demanderait de lire du code qu'il ne lit pas — une propriété dont le getter calcule sa valeur, une
+méthode de l'objet en construction, l'objet lui-même passé à un helper —, il ne peut pas dire quels
+paramètres le rejet implique ; il les marque donc tous plutôt qu'aucun
+([ADR-0110](../../for-maintainers/adr/0110-mark-every-parameter-a-throw-may-depend-on.fr.md)).
+Confirmez chaque recette comme ci-dessus.
+
 **Ce que l'outil ne voit toujours pas reste silencieux.** Quelques formes rejettent une valeur sans que
 l'outil y voie le moindre rejet, et ne reçoivent donc aucune marque : un validateur qui *retourne* la
 valeur vérifiée (`_name = Ensure.Valid(name);`), une copie locale confiée à un helper (`var v = value;

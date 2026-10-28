@@ -61,7 +61,7 @@ public static class GeneratorEmitter {
     /// </summary>
     private static void WriteHeader(StringBuilder file, ScaffoldPlan plan) {
         Line(file, "// Scaffolded by `any` (JustDummies). This file is yours: read it, edit it, commit it.");
-        Line(file, $"// `any generate {plan.Target.Name} --force` overwrites it. This type is partial, so members you add in a");
+        Line(file, $"// `any generate {plan.Target.Argument} --force` overwrites it. This type is partial, so members you add in a");
         Line(file, "// neighbouring file survive.");
         Line(file, string.Empty);
     }

@@ -137,7 +137,8 @@ public static class Scaffolder {
             parameters.Add(Resolve(parameter, target, names, generators, guards));
         }
 
-        ScaffoldPlan plan = new(new TargetType(targetName, fileNamespace, StyleOf(target, fileNamespace), target.ToDisplayString()),
+        ScaffoldPlan plan = new(new TargetType(targetName, fileNamespace, StyleOf(target, fileNamespace), target.ToDisplayString(),
+                                               TypeLookup.ArgumentFor(compilation, target)),
                                 TypeNaming.GeneratorNameFor(target, options.Naming),
                                 names.Usings,
                                 parameters,

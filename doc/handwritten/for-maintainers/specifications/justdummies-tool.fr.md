@@ -165,8 +165,20 @@ métadonnée ne renvoie rien, ce qui signalerait comme absent un type bien réel
 un type de premier niveau dans le namespace englobant, nommé d'après le seul type imbriqué :
 `AnyLine`.
 
+**Un nom simple ne compte que les types qu'il peut nommer.** `Measurement` n'épelle pas un
+`Measurement<T>` générique, pour lequel C# exigerait un argument de type, ni un type auquel le projet
+analysé n'a pas accès, que le fichier émis ne pourrait pas nommer non plus — aucun des deux ne rend
+donc un nom simple ambigu, et un `Measurement` du domaine n'est pas refusé parce que le framework
+déclare `System.Diagnostics.Metrics.Measurement<T>`. Quand rien d'autre ne correspond, ils sont
+gardés, si bien qu'un type générique nommé seul rencontre toujours son propre refus (§7) au lieu
+d'être signalé absent.
+
 Zéro correspondance → erreur, avec les noms les plus proches par distance d'édition. Plus d'une →
 erreur, avec les noms complets, en demandant lequel. Les deux sortent en `1`.
+
+**L'en-tête nomme un argument qui se résout (§4.3).** Sa deuxième ligne dit au développeur comment
+relancer l'outil ; elle épelle donc le type comme cette recherche retrouve exactement ce type : le nom
+simple là où il est sans ambiguïté, le nom complet là où il ne l'est pas.
 
 ### 3.3 Défauts de projet *(v1.1)*
 

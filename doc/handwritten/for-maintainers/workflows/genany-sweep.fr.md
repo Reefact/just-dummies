@@ -157,9 +157,8 @@ moteur respecte cette règle. Chacun des huit placements est croisé avec trois 
 | `copynull` | un null-check sur une copie simple, que le générateur satisfait par construction | `Held` |
 | `helper` | un helper non reconnu, appelé après la première affectation | `KnownResidue` (§9) |
 
-Le placement `setter` est entré comme une entrée ouverte de `SweepDefects`, et il en est sorti quand une
-propriété a dû être auto-implémentée pour qu'un null-check à travers elle compte comme un null-check sur
-une copie simple (#333).
+Le placement `setter` a d'abord été suivi comme un défaut connu dans `SweepDefects`. Il n'y figure plus,
+car un null-check sur une propriété non auto-implémentée est désormais marqué comme non lu (#333).
 
 La famille vérifie les deux sens : une marque là où elle est due, aucune là où elle ne l'est pas. Sur la
 version antérieure à #331, les quinze formes trouvées par l'essai sont détectées comme des anomalies : le

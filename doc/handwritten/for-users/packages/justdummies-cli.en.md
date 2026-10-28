@@ -309,6 +309,9 @@ value apart from a lambda:
 Shipment anyUndeclaredShipment = Any.Shipment().WithDeclaredValue((decimal?)null).Generate();
 ```
 
+A nullable reference parameter takes the same cast — `.WithAgent((Customer?)null)` — and its pin is
+typed `Customer?` for exactly that, wherever your project reads nullable annotations.
+
 *Sometimes* `null` is the overload you add.
 
 **More than the base allows.** If the domain accepts an empty label, the base is wrong: fix

@@ -605,6 +605,15 @@ differ. `IAny<string>` is an `IAny<string?>` and needs nothing; `IAny<int>` is *
 this wrong is the most likely way an implementer produces a table that does not compile — the
 `net8.0`-only rows are all value types too.
 
+**A nullable reference parameter keeps its `?` where a test meets it.** The pin, the field and the
+private constructor parameter of a `Customer? agent` are typed `Customer?`, and the recap and the
+machine report print `Customer?`: the pin is where a test opts into null (ADR-0109), and typing it
+`Customer` made `.WithAgent((Customer?)null)` warn `CS8625` for passing what the constructor accepts.
+The base itself still never draws null (ADR-0064), and covariance keeps it assignable to the
+annotated field. The `?` is written only where the analysed project reads nullable annotations: the
+file carries no `#nullable` directive, and outside that context the annotation is itself a warning
+(`CS8632`) while passing null warns about nothing.
+
 **Element generators recurse.** `IReadOnlyList<OrderLine>` resolves its element through this same
 table, so it becomes `Any.ListOf(new AnyOrderLine())` when `AnyOrderLine` exists. Recursion is
 depth-limited to 3 and cycle-guarded; exceeding either makes the parameter unresolved.

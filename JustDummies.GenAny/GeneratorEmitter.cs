@@ -239,7 +239,8 @@ public static class GeneratorEmitter {
         Line(file, $"{indent}// TODO(any): no generator inferred for '{parameter.TypeDisplay} {parameter.Name}'.");
 
         if (ScaffoldableByName(parameter.TypeDisplay)) {
-            Line(file, $"{indent}//   Scaffold one:  any generate {parameter.TypeDisplay}");
+            // The type is scaffolded, not its annotation: `any generate Bic?` names nothing.
+            Line(file, $"{indent}//   Scaffold one:  any generate {parameter.TypeDisplay.TrimEnd('?')}");
             Line(file, $"{indent}//   or write one here, or replace it and always pass .With{parameter.PascalCasedName}(value) instead.");
 
             return;

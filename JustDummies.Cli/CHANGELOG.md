@@ -39,6 +39,13 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Fixed
 
+- **A nullable reference parameter keeps its `?` on the pin, so a test can pass `null`.** For
+  `Party(Bic? agent)` the scaffold emitted `WithAgent(Bic value)`, and the documented way to ask for null,
+  `.WithAgent((Bic?)null)`, warned `CS8625` — a build break under `TreatWarningsAsErrors`; the recap printed
+  `Party(Bic)` and `--format json` reported `"type": "Bic"`. Where the project reads nullable annotations, the
+  pin, its field and the private constructor parameter are now typed `Bic?`, and the recap and the report print
+  `Bic?`. The default still never draws `null`. A generator already scaffolded does not change; re-scaffold with
+  `--force` to get the new pin.
 - **A parameter to verify now says which guard the tool could not read, and where.** Its `TODO(any)` read
   "may be guarded by something the scaffolder could not read (§9)", which named neither the guard — on a
   parameter with three, which one? — nor a page a user could open: §9 is a section of a maintainer

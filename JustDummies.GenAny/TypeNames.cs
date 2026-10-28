@@ -74,6 +74,25 @@ internal sealed class TypeNames {
         return type.WithNullableAnnotation(NullableAnnotation.None).ToDisplayString(Short);
     }
 
+    /// <summary>
+    ///     The spelling of a constructor parameter's type where a test meets it — the pin, its field, the private
+    ///     constructor — keeping a reference type's top-level <c>?</c> where the file can carry one.
+    /// </summary>
+    /// <remarks>
+    ///     <see cref="Of" /> drops the annotation because no generator the file draws ever yields null
+    ///     (ADR-0064). The pin is the other side of that decision: it is where a test opts into null
+    ///     (ADR-0109), and typing it <c>Customer</c> made <c>WithAgent((Customer?)null)</c> warn <c>CS8625</c>
+    ///     for passing what the constructor accepts. <c>IAny&lt;out T&gt;</c> is covariant, so the never-null
+    ///     base stays assignable to the annotated field. Outside a nullable annotation context the <c>?</c>
+    ///     would itself warn (<c>CS8632</c>) and passing null warns about nothing, so it is written only where
+    ///     <paramref name="annotates" /> says the file is read with annotations.
+    /// </remarks>
+    internal string OfParameter(ITypeSymbol type, bool annotates) {
+        string name = Of(type);
+
+        return annotates && type.IsReferenceType && type.NullableAnnotation == NullableAnnotation.Annotated ? name + "?" : name;
+    }
+
     /// <summary>Opens a namespace the file needs for a name it did not get through <see cref="Of" />.</summary>
     internal void Open(string @namespace) {
         if (@namespace.Length > 0 && @namespace != own) { namespaces.Add(@namespace); }

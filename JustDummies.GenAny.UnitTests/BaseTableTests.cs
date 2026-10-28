@@ -1,3 +1,6 @@
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+
 using NFluent;
 
 namespace JustDummies.GenAny.UnitTests;
@@ -90,6 +93,76 @@ public sealed class BaseTableTests {
     public void ANullableValueTypeNeedsTheExplicitHop(string parameterType, string? expected) {
         Check.That(Subject.ExpressionFor(parameterType)).IsEqualTo(expected);
     }
+
+    /// <summary>
+    ///     A nullable reference parameter keeps its <c>?</c> where a test meets it: on the pin, so the opt-in
+    ///     ADR-0064 and ADR-0109 promise compiles without a warning.
+    /// </summary>
+    /// <remarks>
+    ///     The default still never draws null; what changes is that <c>WithNote((string?)null)</c> no longer
+    ///     warns <c>CS8625</c> — a build break under <c>TreatWarningsAsErrors</c> — for passing the null the
+    ///     constructor itself accepts. Covariance keeps the never-null base assignable to the <c>T?</c> field.
+    /// </remarks>
+    [Fact(DisplayName = "A nullable reference parameter is pinned as T?, so a test can pass null.")]
+    public void ANullableReferenceParameterIsPinnedAsNullable() {
+        const string declarations = """
+                                    namespace Shop.Domain;
+
+                                    public sealed class Subject {
+                                        public Subject(string? note, Customer? agent) { }
+                                    }
+                                    """;
+        const string caller = """
+                              namespace Shop.Tests;
+
+                              public static class Caller {
+                                  public static Shop.Domain.Subject WithoutANote() {
+                                      return new Shop.Domain.AnySubject().WithNote((string?)null).Generate();
+                                  }
+                              }
+                              """;
+
+        ScaffoldOutcome outcome = Subject.Scaffold(declarations);
+        string          emitted = outcome.File!.SourceText;
+
+        Check.That(outcome.Plan!.Parameters.Select(parameter => parameter.TypeDisplay)).ContainsExactly("string?", "Customer?");
+        Check.That(emitted).Contains("public AnySubject WithNote(string? value) {");
+
+        CSharpCompilation compilation = EmittedCodeCompiler.CompileAllWith([emitted, caller], declarations + AnyCustomer);
+
+        compilation = compilation.WithOptions(compilation.Options.WithNullableContextOptions(NullableContextOptions.Enable));
+
+        Check.That(compilation.GetDiagnostics(TestContext.Current.CancellationToken)
+                              .Where(diagnostic => diagnostic.Severity >= DiagnosticSeverity.Warning)
+                              .Select(diagnostic => diagnostic.Id + ": " + diagnostic.GetMessage())).IsEmpty();
+    }
+
+    // Outside a nullable annotation context a `?` on a reference type is itself a warning (CS8632), and nothing
+    // there warns about passing null either: the annotation is written only where it means something.
+    [Fact(DisplayName = "Without nullable annotations, a reference parameter is pinned as it always was.")]
+    public void WithoutNullableAnnotationsAReferenceParameterIsPinnedAsItWas() {
+        ScaffoldOutcome outcome = Subject.Scaffold("""
+                                                   namespace Shop.Domain;
+
+                                                   public sealed class Subject {
+                                                       public Subject(string? note) { }
+                                                   }
+                                                   """, nullable: NullableContextOptions.Disable);
+
+        Check.That(outcome.File!.SourceText).Contains("public AnySubject WithNote(string value) {");
+    }
+
+    /// <summary>The fixture's <c>Customer</c> and a stand-in for its own scaffolded generator.</summary>
+    private const string AnyCustomer = """
+
+                                       public sealed class Customer {
+                                           public Customer(string name) { }
+                                       }
+
+                                       public sealed class AnyCustomer : JustDummies.IAny<Customer> {
+                                           public Customer Generate() { return new Customer("name"); }
+                                       }
+                                       """;
 
     /// <summary>
     ///     A library without the lift gets the hop that always worked, rather than a member it cannot resolve.

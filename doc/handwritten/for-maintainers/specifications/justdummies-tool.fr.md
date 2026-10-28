@@ -627,6 +627,16 @@ n'est **pas** un `IAny<int?>`, donc un paramètre `int?` exige le saut explicite
 `.AsNullable()`. S'y tromper est la façon la plus probable de produire une table qui ne
 compile pas — les lignes réservées à `net8.0` sont elles aussi des types valeur.
 
+**Un paramètre de type référence nullable garde son `?` là où un test le rencontre.** Le pin, le
+champ et le paramètre du constructeur privé d'un `Customer? agent` sont typés `Customer?`, et le
+récapitulatif comme le rapport machine impriment `Customer?` : le pin est l'endroit où un test choisit
+`null` (ADR-0109), et le typer `Customer` faisait avertir `.WithAgent((Customer?)null)` d'un `CS8625`
+pour avoir passé ce que le constructeur accepte. La base, elle, ne tire toujours jamais `null`
+(ADR-0064), et la covariance la garde assignable au champ annoté. Le `?` n'est écrit que là où le
+projet analysé lit les annotations nullables : le fichier ne porte aucune directive `#nullable`, et
+hors de ce contexte l'annotation est elle-même un avertissement (`CS8632`) alors que passer `null`
+n'en déclenche aucun.
+
 **Les generators d'éléments récursent.** `IReadOnlyList<OrderLine>` résout son élément par cette
 même table, et devient donc `Any.ListOf(new AnyOrderLine())` quand `AnyOrderLine` existe. La
 récursion est limitée à une profondeur de 3 et protégée contre les cycles ; dépasser l'une ou

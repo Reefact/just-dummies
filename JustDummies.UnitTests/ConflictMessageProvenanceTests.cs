@@ -131,6 +131,23 @@ public sealed class ConflictMessageProvenanceTests {
         Check.That(message).Contains("Between(0, 5000)");
     }
 
+    [Fact(DisplayName = "A decimal strict bound emptying a scale lattice does not name itself as its own cause.")]
+    public void DecimalStrictBoundEmptyingALatticeIsNotItsOwnCause() {
+        // LessThan(0.01) excludes 0.01, the last point Positive() left on the WithScale(2) grid. Listing it among the
+        // constraints that forbid the grid named it on both sides of "because" (issue #340).
+        string message = ConflictMessage(() => Any.Decimal().Positive().WithScale(2).LessThan(0.01m));
+
+        Check.WithCustomMessage($"The applied constraint is echoed after 'because'. Message: {message}").That(message).Not.Contains("because Positive(), LessThan(0.01)");
+        Check.That(message).Contains("Positive() forbids every other WithScale(2) value");
+    }
+
+    [Fact(DisplayName = "A decimal exclusion emptying a scale lattice names only the exclusions declared before it.")]
+    public void DecimalExclusionEmptyingALatticeNamesOnlyTheEarlierExclusions() {
+        string message = ConflictMessage(() => Any.Decimal().Between(0m, 0.01m).WithScale(2).Except(0m).DifferentFrom(0.01m));
+
+        Check.That(message).Contains("because Except(0) forbids every other WithScale(2) value");
+    }
+
     // ----- ContinuousIntervalSpec: double (and, by sharing the engine, Single/Half) -----
 
     [Fact(DisplayName = "A double pin emptied by DifferentFrom names DifferentFrom.")]

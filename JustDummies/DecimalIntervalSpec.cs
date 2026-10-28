@@ -689,6 +689,14 @@ internal sealed class DecimalIntervalSpec {
         if (_scale >= 0) {
             if (!_latticeHasPoint || culprits.Count == 0) { return $"no {_typeName} value {_scaleConstraint} allows remains between {_render(_min)} and {_render(_max)}"; }
 
+            // The constraint being applied forbids the last grid points itself — a strict bound through its point
+            // exclusion, an exclusion directly — so the earlier ones are named for the rest of the grid, and the
+            // applied one is not listed as its own cause (issue #340).
+            List<ConstraintCall> earlier = culprits.Where(culprit => culprit != applying).ToList();
+            if (earlier.Count > 0 && earlier.Count < culprits.Count) {
+                return $"{Forbids(earlier, applying)} every other {_scaleConstraint} value between {_render(_min)} and {_render(_max)}";
+            }
+
             return $"{Forbids(culprits, applying)} every {_scaleConstraint} value between {_render(_min)} and {_render(_max)}";
         }
 

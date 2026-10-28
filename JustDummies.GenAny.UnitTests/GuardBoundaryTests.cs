@@ -303,6 +303,38 @@ public sealed class GuardBoundaryTests {
     }
 
     /// <summary>
+    ///     A null-check on a member <b>computed</b> from the parameter is a real guard, and is marked unread.
+    /// </summary>
+    /// <remarks>
+    ///     Only a member that holds the parameter itself cannot be null, since the generator never draws null
+    ///     (ADR-0064). A member computed from it can — <c>name.Length &lt; 5 ? null : name</c>, a helper
+    ///     returning null, a failed <c>TryCreate</c> — and its null-check then rejects drawn values.
+    /// </remarks>
+    [Theory(DisplayName = "A null-check on a member computed from the parameter is marked unread.")]
+    [InlineData("Name = value.Length < 5 ? null : value; if (Name is null) { throw new ArgumentException(nameof(value)); }")]
+    [InlineData("Name = Normalise(value); if (Name is null) { throw new ArgumentException(nameof(value)); }")]
+    [InlineData("uri = Uri.TryCreate(value, UriKind.Absolute, out Uri? parsed) ? parsed : null; if (uri == null) { throw new ArgumentException(nameof(value)); }")]
+    public void ANullCheckOnAMemberComputedFromTheParameterIsMarkedUnread(string body) {
+        ScaffoldOutcome outcome = Subject.Scaffold($$"""
+                                                     public sealed class Subject {
+
+                                                         private readonly Uri? uri;
+
+                                                         public Subject(string value) {
+                                                             {{body}}
+                                                         }
+
+                                                         public string? Name { get; }
+
+                                                         private static string? Normalise(string candidate) { return candidate.Length < 3 ? null : candidate; }
+
+                                                     }
+                                                     """);
+
+        Check.That(outcome.Plan!.Parameters[0].Provenance.HasFlag(Provenance.UnreadGuards)).IsTrue();
+    }
+
+    /// <summary>
     ///     A guard helper below the first assignment to state is not read either: the guard above it still
     ///     stands, and the bound below it is reported rather than lost.
     /// </summary>
@@ -338,6 +370,8 @@ public sealed class GuardBoundaryTests {
     [InlineData("if (Name is null) { throw new ArgumentNullException(nameof(name)); }")]
     [InlineData("if (Name == null) { throw new ArgumentNullException(nameof(name)); }")]
     [InlineData("ArgumentNullException.ThrowIfNull(Name);")]
+    [InlineData("Other = name!; if (Other is null) { throw new ArgumentNullException(nameof(name)); }")]
+    [InlineData("Other = (string)name; if (Other == null) { throw new ArgumentNullException(nameof(name)); }")]
     public void AStatementAfterTheFirstAssignmentThatWouldNarrowNothingMarksNothing(string below) {
         ScaffoldOutcome outcome = Subject.Scaffold($$"""
                                                      public sealed class Subject {

@@ -61,7 +61,8 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   nothing at all. Such a guard is still not *read* — it is not placed where the engine can vouch for it — but a statement below the scan that
   throws, or a call the set recognises as a guard, now marks every parameter it would have constrained, and the
   file stops at the `TODO(any)` line until you confirm the generator. A null-check there stays silent, as above
-  it. A generator already scaffolded does not change; re-scaffold with `--force` to see the mark.
+  it, unless it tests a value computed from the parameter (`Name = name.Length < 5 ? null : name;`), which can be
+  null. A generator already scaffolded does not change; re-scaffold with `--force` to see the mark.
 - **A guard that tests a local computed from a parameter is now marked `unread guards` instead of reported as
   inferred.** `bool ok = value.StartsWith("LOT-"); if (!ok) { throw … }` — or a `Match` on a regex, an
   `int.Parse`, a `switch` into a `bool` — names no parameter in its condition, so the tool marked nothing and the

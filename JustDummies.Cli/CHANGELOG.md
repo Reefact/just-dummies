@@ -39,6 +39,10 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Fixed
 
+- **`--namespace` no longer renames the analysed type in the recap and the JSON report.** With
+  `--namespace Foo.Bar`, the recap opened with `Analyzing Foo.Bar.Sku` and the report carried
+  `"type": "Foo.Bar.Sku"`, a type that does not exist. Both now name the type where it is declared; the option
+  still moves only the emitted file.
 - **`--format json` no longer reports a file it refused to overwrite as scaffolded.** When the output file
   already existed and `--force` was not given, the run exited `1` and said so on stderr, while stdout carried
   `"status": "Scaffolded"` and `"summary": {"scaffolded": 1, "failed": 0}`. Such a result now reads

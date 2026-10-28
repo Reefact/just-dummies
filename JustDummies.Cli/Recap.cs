@@ -58,7 +58,7 @@ internal static class Recap {
 
         ScaffoldPlan plan = outcome.Plan!;
 
-        Line(console, $"Analyzing {FullName(plan)}");
+        Line(console, $"Analyzing {plan.Target.FullName}");
         // The chosen construction is always printed (§5.1) — and it is not always a constructor: a type built
         // through its own static factory names that factory here, since it is what Generate() will call.
         string signature = string.Join(", ", plan.Parameters.Select(p => p.TypeDisplay));
@@ -208,10 +208,6 @@ internal static class Recap {
     /// <summary>One line, unwrapped, ending in the newline every platform reads the same.</summary>
     private static void Line(IAnsiConsole console, string text) {
         Unwrapped.Line(console, text);
-    }
-
-    private static string FullName(ScaffoldPlan plan) {
-        return plan.Target.Namespace is null ? plan.Target.Name : plan.Target.Namespace + "." + plan.Target.Name;
     }
 
 }

@@ -139,6 +139,24 @@ public sealed class TypeLookupTests {
         Check.That(outcome.Plan!.Target.FullName).IsEqualTo("Shop.Measurement");
     }
 
+    // Nameable first, source second: a generic type of the developer's own does not hide a referenced type the
+    // bare name does spell — the preference for source is between types the name can reach, not before it.
+    [Fact(DisplayName = "A generic type in source does not hide a nameable referenced one.")]
+    public void AGenericTypeInSourceDoesNotHideANameableReferencedOne() {
+        ScaffoldOutcome outcome = Subject.ScaffoldByNameReferencing("""
+                                                                    namespace Shop;
+
+                                                                    public sealed class Measurement {
+                                                                        public Measurement(int value) { }
+                                                                    }
+                                                                    """,
+                                                                    "Measurement",
+                                                                    "namespace Shop.Tests; public sealed class Measurement<T> { public Measurement(T value) { } }");
+
+        Check.That(outcome.Status).IsEqualTo(ScaffoldStatus.Scaffolded);
+        Check.That(outcome.Plan!.Target.FullName).IsEqualTo("Shop.Measurement");
+    }
+
     // The same name on its own still meets the refusal written for it: a generic type is told why, rather
     // than that it does not exist.
     [Fact(DisplayName = "A generic type named alone is still refused as generic.")]

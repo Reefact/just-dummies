@@ -164,8 +164,10 @@ the containing namespace, named after the nested type alone: `AnyLine`.
 `Measurement<T>`, which C# would need a type argument for, nor a type the analysed project cannot
 access, which the emitted file could not name either — so neither makes a simple name ambiguous, and
 a domain `Measurement` is not refused because the framework declares
-`System.Diagnostics.Metrics.Measurement<T>`. When nothing else matches they are kept, so a generic
-type named alone still meets its own refusal (§7) rather than being reported missing.
+`System.Diagnostics.Metrics.Measurement<T>`. Nor may they hide one: the filter applies **before**
+the preference for source types, so a generic `Measurement<T>` in the analysed project does not stand
+in front of a referenced `Measurement`. When nothing nameable matches anywhere they are kept, so a
+generic type named alone still meets its own refusal (§7) rather than being reported missing.
 
 Zero matches → error, listing the closest names by edit distance. More than one match → error,
 listing the full names, asking for one of them. Both exit `1`.

@@ -169,9 +169,11 @@ un type de premier niveau dans le namespace englobant, nommé d'après le seul t
 `Measurement<T>` générique, pour lequel C# exigerait un argument de type, ni un type auquel le projet
 analysé n'a pas accès, que le fichier émis ne pourrait pas nommer non plus — aucun des deux ne rend
 donc un nom simple ambigu, et un `Measurement` du domaine n'est pas refusé parce que le framework
-déclare `System.Diagnostics.Metrics.Measurement<T>`. Quand rien d'autre ne correspond, ils sont
-gardés, si bien qu'un type générique nommé seul rencontre toujours son propre refus (§7) au lieu
-d'être signalé absent.
+déclare `System.Diagnostics.Metrics.Measurement<T>`. Ils ne peuvent pas non plus en masquer un : le
+filtre s'applique **avant** la préférence pour les types source, si bien qu'un `Measurement<T>`
+générique du projet analysé ne passe pas devant un `Measurement` référencé. Quand rien de nommable ne
+correspond nulle part, ils sont gardés, si bien qu'un type générique nommé seul rencontre toujours son
+propre refus (§7) au lieu d'être signalé absent.
 
 Zéro correspondance → erreur, avec les noms les plus proches par distance d'édition. Plus d'une →
 erreur, avec les noms complets, en demandant lequel. Les deux sortent en `1`.

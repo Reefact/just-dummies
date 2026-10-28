@@ -218,7 +218,10 @@ internal sealed class GenerateCommand : AsyncCommand<GenerateSettings> {
         if (!written.Succeeded) {
             Refusals.FileExists(written.Path, consoles.Error);
 
-            return new ReportedScaffold(ExitCode.Failed, ScaffoldReport.Refused(typeArgument, outcome));
+            IReadOnlyList<FileReport> kept = [.. files.Select(file => FileReport.Kept(file.FileName,
+                                                                                     Path.Combine(directory, file.FileName)))];
+
+            return new ReportedScaffold(ExitCode.Failed, ScaffoldReport.NotWritten(typeArgument, outcome, kept));
         }
 
         if (!json) {

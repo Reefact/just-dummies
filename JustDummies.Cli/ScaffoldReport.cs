@@ -36,6 +36,40 @@ internal sealed record ScaffoldReport(string Argument,
                                   outcome.Candidates);
     }
 
+    /// <summary>
+    ///     The status of an argument the engine scaffolded and the shell then refused to write, because a file
+    ///     already stood where it would have gone and <c>--force</c> was not given (§6.1).
+    /// </summary>
+    /// <remarks>
+    ///     The shell's own status rather than the engine's: the engine did scaffold, so copying its
+    ///     <c>Scaffolded</c> into the report counted a success the exit code had already called a failure.
+    /// </remarks>
+    internal const string FileExists = "FileExists";
+
+    /// <summary>
+    ///     An argument whose files were not written, each kept with the path it would have taken — and at
+    ///     least one of them already stands there.
+    /// </summary>
+    /// <remarks>
+    ///     Nothing landed, so no parameter is reported open or to verify: the summary counts what the run
+    ///     left in the working tree, and this argument left nothing.
+    /// </remarks>
+    internal static ScaffoldReport NotWritten(string argument, ScaffoldOutcome outcome, IReadOnlyList<FileReport> files) {
+        ScaffoldPlan plan = outcome.Plan!;
+
+        return new ScaffoldReport(argument,
+                                  FileExists,
+                                  FullNameOf(plan),
+                                  plan.GeneratorName,
+                                  files,
+                                  Parameters: [],
+                                  OpenParameters: 0,
+                                  ParametersToVerify: 0,
+                                  EntryPoint: null,
+                                  Warnings: [],
+                                  Candidates: []);
+    }
+
     /// <summary>An argument that scaffolded, with the files it produced and where each of them went.</summary>
     internal static ScaffoldReport Of(string argument, ScaffoldOutcome outcome, IReadOnlyList<FileReport> files) {
         ScaffoldPlan plan = outcome.Plan!;

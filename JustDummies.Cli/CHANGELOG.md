@@ -39,6 +39,10 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Fixed
 
+- **`--format json` no longer reports a file it refused to overwrite as scaffolded.** When the output file
+  already existed and `--force` was not given, the run exited `1` and said so on stderr, while stdout carried
+  `"status": "Scaffolded"` and `"summary": {"scaffolded": 1, "failed": 0}`. Such a result now reads
+  `"status": "FileExists"`, lists each file with its `path` and `"written": false`, and counts under `failed`.
 - **A comparison guard `p >= N` or `p <= N` is now read for any constant, not only zero.** `if (longitude >=
   180.0) { throw … }` was marked `unread guards`, while the equivalent `ArgumentOutOfRangeException
   .ThrowIfGreaterThanOrEqual(longitude, 180.0)` was read as `.LessThan(180d)`. Both spellings now give the same

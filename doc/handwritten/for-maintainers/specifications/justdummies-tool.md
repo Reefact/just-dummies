@@ -1343,6 +1343,12 @@ tell empty output from a failed parse.
 `path` and `text` are the two halves of one question and never both answered: a written file carries
 where it went, a dry-run file what it would have been.
 
+**A file the run refused to overwrite is a failure in the document too.** The engine scaffolded, the
+write was refused (§7), so the result reads `status: "FileExists"` — the shell's own status, not the
+engine's `Scaffolded` — and counts under `summary.failed`. Each file keeps the `path` it would have
+taken with `written: false`, and no parameter is reported, since nothing landed. Copying the engine's
+status had the summary count a success the exit code called a failure.
+
 The provenance words are the recap's own (§6), read from one table rather than spelled a second time
 — two renderings of one set of facts, which is what keeps them from drifting into two answers.
 
@@ -1356,7 +1362,7 @@ The provenance words are the recap's own (§6), read from one table rather than 
 | File written, one or more TODOs or parameters to verify | `0` | The write succeeded; the developer's build reports the rest. |
 | `--dry-run` | `0` | Nothing written. |
 | Type not found / ambiguous | `1` | Candidates listed. |
-| Output file exists, no `--force` | `1` | Names the file, suggests `--force`, warns that edits are lost. |
+| Output file exists, no `--force` | `1` | Names the file, suggests `--force`, warns that edits are lost. Reported as `FileExists` under `--format json` (§6.1). |
 | No project / several projects found | `1` | Candidates listed, `--project` suggested. |
 | Project fails to load or restore | `1` | The MSBuild diagnostic, verbatim. |
 | The project does not reference JustDummies | `1` | Nothing can be resolved (D4); says so and suggests the package. |

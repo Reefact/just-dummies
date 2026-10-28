@@ -1417,6 +1417,13 @@ un script à distinguer une sortie vide d'une analyse en échec.
 porter. `path` et `text` sont les deux moitiés d'une même question et ne sont jamais répondues
 ensemble : un fichier écrit porte où il est allé, un fichier de `--dry-run` ce qu'il aurait été.
 
+**Un fichier que l'exécution a refusé d'écraser est aussi un échec dans le document.** Le moteur a
+produit le scaffold, l'écriture a été refusée (§7) : le résultat porte donc `status: "FileExists"` —
+le statut propre de l'outil, pas le `Scaffolded` du moteur — et compte dans `summary.failed`. Chaque
+fichier garde le `path` qu'il aurait pris, avec `written: false`, et aucun paramètre n'est rapporté,
+puisque rien n'a atterri. Recopier le statut du moteur faisait compter au résumé un succès que le code
+de sortie déclarait un échec.
+
 Les mots de provenance sont ceux du récapitulatif (§6), lus dans une seule table plutôt qu'épelés une
 seconde fois — deux rendus d'un même ensemble de faits, ce qui les empêche de dériver vers deux
 réponses.
@@ -1431,7 +1438,7 @@ réponses.
 | Fichier écrit, un ou plusieurs TODO ou paramètres à vérifier | `0` | L'écriture a réussi ; le build du développeur signale le reste. |
 | `--dry-run` | `0` | Rien n'est écrit. |
 | Type introuvable / ambigu | `1` | Candidats listés. |
-| Fichier de sortie existant, sans `--force` | `1` | Nomme le fichier, suggère `--force`, avertit que les éditions seront perdues. |
+| Fichier de sortie existant, sans `--force` | `1` | Nomme le fichier, suggère `--force`, avertit que les éditions seront perdues. Rapporté comme `FileExists` sous `--format json` (§6.1). |
 | Aucun / plusieurs projets trouvés | `1` | Candidats listés, `--project` suggéré. |
 | Le projet ne charge pas ou n'est pas restauré | `1` | Le diagnostic MSBuild, tel quel. |
 | Le projet ne référence pas JustDummies | `1` | Rien ne peut être résolu (D4) ; le dit et suggère le package. |

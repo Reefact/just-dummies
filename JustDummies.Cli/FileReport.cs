@@ -20,6 +20,11 @@ internal sealed record FileReport(string Name, string? Path, bool Written, strin
         return new FileReport(name, path, Written: true, Text: null);
     }
 
+    /// <summary>A file the run refused to write, because one already stands at <paramref name="path" />.</summary>
+    internal static FileReport Kept(string name, string path) {
+        return new FileReport(name, path, Written: false, Text: null);
+    }
+
     internal static FileReport Printed(ScaffoldedFile file) {
         return new FileReport(file.FileName, Path: null, Written: false, file.SourceText);
     }

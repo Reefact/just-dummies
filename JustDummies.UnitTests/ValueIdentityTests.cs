@@ -63,7 +63,7 @@ public sealed class ValueIdentityTests {
         Check.That(full.Guidance).Contains("42");
         // The seed is supplied, not read back from the source, so the two need not agree.
         Check.That(partial.Seed).IsEqualTo(7);
-        Check.That(partial.Guidance).Contains("not reproducible from this seed alone");
+        Check.That(partial.Guidance).Contains("replay from this seed only if it draws");
     }
 
     // Rendered for a reader rather than for a message: nothing appends a replay whole — AnyGenerationException takes

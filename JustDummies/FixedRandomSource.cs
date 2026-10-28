@@ -20,7 +20,7 @@ internal sealed class FixedRandomSource : RandomSource {
     }
 
     internal override string PartialReplayGuidance(int seed) {
-        return $"The seeded draws were made from Any.WithSeed({seed}), but some values come from a generator that does not draw from it, so they are not reproducible from this seed alone.";
+        return $"The seeded draws were made from Any.WithSeed({seed}), but the library cannot see inside every generator: the values of one that does not report this source replay from this seed only if it draws from that same Any.WithSeed context.";
     }
 
 }

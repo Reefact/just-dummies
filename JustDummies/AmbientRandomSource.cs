@@ -52,7 +52,7 @@ internal sealed class AmbientRandomSource : RandomSource {
     }
 
     internal override string PartialReplayGuidance(int seed) {
-        return $"The seeded draws were made with {seed} ({ReplaySnippet(seed)}), but some values come from a generator that does not draw from this source, so they are not reproducible from this seed alone.";
+        return $"The seeded draws were made with {seed} ({ReplaySnippet(seed)}), but the library cannot see inside every generator: the values of one that does not report this source replay from this seed only if it draws through Any (as a generator scaffolded by `any` does).";
     }
 
     /// <summary>

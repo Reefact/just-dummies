@@ -102,6 +102,7 @@ residue is**, and a shape that stops landing there moves the committed counts �
 shrinking announces itself too. It did: the sixteen `delegate-computed-*` shapes, which test a local
 copy of the parameter, were the whole of it until such a guard was marked `unread guards` (issue
 #300), and they now count as `BlockedForVerification`.
+Today the three `placement-helper-*` shapes are the whole of it (see below).
 
 ## What the first run found
 
@@ -132,6 +133,28 @@ Two other numbers in that run are worth reading. The `element` family came back 
 a distinctness guard over the elements and a null check inside a `foreach` are both outside the closed
 set of §5.3, so every one of them meets a sentinel — which is the designed answer, working. And the
 sixteen `delegate-computed-*` shapes are the whole of `KnownResidue`: the §9 residue, measured.
+
+## What the October trial added
+
+The developer-UX trial of October 2026 found four ways a guard rejects a parameter from where §5.3
+cannot read it, and this bench knew none of them: a guard below the first write to state, and a
+guard reaching the parameter through a copy — a local, a field, a property — or through a null-check
+on a value computed from it. #331 marked all four, and the **`placement`** family now holds the
+engine to that. Each of eight placements is crossed with three parameter types (`string`, `int`,
+`IReadOnlyList<int>`):
+
+| Placement | What it declares | Verdict the specification owes |
+|---|---|---|
+| `below`, `local`, `field`, `property`, `computed` | a guard that rejects the parameter from where §5.3 cannot read it | `BlockedForVerification` |
+| `copynull` | a null-check on a plain copy, which the generator satisfies by construction | `Held` |
+| `helper` | an unrecognised helper called below the first write | `KnownResidue` (§9) |
+| `setter` | a null-check on a property whose `set` accessor rewrites the value | `KnownDefect` — #333 |
+
+The family checks both directions: a mark where one is due, and none where it is not. It was proven
+against the engine from **before** #331 too: there, all fifteen shapes of the first row come back as
+findings, a draw the domain rejects behind a recap saying "inferred". The guards are chosen so that
+almost every draw trips them. `Any.String()` draws up to about a thousand characters, so the string
+guard rejects *long* values; a floor of eight would let thirty draws pass by luck.
 
 ## When it runs
 

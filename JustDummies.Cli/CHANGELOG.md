@@ -39,6 +39,13 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Fixed
 
+- **A parameter to verify now says which guard the tool could not read, and where.** Its `TODO(any)` read
+  "may be guarded by something the scaffolder could not read (§9)", which named neither the guard — on a
+  parameter with three, which one? — nor a page a user could open: §9 is a section of a maintainer
+  specification. The comment now gives the file, line and first line of the earliest such guard, and links to
+  the `any` user page; the recap prints the same under its rows, and `--format json` carries it as
+  `unreadGuard` on the parameter's row. A generator already scaffolded does not change; re-scaffold with
+  `--force` to get the new comment.
 - **A project that has not been restored is told to restore, not to add JustDummies.** Run on a fresh clone,
   `any generate` refused with "this project does not reference JustDummies" and suggested
   `dotnet add package JustDummies`, though the project did reference it: an unrestored project opens without its

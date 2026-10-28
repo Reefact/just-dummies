@@ -11,7 +11,7 @@ internal sealed class GuardReading {
 
     private readonly Dictionary<string, List<GuardConstraint>> constraints = new(StringComparer.Ordinal);
 
-    private readonly HashSet<string> unread = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, UnreadGuard> unread = new(StringComparer.Ordinal);
 
     private GuardReading(bool sourceAvailable) {
         SourceAvailable = sourceAvailable;
@@ -52,7 +52,14 @@ internal sealed class GuardReading {
     ///     generator right for this parameter?
     /// </remarks>
     internal bool Unread(string parameter) {
-        return unread.Contains(parameter);
+        return unread.ContainsKey(parameter);
+    }
+
+    /// <summary>
+    ///     The earliest place that earned <paramref name="parameter" /> its mark, or null when it has none.
+    /// </summary>
+    internal UnreadGuard? UnreadAt(string parameter) {
+        return unread.TryGetValue(parameter, out UnreadGuard? at) ? at : null;
     }
 
     internal void Add(string parameter, GuardConstraint constraint) {
@@ -64,8 +71,14 @@ internal sealed class GuardReading {
         read.Add(constraint);
     }
 
-    internal void MarkUnread(string parameter) {
-        unread.Add(parameter);
+    /// <summary>
+    ///     Marks <paramref name="parameter" />, keeping the earliest line of a file that earned the mark — the
+    ///     walk does not visit the body in source order, and the developer reads it from the top.
+    /// </summary>
+    internal void MarkUnread(string parameter, UnreadGuard at) {
+        if (unread.TryGetValue(parameter, out UnreadGuard? kept) && (kept.File != at.File || kept.Line <= at.Line)) { return; }
+
+        unread[parameter] = at;
     }
 
     /// <summary>

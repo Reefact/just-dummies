@@ -37,9 +37,11 @@ public sealed partial class AnyOrder : IAny<Order> {
     }
 
     private static AnyCustomer AnyValidCustomer() {
-        // TODO(any): 'Customer customer' may be guarded by something the scaffolder could not read (§9).
+        // TODO(any): 'Customer customer' may be guarded by something the scaffolder could not read,
+        //   first at Order.cs, line 14: if (!Registry.Knows(customer)) { throw new ArgumentException(nameof(customer)); }
         //   This is the scaffolder's best generator for the type; verify it honours the real invariant,
-        //   or replace it, then delete the line below.
+        //   or replace it, then delete the line below. What the scaffolder reads, and what it cannot:
+        //   https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/packages/justdummies-cli.en.md#what-the-last-column-means
         _ = TODO_verify_the_generator_for_customer;
 
         return new AnyCustomer();

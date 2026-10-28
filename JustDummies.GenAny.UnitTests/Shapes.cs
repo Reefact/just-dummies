@@ -41,7 +41,8 @@ internal static class Shapes {
                                 "AnyOrder",
                                 ["System", "System.Collections.Generic", "JustDummies"],
                                 OrderParameters(customer: Composed("customer", "Customer", "AnyCustomer",
-                                                                   Provenance.UnreadGuards)));
+                                                                   Provenance.UnreadGuards,
+                                                                   new UnreadGuard("Order.cs", 14, "if (!Registry.Knows(customer)) { throw new ArgumentException(nameof(customer)); }"))));
     }
 
     /// <summary>One parameter, and no <c>System</c> using — the group separator has nothing to separate.</summary>
@@ -114,8 +115,12 @@ internal static class Shapes {
     ///     (ADR-0089). Spelled with its provenance because that is what the recap reports for it, and a shape
     ///     that left it off would pin the emitter against a plan the engine cannot produce.
     /// </summary>
-    private static ScaffoldedParameter Composed(string name, string type, string generator, Provenance also = Provenance.None) {
-        return ScaffoldedParameter.DrawnFrom(name, type, generator, $"new {generator}()", Provenance.Scaffolded | also);
+    private static ScaffoldedParameter Composed(string name,
+                                                string type,
+                                                string generator,
+                                                Provenance also = Provenance.None,
+                                                UnreadGuard? unread = null) {
+        return ScaffoldedParameter.DrawnFrom(name, type, generator, $"new {generator}()", Provenance.Scaffolded | also, unreadGuard: unread);
     }
 
     private static IReadOnlyList<ScaffoldedParameter> OrderParameters(ScaffoldedParameter customer) {

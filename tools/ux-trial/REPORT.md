@@ -40,8 +40,11 @@ IDs are stable so that issues can cite them: `CLI-`, `CORE-`, `AN-`, `XU-`, `DOC
 
 ## 1. Summary
 
-> **Status.** CLI-B1 to CLI-B4 are fixed in [#331](https://github.com/Reefact/just-dummies/pull/331), merged and re-checked on the trial
-> by re-scaffolding the affected domains. The other items below are open in their issues.
+> **Status.** Milestone 7 is closed. CLI-B1 to CLI-B4 are fixed in [#331](https://github.com/Reefact/just-dummies/pull/331). The follow-ups are
+> fixed too: mutual recursion ([#332](https://github.com/Reefact/just-dummies/issues/332)), and the guard reader now marks every parameter a throw
+> may depend on ([#333](https://github.com/Reefact/just-dummies/issues/333), ADR-0110). The trial was re-run on that state: 1095 of 1101 tests
+> pass, the six red ones being core `Bug_` tests. Every constructor shape gathered in the review of #331 is
+> marked or read as it should be. The other items below are open in their issues.
 
 | | |
 |---|---|

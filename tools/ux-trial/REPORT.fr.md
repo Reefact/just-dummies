@@ -43,8 +43,11 @@ négatif d'un analyseur) ou `C` (candidat à une décision).
 
 ## 1. Synthèse
 
-> **État.** CLI-B1 à CLI-B4 sont corrigés dans [#331](https://github.com/Reefact/just-dummies/pull/331), fusionnée et revérifiée sur l'essai en
-> relançant le scaffolding des domaines concernés. Les autres éléments ci-dessous restent ouverts dans leurs issues.
+> **État.** La milestone 7 est close. CLI-B1 à CLI-B4 sont corrigés dans [#331](https://github.com/Reefact/just-dummies/pull/331). Les suites le sont
+> aussi : la récursion mutuelle ([#332](https://github.com/Reefact/just-dummies/issues/332)), et le lecteur de gardes marque désormais tout paramètre
+> dont un `throw` peut dépendre ([#333](https://github.com/Reefact/just-dummies/issues/333), ADR-0110). L'essai a été relancé sur cet état : 1095 tests
+> sur 1101 passent, les six rouges étant des `Bug_` du cœur. Toutes les formes de constructeur réunies pendant la
+> revue de #331 sont marquées ou lues comme il se doit. Les autres éléments ci-dessous restent ouverts dans leurs issues.
 
 | | |
 |---|---|

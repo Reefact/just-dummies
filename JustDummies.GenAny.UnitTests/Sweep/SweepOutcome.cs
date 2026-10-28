@@ -17,7 +17,8 @@ internal sealed class SweepOutcome(string name,
                                    string rules,
                                    string draw,
                                    SweepVerdict verdict,
-                                   string? reason = null) {
+                                   string? reason = null,
+                                   EmittedAssembly.DrawFailure? failure = null) {
 
     internal string Name { get; } = name;
 
@@ -42,6 +43,15 @@ internal sealed class SweepOutcome(string name,
 
     /// <summary>Why the verdict is a finding or a sweep bug, in one sentence a reader can act on.</summary>
     internal string? Reason { get; } = reason;
+
+    /// <summary>
+    ///     What stopped the draw, kept typed rather than as the sentence <see cref="Draw" /> prints, or null.
+    /// </summary>
+    /// <remarks>
+    ///     So an entry of <see cref="SweepDefects" /> can name the exact symptom it records — which exception,
+    ///     thrown by a draw rather than by construction — instead of reading it back out of prose.
+    /// </remarks>
+    internal EmittedAssembly.DrawFailure? Failure { get; } = failure;
 
     /// <summary>The row, tab separated, in the column order the August survey used.</summary>
     internal string ToRow() {

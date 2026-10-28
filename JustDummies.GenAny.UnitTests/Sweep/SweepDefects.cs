@@ -36,9 +36,17 @@ internal static class SweepDefects {
         // Guards.IsTheParameterItself reads `Shaped = value;` as a plain copy because its right side IS the
         // parameter, and so exempts the null-check below it; the property's own `set` accessor rewrites short
         // values to null, which the constructor then rejects on nearly every draw. Issue #333.
+        //
+        // Claimed on that symptom alone: the file compiles, no library rule fires, and a DRAW throws the
+        // constructor's ArgumentException. Anything else on these shapes is a different failure and stays a
+        // finding — the baseline counts verdicts only, so a broader claim would let one hide behind this.
         new("setter-transforms-copy",
             "a null-check on a property whose set accessor transforms the value is exempted as a plain copy (#333)",
-            (shape, _) => shape.Family == "placement" && shape.Name.StartsWith("placement-setter-", StringComparison.Ordinal))
+            (shape, finding) => shape.Family == "placement"
+                             && shape.Name.StartsWith("placement-setter-", StringComparison.Ordinal)
+                             && finding.Compiles == "ok"
+                             && finding.Rules == "ok"
+                             && finding.Failure is { DuringDraw: true, Kind: nameof(ArgumentException) })
     ];
 
     /// <summary>The open defect that accounts for this finding, or null when nothing does.</summary>

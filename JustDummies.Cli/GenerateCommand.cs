@@ -96,7 +96,7 @@ internal sealed class GenerateCommand : AsyncCommand<GenerateSettings> {
             return Refused(settings, RunRefusal.LanguageVersionTooLow);
         }
 
-        return ScaffoldEach(loaded.Compilation!, settings, entryPoint, here);
+        return ScaffoldEach(loaded, settings, entryPoint, here);
     }
 
     /// <summary>
@@ -151,7 +151,7 @@ internal sealed class GenerateCommand : AsyncCommand<GenerateSettings> {
     /// <summary>
     ///     One scaffold per type argument, independently, exiting with the worst of them (§7).
     /// </summary>
-    private int ScaffoldEach(Compilation compilation, GenerateSettings settings, EntryPointArgument entryPoint, string here) {
+    private int ScaffoldEach(LoadedProject loaded, GenerateSettings settings, EntryPointArgument entryPoint, string here) {
         ScaffoldOptions options = ScaffoldOptions.Default.WithEntryPoint(entryPoint.Options);
 
         if (settings.Namespace is not null) { options = options.InNamespace(settings.Namespace); }
@@ -161,8 +161,8 @@ internal sealed class GenerateCommand : AsyncCommand<GenerateSettings> {
         List<ScaffoldReport> reported  = [];
 
         foreach (string typeArgument in settings.Types) {
-            ScaffoldOutcome  outcome  = Scaffolder.Scaffold(compilation, typeArgument, options);
-            ReportedScaffold scaffold = Report(typeArgument, outcome, settings, directory);
+            ScaffoldOutcome  outcome  = Scaffolder.Scaffold(loaded.Compilation!, typeArgument, options);
+            ReportedScaffold scaffold = Report(typeArgument, outcome, settings, directory, loaded.Restored);
 
             codes.Add(scaffold.Code);
             reported.Add(scaffold.Report);
@@ -186,8 +186,21 @@ internal sealed class GenerateCommand : AsyncCommand<GenerateSettings> {
     ///     produced. Under <c>--dry-run</c> nothing is written, so the two swap streams instead: the file goes
     ///     to stdout for a developer to pipe, and the recap to stderr for them to read while it does (§6).
     /// </remarks>
-    private ReportedScaffold Report(string typeArgument, ScaffoldOutcome outcome, GenerateSettings settings, string directory) {
+    private ReportedScaffold Report(string typeArgument,
+                                    ScaffoldOutcome outcome,
+                                    GenerateSettings settings,
+                                    string directory,
+                                    bool restored) {
         bool json = settings.ReportsAsJson();
+
+        // The engine cannot tell a project that never named the library from one whose packages were never
+        // restored: both reach it without the reference. The shell can, and the remedies differ (§7).
+        if (outcome.Status == ScaffoldStatus.LibraryNotReferenced && !restored) {
+            Refusals.NotRestored(typeArgument, consoles.Error);
+
+            return new ReportedScaffold(ExitCode.Failed,
+                                        ScaffoldReport.Refused(typeArgument, ScaffoldReport.ProjectNotRestored, outcome));
+        }
 
         if (!outcome.Succeeded) {
             Refusals.Render(typeArgument, outcome, consoles.Error);
@@ -218,7 +231,10 @@ internal sealed class GenerateCommand : AsyncCommand<GenerateSettings> {
         if (!written.Succeeded) {
             Refusals.FileExists(written.Path, consoles.Error);
 
-            return new ReportedScaffold(ExitCode.Failed, ScaffoldReport.Refused(typeArgument, outcome));
+            IReadOnlyList<FileReport> kept = [.. files.Select(file => FileReport.Kept(file.FileName,
+                                                                                     Path.Combine(directory, file.FileName)))];
+
+            return new ReportedScaffold(ExitCode.Failed, ScaffoldReport.NotWritten(typeArgument, outcome, kept));
         }
 
         if (!json) {

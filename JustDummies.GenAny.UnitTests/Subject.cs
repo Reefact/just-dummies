@@ -182,7 +182,8 @@ internal static class Subject {
                                              ScaffoldOptions? options = null,
                                              string metadataName = "Shop.Domain.Subject",
                                              bool downlevel = false,
-                                             bool withLibrary = true) {
+                                             bool withLibrary = true,
+                                             NullableContextOptions nullable = NullableContextOptions.Enable) {
         ImmutableArray<MetadataReference> references = Referenced(downlevel, withLibrary);
 
         CSharpCompilation compilation = CSharpCompilation.Create(
@@ -190,7 +191,7 @@ internal static class Subject {
             [Parse(Domain), Parse(declarations)],
             references,
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary,
-                                         nullableContextOptions: NullableContextOptions.Enable));
+                                         nullableContextOptions: nullable));
 
         INamedTypeSymbol? target = compilation.GetTypeByMetadataName(metadataName);
 

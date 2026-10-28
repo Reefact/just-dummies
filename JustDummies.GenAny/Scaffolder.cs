@@ -134,10 +134,11 @@ public static class Scaffolder {
         List<ScaffoldedParameter> parameters = [];
 
         foreach (IParameterSymbol parameter in chosen.Parameters) {
-            parameters.Add(Resolve(parameter, target, names, generators, guards));
+            parameters.Add(Resolve(parameter, target, names, generators, guards, AnnotatesNullability(compilation)));
         }
 
-        ScaffoldPlan plan = new(new TargetType(targetName, fileNamespace, StyleOf(target, fileNamespace)),
+        ScaffoldPlan plan = new(new TargetType(targetName, fileNamespace, StyleOf(target, fileNamespace), target.ToDisplayString(),
+                                               TypeLookup.ArgumentFor(compilation, target)),
                                 TypeNaming.GeneratorNameFor(target, options.Naming),
                                 names.Usings,
                                 parameters,
@@ -156,8 +157,9 @@ public static class Scaffolder {
                                                INamedTypeSymbol target,
                                                TypeNames names,
                                                GeneratorFor generators,
-                                               GuardReading guards) {
-        string         typeDisplay = names.Of(parameter.Type);
+                                               GuardReading guards,
+                                               bool annotates) {
+        string         typeDisplay = names.OfParameter(parameter.Type, annotates);
         DrawnGenerator drawn       = generators.Draw(parameter.Type, target);
 
         Provenance provenance = drawn.Provenance
@@ -165,7 +167,7 @@ public static class Scaffolder {
                               | (guards.Unread(parameter.Name) ? Provenance.UnreadGuards : Provenance.None);
 
         if (!drawn.Resolved) {
-            return ScaffoldedParameter.Unresolved(parameter.Name, typeDisplay, provenance);
+            return ScaffoldedParameter.Unresolved(parameter.Name, typeDisplay, provenance, guards.UnreadAt(parameter.Name));
         }
 
         IReadOnlyList<GuardConstraint> tightening = guards.For(parameter.Name);
@@ -179,7 +181,8 @@ public static class Scaffolder {
 
         string generatorType = written.Returned is { } returned ? names.Of(returned) : drawn.GeneratorType!;
 
-        return ScaffoldedParameter.DrawnFrom(parameter.Name, typeDisplay, generatorType, written.Base, provenance, written.Conversion);
+        return ScaffoldedParameter.DrawnFrom(parameter.Name, typeDisplay, generatorType, written.Base, provenance, written.Conversion,
+                                             guards.UnreadAt(parameter.Name));
     }
 
     /// <summary>
@@ -336,6 +339,14 @@ public static class Scaffolder {
                                                                  && type.Name == plan.GeneratorName);
 
         return shadowed is null ? [] : [ScaffoldWarning.Shadows(plan.GeneratorName, shadowed.ToDisplayString())];
+    }
+
+    /// <summary>
+    ///     Whether the project the file lands in reads nullable annotations — the default its new file inherits,
+    ///     since the emitted file carries no <c>#nullable</c> directive of its own.
+    /// </summary>
+    private static bool AnnotatesNullability(Compilation compilation) {
+        return compilation.Options.NullableContextOptions is NullableContextOptions.Enable or NullableContextOptions.Annotations;
     }
 
     private static string? NamespaceOf(INamedTypeSymbol target) {

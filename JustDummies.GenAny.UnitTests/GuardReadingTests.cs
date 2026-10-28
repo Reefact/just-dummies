@@ -56,6 +56,10 @@ public sealed class GuardReadingTests {
     [InlineData("int", "if (value > 100) { throw new ArgumentOutOfRangeException(nameof(value)); }", "Any.Int32().LessThanOrEqualTo(100)")]
     [InlineData("int", "if (value < 18) { throw new ArgumentOutOfRangeException(nameof(value)); }", "Any.Int32().GreaterThanOrEqualTo(18)")]
     [InlineData("long", "if (value <= 0) { throw new ArgumentOutOfRangeException(nameof(value)); }", "Any.Int64().Positive()")]
+    [InlineData("int", "if (value >= 100) { throw new ArgumentOutOfRangeException(nameof(value)); }", "Any.Int32().LessThan(100)")]
+    [InlineData("int", "if (value <= 18) { throw new ArgumentOutOfRangeException(nameof(value)); }", "Any.Int32().GreaterThan(18)")]
+    [InlineData("double", "if (value >= 180.0) { throw new ArgumentOutOfRangeException(nameof(value)); }", "Any.Double().LessThan(180d)")]
+    [InlineData("double", "if (value <= -180.0) { throw new ArgumentOutOfRangeException(nameof(value)); }", "Any.Double().GreaterThan(-180d)")]
     public void AGuardOnANumberIsReadIntoTheNumericFamily(string parameterType, string guard, string expected) {
         Check.That(Subject.GuardedBy(parameterType, guard).Expression).IsEqualTo(expected);
     }
@@ -835,6 +839,42 @@ public sealed class GuardReadingTests {
         ScaffoldedParameter total = outcome.Plan!.Parameters.Single();
 
         Check.That(total.Provenance.HasFlag(Provenance.UnreadGuards)).IsTrue();
+    }
+
+    /// <summary>
+    ///     The mark says which guard earned it, and where — not a section of a maintainer page.
+    /// </summary>
+    /// <remarks>
+    ///     On a parameter with several guards, a mark alone sent the developer to read the whole constructor to
+    ///     find the one the engine could not read. The read guard stays read; the unread one is the one named.
+    /// </remarks>
+    [Fact(DisplayName = "An unread guard is named, with its line, in the TODO and on the parameter.")]
+    public void AnUnreadGuardIsNamedWithItsLine() {
+        ScaffoldOutcome outcome = Subject.Scaffold("""
+                                                   using System.Text.RegularExpressions;
+
+                                                   namespace Shop.Domain;
+
+                                                   public sealed class Subject {
+
+                                                       private readonly string kept;
+
+                                                       public Subject(string value) {
+                                                           if (value.Length > 7) { throw new ArgumentException(nameof(value)); }
+                                                           if (!Regex.IsMatch(value, "^[A-Z]+$")) { throw new ArgumentException(nameof(value)); }
+                                                           kept = value;
+                                                       }
+
+                                                   }
+                                                   """);
+
+        UnreadGuard? unread = outcome.Plan!.Parameters.Single().UnreadGuard;
+
+        Check.That(unread).IsNotNull();
+        Check.That(unread!.Line).IsEqualTo(11);
+        Check.That(unread.Excerpt).StartsWith("if (!Regex.IsMatch(value, \"^[A-Z]+$\"))");
+        Check.That(outcome.File!.SourceText).Contains("//   first at line 11: if (!Regex.IsMatch(value");
+        Check.That(outcome.File.SourceText).Not.Contains("§9");
     }
 
     /// <summary>One parameter of a <c>Subject</c> guarded through a library's own spelling, using and all.</summary>

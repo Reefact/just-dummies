@@ -14,9 +14,10 @@ namespace JustDummies.Cli;
 /// <summary>A project that opened, or the diagnostics that stopped it.</summary>
 internal sealed class LoadedProject {
 
-    private LoadedProject(Compilation? compilation, IReadOnlyList<string> diagnostics) {
+    private LoadedProject(Compilation? compilation, IReadOnlyList<string> diagnostics, bool restored) {
         Compilation = compilation;
         Diagnostics = diagnostics;
+        Restored    = restored;
     }
 
     /// <summary>The compilation to scaffold against, or null when the project did not open.</summary>
@@ -28,14 +29,25 @@ internal sealed class LoadedProject {
     /// </summary>
     internal IReadOnlyList<string> Diagnostics { get; }
 
+    /// <summary>
+    ///     False when the project was found never to have been restored: it opens, but without one package
+    ///     reference, so a missing library says nothing about what the project file declares (§7).
+    /// </summary>
+    internal bool Restored { get; }
+
     internal bool Succeeded => Compilation is not null;
 
     internal static LoadedProject Opened(Compilation compilation, IReadOnlyList<string> diagnostics) {
-        return new LoadedProject(compilation, diagnostics);
+        return new LoadedProject(compilation, diagnostics, restored: true);
+    }
+
+    /// <summary>A project that opened without its packages, because nothing has restored it yet.</summary>
+    internal static LoadedProject Unrestored(Compilation compilation, IReadOnlyList<string> diagnostics) {
+        return new LoadedProject(compilation, diagnostics, restored: false);
     }
 
     internal static LoadedProject Failed(IReadOnlyList<string> diagnostics) {
-        return new LoadedProject(compilation: null, diagnostics);
+        return new LoadedProject(compilation: null, diagnostics, restored: true);
     }
 
 }

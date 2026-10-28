@@ -23,8 +23,13 @@ internal sealed record ScaffoldReport(string Argument,
     ///     the developer to settle — type names for §3.2, tied static factories for §5.1.2.
     /// </summary>
     internal static ScaffoldReport Refused(string argument, ScaffoldOutcome outcome) {
+        return Refused(argument, outcome.Status.ToString(), outcome);
+    }
+
+    /// <summary>The same, under a status the shell settled rather than the engine.</summary>
+    internal static ScaffoldReport Refused(string argument, string status, ScaffoldOutcome outcome) {
         return new ScaffoldReport(argument,
-                                  outcome.Status.ToString(),
+                                  status,
                                   Type: null,
                                   Generator: null,
                                   Files: [],
@@ -36,13 +41,54 @@ internal sealed record ScaffoldReport(string Argument,
                                   outcome.Candidates);
     }
 
+    /// <summary>
+    ///     The status of an argument the engine scaffolded and the shell then refused to write, because a file
+    ///     already stood where it would have gone and <c>--force</c> was not given (§6.1).
+    /// </summary>
+    /// <remarks>
+    ///     The shell's own status rather than the engine's: the engine did scaffold, so copying its
+    ///     <c>Scaffolded</c> into the report counted a success the exit code had already called a failure.
+    /// </remarks>
+    internal const string FileExists = "FileExists";
+
+    /// <summary>
+    ///     The status of an argument the engine refused for want of the library, in a project that was never
+    ///     restored — the shell's reading of the engine's <c>LibraryNotReferenced</c>, which cannot tell the two
+    ///     apart (§7).
+    /// </summary>
+    internal const string ProjectNotRestored = "ProjectNotRestored";
+
+    /// <summary>
+    ///     An argument whose files were not written, each kept with the path it would have taken — and at
+    ///     least one of them already stands there.
+    /// </summary>
+    /// <remarks>
+    ///     Nothing landed, so no parameter is reported open or to verify: the summary counts what the run
+    ///     left in the working tree, and this argument left nothing.
+    /// </remarks>
+    internal static ScaffoldReport NotWritten(string argument, ScaffoldOutcome outcome, IReadOnlyList<FileReport> files) {
+        ScaffoldPlan plan = outcome.Plan!;
+
+        return new ScaffoldReport(argument,
+                                  FileExists,
+                                  plan.Target.FullName,
+                                  plan.GeneratorName,
+                                  files,
+                                  Parameters: [],
+                                  OpenParameters: 0,
+                                  ParametersToVerify: 0,
+                                  EntryPoint: null,
+                                  Warnings: [],
+                                  Candidates: []);
+    }
+
     /// <summary>An argument that scaffolded, with the files it produced and where each of them went.</summary>
     internal static ScaffoldReport Of(string argument, ScaffoldOutcome outcome, IReadOnlyList<FileReport> files) {
         ScaffoldPlan plan = outcome.Plan!;
 
         return new ScaffoldReport(argument,
                                   outcome.Status.ToString(),
-                                  FullNameOf(plan),
+                                  plan.Target.FullName,
                                   plan.GeneratorName,
                                   files,
                                   [.. plan.Parameters.Select(ParameterReport.Of)],
@@ -53,10 +99,6 @@ internal sealed record ScaffoldReport(string Argument,
                                       : new EntryPointReport(outcome.EntryPoint.File.FileName, outcome.EntryPoint.Call),
                                   [.. outcome.Warnings.Select(WarningReport.Of)],
                                   Candidates: []);
-    }
-
-    private static string FullNameOf(ScaffoldPlan plan) {
-        return plan.Target.Namespace is null ? plan.Target.Name : plan.Target.Namespace + "." + plan.Target.Name;
     }
 
 }

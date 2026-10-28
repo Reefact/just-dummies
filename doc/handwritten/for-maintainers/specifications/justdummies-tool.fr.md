@@ -165,8 +165,22 @@ métadonnée ne renvoie rien, ce qui signalerait comme absent un type bien réel
 un type de premier niveau dans le namespace englobant, nommé d'après le seul type imbriqué :
 `AnyLine`.
 
+**Un nom simple ne compte que les types qu'il peut nommer.** `Measurement` n'épelle pas un
+`Measurement<T>` générique, pour lequel C# exigerait un argument de type, ni un type auquel le projet
+analysé n'a pas accès, que le fichier émis ne pourrait pas nommer non plus — aucun des deux ne rend
+donc un nom simple ambigu, et un `Measurement` du domaine n'est pas refusé parce que le framework
+déclare `System.Diagnostics.Metrics.Measurement<T>`. Ils ne peuvent pas non plus en masquer un : le
+filtre s'applique **avant** la préférence pour les types source, si bien qu'un `Measurement<T>`
+générique du projet analysé ne passe pas devant un `Measurement` référencé. Quand rien de nommable ne
+correspond nulle part, ils sont gardés, si bien qu'un type générique nommé seul rencontre toujours son
+propre refus (§7) au lieu d'être signalé absent.
+
 Zéro correspondance → erreur, avec les noms les plus proches par distance d'édition. Plus d'une →
 erreur, avec les noms complets, en demandant lequel. Les deux sortent en `1`.
+
+**L'en-tête nomme un argument qui se résout (§4.3).** Sa deuxième ligne dit au développeur comment
+relancer l'outil ; elle épelle donc le type comme cette recherche retrouve exactement ce type : le nom
+simple là où il est sans ambiguïté, le nom complet là où il ne l'est pas.
 
 ### 3.3 Défauts de projet *(v1.1)*
 
@@ -615,6 +629,16 @@ n'est **pas** un `IAny<int?>`, donc un paramètre `int?` exige le saut explicite
 `.AsNullable()`. S'y tromper est la façon la plus probable de produire une table qui ne
 compile pas — les lignes réservées à `net8.0` sont elles aussi des types valeur.
 
+**Un paramètre de type référence nullable garde son `?` là où un test le rencontre.** Le pin, le
+champ et le paramètre du constructeur privé d'un `Customer? agent` sont typés `Customer?`, et le
+récapitulatif comme le rapport machine impriment `Customer?` : le pin est l'endroit où un test choisit
+`null` (ADR-0109), et le typer `Customer` faisait avertir `.WithAgent((Customer?)null)` d'un `CS8625`
+pour avoir passé ce que le constructeur accepte. La base, elle, ne tire toujours jamais `null`
+(ADR-0064), et la covariance la garde assignable au champ annoté. Le `?` n'est écrit que là où le
+projet analysé lit les annotations nullables : le fichier ne porte aucune directive `#nullable`, et
+hors de ce contexte l'annotation est elle-même un avertissement (`CS8632`) alors que passer `null`
+n'en déclenche aucun.
+
 **Les generators d'éléments récursent.** `IReadOnlyList<OrderLine>` résout son élément par cette
 même table, et devient donc `Any.ListOf(new AnyOrderLine())` quand `AnyOrderLine` existe. La
 récursion est limitée à une profondeur de 3 et protégée contre les cycles ; dépasser l'une ou
@@ -753,6 +777,8 @@ L'ensemble reconnu est clos :
 | `p == 0` | `.NonZero()` |
 | `p > N` | `.LessThanOrEqualTo(N)` |
 | `p < N` | `.GreaterThanOrEqualTo(N)` |
+| `p >= N` | `.LessThan(N)` |
+| `p <= N` | `.GreaterThan(N)` |
 | `p == Guid.Empty` | `.NonEmpty()` |
 | `!Enum.IsDefined(typeof(E), p)`, `!Enum.IsDefined(p)` | aucune — `Any.Enum<E>()` ne tire déjà que des membres déclarés, **là où `p` est de type `E`** |
 | `!double.IsFinite(p)`, `!float.IsFinite(p)` | aucune — `Any.Double()` et `Any.Single()` ne tirent que des valeurs finies (ADR-0031), **là où `p` est de ce type** |
@@ -902,7 +928,8 @@ intégral relève de la ligne `.Positive()` ; sur `decimal`, `double` ou `float`
 `.GreaterThanOrEqualTo(N)`, parce que `.Positive()` admettrait les valeurs entre zéro et un que la
 garde rejette. C'est un tirage rare pour un `decimal` par ailleurs non contraint — mesuré à un sur
 cinq mille — et fréquent dès que le paramètre porte une autre borne (§17). Exactement le profil d'un
-défaut qui survit à un test superficiel.
+défaut qui survit à un test superficiel. Par la même règle, `p <= 0` et `p >= 0` restent sur leurs
+lignes de signe plutôt que sur les lignes strictes `p <= N` et `p >= N`.
 
 **Où les contraintes s'attachent.** Une contrainte dérivée d'une garde appartient au generator du
 type propre du paramètre, *avant* toute conversion ou composition. Un paramètre `int?` gardé par
@@ -1259,9 +1286,11 @@ fabrique plutôt que d'être jeté.
 
 ```csharp
     private static AnyString AnyValidName() {
-        // TODO(any): 'string name' may be guarded by something the scaffolder could not read (§9).
+        // TODO(any): 'string name' may be guarded by something the scaffolder could not read,
+        //   first at Customer.cs, line 12: if (!Regex.IsMatch(name, "^[A-Z][a-z]+$")) { throw new ArgumentException(nameof(name)); }
         //   This is the scaffolder's best generator for the type; verify it honours the real invariant,
-        //   or replace it, then delete the line below.
+        //   or replace it, then delete the line below. What the scaffolder reads, and what it cannot:
+        //   https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/packages/justdummies-cli.en.md#what-the-last-column-means
         _ = TODO_verify_the_generator_for_name;
 
         return Any.String().NonEmpty();
@@ -1272,6 +1301,15 @@ L'identifiant sur la ligne écartée n'existe pas, le build échoue donc à cett
 au §5.5 — l'affectation à `_` est ce qui évite qu'un second `CS0201` sans rapport ne brouille ce
 que le développeur doit lire. Le `return` en dessous est réel : supprimer une seule ligne laisse
 exactement ce que le scaffolder aurait écrit en silence sinon, à garder ou à remplacer.
+
+**Le commentaire nomme la garde qui a valu la marque, et où elle se trouve.** Sur un paramètre à
+trois gardes, une marque seule envoie le développeur lire tout le constructeur pour trouver celle dont
+le moteur n'a pas pu répondre. La deuxième ligne donne le premier de ces endroits — fichier et ligne —
+et la première ligne de l'instruction qui la porte, raccourcie au-delà de cent caractères ; le
+récapitulatif imprime la même chose sous ses lignes (§6), et le rapport machine la porte en
+`unreadGuard` (§6.1). Le lien final mène à la page utilisateur qui dit ce que signifie `to verify` :
+le commentaire est lu par quelqu'un qui a ce fichier ouvert, pas cette spécification. Quand aucune
+position dans la source n'est connue, la deuxième ligne est omise.
 
 Un generator qui compile et tire une valeur que le vrai constructeur rejette encore est un échec
 pire que celui qui ne compile jamais : il passe la run d'aujourd'hui et échoue plus tard,
@@ -1351,12 +1389,16 @@ jamais `TODO`, puisque la ligne et la ligne de clôture décrivent le même para
   crates  Crate<int>  —                        TODO
   name    string      Any.String().NonEmpty()  to verify, unread guards
 
+  name: unread guard at Warehouse.cs, line 18: if (!Naming.IsValid(name)) { throw new ArgumentException(nameof(name)); }
+
 ✓ AnyWarehouse.cs — 5 of 6 parameters inferred, 1 TODO, 1 to verify.
   The file will not compile until you resolve it. That is deliberate.
 ```
 
 Les deux comptes se lisent dans l'ordre où un développeur agit dessus : fournir l'un, vérifier
-l'autre.
+l'autre. Une ligne sous les lignes de paramètres nomme, pour chaque paramètre marqué
+`unread guards`, la première garde qui lui a valu la marque et où elle se trouve — l'endroit même
+que donne son `TODO(any)` (§5.6).
 
 **La provenance est une donnée, pas une sortie.** Le moteur la retourne dans son modèle de résultat
 (§10.3) ; la CLI la rend. C'est ce qui rend le récapitulatif testable sans console.
@@ -1414,9 +1456,20 @@ un script à distinguer une sortie vide d'une analyse en échec.
 porter. `path` et `text` sont les deux moitiés d'une même question et ne sont jamais répondues
 ensemble : un fichier écrit porte où il est allé, un fichier de `--dry-run` ce qu'il aurait été.
 
+**Un fichier que l'exécution a refusé d'écraser est aussi un échec dans le document.** Le moteur a
+produit le scaffold, l'écriture a été refusée (§7) : le résultat porte donc `status: "FileExists"` —
+le statut propre de l'outil, pas le `Scaffolded` du moteur — et compte dans `summary.failed`. Chaque
+fichier garde le `path` qu'il aurait pris, avec `written: false`, et aucun paramètre n'est rapporté,
+puisque rien n'a atterri. Recopier le statut du moteur faisait compter au résumé un succès que le code
+de sortie déclarait un échec.
+
 Les mots de provenance sont ceux du récapitulatif (§6), lus dans une seule table plutôt qu'épelés une
 seconde fois — deux rendus d'un même ensemble de faits, ce qui les empêche de dériver vers deux
 réponses.
+
+**Un paramètre marqué `unread guards` porte l'endroit.** Le `unreadGuard` de sa ligne contient le
+`file`, la `line` comptée à partir de un et un `excerpt` de la première garde dont le moteur n'a pas
+pu répondre (§5.6), et vaut `null` sur toutes les autres lignes.
 
 ---
 
@@ -1428,10 +1481,11 @@ réponses.
 | Fichier écrit, un ou plusieurs TODO ou paramètres à vérifier | `0` | L'écriture a réussi ; le build du développeur signale le reste. |
 | `--dry-run` | `0` | Rien n'est écrit. |
 | Type introuvable / ambigu | `1` | Candidats listés. |
-| Fichier de sortie existant, sans `--force` | `1` | Nomme le fichier, suggère `--force`, avertit que les éditions seront perdues. |
+| Fichier de sortie existant, sans `--force` | `1` | Nomme le fichier, suggère `--force`, avertit que les éditions seront perdues. Rapporté comme `FileExists` sous `--format json` (§6.1). |
 | Aucun / plusieurs projets trouvés | `1` | Candidats listés, `--project` suggéré. |
 | Le projet ne charge pas ou n'est pas restauré | `1` | Le diagnostic MSBuild, tel quel. |
 | Le projet ne référence pas JustDummies | `1` | Rien ne peut être résolu (D4) ; le dit et suggère le package. |
+| Le projet n'a jamais été restauré, et JustDummies ne se résout pas | `1` | Un projet non restauré s'ouvre sans ses références de packages, si bien que la compilation ne permet pas de le distinguer de la ligne précédente ; c'est l'absence de `project.assets.json` au-dessus de la sortie intermédiaire qui le distingue. Dit que le projet n'a pas été restauré et suggère `dotnet restore`, jamais le package. Rapporté comme `ProjectNotRestored` sous `--format json` (§6.1). L'outil ne restaure pas à la place du développeur : ce serait atteindre le réseau et écrire dans son arbre. |
 | Rien ne construit le type cible (§5.1) | `1` | Nomme les deux portes qu'ouvre le §5.1 : un constructeur d'instance public passant tous ses paramètres par valeur, ou une fabrique statique reconnue. Quand plusieurs fabriques **éligibles** sont ex æquo — le type ne déclarant aucun constructeur public qui ferme cette route — ce sont elles qui sont listées. |
 | Le type cible est abstrait | `1` | Refusé qu'il déclare ou non un constructeur à lui — le type abstrait ordinaire déclare les siens `protected` et s'entendrait sinon répondre la ligne du dessus, dont le remède est le mauvais. Une fabrique reconnue qui l'atteint est l'exception : `CS0144` porte sur `new`. Suggère un type concret qui en dérive. |
 | Le type cible est générique, ou imbriqué dans un générique | `1` | Rien n'en fournit l'argument de type, donc le fichier émis ne pourrait pas le nommer. |

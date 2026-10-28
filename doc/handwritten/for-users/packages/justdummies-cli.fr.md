@@ -79,16 +79,20 @@ travail et ajoute au-dessus une ligne qui ne compile pas :
 <!-- jd:skip -->
 ```csharp
 private static AnyString AnyValidValue() {
-    // TODO(any): 'string value' may be guarded by something the scaffolder could not read (§9).
+    // TODO(any): 'string value' may be guarded by something the scaffolder could not read,
+    //   first at Currency.cs, line 9: if (!Regex.IsMatch(value, "^[A-Z]{3}$")) { throw new ArgumentException(nameof(value)); }
     //   This is the scaffolder's best generator for the type; verify it honours the real invariant,
-    //   or replace it, then delete the line below.
+    //   or replace it, then delete the line below. What the scaffolder reads, and what it cannot:
+    //   https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/packages/justdummies-cli.en.md#what-the-last-column-means
     _ = TODO_verify_the_generator_for_value;
 
     return Any.String().NonEmpty();
 }
 ```
 
-Gardez la recette ou remplacez-la, supprimez cette seule ligne, et c'est réglé. L'alternative — un
+La deuxième ligne nomme la première garde dont `any` n'a pas pu répondre, et où elle se trouve, pour
+que vous n'ayez pas à la chercher dans le constructeur ; le récapitulatif imprime la même chose sous
+ses lignes. Gardez la recette ou remplacez-la, supprimez cette seule ligne, et c'est réglé. L'alternative — un
 fichier qui compile et tire une valeur que votre constructeur rejette lors d'une exécution
 ultérieure — est l'échec qui coûte le plus cher, parce qu'il surgit loin de sa cause
 ([ADR-0083](../../for-maintainers/adr/0083-block-compilation-on-a-guard-the-engine-cannot-vouch-for.fr.md)).
@@ -312,6 +316,9 @@ un appel suffit ; le cast permet de distinguer la valeur d'une lambda :
 ```csharp
 Shipment anyUndeclaredShipment = Any.Shipment().WithDeclaredValue((decimal?)null).Generate();
 ```
+
+Un paramètre de type référence nullable prend le même cast — `.WithAgent((Customer?)null)` — et son
+pin est typé `Customer?` précisément pour cela, partout où votre projet lit les annotations nullables.
 
 Pour obtenir `null` *de temps en temps*, ajoutez la surcharge.
 

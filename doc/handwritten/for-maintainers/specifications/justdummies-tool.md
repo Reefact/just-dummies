@@ -160,8 +160,21 @@ the engine translates it for the lookup, where the separator is `+` rather than 
 nothing, which would report a real type as missing. The generator it emits is a top-level type in
 the containing namespace, named after the nested type alone: `AnyLine`.
 
+**A simple name counts only the types it can name.** `Measurement` does not spell a generic
+`Measurement<T>`, which C# would need a type argument for, nor a type the analysed project cannot
+access, which the emitted file could not name either — so neither makes a simple name ambiguous, and
+a domain `Measurement` is not refused because the framework declares
+`System.Diagnostics.Metrics.Measurement<T>`. Nor may they hide one: the filter applies **before**
+the preference for source types, so a generic `Measurement<T>` in the analysed project does not stand
+in front of a referenced `Measurement`. When nothing nameable matches anywhere they are kept, so a
+generic type named alone still meets its own refusal (§7) rather than being reported missing.
+
 Zero matches → error, listing the closest names by edit distance. More than one match → error,
 listing the full names, asking for one of them. Both exit `1`.
+
+**The header names an argument that resolves (§4.3).** Its second line tells the developer how to
+re-run the tool, so it spells the type the way this lookup reaches exactly that type again: the
+simple name where it is unambiguous, the full name where it is not.
 
 ### 3.3 Project defaults *(v1.1)*
 
@@ -594,6 +607,15 @@ differ. `IAny<string>` is an `IAny<string?>` and needs nothing; `IAny<int>` is *
 this wrong is the most likely way an implementer produces a table that does not compile — the
 `net8.0`-only rows are all value types too.
 
+**A nullable reference parameter keeps its `?` where a test meets it.** The pin, the field and the
+private constructor parameter of a `Customer? agent` are typed `Customer?`, and the recap and the
+machine report print `Customer?`: the pin is where a test opts into null (ADR-0109), and typing it
+`Customer` made `.WithAgent((Customer?)null)` warn `CS8625` for passing what the constructor accepts.
+The base itself still never draws null (ADR-0064), and covariance keeps it assignable to the
+annotated field. The `?` is written only where the analysed project reads nullable annotations: the
+file carries no `#nullable` directive, and outside that context the annotation is itself a warning
+(`CS8632`) while passing null warns about nothing.
+
 **Element generators recurse.** `IReadOnlyList<OrderLine>` resolves its element through this same
 table, so it becomes `Any.ListOf(new AnyOrderLine())` when `AnyOrderLine` exists. Recursion is
 depth-limited to 3 and cycle-guarded; exceeding either makes the parameter unresolved.
@@ -724,6 +746,8 @@ The recognised set is closed:
 | `p == 0` | `.NonZero()` |
 | `p > N` | `.LessThanOrEqualTo(N)` |
 | `p < N` | `.GreaterThanOrEqualTo(N)` |
+| `p >= N` | `.LessThan(N)` |
+| `p <= N` | `.GreaterThan(N)` |
 | `p == Guid.Empty` | `.NonEmpty()` |
 | `!Enum.IsDefined(typeof(E), p)`, `!Enum.IsDefined(p)` | none — `Any.Enum<E>()` already draws only declared members, **where `p` is of type `E`** |
 | `!double.IsFinite(p)`, `!float.IsFinite(p)` | none — `Any.Double()` and `Any.Single()` draw only finite values (ADR-0031), **where `p` is of that type** |
@@ -860,7 +884,8 @@ the `.Positive()` row; on `decimal`, `double` or `float` it is the `.GreaterThan
 because `.Positive()` would admit the values between zero and one that the guard rejects. That is a
 rare draw for an otherwise unconstrained decimal — measured at one in five thousand — and a common
 one as soon as the parameter carries another bound (§17). Exactly the profile of a defect that
-survives casual testing.
+survives casual testing. By the same rule `p <= 0` and `p >= 0` stay on their sign rows rather than
+the strict `p <= N` and `p >= N` rows.
 
 **Where the constraints attach.** A guard-derived constraint belongs to the generator for the
 parameter's own type, *before* any conversion or composition. An `int?` parameter guarded by
@@ -1193,9 +1218,11 @@ than being thrown away.
 
 ```csharp
     private static AnyString AnyValidName() {
-        // TODO(any): 'string name' may be guarded by something the scaffolder could not read (§9).
+        // TODO(any): 'string name' may be guarded by something the scaffolder could not read,
+        //   first at Customer.cs, line 12: if (!Regex.IsMatch(name, "^[A-Z][a-z]+$")) { throw new ArgumentException(nameof(name)); }
         //   This is the scaffolder's best generator for the type; verify it honours the real invariant,
-        //   or replace it, then delete the line below.
+        //   or replace it, then delete the line below. What the scaffolder reads, and what it cannot:
+        //   https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/packages/justdummies-cli.en.md#what-the-last-column-means
         _ = TODO_verify_the_generator_for_name;
 
         return Any.String().NonEmpty();
@@ -1206,6 +1233,14 @@ The identifier on the discarded line does not exist, so the build fails at that 
 same as §5.5 — the discard assignment is what keeps a second, unrelated `CS0201` from muddying
 what the developer needs to read. The `return` beneath it is real: deleting one line leaves
 exactly what the scaffolder would otherwise have written silently, for the developer to keep or replace.
+
+**The comment names the guard that earned the mark, and where it sits.** On a parameter with three
+guards, a mark alone sends the developer to read the whole constructor for the one the engine could
+not vouch for. The second line gives the earliest such place — file and line — and the first line of
+the statement holding it, shortened past a hundred characters; the recap prints the same under its
+rows (§6), and the machine report carries it as `unreadGuard` (§6.1). The closing link is to the user
+page that says what `to verify` means: the comment is read by someone who has this file open, not
+this specification. Where no source position is known, the second line is left out.
 
 A generator that compiles and draws a value the real constructor still rejects is a worse failure
 than one that never compiles: it passes today's run and fails a later one, indistinguishable from
@@ -1282,11 +1317,15 @@ since the row and the closing line describe the same parameter:
   crates  Crate<int>  —                        TODO
   name    string      Any.String().NonEmpty()  to verify, unread guards
 
+  name: unread guard at Warehouse.cs, line 18: if (!Naming.IsValid(name)) { throw new ArgumentException(nameof(name)); }
+
 ✓ AnyWarehouse.cs — 5 of 6 parameters inferred, 1 TODO, 1 to verify.
   The file will not compile until you resolve it. That is deliberate.
 ```
 
-Both counts read in the order a developer acts on them: supply the one, check the other.
+Both counts read in the order a developer acts on them: supply the one, check the other. A line
+under the rows names, for each parameter marked `unread guards`, the earliest guard that earned it
+and where it sits — the same place its `TODO(any)` gives (§5.6).
 
 **Provenance is data, not output.** The engine returns it in its result model (§10.3); the CLI
 renders it. That is what makes the recap testable without a console.
@@ -1340,8 +1379,18 @@ tell empty output from a failed parse.
 `path` and `text` are the two halves of one question and never both answered: a written file carries
 where it went, a dry-run file what it would have been.
 
+**A file the run refused to overwrite is a failure in the document too.** The engine scaffolded, the
+write was refused (§7), so the result reads `status: "FileExists"` — the shell's own status, not the
+engine's `Scaffolded` — and counts under `summary.failed`. Each file keeps the `path` it would have
+taken with `written: false`, and no parameter is reported, since nothing landed. Copying the engine's
+status had the summary count a success the exit code called a failure.
+
 The provenance words are the recap's own (§6), read from one table rather than spelled a second time
 — two renderings of one set of facts, which is what keeps them from drifting into two answers.
+
+**A parameter marked `unread guards` carries where.** Its row's `unreadGuard` holds the `file`, the
+one-based `line` and an `excerpt` of the earliest guard the engine could not vouch for (§5.6), and is
+`null` on every other row.
 
 ---
 
@@ -1353,10 +1402,11 @@ The provenance words are the recap's own (§6), read from one table rather than 
 | File written, one or more TODOs or parameters to verify | `0` | The write succeeded; the developer's build reports the rest. |
 | `--dry-run` | `0` | Nothing written. |
 | Type not found / ambiguous | `1` | Candidates listed. |
-| Output file exists, no `--force` | `1` | Names the file, suggests `--force`, warns that edits are lost. |
+| Output file exists, no `--force` | `1` | Names the file, suggests `--force`, warns that edits are lost. Reported as `FileExists` under `--format json` (§6.1). |
 | No project / several projects found | `1` | Candidates listed, `--project` suggested. |
 | Project fails to load or restore | `1` | The MSBuild diagnostic, verbatim. |
 | The project does not reference JustDummies | `1` | Nothing can be resolved (D4); says so and suggests the package. |
+| The project has never been restored, and JustDummies does not resolve | `1` | An unrestored project opens without its package references, so the row above cannot be told apart from it by the compilation; no `project.assets.json` above the intermediate output is what tells it. Says the project has not been restored and suggests `dotnet restore`, never the package. Reported as `ProjectNotRestored` under `--format json` (§6.1). The tool does not restore for the developer: that reaches the network and writes to their tree. |
 | Nothing constructs the target (§5.1) | `1` | Names both doors §5.1 opens: a public instance constructor passing every parameter by value, or one recognised static factory. Where several **eligible** factories tie — the type declaring no public constructor to close that route — they are listed instead. |
 | The target is abstract | `1` | Refused whether or not it declares a constructor of its own — the ordinary abstract type declares `protected` ones and would otherwise hear the row above, whose remedy is the wrong one. A recognised factory reaching it is the exception: `CS0144` is about `new`. Suggests a concrete type that derives from it. |
 | The target is generic, or nested in a generic type | `1` | Nothing supplies the type argument, so the emitted file could not name it. |

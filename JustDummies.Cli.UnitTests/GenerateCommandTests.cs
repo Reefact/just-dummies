@@ -147,6 +147,33 @@ public sealed class GenerateCommandTests : IDisposable {
              .Contains("namespace Shop.Tests.Arbitrary;");
     }
 
+    // --namespace moves the file, not the type: the recap and the report name what was analysed, and
+    // `Shop.Tests.Arbitrary.Order` is a type nobody declared.
+    [Fact(DisplayName = "--namespace leaves the recap naming the type where it is declared.")]
+    public async Task ANamespaceOverrideLeavesTheRecapNamingTheDeclaredType() {
+        GenerateSettings settings = Settings("Order");
+
+        settings.Namespace = "Shop.Tests.Arbitrary";
+
+        Run run = await Generate(settings);
+
+        Check.That(run.Output).Contains("Analyzing Shop.Domain.Order");
+        Check.That(run.Output).Not.Contains("Shop.Tests.Arbitrary.Order");
+    }
+
+    [Fact(DisplayName = "--namespace leaves the JSON report naming the type where it is declared.")]
+    public async Task ANamespaceOverrideLeavesTheJsonNamingTheDeclaredType() {
+        GenerateSettings settings = Settings("Order");
+
+        settings.Namespace = "Shop.Tests.Arbitrary";
+        settings.Format    = "json";
+
+        Run         run    = await Generate(settings);
+        JsonElement result = JsonDocument.Parse(run.Output).RootElement.GetProperty("results")[0];
+
+        Check.That(result.GetProperty("type").GetString()).IsEqualTo("Shop.Domain.Order");
+    }
+
     [Fact(DisplayName = "--entry-point static:<Name> writes a second file and recaps the call it opens.")]
     public async Task AStaticEntryPointWritesASecondFile() {
         GenerateSettings settings = Settings("Order");
@@ -422,6 +449,29 @@ public sealed class GenerateCommandTests : IDisposable {
         Check.That(entry.GetProperty("call").GetString()).IsEqualTo("Arbitrary.Order()");
     }
 
+    [Fact(DisplayName = "--format json names the guard a parameter to verify could not have read.")]
+    public async Task JsonNamesTheUnreadGuard() {
+        GenerateSettings settings = Settings("Gauge");
+
+        settings.Format = "json";
+
+        Run run = await Generate(settings, Compilation("""
+                                                       namespace Shop.Domain;
+
+                                                       public sealed class Gauge {
+                                                           public Gauge(int level) {
+                                                               if (level % 2 == 1) { throw new System.ArgumentOutOfRangeException(nameof(level)); }
+                                                           }
+                                                       }
+                                                       """));
+
+        JsonElement unread = JsonDocument.Parse(run.Output).RootElement
+                                         .GetProperty("results")[0].GetProperty("parameters")[0].GetProperty("unreadGuard");
+
+        Check.That(unread.GetProperty("line").GetInt32()).IsEqualTo(5);
+        Check.That(unread.GetProperty("excerpt").GetString()).StartsWith("if (level % 2 == 1)");
+    }
+
     [Fact(DisplayName = "--format json records a refused argument, with its candidates.")]
     public async Task JsonRecordsARefusedArgument() {
         GenerateSettings settings = Settings("Ordr");
@@ -434,6 +484,32 @@ public sealed class GenerateCommandTests : IDisposable {
         Check.That(run.ExitCode).IsEqualTo(1);
         Check.That(result.GetProperty("status").GetString()).IsEqualTo("TypeNotFound");
         Check.That(result.GetProperty("candidates")[0].GetString()).IsEqualTo("Order");
+    }
+
+    // The engine scaffolded, the shell refused to write: the report has to say what the exit code says, or a
+    // script reading the summary believes in a file that was never written.
+    [Fact(DisplayName = "--format json records a file it refused to overwrite as a failure.")]
+    public async Task JsonRecordsAnExistingFileAsAFailure() {
+        string           path     = Path.Combine(directory, "AnyOrder.cs");
+        GenerateSettings settings = Settings("Order");
+
+        settings.Format = "json";
+
+        await File.WriteAllTextAsync(path, "// mine", TestContext.Current.CancellationToken);
+
+        Run         run     = await Generate(settings);
+        JsonElement report  = JsonDocument.Parse(run.Output).RootElement;
+        JsonElement result  = report.GetProperty("results")[0];
+        JsonElement file    = result.GetProperty("files")[0];
+        JsonElement summary = report.GetProperty("summary");
+
+        Check.That(run.ExitCode).IsEqualTo(1);
+        Check.That(result.GetProperty("status").GetString()).IsEqualTo("FileExists");
+        Check.That(file.GetProperty("path").GetString()).IsEqualTo(path);
+        Check.That(file.GetProperty("written").GetBoolean()).IsFalse();
+        Check.That(summary.GetProperty("scaffolded").GetInt32()).IsEqualTo(0);
+        Check.That(summary.GetProperty("failed").GetInt32()).IsEqualTo(1);
+        Check.That(await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken)).IsEqualTo("// mine");
     }
 
     // "stdout carries one JSON document" with no exception to remember: a run that stopped before its first
@@ -527,6 +603,42 @@ public sealed class GenerateCommandTests : IDisposable {
 
         Check.That(run.ExitCode).IsEqualTo(1);
         Check.That(Occurrences(run.Error, "dotnet add package JustDummies")).IsEqualTo(1);
+    }
+
+    // An unrestored project opens without its packages and looks exactly like one that never named the
+    // library; telling its developer to add a reference they can see in their .csproj is the wrong remedy.
+    [Fact(DisplayName = "A project that was never restored is told to restore, not to add the package.")]
+    public async Task AnUnrestoredProjectIsToldToRestore() {
+        Run run = await Run.Of(Settings("Order", "Basket"),
+                               (_, _) => Task.FromResult(LoadedProject.Unrestored(Compilation(Domain, withLibrary: false), [])));
+
+        Check.That(run.ExitCode).IsEqualTo(1);
+        Check.That(Occurrences(run.Error, "dotnet restore")).IsEqualTo(1);
+        Check.That(run.Error).Not.Contains("dotnet add package");
+    }
+
+    [Fact(DisplayName = "--format json records a project that was never restored as such.")]
+    public async Task JsonRecordsAnUnrestoredProject() {
+        GenerateSettings settings = Settings("Order");
+
+        settings.Format = "json";
+
+        Run run = await Run.Of(settings,
+                               (_, _) => Task.FromResult(LoadedProject.Unrestored(Compilation(Domain, withLibrary: false), [])));
+        JsonElement result = JsonDocument.Parse(run.Output).RootElement.GetProperty("results")[0];
+
+        Check.That(run.ExitCode).IsEqualTo(1);
+        Check.That(result.GetProperty("status").GetString()).IsEqualTo("ProjectNotRestored");
+    }
+
+    // A project that resolves the library scaffolds whatever the assets file says: the check only ever
+    // changes which refusal a missing library gets.
+    [Fact(DisplayName = "A project that resolves the library scaffolds, restored or not.")]
+    public async Task AProjectResolvingTheLibraryScaffoldsRestoredOrNot() {
+        Run run = await Run.Of(Settings("Order"),
+                               (_, _) => Task.FromResult(LoadedProject.Unrestored(Compilation(Domain), [])));
+
+        Check.That(run.ExitCode).IsEqualTo(0);
     }
 
     [Fact(DisplayName = "A project that will not open fails with the diagnostics, verbatim.")]

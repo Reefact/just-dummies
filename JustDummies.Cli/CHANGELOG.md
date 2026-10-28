@@ -39,6 +39,45 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Fixed
 
+- **A nullable reference parameter keeps its `?` on the pin, so a test can pass `null`.** For
+  `Party(Bic? agent)` the scaffold emitted `WithAgent(Bic value)`, and the documented way to ask for null,
+  `.WithAgent((Bic?)null)`, warned `CS8625` — a build break under `TreatWarningsAsErrors`; the recap printed
+  `Party(Bic)` and `--format json` reported `"type": "Bic"`. Where the project reads nullable annotations, the
+  pin, its field and the private constructor parameter are now typed `Bic?`, and the recap and the report print
+  `Bic?`. The default still never draws `null`. A generator already scaffolded does not change; re-scaffold with
+  `--force` to get the new pin.
+- **A parameter to verify now says which guard the tool could not read, and where.** Its `TODO(any)` read
+  "may be guarded by something the scaffolder could not read (§9)", which named neither the guard — on a
+  parameter with three, which one? — nor a page a user could open: §9 is a section of a maintainer
+  specification. The comment now gives the file, line and first line of the earliest such guard, and links to
+  the `any` user page; the recap prints the same under its rows, and `--format json` carries it as
+  `unreadGuard` on the parameter's row. A generator already scaffolded does not change; re-scaffold with
+  `--force` to get the new comment.
+- **A project that has not been restored is told to restore, not to add JustDummies.** Run on a fresh clone,
+  `any generate` refused with "this project does not reference JustDummies" and suggested
+  `dotnet add package JustDummies`, though the project did reference it: an unrestored project opens without its
+  package references. When no `project.assets.json` stands above the project's intermediate output, the refusal
+  now says the project has not been restored and suggests `dotnet restore`; `--format json` reports it as
+  `ProjectNotRestored`. The tool still does not restore on its own.
+- **A short type name is no longer made ambiguous by types it cannot name, and the generated header names a
+  command that works.** `any generate Measurement` was refused as ambiguous because of the framework's generic
+  `System.Diagnostics.Metrics.Measurement<T>`, and an `internal` type of another assembly was listed among the
+  candidates. A bare name now counts only non-generic types the project can access, when there are any. After
+  scaffolding a type whose short name is ambiguous, the file's second line named `any generate <ShortName>
+  --force`, which the tool then refused; it now names the full name in that case.
+- **`--namespace` no longer renames the analysed type in the recap and the JSON report.** With
+  `--namespace Foo.Bar`, the recap opened with `Analyzing Foo.Bar.Sku` and the report carried
+  `"type": "Foo.Bar.Sku"`, a type that does not exist. Both now name the type where it is declared; the option
+  still moves only the emitted file.
+- **`--format json` no longer reports a file it refused to overwrite as scaffolded.** When the output file
+  already existed and `--force` was not given, the run exited `1` and said so on stderr, while stdout carried
+  `"status": "Scaffolded"` and `"summary": {"scaffolded": 1, "failed": 0}`. Such a result now reads
+  `"status": "FileExists"`, lists each file with its `path` and `"written": false`, and counts under `failed`.
+- **A comparison guard `p >= N` or `p <= N` is now read for any constant, not only zero.** `if (longitude >=
+  180.0) { throw … }` was marked `unread guards`, while the equivalent `ArgumentOutOfRangeException
+  .ThrowIfGreaterThanOrEqual(longitude, 180.0)` was read as `.LessThan(180d)`. Both spellings now give the same
+  strict bound — `.LessThan(N)` and `.GreaterThan(N)`; `p >= 0` and `p <= 0` keep their sign rows. A generator
+  already scaffolded does not change; re-scaffold with `--force` to drop its `TODO(any)` line.
 - **A finiteness guard on a `double` or `float` parameter no longer blocks the build.** `if
   (!double.IsFinite(kilograms)) { throw … }` was marked `unread guards`, so the scaffold stopped at a `TODO(any)`
   line over a guard its generator can never fail: `Any.Double()` and `Any.Single()` draw only finite values. The

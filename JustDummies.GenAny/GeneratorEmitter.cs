@@ -61,7 +61,7 @@ public static class GeneratorEmitter {
     /// </summary>
     private static void WriteHeader(StringBuilder file, ScaffoldPlan plan) {
         Line(file, "// Scaffolded by `any` (JustDummies). This file is yours: read it, edit it, commit it.");
-        Line(file, $"// `any generate {plan.Target.Name} --force` overwrites it. This type is partial, so members you add in a");
+        Line(file, $"// `any generate {plan.Target.Argument} --force` overwrites it. This type is partial, so members you add in a");
         Line(file, "// neighbouring file survive.");
         Line(file, string.Empty);
     }
@@ -239,7 +239,8 @@ public static class GeneratorEmitter {
         Line(file, $"{indent}// TODO(any): no generator inferred for '{parameter.TypeDisplay} {parameter.Name}'.");
 
         if (ScaffoldableByName(parameter.TypeDisplay)) {
-            Line(file, $"{indent}//   Scaffold one:  any generate {parameter.TypeDisplay}");
+            // The type is scaffolded, not its annotation: `any generate Bic?` names nothing.
+            Line(file, $"{indent}//   Scaffold one:  any generate {parameter.TypeDisplay.TrimEnd('?')}");
             Line(file, $"{indent}//   or write one here, or replace it and always pass .With{parameter.PascalCasedName}(value) instead.");
 
             return;
@@ -271,10 +272,22 @@ public static class GeneratorEmitter {
     ///     to check rather than thrown away over a doubt the engine cannot resolve on its own (ADR-0082).
     /// </summary>
     private static void WriteVerify(StringBuilder file, ScaffoldedParameter parameter, string indent) {
-        Line(file, $"{indent}// TODO(any): '{parameter.TypeDisplay} {parameter.Name}' may be guarded by something the scaffolder could not read (§9).");
+        // Which guard, where: on a parameter with three of them, a mark alone sends the developer to read the
+        // whole constructor. The place is the one the developer opens, not a section of a page they never see.
+        if (parameter.UnreadGuard is { } unread) {
+            Line(file, $"{indent}// TODO(any): '{parameter.TypeDisplay} {parameter.Name}' may be guarded by something the scaffolder could not read,");
+            Line(file, $"{indent}//   first at {unread.Place()}: {unread.Excerpt}");
+        } else {
+            Line(file, $"{indent}// TODO(any): '{parameter.TypeDisplay} {parameter.Name}' may be guarded by something the scaffolder could not read.");
+        }
+
         Line(file, $"{indent}//   This is the scaffolder's best generator for the type; verify it honours the real invariant,");
-        Line(file, $"{indent}//   or replace it, then delete the line below.");
+        Line(file, $"{indent}//   or replace it, then delete the line below. What the scaffolder reads, and what it cannot:");
+        Line(file, $"{indent}//   {VerifyGuide}");
     }
+
+    /// <summary>The user page that says what <c>to verify</c> means, which a reader of the file can open.</summary>
+    private const string VerifyGuide = "https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/packages/justdummies-cli.en.md#what-the-last-column-means";
 
     private static void WritePrivateConstructor(StringBuilder file, ScaffoldPlan plan, string indent) {
         int    width      = GeneratorTypeWidth(plan);

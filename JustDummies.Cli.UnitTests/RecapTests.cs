@@ -94,6 +94,18 @@ public sealed class RecapTests {
         Check.That(rendered).Not.Contains("TODO");
     }
 
+    // The word says that something was not read; the line under the rows says which guard, and where, so the
+    // developer does not have to read the whole constructor to find it.
+    [Fact(DisplayName = "An unread guard is named under the rows, with its place.")]
+    public void AnUnreadGuardIsNamedUnderTheRows() {
+        UnreadGuard unread = new("Subject.cs", 12, "if (!Regex.IsMatch(name, Pattern)) { throw new ArgumentException(nameof(name)); }");
+
+        string rendered = Rendered(Plan([ScaffoldedParameter.DrawnFrom("name", "string", "AnyString", "Any.String().NonEmpty()",
+                                                                       Provenance.UnreadGuards, unreadGuard: unread)]));
+
+        Check.That(rendered).Contains("  name: unread guard at Subject.cs, line 12: if (!Regex.IsMatch(name, Pattern))");
+    }
+
     // Both at once, the ordinary case where one parameter is wholly open and another only doubtful: the two
     // counts read side by side, in the order a developer acts on them — supply one, verify the other.
     [Fact(DisplayName = "An open parameter and one requiring verification are both counted, TODO first.")]

@@ -269,14 +269,14 @@ internal static class Guards {
             // nothing is — marking a hand-off the delegated constructor is silent about would refuse shapes
             // that read perfectly, which is the mirror defect.
             if (Declines(expanded, handedTo, writtenBeforeHandoff(handedFrom), Delegated())) {
-                if (handedTo is null || SaysSomethingAbout(Delegated(), handedTo)) { reading.MarkUnread(handedFrom.Name); }
+                if (handedTo is null || SaysSomethingAbout(Delegated(), handedTo)) { reading.MarkUnread(handedFrom.Name, UnreadGuard.At(argument)); }
 
                 continue;
             }
 
             // Doubt travels with the constraints: a guard the delegated constructor could not read is a
             // guard over THIS parameter too.
-            if (Delegated().Unread(handedTo!.Name)) { reading.MarkUnread(handedFrom.Name); }
+            if (Delegated().Unread(handedTo!.Name)) { reading.MarkUnread(handedFrom.Name, Delegated().UnreadAt(handedTo.Name)!); }
 
             foreach (GuardConstraint constraint in Delegated().For(handedTo.Name)) {
                 reading.Add(handedFrom.Name, constraint);
@@ -329,7 +329,7 @@ internal static class Guards {
         if (handedTo is null || !SaysSomethingAbout(delegated(), handedTo)) { return; }
 
         foreach (IParameterSymbol mentioned in Mentioned(argument.Expression, model, method)) {
-            reading.MarkUnread(mentioned.Name);
+            reading.MarkUnread(mentioned.Name, UnreadGuard.At(argument));
         }
     }
 
@@ -520,10 +520,10 @@ internal static class Guards {
     private static void MarkIfItRejects(StatementSyntax statement, SemanticModel model, IMethodSymbol method, GuardReading reading) {
         if (!Throws(statement)) { return; }
 
-        foreach (IParameterSymbol parameter in Mentioned(statement, model, method)) { reading.MarkUnread(parameter.Name); }
-        foreach (IParameterSymbol parameter in ReachedThroughCopies(statement, model, method)) { reading.MarkUnread(parameter.Name); }
+        foreach (IParameterSymbol parameter in Mentioned(statement, model, method)) { reading.MarkUnread(parameter.Name, UnreadGuard.At(statement)); }
+        foreach (IParameterSymbol parameter in ReachedThroughCopies(statement, model, method)) { reading.MarkUnread(parameter.Name, UnreadGuard.At(statement)); }
 
-        MarkEveryParameterIfTheTrailIsLost(DecidingParts(statement), model, method, reading);
+        MarkEveryParameterIfTheTrailIsLost(DecidingParts(statement), statement, model, method, reading);
     }
 
     /// <summary>
@@ -557,10 +557,10 @@ internal static class Guards {
     ///     "none of them". Only what decides a throw counts, never what the exception is built from: a message
     ///     rejects nothing.
     /// </remarks>
-    private static void MarkEveryParameterIfTheTrailIsLost(IEnumerable<SyntaxNode> deciding, SemanticModel model, IMethodSymbol method, GuardReading reading) {
+    private static void MarkEveryParameterIfTheTrailIsLost(IEnumerable<SyntaxNode> deciding, SyntaxNode where, SemanticModel model, IMethodSymbol method, GuardReading reading) {
         if (!Trail.Follow(deciding, model, method, ignoresWhatIsThrown: true).Lost) { return; }
 
-        foreach (IParameterSymbol parameter in method.Parameters) { reading.MarkUnread(parameter.Name); }
+        foreach (IParameterSymbol parameter in method.Parameters) { reading.MarkUnread(parameter.Name, UnreadGuard.At(where)); }
     }
 
     /// <summary>
@@ -1042,7 +1042,7 @@ internal static class Guards {
 
         foreach (string narrowed in method.Parameters.Select(parameter => parameter.Name)
                                          .Where(name => wouldHaveRead.Unread(name) || wouldHaveRead.For(name).Count > 0)) {
-            reading.MarkUnread(narrowed);
+            reading.MarkUnread(narrowed, wouldHaveRead.UnreadAt(narrowed) ?? UnreadGuard.At(statement));
         }
     }
 
@@ -1156,7 +1156,7 @@ internal static class Guards {
         foreach (InvocationExpressionSyntax invocation in node.DescendantNodesAndSelf().OfType<InvocationExpressionSyntax>()) {
             if (!LibraryGuards.Recognises(invocation, model)) { continue; }
 
-            foreach (IParameterSymbol parameter in Mentioned(invocation, model, method)) { reading.MarkUnread(parameter.Name); }
+            foreach (IParameterSymbol parameter in Mentioned(invocation, model, method)) { reading.MarkUnread(parameter.Name, UnreadGuard.At(invocation)); }
         }
     }
 
@@ -1246,7 +1246,7 @@ internal static class Guards {
             // Whose invariant a conditioned helper states is the paths that reach it, never the parameter,
             // so the reading owes the developer the same word it owes any guard it could not place.
             if (!unconditional) {
-                reading.MarkUnread(parameter.Name);
+                reading.MarkUnread(parameter.Name, UnreadGuard.At(invocation));
 
                 continue;
             }
@@ -1256,7 +1256,7 @@ internal static class Guards {
             // value. This is the placement that matters most — a call sits in the middle of a statement,
             // where the writes above it are as easy to miss as the ones in the statements above that.
             if (writes.Precede(parameter, invocation)) {
-                reading.MarkUnread(parameter.Name);
+                reading.MarkUnread(parameter.Name, UnreadGuard.At(invocation));
 
                 continue;
             }
@@ -1264,7 +1264,7 @@ internal static class Guards {
             if (TryRecogniseCall(invocation, model, parameter, out IReadOnlyList<GuardConstraint> read)) {
                 foreach (GuardConstraint constraint in read) { reading.Add(parameter.Name, constraint); }
             } else {
-                reading.MarkUnread(parameter.Name);
+                reading.MarkUnread(parameter.Name, UnreadGuard.At(invocation));
             }
         }
     }
@@ -1476,9 +1476,9 @@ internal static class Guards {
         IParameterSymbol[] mentioned = Mentioned(condition, model, method);
 
         if (!IsANullCheckOnAPlainCopy(condition, model)) {
-            foreach (IParameterSymbol reached in ReachedThroughCopies(condition, model, method)) { reading.MarkUnread(reached.Name); }
+            foreach (IParameterSymbol reached in ReachedThroughCopies(condition, model, method)) { reading.MarkUnread(reached.Name, UnreadGuard.At(condition)); }
 
-            MarkEveryParameterIfTheTrailIsLost([condition], model, method, reading);
+            MarkEveryParameterIfTheTrailIsLost([condition], condition, model, method, reading);
         }
 
         // Exactly one, or the engine cannot say whose invariant this is. A cross-parameter rule is precisely
@@ -1489,7 +1489,7 @@ internal static class Guards {
         // A condition mentioning NO parameter is different and stays silent — one testing the clock, say, is
         // about none of them, so there is nobody to send looking. The loop below says both at once.
         if (mentioned.Length != 1) {
-            foreach (IParameterSymbol spanned in mentioned) { reading.MarkUnread(spanned.Name); }
+            foreach (IParameterSymbol spanned in mentioned) { reading.MarkUnread(spanned.Name, UnreadGuard.At(condition)); }
 
             return;
         }
@@ -1501,7 +1501,7 @@ internal static class Guards {
         // one a conditioned helper earns, since it is the same question asked along the body rather than up
         // through it.
         if (!unskipped) {
-            reading.MarkUnread(parameter.Name);
+            reading.MarkUnread(parameter.Name, UnreadGuard.At(condition));
 
             return;
         }
@@ -1512,7 +1512,7 @@ internal static class Guards {
         // domain of 0..100, under a recap reporting it inferred. So the guard is not this parameter's to
         // read, and §9 already has the word for that (ADR-0083).
         if (writes.Precede(parameter, condition)) {
-            reading.MarkUnread(parameter.Name);
+            reading.MarkUnread(parameter.Name, UnreadGuard.At(condition));
 
             return;
         }
@@ -1520,14 +1520,14 @@ internal static class Guards {
         if (condition.DescendantNodesAndSelf().OfType<BinaryExpressionSyntax>()
                      .Any(binary => binary.IsKind(SyntaxKind.LogicalAndExpression)
                                  || binary.IsKind(SyntaxKind.LogicalOrExpression))) {
-            reading.MarkUnread(parameter.Name);
+            reading.MarkUnread(parameter.Name, UnreadGuard.At(condition));
 
             return;
         }
 
         if (!TryRecognise(condition, model, parameter, GeneratorFor.Sizes(parameter.Type), names,
                           out GuardConstraint? constraint)) {
-            reading.MarkUnread(parameter.Name);
+            reading.MarkUnread(parameter.Name, UnreadGuard.At(condition));
 
             return;
         }
@@ -1761,6 +1761,9 @@ internal static class Guards {
     ///     type; on <c>decimal</c>, <c>double</c> or <c>float</c> it is a floor of one, because
     ///     <c>Positive</c> would admit the values between zero and one that the guard rejects — a rare draw for
     ///     an otherwise unconstrained decimal, and a common one as soon as the parameter carries another bound.
+    ///     The same rule keeps <c>p &lt;= 0</c> and <c>p &gt;= 0</c> on their sign rows ahead of the general
+    ///     strict bounds below them, which <c>ThrowIfLessThanOrEqual</c> and <c>ThrowIfGreaterThanOrEqual</c>
+    ///     already read into.
     /// </remarks>
     internal static GuardConstraint? Numeric(SyntaxKind @operator, decimal value, ITypeSymbol type, string literal) {
         bool integral = IsIntegral(type);
@@ -1772,6 +1775,8 @@ internal static class Guards {
             SyntaxKind.EqualsExpression when value == 0                 => new GuardConstraint("NonZero", null, Bound.Zero),
             SyntaxKind.GreaterThanExpression                            => new GuardConstraint("LessThanOrEqualTo", literal, Bound.Upper, value),
             SyntaxKind.LessThanExpression                               => new GuardConstraint("GreaterThanOrEqualTo", literal, Bound.Lower, value),
+            SyntaxKind.GreaterThanOrEqualExpression                     => new GuardConstraint("LessThan", literal, Bound.Upper, value, exclusive: true),
+            SyntaxKind.LessThanOrEqualExpression                        => new GuardConstraint("GreaterThan", literal, Bound.Lower, value, exclusive: true),
             _                                                           => null
         };
     }

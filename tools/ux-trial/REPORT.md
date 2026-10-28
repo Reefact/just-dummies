@@ -45,7 +45,8 @@ IDs are stable so that issues can cite them: `CLI-`, `CORE-`, `AN-`, `XU-`, `DOC
 > may depend on ([#333](https://github.com/Reefact/just-dummies/issues/333), ADR-0110). Every constructor shape gathered in the review of #331 is
 > marked or read as it should be. Milestone 8 (CORE-B1, CORE-B2, CORE-D1 to CORE-D3) is merged too, and so is
 > [#341](https://github.com/Reefact/just-dummies/pull/341), which stopped a decimal conflict on a `WithScale` grid naming the refused
-> constraint as its own cause ([#340](https://github.com/Reefact/just-dummies/issues/340)). On that
+> constraint as its own cause ([#340](https://github.com/Reefact/just-dummies/issues/340)). Milestone 9 (CLI-B5 to CLI-B7, CLI-D1,
+> CLI-D3 to CLI-D5) is merged as well, each item confirmed by re-scaffolding its reproduction. On that
 > state the trial passes 1099 of 1101 tests, the 2 red ones being the `Bug_` tests of [#310](https://github.com/Reefact/just-dummies/issues/310).
 > The other items below are open in their issues.
 
@@ -115,25 +116,25 @@ Next in line: [CLI-B6](#cli-b6) (the header names a regeneration command that fa
 <a id="cli-b5"></a>
 #### CLI-B5 — `--format json` reports a refused write as `Scaffolded` (medium)
 
-Tracked in [#301](https://github.com/Reefact/just-dummies/issues/301).
+**Fixed in milestone 9** (tracked in [#301](https://github.com/Reefact/just-dummies/issues/301)): `--format json` now reports the refused write as `FileExists`, `written: false`, `failed: 1`, exit 1.
 
 <a id="cli-b6"></a>
 #### CLI-B6 — The short-name lookup lists candidates C# could never bind, and the header names a command that fails (medium)
 
-Tracked in [#302](https://github.com/Reefact/just-dummies/issues/302).
+**Fixed in milestone 9** (tracked in [#302](https://github.com/Reefact/just-dummies/issues/302)): `Measurement` resolves to the project type (arity and accessibility filter the candidates); the header names the full spelling when the short one is ambiguous.
 
 <a id="cli-b7"></a>
 #### CLI-B7 — `any generate` on an unrestored project claims the project does not reference JustDummies (already filed)
 
-This was found during the pilot and is filed as
-[#296](https://github.com/Reefact/just-dummies/issues/296). It is listed here so the `cli` train
-carries it. Every domain ran `dotnet restore` first because of it.
+**Fixed in milestone 9** (filed as [#296](https://github.com/Reefact/just-dummies/issues/296)): an unrestored project is now refused with "this project has not
+been restored, so its package references cannot be read", naming `dotnet restore`, exit 1. Every domain
+ran `dotnet restore` first because of it.
 
 ### Defects (messages, wording, recap/JSON)
 
 <a id="cli-d1"></a>
 **CLI-D1 — "to verify" never says which guard went unread, and cites the maintainer spec's "§9" (medium).**
-Tracked in [#303](https://github.com/Reefact/just-dummies/issues/303).
+**Fixed in milestone 9** (tracked in [#303](https://github.com/Reefact/just-dummies/issues/303)): the TODO, the recap and the JSON name the first unread guard with its file, line and an excerpt, and link the user CLI page instead of "§9".
 
 <a id="cli-d2"></a>
 **CLI-D2 — "Delete that one line, and you are done" is false when the right base has another builder type (medium).**
@@ -141,15 +142,15 @@ Tracked in [#304](https://github.com/Reefact/just-dummies/issues/304).
 
 <a id="cli-d3"></a>
 **CLI-D3 — A nullable reference parameter loses its `?` in the value pin, the recap and the JSON (medium).**
-Tracked in [#305](https://github.com/Reefact/just-dummies/issues/305).
+**Fixed in milestone 9** (tracked in [#305](https://github.com/Reefact/just-dummies/issues/305)): the pin, the field and the recap keep `Bic?`/`string?`; `.WithAgent((Bic?)null)` builds clean under `-warnaserror`.
 
 <a id="cli-d4"></a>
 **CLI-D4 — `--namespace` rewrites the analysed type's name in the recap and the JSON (low).**
-Tracked in [#306](https://github.com/Reefact/just-dummies/issues/306).
+**Fixed in milestone 9** (tracked in [#306](https://github.com/Reefact/just-dummies/issues/306)): the recap and the JSON keep `Repro.Domain.Sku`; only the file is in `Foo.Bar`.
 
 <a id="cli-d5"></a>
 **CLI-D5 — `p >= N` / `p <= N` with N ≠ 0 are unread, while `ThrowIfGreaterThanOrEqual(p, N)` is read (low).**
-Tracked in [#307](https://github.com/Reefact/just-dummies/issues/307).
+**Fixed in milestone 9** (tracked in [#307](https://github.com/Reefact/just-dummies/issues/307)): `value >= 180.0` scaffolds to `.LessThan(180d)` and `value <= 10` to `.GreaterThan(10)`, both `guard`.
 
 ### Inference gaps honestly flagged (not bugs)
 

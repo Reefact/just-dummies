@@ -48,7 +48,8 @@ négatif d'un analyseur) ou `C` (candidat à une décision).
 > dont un `throw` peut dépendre ([#333](https://github.com/Reefact/just-dummies/issues/333), ADR-0110). Toutes les formes de constructeur réunies pendant
 > la revue de #331 sont marquées ou lues comme il se doit. La milestone 8 (CORE-B1, CORE-B2, CORE-D1 à CORE-D3)
 > est fusionnée elle aussi, de même que [#341](https://github.com/Reefact/just-dummies/pull/341) : un conflit décimal sur une
-> grille `WithScale` ne cite plus la contrainte refusée comme sa propre cause ([#340](https://github.com/Reefact/just-dummies/issues/340)). Sur cet état, l'essai passe 1099 tests sur 1101, les 2 rouges étant les tests `Bug_`
+> grille `WithScale` ne cite plus la contrainte refusée comme sa propre cause ([#340](https://github.com/Reefact/just-dummies/issues/340)). La milestone 9 (CLI-B5 à CLI-B7, CLI-D1,
+> CLI-D3 à CLI-D5) est fusionnée elle aussi, chaque élément confirmé en relançant `any` sur sa reproduction. Sur cet état, l'essai passe 1099 tests sur 1101, les 2 rouges étant les tests `Bug_`
 > de [#310](https://github.com/Reefact/just-dummies/issues/310). Les autres éléments ci-dessous restent ouverts dans leurs issues.
 
 | | |
@@ -119,25 +120,25 @@ Ensuite : [CLI-B6](#cli-b6) (l'en-tête nomme une commande de régénération qu
 <a id="cli-b5"></a>
 #### CLI-B5 — `--format json` rapporte une écriture refusée comme `Scaffolded` (moyenne)
 
-Suivi dans [#301](https://github.com/Reefact/just-dummies/issues/301).
+**Corrigé dans la milestone 9** (suivi dans [#301](https://github.com/Reefact/just-dummies/issues/301)) : `--format json` rapporte désormais l'écriture refusée comme `FileExists`, `written: false`, `failed: 1`, code de sortie 1.
 
 <a id="cli-b6"></a>
 #### CLI-B6 — La recherche par nom court liste des candidats que C# ne pourrait jamais lier, et l'en-tête nomme une commande qui échoue (moyenne)
 
-Suivi dans [#302](https://github.com/Reefact/just-dummies/issues/302).
+**Corrigé dans la milestone 9** (suivi dans [#302](https://github.com/Reefact/just-dummies/issues/302)) : `Measurement` se résout vers le type du projet (l'arité et l'accessibilité filtrent les candidats) ; l'en-tête donne le nom complet quand le nom court est ambigu.
 
 <a id="cli-b7"></a>
 #### CLI-B7 — `any generate` sur un projet non restauré prétend que le projet ne référence pas JustDummies (déjà ouvert)
 
-Trouvé pendant le pilote et ouvert sous
-[#296](https://github.com/Reefact/just-dummies/issues/296). Il est listé ici pour que le train `cli`
-le porte. Tous les domaines ont lancé `dotnet restore` d'abord à cause de lui.
+**Corrigé dans la milestone 9** (ouvert sous [#296](https://github.com/Reefact/just-dummies/issues/296)) : un projet non restauré est désormais refusé avec « this project has not
+been restored, so its package references cannot be read », qui indique `dotnet restore`, code de sortie 1. Tous les domaines
+ont lancé `dotnet restore` d'abord à cause de lui.
 
 ### Défauts (messages, formulation, récapitulatif/JSON)
 
 <a id="cli-d1"></a>
 **CLI-D1 — « to verify » ne dit jamais quelle garde n'a pas été lue, et cite le « §9 » de la spécification de maintenance (moyenne).**
-Suivi dans [#303](https://github.com/Reefact/just-dummies/issues/303).
+**Corrigé dans la milestone 9** (suivi dans [#303](https://github.com/Reefact/just-dummies/issues/303)) : le TODO, le récapitulatif et le JSON nomment la première garde non lue avec son fichier, sa ligne et un extrait, et renvoient vers la page utilisateur du CLI au lieu de « §9 ».
 
 <a id="cli-d2"></a>
 **CLI-D2 — « Delete that one line, and you are done » est faux quand la bonne base a un autre type de builder (moyenne).**
@@ -145,15 +146,15 @@ Suivi dans [#304](https://github.com/Reefact/just-dummies/issues/304).
 
 <a id="cli-d3"></a>
 **CLI-D3 — Un paramètre de type référence nullable perd son `?` dans la méthode qui fixe sa valeur, le récapitulatif et le JSON (moyenne).**
-Suivi dans [#305](https://github.com/Reefact/just-dummies/issues/305).
+**Corrigé dans la milestone 9** (suivi dans [#305](https://github.com/Reefact/just-dummies/issues/305)) : le pin, le champ et le récapitulatif gardent `Bic?`/`string?` ; `.WithAgent((Bic?)null)` compile sans avertissement sous `-warnaserror`.
 
 <a id="cli-d4"></a>
 **CLI-D4 — `--namespace` réécrit le nom du type analysé dans le récapitulatif et le JSON (faible).**
-Suivi dans [#306](https://github.com/Reefact/just-dummies/issues/306).
+**Corrigé dans la milestone 9** (suivi dans [#306](https://github.com/Reefact/just-dummies/issues/306)) : le récapitulatif et le JSON gardent `Repro.Domain.Sku` ; seul le fichier est dans `Foo.Bar`.
 
 <a id="cli-d5"></a>
 **CLI-D5 — `p >= N` / `p <= N` avec N ≠ 0 ne sont pas lus, alors que `ThrowIfGreaterThanOrEqual(p, N)` l'est (faible).**
-Suivi dans [#307](https://github.com/Reefact/just-dummies/issues/307).
+**Corrigé dans la milestone 9** (suivi dans [#307](https://github.com/Reefact/just-dummies/issues/307)) : `value >= 180.0` donne `.LessThan(180d)` et `value <= 10` donne `.GreaterThan(10)`, tous deux `guard`.
 
 ### Lacunes d'inférence signalées honnêtement (pas des bogues)
 

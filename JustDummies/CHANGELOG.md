@@ -97,8 +97,12 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 - **A lambda that takes a parameter is no longer read as a negative test.** Every rule that stands down
   on a conflict-asserting test read any lambda argument whose whole body was the chain as one, so
   `Enumerable.Range(0, 3).Select(_ => Any.Int32().Between(10, 5).Generate())`, arrange code that throws on
-  every element, drew no diagnostic. Only a parameterless lambda, the shape every assertion on a thrown
-  exception takes, is a negative test now.
+  every element, drew no diagnostic. Only a parameterless lambda, the shape most assertions on a thrown
+  exception take, is a negative test now. This reaches every rule that stands down on a negative test,
+  JD015, JD016, JD029, JD033 and the others alike: a chain they left silent inside a lambda taking a
+  parameter is now reported, which can turn an upgrade red under warnings-as-errors. A deliberate negative
+  test written that way, such as `generator.Invoking(g => g.Between(10, 5)).Should().Throw<ArgumentException>()`,
+  takes a justified `[SuppressMessage]`.
 - **An enum value the type does not define is reported once, by JD017.** `Any.Enum<T>().OneOf(...)`
   naming a value that is neither a declared member nor a combination of a `[Flags]` enumeration's
   members drew two warnings at the same position, JD014's and JD017's. JD017 alone reports it now, with

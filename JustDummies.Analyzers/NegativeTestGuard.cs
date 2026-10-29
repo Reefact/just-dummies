@@ -12,10 +12,12 @@ namespace JustDummies.Analyzers;
 ///     Deliberately framework-agnostic: it names no assertion library, so it covers the ones this repository uses and
 ///     the ones a consumer brings. It is also deliberately narrow — the expression must be the whole lambda body, so
 ///     arrange code inside <c>Any.Reproducibly(() =&gt; { ... })</c> stays reported, the call there being one statement
-///     of a block rather than the body itself. And the lambda takes no parameter, as every assertion on a thrown
-///     exception receives its code: a lambda with one is handed a value to map, so
+///     of a block rather than the body itself. And the lambda takes no parameter, the shape most assertions on a thrown
+///     exception take: a lambda with one is usually handed a value to map, so
 ///     <c>Enumerable.Range(0, 3).Select(_ =&gt; Any.Int32().Between(10, 5).Generate())</c> is arrange code, and stays
-///     reported.
+///     reported. The shape is recognised, not the intent, and the residue runs both ways: a parameterless lambda that
+///     is not a test, <c>Task.Run(() =&gt; chain.Generate())</c>, stays silent, and an assertion whose lambda receives
+///     its subject, <c>generator.Invoking(g =&gt; g.Between(10, 5))</c>, is reported.
 /// </remarks>
 internal static class NegativeTestGuard {
 

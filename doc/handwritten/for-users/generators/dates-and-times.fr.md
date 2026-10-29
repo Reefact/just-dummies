@@ -65,30 +65,29 @@ invariant du domaine plutôt qu'un contournement.
 
 `DateOnly` n'a pas de contrainte de granularité — c'est déjà un jour entier.
 
-## Les tirages `DateTime` sont `Kind.Utc`, et les bornes se comparent par ticks
+## Les tirages `DateTime` sont `Kind.Utc`, et une borne `Local` est refusée
 
-Toute valeur générée par `Any.DateTime()` porte `DateTimeKind.Utc`. Les bornes se comparent par leurs seuls
-`Ticks`, quel que soit leur `Kind` — exactement comme le `<=` de `DateTime`. Une valeur fournie par `OneOf` est
-rendue telle quelle, `Kind` compris. Sans borne déclarée, l'intervalle va de `DateTime.MinValue` à
-`DateTime.MaxValue`.
-
-La conséquence mérite d'être dite sans détour : avec des bornes `Local`, le tirage peut être une valeur `Utc`
-dont l'*instant* sort de ceux des bornes.
+Toute valeur générée par `Any.DateTime()` porte `DateTimeKind.Utc`, et les bornes se comparent par leurs `Ticks` —
+exactement comme le `<=` de `DateTime`. Une borne peut être `Utc` ou `Unspecified` — `new DateTime(2026, 1, 1)` est
+`Unspecified` — et l'une comme l'autre est lue telle qu'écrite. Une borne `Local` est **refusée** :
 
 ```csharp
 DateTime localStart = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Local);
-DateTime localEnd   = localStart.AddSeconds(1);
 
-// Kind is Utc; its Ticks lie between the bounds' Ticks, whatever their Kind.
-DateTime anyMoment = Any.DateTime().Between(localStart, localEnd).Generate();
+// Refused: an ArgumentException naming `start`, and the two ways out.
+AnyDateTime impossible = Any.DateTime().Between(localStart, localStart.AddDays(1));
 ```
 
-Sous `TZ=Europe/Paris`, des bornes de 00:00:00 et 00:00:01 en heure locale donnent une valeur `Utc` dont les
-ticks sont compris entre elles, ce qui, comme instant, est une heure *plus tard*. Aucune contrainte déclarée
-n'est violée — la valeur satisfait `start <= value && value <= end` selon la comparaison que votre propre
-test écrirait — mais ce n'est pas l'instant que les bornes désignent. Passez des bornes `Utc` pour garder
-les deux lectures ensemble, ou utilisez [`DateTimeOffset`](#datetimeoffset-ne-porte-un-decalage-que-si-vous-en-declarez-un)
-quand c'est l'instant qui compte.
+Une valeur `Local` peut désigner une heure sur l'horloge de cette machine ou un instant, et la bibliothèque ne peut
+pas savoir lequel. Lue en ticks, elle pourrait donner une valeur `Utc` dont l'*instant* sort de ceux des bornes, du
+décalage local : une valeur qui satisfait toutes les contraintes selon la comparaison de `DateTime`, et qui n'est
+pourtant pas dans la fenêtre voulue. Plutôt que de deviner, l'appel est refusé, et son message nomme les deux façons
+d'en sortir : convertir la borne avec `ToUniversalTime()`, ou utiliser
+[`DateTimeOffset`](#datetimeoffset-ne-porte-un-decalage-que-si-vous-en-declarez-un) quand c'est l'instant qui compte
+([ADR-0114](../../for-maintainers/adr/0114-refuse-a-local-datetime-bound.fr.md)).
+
+Une valeur fournie par `OneOf` n'est pas une borne : elle est rendue telle quelle, `Kind` compris. Sans borne
+déclarée, l'intervalle va de `DateTime.MinValue` à `DateTime.MaxValue`.
 
 ## `DateTimeOffset` ne porte un décalage que si vous en déclarez un
 
@@ -129,11 +128,12 @@ le décalage n'est pas admis par la déclaration n'est jamais tirée
 
 ## Le piège de `DateTime.Now`
 
-Voici l'erreur qui mérite d'être nommée, car elle survit à la revue et échoue à minuit :
+Voici l'erreur qui mérite d'être nommée, car elle survit à la revue et échoue à minuit. `DateTime.Now` lui-même
+est refusé comme borne, puisqu'il est `Local` (ci-dessus) ; `DateTime.UtcNow` est accepté, et le piège demeure :
 
 ```csharp
 // Fragile : le dummy est tiré relativement à une horloge que le test ne contrôle pas.
-DateTime anyCreatedAt = Any.DateTime().Before(DateTime.Now).Generate();
+DateTime anyCreatedAt = Any.DateTime().Before(DateTime.UtcNow).Generate();
 ```
 
 Le test dépend désormais du moment où il s'exécute. Pire, il n'est pas reproductible : rejouer la

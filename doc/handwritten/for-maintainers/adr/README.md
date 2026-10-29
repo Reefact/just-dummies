@@ -224,3 +224,4 @@ failure mode of a "not now" is that nobody remembers the option existed on the d
 | [ADR-0111](0111-own-an-undefined-enum-value-as-jd017.md) | Own an undefined enum value in a value set as JD017, and narrow JD014 out of it | Accepted | recorded here |
 | [ADR-0112](0112-report-a-test-asserting-a-refusal-like-any-other-code.md) | Report a test asserting a refusal like any other code, and let it suppress the rule explicitly | Accepted | recorded here |
 | [ADR-0113](0113-check-a-distinct-collections-cardinality-when-the-specification-is-whole.md) | Check a distinct collection's cardinality when the specification is whole | Accepted | recorded here |
+| [ADR-0114](0114-refuse-a-local-datetime-bound.md) | Refuse a `Local` `DateTime` bound rather than read it as ticks | Accepted | recorded here |

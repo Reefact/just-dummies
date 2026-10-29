@@ -239,3 +239,4 @@ que l'option existait le jour où elle compterait.
 | [ADR-0111](0111-own-an-undefined-enum-value-as-jd017.fr.md) | Confier à JD017 la valeur d'enum non définie d'un ensemble de valeurs, et en retirer JD014 | Accepted | consigné ici |
 | [ADR-0112](0112-report-a-test-asserting-a-refusal-like-any-other-code.fr.md) | Signaler un test qui vérifie un refus comme tout autre code, et le laisser faire taire la règle explicitement | Accepted | consigné ici |
 | [ADR-0113](0113-check-a-distinct-collections-cardinality-when-the-specification-is-whole.fr.md) | Contrôler la cardinalité d'une collection distincte quand la spécification est complète | Accepted | consigné ici |
+| [ADR-0114](0114-refuse-a-local-datetime-bound.fr.md) | Refuser une borne `DateTime` `Local` plutôt que la lire en ticks | Accepted | consigné ici |

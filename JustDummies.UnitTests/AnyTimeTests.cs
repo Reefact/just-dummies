@@ -67,6 +67,36 @@ public sealed class AnyTimeTests {
         Check.ThatCode(() => Any.DateTime().After(DateTime.MaxValue)).Throws<ConflictingAnyConstraintException>();
     }
 
+    [Fact(DisplayName = "DateTime: a Local bound is refused as an argument, naming the parameter and the two ways out (ADR-0114).")]
+    public void DateTimeRefusesALocalBound() {
+        DateTime local = new(2026, 1, 1, 0, 0, 0, DateTimeKind.Local);
+        (Action declaration, string parameter)[] cases = [
+            (() => { _ = Any.DateTime().After(local); }, "instant"),
+            (() => { _ = Any.DateTime().AfterOrEqualTo(local); }, "instant"),
+            (() => { _ = Any.DateTime().Before(local); }, "instant"),
+            (() => { _ = Any.DateTime().BeforeOrEqualTo(local); }, "instant"),
+            (() => { _ = Any.DateTime().Between(local, Anchor.AddYears(1)); }, "start"),
+            (() => { _ = Any.DateTime().Between(Anchor, local.AddYears(1)); }, "end")
+        ];
+
+        foreach ((Action declaration, string parameter) in cases) {
+            // Assert.Throws: ArgumentException is a base type, and its exactness is the assertion.
+            ArgumentException refusal = Assert.Throws<ArgumentException>(declaration);
+            Check.That(refusal.ParamName).IsEqualTo(parameter);
+            Check.That(refusal.Message).Contains("Local", "ToUniversalTime()", "Any.DateTimeOffset()");
+        }
+    }
+
+    [Fact(DisplayName = "DateTime: Utc and Unspecified bounds are accepted, and OneOf still returns a Local value as given.")]
+    public void DateTimeAcceptsUtcAndUnspecifiedBounds() {
+        DateTime unspecified = new(2026, 1, 1, 0, 0, 0, DateTimeKind.Unspecified);
+        DateTime local       = new(2026, 1, 1, 0, 0, 0, DateTimeKind.Local);
+
+        Check.That(Any.DateTime().Between(unspecified, unspecified.AddDays(1)).Generate().Kind).IsEqualTo(DateTimeKind.Utc);
+        Check.That(Any.DateTime().After(Anchor).Before(Anchor.AddDays(1)).Generate().Kind).IsEqualTo(DateTimeKind.Utc);
+        Check.That(Any.DateTime().OneOf(local).Generate().Kind).IsEqualTo(DateTimeKind.Local);
+    }
+
     [Fact(DisplayName = "DateTime: OneOf yields only supplied instants and DifferentFrom always picks the other of two.")]
     public void DateTimeSets() {
         DateTime[] allowed = [Anchor, Anchor.AddDays(1)];

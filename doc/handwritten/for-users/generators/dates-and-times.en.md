@@ -65,30 +65,28 @@ rather than a workaround.
 
 `DateOnly` has no granularity constraint — it is already a whole day.
 
-## `DateTime` draws are `Kind.Utc`, and bounds compare by ticks
+## `DateTime` draws are `Kind.Utc`, and a `Local` bound is refused
 
-Every value `Any.DateTime()` generates carries `DateTimeKind.Utc`. Bounds are compared by their `Ticks`
-alone, whatever their `Kind` — exactly as `DateTime`'s own `<=` does. A value you supply through `OneOf` is
-returned as given, `Kind` included. With no bound declared, the range is `DateTime.MinValue` to
-`DateTime.MaxValue`.
-
-The consequence is worth stating plainly: with `Local` bounds, the draw can be a `Utc` value whose
-*instant* lies outside the bounds' instants.
+Every value `Any.DateTime()` generates carries `DateTimeKind.Utc`, and bounds are compared by their `Ticks` —
+exactly as `DateTime`'s own `<=` does. A bound may be `Utc` or `Unspecified` — `new DateTime(2026, 1, 1)` is
+`Unspecified` — and either is read as written. A `Local` bound is **refused**:
 
 ```csharp
 DateTime localStart = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Local);
-DateTime localEnd   = localStart.AddSeconds(1);
 
-// Kind is Utc; its Ticks lie between the bounds' Ticks, whatever their Kind.
-DateTime anyMoment = Any.DateTime().Between(localStart, localEnd).Generate();
+// Refused: an ArgumentException naming `start`, and the two ways out.
+AnyDateTime impossible = Any.DateTime().Between(localStart, localStart.AddDays(1));
 ```
 
-Under `TZ=Europe/Paris`, bounds of 00:00:00 and 00:00:01 local yield a `Utc` value whose ticks lie between
-them, which as an instant is one hour *later*. No declared constraint is broken — the value satisfies
-`start <= value && value <= end` under the comparison your own test would write — but it is not the
-instant the bounds name. Pass `Utc` bounds to keep the two readings together, or use
-[`DateTimeOffset`](#datetimeoffset-carries-an-offset-only-when-you-declare-one) when the instant is what
-matters.
+A `Local` value may mean a time on this machine's clock or an instant, and the library cannot tell which. Read
+as ticks, it could yield a `Utc` value whose *instant* lies outside the bounds' instants, by the local offset: a
+value that satisfies every constraint as `DateTime` compares, and still is not in the window you meant. Rather
+than guess, the call is refused, and its message names the two ways out: convert the bound with
+`ToUniversalTime()`, or use [`DateTimeOffset`](#datetimeoffset-carries-an-offset-only-when-you-declare-one) when
+the instant is what matters ([ADR-0114](../../for-maintainers/adr/0114-refuse-a-local-datetime-bound.md)).
+
+A value you supply through `OneOf` is not a bound: it is returned as given, `Kind` included. With no bound
+declared, the range is `DateTime.MinValue` to `DateTime.MaxValue`.
 
 ## `DateTimeOffset` carries an offset only when you declare one
 
@@ -128,11 +126,12 @@ does not admit is never drawn
 
 ## The `DateTime.Now` trap
 
-This is the mistake worth naming, because it survives review and fails at midnight:
+This is the mistake worth naming, because it survives review and fails at midnight. `DateTime.Now` itself
+is refused as a bound, since it is `Local` (above); `DateTime.UtcNow` is accepted, and the trap is still there:
 
 ```csharp
 // Fragile: the dummy is drawn relative to a clock the test does not control.
-DateTime anyCreatedAt = Any.DateTime().Before(DateTime.Now).Generate();
+DateTime anyCreatedAt = Any.DateTime().Before(DateTime.UtcNow).Generate();
 ```
 
 The test now depends on when it runs. Worse, it is not reproducible: replaying the seed replays the

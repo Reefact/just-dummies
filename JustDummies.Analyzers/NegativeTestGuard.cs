@@ -23,4 +23,24 @@ internal static class NegativeTestGuard {
         return lambda.Parent is ArgumentSyntax;
     }
 
+    /// <summary>
+    ///     Whether <paramref name="call" /> is a link of a chain whose outermost call is the sole body of a lambda
+    ///     argument — the call itself, or one the chain goes on from, as in <c>Assert.Throws(() =&gt; illegal.Generate())</c>.
+    /// </summary>
+    /// <remarks>
+    ///     For a rule that judges one call of a chain rather than the whole of it. A rule judging the outermost call
+    ///     already asks <see cref="IsSoleBodyOfLambdaArgument" /> about the whole chain, and the two must agree on one
+    ///     negative test (issue #323). Only the receiver side is climbed: a chain passed as an argument to another call
+    ///     inside the lambda is not the expression the test asserts on.
+    /// </remarks>
+    public static bool IsLinkOfSoleBodyOfLambdaArgument(SyntaxNode call) {
+        SyntaxNode outermost = call;
+        while (outermost.Parent is MemberAccessExpressionSyntax access && access.Expression == outermost
+            && access.Parent is InvocationExpressionSyntax invocation && invocation.Expression == access) {
+            outermost = invocation;
+        }
+
+        return IsSoleBodyOfLambdaArgument(outermost);
+    }
+
 }

@@ -55,8 +55,9 @@ public sealed class RejectedConstantArgumentAnalyzer : DiagnosticAnalyzer {
         if (!IsJustDummiesMember(invocation.TargetMethod, symbols)) { return; }
 
         // A test asserting that the guard rejects the argument writes the illegal call as the whole body of a lambda
-        // argument. This repository alone holds hundreds of them.
-        if (NegativeTestGuard.IsSoleBodyOfLambdaArgument(invocation.Syntax)) { return; }
+        // argument. This repository alone holds hundreds of them. The chain may go on past the call — to Generate(),
+        // say — and is still that test, the shape JD023 already stands down on.
+        if (NegativeTestGuard.IsLinkOfSoleBodyOfLambdaArgument(invocation.Syntax)) { return; }
 
         if (TryFindViolation(invocation, context.Compilation, out IOperation? offending, out string? reason)) {
             context.ReportDiagnostic(Diagnostic.Create(Descriptors.RejectedConstantArgument, offending!.Syntax.GetLocation(), invocation.TargetMethod.Name, reason));

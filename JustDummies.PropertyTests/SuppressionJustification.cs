@@ -52,6 +52,50 @@ internal static class SuppressionJustification {
 
     }
 
+    /// <summary>Justifications for JD004 — the discarded-seeding-result diagnostic.</summary>
+    internal static class JD004 {
+
+        /// <inheritdoc cref="JD014.ThrowIsTheSubject" />
+        internal const string ThrowIsTheSubject = "The throw IS the subject: the test asserts that the run time refuses this call, so it has to be written as it is. See the constant's summary.";
+
+    }
+
+    /// <summary>Justifications for JD006 — the discarded-generator-result diagnostic.</summary>
+    internal static class JD006 {
+
+        /// <inheritdoc cref="JD014.ThrowIsTheSubject" />
+        internal const string ThrowIsTheSubject = "The throw IS the subject: the test asserts that the run time refuses this call, so it has to be written as it is. See the constant's summary.";
+
+    }
+
+    /// <summary>Justifications for JD014 — the rejected-constant-argument diagnostic.</summary>
+    internal static class JD014 {
+
+        /// <summary>
+        ///     The throw IS the subject. The test asserts that the run time refuses this call, so the call has to be
+        ///     written as it is, and the diagnostic predicting the refusal is the expected one. No rule guesses which
+        ///     chains a test writes on purpose (ADR-0112): the test says so here.
+        /// </summary>
+        internal const string ThrowIsTheSubject = "The throw IS the subject: the test asserts that the run time refuses this call, so it has to be written as it is. See the constant's summary.";
+
+    }
+
+    /// <summary>Justifications for JD015 — the string-constraints-admit-no-value diagnostic.</summary>
+    internal static class JD015 {
+
+        /// <inheritdoc cref="JD014.ThrowIsTheSubject" />
+        internal const string ThrowIsTheSubject = "The throw IS the subject: the test asserts that the run time refuses this call, so it has to be written as it is. See the constant's summary.";
+
+    }
+
+    /// <summary>Justifications for JD027 — the ignored-operand diagnostic.</summary>
+    internal static class JD027 {
+
+        /// <inheritdoc cref="JD014.ThrowIsTheSubject" />
+        internal const string ThrowIsTheSubject = "The throw IS the subject: the test asserts that the run time refuses this call, so it has to be written as it is. See the constant's summary.";
+
+    }
+
     /// <summary>Justifications for JD030 — the undeclared-string-length diagnostic.</summary>
     internal static class JD030 {
 

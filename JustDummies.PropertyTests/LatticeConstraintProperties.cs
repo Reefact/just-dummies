@@ -1,5 +1,8 @@
 #region Usings declarations
 
+using System.Diagnostics.CodeAnalysis;
+using JustDummies.Diagnostics;
+
 using FsCheck;
 using FsCheck.Fluent;
 
@@ -109,6 +112,7 @@ public sealed class LatticeConstraintProperties {
     }
 
     [Fact(DisplayName = "MultipleOf: an interval keeps the grid inside it, and an interval holding no grid point conflicts.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void MultipleOfComposesWithAnInterval() {
         Prop.ForAll((from bounds in Generators.OrderedPair(Gen.Choose(-2000, 2000))
                      from step in Steps()
@@ -132,6 +136,7 @@ public sealed class LatticeConstraintProperties {
     }
 
     [Fact(DisplayName = "MultipleOf: an allow-list is filtered to its grid points, and an allow-list missing them conflicts.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void MultipleOfFiltersAnAllowList() {
         Gen<int[]> pools = Gen.NonEmptyListOf(Gen.Choose(-200, 200)).Select(values => values.Distinct().ToArray());
 
@@ -155,6 +160,7 @@ public sealed class LatticeConstraintProperties {
     }
 
     [Fact(DisplayName = "MultipleOf: a step that is not strictly positive is an argument error, for every such step.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void NonPositiveMultipleOfIsAnArgumentError() {
         Prop.ForAll(Gen.Choose(-1000, 0).ToArbitrary(),
                     step => Expect.Throws<ArgumentOutOfRangeException>(() => Any.Int32().MultipleOf(step))
@@ -163,6 +169,7 @@ public sealed class LatticeConstraintProperties {
     }
 
     [Fact(DisplayName = "MultipleOf: a second, genuinely different step conflicts; a no-op or a repeat does not.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void MultipleOfIsDeclaredOnce() {
         Prop.ForAll((from first in Gen.Choose(1, 6)
                      from second in Gen.Choose(1, 6)
@@ -219,6 +226,7 @@ public sealed class LatticeConstraintProperties {
     }
 
     [Fact(DisplayName = "WithScale: an interval lying strictly inside one grid cell conflicts at the call.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void WithScaleOnAnIntervalWithoutGridPointConflicts() {
         Prop.ForAll((from scale in Gen.Choose(0, 27)
                      from cell in Gen.Choose(-100, 100)
@@ -239,6 +247,7 @@ public sealed class LatticeConstraintProperties {
     }
 
     [Fact(DisplayName = "WithScale: a scale outside [0, 28] is an argument error, for every such scale.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void WithScaleOutsideTheSupportedRangeIsAnArgumentError() {
         Prop.ForAll(Gen.OneOf(Gen.Choose(-1000, -1), Gen.Choose(29, 1000)).ToArbitrary(),
                     scale => Expect.Throws<ArgumentOutOfRangeException>(() => Any.Decimal().WithScale(scale)))
@@ -246,6 +255,7 @@ public sealed class LatticeConstraintProperties {
     }
 
     [Fact(DisplayName = "WithScale: a second, different scale conflicts; the same scale again does not.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void WithScaleIsDeclaredOnce() {
         Prop.ForAll((from first in Gen.Choose(0, 6)
                      from second in Gen.Choose(0, 6)
@@ -317,6 +327,7 @@ public sealed class LatticeConstraintProperties {
     }
 
     [Fact(DisplayName = "WithGranularity: a granularity that is not strictly positive is an argument error.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void NonPositiveGranularityIsAnArgumentError() {
         Prop.ForAll(Gen.Choose(-10000, 0).Select(ticks => TimeSpan.FromTicks(ticks)).ToArbitrary(),
                     granularity => Expect.Throws<ArgumentOutOfRangeException>(() => Any.TimeSpan().WithGranularity(granularity))
@@ -326,6 +337,7 @@ public sealed class LatticeConstraintProperties {
     }
 
     [Fact(DisplayName = "WithGranularity: a second, genuinely different granularity conflicts; a no-op or a repeat does not.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void WithGranularityIsDeclaredOnce() {
         Prop.ForAll((from first in CollidingGranularities()
                      from second in CollidingGranularities()

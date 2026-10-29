@@ -1,5 +1,7 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Globalization;
+using System.Linq;
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
@@ -44,7 +46,6 @@ public sealed class ScalarChainAdmitsNoValueAnalyzer : DiagnosticAnalyzer {
         if (invocation.Parent is IInvocationOperation) { return; }
         if (!AnyChainFacts.TryGetChain(invocation, symbols, out IReadOnlyList<IInvocationOperation> constraints, out IInvocationOperation? factory)) { return; }
         if (factory is null || !IsIntegerFactory(factory.TargetMethod.Name)) { return; }
-        if (NegativeTestGuard.IsSoleBodyOfLambdaArgument(invocation.Syntax)) { return; }
 
         AnalyzeConstraints(context, factory.TargetMethod.Name, constraints);
     }
@@ -129,11 +130,11 @@ public sealed class ScalarChainAdmitsNoValueAnalyzer : DiagnosticAnalyzer {
     private static string Conflict(string factory, ScalarConstraintState state, ScalarConstraintState next, List<string> written, string? minimumSetBy, string? maximumSetBy) {
         if (!next.Saturated && next.Minimum > next.Maximum) {
             if (next.Minimum > state.Minimum && maximumSetBy is not null) {
-                return $"{maximumSetBy} already requires values less than or equal to {state.Maximum}";
+                return $"{maximumSetBy} already requires values less than or equal to {Invariant(state.Maximum)}";
             }
 
             if (next.Maximum < state.Maximum && minimumSetBy is not null) {
-                return $"{minimumSetBy} already requires values greater than or equal to {state.Minimum}";
+                return $"{minimumSetBy} already requires values greater than or equal to {Invariant(state.Minimum)}";
             }
         }
 
@@ -148,9 +149,15 @@ public sealed class ScalarChainAdmitsNoValueAnalyzer : DiagnosticAnalyzer {
         return (next.Minimum > state.Minimum ? call : minimumSetBy, next.Maximum < state.Maximum ? call : maximumSetBy);
     }
 
-    // A constraint as ConstraintCall renders it at run time: its name, then its arguments between parentheses.
+    // A constraint as ConstraintCall renders it at run time: its name, then its arguments between parentheses. Numbers
+    // are written invariantly, as the run time writes them: the current culture of the build may spell a minus sign
+    // as U+2212.
     private static string Render(string name, IReadOnlyList<long> arguments) {
-        return $"{name}({string.Join(", ", arguments)})";
+        return $"{name}({string.Join(", ", arguments.Select(Invariant))})";
+    }
+
+    private static string Invariant(long value) {
+        return value.ToString(CultureInfo.InvariantCulture);
     }
 
     /// <summary>

@@ -86,13 +86,17 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   value satisfies this chain once GreaterThan is applied", while the exception it predicts names the call
   with its arguments and the constraint it collides with. Two crossing bounds now read as the run time
   writes them: `cannot apply GreaterThan(10) because Between(1, 6) already requires values less than or
-  equal to 6`. A domain emptied by a lattice, an allow-list or an exclusion names every constraint written
-  before the call.
-- **JD014 stands down on a negative test whose chain goes on past the rejected call.**
-  `Assert.Throws(() => Any.Int32().Between(10, 5).Generate())` was reported by JD014, which judged the
-  `Between` call alone, while JD023 stayed silent on the same shape because it judges the chain as a whole.
-  Both rules now stay silent when the chain holding the call is the whole body of a lambda argument; a
-  chain passed to another call inside the lambda is still reported.
+  equal to 6`, with the numbers written as the run time writes them whatever the build machine's culture.
+  A domain emptied by a lattice, an allow-list or an exclusion names every constraint written before the
+  call.
+- **No rule recognises a negative test any more: a test asserting a refusal is reported like any other
+  code.** Twenty rules stayed silent on a chain that was the whole body of a lambda argument, guessing that
+  `Check.ThatCode(() => Any.Int32().Between(10, 5))` asserts a throw. The guess read the shape, not the
+  intent: `Task.Run(() => chain.Generate())` and, until recently, `Select(_ => chain.Generate())` were
+  silent although they are arrange code that throws on every run. Every rule now reports the chain wherever
+  it is written. A test whose subject is the refusal says so on the test method with a justified
+  `[SuppressMessage]`, as the rules README shows; under warnings-as-errors, a build holding such tests
+  turns red on upgrade until they do (ADR-0112).
 - **An enum value the type does not define is reported once, by JD017.** `Any.Enum<T>().OneOf(...)`
   naming a value that is neither a declared member nor a combination of a `[Flags]` enumeration's
   members drew two warnings at the same position, JD014's and JD017's. JD017 alone reports it now, with

@@ -21,7 +21,7 @@ and the **Origin** column says how each one got here:
   but its record stays live in `Reefact/first-class-errors` too, because that
   repository still applies it. Both copies are now independent: either side can
   supersede its own without touching the other. 9 decisions.
-* **recorded here** — decided in this repository, on its own. 68 decisions.
+* **recorded here** — decided in this repository, on its own. 69 decisions.
 
 The numbers are this base's own, assigned in the order the decisions were
 recorded upstream ([ADR-0045](0045-renumber-the-decision-base.md)); every ADR
@@ -222,3 +222,4 @@ failure mode of a "not now" is that nobody remembers the option existed on the d
 | [ADR-0109](0109-let-a-test-refine-a-parameters-valid-base-rather-than-replace-it.md) | Let a test refine a parameter's valid base rather than replace it | Accepted | recorded here |
 | [ADR-0110](0110-mark-every-parameter-a-throw-may-depend-on.md) | Mark every parameter a throw may depend on, and all of them where the trail is lost | Accepted | recorded here |
 | [ADR-0111](0111-own-an-undefined-enum-value-as-jd017.md) | Own an undefined enum value in a value set as JD017, and narrow JD014 out of it | Accepted | recorded here |
+| [ADR-0112](0112-report-a-test-asserting-a-refusal-like-any-other-code.md) | Report a test asserting a refusal like any other code, and let it suppress the rule explicitly | Accepted | recorded here |

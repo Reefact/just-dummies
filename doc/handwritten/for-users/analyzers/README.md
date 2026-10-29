@@ -79,6 +79,28 @@ These rules are about assembling generators into bigger ones — `Combine`'s ope
 | [JD027 UnusedCombineOperand](JD027.en.md) | 🟠 Warning | on | A Combine operand is drawn and thrown away because the composer never reads its parameter. Name the parameter `_` to say the draw is deliberate. |
 | [JD028 InertDistinctness](JD028.en.md) | 🟠 Warning | on | Distinctness is declared over an element type with no value equality, so it is satisfied by construction and the collection can still hold the same value twice. |
 
+## A test that asserts a refusal
+
+Every rule reports what it sees, test code included: no rule tries to guess which calls a test writes on
+purpose. A test whose subject is the refusal itself, such as one checking that transposed bounds are
+rejected, silences the rule where it is meant, with a justified `[SuppressMessage]` naming the rule through the
+[catalogue](../packages/justdummies-diagnosticcatalog.en.md):
+
+<!-- jd:declarations -->
+```csharp
+public sealed class BoundsTests {
+
+    [Fact]
+    [SuppressMessage(JustDummiesRule.JD014.Category, JustDummiesRule.JD014.Id, Justification = "The refusal IS the subject: the test asserts that transposed bounds are rejected.")]
+    public void Transposed_bounds_are_rejected() {
+        Assert.Throws<ArgumentException>(() => Any.Int32().Between(10, 5));
+    }
+
+}
+```
+
+Anywhere else, the same diagnostic is a mistake: the chain throws every time it runs.
+
 ## Configuring
 
 Every rule's severity can be tuned in `.editorconfig`, for example:

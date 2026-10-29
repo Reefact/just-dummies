@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Globalization;
 
 using Microsoft.CodeAnalysis;
 
@@ -148,30 +149,32 @@ public class Jd023ScalarChainAdmitsNoValueTests {
         Check.That(diagnostics.Length).IsEqualTo(0);
     }
 
-    // The second shape goes on to Generate(), as Assert.ThrowsAny(() => chain.Generate()) does; JD014 stands down on
-    // both shapes too, so one negative test draws one verdict from the two rules (issue #323).
-    [Theory]
-    [InlineData("Any.Int32().Positive().Negative()")]
-    [InlineData("Any.Int32().Positive().Negative().Generate()")]
-    public async Task Does_not_report_a_conflict_asserting_negative_test(string chain) {
-        string source = $$"""
-            using System;
+    [Fact]
+    public async Task Words_negative_bounds_as_the_run_time_does_whatever_the_current_culture() {
+        // Some cultures spell the minus sign U+2212; the run time writes its message invariantly, and so must the rule.
+        CultureInfo culture = (CultureInfo)CultureInfo.InvariantCulture.Clone();
+        culture.NumberFormat.NegativeSign = "\u2212";
+        CultureInfo previous = CultureInfo.CurrentCulture;
+        const string source = """
             using JustDummies;
-
-            public static class Check2 {
-                public static void ThatCode(Func<object> code) { }
-            }
 
             public static class Sample {
                 public static void M() {
-                    Check2.ThatCode(() => {{chain}});
+                    _ = Any.Int32().Between(-10, -5).GreaterThan(-3);
                 }
             }
             """;
 
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new ScalarChainAdmitsNoValueAnalyzer(), source, "JD023", "JD024");
+        CultureInfo.CurrentCulture = culture;
+        try {
+            ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new ScalarChainAdmitsNoValueAnalyzer(), source, "JD023", "JD024");
+            string                     thrown      = Check.ThatCode(() => Any.Int32().Between(-10, -5).GreaterThan(-3)).Throws<ConflictingAnyConstraintException>().Value.Message;
 
-        Check.That(diagnostics.Length).IsEqualTo(0);
+            Check.That(diagnostics.Length).IsEqualTo(1);
+            Check.That(diagnostics[0].GetMessage()).IsEqualTo($"No value satisfies this chain: c{thrown.Substring(1, thrown.Length - 2)}");
+        } finally {
+            CultureInfo.CurrentCulture = previous;
+        }
     }
 
 }

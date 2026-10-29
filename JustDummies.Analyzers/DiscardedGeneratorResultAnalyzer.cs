@@ -41,10 +41,6 @@ public sealed class DiscardedGeneratorResultAnalyzer : DiagnosticAnalyzer {
         if (!GeneratorFacts.IsGenerator(invocation.TargetMethod.ReturnType, iAny)) { return; }
         if (!IsResultDiscarded(invocation)) { return; }
 
-        // A test asserting that the constraint throws writes the illegal call as the whole body of a lambda argument;
-        // reporting there would fight the suite that documents the conflict.
-        if (NegativeTestGuard.IsSoleBodyOfLambdaArgument(invocation.Syntax)) { return; }
-
         context.ReportDiagnostic(Diagnostic.Create(Descriptors.DiscardedGeneratorResult, invocation.Syntax.GetLocation(), invocation.TargetMethod.Name));
     }
 

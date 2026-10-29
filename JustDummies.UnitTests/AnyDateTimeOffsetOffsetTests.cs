@@ -65,6 +65,7 @@ public sealed class AnyDateTimeOffsetOffsetTests {
     }
 
     [Fact(DisplayName = "WithOffset: arguments are validated (whole minutes, ±14:00, ordered range).")]
+    [SuppressMessage(JustDummiesRule.JD014.Category, JustDummiesRule.JD014.Id, Justification = SuppressionJustification.JD014.ThrowIsTheSubject)]
     public void WithOffsetArguments() {
         Check.ThatCode(() => Any.DateTimeOffset().WithOffset(TimeSpan.FromSeconds(30))).Throws<ArgumentException>();
         Check.ThatCode(() => Any.DateTimeOffset().WithOffset(TimeSpan.FromHours(15))).Throws<ArgumentOutOfRangeException>();
@@ -137,6 +138,7 @@ public sealed class AnyDateTimeOffsetOffsetTests {
 
     [Fact(DisplayName = "WithOffset: a second, different offset is rejected as already declared.")]
     [SuppressMessage(JustDummiesRule.JD035.Category, JustDummiesRule.JD035.Id, Justification = SuppressionJustification.JD035.RepetitionIsTheSubject)]
+    [SuppressMessage(JustDummiesRule.JD034.Category, JustDummiesRule.JD034.Id, Justification = SuppressionJustification.JD034.ThrowIsTheSubject)]
     public void WithOffsetDeclaredOnce() {
         Check.ThatCode(() => Any.DateTimeOffset().WithOffset(TimeSpan.FromHours(2)).WithOffset(TimeSpan.FromHours(3)))
              .Throws<ConflictingAnyConstraintException>();

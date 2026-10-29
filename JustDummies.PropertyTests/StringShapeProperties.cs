@@ -222,6 +222,7 @@ public sealed class StringShapeProperties {
     }
 
     [Fact(DisplayName = "Crossed WithLengthBetween arguments are an argument error, never a silent swap.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void CrossedLengthBoundsAreAnArgumentError() {
         Prop.ForAll(Generators.OrderedPair(Generators.Count(40)).ToArbitrary(),
                     bounds => bounds.Min == bounds.Max
@@ -230,6 +231,8 @@ public sealed class StringShapeProperties {
     }
 
     [Fact(DisplayName = "NonEmpty never yields the empty string, under every maximum length that leaves room.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
+    [SuppressMessage(JustDummiesRule.JD015.Category, JustDummiesRule.JD015.Id, Justification = SuppressionJustification.JD015.ThrowIsTheSubject)]
     public void NonEmptyNeverYieldsTheEmptyString() {
         Prop.ForAll(Generators.Count(40).ToArbitrary(),
                     maximum => {
@@ -246,6 +249,8 @@ public sealed class StringShapeProperties {
     }
 
     [Fact(DisplayName = "NotBlank never yields a value IsNullOrWhiteSpace rejects, under every maximum length that leaves room.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
+    [SuppressMessage(JustDummiesRule.JD015.Category, JustDummiesRule.JD015.Id, Justification = SuppressionJustification.JD015.ThrowIsTheSubject)]
     public void NotBlankNeverYieldsABlankValue() {
         Prop.ForAll(Generators.Count(40).ToArbitrary(),
                     maximum => {
@@ -335,6 +340,7 @@ public sealed class StringShapeProperties {
 
     [Fact(DisplayName = "A subtraction narrows a WithChars pool whichever was declared first, and refuses a pool it empties.")]
     [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void ASubtractionNarrowsAWithCharsPool() {
         Gen<(string Pool, bool WithoutAlpha, bool WithoutNumeric, bool PoolFirst, int Length)> cases =
             from pool in CharacterPool()
@@ -373,6 +379,7 @@ public sealed class StringShapeProperties {
     }
 
     [Fact(DisplayName = "WithLength and StartingWith hold together exactly when the length leaves room for the prefix.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void ExactLengthAndPrefixHoldTogetherExactlyWhenThereIsRoom() {
         Gen<(string Prefix, int Length)> cases =
             from prefix in Affix(DefaultAlphabet, 8)
@@ -467,6 +474,7 @@ public sealed class StringShapeProperties {
 
     [Fact(DisplayName = "A second character family conflicts unless it repeats the first, whichever two are combined.")]
     [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void ASecondCharacterFamilyConflictsUnlessItRepeatsTheFirst() {
         Gen<(int First, int Second, string Pool)> cases =
             from first in Gen.Choose(0, 8)
@@ -490,6 +498,7 @@ public sealed class StringShapeProperties {
 
     [Fact(DisplayName = "A second casing conflicts unless it repeats the first, whichever two are combined.")]
     [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void ASecondCasingConflictsUnlessItRepeatsTheFirst() {
         Gen<(bool First, bool Second)> cases =
             from first in Gen.Elements(false, true)
@@ -509,6 +518,7 @@ public sealed class StringShapeProperties {
     }
 
     [Fact(DisplayName = "A second exact length conflicts unless it repeats the first, whatever the two lengths.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void ASecondExactLengthConflictsUnlessItRepeatsTheFirst() {
         Gen<(int First, int Second)> cases =
             from first in Generators.Count(40)
@@ -528,6 +538,7 @@ public sealed class StringShapeProperties {
 
     [Fact(DisplayName = "A second prefix or a second suffix conflicts unless it repeats the first, whatever the two values.")]
     [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void ASecondPrefixOrSuffixConflictsUnlessItRepeatsTheFirst() {
         Gen<(bool AsSuffix, string First, string Second)> cases =
             from asSuffix in Gen.Elements(false, true)
@@ -550,6 +561,7 @@ public sealed class StringShapeProperties {
     }
 
     [Fact(DisplayName = "OneOf on an already constrained generator narrows it, and conflicts only when the values leave nothing.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void OneOfOnAConstrainedGeneratorNarrowsOrConflicts() {
         Gen<string[]> pools = Gen.NonEmptyListOf(Affix(DefaultAlphabet, 6)).Select(values => values.Distinct().ToArray());
 
@@ -581,6 +593,7 @@ public sealed class StringShapeProperties {
     ///     not an invariant, and belongs to the example suite that pins it.
     /// </remarks>
     [Fact(DisplayName = "A length constraint and a value set reach the same domain whichever is declared first.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void OneOfIsOrderIndependentWithALengthConstraint() {
         Gen<string[]> pools = Gen.NonEmptyListOf(Affix(DefaultAlphabet, 6)).Select(values => values.Distinct().ToArray());
 

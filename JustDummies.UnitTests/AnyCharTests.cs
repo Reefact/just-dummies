@@ -1,5 +1,7 @@
 #region Usings declarations
 
+using System.Diagnostics.CodeAnalysis;
+
 using JetBrains.Annotations;
 
 using NFluent;
@@ -39,6 +41,7 @@ public sealed class AnyCharTests {
     }
 
     [Fact(DisplayName = "A second character family conflict names both sides.")]
+    [SuppressMessage(JustDummiesRule.JD034.Category, JustDummiesRule.JD034.Id, Justification = SuppressionJustification.JD034.ThrowIsTheSubject)]
     public void ASecondFamilyConflictNamesBothSides() {
         Check.ThatCode(() => Any.Char().Alpha().Numeric())
              .Throws<ConflictingAnyConstraintException>()
@@ -46,6 +49,7 @@ public sealed class AnyCharTests {
     }
 
     [Fact(DisplayName = "A second casing conflict names both sides.")]
+    [SuppressMessage(JustDummiesRule.JD034.Category, JustDummiesRule.JD034.Id, Justification = SuppressionJustification.JD034.ThrowIsTheSubject)]
     public void ASecondCasingConflictNamesBothSides() {
         Check.ThatCode(() => Any.Char().InLowerCase().InUpperCase())
              .Throws<ConflictingAnyConstraintException>()

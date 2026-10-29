@@ -1,5 +1,7 @@
 #region Usings declarations
 
+using System.Diagnostics.CodeAnalysis;
+
 using NFluent;
 
 #endregion
@@ -14,6 +16,7 @@ public sealed class AnyModernTypeTests {
     private static readonly TimeOnly AnchorTime = new(12, 0, 0);
 
     [Fact(DisplayName = "Distinct: the half row counts its own representable values, so a floor beyond them conflicts rather than exhausting.")]
+    [SuppressMessage(JustDummiesRule.JD016.Category, JustDummiesRule.JD016.Id, Justification = SuppressionJustification.JD016.ThrowIsTheSubject)]
     public void DistinctOverHalvesConflictsBeforeDrawing() {
         // Lives here rather than beside the other collection cases: this file is the one the .NET Framework
         // 4.7.2 floor leg excludes, and Half does not exist on that floor.
@@ -129,6 +132,7 @@ public sealed class AnyModernTypeTests {
     }
 
     [Fact(DisplayName = "Half: finite draws, strict Positive, pinned Zero, contained bounds, argument checks.")]
+    [SuppressMessage(JustDummiesRule.JD014.Category, JustDummiesRule.JD014.Id, Justification = SuppressionJustification.JD014.ThrowIsTheSubject)]
     public void HalfBehaves() {
         for (int i = 0; i < SampleCount; i++) {
             Half value = Any.Half().Generate();

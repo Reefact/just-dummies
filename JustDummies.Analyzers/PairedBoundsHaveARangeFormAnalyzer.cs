@@ -82,7 +82,6 @@ public sealed class PairedBoundsHaveARangeFormAnalyzer : DiagnosticAnalyzer {
         if (invocation.Parent is IInvocationOperation) { return; }
         if (!AnyChainFacts.TryGetChain(invocation, symbols, out IReadOnlyList<IInvocationOperation> constraints, out IInvocationOperation? factory)) { return; }
         if (factory is null) { return; }
-        if (NegativeTestGuard.IsSoleBodyOfLambdaArgument(invocation.Syntax)) { return; }
 
         foreach ((string minimumName, string maximumName, string rangeName, string? exactName) in Vocabularies) {
             // A bound declared twice folds to the tighter one silently, so pairing anything from such a chain risks

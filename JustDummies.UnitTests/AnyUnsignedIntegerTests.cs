@@ -1,5 +1,7 @@
 #region Usings declarations
 
+using System.Diagnostics.CodeAnalysis;
+
 using NFluent;
 
 #endregion
@@ -27,6 +29,7 @@ public sealed class AnyUnsignedIntegerTests {
     }
 
     [Fact(DisplayName = "Byte: Zero pins, NonZero excludes, the pair conflicts, and GreaterThan(max) conflicts.")]
+    [SuppressMessage(JustDummiesRule.JD023.Category, JustDummiesRule.JD023.Id, Justification = SuppressionJustification.JD023.ThrowIsTheSubject)]
     public void ByteZeroAndConflicts() {
         Check.That(Any.Byte().Zero().Generate()).IsEqualTo((byte)0);
         for (int i = 0; i < SampleCount; i++) {
@@ -37,6 +40,7 @@ public sealed class AnyUnsignedIntegerTests {
     }
 
     [Fact(DisplayName = "UInt16 and UInt32: exclusive bounds behave and crossed bounds conflict.")]
+    [SuppressMessage(JustDummiesRule.JD023.Category, JustDummiesRule.JD023.Id, Justification = SuppressionJustification.JD023.ThrowIsTheSubject)]
     public void MidWidthExclusiveBounds() {
         for (int i = 0; i < SampleCount; i++) {
             Check.That((int)Any.UInt16().GreaterThan(10).LessThanOrEqualTo(12).Generate()).IsGreaterOrEqualThan(11);
@@ -60,6 +64,7 @@ public sealed class AnyUnsignedIntegerTests {
     }
 
     [Fact(DisplayName = "UInt64: extremes are generable and OneOf/Except behave.")]
+    [SuppressMessage(JustDummiesRule.JD014.Category, JustDummiesRule.JD014.Id, Justification = SuppressionJustification.JD014.ThrowIsTheSubject)]
     public void UInt64ExtremesAndSets() {
         Check.That(Any.UInt64().GreaterThanOrEqualTo(ulong.MaxValue).Generate()).IsEqualTo(ulong.MaxValue);
         Check.ThatCode(() => Any.UInt64().GreaterThan(ulong.MaxValue)).Throws<ConflictingAnyConstraintException>();

@@ -403,27 +403,4 @@ public class Jd017EnumUniverseViolationTests {
         Check.That(diagnostics.Length).IsEqualTo(0);
     }
 
-    [Fact]
-    public async Task Does_not_report_a_conflict_asserting_negative_test() {
-        string source = $$"""
-            using System;
-            using JustDummies;
-            {{Declarations}}
-
-            public static class Check2 {
-                public static void ThatCode(Func<object> code) { }
-            }
-
-            public static class Sample {
-                public static void M() {
-                    Check2.ThatCode(() => Any.Enum<Day>().Except(Day.Mon, Day.Tue));
-                }
-            }
-            """;
-
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new EnumUniverseViolationAnalyzer(), source);
-
-        Check.That(diagnostics.Length).IsEqualTo(0);
-    }
-
 }

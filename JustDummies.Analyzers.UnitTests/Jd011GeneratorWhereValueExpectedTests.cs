@@ -131,30 +131,6 @@ public class Jd011GeneratorWhereValueExpectedTests {
     }
 
     [Fact]
-    public async Task Does_not_report_a_throws_assertion_binding_to_Func_of_object() {
-        // Assert.Throws<T>(() => chain) binds to Func<object>, producing a real generator-to-object conversion at
-        // 88+ existing sites in this repository.
-        const string source = """
-            using System;
-            using JustDummies;
-
-            public static class Assert {
-                public static T Throws<T>(Func<object> code) where T : Exception => null!;
-            }
-
-            public static class Sample {
-                public static void M() {
-                    Assert.Throws<ArgumentException>(() => Any.String().WithLength(3).StartingWith("ORD-"));
-                }
-            }
-            """;
-
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new GeneratorWhereValueExpectedAnalyzer(), source, "JD011");
-
-        Check.That(diagnostics.Length).IsEqualTo(0);
-    }
-
-    [Fact]
     public async Task Does_not_report_a_generated_value() {
         const string source = """
             using JustDummies;

@@ -1,5 +1,8 @@
 #region Usings declarations
 
+using System.Diagnostics.CodeAnalysis;
+using JustDummies.Diagnostics;
+
 using FsCheck;
 using FsCheck.Fluent;
 
@@ -159,6 +162,7 @@ public sealed class TemporalProperties {
     }
 
     [Fact(DisplayName = "DateTime: After and Before are exclusive, and conflict at the edge of the domain.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void DateTimeAfterAndBeforeAreExclusive() {
         Prop.ForAll(Instants().ToArbitrary(),
                     instant => {
@@ -195,6 +199,7 @@ public sealed class TemporalProperties {
     }
 
     [Fact(DisplayName = "DateTime: crossed Between instants are an argument error naming the start, never a silent swap.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void DateTimeCrossedBoundsAreAnArgumentError() {
         Prop.ForAll(Generators.OrderedPair(Instants()).ToArbitrary(),
                     bounds => bounds.Min == bounds.Max
@@ -211,6 +216,7 @@ public sealed class TemporalProperties {
     }
 
     [Fact(DisplayName = "TimeSpan: GreaterThan and LessThan are exclusive, and conflict at the edge of the domain.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void TimeSpanExclusiveBoundsAreExclusive() {
         Prop.ForAll(Durations().ToArbitrary(),
                     duration => {
@@ -237,6 +243,7 @@ public sealed class TemporalProperties {
     }
 
     [Fact(DisplayName = "TimeSpan: Positive and Negative are strict about zero, and conflict with an interval lying on the wrong side of it.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void TimeSpanPositiveAndNegativeAreStrictAboutZero() {
         Prop.ForAll(Generators.OrderedPair(Durations()).ToArbitrary(),
                     bounds => {
@@ -260,6 +267,7 @@ public sealed class TemporalProperties {
     }
 
     [Fact(DisplayName = "TimeSpan: Zero pins any interval that holds zero, and conflicts with every interval that does not.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void TimeSpanZeroPinsTheIntervalsThatHoldIt() {
         Prop.ForAll(Generators.OrderedPair(Durations()).ToArbitrary(),
                     bounds => {
@@ -275,6 +283,7 @@ public sealed class TemporalProperties {
     }
 
     [Fact(DisplayName = "TimeSpan: NonZero removes zero from any interval, and empties the one interval holding nothing else.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void TimeSpanNonZeroExcludesZero() {
         Prop.ForAll(Generators.OrderedPair(Durations()).ToArbitrary(),
                     bounds => {
@@ -294,6 +303,7 @@ public sealed class TemporalProperties {
     }
 
     [Fact(DisplayName = "TimeSpan: crossed Between durations are an argument error naming the minimum, never a silent swap.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void TimeSpanCrossedBoundsAreAnArgumentError() {
         Prop.ForAll(Generators.OrderedPair(Durations()).ToArbitrary(),
                     bounds => bounds.Min == bounds.Max
@@ -310,6 +320,7 @@ public sealed class TemporalProperties {
     }
 
     [Fact(DisplayName = "DateTimeOffset: After and Before are exclusive, and conflict at the edge of the domain.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void DateTimeOffsetAfterAndBeforeAreExclusive() {
         Prop.ForAll(Moments().ToArbitrary(),
                     instant => {
@@ -342,6 +353,7 @@ public sealed class TemporalProperties {
     }
 
     [Fact(DisplayName = "DateTimeOffset: crossed Between instants are an argument error naming the start, never a silent swap.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void DateTimeOffsetCrossedBoundsAreAnArgumentError() {
         Prop.ForAll(Generators.OrderedPair(Moments()).ToArbitrary(),
                     bounds => bounds.Min == bounds.Max
@@ -367,6 +379,7 @@ public sealed class TemporalProperties {
     }
 
     [Fact(DisplayName = "WithOffset: an instant window with no room left for the offset conflicts; one with room keeps both.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void WithOffsetTightensTheInstantWindow() {
         Prop.ForAll((from floorMinutes in Gen.Choose(1, CeilingWindowMinutes)
                      from offsetMinutes in OffsetMinutes()
@@ -426,6 +439,7 @@ public sealed class TemporalProperties {
     }
 
     [Fact(DisplayName = "Offsets: an offset carrying a sub-minute remainder is an argument error, wherever the remainder falls.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void SubMinuteOffsetsAreAnArgumentError() {
         Prop.ForAll((from minutes in Gen.Choose(-(MaxOffsetMinutes - 1), MaxOffsetMinutes - 1)
                      from remainder in Gen.Choose(1, (int)TimeSpan.TicksPerMinute - 1)
@@ -441,6 +455,7 @@ public sealed class TemporalProperties {
     }
 
     [Fact(DisplayName = "Offsets: a whole-minute offset beyond ±14:00 is out of range, however far beyond it lands.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void OffsetsBeyondFourteenHoursAreOutOfRange() {
         Prop.ForAll((from magnitude in Gen.Choose(MaxOffsetMinutes + 1, 10 * MaxOffsetMinutes)
                      from mirrored in Gen.Choose(0, 1)
@@ -453,6 +468,7 @@ public sealed class TemporalProperties {
     }
 
     [Fact(DisplayName = "WithOffsetBetween: a crossed offset range is an argument error naming the minimum, never a silent swap.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void CrossedOffsetRangeIsAnArgumentError() {
         Prop.ForAll(DistinctOffsetMinutes().ToArbitrary(),
                     bounds => ThrowsArgumentExceptionNaming(
@@ -461,6 +477,7 @@ public sealed class TemporalProperties {
     }
 
     [Fact(DisplayName = "Offsets: the offset dimension is declared once — a second, different offset constraint conflicts whichever form it takes.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void TheOffsetDimensionIsDeclaredOnce() {
         Prop.ForAll(DistinctOffsetMinutes().ToArbitrary(),
                     bounds => {

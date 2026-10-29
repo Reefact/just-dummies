@@ -1,5 +1,7 @@
 #region Usings declarations
 
+using System.Diagnostics.CodeAnalysis;
+
 using NFluent;
 
 #endregion
@@ -11,6 +13,7 @@ public sealed class AnySignedIntegerTests {
     private const int SampleCount = 200;
 
     [Fact(DisplayName = "SByte: Positive and Negative are strict, and contradict each other.")]
+    [SuppressMessage(JustDummiesRule.JD023.Category, JustDummiesRule.JD023.Id, Justification = SuppressionJustification.JD023.ThrowIsTheSubject)]
     public void SByteSignConstraints() {
         for (int i = 0; i < SampleCount; i++) {
             Check.That(Any.SByte().Positive().Generate()).IsStrictlyGreaterThan((sbyte)0);
@@ -23,6 +26,7 @@ public sealed class AnySignedIntegerTests {
     }
 
     [Fact(DisplayName = "SByte: Between is inclusive and reaches both bounds; extremes are generable.")]
+    [SuppressMessage(JustDummiesRule.JD023.Category, JustDummiesRule.JD023.Id, Justification = SuppressionJustification.JD023.ThrowIsTheSubject)]
     public void SByteBounds() {
         HashSet<sbyte> seen = [];
         for (int i = 0; i < SampleCount; i++) { seen.Add(Any.SByte().Between(-1, 1).Generate()); }
@@ -35,6 +39,7 @@ public sealed class AnySignedIntegerTests {
     }
 
     [Fact(DisplayName = "Int16: Zero pins, NonZero excludes, and the pair conflicts.")]
+    [SuppressMessage(JustDummiesRule.JD023.Category, JustDummiesRule.JD023.Id, Justification = SuppressionJustification.JD023.ThrowIsTheSubject)]
     public void Int16ZeroFamily() {
         Check.That(Any.Int16().Zero().Generate()).IsEqualTo((short)0);
         for (int i = 0; i < SampleCount; i++) {
@@ -52,6 +57,7 @@ public sealed class AnySignedIntegerTests {
     }
 
     [Fact(DisplayName = "Int64: full-range generation works and crossed bounds conflict naming both sides.")]
+    [SuppressMessage(JustDummiesRule.JD023.Category, JustDummiesRule.JD023.Id, Justification = SuppressionJustification.JD023.ThrowIsTheSubject)]
     public void Int64RangeAndConflicts() {
         HashSet<long> seen = [];
         for (int i = 0; i < SampleCount; i++) { seen.Add(Any.Int64().Generate()); }
@@ -73,6 +79,8 @@ public sealed class AnySignedIntegerTests {
     }
 
     [Fact(DisplayName = "Int64: extremes are generable and arguments are validated.")]
+    [SuppressMessage(JustDummiesRule.JD014.Category, JustDummiesRule.JD014.Id, Justification = SuppressionJustification.JD014.ThrowIsTheSubject)]
+    [SuppressMessage(JustDummiesRule.JD023.Category, JustDummiesRule.JD023.Id, Justification = SuppressionJustification.JD023.ThrowIsTheSubject)]
     public void Int64ExtremesAndArguments() {
         Check.That(Any.Int64().LessThanOrEqualTo(long.MinValue).Generate()).IsEqualTo(long.MinValue);
         Check.That(Any.Int64().GreaterThanOrEqualTo(long.MaxValue).Generate()).IsEqualTo(long.MaxValue);

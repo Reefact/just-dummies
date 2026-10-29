@@ -267,9 +267,9 @@ public class Jd014RejectedConstantArgumentTests {
     }
 
     [Fact]
-    public async Task Does_not_report_a_guard_asserting_negative_test() {
-        // The shape this repository writes hundreds of times; reporting it would fight the suite that documents
-        // the guard's behaviour.
+    public async Task Reports_a_rejected_argument_inside_a_throws_assertion() {
+        // No rule guesses which calls a test writes on purpose (ADR-0112): a test asserting the refusal reports like
+        // any other code, and silences the rule with a justified [SuppressMessage].
         const string source = """
             using System;
             using JustDummies;
@@ -280,57 +280,7 @@ public class Jd014RejectedConstantArgumentTests {
 
             public static class Sample {
                 public static void M() {
-                    Check2.ThatCode(() => Any.Int32().Between(10, 5));
-                }
-            }
-            """;
-
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new RejectedConstantArgumentAnalyzer(), source);
-
-        Check.That(diagnostics.Length).IsEqualTo(0);
-    }
-
-    [Theory]
-    [InlineData("Any.Int32().Between(10, 5).Generate()")]
-    [InlineData("Any.Int32().Between(10, 5).Positive()")]
-    public async Task Does_not_report_a_negative_test_whose_chain_goes_on_past_the_guarded_call(string chain) {
-        // JD023 judges the chain by its outermost call and stands down on this shape; JD014, judging one link, has to
-        // reach the same verdict on the same test (issue #323).
-        string source = $$"""
-            using System;
-            using JustDummies;
-
-            public static class Check2 {
-                public static void ThatCode(Func<object> code) { }
-            }
-
-            public static class Sample {
-                public static void M() {
-                    Check2.ThatCode(() => {{chain}});
-                }
-            }
-            """;
-
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new RejectedConstantArgumentAnalyzer(), source);
-
-        Check.That(diagnostics.Length).IsEqualTo(0);
-    }
-
-    [Fact]
-    public async Task Reports_a_guarded_call_passed_as_an_argument_inside_a_negative_test() {
-        // Only the receiver side of the chain is climbed: the lambda asserts on Wrap(...), not on the chain inside it.
-        const string source = """
-            using System;
-            using JustDummies;
-
-            public static class Check2 {
-                public static void ThatCode(Func<object> code) { }
-                public static object Wrap(object value) => value;
-            }
-
-            public static class Sample {
-                public static void M() {
-                    Check2.ThatCode(() => Check2.Wrap(Any.Int32().Between(10, 5)));
+                    Check2.ThatCode(() => Any.Int32().Between(10, 5).Generate());
                 }
             }
             """;

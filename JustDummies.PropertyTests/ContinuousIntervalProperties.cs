@@ -1,5 +1,8 @@
 #region Usings declarations
 
+using System.Diagnostics.CodeAnalysis;
+using JustDummies.Diagnostics;
+
 using FsCheck;
 using FsCheck.Fluent;
 
@@ -263,6 +266,7 @@ public sealed class ContinuousIntervalProperties {
     }
 
     [Fact(DisplayName = "Double: GreaterThan and LessThan are strict, and conflict at the finite ends of the domain.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void DoubleStrictBoundsAreStrictAndConflictAtTheDomainEnds() {
         Prop.ForAll(Generators.Double().ToArbitrary(),
                     bound => {
@@ -281,6 +285,7 @@ public sealed class ContinuousIntervalProperties {
     }
 
     [Fact(DisplayName = "Single: GreaterThan and LessThan are strict on the float ladder, and conflict at its ends.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void SingleStrictBoundsAreStrictAndConflictAtTheDomainEnds() {
         Prop.ForAll(Singles().ToArbitrary(),
                     bound => {
@@ -329,6 +334,7 @@ public sealed class ContinuousIntervalProperties {
     }
 
     [Fact(DisplayName = "Double: NaN and the infinities are rejected as argument errors by every entry point taking a bound or a pool.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void DoubleRejectsNonFiniteArguments() {
         Prop.ForAll((from finite in Generators.Double()
                      from nonFinite in NonFiniteDoubles()
@@ -344,6 +350,7 @@ public sealed class ContinuousIntervalProperties {
     }
 
     [Fact(DisplayName = "Single: NaN and the infinities are rejected as argument errors by every entry point taking a bound or a pool.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void SingleRejectsNonFiniteArguments() {
         Prop.ForAll((from finite in Singles()
                      from nonFinite in NonFiniteSingles()
@@ -375,6 +382,7 @@ public sealed class ContinuousIntervalProperties {
     }
 
     [Fact(DisplayName = "Double: crossed Between arguments are an argument error, never a silent swap.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void DoubleCrossedBoundsAreAnArgumentError() {
         Prop.ForAll(Generators.OrderedPair(Generators.Double()).ToArbitrary(),
                     bounds => bounds.Min == bounds.Max
@@ -383,6 +391,7 @@ public sealed class ContinuousIntervalProperties {
     }
 
     [Fact(DisplayName = "Single: crossed Between arguments are an argument error, never a silent swap.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void SingleCrossedBoundsAreAnArgumentError() {
         Prop.ForAll(Generators.OrderedPair(Singles()).ToArbitrary(),
                     bounds => bounds.Min == bounds.Max
@@ -391,6 +400,7 @@ public sealed class ContinuousIntervalProperties {
     }
 
     [Fact(DisplayName = "Decimal: crossed Between arguments are an argument error, never a silent swap.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void DecimalCrossedBoundsAreAnArgumentError() {
         Prop.ForAll(Generators.OrderedPair(Generators.Decimal()).ToArbitrary(),
                     bounds => bounds.Min == bounds.Max

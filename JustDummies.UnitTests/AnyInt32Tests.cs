@@ -1,5 +1,7 @@
 #region Usings declarations
 
+using System.Diagnostics.CodeAnalysis;
+
 using JetBrains.Annotations;
 
 using NFluent;
@@ -83,6 +85,7 @@ public sealed class AnyInt32Tests {
     }
 
     [Fact(DisplayName = "Positive then Negative conflicts, naming both constraints.")]
+    [SuppressMessage(JustDummiesRule.JD023.Category, JustDummiesRule.JD023.Id, Justification = SuppressionJustification.JD023.ThrowIsTheSubject)]
     public void PositiveThenNegativeConflicts() {
         Check.ThatCode(() => Any.Int32().Positive().Negative())
              .Throws<ConflictingAnyConstraintException>()
@@ -90,6 +93,7 @@ public sealed class AnyInt32Tests {
     }
 
     [Fact(DisplayName = "GreaterThan then an impossible LessThan conflicts, naming both constraints.")]
+    [SuppressMessage(JustDummiesRule.JD023.Category, JustDummiesRule.JD023.Id, Justification = SuppressionJustification.JD023.ThrowIsTheSubject)]
     public void CrossedBoundsConflict() {
         Check.ThatCode(() => Any.Int32().GreaterThan(100).LessThan(10))
              .Throws<ConflictingAnyConstraintException>()
@@ -97,6 +101,7 @@ public sealed class AnyInt32Tests {
     }
 
     [Fact(DisplayName = "Zero then NonZero conflicts: the pinned value is excluded.")]
+    [SuppressMessage(JustDummiesRule.JD023.Category, JustDummiesRule.JD023.Id, Justification = SuppressionJustification.JD023.ThrowIsTheSubject)]
     public void ZeroThenNonZeroConflicts() {
         Check.ThatCode(() => Any.Int32().Zero().NonZero())
              .Throws<ConflictingAnyConstraintException>()
@@ -104,11 +109,13 @@ public sealed class AnyInt32Tests {
     }
 
     [Fact(DisplayName = "GreaterThan int.MaxValue conflicts: no Int32 satisfies it.")]
+    [SuppressMessage(JustDummiesRule.JD023.Category, JustDummiesRule.JD023.Id, Justification = SuppressionJustification.JD023.ThrowIsTheSubject)]
     public void GreaterThanMaxValueConflicts() {
         Check.ThatCode(() => Any.Int32().GreaterThan(int.MaxValue)).Throws<ConflictingAnyConstraintException>();
     }
 
     [Fact(DisplayName = "OneOf then a bound excluding every allowed value conflicts.")]
+    [SuppressMessage(JustDummiesRule.JD023.Category, JustDummiesRule.JD023.Id, Justification = SuppressionJustification.JD023.ThrowIsTheSubject)]
     public void OneOfEmptiedByABoundConflicts() {
         Check.ThatCode(() => Any.Int32().OneOf(1, 2).GreaterThan(5))
              .Throws<ConflictingAnyConstraintException>()
@@ -116,21 +123,25 @@ public sealed class AnyInt32Tests {
     }
 
     [Fact(DisplayName = "A second OneOf conflicts: the allow-list is declared once.")]
+    [SuppressMessage(JustDummiesRule.JD034.Category, JustDummiesRule.JD034.Id, Justification = SuppressionJustification.JD034.ThrowIsTheSubject)]
     public void SecondOneOfConflicts() {
         Check.ThatCode(() => Any.Int32().OneOf(1, 2).OneOf(3, 4)).Throws<ConflictingAnyConstraintException>();
     }
 
     [Fact(DisplayName = "Except exhausting the whole interval conflicts.")]
+    [SuppressMessage(JustDummiesRule.JD023.Category, JustDummiesRule.JD023.Id, Justification = SuppressionJustification.JD023.ThrowIsTheSubject)]
     public void ExceptExhaustingTheIntervalConflicts() {
         Check.ThatCode(() => Any.Int32().Between(1, 2).Except(1, 2)).Throws<ConflictingAnyConstraintException>();
     }
 
     [Fact(DisplayName = "Except exhausting the allow-list conflicts.")]
+    [SuppressMessage(JustDummiesRule.JD023.Category, JustDummiesRule.JD023.Id, Justification = SuppressionJustification.JD023.ThrowIsTheSubject)]
     public void ExceptExhaustingTheAllowListConflicts() {
         Check.ThatCode(() => Any.Int32().OneOf(1, 2).Except(1).Except(2)).Throws<ConflictingAnyConstraintException>();
     }
 
     [Fact(DisplayName = "OneOf and Except reject null or empty value lists.")]
+    [SuppressMessage(JustDummiesRule.JD014.Category, JustDummiesRule.JD014.Id, Justification = SuppressionJustification.JD014.ThrowIsTheSubject)]
     public void OneOfAndExceptRejectNullOrEmpty() {
         // OneOf carries two overloads, so a bare null would read as either. Each is named at its own call: the guard
         // is the same on both, and a test that cannot say which one it exercised proves neither.

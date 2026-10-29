@@ -40,7 +40,6 @@ public sealed class BlankReplaySnippetAnalyzer : DiagnosticAnalyzer {
 
         if (invocation.TargetMethod.Name != "UseSeed") { return; }
         if (!SymbolEqualityComparer.Default.Equals(invocation.TargetMethod.ContainingType, any)) { return; }
-        if (NegativeTestGuard.IsSoleBodyOfLambdaArgument(invocation.Syntax)) { return; }
 
         foreach (IArgumentOperation argument in invocation.Arguments) {
             if (argument.Parameter?.Name != "replaySnippet") { continue; }

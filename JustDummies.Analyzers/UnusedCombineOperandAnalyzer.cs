@@ -44,7 +44,6 @@ public sealed class UnusedCombineOperandAnalyzer : DiagnosticAnalyzer {
         if (invocation.TargetMethod.Name != "Combine") { return; }
         if (!SymbolEqualityComparer.Default.Equals(invocation.TargetMethod.ContainingType, symbols.Any)) { return; }
         if (invocation.Arguments.Length < 3) { return; }
-        if (NegativeTestGuard.IsSoleBodyOfLambdaArgument(invocation.Syntax)) { return; }
 
         // The composer is the last argument, and it has to be a lambda written here: a method group's body is not
         // this compilation's to read, so an operand it ignores is not knowable.

@@ -469,6 +469,7 @@ public sealed class UriProperties {
     }
 
     [Fact(DisplayName = "WithPort pins the port over the whole legal range, and rejects anything outside it as an argument.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void PortsArePinnedOrRejectedAsArguments() {
         Gen<int> candidates = Generators.WithEdges(Gen.OneOf(Ports(), Generators.Int32()),
                                                    -1, 0, 1, 65535, 65536, int.MinValue, int.MaxValue);
@@ -490,6 +491,7 @@ public sealed class UriProperties {
     }
 
     [Fact(DisplayName = "A second scheme pin conflicts unless it repeats the first, whichever pair and whichever order.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void SecondSchemePinConflictsUnlessItRepeatsTheFirst() {
         Gen<(bool First, bool Second)> cases = from first in Gen.Elements(true, false)
                                                from second in Gen.Elements(true, false)
@@ -509,6 +511,7 @@ public sealed class UriProperties {
     }
 
     [Fact(DisplayName = "A second path constraint conflicts unless it repeats the first, whichever pair and whichever segment counts.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void SecondPathConstraintConflictsUnlessItRepeatsTheFirst() {
         // null stands for WithoutPath(), a count for WithPathSegments(count): all four ordered pairs conflict.
         Gen<(int? First, int? Second)> cases = from first in Optional(Generators.Count(6))
@@ -533,6 +536,7 @@ public sealed class UriProperties {
     }
 
     [Fact(DisplayName = "A negative segment count is an argument error even when a path constraint already conflicts with it.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void NegativeSegmentCountsAreArgumentErrorsBeforeConflicts() {
         Gen<int> negatives = Generators.WithEdges(Generators.Count(8).Select(offset => -1 - offset), -1, int.MinValue);
 
@@ -549,6 +553,7 @@ public sealed class UriProperties {
     }
 
     [Fact(DisplayName = "A host carrying a non-ASCII character is rejected as an argument, wherever the character sits.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void NonAsciiHostsAreRejectedAsArguments() {
         Gen<string> cases = from host in Hosts()
                             from character in Gen.Elements('é', 'ü', 'ñ', 'ß', 'д', '中')
@@ -563,6 +568,7 @@ public sealed class UriProperties {
     }
 
     [Fact(DisplayName = "An IPv6 host is refused without its brackets and drawn with them, whatever the address and the family.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void Ipv6HostsAreWrittenInsideBrackets() {
         // The full eight-group spelling: one every target framework reads the same way, where a compressed form is
         // rendered by IPAddress differently across them.
@@ -589,6 +595,7 @@ public sealed class UriProperties {
     }
 
     [Fact(DisplayName = "A user-info part carrying a reserved character is rejected as an argument, wherever it sits.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void ReservedUserInfoCharactersAreRejectedAsArguments() {
         Gen<string> cases = from part in UnreservedParts()
                             from character in Gen.Elements(':', '/', '?', '#', '[', ']', '@', '!', '$', '&', '(', ')', '*', '+', ',', ';', '=', '%', ' ')

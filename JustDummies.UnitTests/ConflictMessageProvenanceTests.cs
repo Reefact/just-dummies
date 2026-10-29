@@ -1,5 +1,7 @@
 #region Usings declarations
 
+using System.Diagnostics.CodeAnalysis;
+
 using JetBrains.Annotations;
 
 using NFluent;
@@ -42,6 +44,8 @@ public sealed class ConflictMessageProvenanceTests {
     // ----- OrdinalIntervalSpec: integers (and, by sharing the engine, TimeSpan/DateTime/DateOnly/TimeOnly) -----
 
     [Fact(DisplayName = "A pin emptied by NonZero names NonZero, not the pin itself.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
+    [SuppressMessage(JustDummiesRule.JD023.Category, JustDummiesRule.JD023.Id, Justification = SuppressionJustification.JD023.ThrowIsTheSubject)]
     public void PinEmptiedByNonZeroNamesTheExclusion() {
         string message = ConflictMessage(() => Any.Byte().NonZero().Zero());
 
@@ -49,6 +53,8 @@ public sealed class ConflictMessageProvenanceTests {
     }
 
     [Fact(DisplayName = "A single-value bound emptied by NonZero names NonZero.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
+    [SuppressMessage(JustDummiesRule.JD023.Category, JustDummiesRule.JD023.Id, Justification = SuppressionJustification.JD023.ThrowIsTheSubject)]
     public void BoundEmptiedByNonZeroNamesTheExclusion() {
         string message = ConflictMessage(() => Any.Byte().NonZero().LessThan(1));
 
@@ -56,6 +62,8 @@ public sealed class ConflictMessageProvenanceTests {
     }
 
     [Fact(DisplayName = "A range pinned by two bounds and emptied by Except names Except, not a bound.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
+    [SuppressMessage(JustDummiesRule.JD023.Category, JustDummiesRule.JD023.Id, Justification = SuppressionJustification.JD023.ThrowIsTheSubject)]
     public void PinEmptiedByExceptNamesTheExclusionNotABound() {
         string message = ConflictMessage(() => Any.Int32().Except(5).GreaterThanOrEqualTo(5).LessThanOrEqualTo(5));
 
@@ -63,6 +71,8 @@ public sealed class ConflictMessageProvenanceTests {
     }
 
     [Fact(DisplayName = "A pin emptied by DifferentFrom names DifferentFrom.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
+    [SuppressMessage(JustDummiesRule.JD023.Category, JustDummiesRule.JD023.Id, Justification = SuppressionJustification.JD023.ThrowIsTheSubject)]
     public void PinEmptiedByDifferentFromNamesTheExclusion() {
         string message = ConflictMessage(() => Any.Int32().DifferentFrom(-1).Negative().GreaterThan(-2));
 
@@ -70,6 +80,8 @@ public sealed class ConflictMessageProvenanceTests {
     }
 
     [Fact(DisplayName = "A lattice emptied by Except names Except and the lattice, not the lattice alone.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
+    [SuppressMessage(JustDummiesRule.JD023.Category, JustDummiesRule.JD023.Id, Justification = SuppressionJustification.JD023.ThrowIsTheSubject)]
     public void LatticeEmptiedByExceptNamesBothTheExclusionAndTheLattice() {
         string message = ConflictMessage(() => Any.Int32().MultipleOf(5).Except(0).Between(-4, 4));
 
@@ -78,6 +90,8 @@ public sealed class ConflictMessageProvenanceTests {
     }
 
     [Fact(DisplayName = "An allow-list emptied by Except names Except, not just the allow-list.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
+    [SuppressMessage(JustDummiesRule.JD023.Category, JustDummiesRule.JD023.Id, Justification = SuppressionJustification.JD023.ThrowIsTheSubject)]
     public void AllowListEmptiedByExceptNamesTheExclusion() {
         string message = ConflictMessage(() => Any.Int32().Except(1, 2).OneOf(1, 2));
 
@@ -87,6 +101,7 @@ public sealed class ConflictMessageProvenanceTests {
     // ----- DecimalIntervalSpec -----
 
     [Fact(DisplayName = "A decimal pin emptied by DifferentFrom names DifferentFrom.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void DecimalPinEmptiedByDifferentFromNamesTheExclusion() {
         string message = ConflictMessage(() => Any.Decimal().DifferentFrom(1m).Between(1m, 1m));
 
@@ -94,6 +109,7 @@ public sealed class ConflictMessageProvenanceTests {
     }
 
     [Fact(DisplayName = "A decimal strict bound crossing an inclusive one says the strict bound excludes its own value.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void DecimalStrictLowerBoundAboveAnUpperBoundIsWordedAsStrict() {
         string message = ConflictMessage(() => Any.Decimal().GreaterThan(100m).LessThan(10m));
 
@@ -102,6 +118,7 @@ public sealed class ConflictMessageProvenanceTests {
     }
 
     [Fact(DisplayName = "A decimal empty open interval is refused as crossed bounds, not as an exhausted exclusion.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void DecimalEmptyOpenIntervalIsRefusedAsCrossedBounds() {
         string message = ConflictMessage(() => Any.Decimal().GreaterThan(36m).LessThan(36m));
 
@@ -110,6 +127,7 @@ public sealed class ConflictMessageProvenanceTests {
     }
 
     [Fact(DisplayName = "A decimal Negative after Positive is refused as crossed bounds, not as excluded zero.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void DecimalPositiveThenNegativeIsRefusedAsCrossedBounds() {
         string message = ConflictMessage(() => Any.Decimal().Positive().Negative());
 
@@ -118,6 +136,7 @@ public sealed class ConflictMessageProvenanceTests {
     }
 
     [Fact(DisplayName = "A decimal inclusive bound meeting a strict one at the same point is refused and says so.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void DecimalInclusiveBoundMeetingAStrictOneIsRefused() {
         string message = ConflictMessage(() => Any.Decimal().GreaterThan(5m).LessThanOrEqualTo(5m));
 
@@ -125,6 +144,7 @@ public sealed class ConflictMessageProvenanceTests {
     }
 
     [Fact(DisplayName = "A decimal strict bound refused over a scaled range names the Between that bounds it.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void DecimalStrictBoundOverAScaledRangeNamesTheBetween() {
         string message = ConflictMessage(() => Any.Decimal().Between(0m, 5000m).WithScale(2).Negative());
 
@@ -132,6 +152,7 @@ public sealed class ConflictMessageProvenanceTests {
     }
 
     [Fact(DisplayName = "A decimal strict bound emptying a scale lattice does not name itself as its own cause.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void DecimalStrictBoundEmptyingALatticeIsNotItsOwnCause() {
         // LessThan(0.01) excludes 0.01, the last point Positive() left on the WithScale(2) grid. Listing it among the
         // constraints that forbid the grid named it on both sides of "because" (issue #340).
@@ -142,6 +163,7 @@ public sealed class ConflictMessageProvenanceTests {
     }
 
     [Fact(DisplayName = "A decimal exclusion emptying a scale lattice names only the exclusions declared before it.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void DecimalExclusionEmptyingALatticeNamesOnlyTheEarlierExclusions() {
         string message = ConflictMessage(() => Any.Decimal().Between(0m, 0.01m).WithScale(2).Except(0m).DifferentFrom(0.01m));
 
@@ -149,6 +171,7 @@ public sealed class ConflictMessageProvenanceTests {
     }
 
     [Fact(DisplayName = "A decimal exclusion of several points emptying a scale lattice lists the points the earlier ones left.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void DecimalExclusionsOfSeveralPointsEmptyingALatticeListTheLeftPoints() {
         // Each Except removes two of the four grid points: the earlier one forbids neither "every other" value nor
         // every value but one, so the message names exactly the points it leaves to the applied one.
@@ -160,6 +183,7 @@ public sealed class ConflictMessageProvenanceTests {
     // ----- ContinuousIntervalSpec: double (and, by sharing the engine, Single/Half) -----
 
     [Fact(DisplayName = "A double pin emptied by DifferentFrom names DifferentFrom.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void DoublePinEmptiedByDifferentFromNamesTheExclusion() {
         string message = ConflictMessage(() => Any.Double().DifferentFrom(1d).Between(1d, 1d));
 
@@ -170,6 +194,7 @@ public sealed class ConflictMessageProvenanceTests {
     // ----- WideIntervalSpec: Int128/UInt128 (net8.0 leg only) -----
 
     [Fact(DisplayName = "An Int128 pin emptied by NonZero names NonZero.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void Int128PinEmptiedByNonZeroNamesTheExclusion() {
         string message = ConflictMessage(() => Any.Int128().NonZero().Between(System.Int128.Zero, System.Int128.Zero));
 
@@ -180,6 +205,8 @@ public sealed class ConflictMessageProvenanceTests {
     // ----- Correctness of the claim, not only the naming (surfaced by the exhaustive audit). -----
 
     [Fact(DisplayName = "An allow-list narrowed by a bound before an exclusion empties it does not claim the exclusion forbids every allowed value.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
+    [SuppressMessage(JustDummiesRule.JD023.Category, JustDummiesRule.JD023.Id, Justification = SuppressionJustification.JD023.ThrowIsTheSubject)]
     public void AllowListNarrowedByABoundIsNotOverclaimed() {
         // OneOf(1, 3) offers two values, but Between(0, 1) already drops 3; Except(1) then removes the only one
         // that survived. Saying Except(1) forbids *every* value OneOf allows would be false — it never forbids 3 —
@@ -192,6 +219,8 @@ public sealed class ConflictMessageProvenanceTests {
     }
 
     [Fact(DisplayName = "When the applied exclusion is itself the sole cause, the message reads 'it forbids', not the constraint twice.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
+    [SuppressMessage(JustDummiesRule.JD023.Category, JustDummiesRule.JD023.Id, Justification = SuppressionJustification.JD023.ThrowIsTheSubject)]
     public void AnExclusionAppliedLastIsNotRepeatedOnBothSides() {
         // Zero() pins the byte to 0; NonZero(), applied last, is itself the forbidder. Repeating "NonZero()" on
         // both sides of "because" reads as circular, so the clause refers back to the applied constraint as "it".
@@ -206,6 +235,8 @@ public sealed class ConflictMessageProvenanceTests {
     // "because" and never name the bound, sign, lattice or scale that turned every value away.
 
     [Fact(DisplayName = "An allow-list emptied by a bound declared before it names the bound.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
+    [SuppressMessage(JustDummiesRule.JD023.Category, JustDummiesRule.JD023.Id, Justification = SuppressionJustification.JD023.ThrowIsTheSubject)]
     public void AllowListEmptiedByAnEarlierBoundNamesTheBound() {
         string message = ConflictMessage(() => Any.Int32().Between(10, 20).OneOf(1, 2, 3));
 
@@ -213,6 +244,8 @@ public sealed class ConflictMessageProvenanceTests {
     }
 
     [Fact(DisplayName = "An allow-list emptied by a lattice or a sign names that constraint, and only the one that refuses every value.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
+    [SuppressMessage(JustDummiesRule.JD023.Category, JustDummiesRule.JD023.Id, Justification = SuppressionJustification.JD023.ThrowIsTheSubject)]
     public void AllowListEmptiedByAnEarlierLatticeNamesOnlyTheLattice() {
         // Positive() and LessThan(1000) admit both 10 and 20; only MultipleOf(7) refuses them all, so only it is
         // the constraint whose removal changes the verdict.
@@ -227,6 +260,8 @@ public sealed class ConflictMessageProvenanceTests {
     }
 
     [Fact(DisplayName = "An allow-list only the combination of earlier constraints empties names no single one.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
+    [SuppressMessage(JustDummiesRule.JD023.Category, JustDummiesRule.JD023.Id, Justification = SuppressionJustification.JD023.ThrowIsTheSubject)]
     public void AllowListEmptiedOnlyByACombinationIsNotPinnedOnOne() {
         // Positive() refuses -2 and MultipleOf(2) refuses 1: each leaves a value standing, so neither alone is to
         // blame and naming one would send the caller to a constraint whose removal leaves the chain refused.
@@ -237,6 +272,7 @@ public sealed class ConflictMessageProvenanceTests {
     }
 
     [Fact(DisplayName = "A decimal allow-list emptied by a scale declared before it names the scale.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void DecimalAllowListEmptiedByAnEarlierScaleNamesTheScale() {
         string message = ConflictMessage(() => Any.Decimal().WithScale(1).OneOf(1.234m));
 
@@ -244,6 +280,7 @@ public sealed class ConflictMessageProvenanceTests {
     }
 
     [Fact(DisplayName = "A double allow-list emptied by a bound declared before it names the bound.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void DoubleAllowListEmptiedByAnEarlierBoundNamesTheBound() {
         string message = ConflictMessage(() => Any.Double().Between(10d, 20d).OneOf(1.5d));
 
@@ -252,6 +289,7 @@ public sealed class ConflictMessageProvenanceTests {
 
 #if NET8_0_OR_GREATER
     [Fact(DisplayName = "An Int128 allow-list emptied by a bound declared before it names the bound.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void Int128AllowListEmptiedByAnEarlierBoundNamesTheBound() {
         string message = ConflictMessage(() => Any.Int128().Between(10, 20).OneOf((Int128)1));
 
@@ -260,6 +298,8 @@ public sealed class ConflictMessageProvenanceTests {
 #endif
 
     [Fact(DisplayName = "An allow-list declared first is still named as the other side when a bound empties it.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
+    [SuppressMessage(JustDummiesRule.JD023.Category, JustDummiesRule.JD023.Id, Justification = SuppressionJustification.JD023.ThrowIsTheSubject)]
     public void AllowListDeclaredFirstIsStillTheOtherSide() {
         string message = ConflictMessage(() => Any.Int32().OneOf(1, 2, 3).Between(10, 20));
 
@@ -270,6 +310,8 @@ public sealed class ConflictMessageProvenanceTests {
     // ----- Regression guard: bound-vs-bound messages must stay correct and unchanged. -----
 
     [Fact(DisplayName = "A bound-vs-bound conflict still names the opposing bound (unchanged).")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
+    [SuppressMessage(JustDummiesRule.JD023.Category, JustDummiesRule.JD023.Id, Justification = SuppressionJustification.JD023.ThrowIsTheSubject)]
     public void BoundVersusBoundStillNamesBothSides() {
         string message = ConflictMessage(() => Any.Int32().Between(1, 10).GreaterThan(50));
 

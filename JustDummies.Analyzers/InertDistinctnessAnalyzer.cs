@@ -47,7 +47,6 @@ public sealed class InertDistinctnessAnalyzer : DiagnosticAnalyzer {
         if (invocation.Parent is IInvocationOperation) { return; }
         if (!AnyChainFacts.TryGetChain(invocation, symbols, out IReadOnlyList<IInvocationOperation> constraints, out IInvocationOperation? factory)) { return; }
         if (factory is null) { return; }
-        if (NegativeTestGuard.IsSoleBodyOfLambdaArgument(invocation.Syntax)) { return; }
 
         string factoryName = factory.TargetMethod.Name;
         if (factoryName is not ("ListOf" or "ArrayOf" or "SequenceOf" or "SetOf" or "DictionaryOf")) { return; }

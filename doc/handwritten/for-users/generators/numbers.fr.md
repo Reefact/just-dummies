@@ -108,13 +108,17 @@ int    anyOnTheHour    = Any.Int32().Between(0, 1_440).MultipleOf(60).Generate()
 long   anyPageOffset   = Any.Int64().GreaterThanOrEqualTo(0).MultipleOf(25).Generate();
 ```
 
-`WithScale` s'applique à `decimal` et fixe le nombre de décimales — ce qui fait qu'un dummy de
-montant se comporte comme un montant :
+`WithScale` s'applique à `decimal` et garde la valeur exprimable avec au plus *n* décimales — un
+multiple de 10⁻ⁿ, ce qui fait qu'un dummy de montant se comporte comme un montant :
 
 ```csharp
 decimal anyAmount = Any.Decimal().Between(0m, 10_000m).WithScale(2).Generate(); // p. ex. 4172,35
 decimal anyRate   = Any.Decimal().Between(0m, 1m).WithScale(4).Generate();      // p. ex. 0,0725
 ```
+
+Elle décrit un treillis de valeurs, pas une représentation : `decimal.Scale` n'est pas complété par des
+zéros, un tirage peut donc revenir sous la forme `5.3` plutôt que `5.30`, et une valeur fournie par `OneOf`
+ou par un intervalle réduit à un point est rendue telle qu'écrite ([ADR-0015](../../for-maintainers/adr/0015-draw-lattice-constrained-scalars-on-the-grid.fr.md)).
 
 Combiner `Between` et `MultipleOf` est le seul endroit à surveiller : un intervalle ne contenant
 aucun multiple du pas n'admet aucune valeur, et il est refusé.

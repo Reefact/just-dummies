@@ -103,13 +103,17 @@ int    anyOnTheHour    = Any.Int32().Between(0, 1_440).MultipleOf(60).Generate()
 long   anyPageOffset   = Any.Int64().GreaterThanOrEqualTo(0).MultipleOf(25).Generate();
 ```
 
-`WithScale` applies to `decimal`, and fixes the number of decimal places — which is what makes a
-money dummy behave like money:
+`WithScale` applies to `decimal`, and keeps the value expressible in at most *n* decimal places — a
+multiple of 10⁻ⁿ, which is what makes a money dummy behave like money:
 
 ```csharp
 decimal anyAmount = Any.Decimal().Between(0m, 10_000m).WithScale(2).Generate(); // e.g. 4172.35
 decimal anyRate   = Any.Decimal().Between(0m, 1m).WithScale(4).Generate();      // e.g. 0.0725
 ```
+
+It describes a lattice of values, not a representation: `decimal.Scale` is not padded, so a draw may
+come back as `5.3` rather than `5.30`, and a value you supply through `OneOf` or a single-point range is
+returned as written ([ADR-0015](../../for-maintainers/adr/0015-draw-lattice-constrained-scalars-on-the-grid.md)).
 
 Combining `Between` with `MultipleOf` is the one place to watch: an interval containing no multiple
 of the step admits no value, and is refused. `Any.Int32().Between(1, 10).MultipleOf(50)` names both

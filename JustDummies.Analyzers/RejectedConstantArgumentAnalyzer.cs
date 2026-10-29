@@ -52,7 +52,7 @@ public sealed class RejectedConstantArgumentAnalyzer : DiagnosticAnalyzer {
     private static void Analyze(OperationAnalysisContext context, KnownSymbols symbols) {
         IInvocationOperation invocation = (IInvocationOperation)context.Operation;
 
-        if (!IsJustDummiesMember(invocation.TargetMethod, symbols)) { return; }
+        if (!symbols.IsJustDummiesMember(invocation.TargetMethod)) { return; }
 
         // A test asserting that the guard rejects the argument writes the illegal call as the whole body of a lambda
         // argument. This repository alone holds hundreds of them. The chain may go on past the call — to Generate(),
@@ -357,10 +357,6 @@ public sealed class RejectedConstantArgumentAnalyzer : DiagnosticAnalyzer {
 
     private static string Render(IComparable value) {
         return Convert.ToString(value, CultureInfo.InvariantCulture) ?? string.Empty;
-    }
-
-    private static bool IsJustDummiesMember(IMethodSymbol method, KnownSymbols symbols) {
-        return SymbolEqualityComparer.Default.Equals(method.ContainingType?.ContainingAssembly, symbols.IAny!.ContainingAssembly);
     }
 
 }

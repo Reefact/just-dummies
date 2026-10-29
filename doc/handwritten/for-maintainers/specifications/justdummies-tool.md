@@ -1233,6 +1233,8 @@ The identifier on the discarded line does not exist, so the build fails at that 
 same as §5.5 — the discard assignment is what keeps a second, unrelated `CS0201` from muddying
 what the developer needs to read. The `return` beneath it is real: deleting one line leaves
 exactly what the scaffolder would otherwise have written silently, for the developer to keep or replace.
+Replacing it with a generator of another builder type is not a one-line edit: the factory's return type
+and the `Func<…>` of the refining overload carry the old type, and the user page says so.
 
 **The comment names the guard that earned the mark, and where it sits.** On a parameter with three
 guards, a mark alone sends the developer to read the whole constructor for the one the engine could

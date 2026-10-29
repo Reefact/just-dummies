@@ -1301,6 +1301,8 @@ L'identifiant sur la ligne écartée n'existe pas, le build échoue donc à cett
 au §5.5 — l'affectation à `_` est ce qui évite qu'un second `CS0201` sans rapport ne brouille ce
 que le développeur doit lire. Le `return` en dessous est réel : supprimer une seule ligne laisse
 exactement ce que le scaffolder aurait écrit en silence sinon, à garder ou à remplacer.
+Le remplacer par un générateur d'un autre type de constructeur n'est pas une modification d'une ligne : le type de
+retour de la fabrique et le `Func<…>` de la surcharge d'affinage portent l'ancien type, et la page utilisateur le dit.
 
 **Le commentaire nomme la garde qui a valu la marque, et où elle se trouve.** Sur un paramètre à
 trois gardes, une marque seule envoie le développeur lire tout le constructeur pour trouver celle dont

@@ -47,7 +47,7 @@ IDs are stable so that issues can cite them: `CLI-`, `CORE-`, `AN-`, `XU-`, `DOC
 > [#341](https://github.com/Reefact/just-dummies/pull/341), which stopped a decimal conflict on a `WithScale` grid naming the refused
 > constraint as its own cause ([#340](https://github.com/Reefact/just-dummies/issues/340)). Milestone 9 (CLI-B5 to CLI-B7, CLI-D1,
 > CLI-D3 to CLI-D5) is merged as well, each item confirmed by re-scaffolding its reproduction, and so is milestone 10 (AN-D1 to
-> AN-D3, AN-F1, AN-F2), each confirmed by rebuilding its reproduction. On that
+> AN-D3, AN-F1, AN-F2), each confirmed by rebuilding its reproduction, with its follow-ups [#346](https://github.com/Reefact/just-dummies/pull/346) and [#347](https://github.com/Reefact/just-dummies/pull/347). On that
 > state the trial passes 1099 of 1101 tests, the 2 red ones being the `Bug_` tests of [#310](https://github.com/Reefact/just-dummies/issues/310).
 > The other items below are open in their issues.
 
@@ -321,7 +321,7 @@ CORE-C9 (a subset `OneOf` intersecting), CORE-C10 (a public "draws ambient" decl
 
 <a id="an-d3"></a>
 **AN-D3 — JD014 and JD023 suppress different negative-test shapes (low).**
-**Fixed in milestone 10** (tracked in [#323](https://github.com/Reefact/just-dummies/issues/323)): inside `Assert.ThrowsAny(() => chain.Generate())` JD014 and JD023 are now both silent (repro lines 49 and 50).
+**Fixed in milestone 10** (tracked in [#323](https://github.com/Reefact/just-dummies/issues/323)): inside `Assert.ThrowsAny(() => chain.Generate())` JD014 and JD023 now agree. Since [#347](https://github.com/Reefact/just-dummies/pull/347) (ADR-0112) no rule stands down on a negative test any more, so both report it (repro lines 48 to 51); a deliberate negative test carries a justified `[SuppressMessage]`. [#346](https://github.com/Reefact/just-dummies/pull/346) first fixed a regression of #345, where `Select(_ => chain.Generate())` had gone silent, and made JD023 write its numbers invariantly.
 
 <a id="an-d4"></a>
 **AN-D4 — The JD014 page claims to mirror the guards "exactly", and a test files a refused argument under "legal" (low).**

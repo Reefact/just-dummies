@@ -50,7 +50,7 @@ négatif d'un analyseur) ou `C` (candidat à une décision).
 > est fusionnée elle aussi, de même que [#341](https://github.com/Reefact/just-dummies/pull/341) : un conflit décimal sur une
 > grille `WithScale` ne cite plus la contrainte refusée comme sa propre cause ([#340](https://github.com/Reefact/just-dummies/issues/340)). La milestone 9 (CLI-B5 à CLI-B7, CLI-D1,
 > CLI-D3 à CLI-D5) est fusionnée elle aussi, chaque élément confirmé en relançant `any` sur sa reproduction, de même que la milestone 10 (AN-D1 à
-> AN-D3, AN-F1, AN-F2), chaque élément confirmé en recompilant sa reproduction. Sur cet état, l'essai passe 1099 tests sur 1101, les 2 rouges étant les tests `Bug_`
+> AN-D3, AN-F1, AN-F2), chaque élément confirmé en recompilant sa reproduction, avec ses suites [#346](https://github.com/Reefact/just-dummies/pull/346) et [#347](https://github.com/Reefact/just-dummies/pull/347). Sur cet état, l'essai passe 1099 tests sur 1101, les 2 rouges étant les tests `Bug_`
 > de [#310](https://github.com/Reefact/just-dummies/issues/310). Les autres éléments ci-dessous restent ouverts dans leurs issues.
 
 | | |
@@ -328,7 +328,7 @@ publique « tire depuis la source ambiante »).
 
 <a id="an-d3"></a>
 **AN-D3 — JD014 et JD023 neutralisent des formes de test négatif différentes (faible).**
-**Corrigé dans la milestone 10** (suivi dans [#323](https://github.com/Reefact/just-dummies/issues/323)) : dans `Assert.ThrowsAny(() => chain.Generate())`, JD014 et JD023 se taisent désormais tous les deux (lignes 49 et 50 de la reproduction).
+**Corrigé dans la milestone 10** (suivi dans [#323](https://github.com/Reefact/just-dummies/issues/323)) : dans `Assert.ThrowsAny(() => chain.Generate())`, JD014 et JD023 sont désormais d'accord. Depuis [#347](https://github.com/Reefact/just-dummies/pull/347) (ADR-0112), aucune règle ne se tait plus sur un test négatif : tous deux le signalent (lignes 48 à 51 de la reproduction), et un test négatif volontaire porte un `[SuppressMessage]` justifié. [#346](https://github.com/Reefact/just-dummies/pull/346) avait d'abord corrigé une régression de #345, où `Select(_ => chain.Generate())` ne déclenchait plus rien, et rendu les nombres de JD023 indépendants de la culture.
 
 <a id="an-d4"></a>
 **AN-D4 — La page JD014 prétend refléter les gardes « exactly », et un test range un argument refusé parmi les « legal » (faible).**

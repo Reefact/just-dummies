@@ -82,6 +82,12 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   is a repetition, which JD035 now reports at warning severity in every generator family, so one mistake
   draws one diagnostic. JD024 keeps an exclusion made inert by a *different* call, such as
   `Except(5).DifferentFrom(5)` or `Except(5, 6).Except(5)`.
+- **JD023 names both sides of the conflict.** The message said only which call emptied the chain, "No
+  value satisfies this chain once GreaterThan is applied", while the exception it predicts names the call
+  with its arguments and the constraint it collides with. Two crossing bounds now read as the run time
+  writes them: `cannot apply GreaterThan(10) because Between(1, 6) already requires values less than or
+  equal to 6`. A domain emptied by a lattice, an allow-list or an exclusion names every constraint written
+  before the call.
 - **JD025 reads a `WithChars` pool and a collection expression.** A character written twice in a string's
   `WithChars("aab")` pool collapses exactly as a value written twice in a `OneOf(...)` does, so the pool is
   one character smaller than it reads, and JD025 now reports it, on the repeated character itself when the

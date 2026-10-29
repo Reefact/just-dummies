@@ -39,6 +39,57 @@ public class Jd023ScalarChainAdmitsNoValueTests {
         Check.That(diagnostics[0].Id).IsEqualTo("JD023");
     }
 
+    // Each chain beside the expression the analyzer reads, so the message is checked against the exception the
+    // chain really throws rather than against a copy of its wording (issue #322).
+    public static TheoryData<string, Action> BoundConflicts => new() {
+        { "Any.Int32().Between(1, 6).GreaterThan(10)", () => Any.Int32().Between(1, 6).GreaterThan(10) },
+        { "Any.Int32().GreaterThan(10).LessThan(3)", () => Any.Int32().GreaterThan(10).LessThan(3) },
+        { "Any.Int32().Positive().Negative()", () => Any.Int32().Positive().Negative() },
+        { "Any.Int32().Positive().Zero()", () => Any.Int32().Positive().Zero() },
+        { "Any.Int32().Between(1, 10).Between(20, 30)", () => Any.Int32().Between(1, 10).Between(20, 30) },
+        { "Any.Int64().GreaterThanOrEqualTo(10).LessThanOrEqualTo(9)", () => Any.Int64().GreaterThanOrEqualTo(10).LessThanOrEqualTo(9) },
+        { "Any.UInt32().LessThan(3u).GreaterThan(5u)", () => Any.UInt32().LessThan(3u).GreaterThan(5u) },
+        { "Any.Int32().GreaterThan(int.MaxValue)", () => Any.Int32().GreaterThan(int.MaxValue) }
+    };
+
+    [Theory]
+    [MemberData(nameof(BoundConflicts))]
+    public async Task Words_a_bound_conflict_as_the_run_time_does(string expression, Action declare) {
+        string source = $$"""
+            using JustDummies;
+
+            public static class Sample {
+                public static void M() {
+                    _ = {{expression}};
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new ScalarChainAdmitsNoValueAnalyzer(), source, "JD023", "JD024");
+        string                     thrown      = Check.ThatCode(declare).Throws<ConflictingAnyConstraintException>().Value.Message;
+
+        Check.That(diagnostics.Length).IsEqualTo(1);
+        Check.That(diagnostics[0].GetMessage()).IsEqualTo($"No value satisfies this chain: c{thrown.Substring(1, thrown.Length - 2)}");
+    }
+
+    [Fact]
+    public async Task Names_the_earlier_constraints_when_no_bound_crosses() {
+        const string source = """
+            using JustDummies;
+
+            public static class Sample {
+                public static void M() {
+                    _ = Any.Int32().Between(1, 10).MultipleOf(20);
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new ScalarChainAdmitsNoValueAnalyzer(), source, "JD023", "JD024");
+
+        Check.That(diagnostics.Length).IsEqualTo(1);
+        Check.That(diagnostics[0].GetMessage()).IsEqualTo("No value satisfies this chain: cannot apply MultipleOf(20) because no value admitted by Between(1, 10) survives it");
+    }
+
     [Theory]
     [InlineData("Any.Int32().Between(1, 10).MultipleOf(5)")]
     [InlineData("Any.Int32().Positive().LessThan(100)")]

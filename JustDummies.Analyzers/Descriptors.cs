@@ -239,7 +239,7 @@ internal static class Descriptors {
     public static readonly DiagnosticDescriptor ScalarChainAdmitsNoValue = new(
         id: JustDummiesRule.JD023.Id,
         title: JustDummiesRule.JD023.Title,
-        messageFormat: "No value satisfies this chain once {0} is applied",
+        messageFormat: "No value satisfies this chain: cannot apply {0} because {1}",
         category: JustDummiesRule.JD023.Category,
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true,

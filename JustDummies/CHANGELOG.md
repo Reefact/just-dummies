@@ -82,6 +82,23 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   is a repetition, which JD035 now reports at warning severity in every generator family, so one mistake
   draws one diagnostic. JD024 keeps an exclusion made inert by a *different* call, such as
   `Except(5).DifferentFrom(5)` or `Except(5, 6).Except(5)`.
+- **JD023 names both sides of the conflict.** The message said only which call emptied the chain, "No
+  value satisfies this chain once GreaterThan is applied", while the exception it predicts names the call
+  with its arguments and the constraint it collides with. Two crossing bounds now read as the run time
+  writes them: `cannot apply GreaterThan(10) because Between(1, 6) already requires values less than or
+  equal to 6`. A domain emptied by a lattice, an allow-list or an exclusion names every constraint written
+  before the call.
+- **JD014 stands down on a negative test whose chain goes on past the rejected call.**
+  `Assert.Throws(() => Any.Int32().Between(10, 5).Generate())` was reported by JD014, which judged the
+  `Between` call alone, while JD023 stayed silent on the same shape because it judges the chain as a whole.
+  Both rules now stay silent when the chain holding the call is the whole body of a lambda argument; a
+  chain passed to another call inside the lambda is still reported.
+- **An enum value the type does not define is reported once, by JD017.** `Any.Enum<T>().OneOf(...)`
+  naming a value that is neither a declared member nor a combination of a `[Flags]` enumeration's
+  members drew two warnings at the same position, JD014's and JD017's. JD017 alone reports it now, with
+  its message naming the category error, and judges the `OneOf` call wherever its receiver comes from: a
+  generator held in a variable, a collection expression and a chain carrying `AllowingCombinations()` are
+  reported, where JD017 used to miss them (ADR-0111).
 - **JD025 reads a `WithChars` pool and a collection expression.** A character written twice in a string's
   `WithChars("aab")` pool collapses exactly as a value written twice in a `OneOf(...)` does, so the pool is
   one character smaller than it reads, and JD025 now reports it, on the repeated character itself when the
@@ -95,8 +112,7 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   (`WithLocalPart("first+last")`); an offset that is not a whole number of minutes or lies beyond
   ±14:00, and an offset range whose ends are transposed; a granularity written as `new TimeSpan(0)` or
   any other spelling with integral arguments, not only `TimeSpan.Zero` and the `FromXxx` factories; and
-  a `OneOf` value that is not finite on `Any.Double()` or `Any.Single()`, or, on `Any.Enum<T>()`,
-  neither a declared member nor a combination of a `[Flags]` enumeration's members. A host that
+  a `OneOf` value that is not finite on `Any.Double()` or `Any.Single()`. A host that
   `System.Uri` judges and a user-info character whose case mapping depends on the runtime stay
   unreported, since the rule cannot be sure the call throws wherever the test runs. JD034 and JD035,
   which stop reading a chain at a call that may reject its argument, now read past a `OneOf` holding a
@@ -119,6 +135,20 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Fixed
 
+- **JD014 reports a floating-point bound that is not finite, and a `Half` value set element that is
+  not.** `Any.Double().Between(double.NaN, 90.0)`, `LessThan(double.PositiveInfinity)` and
+  `Any.Half().OneOf((Half)1, Half.NaN)` always throw when declared, and drew no diagnostic. A
+  `Between`, `GreaterThan(OrEqualTo)` or `LessThan(OrEqualTo)` bound on `Any.Double()`, `Any.Single()`
+  or `Any.Half()` that is NaN or an infinity is now reported, and so is such a value in `Any.Half()`'s
+  `OneOf`, where `Half.NaN` and the infinities are read as the members they are, and where a finite
+  constant too large for a `Half`, such as `(Half)70000.0`, is read as the infinity it becomes.
+- **JD016 counts a typed generator's own value set.** `Any.SetOf(Any.Int32().OneOf(1, 2)).WithCount(3)`
+  and `Any.ArrayOf(Any.Double().OneOf(1.0, 2.0)).WithCount(3).Distinct()` compiled clean and threw at
+  run time, while the same pool written as `Any.OneOf(1, 2)` was reported: only the character generator's
+  `OneOf` was counted. Every typed `OneOf` written with constants is now counted for its distinct values,
+  as long as the calls above it stay on the same generator; a value the collection pins outside the pool
+  still adds its own slot. A project's own generator whose methods share JustDummies' names, such as a
+  `OneOf` of its own, is no longer read as if it were JustDummies'.
 - **A decimal conflict on a `WithScale` grid no longer names the constraint it refuses as its own
   cause.** `Any.Decimal().Positive().WithScale(2).LessThan(0.01m)` was refused with "Cannot apply
   LessThan(0.01) because Positive(), LessThan(0.01) forbid every WithScale(2) value between 0 and

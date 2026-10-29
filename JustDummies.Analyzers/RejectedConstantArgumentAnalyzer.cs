@@ -52,15 +52,25 @@ public sealed class RejectedConstantArgumentAnalyzer : DiagnosticAnalyzer {
     private static void Analyze(OperationAnalysisContext context, KnownSymbols symbols) {
         IInvocationOperation invocation = (IInvocationOperation)context.Operation;
 
-        if (!IsJustDummiesMember(invocation.TargetMethod, symbols)) { return; }
+        if (!symbols.IsJustDummiesMember(invocation.TargetMethod)) { return; }
 
         // A test asserting that the guard rejects the argument writes the illegal call as the whole body of a lambda
-        // argument. This repository alone holds hundreds of them.
-        if (NegativeTestGuard.IsSoleBodyOfLambdaArgument(invocation.Syntax)) { return; }
+        // argument. This repository alone holds hundreds of them. The chain may go on past the call — to Generate(),
+        // say — and is still that test, the shape JD023 already stands down on.
+        if (NegativeTestGuard.IsLinkOfSoleBodyOfLambdaArgument(invocation.Syntax)) { return; }
 
-        if (TryFindViolation(invocation, context.Compilation, out IOperation? offending, out string? reason)) {
+        if (TryFindViolation(invocation, context.Compilation, out IOperation? offending, out string? reason) && !IsJd017s(invocation, offending!)) {
             context.ReportDiagnostic(Diagnostic.Create(Descriptors.RejectedConstantArgument, offending!.Syntax.GetLocation(), invocation.TargetMethod.Name, reason));
         }
+    }
+
+    /// <summary>
+    ///     Whether the violation is an enumeration value the type does not define, which JD017 reports: one mistake on
+    ///     one expression draws one diagnostic (ADR-0078, issue #321). It stays a violation for <see cref="TryFindViolation" />
+    ///     all the same, since the guard still throws there and JD034 and JD035 must stop reading the chain at it.
+    /// </summary>
+    private static bool IsJd017s(IInvocationOperation invocation, IOperation offending) {
+        return ArgumentGuardFacts.TryFindUndefinedEnumElement(invocation, out IOperation? undefined, out _) && undefined!.Syntax == offending.Syntax;
     }
 
     /// <summary>
@@ -92,8 +102,12 @@ public sealed class RejectedConstantArgumentAnalyzer : DiagnosticAnalyzer {
             case "WithLengthBetween" or "WithCountBetween":
                 return TryCheckSizeRange(invocation, out offending, out reason);
 
+            // A floating-point guard checks that both bounds are finite before it compares them.
             case "Between":
-                return TryCheckOrderedPair(invocation, out offending, out reason);
+                return ArgumentGuardFacts.TryFindNonFiniteBound(invocation, out offending, out reason) || TryCheckOrderedPair(invocation, out offending, out reason);
+
+            case "GreaterThan" or "GreaterThanOrEqualTo" or "LessThan" or "LessThanOrEqualTo":
+                return ArgumentGuardFacts.TryFindNonFiniteBound(invocation, out offending, out reason);
 
             case "MultipleOf":
                 return TryCheckStrictlyPositive(invocation, out offending, out reason);
@@ -343,10 +357,6 @@ public sealed class RejectedConstantArgumentAnalyzer : DiagnosticAnalyzer {
 
     private static string Render(IComparable value) {
         return Convert.ToString(value, CultureInfo.InvariantCulture) ?? string.Empty;
-    }
-
-    private static bool IsJustDummiesMember(IMethodSymbol method, KnownSymbols symbols) {
-        return SymbolEqualityComparer.Default.Equals(method.ContainingType?.ContainingAssembly, symbols.IAny!.ContainingAssembly);
     }
 
 }

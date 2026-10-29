@@ -124,6 +124,11 @@ public class Jd016CollectionConstraintsAdmitNoValueTests {
     // to the Char() factory beneath and answering 128 would be too wide, not too narrow.
     [InlineData("Any.SetOf(Any.Char().OneOf('a', 'b')).WithCount(5)", "only 2")]
     [InlineData("Any.SetOf(Any.Char().OneOf('a', 'b', 'c')).WithCount(4)", "only 3")]
+    // Every typed generator's own pool, not only the character one: these compiled clean and threw (issue #326).
+    [InlineData("Any.SetOf(Any.Int32().OneOf(1, 2)).WithCount(3)", "only 2")]
+    [InlineData("Any.ArrayOf(Any.Double().OneOf(1.0, 2.0)).WithCount(3).Distinct()", "only 2")]
+    [InlineData("Any.SetOf(Any.Byte().OneOf(1, 2, 2)).WithCount(3)", "only 2")]
+    [InlineData("Any.SetOf(Any.String().OneOf(\"EUR\", \"USD\").Except(\"GBP\")).WithCount(3)", "only 2")]
     public async Task Reports_a_set_asking_for_more_than_a_small_primitive_row_can_give(string expression, string expected) {
         string source = $$"""
             using JustDummies;
@@ -165,6 +170,32 @@ public class Jd016CollectionConstraintsAdmitNoValueTests {
     }
 
     [Theory]
+    [InlineData("Codes.Start().OneOf(1, 2)")]
+    [InlineData("new Codes().OneOf(1, 2)")]
+    public async Task Does_not_count_a_same_named_pool_declared_outside_JustDummies(string element) {
+        // A project's own generator may give OneOf any meaning, a widening included; only JustDummies' pool is counted.
+        string source = $$"""
+            using JustDummies;
+
+            public sealed class Codes : IAny<int> {
+                public static Codes Start() => new Codes();
+                public Codes OneOf(params int[] values) => this;
+                public int Generate() => 0;
+            }
+
+            public static class Sample {
+                public static void M() {
+                    _ = Any.SetOf({{element}}).WithCount(3);
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new CollectionConstraintsAdmitNoValueAnalyzer(), source);
+
+        Check.That(diagnostics.Length).IsEqualTo(0);
+    }
+
+    [Theory]
     [InlineData("Any.ListOf(Any.Int32()).WithCountBetween(2, 10)")]
     [InlineData("Any.ListOf(Any.Int32()).NonEmpty().WithMaxCount(5)")]
     [InlineData("Any.ListOf(Any.Int32()).WithCount(3).Containing(1).Containing(2)")]
@@ -178,6 +209,8 @@ public class Jd016CollectionConstraintsAdmitNoValueTests {
     [InlineData("Any.SetOf(Any.Char().OneOf('a', 'b', 'c')).WithCount(3)")]
     [InlineData("Any.SetOf(Any.Half()).WithCount(100)")]
     [InlineData("Any.SetOf(Any.Int32().OneOf(1, 2)).Containing(3).WithCount(3)")]
+    // A call that leaves the generator, such as OrNull(), may add a value the pool does not hold: null here.
+    [InlineData("Any.SetOf(Any.Int32().OneOf(1, 2).OrNull()).WithCount(3)")]
     // Issue #226: a value pinned outside a provable pool, or drawn by a generator the compiler cannot place, fills
     // its own slot, as the runtime counts it (#188). The gate compared the count with the pool alone and refused
     // these, although each generates on every seed.

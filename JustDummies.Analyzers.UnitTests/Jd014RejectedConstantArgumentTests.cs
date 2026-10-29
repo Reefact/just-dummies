@@ -145,12 +145,28 @@ public class Jd014RejectedConstantArgumentTests {
     // A granularity is read through every spelling of a TimeSpan, not only TimeSpan.Zero and the FromXxx factories.
     [InlineData("Any.DateTime().WithGranularity(new TimeSpan(0, 0, 0))",  "strictly positive")]
     [InlineData("Any.TimeSpan().WithGranularity(new TimeSpan(-1))",       "strictly positive")]
-    // A value set element a floating-point or an enumeration generator refuses.
+    // A value set element a floating-point generator refuses -- Half's NaN and infinities being members, not constants.
     [InlineData("Any.Double().OneOf(1.0, double.NaN)",                 "finite")]
     [InlineData("Any.Single().OneOf([float.PositiveInfinity])",        "finite")]
-    [InlineData("Any.Enum<Status>().OneOf(Status.Active, (Status)99)", "99 is not a declared member of Status")]
-    [InlineData("Any.Enum<Access>().OneOf((Access)8)",                 "8 is neither a declared member of Access nor a combination of declared members")]
-    [InlineData("Any.Enum<Access>().OneOf((Access)(-1))",              "-1 is neither a declared member of Access nor a combination of declared members")]
+    [InlineData("Any.Half().OneOf((Half)1, Half.NaN)",                 "finite")]
+    [InlineData("Any.Half().OneOf((Half)double.NegativeInfinity)",     "finite")]
+    // A floating-point bound the guard refuses for not being finite (issue #327).
+    [InlineData("Any.Double().Between(double.NaN, 90.0)",              "not accepted as a bound")]
+    [InlineData("Any.Double().Between(1.0, double.PositiveInfinity)",  "not accepted as a bound")]
+    // Refused by the finiteness guard, which runs first, so never reported as a transposed pair.
+    [InlineData("Any.Double().Between(1.0, double.NegativeInfinity)",  "not accepted as a bound")]
+    [InlineData("Any.Double().LessThan(double.PositiveInfinity)",      "not accepted as a bound")]
+    [InlineData("Any.Double().LessThanOrEqualTo(double.NaN)",          "not accepted as a bound")]
+    [InlineData("Any.Single().GreaterThan(float.NegativeInfinity)",    "not accepted as a bound")]
+    [InlineData("Any.Double().GreaterThanOrEqualTo(float.NaN)",        "not accepted as a bound")]
+    [InlineData("Any.Half().GreaterThanOrEqualTo(Half.PositiveInfinity)", "not accepted as a bound")]
+    [InlineData("Any.Half().Between((Half)1, Half.NaN)",               "not accepted as a bound")]
+    // A finite constant too large for a Half becomes an infinity on the way: 65520 is the midpoint above the largest
+    // finite half, and rounds to the even step, which is the infinity.
+    [InlineData("Any.Half().LessThan((Half)70000.0)",                  "not accepted as a bound")]
+    [InlineData("Any.Half().GreaterThan((Half)(-65520.0))",            "not accepted as a bound")]
+    [InlineData("Any.Half().Between((Half)1, (Half)100000)",           "not accepted as a bound")]
+    [InlineData("Any.Half().OneOf((Half)1, (Half)65520f)",             "finite")]
     public async Task Reports_a_uri_component_an_offset_or_a_value_the_guard_rejects(string expression, string expectedFragment) {
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeWithDeclarationsAsync(expression);
 
@@ -175,8 +191,18 @@ public class Jd014RejectedConstantArgumentTests {
     // On a [Flags] enumeration a combination of declared members is accepted, and the zero value when it is declared.
     [InlineData("Any.Enum<Access>().OneOf(Access.Read | Access.Exec)")]
     [InlineData("Any.Enum<Access>().OneOf((Access)0)")]
+    // Finite floating-point bounds pass their guard, a Half just below the overflow midpoint included; and a
+    // non-finite exclusion is a no-op (ADR-0101).
+    [InlineData("Any.Double().Between(-1e300, 1e300)")]
+    [InlineData("Any.Half().LessThan(Half.MaxValue)")]
+    [InlineData("Any.Half().LessThan((Half)65519.99)")]
+    [InlineData("Any.Double().Except(double.NaN)")]
     // An exclusion is not checked against the members.
     [InlineData("Any.Enum<Status>().Except((Status)99)")]
+    // A value the enumeration does not define is refused, but JD017 reports it: one mistake, one diagnostic (#321).
+    [InlineData("Any.Enum<Status>().OneOf(Status.Active, (Status)99)")]
+    [InlineData("Any.Enum<Access>().OneOf((Access)8)")]
+    [InlineData("Any.Enum<Status>().OneOf(Status.Active).Except(Status.Pending).OneOf((Status)99)")]
     // Refused here, but not wherever the test may run. System.Uri judges every other host, and its parsing differs
     // across target frameworks; the invariant lower case of İ is i under some runtimes and globalization modes, and İ
     // under others.
@@ -206,9 +232,6 @@ public class Jd014RejectedConstantArgumentTests {
     [InlineData("Any.Decimal().Between(1m, 100m)")]
     [InlineData("Any.Double().Between(1.0, 1.0)")]
     [InlineData("Any.UInt64().MultipleOf(4UL)")]
-    // A non-finite bound is refused by its own guard, with its own message; it is not a transposed pair.
-    [InlineData("Any.Double().Between(double.NaN, 1.0)")]
-    [InlineData("Any.Double().Between(1.0, double.NegativeInfinity)")]
     public async Task Does_not_report_a_legal_argument(string expression) {
         string source = $$"""
             using JustDummies;
@@ -265,6 +288,56 @@ public class Jd014RejectedConstantArgumentTests {
         ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new RejectedConstantArgumentAnalyzer(), source);
 
         Check.That(diagnostics.Length).IsEqualTo(0);
+    }
+
+    [Theory]
+    [InlineData("Any.Int32().Between(10, 5).Generate()")]
+    [InlineData("Any.Int32().Between(10, 5).Positive()")]
+    public async Task Does_not_report_a_negative_test_whose_chain_goes_on_past_the_guarded_call(string chain) {
+        // JD023 judges the chain by its outermost call and stands down on this shape; JD014, judging one link, has to
+        // reach the same verdict on the same test (issue #323).
+        string source = $$"""
+            using System;
+            using JustDummies;
+
+            public static class Check2 {
+                public static void ThatCode(Func<object> code) { }
+            }
+
+            public static class Sample {
+                public static void M() {
+                    Check2.ThatCode(() => {{chain}});
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new RejectedConstantArgumentAnalyzer(), source);
+
+        Check.That(diagnostics.Length).IsEqualTo(0);
+    }
+
+    [Fact]
+    public async Task Reports_a_guarded_call_passed_as_an_argument_inside_a_negative_test() {
+        // Only the receiver side of the chain is climbed: the lambda asserts on Wrap(...), not on the chain inside it.
+        const string source = """
+            using System;
+            using JustDummies;
+
+            public static class Check2 {
+                public static void ThatCode(Func<object> code) { }
+                public static object Wrap(object value) => value;
+            }
+
+            public static class Sample {
+                public static void M() {
+                    Check2.ThatCode(() => Check2.Wrap(Any.Int32().Between(10, 5)));
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new RejectedConstantArgumentAnalyzer(), source);
+
+        Check.That(diagnostics.Length).IsEqualTo(1);
     }
 
     [Fact]

@@ -63,6 +63,11 @@ public sealed class ScalarChainAdmitsNoValueAnalyzer : DiagnosticAnalyzer {
         HashSet<string>       seen  = [];
         // The exclusions written so far, so that one written again is left to JD035.
         List<(string Name, IReadOnlyList<long> Values)> declared = [];
+        // Every call walked so far as the run time renders it, and the ones holding each bound: a conflict names the
+        // constraint it collides with, the way the exception the chain would throw does (issue #322).
+        List<string> written = [];
+        string?      minimumSetBy = null;
+        string?      maximumSetBy = null;
 
         foreach (IInvocationOperation constraint in constraints) {
             if (!TryReadArguments(constraint, out IReadOnlyList<long> arguments)) { return; }
@@ -82,9 +87,12 @@ public sealed class ScalarChainAdmitsNoValueAnalyzer : DiagnosticAnalyzer {
             ScalarConstraintState? next = state.Apply(name, arguments);
             if (next is null) { return; }
 
+            string call = Render(name, arguments);
+
             if (next.IsEmpty()) {
                 context.ReportDiagnostic(Diagnostic.Create(
-                    Descriptors.ScalarChainAdmitsNoValue, constraint.Syntax.GetLocation(), name));
+                    Descriptors.ScalarChainAdmitsNoValue, constraint.Syntax.GetLocation(),
+                    call, Conflict(factory, state, next, written, minimumSetBy, maximumSetBy)));
 
                 return;
             }
@@ -103,8 +111,46 @@ public sealed class ScalarChainAdmitsNoValueAnalyzer : DiagnosticAnalyzer {
 
             seen.Add(name);
             declared.Add((name, arguments));
+            written.Add(call);
+            (minimumSetBy, maximumSetBy) = BoundOwners(call, state, next, minimumSetBy, maximumSetBy);
             state = next;
         }
+    }
+
+    /// <summary>
+    ///     Why <paramref name="next" /> admits nothing, worded as the exception the chain throws words it.
+    /// </summary>
+    /// <remarks>
+    ///     Two bounds that cross are the common case, and there the sentence is the run time's own: the bound the call
+    ///     collides with, quoted with its arguments, and the value it already requires. The library tracks exclusions,
+    ///     a lattice and an allow-list in more detail than this model does, so a conflict among those names every
+    ///     constraint written before the call rather than guessing which one the run time would single out.
+    /// </remarks>
+    private static string Conflict(string factory, ScalarConstraintState state, ScalarConstraintState next, List<string> written, string? minimumSetBy, string? maximumSetBy) {
+        if (!next.Saturated && next.Minimum > next.Maximum) {
+            if (next.Minimum > state.Minimum && maximumSetBy is not null) {
+                return $"{maximumSetBy} already requires values less than or equal to {state.Maximum}";
+            }
+
+            if (next.Maximum < state.Maximum && minimumSetBy is not null) {
+                return $"{minimumSetBy} already requires values greater than or equal to {state.Minimum}";
+            }
+        }
+
+        return written.Count == 0
+            ? $"no {factory} value satisfies it"
+            : $"no value admitted by {string.Join(", ", written)} survives it";
+    }
+
+    // The calls holding each bound once `call` is applied. A bound it leaves unchanged keeps its owner, as at run time,
+    // where a looser bound is a no-op that records nothing.
+    private static (string? Minimum, string? Maximum) BoundOwners(string call, ScalarConstraintState state, ScalarConstraintState next, string? minimumSetBy, string? maximumSetBy) {
+        return (next.Minimum > state.Minimum ? call : minimumSetBy, next.Maximum < state.Maximum ? call : maximumSetBy);
+    }
+
+    // A constraint as ConstraintCall renders it at run time: its name, then its arguments between parentheses.
+    private static string Render(string name, IReadOnlyList<long> arguments) {
+        return $"{name}({string.Join(", ", arguments)})";
     }
 
     /// <summary>

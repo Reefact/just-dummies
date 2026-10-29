@@ -13,8 +13,8 @@ namespace JustDummies.Analyzers.PropertyTests;
 /// <summary>
 ///     The FsCheck generator of <see cref="GuardedCall" />s: one call per case on a guard <c>JD014</c> reads beyond a
 ///     range or a non-empty check — a host or a domain, a user-info part or a local part, an offset or a range of
-///     offsets, a granularity, a floating-point or an enumeration value set — its argument drawn so that both outcomes
-///     stay frequent.
+///     offsets, a granularity, a floating-point value set or bound — or on the enumeration value set <c>JD017</c> reads, its
+///     argument drawn so that both outcomes stay frequent.
 /// </summary>
 /// <remarks>
 ///     <para>
@@ -50,6 +50,7 @@ internal static class GuardedCalls {
     private static readonly DeclarationVocabulary TimeSpans      = new("Any.TimeSpan()", context => context.TimeSpan());
     private static readonly DeclarationVocabulary Doubles        = new("Any.Double()", context => context.Double());
     private static readonly DeclarationVocabulary Singles        = new("Any.Single()", context => context.Single());
+    private static readonly DeclarationVocabulary Halves         = new("Any.Half()", context => context.Half());
     private static readonly DeclarationVocabulary Days           = new("Any.Enum<DayOfWeek>()", context => context.Enum<DayOfWeek>());
     private static readonly DeclarationVocabulary Bindings       = new("Any.Enum<System.Reflection.BindingFlags>()", context => context.Enum<BindingFlags>());
     private static readonly DeclarationVocabulary Targets        = new("Any.Enum<AttributeTargets>()", context => context.Enum<AttributeTargets>());
@@ -62,11 +63,18 @@ internal static class GuardedCalls {
         ("1f", 1f), ("2.5f", 2.5f), ("float.NaN", float.NaN), ("float.PositiveInfinity", float.PositiveInfinity), ("float.NegativeInfinity", float.NegativeInfinity)
     ];
 
+    // Half's NaN and infinities are static members rather than constants, read by symbol; a cast of a finite double is
+    // read only for the overflow it may cause, either side of the 65520 midpoint above the largest finite half.
+    private static readonly (string Source, Half Value)[] HalfElements = [
+        ("(Half)1", (Half)1), ("(Half)2.5", (Half)2.5), ("Half.NaN", Half.NaN), ("Half.PositiveInfinity", Half.PositiveInfinity), ("Half.NegativeInfinity", Half.NegativeInfinity),
+        ("(Half)65519.99", (Half)65519.99), ("(Half)65520.0", (Half)65520.0), ("(Half)(-70000.0)", (Half)(-70000.0))
+    ];
+
     #region Statics members declarations
 
     /// <summary>The calls. One call is already minimal, so nothing shrinks.</summary>
     public static Arbitrary<GuardedCall> Arbitrary() {
-        return Arb.From(Gen.OneOf(HostCalls(), UserInfoCalls(), OffsetCalls(), GranularityCalls(), FloatingPointCalls(), EnumerationCalls()));
+        return Arb.From(Gen.OneOf(HostCalls(), UserInfoCalls(), OffsetCalls(), GranularityCalls(), FloatingPointCalls(), FloatingPointBoundCalls(), EnumerationCalls()));
     }
 
     private static Gen<GuardedCall> HostCalls() {
@@ -113,8 +121,33 @@ internal static class GuardedCalls {
                from doubles in Gen.Elements(DoubleElements).ListOf(length)
                from singles in Gen.Elements(SingleElements).ListOf(length)
                from inline in Gen.Elements(true, false)
+               from halves in Gen.Elements(HalfElements).ListOf(length)
                from call in Gen.Elements(new GuardedCall(Doubles, On<AnyDouble>($"OneOf({ValueSet(doubles.Select(element => element.Source), inline)})", g => g.OneOf(doubles.Select(element => element.Value).ToArray())), claimed: true),
-                                         new GuardedCall(Singles, On<AnySingle>($"OneOf({ValueSet(singles.Select(element => element.Source), inline)})", g => g.OneOf(singles.Select(element => element.Value).ToArray())), claimed: true))
+                                         new GuardedCall(Singles, On<AnySingle>($"OneOf({ValueSet(singles.Select(element => element.Source), inline)})", g => g.OneOf(singles.Select(element => element.Value).ToArray())), claimed: true),
+                                         new GuardedCall(Halves, On<AnyHalf>($"OneOf({ValueSet(halves.Select(element => element.Source), inline)})", g => g.OneOf(halves.Select(element => element.Value).ToArray())), claimed: true))
+               select call;
+    }
+
+    /// <summary>
+    ///     A bound on each floating-point generator, finite or not (issue #327). A transposed pair of finite halves is
+    ///     not claimed: <c>(Half)2.5</c> is no constant, so the rule cannot compare it, and its page says so. No strict
+    ///     bound sits at a type's finite edge: <c>GreaterThan((Half)65519.99)</c> is <c>GreaterThan(Half.MaxValue)</c>,
+    ///     a domain left empty rather than an argument the guard rejects, so it would throw outside this oracle.
+    /// </summary>
+    private static Gen<GuardedCall> FloatingPointBoundCalls() {
+        return from d in Gen.Elements(DoubleElements).Two()
+               from f in Gen.Elements(SingleElements).Two()
+               from h in Gen.Elements(HalfElements).Two()
+               from call in Gen.Elements(new GuardedCall(Doubles, On<AnyDouble>($"GreaterThan({d.Item1.Source})", g => g.GreaterThan(d.Item1.Value)), claimed: true),
+                                         new GuardedCall(Doubles, On<AnyDouble>($"LessThanOrEqualTo({d.Item1.Source})", g => g.LessThanOrEqualTo(d.Item1.Value)), claimed: true),
+                                         new GuardedCall(Doubles, On<AnyDouble>($"Between({d.Item1.Source}, {d.Item2.Source})", g => g.Between(d.Item1.Value, d.Item2.Value)), claimed: true),
+                                         new GuardedCall(Singles, On<AnySingle>($"GreaterThanOrEqualTo({f.Item1.Source})", g => g.GreaterThanOrEqualTo(f.Item1.Value)), claimed: true),
+                                         new GuardedCall(Singles, On<AnySingle>($"LessThan({f.Item1.Source})", g => g.LessThan(f.Item1.Value)), claimed: true),
+                                         new GuardedCall(Singles, On<AnySingle>($"Between({f.Item1.Source}, {f.Item2.Source})", g => g.Between(f.Item1.Value, f.Item2.Value)), claimed: true),
+                                         new GuardedCall(Halves, On<AnyHalf>($"LessThan({h.Item1.Source})", g => g.LessThan(h.Item1.Value)), claimed: true),
+                                         new GuardedCall(Halves, On<AnyHalf>($"GreaterThanOrEqualTo({h.Item1.Source})", g => g.GreaterThanOrEqualTo(h.Item1.Value)), claimed: true),
+                                         new GuardedCall(Halves, On<AnyHalf>($"Between({h.Item1.Source}, {h.Item2.Source})", g => g.Between(h.Item1.Value, h.Item2.Value)),
+                                                         claimed: !Half.IsFinite(h.Item1.Value) || !Half.IsFinite(h.Item2.Value) || h.Item1.Value <= h.Item2.Value))
                select call;
     }
 
@@ -123,9 +156,9 @@ internal static class GuardedCalls {
                from days in Gen.Choose(-2, 9).ListOf(length)
                from bindings in Gen.Choose(-2, 300).ListOf(length)
                from targets in Gen.OneOf(Gen.Choose(-2, 40), Gen.Elements(32767, 32768)).ListOf(length)
-               from call in Gen.Elements(new GuardedCall(Days, On<AnyEnum<DayOfWeek>>($"OneOf({EnumValues("DayOfWeek", days)})", g => g.OneOf(days.Select(value => (DayOfWeek)value).ToArray())), claimed: true),
-                                         new GuardedCall(Bindings, On<AnyEnum<BindingFlags>>($"OneOf({EnumValues("System.Reflection.BindingFlags", bindings)})", g => g.OneOf(bindings.Select(value => (BindingFlags)value).ToArray())), claimed: true),
-                                         new GuardedCall(Targets, On<AnyEnum<AttributeTargets>>($"OneOf({EnumValues("AttributeTargets", targets)})", g => g.OneOf(targets.Select(value => (AttributeTargets)value).ToArray())), claimed: true))
+               from call in Gen.Elements(new GuardedCall(Days, On<AnyEnum<DayOfWeek>>($"OneOf({EnumValues("DayOfWeek", days)})", g => g.OneOf(days.Select(value => (DayOfWeek)value).ToArray())), claimed: true, rule: "JD017"),
+                                         new GuardedCall(Bindings, On<AnyEnum<BindingFlags>>($"OneOf({EnumValues("System.Reflection.BindingFlags", bindings)})", g => g.OneOf(bindings.Select(value => (BindingFlags)value).ToArray())), claimed: true, rule: "JD017"),
+                                         new GuardedCall(Targets, On<AnyEnum<AttributeTargets>>($"OneOf({EnumValues("AttributeTargets", targets)})", g => g.OneOf(targets.Select(value => (AttributeTargets)value).ToArray())), claimed: true, rule: "JD017"))
                select call;
     }
 

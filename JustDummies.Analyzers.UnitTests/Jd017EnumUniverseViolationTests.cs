@@ -19,6 +19,80 @@ public class Jd017EnumUniverseViolationTests {
         public enum Status { Active = 1, Inactive = 2 }
         """;
 
+    // The shapes the trial found reported twice, once by each rule (issue #321). JD017 owns the membership, so the
+    // pair gives exactly one diagnostic between them, and it is this rule's.
+    [Theory]
+    [InlineData("Any.Enum<Status>().OneOf((Status)42)",               "42 is not a declared member of Status")]
+    [InlineData("Any.Enum<Perm>().OneOf((Perm)4)",                    "4 is neither a declared member of Perm nor a combination of its declared members")]
+    [InlineData("Any.Enum<Status>().OneOf(Status.Active, (Status)0)", "0 is not a declared member of Status")]
+    [InlineData("Any.Enum<Status>().OneOf([Status.Active, (Status)0])", "0 is not a declared member of Status")]
+    [InlineData("Any.Enum<Perm>().AllowingCombinations().OneOf((Perm)4)", "4 is neither a declared member of Perm nor a combination of its declared members")]
+    public async Task Reports_a_value_the_type_does_not_define_once_between_JD014_and_JD017(string expression, string expectedFragment) {
+        string source = $$"""
+            using JustDummies;
+            {{Declarations}}
+
+            public static class Sample {
+                public static void M() {
+                    _ = {{expression}};
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> jd017 = await AnalyzerTestHarness.GetDiagnosticsAsync(new EnumUniverseViolationAnalyzer(), source);
+        ImmutableArray<Diagnostic> jd014 = await AnalyzerTestHarness.GetDiagnosticsAsync(new RejectedConstantArgumentAnalyzer(), source);
+
+        Check.That(jd014.Length).IsEqualTo(0);
+        Check.That(jd017.Length).IsEqualTo(1);
+        Check.That(jd017[0].GetMessage()).Contains(expectedFragment);
+    }
+
+    [Fact]
+    public async Task Reports_a_value_the_type_does_not_define_on_a_generator_held_in_a_variable() {
+        // The membership is judged on the OneOf call itself, as JD014 judged it before handing it over, so a receiver
+        // the chain walk cannot trace back to Any.Enum<T>() loses nothing.
+        string source = $$"""
+            using JustDummies;
+            {{Declarations}}
+
+            public static class Sample {
+                public static void M() {
+                    AnyEnum<Day> days = Any.Enum<Day>();
+                    _ = days.OneOf((Day)99);
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new EnumUniverseViolationAnalyzer(), source);
+
+        Check.That(diagnostics.Length).IsEqualTo(1);
+        Check.That(diagnostics[0].GetMessage()).Contains("99 is not a declared member of Day");
+    }
+
+    [Fact]
+    public async Task Does_not_report_a_same_named_generator_declared_outside_JustDummies() {
+        // The membership is judged per OneOf call, so the call must be JustDummies' own: a project's AnyEnum may accept
+        // any value it likes.
+        string source = $$"""
+            using JustDummies;
+            {{Declarations}}
+
+            public sealed class AnyEnum {
+                public AnyEnum OneOf(params Status[] values) => this;
+            }
+
+            public static class Sample {
+                public static void M() {
+                    _ = new AnyEnum().OneOf((Status)99);
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new EnumUniverseViolationAnalyzer(), source);
+
+        Check.That(diagnostics.Length).IsEqualTo(0);
+    }
+
     [Fact]
     public async Task Does_not_report_a_flag_combination_OneOf_accepts() {
         // The natural thing to write on a [Flags] enum, and the generator draws it -- with the opt-in, without it,

@@ -135,6 +135,12 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Fixed
 
+- **JD014 reports a floating-point bound that is not finite, and a `Half` value set element that is
+  not.** `Any.Double().Between(double.NaN, 90.0)`, `LessThan(double.PositiveInfinity)` and
+  `Any.Half().OneOf((Half)1, Half.NaN)` always throw when declared, and drew no diagnostic. A
+  `Between`, `GreaterThan(OrEqualTo)` or `LessThan(OrEqualTo)` bound on `Any.Double()`, `Any.Single()`
+  or `Any.Half()` that is NaN or an infinity is now reported, and so is such a value in `Any.Half()`'s
+  `OneOf`, where `Half.NaN` and the infinities are read as the members they are.
 - **JD016 counts a typed generator's own value set.** `Any.SetOf(Any.Int32().OneOf(1, 2)).WithCount(3)`
   and `Any.ArrayOf(Any.Double().OneOf(1.0, 2.0)).WithCount(3).Distinct()` compiled clean and threw at
   run time, while the same pool written as `Any.OneOf(1, 2)` was reported: only the character generator's

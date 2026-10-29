@@ -145,9 +145,22 @@ public class Jd014RejectedConstantArgumentTests {
     // A granularity is read through every spelling of a TimeSpan, not only TimeSpan.Zero and the FromXxx factories.
     [InlineData("Any.DateTime().WithGranularity(new TimeSpan(0, 0, 0))",  "strictly positive")]
     [InlineData("Any.TimeSpan().WithGranularity(new TimeSpan(-1))",       "strictly positive")]
-    // A value set element a floating-point generator refuses.
+    // A value set element a floating-point generator refuses -- Half's NaN and infinities being members, not constants.
     [InlineData("Any.Double().OneOf(1.0, double.NaN)",                 "finite")]
     [InlineData("Any.Single().OneOf([float.PositiveInfinity])",        "finite")]
+    [InlineData("Any.Half().OneOf((Half)1, Half.NaN)",                 "finite")]
+    [InlineData("Any.Half().OneOf((Half)double.NegativeInfinity)",     "finite")]
+    // A floating-point bound the guard refuses for not being finite (issue #327).
+    [InlineData("Any.Double().Between(double.NaN, 90.0)",              "not accepted as a bound")]
+    [InlineData("Any.Double().Between(1.0, double.PositiveInfinity)",  "not accepted as a bound")]
+    // Refused by the finiteness guard, which runs first, so never reported as a transposed pair.
+    [InlineData("Any.Double().Between(1.0, double.NegativeInfinity)",  "not accepted as a bound")]
+    [InlineData("Any.Double().LessThan(double.PositiveInfinity)",      "not accepted as a bound")]
+    [InlineData("Any.Double().LessThanOrEqualTo(double.NaN)",          "not accepted as a bound")]
+    [InlineData("Any.Single().GreaterThan(float.NegativeInfinity)",    "not accepted as a bound")]
+    [InlineData("Any.Double().GreaterThanOrEqualTo(float.NaN)",        "not accepted as a bound")]
+    [InlineData("Any.Half().GreaterThanOrEqualTo(Half.PositiveInfinity)", "not accepted as a bound")]
+    [InlineData("Any.Half().Between((Half)1, Half.NaN)",               "not accepted as a bound")]
     public async Task Reports_a_uri_component_an_offset_or_a_value_the_guard_rejects(string expression, string expectedFragment) {
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeWithDeclarationsAsync(expression);
 
@@ -172,6 +185,12 @@ public class Jd014RejectedConstantArgumentTests {
     // On a [Flags] enumeration a combination of declared members is accepted, and the zero value when it is declared.
     [InlineData("Any.Enum<Access>().OneOf(Access.Read | Access.Exec)")]
     [InlineData("Any.Enum<Access>().OneOf((Access)0)")]
+    // Finite floating-point bounds pass their guard; a non-finite exclusion is a no-op (ADR-0101); and a finite
+    // constant that only overflows on its way to a Half is the run time's conversion, not read here.
+    [InlineData("Any.Double().Between(-1e300, 1e300)")]
+    [InlineData("Any.Half().LessThan(Half.MaxValue)")]
+    [InlineData("Any.Double().Except(double.NaN)")]
+    [InlineData("Any.Half().LessThan((Half)70000.0)")]
     // An exclusion is not checked against the members.
     [InlineData("Any.Enum<Status>().Except((Status)99)")]
     // A value the enumeration does not define is refused, but JD017 reports it: one mistake, one diagnostic (#321).
@@ -207,9 +226,6 @@ public class Jd014RejectedConstantArgumentTests {
     [InlineData("Any.Decimal().Between(1m, 100m)")]
     [InlineData("Any.Double().Between(1.0, 1.0)")]
     [InlineData("Any.UInt64().MultipleOf(4UL)")]
-    // A non-finite bound is refused by its own guard, with its own message; it is not a transposed pair.
-    [InlineData("Any.Double().Between(double.NaN, 1.0)")]
-    [InlineData("Any.Double().Between(1.0, double.NegativeInfinity)")]
     public async Task Does_not_report_a_legal_argument(string expression) {
         string source = $$"""
             using JustDummies;

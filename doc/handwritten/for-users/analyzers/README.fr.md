@@ -18,6 +18,19 @@ Chaque règle a un identifiant stable. Les erreurs sont des défauts durs ; les 
 signalent des erreurs probables ; les règles info sont des conventions, et deux sont opt-in
 (voir chaque page pour savoir comment les activer).
 
+**Les diagnostics Info n'apparaissent pas dans la sortie de `dotnet build`.** MSBuild les garde hors de la console :
+un IDE les affiche, un journal d'erreurs SARIF aussi, mais dans un terminal ou un journal de CI une règle comme
+[JD030](JD030.fr.md) ne dit rien, et le remède qu'elle enseigne ne vous parvient jamais. Les sévérités par défaut
+sont voulues et ne changent pas ; pour voir une règle Info dans la sortie du build, relevez-la dans `.editorconfig` :
+
+```ini
+# voir une règle Info dans la sortie du build
+dotnet_diagnostic.JD030.severity = warning
+
+# ou toutes les règles de la catégorie Constraints
+dotnet_analyzer_diagnostic.category-JustDummies.Constraints.severity = warning
+```
+
 ## Reproductibilité
 
 Ces règles empêchent un corps de test asynchrone d'avaler silencieusement ses propres échecs.

@@ -48,6 +48,17 @@ dotnet_diagnostic.JD011.severity = warning
 dotnet_diagnostic.JD024.severity = none
 ```
 
+Info-level diagnostics, JD030 among them, do not appear in `dotnet build` output: MSBuild keeps them out of the
+console, and only an IDE or a SARIF error log shows them. In a terminal or a CI workflow, raise them to see them:
+
+```ini
+# see one Info rule in the build output
+dotnet_diagnostic.JD030.severity = warning
+
+# or every rule of the Constraints category
+dotnet_analyzer_diagnostic.category-JustDummies.Constraints.severity = warning
+```
+
 ## Target frameworks
 
 | Asset | Carries |

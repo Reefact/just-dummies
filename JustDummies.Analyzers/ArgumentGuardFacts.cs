@@ -49,6 +49,9 @@ internal static class ArgumentGuardFacts {
     private const char HighestAsciiChar = '\u007f';
     private const long OffsetLimitTicks = 14 * TimeSpan.TicksPerHour;
 
+    /// <summary>The smallest magnitude a conversion to <c>Half</c> rounds to an infinity — see <see cref="IsNonFinite" />.</summary>
+    private const double HalfOverflowThreshold = 65520.0;
+
     #region Statics members declarations
 
     /// <summary>
@@ -268,17 +271,24 @@ internal static class ArgumentGuardFacts {
 
     /// <summary>
     ///     Whether <paramref name="operation" /> certainly evaluates to NaN or an infinity: a <c>double</c> or a
-    ///     <c>float</c> constant that is one, the <c>Half</c> member naming one, or either converted to another
-    ///     floating-point type, which keeps it non-finite.
+    ///     <c>float</c> constant that is one, the <c>Half</c> member naming one, either converted to another
+    ///     floating-point type, which keeps it non-finite, or a finite constant too large for the <c>Half</c> it is
+    ///     converted to.
     /// </summary>
     /// <remarks>
-    ///     <c>Half</c> has no C# constants, so its <c>NaN</c> and infinities are read as the static members they are. A finite
-    ///     constant that overflows on its way to a <c>Half</c>, <c>(Half)70000.0</c>, is not read: the conversion is
-    ///     the run time's, and this assembly, built for netstandard2.0, cannot perform it to be certain.
+    ///     <c>Half</c> has no C# constants, so its <c>NaN</c> and infinities are read as the static members they are.
+    ///     Its conversion is the run time's, and this assembly, built for netstandard2.0, has no <c>Half</c> to perform
+    ///     it; it does not need one to tell an overflow, whose threshold is exact. The largest finite half is 65504 and
+    ///     the next step up would be 65536, so a value rounds to the nearest of the two below their midpoint, 65520, and
+    ///     to an infinity from it on — the midpoint itself rounding to the even step, which is the infinity.
     /// </remarks>
     private static bool IsNonFinite(IOperation operation) {
         IOperation value = operation;
-        while (value is IConversionOperation conversion) { value = conversion.Operand; }
+        while (value is IConversionOperation conversion) {
+            if (conversion.Type is INamedTypeSymbol target && IsSystemHalf(target) && OverflowsHalf(conversion.Operand.ConstantValue)) { return true; }
+
+            value = conversion.Operand;
+        }
 
         return value.ConstantValue.HasValue
                    ? value.ConstantValue.Value switch {
@@ -287,6 +297,12 @@ internal static class ArgumentGuardFacts {
                        _             => false
                    }
                    : value is IMemberReferenceOperation { Member: { Name: "NaN" or "PositiveInfinity" or "NegativeInfinity" } member } && IsSystemHalf(member.ContainingType);
+    }
+
+    /// <summary>Whether a numeric constant converted to a <c>Half</c> becomes an infinity.</summary>
+    private static bool OverflowsHalf(Optional<object?> constant) {
+        return constant is { HasValue: true, Value: double or float or decimal or long or ulong or int or uint or short or ushort or sbyte or byte }
+            && Math.Abs(Convert.ToDouble(constant.Value, CultureInfo.InvariantCulture)) >= HalfOverflowThreshold;
     }
 
     private static bool IsSystemHalf(INamedTypeSymbol type) {

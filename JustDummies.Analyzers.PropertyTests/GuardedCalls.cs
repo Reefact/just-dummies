@@ -64,9 +64,10 @@ internal static class GuardedCalls {
     ];
 
     // Half's NaN and infinities are static members rather than constants, read by symbol; a cast of a finite double is
-    // read as no constant at all.
+    // read only for the overflow it may cause, either side of the 65520 midpoint above the largest finite half.
     private static readonly (string Source, Half Value)[] HalfElements = [
-        ("(Half)1", (Half)1), ("(Half)2.5", (Half)2.5), ("Half.NaN", Half.NaN), ("Half.PositiveInfinity", Half.PositiveInfinity), ("Half.NegativeInfinity", Half.NegativeInfinity)
+        ("(Half)1", (Half)1), ("(Half)2.5", (Half)2.5), ("Half.NaN", Half.NaN), ("Half.PositiveInfinity", Half.PositiveInfinity), ("Half.NegativeInfinity", Half.NegativeInfinity),
+        ("(Half)65519.99", (Half)65519.99), ("(Half)65520.0", (Half)65520.0), ("(Half)(-70000.0)", (Half)(-70000.0))
     ];
 
     #region Statics members declarations
@@ -129,7 +130,9 @@ internal static class GuardedCalls {
 
     /// <summary>
     ///     A bound on each floating-point generator, finite or not (issue #327). A transposed pair of finite halves is
-    ///     not claimed: <c>(Half)2.5</c> is no constant, so the rule cannot compare it, and its page says so.
+    ///     not claimed: <c>(Half)2.5</c> is no constant, so the rule cannot compare it, and its page says so. No strict
+    ///     bound sits at a type's finite edge: <c>GreaterThan((Half)65519.99)</c> is <c>GreaterThan(Half.MaxValue)</c>,
+    ///     a domain left empty rather than an argument the guard rejects, so it would throw outside this oracle.
     /// </summary>
     private static Gen<GuardedCall> FloatingPointBoundCalls() {
         return from d in Gen.Elements(DoubleElements).Two()
@@ -142,7 +145,7 @@ internal static class GuardedCalls {
                                          new GuardedCall(Singles, On<AnySingle>($"LessThan({f.Item1.Source})", g => g.LessThan(f.Item1.Value)), claimed: true),
                                          new GuardedCall(Singles, On<AnySingle>($"Between({f.Item1.Source}, {f.Item2.Source})", g => g.Between(f.Item1.Value, f.Item2.Value)), claimed: true),
                                          new GuardedCall(Halves, On<AnyHalf>($"LessThan({h.Item1.Source})", g => g.LessThan(h.Item1.Value)), claimed: true),
-                                         new GuardedCall(Halves, On<AnyHalf>($"GreaterThan({h.Item1.Source})", g => g.GreaterThan(h.Item1.Value)), claimed: true),
+                                         new GuardedCall(Halves, On<AnyHalf>($"GreaterThanOrEqualTo({h.Item1.Source})", g => g.GreaterThanOrEqualTo(h.Item1.Value)), claimed: true),
                                          new GuardedCall(Halves, On<AnyHalf>($"Between({h.Item1.Source}, {h.Item2.Source})", g => g.Between(h.Item1.Value, h.Item2.Value)),
                                                          claimed: !Half.IsFinite(h.Item1.Value) || !Half.IsFinite(h.Item2.Value) || h.Item1.Value <= h.Item2.Value))
                select call;

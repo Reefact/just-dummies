@@ -161,6 +161,12 @@ public class Jd014RejectedConstantArgumentTests {
     [InlineData("Any.Double().GreaterThanOrEqualTo(float.NaN)",        "not accepted as a bound")]
     [InlineData("Any.Half().GreaterThanOrEqualTo(Half.PositiveInfinity)", "not accepted as a bound")]
     [InlineData("Any.Half().Between((Half)1, Half.NaN)",               "not accepted as a bound")]
+    // A finite constant too large for a Half becomes an infinity on the way: 65520 is the midpoint above the largest
+    // finite half, and rounds to the even step, which is the infinity.
+    [InlineData("Any.Half().LessThan((Half)70000.0)",                  "not accepted as a bound")]
+    [InlineData("Any.Half().GreaterThan((Half)(-65520.0))",            "not accepted as a bound")]
+    [InlineData("Any.Half().Between((Half)1, (Half)100000)",           "not accepted as a bound")]
+    [InlineData("Any.Half().OneOf((Half)1, (Half)65520f)",             "finite")]
     public async Task Reports_a_uri_component_an_offset_or_a_value_the_guard_rejects(string expression, string expectedFragment) {
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeWithDeclarationsAsync(expression);
 
@@ -185,12 +191,12 @@ public class Jd014RejectedConstantArgumentTests {
     // On a [Flags] enumeration a combination of declared members is accepted, and the zero value when it is declared.
     [InlineData("Any.Enum<Access>().OneOf(Access.Read | Access.Exec)")]
     [InlineData("Any.Enum<Access>().OneOf((Access)0)")]
-    // Finite floating-point bounds pass their guard; a non-finite exclusion is a no-op (ADR-0101); and a finite
-    // constant that only overflows on its way to a Half is the run time's conversion, not read here.
+    // Finite floating-point bounds pass their guard, a Half just below the overflow midpoint included; and a
+    // non-finite exclusion is a no-op (ADR-0101).
     [InlineData("Any.Double().Between(-1e300, 1e300)")]
     [InlineData("Any.Half().LessThan(Half.MaxValue)")]
+    [InlineData("Any.Half().LessThan((Half)65519.99)")]
     [InlineData("Any.Double().Except(double.NaN)")]
-    [InlineData("Any.Half().LessThan((Half)70000.0)")]
     // An exclusion is not checked against the members.
     [InlineData("Any.Enum<Status>().Except((Status)99)")]
     // A value the enumeration does not define is refused, but JD017 reports it: one mistake, one diagnostic (#321).

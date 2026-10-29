@@ -404,6 +404,26 @@ public class Jd017EnumUniverseViolationTests {
     }
 
     [Fact]
+    public async Task Reports_an_undeclared_value_in_a_lambda_that_takes_a_parameter() {
+        // A lambda handed a value maps it: this is arrange code, not a test asserting a throw.
+        string source = $$"""
+            using System.Linq;
+            using JustDummies;
+            {{Declarations}}
+
+            public static class Sample {
+                public static void M() {
+                    _ = Enumerable.Range(0, 3).Select(_ => Any.Enum<Day>().OneOf((Day)42).Generate()).ToList();
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new EnumUniverseViolationAnalyzer(), source);
+
+        Check.That(diagnostics.Length).IsEqualTo(1);
+    }
+
+    [Fact]
     public async Task Does_not_report_a_conflict_asserting_negative_test() {
         string source = $$"""
             using System;

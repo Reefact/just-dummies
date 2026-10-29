@@ -317,6 +317,26 @@ public class Jd014RejectedConstantArgumentTests {
     }
 
     [Fact]
+    public async Task Reports_a_guarded_call_in_a_lambda_that_takes_a_parameter() {
+        // A lambda handed a value maps it: this is arrange code building a list, not a test asserting a throw, and the
+        // call throws on every element.
+        const string source = """
+            using System.Linq;
+            using JustDummies;
+
+            public static class Sample {
+                public static void M() {
+                    _ = Enumerable.Range(0, 3).Select(_ => Any.Int32().Between(10, 5).Generate()).ToList();
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new RejectedConstantArgumentAnalyzer(), source);
+
+        Check.That(diagnostics.Length).IsEqualTo(1);
+    }
+
+    [Fact]
     public async Task Reports_a_guarded_call_passed_as_an_argument_inside_a_negative_test() {
         // Only the receiver side of the chain is climbed: the lambda asserts on Wrap(...), not on the chain inside it.
         const string source = """

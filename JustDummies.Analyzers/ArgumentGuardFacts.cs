@@ -106,9 +106,28 @@ internal static class ArgumentGuardFacts {
         offending = null;
         reason    = null;
 
-        if (call.TargetMethod.ContainingType.Name is not ("AnyDouble" or "AnySingle" or "AnyEnum")) { return false; }
+        if (call.TargetMethod.ContainingType.Name is not ("AnyDouble" or "AnySingle" or "AnyHalf" or "AnyEnum")) { return false; }
 
         return TryFindFirstRejected(call, out offending, out reason);
+    }
+
+    /// <summary>
+    ///     The first bound a floating-point generator rejects for not being finite: an argument of <c>Between</c>,
+    ///     <c>GreaterThan(OrEqualTo)</c> or <c>LessThan(OrEqualTo)</c> on <c>Any.Double()</c>, <c>Any.Single()</c> or
+    ///     <c>Any.Half()</c>, checked in parameter order as the guard checks them.
+    /// </summary>
+    internal static bool TryFindNonFiniteBound(IInvocationOperation call, out IOperation? offending, out string? reason) {
+        offending = null;
+        reason    = null;
+
+        if (!IsFloatingPointGenerator(call)) { return false; }
+
+        offending = call.Arguments.Select(argument => argument.Value).FirstOrDefault(IsNonFinite);
+        if (offending is null) { return false; }
+
+        reason = "it must be finite: NaN and the infinities are never generated, and not accepted as a bound";
+
+        return true;
     }
 
     /// <summary>
@@ -130,7 +149,7 @@ internal static class ArgumentGuardFacts {
         reason    = null;
 
         foreach (IOperation element in ValueSetFacts.Elements(call)) {
-            if (element.ConstantValue is not { HasValue: true, Value: { } value } || ElementRejection(element, value) is not string rejection) { continue; }
+            if (ElementRejection(element) is not string rejection) { continue; }
 
             offending = element;
             reason    = rejection;
@@ -235,13 +254,43 @@ internal static class ArgumentGuardFacts {
     }
 
     /// <summary>Why a value set guard rejects an element, or <c>null</c> where it accepts it or no reading is certain.</summary>
-    private static string? ElementRejection(IOperation element, object value) {
-        return value switch {
-            double number when double.IsNaN(number) || double.IsInfinity(number) => "it must be finite: NaN and the infinities are never generated",
-            float number when float.IsNaN(number) || float.IsInfinity(number)    => "it must be finite: NaN and the infinities are never generated",
-            _ when element.Type is INamedTypeSymbol { TypeKind: TypeKind.Enum } enumeration => EnumValueRejection(enumeration, value),
-            _                                                                                 => null
-        };
+    private static string? ElementRejection(IOperation element) {
+        if (IsNonFinite(element)) { return "it must be finite: NaN and the infinities are never generated"; }
+
+        return element is { Type: INamedTypeSymbol { TypeKind: TypeKind.Enum } enumeration, ConstantValue: { HasValue: true, Value: { } value } }
+                   ? EnumValueRejection(enumeration, value)
+                   : null;
+    }
+
+    private static bool IsFloatingPointGenerator(IInvocationOperation call) {
+        return call.TargetMethod.ContainingType.Name is "AnyDouble" or "AnySingle" or "AnyHalf";
+    }
+
+    /// <summary>
+    ///     Whether <paramref name="operation" /> certainly evaluates to NaN or an infinity: a <c>double</c> or a
+    ///     <c>float</c> constant that is one, the <c>Half</c> member naming one, or either converted to another
+    ///     floating-point type, which keeps it non-finite.
+    /// </summary>
+    /// <remarks>
+    ///     <c>Half</c> has no C# constants, so its <c>NaN</c> and infinities are read as the static members they are. A finite
+    ///     constant that overflows on its way to a <c>Half</c>, <c>(Half)70000.0</c>, is not read: the conversion is
+    ///     the run time's, and this assembly, built for netstandard2.0, cannot perform it to be certain.
+    /// </remarks>
+    private static bool IsNonFinite(IOperation operation) {
+        IOperation value = operation;
+        while (value is IConversionOperation conversion) { value = conversion.Operand; }
+
+        return value.ConstantValue.HasValue
+                   ? value.ConstantValue.Value switch {
+                       double number => double.IsNaN(number) || double.IsInfinity(number),
+                       float number  => float.IsNaN(number) || float.IsInfinity(number),
+                       _             => false
+                   }
+                   : value is IMemberReferenceOperation { Member: { Name: "NaN" or "PositiveInfinity" or "NegativeInfinity" } member } && IsSystemHalf(member.ContainingType);
+    }
+
+    private static bool IsSystemHalf(INamedTypeSymbol type) {
+        return type is { Name: "Half", ContainingNamespace: { Name: "System", ContainingNamespace.IsGlobalNamespace: true } };
     }
 
     /// <summary>

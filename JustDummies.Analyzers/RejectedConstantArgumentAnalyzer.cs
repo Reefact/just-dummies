@@ -102,8 +102,12 @@ public sealed class RejectedConstantArgumentAnalyzer : DiagnosticAnalyzer {
             case "WithLengthBetween" or "WithCountBetween":
                 return TryCheckSizeRange(invocation, out offending, out reason);
 
+            // A floating-point guard checks that both bounds are finite before it compares them.
             case "Between":
-                return TryCheckOrderedPair(invocation, out offending, out reason);
+                return ArgumentGuardFacts.TryFindNonFiniteBound(invocation, out offending, out reason) || TryCheckOrderedPair(invocation, out offending, out reason);
+
+            case "GreaterThan" or "GreaterThanOrEqualTo" or "LessThan" or "LessThanOrEqualTo":
+                return ArgumentGuardFacts.TryFindNonFiniteBound(invocation, out offending, out reason);
 
             case "MultipleOf":
                 return TryCheckStrictlyPositive(invocation, out offending, out reason);

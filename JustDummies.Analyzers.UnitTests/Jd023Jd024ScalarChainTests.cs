@@ -148,9 +148,13 @@ public class Jd023ScalarChainAdmitsNoValueTests {
         Check.That(diagnostics.Length).IsEqualTo(0);
     }
 
-    [Fact]
-    public async Task Does_not_report_a_conflict_asserting_negative_test() {
-        const string source = """
+    // The second shape goes on to Generate(), as Assert.ThrowsAny(() => chain.Generate()) does; JD014 stands down on
+    // both shapes too, so one negative test draws one verdict from the two rules (issue #323).
+    [Theory]
+    [InlineData("Any.Int32().Positive().Negative()")]
+    [InlineData("Any.Int32().Positive().Negative().Generate()")]
+    public async Task Does_not_report_a_conflict_asserting_negative_test(string chain) {
+        string source = $$"""
             using System;
             using JustDummies;
 
@@ -160,7 +164,7 @@ public class Jd023ScalarChainAdmitsNoValueTests {
 
             public static class Sample {
                 public static void M() {
-                    Check2.ThatCode(() => Any.Int32().Positive().Negative());
+                    Check2.ThatCode(() => {{chain}});
                 }
             }
             """;

@@ -88,6 +88,11 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   writes them: `cannot apply GreaterThan(10) because Between(1, 6) already requires values less than or
   equal to 6`. A domain emptied by a lattice, an allow-list or an exclusion names every constraint written
   before the call.
+- **JD014 stands down on a negative test whose chain goes on past the rejected call.**
+  `Assert.Throws(() => Any.Int32().Between(10, 5).Generate())` was reported by JD014, which judged the
+  `Between` call alone, while JD023 stayed silent on the same shape because it judges the chain as a whole.
+  Both rules now stay silent when the chain holding the call is the whole body of a lambda argument; a
+  chain passed to another call inside the lambda is still reported.
 - **JD025 reads a `WithChars` pool and a collection expression.** A character written twice in a string's
   `WithChars("aab")` pool collapses exactly as a value written twice in a `OneOf(...)` does, so the pool is
   one character smaller than it reads, and JD025 now reports it, on the repeated character itself when the

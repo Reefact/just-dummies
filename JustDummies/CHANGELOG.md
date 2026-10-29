@@ -147,7 +147,8 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   run time, while the same pool written as `Any.OneOf(1, 2)` was reported: only the character generator's
   `OneOf` was counted. Every typed `OneOf` written with constants is now counted for its distinct values,
   as long as the calls above it stay on the same generator; a value the collection pins outside the pool
-  still adds its own slot.
+  still adds its own slot. A project's own generator whose methods share JustDummies' names, such as a
+  `OneOf` of its own, is no longer read as if it were JustDummies'.
 - **A decimal conflict on a `WithScale` grid no longer names the constraint it refuses as its own
   cause.** `Any.Decimal().Positive().WithScale(2).LessThan(0.01m)` was refused with "Cannot apply
   LessThan(0.01) because Positive(), LessThan(0.01) forbid every WithScale(2) value between 0 and

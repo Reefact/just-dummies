@@ -63,7 +63,7 @@ public sealed class CollectionConstraintsAdmitNoValueAnalyzer : DiagnosticAnalyz
         if (factory is null || !IsCollectionFactory(factory.TargetMethod.Name)) { return; }
         if (NegativeTestGuard.IsSoleBodyOfLambdaArgument(invocation.Syntax)) { return; }
 
-        AnalyzeConstraints(context, factory, constraints);
+        AnalyzeConstraints(context, factory, constraints, symbols);
     }
 
     /// <summary>
@@ -74,7 +74,7 @@ public sealed class CollectionConstraintsAdmitNoValueAnalyzer : DiagnosticAnalyz
     ///     Split from <see cref="Analyze" />, which answers a different question: whether this chain is one the rule
     ///     reasons about at all. Everything below assumes that answer is yes.
     /// </remarks>
-    private static void AnalyzeConstraints(OperationAnalysisContext context, IInvocationOperation factory, IReadOnlyList<IInvocationOperation> constraints) {
+    private static void AnalyzeConstraints(OperationAnalysisContext context, IInvocationOperation factory, IReadOnlyList<IInvocationOperation> constraints, KnownSymbols symbols) {
         int?  exact    = null;
         int?  minimum  = null;
         int?  maximum  = null;
@@ -130,7 +130,7 @@ public sealed class CollectionConstraintsAdmitNoValueAnalyzer : DiagnosticAnalyz
         // credited unless it provably sits inside the domain, which mirrors the runtime's own count and can only
         // defer to it: a value the compiler cannot place must never make the domain look smaller than it is.
         if (!distinct) { return; }
-        if (!TryGetProvableCardinality(factory, out int cardinality, out Func<IOperation, bool> mayExtend)) { return; }
+        if (!TryGetProvableCardinality(factory, symbols, out int cardinality, out Func<IOperation, bool> mayExtend)) { return; }
 
         int credited      = CountCredited(pinned.Where(mayExtend));
         int fromGenerator = effectiveMin - credited;
@@ -179,7 +179,7 @@ public sealed class CollectionConstraintsAdmitNoValueAnalyzer : DiagnosticAnalyz
     ///     16-bit integer, a <c>Half</c>) holds every value of the type, so nothing pinned can extend it; a pool, an
     ///     enum and the ASCII row are extended by a constant they do not hold, and by anything the compiler cannot fold.
     /// </remarks>
-    private static bool TryGetProvableCardinality(IInvocationOperation factory, out int cardinality, out Func<IOperation, bool> mayExtend) {
+    private static bool TryGetProvableCardinality(IInvocationOperation factory, KnownSymbols symbols, out int cardinality, out Func<IOperation, bool> mayExtend) {
         cardinality = 0;
         mayExtend   = _ => true;
 
@@ -198,7 +198,8 @@ public sealed class CollectionConstraintsAdmitNoValueAnalyzer : DiagnosticAnalyz
         // a count of three over either went unreported (issue #326). Counted exactly instead, the same way the
         // top-level Any.OneOf(...)/ElementOf(...) case is. Only while every hop above it stays on the same generator:
         // a call that changes the type, OrNull() or As(...), may add a value the pool does not hold, and is walked
-        // through rather than trusted. A value the collection pins outside the pool -- the widening #188 made legal,
+        // through rather than trusted, and so is a OneOf declared outside JustDummies, whose meaning is its own. A
+        // value the collection pins outside the pool -- the widening #188 made legal,
         // SetOf(Any.Int32().OneOf(1, 2)).WithCount(3).Containing(3) -- still reaches the count through mayExtend.
         IInvocationOperation root          = element;
         bool                 sameGenerator = true;
@@ -208,10 +209,19 @@ public sealed class CollectionConstraintsAdmitNoValueAnalyzer : DiagnosticAnalyz
             sameGenerator &= SymbolEqualityComparer.Default.Equals(root.TargetMethod.ContainingType, element.Type);
             // A pool the compiler cannot count -- a sequence, a value it cannot fold -- is still bounded by the row
             // beneath it, so the walk goes on rather than giving up.
-            if (sameGenerator && root.TargetMethod.Name == "OneOf" && TryCountDistinctConstants(root, out cardinality, out mayExtend)) { return true; }
+            if (sameGenerator && TryCountTypedPool(root, symbols, out cardinality, out mayExtend)) { return true; }
 
             root = inner;
         }
+
+        // The rows below are named after JustDummies' own factories; a project's same-named method proves nothing.
+        return symbols.IsJustDummiesMember(root.TargetMethod) && TryGetRowCardinality(root, out cardinality, out mayExtend);
+    }
+
+    /// <summary>The distinct domain of the JustDummies factory the element walk ended on, where the compiler settles it.</summary>
+    private static bool TryGetRowCardinality(IInvocationOperation root, out int cardinality, out Func<IOperation, bool> mayExtend) {
+        cardinality = 0;
+        mayExtend   = _ => true;
 
         switch (root.TargetMethod.Name) {
             case "Boolean":
@@ -270,6 +280,14 @@ public sealed class CollectionConstraintsAdmitNoValueAnalyzer : DiagnosticAnalyz
             default:
                 return false;
         }
+    }
+
+    // A JustDummies OneOf(...) whose values the compiler can count.
+    private static bool TryCountTypedPool(IInvocationOperation hop, KnownSymbols symbols, out int cardinality, out Func<IOperation, bool> mayExtend) {
+        cardinality = 0;
+        mayExtend   = _ => true;
+
+        return hop.TargetMethod.Name == "OneOf" && symbols.IsJustDummiesMember(hop.TargetMethod) && TryCountDistinctConstants(hop, out cardinality, out mayExtend);
     }
 
     private static bool TryCountDistinctConstants(IInvocationOperation pool, out int cardinality, out Func<IOperation, bool> mayExtend) {

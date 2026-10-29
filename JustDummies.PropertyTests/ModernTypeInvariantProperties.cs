@@ -155,6 +155,7 @@ public sealed class ModernTypeInvariantProperties {
     }
 
     [Fact(DisplayName = "Int128: crossed Between arguments are an argument error, never a silent swap.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void Int128CrossedBoundsAreAnArgumentError() {
         Prop.ForAll(Generators.OrderedPair(Int128Values()).ToArbitrary(),
                     bounds => bounds.Min == bounds.Max
@@ -163,6 +164,7 @@ public sealed class ModernTypeInvariantProperties {
     }
 
     [Fact(DisplayName = "Int128: GreaterThan is strict below Int128.MaxValue, and conflicts at it.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void Int128GreaterThanIsStrictAndConflictsAtTheCeiling() {
         Prop.ForAll(Int128Values().ToArbitrary(),
                     bound => bound == Int128.MaxValue
@@ -172,6 +174,7 @@ public sealed class ModernTypeInvariantProperties {
     }
 
     [Fact(DisplayName = "Int128: LessThan is strict above Int128.MinValue, and conflicts at it.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void Int128LessThanIsStrictAndConflictsAtTheFloor() {
         Prop.ForAll(Int128Values().ToArbitrary(),
                     bound => bound == Int128.MinValue
@@ -200,6 +203,7 @@ public sealed class ModernTypeInvariantProperties {
     }
 
     [Fact(DisplayName = "Int128: Positive and Negative meet a bound on their own side of zero, and conflict with one on the other.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void Int128SignConstraintsMeetABoundOrConflict() {
         Prop.ForAll(Int128Values().ToArbitrary(),
                     bound => {
@@ -221,6 +225,7 @@ public sealed class ModernTypeInvariantProperties {
     }
 
     [Fact(DisplayName = "Int128: MultipleOf puts every draw on the lattice, and rejects a step that is not strictly positive.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void Int128MultipleOfPutsEveryDrawOnTheGrid() {
         Prop.ForAll(Int128Values().ToArbitrary(),
                     step => step <= Int128.Zero
@@ -230,6 +235,7 @@ public sealed class ModernTypeInvariantProperties {
     }
 
     [Fact(DisplayName = "Int128: Except removes the value from the interval, whatever the interval and the value.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void Int128ExceptRemovesTheValueFromTheInterval() {
         // The window is anchored on a drawn 64-bit value and widened by at most MaxWindow, so it reaches far into
         // the 128-bit domain while its top can never overflow past Int128.MaxValue.
@@ -272,6 +278,7 @@ public sealed class ModernTypeInvariantProperties {
     }
 
     [Fact(DisplayName = "UInt128: the exclusive bounds are strict, and conflict at the ends of an unsigned domain.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void UInt128ExclusiveBoundsAreStrictAndConflictAtTheDomainEdges() {
         Prop.ForAll(UInt128Values().ToArbitrary(),
                     bound => {
@@ -290,6 +297,7 @@ public sealed class ModernTypeInvariantProperties {
     }
 
     [Fact(DisplayName = "UInt128: MultipleOf puts every draw on the lattice, and rejects a step of zero.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void UInt128MultipleOfPutsEveryDrawOnTheGrid() {
         Prop.ForAll(UInt128Values().ToArbitrary(),
                     step => step == UInt128.Zero
@@ -326,6 +334,7 @@ public sealed class ModernTypeInvariantProperties {
     }
 
     [Fact(DisplayName = "Half: crossed Between arguments are an argument error, not a conflict — argument validation comes first.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void HalfCrossedBoundsAreAnArgumentError() {
         Prop.ForAll(Generators.OrderedPair(Halves()).ToArbitrary(),
                     bounds => bounds.Min == bounds.Max
@@ -334,6 +343,7 @@ public sealed class ModernTypeInvariantProperties {
     }
 
     [Fact(DisplayName = "Half: Positive and Negative meet a bound on their own side of zero, and conflict with one on the other.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void HalfSignConstraintsMeetABoundOrConflict() {
         Prop.ForAll(Halves().ToArbitrary(),
                     bound => {
@@ -354,6 +364,7 @@ public sealed class ModernTypeInvariantProperties {
     }
 
     [Fact(DisplayName = "Half: Zero pins the value, and only excluding zero itself empties it.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void HalfZeroPinsUnlessTheExclusionEmptiesIt() {
         Prop.ForAll(Halves().ToArbitrary(),
                     excluded => excluded == Half.Zero
@@ -378,6 +389,7 @@ public sealed class ModernTypeInvariantProperties {
     }
 
     [Fact(DisplayName = "DateOnly: After and Before are exclusive, and conflict at the edges of the domain.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void DateOnlyAfterAndBeforeAreExclusive() {
         Prop.ForAll(Dates().ToArbitrary(),
                     date => {
@@ -413,6 +425,7 @@ public sealed class ModernTypeInvariantProperties {
     }
 
     [Fact(DisplayName = "DateOnly: crossed Between arguments are an argument error, never a silent swap.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void DateOnlyCrossedBoundsAreAnArgumentError() {
         Prop.ForAll(Generators.OrderedPair(Dates()).ToArbitrary(),
                     bounds => bounds.Min == bounds.Max
@@ -430,6 +443,7 @@ public sealed class ModernTypeInvariantProperties {
 
     [Fact(DisplayName = "TimeOnly: After and Before are exclusive, AfterOrEqualTo and BeforeOrEqualTo inclusive, at every time of day.")]
     [SuppressMessage(JustDummiesRule.JD031.Category, JustDummiesRule.JD031.Id, Justification = SuppressionJustification.JD031.SeparateBoundsAreTheSubject)]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void TimeOnlyBoundsCarryTheirInclusivity() {
         Prop.ForAll(Times().ToArbitrary(),
                     time => {
@@ -451,6 +465,7 @@ public sealed class ModernTypeInvariantProperties {
     }
 
     [Fact(DisplayName = "TimeOnly: WithGranularity puts every draw on the lattice anchored at midnight, and rejects a non-positive step.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void TimeOnlyWithGranularityPutsEveryDrawOnTheLattice() {
         // The anchor is TimeOnly.MinValue, not the drawn value: the lattice belongs to the domain, so a granularity
         // yields the same grid whatever else has been declared — and the value is built on it, never snapped onto it.

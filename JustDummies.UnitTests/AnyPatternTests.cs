@@ -1,5 +1,6 @@
 #region Usings declarations
 
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 using System.Text.RegularExpressions;
@@ -529,6 +530,7 @@ public sealed class AnyPatternTests {
     }
 
     [Fact(DisplayName = "The exclusion arguments are validated as arguments, not as conflicts.")]
+    [SuppressMessage(JustDummiesRule.JD014.Category, JustDummiesRule.JD014.Id, Justification = SuppressionJustification.JD014.ThrowIsTheSubject)]
     public void ExclusionArgumentsAreValidated() {
         Check.ThatCode(() => Any.StringMatching("a").Except(null!)).Throws<ArgumentNullException>();
         Check.ThatCode(() => Any.StringMatching("a").Except()).Throws<ArgumentException>();
@@ -855,6 +857,7 @@ public sealed class AnyPatternTests {
     }
 
     [Fact(DisplayName = "A pooled pattern answers a distinct collection with the size of its surviving set.")]
+    [SuppressMessage(JustDummiesRule.JD016.Category, JustDummiesRule.JD016.Id, Justification = SuppressionJustification.JD016.ThrowIsTheSubject)]
     public void APooledPatternAnswersItsCardinality() {
         // Two survivors, so a third distinct element cannot be drawn — and with the domain supplied that is
         // established at declaration rather than discovered by exhausting the dedup draw.
@@ -874,6 +877,7 @@ public sealed class AnyPatternTests {
     }
 
     [Fact(DisplayName = "The value set arguments are validated as arguments, not as conflicts.")]
+    [SuppressMessage(JustDummiesRule.JD014.Category, JustDummiesRule.JD014.Id, Justification = SuppressionJustification.JD014.ThrowIsTheSubject)]
     public void ValueSetArgumentsAreValidated() {
         Check.ThatCode(() => Any.StringMatching("a").OneOf((string[])null!)).Throws<ArgumentNullException>();
         Check.ThatCode(() => Any.StringMatching("a").OneOf((IEnumerable<string>)null!)).Throws<ArgumentNullException>();

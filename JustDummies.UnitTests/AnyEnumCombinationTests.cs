@@ -134,6 +134,7 @@ public sealed class AnyEnumCombinationTests {
     }
 
     [Fact(DisplayName = "OneOf: a value no combination of declared members produces is refused, naming both.")]
+    [SuppressMessage(JustDummiesRule.JD017.Category, JustDummiesRule.JD017.Id, Justification = SuppressionJustification.JD017.ThrowIsTheSubject)]
     public void OneOfRefusesAValueTheTypeDoesNotDefine() {
         // Bit 3 is declared nowhere, so 8 is neither a member nor an OR of members — the case the acceptance above
         // must not swallow, since no constraint the caller could add would ever make it drawable.
@@ -145,6 +146,7 @@ public sealed class AnyEnumCombinationTests {
     }
 
     [Fact(DisplayName = "OneOf: the empty combination is refused where the enum declares no zero member.")]
+    [SuppressMessage(JustDummiesRule.JD017.Category, JustDummiesRule.JD017.Id, Justification = SuppressionJustification.JD017.ThrowIsTheSubject)]
     public void OneOfRefusesZeroWhereItIsNotDeclared() {
         ArgumentException error = Assert.Throws<ArgumentException>(() => Any.Enum<Sides>().OneOf(default(Sides)));
 
@@ -152,6 +154,7 @@ public sealed class AnyEnumCombinationTests {
     }
 
     [Fact(DisplayName = "OneOf: a non-[Flags] enum still admits only its declared members.")]
+    [SuppressMessage(JustDummiesRule.JD017.Category, JustDummiesRule.JD017.Id, Justification = SuppressionJustification.JD017.ThrowIsTheSubject)]
     public void OneOfRefusesACompositeOnANonFlagsEnum() {
         // Nothing about the acceptance leaks to the enums that never asked to be combined.
         ArgumentException error = Assert.Throws<ArgumentException>(() => Any.Enum<OrderStatus>().OneOf((OrderStatus)7));
@@ -182,6 +185,7 @@ public sealed class AnyEnumCombinationTests {
     }
 
     [Fact(DisplayName = "AllowingCombinations: the widened universe feeds the distinct-collection cardinality check.")]
+    [SuppressMessage(JustDummiesRule.JD016.Category, JustDummiesRule.JD016.Id, Justification = SuppressionJustification.JD016.ThrowIsTheSubject)]
     public void CombinationsWidenTheCardinalityHint() {
         // Eight distinct values exist, so eight are obtainable and nine conflict eagerly — the same check that caps a
         // declared-members draw at four.
@@ -217,6 +221,7 @@ public sealed class AnyEnumCombinationTests {
     }
 
     [Fact(DisplayName = "Excluding every declared member is still refused when no combination is allowed to rescue it.")]
+    [SuppressMessage(JustDummiesRule.JD017.Category, JustDummiesRule.JD017.Id, Justification = SuppressionJustification.JD017.ThrowIsTheSubject)]
     public void ExcludingEveryDeclaredMemberWithoutCombinationsIsStillRefused() {
         // The other side of the same guard: giving the widening constraint its chance must not relax the refusal
         // when the caller never wrote it. The message is the one it always was.

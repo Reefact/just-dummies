@@ -1,5 +1,7 @@
 #region Usings declarations
 
+using System.Diagnostics.CodeAnalysis;
+using JustDummies.Diagnostics;
 using System.Runtime.CompilerServices;
 
 using FsCheck;
@@ -134,6 +136,7 @@ public sealed class CollectionProperties {
     }
 
     [Fact(DisplayName = "Crossed WithCountBetween arguments are an argument error, never a silent swap.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void CrossedCountBoundsAreAnArgumentError() {
         Prop.ForAll(Generators.OrderedPair(Generators.Count(30)).ToArbitrary(),
                     bounds => bounds.Min == bounds.Max
@@ -142,6 +145,7 @@ public sealed class CollectionProperties {
     }
 
     [Fact(DisplayName = "A negative count is rejected as an argument error by every count method.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void NegativeCountsAreAnArgumentError() {
         // Argument validation precedes conflict checking, so these must be ArgumentOutOfRangeException whatever else
         // the generator already carries — a negative count is never a "contradiction with a declared constraint".
@@ -278,6 +282,7 @@ public sealed class CollectionProperties {
     }
 
     [Fact(DisplayName = "More required values than WithMaxCount allows conflicts; up to that many are all placed.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void RequiredValuesBeyondTheCountCapConflict() {
         Gen<int[]> requiredValues = Gen.NonEmptyListOf(Generators.Int32()).Select(drawn => drawn.Distinct().Take(6).ToArray());
 

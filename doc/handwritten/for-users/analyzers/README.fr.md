@@ -81,6 +81,28 @@ Ces règles concernent l'assemblage de générateurs en générateurs plus gros 
 | [JD027 UnusedCombineOperand](JD027.fr.md) | 🟠 Avertissement | on | Un opérande de `Combine` est tiré puis jeté parce que le composeur ne lit jamais son paramètre. Nommer le paramètre `_` pour dire que le tirage est délibéré. |
 | [JD028 InertDistinctness](JD028.fr.md) | 🟠 Avertissement | on | La distinction est déclarée sur un type d'élément sans égalité de valeur : elle est satisfaite par construction et la collection peut quand même contenir deux fois la même valeur. |
 
+## Un test qui vérifie un refus
+
+Chaque règle signale ce qu'elle voit, code de test compris : aucune règle ne cherche à deviner quels appels un
+test écrit exprès. Un test dont le sujet est le refus lui-même, par exemple un test qui vérifie que des bornes
+transposées sont rejetées, fait taire la règle là où c'est voulu, avec un `[SuppressMessage]` justifié qui
+nomme la règle par le [catalogue](../packages/justdummies-diagnosticcatalog.fr.md) :
+
+<!-- jd:declarations -->
+```csharp
+public sealed class BoundsTests {
+
+    [Fact]
+    [SuppressMessage(JustDummiesRule.JD014.Category, JustDummiesRule.JD014.Id, Justification = "Le refus EST le sujet : le test vérifie que des bornes transposées sont rejetées.")]
+    public void Transposed_bounds_are_rejected() {
+        Assert.Throws<ArgumentException>(() => Any.Int32().Between(10, 5));
+    }
+
+}
+```
+
+Partout ailleurs, le même diagnostic signale une erreur : la chaîne lève une exception à chaque exécution.
+
 ## Configuration
 
 La sévérité de chaque règle se règle dans `.editorconfig`, par exemple :

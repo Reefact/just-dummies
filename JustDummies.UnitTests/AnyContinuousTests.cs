@@ -1,5 +1,7 @@
 #region Usings declarations
 
+using System.Diagnostics.CodeAnalysis;
+
 using NFluent;
 
 #endregion
@@ -105,6 +107,7 @@ public sealed class AnyContinuousTests {
     }
 
     [Fact(DisplayName = "Single: finite draws, strict signs, bounds contained, NaN rejected.")]
+    [SuppressMessage(JustDummiesRule.JD014.Category, JustDummiesRule.JD014.Id, Justification = SuppressionJustification.JD014.ThrowIsTheSubject)]
     public void SingleBehaves() {
         for (int i = 0; i < SampleCount; i++) {
             float value = Any.Single().Generate();
@@ -123,6 +126,7 @@ public sealed class AnyContinuousTests {
     }
 
     [Fact(DisplayName = "Decimal: strict signs, pinned zero, contained bounds, and strict GreaterThan via exclusion.")]
+    [SuppressMessage(JustDummiesRule.JD014.Category, JustDummiesRule.JD014.Id, Justification = SuppressionJustification.JD014.ThrowIsTheSubject)]
     public void DecimalBehaves() {
         for (int i = 0; i < SampleCount; i++) {
             Check.That(Any.Decimal().Positive().Generate()).IsStrictlyGreaterThan(0m);

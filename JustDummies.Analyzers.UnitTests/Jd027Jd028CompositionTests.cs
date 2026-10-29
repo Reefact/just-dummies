@@ -346,26 +346,4 @@ public class Jd028InertDistinctnessTests {
         Check.That(diagnostics[0].Id).IsEqualTo("JD028");
     }
 
-    [Fact]
-    public async Task Does_not_report_a_negative_test() {
-        string source = $$"""
-            using System;
-            using JustDummies;
-
-            {{ReferenceEqualityType}}
-
-            public static class Sample {
-                public static void M() {
-                    Run(() => Any.SetOf(Any.Int32().As(v => new Box(v))));
-                }
-
-                private static void Run(Func<object> body) { }
-            }
-            """;
-
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new InertDistinctnessAnalyzer(), source);
-
-        Check.That(diagnostics.Length).IsEqualTo(0);
-    }
-
 }

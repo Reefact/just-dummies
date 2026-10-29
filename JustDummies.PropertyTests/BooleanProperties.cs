@@ -1,5 +1,8 @@
 #region Usings declarations
 
+using System.Diagnostics.CodeAnalysis;
+using JustDummies.Diagnostics;
+
 using FsCheck;
 using FsCheck.Fluent;
 
@@ -29,6 +32,7 @@ public sealed class BooleanProperties {
     #endregion
 
     [Fact(DisplayName = "A pin conflicts unless it repeats the first, whichever two are combined.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void APinConflictsUnlessItRepeatsTheFirst() {
         Gen<(bool First, bool Second)> cases =
             from first in Gen.Elements(false, true)

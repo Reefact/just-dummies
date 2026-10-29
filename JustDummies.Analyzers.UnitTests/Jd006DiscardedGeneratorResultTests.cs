@@ -116,30 +116,6 @@ public class Jd006DiscardedGeneratorResultTests {
     }
 
     [Fact]
-    public async Task Does_not_report_a_conflict_asserting_negative_test() {
-        // The illegal chain is the whole body of a lambda argument — the shape every throws-assertion uses. This
-        // repository's own suite writes hundreds of them.
-        const string source = """
-            using System;
-            using JustDummies;
-
-            public static class Assertions {
-                public static void Throws(Action code) { }
-            }
-
-            public static class Sample {
-                public static void M() {
-                    Assertions.Throws(() => Any.String().WithLength(3).StartingWith("ORD-"));
-                }
-            }
-            """;
-
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new DiscardedGeneratorResultAnalyzer(), source);
-
-        Check.That(diagnostics.Length).IsEqualTo(0);
-    }
-
-    [Fact]
     public async Task Reports_arrange_code_inside_a_block_bodied_lambda() {
         // The negative-test guard must stay narrow: inside Any.Reproducibly's body the dropped constraint is a real
         // defect, because the call is one statement of a block rather than the lambda's whole body.

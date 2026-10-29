@@ -1,5 +1,6 @@
 #region Usings declarations
 
+using System.Diagnostics.CodeAnalysis;
 using System;
 using System.Collections.Generic;
 
@@ -179,6 +180,7 @@ public sealed class AnyUriTests {
     }
 
     [Fact(DisplayName = "A second scheme pin conflicts, naming both sides.")]
+    [SuppressMessage(JustDummiesRule.JD034.Category, JustDummiesRule.JD034.Id, Justification = SuppressionJustification.JD034.ThrowIsTheSubject)]
     public void SecondSchemePinConflicts() {
         Check.ThatCode(() => Any.Uri().Web().UsingHttp().UsingHttps())
              .Throws<ConflictingAnyConstraintException>()
@@ -186,6 +188,7 @@ public sealed class AnyUriTests {
     }
 
     [Fact(DisplayName = "A second path constraint conflicts, naming both sides.")]
+    [SuppressMessage(JustDummiesRule.JD034.Category, JustDummiesRule.JD034.Id, Justification = SuppressionJustification.JD034.ThrowIsTheSubject)]
     public void SecondPathConstraintConflicts() {
         Check.ThatCode(() => Any.Uri().Web().WithoutPath().WithPathSegments(2))
              .Throws<ConflictingAnyConstraintException>()
@@ -193,6 +196,7 @@ public sealed class AnyUriTests {
     }
 
     [Fact(DisplayName = "WithHost rejects a non-ASCII (IDN) host, pointing to punycode.")]
+    [SuppressMessage(JustDummiesRule.JD014.Category, JustDummiesRule.JD014.Id, Justification = SuppressionJustification.JD014.ThrowIsTheSubject)]
     public void WithHostRejectsIdnHost() {
         ArgumentException error = Assert.Throws<ArgumentException>(() => Any.Uri().Web().WithHost("münchen.de"));
 
@@ -200,6 +204,7 @@ public sealed class AnyUriTests {
     }
 
     [Fact(DisplayName = "Host, user-info, port and segment-count arguments are validated as arguments.")]
+    [SuppressMessage(JustDummiesRule.JD014.Category, JustDummiesRule.JD014.Id, Justification = SuppressionJustification.JD014.ThrowIsTheSubject)]
     public void ArgumentsAreValidated() {
         Check.ThatCode(() => Any.Uri().Web().WithHost(null!)).Throws<ArgumentNullException>();
         Check.ThatCode(() => Any.Uri().Web().WithHost("")).Throws<ArgumentException>();
@@ -219,6 +224,7 @@ public sealed class AnyUriTests {
     }
 
     [Fact(DisplayName = "A relative URI with an explicit 0 segments and nothing else fails at generation with a seed.")]
+    [SuppressMessage(JustDummiesRule.JD026.Category, JustDummiesRule.JD026.Id, Justification = SuppressionJustification.JD026.ThrowIsTheSubject)]
     public void EmptyRelativeFailsAtGeneration() {
         Check.ThatCode(() => Any.WithSeed(20260723).Uri().Relative().WithPathSegments(0).Generate())
              .Throws<AnyGenerationException>()
@@ -235,6 +241,7 @@ public sealed class AnyUriTests {
     }
 
     [Fact(DisplayName = "WithHost rejects a non-canonical shorthand-IPv4 host that would not round-trip.")]
+    [SuppressMessage(JustDummiesRule.JD014.Category, JustDummiesRule.JD014.Id, Justification = SuppressionJustification.JD014.ThrowIsTheSubject)]
     public void WithHostRejectsNonCanonicalHost() {
         ArgumentException error = Assert.Throws<ArgumentException>(() => Any.Uri().Web().WithHost("123"));
         Check.That(error.Message).Contains("canonical");

@@ -816,26 +816,4 @@ public class Jd015StringConstraintsAdmitNoValueTests {
         Check.That(diagnostics.Select(diagnostic => diagnostic.Id)).IsEmpty();
     }
 
-    [Fact]
-    public async Task Does_not_report_a_conflict_asserting_negative_test() {
-        const string source = """
-            using System;
-            using JustDummies;
-
-            public static class Check2 {
-                public static void ThatCode(Func<object> code) { }
-            }
-
-            public static class Sample {
-                public static void M() {
-                    Check2.ThatCode(() => Any.String().WithLength(3).StartingWith("ORD-"));
-                }
-            }
-            """;
-
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new StringConstraintsAdmitNoValueAnalyzer(), source);
-
-        Check.That(diagnostics.Length).IsEqualTo(0);
-    }
-
 }

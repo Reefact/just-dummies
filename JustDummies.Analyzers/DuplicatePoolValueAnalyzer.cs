@@ -47,7 +47,6 @@ public sealed class DuplicatePoolValueAnalyzer : DiagnosticAnalyzer {
 
         if (invocation.TargetMethod.Name is not ("OneOf" or "ElementOf" or "WithChars")) { return; }
         if (!AnyChainFacts.TryGetChain(invocation, symbols, out _, out IInvocationOperation? factory) || factory is null) { return; }
-        if (NegativeTestGuard.IsSoleBodyOfLambdaArgument(invocation.Syntax)) { return; }
 
         Location? duplicate = invocation.TargetMethod.Name == "WithChars" ? RepeatedCharacter(invocation) : RepeatedValue(invocation);
         if (duplicate is not null) { context.ReportDiagnostic(Diagnostic.Create(Descriptors.DuplicatePoolValue, duplicate)); }

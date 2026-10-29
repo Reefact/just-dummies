@@ -289,29 +289,6 @@ public class Jd021BlankReplaySnippetTests {
         Check.That(diagnostics.Length).IsEqualTo(0);
     }
 
-    [Fact]
-    public async Task Does_not_report_a_guard_asserting_negative_test() {
-        // JustDummies.PropertyTests asserts exactly this rejection.
-        const string source = """
-            using System;
-            using JustDummies;
-
-            public static class Expect {
-                public static bool Throws<T>(Func<object> code) where T : Exception => true;
-            }
-
-            public static class Sample {
-                public static void M(int seed) {
-                    Expect.Throws<ArgumentException>(() => Any.UseSeed(seed, " "));
-                }
-            }
-            """;
-
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new BlankReplaySnippetAnalyzer(), source);
-
-        Check.That(diagnostics.Length).IsEqualTo(0);
-    }
-
 }
 
 public class Jd022ParallelDrawWithoutPerItemSeedTests {

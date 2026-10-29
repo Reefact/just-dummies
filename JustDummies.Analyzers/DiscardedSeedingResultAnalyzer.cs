@@ -54,10 +54,6 @@ public sealed class DiscardedSeedingResultAnalyzer : DiagnosticAnalyzer {
         if (consequence.Length == 0) { return; }
         if (!IsResultDiscarded(invocation)) { return; }
 
-        // A test asserting that the seeding call rejects its argument never opens a scope, so there is nothing to
-        // leak; the call being the whole body of a lambda argument is that shape.
-        if (NegativeTestGuard.IsSoleBodyOfLambdaArgument(invocation.Syntax)) { return; }
-
         context.ReportDiagnostic(Diagnostic.Create(Descriptors.DiscardedSeedingResult, invocation.Syntax.GetLocation(), method.Name, consequence));
     }
 

@@ -42,6 +42,7 @@ public sealed class ExclusionProvenanceTests {
     #endregion
 
     [Fact(DisplayName = "AnyEnum: an exclusion that empties an allow-list is named, and the allow-list is not blamed.")]
+    [SuppressMessage(JustDummiesRule.JD017.Category, JustDummiesRule.JD017.Id, Justification = SuppressionJustification.JD017.ThrowIsTheSubject)]
     public void EnumExclusionEmptyingAnAllowListIsNamed() {
         Check.ThatCode(() => Any.Enum<OrderStatus>()
                                 .OneOf(OrderStatus.Draft, OrderStatus.Validated)
@@ -58,6 +59,7 @@ public sealed class ExclusionProvenanceTests {
     }
 
     [Fact(DisplayName = "AnyEnum: an earlier exclusion is named when a later constraint completes the exhaustion.")]
+    [SuppressMessage(JustDummiesRule.JD017.Category, JustDummiesRule.JD017.Id, Justification = SuppressionJustification.JD017.ThrowIsTheSubject)]
     public void EnumEarlierExclusionIsNamed() {
         Check.ThatCode(() => Any.Enum<OrderStatus>()
                                 .Except(OrderStatus.Draft, OrderStatus.Validated)
@@ -71,6 +73,7 @@ public sealed class ExclusionProvenanceTests {
     }
 
     [Fact(DisplayName = "AnyEnum: two exclusions that both bit are both named, and the verb agrees.")]
+    [SuppressMessage(JustDummiesRule.JD017.Category, JustDummiesRule.JD017.Id, Justification = SuppressionJustification.JD017.ThrowIsTheSubject)]
     public void EnumSeveralExclusionsAreAllNamed() {
         Check.ThatCode(() => Any.Enum<OrderStatus>()
                                 .Except(OrderStatus.Draft)
@@ -85,6 +88,7 @@ public sealed class ExclusionProvenanceTests {
     }
 
     [Fact(DisplayName = "AnyEnum: an exclusion outside the allow-list never bit, so it is not named.")]
+    [SuppressMessage(JustDummiesRule.JD017.Category, JustDummiesRule.JD017.Id, Justification = SuppressionJustification.JD017.ThrowIsTheSubject)]
     public void EnumExclusionThatNeverBitIsNotNamed() {
         Check.ThatCode(() => Any.Enum<OrderStatus>()
                                 .Except(OrderStatus.Cancelled)          // outside the allow-list below: never removed anything
@@ -138,7 +142,7 @@ public sealed class ExclusionProvenanceTests {
     }
 
     [Fact(DisplayName = "An element generator admitting nothing names its own exclusion, not the collection's Distinct().")]
-    [SuppressMessage(JustDummiesRule.JD017.Category, JustDummiesRule.JD017.Id, Justification = "The emptied enum IS the subject: this pins which constraint the sentence names when such a generator is the element of a collection. NegativeTestGuard cannot reach it, and is right not to — the chain is nested inside Any.SetOf/Any.ListOf rather than being the whole lambda body.")]
+    [SuppressMessage(JustDummiesRule.JD017.Category, JustDummiesRule.JD017.Id, Justification = SuppressionJustification.JD017.ThrowIsTheSubject)]
     public void EmptyElementGeneratorNamesItsOwnExclusion() {
         // Same fault, same sentence, whether or not the collection is distinct. The non-distinct path reaches the
         // element's own refusal by drawing; the distinct path asks the cardinality gate first, and used to answer
@@ -156,6 +160,7 @@ public sealed class ExclusionProvenanceTests {
     }
 
     [Fact(DisplayName = "A distinct collection asking for more than a NON-empty domain still names the cardinality shortfall.")]
+    [SuppressMessage(JustDummiesRule.JD016.Category, JustDummiesRule.JD016.Id, Justification = SuppressionJustification.JD016.ThrowIsTheSubject)]
     public void DistinctBeyondANonEmptyDomainStillNamesTheShortfall() {
         // The other side of the same guard: where the element generator does admit values and the collection asks
         // for more distinct ones than exist, the cardinality sentence is the right one. Letting an exhausted

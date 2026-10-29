@@ -1,6 +1,7 @@
 #region Usings declarations
 
 using System.Diagnostics.CodeAnalysis;
+using JustDummies.Diagnostics;
 
 using FsCheck;
 using FsCheck.Fluent;
@@ -324,6 +325,7 @@ public sealed class CompositionProperties {
     }
 
     [Fact(DisplayName = "Excluding part of a pool leaves exactly the complement; excluding all of it conflicts.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void ExcludingAPoolLeavesItsComplement() {
         Gen<(string[] Pool, string[] Excluded)> cases =
             from pool in StringPools()
@@ -372,6 +374,7 @@ public sealed class CompositionProperties {
     }
 
     [Fact(DisplayName = "A null anywhere in the pool is an argument error, at every position and on every pool entry point.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void ANullPoolElementIsAnArgumentError() {
         Prop.ForAll((from pool in StringPools()
                      from index in Gen.Choose(0, 24)
@@ -388,6 +391,8 @@ public sealed class CompositionProperties {
     }
 
     [Fact(DisplayName = "An absent pool is a null-argument error and an empty one an argument error, on the ambient and seeded entry points alike.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
+    [SuppressMessage(JustDummiesRule.JD014.Category, JustDummiesRule.JD014.Id, Justification = SuppressionJustification.JD014.ThrowIsTheSubject)]
     public void AbsentAndEmptyPoolsAreArgumentErrors() {
         // There is nothing to quantify inside the pool — it is absent or empty by definition — so the quantification
         // runs over the context instead: Any and Any.WithSeed(...) mirror the same surface and must reject identically.
@@ -410,6 +415,8 @@ public sealed class CompositionProperties {
     }
 
     [Fact(DisplayName = "The composition seams reject a null generator or a null lambda, whatever the source constraint.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
+    [SuppressMessage(JustDummiesRule.JD027.Category, JustDummiesRule.JD027.Id, Justification = SuppressionJustification.JD027.ThrowIsTheSubject)]
     public void CompositionSeamsRejectNullArguments() {
         Prop.ForAll(Generators.OrderedPair(Generators.Int32()).ToArbitrary(),
                     bounds => {

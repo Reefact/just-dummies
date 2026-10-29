@@ -162,31 +162,6 @@ public class Jd029PooledValueNeverDrawsTests {
     }
 
     [Fact]
-    public async Task Does_not_report_a_conflict_asserting_negative_test() {
-        // The guard covers the shape a test uses to assert a failure: the chain is the WHOLE body of a lambda
-        // handed to another call. A pool written to be refused there is the subject, not a mistake.
-        const string source = """
-            using System;
-
-            using JustDummies;
-
-            public static class Check2 {
-                public static void ThatCode(Func<object> code) { }
-            }
-
-            public static class Sample {
-                public static void M() {
-                    Check2.ThatCode(() => Any.String().OneOf("abc", "de").WithLength(3));
-                }
-            }
-            """;
-
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new PooledValueNeverDrawsAnalyzer(), source);
-
-        Check.That(diagnostics.Length).IsEqualTo(0);
-    }
-
-    [Fact]
     public async Task Reports_a_value_only_a_later_constraint_refuses() {
         // The value set may be declared first or last; the chain is judged whole, from its outermost call.
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync("        _ = Any.String().WithLength(3).OneOf(\"abc\", \"de\");");

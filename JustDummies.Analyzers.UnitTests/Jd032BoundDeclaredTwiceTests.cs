@@ -124,30 +124,6 @@ public class Jd032BoundDeclaredTwiceTests {
     }
 
     [Fact]
-    public async Task Does_not_report_a_chain_asserted_to_throw() {
-        const string source = """
-            using System;
-
-            using JustDummies;
-
-            public static class Check2 {
-                public static void ThatCode(Func<object> code) { }
-            }
-
-            public static class Sample {
-                public static void M() {
-                    Check2.ThatCode(() => Any.String().WithMinLength(8).WithMinLength(10));
-                }
-            }
-            """;
-
-        ImmutableArray<Diagnostic> diagnostics =
-            await AnalyzerTestHarness.GetDiagnosticsAsync(new BoundDeclaredTwiceAnalyzer(), source);
-
-        Check.That(diagnostics.Length).IsEqualTo(0);
-    }
-
-    [Fact]
     public async Task Reports_a_chain_once_even_when_two_bounds_are_doubled() {
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync("""
                     _ = Any.String().WithMinLength(1).WithMinLength(8).WithMaxLength(90).WithMaxLength(20).Generate();

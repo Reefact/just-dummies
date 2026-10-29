@@ -57,7 +57,6 @@ public sealed class ConstraintAlreadyDefinedAnalyzer : DiagnosticAnalyzer {
         if (invocation.Parent is IInvocationOperation) { return; }
         if (!AnyChainFacts.TryGetChain(invocation, symbols, out IReadOnlyList<IInvocationOperation> constraints, out IInvocationOperation? factory)) { return; }
         if (factory is null) { return; }
-        if (NegativeTestGuard.IsSoleBodyOfLambdaArgument(invocation.Syntax)) { return; }
 
         // The first call the run time would reject as already defined, the one its message names. Nothing after it is
         // ever applied, so the walk ends there.

@@ -208,11 +208,4 @@ public class Jd035ConstraintRepeatedTests {
         await NothingReportedAsync(chain);
     }
 
-    [Fact]
-    public async Task Does_not_report_a_repetition_asserting_negative_test() {
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync("        static void ThatCode(Func<object> code) { } ThatCode(() => Any.String().Alpha().Alpha());");
-
-        Check.That(diagnostics.Select(diagnostic => diagnostic.Id)).IsEmpty();
-    }
-
 }

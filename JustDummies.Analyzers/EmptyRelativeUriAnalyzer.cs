@@ -44,7 +44,6 @@ public sealed class EmptyRelativeUriAnalyzer : DiagnosticAnalyzer {
         if (invocation.Parent is IInvocationOperation) { return; }
         if (!AnyChainFacts.TryGetChain(invocation, symbols, out IReadOnlyList<IInvocationOperation> constraints, out IInvocationOperation? factory)) { return; }
         if (factory is null || factory.TargetMethod.Name != "Uri") { return; }
-        if (NegativeTestGuard.IsSoleBodyOfLambdaArgument(invocation.Syntax)) { return; }
 
         // Only the relative family can render empty. Web, WebSocket and FTP carry an authority, so a path of zero
         // segments still renders as "/" and the reference stays valid.

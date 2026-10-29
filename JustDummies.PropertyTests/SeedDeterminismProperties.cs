@@ -333,6 +333,7 @@ public sealed class SeedDeterminismProperties {
     }
 
     [Fact(DisplayName = "UseSeed rejects a null replay snippet, for every seed.")]
+    [SuppressMessage(JustDummiesRule.JD004.Category, JustDummiesRule.JD004.Id, Justification = SuppressionJustification.JD004.ThrowIsTheSubject)]
     public void UseSeedRejectsANullSnippet() {
         Prop.ForAll(Generators.Seed().ToArbitrary(),
                     seed => Expect.Throws<ArgumentNullException>(() => Any.UseSeed(seed, null!)))
@@ -340,6 +341,7 @@ public sealed class SeedDeterminismProperties {
     }
 
     [Fact(DisplayName = "UseSeed rejects a blank replay snippet, whatever the blank spelling.")]
+    [SuppressMessage(JustDummiesRule.JD004.Category, JustDummiesRule.JD004.Id, Justification = SuppressionJustification.JD004.ThrowIsTheSubject)]
     public void UseSeedRejectsABlankSnippet() {
         Gen<(int Seed, string Snippet)> cases = from seed in Generators.Seed()
                                                 from snippet in BlankSnippet()

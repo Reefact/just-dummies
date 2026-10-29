@@ -54,7 +54,6 @@ public sealed class ConstraintRepeatedAnalyzer : DiagnosticAnalyzer {
         if (invocation.Parent is IInvocationOperation) { return; }
         if (!AnyChainFacts.TryGetChain(invocation, symbols, out IReadOnlyList<IInvocationOperation> constraints, out IInvocationOperation? factory)) { return; }
         if (factory is null) { return; }
-        if (NegativeTestGuard.IsSoleBodyOfLambdaArgument(invocation.Syntax)) { return; }
 
         // Every repetition is reported: the calls after one are still applied. The walk ends at a call the run time
         // refuses, after which nothing is.

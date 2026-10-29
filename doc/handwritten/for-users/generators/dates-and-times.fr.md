@@ -74,7 +74,7 @@ exactement comme le `<=` de `DateTime`. Une borne peut être `Utc` ou `Unspecifi
 ```csharp
 DateTime localStart = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Local);
 
-// Refused: an ArgumentException naming `start`, and the two ways out.
+// Refusé : une ArgumentException qui nomme `start`, et les deux façons d'en sortir.
 AnyDateTime impossible = Any.DateTime().Between(localStart, localStart.AddDays(1));
 ```
 

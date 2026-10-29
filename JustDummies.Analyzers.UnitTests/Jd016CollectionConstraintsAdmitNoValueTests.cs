@@ -124,6 +124,11 @@ public class Jd016CollectionConstraintsAdmitNoValueTests {
     // to the Char() factory beneath and answering 128 would be too wide, not too narrow.
     [InlineData("Any.SetOf(Any.Char().OneOf('a', 'b')).WithCount(5)", "only 2")]
     [InlineData("Any.SetOf(Any.Char().OneOf('a', 'b', 'c')).WithCount(4)", "only 3")]
+    // Every typed generator's own pool, not only the character one: these compiled clean and threw (issue #326).
+    [InlineData("Any.SetOf(Any.Int32().OneOf(1, 2)).WithCount(3)", "only 2")]
+    [InlineData("Any.ArrayOf(Any.Double().OneOf(1.0, 2.0)).WithCount(3).Distinct()", "only 2")]
+    [InlineData("Any.SetOf(Any.Byte().OneOf(1, 2, 2)).WithCount(3)", "only 2")]
+    [InlineData("Any.SetOf(Any.String().OneOf(\"EUR\", \"USD\").Except(\"GBP\")).WithCount(3)", "only 2")]
     public async Task Reports_a_set_asking_for_more_than_a_small_primitive_row_can_give(string expression, string expected) {
         string source = $$"""
             using JustDummies;
@@ -178,6 +183,8 @@ public class Jd016CollectionConstraintsAdmitNoValueTests {
     [InlineData("Any.SetOf(Any.Char().OneOf('a', 'b', 'c')).WithCount(3)")]
     [InlineData("Any.SetOf(Any.Half()).WithCount(100)")]
     [InlineData("Any.SetOf(Any.Int32().OneOf(1, 2)).Containing(3).WithCount(3)")]
+    // A call that leaves the generator, such as OrNull(), may add a value the pool does not hold: null here.
+    [InlineData("Any.SetOf(Any.Int32().OneOf(1, 2).OrNull()).WithCount(3)")]
     // Issue #226: a value pinned outside a provable pool, or drawn by a generator the compiler cannot place, fills
     // its own slot, as the runtime counts it (#188). The gate compared the count with the pool alone and refused
     // these, although each generates on every seed.

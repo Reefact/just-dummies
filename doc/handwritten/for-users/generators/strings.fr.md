@@ -56,8 +56,8 @@ string anyWithStuff = Any.String().NonEmpty().Generate();
 string anyRealText  = Any.String().NotBlank().Generate();
 ```
 
-`NonEmpty()` est l'intrus de cette liste : il relève le plancher à un et laisse le plafond là où il
-était, si bien qu'une chaîne qui ne porte que lui tire encore toute l'étendue. L'analyzer
+`NonEmpty()` est l'intrus de cette liste : il relève d'un le plancher et le plafond — 1 à 1025 plutôt
+que 0 à 1024 —, si bien qu'une chaîne qui ne porte que lui tire encore toute l'étendue. L'analyzer
 [JD030](../analyzers/JD030.fr.md) le dit au site d'appel, sur cette ligne comme sur toute autre chaîne
 qui ne déclare aucune longueur.
 
@@ -267,7 +267,7 @@ string anySame = Any.StringMatching(new Regex("[a-z]{3}", RegexOptions.IgnoreCas
 | n'importe quel caractère | `.` |
 | classes de caractères et intervalles | `[A-Z]`, `[aeiou]`, `[^0-9]` |
 | classes abrégées | `\d` `\D` `\w` `\W` `\s` `\S` |
-| échappements | `\t` `\n` `\r` `\f` `\v` `\a` `\e` |
+| échappements | `\t` `\n` `\r` `\f` `\v` `\a` `\e`, et les formes par point de code `\xNN` et `\uNNNN` |
 | quantificateurs | `*` `+` `?` `{3}` `{2,5}` `{2,}` |
 | groupements | `(…)`, `(?:…)`, `(?<nom>…)` |
 | alternation | `a|b` |
@@ -282,7 +282,10 @@ jamais mal généré :
 
 | Refusé | Pourquoi |
 | --- | --- |
-| références arrière, groupes d'équilibrage `(?<a-b>…)` | ils exigent la pile de captures |
+| références arrière `\1`, `\k<nom>`, groupes d'équilibrage `(?<a-b>…)` | ils exigent la pile de captures |
+| limites de mot `\b`, `\B`, ancre de correspondance contiguë `\G` | elles décrivent le texte autour d'une position, pas un caractère |
+| catégories Unicode `\p{…}` | hors du sous-ensemble : écrivez les caractères sous forme de classe |
+| soustraction de classe `[a-z-[aeiou]]` | ne fait pas partie du langage généré : écrivez la classe en entier |
 | anticipation `(?=…)`, `(?!…)` | non régulier |
 | rétro-anticipation `(?<=…)`, `(?<!…)` | non régulier |
 | groupes atomiques `(?>…)` | non régulier |
@@ -290,6 +293,12 @@ jamais mal généré :
 | commentaires en ligne `(?#…)` | ne font pas partie du langage généré |
 | un `(?i:…)` à portée limitée, un `(?i)` ailleurs qu'en tête, toute autre option de groupe `(?s…)` | seul un unique `(?i)` en tête est honoré ; toute autre option de groupe reste hors du sous-ensemble |
 | une ancre hors extrémité | `^`, `\A` et `$`, `\z`, `\Z` n'ont de sens qu'au début et à la fin du motif, ou d'une branche d'alternation de premier niveau |
+
+Deux autres refus ont une autre forme. `RegexOptions.IgnorePatternWhitespace` sur la `Regex` transmise est refusé
+par une `ArgumentException` dès la construction du générateur, puisqu'il change la façon dont le texte du motif est
+lu : transmettez le motif sans lui. Et un motif dont la valeur dépasserait **65 536 caractères** — un
+quantificateur non borné imbriqué comme `(a+)+`, ou des bornés dont le produit est énorme comme `(a{1000}){1000}` —
+n'est pas refusé d'avance mais échoue à `Generate()` avec une `AnyGenerationException`.
 
 Élargir cet ensemble supposerait une dépendance à un automate d'expressions régulières ; la décision
 de garder un analyseur maison et de refuser bruyamment est

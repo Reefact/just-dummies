@@ -159,7 +159,7 @@ bool anyNotTheSame = Any.Boolean().DifferentFrom(true).Generate();
 `True()` et `False()` existent pour qu'un site d'appel qui fige le drapeau se lise comme ceux qui ne
 le figent pas, ce qui compte dans un test où trois dummies sur quatre varient et un seul non.
 
-`Any.Boolean().Except(true, false)` viderait le domaine, et est refusé avec un message disant
+`Any.Boolean().True().DifferentFrom(true)` viderait le domaine, et est refusé avec un message disant
 exactement cela.
 
 ---

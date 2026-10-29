@@ -62,9 +62,14 @@ Les conflits prennent quelques formes reconnaissables :
 | --- | --- |
 | bornes qui se croisent | `.GreaterThan(100).LessThan(10)` |
 | un treillis sans point dans l'intervalle | `.Between(1, 10).MultipleOf(50)` |
-| des exclusions qui vident le domaine | `Any.Boolean().Except(true, false)` |
+| des exclusions qui vident le domaine | `Any.Boolean().True().DifferentFrom(true)` |
 | une longueur trop courte pour les fragments | `.StartingWith("ORDER-").WithLength(3)` |
 | un effectif qu'aucun vivier ne peut remplir | 100 valeurs distinctes depuis un vivier de trois |
+
+Un appel unique dont les arguments sont à l'envers, `Between(10, 1)`, ne figure pas dans ce tableau : rien n'est
+déclaré deux fois, donc rien n'entre en conflit. C'est une seule liste d'arguments écrite à l'envers, refusée
+immédiatement par une `ArgumentException`, et [JD014](../analyzers/JD014.fr.md) la signale à la compilation quand
+les arguments sont des constantes.
 
 ## Attrapés à la compilation
 

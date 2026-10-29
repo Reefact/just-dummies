@@ -47,7 +47,7 @@ d'`Empty()` — sont refusés avec un message les nommant tous deux, et l'analyz
 [JD016](../analyzers/JD016.fr.md) attrape les cas constants dès la compilation.
 
 Un effectif supérieur à 1 000 000 est refusé
-([ADR-0029](../../for-maintainers/adr/0029-let-a-size-maximum-cap-without-steering-the-draw.fr.md)).
+([ADR-0076](../../for-maintainers/adr/0076-let-a-declared-maximum-steer-the-size-draw.fr.md)).
 
 ## Exiger des éléments précis
 

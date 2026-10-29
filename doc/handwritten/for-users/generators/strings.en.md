@@ -53,8 +53,8 @@ string anyWithStuff = Any.String().NonEmpty().Generate();
 string anyRealText  = Any.String().NotBlank().Generate();
 ```
 
-`NonEmpty()` is the odd one in that list: it raises the floor to one and leaves the ceiling where it
-was, so a chain carrying only it still draws the whole spread. The analyzer
+`NonEmpty()` is the odd one in that list: it raises the floor and the ceiling by one — 1 to 1025 rather
+than 0 to 1024 — so a chain carrying only it still draws the whole spread. The analyzer
 [JD030](../analyzers/JD030.en.md) says so at the call site, on that line and on every other chain
 that declares no length.
 
@@ -260,7 +260,7 @@ string anySame = Any.StringMatching(new Regex("[a-z]{3}", RegexOptions.IgnoreCas
 | any character | `.` |
 | character classes and ranges | `[A-Z]`, `[aeiou]`, `[^0-9]` |
 | shorthand classes | `\d` `\D` `\w` `\W` `\s` `\S` |
-| escapes | `\t` `\n` `\r` `\f` `\v` `\a` `\e` |
+| escapes | `\t` `\n` `\r` `\f` `\v` `\a` `\e`, and the code-point forms `\xNN` and `\uNNNN` |
 | quantifiers | `*` `+` `?` `{3}` `{2,5}` `{2,}` |
 | grouping | `(…)`, `(?:…)`, `(?<name>…)` |
 | alternation | `a|b` |
@@ -274,7 +274,10 @@ an `UnsupportedRegexException` naming the construct and its position — never m
 
 | Refused | Why |
 | --- | --- |
-| back-references, balancing groups `(?<a-b>…)` | they need the capture stack |
+| back-references `\1`, `\k<name>`, balancing groups `(?<a-b>…)` | they need the capture stack |
+| word boundaries `\b`, `\B`, the contiguous-match anchor `\G` | they describe the text around a position, not a character |
+| Unicode categories `\p{…}` | outside the subset: write the characters out as a class |
+| character-class subtraction `[a-z-[aeiou]]` | not part of the language being generated: write the class out |
 | lookahead `(?=…)`, `(?!…)` | not regular |
 | lookbehind `(?<=…)`, `(?<!…)` | not regular |
 | atomic groups `(?>…)` | not regular |
@@ -282,6 +285,12 @@ an `UnsupportedRegexException` naming the construct and its position — never m
 | inline comments `(?#…)` | not part of the language being generated |
 | a scoped `(?i:…)`, a `(?i)` anywhere but first, any other option group `(?s…)` | only one exact leading `(?i)` is honoured; every other option group stays outside the subset |
 | an anchor away from an edge | `^`, `\A` and `$`, `\z`, `\Z` are only meaningful at the start and end of the pattern, or of a top-level alternation branch |
+
+Two more refusals have a different shape. `RegexOptions.IgnorePatternWhitespace` on the `Regex` you pass is
+refused with an `ArgumentException` as the generator is built, since it changes how the pattern text is read:
+pass the pattern without it. And a pattern whose value would run past **65,536 characters** — a nested
+unbounded quantifier such as `(a+)+`, or bounded ones whose product is huge such as `(a{1000}){1000}` — is
+not refused up front but fails at `Generate()` with an `AnyGenerationException`.
 
 Widening this set would mean taking a regex-automaton dependency; the decision to keep a home-grown
 parser and refuse loudly instead is

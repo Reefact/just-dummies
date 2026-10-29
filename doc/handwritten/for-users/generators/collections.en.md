@@ -47,7 +47,7 @@ refused with a message naming both, and the analyzer [JD016](../analyzers/JD016.
 constant cases at build time.
 
 A count above one million is refused
-([ADR-0029](../../for-maintainers/adr/0029-let-a-size-maximum-cap-without-steering-the-draw.md)).
+([ADR-0076](../../for-maintainers/adr/0076-let-a-declared-maximum-steer-the-size-draw.md)).
 
 ## Requiring specific elements
 

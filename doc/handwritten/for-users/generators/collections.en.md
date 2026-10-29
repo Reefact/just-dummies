@@ -92,8 +92,10 @@ Two things are worth understanding here.
 
 **Distinctness is gated by cardinality.** Before drawing, the generator compares what you asked for
 with what the element generator can actually produce. Asking for ten distinct booleans, or a hundred
-distinct values from a pool of three, is refused immediately and by name rather than attempted
-([ADR-0004](../../for-maintainers/adr/0004-gate-distinct-collections-by-cardinality-else-bounded-draw.md)).
+distinct values from a pool of three, is refused by name rather than attempted: the conflict is raised at `Generate()`, once the whole chain is known
+and before any element is drawn, not at the call that declared it
+([ADR-0004](../../for-maintainers/adr/0004-gate-distinct-collections-by-cardinality-else-bounded-draw.md),
+amended by [ADR-0113](../../for-maintainers/adr/0113-check-a-distinct-collections-cardinality-when-the-specification-is-whole.md)).
 The analyzer [JD016](../analyzers/JD016.en.md) reports the constant cases at build time.
 
 **Where the count is feasible but tight, a bounded redraw finishes the job** — a fixed number of

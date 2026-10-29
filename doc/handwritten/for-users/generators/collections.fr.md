@@ -92,9 +92,11 @@ Deux points méritent d'être compris ici.
 
 **La distinction est filtrée par la cardinalité.** Avant de tirer, le générateur compare ce que vous
 demandez à ce que le générateur d'élément peut réellement produire. Demander dix booléens distincts,
-ou cent valeurs distinctes issues d'un vivier de trois, est refusé immédiatement et nommément plutôt
-que tenté
-([ADR-0004](../../for-maintainers/adr/0004-gate-distinct-collections-by-cardinality-else-bounded-draw.fr.md)).
+ou cent valeurs distinctes issues d'un vivier de trois, est refusé nommément plutôt que tenté : le
+conflit est levé à `Generate()`, une fois la chaîne entière connue et avant qu'aucun élément ne soit tiré, et non
+à l'appel qui l'a déclaré
+([ADR-0004](../../for-maintainers/adr/0004-gate-distinct-collections-by-cardinality-else-bounded-draw.fr.md),
+amendé par l'[ADR-0113](../../for-maintainers/adr/0113-check-a-distinct-collections-cardinality-when-the-specification-is-whole.fr.md)).
 L'analyzer [JD016](../analyzers/JD016.fr.md) signale les cas constants dès la compilation.
 
 **Là où l'effectif est atteignable mais serré, un retirage borné termine le travail** — un nombre

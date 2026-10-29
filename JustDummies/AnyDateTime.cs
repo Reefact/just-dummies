@@ -53,7 +53,7 @@ public sealed class AnyDateTime : IAny<DateTime>, IHasRandomSource, ICardinality
     /// </summary>
     private static void RefuseLocal(DateTime bound, string parameterName) {
         if (bound.Kind == DateTimeKind.Local) {
-            throw new ArgumentException($"The {parameterName} ({V(bound)}) has DateTimeKind.Local: it names a time on this machine's clock rather than an instant, and the library cannot tell which you meant. Pass {parameterName}.ToUniversalTime(), a Utc or Unspecified value, or use Any.DateTimeOffset() when the instant is what matters.", parameterName);
+            throw new ArgumentException($"The {parameterName} ({V(bound)}) has DateTimeKind.Local, which may represent a local clock time or an instant; the library cannot determine the intended interpretation. Pass {parameterName}.ToUniversalTime(), a Utc or Unspecified value, or use Any.DateTimeOffset() when the instant is what matters.", parameterName);
         }
     }
 

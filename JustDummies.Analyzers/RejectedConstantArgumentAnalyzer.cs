@@ -59,9 +59,18 @@ public sealed class RejectedConstantArgumentAnalyzer : DiagnosticAnalyzer {
         // say — and is still that test, the shape JD023 already stands down on.
         if (NegativeTestGuard.IsLinkOfSoleBodyOfLambdaArgument(invocation.Syntax)) { return; }
 
-        if (TryFindViolation(invocation, context.Compilation, out IOperation? offending, out string? reason)) {
+        if (TryFindViolation(invocation, context.Compilation, out IOperation? offending, out string? reason) && !IsJd017s(invocation, offending!)) {
             context.ReportDiagnostic(Diagnostic.Create(Descriptors.RejectedConstantArgument, offending!.Syntax.GetLocation(), invocation.TargetMethod.Name, reason));
         }
+    }
+
+    /// <summary>
+    ///     Whether the violation is an enumeration value the type does not define, which JD017 reports: one mistake on
+    ///     one expression draws one diagnostic (ADR-0078, issue #321). It stays a violation for <see cref="TryFindViolation" />
+    ///     all the same, since the guard still throws there and JD034 and JD035 must stop reading the chain at it.
+    /// </summary>
+    private static bool IsJd017s(IInvocationOperation invocation, IOperation offending) {
+        return ArgumentGuardFacts.TryFindUndefinedEnumElement(invocation, out IOperation? undefined, out _) && undefined!.Syntax == offending.Syntax;
     }
 
     /// <summary>

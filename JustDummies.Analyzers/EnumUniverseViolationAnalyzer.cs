@@ -45,6 +45,8 @@ public sealed class EnumUniverseViolationAnalyzer : DiagnosticAnalyzer {
     private static void Analyze(OperationAnalysisContext context, KnownSymbols symbols) {
         IInvocationOperation invocation = (IInvocationOperation)context.Operation;
 
+        ReportAValueTheTypeDoesNotDefine(context, invocation);
+
         if (invocation.Parent is IInvocationOperation) { return; }
         if (!AnyChainFacts.TryGetChain(invocation, symbols, out IReadOnlyList<IInvocationOperation> constraints, out IInvocationOperation? factory)) { return; }
         if (factory is null || factory.TargetMethod.Name != "Enum") { return; }
@@ -61,15 +63,22 @@ public sealed class EnumUniverseViolationAnalyzer : DiagnosticAnalyzer {
         // AllowingCombinations widens the universe to the OR-closure of the declared members, which no longer matches
         // a declared value one for one — so both rules below stand down rather than approximate it.
         if (constraints.Any(constraint => constraint.TargetMethod.Name == "AllowingCombinations")) { return; }
-        if (ReportedAValueTheTypeDoesNotDefine(context, constraints, declared, enumType)) { return; }
+        // A value the type does not define is reported on its own OneOf, above; the chain is not judged twice.
+        if (constraints.Any(constraint => ArgumentGuardFacts.TryFindUndefinedEnumElement(constraint, out _, out _))) { return; }
 
         ReportAnExclusionNothingSurvives(context, invocation, constraints, declared, enumType);
     }
 
     /// <summary>
-    ///     Reports the first value an allow-list names that the enum type does not define, and whether it did.
+    ///     Reports the first value a <c>OneOf</c> on <c>Any.Enum&lt;T&gt;()</c> names that the enum type does not define.
     /// </summary>
     /// <remarks>
+    ///     <para>
+    ///         Judged on the <c>OneOf</c> call itself, wherever its receiver comes from, with the reading of the guard
+    ///         JD014 uses for every other value set: this rule is the one that reports the membership, and JD014 stands
+    ///         down on it, so one mistake draws one diagnostic (ADR-0078, issue #321). <c>AllowingCombinations</c> does
+    ///         not change the verdict — <c>OneOf</c> refuses a value no combination produces either way.
+    ///     </para>
     ///     <para>
     ///         On a <see cref="FlagsAttribute">[Flags]</see> enum a combination of declared members is defined even
     ///         without the opt-in, because writing one is asking for it — which is what the generator accepts.
@@ -80,23 +89,11 @@ public sealed class EnumUniverseViolationAnalyzer : DiagnosticAnalyzer {
     ///         exclusion on a floating-point builder. Reporting it would refuse at build time what the run time honours.
     ///     </para>
     /// </remarks>
-    private static bool ReportedAValueTheTypeDoesNotDefine(OperationAnalysisContext context, IReadOnlyList<IInvocationOperation> constraints,
-                                                          HashSet<object?> declared, INamedTypeSymbol enumType) {
-        bool isFlags = enumType.GetAttributes().Any(IsFlagsAttribute);
+    private static void ReportAValueTheTypeDoesNotDefine(OperationAnalysisContext context, IInvocationOperation invocation) {
+        if (!ArgumentGuardFacts.TryFindUndefinedEnumElement(invocation, out IOperation? offending, out string? reason)) { return; }
+        if (NegativeTestGuard.IsLinkOfSoleBodyOfLambdaArgument(invocation.Syntax)) { return; }
 
-        foreach ((string name, IOperation value, object? constant) in ConstrainedValues(constraints)) {
-            if (name != OneOfMethodName) { continue; }
-            if (declared.Contains(constant)) { continue; }
-            if (isFlags && IsCombinationOfDeclared(constant, declared)) { continue; }
-
-            context.ReportDiagnostic(Diagnostic.Create(
-                Descriptors.EnumUniverseViolation, value.Syntax.GetLocation(),
-                $"{constant} is {(isFlags ? $"neither a declared member of {enumType.Name} nor a combination of its declared members" : $"not a declared member of {enumType.Name}")}"));
-
-            return true;
-        }
-
-        return false;
+        context.ReportDiagnostic(Diagnostic.Create(Descriptors.EnumUniverseViolation, offending!.Syntax.GetLocation(), reason));
     }
 
     /// <summary>
@@ -154,46 +151,6 @@ public sealed class EnumUniverseViolationAnalyzer : DiagnosticAnalyzer {
     }
 
     /// <summary>
-    ///     Whether <paramref name="constant" /> can be obtained by OR-ing declared members — <c>Read | Write</c> yes,
-    ///     <c>99</c> no. Mirrors <c>AnyEnum.IsCombinationOfDeclaredMembers</c>, which is what the generator applies.
-    /// </summary>
-    /// <remarks>
-    ///     Decided arithmetically rather than by enumerating the closure: OR-ing every declared member whose bits the
-    ///     value already carries gives the largest reachable value within it, so the value is reachable exactly when
-    ///     that OR is the value itself. A member the rule cannot read as bits makes the answer <c>false</c>, which
-    ///     only ever leaves the value to be reported as before — the rule never invents a permission it cannot prove.
-    /// </remarks>
-    private static bool IsCombinationOfDeclared(object? constant, HashSet<object?> declared) {
-        if (!TryBits(constant, out ulong bits)) { return false; }
-        // The empty combination is a value only where the enum declares it.
-        if (bits == 0UL) { return declared.Any(member => TryBits(member, out ulong zero) && zero == 0UL); }
-
-        ulong reachable = 0UL;
-        foreach (object? member in declared) {
-            if (!TryBits(member, out ulong memberBits) || memberBits == 0UL) { continue; }
-            if ((memberBits & bits) == memberBits) { reachable |= memberBits; }
-        }
-
-        return reachable == bits;
-    }
-
-    /// <summary>The constant's underlying bits, whatever the enum's underlying type — signed members included.</summary>
-    private static bool TryBits(object? constant, out ulong bits) {
-        // Reinterpreted at each signed width rather than converted, exactly as the runtime stores a negative member.
-        switch (constant) {
-            case sbyte value: bits  = unchecked((ulong)value); return true;
-            case short value: bits  = unchecked((ulong)value); return true;
-            case int value: bits    = unchecked((ulong)value); return true;
-            case long value: bits   = unchecked((ulong)value); return true;
-            case byte value: bits   = value; return true;
-            case ushort value: bits = value; return true;
-            case uint value: bits   = value; return true;
-            case ulong value: bits  = value; return true;
-            default: bits           = 0UL; return false;
-        }
-    }
-
-    /// <summary>
     ///     The constant values the universe rules reason about, each paired with the constraint that declared it —
     ///     <c>OneOf</c>, <c>Except</c> and <c>DifferentFrom</c>, in the order they were written, and only where the
     ///     argument is a constant the rule can compare against a declared member.
@@ -227,10 +184,6 @@ public sealed class EnumUniverseViolationAnalyzer : DiagnosticAnalyzer {
 
             yield return GeneratorFacts.Unwrap(argument.Value);
         }
-    }
-
-    private static bool IsFlagsAttribute(AttributeData attribute) {
-        return attribute.AttributeClass?.Name == "FlagsAttribute";
     }
 
 }

@@ -108,6 +108,27 @@ internal static class ArgumentGuardFacts {
 
         if (call.TargetMethod.ContainingType.Name is not ("AnyDouble" or "AnySingle" or "AnyEnum")) { return false; }
 
+        return TryFindFirstRejected(call, out offending, out reason);
+    }
+
+    /// <summary>
+    ///     The first element of an enumeration value set the type does not define: neither a declared member nor, on a
+    ///     <c>[Flags]</c> enumeration, a combination of declared members. A subset of <see cref="TryFindRejectedElement" />,
+    ///     kept apart because JD017 reports it and JD014 does not (issue #321).
+    /// </summary>
+    internal static bool TryFindUndefinedEnumElement(IInvocationOperation call, out IOperation? offending, out string? reason) {
+        offending = null;
+        reason    = null;
+
+        if (call.TargetMethod.Name != "OneOf" || call.TargetMethod.ContainingType.Name != "AnyEnum") { return false; }
+
+        return TryFindFirstRejected(call, out offending, out reason);
+    }
+
+    private static bool TryFindFirstRejected(IInvocationOperation call, out IOperation? offending, out string? reason) {
+        offending = null;
+        reason    = null;
+
         foreach (IOperation element in ValueSetFacts.Elements(call)) {
             if (element.ConstantValue is not { HasValue: true, Value: { } value } || ElementRejection(element, value) is not string rejection) { continue; }
 
@@ -233,7 +254,7 @@ internal static class ArgumentGuardFacts {
         if (declared.Contains(value)) { return null; }
         if (!enumeration.GetAttributes().Any(attribute => attribute.AttributeClass?.ToDisplayString() == "System.FlagsAttribute")) { return $"{written} is not a declared member of {enumeration.Name}"; }
 
-        return IsCombinationOfDeclaredMembers(declared.Select(Bits).ToArray(), Bits(value)) ? null : $"{written} is neither a declared member of {enumeration.Name} nor a combination of declared members";
+        return IsCombinationOfDeclaredMembers(declared.Select(Bits).ToArray(), Bits(value)) ? null : $"{written} is neither a declared member of {enumeration.Name} nor a combination of its declared members";
     }
 
     /// <summary>Whether OR-ing the declared members whose bits the value carries gives the value itself, as the run time decides it.</summary>

@@ -13,8 +13,8 @@ namespace JustDummies.Analyzers.PropertyTests;
 /// <summary>
 ///     The FsCheck generator of <see cref="GuardedCall" />s: one call per case on a guard <c>JD014</c> reads beyond a
 ///     range or a non-empty check — a host or a domain, a user-info part or a local part, an offset or a range of
-///     offsets, a granularity, a floating-point or an enumeration value set — its argument drawn so that both outcomes
-///     stay frequent.
+///     offsets, a granularity, a floating-point value set — or on the enumeration value set <c>JD017</c> reads, its
+///     argument drawn so that both outcomes stay frequent.
 /// </summary>
 /// <remarks>
 ///     <para>
@@ -123,9 +123,9 @@ internal static class GuardedCalls {
                from days in Gen.Choose(-2, 9).ListOf(length)
                from bindings in Gen.Choose(-2, 300).ListOf(length)
                from targets in Gen.OneOf(Gen.Choose(-2, 40), Gen.Elements(32767, 32768)).ListOf(length)
-               from call in Gen.Elements(new GuardedCall(Days, On<AnyEnum<DayOfWeek>>($"OneOf({EnumValues("DayOfWeek", days)})", g => g.OneOf(days.Select(value => (DayOfWeek)value).ToArray())), claimed: true),
-                                         new GuardedCall(Bindings, On<AnyEnum<BindingFlags>>($"OneOf({EnumValues("System.Reflection.BindingFlags", bindings)})", g => g.OneOf(bindings.Select(value => (BindingFlags)value).ToArray())), claimed: true),
-                                         new GuardedCall(Targets, On<AnyEnum<AttributeTargets>>($"OneOf({EnumValues("AttributeTargets", targets)})", g => g.OneOf(targets.Select(value => (AttributeTargets)value).ToArray())), claimed: true))
+               from call in Gen.Elements(new GuardedCall(Days, On<AnyEnum<DayOfWeek>>($"OneOf({EnumValues("DayOfWeek", days)})", g => g.OneOf(days.Select(value => (DayOfWeek)value).ToArray())), claimed: true, rule: "JD017"),
+                                         new GuardedCall(Bindings, On<AnyEnum<BindingFlags>>($"OneOf({EnumValues("System.Reflection.BindingFlags", bindings)})", g => g.OneOf(bindings.Select(value => (BindingFlags)value).ToArray())), claimed: true, rule: "JD017"),
+                                         new GuardedCall(Targets, On<AnyEnum<AttributeTargets>>($"OneOf({EnumValues("AttributeTargets", targets)})", g => g.OneOf(targets.Select(value => (AttributeTargets)value).ToArray())), claimed: true, rule: "JD017"))
                select call;
     }
 

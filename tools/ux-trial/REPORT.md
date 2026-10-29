@@ -46,7 +46,8 @@ IDs are stable so that issues can cite them: `CLI-`, `CORE-`, `AN-`, `XU-`, `DOC
 > marked or read as it should be. Milestone 8 (CORE-B1, CORE-B2, CORE-D1 to CORE-D3) is merged too, and so is
 > [#341](https://github.com/Reefact/just-dummies/pull/341), which stopped a decimal conflict on a `WithScale` grid naming the refused
 > constraint as its own cause ([#340](https://github.com/Reefact/just-dummies/issues/340)). Milestone 9 (CLI-B5 to CLI-B7, CLI-D1,
-> CLI-D3 to CLI-D5) is merged as well, each item confirmed by re-scaffolding its reproduction. On that
+> CLI-D3 to CLI-D5) is merged as well, each item confirmed by re-scaffolding its reproduction, and so is milestone 10 (AN-D1 to
+> AN-D3, AN-F1, AN-F2), each confirmed by rebuilding its reproduction. On that
 > state the trial passes 1099 of 1101 tests, the 2 red ones being the `Bug_` tests of [#310](https://github.com/Reefact/just-dummies/issues/310).
 > The other items below are open in their issues.
 
@@ -312,15 +313,15 @@ CORE-C9 (a subset `OneOf` intersecting), CORE-C10 (a public "draws ambient" decl
 
 <a id="an-d1"></a>
 **AN-D1 — JD014 and JD017 both report one undeclared enum value in `Any.Enum<T>().OneOf(...)` (medium).**
-Tracked in [#321](https://github.com/Reefact/just-dummies/issues/321).
+**Fixed in milestone 10** (tracked in [#321](https://github.com/Reefact/just-dummies/issues/321)): each undeclared enum value in `OneOf(...)` is reported once, by JD017 alone.
 
 <a id="an-d2"></a>
 **AN-D2 — JD023 names only the constraint that empties the domain, without its arguments (low).**
-Tracked in [#322](https://github.com/Reefact/just-dummies/issues/322).
+**Fixed in milestone 10** (tracked in [#322](https://github.com/Reefact/just-dummies/issues/322)): JD023 names the earlier constraint with its arguments: "cannot apply GreaterThan(10) because Between(1, 6) already requires values less than or equal to 6".
 
 <a id="an-d3"></a>
 **AN-D3 — JD014 and JD023 suppress different negative-test shapes (low).**
-Tracked in [#323](https://github.com/Reefact/just-dummies/issues/323).
+**Fixed in milestone 10** (tracked in [#323](https://github.com/Reefact/just-dummies/issues/323)): inside `Assert.ThrowsAny(() => chain.Generate())` JD014 and JD023 are now both silent (repro lines 49 and 50).
 
 <a id="an-d4"></a>
 **AN-D4 — The JD014 page claims to mirror the guards "exactly", and a test files a refused argument under "legal" (low).**
@@ -334,11 +335,11 @@ Tracked in [#325](https://github.com/Reefact/just-dummies/issues/325).
 
 <a id="an-f1"></a>
 **AN-F1 — JD016 ignores a typed numeric `OneOf` pool (low).**
-Tracked in [#326](https://github.com/Reefact/just-dummies/issues/326).
+**Fixed in milestone 10** (tracked in [#326](https://github.com/Reefact/just-dummies/issues/326)): typed pools (`Any.Double().OneOf(1.0, 2.0)`, `Any.Int32().OneOf(1, 2)`) are counted, so `WithCount(3).Distinct()` over them raises JD016.
 
 <a id="an-f2"></a>
 **AN-F2 — JD014 misses non-finite constant bounds, and `Half` in `OneOf` (low).**
-Tracked in [#327](https://github.com/Reefact/just-dummies/issues/327).
+**Fixed in milestone 10** (tracked in [#327](https://github.com/Reefact/just-dummies/issues/327)): JD014 reports NaN and infinite bounds (`Between`, `LessThan`, `LessThanOrEqualTo`) and a non-finite `Half` in `OneOf(...)`.
 
 ### Candidates (outside every rule's documented scope)
 

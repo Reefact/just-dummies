@@ -49,7 +49,8 @@ négatif d'un analyseur) ou `C` (candidat à une décision).
 > la revue de #331 sont marquées ou lues comme il se doit. La milestone 8 (CORE-B1, CORE-B2, CORE-D1 à CORE-D3)
 > est fusionnée elle aussi, de même que [#341](https://github.com/Reefact/just-dummies/pull/341) : un conflit décimal sur une
 > grille `WithScale` ne cite plus la contrainte refusée comme sa propre cause ([#340](https://github.com/Reefact/just-dummies/issues/340)). La milestone 9 (CLI-B5 à CLI-B7, CLI-D1,
-> CLI-D3 à CLI-D5) est fusionnée elle aussi, chaque élément confirmé en relançant `any` sur sa reproduction. Sur cet état, l'essai passe 1099 tests sur 1101, les 2 rouges étant les tests `Bug_`
+> CLI-D3 à CLI-D5) est fusionnée elle aussi, chaque élément confirmé en relançant `any` sur sa reproduction, de même que la milestone 10 (AN-D1 à
+> AN-D3, AN-F1, AN-F2), chaque élément confirmé en recompilant sa reproduction. Sur cet état, l'essai passe 1099 tests sur 1101, les 2 rouges étant les tests `Bug_`
 > de [#310](https://github.com/Reefact/just-dummies/issues/310). Les autres éléments ci-dessous restent ouverts dans leurs issues.
 
 | | |
@@ -319,15 +320,15 @@ publique « tire depuis la source ambiante »).
 
 <a id="an-d1"></a>
 **AN-D1 — JD014 et JD017 signalent tous deux une même valeur d'énumération non déclarée dans `Any.Enum<T>().OneOf(...)` (moyenne).**
-Suivi dans [#321](https://github.com/Reefact/just-dummies/issues/321).
+**Corrigé dans la milestone 10** (suivi dans [#321](https://github.com/Reefact/just-dummies/issues/321)) : chaque valeur d'enum non déclarée dans `OneOf(...)` est signalée une seule fois, par JD017 seul.
 
 <a id="an-d2"></a>
 **AN-D2 — JD023 ne nomme que la contrainte qui vide le domaine, sans ses arguments (faible).**
-Suivi dans [#322](https://github.com/Reefact/just-dummies/issues/322).
+**Corrigé dans la milestone 10** (suivi dans [#322](https://github.com/Reefact/just-dummies/issues/322)) : JD023 nomme la contrainte précédente avec ses arguments : « cannot apply GreaterThan(10) because Between(1, 6) already requires values less than or equal to 6 ».
 
 <a id="an-d3"></a>
 **AN-D3 — JD014 et JD023 neutralisent des formes de test négatif différentes (faible).**
-Suivi dans [#323](https://github.com/Reefact/just-dummies/issues/323).
+**Corrigé dans la milestone 10** (suivi dans [#323](https://github.com/Reefact/just-dummies/issues/323)) : dans `Assert.ThrowsAny(() => chain.Generate())`, JD014 et JD023 se taisent désormais tous les deux (lignes 49 et 50 de la reproduction).
 
 <a id="an-d4"></a>
 **AN-D4 — La page JD014 prétend refléter les gardes « exactly », et un test range un argument refusé parmi les « legal » (faible).**
@@ -341,11 +342,11 @@ Suivi dans [#325](https://github.com/Reefact/just-dummies/issues/325).
 
 <a id="an-f1"></a>
 **AN-F1 — JD016 ignore un ensemble `OneOf` numérique typé (faible).**
-Suivi dans [#326](https://github.com/Reefact/just-dummies/issues/326).
+**Corrigé dans la milestone 10** (suivi dans [#326](https://github.com/Reefact/just-dummies/issues/326)) : les pools typés (`Any.Double().OneOf(1.0, 2.0)`, `Any.Int32().OneOf(1, 2)`) sont comptés, donc `WithCount(3).Distinct()` dessus lève JD016.
 
 <a id="an-f2"></a>
 **AN-F2 — JD014 manque les bornes constantes non finies, et `Half` dans `OneOf` (faible).**
-Suivi dans [#327](https://github.com/Reefact/just-dummies/issues/327).
+**Corrigé dans la milestone 10** (suivi dans [#327](https://github.com/Reefact/just-dummies/issues/327)) : JD014 signale les bornes NaN et infinies (`Between`, `LessThan`, `LessThanOrEqualTo`) et un `Half` non fini dans `OneOf(...)`.
 
 ### Candidats (hors de la portée documentée de toute règle)
 

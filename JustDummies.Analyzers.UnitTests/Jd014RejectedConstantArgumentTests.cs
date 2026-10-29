@@ -145,12 +145,9 @@ public class Jd014RejectedConstantArgumentTests {
     // A granularity is read through every spelling of a TimeSpan, not only TimeSpan.Zero and the FromXxx factories.
     [InlineData("Any.DateTime().WithGranularity(new TimeSpan(0, 0, 0))",  "strictly positive")]
     [InlineData("Any.TimeSpan().WithGranularity(new TimeSpan(-1))",       "strictly positive")]
-    // A value set element a floating-point or an enumeration generator refuses.
+    // A value set element a floating-point generator refuses.
     [InlineData("Any.Double().OneOf(1.0, double.NaN)",                 "finite")]
     [InlineData("Any.Single().OneOf([float.PositiveInfinity])",        "finite")]
-    [InlineData("Any.Enum<Status>().OneOf(Status.Active, (Status)99)", "99 is not a declared member of Status")]
-    [InlineData("Any.Enum<Access>().OneOf((Access)8)",                 "8 is neither a declared member of Access nor a combination of declared members")]
-    [InlineData("Any.Enum<Access>().OneOf((Access)(-1))",              "-1 is neither a declared member of Access nor a combination of declared members")]
     public async Task Reports_a_uri_component_an_offset_or_a_value_the_guard_rejects(string expression, string expectedFragment) {
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeWithDeclarationsAsync(expression);
 
@@ -177,6 +174,10 @@ public class Jd014RejectedConstantArgumentTests {
     [InlineData("Any.Enum<Access>().OneOf((Access)0)")]
     // An exclusion is not checked against the members.
     [InlineData("Any.Enum<Status>().Except((Status)99)")]
+    // A value the enumeration does not define is refused, but JD017 reports it: one mistake, one diagnostic (#321).
+    [InlineData("Any.Enum<Status>().OneOf(Status.Active, (Status)99)")]
+    [InlineData("Any.Enum<Access>().OneOf((Access)8)")]
+    [InlineData("Any.Enum<Status>().OneOf(Status.Active).Except(Status.Pending).OneOf((Status)99)")]
     // Refused here, but not wherever the test may run. System.Uri judges every other host, and its parsing differs
     // across target frameworks; the invariant lower case of İ is i under some runtimes and globalization modes, and İ
     // under others.

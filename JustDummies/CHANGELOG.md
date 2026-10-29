@@ -93,6 +93,12 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   `Between` call alone, while JD023 stayed silent on the same shape because it judges the chain as a whole.
   Both rules now stay silent when the chain holding the call is the whole body of a lambda argument; a
   chain passed to another call inside the lambda is still reported.
+- **An enum value the type does not define is reported once, by JD017.** `Any.Enum<T>().OneOf(...)`
+  naming a value that is neither a declared member nor a combination of a `[Flags]` enumeration's
+  members drew two warnings at the same position, JD014's and JD017's. JD017 alone reports it now, with
+  its message naming the category error, and judges the `OneOf` call wherever its receiver comes from: a
+  generator held in a variable, a collection expression and a chain carrying `AllowingCombinations()` are
+  reported, where JD017 used to miss them (ADR-0111).
 - **JD025 reads a `WithChars` pool and a collection expression.** A character written twice in a string's
   `WithChars("aab")` pool collapses exactly as a value written twice in a `OneOf(...)` does, so the pool is
   one character smaller than it reads, and JD025 now reports it, on the repeated character itself when the
@@ -106,8 +112,7 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   (`WithLocalPart("first+last")`); an offset that is not a whole number of minutes or lies beyond
   ±14:00, and an offset range whose ends are transposed; a granularity written as `new TimeSpan(0)` or
   any other spelling with integral arguments, not only `TimeSpan.Zero` and the `FromXxx` factories; and
-  a `OneOf` value that is not finite on `Any.Double()` or `Any.Single()`, or, on `Any.Enum<T>()`,
-  neither a declared member nor a combination of a `[Flags]` enumeration's members. A host that
+  a `OneOf` value that is not finite on `Any.Double()` or `Any.Single()`. A host that
   `System.Uri` judges and a user-info character whose case mapping depends on the runtime stay
   unreported, since the rule cannot be sure the call throws wherever the test runs. JD034 and JD035,
   which stop reading a chain at a call that may reject its argument, now read past a `OneOf` holding a

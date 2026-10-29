@@ -16,10 +16,17 @@ internal sealed class GuardedCall {
 
     private readonly DeclarationChain _chain;
 
-    public GuardedCall(DeclarationVocabulary vocabulary, DeclarationCall call, bool claimed) {
+    public GuardedCall(DeclarationVocabulary vocabulary, DeclarationCall call, bool claimed, string rule = "JD014") {
         _chain  = new DeclarationChain(vocabulary, [call]);
         Claimed = claimed;
+        Rule    = rule;
     }
+
+    /// <summary>
+    ///     The rule that reports the rejection: <c>JD014</c>, except for an enumeration value the type does not define,
+    ///     which <c>JD017</c> reports instead (issue #321).
+    /// </summary>
+    public string Rule { get; }
 
     /// <summary>Whether <c>JD014</c> claims to read the guard the call meets for every argument it passes.</summary>
     public bool Claimed { get; }
@@ -39,9 +46,9 @@ internal sealed class GuardedCall {
         }
     }
 
-    /// <summary>The ids <paramref name="analyzer" /> reports on the call.</summary>
-    public ISet<string> ReportedBy(DiagnosticAnalyzer analyzer) {
-        return _chain.ReportedBy(analyzer);
+    /// <summary>The ids <paramref name="analyzers" /> report on the call.</summary>
+    public ISet<string> ReportedBy(params DiagnosticAnalyzer[] analyzers) {
+        return _chain.ReportedBy(analyzers);
     }
 
     /// <inheritdoc />

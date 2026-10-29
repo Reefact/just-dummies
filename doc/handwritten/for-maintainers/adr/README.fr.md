@@ -22,7 +22,7 @@ n'existe, et la colonne **Origine** dit comment chacune est arrivée ici :
   aussi, car ce dépôt l'applique encore. Les deux copies sont désormais
   indépendantes : chaque côté peut remplacer la sienne sans toucher à l'autre.
   9 décisions.
-* **consigné ici** — décidé dans ce dépôt, de son propre chef. 67 décisions.
+* **consigné ici** — décidé dans ce dépôt, de son propre chef. 68 décisions.
 
 Les numéros appartiennent à cette base, attribués dans l'ordre où les décisions
 ont été consignées en amont
@@ -236,3 +236,4 @@ que l'option existait le jour où elle compterait.
 | [ADR-0108](0108-name-the-scaffolder-after-what-it-draws.fr.md) | Nommer le scaffolder d'après ce qu'il tire, non d'après le rôle d'une valeur | Accepted | consigné ici |
 | [ADR-0109](0109-let-a-test-refine-a-parameters-valid-base-rather-than-replace-it.fr.md) | Laisser un test affiner la base valide d'un paramètre plutôt que la remplacer | Accepted | consigné ici |
 | [ADR-0110](0110-mark-every-parameter-a-throw-may-depend-on.fr.md) | Marquer tout paramètre dont un throw peut dépendre, et tous là où la piste se perd | Accepted | consigné ici |
+| [ADR-0111](0111-own-an-undefined-enum-value-as-jd017.fr.md) | Confier à JD017 la valeur d'enum non définie d'un ensemble de valeurs, et en retirer JD014 | Accepted | consigné ici |

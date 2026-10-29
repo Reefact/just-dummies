@@ -214,6 +214,11 @@ entirely:
 
 <!-- jd:declarations -->
 ```csharp
+using JustDummies;
+using JustDummies.Xunit;
+
+using Xunit;
+
 public sealed class OrderTests {
 
     [Fact, Reproducible]

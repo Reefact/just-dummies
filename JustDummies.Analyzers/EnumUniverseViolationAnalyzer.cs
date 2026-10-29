@@ -45,7 +45,7 @@ public sealed class EnumUniverseViolationAnalyzer : DiagnosticAnalyzer {
     private static void Analyze(OperationAnalysisContext context, KnownSymbols symbols) {
         IInvocationOperation invocation = (IInvocationOperation)context.Operation;
 
-        ReportAValueTheTypeDoesNotDefine(context, invocation);
+        if (symbols.IsJustDummiesMember(invocation.TargetMethod)) { ReportAValueTheTypeDoesNotDefine(context, invocation); }
 
         if (invocation.Parent is IInvocationOperation) { return; }
         if (!AnyChainFacts.TryGetChain(invocation, symbols, out IReadOnlyList<IInvocationOperation> constraints, out IInvocationOperation? factory)) { return; }

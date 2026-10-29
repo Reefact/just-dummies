@@ -70,6 +70,30 @@ public class Jd017EnumUniverseViolationTests {
     }
 
     [Fact]
+    public async Task Does_not_report_a_same_named_generator_declared_outside_JustDummies() {
+        // The membership is judged per OneOf call, so the call must be JustDummies' own: a project's AnyEnum may accept
+        // any value it likes.
+        string source = $$"""
+            using JustDummies;
+            {{Declarations}}
+
+            public sealed class AnyEnum {
+                public AnyEnum OneOf(params Status[] values) => this;
+            }
+
+            public static class Sample {
+                public static void M() {
+                    _ = new AnyEnum().OneOf((Status)99);
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new EnumUniverseViolationAnalyzer(), source);
+
+        Check.That(diagnostics.Length).IsEqualTo(0);
+    }
+
+    [Fact]
     public async Task Does_not_report_a_flag_combination_OneOf_accepts() {
         // The natural thing to write on a [Flags] enum, and the generator draws it -- with the opt-in, without it,
         // and in either order. Reporting here refused at build time a chain the run time honours.

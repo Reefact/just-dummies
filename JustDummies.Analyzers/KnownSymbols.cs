@@ -49,6 +49,14 @@ internal sealed class KnownSymbols {
     /// <summary>xUnit's <c>[MemberData]</c>, which names the member producing a theory's cases.</summary>
     public INamedTypeSymbol? MemberDataAttribute { get; }
 
+    /// <summary>
+    ///     Whether <paramref name="method" /> is declared in the JustDummies assembly, rather than on a same-named type
+    ///     of another one — a project's own <c>AnyEnum</c> with a <c>OneOf</c> means whatever that project says.
+    /// </summary>
+    public bool IsJustDummiesMember(IMethodSymbol method) {
+        return IAny is not null && SymbolEqualityComparer.Default.Equals(method.ContainingType?.ContainingAssembly, IAny.ContainingAssembly);
+    }
+
     public static KnownSymbols From(Compilation compilation) {
         return new KnownSymbols(compilation);
     }

@@ -82,6 +82,20 @@ DateTimeOffset anyEuropeanInstant = Any.DateTimeOffset()
                                        .Generate();
 ```
 
+`WithGranularity` measures the grid on the **UTC instant**, not on the local clock the offset then
+shows. Whole days under a `+02:00` offset read `02:00` locally, and whole hours under `+05:30` fall at
+`:30`:
+
+```csharp
+DateTimeOffset anyTwoOClock = Any.DateTimeOffset()
+                                 .WithGranularity(TimeSpan.FromDays(1))
+                                 .WithOffset(TimeSpan.FromHours(2))
+                                 .Generate();                          // local time 02:00, always
+```
+
+When the local reading is what your domain stores, choose a granularity and an offset that agree, or
+declare the instant's grid with the offset in mind.
+
 Combined with `OneOf(...)`, a declared offset **filters the pool** rather than rewriting the values
 in it: a pooled value is returned as given, offset included, and one whose offset the declaration
 does not admit is never drawn

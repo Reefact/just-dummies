@@ -192,7 +192,9 @@ public sealed class AnyDateTimeOffset : IAny<DateTimeOffset>, IHasRandomSource, 
     ///     Requires the instant to fall on a lattice of <paramref name="granularity" /> from
     ///     <see cref="DateTimeOffset.MinValue" /> — a round instant (a whole second, a quarter-hour, a whole day),
     ///     built on the grid rather than snapped after the fact, so tick-precision values never surprise a
-    ///     serialization round-trip. Declared once per generator.
+    ///     serialization round-trip. Declared once per generator. The grid is measured on the UTC instant, not on the
+    ///     local clock: under a declared offset, whole days read as the offset's own time of day, and whole hours under
+    ///     <c>+05:30</c> fall at :30 locally.
     /// </summary>
     /// <param name="granularity">The lattice step; must be strictly positive. A granularity of one tick adds no constraint.</param>
     /// <returns>A new generator carrying the added constraint.</returns>

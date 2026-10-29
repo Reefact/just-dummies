@@ -83,6 +83,20 @@ DateTimeOffset anyEuropeanInstant = Any.DateTimeOffset()
                                        .Generate();
 ```
 
+`WithGranularity` mesure la grille sur l'**instant UTC**, pas sur l'heure locale que le décalage affiche
+ensuite. Des jours entiers sous un décalage `+02:00` se lisent `02:00` en local, et des heures entières sous
+`+05:30` tombent à `:30` :
+
+```csharp
+DateTimeOffset anyTwoOClock = Any.DateTimeOffset()
+                                 .WithGranularity(TimeSpan.FromDays(1))
+                                 .WithOffset(TimeSpan.FromHours(2))
+                                 .Generate();                          // local time 02:00, always
+```
+
+Quand c'est la lecture locale que votre domaine stocke, choisissez une granularité et un décalage qui
+s'accordent, ou déclarez la grille de l'instant en tenant compte du décalage.
+
 Combiné à `OneOf(...)`, un décalage déclaré **filtre le vivier** au lieu de réécrire les valeurs
 qu'il contient : une valeur du vivier est rendue telle quelle, décalage compris, et une valeur dont
 le décalage n'est pas admis par la déclaration n'est jamais tirée

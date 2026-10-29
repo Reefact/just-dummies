@@ -170,6 +170,32 @@ public class Jd016CollectionConstraintsAdmitNoValueTests {
     }
 
     [Theory]
+    [InlineData("Codes.Start().OneOf(1, 2)")]
+    [InlineData("new Codes().OneOf(1, 2)")]
+    public async Task Does_not_count_a_same_named_pool_declared_outside_JustDummies(string element) {
+        // A project's own generator may give OneOf any meaning, a widening included; only JustDummies' pool is counted.
+        string source = $$"""
+            using JustDummies;
+
+            public sealed class Codes : IAny<int> {
+                public static Codes Start() => new Codes();
+                public Codes OneOf(params int[] values) => this;
+                public int Generate() => 0;
+            }
+
+            public static class Sample {
+                public static void M() {
+                    _ = Any.SetOf({{element}}).WithCount(3);
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new CollectionConstraintsAdmitNoValueAnalyzer(), source);
+
+        Check.That(diagnostics.Length).IsEqualTo(0);
+    }
+
+    [Theory]
     [InlineData("Any.ListOf(Any.Int32()).WithCountBetween(2, 10)")]
     [InlineData("Any.ListOf(Any.Int32()).NonEmpty().WithMaxCount(5)")]
     [InlineData("Any.ListOf(Any.Int32()).WithCount(3).Containing(1).Containing(2)")]

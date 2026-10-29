@@ -302,28 +302,6 @@ public class Jd016CollectionConstraintsAdmitNoValueTests {
     }
 
     [Fact]
-    public async Task Does_not_report_a_conflict_asserting_negative_test() {
-        const string source = """
-            using System;
-            using JustDummies;
-
-            public static class Check2 {
-                public static void ThatCode(Func<object> code) { }
-            }
-
-            public static class Sample {
-                public static void M() {
-                    Check2.ThatCode(() => Any.SetOf(Any.Boolean()).WithCount(5));
-                }
-            }
-            """;
-
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new CollectionConstraintsAdmitNoValueAnalyzer(), source);
-
-        Check.That(diagnostics.Length).IsEqualTo(0);
-    }
-
-    [Fact]
     public async Task Does_not_report_a_widened_flag_enum_domain() {
         // AllowingCombinations widens the universe to the OR-closure of the declared members — eight values for four
         // flags — so counting declared members would condemn a legal chain. Live in

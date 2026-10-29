@@ -89,8 +89,13 @@ Check.ThatCode(() => Any.Int32().Positive().Negative())
 `.WithMessage(...)` pins the whole sentence, `.WhichMember(e => e.Message)` opens it to
 `Contains` and `Not.Contains`, and `.WithProperty(e => e.Seed, 1234).And` reaches another member
 first. The lambda binds to `Func<T>`, so the generator is never converted to `object` — the
-recipe-as-value shape `JD011` exists to catch, and has to exempt when `Assert.Throws<T>` takes it
+recipe-as-value shape `JD011` exists to catch, and reports when `Assert.Throws<T>` takes it
 through its `Func<object>` overload.
+
+A test whose subject is a refused chain draws the diagnostic predicting the refusal: no rule
+guesses which chains a test writes on purpose (ADR-0112). Silence it on the test method with
+`[SuppressMessage(JustDummiesRule.JDxxx.Category, JustDummiesRule.JDxxx.Id, Justification =
+SuppressionJustification.JDxxx.ThrowIsTheSubject)]`.
 
 `Assert.Throws` stays only where the exception must be **captured** explicitly, or where xUnit's
 **exact-type** semantics are part of the assertion:

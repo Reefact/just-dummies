@@ -1,5 +1,8 @@
 #region Usings declarations
 
+using System.Diagnostics.CodeAnalysis;
+using JustDummies.Diagnostics;
+
 using FsCheck;
 using FsCheck.Fluent;
 
@@ -48,6 +51,7 @@ public sealed class Int32IntervalProperties {
     }
 
     [Fact(DisplayName = "GreaterThan is strict below int.MaxValue, and conflicts at it.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void GreaterThanIsStrictAndConflictsAtTheCeiling() {
         Prop.ForAll(Generators.Int32().ToArbitrary(),
                     bound => bound == int.MaxValue
@@ -57,6 +61,7 @@ public sealed class Int32IntervalProperties {
     }
 
     [Fact(DisplayName = "LessThan is strict above int.MinValue, and conflicts at it.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void LessThanIsStrictAndConflictsAtTheFloor() {
         Prop.ForAll(Generators.Int32().ToArbitrary(),
                     bound => bound == int.MinValue
@@ -66,6 +71,7 @@ public sealed class Int32IntervalProperties {
     }
 
     [Fact(DisplayName = "Between never yields a value excluded by a subsequent Except.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void ExceptRemovesTheValueFromTheInterval() {
         Gen<(int Min, int Max)> intervals = Generators.OrderedPair(Generators.Count(40));
 
@@ -97,6 +103,7 @@ public sealed class Int32IntervalProperties {
     }
 
     [Fact(DisplayName = "Crossed Between arguments are an argument error, never a silent swap.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void CrossedBoundsAreAnArgumentError() {
         Prop.ForAll(Generators.OrderedPair(Generators.Int32()).ToArbitrary(),
                     bounds => bounds.Min == bounds.Max
@@ -105,6 +112,7 @@ public sealed class Int32IntervalProperties {
     }
 
     [Fact(DisplayName = "Bounds that cannot both hold conflict, for every crossed pair.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void ImpossibleBoundPairsConflict() {
         Prop.ForAll(Generators.OrderedPair(Generators.Int32()).ToArbitrary(),
                     bounds => bounds.Min == bounds.Max

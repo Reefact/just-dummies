@@ -181,11 +181,6 @@ public class Jd034ConstraintAlreadyDefinedTests {
         Check.That(casing.Select(diagnostic => diagnostic.Id)).ContainsExactly("JD034");
     }
 
-    [Fact]
-    public async Task Does_not_report_a_conflict_asserting_negative_test() {
-        await NothingReportedAsync("static void ThatCode(Func<object> code) { } ThatCode(() => Any.String().Alpha().Numeric());");
-    }
-
     [Theory]
     // The refused call is the second declaration: its guard throws before it reads the first.
     [InlineData("Any.ListOf(Any.Int32()).WithCount(2).WithCount(-1)")]

@@ -29,6 +29,7 @@ public sealed class ConstraintRedeclarationTests {
     private static readonly Guid PinnedAlt = Guid.Parse("72b8586b-9d81-4e2a-9d17-8f6a1e6b8c1d");
 
     /// <summary>Every once-only constraint, declared twice with identical arguments.</summary>
+    [SuppressMessage(JustDummiesRule.JD035.Category, JustDummiesRule.JD035.Id, Justification = SuppressionJustification.JD035.RepetitionIsTheSubject)]
     private static IEnumerable<(string Label, Func<object> Redeclare)> IdenticalRedeclarations() {
         yield return ("String().WithLength(3)", () => Any.String().WithLength(3).WithLength(3));
         yield return ("String().StartingWith(\"a\")", () => Any.String().StartingWith("a").StartingWith("a"));
@@ -75,6 +76,7 @@ public sealed class ConstraintRedeclarationTests {
     }
 
     /// <summary>The same constraints declared twice with arguments that genuinely contradict.</summary>
+    [SuppressMessage(JustDummiesRule.JD034.Category, JustDummiesRule.JD034.Id, Justification = SuppressionJustification.JD034.ThrowIsTheSubject)]
     private static IEnumerable<(string Label, Func<object> Contradict)> ContradictoryRedeclarations() {
         yield return ("String().WithLength(3).WithLength(5)", () => Any.String().WithLength(3).WithLength(5));
         yield return ("String().StartingWith(\"a\").StartingWith(\"b\")", () => Any.String().StartingWith("a").StartingWith("b"));
@@ -141,6 +143,7 @@ public sealed class ConstraintRedeclarationTests {
     }
 
     [Fact(DisplayName = "A second URI component pin names both sides instead of silently replacing the first.")]
+    [SuppressMessage(JustDummiesRule.JD034.Category, JustDummiesRule.JD034.Id, Justification = SuppressionJustification.JD034.ThrowIsTheSubject)]
     public void ASecondComponentPinNamesBothSides() {
         // Regression: WithHost, WithPort and WithUserInfo were plain setters — a second, different value replaced the
         // first and the first vanished without a word, while WithPathSegments in the very same generator raised a

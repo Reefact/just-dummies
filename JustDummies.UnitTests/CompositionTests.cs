@@ -227,6 +227,7 @@ public sealed class CompositionTests {
     }
 
     [Fact(DisplayName = "A higher-arity Combine validates its arguments and wraps composer failures.")]
+    [SuppressMessage(JustDummiesRule.JD027.Category, JustDummiesRule.JD027.Id, Justification = SuppressionJustification.JD027.ThrowIsTheSubject)]
     public void HigherArityCombineValidatesAndWraps() {
         Check.ThatCode(() => Any.Combine(Any.Int32(), Any.Int32(), Any.Int32(), Any.Int32(), (Func<int, int, int, int, int>)null!)).Throws<ArgumentNullException>();
         Check.ThatCode(() => Any.Combine<int, int, int, int, int>(Any.Int32(), Any.Int32(), Any.Int32(), null!, (a, b, c, d) => a)).Throws<ArgumentNullException>();

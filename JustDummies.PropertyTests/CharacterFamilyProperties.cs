@@ -1,5 +1,8 @@
 #region Usings declarations
 
+using System.Diagnostics.CodeAnalysis;
+using JustDummies.Diagnostics;
+
 using FsCheck;
 using FsCheck.Fluent;
 
@@ -127,6 +130,7 @@ public sealed class CharacterFamilyProperties {
     }
 
     [Fact(DisplayName = "A second character family conflicts unless it repeats the first, whichever two are combined.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void ASecondCharacterFamilyConflictsUnlessItRepeatsTheFirst() {
         Gen<(int First, int Second)> cases =
             from first in Gen.Choose(0, 7)
@@ -145,6 +149,7 @@ public sealed class CharacterFamilyProperties {
     }
 
     [Fact(DisplayName = "A second casing conflicts unless it repeats the first, whichever two are combined.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void ASecondCasingConflictsUnlessItRepeatsTheFirst() {
         Gen<(bool First, bool Second)> cases =
             from first in Gen.Elements(false, true)

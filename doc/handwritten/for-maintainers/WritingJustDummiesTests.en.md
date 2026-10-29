@@ -97,8 +97,14 @@ Check.ThatCode(() => Any.Int32().Positive().Negative())
 `Contains` and `Not.Contains`; `.WithProperty(e => e.Seed, 1234).And` reaches another
 member before the message. The lambda binds to `Func<T>`, so the generator is never
 converted to `object` — the recipe-as-value shape
-[JD011](../for-users/analyzers/JD011.en.md) exists to catch, and has to exempt when
+[JD011](../for-users/analyzers/JD011.en.md) exists to catch, and reports when
 `Assert.Throws<T>` takes it through its `Func<object>` overload.
+
+A test whose subject is a refused chain draws the diagnostic predicting the refusal: no rule
+guesses which chains a test writes on purpose
+([ADR-0112](adr/0112-report-a-test-asserting-a-refusal-like-any-other-code.md)). Silence it on
+the test method with a `[SuppressMessage]` whose justification is
+`SuppressionJustification.<rule>.ThrowIsTheSubject`.
 
 `Assert.Throws` stays only where the exception must be *captured* explicitly, or where
 xUnit's *exact-type* semantics are part of the assertion:

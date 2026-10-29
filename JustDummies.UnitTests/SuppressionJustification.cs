@@ -59,6 +59,14 @@ internal static class SuppressionJustification {
 
     }
 
+    /// <summary>Justifications for JD006 — the discarded-generator-result diagnostic.</summary>
+    internal static class JD006 {
+
+        /// <inheritdoc cref="JD014.ThrowIsTheSubject" />
+        internal const string ThrowIsTheSubject = "The throw IS the subject: the test asserts that the run time refuses this call, so it has to be written as it is. See the constant's summary.";
+
+    }
+
     /// <summary>Justifications for JD013 — the one-member pool diagnostic.</summary>
     internal static class JD013 {
 
@@ -67,6 +75,50 @@ internal static class SuppressionJustification {
         ///     collection, so the call is legal, the draw succeeds, and what comes back is the whole list.
         /// </summary>
         internal const string OneMemberPoolIsTheSubject = "The one-member pool IS the subject: inference binds T to the collection, so the draw returns the whole list. See the constant's summary.";
+
+    }
+
+    /// <summary>Justifications for JD014 — the rejected-constant-argument diagnostic.</summary>
+    internal static class JD014 {
+
+        /// <summary>
+        ///     The throw IS the subject. The test asserts that the run time refuses this call, so the call has to be
+        ///     written as it is, and the diagnostic predicting the refusal is the expected one. No rule guesses which
+        ///     chains a test writes on purpose (ADR-0112): the test says so here.
+        /// </summary>
+        internal const string ThrowIsTheSubject = "The throw IS the subject: the test asserts that the run time refuses this call, so it has to be written as it is. See the constant's summary.";
+
+    }
+
+    /// <summary>Justifications for JD015 — the string-constraints-admit-no-value diagnostic.</summary>
+    internal static class JD015 {
+
+        /// <inheritdoc cref="JD014.ThrowIsTheSubject" />
+        internal const string ThrowIsTheSubject = "The throw IS the subject: the test asserts that the run time refuses this call, so it has to be written as it is. See the constant's summary.";
+
+    }
+
+    /// <summary>Justifications for JD016 — the collection-constraints-admit-no-value diagnostic.</summary>
+    internal static class JD016 {
+
+        /// <inheritdoc cref="JD014.ThrowIsTheSubject" />
+        internal const string ThrowIsTheSubject = "The throw IS the subject: the test asserts that the run time refuses this call, so it has to be written as it is. See the constant's summary.";
+
+    }
+
+    /// <summary>Justifications for JD017 — the enum-universe diagnostic.</summary>
+    internal static class JD017 {
+
+        /// <inheritdoc cref="JD014.ThrowIsTheSubject" />
+        internal const string ThrowIsTheSubject = "The throw IS the subject: the test asserts that the run time refuses this call, so it has to be written as it is. See the constant's summary.";
+
+    }
+
+    /// <summary>Justifications for JD023 — the scalar-chain-admits-no-value diagnostic.</summary>
+    internal static class JD023 {
+
+        /// <inheritdoc cref="JD014.ThrowIsTheSubject" />
+        internal const string ThrowIsTheSubject = "The throw IS the subject: the test asserts that the run time refuses this call, so it has to be written as it is. See the constant's summary.";
 
     }
 
@@ -81,6 +133,14 @@ internal static class SuppressionJustification {
 
     }
 
+    /// <summary>Justifications for JD026 — the empty-relative-URI diagnostic.</summary>
+    internal static class JD026 {
+
+        /// <inheritdoc cref="JD014.ThrowIsTheSubject" />
+        internal const string ThrowIsTheSubject = "The throw IS the subject: the test asserts that the run time refuses this call, so it has to be written as it is. See the constant's summary.";
+
+    }
+
     /// <summary>Justifications for JD027 — the ignored-operand diagnostic.</summary>
     internal static class JD027 {
 
@@ -90,6 +150,9 @@ internal static class SuppressionJustification {
         /// </summary>
         internal const string IgnoredOperandIsTheSubject = "The ignored operand IS the subject: it is generated in full, then dropped, with nothing failing. See the constant's summary.";
 
+
+        /// <inheritdoc cref="JD014.ThrowIsTheSubject" />
+        internal const string ThrowIsTheSubject = "The throw IS the subject: the test asserts that the run time refuses this call, so it has to be written as it is. See the constant's summary.";
     }
 
     /// <summary>Justifications for JD028 — the inert-distinctness diagnostic.</summary>
@@ -148,6 +211,14 @@ internal static class SuppressionJustification {
         ///     why it is silenced here rather than avoided.
         /// </summary>
         internal const string UnreachableLiteralIsTheSubject = "The literal the pool cannot draw IS the subject: the test pins that it appears only where written. See the constant's summary.";
+
+    }
+
+    /// <summary>Justifications for JD034 — the constraint-already-defined diagnostic.</summary>
+    internal static class JD034 {
+
+        /// <inheritdoc cref="JD014.ThrowIsTheSubject" />
+        internal const string ThrowIsTheSubject = "The throw IS the subject: the test asserts that the run time refuses this call, so it has to be written as it is. See the constant's summary.";
 
     }
 

@@ -116,6 +116,7 @@ public sealed class AnyStringValueSetTests {
     }
 
     [Fact(DisplayName = "A distinct set over OneOf is gated by the set's cardinality, both ways.")]
+    [SuppressMessage(JustDummiesRule.JD016.Category, JustDummiesRule.JD016.Id, Justification = SuppressionJustification.JD016.ThrowIsTheSubject)]
     public void CardinalityGatesDistinctCollections() {
         // Two distinct values cannot fill a set of three: caught eagerly, like any cardinality conflict.
         Check.ThatCode(() => Any.SetOf(Any.String().OneOf("a", "b")).WithCount(3).Generate()).Throws<ConflictingAnyConstraintException>();
@@ -139,6 +140,7 @@ public sealed class AnyStringValueSetTests {
     }
 
     [Fact(DisplayName = "A pinned value is counted as extending the set only when the set could not have drawn it.")]
+    [SuppressMessage(JustDummiesRule.JD016.Category, JustDummiesRule.JD016.Id, Justification = SuppressionJustification.JD016.ThrowIsTheSubject)]
     public void APinnedValueExtendsTheDomainOnlyWhenItIsOutside() {
         // "a" is one of the two values the generator can draw, so pinning it fills a slot the generator would have
         // filled anyway: the domain is still two, and a set of three cannot be filled.
@@ -202,6 +204,7 @@ public sealed class AnyStringValueSetTests {
 
     [Fact(DisplayName = "A value set and a shape reach the same verdict whichever order they are declared in.")]
     [SuppressMessage(JustDummiesRule.JD029.Category, JustDummiesRule.JD029.Id, Justification = SuppressionJustification.JD029.RefusedValueIsTheSubject)]
+    [SuppressMessage(JustDummiesRule.JD015.Category, JustDummiesRule.JD015.Id, Justification = SuppressionJustification.JD015.ThrowIsTheSubject)]
     public void OrderOfDeclarationDoesNotChangeTheVerdict() {
         Check.That(Any.String().WithLength(3).OneOf("abc", "de").Generate()).IsEqualTo("abc");
         Check.That(Any.String().OneOf("abc", "de").WithLength(3).Generate()).IsEqualTo("abc");
@@ -211,6 +214,7 @@ public sealed class AnyStringValueSetTests {
     }
 
     [Fact(DisplayName = "A constraint no supplied value satisfies names the value set and itself, and nothing else.")]
+    [SuppressMessage(JustDummiesRule.JD015.Category, JustDummiesRule.JD015.Id, Justification = SuppressionJustification.JD015.ThrowIsTheSubject)]
     public void AnEmptyingConstraintNamesBothSides() {
         Check.ThatCode(() => Any.String().OneOf("abc", "de").WithLength(9))
              .Throws<ConflictingAnyConstraintException>()
@@ -218,6 +222,7 @@ public sealed class AnyStringValueSetTests {
     }
 
     [Fact(DisplayName = "A value set no declared constraint admits names that constraint and itself, and nothing else.")]
+    [SuppressMessage(JustDummiesRule.JD015.Category, JustDummiesRule.JD015.Id, Justification = SuppressionJustification.JD015.ThrowIsTheSubject)]
     public void AnEmptyValueSetNamesTheConstraintThatRefusedIt() {
         Check.ThatCode(() => Any.String().WithLength(9).OneOf("abc", "de"))
              .Throws<ConflictingAnyConstraintException>()
@@ -225,6 +230,7 @@ public sealed class AnyStringValueSetTests {
     }
 
     [Fact(DisplayName = "Several constraints that each refuse every value are all named.")]
+    [SuppressMessage(JustDummiesRule.JD015.Category, JustDummiesRule.JD015.Id, Justification = SuppressionJustification.JD015.ThrowIsTheSubject)]
     public void EveryConstraintRefusingEveryValueIsNamed() {
         Check.ThatCode(() => Any.String().WithLength(9).Numeric().OneOf("abc"))
              .Throws<ConflictingAnyConstraintException>()
@@ -232,6 +238,7 @@ public sealed class AnyStringValueSetTests {
     }
 
     [Fact(DisplayName = "When only the combination empties the set, no single constraint is blamed for it.")]
+    [SuppressMessage(JustDummiesRule.JD015.Category, JustDummiesRule.JD015.Id, Justification = SuppressionJustification.JD015.ThrowIsTheSubject)]
     public void ACombinationBlamesNoSingleConstraint() {
         // WithLength(3) admits "abc" and StartingWith("z") admits "zz": neither refuses every value, so naming
         // either one would blame a constraint the caller could loosen without changing the verdict.
@@ -241,6 +248,7 @@ public sealed class AnyStringValueSetTests {
     }
 
     [Fact(DisplayName = "A constraint that would have accepted a value the others removed qualifies its claim.")]
+    [SuppressMessage(JustDummiesRule.JD015.Category, JustDummiesRule.JD015.Id, Justification = SuppressionJustification.JD015.ThrowIsTheSubject)]
     public void AConstraintTheOthersOutranQualifiesItsClaim() {
         // Numeric() does accept "12" — WithLength(3) is what took it away. Claiming that no value the set offers
         // satisfies Numeric() would be false, so the message says only that nothing the other constraints left does.
@@ -250,6 +258,7 @@ public sealed class AnyStringValueSetTests {
     }
 
     [Fact(DisplayName = "A constraint that refuses every supplied value is not qualified away, whatever narrowed the set first.")]
+    [SuppressMessage(JustDummiesRule.JD015.Category, JustDummiesRule.JD015.Id, Justification = SuppressionJustification.JD015.ThrowIsTheSubject)]
     public void AConstraintRefusingEveryValueIsNotQualifiedAway() {
         // Numeric() refuses "abc" and "de" alike, so loosening WithLength(3) could not help and the message must
         // not suggest it: the claim stays the plain one, identical to the verdict without any prior narrowing.
@@ -263,6 +272,7 @@ public sealed class AnyStringValueSetTests {
     }
 
     [Fact(DisplayName = "A constraint declared in one call is blamed as one call, not as the bounds it sets.")]
+    [SuppressMessage(JustDummiesRule.JD015.Category, JustDummiesRule.JD015.Id, Justification = SuppressionJustification.JD015.ThrowIsTheSubject)]
     public void ARangeIsBlamedAsTheCallTheCallerWrote() {
         // WithLengthBetween sets two internal bounds under one name. Judged apart, each admits one of the two
         // values and neither looks guilty; judged as the call the caller wrote — the only thing they can loosen —
@@ -279,6 +289,7 @@ public sealed class AnyStringValueSetTests {
 
     [Fact(DisplayName = "A casing constraint judges a pooled value on its actual case, accents included.")]
     [SuppressMessage(JustDummiesRule.JD029.Category, JustDummiesRule.JD029.Id, Justification = SuppressionJustification.JD029.RefusedValueIsTheSubject)]
+    [SuppressMessage(JustDummiesRule.JD015.Category, JustDummiesRule.JD015.Id, Justification = SuppressionJustification.JD015.ThrowIsTheSubject)]
     public void CasingJudgesNonAsciiLettersToo() {
         // The constructive filler is ASCII, but a supplied value is the caller's own text: 'É' is an uppercase
         // letter, so InLowerCase() must refuse it rather than wave it through and emit a value violating itself.
@@ -290,6 +301,7 @@ public sealed class AnyStringValueSetTests {
     }
 
     [Fact(DisplayName = "Constraints that contradict each other on their own terms are still refused before a value set is declared.")]
+    [SuppressMessage(JustDummiesRule.JD015.Category, JustDummiesRule.JD015.Id, Justification = SuppressionJustification.JD015.ThrowIsTheSubject)]
     public void AContradictionIsRefusedBeforeTheValuesAreSeen() {
         // Declared first, the set is the specification and the two fragments are merely checked against "aba".
         Check.That(Any.String().OneOf("aba").WithMaxLength(3).Containing("ab").Containing("ba").Generate()).IsEqualTo("aba");
@@ -302,6 +314,7 @@ public sealed class AnyStringValueSetTests {
     }
 
     [Fact(DisplayName = "An exclusion that empties the value set conflicts at declaration, naming both sides.")]
+    [SuppressMessage(JustDummiesRule.JD015.Category, JustDummiesRule.JD015.Id, Justification = SuppressionJustification.JD015.ThrowIsTheSubject)]
     public void AnExclusionEmptyingTheSetConflicts() {
         Check.ThatCode(() => Any.String().OneOf("a", "b").Except("a", "b"))
              .Throws<ConflictingAnyConstraintException>()
@@ -309,6 +322,7 @@ public sealed class AnyStringValueSetTests {
     }
 
     [Fact(DisplayName = "A value set every exclusion covers conflicts, naming the exclusion that refused it.")]
+    [SuppressMessage(JustDummiesRule.JD015.Category, JustDummiesRule.JD015.Id, Justification = SuppressionJustification.JD015.ThrowIsTheSubject)]
     public void AValueSetTheExclusionsRefuseNamesThem() {
         Check.ThatCode(() => Any.String().DifferentFrom("x").OneOf("x"))
              .Throws<ConflictingAnyConstraintException>()
@@ -324,6 +338,8 @@ public sealed class AnyStringValueSetTests {
     }
 
     [Fact(DisplayName = "Re-declaring the same value set is a no-op; a different one conflicts.")]
+    [SuppressMessage(JustDummiesRule.JD034.Category, JustDummiesRule.JD034.Id, Justification = SuppressionJustification.JD034.ThrowIsTheSubject)]
+    [SuppressMessage(JustDummiesRule.JD035.Category, JustDummiesRule.JD035.Id, Justification = SuppressionJustification.JD035.RepetitionIsTheSubject)]
     public void RedeclaringTheValueSet() {
         Check.ThatCode(() => Any.String().OneOf("a", "b").OneOf("a", "b")).DoesNotThrow();
 
@@ -334,6 +350,7 @@ public sealed class AnyStringValueSetTests {
 
     [Fact(DisplayName = "OneOf rejects null, empty, or null-containing value lists as arguments.")]
     [SuppressMessage(SonarRule.S3220.Category, SonarRule.S3220.Id, Justification = SuppressionJustification.S3220.AmbiguityIsTheInputUnderTest)]
+    [SuppressMessage(JustDummiesRule.JD014.Category, JustDummiesRule.JD014.Id, Justification = SuppressionJustification.JD014.ThrowIsTheSubject)]
     public void RejectsInvalidValueLists() {
         Check.ThatCode(() => Any.String().OneOf()).Throws<ArgumentException>();
         Check.ThatCode(() => Any.String().OneOf(null!)).Throws<ArgumentNullException>();

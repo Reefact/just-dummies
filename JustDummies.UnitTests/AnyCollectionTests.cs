@@ -55,6 +55,8 @@ public sealed class AnyCollectionTests {
     }
 
     [Fact(DisplayName = "ListOf: contradictory count constraints fail eagerly naming both sides.")]
+    [SuppressMessage(JustDummiesRule.JD016.Category, JustDummiesRule.JD016.Id, Justification = SuppressionJustification.JD016.ThrowIsTheSubject)]
+    [SuppressMessage(JustDummiesRule.JD034.Category, JustDummiesRule.JD034.Id, Justification = SuppressionJustification.JD034.ThrowIsTheSubject)]
     public void ListOfCountConflicts() {
         Check.ThatCode(() => Any.ListOf(Any.Int32()).WithCount(3).WithMinCount(5))
              .Throws<ConflictingAnyConstraintException>()
@@ -65,6 +67,8 @@ public sealed class AnyCollectionTests {
     }
 
     [Fact(DisplayName = "ListOf: count constraints validate their arguments.")]
+    [SuppressMessage(JustDummiesRule.JD014.Category, JustDummiesRule.JD014.Id, Justification = SuppressionJustification.JD014.ThrowIsTheSubject)]
+    [SuppressMessage(JustDummiesRule.JD016.Category, JustDummiesRule.JD016.Id, Justification = SuppressionJustification.JD016.ThrowIsTheSubject)]
     public void ListOfCountValidation() {
         Check.ThatCode(() => Any.ListOf(Any.Int32()).WithCount(-1)).Throws<ArgumentOutOfRangeException>();
         Check.ThatCode(() => Any.ListOf(Any.Int32()).WithMinCount(-1)).Throws<ArgumentOutOfRangeException>();
@@ -73,6 +77,7 @@ public sealed class AnyCollectionTests {
     }
 
     [Fact(DisplayName = "A produced count is refused above the ceiling; the bound just below it is accepted.")]
+    [SuppressMessage(JustDummiesRule.JD014.Category, JustDummiesRule.JD014.Id, Justification = SuppressionJustification.JD014.ThrowIsTheSubject)]
     public void ProducedCountsAreCeilinged() {
         // ADR-0029, at the two coordinates a mis-written comparison would pass: the ceiling and the first value past it.
         Check.ThatCode(() => Any.ListOf(Any.Int32()).WithCount(1_000_001)).Throws<ArgumentOutOfRangeException>();
@@ -83,6 +88,7 @@ public sealed class AnyCollectionTests {
     }
 
     [Fact(DisplayName = "An enormous count names the caller's parameter instead of exhausting memory.")]
+    [SuppressMessage(JustDummiesRule.JD014.Category, JustDummiesRule.JD014.Id, Justification = SuppressionJustification.JD014.ThrowIsTheSubject)]
     public void AnEnormousCountNamesTheCallersParameter() {
         // Regression: WithCount(int.MaxValue) used to fail on the allocation itself, and WithMaxCount(int.MaxValue)
         // to grind for minutes filling a collection sized after the cap. Both are now decided at declaration.
@@ -92,6 +98,7 @@ public sealed class AnyCollectionTests {
     }
 
     [Fact(DisplayName = "A maximum steers the count and is ceilinged like every other size.")]
+    [SuppressMessage(JustDummiesRule.JD014.Category, JustDummiesRule.JD014.Id, Justification = SuppressionJustification.JD014.ThrowIsTheSubject)]
     public void AMaximumSteersTheCount() {
         // The policy is the string's (ADR-0076); only the spread differs, a thousand elements costing what their
         // element generator costs rather than one character.
@@ -113,6 +120,7 @@ public sealed class AnyCollectionTests {
     }
 
     [Fact(DisplayName = "Distinct: a count beyond the element cardinality conflicts before any element is drawn, naming the shortfall.")]
+    [SuppressMessage(JustDummiesRule.JD016.Category, JustDummiesRule.JD016.Id, Justification = SuppressionJustification.JD016.ThrowIsTheSubject)]
     public void DistinctCardinalityConflictsBeforeDrawing() {
         Check.ThatCode(() => Any.SetOf(Any.Boolean()).WithCount(3).Generate())
              .Throws<ConflictingAnyConstraintException>()
@@ -172,6 +180,7 @@ public sealed class AnyCollectionTests {
     }
 
     [Fact(DisplayName = "Containing: a required value is present, and a distinct duplicate requirement conflicts.")]
+    [SuppressMessage(JustDummiesRule.JD016.Category, JustDummiesRule.JD016.Id, Justification = SuppressionJustification.JD016.ThrowIsTheSubject)]
     public void ContainingPlacesValues() {
         for (int i = 0; i < SampleCount; i++) {
             List<int> list = Any.ListOf(Any.Int32().Between(1, 9)).WithCount(5).Containing(777).Generate();
@@ -218,6 +227,7 @@ public sealed class AnyCollectionTests {
     }
 
     [Fact(DisplayName = "Containing: a value already inside the element domain does not inflate the cardinality, so an impossible count still conflicts.")]
+    [SuppressMessage(JustDummiesRule.JD016.Category, JustDummiesRule.JD016.Id, Justification = SuppressionJustification.JD016.ThrowIsTheSubject)]
     public void ContainingInsideDomainDoesNotInflate() {
         // 1 is already producible by the generator, so it adds no capacity: three distinct values over {1, 2} remain
         // impossible and must still be refused before any element is drawn, naming the shortfall.
@@ -235,6 +245,7 @@ public sealed class AnyCollectionTests {
     }
 
     [Fact(DisplayName = "Containing: the effective cardinality is order-independent across Distinct, Containing and the count.")]
+    [SuppressMessage(JustDummiesRule.JD016.Category, JustDummiesRule.JD016.Id, Justification = SuppressionJustification.JD016.ThrowIsTheSubject)]
     public void EffectiveCardinalityIsOrderIndependent() {
         // Every ordering of the same three constraints reaches the same verdict — accepted, because 3 is outside the
         // domain — since Distinct() re-runs the whole validation on the accumulated state.
@@ -444,6 +455,7 @@ public sealed class AnyCollectionTests {
     }
 
     [Fact(DisplayName = "The eager perimeter reaches every finite generator: decimal, floating-point and 128-bit allow-lists gate distinct collections too.")]
+    [SuppressMessage(JustDummiesRule.JD016.Category, JustDummiesRule.JD016.Id, Justification = SuppressionJustification.JD016.ThrowIsTheSubject)]
     public void FiniteScalarGeneratorsGateEagerly() {
         // A finite allow-list or a narrow range over decimal, double, single or Int128 now advertises its cardinality,
         // so a count beyond it conflicts at declaration — the same promise integers and enums already kept, held
@@ -505,6 +517,7 @@ public sealed class AnyCollectionTests {
 
     [Fact(DisplayName = "DictionaryOf: builds unique-keyed dictionaries and gates the count by the key domain.")]
     [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
+    [SuppressMessage(JustDummiesRule.JD016.Category, JustDummiesRule.JD016.Id, Justification = SuppressionJustification.JD016.ThrowIsTheSubject)]
     public void DictionaryOfBehaves() {
         for (int i = 0; i < SampleCount; i++) {
             Dictionary<int, string> dictionary = Any.DictionaryOf(Any.Int32().Between(1, 1000), Any.String().NonEmpty()).WithCount(8).Generate();
@@ -533,6 +546,7 @@ public sealed class AnyCollectionTests {
 
     [Fact(DisplayName = "ContainingKey: a within-domain key is present, an out-of-capacity one is still refused before any entry is drawn.")]
     [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
+    [SuppressMessage(JustDummiesRule.JD016.Category, JustDummiesRule.JD016.Id, Justification = SuppressionJustification.JD016.ThrowIsTheSubject)]
     public void DictionaryContainingKeyInsideDomainDoesNotInflate() {
         // A within-domain fixed key is present and adds no capacity of its own.
         for (int i = 0; i < SampleCount; i++) {
@@ -590,6 +604,7 @@ public sealed class AnyCollectionTests {
 
     [Fact(DisplayName = "SetOf and DictionaryOf: a conflict never names Distinct(), a call neither surface has (issue #179).")]
     [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
+    [SuppressMessage(JustDummiesRule.JD016.Category, JustDummiesRule.JD016.Id, Justification = SuppressionJustification.JD016.ThrowIsTheSubject)]
     public void SetAndDictionaryConflictsNeverNameDistinct() {
         // A set is distinct by nature: the caller can loosen the count or the element generator, never a Distinct()
         // they never wrote.
@@ -618,6 +633,7 @@ public sealed class AnyCollectionTests {
     }
 
     [Fact(DisplayName = "SetOf and DictionaryOf: the shortfall names what still must be drawn, not the requested size (PR #196 review).")]
+    [SuppressMessage(JustDummiesRule.JD016.Category, JustDummiesRule.JD016.Id, Justification = SuppressionJustification.JD016.ThrowIsTheSubject)]
     public void SetAndDictionaryShortfallNamesWhatMustStillBeDrawn() {
         // 3m sits outside the {1m, 2m} the element generator can produce, so it fills its own slot: only 3 of the 4
         // requested elements — not the full 4 — must still come from the generator. Naming the requested count here

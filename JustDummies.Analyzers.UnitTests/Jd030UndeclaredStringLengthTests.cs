@@ -180,30 +180,6 @@ public class Jd030UndeclaredStringLengthTests {
     }
 
     [Fact]
-    public async Task Does_not_report_a_chain_written_as_a_negative_test() {
-        // The guard the other rules share: a chain that is the sole body of a lambda ARGUMENT is being asserted
-        // about, not written as arrange code.
-        const string source = """
-            using System;
-            using JustDummies;
-
-            public static class Expect {
-                public static bool Throws<T>(Func<string> code) where T : Exception => true;
-            }
-
-            public static class Sample {
-                public static void M() {
-                    Expect.Throws<ArgumentException>(() => Any.String().Generate());
-                }
-            }
-            """;
-
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new UndeclaredStringLengthAnalyzer(), source);
-
-        Check.That(diagnostics.Length).IsEqualTo(0);
-    }
-
-    [Fact]
     public async Task Reports_the_factory_call_even_when_a_later_statement_narrows_the_reassigned_variable() {
         // The rule is syntactic (its documented Scope): it reasons about the Any.String() expression as written, not
         // about what the variable it is assigned to ends up holding. The factory call is reported the moment it is

@@ -74,6 +74,7 @@ public sealed class AnyLatticeConstraintTests {
     }
 
     [Fact(DisplayName = "MultipleOf: one is a no-op; zero and negatives are rejected.")]
+    [SuppressMessage(JustDummiesRule.JD014.Category, JustDummiesRule.JD014.Id, Justification = SuppressionJustification.JD014.ThrowIsTheSubject)]
     public void MultipleOfArguments() {
         for (int i = 0; i < SampleCount; i++) { Any.Int32().MultipleOf(1).Generate(); } // no-op: any value
 
@@ -83,6 +84,7 @@ public sealed class AnyLatticeConstraintTests {
     }
 
     [Fact(DisplayName = "MultipleOf: an empty grid inside the range conflicts eagerly, naming the step.")]
+    [SuppressMessage(JustDummiesRule.JD023.Category, JustDummiesRule.JD023.Id, Justification = SuppressionJustification.JD023.ThrowIsTheSubject)]
     public void MultipleOfEmptyGridConflicts() {
         Check.ThatCode(() => Any.Int32().Between(1, 9).MultipleOf(10))
              .Throws<ConflictingAnyConstraintException>()
@@ -94,6 +96,7 @@ public sealed class AnyLatticeConstraintTests {
 
     [Fact(DisplayName = "MultipleOf: a second, different step is rejected as already declared.")]
     [SuppressMessage(JustDummiesRule.JD035.Category, JustDummiesRule.JD035.Id, Justification = SuppressionJustification.JD035.RepetitionIsTheSubject)]
+    [SuppressMessage(JustDummiesRule.JD034.Category, JustDummiesRule.JD034.Id, Justification = SuppressionJustification.JD034.ThrowIsTheSubject)]
     public void MultipleOfDeclaredOnce() {
         Check.ThatCode(() => Any.Int32().MultipleOf(4).MultipleOf(6)).Throws<ConflictingAnyConstraintException>();
         // The same step twice is idempotent, not a conflict.
@@ -148,6 +151,7 @@ public sealed class AnyLatticeConstraintTests {
     }
 
     [Fact(DisplayName = "WithScale: a scale outside [0, 28] is rejected.")]
+    [SuppressMessage(JustDummiesRule.JD014.Category, JustDummiesRule.JD014.Id, Justification = SuppressionJustification.JD014.ThrowIsTheSubject)]
     public void WithScaleArguments() {
         Check.ThatCode(() => Any.Decimal().WithScale(-1)).Throws<ArgumentOutOfRangeException>();
         Check.ThatCode(() => Any.Decimal().WithScale(29)).Throws<ArgumentOutOfRangeException>();
@@ -190,6 +194,7 @@ public sealed class AnyLatticeConstraintTests {
     }
 
     [Fact(DisplayName = "WithGranularity: a non-positive granularity is rejected.")]
+    [SuppressMessage(JustDummiesRule.JD014.Category, JustDummiesRule.JD014.Id, Justification = SuppressionJustification.JD014.ThrowIsTheSubject)]
     public void WithGranularityArguments() {
         Check.ThatCode(() => Any.DateTime().WithGranularity(TimeSpan.Zero)).Throws<ArgumentOutOfRangeException>();
         Check.ThatCode(() => Any.TimeSpan().WithGranularity(TimeSpan.FromTicks(-1))).Throws<ArgumentOutOfRangeException>();

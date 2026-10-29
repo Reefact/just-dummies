@@ -102,6 +102,7 @@ public sealed class AnyOneOfTests {
     }
 
     [Fact(DisplayName = "A distinct set over OneOf is gated by the pool's cardinality, both ways.")]
+    [SuppressMessage(JustDummiesRule.JD016.Category, JustDummiesRule.JD016.Id, Justification = SuppressionJustification.JD016.ThrowIsTheSubject)]
     public void CardinalityGatesDistinctCollections() {
         // Two distinct values cannot fill a set of three: caught eagerly, like any cardinality conflict.
         Check.ThatCode(() => Any.SetOf(Any.OneOf(1, 2)).WithCount(3).Generate()).Throws<ConflictingAnyConstraintException>();
@@ -126,6 +127,7 @@ public sealed class AnyOneOfTests {
     }
 
     [Fact(DisplayName = "OneOf rejects empty, null, or null-containing pools as arguments — null goes through OrNull.")]
+    [SuppressMessage(JustDummiesRule.JD014.Category, JustDummiesRule.JD014.Id, Justification = SuppressionJustification.JD014.ThrowIsTheSubject)]
     public void RejectsInvalidPools() {
         Check.ThatCode(() => Any.OneOf<int>()).Throws<ArgumentException>();
         Check.ThatCode(() => Any.OneOf((string[])null!)).Throws<ArgumentNullException>();
@@ -280,6 +282,7 @@ public sealed class AnyOneOfTests {
     }
 
     [Fact(DisplayName = "The exclusion arguments are validated as arguments, not as conflicts.")]
+    [SuppressMessage(JustDummiesRule.JD014.Category, JustDummiesRule.JD014.Id, Justification = SuppressionJustification.JD014.ThrowIsTheSubject)]
     public void ExclusionArgumentsAreValidated() {
         Check.ThatCode(() => Any.OneOf("a", "b").Except(null!)).Throws<ArgumentNullException>();
         Check.ThatCode(() => Any.OneOf("a", "b").Except()).Throws<ArgumentException>();

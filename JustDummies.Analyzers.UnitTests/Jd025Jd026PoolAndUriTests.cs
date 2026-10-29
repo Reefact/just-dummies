@@ -140,26 +140,6 @@ public class Jd025DuplicatePoolValueTests {
         Check.That(diagnostics.Length).IsEqualTo(0);
     }
 
-    [Fact]
-    public async Task Does_not_report_a_negative_test() {
-        const string source = """
-            using System;
-            using JustDummies;
-
-            public static class Sample {
-                public static void M() {
-                    Run(() => Any.OneOf(1, 1));
-                }
-
-                private static void Run(Func<object> body) { }
-            }
-            """;
-
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new DuplicatePoolValueAnalyzer(), source);
-
-        Check.That(diagnostics.Length).IsEqualTo(0);
-    }
-
 }
 
 public class Jd026EmptyRelativeUriTests {
@@ -215,26 +195,6 @@ public class Jd026EmptyRelativeUriTests {
                 public static void M(int segments) {
                     _ = Any.Uri().Relative().WithPathSegments(segments);
                 }
-            }
-            """;
-
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new EmptyRelativeUriAnalyzer(), source);
-
-        Check.That(diagnostics.Length).IsEqualTo(0);
-    }
-
-    [Fact]
-    public async Task Does_not_report_a_negative_test() {
-        const string source = """
-            using System;
-            using JustDummies;
-
-            public static class Sample {
-                public static void M() {
-                    Run(() => Any.Uri().Relative().WithPathSegments(0));
-                }
-
-                private static void Run(Func<object> body) { }
             }
             """;
 

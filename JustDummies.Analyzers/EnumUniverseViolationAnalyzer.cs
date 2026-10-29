@@ -51,7 +51,6 @@ public sealed class EnumUniverseViolationAnalyzer : DiagnosticAnalyzer {
         if (!AnyChainFacts.TryGetChain(invocation, symbols, out IReadOnlyList<IInvocationOperation> constraints, out IInvocationOperation? factory)) { return; }
         if (factory is null || factory.TargetMethod.Name != "Enum") { return; }
         if (factory.TargetMethod.TypeArguments.Length != 1 || factory.TargetMethod.TypeArguments[0] is not INamedTypeSymbol enumType) { return; }
-        if (NegativeTestGuard.IsSoleBodyOfLambdaArgument(invocation.Syntax)) { return; }
 
         HashSet<object?> declared = [.. enumType.GetMembers()
                                                 .OfType<IFieldSymbol>()
@@ -91,7 +90,6 @@ public sealed class EnumUniverseViolationAnalyzer : DiagnosticAnalyzer {
     /// </remarks>
     private static void ReportAValueTheTypeDoesNotDefine(OperationAnalysisContext context, IInvocationOperation invocation) {
         if (!ArgumentGuardFacts.TryFindUndefinedEnumElement(invocation, out IOperation? offending, out string? reason)) { return; }
-        if (NegativeTestGuard.IsLinkOfSoleBodyOfLambdaArgument(invocation.Syntax)) { return; }
 
         context.ReportDiagnostic(Diagnostic.Create(Descriptors.EnumUniverseViolation, offending!.Syntax.GetLocation(), reason));
     }

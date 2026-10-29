@@ -126,30 +126,6 @@ public class Jd004DiscardedSeedingResultTests {
     }
 
     [Fact]
-    public async Task Does_not_report_a_guard_asserting_negative_test() {
-        // A test asserting that UseSeed rejects its snippet never opens a scope, so there is nothing to leak. This
-        // shape is live in JustDummies.PropertyTests/SeedDeterminismProperties.cs.
-        const string source = """
-            using System;
-            using JustDummies;
-
-            public static class Expect {
-                public static bool Throws<T>(Action code) where T : Exception => true;
-            }
-
-            public static class Sample {
-                public static void M(int seed) {
-                    Expect.Throws<ArgumentNullException>(() => Any.UseSeed(seed, null!));
-                }
-            }
-            """;
-
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new DiscardedSeedingResultAnalyzer(), source);
-
-        Check.That(diagnostics.Length).IsEqualTo(0);
-    }
-
-    [Fact]
     public async Task Does_not_report_another_types_UseSeed() {
         const string source = """
             using System;

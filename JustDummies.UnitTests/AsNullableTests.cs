@@ -1,6 +1,7 @@
 #region Usings declarations
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 using NFluent;
 
@@ -67,6 +68,7 @@ public sealed class AsNullableTests {
     ///     which is the claim "the lift changes the type and nothing else" reduced to something checkable.
     /// </remarks>
     [Fact(DisplayName = "A set over the lift answers exactly as a set over the underlying generator.")]
+    [SuppressMessage(JustDummiesRule.JD016.Category, JustDummiesRule.JD016.Id, Justification = SuppressionJustification.JD016.ThrowIsTheSubject)]
     public void TheLiftedDomainIsCountedExactly() {
         Check.That(Any.SetOf(Any.Enum<Slot>().AsNullable()).WithCount(3).Generate()).HasSize(3);
         Check.That(Any.SetOf(Any.Enum<Slot>()).WithCount(3).Generate()).HasSize(3);

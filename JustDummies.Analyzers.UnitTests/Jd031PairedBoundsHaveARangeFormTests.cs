@@ -153,30 +153,6 @@ public class Jd031PairedBoundsHaveARangeFormTests {
     }
 
     [Fact]
-    public async Task Does_not_report_a_chain_asserted_to_throw() {
-        const string source = """
-            using System;
-
-            using JustDummies;
-
-            public static class Check2 {
-                public static void ThatCode(Func<object> code) { }
-            }
-
-            public static class Sample {
-                public static void M() {
-                    Check2.ThatCode(() => Any.String().WithMinLength(8).WithMaxLength(20));
-                }
-            }
-            """;
-
-        ImmutableArray<Diagnostic> diagnostics =
-            await AnalyzerTestHarness.GetDiagnosticsAsync(new PairedBoundsHaveARangeFormAnalyzer(), source);
-
-        Check.That(diagnostics.Length).IsEqualTo(0);
-    }
-
-    [Fact]
     public async Task Reports_each_chain_once() {
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeAsync("""
                     _ = Any.String().Alpha().WithMinLength(8).InUpperCase().WithMaxLength(20).Generate();

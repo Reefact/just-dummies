@@ -1,5 +1,7 @@
 #region Usings declarations
 
+using System.Diagnostics.CodeAnalysis;
+using JustDummies.Diagnostics;
 using System.Globalization;
 using System.Text.RegularExpressions;
 
@@ -612,6 +614,7 @@ public sealed class PatternRoundTripProperties {
     }
 
     [Fact(DisplayName = "IgnorePatternWhitespace is refused as an argument error, whatever the pattern and the companion options.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void IgnorePatternWhitespaceIsAnArgumentError() {
         Gen<(string Pattern, RegexOptions Companion, int Seed)> cases =
             from pattern in SupportedPattern()
@@ -633,6 +636,7 @@ public sealed class PatternRoundTripProperties {
     }
 
     [Fact(DisplayName = "A null pattern is an argument error, on both overloads and on a seeded context.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void ANullPatternIsAnArgumentError() {
         Prop.ForAll(Generators.Seed().ToArbitrary(),
                     seed => Expect.Throws<ArgumentNullException>(() => Any.StringMatching((string)null!))
@@ -643,6 +647,7 @@ public sealed class PatternRoundTripProperties {
     }
 
     [Fact(DisplayName = "A well-formed but unsupported construct is refused eagerly, alone and after any supported prefix.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void UnsupportedConstructsAreRefusedAsUnsupported() {
         Gen<(string Prefix, string Construct)> cases =
             from prefix in SupportedPattern()

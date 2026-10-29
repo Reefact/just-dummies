@@ -49,11 +49,6 @@ public sealed class GeneratorWhereValueExpectedAnalyzer : DiagnosticAnalyzer {
         IOperation operand = GeneratorFacts.Unwrap(conversion.Operand);
         if (!GeneratorFacts.IsGenerator(operand.Type, iAny)) { return; }
 
-        // A test asserting that the chain throws writes it as the whole body of a lambda argument, which binds to
-        // Func<object> rather than Action and so produces a real generator-to-object conversion. Reporting it would
-        // fight every throws-assertion in the suite.
-        if (NegativeTestGuard.IsSoleBodyOfLambdaArgument(operand.Syntax)) { return; }
-
         // Comparing two recipes is a deliberate operation — it is how an immutability test proves a constraint
         // returned a new generator rather than mutating the receiver. Generate() there would destroy the very
         // property under test, so the identity comparisons belong to the Equals branch below, which reports only

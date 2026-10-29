@@ -73,7 +73,6 @@ public sealed class UndeclaredStringLengthAnalyzer : DiagnosticAnalyzer {
         if (invocation.Parent is IInvocationOperation) { return; }
         if (!AnyChainFacts.TryGetChain(invocation, symbols, out IReadOnlyList<IInvocationOperation> constraints, out IInvocationOperation? factory)) { return; }
         if (factory is null || factory.TargetMethod.Name != "String") { return; }
-        if (NegativeTestGuard.IsSoleBodyOfLambdaArgument(invocation.Syntax)) { return; }
         if (constraints.Any(constraint => LengthConstraints.Contains(constraint.TargetMethod.Name))) { return; }
 
         int floor = StringShapeFacts.Floor(constraints);

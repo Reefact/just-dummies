@@ -1,5 +1,8 @@
 #region Usings declarations
 
+using System.Diagnostics.CodeAnalysis;
+using JustDummies.Diagnostics;
+
 using FsCheck;
 using FsCheck.Fluent;
 
@@ -98,6 +101,7 @@ public sealed class ScalarIntervalProperties {
     }
 
     [Fact(DisplayName = "SByte: GreaterThan and LessThan are strict, and conflict at the domain edge they cannot clear.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void SByteStrictBoundsAreStrictAndConflictAtTheEdges() {
         Prop.ForAll(SByte().ToArbitrary(),
                     bound => {
@@ -116,6 +120,7 @@ public sealed class ScalarIntervalProperties {
     }
 
     [Fact(DisplayName = "SByte: Between never yields a value excluded by a subsequent Except.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void SByteExceptRemovesTheValueFromTheInterval() {
         Gen<((sbyte Min, sbyte Max) Bounds, sbyte Excluded)> cases =
             from bounds in Generators.OrderedPair(SByte())
@@ -162,6 +167,7 @@ public sealed class ScalarIntervalProperties {
     }
 
     [Fact(DisplayName = "Byte: GreaterThan and LessThan are strict, and conflict at the domain edges — zero being the floor.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void ByteStrictBoundsAreStrictAndConflictAtTheEdges() {
         Prop.ForAll(Byte().ToArbitrary(),
                     bound => {
@@ -180,6 +186,7 @@ public sealed class ScalarIntervalProperties {
     }
 
     [Fact(DisplayName = "Byte: Between never yields a value excluded by a subsequent Except.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void ByteExceptRemovesTheValueFromTheInterval() {
         Gen<((byte Min, byte Max) Bounds, byte Excluded)> cases =
             from bounds in Generators.OrderedPair(Byte())
@@ -231,6 +238,7 @@ public sealed class ScalarIntervalProperties {
     }
 
     [Fact(DisplayName = "UInt32: crossed bounds are rejected — as Between arguments an argument error, as two constraints a conflict.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void UInt32CrossedBoundsAreRejected() {
         Prop.ForAll(Generators.OrderedPair(UInt32()).ToArbitrary(),
                     bounds => bounds.Min == bounds.Max
@@ -261,6 +269,7 @@ public sealed class ScalarIntervalProperties {
     }
 
     [Fact(DisplayName = "Int64: crossed bounds are rejected — as Between arguments an argument error, as two constraints a conflict.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void Int64CrossedBoundsAreRejected() {
         Prop.ForAll(Generators.OrderedPair(Generators.Int64()).ToArbitrary(),
                     bounds => bounds.Min == bounds.Max

@@ -26,7 +26,7 @@ public sealed class NonFiniteRecipeTests {
     ///     cannot run one of them on its own. The key travels instead, and it is what names the row: a failure then
     ///     says WHICH entry point stopped refusing rather than that one of them did.
     /// </summary>
-    [SuppressMessage(JustDummiesRule.JD014.Category, JustDummiesRule.JD014.Id, Justification = "The refused value IS the subject: each entry pins that its builder refuses it. NegativeTestGuard cannot reach it, and is right not to — the lambda is a dictionary value rather than an argument.")]
+    [SuppressMessage(JustDummiesRule.JD014.Category, JustDummiesRule.JD014.Id, Justification = SuppressionJustification.JD014.ThrowIsTheSubject)]
     private static readonly Dictionary<string, Func<object>> Declarations = new() {
         ["Any.Double().GreaterThan(double.NegativeInfinity)"] = () => Any.Double().GreaterThan(double.NegativeInfinity),
         ["Any.Double().LessThan(double.NaN)"]                 = () => Any.Double().LessThan(double.NaN),
@@ -96,6 +96,7 @@ public sealed class NonFiniteRecipeTests {
     }
 
     [Fact(DisplayName = "A bound's refusal names the way out in the builder's own type, and says what is refused — a bound, not every argument — on all three builders.")]
+    [SuppressMessage(JustDummiesRule.JD014.Category, JustDummiesRule.JD014.Id, Justification = SuppressionJustification.JD014.ThrowIsTheSubject)]
     public void TheRefusalNamesTheWayOut() {
         (ArgumentException Refusal, string Pool)[] refusals = [
             (Assert.Throws<ArgumentException>(() => Any.Double().LessThan(double.NaN)), "Any.OneOf(double.NaN, ...)"),
@@ -118,6 +119,7 @@ public sealed class NonFiniteRecipeTests {
     }
 
     [Fact(DisplayName = "OneOf's refusal names the generic pool in the builder's own type, distinct from the builder's own OneOf, so the advice does not read as the call just written — on all three builders (issue #180).")]
+    [SuppressMessage(JustDummiesRule.JD014.Category, JustDummiesRule.JD014.Id, Justification = SuppressionJustification.JD014.ThrowIsTheSubject)]
     public void OneOfsRefusalNamesTheGenericPool() {
         (ArgumentException Refusal, string Pool)[] refusals = [
             (Assert.Throws<ArgumentException>(() => Any.Double().OneOf(1.0, double.NaN)), "Any.OneOf<double>(double.NaN, ...)"),

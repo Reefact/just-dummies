@@ -75,7 +75,6 @@ public sealed class PooledValueNeverDrawsAnalyzer : DiagnosticAnalyzer {
         if (invocation.Parent is IInvocationOperation) { return; }
         if (!AnyChainFacts.TryGetChain(invocation, symbols, out IReadOnlyList<IInvocationOperation> constraints, out IInvocationOperation? factory)) { return; }
         if (factory is null) { return; }
-        if (NegativeTestGuard.IsSoleBodyOfLambdaArgument(invocation.Syntax)) { return; }
 
         IInvocationOperation? valueSet = constraints.FirstOrDefault(constraint => constraint.TargetMethod.Name == "OneOf");
         if (valueSet is null) { return; }

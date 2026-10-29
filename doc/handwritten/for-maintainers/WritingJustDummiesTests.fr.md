@@ -104,8 +104,14 @@ Check.ThatCode(() => Any.Int32().Positive().Negative())
 `Contains` et `Not.Contains` ; `.WithProperty(e => e.Seed, 1234).And` atteint un autre
 membre avant le message. La lambda se lie à `Func<T>`, donc le générateur n'est jamais
 converti en `object` — la forme recette-comme-valeur que
-[JD011](../for-users/analyzers/JD011.fr.md) existe pour attraper, et doit exempter quand
+[JD011](../for-users/analyzers/JD011.fr.md) existe pour attraper, et signale quand
 `Assert.Throws<T>` la prend par sa surcharge `Func<object>`.
+
+Un test dont le sujet est une chaîne refusée reçoit le diagnostic qui prédit ce refus : aucune
+règle ne devine quelles chaînes un test écrit exprès
+([ADR-0112](adr/0112-report-a-test-asserting-a-refusal-like-any-other-code.fr.md)). On le fait
+taire sur la méthode de test avec un `[SuppressMessage]` dont la justification est
+`SuppressionJustification.<règle>.ThrowIsTheSubject`.
 
 `Assert.Throws` ne reste que là où l'exception doit être *capturée* explicitement, ou là
 où la sémantique de *type exact* de xUnit fait partie de l'affirmation :

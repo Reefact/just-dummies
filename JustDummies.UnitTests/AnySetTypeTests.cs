@@ -128,6 +128,7 @@ public sealed class AnySetTypeTests {
     }
 
     [Fact(DisplayName = "Enum: OneOf restricts, Except removes, exhausting the pool conflicts.")]
+    [SuppressMessage(JustDummiesRule.JD017.Category, JustDummiesRule.JD017.Id, Justification = SuppressionJustification.JD017.ThrowIsTheSubject)]
     public void EnumSets() {
         for (int i = 0; i < SampleCount; i++) {
             OrderStatus restricted = Any.Enum<OrderStatus>().OneOf(OrderStatus.Draft, OrderStatus.Validated).Generate();
@@ -142,6 +143,7 @@ public sealed class AnySetTypeTests {
     }
 
     [Fact(DisplayName = "Enum: OneOf rejects undeclared numeric values — the declared-members-only contract holds.")]
+    [SuppressMessage(JustDummiesRule.JD017.Category, JustDummiesRule.JD017.Id, Justification = SuppressionJustification.JD017.ThrowIsTheSubject)]
     public void EnumOneOfRejectsUndeclaredValues() {
         ArgumentException rejected = Assert.Throws<ArgumentException>(
             () => Any.Enum<OrderStatus>().OneOf((OrderStatus)42));
@@ -163,6 +165,7 @@ public sealed class AnySetTypeTests {
     }
 
     [Fact(DisplayName = "Char: OneOf restricts, exclusions apply, and contradictions conflict.")]
+    [SuppressMessage(JustDummiesRule.JD034.Category, JustDummiesRule.JD034.Id, Justification = SuppressionJustification.JD034.ThrowIsTheSubject)]
     public void CharSets() {
         for (int i = 0; i < SampleCount; i++) {
             char value = Any.Char().OneOf('a', 'b').Generate();
@@ -193,6 +196,7 @@ public sealed class AnySetTypeTests {
     }
 
     [Fact(DisplayName = "Char: the wider families draw within themselves and still answer to casing.")]
+    [SuppressMessage(JustDummiesRule.JD034.Category, JustDummiesRule.JD034.Id, Justification = SuppressionJustification.JD034.ThrowIsTheSubject)]
     public void CharWiderFamiliesDrawWithinThemselves() {
         for (int i = 0; i < SampleCount; i++) {
             Check.That(CharacterPools.IsAsciiPunctuation(Any.Char().Punctuation().Generate())).IsTrue();

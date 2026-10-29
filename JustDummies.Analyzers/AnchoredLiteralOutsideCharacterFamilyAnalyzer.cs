@@ -55,7 +55,6 @@ public sealed class AnchoredLiteralOutsideCharacterFamilyAnalyzer : DiagnosticAn
         if (invocation.Parent is IInvocationOperation) { return; }
         if (!AnyChainFacts.TryGetChain(invocation, symbols, out IReadOnlyList<IInvocationOperation> constraints, out IInvocationOperation? factory)) { return; }
         if (factory is null || factory.TargetMethod.Name != "String") { return; }
-        if (NegativeTestGuard.IsSoleBodyOfLambdaArgument(invocation.Syntax)) { return; }
 
         AnalyzeConstraints(context, constraints);
     }

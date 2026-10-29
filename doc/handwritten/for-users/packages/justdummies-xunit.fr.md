@@ -16,7 +16,7 @@ Il dépend de `JustDummies` et de xUnit v3.
 
 ## Toute la surface
 
-`ReproducibleAttribute`, avec une propriété `Seed` assignable. C'est tout — l'adaptateur est
+`ReproducibleAttribute`, dans l'espace de noms `JustDummies.Xunit`, avec une propriété `Seed` assignable. C'est tout — l'adaptateur est
 volontairement mince, car tout ce dont il a besoin existe déjà dans la bibliothèque
 ([ADR-0018](../../for-maintainers/adr/0018-adapt-dummies-to-xunit-v3-through-a-companion-package.fr.md)).
 
@@ -24,6 +24,11 @@ volontairement mince, car tout ce dont il a besoin existe déjà dans la bibliot
 
 <!-- jd:declarations -->
 ```csharp
+using JustDummies;
+using JustDummies.Xunit;
+
+using Xunit;
+
 public sealed class OrderTests {
 
     [Fact, Reproducible]
@@ -50,6 +55,8 @@ un niveau extérieur n'écrit rien, puisque rejouer sa graine ne reproduirait ri
 
 <!-- jd:declarations -->
 ```csharp
+using JustDummies.Xunit;
+
 // Sur une classe : chaque test qu'elle déclare est reproductible.
 [Reproducible]
 public sealed class OrderTests {
@@ -94,6 +101,8 @@ déclaration de namespace ou de type :
 
 <!-- jd:skip -->
 ```csharp
+using JustDummies.Xunit;
+
 [assembly: Reproducible]
 ```
 

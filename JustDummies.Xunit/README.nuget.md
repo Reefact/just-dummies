@@ -20,6 +20,11 @@ to replay while a green one stays silent.
 That works on every test framework, and stays the portable form. This package
 removes the ceremony for xUnit v3:
 
+    using JustDummies;
+    using JustDummies.Xunit;
+
+    using Xunit;
+
     [Fact, Reproducible]
     public void Order_reference_is_accepted() {
         string reference = Any.String().StartingWith("ORD-").WithLength(12).Generate();

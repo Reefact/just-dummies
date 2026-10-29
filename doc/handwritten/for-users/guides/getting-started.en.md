@@ -292,6 +292,11 @@ If you use xUnit v3, the [`JustDummies.Xunit`](../packages/justdummies-xunit.en.
 
 <!-- jd:declarations -->
 ```csharp
+using JustDummies;
+using JustDummies.Xunit;
+
+using Xunit;
+
 public sealed class OrderTests {
 
     [Fact, Reproducible]
@@ -316,6 +321,8 @@ If the test fails, the seed is reported in the test's output, the same way as wi
 
 <!-- jd:declarations -->
 ```csharp
+using JustDummies.Xunit;
+
 public sealed class OrderTests {
 
     [Fact, Reproducible(Seed = 1743029518)]

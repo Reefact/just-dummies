@@ -65,6 +65,31 @@ invariant du domaine plutôt qu'un contournement.
 
 `DateOnly` n'a pas de contrainte de granularité — c'est déjà un jour entier.
 
+## Les tirages `DateTime` sont `Kind.Utc`, et les bornes se comparent par ticks
+
+Toute valeur générée par `Any.DateTime()` porte `DateTimeKind.Utc`. Les bornes se comparent par leurs seuls
+`Ticks`, quel que soit leur `Kind` — exactement comme le `<=` de `DateTime`. Une valeur fournie par `OneOf` est
+rendue telle quelle, `Kind` compris. Sans borne déclarée, l'intervalle va de `DateTime.MinValue` à
+`DateTime.MaxValue`.
+
+La conséquence mérite d'être dite sans détour : avec des bornes `Local`, le tirage peut être une valeur `Utc`
+dont l'*instant* sort de ceux des bornes.
+
+```csharp
+DateTime localStart = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Local);
+DateTime localEnd   = localStart.AddSeconds(1);
+
+// Kind is Utc; its Ticks lie between the bounds' Ticks, whatever their Kind.
+DateTime anyMoment = Any.DateTime().Between(localStart, localEnd).Generate();
+```
+
+Sous `TZ=Europe/Paris`, des bornes de 00:00:00 et 00:00:01 en heure locale donnent une valeur `Utc` dont les
+ticks sont compris entre elles, ce qui, comme instant, est une heure *plus tard*. Aucune contrainte déclarée
+n'est violée — la valeur satisfait `start <= value && value <= end` selon la comparaison que votre propre
+test écrirait — mais ce n'est pas l'instant que les bornes désignent. Passez des bornes `Utc` pour garder
+les deux lectures ensemble, ou utilisez [`DateTimeOffset`](#datetimeoffset-ne-porte-un-decalage-que-si-vous-en-declarez-un)
+quand c'est l'instant qui compte.
+
 ## `DateTimeOffset` ne porte un décalage que si vous en déclarez un
 
 Un `DateTimeOffset` est un instant **et** un décalage par rapport à UTC. Sans contrainte, JustDummies

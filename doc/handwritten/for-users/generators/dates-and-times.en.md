@@ -65,6 +65,31 @@ rather than a workaround.
 
 `DateOnly` has no granularity constraint — it is already a whole day.
 
+## `DateTime` draws are `Kind.Utc`, and bounds compare by ticks
+
+Every value `Any.DateTime()` generates carries `DateTimeKind.Utc`. Bounds are compared by their `Ticks`
+alone, whatever their `Kind` — exactly as `DateTime`'s own `<=` does. A value you supply through `OneOf` is
+returned as given, `Kind` included. With no bound declared, the range is `DateTime.MinValue` to
+`DateTime.MaxValue`.
+
+The consequence is worth stating plainly: with `Local` bounds, the draw can be a `Utc` value whose
+*instant* lies outside the bounds' instants.
+
+```csharp
+DateTime localStart = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Local);
+DateTime localEnd   = localStart.AddSeconds(1);
+
+// Kind is Utc; its Ticks lie between the bounds' Ticks, whatever their Kind.
+DateTime anyMoment = Any.DateTime().Between(localStart, localEnd).Generate();
+```
+
+Under `TZ=Europe/Paris`, bounds of 00:00:00 and 00:00:01 local yield a `Utc` value whose ticks lie between
+them, which as an instant is one hour *later*. No declared constraint is broken — the value satisfies
+`start <= value && value <= end` under the comparison your own test would write — but it is not the
+instant the bounds name. Pass `Utc` bounds to keep the two readings together, or use
+[`DateTimeOffset`](#datetimeoffset-carries-an-offset-only-when-you-declare-one) when the instant is what
+matters.
+
 ## `DateTimeOffset` carries an offset only when you declare one
 
 A `DateTimeOffset` is an instant **and** an offset from UTC. Unconstrained, JustDummies varies the

@@ -16,6 +16,19 @@ well-typed chain. Each rule closes one of those gaps.
 Each rule has a stable id. Errors are hard defects; warnings flag likely mistakes; the info
 rules are conventions, and two are opt-in (see each page for how to enable them).
 
+**Info diagnostics do not appear in `dotnet build` output.** MSBuild keeps them out of the console: an IDE
+shows them, and so does a SARIF error log, but in a terminal or a CI log a rule such as
+[JD030](JD030.en.md) says nothing, and the remedy it teaches never reaches you. The default severities are
+deliberate and stay; to see an Info rule in the build output, raise it in `.editorconfig`:
+
+```ini
+# see one Info rule in the build output
+dotnet_diagnostic.JD030.severity = warning
+
+# or every rule of the Constraints category
+dotnet_analyzer_diagnostic.category-JustDummies.Constraints.severity = warning
+```
+
 ## Reproducibility
 
 These rules keep an asynchronous test body from silently swallowing its own failures.

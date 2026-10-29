@@ -92,8 +92,13 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 - **JD014 stands down on a negative test whose chain goes on past the rejected call.**
   `Assert.Throws(() => Any.Int32().Between(10, 5).Generate())` was reported by JD014, which judged the
   `Between` call alone, while JD023 stayed silent on the same shape because it judges the chain as a whole.
-  Both rules now stay silent when the chain holding the call is the whole body of a lambda argument; a
-  chain passed to another call inside the lambda is still reported.
+  Both rules now stay silent when the chain holding the call is the whole body of a parameterless lambda
+  argument; a chain passed to another call inside the lambda is still reported.
+- **A lambda that takes a parameter is no longer read as a negative test.** Every rule that stands down
+  on a conflict-asserting test read any lambda argument whose whole body was the chain as one, so
+  `Enumerable.Range(0, 3).Select(_ => Any.Int32().Between(10, 5).Generate())`, arrange code that throws on
+  every element, drew no diagnostic. Only a parameterless lambda, the shape every assertion on a thrown
+  exception takes, is a negative test now.
 - **An enum value the type does not define is reported once, by JD017.** `Any.Enum<T>().OneOf(...)`
   naming a value that is neither a declared member nor a combination of a `[Flags]` enumeration's
   members drew two warnings at the same position, JD014's and JD017's. JD017 alone reports it now, with

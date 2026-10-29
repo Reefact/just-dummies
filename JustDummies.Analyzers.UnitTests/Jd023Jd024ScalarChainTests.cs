@@ -177,6 +177,25 @@ public class Jd023ScalarChainAdmitsNoValueTests {
         }
     }
 
+    [Fact]
+    public async Task Reports_a_conflict_in_a_lambda_that_takes_a_parameter() {
+        // A lambda handed a value maps it: this is arrange code building a list, not a test asserting a throw.
+        const string source = """
+            using System.Linq;
+            using JustDummies;
+
+            public static class Sample {
+                public static void M() {
+                    _ = Enumerable.Range(0, 3).Select(_ => Any.Int32().Positive().Negative().Generate()).ToList();
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new ScalarChainAdmitsNoValueAnalyzer(), source, "JD023", "JD024");
+
+        Check.That(diagnostics.Length).IsEqualTo(1);
+    }
+
     // The second shape goes on to Generate(), as Assert.ThrowsAny(() => chain.Generate()) does; JD014 stands down on
     // both shapes too, so one negative test draws one verdict from the two rules (issue #323).
     [Theory]

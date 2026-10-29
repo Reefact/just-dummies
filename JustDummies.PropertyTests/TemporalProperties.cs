@@ -30,7 +30,7 @@ namespace JustDummies.PropertyTests;
 ///     <para>
 ///         Instants are built from a drawn tick count rather than from FsCheck's own <see cref="DateTime" />
 ///         arbitrary, so this file owns its domain and the distance it keeps from the edges that overflow. Bounds
-///         are compared the way the library compares them — by ticks for <see cref="DateTime" /> (kind ignored) and
+///         are compared the way the library compares them — by ticks for <see cref="DateTime" /> (a <c>Utc</c> or <c>Unspecified</c> bound) and
 ///         by <see cref="DateTimeOffset.UtcTicks" /> for <see cref="DateTimeOffset" /> (rendering ignored).
 ///     </para>
 /// </remarks>
@@ -74,13 +74,15 @@ public sealed class TemporalProperties {
 
     /// <summary>
     ///     Arbitrary instants over the whole <see cref="DateTime" /> domain, its edges included and its
-    ///     <see cref="DateTimeKind" /> drawn rather than fixed: constraints compare by <see cref="DateTime.Ticks" />
-    ///     and ignore the kind of the bounds they are handed, exactly as <see cref="DateTime" />'s own operators do.
+    ///     <see cref="DateTimeKind" /> drawn among the two a bound may carry, <see cref="DateTimeKind.Unspecified" /> and
+    ///     <see cref="DateTimeKind.Utc" />: constraints compare those by <see cref="DateTime.Ticks" />, exactly as
+    ///     <see cref="DateTime" />'s own operators do. A <see cref="DateTimeKind.Local" /> bound is refused (ADR-0114),
+    ///     which a property of its own holds.
     /// </summary>
     private static Gen<DateTime> Instants() {
         Gen<DateTime> anywhere = from bits in Bits64()
-                                 from kind in Gen.Choose(0, 2)
-                                 select new DateTime((long)((ulong)bits % DomainTicks), (DateTimeKind)kind);
+                                 from kind in Gen.Elements(DateTimeKind.Unspecified, DateTimeKind.Utc)
+                                 select new DateTime((long)((ulong)bits % DomainTicks), kind);
 
         return Generators.WithEdges(anywhere, DateTime.MinValue, DateTime.MinValue.AddTicks(1), AnchorInstant,
                                     DateTime.MaxValue.AddTicks(-1), DateTime.MaxValue);
@@ -189,12 +191,29 @@ public sealed class TemporalProperties {
             .QuickCheckThrowOnFailure();
     }
 
-    [Fact(DisplayName = "DateTime: every generated value carries Utc kind, whatever kind the bounds carry.")]
+    [Fact(DisplayName = "DateTime: every generated value carries Utc kind, whether the bounds are Utc or Unspecified.")]
     public void DateTimeGeneratedValuesCarryUtcKind() {
         Prop.ForAll(Instants().ToArbitrary(),
                     instant => Expect.EveryDraw(Any.DateTime(), value => value.Kind == DateTimeKind.Utc)
                                && Expect.EveryDraw(Any.DateTime().AfterOrEqualTo(instant), value => value.Kind == DateTimeKind.Utc)
                                && Expect.EveryDraw(Any.DateTime().BeforeOrEqualTo(instant), value => value.Kind == DateTimeKind.Utc))
+            .QuickCheckThrowOnFailure();
+    }
+
+    [Fact(DisplayName = "DateTime: a Local bound is an argument error naming its parameter, for every instant (ADR-0114).")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
+    public void DateTimeLocalBoundIsAnArgumentError() {
+        Prop.ForAll(Instants().ToArbitrary(),
+                    instant => {
+                        DateTime local = DateTime.SpecifyKind(instant, DateTimeKind.Local);
+
+                        return ThrowsArgumentExceptionNaming(() => Any.DateTime().After(local), "instant")
+                            && ThrowsArgumentExceptionNaming(() => Any.DateTime().AfterOrEqualTo(local), "instant")
+                            && ThrowsArgumentExceptionNaming(() => Any.DateTime().Before(local), "instant")
+                            && ThrowsArgumentExceptionNaming(() => Any.DateTime().BeforeOrEqualTo(local), "instant")
+                            && ThrowsArgumentExceptionNaming(() => Any.DateTime().Between(local, DateTime.MaxValue), "start")
+                            && ThrowsArgumentExceptionNaming(() => Any.DateTime().Between(DateTime.MinValue, local), "end");
+                    })
             .QuickCheckThrowOnFailure();
     }
 

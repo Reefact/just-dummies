@@ -16,8 +16,9 @@ namespace JustDummies;
 /// </summary>
 /// <remarks>
 ///     Generated values carry <see cref="DateTimeKind.Utc" />; constraints compare by <see cref="DateTime.Ticks" />,
-///     ignoring the <see cref="DateTime.Kind" /> of the supplied bounds — exactly as <see cref="DateTime" />'s own
-///     comparison operators do. Values supplied to <see cref="OneOf(DateTime[])" /> are returned as given, Kind included. There is deliberately no clock-relative constraint (no "in the past/future"): a
+///     exactly as <see cref="DateTime" />'s own comparison operators do. A bound may be <see cref="DateTimeKind.Utc" />
+///     or <see cref="DateTimeKind.Unspecified" />; a <see cref="DateTimeKind.Local" /> bound is refused, since it may
+///     name a clock time or an instant and the library cannot tell which (ADR-0114). Values supplied to <see cref="OneOf(DateTime[])" /> are returned as given, Kind included. There is deliberately no clock-relative constraint (no "in the past/future"): a
 ///     reproducible test pins its reference instants explicitly with <see cref="After" /> and <see cref="Before" />.
 /// </remarks>
 public sealed class AnyDateTime : IAny<DateTime>, IHasRandomSource, ICardinalityHint<DateTime>, IPoolInspection<DateTime> {
@@ -44,6 +45,16 @@ public sealed class AnyDateTime : IAny<DateTime>, IHasRandomSource, ICardinality
 
     private static string Join(DateTime[] values) {
         return string.Join(", ", values.Select(V));
+    }
+
+    /// <summary>
+    ///     Refuses a bound whose <see cref="DateTime.Kind" /> is <see cref="DateTimeKind.Local" />: it may mean a time on
+    ///     this machine's clock or an instant, and the library cannot tell which (ADR-0114).
+    /// </summary>
+    private static void RefuseLocal(DateTime bound, string parameterName) {
+        if (bound.Kind == DateTimeKind.Local) {
+            throw new ArgumentException($"The {parameterName} ({V(bound)}) has DateTimeKind.Local: it names a time on this machine's clock rather than an instant, and the library cannot tell which you meant. Pass {parameterName}.ToUniversalTime(), a Utc or Unspecified value, or use Any.DateTimeOffset() when the instant is what matters.", parameterName);
+        }
     }
 
     #endregion
@@ -89,32 +100,44 @@ public sealed class AnyDateTime : IAny<DateTime>, IHasRandomSource, ICardinality
     /// <summary>Requires an instant strictly after <paramref name="instant" />.</summary>
     /// <param name="instant">The exclusive lower bound.</param>
     /// <returns>A new generator carrying the added constraint.</returns>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="instant" /> has <see cref="DateTimeKind.Local" /> (ADR-0114).</exception>
     /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
     public AnyDateTime After(DateTime instant) {
+        RefuseLocal(instant, nameof(instant));
+
         return new AnyDateTime(_source, _spec.WithMinimumAbove(Ord(instant), ConstraintCall.Of(nameof(After), V(instant))), _allowedOriginals);
     }
 
     /// <summary>Requires an instant at or after <paramref name="instant" />.</summary>
     /// <param name="instant">The inclusive lower bound.</param>
     /// <returns>A new generator carrying the added constraint.</returns>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="instant" /> has <see cref="DateTimeKind.Local" /> (ADR-0114).</exception>
     /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
     public AnyDateTime AfterOrEqualTo(DateTime instant) {
+        RefuseLocal(instant, nameof(instant));
+
         return new AnyDateTime(_source, _spec.WithMinimum(Ord(instant), ConstraintCall.Of(nameof(AfterOrEqualTo), V(instant))), _allowedOriginals);
     }
 
     /// <summary>Requires an instant strictly before <paramref name="instant" />.</summary>
     /// <param name="instant">The exclusive upper bound.</param>
     /// <returns>A new generator carrying the added constraint.</returns>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="instant" /> has <see cref="DateTimeKind.Local" /> (ADR-0114).</exception>
     /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
     public AnyDateTime Before(DateTime instant) {
+        RefuseLocal(instant, nameof(instant));
+
         return new AnyDateTime(_source, _spec.WithMaximumBelow(Ord(instant), ConstraintCall.Of(nameof(Before), V(instant))), _allowedOriginals);
     }
 
     /// <summary>Requires an instant at or before <paramref name="instant" />.</summary>
     /// <param name="instant">The inclusive upper bound.</param>
     /// <returns>A new generator carrying the added constraint.</returns>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="instant" /> has <see cref="DateTimeKind.Local" /> (ADR-0114).</exception>
     /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
     public AnyDateTime BeforeOrEqualTo(DateTime instant) {
+        RefuseLocal(instant, nameof(instant));
+
         return new AnyDateTime(_source, _spec.WithMaximum(Ord(instant), ConstraintCall.Of(nameof(BeforeOrEqualTo), V(instant))), _allowedOriginals);
     }
 
@@ -122,9 +145,14 @@ public sealed class AnyDateTime : IAny<DateTime>, IHasRandomSource, ICardinality
     /// <param name="start">The inclusive lower bound.</param>
     /// <param name="end">The inclusive upper bound.</param>
     /// <returns>A new generator carrying the added constraint.</returns>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="start" /> is after <paramref name="end" />.</exception>
+    /// <exception cref="ArgumentException">
+    ///     Thrown when <paramref name="start" /> or <paramref name="end" /> has <see cref="DateTimeKind.Local" />
+    ///     (ADR-0114), or when <paramref name="start" /> is after <paramref name="end" />.
+    /// </exception>
     /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
     public AnyDateTime Between(DateTime start, DateTime end) {
+        RefuseLocal(start, nameof(start));
+        RefuseLocal(end, nameof(end));
         if (start > end) { throw new ArgumentException($"The start ({V(start)}) must be at or before the end ({V(end)}).", nameof(start)); }
 
         ConstraintCall constraint = ConstraintCall.Of(nameof(Between), V(start), V(end));

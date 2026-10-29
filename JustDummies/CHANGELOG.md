@@ -86,8 +86,9 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   value satisfies this chain once GreaterThan is applied", while the exception it predicts names the call
   with its arguments and the constraint it collides with. Two crossing bounds now read as the run time
   writes them: `cannot apply GreaterThan(10) because Between(1, 6) already requires values less than or
-  equal to 6`. A domain emptied by a lattice, an allow-list or an exclusion names every constraint written
-  before the call.
+  equal to 6`, with the numbers written as the run time writes them whatever the build machine's culture.
+  A domain emptied by a lattice, an allow-list or an exclusion names every constraint written before the
+  call.
 - **JD014 stands down on a negative test whose chain goes on past the rejected call.**
   `Assert.Throws(() => Any.Int32().Between(10, 5).Generate())` was reported by JD014, which judged the
   `Between` call alone, while JD023 stayed silent on the same shape because it judges the chain as a whole.

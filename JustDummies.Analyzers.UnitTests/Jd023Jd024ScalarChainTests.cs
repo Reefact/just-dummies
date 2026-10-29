@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Globalization;
 
 using Microsoft.CodeAnalysis;
 
@@ -146,6 +147,34 @@ public class Jd023ScalarChainAdmitsNoValueTests {
         ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new ScalarChainAdmitsNoValueAnalyzer(), source, "JD023", "JD024");
 
         Check.That(diagnostics.Length).IsEqualTo(0);
+    }
+
+    [Fact]
+    public async Task Words_negative_bounds_as_the_run_time_does_whatever_the_current_culture() {
+        // Some cultures spell the minus sign U+2212; the run time writes its message invariantly, and so must the rule.
+        CultureInfo culture = (CultureInfo)CultureInfo.InvariantCulture.Clone();
+        culture.NumberFormat.NegativeSign = "\u2212";
+        CultureInfo previous = CultureInfo.CurrentCulture;
+        const string source = """
+            using JustDummies;
+
+            public static class Sample {
+                public static void M() {
+                    _ = Any.Int32().Between(-10, -5).GreaterThan(-3);
+                }
+            }
+            """;
+
+        CultureInfo.CurrentCulture = culture;
+        try {
+            ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new ScalarChainAdmitsNoValueAnalyzer(), source, "JD023", "JD024");
+            string                     thrown      = Check.ThatCode(() => Any.Int32().Between(-10, -5).GreaterThan(-3)).Throws<ConflictingAnyConstraintException>().Value.Message;
+
+            Check.That(diagnostics.Length).IsEqualTo(1);
+            Check.That(diagnostics[0].GetMessage()).IsEqualTo($"No value satisfies this chain: c{thrown.Substring(1, thrown.Length - 2)}");
+        } finally {
+            CultureInfo.CurrentCulture = previous;
+        }
     }
 
     // The second shape goes on to Generate(), as Assert.ThrowsAny(() => chain.Generate()) does; JD014 stands down on

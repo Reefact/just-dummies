@@ -552,6 +552,38 @@ public sealed class AnyPatternTests {
              .WhichMember(caught => caught.Message).Contains("lookahead");
     }
 
+    [Theory(DisplayName = "A refused construct ends its message with the way out for its own family, not a list of unrelated ones.")]
+    // Not honourable while building a value: compose the parts instead.
+    [InlineData(@"foo(?=bar)", "compose them with As(...) or Any.Combine(...)")]
+    [InlineData(@"foo(?!bar)", "compose them with As(...) or Any.Combine(...)")]
+    [InlineData(@"(?<=x)y", "compose them with As(...) or Any.Combine(...)")]
+    [InlineData(@"(\w+)\s\1", "compose them with As(...) or Any.Combine(...)")]
+    [InlineData(@"(?<a>x)\k<a>", "compose them with As(...) or Any.Combine(...)")]
+    [InlineData(@"(?<a>x)(?<b-a>y)", "compose them with As(...) or Any.Combine(...)")]
+    [InlineData(@"(?(x)y|z)", "compose them with As(...) or Any.Combine(...)")]
+    [InlineData(@"(?>ab|a)b", "compose them with As(...) or Any.Combine(...)")]
+    // Nothing to generate: remove it.
+    [InlineData(@"[A-Z]{3}(?#currency)", "adds nothing to a generated value")]
+    // Outside the alphabet's own spelling: write the class out.
+    [InlineData(@"\p{L}+", "as an explicit class")]
+    [InlineData(@"\P{L}", "as an explicit class")]
+    [InlineData(@"[a-z-[aeiou]]", "as an explicit class")]
+    [InlineData(@"[\p{L}]", "as an explicit class")]
+    // About positions in the value, which is generated whole.
+    [InlineData(@"\bword\b", "is matched whole")]
+    [InlineData(@"a\Bb", "is matched whole")]
+    [InlineData(@"\Gabc", "is matched whole")]
+    [InlineData(@"a\Ab", "is matched whole")]
+    [InlineData(@"a$b", "is matched whole")]
+    // An option the subset does not honour.
+    [InlineData(@"(?s)abc", "leading (?i) is honoured")]
+    public void ARefusalNamesTheWayOutForItsFamily(string pattern, string wayOut) {
+        Check.ThatCode(() => Any.StringMatching(pattern))
+             .Throws<UnsupportedRegexException>()
+             .WhichMember(caught => caught.Message).Contains(wayOut)
+             .And.Not.Contains("lookarounds, backreferences, word boundaries and Unicode categories");
+    }
+
     [Fact(DisplayName = "Constructs whose language a plain walk cannot honour are refused, never mis-generated.")]
     public void NotGeneratableConstructsAreRefused() {
         // An atomic group commits to its first matching branch: (?>ab|a)b matches only "abb", so lowering it to

@@ -13,14 +13,42 @@ public sealed class UnsupportedRegexException : DummyException {
     #region Statics members declarations
 
     /// <summary>
-    ///     Builds the exception for a construct outside the regular subset the library generates from — a lookaround, a
-    ///     backreference, a balancing group, a Unicode category, a word boundary. A grammar limit: the pattern is
-    ///     well-formed, and the construct is one no finite generator can honour or one deliberately out of scope.
+    ///     Builds the exception for a construct the generator cannot honour while building a value — a lookaround, a
+    ///     backreference, a balancing, conditional or atomic group. The way out is to build the parts and compose them.
     /// </summary>
-    internal static UnsupportedRegexException OutsideRegularSubset(string pattern, string construct, int position) {
+    internal static UnsupportedRegexException NotHonourable(string pattern, string construct, int position) {
         return Sentence(pattern, construct, position,
-                        "It builds values from the regular subset of the pattern language; lookarounds, backreferences, word boundaries and Unicode categories are outside it. " +
-                        "Express the requirement with the supported subset, or generate the value another way.");
+                        "JustDummies cannot honour it while building a value: generate the parts and compose them with As(...) or Any.Combine(...), or generate the value another way.");
+    }
+
+    /// <summary>Builds the exception for a construct that contributes nothing to a generated value — an inline comment.</summary>
+    internal static UnsupportedRegexException AddsNothing(string pattern, string construct, int position) {
+        return Sentence(pattern, construct, position, "It adds nothing to a generated value: remove it.");
+    }
+
+    /// <summary>
+    ///     Builds the exception for a way of naming characters the subset does not read — a Unicode category, a class
+    ///     subtraction. The same characters can be written out as an explicit class.
+    /// </summary>
+    internal static UnsupportedRegexException WrittenAsAClass(string pattern, string construct, int position) {
+        return Sentence(pattern, construct, position,
+                        "Write the characters out as an explicit class, such as [A-Za-z]; values are drawn from printable ASCII.");
+    }
+
+    /// <summary>
+    ///     Builds the exception for a construct about a position in the matched text — a word boundary, the
+    ///     contiguous-match anchor, an anchor away from an edge. A generated value is matched whole, which is what the
+    ///     remedy turns on.
+    /// </summary>
+    internal static UnsupportedRegexException AboutAPosition(string pattern, string construct, int position) {
+        return Sentence(pattern, construct, position,
+                        "A generated value is matched whole: drop an anchor or boundary that marks its edges, and express one inside the value with explicit classes, or generate the value another way.");
+    }
+
+    /// <summary>Builds the exception for an option group the subset does not honour — anything but one leading <c>(?i)</c>.</summary>
+    internal static UnsupportedRegexException UnhonouredOption(string pattern, string construct, int position) {
+        return Sentence(pattern, construct, position,
+                        "Only one leading (?i) is honoured, or RegexOptions.IgnoreCase on the Regex overload: write the pattern without any other option.");
     }
 
     /// <summary>

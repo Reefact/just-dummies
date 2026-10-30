@@ -277,22 +277,22 @@ string anySame = Any.StringMatching(new Regex("[a-z]{3}", RegexOptions.IgnoreCas
 ### Constructions refusées
 
 Tout ce qui n'est pas **régulier** ne peut pas être construit par un automate fini : c'est donc
-refusé immédiatement par une `UnsupportedRegexException` nommant la construction et sa position —
-jamais mal généré :
+refusé immédiatement par une `UnsupportedRegexException` nommant la construction, sa position et ce
+qu'il faut faire à la place — jamais mal généré :
 
-| Refusé | Pourquoi |
-| --- | --- |
-| références arrière `\1`, `\k<nom>`, groupes d'équilibrage `(?<a-b>…)` | ils exigent la pile de captures |
-| limites de mot `\b`, `\B`, ancre de correspondance contiguë `\G` | elles décrivent le texte autour d'une position, pas un caractère |
-| catégories Unicode `\p{…}` | hors du sous-ensemble : écrivez les caractères sous forme de classe |
-| soustraction de classe `[a-z-[aeiou]]` | ne fait pas partie du langage généré : écrivez la classe en entier |
-| anticipation `(?=…)`, `(?!…)` | non régulier |
-| rétro-anticipation `(?<=…)`, `(?<!…)` | non régulier |
-| groupes atomiques `(?>…)` | non régulier |
-| groupes conditionnels `(?(…)…)` | non régulier |
-| commentaires en ligne `(?#…)` | ne font pas partie du langage généré |
-| un `(?i:…)` à portée limitée, un `(?i)` ailleurs qu'en tête, toute autre option de groupe `(?s…)` | seul un unique `(?i)` en tête est honoré ; toute autre option de groupe reste hors du sous-ensemble |
-| une ancre hors extrémité | `^`, `\A` et `$`, `\z`, `\Z` n'ont de sens qu'au début et à la fin du motif, ou d'une branche d'alternation de premier niveau |
+| Refusé | Pourquoi | Que faire à la place |
+| --- | --- | --- |
+| références arrière `\1`, `\k<nom>`, groupes d'équilibrage `(?<a-b>…)` | ils exigent la pile de captures | générer les parties et les composer avec `As(…)` ou `Any.Combine(…)` |
+| anticipation `(?=…)`, `(?!…)` | non régulier | de même |
+| rétro-anticipation `(?<=…)`, `(?<!…)` | non régulier | de même |
+| groupes atomiques `(?>…)` | non régulier | de même |
+| groupes conditionnels `(?(…)…)` | non régulier | de même |
+| commentaires en ligne `(?#…)` | ne font pas partie du langage généré | le supprimer |
+| catégories Unicode `\p{…}`, `\P{…}` | hors du sous-ensemble | écrire les caractères sous forme de classe explicite, comme `[A-Za-z]` |
+| soustraction de classe `[a-z-[aeiou]]` | ne fait pas partie du langage généré | écrire la classe en entier, comme `[b-df-hj-np-tv-z]` |
+| limites de mot `\b`, `\B`, ancre de correspondance contiguë `\G` | elles décrivent le texte autour d'une position, pas un caractère | une valeur générée est reconnue en entier : supprimer celle qui marque ses bords, et exprimer celle qui est à l'intérieur avec des classes explicites |
+| une ancre hors extrémité | `^`, `\A` et `$`, `\z`, `\Z` n'ont de sens qu'au début et à la fin du motif, ou d'une branche d'alternation de premier niveau | de même |
+| un `(?i:…)` à portée limitée, un `(?i)` ailleurs qu'en tête, toute autre option de groupe `(?s…)` | seul un unique `(?i)` en tête est honoré ; toute autre option de groupe reste hors du sous-ensemble | utiliser un unique `(?i)` en tête, ou `RegexOptions.IgnoreCase` sur la surcharge `Regex` |
 
 Deux autres refus ont une autre forme. `RegexOptions.IgnorePatternWhitespace` sur la `Regex` transmise est refusé
 par une `ArgumentException` dès la construction du générateur, puisqu'il change la façon dont le texte du motif est

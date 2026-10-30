@@ -270,21 +270,22 @@ string anySame = Any.StringMatching(new Regex("[a-z]{3}", RegexOptions.IgnoreCas
 ### Refused constructs
 
 Anything that is not **regular** cannot be built by a finite automaton, so it is refused eagerly with
-an `UnsupportedRegexException` naming the construct and its position — never mis-generated:
+an `UnsupportedRegexException` naming the construct, its position and what to do instead — never
+mis-generated:
 
-| Refused | Why |
-| --- | --- |
-| back-references `\1`, `\k<name>`, balancing groups `(?<a-b>…)` | they need the capture stack |
-| word boundaries `\b`, `\B`, the contiguous-match anchor `\G` | they describe the text around a position, not a character |
-| Unicode categories `\p{…}` | outside the subset: write the characters out as a class |
-| character-class subtraction `[a-z-[aeiou]]` | not part of the language being generated: write the class out |
-| lookahead `(?=…)`, `(?!…)` | not regular |
-| lookbehind `(?<=…)`, `(?<!…)` | not regular |
-| atomic groups `(?>…)` | not regular |
-| conditional groups `(?(…)…)` | not regular |
-| inline comments `(?#…)` | not part of the language being generated |
-| a scoped `(?i:…)`, a `(?i)` anywhere but first, any other option group `(?s…)` | only one exact leading `(?i)` is honoured; every other option group stays outside the subset |
-| an anchor away from an edge | `^`, `\A` and `$`, `\z`, `\Z` are only meaningful at the start and end of the pattern, or of a top-level alternation branch |
+| Refused | Why | What to do instead |
+| --- | --- | --- |
+| back-references `\1`, `\k<name>`, balancing groups `(?<a-b>…)` | they need the capture stack | generate the parts and compose them with `As(…)` or `Any.Combine(…)` |
+| lookahead `(?=…)`, `(?!…)` | not regular | the same |
+| lookbehind `(?<=…)`, `(?<!…)` | not regular | the same |
+| atomic groups `(?>…)` | not regular | the same |
+| conditional groups `(?(…)…)` | not regular | the same |
+| inline comments `(?#…)` | not part of the language being generated | remove it |
+| Unicode categories `\p{…}`, `\P{…}` | outside the subset | write the characters out as an explicit class, such as `[A-Za-z]` |
+| character-class subtraction `[a-z-[aeiou]]` | not part of the language being generated | write the class out, such as `[b-df-hj-np-tv-z]` |
+| word boundaries `\b`, `\B`, the contiguous-match anchor `\G` | they describe the text around a position, not a character | a generated value is matched whole: drop one that marks its edges, and express one inside it with explicit classes |
+| an anchor away from an edge | `^`, `\A` and `$`, `\z`, `\Z` are only meaningful at the start and end of the pattern, or of a top-level alternation branch | the same |
+| a scoped `(?i:…)`, a `(?i)` anywhere but first, any other option group `(?s…)` | only one exact leading `(?i)` is honoured; every other option group stays outside the subset | use one leading `(?i)`, or `RegexOptions.IgnoreCase` on the `Regex` overload |
 
 Two more refusals have a different shape. `RegexOptions.IgnorePatternWhitespace` on the `Regex` you pass is
 refused with an `ArgumentException` as the generator is built, since it changes how the pattern text is read:

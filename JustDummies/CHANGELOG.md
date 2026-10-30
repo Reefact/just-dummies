@@ -77,6 +77,23 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Changed
 
+- **A refused regex construct says what to do instead.** Every `UnsupportedRegexException` from
+  `Any.StringMatching` ended with the same list of unrelated constructs and a generic "express the
+  requirement with the supported subset". The message now ends with the way out for the construct's own family, and
+  no way out it gives can admit a value the pattern rejects: remove an inline comment; write a Unicode category or a
+  class subtraction out as an explicit class of characters it accepts; move an anchor that sits away from an edge to
+  the edge it was meant for; write the letters a scoped or later `(?i)` covers as explicit classes. Where no
+  equivalent rewrite exists — a lookaround, a backreference, a balancing, conditional or atomic group, a word
+  boundary, `\G`, any other option — the message says so, and that composing parts with `As(...)` or
+  `Any.Combine(...)` does not enforce the requirement on its own. The exception type and the construct and position
+  it names are unchanged.
+- **`Any.DateTime()` refuses a `Local` bound.** `After`, `AfterOrEqualTo`, `Before`, `BeforeOrEqualTo`
+  and `Between` throw an `ArgumentException` naming the parameter when it has `DateTimeKind.Local`. Such a
+  bound may mean a time on the machine's clock or an instant, and read as ticks it could yield a `Utc` value
+  whose instant lies outside the window the bounds name. The message names the two ways out:
+  `ToUniversalTime()`, or `Any.DateTimeOffset()` when the instant is what matters. `Utc` and `Unspecified`
+  bounds are read as before, and a `Local` value given to `OneOf` is still returned as given. A chain that
+  passed `DateTime.Now` or `DateTime.Today` as a bound now throws (ADR-0114).
 - **JD024 leaves an exclusion written twice identically to JD035.** `Any.Int32().Except(5).Except(5)` was
   reported as an exclusion that removes nothing, at information severity, on integer generators only; it
   is a repetition, which JD035 now reports at warning severity in every generator family, so one mistake

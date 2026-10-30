@@ -154,7 +154,7 @@ bool anyNotTheSame = Any.Boolean().DifferentFrom(true).Generate();
 `True()` and `False()` exist so a call site that pins the flag still reads like the ones that do not,
 which matters in a test where three of four dummies vary and one does not.
 
-`Any.Boolean().Except(true, false)` would empty the domain, and is refused with a message naming
+`Any.Boolean().True().DifferentFrom(true)` would empty the domain, and is refused with a message naming
 exactly that.
 
 ---

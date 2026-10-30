@@ -119,6 +119,18 @@ public sealed class AnyCollectionTests {
         }
     }
 
+    [Fact(DisplayName = "Distinct: the cardinality conflict is raised at Generate(), once the specification is whole, not at declaration (ADR-0113).")]
+    [SuppressMessage(JustDummiesRule.JD016.Category, JustDummiesRule.JD016.Id, Justification = SuppressionJustification.JD016.ThrowIsTheSubject)]
+    public void DistinctCardinalityIsCheckedAtGenerate() {
+        AnySet<bool> countedFirst = null!;
+        Check.ThatCode(() => countedFirst = Any.SetOf(Any.Boolean()).WithCount(5)).DoesNotThrow();
+        Check.ThatCode(() => countedFirst.Generate()).Throws<ConflictingAnyConstraintException>();
+
+        AnyList<bool> distinctLast = null!;
+        Check.ThatCode(() => distinctLast = Any.ListOf(Any.Boolean()).WithCount(5).Distinct()).DoesNotThrow();
+        Check.ThatCode(() => distinctLast.Generate()).Throws<ConflictingAnyConstraintException>();
+    }
+
     [Fact(DisplayName = "Distinct: a count beyond the element cardinality conflicts before any element is drawn, naming the shortfall.")]
     [SuppressMessage(JustDummiesRule.JD016.Category, JustDummiesRule.JD016.Id, Justification = SuppressionJustification.JD016.ThrowIsTheSubject)]
     public void DistinctCardinalityConflictsBeforeDrawing() {

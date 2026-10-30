@@ -56,8 +56,8 @@ string anyWithStuff = Any.String().NonEmpty().Generate();
 string anyRealText  = Any.String().NotBlank().Generate();
 ```
 
-`NonEmpty()` est l'intrus de cette liste : il relève le plancher à un et laisse le plafond là où il
-était, si bien qu'une chaîne qui ne porte que lui tire encore toute l'étendue. L'analyzer
+`NonEmpty()` est l'intrus de cette liste : il relève d'un le plancher et le plafond — 1 à 1025 plutôt
+que 0 à 1024 —, si bien qu'une chaîne qui ne porte que lui tire encore toute l'étendue. L'analyzer
 [JD030](../analyzers/JD030.fr.md) le dit au site d'appel, sur cette ligne comme sur toute autre chaîne
 qui ne déclare aucune longueur.
 
@@ -267,7 +267,7 @@ string anySame = Any.StringMatching(new Regex("[a-z]{3}", RegexOptions.IgnoreCas
 | n'importe quel caractère | `.` |
 | classes de caractères et intervalles | `[A-Z]`, `[aeiou]`, `[^0-9]` |
 | classes abrégées | `\d` `\D` `\w` `\W` `\s` `\S` |
-| échappements | `\t` `\n` `\r` `\f` `\v` `\a` `\e` |
+| échappements | `\t` `\n` `\r` `\f` `\v` `\a` `\e`, et les formes par point de code `\xNN` et `\uNNNN` |
 | quantificateurs | `*` `+` `?` `{3}` `{2,5}` `{2,}` |
 | groupements | `(…)`, `(?:…)`, `(?<nom>…)` |
 | alternation | `a|b` |
@@ -277,19 +277,30 @@ string anySame = Any.StringMatching(new Regex("[a-z]{3}", RegexOptions.IgnoreCas
 ### Constructions refusées
 
 Tout ce qui n'est pas **régulier** ne peut pas être construit par un automate fini : c'est donc
-refusé immédiatement par une `UnsupportedRegexException` nommant la construction et sa position —
-jamais mal généré :
+refusé immédiatement par une `UnsupportedRegexException` nommant la construction, sa position et ce
+qu'il faut faire à la place — jamais mal généré :
 
-| Refusé | Pourquoi |
-| --- | --- |
-| références arrière, groupes d'équilibrage `(?<a-b>…)` | ils exigent la pile de captures |
-| anticipation `(?=…)`, `(?!…)` | non régulier |
-| rétro-anticipation `(?<=…)`, `(?<!…)` | non régulier |
-| groupes atomiques `(?>…)` | non régulier |
-| groupes conditionnels `(?(…)…)` | non régulier |
-| commentaires en ligne `(?#…)` | ne font pas partie du langage généré |
-| un `(?i:…)` à portée limitée, un `(?i)` ailleurs qu'en tête, toute autre option de groupe `(?s…)` | seul un unique `(?i)` en tête est honoré ; toute autre option de groupe reste hors du sous-ensemble |
-| une ancre hors extrémité | `^`, `\A` et `$`, `\z`, `\Z` n'ont de sens qu'au début et à la fin du motif, ou d'une branche d'alternation de premier niveau |
+| Refusé | Pourquoi | Que faire à la place |
+| --- | --- | --- |
+| références arrière `\1`, `\k<nom>`, groupes d'équilibrage `(?<a-b>…)` | ils exigent la pile de captures | générer la valeur autrement, en veillant soi-même à ce qu'elle corresponde au motif : composer des parties avec `As(…)` ou `Any.Combine(…)` n'impose pas l'exigence à lui seul |
+| anticipation `(?=…)`, `(?!…)` | non régulier | de même |
+| rétro-anticipation `(?<=…)`, `(?<!…)` | non régulier | de même |
+| groupes atomiques `(?>…)` | non régulier | de même |
+| groupes conditionnels `(?(…)…)` | non régulier | de même |
+| commentaires en ligne `(?#…)` | ne font pas partie du langage généré | le supprimer |
+| catégories Unicode `\p{…}`, `\P{…}` | hors du sous-ensemble | écrire, sous forme de classe explicite, des caractères qu'elle accepte, comme `[A-Za-z]` pour les lettres |
+| soustraction de classe `[a-z-[aeiou]]` | ne fait pas partie du langage généré | écrire la classe en entier, comme `[b-df-hj-np-tv-z]` |
+| limites de mot `\b`, `\B` | elles lisent les caractères des deux côtés d'une position, bords de la valeur compris | en supprimer une peut admettre des valeurs que le motif rejette (`\b!` n'accepte aucune valeur commençant par `!`) : ne réécrire qu'après avoir vérifié que la réécriture n'accepte aucune valeur que le motif rejette, ou générer la valeur autrement |
+| l'ancre de correspondance contiguë `\G` | elle lie une correspondance à l'endroit où la précédente s'est arrêtée | de même |
+| une ancre hors extrémité | `^`, `\A` et `$`, `\z`, `\Z` n'ont de sens qu'au début et à la fin du motif, ou d'une branche d'alternation de premier niveau | aucune valeur entière ne peut la satisfaire à cet endroit : si elle visait une extrémité, l'y déplacer |
+| un `(?i:…)` à portée limitée, un `(?i)` ailleurs qu'en tête | seul un unique `(?i)` en tête est honoré, et il rend tout le motif insensible à la casse | écrire les lettres concernées sous forme de classes explicites, comme `[Bb]` |
+| toute autre option de groupe, comme `(?s…)` ou `(?is…)` | hors du sous-ensemble, sans équivalent | ne réécrire qu'après avoir vérifié que la réécriture n'accepte aucune valeur que le motif rejette, ou générer la valeur autrement |
+
+Deux autres refus ont une autre forme. `RegexOptions.IgnorePatternWhitespace` sur la `Regex` transmise est refusé
+par une `ArgumentException` dès la construction du générateur, puisqu'il change la façon dont le texte du motif est
+lu : transmettez le motif sans lui. Et un motif dont la valeur dépasserait **65 536 caractères** — un
+quantificateur non borné imbriqué comme `(a+)+`, ou des bornés dont le produit est énorme comme `(a{1000}){1000}` —
+n'est pas refusé d'avance mais échoue à `Generate()` avec une `AnyGenerationException`.
 
 Élargir cet ensemble supposerait une dépendance à un automate d'expressions régulières ; la décision
 de garder un analyseur maison et de refuser bruyamment est

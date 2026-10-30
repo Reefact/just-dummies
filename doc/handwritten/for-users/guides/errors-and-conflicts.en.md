@@ -60,9 +60,14 @@ Conflicts come in a few recognisable shapes:
 | --- | --- |
 | bounds that cross | `.GreaterThan(100).LessThan(10)` |
 | a lattice with no point in range | `.Between(1, 10).MultipleOf(50)` |
-| exclusions that empty the domain | `Any.Boolean().Except(true, false)` |
+| exclusions that empty the domain | `Any.Boolean().True().DifferentFrom(true)` |
 | a length that cannot hold the fragments | `.StartingWith("ORDER-").WithLength(3)` |
 | a count no element pool can fill | 100 distinct values from a pool of three |
+
+A single call with its arguments the wrong way round, `Between(10, 1)`, is not in that table: nothing is
+declared twice, so nothing conflicts. It is one argument list written backwards, refused at once as an
+`ArgumentException`, and [JD014](../analyzers/JD014.en.md) reports it at build time when the arguments are
+constants.
 
 ## Caught at compile time instead
 

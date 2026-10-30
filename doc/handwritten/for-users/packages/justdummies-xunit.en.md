@@ -16,7 +16,7 @@ It depends on `JustDummies` and on xUnit v3.
 
 ## The whole surface
 
-`ReproducibleAttribute`, with a settable `Seed`. That is all of it — the adapter is deliberately thin,
+`ReproducibleAttribute`, in the `JustDummies.Xunit` namespace, with a settable `Seed`. That is all of it — the adapter is deliberately thin,
 because everything it needs already exists in the library
 ([ADR-0018](../../for-maintainers/adr/0018-adapt-dummies-to-xunit-v3-through-a-companion-package.md)).
 
@@ -24,6 +24,11 @@ because everything it needs already exists in the library
 
 <!-- jd:declarations -->
 ```csharp
+using JustDummies;
+using JustDummies.Xunit;
+
+using Xunit;
+
 public sealed class OrderTests {
 
     [Fact, Reproducible]
@@ -50,6 +55,8 @@ prints nothing, since replaying its seed would reproduce nothing:
 
 <!-- jd:declarations -->
 ```csharp
+using JustDummies.Xunit;
+
 // On a class: every test it declares is reproducible.
 [Reproducible]
 public sealed class OrderTests {
@@ -94,6 +101,8 @@ or type declaration:
 
 <!-- jd:skip -->
 ```csharp
+using JustDummies.Xunit;
+
 [assembly: Reproducible]
 ```
 

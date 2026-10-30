@@ -54,7 +54,7 @@ sit in one chain, as information rather than as a verdict; the pair stays correc
 
 **An unconstrained integer spans its whole type.** Declare nothing and the draw is uniform over the
 full range, and that is deliberate
-([ADR-0031](../../for-maintainers/adr/0031-draw-arbitrary-numbers-within-an-ordinary-magnitude.md)):
+([ADR-0031](../../for-maintainers/adr/0031-draw-arbitrary-numbers-within-an-ordinary-magnitude.md), superseded by [ADR-0097](../../for-maintainers/adr/0097-follow-the-declared-bounds-with-the-ordinary-magnitude-window.md)):
 a large integer is still an ordinary integer, where a large `double` stops behaving like arithmetic
 — the floating-point rule below is the exception, not the norm. Uniform over a range also means most
 of that range sits near its extremes: an unconstrained `Int128` carries 38 or 39 digits in about 94
@@ -103,13 +103,17 @@ int    anyOnTheHour    = Any.Int32().Between(0, 1_440).MultipleOf(60).Generate()
 long   anyPageOffset   = Any.Int64().GreaterThanOrEqualTo(0).MultipleOf(25).Generate();
 ```
 
-`WithScale` applies to `decimal`, and fixes the number of decimal places — which is what makes a
-money dummy behave like money:
+`WithScale` applies to `decimal`, and keeps the value expressible in at most *n* decimal places — a
+multiple of 10⁻ⁿ, which is what makes a money dummy behave like money:
 
 ```csharp
 decimal anyAmount = Any.Decimal().Between(0m, 10_000m).WithScale(2).Generate(); // e.g. 4172.35
 decimal anyRate   = Any.Decimal().Between(0m, 1m).WithScale(4).Generate();      // e.g. 0.0725
 ```
+
+It describes a lattice of values, not a representation: `decimal.Scale` is not padded, so a draw may
+come back as `5.3` rather than `5.30`, and a value you supply through `OneOf` or a single-point range is
+returned as written ([ADR-0015](../../for-maintainers/adr/0015-draw-lattice-constrained-scalars-on-the-grid.md)).
 
 Combining `Between` with `MultipleOf` is the one place to watch: an interval containing no multiple
 of the step admits no value, and is refused. `Any.Int32().Between(1, 10).MultipleOf(50)` names both
@@ -126,7 +130,7 @@ Two behaviours are worth knowing.
 
 **Unconstrained draws stay ordinary.** An unconstrained `double`, `float` or `decimal` is drawn
 within a magnitude of one million rather than roaming the type's full range
-([ADR-0031](../../for-maintainers/adr/0031-draw-arbitrary-numbers-within-an-ordinary-magnitude.md)).
+([ADR-0031](../../for-maintainers/adr/0031-draw-arbitrary-numbers-within-an-ordinary-magnitude.md), superseded by [ADR-0097](../../for-maintainers/adr/0097-follow-the-declared-bounds-with-the-ordinary-magnitude-window.md)).
 Values like `1.7e308` are technically in range and useless in a test: they turn every subsequent
 arithmetic assertion into a question about floating-point overflow. Declare a bound when your domain
 has one.

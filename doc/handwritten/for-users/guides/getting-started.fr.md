@@ -292,6 +292,11 @@ Avec xUnit v3, le paquet [`JustDummies.Xunit`](../packages/justdummies-xunit.fr.
 
 <!-- jd:declarations -->
 ```csharp
+using JustDummies;
+using JustDummies.Xunit;
+
+using Xunit;
+
 public sealed class OrderTests {
 
     [Fact, Reproducible]
@@ -316,6 +321,8 @@ Si le test échoue, la graine est rapportée dans la sortie du test, comme pour 
 
 <!-- jd:declarations -->
 ```csharp
+using JustDummies.Xunit;
+
 public sealed class OrderTests {
 
     [Fact, Reproducible(Seed = 1743029518)]

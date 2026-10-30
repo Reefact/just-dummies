@@ -85,17 +85,28 @@ juste*, il appartient à la documentation de référence, et l'ADR y renvoie.
   ([ADR-0036](0036-keep-one-dated-line-per-state-an-adr-reached.fr.md)).
 * Le statut vaut *Proposed*, *Accepted*, *Superseded* ou *Deprecated*.
 * Une **supersession** s'écrit des deux côtés et n'ajoute aucune date. Le statut
-  de l'enregistrement superséedé devient `Superseded by` suivi d'un lien vers le
+  de l'enregistrement remplacé devient `Superseded by` suivi d'un lien vers le
   successeur ; rien d'autre ne change chez lui : ses dates restent, et son corps
-  n'est jamais retouché, car une décision acceptée est une pièce d'histoire et
+  n'est jamais retouché sur le fond, car une décision acceptée est une pièce d'histoire et
   non un brouillon. Le successeur porte une ligne `Supersède l'…` sous son
   en-tête, qui pointe en retour. Chaque côté pointe le jumeau de sa propre
   langue. Le couple de référence est
   [ADR-0029](0029-let-a-size-maximum-cap-without-steering-the-draw.fr.md) et
   [ADR-0076](0076-let-a-declared-maximum-steer-the-size-draw.fr.md).
-* La citation d'un enregistrement superséedé ne se repinne **pas**. Sa ligne de
+* La citation d'un enregistrement remplacé ne se repinne **pas**. Sa ligne de
   statut nomme le successeur, et c'est cela qu'un lecteur suit ; une citation ne
-  bouge que si ce qu'elle affirme a cessé d'être vrai.
+  bouge que si ce qu'elle affirme a cessé d'être vrai. Écrire le successeur à côté
+  est une correction éditoriale, et sur une page utilisateur c'est obligatoire :
+  une page sous `doc/handwritten/for-users/` nomme le successeur sur la même
+  ligne, ce que vérifie la suite de documentation
+  ([ADR-0115](0115-allow-an-editorial-correction-to-an-accepted-adr.fr.md)).
+* Un enregistrement accepté reçoit des corrections **éditoriales** — une coquille,
+  un lien mort ou déplacé, la mise en forme, un jumeau français réaligné sur
+  l'anglais, le successeur nommé à côté d'une citation — et jamais un changement
+  de fond, qui passe par un nouvel enregistrement. Une retouche est éditoriale
+  quand l'enregistrement, lu à la date de son acceptation, dit exactement ce qu'il
+  disait avant
+  ([ADR-0115](0115-allow-an-editorial-correction-to-an-accepted-adr.fr.md)).
 * La citation d'une ADR qui ne vit que dans l'autre dépôt se qualifie
   `ADR-00NN (first-class-errors)` ; un numéro non qualifié désigne toujours cette
   base.
@@ -238,3 +249,6 @@ que l'option existait le jour où elle compterait.
 | [ADR-0110](0110-mark-every-parameter-a-throw-may-depend-on.fr.md) | Marquer tout paramètre dont un throw peut dépendre, et tous là où la piste se perd | Accepted | consigné ici |
 | [ADR-0111](0111-own-an-undefined-enum-value-as-jd017.fr.md) | Confier à JD017 la valeur d'enum non définie d'un ensemble de valeurs, et en retirer JD014 | Accepted | consigné ici |
 | [ADR-0112](0112-report-a-test-asserting-a-refusal-like-any-other-code.fr.md) | Signaler un test qui vérifie un refus comme tout autre code, et le laisser faire taire la règle explicitement | Accepted | consigné ici |
+| [ADR-0113](0113-check-a-distinct-collections-cardinality-when-the-specification-is-whole.fr.md) | Contrôler la cardinalité d'une collection distincte quand la spécification est complète | Accepted | consigné ici |
+| [ADR-0114](0114-refuse-a-local-datetime-bound.fr.md) | Refuser une borne `DateTime` `Local` plutôt que la lire en ticks | Accepted | consigné ici |
+| [ADR-0115](0115-allow-an-editorial-correction-to-an-accepted-adr.fr.md) | Permettre une correction éditoriale d'une ADR acceptée, jamais un changement de fond | Accepted | consigné ici |

@@ -53,8 +53,8 @@ string anyWithStuff = Any.String().NonEmpty().Generate();
 string anyRealText  = Any.String().NotBlank().Generate();
 ```
 
-`NonEmpty()` is the odd one in that list: it raises the floor to one and leaves the ceiling where it
-was, so a chain carrying only it still draws the whole spread. The analyzer
+`NonEmpty()` is the odd one in that list: it raises the floor and the ceiling by one — 1 to 1025 rather
+than 0 to 1024 — so a chain carrying only it still draws the whole spread. The analyzer
 [JD030](../analyzers/JD030.en.md) says so at the call site, on that line and on every other chain
 that declares no length.
 
@@ -260,7 +260,7 @@ string anySame = Any.StringMatching(new Regex("[a-z]{3}", RegexOptions.IgnoreCas
 | any character | `.` |
 | character classes and ranges | `[A-Z]`, `[aeiou]`, `[^0-9]` |
 | shorthand classes | `\d` `\D` `\w` `\W` `\s` `\S` |
-| escapes | `\t` `\n` `\r` `\f` `\v` `\a` `\e` |
+| escapes | `\t` `\n` `\r` `\f` `\v` `\a` `\e`, and the code-point forms `\xNN` and `\uNNNN` |
 | quantifiers | `*` `+` `?` `{3}` `{2,5}` `{2,}` |
 | grouping | `(…)`, `(?:…)`, `(?<name>…)` |
 | alternation | `a|b` |
@@ -270,18 +270,30 @@ string anySame = Any.StringMatching(new Regex("[a-z]{3}", RegexOptions.IgnoreCas
 ### Refused constructs
 
 Anything that is not **regular** cannot be built by a finite automaton, so it is refused eagerly with
-an `UnsupportedRegexException` naming the construct and its position — never mis-generated:
+an `UnsupportedRegexException` naming the construct, its position and what to do instead — never
+mis-generated:
 
-| Refused | Why |
-| --- | --- |
-| back-references, balancing groups `(?<a-b>…)` | they need the capture stack |
-| lookahead `(?=…)`, `(?!…)` | not regular |
-| lookbehind `(?<=…)`, `(?<!…)` | not regular |
-| atomic groups `(?>…)` | not regular |
-| conditional groups `(?(…)…)` | not regular |
-| inline comments `(?#…)` | not part of the language being generated |
-| a scoped `(?i:…)`, a `(?i)` anywhere but first, any other option group `(?s…)` | only one exact leading `(?i)` is honoured; every other option group stays outside the subset |
-| an anchor away from an edge | `^`, `\A` and `$`, `\z`, `\Z` are only meaningful at the start and end of the pattern, or of a top-level alternation branch |
+| Refused | Why | What to do instead |
+| --- | --- | --- |
+| back-references `\1`, `\k<name>`, balancing groups `(?<a-b>…)` | they need the capture stack | generate the value another way and keep it matching the pattern yourself: composing parts with `As(…)` or `Any.Combine(…)` does not enforce the requirement on its own |
+| lookahead `(?=…)`, `(?!…)` | not regular | the same |
+| lookbehind `(?<=…)`, `(?<!…)` | not regular | the same |
+| atomic groups `(?>…)` | not regular | the same |
+| conditional groups `(?(…)…)` | not regular | the same |
+| inline comments `(?#…)` | not part of the language being generated | remove it |
+| Unicode categories `\p{…}`, `\P{…}` | outside the subset | write out, as an explicit class, characters it accepts, such as `[A-Za-z]` for letters |
+| character-class subtraction `[a-z-[aeiou]]` | not part of the language being generated | write the class out, such as `[b-df-hj-np-tv-z]` |
+| word boundaries `\b`, `\B` | they read the characters on both sides of a position, the value's edges included | removing one can admit values the pattern rejects (`\b!` matches no value starting with `!`): rewrite only once you have checked the rewrite accepts no value the pattern rejects, or generate the value another way |
+| the contiguous-match anchor `\G` | it ties a match to where a previous one ended | the same |
+| an anchor away from an edge | `^`, `\A` and `$`, `\z`, `\Z` are only meaningful at the start and end of the pattern, or of a top-level alternation branch | no whole value can satisfy it there: if it was meant for an edge, move it there |
+| a scoped `(?i:…)`, a `(?i)` anywhere but first | only one exact leading `(?i)` is honoured, and it makes the whole pattern case-insensitive | write the affected letters as explicit classes, such as `[Bb]` |
+| any other option group, such as `(?s…)` or `(?is…)` | outside the subset, with no equivalent | rewrite only once you have checked the rewrite accepts no value the pattern rejects, or generate the value another way |
+
+Two more refusals have a different shape. `RegexOptions.IgnorePatternWhitespace` on the `Regex` you pass is
+refused with an `ArgumentException` as the generator is built, since it changes how the pattern text is read:
+pass the pattern without it. And a pattern whose value would run past **65,536 characters** — a nested
+unbounded quantifier such as `(a+)+`, or bounded ones whose product is huge such as `(a{1000}){1000}` — is
+not refused up front but fails at `Generate()` with an `AnyGenerationException`.
 
 Widening this set would mean taking a regex-automaton dependency; the decision to keep a home-grown
 parser and refuse loudly instead is

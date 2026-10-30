@@ -65,13 +65,37 @@ invariant du domaine plutôt qu'un contournement.
 
 `DateOnly` n'a pas de contrainte de granularité — c'est déjà un jour entier.
 
+## Les tirages `DateTime` sont `Kind.Utc`, et une borne `Local` est refusée
+
+Toute valeur générée par `Any.DateTime()` porte `DateTimeKind.Utc`, et les bornes se comparent par leurs `Ticks` —
+exactement comme le `<=` de `DateTime`. Une borne peut être `Utc` ou `Unspecified` — `new DateTime(2026, 1, 1)` est
+`Unspecified` — et l'une comme l'autre est lue telle qu'écrite. Une borne `Local` est **refusée** :
+
+```csharp
+DateTime localStart = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Local);
+
+// Refusé : une ArgumentException qui nomme `start`, et les deux façons d'en sortir.
+AnyDateTime impossible = Any.DateTime().Between(localStart, localStart.AddDays(1));
+```
+
+Une valeur `Local` peut désigner une heure sur l'horloge de cette machine ou un instant, et la bibliothèque ne peut
+pas savoir lequel. Lue en ticks, elle pourrait donner une valeur `Utc` dont l'*instant* sort de ceux des bornes, du
+décalage local : une valeur qui satisfait toutes les contraintes selon la comparaison de `DateTime`, et qui n'est
+pourtant pas dans la fenêtre voulue. Plutôt que de deviner, l'appel est refusé, et son message nomme les deux façons
+d'en sortir : convertir la borne avec `ToUniversalTime()`, ou utiliser
+[`DateTimeOffset`](#datetimeoffset-ne-porte-un-decalage-que-si-vous-en-declarez-un) quand c'est l'instant qui compte
+([ADR-0114](../../for-maintainers/adr/0114-refuse-a-local-datetime-bound.fr.md)).
+
+Une valeur fournie par `OneOf` n'est pas une borne : elle est rendue telle quelle, `Kind` compris. Sans borne
+déclarée, l'intervalle va de `DateTime.MinValue` à `DateTime.MaxValue`.
+
 ## `DateTimeOffset` ne porte un décalage que si vous en déclarez un
 
 Un `DateTimeOffset` est un instant **et** un décalage par rapport à UTC. Sans contrainte, JustDummies
 fait varier l'instant et laisse le décalage à `+00:00` : le décalage est une dimension que l'on
 active explicitement, avec `WithOffset` pour un décalage fixe en minutes entières ou
 `WithOffsetBetween` pour un décalage borné
-([ADR-0016](../../for-maintainers/adr/0016-vary-the-datetimeoffset-offset-dimension.fr.md)).
+([ADR-0016](../../for-maintainers/adr/0016-vary-the-datetimeoffset-offset-dimension.fr.md), remplacée par l'[ADR-0030](../../for-maintainers/adr/0030-filter-the-datetimeoffset-pool-by-the-declared-offset.fr.md)).
 Déclarez-en un quand le code testé y est sensible : un tirage sans contrainte n'atteint jamais le
 code qui suppose l'heure locale.
 
@@ -83,6 +107,20 @@ DateTimeOffset anyEuropeanInstant = Any.DateTimeOffset()
                                        .Generate();
 ```
 
+`WithGranularity` mesure la grille sur l'**instant UTC**, pas sur l'heure locale que le décalage affiche
+ensuite. Des jours entiers sous un décalage `+02:00` se lisent `02:00` en local, et des heures entières sous
+`+05:30` tombent à `:30` :
+
+```csharp
+DateTimeOffset anyTwoOClock = Any.DateTimeOffset()
+                                 .WithGranularity(TimeSpan.FromDays(1))
+                                 .WithOffset(TimeSpan.FromHours(2))
+                                 .Generate();                          // local time 02:00, always
+```
+
+Quand c'est la lecture locale que votre domaine stocke, choisissez une granularité et un décalage qui
+s'accordent, ou déclarez la grille de l'instant en tenant compte du décalage.
+
 Combiné à `OneOf(...)`, un décalage déclaré **filtre le vivier** au lieu de réécrire les valeurs
 qu'il contient : une valeur du vivier est rendue telle quelle, décalage compris, et une valeur dont
 le décalage n'est pas admis par la déclaration n'est jamais tirée
@@ -90,11 +128,12 @@ le décalage n'est pas admis par la déclaration n'est jamais tirée
 
 ## Le piège de `DateTime.Now`
 
-Voici l'erreur qui mérite d'être nommée, car elle survit à la revue et échoue à minuit :
+Voici l'erreur qui mérite d'être nommée, car elle survit à la revue et échoue à minuit. `DateTime.Now` lui-même
+est refusé comme borne, puisqu'il est `Local` (ci-dessus) ; `DateTime.UtcNow` est accepté, et le piège demeure :
 
 ```csharp
 // Fragile : le dummy est tiré relativement à une horloge que le test ne contrôle pas.
-DateTime anyCreatedAt = Any.DateTime().Before(DateTime.Now).Generate();
+DateTime anyCreatedAt = Any.DateTime().Before(DateTime.UtcNow).Generate();
 ```
 
 Le test dépend désormais du moment où il s'exécute. Pire, il n'est pas reproductible : rejouer la

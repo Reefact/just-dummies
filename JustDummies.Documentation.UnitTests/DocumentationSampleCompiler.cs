@@ -38,7 +38,6 @@ internal static class DocumentationSampleCompiler {
 
                                          using JustDummies;
                                          using JustDummies.Diagnostics;
-                                         using JustDummies.Xunit;
                                          using JustDummies.Documentation.UnitTests.Fixtures;
 
                                          using Xunit;

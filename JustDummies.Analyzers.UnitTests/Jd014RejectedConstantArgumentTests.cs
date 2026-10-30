@@ -209,6 +209,11 @@ public class Jd014RejectedConstantArgumentTests {
     [InlineData("Any.Uri().Web().WithHost(\"::1\")")]
     [InlineData("Any.Uri().Web().WithHost(\"a b\")")]
     [InlineData("Any.Uri().Web().WithUserInfo(\"\\u0130\")")]
+    // Not covered, by scope: the rule reads the numeric and Half forms of a transposed Between. The run-time guard
+    // refuses these; widening the rule is a decision for ADR-0106, not a missing case.
+    [InlineData("Any.DateTime().Between(new DateTime(2026, 1, 2), new DateTime(2026, 1, 1))")]
+    [InlineData("Any.TimeSpan().Between(TimeSpan.FromHours(2), TimeSpan.FromHours(1))")]
+    [InlineData("Any.DateTimeOffset().Between(new DateTimeOffset(2026, 1, 2, 0, 0, 0, TimeSpan.Zero), new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero))")]
     public async Task Does_not_report_a_uri_component_an_offset_or_a_value_the_guard_may_accept(string expression) {
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeWithDeclarationsAsync(expression);
 

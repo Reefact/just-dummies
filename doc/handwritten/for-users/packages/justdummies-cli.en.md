@@ -92,8 +92,9 @@ private static AnyString AnyValidValue() {
 ```
 
 The second line names the first guard `any` could not vouch for and where it is, so you do not have
-to search the constructor for it; the recap prints the same under its rows. Keep the recipe or
-replace it, delete that one line, and you are done. The alternative — a file that
+to search the constructor for it; the recap prints the same under its rows. Keep the recipe, or
+replace it and delete that one line — and if the replacement is another kind of generator, retype what
+that changes ([below](#when-the-replacement-is-another-kind-of-generator)). The alternative — a file that
 compiles and draws a value your constructor rejects on some later run — is the failure that costs
 most, because it surfaces far from its cause
 ([ADR-0083](../../for-maintainers/adr/0083-block-compilation-on-a-guard-the-engine-cannot-vouch-for.md)).
@@ -105,6 +106,16 @@ property whose getter computes its value, a method of the object being built, th
 to a helper — it cannot say which parameters the rejection involves, so it marks them all rather than
 none ([ADR-0110](../../for-maintainers/adr/0110-mark-every-parameter-a-throw-may-depend-on.md)).
 Confirm each recipe as above.
+
+**A regex guard is never read.** `if (!Regex.IsMatch(value, "^[A-Z]{3}$")) { throw … }`, the guard in the
+sample above, marks the parameter `to verify` and nothing more: the pattern is not carried over, and the
+recipe stays the neutral one. The library draws from a
+[regular subset](../generators/strings.en.md#patterns) of .NET's syntax, and a pattern written for
+validation often leaves it — a lookahead, a word boundary, a backreference, a Unicode category — so the
+tool does not translate some and drop others silently
+([specification §5.3](../../for-maintainers/specifications/justdummies-tool.md)). When yours is inside
+the subset, the replacement is one line, `Any.StringMatching("[A-Z]{3}")`, and it changes the factory's
+type: see [below](#when-the-replacement-is-another-kind-of-generator).
 
 **What the tool still cannot see stays silent.** A few shapes reject a value without the tool seeing a
 rejection at all, so they earn no mark: a validator that *returns* the value it checked
@@ -259,6 +270,60 @@ public sealed partial class AnyShipment {
 Written there once, the rule holds for every test that draws a shipment, with a lambda or without.
 Changed there, it changes for all of them at once — no test restated it, so no test has to be found.
 
+A scaffolded string row, `Any.String().NonEmpty()`, raises [JD030](../analyzers/JD030.en.md) at
+Info level, by design: the tool will not invent a length your domain never declared. Declare it in the
+factory when it matters — `Any.String().NonEmpty().WithLengthBetween(1, 50)`.
+
+### When the replacement is another kind of generator
+
+`AnyValid…()` returns the builder the tool chose for the type: `AnyString` for a `string`. Replace
+`Any.String().NonEmpty()` with `Any.StringMatching("[A-Z]{3}")` and the file stops compiling
+(`CS0029`), because that call returns an `AnyPattern`. Two other lines carry the old type, and they
+are the whole of the edit — the factory's return type, and the `Func<…>` of the refining overload
+beside the pin:
+
+<!-- jd:declarations -->
+```csharp
+public sealed class Currency {
+
+    public Currency(string code) {
+        Code = code;
+    }
+
+    public string Code { get; }
+
+}
+
+public sealed partial class AnyCurrency : IAny<Currency> {
+
+    private readonly IAny<string> _code;
+
+    public AnyCurrency()
+        : this(code: AnyValidCode()) { }
+
+    private static AnyPattern AnyValidCode() {                             // was AnyString
+        return Any.StringMatching("[A-Z]{3}");                             // was Any.String().NonEmpty()
+    }
+
+    private AnyCurrency(IAny<string> code) {
+        _code = code;
+    }
+
+    public AnyCurrency WithCode(Func<AnyPattern, AnyPattern> configure) {  // was Func<AnyString, AnyString>
+        return new AnyCurrency(configure(AnyValidCode()));
+    }
+
+    public Currency Generate() {
+        return new Currency(_code.Generate());
+    }
+
+}
+```
+
+A replacement that ends in `.As(…)` is an `IAny<T>`, not a builder: there is nothing for a lambda to
+refine, so type the factory `IAny<string>` and delete the refining overload, or give it
+`Func<IAny<string>, IAny<string>>`. The pin, `WithCode(string value)`, does not change.
+
 ### What a refinement can do, and what it cannot
 
 * **It narrows a leaf.** On a number, a string, a date or a collection, the lambda adds constraints to
@@ -272,7 +337,23 @@ Changed there, it changes for all of them at once — no test restated it, so no
   lambda guarantees where it starts, not where you take it.
 * **The last call wins**, as with every `With…`. A second `WithParcels(…)` starts again from the base;
   it does not add to the first.
-* **It never widens the base.** No lambda can draw an empty label when the base says `NonEmpty()`.
+* **One that builds on its argument never widens the base.** It cannot draw an empty label when the base
+  says `NonEmpty()`. One that ignores its argument replaces the base: `_ => Any.Int32()` hands back a
+  generator of the lambda's own, and every rule the base kept goes with it.
+* **A constraint that can be declared once cannot be declared again.** `OneOf`, `WithLength`,
+  `MultipleOf` and `WithScale` are refused a second time, naming both, when the base already set
+  them — `JD034` cannot see inside the lambda, so the refusal comes at run time. To take values out of
+  what the base draws, narrow it instead: `p => p.Except(1)` or `.DifferentFrom(…)`.
+* **A refinement you want to reuse is a function.** Keep it as a `Func<AnyRoute, AnyRoute>` and pass
+  it to any number of `With…` calls. A built `IAny<Route>` does not fit: no `With…` method takes a
+  generator, for the reason given below.
+
+```csharp
+Func<AnyRoute, AnyRoute> longHaul = r => r.WithDistanceKm(240);
+
+Shipment anyShipment      = Any.Shipment().WithRoute(longHaul).WithParcels(p => p.Except(1)).Generate();
+Shipment anyOtherShipment = Any.Shipment().WithRoute(longHaul).Generate();
+```
 
 ### When the lambda is not enough
 
@@ -355,6 +436,84 @@ And one thing to remember: this overload **replaces** the base. Whatever rule `A
 for that parameter, the generator you pass has to keep too — which is why the tool does not write it
 for you. Decision:
 [ADR-0109](../../for-maintainers/adr/0109-let-a-test-refine-a-parameters-valid-base-rather-than-replace-it.md).
+
+## When a guard ties two parameters
+
+`start < end`, a claim inside a policy period, a check digit computed from the digits before it: no
+per-parameter recipe can honour a rule that lives *between* parameters, so the tool marks every
+parameter it touches `to verify` and stops the build at the first, as it does for any guard it cannot
+vouch for ([ADR-0060](../../for-maintainers/adr/0060-seed-generators-from-constructor-guards.md)). That is
+the design, not a gap: the generator is a base you own, and the rule is yours to write. Three forms
+cover most cases, none of which asks the tool to be cleverer.
+
+**Draw a start and a duration, rather than two bounds.** A positive duration added to a start cannot
+land before it, so the rule holds by construction instead of by retrying:
+
+<!-- jd:declarations -->
+```csharp
+public sealed class Booking {
+
+    public Booking(DateTime start, DateTime end) {
+        if (end <= start) { throw new ArgumentException("A booking ends after it starts.", nameof(end)); }
+
+        Start = start;
+        End   = end;
+    }
+
+    public DateTime Start { get; }
+    public DateTime End   { get; }
+
+}
+
+public static class BookingGenerators {
+
+    public static IAny<Booking> Bookings() {
+        return Any.Combine(
+            Any.DateTime().Between(new DateTime(2026, 1, 1), new DateTime(2026, 12, 31)),
+            Any.TimeSpan().Between(TimeSpan.FromHours(1), TimeSpan.FromDays(30)),
+            (start, duration) => new Booking(start, start + duration));
+    }
+
+}
+```
+
+**Derive one draw from another inside `Generate()`.** The scaffolder wrote one draw per parameter;
+`Generate()` is ordinary code, so the dependent one can be computed from the first
+(`DateTime end = start + _duration.Generate();`) before the constructor is called.
+
+**Draw the body, then derive the check digit.** A check digit is not drawn, it is computed, and
+`.As(…)` is the one-line form:
+
+<!-- jd:declarations -->
+```csharp
+public static class CardNumberGenerators {
+
+    public static IAny<string> CardNumbers() {
+        return Any.StringMatching("[0-9]{15}").As(body => body + LuhnDigit(body));
+    }
+
+    private static char LuhnDigit(string body) {
+        int sum = 0;
+        for (int i = 0; i < body.Length; i++) {
+            int digit = body[body.Length - 1 - i] - '0';
+            if (i % 2 == 0) {
+                digit *= 2;
+                if (digit > 9) { digit -= 9; }
+            }
+
+            sum += digit;
+        }
+
+        return (char)('0' + (10 - sum % 10) % 10);
+    }
+
+}
+```
+
+Whichever you pick, delete the `TODO` line once the rule is written: it was only there to stop the
+build until you read it. Mind that `any generate … --force` rewrites the whole generated file, a
+hand-written `Generate()` included. The file you keep beside it, as in
+[Adding the overload yourself](#adding-the-overload-yourself), is the one that survives.
 
 ## Reporting to a script
 

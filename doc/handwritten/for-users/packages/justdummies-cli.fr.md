@@ -92,7 +92,8 @@ private static AnyString AnyValidValue() {
 
 La deuxième ligne nomme la première garde dont `any` n'a pas pu répondre, et où elle se trouve, pour
 que vous n'ayez pas à la chercher dans le constructeur ; le récapitulatif imprime la même chose sous
-ses lignes. Gardez la recette ou remplacez-la, supprimez cette seule ligne, et c'est réglé. L'alternative — un
+ses lignes. Gardez la recette, ou remplacez-la et supprimez cette seule ligne — et si le remplacement est un autre genre de
+générateur, retapez ce que cela change ([plus bas](#quand-le-remplacement-est-un-autre-genre-de-generateur)). L'alternative — un
 fichier qui compile et tire une valeur que votre constructeur rejette lors d'une exécution
 ultérieure — est l'échec qui coûte le plus cher, parce qu'il surgit loin de sa cause
 ([ADR-0083](../../for-maintainers/adr/0083-block-compilation-on-a-guard-the-engine-cannot-vouch-for.fr.md)).
@@ -105,6 +106,16 @@ méthode de l'objet en construction, l'objet lui-même passé à un helper —, 
 paramètres le rejet implique ; il les marque donc tous plutôt qu'aucun
 ([ADR-0110](../../for-maintainers/adr/0110-mark-every-parameter-a-throw-may-depend-on.fr.md)).
 Confirmez chaque recette comme ci-dessus.
+
+**Une garde par regex n'est jamais lue.** `if (!Regex.IsMatch(value, "^[A-Z]{3}$")) { throw … }`, la garde de
+l'exemple ci-dessus, marque le paramètre `to verify` et rien de plus : le motif n'est pas repris, et la
+recette reste la recette neutre. La bibliothèque tire depuis un [sous-ensemble régulier](../generators/strings.fr.md#motifs)
+de la syntaxe de .NET, et un motif écrit pour valider en sort souvent — une assertion avant (lookahead), une
+limite de mot, une référence arrière, une catégorie Unicode — si bien que l'outil ne traduit pas certains
+motifs en en laissant tomber d'autres en silence
+([spécification §5.3](../../for-maintainers/specifications/justdummies-tool.fr.md)). Quand le vôtre est dans le
+sous-ensemble, le remplacement tient en une ligne, `Any.StringMatching("[A-Z]{3}")`, et il change le type de la
+fabrique : voir [plus bas](#quand-le-remplacement-est-un-autre-genre-de-generateur).
 
 **Ce que l'outil ne voit toujours pas reste silencieux.** Quelques formes rejettent une valeur sans que
 l'outil y voie le moindre rejet, et ne reçoivent donc aucune marque : un validateur qui *retourne* la
@@ -263,6 +274,60 @@ public sealed partial class AnyShipment {
 lambda. Si elle change, il suffit de la modifier là : aucun test ne la répète, aucun n'est donc à
 retrouver.
 
+Une ligne de chaîne scaffoldée, `Any.String().NonEmpty()`, déclenche [JD030](../analyzers/JD030.fr.md) au niveau
+Info, par conception : l'outil n'invente pas une longueur que votre domaine n'a jamais déclarée. Déclarez-la dans
+la fabrique quand elle compte — `Any.String().NonEmpty().WithLengthBetween(1, 50)`.
+
+### Quand le remplacement est un autre genre de générateur
+
+`AnyValid…()` retourne le constructeur que l'outil a choisi pour le type : `AnyString` pour une `string`.
+Remplacez `Any.String().NonEmpty()` par `Any.StringMatching("[A-Z]{3}")` et le fichier ne compile plus
+(`CS0029`), parce que cet appel retourne un `AnyPattern`. Deux autres lignes portent l'ancien type, et ce sont
+toutes les modifications à faire — le type de retour de la fabrique, et le `Func<…>` de la surcharge d'affinage
+placée à côté de la fixation :
+
+<!-- jd:declarations -->
+```csharp
+public sealed class Currency {
+
+    public Currency(string code) {
+        Code = code;
+    }
+
+    public string Code { get; }
+
+}
+
+public sealed partial class AnyCurrency : IAny<Currency> {
+
+    private readonly IAny<string> _code;
+
+    public AnyCurrency()
+        : this(code: AnyValidCode()) { }
+
+    private static AnyPattern AnyValidCode() {                             // was AnyString
+        return Any.StringMatching("[A-Z]{3}");                             // was Any.String().NonEmpty()
+    }
+
+    private AnyCurrency(IAny<string> code) {
+        _code = code;
+    }
+
+    public AnyCurrency WithCode(Func<AnyPattern, AnyPattern> configure) {  // was Func<AnyString, AnyString>
+        return new AnyCurrency(configure(AnyValidCode()));
+    }
+
+    public Currency Generate() {
+        return new Currency(_code.Generate());
+    }
+
+}
+```
+
+Un remplacement qui se termine par `.As(…)` est un `IAny<T>`, pas un constructeur : il n'y a rien à affiner pour
+une lambda. Typez alors la fabrique `IAny<string>` et supprimez la surcharge d'affinage, ou donnez-lui
+`Func<IAny<string>, IAny<string>>`. La fixation, `WithCode(string value)`, ne change pas.
+
 ### Ce qu'un affinage permet, et ce qu'il ne permet pas
 
 * **Il restreint une valeur simple.** Sur un nombre, une chaîne, une date ou une collection, la lambda
@@ -277,8 +342,23 @@ retrouver.
   laquelle vous aboutissez.
 * **Le dernier appel l'emporte**, comme pour toute méthode `With…`. Un second `WithParcels(…)` repart
   de la base au lieu de s'ajouter au premier.
-* **Il n'élargit jamais la base.** Aucune lambda ne peut produire une étiquette vide quand la base
-  impose `NonEmpty()`.
+* **Une lambda qui s'appuie sur son argument n'élargit jamais la base.** Elle ne peut pas produire une étiquette
+  vide quand la base impose `NonEmpty()`. Une lambda qui ignore son argument remplace la base : `_ => Any.Int32()`
+  renvoie un générateur qui lui est propre, et toutes les règles que la base respectait s'en vont avec.
+* **Une contrainte déclarable une seule fois ne se déclare pas deux fois.** `OneOf`, `WithLength`,
+  `MultipleOf` et `WithScale` sont refusés une seconde fois, en nommant les deux, quand la base les a déjà
+  posés — `JD034` ne voit pas à l'intérieur de la lambda, le refus arrive donc à l'exécution. Pour retirer des
+  valeurs de ce que la base tire, restreignez plutôt : `p => p.Except(1)` ou `.DifferentFrom(…)`.
+* **Un affinage à réutiliser est une fonction.** Gardez-le comme un `Func<AnyRoute, AnyRoute>` et passez-le à
+  autant d'appels `With…` que vous voulez. Un `IAny<Route>` déjà construit ne convient pas : aucune méthode
+  `With…` n'accepte un générateur, pour la raison donnée plus bas.
+
+```csharp
+Func<AnyRoute, AnyRoute> longHaul = r => r.WithDistanceKm(240);
+
+Shipment anyShipment      = Any.Shipment().WithRoute(longHaul).WithParcels(p => p.Except(1)).Generate();
+Shipment anyOtherShipment = Any.Shipment().WithRoute(longHaul).Generate();
+```
 
 ### Quand la lambda ne suffit pas
 
@@ -365,6 +445,85 @@ Enfin, gardez à l'esprit que cette surcharge **remplace** la base. Toute règle
 impose à ce paramètre doit aussi être respectée par le générateur que vous passez — c'est pourquoi
 l'outil ne l'écrit pas à votre place. Décision :
 [ADR-0109](../../for-maintainers/adr/0109-let-a-test-refine-a-parameters-valid-base-rather-than-replace-it.fr.md).
+
+## Quand une garde relie deux paramètres
+
+`start < end`, une déclaration comprise dans une période de garantie, un chiffre de contrôle calculé à partir des
+chiffres qui le précèdent : aucune recette par paramètre ne peut respecter une règle qui vit *entre* des
+paramètres. L'outil marque donc chaque paramètre concerné `to verify` et arrête la compilation sur le premier,
+comme pour toute garde dont il ne peut pas répondre
+([ADR-0060](../../for-maintainers/adr/0060-seed-generators-from-constructor-guards.fr.md)). C'est voulu, pas un
+manque : le générateur est une base qui vous appartient, et la règle est à écrire par vous. Trois formes couvrent
+la plupart des cas, et aucune ne demande à l'outil d'être plus malin.
+
+**Tirez un début et une durée, plutôt que deux bornes.** Une durée positive ajoutée à un début ne peut pas
+retomber avant lui : la règle tient par construction, pas par nouveaux tirages :
+
+<!-- jd:declarations -->
+```csharp
+public sealed class Booking {
+
+    public Booking(DateTime start, DateTime end) {
+        if (end <= start) { throw new ArgumentException("A booking ends after it starts.", nameof(end)); }
+
+        Start = start;
+        End   = end;
+    }
+
+    public DateTime Start { get; }
+    public DateTime End   { get; }
+
+}
+
+public static class BookingGenerators {
+
+    public static IAny<Booking> Bookings() {
+        return Any.Combine(
+            Any.DateTime().Between(new DateTime(2026, 1, 1), new DateTime(2026, 12, 31)),
+            Any.TimeSpan().Between(TimeSpan.FromHours(1), TimeSpan.FromDays(30)),
+            (start, duration) => new Booking(start, start + duration));
+    }
+
+}
+```
+
+**Dérivez un tirage d'un autre dans `Generate()`.** Le scaffolder a écrit un tirage par paramètre ; `Generate()`
+est du code ordinaire, et le tirage dépendant peut donc être calculé à partir du premier
+(`DateTime end = start + _duration.Generate();`) avant l'appel du constructeur.
+
+**Tirez le corps, puis dérivez le chiffre de contrôle.** Un chiffre de contrôle ne se tire pas, il se calcule,
+et `.As(…)` en est la forme en une ligne :
+
+<!-- jd:declarations -->
+```csharp
+public static class CardNumberGenerators {
+
+    public static IAny<string> CardNumbers() {
+        return Any.StringMatching("[0-9]{15}").As(body => body + LuhnDigit(body));
+    }
+
+    private static char LuhnDigit(string body) {
+        int sum = 0;
+        for (int i = 0; i < body.Length; i++) {
+            int digit = body[body.Length - 1 - i] - '0';
+            if (i % 2 == 0) {
+                digit *= 2;
+                if (digit > 9) { digit -= 9; }
+            }
+
+            sum += digit;
+        }
+
+        return (char)('0' + (10 - sum % 10) % 10);
+    }
+
+}
+```
+
+Quelle que soit la forme choisie, supprimez la ligne `TODO` une fois la règle écrite : elle n'était là que pour
+arrêter la compilation jusqu'à ce que vous l'ayez lue. Attention : `any generate … --force` réécrit tout le fichier
+généré, `Generate()` écrit à la main compris. Le fichier que vous gardez à côté, comme dans
+[Ajouter la surcharge vous-même](#ajouter-la-surcharge-vous-meme), est celui qui survit.
 
 ## Rendre compte à un script
 

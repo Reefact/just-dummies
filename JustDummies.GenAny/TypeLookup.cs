@@ -90,8 +90,9 @@ internal static class TypeLookup {
     ///     test project — is not in source at all and would otherwise read as missing.
     ///     <para>
     ///         Nameable first, source second. A bare name does not spell a generic type — C# would need its type
-    ///         argument — and a type the project cannot access is one the emitted file could not name either, so
-    ///         neither makes a short name ambiguous: <c>Measurement</c> means the domain's, not
+    ///         argument — a type the project cannot access is one the emitted file could not name either, and a
+    ///         <c>ref struct</c> cannot be the type argument of <c>IAny&lt;T&gt;</c>, so none of them makes a short
+    ///         name ambiguous: <c>Measurement</c> means the domain's, not
     ///         <c>System.Diagnostics.Metrics.Measurement&lt;T&gt;</c>. And neither may hide one that can be named:
     ///         a generic <c>Measurement&lt;T&gt;</c> in source does not stand in front of a referenced
     ///         <c>Measurement</c>, so the preference for source is applied among nameable matches only.
@@ -118,7 +119,7 @@ internal static class TypeLookup {
 
     /// <summary>Whether a bare name can reach <paramref name="type" /> from the analysed project.</summary>
     private static bool Nameable(Compilation compilation, INamedTypeSymbol type) {
-        return !IsGeneric(type) && compilation.IsSymbolAccessibleWithin(type, compilation.Assembly);
+        return !IsGeneric(type) && !type.IsRefLikeType && compilation.IsSymbolAccessibleWithin(type, compilation.Assembly);
     }
 
     /// <summary>Whether <paramref name="type" />, or a type it is nested in, takes type arguments.</summary>

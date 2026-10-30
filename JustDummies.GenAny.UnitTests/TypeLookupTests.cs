@@ -139,6 +139,36 @@ public sealed class TypeLookupTests {
         Check.That(outcome.Plan!.Target.FullName).IsEqualTo("Shop.Measurement");
     }
 
+    /// <summary>
+    ///     A <c>ref struct</c> is not a type the scaffolder can name either.
+    /// </summary>
+    /// <remarks>
+    ///     A <c>ref struct</c> cannot be the type argument of <c>IAny&lt;T&gt;</c>, so no generator can ever be
+    ///     written for it. Counting one made a domain's <c>Scope</c> ambiguous with the framework's
+    ///     <c>System.Threading.Lock.Scope</c>.
+    /// </remarks>
+    [Fact(DisplayName = "A short name ignores a ref struct it cannot scaffold.")]
+    public void AShortNameIgnoresARefStruct() {
+        ScaffoldOutcome outcome = Subject.ScaffoldByNameReferencing("""
+                                                                    namespace Shop {
+                                                                        public sealed class Lease {
+                                                                            public Lease(int depth) { }
+                                                                        }
+                                                                    }
+
+                                                                    namespace Other {
+                                                                        public ref struct Lease {
+                                                                            public Lease(int depth) { }
+                                                                        }
+                                                                    }
+                                                                    """,
+                                                                    "Lease",
+                                                                    Nearby);
+
+        Check.That(outcome.Status).IsEqualTo(ScaffoldStatus.Scaffolded);
+        Check.That(outcome.Plan!.Target.FullName).IsEqualTo("Shop.Lease");
+    }
+
     // Nameable first, source second: a generic type of the developer's own does not hide a referenced type the
     // bare name does spell — the preference for source is between types the name can reach, not before it.
     [Fact(DisplayName = "A generic type in source does not hide a nameable referenced one.")]

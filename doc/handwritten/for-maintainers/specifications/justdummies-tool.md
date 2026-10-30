@@ -162,9 +162,11 @@ the containing namespace, named after the nested type alone: `AnyLine`.
 
 **A simple name counts only the types it can name.** `Measurement` does not spell a generic
 `Measurement<T>`, which C# would need a type argument for, nor a type the analysed project cannot
-access, which the emitted file could not name either — so neither makes a simple name ambiguous, and
-a domain `Measurement` is not refused because the framework declares
-`System.Diagnostics.Metrics.Measurement<T>`. Nor may they hide one: the filter applies **before**
+access, which the emitted file could not name either; and a `ref struct` cannot be the type
+argument of `IAny<T>`, so no generator can be written for one — none of them makes a simple name
+ambiguous, so a domain `Measurement` is not refused because the framework declares
+`System.Diagnostics.Metrics.Measurement<T>`, nor a domain `Scope` because it declares the `ref
+struct` `System.Threading.Lock.Scope`. Nor may they hide one: the filter applies **before**
 the preference for source types, so a generic `Measurement<T>` in the analysed project does not stand
 in front of a referenced `Measurement`. When nothing nameable matches anywhere they are kept, so a
 generic type named alone still meets its own refusal (§7) rather than being reported missing.

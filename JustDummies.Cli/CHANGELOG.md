@@ -39,6 +39,10 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Fixed
 
+- **A `ref struct` no longer makes a short type name ambiguous.** `any generate Scope`, in a project declaring
+  its own `Scope`, was refused as ambiguous with `System.Threading.Lock.Scope` — a `ref struct`, which cannot
+  be the type argument of `IAny<T>` and so can never be scaffolded. A short name now ignores `ref struct` types,
+  as it already ignored generic and inaccessible ones.
 - **A nullable reference parameter keeps its `?` on the pin, so a test can pass `null`.** For
   `Party(Bic? agent)` the scaffold emitted `WithAgent(Bic value)`, and the documented way to ask for null,
   `.WithAgent((Bic?)null)`, warned `CS8625` — a build break under `TreatWarningsAsErrors`; the recap printed

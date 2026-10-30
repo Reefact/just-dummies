@@ -48,6 +48,51 @@ public sealed class DocumentationLinkTests {
              .That(broken).IsEmpty();
     }
 
+    [Fact(DisplayName = "A user page that cites a superseded ADR cites its successor on the same line.")]
+    public void ASupersededAdrIsCitedWithItsSuccessor() {
+        List<string> alone = [];
+
+        // A decision record keeps citing the record it built on; a page written for users must also show the one in force.
+        foreach (DocumentationPage page in DocumentationCorpus.Pages.Where(page => page.RelativePath.StartsWith("doc/handwritten/for-users/", StringComparison.Ordinal))) {
+            string directory = Path.GetDirectoryName(page.AbsolutePath)!;
+
+            foreach (MarkdownLink link in page.Links) {
+                string? successor = SuccessorOf(directory, link.Target);
+                if (successor is null) { continue; }
+
+                bool successorCited = page.Links.Any(other => other.Line == link.Line
+                                                           && Path.GetFileName(StripAnchor(other.Target)).StartsWith($"{successor}-", StringComparison.Ordinal));
+                if (!successorCited) { alone.Add($"{page.RelativePath}:{link.Line}: {link.Target} (superseded by ADR-{successor})"); }
+            }
+        }
+
+        Check.WithCustomMessage(
+                  $"{alone.Count} citation(s) of a superseded ADR without its successor on the same line:{Environment.NewLine}"
+                + string.Join(Environment.NewLine, alone))
+             .That(alone).IsEmpty();
+    }
+
+    /// <summary>
+    ///     The number of the record that superseded the ADR <paramref name="target" /> points at, or <see langword="null" />
+    ///     when it points at no ADR or at one still in force. The status is read from the English twin, which is canonical
+    ///     and the only one whose wording is uniform.
+    /// </summary>
+    private static string? SuccessorOf(string directory, string target) {
+        if (!IsRepositoryRelative(target)) { return null; }
+
+        string resolved  = Path.GetFullPath(Path.Combine(directory, Uri.UnescapeDataString(StripAnchor(target))));
+        string separator = Path.DirectorySeparatorChar.ToString();
+        if (!resolved.Contains($"{separator}adr{separator}", StringComparison.Ordinal)) { return null; }
+
+        string english = resolved.EndsWith(".fr.md", StringComparison.Ordinal) ? resolved[..^".fr.md".Length] + ".md" : resolved;
+        if (!File.Exists(english)) { return null; }
+
+        const string marker = "**Status:** Superseded by [ADR-";
+        string?      status = File.ReadLines(english).Take(12).FirstOrDefault(line => line.StartsWith(marker, StringComparison.Ordinal));
+
+        return status?.Substring(marker.Length, 4);
+    }
+
     private static bool IsRepositoryRelative(string target) {
         return !target.StartsWith('#')
             && !target.StartsWith('/')

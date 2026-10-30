@@ -93,7 +93,7 @@ declared, the range is `DateTime.MinValue` to `DateTime.MaxValue`.
 A `DateTimeOffset` is an instant **and** an offset from UTC. Unconstrained, JustDummies varies the
 instant and leaves the offset at `+00:00`: the offset is a dimension you opt into, with `WithOffset`
 for a fixed whole-minute offset or `WithOffsetBetween` for a bounded one
-([ADR-0016](../../for-maintainers/adr/0016-vary-the-datetimeoffset-offset-dimension.md)). Declare one
+([ADR-0016](../../for-maintainers/adr/0016-vary-the-datetimeoffset-offset-dimension.md), superseded by [ADR-0030](../../for-maintainers/adr/0030-filter-the-datetimeoffset-pool-by-the-declared-offset.md)). Declare one
 when the code under test is sensitive to it: a plain draw never reaches the code that assumes local
 time.
 

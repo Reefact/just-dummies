@@ -95,7 +95,7 @@ Un `DateTimeOffset` est un instant **et** un décalage par rapport à UTC. Sans 
 fait varier l'instant et laisse le décalage à `+00:00` : le décalage est une dimension que l'on
 active explicitement, avec `WithOffset` pour un décalage fixe en minutes entières ou
 `WithOffsetBetween` pour un décalage borné
-([ADR-0016](../../for-maintainers/adr/0016-vary-the-datetimeoffset-offset-dimension.fr.md)).
+([ADR-0016](../../for-maintainers/adr/0016-vary-the-datetimeoffset-offset-dimension.fr.md), remplacée par l'[ADR-0030](../../for-maintainers/adr/0030-filter-the-datetimeoffset-pool-by-the-declared-offset.fr.md)).
 Déclarez-en un quand le code testé y est sensible : un tirage sans contrainte n'atteint jamais le
 code qui suppose l'heure locale.
 

@@ -76,7 +76,7 @@ right*, it belongs in the reference docs, and the ADR links to it.
 * Status is one of *Proposed*, *Accepted*, *Superseded* or *Deprecated*.
 * A **supersession** is written on both sides and adds no date. The superseded
   record's status becomes `Superseded by` and a link to the successor; nothing
-  else about it changes — its dates stay, and its body is never edited, because
+  else about it changes — its dates stay, and its body is never edited in substance, because
   an accepted decision is a piece of history rather than a draft. The successor
   carries a `Supersedes` line below its header, linking back. Each side links
   its own language's twin. The worked pair is
@@ -84,7 +84,17 @@ right*, it belongs in the reference docs, and the ADR links to it.
   [ADR-0076](0076-let-a-declared-maximum-steer-the-size-draw.md).
 * A citation of a superseded record is **not** repinned. Its status line names
   the successor, which is what a reader follows; a citation only moves when what
-  it claims stopped being true.
+  it claims stopped being true. Writing the successor beside it is an editorial
+  correction, and on a user page it is required: a page under
+  `doc/handwritten/for-users/` names the successor on the same line, which the
+  documentation suite checks
+  ([ADR-0115](0115-allow-an-editorial-correction-to-an-accepted-adr.md)).
+* An accepted record takes **editorial** corrections — a typo, a dead or moved
+  link, formatting, a French twin realigned on the English, the successor named
+  beside a citation — and never a change of substance, which takes a new record.
+  An edit is editorial when the record, read at the date it was accepted, says
+  exactly what it said before
+  ([ADR-0115](0115-allow-an-editorial-correction-to-an-accepted-adr.md)).
 * A citation of an ADR that lives only in the other repository is qualified
   `ADR-00NN (first-class-errors)`; an unqualified number always means this base.
 
@@ -225,3 +235,4 @@ failure mode of a "not now" is that nobody remembers the option existed on the d
 | [ADR-0112](0112-report-a-test-asserting-a-refusal-like-any-other-code.md) | Report a test asserting a refusal like any other code, and let it suppress the rule explicitly | Accepted | recorded here |
 | [ADR-0113](0113-check-a-distinct-collections-cardinality-when-the-specification-is-whole.md) | Check a distinct collection's cardinality when the specification is whole | Accepted | recorded here |
 | [ADR-0114](0114-refuse-a-local-datetime-bound.md) | Refuse a `Local` `DateTime` bound rather than read it as ticks | Accepted | recorded here |
+| [ADR-0115](0115-allow-an-editorial-correction-to-an-accepted-adr.md) | Allow an editorial correction to an accepted ADR, never a change of substance | Accepted | recorded here |

@@ -116,6 +116,12 @@ failure mode of a "not now" is that nobody remembers the option existed on the d
 | Option | Record | What would revive it |
 |---|---|---|
 | Roslyn's control-flow graph for guard placement | [ADR-0084](0084-place-a-guard-by-syntax-reach-not-a-control-flow-graph.md) | A constructor from a real codebase that the placement rule refuses and whose author minded, a second engine question needing the same graph, or exception-handler entry proving to be an ordinary edge at the Roslyn floor. The record carries the signature to match a report against. |
+| A rule reporting a drawn value that reaches an assertion | [UX trial, AN-C1](../../../../tools/ux-trial/REPORT.md#an-c1) | A way to recognise an assertion without depending on any assertion library: the rule would otherwise be bound to the libraries it names, which the library itself never depends on. |
+| A business-day or day-of-week constraint on dates | [UX trial, CORE-C3](../../../../tools/ux-trial/REPORT.md#core-c3) | Field reports beyond the two trial domains asking for a weekday filter; holiday calendars are domain data and stay out ([ADR-0046](0046-bound-the-generators-ambition-never-its-correctness.md)). |
+| A member drawing an RFC 9562 version-4 `Guid` | [UX trial, CORE-C5](../../../../tools/ux-trial/REPORT.md#core-c5) | More than one codebase whose code checks `Guid.Version`; a single domain met it, and an `.As(...)` mask covers it. |
+| A public marker letting a hand-written generator declare that it draws from the ambient seed | [UX trial, CORE-C10](../../../../tools/ux-trial/REPORT.md#core-c10) | A user needing the full-replay guidance for a generator of their own; #313 already removed the message that misled, and a marker could not prove the generator draws through `Any`. |
+| A `partial` hook that survives `any generate --force` | [UX trial, CLI-E1](../../../../tools/ux-trial/REPORT.md#cli-e1) | Real users losing hand-written rules to `--force`; the generated file is a working base, and the overwrite is disclosed in its header and the refusal. |
+| A rule reporting an unsupported regex construct at build time | [UX trial, AN-C5](../../../../tools/ux-trial/REPORT.md#an-c5) | Refused patterns regularly reaching CI; the run-time refusal names the construct, its position and the rewrite (#351), and the rule would carry a copy of the parser. |
 
 ## Index
 

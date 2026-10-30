@@ -416,6 +416,33 @@ CLI, pas un défaut de page : elle n'a donc pas de ligne ici.
 
 ## 8. Candidats à une décision
 
+> **Tranchés le 2026-10-30** avec le mainteneur, un par un. Les correctifs automatiques des règles qui en admettent un sont [#355](https://github.com/Reefact/just-dummies/issues/355).
+>
+> | Candidat | Issue | Où |
+> |---|---|---|
+> | CORE-C1 | tranché | [#357](https://github.com/Reefact/just-dummies/issues/357), `TimeOnly.Between` crosses midnight |
+> | CORE-C2 | tranché | [#358](https://github.com/Reefact/just-dummies/issues/358), a rule reports a `Generate()` inside `As`/`Combine`; no `.Then(...)` |
+> | CORE-C3 | refusé | [Envisagé, non retenu](../../doc/handwritten/for-maintainers/adr/README.fr.md#envisagé-non-retenu) |
+> | CORE-C4 | tranché | [#359](https://github.com/Reefact/just-dummies/issues/359), `AnyDecimal.MultipleOf` |
+> | CORE-C5 | refusé | [Envisagé, non retenu](../../doc/handwritten/for-maintainers/adr/README.fr.md#envisagé-non-retenu) |
+> | CORE-C6 | tranché | [#360](https://github.com/Reefact/just-dummies/issues/360), `Ordered()` and `OrderedBy(...)` |
+> | CORE-C7 | tranché | ADR-0114: a `Local` bound is refused |
+> | CORE-C8 | conservé et documenté | [#348](https://github.com/Reefact/just-dummies/issues/348) |
+> | CORE-C9 | conservé et documenté | [#348](https://github.com/Reefact/just-dummies/issues/348) |
+> | CORE-C10 | refusé | [Envisagé, non retenu](../../doc/handwritten/for-maintainers/adr/README.fr.md#envisagé-non-retenu) |
+> | CLI-C1 | tranché | [#361](https://github.com/Reefact/just-dummies/issues/361), a recap warning above a size threshold |
+> | CLI-C2 | tranché | [#362](https://github.com/Reefact/just-dummies/issues/362), a ceiling above the cap holds by construction; a floor above it is refused |
+> | CLI-C3 | tranché | [#363](https://github.com/Reefact/just-dummies/issues/363), referenced projects before the framework |
+> | CLI-C4 | tranché | [#364](https://github.com/Reefact/just-dummies/issues/364), an or-pattern range guard reads as `Between` |
+> | CLI-C5 | conservé et documenté | [#348](https://github.com/Reefact/just-dummies/issues/348) |
+> | CLI-E1(c) | refusé | [Envisagé, non retenu](../../doc/handwritten/for-maintainers/adr/README.fr.md#envisagé-non-retenu) |
+> | AN-C1 | refusé | [Envisagé, non retenu](../../doc/handwritten/for-maintainers/adr/README.fr.md#envisagé-non-retenu) |
+> | AN-C2 | tranché | [#356](https://github.com/Reefact/just-dummies/issues/356), JD023 over `decimal` and temporal types |
+> | AN-C3 | tranché | [#365](https://github.com/Reefact/just-dummies/issues/365), a `Generate()` on any `IAny<T>` is a draw |
+> | AN-C4 | tranché | [#366](https://github.com/Reefact/just-dummies/issues/366), JD014, JD016 and JD034 |
+> | AN-C5 | refusé | [Envisagé, non retenu](../../doc/handwritten/for-maintainers/adr/README.fr.md#envisagé-non-retenu) |
+> | AN-C6 | conservé et documenté | [#348](https://github.com/Reefact/just-dummies/issues/348) |
+
 Aucun de ces éléments n'est un bogue. Dans chaque cas, la bibliothèque soit refuse clairement, soit n'a
 pas de membre, et l'essai fournit le retour de terrain dont une ADR aurait besoin. Les options sont
 données en une ligne chacune.

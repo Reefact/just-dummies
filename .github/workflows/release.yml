@@ -57,8 +57,32 @@ env:
   NUGET_FEED: 'https://api.nuget.org/v3/index.json'
 
 jobs:
+  # The consumer contract of the developer-UX trial, run before anything is packed for publication: the three
+  # packages packed from this commit, the packed `any` scaffolding a smoke domain whose output must build with the
+  # bundled analyzers loaded and pass its tests, and one full domain. A failure means what a user would receive is
+  # broken, so it stops the release. It packs all three packages at a trial version of its own, whichever train is
+  # released, since the contract uses the library, the adapter and the tool together. The twenty-domain corpus is
+  # not a gate: it runs in ux-trial.yml, on demand and weekly. Read-only: it publishes nothing.
+  ux-trial:
+    name: UX trial (consumer contract)
+    runs-on: ubuntu-latest
+    # prepare + smoke + one domain is a few minutes; cap a hung run rather than the 6-hour default.
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Run the consumer contract
+        run: tools/ux-trial/run.sh
+
   pack-push:
     name: Pack & push NuGet
+    needs: ux-trial
     runs-on: ubuntu-latest
     # build + test + pack + attest + push is ~4 min; cap a hung release rather than the 6-hour default.
     timeout-minutes: 20

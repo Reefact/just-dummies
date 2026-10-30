@@ -32,6 +32,15 @@ Ce n'est pas hypothétique : un tag `lib-v0.0.0-rulesetcheck` a un jour été po
 réglage de protection de tags, et il a publié. Pour éprouver quoi que ce soit sur les tags de release
 sans publier, utilisez une ref que le déclencheur ne reconnaît pas, ou le galop d'essai ci-dessous.
 
+## Le contrat consommateur passe d'abord
+
+Avant que quoi que ce soit soit empaqueté pour publication, un job `ux-trial` en lecture seule lance
+`tools/ux-trial/run.sh`. Il empaquète la bibliothèque, l'adaptateur et `any` depuis le commit tagué, et
+vérifie trois choses avec eux : `any` scaffolde un petit domaine de fumée, le résultat compile avec les
+analyseurs embarqués chargés et passe ses tests, et un domaine complet de l'essai d'expérience
+développeur passe. Un échec arrête la release. Les autres domaines de l'essai ne sont pas une porte : le
+workflow `ux-trial` les lance à la demande et chaque semaine.
+
 ## Ce qu'il faut configurer sur nuget.org
 
 Connectez-vous avec le compte propriétaire des paquets, puis créez une politique sous
@@ -82,8 +91,8 @@ dans la politique nuget.org — l'échange s'appuie dessus.
 gh workflow run release.yml -f component=lib -f version=0.0.0-dry.1 -f dry_run=true
 ```
 
-Une exécution verte prouve tout le pipeline de bout en bout — restore, build, test, pack, SBOM,
-attestation et échange OIDC — sans rien publier : le push et la GitHub Release sont les seules étapes
+Une exécution verte prouve tout le pipeline de bout en bout — le contrat consommateur, restore,
+build, test, pack, SBOM, attestation et échange OIDC — sans rien publier : le push et la GitHub Release sont les seules étapes
 qu'un galop d'essai saute. Tant qu'aucune politique n'existe, toute exécution y compris celle-ci
 échoue sur `NuGet login (OIDC)`, et c'est voulu : la répétition existe pour qu'une erreur de
 configuration se révèle avant une vraie release plutôt que pendant.

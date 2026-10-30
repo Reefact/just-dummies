@@ -67,13 +67,14 @@ generated code, so it needs the compile assets too.
 
 ## Deliberately outside the solution
 
-`tools/justdummies-check` (packaged-asset compatibility) and `tools/floor-check` (analyzer
-loading on the Roslyn floor) consume the **packed package**, not the projects. Keep them out
-of `JustDummies.sln`.
+`tools/justdummies-check` (packaged-asset compatibility), `tools/floor-check` (analyzer
+loading on the Roslyn floor) and `tools/ux-trial` (the developer-UX trial, whose consumer
+contract `release` runs before it publishes) consume the **packed package**, not the projects. Keep them out of
+`JustDummies.sln`.
 
 ## Workflows
 
-20 workflows; seven have a dedicated page under
+21 workflows; seven have a dedicated page under
 [`doc/handwritten/for-maintainers/workflows/`](../../doc/handwritten/for-maintainers/workflows/README.md),
 the rest one table row each. Shell scripts and workflow YAML are linted by the `lint`
 workflow (shellcheck + actionlint) — run `shellcheck` on any script you touch.

@@ -279,11 +279,11 @@ enables auto-merge on its own pull request.
 
 For each review finding, take exactly one route:
 
-- **You agree and the fix is clear and local** — implement it, push, and reply on
-  the thread with `Resolved in <sha>`. You MAY ask the reviewer (`@codex`) for a
+- **You agree and the fix is clear and local** — implement it, push, and answer on
+  the thread with `done:` and the commit, once it is pushed (`done: fixed in a1b2c3d, …`). You MAY ask the reviewer (`@codex`) for a
   single confirming re-review; never open a back-and-forth.
-- **You believe the finding is wrong** — reply on the thread with the concrete
-  technical reason and mention `@reefact` to arbitrate. Do not ping `@codex` to
+- **You believe the finding is wrong** — answer on the thread with `disagree:` and
+  the concrete technical reason, and mention `@reefact` to arbitrate. Do not ping `@codex` to
   argue: a peer reviewer has no authority to settle the disagreement.
 - **The finding needs a human judgement** — architecture, a product trade-off, an
   ambiguous requirement, a security or compatibility policy — mention `@reefact`
@@ -291,6 +291,29 @@ For each review finding, take exactly one route:
 
 Rules:
 
+- Every reply opens with a Conventional Comments reply label, `<label>: <subject>`,
+  the subject at most 72 characters, in English. Every finding and question gets
+  one, `praise` and non-blocking findings included; a reviewer's `reviewed:`
+  closure needs none. The labels mean:
+  - `done:` the code changed because of the comment. Only once the change is
+    **pushed**, naming the commit: `done: fixed in a1b2c3d, null now returns an error`.
+  - `ack:` accepted, the code has not changed at this stage ("handled in the
+    follow-up PR", "agreed, no change needed"). Never a polite refusal.
+  - `disagree:` you decline the remark, with a verifiable reason: the code, a test,
+    the specification, a recorded decision. It settles nothing: the reviewer
+    decides whether the reason holds.
+  - `thanks:` thanks without taking a position, the answer to a `praise`.
+  - `note:` information, such as the answer to a reviewer's `question`.
+  - `question:` you ask back when you need a clarification before acting.
+- Never post `decision` (reserved to the maintainers) or `reviewed`, nor a label
+  that raises a point (`issue`, `suggestion`, `nitpick`, `praise`): you are
+  answering, not reviewing. When you think a blocking point should not be
+  addressed, answer `disagree:` and tell the maintainer a `decision` may be needed.
+- A **blocking** thread is resolved by the author of its comment, never by you. A
+  non-blocking thread you may resolve once your fix is pushed or your answer is
+  final, and only when it plainly settles the point.
+- After pushing, ask the reviewer for a new pass: a push reopens their review.
+  `.claude/skills/respond-to-review/SKILL.md` carries the same contract in full.
 - Never mention both `@codex` and `@reefact` on the same thread: a bot round-trip
   or a human decision, never both.
 - At most two fix / re-review cycles per finding. If it is still open after that,

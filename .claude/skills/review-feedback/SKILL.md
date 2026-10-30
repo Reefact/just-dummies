@@ -11,11 +11,11 @@ merges**; no agent merges, and no agent enables auto-merge on its own pull reque
 
 ## For each finding, take exactly one route
 
-* **You agree, and the fix is clear and local** — implement it, push, and reply on the thread
-  with `Resolved in <sha>`. You MAY ask the reviewer (`@codex`) for a single confirming
+* **You agree, and the fix is clear and local** — implement it, push, and answer on the thread
+  with `done:` and the commit, once it is pushed (`done: fixed in a1b2c3d, …`). You MAY ask the reviewer (`@codex`) for a single confirming
   re-review; never open a back-and-forth.
-* **You believe the finding is wrong** — reply on the thread with the concrete technical
-  reason and mention `@reefact` to arbitrate. Do **not** ping `@codex` to argue: a peer
+* **You believe the finding is wrong** — answer on the thread with `disagree:` and the concrete
+  technical reason, and mention `@reefact` to arbitrate. Do **not** ping `@codex` to argue: a peer
   reviewer has no authority to settle the disagreement.
 * **The finding needs a human judgement** — architecture, a product trade-off, an ambiguous
   requirement, a security or compatibility policy — mention `@reefact` and wait. Do not
@@ -23,6 +23,10 @@ merges**; no agent merges, and no agent enables auto-merge on its own pull reque
 
 ## Rules
 
+* **Every reply follows the `respond-to-review` skill**: it opens with a Conventional Comments
+  reply label, `<label>: <subject>` (`done`, `ack`, `disagree`, `thanks`, `note`, `question`),
+  every finding gets one, `praise` included, and a **blocking** thread is resolved by its
+  reviewer, never by you.
 * **Never mention both `@codex` and `@reefact` on the same thread**: a bot round-trip or a
   human decision, never both.
 * **At most two fix / re-review cycles per finding.** If it is still open after that, stop and

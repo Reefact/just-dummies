@@ -25,6 +25,7 @@ of a given kind belongs. Written for someone about to modify the library, not to
 | `JustDummies.GenAny.UnitTests` | — | — | the engine's floor and its boundaries |
 | `JustDummies.Cli.UnitTests` | — | — | project discovery, what the tool answers, and the exit codes of §7 |
 | `tools/justdummies-check` | — | — | packaged-asset compatibility, deliberately outside the solution |
+| `tools/ux-trial` | — | — | the developer-UX trial: twenty consumer projects over the packed packages, whose consumer contract gates a release; deliberately outside the solution |
 
 Two target frameworks, one reason: `netstandard2.0` is the floor that gives the library its reach —
 down to .NET Framework 4.7.2, which CI exercises

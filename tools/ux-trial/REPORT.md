@@ -408,6 +408,33 @@ here.
 
 ## 8. Candidates for a decision
 
+> **Decided on 2026-10-30** with the maintainer, one by one. Code fixes for the rules that admit one are [#355](https://github.com/Reefact/just-dummies/issues/355).
+>
+> | Candidate | Outcome | Where |
+> |---|---|---|
+> | CORE-C1 | decided | [#357](https://github.com/Reefact/just-dummies/issues/357), `TimeOnly.Between` crosses midnight |
+> | CORE-C2 | decided | [#358](https://github.com/Reefact/just-dummies/issues/358), a rule reports a `Generate()` inside `As`/`Combine`; no `.Then(...)` |
+> | CORE-C3 | refused | [Considered, not adopted](../../doc/handwritten/for-maintainers/adr/README.md#considered-not-adopted) |
+> | CORE-C4 | decided | [#359](https://github.com/Reefact/just-dummies/issues/359), `AnyDecimal.MultipleOf` |
+> | CORE-C5 | refused | [Considered, not adopted](../../doc/handwritten/for-maintainers/adr/README.md#considered-not-adopted) |
+> | CORE-C6 | decided | [#360](https://github.com/Reefact/just-dummies/issues/360), `Ordered()` and `OrderedBy(...)` |
+> | CORE-C7 | decided | ADR-0114: a `Local` bound is refused |
+> | CORE-C8 | kept and documented | [#348](https://github.com/Reefact/just-dummies/issues/348) |
+> | CORE-C9 | kept and documented | [#348](https://github.com/Reefact/just-dummies/issues/348) |
+> | CORE-C10 | refused | [Considered, not adopted](../../doc/handwritten/for-maintainers/adr/README.md#considered-not-adopted) |
+> | CLI-C1 | decided | [#361](https://github.com/Reefact/just-dummies/issues/361), a recap warning above a size threshold |
+> | CLI-C2 | decided | [#362](https://github.com/Reefact/just-dummies/issues/362), a ceiling above the cap holds by construction; a floor above it is refused |
+> | CLI-C3 | decided | [#363](https://github.com/Reefact/just-dummies/issues/363), referenced projects before the framework |
+> | CLI-C4 | decided | [#364](https://github.com/Reefact/just-dummies/issues/364), an or-pattern range guard reads as `Between` |
+> | CLI-C5 | kept and documented | [#348](https://github.com/Reefact/just-dummies/issues/348) |
+> | CLI-E1(c) | refused | [Considered, not adopted](../../doc/handwritten/for-maintainers/adr/README.md#considered-not-adopted) |
+> | AN-C1 | refused | [Considered, not adopted](../../doc/handwritten/for-maintainers/adr/README.md#considered-not-adopted) |
+> | AN-C2 | decided | [#356](https://github.com/Reefact/just-dummies/issues/356), JD023 over `decimal` and temporal types |
+> | AN-C3 | decided | [#365](https://github.com/Reefact/just-dummies/issues/365), a `Generate()` on any `IAny<T>` is a draw |
+> | AN-C4 | decided | [#366](https://github.com/Reefact/just-dummies/issues/366), JD014, JD016 and JD034 |
+> | AN-C5 | refused | [Considered, not adopted](../../doc/handwritten/for-maintainers/adr/README.md#considered-not-adopted) |
+> | AN-C6 | kept and documented | [#348](https://github.com/Reefact/just-dummies/issues/348) |
+
 None of these is a bug. In each case the library either refuses clearly or has no member, and the
 trial supplies the field report an ADR would need. Options are given in one line each.
 

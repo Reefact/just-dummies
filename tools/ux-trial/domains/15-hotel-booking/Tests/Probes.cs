@@ -118,7 +118,7 @@ public sealed class Probes {
     public void More_distinct_room_types_than_exist_are_refused() {
         ConflictingAnyConstraintException refusal = Assert.Throws<ConflictingAnyConstraintException>(() => Any.SetOf(Any.Enum<RoomType>()).WithCount(5).Generate());
 
-        Assert.Equal("The generator can produce only 4 distinct value(s), not enough for the 5 elements it must still supply.", refusal.Message);
+        Assert.Equal("The generator can produce only 4 distinct value(s), not enough for the 5 elements it must still supply to honour WithCount(5).", refusal.Message);
     }
 
     [Fact]

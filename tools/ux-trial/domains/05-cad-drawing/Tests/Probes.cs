@@ -17,14 +17,14 @@ public sealed class Probes {
     public void Crossed_double_bounds_fail_fast_naming_both_sides() {
         ConflictingAnyConstraintException refusal = Assert.Throws<ConflictingAnyConstraintException>(() => Any.Double().GreaterThan(10).LessThan(5));
 
-        Assert.Equal("Cannot apply LessThan(5) because GreaterThan(10) already requires values greater than or equal to 10.000000000000002.", refusal.Message);
+        Assert.Equal("Cannot apply LessThan(5) because GreaterThan(10) already requires values greater than 10.", refusal.Message);
     }
 
     [Fact]
-    public void Positive_then_Negative_on_a_double_names_the_smallest_subnormal() {
+    public void Positive_then_Negative_on_a_double_quotes_the_strict_bound_as_declared() {
         ConflictingAnyConstraintException refusal = Assert.Throws<ConflictingAnyConstraintException>(() => Any.Double().Positive().Negative());
 
-        Assert.Equal("Cannot apply Negative() because Positive() already requires values greater than or equal to 5E-324.", refusal.Message);
+        Assert.Equal("Cannot apply Negative() because Positive() already requires values greater than 0.", refusal.Message);
     }
 
     [Fact]
@@ -56,8 +56,8 @@ public sealed class Probes {
         ConflictingAnyConstraintException atGenerate = Assert.Throws<ConflictingAnyConstraintException>(() => Any.ListOf(Any.Enum<FitKind>()).WithCount(4).Distinct().Generate());
         ConflictingAnyConstraintException setAtGenerate = Assert.Throws<ConflictingAnyConstraintException>(() => Any.SetOf(Any.Enum<FitKind>()).WithCount(4).Generate());
 
-        Assert.Equal("Cannot apply Distinct() because 4 elements required to be distinct exceed the 3 distinct value(s) the element generator can produce.", atGenerate.Message);
-        Assert.Equal("The generator can produce only 3 distinct value(s), not enough for the 4 elements it must still supply.", setAtGenerate.Message);
+        Assert.Equal("Cannot apply Distinct() because 4 elements required to be distinct to honour WithCount(4) exceed the 3 distinct value(s) the element generator can produce.", atGenerate.Message);
+        Assert.Equal("The generator can produce only 3 distinct value(s), not enough for the 4 elements it must still supply to honour WithCount(4).", setAtGenerate.Message);
         Assert.Equal("null|null|null", $"{atDeclarationCountFirst?.GetType().Name ?? "null"}|{atDeclarationDistinctFirst?.GetType().Name ?? "null"}|{atDeclarationSet?.GetType().Name ?? "null"}");
     }
 

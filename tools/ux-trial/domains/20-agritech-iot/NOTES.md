@@ -143,3 +143,7 @@ The numeric vocabulary fits geodesy directly: `GreaterThanOrEqualTo(-180).LessTh
 works. Scaffolding read most guards, including a `const` ceiling. One point off because a domain ceiling turns the default dummy into
 a 250 000-element, two-second object, and the fix collides with the refine overloads. The ε corner is real but is a
 curiosity in practice.
+
+## After milestone 12
+
+The defect behind the two `Bug_` tests is fixed ([#310](https://github.com/Reefact/just-dummies/issues/310)): `Any.Double().Between(-double.Epsilon, double.Epsilon)` reaches all three values, and two distinct ones are drawn. The tests are renamed `Double_between_minus_and_plus_epsilon_reaches_all_three_values` and `Two_distinct_doubles_from_minus_to_plus_epsilon_are_drawn`, and pass.

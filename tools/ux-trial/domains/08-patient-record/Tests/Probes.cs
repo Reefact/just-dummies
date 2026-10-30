@@ -144,7 +144,7 @@ public sealed class Probes {
 
         ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(() => Any.SetOf(Any.Enum<RouteOfAdministration>()).WithCount(nine).Generate());
 
-        Assert.Equal("The generator can produce only 8 distinct value(s), not enough for the 9 elements it must still supply.", conflict.Message);
+        Assert.Equal("The generator can produce only 8 distinct value(s), not enough for the 9 elements it must still supply to honour WithCount(9).", conflict.Message);
     }
 
     [Fact]

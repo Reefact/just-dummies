@@ -47,8 +47,9 @@ IDs are stable so that issues can cite them: `CLI-`, `CORE-`, `AN-`, `XU-`, `DOC
 > [#341](https://github.com/Reefact/just-dummies/pull/341), which stopped a decimal conflict on a `WithScale` grid naming the refused
 > constraint as its own cause ([#340](https://github.com/Reefact/just-dummies/issues/340)). Milestone 9 (CLI-B5 to CLI-B7, CLI-D1,
 > CLI-D3 to CLI-D5) is merged as well, each item confirmed by re-scaffolding its reproduction, and so is milestone 10 (AN-D1 to
-> AN-D3, AN-F1, AN-F2), each confirmed by rebuilding its reproduction, with its follow-ups [#346](https://github.com/Reefact/just-dummies/pull/346) and [#347](https://github.com/Reefact/just-dummies/pull/347). Milestone 11, the documentation, is merged in [#348](https://github.com/Reefact/just-dummies/pull/348); its pages were checked against the packed library, and the three probes that passed a `Local` bound to `Any.DateTime()` now assert its refusal ([#349](https://github.com/Reefact/just-dummies/pull/349), ADR-0114). On that
-> state the trial passes 1099 of 1101 tests, the 2 red ones being the `Bug_` tests of [#310](https://github.com/Reefact/just-dummies/issues/310).
+> AN-D3, AN-F1, AN-F2), each confirmed by rebuilding its reproduction, with its follow-ups [#346](https://github.com/Reefact/just-dummies/pull/346) and [#347](https://github.com/Reefact/just-dummies/pull/347). Milestone 11, the documentation, is merged in [#348](https://github.com/Reefact/just-dummies/pull/348); its pages were checked against the packed library, and the three probes that passed a `Local` bound to `Any.DateTime()` now assert its refusal ([#349](https://github.com/Reefact/just-dummies/pull/349), ADR-0114). Milestone 12 is
+> merged too, in [#354](https://github.com/Reefact/just-dummies/pull/354): [#310](https://github.com/Reefact/just-dummies/issues/310) is fixed, so its two `Bug_` tests pass and are renamed, and nine probes that
+> pinned a message #354 improved now carry its new wording. On that state the trial passes all 1101 tests.
 > The other items below are open in their issues.
 
 | | |
@@ -241,7 +242,7 @@ Tracked in [#309](https://github.com/Reefact/just-dummies/issues/309).
 <a id="core-b3"></a>
 #### CORE-B3 — `Any.Double().Between(-double.Epsilon, double.Epsilon)` only ever draws 0 (low)
 
-Tracked in [#310](https://github.com/Reefact/just-dummies/issues/310).
+**Fixed in milestone 12** ([#354](https://github.com/Reefact/just-dummies/pull/354); tracked in [#310](https://github.com/Reefact/just-dummies/issues/310)).
 
 ### Defects (messages, wording, documentation of a contract)
 
@@ -259,15 +260,15 @@ Tracked in [#313](https://github.com/Reefact/just-dummies/issues/313).
 
 <a id="core-d4"></a>
 **CORE-D4 — Floating-point conflict messages restate a strict bound as the next representable value (low).**
-Tracked in [#314](https://github.com/Reefact/just-dummies/issues/314).
+**Fixed in milestone 12** ([#354](https://github.com/Reefact/just-dummies/pull/354); tracked in [#314](https://github.com/Reefact/just-dummies/issues/314)).
 
 <a id="core-d5"></a>
 **CORE-D5 — An offset refused near `DateTimeOffset.MaxValue`/`MinValue` does not state the limit it implies (low).**
-Tracked in [#315](https://github.com/Reefact/just-dummies/issues/315).
+**Fixed in milestone 12** ([#354](https://github.com/Reefact/just-dummies/pull/354); tracked in [#315](https://github.com/Reefact/just-dummies/issues/315)).
 
 <a id="core-d6"></a>
 **CORE-D6 — The `SetOf` cardinality refusal names no count (low).**
-Tracked in [#316](https://github.com/Reefact/just-dummies/issues/316).
+**Fixed in milestone 12** ([#354](https://github.com/Reefact/just-dummies/pull/354); tracked in [#316](https://github.com/Reefact/just-dummies/issues/316)).
 
 <a id="core-d7"></a>
 **CORE-D7 — `DateTime` draws are always `Kind = Utc` and compare by ticks: decided in XML docs, absent from the user page (medium, documentation).**
@@ -685,8 +686,8 @@ enum generators that fix made obsolete were removed (each domain's NOTES.md, "Af
 | 17 real estate | Land registry, energy diagnosis, listings | 50 / 50 | 3 | Value objects read well; every aggregate had a cross-field rule | [NOTES](domains/17-real-estate/NOTES.md) |
 | 18 education | Enrolment, grades on a half-point grid, semesters | 51 / 51 | 4 | Constraints and seeds fluent; half-point grade needs a 41-value pool | [NOTES](domains/18-education/NOTES.md) |
 | 19 IAM | Access token, roles, scopes, expiry, redirect URI | 61 / 61 | 4 | `Any.Uri()` is excellent; a silent "guard" recap and the enum scaffold | [NOTES](domains/19-iam/NOTES.md) |
-| 20 agritech IoT | Field sensors: GPS, humidity, `Half` battery, batches of 500k | 56 / 58 (2 `Bug_`) | 4 | Numeric vocabulary maps onto geodesy; a large ceiling makes the default dummy huge | [NOTES](domains/20-agritech-iot/NOTES.md) |
-| **Total** | | **1099 / 1101** (2 red, both `Bug_` tests of [#310](https://github.com/Reefact/just-dummies/issues/310)) | | | |
+| 20 agritech IoT | Field sensors: GPS, humidity, `Half` battery, batches of 500k | 58 / 58 | 4 | Numeric vocabulary maps onto geodesy; a large ceiling makes the default dummy huge | [NOTES](domains/20-agritech-iot/NOTES.md) |
+| **Total** | | **1101 / 1101** (the 2 `Bug_` tests of [#310](https://github.com/Reefact/just-dummies/issues/310) green since milestone 12) | | | |
 
 ---
 

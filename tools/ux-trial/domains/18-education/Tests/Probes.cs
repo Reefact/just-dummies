@@ -73,7 +73,7 @@ public sealed class Probes {
         ConflictingAnyConstraintException exception = Assert.Throws<ConflictingAnyConstraintException>(
             () => Any.SetOf(Any.Decimal().OneOf(HalfPoints)).WithCount(42).Generate());
 
-        Assert.Equal("The generator can produce only 41 distinct value(s), not enough for the 42 elements it must still supply.", exception.Message);
+        Assert.Equal("The generator can produce only 41 distinct value(s), not enough for the 42 elements it must still supply to honour WithCount(42).", exception.Message);
     }
 
     [Fact]

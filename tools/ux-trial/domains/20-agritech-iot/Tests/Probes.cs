@@ -201,13 +201,12 @@ public sealed class Probes {
     }
 
     /// <summary>
-    ///     NEW DEFECT. [-ε, ε] holds three distinct doubles (-ε, 0, ε), yet every draw returns 0:
-    ///     ContinuousIntervalSpec.CandidateIn samples around the midpoint, and ε/2 underflows to 0, so
-    ///     <c>half</c> is 0. Single and Half (P19) and [-2ε, 2ε] reach every value. A feasible Distinct then
-    ///     fails: "the element generator produced only 1 distinct value(s)".
+    ///     [-ε, ε] holds three distinct doubles (-ε, 0, ε). Every draw used to return 0: the midpoint form halved
+    ///     ε to 0, so a feasible Distinct failed with "the element generator produced only 1 distinct value(s)".
+    ///     Fixed by #310: a span of a few rungs is drawn by index.
     /// </summary>
     [Fact]
-    public void Bug_Double_between_minus_and_plus_epsilon_only_ever_draws_zero() {
+    public void Double_between_minus_and_plus_epsilon_reaches_all_three_values() {
         HashSet<double> seen = [];
         for (int draw = 0; draw < 2_000; draw++) {
             seen.Add(Any.Double().Between(-double.Epsilon, double.Epsilon).Generate());
@@ -217,7 +216,7 @@ public sealed class Probes {
     }
 
     [Fact]
-    public void Bug_Two_distinct_doubles_from_minus_to_plus_epsilon_are_refused() {
+    public void Two_distinct_doubles_from_minus_to_plus_epsilon_are_drawn() {
         double[] two = Any.ArrayOf(Any.Double().Between(-double.Epsilon, double.Epsilon)).WithCount(2).Distinct().Generate();
 
         Assert.Equal(2, two.Distinct().Count());

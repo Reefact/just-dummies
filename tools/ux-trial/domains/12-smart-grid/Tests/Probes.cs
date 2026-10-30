@@ -118,7 +118,7 @@ public sealed class Probes {
             () => Any.SetOf(Any.TimeOnly().WithGranularity(HalfHour)).WithCount(49).Generate());
 
         Assert.Equal(48, anyDay.Count);
-        Assert.Equal("The generator can produce only 48 distinct value(s), not enough for the 49 elements it must still supply.", conflict.Message);
+        Assert.Equal("The generator can produce only 48 distinct value(s), not enough for the 49 elements it must still supply to honour WithCount(49).", conflict.Message);
     }
 
     [Fact]

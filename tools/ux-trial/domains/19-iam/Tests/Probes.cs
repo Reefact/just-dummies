@@ -70,8 +70,8 @@ public sealed class Probes {
         ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
             () => Any.DateTimeOffset().After(lastHour).WithOffset(kiribati));
 
-        // Both sides are named; the reason (the local clock would pass 9999-12-31) is not.
-        Assert.Equal("Cannot apply WithOffset(14:00:00) because After(9999-12-31T22:59:59.9999999+00:00) already requires values greater than or equal to 9999-12-31T23:00:00.0000000+00:00.", conflict.Message);
+        // Both sides are named, and since #315 so is the reason: the local clock would pass 9999-12-31.
+        Assert.Equal("Cannot apply WithOffset(14:00:00) because After(9999-12-31T22:59:59.9999999+00:00) already requires values greater than or equal to 9999-12-31T23:00:00.0000000+00:00, and under an offset of 14:00:00 any instant after 9999-12-31T09:59:59.9999999+00:00 would have a local time past 9999-12-31.", conflict.Message);
     }
 
     [Fact]

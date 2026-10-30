@@ -159,7 +159,7 @@ public sealed class Probes {
         ConflictingAnyConstraintException conflict = Assert.Throws<ConflictingAnyConstraintException>(
             () => Any.SetOf(Any.Enum<MachineState>()).WithCount(7).Generate());
 
-        Assert.Equal("The generator can produce only 6 distinct value(s), not enough for the 7 elements it must still supply.", conflict.Message);
+        Assert.Equal("The generator can produce only 6 distinct value(s), not enough for the 7 elements it must still supply to honour WithCount(7).", conflict.Message);
     }
 
     [Fact]

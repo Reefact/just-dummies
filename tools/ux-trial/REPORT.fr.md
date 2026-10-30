@@ -50,8 +50,10 @@ négatif d'un analyseur) ou `C` (candidat à une décision).
 > est fusionnée elle aussi, de même que [#341](https://github.com/Reefact/just-dummies/pull/341) : un conflit décimal sur une
 > grille `WithScale` ne cite plus la contrainte refusée comme sa propre cause ([#340](https://github.com/Reefact/just-dummies/issues/340)). La milestone 9 (CLI-B5 à CLI-B7, CLI-D1,
 > CLI-D3 à CLI-D5) est fusionnée elle aussi, chaque élément confirmé en relançant `any` sur sa reproduction, de même que la milestone 10 (AN-D1 à
-> AN-D3, AN-F1, AN-F2), chaque élément confirmé en recompilant sa reproduction, avec ses suites [#346](https://github.com/Reefact/just-dummies/pull/346) et [#347](https://github.com/Reefact/just-dummies/pull/347). La milestone 11, la documentation, est fusionnée dans [#348](https://github.com/Reefact/just-dummies/pull/348) ; ses pages ont été confrontées à la bibliothèque packagée, et les trois sondes qui passaient une borne `Local` à `Any.DateTime()` vérifient désormais son refus ([#349](https://github.com/Reefact/just-dummies/pull/349), ADR-0114). Sur cet état, l'essai passe 1099 tests sur 1101, les 2 rouges étant les tests `Bug_`
-> de [#310](https://github.com/Reefact/just-dummies/issues/310). Les autres éléments ci-dessous restent ouverts dans leurs issues.
+> AN-D3, AN-F1, AN-F2), chaque élément confirmé en recompilant sa reproduction, avec ses suites [#346](https://github.com/Reefact/just-dummies/pull/346) et [#347](https://github.com/Reefact/just-dummies/pull/347). La milestone 11, la documentation, est fusionnée dans [#348](https://github.com/Reefact/just-dummies/pull/348) ; ses pages ont été confrontées à la bibliothèque packagée, et les trois sondes qui passaient une borne `Local` à `Any.DateTime()` vérifient désormais son refus ([#349](https://github.com/Reefact/just-dummies/pull/349), ADR-0114). La milestone 12 est
+> fusionnée elle aussi, dans [#354](https://github.com/Reefact/just-dummies/pull/354) : [#310](https://github.com/Reefact/just-dummies/issues/310) est corrigé, ses deux tests `Bug_` passent donc et sont
+> renommés, et neuf sondes qui figeaient un message amélioré par #354 portent désormais sa nouvelle formulation. Sur cet état,
+> l'essai passe ses 1101 tests. Les autres éléments ci-dessous restent ouverts dans leurs issues.
 
 | | |
 |---|---|
@@ -247,7 +249,7 @@ Suivi dans [#309](https://github.com/Reefact/just-dummies/issues/309).
 <a id="core-b3"></a>
 #### CORE-B3 — `Any.Double().Between(-double.Epsilon, double.Epsilon)` ne tire jamais que 0 (faible)
 
-Suivi dans [#310](https://github.com/Reefact/just-dummies/issues/310).
+**Corrigé dans la milestone 12** ([#354](https://github.com/Reefact/just-dummies/pull/354) ; suivi dans [#310](https://github.com/Reefact/just-dummies/issues/310)).
 
 ### Défauts (messages, formulation, documentation d'un contrat)
 
@@ -265,15 +267,15 @@ Suivi dans [#313](https://github.com/Reefact/just-dummies/issues/313).
 
 <a id="core-d4"></a>
 **CORE-D4 — Les messages de conflit en virgule flottante reformulent une borne stricte comme la valeur représentable suivante (faible).**
-Suivi dans [#314](https://github.com/Reefact/just-dummies/issues/314).
+**Corrigé dans la milestone 12** ([#354](https://github.com/Reefact/just-dummies/pull/354) ; suivi dans [#314](https://github.com/Reefact/just-dummies/issues/314)).
 
 <a id="core-d5"></a>
 **CORE-D5 — Un décalage refusé près de `DateTimeOffset.MaxValue`/`MinValue` n'énonce pas la limite qu'il implique (faible).**
-Suivi dans [#315](https://github.com/Reefact/just-dummies/issues/315).
+**Corrigé dans la milestone 12** ([#354](https://github.com/Reefact/just-dummies/pull/354) ; suivi dans [#315](https://github.com/Reefact/just-dummies/issues/315)).
 
 <a id="core-d6"></a>
 **CORE-D6 — Le refus de cardinalité de `SetOf` ne nomme aucun nombre d'éléments (faible).**
-Suivi dans [#316](https://github.com/Reefact/just-dummies/issues/316).
+**Corrigé dans la milestone 12** ([#354](https://github.com/Reefact/just-dummies/pull/354) ; suivi dans [#316](https://github.com/Reefact/just-dummies/issues/316)).
 
 <a id="core-d7"></a>
 **CORE-D7 — Les tirages `DateTime` sont toujours `Kind = Utc` et se comparent en ticks : décidé dans la documentation XML, absent de la page utilisateur (moyenne, documentation).**
@@ -708,8 +710,8 @@ retirés (voir la section « After #331 » du NOTES.md de chaque domaine).
 | 17 real estate | Cadastre, diagnostic énergétique, annonces | 50 / 50 | 3 | Les objets valeur se lisent bien ; chaque agrégat avait une règle entre champs | [NOTES](domains/17-real-estate/NOTES.md) |
 | 18 education | Inscription, notes au demi-point, semestres | 51 / 51 | 4 | Contraintes et graines fluides ; la note au demi-point exige un ensemble de 41 valeurs | [NOTES](domains/18-education/NOTES.md) |
 | 19 IAM | Jeton d'accès, rôles, scopes, expiration, URI de redirection | 61 / 61 | 4 | `Any.Uri()` est excellent ; un récapitulatif « guard » silencieux et le scaffolding d'énumération | [NOTES](domains/19-iam/NOTES.md) |
-| 20 agritech IoT | Capteurs de terrain : GPS, humidité, batterie en `Half`, lots de 500k | 56 / 58 (2 `Bug_`) | 4 | Le vocabulaire numérique colle à la géodésie ; un grand plafond rend le dummy par défaut énorme | [NOTES](domains/20-agritech-iot/NOTES.md) |
-| **Total** | | **1099 / 1101** (2 rouges, les deux tests `Bug_` de [#310](https://github.com/Reefact/just-dummies/issues/310)) | | | |
+| 20 agritech IoT | Capteurs de terrain : GPS, humidité, batterie en `Half`, lots de 500k | 58 / 58 | 4 | Le vocabulaire numérique colle à la géodésie ; un grand plafond rend le dummy par défaut énorme | [NOTES](domains/20-agritech-iot/NOTES.md) |
+| **Total** | | **1101 / 1101** (les deux tests `Bug_` de [#310](https://github.com/Reefact/just-dummies/issues/310) au vert depuis la milestone 12) | | | |
 
 ---
 

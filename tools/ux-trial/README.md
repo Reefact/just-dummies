@@ -16,6 +16,7 @@ The findings, verified and deduplicated, are in [`REPORT.md`](REPORT.md).
 | `domains/NN-name/Tests` | the scaffolded `AnyX` generators and the tests; `Probes.cs` holds the deliberate edge cases |
 | `domains/NN-name/NOTES.md` | the participant's log: CLI recaps, hand fixes, findings, a fluency score |
 | `repros/` | the minimal reproductions left by the verification pass |
+| `smoke/` | a small domain whose generators are **not** committed: `run.sh` scaffolds them with the packed `any` into a disposable `.smoke/` copy, then builds and tests it |
 
 Every test passes. During the trial a test named `Bug_…` demonstrated a defect and was left failing;
 those defects are fixed, and the trial now runs before every release, so it stays green. A defect found
@@ -34,7 +35,8 @@ dotnet test --project tools/ux-trial/domains/01-payments/Tests  # then run one d
 ```
 
 The `release` workflow runs `run.sh` before it packs and publishes a train, and a failing domain stops
-the release. `prepare.sh` packs the three packages into `local-feed/` and installs `any` into `.tools/`; run
+the release. The domains test the generators `any` emitted when they were written; the smoke domain
+scaffolds afresh, so a regression in `any generate` itself stops the release too. `prepare.sh` packs the three packages into `local-feed/` and installs `any` into `.tools/`; run
 `.tools/any generate <Type>` from a domain's `Tests` folder. The shared `Directory.Build.props`,
 `Directory.Packages.props` and `nuget.config` here shadow the repository's own, so each trial
 project builds as a consumer's would.

@@ -34,8 +34,9 @@ trigger does not match, or the dry run below.
 ## The developer-UX trial runs first
 
 Before anything is packed for publication, a read-only `ux-trial` job runs `tools/ux-trial/run.sh`: it
-packs the library, the adapter and `any` from the tagged commit, then runs twenty consumer projects
-against them. A failing domain stops the release. A probe that pins a message the release improves on
+packs the library, the adapter and `any` from the tagged commit, scaffolds a small smoke domain with
+that `any` and tests the result, then runs twenty consumer projects against the packages. A failing
+domain stops the release. A probe that pins a message the release improves on
 purpose fails too; update it in the change that improves the message.
 
 ## What to configure on nuget.org

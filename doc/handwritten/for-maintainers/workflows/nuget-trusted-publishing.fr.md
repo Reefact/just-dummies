@@ -36,7 +36,8 @@ sans publier, utilisez une ref que le déclencheur ne reconnaît pas, ou le galo
 
 Avant que quoi que ce soit soit empaqueté pour publication, un job `ux-trial` en lecture seule lance
 `tools/ux-trial/run.sh` : il empaquète la bibliothèque, l'adaptateur et `any` depuis le commit tagué,
-puis lance vingt projets consommateurs dessus. Un domaine en échec arrête la release. Une sonde qui fige
+scaffolde un petit domaine de fumée avec ce `any` et en teste le résultat, puis lance vingt projets
+consommateurs sur les packages. Un domaine en échec arrête la release. Une sonde qui fige
 un message que la release améliore volontairement échoue aussi ; mettez-la à jour dans le changement qui
 améliore le message.
 

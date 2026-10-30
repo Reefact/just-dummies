@@ -174,6 +174,11 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   `ArrayOf(...).WithCount(4).Distinct()` over it was refused. A span of up to 17 consecutive values of the type —
   `Double`, `Single` or `Half` — is now drawn by index among them, and so is any span of subnormal doubles. This
   changes what a seed draws within such a span, and nowhere else.
+- **An offset that leaves no room at the calendar's edge says what limit it implies, and why.**
+  `Any.DateTimeOffset().After(DateTimeOffset.MaxValue.AddHours(-1)).WithOffset(TimeSpan.FromHours(14))` was
+  refused naming both constraints, but never the instant the offset caps the draw at — 14 hours before
+  `MaxValue` — nor that a later one would have a local time past 9999-12-31; declared the other way round, it gave
+  the limit without the reason. Both orders now name the limit and the reason, at either edge of the calendar.
 - **JD014 reports a floating-point bound that is not finite, and a `Half` value set element that is
   not.** `Any.Double().Between(double.NaN, 90.0)`, `LessThan(double.PositiveInfinity)` and
   `Any.Half().OneOf((Half)1, Half.NaN)` always throw when declared, and drew no diagnostic. A

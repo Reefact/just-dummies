@@ -188,6 +188,37 @@ public sealed class ConflictingAnyConstraintException : DummyException {
     }
 
     /// <summary>
+    ///     Builds the exception for an offset whose local time would leave the calendar for every instant a bound
+    ///     already declared admits — the derived limit is what the caller never wrote, so it is named with its reason.
+    /// </summary>
+    /// <param name="existing">The instant bound already declared, with what it requires.</param>
+    /// <param name="applying">The offset being declared.</param>
+    /// <param name="offset">The offset that moves the local time furthest toward the calendar edge.</param>
+    /// <param name="limit">The last instant whose local time stays within the calendar under <paramref name="offset" />.</param>
+    /// <param name="late">Whether the calendar's upper edge is the one left, rather than its lower.</param>
+    internal static ConflictingAnyConstraintException OffsetLeavesTheCalendar(ConstraintClaim existing, ConstraintCall applying, string offset, string limit, bool late) {
+        return Sentence(applying, $"{existing}, and under an offset of {offset} any instant {(late ? "after" : "before")} {limit} would have a local time {Beyond(late)}");
+    }
+
+    /// <summary>
+    ///     Builds the exception for an instant bound beyond what a declared offset leaves reachable — the counterpart
+    ///     of <see cref="OffsetLeavesTheCalendar" /> for the other declaration order, so both name the limit and why.
+    /// </summary>
+    /// <param name="applying">The instant bound being declared.</param>
+    /// <param name="offsetConstraint">The offset already declared.</param>
+    /// <param name="offset">The offset that moves the local time furthest toward the calendar edge.</param>
+    /// <param name="limit">The last instant whose local time stays within the calendar under <paramref name="offset" />.</param>
+    /// <param name="late">Whether the calendar's upper edge is the one left, rather than its lower.</param>
+    internal static ConflictingAnyConstraintException InstantLeavesTheCalendarUnderOffset(ConstraintCall applying, ConstraintCall offsetConstraint, string offset, string limit, bool late) {
+        return Sentence(applying, $"{offsetConstraint} already requires values {(late ? "less" : "greater")} than or equal to {limit}, since under an offset of {offset} any {(late ? "later" : "earlier")} instant would have a local time {Beyond(late)}");
+    }
+
+    /// <summary>Where a local time leaves the calendar <see cref="DateTimeOffset" /> represents.</summary>
+    private static string Beyond(bool late) {
+        return late ? "past 9999-12-31" : "before 0001-01-01";
+    }
+
+    /// <summary>
     ///     Builds the exception for a constraint that contradicts an upper bound already declared.
     /// </summary>
     internal static ConflictingAnyConstraintException AlreadyBoundedAbove(ConstraintCall applying, ConstraintCall existingConstraint, string bound, bool exclusive = false) {

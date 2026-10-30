@@ -64,6 +64,32 @@ public sealed class AnyDateTimeOffsetOffsetTests {
              .Throws<ConflictingAnyConstraintException>();
     }
 
+    [Fact(DisplayName = "WithOffset: the conflict names the limit the offset implies and why, in both orders (issue #315).")]
+    public void WithOffsetConflictNamesTheDerivedLimit() {
+        // The limit is what the caller never wrote: MaxValue less the offset, past which the local time leaves 9999.
+        DateTimeOffset floor  = DateTimeOffset.MaxValue.AddHours(-1);
+        TimeSpan       offset = TimeSpan.FromHours(14);
+
+        Check.ThatCode(() => Any.DateTimeOffset().After(floor).WithOffset(offset))
+             .Throws<ConflictingAnyConstraintException>()
+             .WhichMember(conflict => conflict.Message).Contains("9999-12-31T09:59:59.9999999+00:00", "past 9999-12-31");
+
+        Check.ThatCode(() => Any.DateTimeOffset().WithOffset(offset).After(floor))
+             .Throws<ConflictingAnyConstraintException>()
+             .WhichMember(conflict => conflict.Message).Contains("9999-12-31T09:59:59.9999999+00:00", "past 9999-12-31");
+
+        // The lower edge, under a negative offset.
+        DateTimeOffset ceiling = DateTimeOffset.MinValue.AddHours(1);
+
+        Check.ThatCode(() => Any.DateTimeOffset().Before(ceiling).WithOffset(-offset))
+             .Throws<ConflictingAnyConstraintException>()
+             .WhichMember(conflict => conflict.Message).Contains("0001-01-01T14:00:00.0000000+00:00", "before 0001-01-01");
+
+        Check.ThatCode(() => Any.DateTimeOffset().WithOffset(-offset).Before(ceiling))
+             .Throws<ConflictingAnyConstraintException>()
+             .WhichMember(conflict => conflict.Message).Contains("0001-01-01T14:00:00.0000000+00:00", "before 0001-01-01");
+    }
+
     [Fact(DisplayName = "WithOffset: arguments are validated (whole minutes, ±14:00, ordered range).")]
     [SuppressMessage(JustDummiesRule.JD014.Category, JustDummiesRule.JD014.Id, Justification = SuppressionJustification.JD014.ThrowIsTheSubject)]
     public void WithOffsetArguments() {

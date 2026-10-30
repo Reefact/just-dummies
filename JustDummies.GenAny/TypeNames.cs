@@ -90,7 +90,12 @@ internal sealed class TypeNames {
     internal string OfParameter(ITypeSymbol type, bool annotates) {
         string name = Of(type);
 
-        return annotates && type.IsReferenceType && type.NullableAnnotation == NullableAnnotation.Annotated ? name + "?" : name;
+        return annotates && IsNullableReference(type) ? name + "?" : name;
+    }
+
+    /// <summary>Whether <paramref name="type" /> is a reference type declared with a top-level <c>?</c>.</summary>
+    internal static bool IsNullableReference(ITypeSymbol type) {
+        return type.IsReferenceType && type.NullableAnnotation == NullableAnnotation.Annotated;
     }
 
     /// <summary>Opens a namespace the file needs for a name it did not get through <see cref="Of" />.</summary>

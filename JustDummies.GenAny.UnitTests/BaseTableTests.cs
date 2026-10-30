@@ -152,6 +152,25 @@ public sealed class BaseTableTests {
         Check.That(outcome.File!.SourceText).Contains("public AnySubject WithNote(string value) {");
     }
 
+    // The file is right not to carry the `?`, and the recap describes the file; what it still owes the reader is that
+    // the declaration had one (§6), so the parameter says so — and only where the annotation was really dropped.
+    [Fact(DisplayName = "A nullable reference parameter spelled without its ? says so, for the recap to note once.")]
+    public void ANullableReferenceSpelledWithoutItsAnnotationSaysSo() {
+        const string declarations = """
+                                    namespace Shop.Domain;
+
+                                    public sealed class Subject {
+                                        public Subject(string? note, string name, int? priority) { }
+                                    }
+                                    """;
+
+        ScaffoldOutcome withoutAnnotations = Subject.Scaffold(declarations, nullable: NullableContextOptions.Disable);
+        ScaffoldOutcome withAnnotations    = Subject.Scaffold(declarations);
+
+        Check.That(withoutAnnotations.Plan!.Parameters.Select(parameter => parameter.NullableAnnotationDropped)).ContainsExactly(true, false, false);
+        Check.That(withAnnotations.Plan!.Parameters.Select(parameter => parameter.NullableAnnotationDropped)).ContainsExactly(false, false, false);
+    }
+
     /// <summary>The fixture's <c>Customer</c> and a stand-in for its own scaffolded generator.</summary>
     private const string AnyCustomer = """
 

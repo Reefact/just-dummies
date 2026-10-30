@@ -133,8 +133,10 @@ public static class Scaffolder {
 
         List<ScaffoldedParameter> parameters = [];
 
+        bool annotates = AnnotatesNullability(compilation);
+
         foreach (IParameterSymbol parameter in chosen.Parameters) {
-            parameters.Add(Resolve(parameter, target, names, generators, guards, AnnotatesNullability(compilation)));
+            parameters.Add(Noted(Resolve(parameter, target, names, generators, guards, annotates), parameter, annotates));
         }
 
         ScaffoldPlan plan = new(new TargetType(targetName, fileNamespace, StyleOf(target, fileNamespace), target.ToDisplayString(),
@@ -148,6 +150,14 @@ public static class Scaffolder {
                                           GeneratorEmitter.Emit(plan),
                                           Shadowing(plan, library),
                                           EntryPointEmitter.Emit(plan, options.EntryPoint));
+    }
+
+    /// <summary>
+    ///     <paramref name="resolved" />, noting a declared <c>?</c> its spelling could not carry: the rows spell the
+    ///     type as the file does, and the recap still owes the reader the annotation it could not write (§6).
+    /// </summary>
+    private static ScaffoldedParameter Noted(ScaffoldedParameter resolved, IParameterSymbol parameter, bool annotates) {
+        return !annotates && TypeNames.IsNullableReference(parameter.Type) ? resolved.DroppingNullableAnnotation() : resolved;
     }
 
     /// <summary>

@@ -391,7 +391,9 @@ Shipment anyUndeclaredShipment = Any.Shipment().WithDeclaredValue((decimal?)null
 ```
 
 A nullable reference parameter takes the same cast — `.WithAgent((Customer?)null)` — and its pin is
-typed `Customer?` for exactly that, wherever your project reads nullable annotations.
+typed `Customer?` for exactly that, wherever your project reads nullable annotations. Where it does
+not, the `?` would itself warn, so the pin is typed `Customer` and the recap says so in one line
+under its rows; `--format json` carries the same fact as `"nullableAnnotationDropped"`.
 
 *Sometimes* `null` is the overload you add.
 

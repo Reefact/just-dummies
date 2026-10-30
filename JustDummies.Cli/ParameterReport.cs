@@ -11,6 +11,7 @@ internal sealed record ParameterReport(string Name,
                                        string? Expression,
                                        bool Resolved,
                                        bool RequiresVerification,
+                                       bool NullableAnnotationDropped,
                                        IReadOnlyList<string> Provenance,
                                        UnreadGuardReport? UnreadGuard) {
 
@@ -23,6 +24,11 @@ internal sealed record ParameterReport(string Name,
     ///     compile until the developer acts. Reading <c>resolved: true</c> as "nothing to do here" is exactly
     ///     the silence ADR-0083 removed, so the second flag says it rather than leaving a script to infer it
     ///     from the provenance words.
+    ///     <para>
+    ///         <c>nullableAnnotationDropped</c> is the recap's note under the rows, per row: <c>type</c> spells the
+    ///         parameter as the file does, so a script reading <c>Bic</c> learns here that the domain declared
+    ///         <c>Bic?</c> (§6.1).
+    ///     </para>
     /// </remarks>
     internal static ParameterReport Of(ScaffoldedParameter parameter) {
         return new ParameterReport(parameter.Name,
@@ -30,6 +36,7 @@ internal sealed record ParameterReport(string Name,
                                    parameter.Expression,
                                    !parameter.IsUnresolved,
                                    parameter.RequiresVerification,
+                                   parameter.NullableAnnotationDropped,
                                    Recap.WordsFor(parameter.Provenance),
                                    UnreadGuardReport.Of(parameter.UnreadGuard));
     }

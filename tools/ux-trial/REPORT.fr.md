@@ -50,7 +50,7 @@ négatif d'un analyseur) ou `C` (candidat à une décision).
 > est fusionnée elle aussi, de même que [#341](https://github.com/Reefact/just-dummies/pull/341) : un conflit décimal sur une
 > grille `WithScale` ne cite plus la contrainte refusée comme sa propre cause ([#340](https://github.com/Reefact/just-dummies/issues/340)). La milestone 9 (CLI-B5 à CLI-B7, CLI-D1,
 > CLI-D3 à CLI-D5) est fusionnée elle aussi, chaque élément confirmé en relançant `any` sur sa reproduction, de même que la milestone 10 (AN-D1 à
-> AN-D3, AN-F1, AN-F2), chaque élément confirmé en recompilant sa reproduction, avec ses suites [#346](https://github.com/Reefact/just-dummies/pull/346) et [#347](https://github.com/Reefact/just-dummies/pull/347). Sur cet état, l'essai passe 1099 tests sur 1101, les 2 rouges étant les tests `Bug_`
+> AN-D3, AN-F1, AN-F2), chaque élément confirmé en recompilant sa reproduction, avec ses suites [#346](https://github.com/Reefact/just-dummies/pull/346) et [#347](https://github.com/Reefact/just-dummies/pull/347). La milestone 11, la documentation, est fusionnée dans [#348](https://github.com/Reefact/just-dummies/pull/348) ; ses pages ont été confrontées à la bibliothèque packagée, et les trois sondes qui passaient une borne `Local` à `Any.DateTime()` vérifient désormais son refus ([#349](https://github.com/Reefact/just-dummies/pull/349), ADR-0114). Sur cet état, l'essai passe 1099 tests sur 1101, les 2 rouges étant les tests `Bug_`
 > de [#310](https://github.com/Reefact/just-dummies/issues/310). Les autres éléments ci-dessous restent ouverts dans leurs issues.
 
 | | |
@@ -143,7 +143,7 @@ ont lancé `dotnet restore` d'abord à cause de lui.
 
 <a id="cli-d2"></a>
 **CLI-D2 — « Delete that one line, and you are done » est faux quand la bonne base a un autre type de builder (moyenne).**
-Suivi dans [#304](https://github.com/Reefact/just-dummies/issues/304).
+**Corrigé dans la milestone 11** ([#348](https://github.com/Reefact/just-dummies/pull/348) ; suivi dans [#304](https://github.com/Reefact/just-dummies/issues/304)).
 
 <a id="cli-d3"></a>
 **CLI-D3 — Un paramètre de type référence nullable perd son `?` dans la méthode qui fixe sa valeur, le récapitulatif et le JSON (moyenne).**
@@ -277,19 +277,19 @@ Suivi dans [#316](https://github.com/Reefact/just-dummies/issues/316).
 
 <a id="core-d7"></a>
 **CORE-D7 — Les tirages `DateTime` sont toujours `Kind = Utc` et se comparent en ticks : décidé dans la documentation XML, absent de la page utilisateur (moyenne, documentation).**
-Suivi dans [#317](https://github.com/Reefact/just-dummies/issues/317).
+**Corrigé dans la milestone 11** ([#348](https://github.com/Reefact/just-dummies/pull/348) ; suivi dans [#317](https://github.com/Reefact/just-dummies/issues/317)).
 
 <a id="core-d8"></a>
 **CORE-D8 — La page utilisateur de `WithScale` dit qu'il « fixes the number of decimal places » ; l'ADR-0015 décide une grille de valeurs (moyenne, documentation).**
-Suivi dans [#318](https://github.com/Reefact/just-dummies/issues/318).
+**Corrigé dans la milestone 11** ([#348](https://github.com/Reefact/just-dummies/pull/348) ; suivi dans [#318](https://github.com/Reefact/just-dummies/issues/318)).
 
 <a id="core-d9"></a>
 **CORE-D9 — `DateTimeOffset.WithGranularity` aligne l'instant UTC sur la grille, pas l'horloge locale ; la documentation utilisateur ne le dit jamais (moyenne, documentation).**
-Suivi dans [#319](https://github.com/Reefact/just-dummies/issues/319).
+**Corrigé dans la milestone 11** ([#348](https://github.com/Reefact/just-dummies/pull/348) ; suivi dans [#319](https://github.com/Reefact/just-dummies/issues/319)).
 
 <a id="core-d10"></a>
 **CORE-D10 — Le refus de cardinalité distincte a migré vers `Generate()` sans trace écrite ; l'ADR-0004, JD016 et la page des collections promettent toujours un refus à la déclaration (moyenne, documentation + ADR).**
-Suivi dans [#320](https://github.com/Reefact/just-dummies/issues/320).
+**Corrigé dans la milestone 11** ([#348](https://github.com/Reefact/just-dummies/pull/348) ; suivi dans [#320](https://github.com/Reefact/just-dummies/issues/320)).
 
 ### Lacunes d'inférence
 
@@ -332,11 +332,11 @@ publique « tire depuis la source ambiante »).
 
 <a id="an-d4"></a>
 **AN-D4 — La page JD014 prétend refléter les gardes « exactly », et un test range un argument refusé parmi les « legal » (faible).**
-Suivi dans [#324](https://github.com/Reefact/just-dummies/issues/324).
+**Corrigé dans la milestone 11** ([#348](https://github.com/Reefact/just-dummies/pull/348) ; suivi dans [#324](https://github.com/Reefact/just-dummies/issues/324)).
 
 <a id="an-d5"></a>
 **AN-D5 — Les règles Info (JD020, JD022, JD024, JD029, JD030, JD031, JD033) n'apparaissent jamais dans la sortie de `dotnet build`, et aucune page utilisateur ne le dit (moyenne, documentation).**
-Suivi dans [#325](https://github.com/Reefact/just-dummies/issues/325).
+**Corrigé dans la milestone 11** ([#348](https://github.com/Reefact/just-dummies/pull/348) ; suivi dans [#325](https://github.com/Reefact/just-dummies/issues/325)).
 
 ### Faux négatifs au regard de la portée documentée d'une règle
 
@@ -366,7 +366,7 @@ chaque règle Info est vécue hors d'un IDE.
 
 <a id="xu-d1"></a>
 **XU-D1 — Aucune page utilisateur ne montre `using JustDummies.Xunit;` (moyenne ; 13 domaines sur 20).**
-Suivi dans [#328](https://github.com/Reefact/just-dummies/issues/328).
+**Corrigé dans la milestone 11** ([#348](https://github.com/Reefact/just-dummies/pull/348) ; suivi dans [#328](https://github.com/Reefact/just-dummies/issues/328)).
 
 ---
 
@@ -391,18 +391,18 @@ s'applique à la page anglaise **et** à son jumeau français.
 | [CORE-D9](#core-d9) | `generators/dates-and-times` | Sous un décalage, la granularité aligne l'instant UTC | `core` | L'énoncer ; résumé XML aussi |
 | [CORE-D10](#core-d10) | ADR-0004, ADR-0009/0011, `analyzers/JD016`, `generators/collections` | Refus de cardinalité documenté à la déclaration ; il s'exécute à `Generate()` | `core` | ADR d'amendement, puis les pages |
 | [AN-D5](#an-d5) | `analyzers/README`, `packages/justdummies` | Règles Info invisibles dans les builds en console | `analyzers` | Une phrase plus un extrait `.editorconfig` |
-| <a id="doc-1"></a>DOC-1 | `generators/enums-and-choices:157`, `guides/errors-and-conflicts:63` | `Any.Boolean().Except(true, false)` n'existe pas dans l'API publique | `core` | [#329](https://github.com/Reefact/just-dummies/issues/329) |
-| <a id="doc-2"></a>DOC-2 | `generators/strings:56`, `analyzers/JD030:24` | « `NonEmpty()` leaves the ceiling where it was » ; il donne 1 à 1025 (la propre phrase de JD030 le dit) | `core` | [#329](https://github.com/Reefact/just-dummies/issues/329) |
-| <a id="doc-3"></a>DOC-3 | `generators/collections:50`, `guides/design-principles:72` | Citent l'ADR-0029 pour la limite du million ; remplacée par l'ADR-0076 | `core` | [#329](https://github.com/Reefact/just-dummies/issues/329) |
-| <a id="doc-4"></a>DOC-4 | `generators/strings` (tableaux regex) | `\xNN`/`\uNNNN` fonctionnent mais ne sont pas listés ; `\b`, `\B`, `\G`, `\p{…}`, `\k<…>` et la soustraction de classes sont refusés mais pas listés ; `IgnorePatternWhitespace` lève `ArgumentException`, sans mention ; la limite de 65 536 caractères est absente ; chaque refus se termine par la même liste figée | `core` | [#329](https://github.com/Reefact/just-dummies/issues/329) |
-| <a id="doc-5"></a>DOC-5 | `packages/justdummies-cli:254` | « A lambda never widens the base » ; `_ => Any.Int32()` la remplace | `cli` | [#330](https://github.com/Reefact/just-dummies/issues/330) |
+| <a id="doc-1"></a>DOC-1 | `generators/enums-and-choices:157`, `guides/errors-and-conflicts:63` | `Any.Boolean().Except(true, false)` n'existe pas dans l'API publique | `core` | corrigé dans [#348](https://github.com/Reefact/just-dummies/pull/348) ([#329](https://github.com/Reefact/just-dummies/issues/329)) |
+| <a id="doc-2"></a>DOC-2 | `generators/strings:56`, `analyzers/JD030:24` | « `NonEmpty()` leaves the ceiling where it was » ; il donne 1 à 1025 (la propre phrase de JD030 le dit) | `core` | corrigé dans [#348](https://github.com/Reefact/just-dummies/pull/348) ([#329](https://github.com/Reefact/just-dummies/issues/329)) |
+| <a id="doc-3"></a>DOC-3 | `generators/collections:50`, `guides/design-principles:72` | Citent l'ADR-0029 pour la limite du million ; remplacée par l'ADR-0076 | `core` | corrigé dans [#348](https://github.com/Reefact/just-dummies/pull/348) ([#329](https://github.com/Reefact/just-dummies/issues/329)) |
+| <a id="doc-4"></a>DOC-4 | `generators/strings` (tableaux regex) | `\xNN`/`\uNNNN` fonctionnent mais ne sont pas listés ; `\b`, `\B`, `\G`, `\p{…}`, `\k<…>` et la soustraction de classes sont refusés mais pas listés ; `IgnorePatternWhitespace` lève `ArgumentException`, sans mention ; la limite de 65 536 caractères est absente ; chaque refus se termine par la même liste figée | `core` | corrigé dans [#348](https://github.com/Reefact/just-dummies/pull/348) ([#329](https://github.com/Reefact/just-dummies/issues/329)) |
+| <a id="doc-5"></a>DOC-5 | `packages/justdummies-cli:254` | « A lambda never widens the base » ; `_ => Any.Int32()` la remplace | `cli` | corrigé dans [#348](https://github.com/Reefact/just-dummies/pull/348) ([#330](https://github.com/Reefact/just-dummies/issues/330)) |
 | <a id="doc-6"></a>DOC-6 | `guides/errors-and-conflicts:101-108` | `Seed` documenté « inside a reproducible scope » seulement ; il est aussi renseigné en dehors | `core` | [#308](https://github.com/Reefact/just-dummies/issues/308) (avec [CORE-B1](#core-b1)) |
-| <a id="doc-7"></a>DOC-7 | `packages/justdummies-cli` | Muette sur le fait que les gardes par regex ne sont jamais lues (le §5.3 de la spécification le décide) | `cli` | [#330](https://github.com/Reefact/just-dummies/issues/330) |
-| <a id="doc-8"></a>DOC-8 | `packages/justdummies-cli` | Aucune section sur l'endroit où placer un invariant entre paramètres | `cli` | [#330](https://github.com/Reefact/just-dummies/issues/330) |
-| <a id="doc-9"></a>DOC-9 | `packages/justdummies-cli:243-247` (affinage) | Ne dit pas qu'une contrainte déclarable une seule fois (`OneOf`, familles, `WithLength`, `MultipleOf`, `WithScale`) ne peut pas être redéclarée dans la lambda ; que `Except`/`DifferentFrom` restreignent un ensemble ; que JD034 ne voit pas dans la lambda | `cli` | [#330](https://github.com/Reefact/just-dummies/issues/330) |
-| <a id="doc-10"></a>DOC-10 | `packages/justdummies-cli` (affinage) | Pour réutiliser un affinage préparé, conserver un `Func<AnyX, AnyX>`, pas un `IAny<T>` construit (ADR-0109 ; CS0266 ne l'enseigne pas) | `cli` | [#330](https://github.com/Reefact/just-dummies/issues/330) |
-| <a id="doc-11"></a>DOC-11 | `packages/justdummies-cli` | Une ligne de chaîne scaffoldée déclenche JD030 (Info) par conception | `cli` | [#330](https://github.com/Reefact/just-dummies/issues/330) |
-| <a id="doc-12"></a>DOC-12 | `guides/errors-and-conflicts` | Un appel unique aux bornes inversées (`Between(10, 1)`) est une erreur d'argument, pas un conflit | `core` | [#329](https://github.com/Reefact/just-dummies/issues/329) |
+| <a id="doc-7"></a>DOC-7 | `packages/justdummies-cli` | Muette sur le fait que les gardes par regex ne sont jamais lues (le §5.3 de la spécification le décide) | `cli` | corrigé dans [#348](https://github.com/Reefact/just-dummies/pull/348) ([#330](https://github.com/Reefact/just-dummies/issues/330)) |
+| <a id="doc-8"></a>DOC-8 | `packages/justdummies-cli` | Aucune section sur l'endroit où placer un invariant entre paramètres | `cli` | corrigé dans [#348](https://github.com/Reefact/just-dummies/pull/348) ([#330](https://github.com/Reefact/just-dummies/issues/330)) |
+| <a id="doc-9"></a>DOC-9 | `packages/justdummies-cli:243-247` (affinage) | Ne dit pas qu'une contrainte déclarable une seule fois (`OneOf`, familles, `WithLength`, `MultipleOf`, `WithScale`) ne peut pas être redéclarée dans la lambda ; que `Except`/`DifferentFrom` restreignent un ensemble ; que JD034 ne voit pas dans la lambda | `cli` | corrigé dans [#348](https://github.com/Reefact/just-dummies/pull/348) ([#330](https://github.com/Reefact/just-dummies/issues/330)) |
+| <a id="doc-10"></a>DOC-10 | `packages/justdummies-cli` (affinage) | Pour réutiliser un affinage préparé, conserver un `Func<AnyX, AnyX>`, pas un `IAny<T>` construit (ADR-0109 ; CS0266 ne l'enseigne pas) | `cli` | corrigé dans [#348](https://github.com/Reefact/just-dummies/pull/348) ([#330](https://github.com/Reefact/just-dummies/issues/330)) |
+| <a id="doc-11"></a>DOC-11 | `packages/justdummies-cli` | Une ligne de chaîne scaffoldée déclenche JD030 (Info) par conception | `cli` | corrigé dans [#348](https://github.com/Reefact/just-dummies/pull/348) ([#330](https://github.com/Reefact/just-dummies/issues/330)) |
+| <a id="doc-12"></a>DOC-12 | `guides/errors-and-conflicts` | Un appel unique aux bornes inversées (`Between(10, 1)`) est une erreur d'argument, pas un conflit | `core` | corrigé dans [#348](https://github.com/Reefact/just-dummies/pull/348) ([#329](https://github.com/Reefact/just-dummies/issues/329)) |
 | <a id="doc-13"></a>DOC-13 | `analyzers/JD007`, `JD009` | « Written inline from `Any` » laisse entendre que `Any.X()` issu de `--entry-point any` est vu ; il ne l'est pas | `analyzers` | Dépend de [AN-C3](#an-c3) |
 
 Garde-fous suggérés pour `JustDummies.Documentation.UnitTests` : résoudre les extraits en ligne

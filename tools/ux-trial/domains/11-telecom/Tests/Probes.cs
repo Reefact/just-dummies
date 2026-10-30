@@ -59,13 +59,11 @@ public sealed class Probes {
     }
 
     [Fact]
-    public void A_drawn_DateTime_is_relabelled_Utc_even_from_local_bounds() {
-        // Documented on the type's XML remarks, not on the user page: bounds compare by ticks, the result is Utc.
+    public void A_local_DateTime_bound_is_refused_rather_than_relabelled() {
+        // It used to be read by its ticks and the draw relabelled Utc; since ADR-0114 a Local bound is refused.
         DateTime localStart = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Local);
 
-        DateTime drawn = Any.DateTime().Between(localStart, localStart.AddSeconds(1)).Generate();
-
-        Assert.Equal(DateTimeKind.Utc, drawn.Kind);
+        Assert.Throws<ArgumentException>(() => Any.DateTime().Between(localStart, localStart.AddSeconds(1)));
     }
 
     [Fact]

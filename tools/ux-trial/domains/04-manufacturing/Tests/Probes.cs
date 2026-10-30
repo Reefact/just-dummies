@@ -83,15 +83,13 @@ public sealed class Probes {
     }
 
     [Fact]
-    public void A_drawn_DateTime_is_Utc_even_when_its_bounds_are_local() {
+    public void A_local_DateTime_bound_is_refused() {
         DateTime localStart = new DateTime(2026, 3, 1, 6, 0, 0, DateTimeKind.Local);
 
-        DateTime anyInstant = Any.DateTime().Between(localStart, localStart.AddHours(8)).Generate();
+        // A Local bound used to be read by its ticks and relabelled Utc (see NOTES.md); since ADR-0114 it is refused.
+        ArgumentException refusal = Assert.Throws<ArgumentException>(() => Any.DateTime().Between(localStart, localStart.AddHours(8)));
 
-        // Observed: Kind is Utc while the ticks stay inside the local bounds, i.e. a wall-clock
-        // local time relabelled as UTC. Undocumented; see NOTES.md.
-        Assert.Equal(DateTimeKind.Utc, anyInstant.Kind);
-        Assert.InRange(anyInstant.Ticks, localStart.Ticks, localStart.AddHours(8).Ticks);
+        Assert.Contains("ToUniversalTime()", refusal.Message);
     }
 
     [Fact]

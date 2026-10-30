@@ -146,13 +146,14 @@ public sealed class Probes {
     public void Probe_the_kind_of_a_drawn_DateTime() {
         DateTime unconstrained = Any.DateTime().Generate();
         DateTime utcBounded    = Any.DateTime().Between(new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc), new DateTime(2027, 1, 1, 0, 0, 0, DateTimeKind.Utc)).Generate();
-        DateTime mixedBounds   = Any.DateTime().Between(new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Local), new DateTime(2027, 1, 1, 0, 0, 0, DateTimeKind.Utc)).Generate();
+        DateTime unspecified   = Any.DateTime().Between(new DateTime(2026, 1, 1), new DateTime(2027, 1, 1)).Generate();
         DateTime afterUtc      = Any.DateTime().After(new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)).Generate();
-        Log($"kinds: unconstrained={unconstrained.Kind} utcBounded={utcBounded.Kind} mixed={mixedBounds.Kind} afterUtc={afterUtc.Kind}");
+        Log($"kinds: unconstrained={unconstrained.Kind} utcBounded={utcBounded.Kind} unspecified={unspecified.Kind} afterUtc={afterUtc.Kind}");
 
-        // Observed, and documented nowhere: every drawn DateTime is UTC, whatever the kind of its bounds.
+        // Every drawn DateTime is Utc, now documented on dates-and-times; a Local bound is refused (ADR-0114).
         Assert.Equal([DateTimeKind.Utc, DateTimeKind.Utc, DateTimeKind.Utc, DateTimeKind.Utc],
-                     [unconstrained.Kind, utcBounded.Kind, mixedBounds.Kind, afterUtc.Kind]);
+                     [unconstrained.Kind, utcBounded.Kind, unspecified.Kind, afterUtc.Kind]);
+        Assert.Throws<ArgumentException>(() => Any.DateTime().Between(new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Local), new DateTime(2027, 1, 1, 0, 0, 0, DateTimeKind.Utc)));
     }
 
     // ----- Patterns -------------------------------------------------------------------------------------------

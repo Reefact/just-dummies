@@ -60,9 +60,9 @@ public sealed class DocumentationLinkTests {
                 string? successor = SuccessorOf(directory, link.Target);
                 if (successor is null) { continue; }
 
-                bool successorCited = page.Links.Any(other => other.Line == link.Line
-                                                           && Path.GetFileName(StripAnchor(other.Target)).StartsWith($"{successor}-", StringComparison.Ordinal));
-                if (!successorCited) { alone.Add($"{page.RelativePath}:{link.Line}: {link.Target} (superseded by ADR-{successor})"); }
+                if (!CitesSuccessor(directory, page.Links.Where(other => other.Line == link.Line), successor)) {
+                    alone.Add($"{page.RelativePath}:{link.Line}: {link.Target} (superseded by {Path.GetFileName(successor)})");
+                }
             }
         }
 
@@ -72,25 +72,55 @@ public sealed class DocumentationLinkTests {
              .That(alone).IsEmpty();
     }
 
+    [Fact(DisplayName = "The successor check accepts the successor's own file, in either language, and nothing that merely shares its number.")]
+    public void TheSuccessorCheckComparesResolvedTargets() {
+        string directory = Path.Combine(DocumentationCorpus.RepositoryRoot, "doc", "handwritten", "for-users", "generators");
+        string successor = SuccessorOf(directory, "../../for-maintainers/adr/0031-draw-arbitrary-numbers-within-an-ordinary-magnitude.md")!;
+
+        Check.That(successor).IsNotNull();
+        Check.That(CitesSuccessor(directory, [Link("../../for-maintainers/adr/0097-follow-the-declared-bounds-with-the-ordinary-magnitude-window.md")], successor)).IsTrue();
+        Check.That(CitesSuccessor(directory, [Link("../../for-maintainers/adr/0097-follow-the-declared-bounds-with-the-ordinary-magnitude-window.fr.md#decision")], successor)).IsTrue();
+        // Same number, wrong place: a file of that name outside the decision base, and another record numbered alike.
+        Check.That(CitesSuccessor(directory, [Link("../guides/0097-follow-the-declared-bounds-with-the-ordinary-magnitude-window.md")], successor)).IsFalse();
+        Check.That(CitesSuccessor(directory, [Link("../../for-maintainers/adr/0097-another-record.md")], successor)).IsFalse();
+    }
+
+    private static MarkdownLink Link(string target) {
+        return new MarkdownLink(target, 1, "ADR-0097");
+    }
+
     /// <summary>
-    ///     The number of the record that superseded the ADR <paramref name="target" /> points at, or <see langword="null" />
-    ///     when it points at no ADR or at one still in force. The status is read from the English twin, which is canonical
-    ///     and the only one whose wording is uniform.
+    ///     The English file of the record that superseded the ADR <paramref name="target" /> points at, resolved from the
+    ///     link in that ADR's own status line, or <see langword="null" /> when it points at no ADR or at one still in force.
+    ///     The status is read from the English twin, which is canonical and the only one whose wording is uniform.
     /// </summary>
     private static string? SuccessorOf(string directory, string target) {
         if (!IsRepositoryRelative(target)) { return null; }
 
-        string resolved  = Path.GetFullPath(Path.Combine(directory, Uri.UnescapeDataString(StripAnchor(target))));
+        string record    = Canonical(Path.GetFullPath(Path.Combine(directory, Uri.UnescapeDataString(StripAnchor(target)))));
         string separator = Path.DirectorySeparatorChar.ToString();
-        if (!resolved.Contains($"{separator}adr{separator}", StringComparison.Ordinal)) { return null; }
-
-        string english = resolved.EndsWith(".fr.md", StringComparison.Ordinal) ? resolved[..^".fr.md".Length] + ".md" : resolved;
-        if (!File.Exists(english)) { return null; }
+        if (!record.Contains($"{separator}adr{separator}", StringComparison.Ordinal) || !File.Exists(record)) { return null; }
 
         const string marker = "**Status:** Superseded by [ADR-";
-        string?      status = File.ReadLines(english).Take(12).FirstOrDefault(line => line.StartsWith(marker, StringComparison.Ordinal));
+        string?      status = File.ReadLines(record).Take(12).FirstOrDefault(line => line.StartsWith(marker, StringComparison.Ordinal));
+        if (status is null) { return null; }
 
-        return status?.Substring(marker.Length, 4);
+        int open  = status.IndexOf("](", StringComparison.Ordinal) + 2;
+        int close = status.IndexOf(')', open);
+
+        return Canonical(Path.GetFullPath(Path.Combine(Path.GetDirectoryName(record)!, status[open..close])));
+    }
+
+    /// <summary>Whether one of <paramref name="links" /> resolves to <paramref name="successor" />, in either language.</summary>
+    private static bool CitesSuccessor(string directory, IEnumerable<MarkdownLink> links, string successor) {
+        return links.Where(link => IsRepositoryRelative(link.Target))
+                    .Select(link => Canonical(Path.GetFullPath(Path.Combine(directory, Uri.UnescapeDataString(StripAnchor(link.Target))))))
+                    .Any(resolved => string.Equals(resolved, successor, StringComparison.Ordinal));
+    }
+
+    /// <summary>A record's English path: its French twin and itself name the same decision.</summary>
+    private static string Canonical(string path) {
+        return path.EndsWith(".fr.md", StringComparison.Ordinal) ? path[..^".fr.md".Length] + ".md" : path;
     }
 
     private static bool IsRepositoryRelative(string target) {

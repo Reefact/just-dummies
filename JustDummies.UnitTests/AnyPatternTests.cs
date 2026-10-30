@@ -552,36 +552,42 @@ public sealed class AnyPatternTests {
              .WhichMember(caught => caught.Message).Contains("lookahead");
     }
 
-    [Theory(DisplayName = "A refused construct ends its message with the way out for its own family, not a list of unrelated ones.")]
-    // Not honourable while building a value: compose the parts instead.
-    [InlineData(@"foo(?=bar)", "compose them with As(...) or Any.Combine(...)")]
-    [InlineData(@"foo(?!bar)", "compose them with As(...) or Any.Combine(...)")]
-    [InlineData(@"(?<=x)y", "compose them with As(...) or Any.Combine(...)")]
-    [InlineData(@"(\w+)\s\1", "compose them with As(...) or Any.Combine(...)")]
-    [InlineData(@"(?<a>x)\k<a>", "compose them with As(...) or Any.Combine(...)")]
-    [InlineData(@"(?<a>x)(?<b-a>y)", "compose them with As(...) or Any.Combine(...)")]
-    [InlineData(@"(?(x)y|z)", "compose them with As(...) or Any.Combine(...)")]
-    [InlineData(@"(?>ab|a)b", "compose them with As(...) or Any.Combine(...)")]
+    [Theory(DisplayName = "A refused construct ends its message with the way out for its own family, and no way out admits a value the pattern rejects.")]
+    // Nothing in the subset is equivalent, and composing parts does not enforce the requirement.
+    [InlineData(@"foo(?=bar)", "does not enforce the pattern's requirement on its own")]
+    [InlineData(@"foo(?!bar)", "does not enforce the pattern's requirement on its own")]
+    [InlineData(@"(?<=x)y", "does not enforce the pattern's requirement on its own")]
+    [InlineData(@"(\w+)\s\1", "does not enforce the pattern's requirement on its own")]
+    [InlineData(@"(?<a>x)\k<a>", "does not enforce the pattern's requirement on its own")]
+    [InlineData(@"(?<a>x)(?<b-a>y)", "does not enforce the pattern's requirement on its own")]
+    [InlineData(@"(?(x)y|z)", "does not enforce the pattern's requirement on its own")]
+    [InlineData(@"(?>ab|a)b", "does not enforce the pattern's requirement on its own")]
     // Nothing to generate: remove it.
     [InlineData(@"[A-Z]{3}(?#currency)", "adds nothing to a generated value")]
-    // Outside the alphabet's own spelling: write the class out.
-    [InlineData(@"\p{L}+", "as an explicit class")]
-    [InlineData(@"\P{L}", "as an explicit class")]
-    [InlineData(@"[a-z-[aeiou]]", "as an explicit class")]
-    [InlineData(@"[\p{L}]", "as an explicit class")]
-    // About positions in the value, which is generated whole.
-    [InlineData(@"\bword\b", "is matched whole")]
-    [InlineData(@"a\Bb", "is matched whole")]
-    [InlineData(@"\Gabc", "is matched whole")]
-    [InlineData(@"a\Ab", "is matched whole")]
-    [InlineData(@"a$b", "is matched whole")]
-    // An option the subset does not honour.
-    [InlineData(@"(?s)abc", "leading (?i) is honoured")]
+    // Characters named a way the subset does not read: a class of characters it accepts.
+    [InlineData(@"\p{L}+", "as an explicit class, characters it accepts")]
+    [InlineData(@"\P{L}", "as an explicit class, characters it accepts")]
+    [InlineData(@"[a-z-[aeiou]]", "as an explicit class, characters it accepts")]
+    [InlineData(@"[\p{L}]", "as an explicit class, characters it accepts")]
+    // A boundary reads both sides of a position, edges included: removing it is conditional on checking the rewrite.
+    [InlineData(@"\bword\b", "accepts no value the pattern rejects")]
+    [InlineData(@"\b!", "accepts no value the pattern rejects")]
+    [InlineData(@"a\Bb", "accepts no value the pattern rejects")]
+    [InlineData(@"\Gabc", "ties a match to where a previous one ended")]
+    // An anchor away from an edge matches nothing: the remedy is where it was meant to be, never to remove it.
+    [InlineData(@"a\Ab", "No whole value can satisfy it there")]
+    [InlineData(@"a$b", "No whole value can satisfy it there")]
+    // A scoped or later (?i) is part of the pattern, not all of it.
+    [InlineData(@"A(?i:b)C", "write the affected letters as explicit classes")]
+    [InlineData(@"a(?i)bc", "write the affected letters as explicit classes")]
+    // Any other option, a combined one included, has no equivalent.
+    [InlineData(@"(?s)abc", "honours no other option")]
+    [InlineData(@"(?is)abc", "honours no other option")]
     public void ARefusalNamesTheWayOutForItsFamily(string pattern, string wayOut) {
         Check.ThatCode(() => Any.StringMatching(pattern))
              .Throws<UnsupportedRegexException>()
              .WhichMember(caught => caught.Message).Contains(wayOut)
-             .And.Not.Contains("lookarounds, backreferences, word boundaries and Unicode categories");
+             .And.Not.Contains("lookarounds, backreferences, word boundaries and Unicode categories", "drop", "leading (?i) or");
     }
 
     [Fact(DisplayName = "Constructs whose language a plain walk cannot honour are refused, never mis-generated.")]

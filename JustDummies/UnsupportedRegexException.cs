@@ -14,41 +14,66 @@ public sealed class UnsupportedRegexException : DummyException {
 
     /// <summary>
     ///     Builds the exception for a construct the generator cannot honour while building a value — a lookaround, a
-    ///     backreference, a balancing, conditional or atomic group. The way out is to build the parts and compose them.
+    ///     backreference, a balancing, conditional or atomic group. Nothing in the subset is equivalent to it, and composing
+    ///     generated parts does not enforce what it requires, so the remedy says so rather than offer a rewrite.
     /// </summary>
     internal static UnsupportedRegexException NotHonourable(string pattern, string construct, int position) {
         return Sentence(pattern, construct, position,
-                        "JustDummies cannot honour it while building a value: generate the parts and compose them with As(...) or Any.Combine(...), or generate the value another way.");
+                        "No rewrite within the supported subset is equivalent in general: generate the value another way, and keep it matching the pattern yourself; composing parts with As(...) or Any.Combine(...) does not enforce the pattern's requirement on its own.");
     }
 
-    /// <summary>Builds the exception for a construct that contributes nothing to a generated value — an inline comment.</summary>
+    /// <summary>Builds the exception for a construct that contributes nothing to what a pattern matches — an inline comment.</summary>
     internal static UnsupportedRegexException AddsNothing(string pattern, string construct, int position) {
         return Sentence(pattern, construct, position, "It adds nothing to a generated value: remove it.");
     }
 
     /// <summary>
     ///     Builds the exception for a way of naming characters the subset does not read — a Unicode category, a class
-    ///     subtraction. The same characters can be written out as an explicit class.
+    ///     subtraction. A class of characters the construct accepts keeps every drawn value matching the original.
     /// </summary>
     internal static UnsupportedRegexException WrittenAsAClass(string pattern, string construct, int position) {
         return Sentence(pattern, construct, position,
-                        "Write the characters out as an explicit class, such as [A-Za-z]; values are drawn from printable ASCII.");
+                        "Write out, as an explicit class, characters it accepts, such as [A-Za-z] for letters; values are drawn from printable ASCII.");
     }
 
     /// <summary>
-    ///     Builds the exception for a construct about a position in the matched text — a word boundary, the
-    ///     contiguous-match anchor, an anchor away from an edge. A generated value is matched whole, which is what the
-    ///     remedy turns on.
+    ///     Builds the exception for a word boundary or its negation. It reads the characters on both sides of a position,
+    ///     the edges of the value included, so removing it can admit values the pattern rejects (<c>\b!</c> matches no
+    ///     value that starts with <c>!</c>).
     /// </summary>
-    internal static UnsupportedRegexException AboutAPosition(string pattern, string construct, int position) {
+    internal static UnsupportedRegexException WordBoundary(string pattern, string construct, int position) {
         return Sentence(pattern, construct, position,
-                        "A generated value is matched whole: drop an anchor or boundary that marks its edges, and express one inside the value with explicit classes, or generate the value another way.");
+                        "It depends on the characters on both sides of a position, at the edges of the value too, so removing it can admit values the pattern rejects: rewrite the pattern only once you have checked that the rewrite accepts no value the pattern rejects, or generate the value another way.");
     }
 
-    /// <summary>Builds the exception for an option group the subset does not honour — anything but one leading <c>(?i)</c>.</summary>
+    /// <summary>Builds the exception for the contiguous-match anchor, which ties a match to where a previous one ended.</summary>
+    internal static UnsupportedRegexException ContiguousMatch(string pattern, string construct, int position) {
+        return Sentence(pattern, construct, position,
+                        "It ties a match to where a previous one ended, which a single generated value knows nothing of: rewrite the pattern only once you have checked that the rewrite accepts no value the pattern rejects, or generate the value another way.");
+    }
+
+    /// <summary>
+    ///     Builds the exception for an anchor away from an edge, which no whole value can satisfy. Removing it would turn a
+    ///     pattern that matches nothing into one that matches something, so the remedy is about where it was meant to be.
+    /// </summary>
+    internal static UnsupportedRegexException MisplacedAnchor(string pattern, string construct, int position) {
+        return Sentence(pattern, construct, position,
+                        "No whole value can satisfy it there: if it was meant for an edge, move it to the start or end of the pattern, or of a top-level alternation branch.");
+    }
+
+    /// <summary>
+    ///     Builds the exception for a scoped or later <c>(?i)</c>. The one honoured form, a leading <c>(?i)</c>, makes the
+    ///     whole pattern case-insensitive, which is not what a scoped one asks; explicit classes say it exactly.
+    /// </summary>
+    internal static UnsupportedRegexException ScopedCaseInsensitivity(string pattern, string construct, int position) {
+        return Sentence(pattern, construct, position,
+                        "Only one leading (?i), on its own, is honoured, and it makes the whole pattern case-insensitive: for a scoped or later one, write the affected letters as explicit classes, such as [Bb] for b.");
+    }
+
+    /// <summary>Builds the exception for an option group other than case-insensitivity, which the subset honours no form of.</summary>
     internal static UnsupportedRegexException UnhonouredOption(string pattern, string construct, int position) {
         return Sentence(pattern, construct, position,
-                        "Only one leading (?i) is honoured, or RegexOptions.IgnoreCase on the Regex overload: write the pattern without any other option.");
+                        "The supported subset honours no other option and offers no equivalent: rewrite the pattern only once you have checked that the rewrite accepts no value the pattern rejects, or generate the value another way.");
     }
 
     /// <summary>

@@ -197,7 +197,7 @@ internal sealed class RegexParser {
         int start = StartAnchorLength();
         if (start > 0) {
             string spelling = _pattern.Substring(_index, start);
-            if (_depth > 0 || !atSequenceStart) { throw UnsupportedRegexException.AboutAPosition(_pattern, $"an anchor '{spelling}' away from the start of the pattern or of a top-level alternation branch", _index); }
+            if (_depth > 0 || !atSequenceStart) { throw UnsupportedRegexException.MisplacedAnchor(_pattern, $"an anchor '{spelling}' away from the start of the pattern or of a top-level alternation branch", _index); }
             _index += start;
             SkipAnchorQuantifier();
 
@@ -212,7 +212,7 @@ internal sealed class RegexParser {
             SkipAnchorQuantifier();
             // An end anchor is a no-op only at the very end: what follows must be end-of-pattern, a branch bar, or
             // another end anchor. Inside a group, or before anything else, it can never match a whole string.
-            if (_depth > 0 || (!AtEnd && Peek() != '|' && EndAnchorLength() == 0)) { throw UnsupportedRegexException.AboutAPosition(_pattern, $"an anchor '{spelling}' away from the end of the pattern or of a top-level alternation branch", position); }
+            if (_depth > 0 || (!AtEnd && Peek() != '|' && EndAnchorLength() == 0)) { throw UnsupportedRegexException.MisplacedAnchor(_pattern, $"an anchor '{spelling}' away from the end of the pattern or of a top-level alternation branch", position); }
 
             return true;
         }
@@ -374,6 +374,9 @@ internal sealed class RegexParser {
                     _index++; // consume '\''
                     SkipGroupName('\'', position);
                     break;
+                // A scoped '(?i:…)' or a later '(?i)' asks for case-insensitivity over part of the pattern, which explicit
+                // classes can say; any other option, '(?is)' included, has no equivalent in the subset.
+                case 'i' when PeekAt(1) is ':' or ')': throw UnsupportedRegexException.ScopedCaseInsensitivity(_pattern, "a group option '(?i…)'", position);
                 default: throw UnsupportedRegexException.UnhonouredOption(_pattern, $"a group option '(?{Peek()}…)'", position);
             }
         }
@@ -466,10 +469,10 @@ internal sealed class RegexParser {
             case 'u': return Literal(ReadHexEscape(UnicodeEscapeDigits));
             case 'c': return Literal(ReadControlEscape());
             case '0': return Literal(ReadOctalTail(0));
-            case 'b': throw UnsupportedRegexException.AboutAPosition(_pattern, "a word-boundary '\\b'", position);
-            case 'B': throw UnsupportedRegexException.AboutAPosition(_pattern, "a non-word-boundary '\\B'", position);
+            case 'b': throw UnsupportedRegexException.WordBoundary(_pattern, "a word-boundary '\\b'", position);
+            case 'B': throw UnsupportedRegexException.WordBoundary(_pattern, "a non-word-boundary '\\B'", position);
             // '\A', '\z' and '\Z' never reach here: ParseSequence hands every anchor to TryConsumeAnchor first.
-            case 'G': throw UnsupportedRegexException.AboutAPosition(_pattern, "a contiguous-match anchor '\\G'", position);
+            case 'G': throw UnsupportedRegexException.ContiguousMatch(_pattern, "a contiguous-match anchor '\\G'", position);
             case 'p':
             case 'P': throw UnsupportedRegexException.WrittenAsAClass(_pattern, "a Unicode category '\\" + escaped + "{…}'", position);
             case 'k': throw UnsupportedRegexException.NotHonourable(_pattern, "a named backreference '\\k<…>'", position);

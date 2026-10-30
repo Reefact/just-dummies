@@ -161,6 +161,12 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   ceiling. The message now names causes that do reach it: bounded quantifiers whose product is huge,
   `(a{1000}){1000}`, or a repetition minimum that large, `a{70000,}`.
 
+- **A distinct collection too large for its element generator names the count it was asked for.**
+  `Any.SetOf(Any.Boolean()).WithCount(3)` was refused with "The generator can produce only 2 distinct
+  value(s), not enough for the 3 elements it must still supply", which named neither side a caller could
+  loosen, and a list's `Distinct()` refusal named the count without the call that set it. Both now name it,
+  "to honour WithCount(3)" — or the `WithMinCount`, `NonEmpty` call that set the size — for `SetOf`, a
+  dictionary's keys and the list-shaped generators alike.
 - **JD014 reports a floating-point bound that is not finite, and a `Half` value set element that is
   not.** `Any.Double().Between(double.NaN, 90.0)`, `LessThan(double.PositiveInfinity)` and
   `Any.Half().OneOf((Half)1, Half.NaN)` always throw when declared, and drew no diagnostic. A

@@ -125,8 +125,12 @@ public sealed class ConflictingAnyConstraintException : DummyException {
     /// <summary>
     ///     Builds the exception for more distinct elements than the element generator has distinct values to give.
     /// </summary>
-    internal static ConflictingAnyConstraintException DistinctElementsExceedCardinality(ConstraintCall applying, string required, string cardinality) {
-        return Sentence(applying, $"{required} required to be distinct exceed the {cardinality} distinct value(s) the element generator can produce");
+    /// <param name="applying">The call that makes the collection distinct.</param>
+    /// <param name="required">The elements still to be drawn from the generator.</param>
+    /// <param name="cardinality">The number of distinct values the element generator can produce.</param>
+    /// <param name="sizing">The count call that sets how many elements are needed, or <c>null</c> when none does.</param>
+    internal static ConflictingAnyConstraintException DistinctElementsExceedCardinality(ConstraintCall applying, string required, string cardinality, ConstraintCall? sizing) {
+        return Sentence(applying, $"{required} required to be distinct{ToHonour(sizing)} exceed the {cardinality} distinct value(s) the element generator can produce");
     }
 
     /// <summary>
@@ -149,8 +153,9 @@ public sealed class ConflictingAnyConstraintException : DummyException {
     ///     drawing on it, so this can be smaller than what the caller wrote.
     /// </param>
     /// <param name="cardinality">The number of distinct values the element generator can produce.</param>
-    internal static ConflictingAnyConstraintException SetElementsExceedCardinality(string required, string cardinality) {
-        return Verdict($"The generator can produce only {cardinality} distinct value(s), not enough for the {required} it must still supply");
+    /// <param name="sizing">The count call that sets how many elements are needed, or <c>null</c> when none does.</param>
+    internal static ConflictingAnyConstraintException SetElementsExceedCardinality(string required, string cardinality, ConstraintCall? sizing) {
+        return Verdict($"The generator can produce only {cardinality} distinct value(s), not enough for the {required} it must still supply{ToHonour(sizing)}");
     }
 
     /// <summary>
@@ -172,8 +177,14 @@ public sealed class ConflictingAnyConstraintException : DummyException {
     ///     without drawing on it, so this can be smaller than what the caller wrote.
     /// </param>
     /// <param name="cardinality">The number of distinct keys the key generator can produce.</param>
-    internal static ConflictingAnyConstraintException DictionaryKeysExceedCardinality(string required, string cardinality) {
-        return Verdict($"The key generator can produce only {cardinality} distinct key(s), not enough for the {required} it must still supply");
+    /// <param name="sizing">The count call that sets how many keys are needed, or <c>null</c> when none does.</param>
+    internal static ConflictingAnyConstraintException DictionaryKeysExceedCardinality(string required, string cardinality, ConstraintCall? sizing) {
+        return Verdict($"The key generator can produce only {cardinality} distinct key(s), not enough for the {required} it must still supply{ToHonour(sizing)}");
+    }
+
+    /// <summary>Names the count call a cardinality shortfall answers to, so the caller sees which line to loosen.</summary>
+    private static string ToHonour(ConstraintCall? sizing) {
+        return sizing is null ? "" : $" to honour {sizing}";
     }
 
     /// <summary>

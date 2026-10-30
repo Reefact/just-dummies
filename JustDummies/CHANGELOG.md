@@ -167,6 +167,13 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   loosen, and a list's `Distinct()` refusal named the count without the call that set it. Both now name it,
   "to honour WithCount(3)" — or the `WithMinCount`, `NonEmpty` call that set the size — for `SetOf`, a
   dictionary's keys and the list-shaped generators alike.
+- **A floating-point interval only a few values wide reaches every value in it.**
+  `Any.Double().Between(-double.Epsilon, double.Epsilon)` drew 0 every time, and over four consecutive doubles
+  from 1.0 the first never came out: the draw starts from the interval's midpoint, which in such a span falls
+  between two values and rounds onto one, so a value at the far end was unreachable and a feasible
+  `ArrayOf(...).WithCount(4).Distinct()` over it was refused. A span of up to 17 consecutive values of the type —
+  `Double`, `Single` or `Half` — is now drawn by index among them, and so is any span of subnormal doubles. This
+  changes what a seed draws within such a span, and nowhere else.
 - **JD014 reports a floating-point bound that is not finite, and a `Half` value set element that is
   not.** `Any.Double().Between(double.NaN, 90.0)`, `LessThan(double.PositiveInfinity)` and
   `Any.Half().OneOf((Half)1, Half.NaN)` always throw when declared, and drew no diagnostic. A

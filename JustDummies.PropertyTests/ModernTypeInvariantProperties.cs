@@ -477,4 +477,22 @@ public sealed class ModernTypeInvariantProperties {
             .QuickCheckThrowOnFailure();
     }
 
+    [Fact(DisplayName = "Half: a span of a few consecutive values returns every one of them, wherever it sits.")]
+    public void HalfFewRungSpanReachesEveryValue() {
+        // The counterpart of the double and float properties: Half draws on its own ladder, so its spans are
+        // counted in its own values, not in the doubles between them (ADR-0097).
+        Gen<(int Seed, Half[] Rungs)> spans = from seed in Generators.Seed()
+                                              from start in Gen.OneOf(Halves(), Gen.Choose(-8, 8).Select(steps => (Half)(steps * (double)Half.Epsilon)))
+                                              from steps in Gen.Choose(1, 3)
+                                              let rungs = Enumerable.Range(0, steps).Aggregate(new List<Half> { start }, (list, _) => { list.Add(Half.BitIncrement(list[list.Count - 1])); return list; })
+                                              where Half.IsFinite(rungs[rungs.Count - 1])
+                                              select (Seed: seed, Rungs: rungs.ToArray());
+
+        Prop.ForAll(spans.ToArbitrary(),
+                    span => new HashSet<Half>(Expect.Draws(Any.WithSeed(span.Seed).Half().Between(span.Rungs[0], span.Rungs[span.Rungs.Length - 1]),
+                                                           ContinuousIntervalProperties.FewRungDrawCount))
+                        .SetEquals(span.Rungs))
+            .QuickCheckThrowOnFailure();
+    }
+
 }

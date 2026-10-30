@@ -207,6 +207,25 @@ public sealed class OrdinaryMagnitudeWindowTests {
         Check.That(singles).IsEqualTo(new HashSet<float> { 999_999.9375f, 1_000_000f });
     }
 
+    [Fact(DisplayName = "A span a few subnormal steps wide returns every value in it (issue #310).")]
+    public void ASpanOfAFewSubnormalStepsReturnsEveryValue() {
+        // Regression, the same rule one scale further down. Halving a subnormal rounds, so over [-ε, ε] the midpoint
+        // form computed mid = half = 0 and drew 0 every time — and a distinct pair of the three doubles it holds was
+        // refused although the type represents them.
+        AnyContext any = Any.WithSeed(Seed);
+
+        HashSet<double> drawn = [];
+        for (int i = 0; i < SampleCount; i++) { drawn.Add(any.Double().Between(-double.Epsilon, double.Epsilon).Generate()); }
+
+        Check.That(drawn).IsEqualTo(new HashSet<double> { -double.Epsilon, 0d, double.Epsilon });
+
+        // Off-centre, where the halved lower bound rounded away and -ε could never be drawn either.
+        HashSet<double> offCentre = [];
+        for (int i = 0; i < SampleCount; i++) { offCentre.Add(any.Double().Between(-double.Epsilon, 2 * double.Epsilon).Generate()); }
+
+        Check.That(offCentre).IsEqualTo(new HashSet<double> { -double.Epsilon, 0d, double.Epsilon, 2 * double.Epsilon });
+    }
+
     [Fact(DisplayName = "The drawable-value walk stops at the domain edge instead of overflowing past it.")]
     public void TheDrawableValueWalkStopsAtTheDomainEdge() {
         // Regression on the bounded walk itself. Its loop stepped past its last grid point before re-testing the

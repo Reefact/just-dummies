@@ -25,6 +25,7 @@ d'un type donné. Écrit pour qui s'apprête à modifier la bibliothèque, non �
 | `JustDummies.GenAny.UnitTests` | — | — | le plancher du moteur et ses frontières |
 | `JustDummies.Cli.UnitTests` | — | — | la découverte du projet, ce que l'outil répond, et les codes de sortie de la §7 |
 | `tools/justdummies-check` | — | — | compatibilité de l'asset empaqueté, volontairement hors solution |
+| `tools/ux-trial` | — | — | l'essai d'expérience développeur : vingt projets consommateurs sur les packages empaquetés, lancé avant une release ; volontairement hors solution |
 
 Deux frameworks cibles, une raison : `netstandard2.0` est le plancher qui donne sa portée à la
 bibliothèque — jusqu'à .NET Framework 4.7.2, que la CI exerce

@@ -57,8 +57,31 @@ env:
   NUGET_FEED: 'https://api.nuget.org/v3/index.json'
 
 jobs:
+  # The developer-UX trial: twenty consumer projects, scaffolded with `any` and tested against the three packages
+  # packed from this commit, as a user would receive them. It runs before anything is packed for publication, and a
+  # failing domain stops the release: what a user receives is exercised whole first. It packs all three packages at
+  # a trial version of its own, whichever train is released, since every domain uses the library, the adapter and
+  # the tool together. Read-only: it publishes nothing.
+  ux-trial:
+    name: UX trial
+    runs-on: ubuntu-latest
+    # prepare + twenty domains is ~10 min; cap a hung run rather than the 6-hour default.
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Run the trial
+        run: tools/ux-trial/run.sh
+
   pack-push:
     name: Pack & push NuGet
+    needs: ux-trial
     runs-on: ubuntu-latest
     # build + test + pack + attest + push is ~4 min; cap a hung release rather than the 6-hour default.
     timeout-minutes: 20

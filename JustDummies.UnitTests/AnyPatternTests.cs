@@ -258,10 +258,10 @@ public sealed class AnyPatternTests {
              .And.Not.Contains("is expanding without bound");  // the old, false assertion is gone
     }
 
-    [Fact(DisplayName = "A nested unbounded quantifier stays short: each level adds at most eight repetitions.")]
-    public void NestedUnboundedQuantifierStaysShort() {
+    [Fact(DisplayName = "'(a+)+' stays short: two levels of at most nine repetitions each never near the generation ceiling.")]
+    public void TwoLevelNestedUnboundedQuantifierStaysShort() {
         // '(a+)+' was given as the example of a pattern overrunning the generation ceiling; at most nine repetitions
-        // a level, it never comes near it.
+        // a level, two levels never come near it. The bound is per level: a nest deep enough can still overrun.
         AnyPattern generator = Any.StringMatching("(a+)+");
 
         for (int i = 0; i < SampleCount; i++) {

@@ -346,8 +346,8 @@ une lambda. Typez alors la fabrique `IAny<string>` et supprimez la surcharge d'a
   vide quand la base impose `NonEmpty()`. Une lambda qui ignore son argument remplace la base : `_ => Any.Int32()`
   renvoie un générateur qui lui est propre, et toutes les règles que la base respectait s'en vont avec.
 * **Une contrainte déclarable une seule fois ne se déclare pas deux fois.** `OneOf`, `WithLength`,
-  `MultipleOf` et `WithScale` sont refusés une seconde fois, en nommant les deux, quand la base les a déjà
-  posés — `JD034` ne voit pas à l'intérieur de la lambda, le refus arrive donc à l'exécution. Pour retirer des
+  `MultipleOf` et `WithScale` sont refusés une seconde fois avec un autre argument, en nommant les deux,
+  quand la base les a déjà posés — répéter le même ne change rien — `JD034` ne voit pas à l'intérieur de la lambda, le refus arrive donc à l'exécution. Pour retirer des
   valeurs de ce que la base tire, restreignez plutôt : `p => p.Except(1)` ou `.DifferentFrom(…)`.
 * **Un affinage à réutiliser est une fonction.** Gardez-le comme un `Func<AnyRoute, AnyRoute>` et passez-le à
   autant d'appels `With…` que vous voulez. Un `IAny<Route>` déjà construit ne convient pas : aucune méthode

@@ -225,6 +225,35 @@ public sealed class LatticeConstraintProperties {
             .QuickCheckThrowOnFailure();
     }
 
+    [Fact(DisplayName = "WithScale: draws stay on the grid out to the edges of decimal, where no digit is left for a fraction.")]
+    public void WithScaleHoldsUpToTheEdgesOfTheDecimalRange() {
+        Prop.ForAll((from scale in Gen.Choose(0, 28)
+                     from exponent in Gen.Choose(15, 28)
+                     from negative in Gen.Elements(true, false)
+                     from atTheEdge in Gen.Elements(true, false)
+                     select (scale, exponent, negative, atTheEdge)).ToArbitrary(),
+                    testCase => {
+                        // The ordinary-magnitude window keeps an unconstrained draw near zero, so the grid property above
+                        // never reaches the top of the type. Here the interval reaches the edge of decimal, where 28 or 29
+                        // significant digits leave no room for the requested fraction: a value there is on the grid only
+                        // by being whole, and a rounding slip in building it would show. A draw follows the bound it
+                        // starts from (ADR-0097), so the interval either starts at 10^exponent, to cross every magnitude
+                        // up to 10^28, or is the last million below decimal.MaxValue itself.
+                        decimal magnitude = 1m;
+                        for (int i = 0; i < testCase.exponent; i++) { magnitude *= 10m; }
+
+                        decimal lower = testCase.atTheEdge ? decimal.MaxValue - 1_000_000m : magnitude;
+                        decimal minimum = testCase.negative ? decimal.MinValue : lower;
+                        decimal maximum = testCase.negative ? -lower : decimal.MaxValue;
+
+                        return Expect.EveryDraw(Any.Decimal().Between(minimum, maximum).WithScale(testCase.scale),
+                                                value => Math.Round(value, testCase.scale, MidpointRounding.ToEven) == value
+                                                         && value >= minimum
+                                                         && value <= maximum);
+                    })
+            .QuickCheckThrowOnFailure();
+    }
+
     [Fact(DisplayName = "WithScale: an interval lying strictly inside one grid cell conflicts at the call.")]
     [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void WithScaleOnAnIntervalWithoutGridPointConflicts() {

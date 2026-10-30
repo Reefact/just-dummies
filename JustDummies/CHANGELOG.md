@@ -179,6 +179,11 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   refused naming both constraints, but never the instant the offset caps the draw at — 14 hours before
   `MaxValue` — nor that a later one would have a local time past 9999-12-31; declared the other way round, it gave
   the limit without the reason. Both orders now name the limit and the reason, at either edge of the calendar.
+- **A floating-point conflict quotes a strict bound as the caller wrote it.** `Any.Double().GreaterThan(10).LessThan(5)`
+  was refused because `GreaterThan(10)` "already requires values greater than or equal to 10.000000000000002", and
+  `Positive()` because it required values "greater than or equal to 5E-324": true, but worded in the engine's
+  neighbouring values rather than the bound written. On `Double`, `Single` and `Half` the message now reads "greater
+  than 10", "greater than 0", as `Decimal`'s already did.
 - **JD014 reports a floating-point bound that is not finite, and a `Half` value set element that is
   not.** `Any.Double().Between(double.NaN, 90.0)`, `LessThan(double.PositiveInfinity)` and
   `Any.Half().OneOf((Half)1, Half.NaN)` always throw when declared, and drew no diagnostic. A

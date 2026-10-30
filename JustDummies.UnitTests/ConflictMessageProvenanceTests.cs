@@ -307,6 +307,21 @@ public sealed class ConflictMessageProvenanceTests {
         Check.That(message).Contains("OneOf(1, 2, 3)");
     }
 
+    // ----- ContinuousIntervalSpec: a strict bound is quoted as declared, not as the neighbour it becomes. -----
+
+    [Fact(DisplayName = "A floating-point conflict quotes a strict bound as the caller wrote it (issue #314).")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
+    [SuppressMessage(JustDummiesRule.JD023.Category, JustDummiesRule.JD023.Id, Justification = SuppressionJustification.JD023.ThrowIsTheSubject)]
+    public void FloatingPointConflictQuotesTheStrictBoundAsDeclared() {
+        string above = ConflictMessage(() => Any.Double().GreaterThan(10).LessThan(5));
+        string below = ConflictMessage(() => Any.Double().LessThan(5).GreaterThan(10));
+        string sign  = ConflictMessage(() => Any.Double().Positive().Negative());
+
+        Check.That(above).Contains("GreaterThan(10) already requires values greater than 10.").And.Not.Contains("10.000000000000002");
+        Check.That(below).Contains("LessThan(5) already requires values less than 5.").And.Not.Contains("4.999999999999999");
+        Check.That(sign).Contains("Positive() already requires values greater than 0.").And.Not.Contains("5E-324");
+    }
+
     // ----- Regression guard: bound-vs-bound messages must stay correct and unchanged. -----
 
     [Fact(DisplayName = "A bound-vs-bound conflict still names the opposing bound (unchanged).")]

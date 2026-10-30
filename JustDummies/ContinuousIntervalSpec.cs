@@ -66,7 +66,7 @@ internal sealed class ContinuousIntervalSpec {
         if (quantize is null) { throw new ArgumentNullException(nameof(quantize)); }
         if (nextUp is null) { throw new ArgumentNullException(nameof(nextUp)); }
 
-        return new ContinuousIntervalSpec(typeName, render, quantize, nextUp, domainMin, domainMax, domainMin, null, domainMax, null, null, null, [], laddered);
+        return new ContinuousIntervalSpec(typeName, render, quantize, nextUp, domainMin, domainMax, domainMin, null, false, domainMax, null, false, null, null, [], laddered);
     }
 
     /// <summary>
@@ -132,8 +132,10 @@ internal sealed class ContinuousIntervalSpec {
     private readonly Func<double, double>   _nextUp;
     private readonly double                 _max;
     private readonly ConstraintCall?        _maxConstraint;
+    private readonly bool                   _maxStrict;
     private readonly double                 _min;
     private readonly ConstraintCall?        _minConstraint;
+    private readonly bool                   _minStrict;
     private readonly Func<double, double>   _quantize;
     private readonly Func<double, string>   _render;
     private readonly string                 _typeName;
@@ -143,8 +145,8 @@ internal sealed class ContinuousIntervalSpec {
     [SuppressMessage(SonarRule.S107.Category, SonarRule.S107.Id, Justification = SuppressionJustification.S107.EngineImmutableState)]
     private ContinuousIntervalSpec(string  typeName, Func<double, string> render, Func<double, double> quantize, Func<double, double> nextUp,
                                    double  domainMin, double domainMax,
-                                   double  min,      ConstraintCall? minConstraint,
-                                   double  max,      ConstraintCall? maxConstraint,
+                                   double  min,      ConstraintCall? minConstraint, bool minStrict,
+                                   double  max,      ConstraintCall? maxConstraint, bool maxStrict,
                                    IReadOnlyList<double>? allowed, ConstraintCall? allowedConstraint,
                                    IReadOnlyList<(ConstraintCall Constraint, double[] Ordinals)> exclusions,
                                    Func<double, double, double, double>? laddered) {
@@ -157,8 +159,10 @@ internal sealed class ContinuousIntervalSpec {
         _domainMax         = domainMax;
         _min               = min;
         _minConstraint     = minConstraint;
+        _minStrict         = minStrict;
         _max               = max;
         _maxConstraint     = maxConstraint;
+        _maxStrict         = maxStrict;
         _allowed           = allowed;
         _allowedConstraint = allowedConstraint;
         _exclusions        = exclusions;
@@ -170,6 +174,14 @@ internal sealed class ContinuousIntervalSpec {
 
     /// <summary>Tightens the lower bound; a looser bound than the current one is a no-op.</summary>
     internal ContinuousIntervalSpec WithMinimum(double minimum, ConstraintCall applying) {
+        return WithMinimum(minimum, applying, strict: false);
+    }
+
+    /// <summary>
+    ///     Tightens the lower bound, remembering whether <paramref name="minimum" /> is the next value above a strict
+    ///     bound the caller declared — so a conflict quotes the bound they wrote, not the neighbour it became.
+    /// </summary>
+    private ContinuousIntervalSpec WithMinimum(double minimum, ConstraintCall applying, bool strict) {
         if (applying is null) { throw new ArgumentNullException(nameof(applying)); }
         if (double.IsInfinity(minimum)) { throw ConflictingAnyConstraintException.NoValueSatisfies(applying, _typeName); }
         if (minimum <= _min) { return this; }
@@ -177,14 +189,19 @@ internal sealed class ContinuousIntervalSpec {
         if (minimum > _max) {
             if (_maxConstraint is null) { throw ConflictingAnyConstraintException.NoValueSatisfies(applying, _typeName); }
 
-            throw ConflictingAnyConstraintException.AlreadyBoundedAbove(applying, _maxConstraint, _render(_max));
+            throw ConflictingAnyConstraintException.AlreadyBoundedAbove(applying, _maxConstraint, DeclaredBound(_maxStrict ? _nextUp(_max) : _max), _maxStrict);
         }
 
-        return Validated(new ContinuousIntervalSpec(_typeName, _render, _quantize, _nextUp, _domainMin, _domainMax, minimum, applying, _max, _maxConstraint, _allowed, _allowedConstraint, _exclusions, _laddered), applying);
+        return Validated(new ContinuousIntervalSpec(_typeName, _render, _quantize, _nextUp, _domainMin, _domainMax, minimum, applying, strict, _max, _maxConstraint, _maxStrict, _allowed, _allowedConstraint, _exclusions, _laddered), applying);
     }
 
     /// <summary>Tightens the upper bound; a looser bound than the current one is a no-op.</summary>
     internal ContinuousIntervalSpec WithMaximum(double maximum, ConstraintCall applying) {
+        return WithMaximum(maximum, applying, strict: false);
+    }
+
+    /// <summary>The mirror of the strict-aware <see cref="WithMinimum(double, ConstraintCall, bool)" />.</summary>
+    private ContinuousIntervalSpec WithMaximum(double maximum, ConstraintCall applying, bool strict) {
         if (applying is null) { throw new ArgumentNullException(nameof(applying)); }
         if (double.IsInfinity(maximum)) { throw ConflictingAnyConstraintException.NoValueSatisfies(applying, _typeName); }
         if (maximum >= _max) { return this; }
@@ -192,24 +209,34 @@ internal sealed class ContinuousIntervalSpec {
         if (maximum < _min) {
             if (_minConstraint is null) { throw ConflictingAnyConstraintException.NoValueSatisfies(applying, _typeName); }
 
-            throw ConflictingAnyConstraintException.AlreadyBoundedBelow(applying, _minConstraint, _render(_min));
+            throw ConflictingAnyConstraintException.AlreadyBoundedBelow(applying, _minConstraint, DeclaredBound(_minStrict ? -_nextUp(-_min) : _min), _minStrict);
         }
 
-        return Validated(new ContinuousIntervalSpec(_typeName, _render, _quantize, _nextUp, _domainMin, _domainMax, _min, _minConstraint, maximum, applying, _allowed, _allowedConstraint, _exclusions, _laddered), applying);
+        return Validated(new ContinuousIntervalSpec(_typeName, _render, _quantize, _nextUp, _domainMin, _domainMax, _min, _minConstraint, _minStrict, maximum, applying, strict, _allowed, _allowedConstraint, _exclusions, _laddered), applying);
+    }
+
+    /// <summary>
+    ///     A bound as the caller wrote it. Stepping back from the neighbour of a strict bound at zero lands on
+    ///     <c>-0</c>, which no caller declaring <c>LessThan(0)</c> wrote; the two zeros compare equal, so the plain one
+    ///     is shown.
+    /// </summary>
+    [SuppressMessage(SonarRule.S1244.Category, SonarRule.S1244.Id, Justification = "Only zero is tested for, and both of its signs equal it exactly; no tolerance is meant.")]
+    private string DeclaredBound(double bound) {
+        return _render(bound == 0d ? 0d : bound);
     }
 
     /// <summary>Tightens the lower bound to strictly above <paramref name="bound" /> — via the type's next representable value.</summary>
     internal ContinuousIntervalSpec WithMinimumAbove(double bound, ConstraintCall applying) {
         if (applying is null) { throw new ArgumentNullException(nameof(applying)); }
 
-        return WithMinimum(_nextUp(bound), applying);
+        return WithMinimum(_nextUp(bound), applying, strict: true);
     }
 
     /// <summary>Tightens the upper bound to strictly below <paramref name="bound" /> — via the type's next representable value.</summary>
     internal ContinuousIntervalSpec WithMaximumBelow(double bound, ConstraintCall applying) {
         if (applying is null) { throw new ArgumentNullException(nameof(applying)); }
 
-        return WithMaximum(-_nextUp(-bound), applying);
+        return WithMaximum(-_nextUp(-bound), applying, strict: true);
     }
 
     /// <summary>Restricts the domain to an explicit allow-list; declared once per generator.</summary>
@@ -226,7 +253,7 @@ internal sealed class ContinuousIntervalSpec {
         if (_allowed is not null && new HashSet<double>(_allowed).SetEquals(distinct)) { return this; }
         if (_allowedConstraint is not null) { throw ConflictingAnyConstraintException.AlreadyDefined(applying, _allowedConstraint); }
 
-        return Validated(new ContinuousIntervalSpec(_typeName, _render, _quantize, _nextUp, _domainMin, _domainMax, _min, _minConstraint, _max, _maxConstraint, distinct, applying, _exclusions, _laddered), applying);
+        return Validated(new ContinuousIntervalSpec(_typeName, _render, _quantize, _nextUp, _domainMin, _domainMax, _min, _minConstraint, _minStrict, _max, _maxConstraint, _maxStrict, distinct, applying, _exclusions, _laddered), applying);
     }
 
     /// <summary>Adds values the generator must never produce.</summary>
@@ -238,7 +265,7 @@ internal sealed class ContinuousIntervalSpec {
         // that actually emptied the domain rather than a bound that merely happens to border it.
         List<(ConstraintCall Constraint, double[] Ordinals)> exclusions = [.. _exclusions, (applying, values)];
 
-        return Validated(new ContinuousIntervalSpec(_typeName, _render, _quantize, _nextUp, _domainMin, _domainMax, _min, _minConstraint, _max, _maxConstraint, _allowed, _allowedConstraint, exclusions, _laddered), applying);
+        return Validated(new ContinuousIntervalSpec(_typeName, _render, _quantize, _nextUp, _domainMin, _domainMax, _min, _minConstraint, _minStrict, _max, _maxConstraint, _maxStrict, _allowed, _allowedConstraint, exclusions, _laddered), applying);
     }
 
     /// <summary>

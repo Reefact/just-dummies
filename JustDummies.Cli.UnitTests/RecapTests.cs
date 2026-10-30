@@ -106,6 +106,24 @@ public sealed class RecapTests {
         Check.That(rendered).Contains("  name: unread guard at Subject.cs, line 12: if (!Regex.IsMatch(name, Pattern))");
     }
 
+    // The rows spell the type as the file does, which in a project that does not read nullable annotations is without
+    // the declaration's `?`. One line under them says so, once for every such parameter, rather than leaving the
+    // constructor line to misdescribe the domain (issue #344).
+    [Fact(DisplayName = "A dropped nullable annotation is noted once under the rows.")]
+    public void ADroppedNullableAnnotationIsNotedOnceUnderTheRows() {
+        string rendered = Rendered(Plan([Inferred("agent", "Bic", "AnyBic", "new AnyBic()", Provenance.Scaffolded).DroppingNullableAnnotation(),
+                                         Inferred("note", "string", "AnyString", "Any.String().NonEmpty()").DroppingNullableAnnotation(),
+                                         Inferred("name", "string", "AnyString", "Any.String().NonEmpty()")]));
+
+        Check.That(rendered).Contains("\n\n  agent, note: declared nullable, written without ? because this project does not read nullable annotations.\n");
+        Check.That(rendered).Contains("  constructor Subject(Bic, string, string)");
+    }
+
+    [Fact(DisplayName = "A recap with no dropped annotation carries no such note.")]
+    public void ARecapWithNoDroppedAnnotationCarriesNoNote() {
+        Check.That(Rendered(WorkedExample())).Not.Contains("declared nullable");
+    }
+
     // Both at once, the ordinary case where one parameter is wholly open and another only doubtful: the two
     // counts read side by side, in the order a developer acts on them — supply one, verify the other.
     [Fact(DisplayName = "An open parameter and one requiring verification are both counted, TODO first.")]

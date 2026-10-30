@@ -399,6 +399,9 @@ Shipment anyUndeclaredShipment = Any.Shipment().WithDeclaredValue((decimal?)null
 
 Un paramètre de type référence nullable prend le même cast — `.WithAgent((Customer?)null)` — et son
 pin est typé `Customer?` précisément pour cela, partout où votre projet lit les annotations nullables.
+Là où il ne les lit pas, le `?` déclencherait lui-même un avertissement : le pin est alors typé
+`Customer`, et le récapitulatif le signale en une ligne sous ses lignes de paramètres ;
+`--format json` porte le même fait dans `"nullableAnnotationDropped"`.
 
 Pour obtenir `null` *de temps en temps*, ajoutez la surcharge.
 

@@ -639,7 +639,8 @@ pour avoir passé ce que le constructeur accepte. La base, elle, ne tire toujour
 (ADR-0064), et la covariance la garde assignable au champ annoté. Le `?` n'est écrit que là où le
 projet analysé lit les annotations nullables : le fichier ne porte aucune directive `#nullable`, et
 hors de ce contexte l'annotation est elle-même un avertissement (`CS8632`) alors que passer `null`
-n'en déclenche aucun.
+n'en déclenche aucun. Là, le récapitulatif et le rapport machine épellent le type comme le fichier, et
+le récapitulatif note une fois que la déclaration portait un `?` (§6).
 
 **Les generators d'éléments récursent.** `IReadOnlyList<OrderLine>` résout son élément par cette
 même table, et devient donc `Any.ListOf(new AnyOrderLine())` quand `AnyOrderLine` existe. La
@@ -1404,6 +1405,27 @@ l'autre. Une ligne sous les lignes de paramètres nomme, pour chaque paramètre 
 `unread guards`, la première garde qui lui a valu la marque et où elle se trouve — l'endroit même
 que donne son `TODO(any)` (§5.6).
 
+**Une annotation nullable abandonnée est notée une fois.** Là où le projet analysé ne lit pas les
+annotations nullables, un `Bic? agent` s'écrit `Bic` dans le fichier (§5.2), et les lignes de
+paramètres, la ligne du constructeur et le `type` du rapport machine l'épellent de même : ils décrivent
+le fichier, avec une seule graphie par paramètre. Ce qu'ils ne montrent plus, c'est que la
+déclaration avait un `?` ; une ligne sous les lignes de paramètres nomme donc chacun de ces
+paramètres :
+
+```console
+  constructor Party(string, Bic, string, int?)
+
+  name      string  Any.String().NonEmpty()
+  agent     Bic     new AnyBic()              AnyX
+  note      string  Any.String().NonEmpty()
+  priority  int?    Any.Int32().AsNullable()
+
+  agent, note: declared nullable, written without ? because this project does not read nullable annotations.
+```
+
+Un type valeur nullable n'est pas concerné : `int?` est un autre type, écrit de la même façon dans
+tout contexte.
+
 **La provenance est une donnée, pas une sortie.** Le moteur la retourne dans son modèle de résultat
 (§10.3) ; la CLI la rend. C'est ce qui rend le récapitulatif testable sans console.
 
@@ -1470,6 +1492,12 @@ de sortie déclarait un échec.
 Les mots de provenance sont ceux du récapitulatif (§6), lus dans une seule table plutôt qu'épelés une
 seconde fois — deux rendus d'un même ensemble de faits, ce qui les empêche de dériver vers deux
 réponses.
+
+**Une annotation nullable abandonnée est dite sur chaque ligne.** `type` épelle le paramètre comme le
+fichier (§5.2), si bien que là où le projet analysé ne lit pas les annotations nullables, un
+`Bic? agent` se lit `"type": "Bic"`. Le `nullableAnnotationDropped` de la ligne y vaut `true`, et
+`false` partout ailleurs — la note du récapitulatif sous ses lignes (§6), portée ligne par ligne pour
+qu'un script n'ait pas à relire le domaine.
 
 **Un paramètre marqué `unread guards` porte l'endroit.** Le `unreadGuard` de sa ligne contient le
 `file`, la `line` comptée à partir de un et un `excerpt` de la première garde dont le moteur n'a pas

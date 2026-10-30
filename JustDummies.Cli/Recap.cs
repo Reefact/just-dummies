@@ -73,6 +73,7 @@ internal static class Recap {
             foreach (string row in Rows(plan)) { Line(console, row); }
 
             Unread(plan, console);
+            Dropped(plan, console);
         }
 
         Line(console, string.Empty);
@@ -126,6 +127,19 @@ internal static class Recap {
         foreach (ScaffoldedParameter parameter in marked) {
             Line(console, $"  {parameter.Name}: unread guard at {parameter.UnreadGuard!.Place()}: {parameter.UnreadGuard.Excerpt}");
         }
+    }
+
+    /// <summary>
+    ///     Under the rows, once, which parameters the constructor declares nullable while the rows spell them without
+    ///     their <c>?</c> — the rows describe the file, and a test project that does not read annotations cannot carry it.
+    /// </summary>
+    private static void Dropped(ScaffoldPlan plan, IAnsiConsole console) {
+        List<string> names = [.. plan.Parameters.Where(parameter => parameter.NullableAnnotationDropped).Select(parameter => parameter.Name)];
+
+        if (names.Count == 0) { return; }
+
+        Line(console, string.Empty);
+        Line(console, $"  {string.Join(", ", names)}: declared nullable, written without ? because this project does not read nullable annotations.");
     }
 
     private static string Expression(ScaffoldedParameter parameter) {

@@ -18,13 +18,15 @@ namespace JustDummies.GenAny;
 /// </remarks>
 public sealed class ScaffoldedParameter {
 
+    [SuppressMessage(SonarRule.S107.Category, SonarRule.S107.Id, Justification = "The private constructor threads the parameter's whole immutable state for DrawnFrom, Unresolved and DroppingNullableAnnotation; no caller writes this argument list, and a parameter object would only rename it.")]
     private ScaffoldedParameter(string name,
                                 string typeDisplay,
                                 string? generatorType,
                                 string? baseExpression,
                                 string conversion,
                                 Provenance provenance,
-                                UnreadGuard? unreadGuard) {
+                                UnreadGuard? unreadGuard,
+                                bool nullableAnnotationDropped) {
         Name           = name;
         TypeDisplay    = typeDisplay;
         GeneratorType  = generatorType;
@@ -32,6 +34,8 @@ public sealed class ScaffoldedParameter {
         Conversion     = conversion;
         Provenance     = provenance;
         UnreadGuard    = unreadGuard;
+
+        NullableAnnotationDropped = nullableAnnotationDropped;
     }
 
     /// <summary>The parameter's name, exactly as the constructor declares it.</summary>
@@ -86,6 +90,16 @@ public sealed class ScaffoldedParameter {
     ///     <see cref="Provenance.UnreadGuards" /> and the source was there to point into; null otherwise.
     /// </summary>
     public UnreadGuard? UnreadGuard { get; }
+
+    /// <summary>
+    ///     Whether the constructor declares this parameter as a nullable reference that <see cref="TypeDisplay" />
+    ///     spells without its <c>?</c>, because the analysed project does not read nullable annotations (§5.2).
+    /// </summary>
+    /// <remarks>
+    ///     The spelling is the file's, and the file is right not to carry the <c>?</c>; this is what lets the recap
+    ///     say once that the declaration had one (§6), rather than describe the domain as it is not.
+    /// </remarks>
+    public bool NullableAnnotationDropped { get; }
 
     /// <summary>Whether the emitted file will carry a TODO for this parameter.</summary>
     [SuppressMessage(SonarRule.S1135.Category, SonarRule.S1135.Id, Justification = SuppressionJustification.S1135.DocumentsTheMarkerTheToolEmits)]
@@ -213,7 +227,8 @@ public sealed class ScaffoldedParameter {
                                        expression,
                                        conversion,
                                        provenance,
-                                       unreadGuard);
+                                       unreadGuard,
+                                       nullableAnnotationDropped: false);
     }
 
     /// <summary>A parameter the engine inferred no generator for (§5.5).</summary>
@@ -229,7 +244,16 @@ public sealed class ScaffoldedParameter {
                                        baseExpression: null,
                                        conversion: string.Empty,
                                        provenance,
-                                       unreadGuard);
+                                       unreadGuard,
+                                       nullableAnnotationDropped: false);
+    }
+
+    /// <summary>
+    ///     The same parameter, noting that its declaration's <c>?</c> is not written in <see cref="TypeDisplay" />
+    ///     (<see cref="NullableAnnotationDropped" />).
+    /// </summary>
+    public ScaffoldedParameter DroppingNullableAnnotation() {
+        return new ScaffoldedParameter(Name, TypeDisplay, GeneratorType, BaseExpression, Conversion, Provenance, UnreadGuard, nullableAnnotationDropped: true);
     }
 
     private static string Checked(string value, string parameterName) {

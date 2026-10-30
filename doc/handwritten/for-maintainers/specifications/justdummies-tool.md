@@ -162,9 +162,11 @@ the containing namespace, named after the nested type alone: `AnyLine`.
 
 **A simple name counts only the types it can name.** `Measurement` does not spell a generic
 `Measurement<T>`, which C# would need a type argument for, nor a type the analysed project cannot
-access, which the emitted file could not name either — so neither makes a simple name ambiguous, and
-a domain `Measurement` is not refused because the framework declares
-`System.Diagnostics.Metrics.Measurement<T>`. Nor may they hide one: the filter applies **before**
+access, which the emitted file could not name either; and a `ref struct` cannot be the type
+argument of `IAny<T>`, so no generator can be written for one — none of them makes a simple name
+ambiguous, so a domain `Measurement` is not refused because the framework declares
+`System.Diagnostics.Metrics.Measurement<T>`, nor a domain `Scope` because it declares the `ref
+struct` `System.Threading.Lock.Scope`. Nor may they hide one: the filter applies **before**
 the preference for source types, so a generic `Measurement<T>` in the analysed project does not stand
 in front of a referenced `Measurement`. When nothing nameable matches anywhere they are kept, so a
 generic type named alone still meets its own refusal (§7) rather than being reported missing.
@@ -614,7 +616,8 @@ machine report print `Customer?`: the pin is where a test opts into null (ADR-01
 The base itself still never draws null (ADR-0064), and covariance keeps it assignable to the
 annotated field. The `?` is written only where the analysed project reads nullable annotations: the
 file carries no `#nullable` directive, and outside that context the annotation is itself a warning
-(`CS8632`) while passing null warns about nothing.
+(`CS8632`) while passing null warns about nothing. There the recap and the machine report spell the
+type as the file does, and the recap notes once that the declaration carried a `?` (§6).
 
 **Element generators recurse.** `IReadOnlyList<OrderLine>` resolves its element through this same
 table, so it becomes `Any.ListOf(new AnyOrderLine())` when `AnyOrderLine` exists. Recursion is
@@ -1329,6 +1332,26 @@ Both counts read in the order a developer acts on them: supply the one, check th
 under the rows names, for each parameter marked `unread guards`, the earliest guard that earned it
 and where it sits — the same place its `TODO(any)` gives (§5.6).
 
+**A dropped nullable annotation is noted once.** Where the analysed project does not read nullable
+annotations, a `Bic? agent` is written `Bic` in the file (§5.2), and the rows, the constructor line
+and the machine report's `type` spell it the same way: they describe the file, with one spelling per
+parameter. What they no longer show is that the declaration had a `?`, so one line under the rows
+names every such parameter:
+
+```console
+  constructor Party(string, Bic, string, int?)
+
+  name      string  Any.String().NonEmpty()
+  agent     Bic     new AnyBic()              AnyX
+  note      string  Any.String().NonEmpty()
+  priority  int?    Any.Int32().AsNullable()
+
+  agent, note: declared nullable, written without ? because this project does not read nullable annotations.
+```
+
+A nullable value type is not concerned: `int?` is a different type, written the same way in every
+context.
+
 **Provenance is data, not output.** The engine returns it in its result model (§10.3); the CLI
 renders it. That is what makes the recap testable without a console.
 
@@ -1389,6 +1412,11 @@ status had the summary count a success the exit code called a failure.
 
 The provenance words are the recap's own (§6), read from one table rather than spelled a second time
 — two renderings of one set of facts, which is what keeps them from drifting into two answers.
+
+**A dropped nullable annotation is stated on every row.** `type` spells the parameter as the file
+does (§5.2), so where the analysed project does not read nullable annotations a `Bic? agent` reads
+`"type": "Bic"`. The row's `nullableAnnotationDropped` is `true` there and `false` everywhere else —
+the recap's note under its rows (§6), carried per row so a script need not reread the domain.
 
 **A parameter marked `unread guards` carries where.** Its row's `unreadGuard` holds the `file`, the
 one-based `line` and an `excerpt` of the earliest guard the engine could not vouch for (§5.6), and is

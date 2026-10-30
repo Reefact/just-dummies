@@ -382,6 +382,31 @@ public sealed class GenerateCommandTests : IDisposable {
         Check.That(parameter.GetProperty("expression").GetString()).IsNotNull();
     }
 
+    // The row's `type` is the file's spelling, which without nullable annotations has no `?`; the flag is what tells a
+    // script the domain declared one, the same fact the recap notes under its rows (issue #344).
+    [Fact(DisplayName = "--format json says on each row whether a declared nullable annotation was dropped.")]
+    public async Task JsonSaysWhetherANullableAnnotationWasDropped() {
+        GenerateSettings settings = Settings("Party");
+
+        settings.Format = "json";
+
+        CSharpCompilation compilation = Compilation("""
+                                                    namespace Shop.Domain;
+
+                                                    public sealed class Party {
+                                                        public Party(string? note, string name) { }
+                                                    }
+                                                    """);
+
+        Run run = await Generate(settings, compilation.WithOptions(compilation.Options.WithNullableContextOptions(NullableContextOptions.Disable)));
+
+        JsonElement parameters = JsonDocument.Parse(run.Output).RootElement.GetProperty("results")[0].GetProperty("parameters");
+
+        Check.That(parameters[0].GetProperty("type").GetString()).IsEqualTo("string");
+        Check.That(parameters[0].GetProperty("nullableAnnotationDropped").GetBoolean()).IsTrue();
+        Check.That(parameters[1].GetProperty("nullableAnnotationDropped").GetBoolean()).IsFalse();
+    }
+
     [Fact(DisplayName = "--format json carries each parameter, its expression and its provenance.")]
     public async Task JsonCarriesEachParameterAndItsProvenance() {
         GenerateSettings settings = Settings("Order");

@@ -341,8 +341,8 @@ refine, so type the factory `IAny<string>` and delete the refining overload, or 
   says `NonEmpty()`. One that ignores its argument replaces the base: `_ => Any.Int32()` hands back a
   generator of the lambda's own, and every rule the base kept goes with it.
 * **A constraint that can be declared once cannot be declared again.** `OneOf`, `WithLength`,
-  `MultipleOf` and `WithScale` are refused a second time, naming both, when the base already set
-  them — `JD034` cannot see inside the lambda, so the refusal comes at run time. To take values out of
+  `MultipleOf` and `WithScale` are refused a second time with a different argument, naming both,
+  when the base already set them — repeating the same one changes nothing — `JD034` cannot see inside the lambda, so the refusal comes at run time. To take values out of
   what the base draws, narrow it instead: `p => p.Except(1)` or `.DifferentFrom(…)`.
 * **A refinement you want to reuse is a function.** Keep it as a `Func<AnyRoute, AnyRoute>` and pass
   it to any number of `With…` calls. A built `IAny<Route>` does not fit: no `With…` method takes a
@@ -391,7 +391,9 @@ Shipment anyUndeclaredShipment = Any.Shipment().WithDeclaredValue((decimal?)null
 ```
 
 A nullable reference parameter takes the same cast — `.WithAgent((Customer?)null)` — and its pin is
-typed `Customer?` for exactly that, wherever your project reads nullable annotations.
+typed `Customer?` for exactly that, wherever your project reads nullable annotations. Where it does
+not, the `?` would itself warn, so the pin is typed `Customer` and the recap says so in one line
+under its rows; `--format json` carries the same fact as `"nullableAnnotationDropped"`.
 
 *Sometimes* `null` is the overload you add.
 

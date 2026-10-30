@@ -125,8 +125,12 @@ public sealed class ConflictingAnyConstraintException : DummyException {
     /// <summary>
     ///     Builds the exception for more distinct elements than the element generator has distinct values to give.
     /// </summary>
-    internal static ConflictingAnyConstraintException DistinctElementsExceedCardinality(ConstraintCall applying, string required, string cardinality) {
-        return Sentence(applying, $"{required} required to be distinct exceed the {cardinality} distinct value(s) the element generator can produce");
+    /// <param name="applying">The call that makes the collection distinct.</param>
+    /// <param name="required">The elements still to be drawn from the generator.</param>
+    /// <param name="cardinality">The number of distinct values the element generator can produce.</param>
+    /// <param name="sizing">The count call that sets how many elements are needed, or <c>null</c> when none does.</param>
+    internal static ConflictingAnyConstraintException DistinctElementsExceedCardinality(ConstraintCall applying, string required, string cardinality, ConstraintCall? sizing) {
+        return Sentence(applying, $"{required} required to be distinct{ToHonour(sizing)} exceed the {cardinality} distinct value(s) the element generator can produce");
     }
 
     /// <summary>
@@ -149,8 +153,9 @@ public sealed class ConflictingAnyConstraintException : DummyException {
     ///     drawing on it, so this can be smaller than what the caller wrote.
     /// </param>
     /// <param name="cardinality">The number of distinct values the element generator can produce.</param>
-    internal static ConflictingAnyConstraintException SetElementsExceedCardinality(string required, string cardinality) {
-        return Verdict($"The generator can produce only {cardinality} distinct value(s), not enough for the {required} it must still supply");
+    /// <param name="sizing">The count call that sets how many elements are needed, or <c>null</c> when none does.</param>
+    internal static ConflictingAnyConstraintException SetElementsExceedCardinality(string required, string cardinality, ConstraintCall? sizing) {
+        return Verdict($"The generator can produce only {cardinality} distinct value(s), not enough for the {required} it must still supply{ToHonour(sizing)}");
     }
 
     /// <summary>
@@ -172,8 +177,45 @@ public sealed class ConflictingAnyConstraintException : DummyException {
     ///     without drawing on it, so this can be smaller than what the caller wrote.
     /// </param>
     /// <param name="cardinality">The number of distinct keys the key generator can produce.</param>
-    internal static ConflictingAnyConstraintException DictionaryKeysExceedCardinality(string required, string cardinality) {
-        return Verdict($"The key generator can produce only {cardinality} distinct key(s), not enough for the {required} it must still supply");
+    /// <param name="sizing">The count call that sets how many keys are needed, or <c>null</c> when none does.</param>
+    internal static ConflictingAnyConstraintException DictionaryKeysExceedCardinality(string required, string cardinality, ConstraintCall? sizing) {
+        return Verdict($"The key generator can produce only {cardinality} distinct key(s), not enough for the {required} it must still supply{ToHonour(sizing)}");
+    }
+
+    /// <summary>Names the count call a cardinality shortfall answers to, so the caller sees which line to loosen.</summary>
+    private static string ToHonour(ConstraintCall? sizing) {
+        return sizing is null ? "" : $" to honour {sizing}";
+    }
+
+    /// <summary>
+    ///     Builds the exception for an offset whose local time would leave the calendar for every instant a bound
+    ///     already declared admits — the derived limit is what the caller never wrote, so it is named with its reason.
+    /// </summary>
+    /// <param name="existing">The instant bound already declared, with what it requires.</param>
+    /// <param name="applying">The offset being declared.</param>
+    /// <param name="offset">The offset that moves the local time furthest toward the calendar edge.</param>
+    /// <param name="limit">The last instant whose local time stays within the calendar under <paramref name="offset" />.</param>
+    /// <param name="late">Whether the calendar's upper edge is the one left, rather than its lower.</param>
+    internal static ConflictingAnyConstraintException OffsetLeavesTheCalendar(ConstraintClaim existing, ConstraintCall applying, string offset, string limit, bool late) {
+        return Sentence(applying, $"{existing}, and under an offset of {offset} any instant {(late ? "after" : "before")} {limit} would have a local time {Beyond(late)}");
+    }
+
+    /// <summary>
+    ///     Builds the exception for an instant bound beyond what a declared offset leaves reachable — the counterpart
+    ///     of <see cref="OffsetLeavesTheCalendar" /> for the other declaration order, so both name the limit and why.
+    /// </summary>
+    /// <param name="applying">The instant bound being declared.</param>
+    /// <param name="offsetConstraint">The offset already declared.</param>
+    /// <param name="offset">The offset that moves the local time furthest toward the calendar edge.</param>
+    /// <param name="limit">The last instant whose local time stays within the calendar under <paramref name="offset" />.</param>
+    /// <param name="late">Whether the calendar's upper edge is the one left, rather than its lower.</param>
+    internal static ConflictingAnyConstraintException InstantLeavesTheCalendarUnderOffset(ConstraintCall applying, ConstraintCall offsetConstraint, string offset, string limit, bool late) {
+        return Sentence(applying, $"{offsetConstraint} already requires values {(late ? "less" : "greater")} than or equal to {limit}, since under an offset of {offset} any {(late ? "later" : "earlier")} instant would have a local time {Beyond(late)}");
+    }
+
+    /// <summary>Where a local time leaves the calendar <see cref="DateTimeOffset" /> represents.</summary>
+    private static string Beyond(bool late) {
+        return late ? "past 9999-12-31" : "before 0001-01-01";
     }
 
     /// <summary>

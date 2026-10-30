@@ -70,6 +70,9 @@ internal sealed class CountSpec {
     /// <summary>The smallest count the specification allows — the exact count when pinned, otherwise the lower bound.</summary>
     internal int Floor => _exact ?? _min;
 
+    /// <summary>The constraint that declared <see cref="Floor" />, or <c>null</c> while the floor is the default zero.</summary>
+    internal ConstraintCall? FloorConstraint => _exact is null ? _minConstraint : _exactConstraint;
+
     /// <summary>The largest count the specification allows, or <c>null</c> when the upper bound is left open.</summary>
     internal int? Ceiling => _exact ?? _max;
 

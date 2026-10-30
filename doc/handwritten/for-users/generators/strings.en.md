@@ -291,9 +291,11 @@ mis-generated:
 
 Two more refusals have a different shape. `RegexOptions.IgnorePatternWhitespace` on the `Regex` you pass is
 refused with an `ArgumentException` as the generator is built, since it changes how the pattern text is read:
-pass the pattern without it. And a pattern whose value would run past **65,536 characters** — a nested
-unbounded quantifier such as `(a+)+`, or bounded ones whose product is huge such as `(a{1000}){1000}` — is
-not refused up front but fails at `Generate()` with an `AnyGenerationException`.
+pass the pattern without it. And a pattern whose value would run past **65,536 characters** — bounded quantifiers whose product is
+huge, such as `(a{1000}){1000}`, or a minimum that large, such as `a{70000,}` — is not refused up front but
+fails at `Generate()` with an `AnyGenerationException`. An unbounded quantifier adds at most eight
+repetitions to its minimum, a bound that holds per level: `(a+)+` stays short, and only a nest several
+levels deep can reach the ceiling.
 
 Widening this set would mean taking a regex-automaton dependency; the decision to keep a home-grown
 parser and refuse loudly instead is

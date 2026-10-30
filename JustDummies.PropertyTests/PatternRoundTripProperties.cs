@@ -34,7 +34,8 @@ namespace JustDummies.PropertyTests;
 ///         The pattern generator is deliberately narrower than the supported subset. It emits <b>no anchors</b> — the
 ///         wrapper supplies them, and a generated <c>^</c> or <c>$</c> would either duplicate them or land where the
 ///         parser rightly refuses it — and it never nests an unbounded quantifier inside a repeated group, because
-///         <c>(a+)+</c> legitimately overruns the generation ceiling with an <see cref="AnyGenerationException" />.
+///         nested repeats multiply, and a deep enough nest legitimately overruns the generation ceiling with an
+///         <see cref="AnyGenerationException" />.
 ///         Unbounded quantifiers therefore apply to single-character atoms only, group repeats stay at or below two,
 ///         and nesting stops at <see cref="MaxNestingDepth" />: a narrow round trip that always holds is worth more
 ///         than a broad one that flakes.

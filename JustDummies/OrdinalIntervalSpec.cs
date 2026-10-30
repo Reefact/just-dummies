@@ -138,6 +138,18 @@ internal sealed class OrdinalIntervalSpec {
         }
     }
 
+    /// <summary>The lower bound in force.</summary>
+    internal ulong Minimum => _min;
+
+    /// <summary>The constraint that declared <see cref="Minimum" />, or <c>null</c> while it is the domain's own.</summary>
+    internal ConstraintCall? MinimumConstraint => _minConstraint;
+
+    /// <summary>The upper bound in force.</summary>
+    internal ulong Maximum => _max;
+
+    /// <summary>The constraint that declared <see cref="Maximum" />, or <c>null</c> while it is the domain's own.</summary>
+    internal ConstraintCall? MaximumConstraint => _maxConstraint;
+
     /// <summary>Tightens the lower bound; a looser bound than the current one is a no-op.</summary>
     internal OrdinalIntervalSpec WithMinimum(ulong minimum, ConstraintCall applying) {
         if (applying is null) { throw new ArgumentNullException(nameof(applying)); }

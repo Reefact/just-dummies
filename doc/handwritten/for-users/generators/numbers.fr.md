@@ -116,8 +116,10 @@ decimal anyAmount = Any.Decimal().Between(0m, 10_000m).WithScale(2).Generate(); 
 decimal anyRate   = Any.Decimal().Between(0m, 1m).WithScale(4).Generate();      // p. ex. 0,0725
 ```
 
-Elle décrit un treillis de valeurs, pas une représentation : `decimal.Scale` n'est pas complété par des
-zéros, un tirage peut donc revenir sous la forme `5.3` plutôt que `5.30`, et une valeur fournie par `OneOf`
+Elle décrit un treillis de valeurs, pas une représentation. Un tirage porte en général l'échelle demandée —
+`5.30` sous `WithScale(2)` — mais ce n'est pas promis : aux échelles les plus hautes que le type permet, un
+tirage qui finit par un zéro peut le perdre, environ un sur dix sous `WithScale(28)`. Comparez des valeurs,
+pas leur texte. Une valeur fournie par `OneOf`
 ou par un intervalle réduit à un point est rendue telle qu'écrite ([ADR-0015](../../for-maintainers/adr/0015-draw-lattice-constrained-scalars-on-the-grid.fr.md)).
 
 Combiner `Between` et `MultipleOf` est le seul endroit à surveiller : un intervalle ne contenant

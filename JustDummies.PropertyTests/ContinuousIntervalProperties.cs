@@ -38,6 +38,12 @@ public sealed class ContinuousIntervalProperties {
     /// </summary>
     private const int ReachabilityDrawCount = 300;
 
+    /// <summary>
+    ///     Draws per few-rung case. Each of at most four values is drawn with probability about a quarter, so missing
+    ///     one in this many draws has probability under 4 × 0.75^120, about 4e-15 — never, in a suite's lifetime.
+    /// </summary>
+    internal const int FewRungDrawCount = 120;
+
     /// <summary>The magnitude an arbitrary number stays within unless the declared bounds leave no room (ADR-0031).</summary>
     private const double OrdinaryMagnitude = 1_000_000d;
 
@@ -162,6 +168,57 @@ public sealed class ContinuousIntervalProperties {
                                                                   : (Seed: seed, Min: -OrdinaryMagnitude - width, Max: -OrdinaryMagnitude);
 
         return Gen.OneOf(spread, seam);
+    }
+
+    /// <summary>The next representable <see cref="double" /> above <paramref name="value" />, spelled for the net472 floor.</summary>
+    private static double NextUp(double value) {
+        long bits = BitConverter.DoubleToInt64Bits(value);
+        if (bits == long.MinValue) { return double.Epsilon; }
+
+        return BitConverter.Int64BitsToDouble(bits >= 0L ? bits + 1L : bits - 1L);
+    }
+
+    /// <summary>The <see cref="float" /> counterpart of <see cref="NextUp(double)" />.</summary>
+    private static float NextUp(float value) {
+        int bits = BitConverter.ToInt32(BitConverter.GetBytes(value), 0);
+        if (bits == int.MinValue) { return BitConverter.ToSingle(BitConverter.GetBytes(1), 0); }
+
+        return BitConverter.ToSingle(BitConverter.GetBytes(bits >= 0 ? bits + 1 : bits - 1), 0);
+    }
+
+    /// <summary>
+    ///     A span of two to four consecutive values of a type, from <paramref name="starts" />: the shape the midpoint
+    ///     form cannot resolve, at every magnitude, subnormals included.
+    /// </summary>
+    private static Gen<(int Seed, T[] Rungs)> FewRungs<T>(Gen<T> starts, Func<T, T> nextUp, Func<T, bool> isFinite) {
+        return from seed in Generators.Seed()
+               from start in starts
+               from steps in Gen.Choose(1, 3)
+               let rungs = Rungs(start, steps, nextUp)
+               where isFinite(rungs[rungs.Length - 1])
+               select (Seed: seed, Rungs: rungs);
+    }
+
+    private static T[] Rungs<T>(T start, int steps, Func<T, T> nextUp) {
+        T[] rungs = new T[steps + 1];
+        rungs[0] = start;
+        for (int i = 1; i <= steps; i++) { rungs[i] = nextUp(rungs[i - 1]); }
+
+        return rungs;
+    }
+
+    /// <summary>Starting points for <see cref="FewRungs{T}" /> on <see cref="double" />: anywhere, around zero, and at the smallest normal value.</summary>
+    private static Gen<double> DoubleRungStarts() {
+        return Gen.OneOf(Generators.Double(),
+                         Gen.Choose(-8, 8).Select(steps => steps * double.Epsilon),
+                         Gen.Elements(2.2250738585072014E-308, -2.2250738585072014E-308, OrdinaryMagnitude, -OrdinaryMagnitude));
+    }
+
+    /// <summary>The <see cref="float" /> counterpart of <see cref="DoubleRungStarts" />.</summary>
+    private static Gen<float> SingleRungStarts() {
+        return Gen.OneOf(Singles(),
+                         Gen.Choose(-8, 8).Select(steps => steps * float.Epsilon),
+                         Gen.Elements(1.17549435E-38f, -1.17549435E-38f, (float)OrdinaryMagnitude, -(float)OrdinaryMagnitude));
     }
 
     /// <summary>The <see cref="decimal" /> counterpart of <see cref="DoubleIntervals" />, seam included.</summary>
@@ -508,6 +565,27 @@ public sealed class ContinuousIntervalProperties {
 
                         return values.Min() < midpoint && values.Max() > midpoint;
                     })
+            .QuickCheckThrowOnFailure();
+    }
+
+    [Fact(DisplayName = "Double: a span of a few consecutive values returns every one of them, wherever it sits.")]
+    public void DoubleFewRungSpanReachesEveryValue() {
+        // ADR-0097, quantified: two values the type represents must be two values a draw can land on. The midpoint
+        // form missed an end of every odd-width span — over four doubles from 1.0 the first never came out — and
+        // every draw of [-ε, ε] was 0 (issue #310). Fixed spans only pinned the shapes that had already broken.
+        Prop.ForAll(FewRungs(DoubleRungStarts(), NextUp, IsFinite).ToArbitrary(),
+                    span => new HashSet<double>(Expect.Draws(Any.WithSeed(span.Seed).Double().Between(span.Rungs[0], span.Rungs[span.Rungs.Length - 1]),
+                                                             FewRungDrawCount))
+                        .SetEquals(span.Rungs))
+            .QuickCheckThrowOnFailure();
+    }
+
+    [Fact(DisplayName = "Single: a span of a few consecutive values returns every one of them, wherever it sits.")]
+    public void SingleFewRungSpanReachesEveryValue() {
+        Prop.ForAll(FewRungs(SingleRungStarts(), NextUp, value => !float.IsNaN(value) && !float.IsInfinity(value)).ToArbitrary(),
+                    span => new HashSet<float>(Expect.Draws(Any.WithSeed(span.Seed).Single().Between(span.Rungs[0], span.Rungs[span.Rungs.Length - 1]),
+                                                            FewRungDrawCount))
+                        .SetEquals(span.Rungs))
             .QuickCheckThrowOnFailure();
     }
 

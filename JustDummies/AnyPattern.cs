@@ -73,7 +73,7 @@ public sealed class AnyPattern : IAny<string>, IHasRandomSource, ICardinalityHin
 
     #region Statics members declarations
 
-    // A nested unbounded quantifier can, in principle, expand super-linearly; this ceiling turns that into a clear
+    // Bounded quantifiers can multiply into a huge expansion, (a{1000}){1000}; this ceiling turns that into a clear
     // AnyGenerationException instead of an out-of-memory. It is far above any realistic format-validation pattern.
     private const int GenerationLimit = 65536;
     // The seed the ceiling probe draws on. Any constant does: the probe's value is discarded and only the verdict —

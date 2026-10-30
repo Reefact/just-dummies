@@ -156,6 +156,34 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Fixed
 
+- **The pattern generation-limit message no longer names `(a+)+` as a cause.** An unbounded quantifier
+  adds at most eight repetitions to its minimum, so `(a+)+` never comes near the 65,536-character
+  ceiling. The message now names causes that do reach it: bounded quantifiers whose product is huge,
+  `(a{1000}){1000}`, or a repetition minimum that large, `a{70000,}`.
+
+- **A distinct collection too large for its element generator names the count it was asked for.**
+  `Any.SetOf(Any.Boolean()).WithCount(3)` was refused with "The generator can produce only 2 distinct
+  value(s), not enough for the 3 elements it must still supply", which named neither side a caller could
+  loosen, and a list's `Distinct()` refusal named the count without the call that set it. Both now name it,
+  "to honour WithCount(3)" — or the `WithMinCount`, `NonEmpty` call that set the size — for `SetOf`, a
+  dictionary's keys and the list-shaped generators alike.
+- **A floating-point interval only a few values wide reaches every value in it.**
+  `Any.Double().Between(-double.Epsilon, double.Epsilon)` drew 0 every time, and over four consecutive doubles
+  from 1.0 the first never came out: the draw starts from the interval's midpoint, which in such a span falls
+  between two values and rounds onto one, so a value at the far end was unreachable and a feasible
+  `ArrayOf(...).WithCount(4).Distinct()` over it was refused. A span of up to 17 consecutive values of the type —
+  `Double`, `Single` or `Half` — is now drawn by index among them, and so is any span of subnormal doubles. This
+  changes what a seed draws within such a span, and nowhere else.
+- **An offset that leaves no room at the calendar's edge says what limit it implies, and why.**
+  `Any.DateTimeOffset().After(DateTimeOffset.MaxValue.AddHours(-1)).WithOffset(TimeSpan.FromHours(14))` was
+  refused naming both constraints, but never the instant the offset caps the draw at — 14 hours before
+  `MaxValue` — nor that a later one would have a local time past 9999-12-31; declared the other way round, it gave
+  the limit without the reason. Both orders now name the limit and the reason, at either edge of the calendar.
+- **A floating-point conflict quotes a strict bound as the caller wrote it.** `Any.Double().GreaterThan(10).LessThan(5)`
+  was refused because `GreaterThan(10)` "already requires values greater than or equal to 10.000000000000002", and
+  `Positive()` because it required values "greater than or equal to 5E-324": true, but worded in the engine's
+  neighbouring values rather than the bound written. On `Double`, `Single` and `Half` the message now reads "greater
+  than 10", "greater than 0", as `Decimal`'s already did.
 - **JD014 reports a floating-point bound that is not finite, and a `Half` value set element that is
   not.** `Any.Double().Between(double.NaN, 90.0)`, `LessThan(double.PositiveInfinity)` and
   `Any.Half().OneOf((Half)1, Half.NaN)` always throw when declared, and drew no diagnostic. A

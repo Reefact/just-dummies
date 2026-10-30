@@ -147,7 +147,10 @@ public sealed class AnyDateTimeOffset : IAny<DateTimeOffset>, IHasRandomSource, 
     /// <returns>A new generator carrying the added constraint.</returns>
     /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
     public AnyDateTimeOffset After(DateTimeOffset instant) {
-        return With(_spec.WithMinimumAbove(Ord(instant), ConstraintCall.Of(nameof(After), V(instant))));
+        ConstraintCall applying = ConstraintCall.Of(nameof(After), V(instant));
+        if (instant < DateTimeOffset.MaxValue) { EnsureReachableUnderTheOffset(Ord(instant) + 1, null, applying); }
+
+        return With(_spec.WithMinimumAbove(Ord(instant), applying));
     }
 
     /// <summary>Requires an instant at or after <paramref name="instant" />.</summary>
@@ -155,7 +158,10 @@ public sealed class AnyDateTimeOffset : IAny<DateTimeOffset>, IHasRandomSource, 
     /// <returns>A new generator carrying the added constraint.</returns>
     /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
     public AnyDateTimeOffset AfterOrEqualTo(DateTimeOffset instant) {
-        return With(_spec.WithMinimum(Ord(instant), ConstraintCall.Of(nameof(AfterOrEqualTo), V(instant))));
+        ConstraintCall applying = ConstraintCall.Of(nameof(AfterOrEqualTo), V(instant));
+        EnsureReachableUnderTheOffset(Ord(instant), null, applying);
+
+        return With(_spec.WithMinimum(Ord(instant), applying));
     }
 
     /// <summary>Requires an instant strictly before <paramref name="instant" />.</summary>
@@ -163,7 +169,10 @@ public sealed class AnyDateTimeOffset : IAny<DateTimeOffset>, IHasRandomSource, 
     /// <returns>A new generator carrying the added constraint.</returns>
     /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
     public AnyDateTimeOffset Before(DateTimeOffset instant) {
-        return With(_spec.WithMaximumBelow(Ord(instant), ConstraintCall.Of(nameof(Before), V(instant))));
+        ConstraintCall applying = ConstraintCall.Of(nameof(Before), V(instant));
+        if (instant > DateTimeOffset.MinValue) { EnsureReachableUnderTheOffset(null, Ord(instant) - 1, applying); }
+
+        return With(_spec.WithMaximumBelow(Ord(instant), applying));
     }
 
     /// <summary>Requires an instant at or before <paramref name="instant" />.</summary>
@@ -171,7 +180,10 @@ public sealed class AnyDateTimeOffset : IAny<DateTimeOffset>, IHasRandomSource, 
     /// <returns>A new generator carrying the added constraint.</returns>
     /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
     public AnyDateTimeOffset BeforeOrEqualTo(DateTimeOffset instant) {
-        return With(_spec.WithMaximum(Ord(instant), ConstraintCall.Of(nameof(BeforeOrEqualTo), V(instant))));
+        ConstraintCall applying = ConstraintCall.Of(nameof(BeforeOrEqualTo), V(instant));
+        EnsureReachableUnderTheOffset(null, Ord(instant), applying);
+
+        return With(_spec.WithMaximum(Ord(instant), applying));
     }
 
     /// <summary>Requires an instant within the inclusive range [<paramref name="start" />, <paramref name="end" />].</summary>
@@ -184,6 +196,7 @@ public sealed class AnyDateTimeOffset : IAny<DateTimeOffset>, IHasRandomSource, 
         if (start > end) { throw new ArgumentException($"The start ({V(start)}) must be at or before the end ({V(end)}).", nameof(start)); }
 
         ConstraintCall constraint = ConstraintCall.Of(nameof(Between), V(start), V(end));
+        EnsureReachableUnderTheOffset(Ord(start), Ord(end), constraint);
 
         return With(_spec.WithMinimum(Ord(start), constraint).WithMaximum(Ord(end), constraint));
     }
@@ -394,10 +407,20 @@ public sealed class AnyDateTimeOffset : IAny<DateTimeOffset>, IHasRandomSource, 
 
         // Tighten the instant so local ticks = UtcTicks + offset stay in [0, MaxTicks] for every offset in the range;
         // the offset can then be drawn independently, never producing an out-of-range DateTimeOffset.
-        long  minOffsetTicks = minMinutes * TimeSpan.TicksPerMinute;
-        long  maxOffsetTicks = maxMinutes * TimeSpan.TicksPerMinute;
-        ulong lowerUtc       = (ulong)Math.Max(0L, -minOffsetTicks);
-        ulong upperUtc       = (ulong)(DateTimeOffset.MaxValue.UtcTicks - Math.Max(0L, maxOffsetTicks));
+        ulong lowerUtc = EarliestUnder(minMinutes);
+        ulong upperUtc = LatestUnder(maxMinutes);
+
+        // A bound already declared beyond the derived limit is refused here rather than by the engine, which would
+        // name the bound and the instant the caller wrote but not the limit the offset implies, nor why it does.
+        if (_spec.Minimum > upperUtc && _spec.MinimumConstraint is ConstraintCall floor) {
+            throw ConflictingAnyConstraintException.OffsetLeavesTheCalendar(ConstraintClaim.Of(floor, $"already requires values greater than or equal to {V(Val(_spec.Minimum))}"),
+                                                                            applying, Render(TimeSpan.FromMinutes(maxMinutes)), V(Val(upperUtc)), late: true);
+        }
+
+        if (_spec.Maximum < lowerUtc && _spec.MaximumConstraint is ConstraintCall ceiling) {
+            throw ConflictingAnyConstraintException.OffsetLeavesTheCalendar(ConstraintClaim.Of(ceiling, $"already requires values less than or equal to {V(Val(_spec.Maximum))}"),
+                                                                            applying, Render(TimeSpan.FromMinutes(minMinutes)), V(Val(lowerUtc)), late: false);
+        }
 
         OrdinalIntervalSpec spec = _spec.WithMinimum(lowerUtc, applying).WithMaximum(upperUtc, applying);
 
@@ -410,6 +433,38 @@ public sealed class AnyDateTimeOffset : IAny<DateTimeOffset>, IHasRandomSource, 
         }
 
         return new AnyDateTimeOffset(_source, spec, _allowedOriginals, applying, minMinutes, maxMinutes);
+    }
+
+    /// <summary>The earliest instant whose local time stays within the calendar under every offset from <paramref name="minMinutes" />.</summary>
+    private static ulong EarliestUnder(int minMinutes) {
+        return (ulong)Math.Max(0L, -minMinutes * TimeSpan.TicksPerMinute);
+    }
+
+    /// <summary>The latest instant whose local time stays within the calendar under every offset up to <paramref name="maxMinutes" />.</summary>
+    private static ulong LatestUnder(int maxMinutes) {
+        return (ulong)(DateTimeOffset.MaxValue.UtcTicks - Math.Max(0L, maxMinutes * TimeSpan.TicksPerMinute));
+    }
+
+    /// <summary>
+    ///     Refuses an instant bound beyond the limit a declared offset leaves, naming that limit and the reason — the
+    ///     same sentence <see cref="WithOffsetRange" /> gives when the offset is the one declared second.
+    /// </summary>
+    /// <remarks>
+    ///     Only while the offset is what holds the bound in force: a tighter bound declared since is the side to name,
+    ///     and the engine already names it.
+    /// </remarks>
+    private void EnsureReachableUnderTheOffset(ulong? minimum, ulong? maximum, ConstraintCall applying) {
+        if (_offsetConstraint is null) { return; }
+
+        if (minimum > _spec.Maximum && _spec.MaximumConstraint == _offsetConstraint) {
+            throw ConflictingAnyConstraintException.InstantLeavesTheCalendarUnderOffset(applying, _offsetConstraint, Render(TimeSpan.FromMinutes(_offsetMaxMinutes)),
+                                                                                        V(Val(_spec.Maximum)), late: true);
+        }
+
+        if (maximum < _spec.Minimum && _spec.MinimumConstraint == _offsetConstraint) {
+            throw ConflictingAnyConstraintException.InstantLeavesTheCalendarUnderOffset(applying, _offsetConstraint, Render(TimeSpan.FromMinutes(_offsetMinMinutes)),
+                                                                                        V(Val(_spec.Minimum)), late: false);
+        }
     }
 
     /// <summary>Whether <paramref name="value" /> carries an offset the declared offset dimension admits.</summary>

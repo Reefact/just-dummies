@@ -1,0 +1,1 @@
+// Kept out of the build (CS0121): new AnyParty().WithAgent(null) and new AnyParty().WithNote(null)

@@ -1,0 +1,5 @@
+# Raising the two Info rules to warning is what makes them appear in `dotnet build` output.
+root = false
+[*.cs]
+dotnet_diagnostic.JD030.severity = warning
+dotnet_diagnostic.JD029.severity = warning

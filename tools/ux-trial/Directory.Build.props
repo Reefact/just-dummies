@@ -1,0 +1,15 @@
+<Project>
+
+  <!-- Deliberately shadows the repository's Directory.Build.props: the trial projects stand in for a
+       consumer's solution, not for this repository's own projects. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <JustDummiesTrialVersion Condition="'$(JustDummiesTrialVersion)' == ''">1.0.0-uxtrial.1</JustDummiesTrialVersion>
+    <!-- A project-local package folder, so a re-pack under the same version is never served stale. -->
+    <RestorePackagesPath>$(MSBuildThisFileDirectory)packages</RestorePackagesPath>
+  </PropertyGroup>
+
+</Project>

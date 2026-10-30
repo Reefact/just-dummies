@@ -1,0 +1,8 @@
+<Project>
+
+  <!-- Shadows the repository's central package management: a consumer pins its own versions. -->
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+
+</Project>

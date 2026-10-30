@@ -96,8 +96,8 @@ Envisagé par symétrie. Écarté pour `Unspecified`, qui ne porte aucun fuseau 
 
 ### Negative
 
-* Une chaîne qui passait une borne `Local` lève désormais une exception. Acceptable tant que la bibliothèque n'a pas
-  d'utilisateurs ; le changelog le dit.
+* Une chaîne qui passait une borne `Local` lève désormais une exception. La bibliothèque n'a pas encore
+  d'utilisateurs, la rupture n'atteint donc personne ; le changelog le dit.
 
 ### Risks
 

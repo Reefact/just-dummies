@@ -93,8 +93,8 @@ are refused by the `Local` side.
 
 ### Negative
 
-* A chain that passed a `Local` bound now throws. Acceptable while the library has no users; the changelog says
-  so.
+* A chain that passed a `Local` bound now throws. The library has no users yet, so the break reaches no one; the
+  changelog says so.
 
 ### Risks
 

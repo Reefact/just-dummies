@@ -31,6 +31,13 @@ This is not hypothetical: a `lib-v0.0.0-rulesetcheck` tag was once pushed to tes
 setting, and it published. To exercise anything about release tags without publishing, use a ref the
 trigger does not match, or the dry run below.
 
+## The developer-UX trial runs first
+
+Before anything is packed for publication, a read-only `ux-trial` job runs `tools/ux-trial/run.sh`: it
+packs the library, the adapter and `any` from the tagged commit, then runs twenty consumer projects
+against them. A failing domain stops the release. A probe that pins a message the release improves on
+purpose fails too; update it in the change that improves the message.
+
 ## What to configure on nuget.org
 
 Sign in as the account that owns the packages, then create a policy under
@@ -78,7 +85,7 @@ declared both in `release.yml` (`environment:`) and in the nuget.org policy — 
 gh workflow run release.yml -f component=lib -f version=0.0.0-dry.1 -f dry_run=true
 ```
 
-A green run proves the whole pipeline end to end — restore, build, test, pack, SBOM, attestation and the
-OIDC exchange — while publishing nothing: the push and the GitHub Release are the only steps a dry run
+A green run proves the whole pipeline end to end — the developer-UX trial, restore, build, test, pack,
+SBOM, attestation and the OIDC exchange — while publishing nothing: the push and the GitHub Release are the only steps a dry run
 skips. Until a policy exists, every run including this one fails at `NuGet login (OIDC)`, by design: the
 rehearsal exists so a misconfiguration surfaces before a real release rather than during one.

@@ -95,8 +95,9 @@ relevant command, say so explicitly.
 | `build/`, `tools/` | shared MSBuild props, the Sonar profile, packaging and lint scripts |
 | `doc/handwritten/` | `for-users/` and `for-maintainers/` (ADRs, specifications, workflow pages) |
 
-`tools/justdummies-check` and `tools/floor-check` are deliberately **outside** the solution:
-they consume the packed package, not the projects.
+`tools/justdummies-check`, `tools/floor-check` and `tools/ux-trial` are deliberately **outside** the
+solution: they consume the packed package, not the projects. `tools/ux-trial` runs before every
+release; a change that improves a message it pins updates the probe in the same change.
 
 ## Always-on rules
 

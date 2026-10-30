@@ -67,9 +67,10 @@ generated code, so it needs the compile assets too.
 
 ## Deliberately outside the solution
 
-`tools/justdummies-check` (packaged-asset compatibility) and `tools/floor-check` (analyzer
-loading on the Roslyn floor) consume the **packed package**, not the projects. Keep them out
-of `JustDummies.sln`.
+`tools/justdummies-check` (packaged-asset compatibility), `tools/floor-check` (analyzer
+loading on the Roslyn floor) and `tools/ux-trial` (the developer-UX trial, run by `release`
+before it publishes) consume the **packed package**, not the projects. Keep them out of
+`JustDummies.sln`.
 
 ## Workflows
 

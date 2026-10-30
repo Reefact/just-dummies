@@ -40,8 +40,9 @@ public sealed class PropertyTests {
 
     [Fact]
     public void A_document_is_attached_only_once() {
-        // Arrange: the folder must have room for one more, which is a precondition, not the point.
-        Property     anyProperty = Any.Property().WithDocuments(l => l.WithMaxCount(Property.MaxDocuments - 1)).Generate();
+        // Arrange: the folder must have room for two more, the attachment and the repeat, so a full folder
+        // cannot answer first. That is a precondition, not the point.
+        Property     anyProperty = Any.Property().WithDocuments(l => l.WithMaxCount(Property.MaxDocuments - 2)).Generate();
         DocumentLink anyDocument = Arbitrary.DocumentLink().Generate();
         anyProperty.Attach(anyDocument);
 

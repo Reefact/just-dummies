@@ -111,9 +111,10 @@ decimal anyAmount = Any.Decimal().Between(0m, 10_000m).WithScale(2).Generate(); 
 decimal anyRate   = Any.Decimal().Between(0m, 1m).WithScale(4).Generate();      // e.g. 0.0725
 ```
 
-It describes a lattice of values, not a representation: `decimal.Scale` is not padded, so a draw may
-come back as `5.3` rather than `5.30`, and a value you supply through `OneOf` or a single-point range is
-returned as written ([ADR-0015](../../for-maintainers/adr/0015-draw-lattice-constrained-scalars-on-the-grid.md)).
+It describes a lattice of values, not a representation. A draw usually carries the scale it asks for —
+`5.30` under `WithScale(2)` — but that is not promised: at the highest scales the type allows, a draw
+ending in zero may lose that zero, about one in ten under `WithScale(28)`. Compare values, not their text. A value you supply through `OneOf` or a
+single-point range is returned as written, so `OneOf(5.3m)` gives `5.3`, not `5.30` ([ADR-0015](../../for-maintainers/adr/0015-draw-lattice-constrained-scalars-on-the-grid.md)).
 
 Combining `Between` with `MultipleOf` is the one place to watch: an interval containing no multiple
 of the step admits no value, and is refused. `Any.Int32().Between(1, 10).MultipleOf(50)` names both

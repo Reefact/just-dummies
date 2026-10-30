@@ -258,6 +258,26 @@ public sealed class AnyPatternTests {
              .And.Not.Contains("is expanding without bound");  // the old, false assertion is gone
     }
 
+    [Fact(DisplayName = "A nested unbounded quantifier stays short: each level adds at most eight repetitions.")]
+    public void NestedUnboundedQuantifierStaysShort() {
+        // '(a+)+' was given as the example of a pattern overrunning the generation ceiling; at most nine repetitions
+        // a level, it never comes near it.
+        AnyPattern generator = Any.StringMatching("(a+)+");
+
+        for (int i = 0; i < SampleCount; i++) {
+            Check.That(generator.Generate().Length).IsStrictlyLessThan(82);
+        }
+    }
+
+    [Fact(DisplayName = "The generation-limit message gives causes that reach the ceiling, not a nested unbounded quantifier.")]
+    public void GenerationLimitMessageNamesCausesThatReachIt() {
+        Check.ThatCode(() => Any.StringMatching("a{70000,}").Generate())
+             .Throws<AnyGenerationException>()
+             .WhichMember(caught => caught.Message)
+             .Contains("a{70000,}")
+             .And.Not.Contains("(a+)+");
+    }
+
     [Fact(DisplayName = "A negated class that excludes the whole printable universe is refused as unsupported, not malformed.")]
     public void NegatedClassExcludingTheUniverseIsUnsupported() {
         // Well-formed and regular — the real engine accepts both — but no printable-ASCII character survives the

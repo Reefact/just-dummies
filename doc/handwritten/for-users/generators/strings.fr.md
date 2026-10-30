@@ -298,9 +298,11 @@ qu'il faut faire à la place — jamais mal généré :
 
 Deux autres refus ont une autre forme. `RegexOptions.IgnorePatternWhitespace` sur la `Regex` transmise est refusé
 par une `ArgumentException` dès la construction du générateur, puisqu'il change la façon dont le texte du motif est
-lu : transmettez le motif sans lui. Et un motif dont la valeur dépasserait **65 536 caractères** — un
-quantificateur non borné imbriqué comme `(a+)+`, ou des bornés dont le produit est énorme comme `(a{1000}){1000}` —
-n'est pas refusé d'avance mais échoue à `Generate()` avec une `AnyGenerationException`.
+lu : transmettez le motif sans lui. Et un motif dont la valeur dépasserait **65 536 caractères** — des
+quantificateurs bornés dont le produit est énorme, comme `(a{1000}){1000}`, ou un minimum aussi grand, comme
+`a{70000,}` — n'est pas refusé d'avance mais échoue à `Generate()` avec une `AnyGenerationException`. Un
+quantificateur non borné ajoute au plus huit répétitions à son minimum, donc un quantificateur imbriqué comme
+`(a+)+` reste court.
 
 Élargir cet ensemble supposerait une dépendance à un automate d'expressions régulières ; la décision
 de garder un analyseur maison et de refuser bruyamment est

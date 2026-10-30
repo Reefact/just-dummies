@@ -156,6 +156,11 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Fixed
 
+- **The pattern generation-limit message no longer names `(a+)+` as a cause.** An unbounded quantifier
+  adds at most eight repetitions to its minimum, so `(a+)+` never comes near the 65,536-character
+  ceiling. The message now names causes that do reach it: bounded quantifiers whose product is huge,
+  `(a{1000}){1000}`, or a repetition minimum that large, `a{70000,}`.
+
 - **JD014 reports a floating-point bound that is not finite, and a `Half` value set element that is
   not.** `Any.Double().Between(double.NaN, 90.0)`, `LessThan(double.PositiveInfinity)` and
   `Any.Half().OneOf((Half)1, Half.NaN)` always throw when declared, and drew no diagnostic. A

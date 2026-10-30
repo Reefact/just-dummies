@@ -35,6 +35,19 @@ internal sealed class ContinuousIntervalSpec {
 
     private const int NudgeBudget = 128;
 
+    /// <summary>
+    ///     Twice the smallest normal <see cref="double" />: every double at or within it in magnitude sits on one grid,
+    ///     spaced by <see cref="double.Epsilon" />, and halving such a value can round.
+    /// </summary>
+    private const double SubnormalScale = 4.4501477170144028E-308;
+
+    /// <summary>
+    ///     The widest span, in rungs of the row's own ladder, that is drawn by index rather than by the continuous
+    ///     forms — a span the midpoint can no longer resolve is a handful of steps wide, and the walk that counts
+    ///     them runs on every draw.
+    /// </summary>
+    private const int EnumeratedRungs = 16;
+
     #region Statics members declarations
 
     /// <summary>
@@ -429,21 +442,71 @@ internal sealed class ContinuousIntervalSpec {
     ///     escaped.
     /// </summary>
     /// <remarks>
-    ///     A span of a single step of the type's own ladder leaves the midpoint form no room to work in: <c>half</c>
-    ///     is then half an ulp, <c>mid ± half</c> rounds straight back to <c>mid</c>, and the upper of the pair can
-    ///     never be returned. Two values the type represents must be two values a draw can land on — the terms
-    ///     ADR-0097 states the rule in — so that pair is chosen directly. It consumes the same one unit sample as
-    ///     every other path, which is what keeps a pinned seed replaying (ADR-0049).
+    ///     A span of a few steps of the type's own ladder leaves the midpoint form no room to work in. Its midpoint
+    ///     falls between two rungs whenever the span is an odd number of steps wide, rounds onto one of them, and
+    ///     shifts the whole draw by half a step: the rung at the far end can then never be returned — over four
+    ///     consecutive doubles from 1.0 the first never came out, and over a single step the upper never did. Two
+    ///     values the type represents must be two values a draw can land on — the terms ADR-0097 states the rule in
+    ///     — so such a span is enumerated and its rung picked by index (<see cref="OnAFewRungs" />). It consumes the
+    ///     same one unit sample as every other path, which is what keeps a pinned seed replaying (ADR-0049).
+    ///     <para>
+    ///         The same holds for a wider span a few <see cref="double.Epsilon" /> wide around zero: halving a
+    ///         subnormal rounds, so the midpoint form loses a step at either end. Such a span lies on the single grid
+    ///         <see cref="SubnormalScale" /> names, so its values are picked by index there, whatever its width.
+    ///     </para>
     /// </remarks>
     private double CandidateIn(double lower, double upper, double unit) {
-        if (_nextUp(lower) >= upper) { return unit < 0.5d ? lower : upper; }
+        if (OnAFewRungs(lower, upper, unit) is double rung) { return rung; }
         if (_laddered is not null) { return Quantized(_laddered(lower, upper, unit)); }
+        if (Math.Abs(lower) <= SubnormalScale && Math.Abs(upper) <= SubnormalScale) { return Quantized(OnTheSubnormalGrid(lower, upper, unit)); }
 
         // Sample around the midpoint so the span (max - min) never overflows to infinity on wide ranges.
         double mid  = lower / 2 + upper / 2;
         double half = upper / 2 - lower / 2;
 
         return Quantized(mid + (2 * unit - 1) * half);
+    }
+
+    /// <summary>
+    ///     One of the rungs of <c>[lower, upper]</c>, picked by index, when the span holds no more than
+    ///     <see cref="EnumeratedRungs" /> of them; <c>null</c> for a wider span, which the continuous forms draw from.
+    /// </summary>
+    /// <remarks>
+    ///     The walk steps the row's own ladder, so a <c>float</c> or a <c>Half</c> span is counted in its own values
+    ///     rather than in the doubles between them, and it is bounded: a wide span costs
+    ///     <see cref="EnumeratedRungs" /> steps before it is handed on.
+    /// </remarks>
+    private double? OnAFewRungs(double lower, double upper, double unit) {
+        double first = FirstRungAtOrAbove(lower);
+        int    count = 0;
+        for (double point = first; point <= upper; point = _nextUp(point)) {
+            if (++count > EnumeratedRungs) { return null; }
+        }
+
+        if (count == 0) { return null; }
+
+        int    index  = Math.Min((int)(unit * count), count - 1);
+        double chosen = first;
+        for (int step = 0; step < index; step++) { chosen = _nextUp(chosen); }
+
+        return chosen;
+    }
+
+    /// <summary>
+    ///     One of the values of <c>[lower, upper]</c>, picked by index on the <see cref="double.Epsilon" /> grid both
+    ///     bounds lie on.
+    /// </summary>
+    /// <remarks>
+    ///     Exact throughout: dividing by <see cref="double.Epsilon" /> scales by a power of two, and a bound within
+    ///     <see cref="SubnormalScale" /> becomes an integer no larger than 2^53, so both the count and the value
+    ///     multiplied back are represented without rounding.
+    /// </remarks>
+    private static double OnTheSubnormalGrid(double lower, double upper, double unit) {
+        long first = (long)(lower / double.Epsilon);
+        long count = (long)(upper / double.Epsilon) - first + 1;
+        long index = Math.Min((long)(unit * count), count - 1);
+
+        return (first + index) * double.Epsilon;
     }
 
     /// <summary>

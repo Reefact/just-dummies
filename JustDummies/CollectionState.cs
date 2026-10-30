@@ -286,11 +286,14 @@ internal sealed class CollectionState<T> {
     /// <summary>The exception for more distinct elements than the generator can produce, blamed under this collection's <see cref="DistinctnessOwner" />.</summary>
     private ConflictingAnyConstraintException CardinalityException(int fromGenerator, long cardinality) {
         string domain = cardinality.ToString(CultureInfo.InvariantCulture);
+        // The count the caller wrote is what they can loosen, so it is named whenever it is what sets the need; a need
+        // set by the contained values alone has no count call to name.
+        ConstraintCall? sizing = _count.FloorConstraint is ConstraintCall floor && _count.Floor >= _fixedContaining.Count + _generatedContaining.Count ? floor : null;
 
         return _distinctnessOwner switch {
-            DistinctnessOwner.SetIdentity    => ConflictingAnyConstraintException.SetElementsExceedCardinality(Elements(fromGenerator), domain),
-            DistinctnessOwner.DictionaryKeys => ConflictingAnyConstraintException.DictionaryKeysExceedCardinality(Keys(fromGenerator), domain),
-            _                                => ConflictingAnyConstraintException.DistinctElementsExceedCardinality(ConstraintCall.Of("Distinct"), Elements(fromGenerator), domain)
+            DistinctnessOwner.SetIdentity    => ConflictingAnyConstraintException.SetElementsExceedCardinality(Elements(fromGenerator), domain, sizing),
+            DistinctnessOwner.DictionaryKeys => ConflictingAnyConstraintException.DictionaryKeysExceedCardinality(Keys(fromGenerator), domain, sizing),
+            _                                => ConflictingAnyConstraintException.DistinctElementsExceedCardinality(ConstraintCall.Of("Distinct"), Elements(fromGenerator), domain, sizing)
         };
     }
 

@@ -622,7 +622,7 @@ public sealed class AnyCollectionTests {
         // they never wrote.
         Check.ThatCode(() => Any.SetOf(Any.Boolean()).WithCount(3).Generate())
              .Throws<ConflictingAnyConstraintException>()
-             .WithMessage("The generator can produce only 2 distinct value(s), not enough for the 3 elements it must still supply.");
+             .WithMessage("The generator can produce only 2 distinct value(s), not enough for the 3 elements it must still supply to honour WithCount(3).");
 
         Check.ThatCode(() => Any.SetOf(Any.Int32()).Containing(1).Containing(1).Generate())
              .Throws<ConflictingAnyConstraintException>()
@@ -631,7 +631,7 @@ public sealed class AnyCollectionTests {
         // A dictionary's keys are distinct by nature: the caller can loosen the count or the key generator.
         Check.ThatCode(() => Any.DictionaryOf(Any.Boolean(), Any.Int32()).WithCount(3).Generate())
              .Throws<ConflictingAnyConstraintException>()
-             .WithMessage("The key generator can produce only 2 distinct key(s), not enough for the 3 keys it must still supply.");
+             .WithMessage("The key generator can produce only 2 distinct key(s), not enough for the 3 keys it must still supply to honour WithCount(3).");
 
         Check.ThatCode(() => Any.DictionaryOf(Any.Int32(), Any.String()).ContainingKey(1).ContainingKey(1).Generate())
              .Throws<ConflictingAnyConstraintException>()
@@ -652,11 +652,29 @@ public sealed class AnyCollectionTests {
         // would report a number the caller did not write and the generator was never asked to produce.
         Check.ThatCode(() => Any.SetOf(Any.Decimal().OneOf(1m, 2m)).Containing(3m).WithCount(4).Generate())
              .Throws<ConflictingAnyConstraintException>()
-             .WithMessage("The generator can produce only 2 distinct value(s), not enough for the 3 elements it must still supply.");
+             .WithMessage("The generator can produce only 2 distinct value(s), not enough for the 3 elements it must still supply to honour WithCount(4).");
 
         Check.ThatCode(() => Any.DictionaryOf(Any.Decimal().OneOf(1m, 2m), Any.Int32()).ContainingKey(3m).WithCount(4).Generate())
              .Throws<ConflictingAnyConstraintException>()
-             .WithMessage("The key generator can produce only 2 distinct key(s), not enough for the 3 keys it must still supply.");
+             .WithMessage("The key generator can produce only 2 distinct key(s), not enough for the 3 keys it must still supply to honour WithCount(4).");
+    }
+
+    [Fact(DisplayName = "A distinct collection's shortfall names the count call the caller can loosen (issue #316).")]
+    [SuppressMessage(JustDummiesRule.JD016.Category, JustDummiesRule.JD016.Id, Justification = SuppressionJustification.JD016.ThrowIsTheSubject)]
+    public void DistinctShortfallNamesTheCountCall() {
+        // A list blames Distinct(), the call it does have, and names the count on the other side as a set does.
+        Check.ThatCode(() => Any.ListOf(Any.Boolean()).WithCount(3).Distinct().Generate())
+             .Throws<ConflictingAnyConstraintException>()
+             .WithMessage("Cannot apply Distinct() because 3 elements required to be distinct to honour WithCount(3) exceed the 2 distinct value(s) the element generator can produce.");
+
+        // A minimum sets the need as an exact count does; the one the caller wrote is the one named.
+        Check.ThatCode(() => Any.SetOf(Any.Boolean()).WithMinCount(5).Generate())
+             .Throws<ConflictingAnyConstraintException>()
+             .WhichMember(conflict => conflict.Message).Contains("WithMinCount(5)");
+
+        Check.ThatCode(() => Any.DictionaryOf(Any.Boolean(), Any.Int32()).WithMinCount(5).Generate())
+             .Throws<ConflictingAnyConstraintException>()
+             .WhichMember(conflict => conflict.Message).Contains("WithMinCount(5)");
     }
 
     [Fact(DisplayName = "PairOf and TripleOf assemble value tuples from constrained parts.")]

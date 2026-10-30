@@ -96,7 +96,8 @@ les workflows tels qu'ils sont, pas reprise sur parole :
 
 | Workflow | Rôle |
 | --- | --- |
-| [`release`](nuget-trusted-publishing.fr.md) | Construit, atteste et publie les packages NuGet sur un tag de version de l'un des quatre trains (`lib-v*`, `xunit-v*`, `catalog-v*`, `cli-v*`). **Pousser un tel tag publie**, et une version publiée est immuable — la page liée couvre la configuration trusted publishing de nuget.org qu'il exige et comment répéter sans publier. L'essai d'expérience développeur (`tools/ux-trial/run.sh`) passe d'abord, et un domaine en échec arrête la release. (Page en anglais seulement.) |
+| [`release`](nuget-trusted-publishing.fr.md) | Construit, atteste et publie les packages NuGet sur un tag de version de l'un des quatre trains (`lib-v*`, `xunit-v*`, `catalog-v*`, `cli-v*`). **Pousser un tel tag publie**, et une version publiée est immuable — la page liée couvre la configuration trusted publishing de nuget.org qu'il exige et comment répéter sans publier. Le contrat consommateur de l'essai d'expérience développeur (`tools/ux-trial/run.sh`) passe d'abord, et un échec arrête la release. (Page en anglais seulement.) |
+| `ux-trial` | Lance tous les domaines de l'essai d'expérience développeur (`tools/ux-trial/run.sh --all`) sur les packages empaquetés depuis le commit, à la demande et chaque lundi. Ne bloque rien. |
 | `release-dryrun` | Répète en continu la part sans effet de bord de la release (pack + SBOM) sur chaque PR et chaque push. |
 | `changelog` | Rédige la section `[Unreleased]` du changelog d'un train à partir des PR mergées, sur déclenchement manuel, et ouvre une PR de relecture. |
 

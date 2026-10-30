@@ -96,8 +96,9 @@ relevant command, say so explicitly.
 | `doc/handwritten/` | `for-users/` and `for-maintainers/` (ADRs, specifications, workflow pages) |
 
 `tools/justdummies-check`, `tools/floor-check` and `tools/ux-trial` are deliberately **outside** the
-solution: they consume the packed package, not the projects. `tools/ux-trial` runs before every
-release; a change that improves a message it pins updates the probe in the same change.
+solution: they consume the packed package, not the projects. The consumer contract of `tools/ux-trial`
+gates every release, and its full corpus runs weekly; a change that improves a message a probe pins
+updates the probe in the same change.
 
 ## Always-on rules
 

@@ -91,7 +91,8 @@ as they stand, not carried over on faith:
 
 | Workflow | Purpose |
 | --- | --- |
-| [`release`](nuget-trusted-publishing.en.md) | Build, attest, and publish the NuGet packages on a version tag of one of the four trains (`lib-v*`, `xunit-v*`, `catalog-v*`, `cli-v*`). **Pushing such a tag publishes**, and a published version is immutable — the linked page covers the nuget.org trusted-publishing setup it needs and how to rehearse without publishing. The developer-UX trial (`tools/ux-trial/run.sh`) runs first, and a failing domain stops the release. |
+| [`release`](nuget-trusted-publishing.en.md) | Build, attest, and publish the NuGet packages on a version tag of one of the four trains (`lib-v*`, `xunit-v*`, `catalog-v*`, `cli-v*`). **Pushing such a tag publishes**, and a published version is immutable — the linked page covers the nuget.org trusted-publishing setup it needs and how to rehearse without publishing. The consumer contract of the developer-UX trial (`tools/ux-trial/run.sh`) runs first, and a failure stops the release. |
+| `ux-trial` | Run every domain of the developer-UX trial (`tools/ux-trial/run.sh --all`) against the packages packed from the commit, on manual dispatch and every Monday. It blocks nothing. |
 | `release-dryrun` | Continuously rehearse the side-effect-free part of the release (pack + SBOM) on every PR and push. |
 | `changelog` | Draft the `[Unreleased]` section of a train's changelog from merged PRs, on manual dispatch, and open a review PR. |
 

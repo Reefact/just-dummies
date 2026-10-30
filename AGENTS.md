@@ -279,11 +279,11 @@ enables auto-merge on its own pull request.
 
 For each review finding, take exactly one route:
 
-- **You agree and the fix is clear and local** — implement it, push, and reply on
-  the thread with `Resolved in <sha>`. You MAY ask the reviewer (`@codex`) for a
+- **You agree and the fix is clear and local** — implement it, push, and answer on
+  the thread with `done:` and the commit, once it is pushed (`done: fixed in a1b2c3d, …`). You MAY ask the reviewer (`@codex`) for a
   single confirming re-review; never open a back-and-forth.
-- **You believe the finding is wrong** — reply on the thread with the concrete
-  technical reason and mention `@reefact` to arbitrate. Do not ping `@codex` to
+- **You believe the finding is wrong** — answer on the thread with `disagree:` and
+  the concrete technical reason, and mention `@reefact` to arbitrate. Do not ping `@codex` to
   argue: a peer reviewer has no authority to settle the disagreement.
 - **The finding needs a human judgement** — architecture, a product trade-off, an
   ambiguous requirement, a security or compatibility policy — mention `@reefact`
@@ -291,6 +291,10 @@ For each review finding, take exactly one route:
 
 Rules:
 
+- Every reply opens with a Conventional Comments reply label, `<label>: <subject>`
+  (`done`, `ack`, `disagree`, `thanks`, `note`, `question`); every finding gets one,
+  `praise` included, and a blocking thread is resolved by its reviewer, never by you.
+  `.claude/skills/respond-to-review/SKILL.md` holds the whole contract.
 - Never mention both `@codex` and `@reefact` on the same thread: a bot round-trip
   or a human decision, never both.
 - At most two fix / re-review cycles per finding. If it is still open after that,

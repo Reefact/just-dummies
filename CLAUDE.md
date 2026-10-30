@@ -152,6 +152,7 @@ Invoke on demand — `.claude/skills/`:
 | `open-pr` | preparing a pull request: title, template, honest testing claims |
 | `review-pr` | reviewing one: the Conventional Comments contract |
 | `review-feedback` | acting on review findings: the three routes, and when to escalate |
+| `respond-to-review` | the wording of every reply to a review: Conventional Comments reply labels (`done`, `ack`, `disagree`, `thanks`…), and who resolves a thread |
 | `tidy-history` | before opening a pull request, and after pushing more commits to an open one |
 | `release-train` | cutting, tagging or preparing a release; drafting a changelog |
 | `release-notes` | drafting or refreshing a GitHub release note from a train's changelog, EN/FR |

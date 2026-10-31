@@ -59,8 +59,10 @@ public sealed class ScaffoldOutcome {
     ///     Type names under <see cref="ScaffoldStatus.TypeNotFound" /> (the closest ones) and
     ///     <see cref="ScaffoldStatus.TypeAmbiguous" /> (the full ones), both §3.2; static factory signatures
     ///     under <see cref="ScaffoldStatus.NoEligibleConstructor" /> where several qualify and §5.1.2's tie
-    ///     rule left them tied. Empty otherwise — including that same status where nothing tied, so an empty
-    ///     list is never a fourth meaning.
+    ///     rule left them tied; the two declarations that bear one name under
+    ///     <see cref="ScaffoldStatus.EntryPointNameTaken" /> (§4.5), the entry point's own first, each with its
+    ///     file. Empty otherwise — including the factory status where nothing tied, so an empty list is never a
+    ///     fifth meaning.
     ///     <para>
     ///         One property rather than one per producer, because they answer one question: what the
     ///         developer has to settle before the tool can proceed. The console renders all three through the

@@ -187,6 +187,17 @@ rassemble des types de plusieurs namespaces :
 any generate Order --entry-point static:Arbitrary --entry-point-namespace Shop.Tests.Arbitrary
 ```
 
+Un nom que `--entry-point any` ne peut pas prendre est refusé avant toute écriture. Le fichier déclare
+une classe nommée `Any{Type}Entry` pour porter le membre d'extension, et c'est exactement le nom du
+generator d'un type appelé `{Type}Entry` : avec un `Voice` et un `VoiceEntry` dans un même namespace,
+`any generate VoiceEntry Voice --entry-point any` déclarerait `AnyVoiceEntry` deux fois. `any` compare
+ce nom aux generators du même lancement et aux types que votre projet déclare déjà là, et refuse le
+scaffold dont le point d'entrée entrerait en collision — sortie `1`, les deux déclarations nommées
+avec leurs fichiers, les autres types du lancement écrits comme d'habitude ; `--dry-run` le rapporte
+aussi. Il ne renomme rien : déplacez les points d'entrée avec `--entry-point-namespace`, là où aucun
+generator n'est, demandez `static:<Name>`, qui ne déclare aucune classe nommée d'après votre type, ou
+renommez l'un des deux types.
+
 Le generator, lui, ne bouge pas, et `AnyOrder.cs` est identique octet pour octet quelle que soit la
 valeur demandée. Une racine nommée `Any` est refusée : une classe statique de ce nom dans votre propre
 projet masquerait `JustDummies.Any` pour tout son namespace, et `Any.Int32()` cesserait de compiler —

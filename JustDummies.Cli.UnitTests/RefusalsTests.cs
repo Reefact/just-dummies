@@ -125,6 +125,19 @@ public sealed class RefusalsTests : IDisposable {
              .Contains("dotnet add package JustDummies");
     }
 
+    // Both declarations, each with its file, under the sentence — and the two remedies that leave the domain
+    // alone. What the tool did not do is rename anything (ADR-0046).
+    [Fact(DisplayName = "An entry class whose name is taken lists both declarations and the way around.")]
+    public void AnEntryClassWhoseNameIsTakenListsBothDeclarations() {
+        string said = Rendered(ScaffoldOutcome.Refused(ScaffoldStatus.EntryPointNameTaken,
+                                                       ["AnyOrderEntry in AnyOrder.Entry.cs — the entry point of Order",
+                                                        "AnyOrderEntry in AnyOrderEntry.cs — the generator of OrderEntry, scaffolded in this run"]));
+
+        Check.That(said).Contains("  AnyOrderEntry in AnyOrder.Entry.cs — the entry point of Order\n  AnyOrderEntry in AnyOrderEntry.cs — the generator of OrderEntry, scaffolded in this run\n");
+        Check.That(said).Contains("--entry-point-namespace");
+        Check.That(said).Contains("--entry-point static:<Name>");
+    }
+
     [Fact(DisplayName = "An existing file is named, with --force and what it costs.")]
     public void AnExistingFileIsNamedWithWhatForceCosts() {
         string said = Say(console => Refusals.FileExists("/tests/AnyOrder.cs", console));

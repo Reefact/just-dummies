@@ -50,6 +50,24 @@ public sealed class GenerateCommandTests : IDisposable {
                                   }
                                   """;
 
+    /// <summary>
+    ///     A type and the type its name is a prefix of, in one namespace: <c>Voice</c>'s entry class is
+    ///     <c>AnyVoiceEntry</c>, which is <c>VoiceEntry</c>'s generator (§4.5).
+    /// </summary>
+    private const string Voices = """
+                                  using System.Collections.Generic;
+
+                                  namespace Shop.Domain;
+
+                                  public sealed class VoiceEntry {
+                                      public VoiceEntry(int pitch) { }
+                                  }
+
+                                  public sealed class Voice {
+                                      public Voice(int number, IReadOnlyList<VoiceEntry> entries) { }
+                                  }
+                                  """;
+
     private readonly string directory = Directory.CreateTempSubdirectory("any-generate-").FullName;
 
     /// <inheritdoc />
@@ -258,6 +276,76 @@ public sealed class GenerateCommandTests : IDisposable {
         Check.That(run.ExitCode).IsEqualTo(1);
         Check.That(run.Error).Contains("AnyOrder.Entry.cs");
         Check.That(File.Exists(Path.Combine(directory, "AnyOrder.cs"))).IsFalse();
+    }
+
+    /// <summary>
+    ///     The pre-write name check of §4.5: <c>--entry-point any</c> declares <c>Any{Type}Entry</c>, which is
+    ///     exactly the generator name of a domain type <c>{Type}Entry</c>.
+    /// </summary>
+    /// <remarks>
+    ///     Refused, not renamed, and before anything is written for that type: a run that reported
+    ///     <c>✓ AnyVoice.Entry.cs</c> and then failed the developer's build with <c>CS0260</c> is the outcome
+    ///     ADR-0046 names rather than works around. The other type of the batch is unaffected — the types are
+    ///     processed independently (§7), and its files are the ones the entry point would have collided with.
+    /// </remarks>
+    [Fact(DisplayName = "An entry class named like another type's generator is refused before it is written.")]
+    public async Task AnEntryClassNamedLikeAnotherGeneratorIsRefused() {
+        GenerateSettings settings = Settings("VoiceEntry", "Voice");
+
+        settings.EntryPoint = "any";
+
+        Run run = await Generate(settings, Compilation(Voices));
+
+        Check.That(run.ExitCode).IsEqualTo(1);
+        Check.That(run.Error).Contains("AnyVoiceEntry");
+        Check.That(run.Error).Contains("AnyVoice.Entry.cs");
+        Check.That(run.Error).Contains("AnyVoiceEntry.cs");
+        Check.That(run.Error).Contains("--entry-point-namespace");
+        Check.That(File.Exists(Path.Combine(directory, "AnyVoice.cs"))).IsFalse();
+        Check.That(File.Exists(Path.Combine(directory, "AnyVoice.Entry.cs"))).IsFalse();
+        Check.That(File.Exists(Path.Combine(directory, "AnyVoiceEntry.cs"))).IsTrue();
+        Check.That(File.Exists(Path.Combine(directory, "AnyVoiceEntry.Entry.cs"))).IsTrue();
+    }
+
+    // The same clash, met one run later: the generator of VoiceEntry is already in the project, so the entry
+    // class of Voice would redeclare a type the compilation holds. --dry-run has to say it too — it is the
+    // run a developer makes to see what would happen, and exit 0 there was the report's own finding.
+    [Fact(DisplayName = "--dry-run refuses an entry class whose name the project already declares.")]
+    public async Task ADryRunRefusesAnEntryClassTheProjectAlreadyDeclares() {
+        GenerateSettings settings = Settings("Voice");
+
+        settings.EntryPoint = "any";
+        settings.DryRun     = true;
+
+        CSharpCompilation compilation = Compilation(Voices).AddSyntaxTrees(
+            CSharpSyntaxTree.ParseText("namespace Shop.Domain;\n\npublic sealed class AnyVoiceEntry { }\n",
+                                       new CSharpParseOptions(LanguageVersion.Latest),
+                                       path: Path.Combine(directory, "AnyVoiceEntry.cs"),
+                                       cancellationToken: TestContext.Current.CancellationToken));
+
+        Run run = await Generate(settings, compilation);
+
+        Check.That(run.ExitCode).IsEqualTo(1);
+        Check.That(run.Error).Contains("AnyVoiceEntry.cs");
+        Check.That(run.Error).Contains("AnyVoice.Entry.cs");
+        Check.That(run.Output).IsEmpty();
+        Check.That(Directory.GetFiles(directory)).IsEmpty();
+    }
+
+    [Fact(DisplayName = "--format json records an entry class whose name is taken, naming both declarations.")]
+    public async Task JsonRecordsAnEntryClassWhoseNameIsTaken() {
+        GenerateSettings settings = Settings("VoiceEntry", "Voice");
+
+        settings.EntryPoint = "any";
+        settings.Format     = "json";
+
+        Run         run    = await Generate(settings, Compilation(Voices));
+        JsonElement result = JsonDocument.Parse(run.Output).RootElement.GetProperty("results")[1];
+
+        Check.That(run.ExitCode).IsEqualTo(1);
+        Check.That(result.GetProperty("status").GetString()).IsEqualTo("EntryPointNameTaken");
+        Check.That(result.GetProperty("candidates")[0].GetString()).Contains("AnyVoice.Entry.cs");
+        Check.That(result.GetProperty("candidates")[1].GetString()).Contains("AnyVoiceEntry.cs");
     }
 
     [Fact(DisplayName = "--dry-run prints both files and writes neither.")]

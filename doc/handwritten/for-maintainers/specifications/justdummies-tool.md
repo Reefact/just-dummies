@@ -509,6 +509,23 @@ it. Moving the entry point is what makes a single root reachable across several 
 opens the generator's namespace in the emitted file. `--namespace` still moves the generator, and
 takes the entry point with it unless this option says otherwise.
 
+**A name the entry-point file cannot take is refused before anything is written.** `any` declares
+`Any{Type}Entry` to carry its extension block, and that is exactly the generator name of a domain
+type `{Type}Entry`: `any generate VoiceEntry Voice --entry-point any` would write `AnyVoiceEntry`
+twice, once as a generator and once as a static class, and `CS0260` would report it at the next
+build under a recap that said success. One pre-write check compares the name the entry-point file
+would declare, in the namespace it would declare it in, against the names already borne there — the
+generators of the other types of the same run, and the types the project already declares or can see
+in a referenced assembly. A match **refuses that scaffold**, exit `1`, naming both declarations with
+their files; the other types of the run are unaffected (§7). `--dry-run` reports it the same way. A
+static root is never refused this way: it is `partial`, and a declaration already bearing its name is
+the part an earlier scaffold wrote. Refusing rather than renaming is ADR-0046 — a cleverer name would
+move the clash to the next domain type that spells it — and the remedies are the developer's:
+`--entry-point-namespace`, which declares the entry points where no generator is, `static:<Name>`,
+which declares no type named after the target, or a rename. The check is one place rather than one
+per caller, so a clash found against the run reads like one found against the project; the root name
+against the last segment of the entry-point namespace belongs to it too, when that case is written.
+
 **Shape rules.** Three header comment lines like §4.3's, naming the option that wrote the file. One
 public static factory named after the target type alone — `Order.Line` scaffolds `AnyLine` and is
 reached as `Line()`. It returns the generator, never a value: constraining it through `With…` and
@@ -1443,6 +1460,7 @@ one-based `line` and an `excerpt` of the earliest guard the engine could not vou
 | The target is an enum | `1` | Names `Any.Enum<TEnum>()`, which the library already uses to generate enum values; nothing is written. |
 | The target's `required` members are unset by the chosen constructor | `1` | Deferred to §16; names `[SetsRequiredMembers]`, which is scaffolded like any other constructor. |
 | `--entry-point any`, project below C# 14 | `1` | Names the version the project resolved, and `static:<Name>`. |
+| `--entry-point any`, and `Any{Type}Entry` is a name already borne in that namespace (§4.5) | `1` | Names both declarations with their files — the entry point's, and the generator of another type of the run or the type the project already declares — and the two options that leave the domain alone, `--entry-point-namespace` and `static:<Name>`. Nothing is written for that type; the others of the run are. Reported as `EntryPointNameTaken` under `--format json` (§6.1). |
 | `--entry-point static:Any` | `2` | Names what would stop compiling, and points at `--entry-point any`. |
 | `--entry-point` given a value that is not one of the three | `2` | Lists the three. |
 | `--entry-point-namespace` with no entry point to place | `2` | Says which option is missing. |
@@ -1463,7 +1481,9 @@ is decided in this order, which is a rule rather than a pipeline's accident:
 5. **`required` members unset**, which only arises once a constructor has been chosen.
 
 An **enum** is decided right after 1, before anything about its constructors is asked: the one it has
-is synthesised, so every later row would describe a construction that does not mean anything.
+is synthesised, so every later row would describe a construction that does not mean anything. The
+**entry-point name** (§4.5) is decided last of all, once a plan exists: it is a fact about the second
+file, and a type refused for any reason above has no entry point to ask about.
 
 The order matters because 4 is the cheapest to compute and the least useful to hear: an abstract type
 declares its constructors `protected`, so deciding 4 first told every one of them to add a public
@@ -1491,11 +1511,13 @@ developer's call, and v1.1 gives them the switch.
 The check must therefore compare arity, not just the name. Warning on all 40 would cry wolf on the
 eight that cannot collide.
 
-The four entry-point rows split across two codes, and the split is the one §7 already draws. Only
-the first is a scaffolding failure: the tool read the command line, opened the project, and found it
-cannot compile what was asked for. The other three are command lines the tool never got as far as
+The five entry-point rows split across two codes, and the split is the one §7 already draws. Only
+the first two are scaffolding failures: the tool read the command line, opened the project, and found
+it cannot compile what was asked for. The other three are command lines the tool never got as far as
 running, which is `2`. The first is also asked **once per run** rather than once per type, since it
-is a fact about the project — `any generate Order Customer Invoice` prints it once and stops.
+is a fact about the project — `any generate Order Customer Invoice` prints it once and stops. The
+second is asked per type, and after every type of the run has been scaffolded: half of it is a fact
+about the run, and a type refused for it has nothing of its own on disk.
 
 One scaffold is one unit of work on disk. Where an entry point was asked for, its file is checked for
 existence together with the generator's before either is written, so `Any{Type}.Entry.cs` already

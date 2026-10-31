@@ -39,6 +39,16 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Fixed
 
+- **`--entry-point any` refuses an entry class whose name is already taken, instead of writing a file that
+  breaks the build.** The entry-point file declares `Any{Type}Entry` to carry its extension member, which is
+  exactly the generator name of a domain type `{Type}Entry`: `any generate VoiceEntry Voice --entry-point any`
+  reported `✓ AnyVoice.Entry.cs` and the project then failed with `CS0260` and a cascade behind it; `--dry-run`
+  with the clash already on disk exited `0` too. One check now runs before anything is written, comparing the
+  name the entry-point file would declare with the generators of the same run and with the types the project
+  already declares in that namespace. A clash refuses that scaffold — exit `1`, both declarations named with
+  their files, the other types of the run written as usual, `--dry-run` included — and `--format json` reports
+  it as `EntryPointNameTaken` with the two declarations as `candidates`. Nothing is renamed: move the entry
+  points with `--entry-point-namespace`, ask for `--entry-point static:<Name>`, or rename a type.
 - **The recap says when a parameter's nullable annotation could not be written.** In a test project that does
   not read nullable annotations, a `Bic? agent` is pinned as `Bic` — the `?` would itself warn there — and the
   recap's constructor line read `Party(string, Bic, …)`, describing the domain as it is not. The rows still spell

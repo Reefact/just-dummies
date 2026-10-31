@@ -135,6 +135,7 @@ internal static class Refusals {
             ScaffoldStatus.TypeIsGeneric         => Generic(typeArgument),
             ScaffoldStatus.RequiredMembersUnset  => RequiredMembers(typeArgument),
             ScaffoldStatus.TypeIsEnum            => Enum(typeArgument),
+            ScaffoldStatus.EntryPointNameTaken   => EntryPointNameTaken(typeArgument, outcome.Candidates),
             _                                    => [Mark + $"{typeArgument}: {outcome.Status}."]
         };
     }
@@ -253,6 +254,25 @@ internal static class Refusals {
             Mark + $"{typeArgument} declares members marked required that its constructor does not set.",
             "  This tool does not set them yet. Mark that constructor [SetsRequiredMembers], or write the generator by hand."
         ];
+    }
+
+    /// <summary>
+    ///     The entry point would declare a type whose name is already borne — by the generator of another type
+    ///     of this run, or by a type the project already holds (§4.5).
+    /// </summary>
+    /// <remarks>
+    ///     Both declarations are listed, each with its file, because that is what the developer acts on: which
+    ///     two names met, and where. The remedies name the two options that change nothing about the domain
+    ///     first — moving the entry points, or a static root, which declares no class named after the type —
+    ///     and renaming is left to them. Nothing was renamed by the tool (ADR-0046).
+    /// </remarks>
+    private static IReadOnlyList<string> EntryPointNameTaken(string typeArgument, IReadOnlyList<string> declarations) {
+        List<string> sentences = [Mark + $"{typeArgument}: --entry-point any would declare a type whose name is already taken."];
+
+        sentences.AddRange(Listed(declarations));
+        sentences.Add("  Move the entry points with --entry-point-namespace, or ask for --entry-point static:<Name>, which declares no type named after yours.");
+
+        return sentences;
     }
 
     /// <summary>The candidates, indented under the sentence that introduced them.</summary>

@@ -187,6 +187,16 @@ several namespaces:
 any generate Order --entry-point static:Arbitrary --entry-point-namespace Shop.Tests.Arbitrary
 ```
 
+One name `--entry-point any` cannot take is refused before anything is written. The file declares a
+class named `Any{Type}Entry` to carry the extension member, which is exactly the generator name of a
+type called `{Type}Entry`: with a `Voice` and a `VoiceEntry` in one namespace, `any generate
+VoiceEntry Voice --entry-point any` would declare `AnyVoiceEntry` twice. `any` compares that name with
+the generators of the same run and with the types your project already declares there, and refuses
+the scaffold whose entry point would clash — exit `1`, both declarations named with their files, the
+other types of the run written as usual; `--dry-run` reports it too. It does not rename anything:
+move the entry points with `--entry-point-namespace`, where no generator is, ask for `static:<Name>`,
+which declares no class named after your type, or rename one of the two types.
+
 The generator itself does not move, and `AnyOrder.cs` is byte-identical whichever of the three you
 ask for. A root named `Any` is refused: a static class by that name in your own project would hide
 `JustDummies.Any` for its whole namespace, and `Any.Int32()` would stop compiling — which is what

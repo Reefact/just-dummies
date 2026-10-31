@@ -51,7 +51,23 @@ public static class EntryPointEmitter {
         WriteNamespaceClosing(file, entryNamespace, block);
 
         return new ScaffoldedEntryPoint(new ScaffoldedFile(plan.GeneratorName + ".Entry.cs", file.ToString(), containsTodo: false),
-                                        $"{entryPoint.Root}.{method}()");
+                                        $"{entryPoint.Root}.{method}()",
+                                        entryPoint.Kind,
+                                        entryPoint.Kind == EntryPointKind.Any ? ExtensionTypeName(plan) : entryPoint.Root,
+                                        entryNamespace);
+    }
+
+    /// <summary>
+    ///     The class that carries the <c>extension</c> block — <c>AnyOrderEntry</c> for <c>AnyOrder</c>.
+    /// </summary>
+    /// <remarks>
+    ///     Named after the generator rather than after the target so that two generators of one type under two
+    ///     naming patterns (§16) carry two containers. It is a name a domain type can also earn — the generator
+    ///     of an <c>OrderEntry</c> is <c>AnyOrderEntry</c> — and that is not resolved here by a cleverer name:
+    ///     the pre-write check of §4.5 refuses the clash instead, naming both sides (ADR-0046).
+    /// </remarks>
+    private static string ExtensionTypeName(ScaffoldPlan plan) {
+        return plan.GeneratorName + "Entry";
     }
 
     /// <summary>
@@ -181,7 +197,7 @@ public static class EntryPointEmitter {
     /// </summary>
     private static void WriteExtension(StringBuilder file, ScaffoldPlan plan, string method, string indent) {
         Line(file, $"{indent}/// <summary>Hangs <c>Any.{method}()</c> off the library's own entry point.</summary>");
-        Line(file, $"{indent}public static class {plan.GeneratorName}Entry {{");
+        Line(file, $"{indent}public static class {ExtensionTypeName(plan)} {{");
         Line(file, string.Empty);
         Line(file, $"{indent}{Indent}extension(Any) {{");
         Line(file, string.Empty);

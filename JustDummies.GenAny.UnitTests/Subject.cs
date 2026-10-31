@@ -86,6 +86,11 @@ internal static class Subject {
     ///     Scaffolds by the name a developer would type, over the sources given (§3.2).
     /// </summary>
     internal static ScaffoldOutcome ScaffoldByName(string typeArgument, params string[] sources) {
+        return ScaffoldByName(typeArgument, ScaffoldOptions.Default, sources);
+    }
+
+    /// <summary>The same, under the options given — an entry point, a namespace of the file's own.</summary>
+    internal static ScaffoldOutcome ScaffoldByName(string typeArgument, ScaffoldOptions options, params string[] sources) {
         CSharpCompilation compilation = CSharpCompilation.Create(
             "Subject",
             [.. sources.Select(Parse)],
@@ -93,7 +98,7 @@ internal static class Subject {
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary,
                                          nullableContextOptions: NullableContextOptions.Enable));
 
-        return Scaffolder.Scaffold(compilation, typeArgument, ScaffoldOptions.Default);
+        return Scaffolder.Scaffold(compilation, typeArgument, options);
     }
 
     /// <summary>
@@ -106,8 +111,16 @@ internal static class Subject {
     internal static ScaffoldOutcome ScaffoldByNameReferencing(string referencedSource,
                                                               string typeArgument,
                                                               params string[] sources) {
+        return ScaffoldByNameReferencing(referencedSource, typeArgument, ScaffoldOptions.Default, sources);
+    }
+
+    /// <summary>The same, under the options given.</summary>
+    internal static ScaffoldOutcome ScaffoldByNameReferencing(string referencedSource,
+                                                              string typeArgument,
+                                                              ScaffoldOptions options,
+                                                              params string[] sources) {
         return ScaffoldReferencing(referencedSource, Referenced(downlevel: false, withLibrary: true),
-                                   typeArgument, sources);
+                                   typeArgument, sources, options);
     }
 
     /// <summary>
@@ -130,13 +143,14 @@ internal static class Subject {
     internal static ScaffoldOutcome ScaffoldByNameReferencingAcrossFrameworks(string referencedSource,
                                                                              string typeArgument,
                                                                              params string[] sources) {
-        return ScaffoldReferencing(referencedSource, ItsOwnReferenceSet(), typeArgument, sources);
+        return ScaffoldReferencing(referencedSource, ItsOwnReferenceSet(), typeArgument, sources, ScaffoldOptions.Default);
     }
 
     private static ScaffoldOutcome ScaffoldReferencing(string referencedSource,
                                                        ImmutableArray<MetadataReference> referencedAgainst,
                                                        string typeArgument,
-                                                       IEnumerable<string> sources) {
+                                                       IEnumerable<string> sources,
+                                                       ScaffoldOptions options) {
         CSharpCompilation referenced = CSharpCompilation.Create(
             "Referenced",
             [Parse(referencedSource)],
@@ -156,7 +170,7 @@ internal static class Subject {
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary,
                                          nullableContextOptions: NullableContextOptions.Enable));
 
-        return Scaffolder.Scaffold(compilation, typeArgument, ScaffoldOptions.Default);
+        return Scaffolder.Scaffold(compilation, typeArgument, options);
     }
 
     /// <summary>

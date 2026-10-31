@@ -76,6 +76,19 @@ public enum ScaffoldStatus {
     ///     <c>Any.Enum&lt;TEnum&gt;()</c> instead would wrap a generator the library already ships in a file
     ///     that adds nothing, so the honest answer is to name it.
     /// </remarks>
-    TypeIsEnum = 8
+    TypeIsEnum = 8,
+
+    /// <summary>
+    ///     The entry-point file would declare a type whose name is already borne in that namespace — by the
+    ///     generator of another type of the same run, or by a type the project already declares (§4.5).
+    /// </summary>
+    /// <remarks>
+    ///     <c>--entry-point any</c> declares <c>Any{Type}Entry</c>, and that is exactly the generator name of a
+    ///     domain type <c>{Type}Entry</c>: <c>Voice</c> beside <c>VoiceEntry</c> wrote a file reporting success
+    ///     and failing the developer's build with <c>CS0260</c>. Refused rather than renamed (ADR-0046), and
+    ///     before anything is written for that type; the outcome carries both declarations, the entry point's
+    ///     first, each with its file.
+    /// </remarks>
+    EntryPointNameTaken = 9
 
 }

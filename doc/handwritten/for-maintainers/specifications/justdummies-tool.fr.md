@@ -526,6 +526,25 @@ atteignable à travers plusieurs namespaces, et cela ouvre le namespace du gener
 émis. `--namespace` déplace toujours le generator, et emmène le point d'entrée avec lui sauf si cette
 option en décide autrement.
 
+**Un nom que le fichier de point d'entrée ne peut pas prendre est refusé avant toute écriture.**
+`any` déclare `Any{Type}Entry` pour porter son bloc d'extension, et c'est exactement le nom du
+generator d'un type métier `{Type}Entry` : `any generate VoiceEntry Voice --entry-point any` écrirait
+`AnyVoiceEntry` deux fois, une fois comme generator et une fois comme classe statique, et `CS0260` le
+signalerait au build suivant sous un récapitulatif qui disait succès. Une vérification unique, avant
+écriture, compare le nom que le fichier de point d'entrée déclarerait, dans le namespace où il le
+déclarerait, aux noms déjà portés là — les generators des autres types du même lancement, et les
+types que le projet déclare déjà ou voit dans un assembly référencé. Une correspondance **refuse ce
+scaffold**, sortie `1`, en nommant les deux déclarations avec leurs fichiers ; les autres types du
+lancement ne sont pas touchés (§7). `--dry-run` le rapporte de la même façon. Une racine statique
+n'est jamais refusée ainsi : elle est `partial`, et une déclaration portant déjà son nom est la part
+qu'un scaffold antérieur a écrite. Refuser plutôt que renommer, c'est l'ADR-0046 — un nom plus malin
+déplacerait la collision vers le prochain type métier qui l'épelle — et les remèdes appartiennent au
+développeur : `--entry-point-namespace`, qui déclare les points d'entrée là où aucun generator n'est,
+`static:<Name>`, qui ne déclare aucun type nommé d'après la cible, ou un renommage. La vérification
+est un seul endroit plutôt qu'un par appelant, pour qu'une collision trouvée contre le lancement se
+lise comme une trouvée contre le projet ; le nom de racine contre le dernier segment du namespace du
+point d'entrée lui appartient aussi, quand ce cas sera écrit.
+
 **Règles de forme.** Trois lignes d'en-tête comme au §4.3, nommant l'option qui a écrit le fichier.
 Une fabrique publique statique nommée d'après le seul type cible — `Order.Line` scaffolde `AnyLine` et
 s'atteint par `Line()`. Elle rend le generator, jamais une valeur : le contraindre par `With…` et
@@ -1524,6 +1543,7 @@ pu répondre (§5.6), et vaut `null` sur toutes les autres lignes.
 | Le type cible est une énumération | `1` | Nomme `Any.Enum<TEnum>()`, que la bibliothèque utilise déjà pour générer les valeurs d'une énumération ; rien n'est écrit. |
 | Les membres `required` du type cible ne sont pas assignés par le constructeur retenu | `1` | Reporté au §16 ; nomme `[SetsRequiredMembers]`, scaffoldé comme n'importe quel autre constructeur. |
 | `--entry-point any`, projet en deçà de C# 14 | `1` | Nomme la version que le projet a résolue, et `static:<Name>`. |
+| `--entry-point any`, et `Any{Type}Entry` est un nom déjà porté dans ce namespace (§4.5) | `1` | Nomme les deux déclarations avec leurs fichiers — celle du point d'entrée, et le generator d'un autre type du lancement ou le type que le projet déclare déjà — et les deux options qui laissent le domaine intact, `--entry-point-namespace` et `static:<Name>`. Rien n'est écrit pour ce type ; les autres du lancement le sont. Rapporté comme `EntryPointNameTaken` sous `--format json` (§6.1). |
 | `--entry-point static:Any` | `2` | Nomme ce qui cesserait de compiler, et renvoie vers `--entry-point any`. |
 | `--entry-point` reçoit une valeur hors des trois | `2` | Liste les trois. |
 | `--entry-point-namespace` sans point d'entrée à placer | `2` | Dit quelle option manque. |
@@ -1546,6 +1566,9 @@ Le refus est décidé dans cet ordre, qui est une règle et non un accident de t
 
 Le cas des **énumérations** est traité immédiatement après l'étape 1, avant toute question sur ses constructeurs : celui
 qu'elle a est synthétisé, donc chaque ligne suivante décrirait une construction qui ne veut rien dire.
+Le **nom du point d'entrée** (§4.5) est décidé en tout dernier, une fois qu'un plan existe : c'est un
+fait sur le second fichier, et un type refusé pour l'une des raisons ci-dessus n'a aucun point
+d'entrée sur lequel s'interroger.
 
 L'ordre compte parce que le 4 est le moins coûteux à calculer et le moins utile à entendre : un type
 abstrait déclare ses constructeurs `protected`, donc décider le 4 d'abord revenait à dire à chacun
@@ -1574,12 +1597,14 @@ levier.
 Le contrôle doit donc comparer l'arité, pas seulement le nom. Avertir sur les 40 crierait au loup
 sur les huit qui ne peuvent pas entrer en collision.
 
-Les quatre lignes de point d'entrée se répartissent sur deux codes, et le partage est celui que le §7
-trace déjà. Seule la première est un échec de scaffolding : le tool a lu la ligne de commande, ouvert
-le projet, et constaté qu'il ne peut pas compiler ce qui lui est demandé. Les trois autres sont des
-lignes de commande que le tool n'a jamais réussi à exécuter, ce qui est `2`. La première est en outre
-posée **une fois par exécution** plutôt qu'une fois par type, puisque c'est un fait sur le projet —
-`any generate Order Customer Invoice` l'affiche une fois et s'arrête.
+Les cinq lignes de point d'entrée se répartissent sur deux codes, et le partage est celui que le §7
+trace déjà. Seules les deux premières sont des échecs de scaffolding : le tool a lu la ligne de
+commande, ouvert le projet, et constaté qu'il ne peut pas compiler ce qui lui est demandé. Les trois
+autres sont des lignes de commande que le tool n'a jamais réussi à exécuter, ce qui est `2`. La
+première est en outre posée **une fois par exécution** plutôt qu'une fois par type, puisque c'est un
+fait sur le projet — `any generate Order Customer Invoice` l'affiche une fois et s'arrête. La seconde
+est posée par type, et après que chaque type du lancement a été scaffoldé : la moitié en est un fait
+sur le lancement, et un type refusé pour elle n'a rien à lui sur le disque.
 
 Un scaffold est une unité de travail sur le disque. Là où un point d'entrée a été demandé, l'existence
 de son fichier est vérifiée en même temps que celle du generator avant que l'un ou l'autre ne soit

@@ -156,21 +156,34 @@ internal sealed class GenerateCommand : AsyncCommand<GenerateSettings> {
 
         if (settings.Namespace is not null) { options = options.InNamespace(settings.Namespace); }
 
-        string               directory = settings.Output is null ? here : Path.GetFullPath(settings.Output);
-        List<int>            codes     = [];
-        List<ScaffoldReport> reported  = [];
+        string                directory = settings.Output is null ? here : Path.GetFullPath(settings.Output);
+        List<string>          arguments = [];
+        List<ScaffoldOutcome> outcomes  = [];
+        List<int>             codes     = [];
+        List<ScaffoldReport>  reported  = [];
 
         foreach (string typeArgument in settings.Types) {
-            ScaffoldOutcome  outcome  = Scaffolder.Scaffold(loaded.Compilation!, typeArgument, options);
-            ReportedScaffold scaffold = Report(typeArgument, outcome, settings, directory, loaded.Restored);
+            ScaffoldOutcome outcome = Scaffolder.Scaffold(loaded.Compilation!, typeArgument, options);
 
-            codes.Add(scaffold.Code);
-            reported.Add(scaffold.Report);
+            arguments.Add(typeArgument);
+            outcomes.Add(outcome);
 
             // The one refusal that is not about the type: without the package nothing in this project can be
             // resolved, so the remaining arguments would each print the same two lines. Said once, and the run
             // stops — the exit code is the same either way.
             if (outcome.Status == ScaffoldStatus.LibraryNotReferenced) { break; }
+        }
+
+        // Every type is scaffolded before any is written, because one question is about the run rather than
+        // about a type: an entry point declaring the generator name of another argument (§4.5) is refused with
+        // nothing of its own on disk, which a write made between two scaffolds could not promise.
+        IReadOnlyList<ScaffoldOutcome> checkedOutcomes = EntryPointNameCheck.AgainstTheBatch(outcomes);
+
+        for (int index = 0; index < checkedOutcomes.Count; index++) {
+            ReportedScaffold scaffold = Report(arguments[index], checkedOutcomes[index], settings, directory, loaded.Restored);
+
+            codes.Add(scaffold.Code);
+            reported.Add(scaffold.Report);
         }
 
         if (settings.ReportsAsJson()) { JsonReport.Write(RunReport.Of(reported), consoles.Output); }

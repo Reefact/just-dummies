@@ -146,10 +146,15 @@ public static class Scaffolder {
                                 parameters,
                                 factory is null ? null : targetName + "." + factory.Name);
 
-        return ScaffoldOutcome.Scaffolded(plan,
-                                          GeneratorEmitter.Emit(plan),
-                                          Shadowing(plan, library),
-                                          EntryPointEmitter.Emit(plan, options.EntryPoint));
+        ScaffoldOutcome scaffolded = ScaffoldOutcome.Scaffolded(plan,
+                                                                GeneratorEmitter.Emit(plan),
+                                                                Shadowing(plan, library),
+                                                                EntryPointEmitter.Emit(plan, options.EntryPoint));
+
+        // Last, once there is an entry-point file to ask about: whether the type it declares is one the
+        // project already holds under that name (§4.5). The other half of that check — against the generators
+        // of the same run — is a question about the batch, which only the caller holding it can ask.
+        return EntryPointNameCheck.AgainstTheCompilation(compilation, scaffolded) ?? scaffolded;
     }
 
     /// <summary>

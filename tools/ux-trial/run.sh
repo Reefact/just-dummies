@@ -40,13 +40,13 @@ else
 fi
 
 if [ "$all" = true ]; then
-  domains="$here/domains/*/Tests"
+  domains="$here/domains/*/Tests $here/domains/*/Tests.*"
 else
   domains="$here/domains/01-payments/Tests"
 fi
 
 for tests in $domains; do
-  domain="$(basename "$(dirname "$tests")")"
+  domain="$(basename "$(dirname "$tests")")/$(basename "$tests")"
   echo "== $domain"
   if ! dotnet test --project "$tests"; then
     failed="$failed $domain"

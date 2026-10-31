@@ -6,7 +6,16 @@ scaffolded with `any`, and tested with xUnit using only the user documentation a
 is twofold — to find out whether writing tests with the library is fluent, and to catch bugs on the
 way.
 
-The findings, verified and deduplicated, are in [`REPORT.md`](REPORT.md).
+It ran twice:
+
+* **Domains 01–20**: one participant per domain, who also probed the library's limits on purpose.
+  The findings, verified and deduplicated, are in [`REPORT.md`](REPORT.md) and
+  [`REPORT.fr.md`](REPORT.fr.md).
+* **Domains 21–40**: richer models (graphs, state machines, probability distributions, 3D geometry,
+  rational durations, double-entry ledgers…), each modelled once, then tested by three developer
+  profiles — one discovering the library, one using it for months, one expert crafter — on real
+  cases only, with no boundary hunting. The findings, verified and deduplicated, are in
+  [`REPORT-2.md`](REPORT-2.md) and [`REPORT-2.fr.md`](REPORT-2.fr.md).
 
 ## Layout
 
@@ -15,6 +24,9 @@ The findings, verified and deduplicated, are in [`REPORT.md`](REPORT.md).
 | `domains/NN-name/Domain` | the domain model: value objects and aggregates with their guards |
 | `domains/NN-name/Tests` | the scaffolded `AnyX` generators and the tests; `Probes.cs` holds the deliberate edge cases |
 | `domains/NN-name/NOTES.md` | the participant's log: CLI recaps, hand fixes, findings, a fluency score |
+| `domains/NN-name/MODEL.md` | domains 21–40: the model's types, invariants and behaviour |
+| `domains/NN-name/Tests.Discovery`, `Tests.Regular`, `Tests.Expert` | domains 21–40: each profile's own generators and tests, scaffolded independently |
+| `domains/NN-name/NOTES.discovery.md`, `.regular.md`, `.expert.md` | domains 21–40: each profile's log and fluency score |
 | `repros/` | the minimal reproductions left by the verification pass |
 | `smoke/` | a small domain whose generators are **not** committed: `run.sh` scaffolds them with the packed `any` into a disposable `.smoke/` copy, then builds and tests it |
 

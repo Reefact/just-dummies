@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType></PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="JustDummies" Version="$(JustDummiesTrialVersion)" />
+    <PackageReference Include="JustDummies.Xunit" Version="$(JustDummiesTrialVersion)" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.11.0" />
+    <PackageReference Include="xunit.v3" Version="4.0.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="4.0.1" PrivateAssets="all" />
+  </ItemGroup>
+  <ItemGroup><ProjectReference Include="..\Domain\SatelliteConjunction.Domain.csproj" /></ItemGroup>
+</Project>

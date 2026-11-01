@@ -10,6 +10,13 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Added
 
+- **`WithoutChars(chars)` narrows a string's alphabet at the call site.** The general form of
+  `WithoutAlpha()` and `WithoutNumeric()`: it subtracts the characters you name and accumulates with the
+  other subtractions, so `WithChars("ACGTN")` in a scaffolded base becomes `WithoutChars("N")` where a
+  test wants no unknown base — a second `WithChars` would contradict the first, and still does. A
+  subtraction that empties the pool is refused naming both constraints; JD015 reports it when the
+  characters are a constant, JD029 reads it, and JD035 reports it written twice (issue #399).
+
 - **`Any.PermutationOf(items)` draws a random order of exactly the items given.** Every item once per
   occurrence, duplicates included, since it shuffles positions rather than comparing values — where
   `ListOf(ElementOf(all)).WithCount(n).Distinct()` hid the intent and failed on two equal items. A

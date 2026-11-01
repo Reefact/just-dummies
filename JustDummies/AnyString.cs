@@ -361,6 +361,26 @@ public sealed class AnyString : IAny<string>, IHasRandomSource, ICardinalityHint
     }
 
     /// <summary>
+    ///     Removes the characters of <paramref name="chars" /> from whatever the generator would otherwise draw — the
+    ///     general form of <see cref="WithoutAlpha" /> and <see cref="WithoutNumeric" />, and the way to narrow an alphabet
+    ///     declared elsewhere: <c>WithChars("ACGTN")</c> in a scaffolded base, <c>WithoutChars("N")</c> at the call site.
+    ///     Accumulates with the other subtractions rather than replacing them, and governs the characters drawn, not an
+    ///     anchored literal.
+    /// </summary>
+    /// <param name="chars">The characters never to draw.</param>
+    /// <returns>A new generator carrying the added constraint.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="chars" /> is <c>null</c>.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="chars" /> is empty or contains a surrogate.</exception>
+    /// <exception cref="ConflictingAnyConstraintException">Thrown when the subtraction leaves no character drawable.</exception>
+    public AnyString WithoutChars(string chars) {
+        if (chars is null) { throw new ArgumentNullException(nameof(chars)); }
+        if (chars.Length == 0) { throw new ArgumentException("The characters to remove must not be empty.", nameof(chars)); }
+        if (chars.Any(char.IsSurrogate)) { throw new ArgumentException("The characters to remove must not contain a surrogate: no draw ever yields half of an astral code point, so there is nothing to remove.", nameof(chars)); }
+
+        return new AnyString(_source, _spec.WithSubtraction(chars, ConstraintCall.Of(nameof(WithoutChars), Q(chars))));
+    }
+
+    /// <summary>
     ///     Restricts the string to the characters of an explicit <paramref name="pool" /> — a custom alphabet, the
     ///     general form of <see cref="Alpha" />/<see cref="Numeric" />/<see cref="AlphaNumeric" />. Use it to reach
     ///     characters the named sets cannot, most notably non-ASCII text (accents, other scripts), without a

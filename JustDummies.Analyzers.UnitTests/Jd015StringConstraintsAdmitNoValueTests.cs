@@ -740,6 +740,7 @@ public class Jd015StringConstraintsAdmitNoValueTests {
     [InlineData("Any.String().WithoutAlpha().Alpha()",                        "WithoutAlpha() removes every character Alpha() offers")]
     [InlineData("Any.String().Hexadecimal().WithoutNumeric().WithoutAlpha()", "WithoutNumeric() and WithoutAlpha() remove every character Hexadecimal() offers")]
     [InlineData("Any.String().WithChars(\"ab\").WithoutAlpha()",              "WithoutAlpha() removes every character WithChars(\"ab\") offers")]
+    [InlineData("Any.String().WithChars(\"ab\").WithoutChars(\"ba\")",        "WithoutChars(\"ba\") removes every character WithChars(\"ab\") offers")]
     [InlineData("Any.String().Whitespaces().NotBlank()",                      "NotBlank() needs a character that is not whitespace, and Whitespaces() offers none")]
     [InlineData("Any.String().NotBlank().WithChars(\"\\t \")",                "NotBlank() needs a character that is not whitespace, and WithChars(\"\t \") offers none")]
     [InlineData("Any.String().WithChars(\" 1\").WithoutNumeric().NotBlank()",  "NotBlank() needs a character that is not whitespace, and WithoutNumeric() removes every one WithChars(\" 1\") offers")]

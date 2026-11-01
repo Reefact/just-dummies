@@ -130,6 +130,7 @@ internal static class StringChains {
             (1, Gen.Elements(Pools).Select(p => Call($"WithChars({CSharp(p)})", g => g.WithChars(p), StringChainSlot.Family))),
             (1, Gen.Constant(Call("WithoutAlpha()", g => g.WithoutAlpha()))),
             (1, Gen.Constant(Call("WithoutNumeric()", g => g.WithoutNumeric()))),
+            (1, Gen.Elements(Pools).Select(p => Call($"WithoutChars({CSharp(p)})", g => g.WithoutChars(p)))),
             (1, Gen.Constant(Call("InUpperCase()", g => g.InUpperCase(), StringChainSlot.Casing))),
             (1, Gen.Constant(Call("InLowerCase()", g => g.InLowerCase(), StringChainSlot.Casing))));
     }

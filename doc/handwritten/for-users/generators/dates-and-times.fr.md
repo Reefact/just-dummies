@@ -100,11 +100,13 @@ Sans borne déclarée, chaque générateur tire sur tout ce que son type peut co
 | `Any.DateOnly()` | de `DateOnly.MinValue` à `DateOnly.MaxValue` — du `0001-01-01` au `9999-12-31` |
 | `Any.TimeOnly()` | de `TimeOnly.MinValue` à `TimeOnly.MaxValue` — de `00:00:00` à `23:59:59.9999999`, la journée entière |
 
-Les petits décalages ne sont pas le risque : `AddHours(1)` n'a jamais échoué sur un million de tirages. Le
-calcul calendaire, si, parce que les tirages atteignent les extrémités du type : sur 100 000 tirages sans
-contrainte, `AddYears(6)` a débordé 68 fois et `AddMonths(120)` 104 fois. Une date que le code testé décale
-ensuite de plusieurs années ou mois est une valeur qui a un domaine, donc **bornez-la avant d'en faire du calcul
-calendaire** :
+Les tirages atteignent les extrémités du type, donc **tout** décalage peut y déborder : une valeur dans la
+dernière heure de l'intervalle fait lever `AddHours(1)` aussi sûrement qu'une valeur dans les six dernières
+années fait lever `AddYears(6)`. La fréquence ne dépend que de la portée du décalage. Mesuré sur des tirages
+sans contrainte, `AddYears(6)` a débordé 68 fois sur 100 000 et `AddMonths(120)` 104 fois, tandis
+qu'`AddHours(1)` n'a pas débordé une seule fois sur un million — un échec plus rare, pas un calcul sûr. Une
+date que le code testé décale ensuite est une valeur qui a un domaine, donc **bornez-la avant d'en faire du
+calcul de dates** :
 
 ```csharp
 DateTimeOffset anyShippedAt = Any.DateTimeOffset()

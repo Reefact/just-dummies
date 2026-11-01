@@ -219,7 +219,7 @@ que l'option existait le jour où elle compterait.
 | [ADR-0061](0061-draw-from-the-ambient-context-and-hold-no-state.fr.md) | Tirer du contexte ambiant et ne détenir aucun état | Accepted | consigné ici |
 | [ADR-0062](0062-emit-the-generator-into-the-target-types-namespace.fr.md) | Émettre le generator dans le namespace du type cible | Accepted | consigné ici |
 | [ADR-0063](0063-give-the-scaffolder-no-dependency-on-the-package.fr.md) | Ne donner au scaffolder aucune dépendance sur le package JustDummies | Accepted | consigné ici |
-| [ADR-0064](0064-never-draw-null-for-a-nullable-parameter.fr.md) | Ne jamais tirer null pour un paramètre nullable | Accepted | consigné ici |
+| [ADR-0064](0064-never-draw-null-for-a-nullable-parameter.fr.md) | Ne jamais tirer null pour un paramètre nullable | Superseded by ADR-0117 | consigné ici |
 | [ADR-0065](0065-keep-the-scaffolding-engine-loadable-by-a-roslyn-host.fr.md) | Garder le moteur de scaffolding chargeable par un hôte Roslyn | Accepted | consigné ici |
 | [ADR-0066](0066-load-msbuild-from-the-sdk-never-from-the-tool.fr.md) | Charger MSBuild depuis le SDK installé, jamais depuis les fichiers de l'outil | Accepted | consigné ici |
 | [ADR-0067](0067-report-a-filtered-pool-through-an-explicit-interface.fr.md) | Rendre compte d'un pool filtré par une interface implémentée explicitement, et n'avertir de rien | Accepted | consigné ici |
@@ -252,7 +252,7 @@ que l'option existait le jour où elle compterait.
 | [ADR-0094](0094-lift-a-nullable-value-type-rather-than-deriving-it.fr.md) | Lever un type valeur nullable plutôt que le dériver | Accepted | consigné ici |
 | [ADR-0095](0095-read-the-assigned-null-check-as-a-guard-idiom-too.fr.md) | Lire aussi le null-check assigné comme un idiome de garde | Accepted | consigné ici |
 | [ADR-0096](0096-emit-a-parameter-inline-whenever-it-has-nothing-to-report.fr.md) | Émettre un paramètre en ligne dès qu'il n'a rien à rapporter | Superseded by ADR-0109 | consigné ici |
-| [ADR-0097](0097-follow-the-declared-bounds-with-the-ordinary-magnitude-window.fr.md) | Faire suivre les bornes déclarées par la fenêtre de magnitude ordinaire | Accepted | consigné ici |
+| [ADR-0097](0097-follow-the-declared-bounds-with-the-ordinary-magnitude-window.fr.md) | Faire suivre les bornes déclarées par la fenêtre de magnitude ordinaire | Superseded by ADR-0117 | consigné ici |
 | [ADR-0098](0098-offer-every-oneof-in-both-shapes.fr.md) | Offrir chaque OneOf sous les deux formes, params et séquence | Accepted | consigné ici |
 | [ADR-0099](0099-offer-oneof-wherever-the-generator-would-otherwise-build.fr.md) | Offrir OneOf partout où le générateur construirait sinon la valeur | Accepted | consigné ici |
 | [ADR-0100](0100-identify-a-value-set-by-its-values.fr.md) | Identifier un ensemble de valeurs déclaré par ses valeurs, non par l'appel qui l'a déclaré | Accepted | consigné ici |
@@ -272,4 +272,4 @@ que l'option existait le jour où elle compterait.
 | [ADR-0114](0114-refuse-a-local-datetime-bound.fr.md) | Refuser une borne `DateTime` `Local` plutôt que la lire en ticks | Accepted | consigné ici |
 | [ADR-0115](0115-allow-an-editorial-correction-to-an-accepted-adr.fr.md) | Permettre une correction éditoriale d'une ADR acceptée, jamais un changement de fond | Accepted | consigné ici |
 | [ADR-0116](0116-accumulate-a-parameters-refinements-on-its-current-recipe.fr.md) | Accumuler les affinages d'un paramètre sur sa recette courante | Proposed | consigné ici |
-| [ADR-0117](0117-draw-a-limit-value-the-type-permits-one-draw-in-ten.fr.md) | Tirer une valeur limite que le type permet une fois sur dix | Proposed | consigné ici |
+| [ADR-0117](0117-draw-a-limit-value-the-type-permits-one-draw-in-ten.fr.md) | Tirer une valeur limite que le type permet une fois sur dix | Accepted | consigné ici |

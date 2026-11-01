@@ -202,6 +202,28 @@ TimeOnly anyOpeningTime = Any.TimeOnly()
                              .Generate();
 ```
 
+A time of day wraps at midnight, so a start after the end is not a mistake: `Between(22:00, 06:00)` is
+the night, as `TimeOnly.IsBetween` reads it, drawn uniformly over its two segments — a quarter of the
+draws before midnight, since two of its eight hours are. `Between(t, t)` stays the single value `t`;
+`Any.TimeOnly()` alone is the whole day.
+
+<!-- jd:net8 -->
+```csharp
+TimeOnly anyNightTime   = Any.TimeOnly().Between(new TimeOnly(22, 0), new TimeOnly(6, 0)).Generate();
+TimeOnly anyLateShift   = Any.TimeOnly().Between(new TimeOnly(22, 0), new TimeOnly(6, 0)).After(new TimeOnly(23, 0)).Generate();
+TimeOnly anyRoundedTime = Any.TimeOnly()
+                             .Between(new TimeOnly(22, 0), new TimeOnly(6, 0))
+                             .WithGranularity(TimeSpan.FromMinutes(30))
+                             .Generate();
+```
+
+Once a window crosses midnight, every bound is read along it, whatever order you wrote the calls in:
+`After(23:00)` moves its start, `Before(02:00)` its end, `After(01:00)` leaves only 01:00 to 06:00, and a
+time outside the window — `After(12:00)` on the night — admits no value and is refused naming both.
+`Except`, `OneOf` and `WithGranularity` apply to both segments. A granularity that does not divide a day,
+such as 7 minutes, restarts its grid at midnight, so it has no single step across it and is refused on
+such a window ([ADR-0125](../../for-maintainers/adr/0125-let-a-time-of-day-window-cross-midnight.md)).
+
 On `netstandard2.0` those types do not exist, so neither do their factories. Everything else on this
 page is available on every target.
 

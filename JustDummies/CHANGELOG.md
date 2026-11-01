@@ -10,6 +10,15 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Added
 
+- **`Any.TimeOnly().Between(start, end)` crosses midnight when the start is after the end.**
+  `Between(22:00, 06:00)` is the night, as `TimeOnly.IsBetween` reads it, drawn uniformly over its two
+  segments — where it threw an `ArgumentException` in eight domains of the developer-UX trial.
+  `Between(t, t)` stays the single value `t`. Once a window crosses midnight, `After`, `Before` and a
+  further `Between` narrow it along its direction, in any declaration order; a time outside the window
+  is refused naming both, and so is a granularity that does not divide a day, whose grid restarts at
+  midnight. `Except`, `OneOf` and `WithGranularity` apply to both segments, and a window that does not
+  cross midnight draws exactly as before (issue #357, ADR-0125).
+
 - **`Ordered()` and `OrderedBy(key)` arrange a list or an array in ascending order.** The elements are
   drawn, then sorted, so the count, the contained values and distinctness hold wherever the order is
   declared — where sorting in `As(...)` left the builder. Strictly increasing is `Ordered().Distinct()`

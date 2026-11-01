@@ -114,8 +114,11 @@ public sealed class Probes {
     }
 
     [Fact]
-    public void A_TimeOnly_range_across_midnight_is_an_argument_error() {
-        Assert.Throws<ArgumentException>(() => Any.TimeOnly().Between(new TimeOnly(23, 0), new TimeOnly(1, 0)));
+    public void A_TimeOnly_range_across_midnight_is_drawn_across_it() {
+        // The start after the end crosses midnight, as TimeOnly.IsBetween reads it (issue #357).
+        TimeOnly drawn = Any.TimeOnly().Between(new TimeOnly(23, 0), new TimeOnly(1, 0)).Generate();
+
+        Assert.True(drawn >= new TimeOnly(23, 0) || drawn <= new TimeOnly(1, 0));
     }
 
     [Fact]

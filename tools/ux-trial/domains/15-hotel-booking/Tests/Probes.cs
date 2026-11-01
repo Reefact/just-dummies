@@ -56,14 +56,15 @@ public sealed class Probes {
     }
 
     [Fact]
-    public void An_overnight_arrival_window_is_refused_although_TimeOnly_IsBetween_wraps_midnight() {
+    public void An_overnight_arrival_window_wraps_midnight_as_TimeOnly_IsBetween_does() {
         TimeOnly start = new TimeOnly(22, 0);
         TimeOnly end   = new TimeOnly(2, 0);
 
         Assert.True(new TimeOnly(23, 30).IsBetween(start, end)); // the BCL's own reading of the window
 
-        ArgumentException refusal = Assert.Throws<ArgumentException>(() => Any.TimeOnly().Between(start, end));
-        Assert.StartsWith("The start (22:00:00.0000000) must be at or before the end (02:00:00.0000000).", refusal.Message);
+        // The library now reads the pair the same way (issue #357).
+        TimeOnly drawn = Any.TimeOnly().Between(start, end).Generate();
+        Assert.True(drawn >= start || drawn <= end);
     }
 
     [Fact]

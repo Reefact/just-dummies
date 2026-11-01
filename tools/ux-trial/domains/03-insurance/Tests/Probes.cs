@@ -86,12 +86,11 @@ public sealed class Probes {
     }
 
     [Fact]
-    public void An_overnight_time_window_is_refused_as_reversed_bounds() {
-        // A night-driving window (22:00 to 02:00) cannot be declared: Between demands start <= end.
-        ArgumentException refusal = Assert.Throws<ArgumentException>(
-            () => Any.TimeOnly().Between(new TimeOnly(22, 0), new TimeOnly(2, 0)));
+    public void An_overnight_time_window_is_drawn_across_midnight() {
+        // A night-driving window (22:00 to 02:00) is declared as written: the start after the end crosses midnight (issue #357).
+        TimeOnly drawn = Any.TimeOnly().Between(new TimeOnly(22, 0), new TimeOnly(2, 0)).Generate();
 
-        Assert.Contains("must be at or before the end", refusal.Message);
+        Assert.True(drawn >= new TimeOnly(22, 0) || drawn <= new TimeOnly(2, 0));
     }
 
     [Fact]

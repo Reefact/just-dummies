@@ -608,7 +608,7 @@ chiffres qui le précèdent : aucune recette par paramètre ne peut respecter un
 paramètres. L'outil marque donc chaque paramètre concerné `to verify` et arrête la compilation sur le premier,
 comme pour toute garde dont il ne peut pas répondre
 ([ADR-0060](../../for-maintainers/adr/0060-seed-generators-from-constructor-guards.fr.md)). C'est voulu, pas un
-manque : le générateur est une base qui vous appartient, et la règle est à écrire par vous. Trois formes couvrent
+manque : le générateur est une base qui vous appartient, et la règle est à écrire par vous. Quatre formes couvrent
 la plupart des cas, et aucune ne demande à l'outil d'être plus malin.
 
 **Tirez un début et une durée, plutôt que deux bornes.** Une durée positive ajoutée à un début ne peut pas
@@ -670,6 +670,38 @@ public static class CardNumberGenerators {
         }
 
         return (char)('0' + (10 - sum % 10) % 10);
+    }
+
+}
+```
+
+**Tirez une seconde valeur qui diffère d'une première.** Un constructeur qui refuse deux paramètres égaux
+porte une règle que `DifferentFrom` énonce en un appel. Sur un builder typé, c'est celui du builder, vérifié
+à la déclaration — `new AnyAllele().WithCode(c => c.DifferentFrom(first.Code))` dans `Generate()` raffine
+un composant. Sur tout autre générateur, un générateur scaffoldé compris, `DifferentFrom` retire tant que la
+valeur égale celle donnée, un nombre borné de fois, et échoue avec sa graine si le générateur ne produit rien
+d'autre ([ADR-0121](../../for-maintainers/adr/0121-exclude-a-value-from-any-generator-by-redrawing.fr.md)) :
+
+<!-- jd:declarations -->
+```csharp
+public sealed class Crossing {
+
+    public Crossing(string reference, string alternate) {
+        if (reference == alternate) { throw new ArgumentException("A crossing pairs two different alleles.", nameof(alternate)); }
+
+        Reference = reference;
+        Alternate = alternate;
+    }
+
+    public string Reference { get; }
+    public string Alternate { get; }
+
+}
+
+public static class CrossingGenerators {
+
+    public static IAny<Crossing> Crossings(IAny<string> allele) {
+        return allele.Then(reference => allele.DifferentFrom(reference).As(alternate => new Crossing(reference, alternate)));
     }
 
 }

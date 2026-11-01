@@ -93,4 +93,36 @@ public static class AnyExtensions {
             using (AmbientRandomSource.Borrow(context.Current, context.ReplaySnippet)) { return built.Generate(); }
         });
     }
+
+    /// <summary>
+    ///     Derives a generator that never yields <paramref name="value" />: it redraws while <paramref name="generator" />
+    ///     produces it — a second value of a type that must differ from a first, on any generator, a scaffolded or
+    ///     hand-written one included.
+    /// </summary>
+    /// <remarks>
+    ///     <para>
+    ///         This is the <b>rejective</b> exclusion, and it differs from the <c>DifferentFrom</c> the typed builders
+    ///         carry. Theirs is constructive: an exclusion in the builder's own specification, checked when it is
+    ///         declared, so <c>Any.Int32().OneOf(5).DifferentFrom(5)</c> is refused at once, naming both constraints,
+    ///         and the analyzers see it at build time. This one sees nothing before <see cref="IAny{T}.Generate" />,
+    ///         then redraws a bounded number of times and fails with its seed when every draw produced the excluded
+    ///         value — at once for a generator pinned to it (ADR-0121).
+    ///     </para>
+    ///     <para>
+    ///         C# picks between the two from the receiver's <b>static</b> type: on a typed builder the builder's own wins,
+    ///         and on an expression typed <see cref="IAny{T}" /> this one is called. Values are compared with
+    ///         <see cref="EqualityComparer{T}.Default" />. It returns an <see cref="IAny{T}" />, so it goes last in a chain,
+    ///         like <c>As</c> and <c>OrNull</c>.
+    ///     </para>
+    /// </remarks>
+    /// <param name="generator">The generator whose draws must differ from <paramref name="value" />.</param>
+    /// <param name="value">The value never yielded; <c>null</c> is accepted.</param>
+    /// <typeparam name="T">The type of the generated values.</typeparam>
+    /// <returns>A generator of values different from <paramref name="value" />.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="generator" /> is <c>null</c>.</exception>
+    public static IAny<T> DifferentFrom<T>(this IAny<T> generator, T value) {
+        if (generator is null) { throw new ArgumentNullException(nameof(generator)); }
+
+        return new DifferentFromAny<T>(generator, value);
+    }
 }

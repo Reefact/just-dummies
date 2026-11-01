@@ -185,6 +185,24 @@ It draws nothing, so the values drawn around it replay exactly as they would wit
 same instance on every call: pin an immutable value, because a mutable one is shared by everything built
 from the generator ([ADR-0118](../../for-maintainers/adr/0118-return-a-literal-through-any-fixed.md)).
 
+## `.DifferentFrom(value)` on any generator
+
+Every typed builder carries a `DifferentFrom` of its own, checked when it is declared. A generator seen
+only as an `IAny<T>` — one built by `As` or `Combine`, a scaffolded one — gets one too: it redraws while
+the value equals the one given, a bounded number of times, and fails with its seed when the generator
+yields nothing else.
+
+```csharp
+IAny<string> pitchGenerator = Any.Combine(Any.OneOf("A", "B", "C"), Any.OneOf("3", "4"), (note, octave) => note + octave);
+
+string anyFirst  = pitchGenerator.Generate();
+string anySecond = pitchGenerator.DifferentFrom(anyFirst).Generate();
+```
+
+The two are different guarantees under one name, and the receiver's static type picks one: the
+builder's refuses a contradiction at once, naming both constraints, and the analyzers see it at build
+time; this one sees nothing before `Generate()` ([ADR-0121](../../for-maintainers/adr/0121-exclude-a-value-from-any-generator-by-redrawing.md)).
+
 ## A bound taken from another draw
 
 When one value must sit under another — a count of cells under a sample's capacity, a deadline after a

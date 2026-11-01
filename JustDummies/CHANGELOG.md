@@ -10,6 +10,12 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Added
 
+- **`DifferentFrom(value)` on any generator.** A generator seen only as an `IAny<T>` — built by `As`
+  or `Combine`, scaffolded, or your own — now takes `DifferentFrom`: it redraws while the value equals
+  the one given, up to a bounded number of times, and fails with its seed when the generator yields
+  nothing else. It is the rejective exclusion; a typed builder keeps its own constructive `DifferentFrom`,
+  checked at declaration, and the receiver's static type picks between them (ADR-0121, issue #395).
+
 - **JD037 reports a `Generate()` inside a lambda passed to `As` or `Combine`.** The draw runs on every
   generation but apart from the recipe, and under an explicit `Any.WithSeed(...)` context a generator
   built from the static `Any` draws from the ambient seed, so the run replays only partly. The warning

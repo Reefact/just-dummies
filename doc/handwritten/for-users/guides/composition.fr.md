@@ -192,6 +192,24 @@ accepte `null` — `Any.Fixed<string?>(null)` est la façon d'épingler un param
 Il renvoie la même instance à chaque appel : épinglez une valeur immuable, car une valeur mutable est partagée
 par tout ce que le générateur construit ([ADR-0118](../../for-maintainers/adr/0118-return-a-literal-through-any-fixed.fr.md)).
 
+## `.DifferentFrom(value)` sur tout générateur
+
+Chaque builder typé porte un `DifferentFrom` qui lui est propre, vérifié à la déclaration. Un générateur vu
+seulement comme un `IAny<T>` — construit par `As` ou `Combine`, ou scaffoldé — en reçoit un aussi : il
+retire tant que la valeur égale celle donnée, un nombre borné de fois, et échoue avec sa graine quand le
+générateur ne produit rien d'autre.
+
+```csharp
+IAny<string> pitchGenerator = Any.Combine(Any.OneOf("A", "B", "C"), Any.OneOf("3", "4"), (note, octave) => note + octave);
+
+string anyFirst  = pitchGenerator.Generate();
+string anySecond = pitchGenerator.DifferentFrom(anyFirst).Generate();
+```
+
+Ce sont deux garanties différentes sous un même nom, et le type statique du receveur en choisit une : celle
+du builder refuse une contradiction tout de suite, en nommant les deux contraintes, et les analyzers la voient
+à la compilation ; celle-ci ne voit rien avant `Generate()` ([ADR-0121](../../for-maintainers/adr/0121-exclude-a-value-from-any-generator-by-redrawing.fr.md)).
+
 ## Une borne prise sur un autre tirage
 
 Quand une valeur doit se tenir sous une autre — un nombre de cellules sous la capacité d'un échantillon, une

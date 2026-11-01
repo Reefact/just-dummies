@@ -277,7 +277,7 @@ public sealed class AnyChar : IAny<char>, IHasRandomSource, ICardinalityHint<cha
         // promises nothing about order. The rendered call is still kept for the messages, because a
         // conflict has to quote the caller their own words.
         if (_allowed is not null && new HashSet<char>(_allowed).SetEquals(distinct)) { return this; }
-        if (_allowedConstraint is not null) { throw ConflictingAnyConstraintException.AlreadyDefined(constraint, _allowedConstraint); }
+        if (_allowedConstraint is not null) { throw ConflictingAnyConstraintException.AllowListAlreadyDefined(constraint, _allowedConstraint); }
 
         return Validated(new AnyChar(_source, _charset, _charsetConstraint, _casing, _casingConstraint, distinct, constraint, _excluded, _exclusions, _subtractions), constraint);
     }

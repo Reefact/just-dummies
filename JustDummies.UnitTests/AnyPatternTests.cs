@@ -862,7 +862,7 @@ public sealed class AnyPatternTests {
         Check.That(generator.OneOf("123", "456").Generate()).IsOneOfThese("123", "456");
         Check.ThatCode(() => generator.OneOf("789"))
              .Throws<ConflictingAnyConstraintException>()
-             .WithMessage("Cannot apply OneOf(\"789\") because OneOf(\"123\", \"456\") is already defined.");
+             .WithMessage("Cannot apply OneOf(\"789\") because OneOf(\"123\", \"456\") is already defined; to narrow the first set, use Except(...).");
     }
 
     [Fact(DisplayName = "A redeclared value set is judged as a set, not as the call that was written.")]
@@ -886,10 +886,10 @@ public sealed class AnyPatternTests {
 
         Check.ThatCode(() => generator.OneOf("123", "456", "789"))
              .Throws<ConflictingAnyConstraintException>()
-             .WithMessage("Cannot apply OneOf(\"123\", \"456\", \"789\") because OneOf(\"123\", \"456\") is already defined.");
+             .WithMessage("Cannot apply OneOf(\"123\", \"456\", \"789\") because OneOf(\"123\", \"456\") is already defined; to narrow the first set, use Except(...).");
         Check.ThatCode(() => generator.OneOf("123"))
              .Throws<ConflictingAnyConstraintException>()
-             .WithMessage("Cannot apply OneOf(\"123\") because OneOf(\"123\", \"456\") is already defined.");
+             .WithMessage("Cannot apply OneOf(\"123\") because OneOf(\"123\", \"456\") is already defined; to narrow the first set, use Except(...).");
     }
 
     [Fact(DisplayName = "A pooled pattern reports its survivors and what refused the rest.")]

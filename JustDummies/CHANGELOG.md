@@ -156,6 +156,11 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Fixed
 
+- **A second `OneOf` is refused with the way out.** The refusal, `Cannot apply OneOf(…) because OneOf(…)
+  is already defined`, was right and documented, but the route that does narrow the first set —
+  `Except(…)` on it — was named only on the scaffolder page. The message now ends `; to narrow the first
+  set, use Except(...)`, on every generator that has a `OneOf` (strings, patterns, characters, enums, GUIDs
+  and all the numeric ones). A script matching the whole sentence needs the new ending.
 - **The pattern generation-limit message no longer names `(a+)+` as a cause.** An unbounded quantifier
   adds at most eight repetitions to its minimum, so `(a+)+` never comes near the 65,536-character
   ceiling. The message now names causes that do reach it: bounded quantifiers whose product is huge,

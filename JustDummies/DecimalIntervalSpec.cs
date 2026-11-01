@@ -190,7 +190,7 @@ internal sealed class DecimalIntervalSpec {
         // and promises nothing about order. The rendered call is still kept for the messages, because a
         // conflict has to quote the caller their own words.
         if (_allowed is not null && new HashSet<decimal>(_allowed).SetEquals(distinct)) { return this; }
-        if (_allowedConstraint is not null) { throw ConflictingAnyConstraintException.AlreadyDefined(applying, _allowedConstraint); }
+        if (_allowedConstraint is not null) { throw ConflictingAnyConstraintException.AllowListAlreadyDefined(applying, _allowedConstraint); }
 
         return Validated(new DecimalIntervalSpec(_typeName, _render, _min, _minConstraint, _minStrict, _max, _maxConstraint, _maxStrict, distinct, applying, _exclusions, _scale, _scaleConstraint), applying);
     }

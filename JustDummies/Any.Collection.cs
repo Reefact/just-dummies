@@ -14,7 +14,7 @@ public static partial class Any {
     public static AnyList<T> ListOf<T>(IAny<T> item) {
         if (item is null) { throw new ArgumentNullException(nameof(item)); }
 
-        return new AnyList<T>(AnyDerivation.SourceOf(item), CollectionState<T>.Create(item, false, null, DistinctnessOwner.DeclaredCall));
+        return new AnyList<T>(AnyDerivation.SourceForADrawOver(item), CollectionState<T>.Create(item, false, null, DistinctnessOwner.DeclaredCall));
     }
 
     /// <summary>
@@ -28,7 +28,7 @@ public static partial class Any {
     public static AnyArray<T> ArrayOf<T>(IAny<T> item) {
         if (item is null) { throw new ArgumentNullException(nameof(item)); }
 
-        return new AnyArray<T>(AnyDerivation.SourceOf(item), CollectionState<T>.Create(item, false, null, DistinctnessOwner.DeclaredCall));
+        return new AnyArray<T>(AnyDerivation.SourceForADrawOver(item), CollectionState<T>.Create(item, false, null, DistinctnessOwner.DeclaredCall));
     }
 
     /// <summary>
@@ -43,7 +43,7 @@ public static partial class Any {
     public static AnySequence<T> SequenceOf<T>(IAny<T> item) {
         if (item is null) { throw new ArgumentNullException(nameof(item)); }
 
-        return new AnySequence<T>(AnyDerivation.SourceOf(item), CollectionState<T>.Create(item, false, null, DistinctnessOwner.DeclaredCall));
+        return new AnySequence<T>(AnyDerivation.SourceForADrawOver(item), CollectionState<T>.Create(item, false, null, DistinctnessOwner.DeclaredCall));
     }
 
     /// <summary>
@@ -58,7 +58,7 @@ public static partial class Any {
     public static AnySet<T> SetOf<T>(IAny<T> item) {
         if (item is null) { throw new ArgumentNullException(nameof(item)); }
 
-        return new AnySet<T>(AnyDerivation.SourceOf(item), CollectionState<T>.Create(item, true, null, DistinctnessOwner.SetIdentity));
+        return new AnySet<T>(AnyDerivation.SourceForADrawOver(item), CollectionState<T>.Create(item, true, null, DistinctnessOwner.SetIdentity));
     }
 
     /// <summary>
@@ -74,7 +74,7 @@ public static partial class Any {
         if (item is null) { throw new ArgumentNullException(nameof(item)); }
         if (comparer is null) { throw new ArgumentNullException(nameof(comparer)); }
 
-        return new AnySet<T>(AnyDerivation.SourceOf(item), CollectionState<T>.Create(item, true, comparer, DistinctnessOwner.SetIdentity));
+        return new AnySet<T>(AnyDerivation.SourceForADrawOver(item), CollectionState<T>.Create(item, true, comparer, DistinctnessOwner.SetIdentity));
     }
 
     /// <summary>
@@ -93,7 +93,8 @@ public static partial class Any {
         if (keys is null) { throw new ArgumentNullException(nameof(keys)); }
         if (values is null) { throw new ArgumentNullException(nameof(values)); }
 
-        RandomSource? source = AnyDerivation.SourceOf(keys) ?? AnyDerivation.SourceOf(values);
+        RandomSource? source = AnyDerivation.SourceOf(keys) ?? AnyDerivation.SourceOf(values)
+                            ?? (AnyDerivation.DrawsNothing(keys) && AnyDerivation.DrawsNothing(values) ? AmbientRandomSource.Instance : null);
 
         return new AnyDictionary<TKey, TValue>(source, CollectionState<TKey>.Create(keys, true, null, DistinctnessOwner.DictionaryKeys), values);
     }
@@ -115,7 +116,8 @@ public static partial class Any {
         if (values is null) { throw new ArgumentNullException(nameof(values)); }
         if (keyComparer is null) { throw new ArgumentNullException(nameof(keyComparer)); }
 
-        RandomSource? source = AnyDerivation.SourceOf(keys) ?? AnyDerivation.SourceOf(values);
+        RandomSource? source = AnyDerivation.SourceOf(keys) ?? AnyDerivation.SourceOf(values)
+                            ?? (AnyDerivation.DrawsNothing(keys) && AnyDerivation.DrawsNothing(values) ? AmbientRandomSource.Instance : null);
 
         return new AnyDictionary<TKey, TValue>(source, CollectionState<TKey>.Create(keys, true, keyComparer, DistinctnessOwner.DictionaryKeys), values);
     }

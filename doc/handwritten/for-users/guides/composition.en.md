@@ -165,6 +165,26 @@ ISet<OrderStatus?> anyStatuses = Any.SetOf(Any.Enum<OrderStatus>().AsNullable())
 A generator scaffolded by `any` writes `.AsNullable()` for every nullable value-type parameter, for
 exactly that reason.
 
+## `Any.Fixed`: a value you chose, in a generator's shape
+
+Some places want an `IAny<T>` where the value is not a dummy at all: an operand of `Any.Combine` the test
+is about, the pinned parameter of a scaffolded generator, the branch of a draw that should not vary.
+`Any.Fixed(value)` hands that literal over as a generator:
+
+```csharp
+// The amount is what the test is about, so it stays a literal; the reference and the name are dummies.
+IAny<Order> orderGenerator = Any.Combine(
+    Any.String().StartingWith("ORD-").WithLength(12).As(OrderReference.Create),
+    Any.String().Alpha().WithLengthBetween(3, 20),
+    Any.Fixed(120.00m),
+    (reference, customerName, amount) => new Order(reference, customerName, amount));
+```
+
+It draws nothing, so the values drawn around it replay exactly as they would without it, and it accepts
+`null` — `Any.Fixed<string?>(null)` is how a nullable parameter is pinned to its absent case. It returns the
+same instance on every call: pin an immutable value, because a mutable one is shared by everything built
+from the generator ([ADR-0118](../../for-maintainers/adr/0118-return-a-literal-through-any-fixed.md)).
+
 ## A bound taken from another draw
 
 When one value must sit under another — a count of cells under a sample's capacity, a deadline after a

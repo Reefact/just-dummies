@@ -172,6 +172,26 @@ ISet<OrderStatus?> anyStatuses = Any.SetOf(Any.Enum<OrderStatus>().AsNullable())
 Un générateur scaffoldé par `any` écrit `.AsNullable()` pour chaque paramètre nullable de type
 valeur, exactement pour cette raison.
 
+## `Any.Fixed` : une valeur que vous avez choisie, sous la forme d'un générateur
+
+Certains endroits attendent un `IAny<T>` là où la valeur n'est pas un dummy du tout : un opérande
+d'`Any.Combine` sur lequel porte le test, le paramètre épinglé d'un générateur scaffoldé, la branche d'un tirage
+qui ne doit pas varier. `Any.Fixed(value)` y passe ce littéral comme un générateur :
+
+```csharp
+// Le montant est ce sur quoi porte le test : il reste un littéral ; la référence et le nom sont des dummies.
+IAny<Order> orderGenerator = Any.Combine(
+    Any.String().StartingWith("ORD-").WithLength(12).As(OrderReference.Create),
+    Any.String().Alpha().WithLengthBetween(3, 20),
+    Any.Fixed(120.00m),
+    (reference, customerName, amount) => new Order(reference, customerName, amount));
+```
+
+Il ne tire rien, si bien que les valeurs tirées autour de lui se rejouent exactement comme sans lui, et il
+accepte `null` — `Any.Fixed<string?>(null)` est la façon d'épingler un paramètre nullable sur son cas absent.
+Il renvoie la même instance à chaque appel : épinglez une valeur immuable, car une valeur mutable est partagée
+par tout ce que le générateur construit ([ADR-0118](../../for-maintainers/adr/0118-return-a-literal-through-any-fixed.fr.md)).
+
 ## Une borne prise sur un autre tirage
 
 Quand une valeur doit se tenir sous une autre — un nombre de cellules sous la capacité d'un échantillon, une

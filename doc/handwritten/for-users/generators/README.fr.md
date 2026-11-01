@@ -83,6 +83,7 @@ d'autres générateurs.
 | `Any.TripleOf(first, second, third)` | `IAny<(T1, T2, T3)>` | [Composition](../guides/composition.fr.md) |
 | `generator.OrNull()` | `IAny<T?>`, `null` un tirage sur dix | [Composition](../guides/composition.fr.md) |
 | `generator.AsNullable()` | `IAny<T?>`, jamais `null` | [Composition](../guides/composition.fr.md) |
+| `Any.Fixed(value)` | `IAny<T>` renvoyant la valeur que vous avez choisie, sans rien tirer | [Composition](../guides/composition.fr.md) |
 
 ## Reproductibilité
 

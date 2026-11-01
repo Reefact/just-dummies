@@ -10,6 +10,13 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Added
 
+- **`Any.Fixed(value)` hands a value you chose to anything that takes a generator.** An operand of
+  `Any.Combine` the test is about, a parameter pinned to its absent case, the branch of a draw that must
+  not vary: `Any.Fixed(120.00m)`, `Any.Fixed<string?>(null)`. It consumes no draw, so the values around
+  it replay unchanged; it accepts `null`, because it is a literal rather than a draw; and it returns the
+  same instance every time, so pin an immutable value. It never qualifies the replay hint of a
+  composition it is part of (ADR-0118, issue #397).
+
 - **JD036 names the range a floating-point dummy left unsaid.** An `Any.Double()`, `Any.Single()` or
   `Any.Decimal()` chain that declares no range bounded on both sides now draws one value in ten across
   the whole type (see *Changed*), and a value near `double.MaxValue` in a failure message does not say

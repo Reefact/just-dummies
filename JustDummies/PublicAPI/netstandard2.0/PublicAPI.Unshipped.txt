@@ -61,6 +61,7 @@ JustDummies.AnyContext.Double() -> JustDummies.AnyDouble!
 JustDummies.AnyContext.ElementOf<T>(System.Collections.Generic.IEnumerable<T>! values) -> JustDummies.AnyOneOf<T>!
 JustDummies.AnyContext.ElementOf<T>(System.Collections.Generic.IReadOnlyList<T>! values) -> JustDummies.AnyOneOf<T>!
 JustDummies.AnyContext.Enum<TEnum>() -> JustDummies.AnyEnum<TEnum>!
+JustDummies.AnyContext.Fixed<T>(T value) -> JustDummies.IAny<T>!
 JustDummies.AnyContext.Guid() -> JustDummies.AnyGuid!
 JustDummies.AnyContext.Int16() -> JustDummies.AnyInt16!
 JustDummies.AnyContext.Int32() -> JustDummies.AnyInt32!
@@ -448,6 +449,7 @@ static JustDummies.Any.Double() -> JustDummies.AnyDouble!
 static JustDummies.Any.ElementOf<T>(System.Collections.Generic.IEnumerable<T>! values) -> JustDummies.AnyOneOf<T>!
 static JustDummies.Any.ElementOf<T>(System.Collections.Generic.IReadOnlyList<T>! values) -> JustDummies.AnyOneOf<T>!
 static JustDummies.Any.Enum<TEnum>() -> JustDummies.AnyEnum<TEnum>!
+static JustDummies.Any.Fixed<T>(T value) -> JustDummies.IAny<T>!
 static JustDummies.Any.Guid() -> JustDummies.AnyGuid!
 static JustDummies.Any.Int16() -> JustDummies.AnyInt16!
 static JustDummies.Any.Int32() -> JustDummies.AnyInt32!

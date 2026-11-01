@@ -90,7 +90,9 @@ int      anyNotTheSame = Any.Int32().Between(1, 100).DifferentFrom(42).Generate(
 ```
 
 `OneOf` restreint le tirage à un vivier explicite. `Except` retire des valeurs du domaine ;
-`DifferentFrom` en est la forme à valeur unique et se lit mieux quand il n'y en a qu'une.
+`DifferentFrom` en est la forme à valeur unique et se lit mieux quand il n'y en a qu'une. Comme `OneOf`,
+`Except` prend une séquence aussi bien qu'une liste, si bien qu'un ensemble que garde le test — les valeurs
+déjà utilisées — passe tel quel : `Except(used)`, vide à sa première utilisation compris.
 
 Lister deux fois la même constante dans un vivier est le diagnostic
 [JD025](../analyzers/JD025.fr.md) : les doublons fusionnent, le vivier est donc plus petit qu'il n'y

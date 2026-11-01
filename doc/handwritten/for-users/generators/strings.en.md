@@ -195,8 +195,8 @@ string anyNotDraft = Any.String().OneOf("draft", "sent", "paid").DifferentFrom("
 string anyNotEmpty = Any.String().WithLengthBetween(1, 5).Except("aaa", "bbb").Generate();
 ```
 
-An `Except` given an empty list excludes nothing and is accepted, so a set of values already used that
-starts empty needs no special case; an empty `OneOf` is refused, since it declares an empty domain
+`Except` takes a sequence as well as a list, and given an empty one it excludes nothing, so a set of
+values already used passes as it is, empty on its first use included; an empty `OneOf` is refused, since it declares an empty domain
 ([ADR-0122](../../for-maintainers/adr/0122-accept-an-empty-exclusion-as-the-identity.md)).
 
 `OneOf` is the one constraint that **replaces** the layout rather than shaping it: you supply the
@@ -233,6 +233,10 @@ hand you a carriage return or a NUL. `Printable()` is what you declare when that
 `Punctuation()` when the character must not read as alphanumeric; `NonPrintable()` when a control
 character is precisely the counter-example your test needs. Where the set is a specific one — three
 allowed separators, not all thirty-two — `OneOf` says so and says it exactly.
+
+`Except` takes a sequence as well as a list, and on `Any.Char()` a `string` is one: `Except("aeiou")`
+excludes each of its characters, the way `Except('a', 'e', 'i', 'o', 'u')` does. The analyzers read
+the characters of a list written inline; a string, like a set held in a variable, is not read.
 
 ## Patterns
 

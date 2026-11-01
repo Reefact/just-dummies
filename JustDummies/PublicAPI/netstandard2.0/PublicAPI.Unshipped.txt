@@ -12,6 +12,7 @@ JustDummies.AnyByte
 JustDummies.AnyByte.Between(byte minimum, byte maximum) -> JustDummies.AnyByte!
 JustDummies.AnyByte.DifferentFrom(byte value) -> JustDummies.AnyByte!
 JustDummies.AnyByte.Except(params byte[]! values) -> JustDummies.AnyByte!
+JustDummies.AnyByte.Except(System.Collections.Generic.IEnumerable<byte>! values) -> JustDummies.AnyByte!
 JustDummies.AnyByte.Generate() -> byte
 JustDummies.AnyByte.GreaterThan(byte value) -> JustDummies.AnyByte!
 JustDummies.AnyByte.GreaterThanOrEqualTo(byte value) -> JustDummies.AnyByte!
@@ -27,6 +28,7 @@ JustDummies.AnyChar.Alpha() -> JustDummies.AnyChar!
 JustDummies.AnyChar.AlphaNumeric() -> JustDummies.AnyChar!
 JustDummies.AnyChar.DifferentFrom(char value) -> JustDummies.AnyChar!
 JustDummies.AnyChar.Except(params char[]! values) -> JustDummies.AnyChar!
+JustDummies.AnyChar.Except(System.Collections.Generic.IEnumerable<char>! values) -> JustDummies.AnyChar!
 JustDummies.AnyChar.Generate() -> char
 JustDummies.AnyChar.Hexadecimal() -> JustDummies.AnyChar!
 JustDummies.AnyChar.InLowerCase() -> JustDummies.AnyChar!
@@ -86,6 +88,7 @@ JustDummies.AnyDateTime.BeforeOrEqualTo(System.DateTime instant) -> JustDummies.
 JustDummies.AnyDateTime.Between(System.DateTime start, System.DateTime end) -> JustDummies.AnyDateTime!
 JustDummies.AnyDateTime.DifferentFrom(System.DateTime value) -> JustDummies.AnyDateTime!
 JustDummies.AnyDateTime.Except(params System.DateTime[]! values) -> JustDummies.AnyDateTime!
+JustDummies.AnyDateTime.Except(System.Collections.Generic.IEnumerable<System.DateTime>! values) -> JustDummies.AnyDateTime!
 JustDummies.AnyDateTime.Generate() -> System.DateTime
 JustDummies.AnyDateTime.OneOf(params System.DateTime[]! values) -> JustDummies.AnyDateTime!
 JustDummies.AnyDateTime.OneOf(System.Collections.Generic.IEnumerable<System.DateTime>! values) -> JustDummies.AnyDateTime!
@@ -98,6 +101,7 @@ JustDummies.AnyDateTimeOffset.BeforeOrEqualTo(System.DateTimeOffset instant) -> 
 JustDummies.AnyDateTimeOffset.Between(System.DateTimeOffset start, System.DateTimeOffset end) -> JustDummies.AnyDateTimeOffset!
 JustDummies.AnyDateTimeOffset.DifferentFrom(System.DateTimeOffset value) -> JustDummies.AnyDateTimeOffset!
 JustDummies.AnyDateTimeOffset.Except(params System.DateTimeOffset[]! values) -> JustDummies.AnyDateTimeOffset!
+JustDummies.AnyDateTimeOffset.Except(System.Collections.Generic.IEnumerable<System.DateTimeOffset>! values) -> JustDummies.AnyDateTimeOffset!
 JustDummies.AnyDateTimeOffset.Generate() -> System.DateTimeOffset
 JustDummies.AnyDateTimeOffset.OneOf(params System.DateTimeOffset[]! values) -> JustDummies.AnyDateTimeOffset!
 JustDummies.AnyDateTimeOffset.OneOf(System.Collections.Generic.IEnumerable<System.DateTimeOffset>! values) -> JustDummies.AnyDateTimeOffset!
@@ -108,6 +112,7 @@ JustDummies.AnyDecimal
 JustDummies.AnyDecimal.Between(decimal minimum, decimal maximum) -> JustDummies.AnyDecimal!
 JustDummies.AnyDecimal.DifferentFrom(decimal value) -> JustDummies.AnyDecimal!
 JustDummies.AnyDecimal.Except(params decimal[]! values) -> JustDummies.AnyDecimal!
+JustDummies.AnyDecimal.Except(System.Collections.Generic.IEnumerable<decimal>! values) -> JustDummies.AnyDecimal!
 JustDummies.AnyDecimal.Generate() -> decimal
 JustDummies.AnyDecimal.GreaterThan(decimal value) -> JustDummies.AnyDecimal!
 JustDummies.AnyDecimal.GreaterThanOrEqualTo(decimal value) -> JustDummies.AnyDecimal!
@@ -135,6 +140,7 @@ JustDummies.AnyDouble
 JustDummies.AnyDouble.Between(double minimum, double maximum) -> JustDummies.AnyDouble!
 JustDummies.AnyDouble.DifferentFrom(double value) -> JustDummies.AnyDouble!
 JustDummies.AnyDouble.Except(params double[]! values) -> JustDummies.AnyDouble!
+JustDummies.AnyDouble.Except(System.Collections.Generic.IEnumerable<double>! values) -> JustDummies.AnyDouble!
 JustDummies.AnyDouble.Generate() -> double
 JustDummies.AnyDouble.GreaterThan(double value) -> JustDummies.AnyDouble!
 JustDummies.AnyDouble.GreaterThanOrEqualTo(double value) -> JustDummies.AnyDouble!
@@ -150,6 +156,7 @@ JustDummies.AnyEnum<TEnum>
 JustDummies.AnyEnum<TEnum>.AllowingCombinations() -> JustDummies.AnyEnum<TEnum>!
 JustDummies.AnyEnum<TEnum>.DifferentFrom(TEnum value) -> JustDummies.AnyEnum<TEnum>!
 JustDummies.AnyEnum<TEnum>.Except(params TEnum[]! values) -> JustDummies.AnyEnum<TEnum>!
+JustDummies.AnyEnum<TEnum>.Except(System.Collections.Generic.IEnumerable<TEnum>! values) -> JustDummies.AnyEnum<TEnum>!
 JustDummies.AnyEnum<TEnum>.Generate() -> TEnum
 JustDummies.AnyEnum<TEnum>.OneOf(params TEnum[]! values) -> JustDummies.AnyEnum<TEnum>!
 JustDummies.AnyEnum<TEnum>.OneOf(System.Collections.Generic.IEnumerable<TEnum>! values) -> JustDummies.AnyEnum<TEnum>!
@@ -172,6 +179,7 @@ JustDummies.AnyGuid
 JustDummies.AnyGuid.DifferentFrom(System.Guid value) -> JustDummies.AnyGuid!
 JustDummies.AnyGuid.Empty() -> JustDummies.AnyGuid!
 JustDummies.AnyGuid.Except(params System.Guid[]! values) -> JustDummies.AnyGuid!
+JustDummies.AnyGuid.Except(System.Collections.Generic.IEnumerable<System.Guid>! values) -> JustDummies.AnyGuid!
 JustDummies.AnyGuid.Generate() -> System.Guid
 JustDummies.AnyGuid.NonEmpty() -> JustDummies.AnyGuid!
 JustDummies.AnyGuid.OneOf(params System.Guid[]! values) -> JustDummies.AnyGuid!
@@ -180,6 +188,7 @@ JustDummies.AnyInt16
 JustDummies.AnyInt16.Between(short minimum, short maximum) -> JustDummies.AnyInt16!
 JustDummies.AnyInt16.DifferentFrom(short value) -> JustDummies.AnyInt16!
 JustDummies.AnyInt16.Except(params short[]! values) -> JustDummies.AnyInt16!
+JustDummies.AnyInt16.Except(System.Collections.Generic.IEnumerable<short>! values) -> JustDummies.AnyInt16!
 JustDummies.AnyInt16.Generate() -> short
 JustDummies.AnyInt16.GreaterThan(short value) -> JustDummies.AnyInt16!
 JustDummies.AnyInt16.GreaterThanOrEqualTo(short value) -> JustDummies.AnyInt16!
@@ -196,6 +205,7 @@ JustDummies.AnyInt32
 JustDummies.AnyInt32.Between(int minimum, int maximum) -> JustDummies.AnyInt32!
 JustDummies.AnyInt32.DifferentFrom(int value) -> JustDummies.AnyInt32!
 JustDummies.AnyInt32.Except(params int[]! values) -> JustDummies.AnyInt32!
+JustDummies.AnyInt32.Except(System.Collections.Generic.IEnumerable<int>! values) -> JustDummies.AnyInt32!
 JustDummies.AnyInt32.Generate() -> int
 JustDummies.AnyInt32.GreaterThan(int value) -> JustDummies.AnyInt32!
 JustDummies.AnyInt32.GreaterThanOrEqualTo(int value) -> JustDummies.AnyInt32!
@@ -212,6 +222,7 @@ JustDummies.AnyInt64
 JustDummies.AnyInt64.Between(long minimum, long maximum) -> JustDummies.AnyInt64!
 JustDummies.AnyInt64.DifferentFrom(long value) -> JustDummies.AnyInt64!
 JustDummies.AnyInt64.Except(params long[]! values) -> JustDummies.AnyInt64!
+JustDummies.AnyInt64.Except(System.Collections.Generic.IEnumerable<long>! values) -> JustDummies.AnyInt64!
 JustDummies.AnyInt64.Generate() -> long
 JustDummies.AnyInt64.GreaterThan(long value) -> JustDummies.AnyInt64!
 JustDummies.AnyInt64.GreaterThanOrEqualTo(long value) -> JustDummies.AnyInt64!
@@ -235,10 +246,12 @@ JustDummies.AnyMailtoUri.WithLocalPart(string! localPart) -> JustDummies.AnyMail
 JustDummies.AnyOneOf<T>
 JustDummies.AnyOneOf<T>.DifferentFrom(T value) -> JustDummies.AnyOneOf<T>!
 JustDummies.AnyOneOf<T>.Except(params T[]! values) -> JustDummies.AnyOneOf<T>!
+JustDummies.AnyOneOf<T>.Except(System.Collections.Generic.IEnumerable<T>! values) -> JustDummies.AnyOneOf<T>!
 JustDummies.AnyOneOf<T>.Generate() -> T
 JustDummies.AnyPattern
 JustDummies.AnyPattern.DifferentFrom(string! value) -> JustDummies.AnyPattern!
 JustDummies.AnyPattern.Except(params string![]! values) -> JustDummies.AnyPattern!
+JustDummies.AnyPattern.Except(System.Collections.Generic.IEnumerable<string!>! values) -> JustDummies.AnyPattern!
 JustDummies.AnyPattern.Generate() -> string!
 JustDummies.AnyPattern.OneOf(params string![]! values) -> JustDummies.AnyPattern!
 JustDummies.AnyPattern.OneOf(System.Collections.Generic.IEnumerable<string!>! values) -> JustDummies.AnyPattern!
@@ -252,6 +265,7 @@ JustDummies.AnySByte
 JustDummies.AnySByte.Between(sbyte minimum, sbyte maximum) -> JustDummies.AnySByte!
 JustDummies.AnySByte.DifferentFrom(sbyte value) -> JustDummies.AnySByte!
 JustDummies.AnySByte.Except(params sbyte[]! values) -> JustDummies.AnySByte!
+JustDummies.AnySByte.Except(System.Collections.Generic.IEnumerable<sbyte>! values) -> JustDummies.AnySByte!
 JustDummies.AnySByte.Generate() -> sbyte
 JustDummies.AnySByte.GreaterThan(sbyte value) -> JustDummies.AnySByte!
 JustDummies.AnySByte.GreaterThanOrEqualTo(sbyte value) -> JustDummies.AnySByte!
@@ -272,6 +286,7 @@ JustDummies.AnySingle
 JustDummies.AnySingle.Between(float minimum, float maximum) -> JustDummies.AnySingle!
 JustDummies.AnySingle.DifferentFrom(float value) -> JustDummies.AnySingle!
 JustDummies.AnySingle.Except(params float[]! values) -> JustDummies.AnySingle!
+JustDummies.AnySingle.Except(System.Collections.Generic.IEnumerable<float>! values) -> JustDummies.AnySingle!
 JustDummies.AnySingle.Generate() -> float
 JustDummies.AnySingle.GreaterThan(float value) -> JustDummies.AnySingle!
 JustDummies.AnySingle.GreaterThanOrEqualTo(float value) -> JustDummies.AnySingle!
@@ -290,6 +305,7 @@ JustDummies.AnyString.Containing(string! value) -> JustDummies.AnyString!
 JustDummies.AnyString.DifferentFrom(string! value) -> JustDummies.AnyString!
 JustDummies.AnyString.EndingWith(string! suffix) -> JustDummies.AnyString!
 JustDummies.AnyString.Except(params string![]! values) -> JustDummies.AnyString!
+JustDummies.AnyString.Except(System.Collections.Generic.IEnumerable<string!>! values) -> JustDummies.AnyString!
 JustDummies.AnyString.Generate() -> string!
 JustDummies.AnyString.Hexadecimal() -> JustDummies.AnyString!
 JustDummies.AnyString.InLowerCase() -> JustDummies.AnyString!
@@ -315,6 +331,7 @@ JustDummies.AnyTimeSpan
 JustDummies.AnyTimeSpan.Between(System.TimeSpan minimum, System.TimeSpan maximum) -> JustDummies.AnyTimeSpan!
 JustDummies.AnyTimeSpan.DifferentFrom(System.TimeSpan value) -> JustDummies.AnyTimeSpan!
 JustDummies.AnyTimeSpan.Except(params System.TimeSpan[]! values) -> JustDummies.AnyTimeSpan!
+JustDummies.AnyTimeSpan.Except(System.Collections.Generic.IEnumerable<System.TimeSpan>! values) -> JustDummies.AnyTimeSpan!
 JustDummies.AnyTimeSpan.Generate() -> System.TimeSpan
 JustDummies.AnyTimeSpan.GreaterThan(System.TimeSpan value) -> JustDummies.AnyTimeSpan!
 JustDummies.AnyTimeSpan.GreaterThanOrEqualTo(System.TimeSpan value) -> JustDummies.AnyTimeSpan!
@@ -331,6 +348,7 @@ JustDummies.AnyUInt16
 JustDummies.AnyUInt16.Between(ushort minimum, ushort maximum) -> JustDummies.AnyUInt16!
 JustDummies.AnyUInt16.DifferentFrom(ushort value) -> JustDummies.AnyUInt16!
 JustDummies.AnyUInt16.Except(params ushort[]! values) -> JustDummies.AnyUInt16!
+JustDummies.AnyUInt16.Except(System.Collections.Generic.IEnumerable<ushort>! values) -> JustDummies.AnyUInt16!
 JustDummies.AnyUInt16.Generate() -> ushort
 JustDummies.AnyUInt16.GreaterThan(ushort value) -> JustDummies.AnyUInt16!
 JustDummies.AnyUInt16.GreaterThanOrEqualTo(ushort value) -> JustDummies.AnyUInt16!
@@ -345,6 +363,7 @@ JustDummies.AnyUInt32
 JustDummies.AnyUInt32.Between(uint minimum, uint maximum) -> JustDummies.AnyUInt32!
 JustDummies.AnyUInt32.DifferentFrom(uint value) -> JustDummies.AnyUInt32!
 JustDummies.AnyUInt32.Except(params uint[]! values) -> JustDummies.AnyUInt32!
+JustDummies.AnyUInt32.Except(System.Collections.Generic.IEnumerable<uint>! values) -> JustDummies.AnyUInt32!
 JustDummies.AnyUInt32.Generate() -> uint
 JustDummies.AnyUInt32.GreaterThan(uint value) -> JustDummies.AnyUInt32!
 JustDummies.AnyUInt32.GreaterThanOrEqualTo(uint value) -> JustDummies.AnyUInt32!
@@ -359,6 +378,7 @@ JustDummies.AnyUInt64
 JustDummies.AnyUInt64.Between(ulong minimum, ulong maximum) -> JustDummies.AnyUInt64!
 JustDummies.AnyUInt64.DifferentFrom(ulong value) -> JustDummies.AnyUInt64!
 JustDummies.AnyUInt64.Except(params ulong[]! values) -> JustDummies.AnyUInt64!
+JustDummies.AnyUInt64.Except(System.Collections.Generic.IEnumerable<ulong>! values) -> JustDummies.AnyUInt64!
 JustDummies.AnyUInt64.Generate() -> ulong
 JustDummies.AnyUInt64.GreaterThan(ulong value) -> JustDummies.AnyUInt64!
 JustDummies.AnyUInt64.GreaterThanOrEqualTo(ulong value) -> JustDummies.AnyUInt64!

@@ -86,7 +86,9 @@ int      anyNotTheSame = Any.Int32().Between(1, 100).DifferentFrom(42).Generate(
 ```
 
 `OneOf` restricts the draw to an explicit pool. `Except` removes values from the domain, `DifferentFrom`
-is the single-value form of it and reads better when there is exactly one.
+is the single-value form of it and reads better when there is exactly one. Like `OneOf`, `Except` takes a
+sequence as well as a list, so a set the test keeps — the values already used — passes as it is:
+`Except(used)`, empty on its first use included.
 
 Listing the same constant twice in a pool is diagnostic [JD025](../analyzers/JD025.en.md): duplicates
 collapse, so the pool is smaller than it reads.

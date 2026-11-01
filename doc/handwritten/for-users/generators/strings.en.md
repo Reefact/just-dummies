@@ -345,6 +345,40 @@ language, a pattern meets an exclusion by the bounded redraw described above, be
 does not enumerate a regular language to prove it empty. A set you supplied *is* enumerable, so an
 exclusion that empties it conflicts at declaration instead of spending a budget at `Generate`.
 
+**A narrower pattern at one call site is a named recipe.** There is no `StartingWith("FR")` on an
+`AnyPattern`, and it is not an oversight: narrowing a pattern is intersecting two regular languages, the
+machinery the library keeps out ([ADR-0008](../../for-maintainers/adr/0008-generate-strings-from-a-home-grown-regular-subset.md),
+[ADR-0046](../../for-maintainers/adr/0046-bound-the-generators-ambition-never-its-correctness.md)). When
+a test wants an animal id that is a French one, state the narrower pattern **on purpose**, once, as a method
+with a name. Beside the generator `any` scaffolded for the id — in a file of its own, so that
+`any generate --force` leaves it alone — it is one line:
+
+<!-- jd:declarations -->
+```csharp
+public static class AnimalIdRecipes {
+
+    public static AnyAnimalId French(this AnyAnimalId animalIds) {
+        return animalIds.WithValue(_ => Any.StringMatching("FR[0-9]{12}"));
+    }
+
+}
+
+public sealed class AnimalIdUsage {
+
+    public AnimalId AnyFrenchAnimalId() {
+        return Any.AnimalId().French().Generate();
+    }
+
+}
+```
+
+The call site reads as what it means, and nothing there restates a pattern. The pattern is written twice —
+in the base, `[A-Z]{2}[0-9]{12}`, and here — and that is the cost, so keep the method next to the generator
+it narrows. The lambda ignores its argument, which is what the
+[scaffolder page](../packages/justdummies-cli.en.md) warns against *as a habit*: a test that replaces a base
+loses its rules without a word. Here it is a recipe with a name, reviewed once, that says in its signature
+what it narrows.
+
 A generated value is guaranteed to match its pattern, by a bounded redraw where construction alone
 cannot ensure it
 ([ADR-0027](../../for-maintainers/adr/0027-guarantee-a-generated-regex-value-matches-by-bounded-redraw.md)).

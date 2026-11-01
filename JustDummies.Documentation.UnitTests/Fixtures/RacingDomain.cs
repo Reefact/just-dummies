@@ -1,6 +1,21 @@
 namespace JustDummies.Documentation.UnitTests.Fixtures;
 
 /// <summary>
+///     An animal's identifier: two capital letters for the country, then twelve digits. The pattern is the whole
+///     rule, which is why the strings and scaffolder pages use it to show a narrower pattern at one call site.
+/// </summary>
+public sealed class AnimalId {
+
+    public AnimalId(string value) {
+        Value = value;
+    }
+
+    /// <summary>The identifier, as written.</summary>
+    public string Value { get; }
+
+}
+
+/// <summary>
 ///     A runner's number in a race: 1 to 20, whatever the size of the race it runs in. A record, because
 ///     "distinct" on a list of them has to mean distinct numbers — a class would compare by reference, and every
 ///     drawn instance would be distinct from every other.

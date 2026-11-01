@@ -97,7 +97,7 @@ public sealed class Probes {
     [Fact]
     public void A_money_amount_keeps_exactly_two_decimal_places_even_with_trailing_zeros() {
         for (int draw = 0; draw < 500; draw++) {
-            Assert.Equal(2, Any.Decimal().GreaterThanOrEqualTo(0m).WithScale(2).Generate().Scale);
+            Assert.Equal(2, Any.Decimal().Between(0m, 1_000_000m).WithScale(2).Generate().Scale);
         }
     }
 

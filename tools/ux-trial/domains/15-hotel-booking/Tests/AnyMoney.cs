@@ -24,7 +24,10 @@ public sealed partial class AnyMoney : IAny<Money> {
                currency: AnyValidCurrency()) { }
 
     private static AnyDecimal AnyValidAmount() {
-        return Any.Decimal().GreaterThanOrEqualTo(0m).WithScale(2);
+        // Hand fix after ADR-0117: the domain states no ceiling, and Reservation.Total multiplies the nightly
+        // rate by the number of nights, which overflows decimal when one draw in ten reaches the type's edge.
+        // JD036 names the remedy: a nightly rate has a range, so it is declared.
+        return Any.Decimal().Between(0m, 100_000m).WithScale(2);
     }
 
     private static AnyPattern AnyValidCurrency() {

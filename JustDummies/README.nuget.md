@@ -266,6 +266,11 @@ unguessable from `Any.*`; reach for
 
 ## Documentation
 
+The analyzers ship inside this package. Info-level ones, JD030 among them, never print in
+`dotnet build` — that is MSBuild's handling of Info — so raise a rule's severity in `.editorconfig` to see
+it in a terminal or in CI:
+https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/packages/justdummies.en.md#the-analyzers-travel-inside-the-package
+
 Full documentation on GitHub:
 
 https://github.com/Reefact/just-dummies

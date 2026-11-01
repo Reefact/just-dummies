@@ -319,7 +319,9 @@ Changed there, it changes for all of them at once — no test restated it, so no
 
 A scaffolded string row, `Any.String().NonEmpty()`, raises [JD030](../analyzers/JD030.en.md) at
 Info level, by design: the tool will not invent a length your domain never declared. Declare it in the
-factory when it matters — `Any.String().NonEmpty().WithLengthBetween(1, 50)`.
+factory when it matters — `Any.String().NonEmpty().WithLengthBetween(1, 50)`. Info never prints in
+`dotnet build`; [raise its severity](justdummies.en.md#the-analyzers-travel-inside-the-package) to see it
+in a terminal or in CI.
 
 ### When the replacement is another kind of generator
 

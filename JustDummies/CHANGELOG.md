@@ -141,6 +141,10 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Documentation
 
+- **The Info-severity remedy is linked from where JD030 and JD031 are met.** Info-level diagnostics never
+  print in `dotnet build`, and the `.editorconfig` line that raises one was documented only on the package
+  page — six trial sessions never found it. The JD030 and JD031 pages, the scaffolder page where it cites
+  JD030, and the package readme on nuget.org now each say it in one sentence with a link (EN and FR).
 - **The packaged readme no longer says a maximum is never capped.** One of its paragraphs still
   described the rule ADR-0076 replaced: that `WithMaxLength`/`WithMaxCount` only narrow a draw, that
   `WithMaxLength(100_000)` yields a short string, and that a four-million-character maximum costs

@@ -11,6 +11,11 @@ public class Jd023ScalarChainAdmitsNoValueTests {
 
     [Theory]
     [InlineData("Any.Int32().Between(1, 10).MultipleOf(20)")]
+    [InlineData("Any.Int32().Between(4, 4).Odd()")]
+    [InlineData("Any.Int32().Zero().Odd()")]
+    [InlineData("Any.Int64().Odd().Between(-2, -2)")]
+    [InlineData("Any.Byte().Between(3, 3).Even()")]
+    [InlineData("Any.Int32().Odd().Between(1, 3).Except(1, 3)")]
     [InlineData("Any.Int32().GreaterThan(10).LessThan(3)")]
     [InlineData("Any.Int32().Positive().LessThan(-5)")]
     [InlineData("Any.Int32().Positive().Negative()")]
@@ -97,6 +102,11 @@ public class Jd023ScalarChainAdmitsNoValueTests {
     [InlineData("Any.Int32().Between(1, 10).Except(5)")]
     [InlineData("Any.Int32().OneOf(1, 2, 3).Except(2)")]
     [InlineData("Any.Int32().GreaterThan(-100).LessThan(100).MultipleOf(7)")]
+    [InlineData("Any.Int32().Between(1, 99).Odd()")]
+    [InlineData("Any.Int32().Between(-1, -1).Odd()")]
+    [InlineData("Any.Int32().Between(4, 4).Even()")]
+    [InlineData("Any.Int32().Odd().Between(1, 3).Except(1)")]
+    [InlineData("Any.Int32().Even().Between(-4, -4)")]
     [InlineData("Any.UInt32().GreaterThan(5u).LessThan(100u)")]
     public async Task Does_not_report_a_satisfiable_chain(string expression) {
         string source = $$"""

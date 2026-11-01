@@ -44,6 +44,8 @@ public class Jd029PooledValueNeverDrawsTests {
     [InlineData("_ = Any.Int32().OneOf(-1, 3).Negative();", "Negative()")]
     [InlineData("_ = Any.Int32().OneOf(0, 7).NonZero();", "NonZero()")]
     [InlineData("_ = Any.Int32().OneOf(6, 7).MultipleOf(3);", "MultipleOf(3)")]
+    [InlineData("_ = Any.Int32().OneOf(3, 4).Odd();", "Odd()")]
+    [InlineData("_ = Any.Int32().OneOf(-3, 4).Even();", "Even()")]
     [InlineData("_ = Any.Int32().OneOf(4, 12).GreaterThan(5);", "GreaterThan(5)")]
     [InlineData("_ = Any.Int64().OneOf(1L, 99L).LessThanOrEqualTo(50L);", "LessThanOrEqualTo(50)")]
     [InlineData("_ = Any.Byte().OneOf((byte)1, (byte)9).LessThan(5);", "LessThan(5)")]

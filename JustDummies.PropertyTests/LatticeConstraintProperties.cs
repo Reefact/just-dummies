@@ -135,6 +135,33 @@ public sealed class LatticeConstraintProperties {
             .QuickCheckThrowOnFailure();
     }
 
+    [Fact(DisplayName = "Odd and Even: an interval keeps the parity inside it, and an interval holding no such number conflicts.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
+    public void OddAndEvenComposeWithAnInterval() {
+        Prop.ForAll((from bounds in Generators.OrderedPair(Gen.Choose(-50, 50))
+                     from odd in Gen.Elements(true, false)
+                     select (bounds, odd)).ToArbitrary(),
+                    testCase => {
+                        int  minimum  = testCase.bounds.Min;
+                        int  maximum  = testCase.bounds.Max;
+                        int  parity   = testCase.odd ? 1 : 0;
+                        bool holdsOne = Enumerable.Range(minimum, maximum - minimum + 1).Any(value => Math.Abs(value % 2) == parity);
+
+                        AnyInt32 Declared() {
+                            AnyInt32 range = Any.Int32().Between(minimum, maximum);
+
+                            return testCase.odd ? range.Odd() : range.Even();
+                        }
+
+                        // A one-value interval on the other parity is the only way to empty the lattice here, and the
+                        // refusal is owed at the call, as for MultipleOf.
+                        if (!holdsOne) { return Expect.Throws<ConflictingAnyConstraintException>(() => Declared()); }
+
+                        return Expect.EveryDraw(Declared(), value => Math.Abs(value % 2) == parity && value >= minimum && value <= maximum);
+                    })
+            .QuickCheckThrowOnFailure();
+    }
+
     [Fact(DisplayName = "MultipleOf: an allow-list is filtered to its grid points, and an allow-list missing them conflicts.")]
     [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void MultipleOfFiltersAnAllowList() {

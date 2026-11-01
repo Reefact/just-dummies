@@ -20,6 +20,8 @@ JustDummies.AnyByte.GreaterThanOrEqualTo(byte value) -> JustDummies.AnyByte!
 JustDummies.AnyByte.LessThan(byte value) -> JustDummies.AnyByte!
 JustDummies.AnyByte.LessThanOrEqualTo(byte value) -> JustDummies.AnyByte!
 JustDummies.AnyByte.MultipleOf(byte value) -> JustDummies.AnyByte!
+JustDummies.AnyByte.Odd() -> JustDummies.AnyByte!
+JustDummies.AnyByte.Even() -> JustDummies.AnyByte!
 JustDummies.AnyByte.NonZero() -> JustDummies.AnyByte!
 JustDummies.AnyByte.OneOf(params byte[]! values) -> JustDummies.AnyByte!
 JustDummies.AnyByte.OneOf(System.Collections.Generic.IEnumerable<byte>! values) -> JustDummies.AnyByte!
@@ -230,6 +232,8 @@ JustDummies.AnyInt128.GreaterThanOrEqualTo(System.Int128 value) -> JustDummies.A
 JustDummies.AnyInt128.LessThan(System.Int128 value) -> JustDummies.AnyInt128!
 JustDummies.AnyInt128.LessThanOrEqualTo(System.Int128 value) -> JustDummies.AnyInt128!
 JustDummies.AnyInt128.MultipleOf(System.Int128 value) -> JustDummies.AnyInt128!
+JustDummies.AnyInt128.Odd() -> JustDummies.AnyInt128!
+JustDummies.AnyInt128.Even() -> JustDummies.AnyInt128!
 JustDummies.AnyInt128.Negative() -> JustDummies.AnyInt128!
 JustDummies.AnyInt128.NonZero() -> JustDummies.AnyInt128!
 JustDummies.AnyInt128.OneOf(params System.Int128[]! values) -> JustDummies.AnyInt128!
@@ -247,6 +251,8 @@ JustDummies.AnyInt16.GreaterThanOrEqualTo(short value) -> JustDummies.AnyInt16!
 JustDummies.AnyInt16.LessThan(short value) -> JustDummies.AnyInt16!
 JustDummies.AnyInt16.LessThanOrEqualTo(short value) -> JustDummies.AnyInt16!
 JustDummies.AnyInt16.MultipleOf(short value) -> JustDummies.AnyInt16!
+JustDummies.AnyInt16.Odd() -> JustDummies.AnyInt16!
+JustDummies.AnyInt16.Even() -> JustDummies.AnyInt16!
 JustDummies.AnyInt16.Negative() -> JustDummies.AnyInt16!
 JustDummies.AnyInt16.NonZero() -> JustDummies.AnyInt16!
 JustDummies.AnyInt16.OneOf(params short[]! values) -> JustDummies.AnyInt16!
@@ -264,6 +270,8 @@ JustDummies.AnyInt32.GreaterThanOrEqualTo(int value) -> JustDummies.AnyInt32!
 JustDummies.AnyInt32.LessThan(int value) -> JustDummies.AnyInt32!
 JustDummies.AnyInt32.LessThanOrEqualTo(int value) -> JustDummies.AnyInt32!
 JustDummies.AnyInt32.MultipleOf(int value) -> JustDummies.AnyInt32!
+JustDummies.AnyInt32.Odd() -> JustDummies.AnyInt32!
+JustDummies.AnyInt32.Even() -> JustDummies.AnyInt32!
 JustDummies.AnyInt32.Negative() -> JustDummies.AnyInt32!
 JustDummies.AnyInt32.NonZero() -> JustDummies.AnyInt32!
 JustDummies.AnyInt32.OneOf(params int[]! values) -> JustDummies.AnyInt32!
@@ -281,6 +289,8 @@ JustDummies.AnyInt64.GreaterThanOrEqualTo(long value) -> JustDummies.AnyInt64!
 JustDummies.AnyInt64.LessThan(long value) -> JustDummies.AnyInt64!
 JustDummies.AnyInt64.LessThanOrEqualTo(long value) -> JustDummies.AnyInt64!
 JustDummies.AnyInt64.MultipleOf(long value) -> JustDummies.AnyInt64!
+JustDummies.AnyInt64.Odd() -> JustDummies.AnyInt64!
+JustDummies.AnyInt64.Even() -> JustDummies.AnyInt64!
 JustDummies.AnyInt64.Negative() -> JustDummies.AnyInt64!
 JustDummies.AnyInt64.NonZero() -> JustDummies.AnyInt64!
 JustDummies.AnyInt64.OneOf(params long[]! values) -> JustDummies.AnyInt64!
@@ -325,6 +335,8 @@ JustDummies.AnySByte.GreaterThanOrEqualTo(sbyte value) -> JustDummies.AnySByte!
 JustDummies.AnySByte.LessThan(sbyte value) -> JustDummies.AnySByte!
 JustDummies.AnySByte.LessThanOrEqualTo(sbyte value) -> JustDummies.AnySByte!
 JustDummies.AnySByte.MultipleOf(sbyte value) -> JustDummies.AnySByte!
+JustDummies.AnySByte.Odd() -> JustDummies.AnySByte!
+JustDummies.AnySByte.Even() -> JustDummies.AnySByte!
 JustDummies.AnySByte.Negative() -> JustDummies.AnySByte!
 JustDummies.AnySByte.NonZero() -> JustDummies.AnySByte!
 JustDummies.AnySByte.OneOf(params sbyte[]! values) -> JustDummies.AnySByte!
@@ -423,6 +435,8 @@ JustDummies.AnyUInt128.GreaterThanOrEqualTo(System.UInt128 value) -> JustDummies
 JustDummies.AnyUInt128.LessThan(System.UInt128 value) -> JustDummies.AnyUInt128!
 JustDummies.AnyUInt128.LessThanOrEqualTo(System.UInt128 value) -> JustDummies.AnyUInt128!
 JustDummies.AnyUInt128.MultipleOf(System.UInt128 value) -> JustDummies.AnyUInt128!
+JustDummies.AnyUInt128.Odd() -> JustDummies.AnyUInt128!
+JustDummies.AnyUInt128.Even() -> JustDummies.AnyUInt128!
 JustDummies.AnyUInt128.NonZero() -> JustDummies.AnyUInt128!
 JustDummies.AnyUInt128.OneOf(params System.UInt128[]! values) -> JustDummies.AnyUInt128!
 JustDummies.AnyUInt128.OneOf(System.Collections.Generic.IEnumerable<System.UInt128>! values) -> JustDummies.AnyUInt128!
@@ -438,6 +452,8 @@ JustDummies.AnyUInt16.GreaterThanOrEqualTo(ushort value) -> JustDummies.AnyUInt1
 JustDummies.AnyUInt16.LessThan(ushort value) -> JustDummies.AnyUInt16!
 JustDummies.AnyUInt16.LessThanOrEqualTo(ushort value) -> JustDummies.AnyUInt16!
 JustDummies.AnyUInt16.MultipleOf(ushort value) -> JustDummies.AnyUInt16!
+JustDummies.AnyUInt16.Odd() -> JustDummies.AnyUInt16!
+JustDummies.AnyUInt16.Even() -> JustDummies.AnyUInt16!
 JustDummies.AnyUInt16.NonZero() -> JustDummies.AnyUInt16!
 JustDummies.AnyUInt16.OneOf(params ushort[]! values) -> JustDummies.AnyUInt16!
 JustDummies.AnyUInt16.OneOf(System.Collections.Generic.IEnumerable<ushort>! values) -> JustDummies.AnyUInt16!
@@ -453,6 +469,8 @@ JustDummies.AnyUInt32.GreaterThanOrEqualTo(uint value) -> JustDummies.AnyUInt32!
 JustDummies.AnyUInt32.LessThan(uint value) -> JustDummies.AnyUInt32!
 JustDummies.AnyUInt32.LessThanOrEqualTo(uint value) -> JustDummies.AnyUInt32!
 JustDummies.AnyUInt32.MultipleOf(uint value) -> JustDummies.AnyUInt32!
+JustDummies.AnyUInt32.Odd() -> JustDummies.AnyUInt32!
+JustDummies.AnyUInt32.Even() -> JustDummies.AnyUInt32!
 JustDummies.AnyUInt32.NonZero() -> JustDummies.AnyUInt32!
 JustDummies.AnyUInt32.OneOf(params uint[]! values) -> JustDummies.AnyUInt32!
 JustDummies.AnyUInt32.OneOf(System.Collections.Generic.IEnumerable<uint>! values) -> JustDummies.AnyUInt32!
@@ -468,6 +486,8 @@ JustDummies.AnyUInt64.GreaterThanOrEqualTo(ulong value) -> JustDummies.AnyUInt64
 JustDummies.AnyUInt64.LessThan(ulong value) -> JustDummies.AnyUInt64!
 JustDummies.AnyUInt64.LessThanOrEqualTo(ulong value) -> JustDummies.AnyUInt64!
 JustDummies.AnyUInt64.MultipleOf(ulong value) -> JustDummies.AnyUInt64!
+JustDummies.AnyUInt64.Odd() -> JustDummies.AnyUInt64!
+JustDummies.AnyUInt64.Even() -> JustDummies.AnyUInt64!
 JustDummies.AnyUInt64.NonZero() -> JustDummies.AnyUInt64!
 JustDummies.AnyUInt64.OneOf(params ulong[]! values) -> JustDummies.AnyUInt64!
 JustDummies.AnyUInt64.OneOf(System.Collections.Generic.IEnumerable<ulong>! values) -> JustDummies.AnyUInt64!

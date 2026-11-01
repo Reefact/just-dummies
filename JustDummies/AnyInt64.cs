@@ -156,6 +156,27 @@ public sealed class AnyInt64 : IAny<long>, IHasRandomSource, ICardinalityHint<lo
         return new AnyInt64(_source, _spec.WithStep((ulong)value, Ord(0), ConstraintCall.Of(nameof(MultipleOf), V(value))));
     }
 
+    /// <summary>
+    ///     Requires the value to be odd — drawn directly on the odd numbers, a step of two anchored at one, so the
+    ///     declared range keeps its meaning. Declared once per generator, as a lattice: it cannot stand beside
+    ///     <see cref="Even" /> or a <see cref="MultipleOf" /> other than <c>MultipleOf(1)</c>.
+    /// </summary>
+    /// <returns>A new generator carrying the added constraint.</returns>
+    /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
+    public AnyInt64 Odd() {
+        return new AnyInt64(_source, _spec.WithStep(2UL, Ord(1), ConstraintCall.Of(nameof(Odd))));
+    }
+
+    /// <summary>
+    ///     Requires the value to be even — the readable spelling of <c>MultipleOf(2)</c>, drawn on that lattice and
+    ///     declared once per generator like it: it cannot stand beside <see cref="Odd" /> or another step.
+    /// </summary>
+    /// <returns>A new generator carrying the added constraint.</returns>
+    /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
+    public AnyInt64 Even() {
+        return new AnyInt64(_source, _spec.WithStep(2UL, Ord(0), ConstraintCall.Of(nameof(Even))));
+    }
+
     /// <summary>Requires the value to be one of the supplied values. Declared once per generator.</summary>
     /// <param name="values">The allowed values; duplicates are ignored.</param>
     /// <returns>A new generator carrying the added constraint.</returns>

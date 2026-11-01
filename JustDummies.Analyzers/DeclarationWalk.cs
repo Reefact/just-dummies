@@ -42,6 +42,8 @@ internal static class DeclarationWalk {
     private const string ValueSetName      = "OneOf";
     private const string ExclusionName     = "Except";
     private const string MultipleName      = "MultipleOf";
+    private const string OddName           = "Odd";
+    private const string EvenName          = "Even";
     private const string GranularityName   = "WithGranularity";
     private const string OffsetName        = "WithOffset";
     private const string OffsetRangeName   = "WithOffsetBetween";
@@ -175,7 +177,7 @@ internal static class DeclarationWalk {
             "InUpperCase" or "InLowerCase"                            => Casing,
             PoolName                                                  => FamilyOrPool,
             _ when CharacterFamilies.PoolFor(method.Name) is not null => owner == StringOwner ? FamilyOrPool : "character family",
-            MultipleName                                              => "MultipleOf constraint",
+            MultipleName or OddName or EvenName                       => "step (MultipleOf, Odd or Even)",
             "WithScale"                                               => "scale",
             GranularityName                                           => "granularity",
             OffsetName or OffsetRangeName                             => "offset",
@@ -266,6 +268,9 @@ internal static class DeclarationWalk {
     private static bool? IsSameDeclaration(IInvocationOperation first, IInvocationOperation second) {
         // Two methods declare an offset, and the run time compares the range they declare, not the call.
         if (first.TargetMethod.Name is OffsetName or OffsetRangeName) { return AreEqual(OffsetRange(first), OffsetRange(second)); }
+        // Three methods declare a lattice, and the run time compares the step and the residue, not the call:
+        // Even() and MultipleOf(2) are one lattice, Odd() another.
+        if (first.TargetMethod.Name is MultipleName or OddName or EvenName) { return AreEqual(Lattice(first), Lattice(second)); }
 
         return first.TargetMethod.Name == GranularityName && second.TargetMethod.Name == GranularityName
                    ? AreEqual(Granularity(first), Granularity(second))
@@ -301,6 +306,19 @@ internal static class DeclarationWalk {
     /// </summary>
     private static IEnumerable<IArgumentOperation> InParameterOrder(IInvocationOperation call) {
         return call.Arguments.OrderBy(argument => argument.Parameter?.Ordinal ?? int.MaxValue);
+    }
+
+    /// <summary>
+    ///     The step and the residue of the lattice a <c>MultipleOf(...)</c>, an <c>Odd()</c> or an <c>Even()</c>
+    ///     declares, or <c>null</c> if the step is not a constant.
+    /// </summary>
+    private static (decimal Step, decimal Residue)? Lattice(IInvocationOperation call) {
+        return call.TargetMethod.Name switch {
+            OddName                       => (2m, 1m),
+            EvenName                      => (2m, 0m),
+            _ when Step(call) is { } step => (step, 0m),
+            _                             => null
+        };
     }
 
     /// <summary>The ticks of the granularity a <c>WithGranularity(...)</c> declares, or <c>null</c> if it cannot be read.</summary>

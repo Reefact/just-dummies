@@ -101,18 +101,18 @@ public sealed class SurfaceParityTests {
     // the test compares sets. The lattice constraint splits what was once one signed-numeric family: only the
     // integers carry MultipleOf, only Decimal carries WithScale, only the temporals carry WithGranularity.
 
-    // Signed integers: the bound/sign vocabulary plus the integer lattice MultipleOf.
+    // Signed integers: the bound/sign vocabulary plus the integer lattices MultipleOf, Odd and Even.
     private static readonly string[] SignedIntegerAlgebra = [
         "Positive", "Negative", "Zero", "NonZero",
         "GreaterThan", "GreaterThanOrEqualTo", "LessThan", "LessThanOrEqualTo",
-        "Between", "MultipleOf", "OneOf", "Except", "DifferentFrom"
+        "Between", "MultipleOf", "Odd", "Even", "OneOf", "Except", "DifferentFrom"
     ];
 
-    // Unsigned integers drop Positive/Negative (meaningless there — NonZero carries the intent); they keep MultipleOf.
+    // Unsigned integers drop Positive/Negative (meaningless there — NonZero carries the intent); they keep the lattices.
     private static readonly string[] UnsignedIntegerAlgebra = [
         "Zero", "NonZero",
         "GreaterThan", "GreaterThanOrEqualTo", "LessThan", "LessThanOrEqualTo",
-        "Between", "MultipleOf", "OneOf", "Except", "DifferentFrom"
+        "Between", "MultipleOf", "Odd", "Even", "OneOf", "Except", "DifferentFrom"
     ];
 
     // Binary floating-point carries the full signed vocabulary but no lattice: a grid of 10^-n over binary floats is a

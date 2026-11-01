@@ -27,10 +27,11 @@ internal sealed class ScalarConstraintState {
     /// </summary>
     private const long MaxWalkLength = 64;
 
-    private ScalarConstraintState(long minimum, long maximum, long? multipleOf, HashSet<long>? allowed, HashSet<long> excluded, (long Minimum, long? Maximum) domain, bool saturated = false) {
+    private ScalarConstraintState(long minimum, long maximum, (long? Step, long Residue) lattice, HashSet<long>? allowed, HashSet<long> excluded, (long Minimum, long? Maximum) domain, bool saturated = false) {
         Minimum       = minimum;
         Maximum       = maximum;
-        MultipleOf    = multipleOf;
+        MultipleOf    = lattice.Step;
+        Residue       = lattice.Residue;
         Allowed       = allowed;
         Excluded      = excluded;
         DomainMinimum = domain.Minimum;
@@ -41,6 +42,13 @@ internal sealed class ScalarConstraintState {
     public long           Minimum    { get; }
     public long           Maximum    { get; }
     public long?          MultipleOf { get; }
+
+    /// <summary>
+    ///     What a value leaves divided by <see cref="MultipleOf" />, in <c>[0, MultipleOf)</c>: <c>0</c> for a
+    ///     <c>MultipleOf(...)</c> or an <c>Even()</c>, <c>1</c> for an <c>Odd()</c>.
+    /// </summary>
+    public long           Residue    { get; }
+
     public HashSet<long>? Allowed    { get; }
     public HashSet<long>  Excluded   { get; }
 
@@ -67,7 +75,7 @@ internal sealed class ScalarConstraintState {
 
     /// <summary>The state before any constraint, over a type holding <paramref name="domainMinimum" /> to <paramref name="domainMaximum" />.</summary>
     public static ScalarConstraintState Unconstrained(long domainMinimum, long? domainMaximum) {
-        return new ScalarConstraintState(long.MinValue, long.MaxValue, null, null, [], (domainMinimum, domainMaximum));
+        return new ScalarConstraintState(long.MinValue, long.MaxValue, (null, 0), null, [], (domainMinimum, domainMaximum));
     }
 
     /// <summary>Whether no value at all survives the constraints declared so far.</summary>
@@ -99,7 +107,7 @@ internal sealed class ScalarConstraintState {
     public bool Admits(long value) {
         if (value < Low || value > High) { return false; }
         if (Excluded.Contains(value)) { return false; }
-        if (MultipleOf is long step && step != 0 && value % step != 0) { return false; }
+        if (MultipleOf is long step && step != 0 && Remainder(value, step) != Residue) { return false; }
 
         return Allowed is null || Allowed.Contains(value);
     }
@@ -135,15 +143,17 @@ internal sealed class ScalarConstraintState {
             case "Between" when arguments.Count == 2:
                 return arguments[0] > arguments[1] ? null : WithMinimum(arguments[0])?.WithMaximum(arguments[1]);
             case "MultipleOf" when arguments.Count == 1 && arguments[0] != 0:
-                return new ScalarConstraintState(Minimum, Maximum, arguments[0] < 0 ? -arguments[0] : arguments[0], Allowed, Excluded, (DomainMinimum, DomainMaximum));
+                return new ScalarConstraintState(Minimum, Maximum, (arguments[0] < 0 ? -arguments[0] : arguments[0], 0), Allowed, Excluded, (DomainMinimum, DomainMaximum));
+            case "Odd" when arguments.Count == 0:  return new ScalarConstraintState(Minimum, Maximum, (2, 1), Allowed, Excluded, (DomainMinimum, DomainMaximum));
+            case "Even" when arguments.Count == 0: return new ScalarConstraintState(Minimum, Maximum, (2, 0), Allowed, Excluded, (DomainMinimum, DomainMaximum));
 
             case "OneOf" when arguments.Count > 0:
-                return new ScalarConstraintState(Minimum, Maximum, MultipleOf, [.. arguments], Excluded, (DomainMinimum, DomainMaximum));
+                return new ScalarConstraintState(Minimum, Maximum, (MultipleOf, Residue), [.. arguments], Excluded, (DomainMinimum, DomainMaximum));
 
             case "Except" or "DifferentFrom" when arguments.Count > 0: {
                 HashSet<long> excluded = [.. Excluded, .. arguments];
 
-                return new ScalarConstraintState(Minimum, Maximum, MultipleOf, Allowed, excluded, (DomainMinimum, DomainMaximum));
+                return new ScalarConstraintState(Minimum, Maximum, (MultipleOf, Residue), Allowed, excluded, (DomainMinimum, DomainMaximum));
             }
 
             // Anything else — a granularity, a scale, a name this model has never seen — ends the walk.
@@ -156,6 +166,7 @@ internal sealed class ScalarConstraintState {
         return candidate.Minimum == Minimum
             && candidate.Maximum == Maximum
             && candidate.MultipleOf == MultipleOf
+            && candidate.Residue == Residue
             && candidate.Excluded.Count == Excluded.Count
             && (candidate.Allowed?.Count ?? -1) == (Allowed?.Count ?? -1);
     }
@@ -169,25 +180,25 @@ internal sealed class ScalarConstraintState {
     }
 
     private ScalarConstraintState Saturate() {
-        return new ScalarConstraintState(Minimum, Maximum, MultipleOf, Allowed, Excluded, (DomainMinimum, DomainMaximum), saturated: true);
+        return new ScalarConstraintState(Minimum, Maximum, (MultipleOf, Residue), Allowed, Excluded, (DomainMinimum, DomainMaximum), saturated: true);
     }
 
     private ScalarConstraintState? WithMinimum(long minimum) {
         return minimum <= Minimum
-            ? new ScalarConstraintState(Minimum, Maximum, MultipleOf, Allowed, Excluded, (DomainMinimum, DomainMaximum))
-            : new ScalarConstraintState(minimum, Maximum, MultipleOf, Allowed, Excluded, (DomainMinimum, DomainMaximum));
+            ? new ScalarConstraintState(Minimum, Maximum, (MultipleOf, Residue), Allowed, Excluded, (DomainMinimum, DomainMaximum))
+            : new ScalarConstraintState(minimum, Maximum, (MultipleOf, Residue), Allowed, Excluded, (DomainMinimum, DomainMaximum));
     }
 
     private ScalarConstraintState? WithMaximum(long maximum) {
         return maximum >= Maximum
-            ? new ScalarConstraintState(Minimum, Maximum, MultipleOf, Allowed, Excluded, (DomainMinimum, DomainMaximum))
-            : new ScalarConstraintState(Minimum, maximum, MultipleOf, Allowed, Excluded, (DomainMinimum, DomainMaximum));
+            ? new ScalarConstraintState(Minimum, Maximum, (MultipleOf, Residue), Allowed, Excluded, (DomainMinimum, DomainMaximum))
+            : new ScalarConstraintState(Minimum, maximum, (MultipleOf, Residue), Allowed, Excluded, (DomainMinimum, DomainMaximum));
     }
 
     private ScalarConstraintState WithExcluded(long value) {
         HashSet<long> excluded = [.. Excluded, value];
 
-        return new ScalarConstraintState(Minimum, Maximum, MultipleOf, Allowed, excluded, (DomainMinimum, DomainMaximum));
+        return new ScalarConstraintState(Minimum, Maximum, (MultipleOf, Residue), Allowed, excluded, (DomainMinimum, DomainMaximum));
     }
 
     // Is there any multiple of step inside [Minimum, Maximum] that survives the exclusions? The range can be huge, so
@@ -202,9 +213,14 @@ internal sealed class ScalarConstraintState {
 
         long low  = Low;
         long high = High;
-        long first = low >= 0
-            ? (low + step - 1) / step * step
-            : -((-low) / step) * step;
+        // The first lattice point at or above the low end: how far the low end lies past the residue, then up to the
+        // next point. The width is compared unsigned, since high - low overflows a long across zero at the extremes,
+        // and the point is reached only once it is known to fit below the high end.
+        long past = Remainder(low, step) - Residue;
+        if (past < 0) { past += step; }
+        long rise = past == 0 ? 0 : step - past;
+        if ((ulong)(high - low) < (ulong)rise) { return false; }
+        long first = low + rise;
 
         for (long candidate = first, seen = 0; candidate <= high && seen < MaxWalkLength; candidate += step, seen++) {
             if (!Excluded.Contains(candidate) && (Allowed is null || Allowed.Contains(candidate))) { return true; }
@@ -214,6 +230,13 @@ internal sealed class ScalarConstraintState {
         // Compare by division so the subtraction cannot overflow at the representable extremes — which is why both
         // sides are halved, the right one carrying half the walk length rather than the whole of it.
         return high / 2 - low / 2 >= step * (MaxWalkLength / 2);
+    }
+
+    /// <summary>What <paramref name="value" /> leaves divided by <paramref name="step" />, in <c>[0, step)</c> whatever its sign.</summary>
+    private static long Remainder(long value, long step) {
+        long remainder = value % step;
+
+        return remainder < 0 ? remainder + step : remainder;
     }
 
 }

@@ -164,6 +164,8 @@ public sealed class PooledValueNeverDrawsAnalyzer : DiagnosticAnalyzer {
                 case "Negative": tests.Add(("Negative()", value => value < 0m));  break;
                 case "Zero":     tests.Add(("Zero()", value => value == 0m));     break;
                 case "NonZero":  tests.Add(("NonZero()", value => value != 0m));  break;
+                case "Odd":      tests.Add(("Odd()", value => value % 2m != 0m)); break;
+                case "Even":     tests.Add(("Even()", value => value % 2m == 0m)); break;
 
                 case "GreaterThan" when TryGetSingleNumber(constraint, out decimal above):
                     tests.Add(($"GreaterThan({Render(above)})", value => value > above));

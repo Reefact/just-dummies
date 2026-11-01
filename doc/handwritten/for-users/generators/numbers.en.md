@@ -90,6 +90,13 @@ is the single-value form of it and reads better when there is exactly one. Like 
 sequence as well as a list, so a set the test keeps — the values already used — passes as it is:
 `Except(used)`, empty on its first use included.
 
+A domain made of two ranges — container tiers from 2 to 20 or from 82 to 98 — is a pool too: `OneOf`
+takes the union as one sequence, and the constraints declared after it narrow that pool like any other.
+
+```csharp
+int anyTier = Any.Int32().OneOf(Enumerable.Range(2, 19).Concat(Enumerable.Range(82, 17))).Even().Generate();
+```
+
 Listing the same constant twice in a pool is diagnostic [JD025](../analyzers/JD025.en.md): duplicates
 collapse, so the pool is smaller than it reads.
 
@@ -97,13 +104,20 @@ collapse, so the pool is smaller than it reads.
 
 Two constraints put the value on a grid rather than merely inside a range.
 
-`MultipleOf` applies to the **integer** types:
+`MultipleOf` applies to the **integer** types, and so do its two readable forms: `Even()`, which is
+`MultipleOf(2)`, and `Odd()`, the odd numbers — a step of two that starts at one, which no `MultipleOf`
+spells:
 
 ```csharp
-int    anyEvenQuantity = Any.Int32().Between(1, 100).MultipleOf(2).Generate();
 int    anyOnTheHour    = Any.Int32().Between(0, 1_440).MultipleOf(60).Generate();
 long   anyPageOffset   = Any.Int64().GreaterThanOrEqualTo(0).MultipleOf(25).Generate();
+int    anyEvenQuantity = Any.Int32().Between(1, 100).Even().Generate();
+int    anyOddBay       = Any.Int32().Between(1, 99).Odd().Generate();
 ```
+
+The three declare one grid, so a generator takes only one of them: `Odd().MultipleOf(3)` is refused
+naming both sides, as two different `MultipleOf` are ([JD034](../analyzers/JD034.en.md)). An odd
+multiple of three is a pool: `OneOf(Enumerable.Range(0, 17).Select(n => 6 * n + 3))`, 3 to 99.
 
 `WithScale` applies to `decimal`, and keeps the value expressible in at most *n* decimal places — a
 multiple of 10⁻ⁿ, which is what makes a money dummy behave like money:
@@ -186,7 +200,7 @@ double anyMaybeNaN = Any.OneOf(double.NaN, 1.0, 2.0).Generate();
 | `OneOf`, `Except`, `DifferentFrom` | ✅ | ✅ | ✅ | ✅ |
 | `NonZero`, `Zero` | ✅ | ✅ | ✅ | ✅ |
 | `Positive`, `Negative` | ✅ | ❌ | ✅ | ✅ |
-| `MultipleOf` | ✅ | ✅ | ❌ | ❌ |
+| `MultipleOf`, `Odd`, `Even` | ✅ | ✅ | ❌ | ❌ |
 | `WithScale` | ❌ | ❌ | ✅ | ❌ |
 
 ---

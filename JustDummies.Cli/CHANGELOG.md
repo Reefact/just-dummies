@@ -75,7 +75,7 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   current recipe, typed, beside what is drawn: `With…(x => …)` refines that recipe, so refinements accumulate as
   the library's constraints do and a contradiction is refused naming both sides; `With…(value)` pins the value
   and keeps the recipe, so a refinement after a pin starts from the last recipe and takes the pin's place
-  (ADR-0109, amended). The emitted file gains a `_xRecipe` field per resolved parameter and a private copy
+  (ADR-0116, proposed to supersede ADR-0109). The emitted file gains a `_xRecipe` field per resolved parameter and a private copy
   constructor, and each `With…` now copies the generator, writes one parameter of the copy and returns it —
   three statements whatever the parameter count, where it used to pass every field to an all-arguments
   constructor. The fields are no longer `readonly`: the instance you hold never changes, by the shape of the

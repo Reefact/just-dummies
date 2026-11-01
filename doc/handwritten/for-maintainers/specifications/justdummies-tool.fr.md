@@ -548,7 +548,7 @@ public sealed partial class AnyOrder : IAny<Order> {
   paramètre et rend la copie — les trois mêmes instructions quel que soit le nombre de paramètres.
   La seconde écrit `configure(_{param}Recipe)` comme nouvelle recette courante de la copie et en
   tire, à travers la conversion : la lambda du test part de la base valide la première fois, de ce
-  que les affinages précédents en ont fait ensuite, et n'exprime que ce qu'elle ajoute. **Les affinages s'accumulent**, comme les
+  que les affinages précédents en ont fait ensuite, et n'exprime que ce qu'elle ajoute. **Les affinages s'accumulent** ([ADR-0116](../adr/0116-accumulate-a-parameters-refinements-on-its-current-recipe.fr.md), proposé), comme les
   contraintes de la bibliothèque, donc deux affinages qui se contredisent sont refusés là où le
   second est écrit, en nommant les deux ; un affinage qui repartait de la base perdait tous les
   précédents, y compris une règle qu'une base extérieure avait posée sur une valeur composée. La
@@ -2380,7 +2380,7 @@ celui-ci — et les enregistrements sont entrés dans sa base d'ADR, chacun cons
 | **D10** | [ADR-0064](../adr/0064-never-draw-null-for-a-nullable-parameter.fr.md) — Ne jamais tirer null pour un paramètre nullable |
 | **D11** | [ADR-0065](../adr/0065-keep-the-scaffolding-engine-loadable-by-a-roslyn-host.fr.md) — Garder le moteur de scaffolding chargeable par un hôte Roslyn |
 | **D12** | [ADR-0070](../adr/0070-emit-an-entry-point-on-request-as-a-file-of-its-own.fr.md) — Émettre un point d'entrée à la demande, dans un fichier à lui |
-| **D13** | [ADR-0109](../adr/0109-let-a-test-refine-a-parameters-valid-base-rather-than-replace-it.fr.md) — Laisser un test affiner la base valide d'un paramètre plutôt que la remplacer |
+| **D13** | [ADR-0109](../adr/0109-let-a-test-refine-a-parameters-valid-base-rather-than-replace-it.fr.md) — Laisser un test affiner la base valide d'un paramètre plutôt que la remplacer; [ADR-0116](../adr/0116-accumulate-a-parameters-refinements-on-its-current-recipe.fr.md) (proposé) — Accumuler les affinages d'un paramètre sur sa recette courante |
 
 Trois de ces enregistrements ont été écrits après le tableau des décisions, et la raison mérite
 d'être conservée. D7, D8 et D10 ont chacun été jugés trop petits au départ — une limite de périmètre

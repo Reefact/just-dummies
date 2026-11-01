@@ -105,7 +105,7 @@ public sealed partial class DocumentedRuleCountTests {
     }
 
     /// <summary>
-    ///     The count is only half the claim: <c>JD001</c>–<c>JD036</c> also promises the range has no hole in it, and
+    ///     The count is only half the claim: <c>JD001</c>–<c>JD037</c> also promises the range has no hole in it, and
     ///     that every rule a reader meets in a build has a page to land on from its help link.
     /// </summary>
     [Fact(DisplayName = "Every shipped rule has a documentation page, and every page a shipped rule.")]

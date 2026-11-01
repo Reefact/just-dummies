@@ -685,4 +685,22 @@ public static class JustDummiesRule {
 
     }
 
+    /// <summary>A draw made inside a lambda passed to As or Combine, apart from the recipe it sits in</summary>
+    [DiagnosticRule]
+    public static class JD037 {
+
+        /// <summary>The canonical identifier of this diagnostic.</summary>
+        public const string Id = nameof(JD037);
+
+        /// <summary>The category this diagnostic is grouped under.</summary>
+        public const string Category = JustDummiesCategory.Reproducibility;
+
+        /// <summary>The one-line summary the IDE shows beside the rule.</summary>
+        public const string Title = "A draw made inside the lambda of As or Combine";
+
+        /// <summary>The page explaining the condition this diagnostic detects.</summary>
+        public const string HelpLinkUri = HelpLinkBase + nameof(JD037) + HelpLinkSuffix;
+
+    }
+
 }

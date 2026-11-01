@@ -184,6 +184,33 @@ public sealed class CompositionProperties {
             .QuickCheckThrowOnFailure();
     }
 
+    [Fact(DisplayName = "DifferentFrom on any IAny never yields the excluded value, and replays, for every interval holding another.")]
+    public void DifferentFromOnAnyGeneratorNeverYieldsTheExcludedValue() {
+        // ADR-0121, the rejective exclusion: the static type is IAny, so the builder's constructive one is not reached.
+        Gen<(int Seed, int Low, int Width, int Offset)> cases = from seed in Generators.Seed()
+                                                               from low in Gen.Choose(-1_000, 1_000)
+                                                               from width in Gen.Choose(1, 20)
+                                                               from offset in Gen.Choose(0, 20)
+                                                               select (seed, low, width, offset % (width + 1));
+
+        Prop.ForAll(cases.ToArbitrary(),
+                    @case => {
+                        int excluded = @case.Low + @case.Offset;
+
+                        List<int> Draw() {
+                            IAny<int> generator = Any.WithSeed(@case.Seed).Int32().Between(@case.Low, @case.Low + @case.Width);
+
+                            return Expect.Draws(generator.DifferentFrom(excluded), 32);
+                        }
+
+                        List<int> first = Draw();
+
+                        return first.TrueForAll(value => value != excluded && value >= @case.Low && value <= @case.Low + @case.Width)
+                            && first.SequenceEqual(Draw());
+                    })
+            .QuickCheckThrowOnFailure();
+    }
+
     [Fact(DisplayName = "A set over OrNull counts null as one additional value: it draws every count up to the domain size including null.")]
     public void ASetOverOrNullCountsNullAsOneMoreValue() {
         Gen<(int Pool, int Count, bool Reference)> cases =

@@ -596,7 +596,7 @@ for you. Decision:
 per-parameter recipe can honour a rule that lives *between* parameters, so the tool marks every
 parameter it touches `to verify` and stops the build at the first, as it does for any guard it cannot
 vouch for ([ADR-0060](../../for-maintainers/adr/0060-seed-generators-from-constructor-guards.md)). That is
-the design, not a gap: the generator is a base you own, and the rule is yours to write. Three forms
+the design, not a gap: the generator is a base you own, and the rule is yours to write. Four forms
 cover most cases, none of which asks the tool to be cleverer.
 
 **Draw a start and a duration, rather than two bounds.** A positive duration added to a start cannot
@@ -658,6 +658,38 @@ public static class CardNumberGenerators {
         }
 
         return (char)('0' + (10 - sum % 10) % 10);
+    }
+
+}
+```
+
+**Draw a second value that differs from a first.** A constructor refusing two equal parameters is a
+rule `DifferentFrom` states in one call. On a typed builder it is the builder's own, checked when it is
+declared — `new AnyAllele().WithCode(c => c.DifferentFrom(first.Code))` inside `Generate()` refines one
+component. On any other generator, a scaffolded one included, `DifferentFrom` redraws while the value
+equals the one given, a bounded number of times, and fails with its seed if the generator yields nothing
+else ([ADR-0121](../../for-maintainers/adr/0121-exclude-a-value-from-any-generator-by-redrawing.md)):
+
+<!-- jd:declarations -->
+```csharp
+public sealed class Crossing {
+
+    public Crossing(string reference, string alternate) {
+        if (reference == alternate) { throw new ArgumentException("A crossing pairs two different alleles.", nameof(alternate)); }
+
+        Reference = reference;
+        Alternate = alternate;
+    }
+
+    public string Reference { get; }
+    public string Alternate { get; }
+
+}
+
+public static class CrossingGenerators {
+
+    public static IAny<Crossing> Crossings(IAny<string> allele) {
+        return allele.Then(reference => allele.DifferentFrom(reference).As(alternate => new Crossing(reference, alternate)));
     }
 
 }

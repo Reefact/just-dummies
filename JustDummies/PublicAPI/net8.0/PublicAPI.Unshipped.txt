@@ -73,6 +73,7 @@ JustDummies.AnyContext.Int16() -> JustDummies.AnyInt16!
 JustDummies.AnyContext.Int32() -> JustDummies.AnyInt32!
 JustDummies.AnyContext.Int64() -> JustDummies.AnyInt64!
 JustDummies.AnyContext.OneOf<T>(params T[]! values) -> JustDummies.AnyOneOf<T>!
+JustDummies.AnyContext.PermutationOf<T>(System.Collections.Generic.IEnumerable<T>! items) -> JustDummies.IAny<System.Collections.Generic.List<T>!>!
 JustDummies.AnyContext.SByte() -> JustDummies.AnySByte!
 JustDummies.AnyContext.Seed.get -> int
 JustDummies.AnyContext.Single() -> JustDummies.AnySingle!
@@ -561,6 +562,7 @@ static JustDummies.Any.Int64() -> JustDummies.AnyInt64!
 static JustDummies.Any.ListOf<T>(JustDummies.IAny<T>! item) -> JustDummies.AnyList<T>!
 static JustDummies.Any.OneOf<T>(params T[]! values) -> JustDummies.AnyOneOf<T>!
 static JustDummies.Any.PairOf<T1, T2>(JustDummies.IAny<T1>! first, JustDummies.IAny<T2>! second) -> JustDummies.IAny<(T1, T2)>!
+static JustDummies.Any.PermutationOf<T>(System.Collections.Generic.IEnumerable<T>! items) -> JustDummies.IAny<System.Collections.Generic.List<T>!>!
 static JustDummies.Any.Reproducibly(int seed, System.Action! body, System.Action<string!>? report = null) -> void
 static JustDummies.Any.Reproducibly(System.Action! body, System.Action<string!>? report = null) -> void
 static JustDummies.Any.ReproduciblyAsync(int seed, System.Func<System.Threading.Tasks.Task!>! body, System.Action<string!>? report = null) -> System.Threading.Tasks.Task!

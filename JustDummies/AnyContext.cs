@@ -348,6 +348,20 @@ public sealed class AnyContext {
 #endif
 
     /// <summary>
+    ///     Draws a random order of exactly <paramref name="items" /> drawing from this context — same surface as
+    ///     <see cref="Any.PermutationOf{T}" />, deterministic under this context's seed.
+    /// </summary>
+    /// <param name="items">The items to order.</param>
+    /// <typeparam name="T">The type of the items.</typeparam>
+    /// <returns>A generator of orders of <paramref name="items" />.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="items" /> is <c>null</c>.</exception>
+    public IAny<List<T>> PermutationOf<T>(IEnumerable<T> items) {
+        if (items is null) { throw new ArgumentNullException(nameof(items)); }
+
+        return new PermutationAny<T>(_source, items.ToArray());
+    }
+
+    /// <summary>
     ///     A generator that returns <paramref name="value" /> as given, every time — the context's spelling of
     ///     <see cref="Any.Fixed{T}" />, identical to it: a fixed value draws nothing, so the context's seed takes no
     ///     part in it, and it never qualifies the replay hint of a composition it is part of (ADR-0118).

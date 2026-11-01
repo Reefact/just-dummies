@@ -52,6 +52,7 @@ the type you need, this page gets you to the right constraints in one hop.
 | `Any.SequenceOf(item)` | `IEnumerable<T>` | [Collections](./collections.en.md) |
 | `Any.SetOf(item)` | `HashSet<T>` | [Collections](./collections.en.md) |
 | `Any.DictionaryOf(keys, values)` | `Dictionary<TKey, TValue>` | [Collections](./collections.en.md) |
+| `Any.PermutationOf(items)` | `List<T>`, the items in a random order | [Collections](./collections.en.md) |
 
 ## Enums and choices
 

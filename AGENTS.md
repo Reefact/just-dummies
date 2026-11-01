@@ -45,8 +45,10 @@ that cannot read `.claude/` loses nothing by reading this file instead.
   `Any.Combine` stops at arity eight (ADR-0005); `Any.StringMatching` covers the regular subset with the
   library's own parser and refuses the rest by name rather than taking a dependency (ADR-0008); distinct
   collections, string exclusions and regex matching use a bounded redraw that fails explicitly
-  (ADR-0004, ADR-0012, ADR-0027); sizes are capped at a million (ADR-0076, superseding ADR-0029) and float draws stay within an
-  ordinary magnitude (ADR-0031). Before making the generator cleverer, ask whether the honest answer is a
+  (ADR-0004, ADR-0012, ADR-0027); sizes are capped at a million (ADR-0076, superseding ADR-0029) and an open float draw stays
+  within an ordinary magnitude nine times in ten — within ±1 000 000, or in a slab beside a one-sided bound past
+  it, unless the bound is too large for such a slab and every draw spans the declared domain — while the tenth reaches the declared domain's limit by decision and a range bounded on both sides is drawn
+  whole (ADR-0031, superseded by ADR-0097 then ADR-0117). Before making the generator cleverer, ask whether the honest answer is a
   clear refusal. A solver, a runtime dependency taken to widen coverage, or a silently widened bound
   needs a decision, not a patch.
 - Build: `dotnet build JustDummies.sln`

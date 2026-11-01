@@ -184,7 +184,7 @@ An optional `any.json` **beside the project file** sets what the command line wo
 Decision: [ADR-0072](../adr/0072-read-project-defaults-from-a-file-the-command-line-overrides.md).
 
 ```json
-{ "output": "./Arbitrary", "entryPoint": "static:Arbitrary", "entryPointNamespace": "Shop.Tests.Arbitrary" }
+{ "output": "./Arbitrary", "entryPoint": "static:Arbitrary", "entryPointNamespace": "Shop.Tests.Generators" }
 ```
 
 It reads five keys — `output`, `namespace`, `entryPoint`, `entryPointNamespace`, `format` — one per
@@ -635,6 +635,16 @@ move the clash to the next domain type that spells it — and the remedies are t
 which declares no type named after the target, or a rename. The check is one place rather than one
 per caller, so a clash found against the run reads like one found against the project; the root name
 against the last segment of the entry-point namespace belongs to it too, when that case is written.
+
+**A namespace ending in the root's own name is warned about.** C# resolves a simple name in the
+enclosing namespace before it looks at a type another namespace declares, so with `Arbitrary` declared
+in `Shop.Tests.Arbitrary` the name binds, from a test in `Shop.Tests`, to the namespace, and
+`Arbitrary.Order()` fails with `CS0234` — the layout the user page used to suggest (issue #384). The
+same holds for `any` in a namespace ending in `.Any`. This is the third question of the pre-write name
+check above, and it is a **warning**, exit `0`: nothing fails where the file is, a call site in another
+namespace or one opening the namespace resolves the root, and the tool cannot see the call sites. The
+warning names the call that fails and the two ways out, another namespace or another root. It is also
+raised when no `--entry-point-namespace` was given and the generator's own namespace ends in the root.
 
 **Shape rules.** Three header comment lines like §4.3's, naming the option that wrote the file. One
 public static factory named after the target type alone — `Order.Line` scaffolds `AnyLine` and is
@@ -1606,6 +1616,7 @@ one-based `line` and an `excerpt` of the earliest guard the engine could not vou
 | `--format` given a value that is neither `human` nor `json` | `2` | Names both. |
 | `any.json` unreadable, or setting a key that is not read | `2` | Names the key, and the ones that are read. |
 | `Any{Type}` shadows a `JustDummies.Any*` type | `0` | **Warning**, then generate. |
+| The entry-point namespace ends in the root class's own name (§4.5) | `0` | **Warning**, then generate: names the call that fails with `CS0234` from the parent namespace, and the two ways out. Reported as `RootHiddenByNamespace` in `warnings` under `--format json` (§6.1). |
 
 **Several rows can describe one type at once, and the most actionable of them answers.** The refusal
 is decided in this order, which is a rule rather than a pipeline's accident:

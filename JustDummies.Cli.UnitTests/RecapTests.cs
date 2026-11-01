@@ -156,6 +156,24 @@ public sealed class RecapTests {
         Check.That(ExitCode.For(outcome)).IsEqualTo(0);
     }
 
+    /// <summary>
+    ///     The root hidden by its namespace (§4.5, issue #384): a warning that names the call that will fail and
+    ///     the two ways out, and the file written anyway.
+    /// </summary>
+    [Fact(DisplayName = "A root hidden by the entry-point namespace is warned about with the call that fails.")]
+    public void ARootHiddenByItsNamespaceIsWarnedAbout() {
+        ScaffoldOutcome outcome = Outcome(Plan([Inferred("text", "string", "AnyString", "Any.String().NonEmpty()")]),
+                                          [ScaffoldWarning.HidesRoot("Arbitrary", "Shop.Tests.Arbitrary")]);
+
+        string rendered = Rendered(outcome);
+
+        Check.That(rendered).Contains("! The namespace Shop.Tests.Arbitrary hides the root class Arbitrary from the code beside it.");
+        Check.That(rendered).Contains("CS0234");
+        Check.That(rendered).Contains("--entry-point-namespace");
+        Check.That(rendered).Not.Contains("shadows");
+        Check.That(ExitCode.For(outcome)).IsEqualTo(0);
+    }
+
     [Theory(DisplayName = "Every provenance the engine can report has a word in the column.")]
     [InlineData(Provenance.Guard, "guard")]
     [InlineData(Provenance.Scaffolded, "AnyX")]

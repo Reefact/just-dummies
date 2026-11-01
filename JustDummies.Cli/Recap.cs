@@ -186,8 +186,29 @@ internal static class Recap {
     ///     It compiles; it is just wrong later — which is exactly why this is said out loud (§7).
     /// </summary>
     private static void Warn(ScaffoldWarning warning, IAnsiConsole console) {
+        if (warning.Kind == ScaffoldWarningKind.RootHiddenByNamespace) {
+            WarnRootHidden(warning, console);
+
+            return;
+        }
+
         Line(console, $"! {warning.Subject} shadows {warning.Other} inside its own namespace.");
         Line(console, "  It compiles, and every file in that namespace will resolve yours instead. Rename either one.");
+        Line(console, string.Empty);
+    }
+
+    /// <summary>
+    ///     The entry-point namespace ends in the root's own name (§4.5): C# resolves the namespace before the class
+    ///     from the code beside it, so the call the entry point exists for fails there with <c>CS0234</c>.
+    /// </summary>
+    /// <remarks>
+    ///     Says which call fails and offers both ways out, because the tool cannot see the call sites: a test in
+    ///     another namespace, or one opening the namespace, resolves the root, and the layout is then fine.
+    /// </remarks>
+    private static void WarnRootHidden(ScaffoldWarning warning, IAnsiConsole console) {
+        Line(console, $"! The namespace {warning.Other} hides the root class {warning.Subject} from the code beside it.");
+        Line(console, $"  From a test in its parent namespace, {warning.Subject}.Type() fails with CS0234: the name binds to the namespace.");
+        Line(console, "  Move the entry point to a namespace not ending in " + warning.Subject + " with --entry-point-namespace, or name another root.");
         Line(console, string.Empty);
     }
 

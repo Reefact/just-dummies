@@ -22,6 +22,20 @@ public enum ScaffoldWarningKind {
     ///         false alarm, and warning on all forty would cry wolf on the eight that cannot collide.
     ///     </para>
     /// </remarks>
-    ShadowsLibraryType = 0
+    ShadowsLibraryType = 0,
+
+    /// <summary>
+    ///     The entry-point namespace ends in the root class's own name, so the namespace hides the class from any
+    ///     call site written in its parent (§4.5).
+    /// </summary>
+    /// <remarks>
+    ///     C# resolves a simple name in the enclosing namespace before it looks at a type another one declares:
+    ///     with <c>Arbitrary</c> declared in <c>Shop.Tests.Arbitrary</c>, a test in <c>Shop.Tests</c> binds
+    ///     <c>Arbitrary</c> to the namespace and <c>Arbitrary.Order()</c> fails with <c>CS0234</c>. It compiles
+    ///     where the file is, which is why this is a warning and not the refusal of the name clashes that share its
+    ///     check: a test in another namespace, or one opening the namespace with a <c>using</c>, resolves it, and
+    ///     the engine cannot see the call sites.
+    /// </remarks>
+    RootHiddenByNamespace = 1
 
 }

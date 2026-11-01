@@ -39,6 +39,14 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Fixed
 
+- **The entry-point layout the page suggested no longer fails, and `any` warns when yours would.** The CLI
+  page showed `--entry-point static:Arbitrary --entry-point-namespace Shop.Tests.Arbitrary`, which puts the
+  class `Arbitrary` in a namespace ending in `.Arbitrary`: C# resolves the enclosing namespace first, so from a
+  test in `Shop.Tests` the name binds to the namespace and `Arbitrary.Order()` fails with `CS0234`, without a
+  word from the tool. The page now shows `Shop.Tests.Generators`, and a run whose entry-point namespace — the
+  given one, or the generator's own — ends in the root's name (`Arbitrary`, or `Any` for `--entry-point any`)
+  prints a warning naming the call that fails and the two ways out. Exit code `0`, and `--format json`
+  carries it as a `RootHiddenByNamespace` warning.
 - **A guard written in a helper of the same type that returns the value is now marked `to verify`, instead of
   staying silent.** The idiomatic value object validates through `XMm = Guard(xMm, nameof(xMm));` with a
   `private static double Guard(double v, string name)` that throws and returns `v`; the call's result is used, so

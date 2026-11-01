@@ -21,10 +21,10 @@ public sealed class ScaffoldWarning {
     /// <summary>What kind of warning this is.</summary>
     public ScaffoldWarningKind Kind { get; }
 
-    /// <summary>The scaffolded name it is about — <c>AnyPattern</c>.</summary>
+    /// <summary>The name it is about — the scaffolded <c>AnyPattern</c>, or the root class <c>Arbitrary</c>.</summary>
     public string Subject { get; }
 
-    /// <summary>What it collides with — <c>JustDummies.AnyPattern</c>.</summary>
+    /// <summary>What it collides with — <c>JustDummies.AnyPattern</c>, or the namespace <c>Shop.Tests.Arbitrary</c>.</summary>
     public string Other { get; }
 
     /// <summary>
@@ -36,6 +36,20 @@ public sealed class ScaffoldWarning {
         if (libraryType is null) { throw new ArgumentNullException(nameof(libraryType)); }
 
         return new ScaffoldWarning(ScaffoldWarningKind.ShadowsLibraryType, generator, libraryType);
+    }
+
+    /// <summary>
+    ///     The entry-point namespace ends in the root class's name, which hides the class from its parent's call
+    ///     sites (§4.5).
+    /// </summary>
+    /// <param name="root">The root class — <c>Arbitrary</c>, or the library's <c>Any</c>.</param>
+    /// <param name="entryPointNamespace">The namespace whose last segment is <paramref name="root" />.</param>
+    /// <exception cref="ArgumentNullException">Any argument is null.</exception>
+    public static ScaffoldWarning HidesRoot(string root, string entryPointNamespace) {
+        if (root is null) { throw new ArgumentNullException(nameof(root)); }
+        if (entryPointNamespace is null) { throw new ArgumentNullException(nameof(entryPointNamespace)); }
+
+        return new ScaffoldWarning(ScaffoldWarningKind.RootHiddenByNamespace, root, entryPointNamespace);
     }
 
     /// <inheritdoc />

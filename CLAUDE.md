@@ -25,7 +25,10 @@ Two corollaries bind exactly as hard as the definition:
   this library runs with a sample size of one and cannot defend.
 * **Why draw it rather than hard-code it?** Because the *test* not caring is not the *code*
   not caring. The draw puts that indifference to the test: it can reveal a wrong dependency
-  that a literal chosen once and for all may hide.
+  that a literal chosen once and for all may hide. So a test that fails on a drawn value is
+  **never** "flaky" and never a cost the library imposes: either the value was not a dummy, or
+  the code has a defect the literal would have hidden — and the seed replays it. Never word a
+  draw that reaches further (a limit value, a `null`) as a risk to the suite's stability.
 
 **2 — What does JustDummies solve?** Making a test say what it means, while staying
 replayable. Hand-picked literals lie about what matters: every one of them looks as though it

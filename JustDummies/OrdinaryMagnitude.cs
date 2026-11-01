@@ -59,9 +59,11 @@ internal static class OrdinaryMagnitude {
     ///     one draw in this many is taken from the whole declared domain instead of the window (ADR-0117).
     /// </summary>
     /// <remarks>
-    ///     Rare enough that a test drawing a handful of dummies sees ordinary values almost every run, frequent enough
-    ///     that a suite run regularly meets the type's limit values — the place a code path that does care about the
-    ///     value shows it. The rate is part of the seed contract from 1.0 on, so it is not a tuning knob.
+    ///     Most draws stay where ordinary arithmetic, rounding and formatting defects live; one in ten reaches the
+    ///     type's limit values, often enough that a suite run regularly meets them — the place a code path that does
+    ///     care about the magnitude shows it. A test that then fails was not drawing a dummy on that axis, or found a
+    ///     defect; the seed replays either. The rate is part of the seed contract from 1.0 on, so it is not a tuning
+    ///     knob.
     /// </remarks>
     internal const int EdgeDrawOutcomes = 10;
 

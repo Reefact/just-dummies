@@ -251,7 +251,7 @@ internal sealed class ContinuousIntervalSpec {
         // and promises nothing about order. The rendered call is still kept for the messages, because a
         // conflict has to quote the caller their own words.
         if (_allowed is not null && new HashSet<double>(_allowed).SetEquals(distinct)) { return this; }
-        if (_allowedConstraint is not null) { throw ConflictingAnyConstraintException.AlreadyDefined(applying, _allowedConstraint); }
+        if (_allowedConstraint is not null) { throw ConflictingAnyConstraintException.AllowListAlreadyDefined(applying, _allowedConstraint); }
 
         return Validated(new ContinuousIntervalSpec(_typeName, _render, _quantize, _nextUp, _domainMin, _domainMax, _min, _minConstraint, _minStrict, _max, _maxConstraint, _maxStrict, distinct, applying, _exclusions, _laddered), applying);
     }

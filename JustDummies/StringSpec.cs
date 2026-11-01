@@ -429,7 +429,7 @@ internal sealed class StringSpec {
         // and promises nothing about order. The rendered call is still kept for the messages, because a
         // conflict has to quote the caller their own words.
         if (_allowed is not null && new HashSet<string>(_allowed, StringComparer.Ordinal).SetEquals(distinct)) { return this; }
-        if (_allowedConstraint is not null) { throw ConflictingAnyConstraintException.AlreadyDefined(applying, _allowedConstraint); }
+        if (_allowedConstraint is not null) { throw ConflictingAnyConstraintException.AllowListAlreadyDefined(applying, _allowedConstraint); }
 
         StringSpec candidate = new(_exactLength, _exactConstraint, _minLength, _minConstraint, _maxLength, _maxConstraint,
                                    _prefix, _prefixConstraint, _suffix, _suffixConstraint, _fragments,

@@ -38,6 +38,20 @@ public sealed class ConflictingAnyConstraintException : DummyException {
     }
 
     /// <summary>
+    ///     Builds the exception for a second, different <c>OneOf(...)</c> on a generator whose value set the first
+    ///     has already settled, pointing at the route that does narrow it.
+    /// </summary>
+    /// <remarks>
+    ///     The refusal is right — one declared set, one domain — and the user who meets it almost always wants the
+    ///     second set to be a subset of the first. <c>Except(...)</c> on the first set says exactly that, and it was
+    ///     named only on the scaffolder page, which is not where a message is read. Every generator whose
+    ///     <c>OneOf</c> raises this also has <c>Except</c>, so the hint is the same everywhere it is raised.
+    /// </remarks>
+    internal static ConflictingAnyConstraintException AllowListAlreadyDefined(ConstraintCall applying, ConstraintCall existingConstraint) {
+        return Sentence(applying, $"{existingConstraint} is already defined; to narrow the first set, use Except(...)");
+    }
+
+    /// <summary>
     ///     Builds the exception for two constraints that cannot hold together, blaming
     ///     <paramref name="culprit" /> — unless it is the one being applied, in which case
     ///     <paramref name="otherwise" /> is blamed instead.

@@ -274,7 +274,7 @@ public sealed class AnyPattern : IAny<string>, IHasRandomSource, ICardinalityHin
         // order, so OneOf("a", "b"), OneOf("b", "a") and OneOf("a", "b", "b") all declare one domain. The rendered
         // call is still kept for the messages, because a conflict has to quote the caller their own words.
         if (_allowed is not null && new HashSet<string>(_allowed, StringComparer.Ordinal).SetEquals(requested)) { return this; }
-        if (_allowedConstraint is not null) { throw ConflictingAnyConstraintException.AlreadyDefined(applying, _allowedConstraint); }
+        if (_allowedConstraint is not null) { throw ConflictingAnyConstraintException.AllowListAlreadyDefined(applying, _allowedConstraint); }
 
         // Judging the supplied values forces the verifier, and the verifier is lazy precisely so a pattern the
         // generation ceiling refuses is never handed to Regex. Ask the ceiling first, so the value set reaches the

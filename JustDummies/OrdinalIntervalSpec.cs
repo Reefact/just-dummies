@@ -206,7 +206,7 @@ internal sealed class OrdinalIntervalSpec {
         // and promises nothing about order. The rendered call is still kept for the messages, because a
         // conflict has to quote the caller their own words.
         if (_allowed is not null && new HashSet<ulong>(_allowed).SetEquals(distinct)) { return this; }
-        if (_allowedConstraint is not null) { throw ConflictingAnyConstraintException.AlreadyDefined(applying, _allowedConstraint); }
+        if (_allowedConstraint is not null) { throw ConflictingAnyConstraintException.AllowListAlreadyDefined(applying, _allowedConstraint); }
 
         return Validated(new OrdinalIntervalSpec(_typeName, _render, _domainMin, _domainMax, _min, _minConstraint, _max, _maxConstraint, distinct, applying, _exclusions, _step, _anchor, _stepConstraint), applying);
     }

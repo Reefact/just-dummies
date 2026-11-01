@@ -172,7 +172,7 @@ public sealed class AnyGuid : IAny<Guid>, IHasRandomSource, ICardinalityHint<Gui
         // promises nothing about order. The rendered call is still kept for the messages, because a
         // conflict has to quote the caller their own words.
         if (_allowed is not null && new HashSet<Guid>(_allowed).SetEquals(distinct)) { return this; }
-        if (_allowedConstraint is not null) { throw ConflictingAnyConstraintException.AlreadyDefined(constraint, _allowedConstraint); }
+        if (_allowedConstraint is not null) { throw ConflictingAnyConstraintException.AllowListAlreadyDefined(constraint, _allowedConstraint); }
 
         return Validated(new AnyGuid(_source, _pinned, _pinnedConstraint, distinct, constraint, _excluded, _exclusions), constraint);
     }

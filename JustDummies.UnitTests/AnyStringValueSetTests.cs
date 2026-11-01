@@ -345,7 +345,7 @@ public sealed class AnyStringValueSetTests {
 
         Check.ThatCode(() => Any.String().OneOf("a", "b").OneOf("b", "c"))
              .Throws<ConflictingAnyConstraintException>()
-             .WithMessage("Cannot apply OneOf(\"b\", \"c\") because OneOf(\"a\", \"b\") is already defined.");
+             .WithMessage("Cannot apply OneOf(\"b\", \"c\") because OneOf(\"a\", \"b\") is already defined; to narrow the first set, use Except(...).");
     }
 
     [Fact(DisplayName = "OneOf rejects null, empty, or null-containing value lists as arguments.")]

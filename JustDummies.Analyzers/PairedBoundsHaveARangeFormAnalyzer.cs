@@ -79,7 +79,7 @@ public sealed class PairedBoundsHaveARangeFormAnalyzer : DiagnosticAnalyzer {
         // Analyse each chain once, from its outermost call — the only point where every constraint is in hand.
         // It is also what confines the rule to a single chain: bounds that reach the generator through a local, a
         // parameter or a second statement are never in the same list, so they are never paired.
-        if (invocation.Parent is IInvocationOperation) { return; }
+        if (AnyChainFacts.HasOuterLink(invocation, symbols)) { return; }
         if (!AnyChainFacts.TryGetChain(invocation, symbols, out IReadOnlyList<IInvocationOperation> constraints, out IInvocationOperation? factory)) { return; }
         if (factory is null) { return; }
 

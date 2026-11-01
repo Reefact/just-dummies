@@ -18,6 +18,10 @@ public class Jd016CollectionConstraintsAdmitNoValueTests {
     [InlineData("Any.ListOf(Any.Int32()).Empty().NonEmpty()")]
     [InlineData("Any.ListOf(Any.Int32()).WithMinCount(5).WithMaxCount(2)")]
     [InlineData("Any.ListOf(Any.Int32()).WithCount(2).WithMinCount(5)")]
+    // Ordered() is an extension, so the chain runs through a static call: it is still one chain, read once (#360).
+    [InlineData("Any.ListOf(Any.Int32()).WithCount(0).Ordered().NonEmpty()")]
+    [InlineData("Any.ListOf(Any.Int32()).WithCount(0).NonEmpty().Ordered()")]
+    [InlineData("Any.ArrayOf(Any.Int32()).Ordered().WithMinCount(5).WithMaxCount(2)")]
     public async Task Reports_counts_that_cannot_all_hold(string expression) {
         string source = $$"""
             using JustDummies;
@@ -222,6 +226,7 @@ public class Jd016CollectionConstraintsAdmitNoValueTests {
     [InlineData("Any.SetOf(Any.OneOf(1, 2)).ContainingAny(Any.OneOf(3)).WithCount(3)")]
     [InlineData("Any.DictionaryOf(Any.OneOf(1, 2), Any.Int32()).ContainingAnyKey(Any.OneOf(3)).WithCount(3)")]
     [InlineData("Any.SetOf(Any.Char()).Containing('\\u00e9').WithCount(129)")]
+    [InlineData("Any.ListOf(Any.Int32()).WithCount(3).Ordered().Distinct()")]
     public async Task Does_not_report_a_satisfiable_chain(string expression) {
         string source = $$"""
             using JustDummies;

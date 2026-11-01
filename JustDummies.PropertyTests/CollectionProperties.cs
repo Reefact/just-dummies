@@ -247,6 +247,19 @@ public sealed class CollectionProperties {
             .QuickCheckThrowOnFailure();
     }
 
+    [Fact(DisplayName = "Ordered is the same draw, sorted: for every seed and count, the order consumes nothing and keeps every element.")]
+    public void OrderedIsTheSameDrawSorted() {
+        Prop.ForAll(Generators.Seed().ToArbitrary(),
+                    Generators.Count(16).ToArbitrary(),
+                    (seed, count) => {
+                        List<int> drawn   = Any.ListOf(Any.WithSeed(seed).Int32().Between(-20, 20)).WithCount(count).Generate();
+                        int[]     ordered = Any.ArrayOf(Any.WithSeed(seed).Int32().Between(-20, 20)).WithCount(count).Ordered().Generate();
+
+                        return ordered.SequenceEqual(drawn.OrderBy(value => value));
+                    })
+            .QuickCheckThrowOnFailure();
+    }
+
     [Fact(DisplayName = "PermutationOf keeps every item, duplicates included, and replays, for every list.")]
     public void PermutationOfKeepsEveryItem() {
         Prop.ForAll(Generators.Seed().ToArbitrary(),

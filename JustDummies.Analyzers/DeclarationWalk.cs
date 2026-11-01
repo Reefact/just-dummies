@@ -29,7 +29,7 @@ namespace JustDummies.Analyzers;
 ///     </para>
 ///     <para>
 ///         A <c>Distinct</c> comparer is left out: the run time compares comparers by reference, so no reading of the
-///         source can tell a repetition from a conflict (issue #278). So are the bounds and their aliases, which fold
+///         source can tell a repetition from a conflict (issue #278), and for the same reason an <c>OrderedBy</c> key. So are the bounds and their aliases, which fold
 ///         rather than repeat and belong to JD032 and JD024 (ADR-0078), and a collection's contained element, which
 ///         a second call requires twice.
 ///     </para>
@@ -188,6 +188,7 @@ internal static class DeclarationWalk {
             GranularityName                                           => "granularity",
             OffsetName or OffsetRangeName                             => "offset",
             "WithCount"                                               => ExactCount,
+            "Ordered"                                                 => "order",
             "Empty" when owner is "AnyCollection" or "AnyDictionary"  => ExactCount,
             "UsingHttp" or "UsingHttps" or "UsingWs" or "UsingWss"    => "scheme",
             "WithHost"                                                => "host",
@@ -331,7 +332,10 @@ internal static class DeclarationWalk {
     ///     change without changing the call.
     /// </summary>
     private static IEnumerable<IArgumentOperation> InParameterOrder(IInvocationOperation call) {
-        return call.Arguments.OrderBy(argument => argument.Parameter?.Ordinal ?? int.MaxValue);
+        // An extension's first argument is the generator it is written on, not an argument of the constraint.
+        int receivers = call.TargetMethod.IsExtensionMethod ? 1 : 0;
+
+        return call.Arguments.OrderBy(argument => argument.Parameter?.Ordinal ?? int.MaxValue).Skip(receivers);
     }
 
     /// <summary>

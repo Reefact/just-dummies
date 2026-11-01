@@ -68,7 +68,7 @@ public sealed class UndeclaredNumericRangeAnalyzer : DiagnosticAnalyzer {
         IInvocationOperation invocation = (IInvocationOperation)context.Operation;
 
         // Analyse each chain once, from its outermost call — the only point where every constraint is in hand.
-        if (invocation.Parent is IInvocationOperation) { return; }
+        if (AnyChainFacts.HasOuterLink(invocation, symbols)) { return; }
         if (!AnyChainFacts.TryGetChain(invocation, symbols, out IReadOnlyList<IInvocationOperation> constraints, out IInvocationOperation? factory)) { return; }
         if (factory is null || !FloatingPointFactories.Contains(factory.TargetMethod.Name)) { return; }
         if (DeclaresARange(constraints)) { return; }

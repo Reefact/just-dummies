@@ -58,7 +58,7 @@ public sealed class CollectionConstraintsAdmitNoValueAnalyzer : DiagnosticAnalyz
     private static void Analyze(OperationAnalysisContext context, KnownSymbols symbols) {
         IInvocationOperation invocation = (IInvocationOperation)context.Operation;
 
-        if (invocation.Parent is IInvocationOperation) { return; }
+        if (AnyChainFacts.HasOuterLink(invocation, symbols)) { return; }
         if (!AnyChainFacts.TryGetChain(invocation, symbols, out IReadOnlyList<IInvocationOperation> constraints, out IInvocationOperation? factory)) { return; }
         if (factory is null || !IsCollectionFactory(factory.TargetMethod.Name)) { return; }
 

@@ -47,7 +47,7 @@ public sealed class EnumUniverseViolationAnalyzer : DiagnosticAnalyzer {
 
         if (symbols.IsJustDummiesMember(invocation.TargetMethod)) { ReportAValueTheTypeDoesNotDefine(context, invocation); }
 
-        if (invocation.Parent is IInvocationOperation) { return; }
+        if (AnyChainFacts.HasOuterLink(invocation, symbols)) { return; }
         if (!AnyChainFacts.TryGetChain(invocation, symbols, out IReadOnlyList<IInvocationOperation> constraints, out IInvocationOperation? factory)) { return; }
         if (factory is null || factory.TargetMethod.Name != "Enum") { return; }
         if (factory.TargetMethod.TypeArguments.Length != 1 || factory.TargetMethod.TypeArguments[0] is not INamedTypeSymbol enumType) { return; }

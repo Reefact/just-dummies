@@ -57,7 +57,7 @@ public sealed class StringConstraintsAdmitNoValueAnalyzer : DiagnosticAnalyzer {
         IInvocationOperation invocation = (IInvocationOperation)context.Operation;
 
         // Analyse each chain once, from its outermost call.
-        if (invocation.Parent is IInvocationOperation) { return; }
+        if (AnyChainFacts.HasOuterLink(invocation, symbols)) { return; }
         if (!AnyChainFacts.TryGetChain(invocation, symbols, out IReadOnlyList<IInvocationOperation> constraints, out IInvocationOperation? factory)) { return; }
         if (factory is null || factory.TargetMethod.Name != "String") { return; }
 

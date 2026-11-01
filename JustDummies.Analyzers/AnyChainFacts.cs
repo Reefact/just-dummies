@@ -31,9 +31,7 @@ internal static class AnyChainFacts {
 
         // Climb to the outermost invocation of the chain, so a rule registered on any link sees the whole of it.
         IInvocationOperation outermost = invocation;
-        while (outermost.Parent is IInvocationOperation parent && ReferenceEquals(GeneratorFacts.Unwrap(parent.Instance ?? parent), outermost)) {
-            outermost = parent;
-        }
+        while (OuterLinkOf(outermost, symbols) is IInvocationOperation parent) { outermost = parent; }
 
         // Unbounded on purpose, and it terminates: every branch below either returns or steps `current` one
         // link down the receiver chain, which a syntax tree makes finite. Written `;;` rather than with a
@@ -55,9 +53,9 @@ internal static class AnyChainFacts {
             }
 
             // Not a factory and rooted in a static call: this is not a JustDummies chain at all.
-            if (current.Instance is null) { return false; }
+            if (ReceiverOf(current, symbols) is not IOperation link) { return false; }
 
-            IOperation receiver = GeneratorFacts.Unwrap(current.Instance);
+            IOperation receiver = GeneratorFacts.Unwrap(link);
 
             // A generator reached through a local, a field or a helper is not followed — the chain must be one
             // expression for a rule to see every constraint it carries.
@@ -66,6 +64,54 @@ internal static class AnyChainFacts {
             collected.Add(current);
             current = next;
         }
+    }
+
+    /// <summary>
+    ///     Whether <paramref name="invocation" /> is the receiver of a further link of its chain — so a rule analyses
+    ///     the chain once, from that outer call, rather than from every link.
+    /// </summary>
+    public static bool HasOuterLink(IInvocationOperation invocation, KnownSymbols symbols) {
+        return OuterLinkOf(invocation, symbols) is not null;
+    }
+
+    /// <summary>
+    ///     The call <paramref name="invocation" /> is the receiver of: the instance call written on it, or a chain
+    ///     extension taking it as its first argument.
+    /// </summary>
+    private static IInvocationOperation? OuterLinkOf(IInvocationOperation invocation, KnownSymbols symbols) {
+        if (invocation.Parent is IInvocationOperation parent && ReferenceEquals(GeneratorFacts.Unwrap(parent.Instance ?? parent), invocation)) { return parent; }
+
+        IOperation argument = invocation;
+        while (argument.Parent is IConversionOperation conversion) { argument = conversion; }
+
+        return argument.Parent is IArgumentOperation { Parent: IInvocationOperation extension } written
+            && IsChainExtension(extension, symbols)
+            && ReferenceEquals(extension.Arguments[0], written)
+                   ? extension
+                   : null;
+    }
+
+    /// <summary>The generator a link is written on: its instance, or what a chain extension extends.</summary>
+    private static IOperation? ReceiverOf(IInvocationOperation call, KnownSymbols symbols) {
+        if (call.Instance is not null) { return call.Instance; }
+
+        return IsChainExtension(call, symbols) ? call.Arguments[0].Value : null;
+    }
+
+    /// <summary>
+    ///     Whether the call is a library extension on a concrete generator that returns that same generator — a link
+    ///     of the chain written as a static call only so its element type can be constrained, as <c>Ordered()</c>
+    ///     requires an element type with a natural order. An extension on <c>IAny&lt;T&gt;</c> is not one: it leaves
+    ///     the builder behind.
+    /// </summary>
+    private static bool IsChainExtension(IInvocationOperation call, KnownSymbols symbols) {
+        IMethodSymbol method = call.TargetMethod;
+
+        return method.IsExtensionMethod
+            && call.Arguments.Length > 0
+            && method.Parameters[0].Type.TypeKind == TypeKind.Class
+            && SymbolEqualityComparer.Default.Equals(method.ReturnType, method.Parameters[0].Type)
+            && symbols.IsJustDummiesMember(method);
     }
 
     private static bool IsFactoryOwner(INamedTypeSymbol? type, KnownSymbols symbols) {

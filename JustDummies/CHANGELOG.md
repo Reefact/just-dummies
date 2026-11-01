@@ -10,6 +10,15 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Added
 
+- **`Ordered()` and `OrderedBy(key)` arrange a list or an array in ascending order.** The elements are
+  drawn, then sorted, so the count, the contained values and distinctness hold wherever the order is
+  declared — where sorting in `As(...)` left the builder. Strictly increasing is `Ordered().Distinct()`
+  or `OrderedBy(key).DistinctBy(key)`. `Ordered()` is an extension constrained on `IComparable<T>`, so
+  ordering elements that have no order does not compile; an order is declared once. The analyzers read
+  a library extension that returns the generator it extends as a link of the chain, so JD016 and the
+  other chain rules keep seeing every constraint around `Ordered()`, and JD035 reports it written twice.
+  The collections page shows how two orders rise together (issue #360, ADR-0124).
+
 - **`Any.Decimal().MultipleOf(step)` draws on a step's grid.** A tick size of `0.25` or a half-point grade
   is one call, drawn by construction as a whole number of steps — where a 41-value `OneOf` or
   `Any.Int32().Between(0, 80).As(k => k * 0.25m)` lost the range or the builder. Declared once; it holds

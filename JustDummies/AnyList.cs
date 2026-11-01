@@ -8,7 +8,11 @@ namespace JustDummies;
 /// <typeparam name="T">The element type.</typeparam>
 public sealed class AnyList<T> : AnyCollection<T, List<T>, AnyList<T>> {
 
-    internal AnyList(RandomSource? source, CollectionState<T> state) : base(source, state) { }
+    private readonly ElementOrder<T>? _order;
+
+    internal AnyList(RandomSource? source, CollectionState<T> state, ElementOrder<T>? order = null) : base(source, state) {
+        _order = order;
+    }
 
     /// <summary>Requires the elements to be pairwise distinct (default equality).</summary>
     /// <returns>A new generator carrying the added constraint.</returns>
@@ -48,14 +52,44 @@ public sealed class AnyList<T> : AnyCollection<T, List<T>, AnyList<T>> {
         return With(State.AsDistinct(new KeyEqualityComparer<T, TKey>(keySelector), ConstraintCall.Of(nameof(DistinctBy), "keySelector")));
     }
 
+    /// <summary>
+    ///     Arranges the elements in ascending, non-decreasing order of the key <paramref name="keySelector" /> returns —
+    ///     <c>OrderedBy(p =&gt; p.At)</c> for points in time. The elements are drawn, then sorted, so every other
+    ///     constraint keeps applying: the order changes the arrangement, never the content. Strictly increasing is
+    ///     <c>OrderedBy(key).DistinctBy(key)</c>. Declared once per generator (ADR-0124).
+    /// </summary>
+    /// <remarks>
+    ///     Two key orders are the same declaration only through the same key selector instance; a different one, or
+    ///     <c>Ordered()</c>, declared before or after, is refused.
+    /// </remarks>
+    /// <param name="keySelector">The key the elements are arranged by.</param>
+    /// <typeparam name="TKey">The type of the key, which has a natural order.</typeparam>
+    /// <returns>A new generator carrying the added constraint.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="keySelector" /> is <c>null</c>.</exception>
+    /// <exception cref="ConflictingAnyConstraintException">Thrown when a different order is already declared.</exception>
+    public AnyList<T> OrderedBy<TKey>(Func<T, TKey> keySelector) where TKey : IComparable<TKey> {
+        if (keySelector is null) { throw new ArgumentNullException(nameof(keySelector)); }
+
+        return WithOrder(ElementOrder<T>.ByKey(keySelector, ConstraintCall.Of(nameof(OrderedBy), "keySelector")));
+    }
+
+    /// <summary>The same generator with <paramref name="order" /> declared — the seam <c>Ordered()</c> goes through.</summary>
+    internal AnyList<T> WithOrder(ElementOrder<T> order) {
+        if (order is null) { throw new ArgumentNullException(nameof(order)); }
+
+        return new AnyList<T>(SourceOrNull, State, ElementOrder<T>.Declare(_order, order));
+    }
+
     private protected override AnyList<T> With(CollectionState<T> state) {
         if (state is null) { throw new ArgumentNullException(nameof(state)); }
 
-        return new AnyList<T>(SourceOrNull, state);
+        return new AnyList<T>(SourceOrNull, state, _order);
     }
 
     private protected override List<T> Build(List<T> items) {
         if (items is null) { throw new ArgumentNullException(nameof(items)); }
+
+        _order?.Arrange(items);
 
         return items;
     }

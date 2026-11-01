@@ -137,6 +137,7 @@ internal static class RepetitionChains {
             On<AnyList<int>>("WithCount(2)", g => g.WithCount(2)),
             On<AnyList<int>>("WithCount(3)", g => g.WithCount(3)),
             On<AnyList<int>>("Distinct()", g => g.Distinct()),
+            On<AnyList<int>>("Ordered()", g => g.Ordered()),
             On<AnyList<int>>("WithCount(-1)", g => g.WithCount(-1))),
         new("Any.ListOf(Any.Int32())", context => Any.ListOf(context.Int32()),
             On<AnyList<int>>("Empty()", g => g.Empty()),

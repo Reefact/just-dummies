@@ -133,7 +133,7 @@ public static class GeneratorEmitter {
 
         WriteGenerate(file, plan, member);
 
-        if (!plan.IsDegenerate) { WriteFixedValue(file, member); }
+        if (!plan.IsDegenerate && !plan.PinsThroughAnyFixed) { WriteFixedValue(file, member); }
 
         Line(file, $"{indent}}}");
     }
@@ -422,7 +422,9 @@ public static class GeneratorEmitter {
                            : $"{indent}/// <summary>Pins <c>{parameter.Name}</c> to a fixed value; its recipe is kept for a later refinement.</summary>");
             Line(file, $"{indent}public {plan.GeneratorName} With{parameter.PascalCasedName}({parameter.TypeDisplay} value) {{");
             WriteCopy(file, plan, body);
-            Line(file, $"{body}copy.{parameter.FieldName} = new FixedValue<{parameter.TypeDisplay}>(value);");
+            Line(file, plan.PinsThroughAnyFixed
+                           ? $"{body}copy.{parameter.FieldName} = Any.Fixed(value);"
+                           : $"{body}copy.{parameter.FieldName} = new FixedValue<{parameter.TypeDisplay}>(value);");
             WriteReturnCopy(file, body);
             Line(file, $"{indent}}}");
             Line(file, string.Empty);

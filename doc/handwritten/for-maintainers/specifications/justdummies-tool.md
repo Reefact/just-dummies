@@ -351,7 +351,7 @@ public sealed partial class AnyOrder : IAny<Order> {
     public AnyOrder WithReference(OrderReference value) {
         AnyOrder copy = new AnyOrder(this);
 
-        copy._reference = new FixedValue<OrderReference>(value);
+        copy._reference = Any.Fixed(value);
 
         return copy;
     }
@@ -370,7 +370,7 @@ public sealed partial class AnyOrder : IAny<Order> {
     public AnyOrder WithCustomer(Customer value) {
         AnyOrder copy = new AnyOrder(this);
 
-        copy._customer = new FixedValue<Customer>(value);
+        copy._customer = Any.Fixed(value);
 
         return copy;
     }
@@ -389,7 +389,7 @@ public sealed partial class AnyOrder : IAny<Order> {
     public AnyOrder WithQuantity(int value) {
         AnyOrder copy = new AnyOrder(this);
 
-        copy._quantity = new FixedValue<int>(value);
+        copy._quantity = Any.Fixed(value);
 
         return copy;
     }
@@ -408,7 +408,7 @@ public sealed partial class AnyOrder : IAny<Order> {
     public AnyOrder WithStatus(OrderStatus value) {
         AnyOrder copy = new AnyOrder(this);
 
-        copy._status = new FixedValue<OrderStatus>(value);
+        copy._status = Any.Fixed(value);
 
         return copy;
     }
@@ -427,7 +427,7 @@ public sealed partial class AnyOrder : IAny<Order> {
     public AnyOrder WithTags(IReadOnlyList<string> value) {
         AnyOrder copy = new AnyOrder(this);
 
-        copy._tags = new FixedValue<IReadOnlyList<string>>(value);
+        copy._tags = Any.Fixed(value);
 
         return copy;
     }
@@ -446,7 +446,7 @@ public sealed partial class AnyOrder : IAny<Order> {
     public AnyOrder WithPlacedAt(DateTime value) {
         AnyOrder copy = new AnyOrder(this);
 
-        copy._placedAt = new FixedValue<DateTime>(value);
+        copy._placedAt = Any.Fixed(value);
 
         return copy;
     }
@@ -469,20 +469,6 @@ public sealed partial class AnyOrder : IAny<Order> {
                          _status.Generate(),
                          _tags.Generate(),
                          _placedAt.Generate());
-    }
-
-    private sealed class FixedValue<TValue> : IAny<TValue> {
-
-        private readonly TValue _value;
-
-        public FixedValue(TValue value) {
-            _value = value;
-        }
-
-        public TValue Generate() {
-            return _value;
-        }
-
     }
 
 }
@@ -547,17 +533,17 @@ public sealed partial class AnyOrder : IAny<Order> {
   has no base to refine, and keeps the value overload alone.
 * `using System;` is opened whenever a refining overload is emitted, for its `Func<,>`.
 * `public {Type} Generate()` calling the constructor with each field's `Generate()`.
-* The private nested `FixedValue<TValue>` helper. Rationale: it accepts `null` (which
-  `Any.OneOf(value)` rejects) and consumes no draw from the ambient source, so pinning a
-  parameter does not shift the values drawn for the others (§14.5). It is nested and private, so
-  any number of scaffolded files coexist. *(If `Any.Fixed<T>(value)` is ever added to the
-  library, the helper can be dropped — see §15.)*
+* A pin written `Any.Fixed(value)`: it accepts `null` (which `Any.OneOf(value)` rejects) and
+  consumes no draw, so pinning a parameter does not shift the values drawn for the others (§14.5;
+  ADR-0118). Against a library that predates `Any.Fixed`, asked of the compilation like every
+  member (ADR-0059), the file declares instead a private nested `FixedValue<TValue>` helper with the
+  same two properties, nested and private so any number of scaffolded files coexist.
 * `With{Param}` casing: the parameter name, first letter upper-cased, invariant culture. A
   parameter named `_id` or `@class` is normalised by stripping the leading `_`/`@`.
 
 **The degenerate case has its own shape.** A constructor with no parameters (§5.1) collapses all of
 the above: one public parameterless constructor, no fields, no private constructor, no `With`
-methods, no `FixedValue` helper, and `Generate()` returning `new {Type}()`. Emitting the two
+methods, no pin, and `Generate()` returning `new {Type}()`. Emitting the two
 constructors unconditionally would give them the same signature and fail with `CS0111` — verified.
 The result is still worth generating: `Any{Type}` is an `IAny<T>`, so it composes into
 `Any.ListOf(...)`, `Any.Combine(...)` and the rest, which a bare `new {Type}()` does not.
@@ -2175,7 +2161,8 @@ exercised by §17.
    characters. The first half is what §5.2 and §5.3 rest on; the measurements in §17 were taken
    before those two records, when the draw was 0 to 16 letters and digits.
 5. **`Any.OneOf(value)` requires at least one value, rejects `null` elements, and consumes a
-   draw.** All three are why §4.2 emits a private `FixedValue<TValue>` instead.
+   draw.** All three are why §4.2 pins through `Any.Fixed(value)` instead — or, against a library that
+   predates it, through a private `FixedValue<TValue>`.
 
 ### 14.6 Analyzer inventory
 
@@ -2295,10 +2282,12 @@ and none of those three consequences is self-explanatory in the section where it
 
 ### A library follow-up, not a decision record
 
-`Any.Fixed<T>(value)` — an `IAny<T>` returning a constant — would let the emitter drop the nested
-`FixedValue<TValue>` helper of §4.2. `Any.OneOf(value)` almost fills the role but rejects `null`
-and consumes a draw (§14.5). This is an addition to the library's public API rather than a decision
-about the tool, so it belongs to the library's own decision base and is **not** required for v1.0.
+`Any.Fixed<T>(value)` — an `IAny<T>` returning a constant — lets the emitter drop the nested
+`FixedValue<TValue>` helper of §4.2. `Any.OneOf(value)` almost filled the role but rejects `null`
+and consumes a draw (§14.5). It was an addition to the library's public API rather than a decision
+about the tool, so it was recorded in the library's own decision base: the library now carries it
+([ADR-0118](../adr/0118-return-a-literal-through-any-fixed.md)), and the emitter writes it in every pin
+where the target compilation resolves it, keeping the helper only against a library that predates it.
 
 ---
 

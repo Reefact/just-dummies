@@ -55,7 +55,7 @@ public sealed partial class AnyAddress : IAny<Address> {
     public AnyAddress WithStreet(string value) {
         AnyAddress copy = new AnyAddress(this);
 
-        copy._street = new FixedValue<string>(value);
+        copy._street = Any.Fixed(value);
 
         return copy;
     }
@@ -74,7 +74,7 @@ public sealed partial class AnyAddress : IAny<Address> {
     public AnyAddress WithCity(string value) {
         AnyAddress copy = new AnyAddress(this);
 
-        copy._city = new FixedValue<string>(value);
+        copy._city = Any.Fixed(value);
 
         return copy;
     }
@@ -93,20 +93,6 @@ public sealed partial class AnyAddress : IAny<Address> {
     public Address Generate() {
         return new Address(_street.Generate(),
                            _city.Generate());
-    }
-
-    private sealed class FixedValue<TValue> : IAny<TValue> {
-
-        private readonly TValue _value;
-
-        public FixedValue(TValue value) {
-            _value = value;
-        }
-
-        public TValue Generate() {
-            return _value;
-        }
-
     }
 
 }

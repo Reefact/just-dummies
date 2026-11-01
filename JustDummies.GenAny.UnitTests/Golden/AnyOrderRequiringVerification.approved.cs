@@ -111,7 +111,7 @@ public sealed partial class AnyOrder : IAny<Order> {
     public AnyOrder WithReference(OrderReference value) {
         AnyOrder copy = new AnyOrder(this);
 
-        copy._reference = new FixedValue<OrderReference>(value);
+        copy._reference = Any.Fixed(value);
 
         return copy;
     }
@@ -130,7 +130,7 @@ public sealed partial class AnyOrder : IAny<Order> {
     public AnyOrder WithCustomer(Customer value) {
         AnyOrder copy = new AnyOrder(this);
 
-        copy._customer = new FixedValue<Customer>(value);
+        copy._customer = Any.Fixed(value);
 
         return copy;
     }
@@ -149,7 +149,7 @@ public sealed partial class AnyOrder : IAny<Order> {
     public AnyOrder WithQuantity(int value) {
         AnyOrder copy = new AnyOrder(this);
 
-        copy._quantity = new FixedValue<int>(value);
+        copy._quantity = Any.Fixed(value);
 
         return copy;
     }
@@ -168,7 +168,7 @@ public sealed partial class AnyOrder : IAny<Order> {
     public AnyOrder WithStatus(OrderStatus value) {
         AnyOrder copy = new AnyOrder(this);
 
-        copy._status = new FixedValue<OrderStatus>(value);
+        copy._status = Any.Fixed(value);
 
         return copy;
     }
@@ -187,7 +187,7 @@ public sealed partial class AnyOrder : IAny<Order> {
     public AnyOrder WithTags(IReadOnlyList<string> value) {
         AnyOrder copy = new AnyOrder(this);
 
-        copy._tags = new FixedValue<IReadOnlyList<string>>(value);
+        copy._tags = Any.Fixed(value);
 
         return copy;
     }
@@ -206,7 +206,7 @@ public sealed partial class AnyOrder : IAny<Order> {
     public AnyOrder WithPlacedAt(DateTime value) {
         AnyOrder copy = new AnyOrder(this);
 
-        copy._placedAt = new FixedValue<DateTime>(value);
+        copy._placedAt = Any.Fixed(value);
 
         return copy;
     }
@@ -229,20 +229,6 @@ public sealed partial class AnyOrder : IAny<Order> {
                          _status.Generate(),
                          _tags.Generate(),
                          _placedAt.Generate());
-    }
-
-    private sealed class FixedValue<TValue> : IAny<TValue> {
-
-        private readonly TValue _value;
-
-        public FixedValue(TValue value) {
-            _value = value;
-        }
-
-        public TValue Generate() {
-            return _value;
-        }
-
     }
 
 }

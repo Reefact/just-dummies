@@ -122,6 +122,45 @@ not override `Equals` is satisfied trivially — every instance differs — so t
 hold what a reader would call the same value twice. That is diagnostic
 [JD028](../analyzers/JD028.en.md).
 
+## Ascending order
+
+A list or an array whose elements must come in order — the timestamps of a load curve, a ladder of
+thresholds — declares it: `Ordered()` where the element type has a natural order, `OrderedBy(key)` to
+order by a key. Both are ascending and non-decreasing; strictly increasing adds the distinctness that
+says so, `Ordered().Distinct()` or `OrderedBy(key).DistinctBy(key)`.
+
+```csharp
+List<double> anyThresholds = Any.ListOf(Any.Double().Between(0, 100)).WithCount(4).Ordered().Distinct().Generate();
+
+IAny<Route> routeGenerator = Any.Combine(
+    Any.String().Alpha().InUpperCase().WithLength(3),
+    Any.String().Alpha().InUpperCase().WithLength(3),
+    Any.Int32().Between(1, 5_000),
+    Any.Boolean(),
+    (origin, destination, distanceKm, domestic) => new Route(origin, destination, distanceKm, domestic));
+
+List<Route> anyLegs = Any.ListOf(routeGenerator).WithCount(3).OrderedBy(route => route.DistanceKm).Generate();
+```
+
+The elements are drawn, then sorted, so the order changes the arrangement and never the content: the
+count, the contained values and distinctness hold as they would without it, wherever the order is
+written in the chain. `Ordered()` exists only on an element type with a natural order — on any other it
+does not compile — and an order is declared once: a second, different one is refused naming both
+([ADR-0124](../../for-maintainers/adr/0124-arrange-a-drawn-list-in-ascending-order.md)).
+
+Two orders that must rise together — a bitrate ladder whose resolution never falls as the bitrate
+rises — are two ordered lists of the same count, paired in order. No rule between neighbouring
+elements is offered: that would be constraint propagation, which the library does not attempt.
+
+```csharp
+IAny<List<(int BitrateKbps, int Height)>> ladderGenerator = Any.Combine(
+    Any.ListOf(Any.Int32().Between(300, 8_000)).WithCount(4).Ordered().Distinct(),
+    Any.ListOf(Any.Int32().OneOf(360, 480, 720, 1080)).WithCount(4).Ordered(),
+    (bitrates, heights) => bitrates.Zip(heights, (bitrate, height) => (bitrate, height)).ToList());
+
+List<(int BitrateKbps, int Height)> anyLadder = ladderGenerator.Generate();
+```
+
 ## An order, and a subset
 
 A random order of items you already hold is `Any.PermutationOf(items)`: every item once per occurrence,

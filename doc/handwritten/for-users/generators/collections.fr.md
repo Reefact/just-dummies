@@ -123,6 +123,46 @@ ne redéfinit pas `Equals` est satisfait trivialement — chaque instance diffè
 collection peut toujours contenir deux fois ce qu'un lecteur appellerait la même valeur. C'est le
 diagnostic [JD028](../analyzers/JD028.fr.md).
 
+## Ordre croissant
+
+Une liste ou un tableau dont les éléments doivent venir dans l'ordre — les horodatages d'une courbe de
+charge, une échelle de seuils — le déclare : `Ordered()` quand le type des éléments a un ordre naturel,
+`OrderedBy(key)` pour ordonner selon une clé. Les deux sont croissants au sens large ; strictement
+croissant ajoute la distinction qui le dit, `Ordered().Distinct()` ou `OrderedBy(key).DistinctBy(key)`.
+
+```csharp
+List<double> anyThresholds = Any.ListOf(Any.Double().Between(0, 100)).WithCount(4).Ordered().Distinct().Generate();
+
+IAny<Route> routeGenerator = Any.Combine(
+    Any.String().Alpha().InUpperCase().WithLength(3),
+    Any.String().Alpha().InUpperCase().WithLength(3),
+    Any.Int32().Between(1, 5_000),
+    Any.Boolean(),
+    (origin, destination, distanceKm, domestic) => new Route(origin, destination, distanceKm, domestic));
+
+List<Route> anyLegs = Any.ListOf(routeGenerator).WithCount(3).OrderedBy(route => route.DistanceKm).Generate();
+```
+
+Les éléments sont tirés, puis triés, donc l'ordre change l'arrangement et jamais le contenu : l'effectif,
+les valeurs contenues et la distinction tiennent comme sans lui, où que l'ordre soit écrit dans la
+chaîne. `Ordered()` n'existe que sur un type d'éléments doté d'un ordre naturel — sur tout autre, il ne
+compile pas — et un ordre se déclare une fois : un second, différent, est refusé en nommant les deux
+([ADR-0124](../../for-maintainers/adr/0124-arrange-a-drawn-list-in-ascending-order.fr.md)).
+
+Deux ordres qui doivent monter ensemble — une échelle de débits dont la résolution ne baisse jamais quand
+le débit monte — sont deux listes ordonnées du même effectif, appariées dans l'ordre. Aucune règle entre
+éléments voisins n'est offerte : ce serait de la propagation de contraintes, que la bibliothèque ne tente
+pas.
+
+```csharp
+IAny<List<(int BitrateKbps, int Height)>> ladderGenerator = Any.Combine(
+    Any.ListOf(Any.Int32().Between(300, 8_000)).WithCount(4).Ordered().Distinct(),
+    Any.ListOf(Any.Int32().OneOf(360, 480, 720, 1080)).WithCount(4).Ordered(),
+    (bitrates, heights) => bitrates.Zip(heights, (bitrate, height) => (bitrate, height)).ToList());
+
+List<(int BitrateKbps, int Height)> anyLadder = ladderGenerator.Generate();
+```
+
 ## Un ordre, et un sous-ensemble
 
 Un ordre aléatoire d'éléments que vous détenez déjà, c'est `Any.PermutationOf(items)` : chaque élément une

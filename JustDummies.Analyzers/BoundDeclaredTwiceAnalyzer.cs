@@ -78,7 +78,7 @@ public sealed class BoundDeclaredTwiceAnalyzer : DiagnosticAnalyzer {
         // Analyse each chain once, from its outermost call. It is also what confines the rule to a single chain:
         // a generator that reaches a second statement through a name is a generator someone can still draw from,
         // so its bound is not dead and reporting it would be a false positive.
-        if (invocation.Parent is IInvocationOperation) { return; }
+        if (AnyChainFacts.HasOuterLink(invocation, symbols)) { return; }
         if (!AnyChainFacts.TryGetChain(invocation, symbols, out IReadOnlyList<IInvocationOperation> constraints, out IInvocationOperation? factory)) { return; }
         if (factory is null) { return; }
 

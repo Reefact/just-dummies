@@ -50,7 +50,7 @@ public sealed class ScalarChainAdmitsNoValueAnalyzer : DiagnosticAnalyzer {
             context.ReportDiagnostic(Diagnostic.Create(Descriptors.ConstraintWithNoEffect, invocation.Syntax.GetLocation(), "an empty exclusion removes no value"));
         }
 
-        if (invocation.Parent is IInvocationOperation) { return; }
+        if (AnyChainFacts.HasOuterLink(invocation, symbols)) { return; }
         if (!AnyChainFacts.TryGetChain(invocation, symbols, out IReadOnlyList<IInvocationOperation> constraints, out IInvocationOperation? factory)) { return; }
         if (factory is null || !IsIntegerFactory(factory.TargetMethod.Name)) { return; }
 

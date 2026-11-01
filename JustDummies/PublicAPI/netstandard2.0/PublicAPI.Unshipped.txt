@@ -531,3 +531,8 @@ static JustDummies.NullableExtensions.OrNull<T>(this JustDummies.IAny<T>! genera
 static JustDummies.NullableReferenceExtensions.OrNull<T>(this JustDummies.IAny<T!>! generator) -> JustDummies.IAny<T?>!
 static JustDummies.PoolRejection<T>.operator !=(JustDummies.PoolRejection<T>? left, JustDummies.PoolRejection<T>? right) -> bool
 static JustDummies.PoolRejection<T>.operator ==(JustDummies.PoolRejection<T>? left, JustDummies.PoolRejection<T>? right) -> bool
+JustDummies.AnyArray<T>.OrderedBy<TKey>(System.Func<T, TKey>! keySelector) -> JustDummies.AnyArray<T>!
+JustDummies.AnyList<T>.OrderedBy<TKey>(System.Func<T, TKey>! keySelector) -> JustDummies.AnyList<T>!
+JustDummies.OrderingExtensions
+static JustDummies.OrderingExtensions.Ordered<T>(this JustDummies.AnyArray<T>! array) -> JustDummies.AnyArray<T>!
+static JustDummies.OrderingExtensions.Ordered<T>(this JustDummies.AnyList<T>! list) -> JustDummies.AnyList<T>!

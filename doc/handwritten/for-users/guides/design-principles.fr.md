@@ -100,8 +100,9 @@ vous laisserait bissecter une chaîne à la main.
 
 **Vous devrez parfois faire quelque chose à la main.** Un motif hors du sous-ensemble régulier, un
 agrégat à quinze champs, une valeur dont la validité dépend d'une autre valeur tirée plus tôt. La
-bibliothèque vous donne `IAny<T>`, `.As(...)` et `Combine`, et attend de vous que vous assembliez le
-reste — ce qui garde le résultat correct selon *vos* règles plutôt que selon une convention devinée.
+bibliothèque vous donne `IAny<T>`, `.As(...)`, `Combine` et `.Then(...)` — ce dernier tire une valeur
+à partir d'une autre tirée d'abord — et attend de vous que vous assembliez le reste, ce qui garde le
+résultat correct selon *vos* règles plutôt que selon une convention devinée.
 
 **Vous n'aurez pas à déboguer le générateur.** Chaque refus nomme ce qu'il n'a pas pu honorer, chaque
 tirage satisfait ce que vous avez déclaré, et toute exécution séquentielle se rejoue depuis la graine

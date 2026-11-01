@@ -208,6 +208,33 @@ comme un seul générateur qui tire les deux ensemble : [Quand une garde relie d
 montre les trois formes, et [Principes de conception](./design-principles.fr.md#ce-que-cela-change-au-quotidien)
 dit pourquoi la bibliothèque vous le laisse.
 
+## `.Then(...)` : un tirage qui dépend d'un autre
+
+Quand la seconde valeur n'est pas seulement bornée par la première mais *construite* à partir d'elle — les
+cellules d'une grille dans ses dimensions tirées, une mesure remplie jusqu'à sa signature rythmique tirée —
+tirez la première, et laissez `.Then(...)` construire à partir d'elle le générateur de la seconde :
+
+```csharp
+IAny<(int Width, int Height, int Cell)> gridGenerator = Any.Combine(
+        Any.Int32().Between(1, 20),
+        Any.Int32().Between(1, 20),
+        (width, height) => (width, height))
+    .Then(size => Any.Int32().Between(0, size.width * size.height - 1)
+                     .As(cell => (size.width, size.height, cell)));
+```
+
+C'est une seule recette : le générateur intérieur tire sur la même source que l'extérieur, si bien que la
+chaîne se rejoue depuis une seule graine — sous un contexte `Any.WithSeed(...)` explicite aussi, là où un
+`Generate()` écrit dans un `As(...)` tirerait la valeur intérieure de la graine ambiante. C'est un tirage
+séquentiel, correct par construction, jamais une recherche
+([ADR-0119](../../for-maintainers/adr/0119-draw-a-value-that-depends-on-another-draw.fr.md)).
+
+Choisir parmi des générateurs est le même geste : la branche non retenue n'est jamais tirée.
+
+```csharp
+IAny<int> signedGenerator = Any.Boolean().Then(positive => positive ? Any.Int32().Positive() : Any.Int32().Negative());
+```
+
 ## Construire un agrégat entier
 
 En rassemblant tout, voici un dummy pour un enregistrement à trois champs, dont aucun n'est un

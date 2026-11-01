@@ -10,6 +10,14 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Added
 
+- **`.Then(...)` draws a value that depends on another draw.** `Any.Int32().Between(1, 20).Then(n =>
+  Any.ListOf(anyCell).WithCount(n))` draws the first value, builds the generator for the second from it,
+  and draws from that one — a grid's cells inside its drawn dimensions, a branch chosen by a drawn flag,
+  where only the chosen generator draws. The chain is one recipe and replays from one seed: under an
+  explicit `Any.WithSeed(...)` context, a generator built from the static `Any` inside the function draws
+  from that context too, which a `Generate()` written inside `As(...)` did not (ADR-0119, issue #396).
+  JD012's message now names `Then` as the way to choose among pooled generators.
+
 - **`Any.Fixed(value)` hands a value you chose to anything that takes a generator.** An operand of
   `Any.Combine` the test is about, a parameter pinned to its absent case, the branch of a draw that must
   not vary: `Any.Fixed(120.00m)`, `Any.Fixed<string?>(null)`. It consumes no draw, so the values around

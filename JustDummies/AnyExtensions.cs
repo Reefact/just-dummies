@@ -47,4 +47,50 @@ public static class AnyExtensions {
         });
     }
 
+
+    /// <summary>
+    ///     Derives a generator whose value depends on another draw: it draws a value from <paramref name="generator" />,
+    ///     builds the generator <paramref name="next" /> returns for it, and draws from that one — a grid's cell drawn
+    ///     inside the grid's drawn dimensions, a branch chosen by a drawn flag. Only the generator built for the drawn
+    ///     value is asked for one, so choosing among generators is <c>Any.Boolean().Then(b =&gt; b ? first : second)</c>.
+    /// </summary>
+    /// <remarks>
+    ///     <para>
+    ///         Both draws come from the same source, so the whole chain replays from one seed. Under the ambient source
+    ///         that is the ambient seed; under an explicit <see cref="Any.WithSeed" /> context, a generator built from the
+    ///         static <see cref="Any" /> inside <paramref name="next" /> draws from that context too, for the length of
+    ///         the dependent draw — the case a <c>Generate()</c> written inside <c>As(...)</c> would split across two
+    ///         seeds. A generator built from another context, or one of your own drawing through neither, keeps its own
+    ///         source.
+    ///     </para>
+    ///     <para>
+    ///         It is a sequential draw, correct by construction: the second value is drawn knowing the first, never
+    ///         searched for. A relation <paramref name="next" /> cannot state as a generator is still the test's to write
+    ///         (ADR-0046, ADR-0119).
+    ///     </para>
+    /// </remarks>
+    /// <param name="generator">The generator of the value the next draw depends on.</param>
+    /// <param name="next">Builds, from that value, the generator the result is drawn from.</param>
+    /// <typeparam name="TSource">The type of the value the next draw depends on.</typeparam>
+    /// <typeparam name="TResult">The type of the generated values.</typeparam>
+    /// <returns>A generator of <typeparamref name="TResult" />.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="generator" /> or <paramref name="next" /> is <c>null</c>.</exception>
+    public static IAny<TResult> Then<TSource, TResult>(this IAny<TSource> generator, Func<TSource, IAny<TResult>> next) {
+        if (generator is null) { throw new ArgumentNullException(nameof(generator)); }
+        if (next is null) { throw new ArgumentNullException(nameof(next)); }
+
+        RandomSource? source       = AnyDerivation.SourceForADrawOver(generator);
+        bool          reproducible = AnyDerivation.IsReproducible(generator);
+
+        return new DerivedAny<TResult>(source, reproducible, () => {
+            TSource       value = generator.Generate();
+            IAny<TResult> built = AnyDerivation.Invoke(() => next(value) ?? throw new InvalidOperationException("Then(...) returned no generator."),
+                                                       source, reproducible,
+                                                       () => $"the function passed to Then(...) threw for the generated value {AnyDerivation.Display(value)}");
+
+            if (source is not FixedRandomSource context) { return built.Generate(); }
+
+            using (AmbientRandomSource.Borrow(context.Current, context.ReplaySnippet)) { return built.Generate(); }
+        });
+    }
 }

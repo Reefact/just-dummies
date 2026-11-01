@@ -158,6 +158,32 @@ public sealed class CompositionProperties {
         return nulls > OrNullRateDrawCount / 40 && nulls < OrNullRateDrawCount / 5;
     }
 
+    [Fact(DisplayName = "Then replays from an explicit context's seed alone, whatever the ambient seed, for every seed.")]
+    public void ThenReplaysFromTheContextSeedAlone() {
+        // ADR-0119: the inner generator is built from the static Any, yet under an explicit context it draws from that
+        // context, so two runs differing only in the ambient seed draw the same chain.
+        Prop.ForAll(Generators.Seed().ToArbitrary(),
+                    Generators.Seed().ToArbitrary(),
+                    (contextSeed, ambientSeed) => DrawChain(contextSeed, ambientSeed).SequenceEqual(DrawChain(contextSeed, ambientSeed + 1)))
+            .QuickCheckThrowOnFailure();
+
+        static List<int> DrawChain(int contextSeed, int ambientSeed) {
+            using (Any.UseSeed(ambientSeed)) {
+                AnyContext context = Any.WithSeed(contextSeed);
+
+                return Expect.Draws(context.Int32().Between(1, 1000).Then(bound => Any.Int32().Between(-bound, bound)), 16);
+            }
+        }
+    }
+
+    [Fact(DisplayName = "Then's dependent draw honours the value it was built from, for every bound.")]
+    public void ThenHonoursTheDrawnValue() {
+        Prop.ForAll(Gen.Choose(1, 10_000).ToArbitrary(),
+                    ceiling => Expect.EveryDraw(Any.Int32().Between(0, ceiling).Then(bound => Any.Int32().Between(0, bound).As(inner => (bound, inner))),
+                                                pair => pair.inner >= 0 && pair.inner <= pair.bound && pair.bound <= ceiling))
+            .QuickCheckThrowOnFailure();
+    }
+
     [Fact(DisplayName = "A set over OrNull counts null as one additional value: it draws every count up to the domain size including null.")]
     public void ASetOverOrNullCountsNullAsOneMoreValue() {
         Gen<(int Pool, int Count, bool Reference)> cases =

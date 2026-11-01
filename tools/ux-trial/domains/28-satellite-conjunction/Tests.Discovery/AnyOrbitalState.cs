@@ -34,16 +34,23 @@ public sealed partial class AnyOrbitalState : IAny<OrbitalState> {
     private static IAny<Vector3> AnyValidPositionKm() {
         // A direction times a radius above the surface and below the maximum altitude. A one-kilometre
         // margin on each side keeps the rounding of Normalized().Scale(...) from crossing a bound.
-        return Any.Combine(new AnyVector3(),
+        return Any.Combine(AnyDirection(),
                            Any.Double().Between(OrbitalState.EarthRadiusKm + 1, OrbitalState.EarthRadiusKm + OrbitalState.MaximumAltitudeKm - 1),
                            (direction, radius) => direction.Normalized().Scale(radius));
     }
 
     private static IAny<Vector3> AnyValidVelocityKmPerSecond() {
         // A direction times a speed in (0, 12] km/s, with the same rounding margin.
-        return Any.Combine(new AnyVector3(),
+        return Any.Combine(AnyDirection(),
                            Any.Double().Between(0.001, OrbitalState.MaximumSpeedKmPerSecond - 0.001),
                            (direction, speed) => direction.Normalized().Scale(speed));
+    }
+
+    private static AnyVector3 AnyDirection() {
+        // Hand fix after ADR-0117: an unbounded component reaches the edge of double one draw in ten, its square
+        // overflows Vector3.Magnitude to infinity, and Normalized() then returns the zero vector. A direction only
+        // needs its components in [-1, 1], so that is the range declared.
+        return new AnyVector3().WithX(x => x.Between(-1d, 1d)).WithY(y => y.Between(-1d, 1d)).WithZ(z => z.Between(-1d, 1d));
     }
 
     private static AnyPositionCovariance AnyValidCovariance() {

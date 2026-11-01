@@ -89,6 +89,32 @@ d'en sortir : convertir la borne avec `ToUniversalTime()`, ou utiliser
 Une valeur fournie par `OneOf` n'est pas une borne : elle est rendue telle quelle, `Kind` compris. Sans borne
 déclarée, l'intervalle va de `DateTime.MinValue` à `DateTime.MaxValue`.
 
+## Un tirage sans contrainte couvre le type entier
+
+Sans borne déclarée, chaque générateur tire sur tout ce que son type peut contenir :
+
+| Générateur | Étendue par défaut |
+|---|---|
+| `Any.DateTime()` | de `DateTime.MinValue` à `DateTime.MaxValue` — du `0001-01-01` au `9999-12-31` |
+| `Any.DateTimeOffset()` | de `DateTimeOffset.MinValue` à `DateTimeOffset.MaxValue`, décalage `+00:00` — les mêmes instants |
+| `Any.DateOnly()` | de `DateOnly.MinValue` à `DateOnly.MaxValue` — du `0001-01-01` au `9999-12-31` |
+| `Any.TimeOnly()` | de `TimeOnly.MinValue` à `TimeOnly.MaxValue` — de `00:00:00` à `23:59:59.9999999`, la journée entière |
+
+Les petits décalages ne sont pas le risque : `AddHours(1)` n'a jamais échoué sur un million de tirages. Le
+calcul calendaire, si, parce que les tirages atteignent les extrémités du type : sur 100 000 tirages sans
+contrainte, `AddYears(6)` a débordé 68 fois et `AddMonths(120)` 104 fois. Une date que le code testé décale
+ensuite de plusieurs années ou mois est une valeur qui a un domaine, donc **bornez-la avant d'en faire du calcul
+calendaire** :
+
+```csharp
+DateTimeOffset anyShippedAt = Any.DateTimeOffset()
+                                 .Between(new DateTimeOffset(2000, 1, 1, 0, 0, 0, TimeSpan.Zero),
+                                          new DateTimeOffset(2100, 1, 1, 0, 0, 0, TimeSpan.Zero))
+                                 .Generate();
+
+DateTimeOffset warrantyEndsAt = anyShippedAt.AddYears(6);              // n'atteint jamais l'extrémité du type
+```
+
 ## `DateTimeOffset` ne porte un décalage que si vous en déclarez un
 
 Un `DateTimeOffset` est un instant **et** un décalage par rapport à UTC. Sans contrainte, JustDummies

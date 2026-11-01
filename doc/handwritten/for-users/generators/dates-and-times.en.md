@@ -88,6 +88,31 @@ the instant is what matters ([ADR-0114](../../for-maintainers/adr/0114-refuse-a-
 A value you supply through `OneOf` is not a bound: it is returned as given, `Kind` included. With no bound
 declared, the range is `DateTime.MinValue` to `DateTime.MaxValue`.
 
+## An unconstrained draw spans the whole type
+
+With no bound declared, each generator draws across everything its type can hold:
+
+| Generator | Default span |
+|---|---|
+| `Any.DateTime()` | `DateTime.MinValue` to `DateTime.MaxValue` — `0001-01-01` to `9999-12-31` |
+| `Any.DateTimeOffset()` | `DateTimeOffset.MinValue` to `DateTimeOffset.MaxValue`, offset `+00:00` — the same instants |
+| `Any.DateOnly()` | `DateOnly.MinValue` to `DateOnly.MaxValue` — `0001-01-01` to `9999-12-31` |
+| `Any.TimeOnly()` | `TimeOnly.MinValue` to `TimeOnly.MaxValue` — `00:00:00` to `23:59:59.9999999`, the whole day |
+
+Small offsets are not the risk: `AddHours(1)` never failed over a million draws. Calendar arithmetic is,
+because the draws reach the ends of the type: over 100,000 unconstrained draws, `AddYears(6)` overflowed 68
+times and `AddMonths(120)` 104 times. A date the code under test then moves by years or months is a value with a
+domain, so **bound it before doing calendar arithmetic on it**:
+
+```csharp
+DateTimeOffset anyShippedAt = Any.DateTimeOffset()
+                                 .Between(new DateTimeOffset(2000, 1, 1, 0, 0, 0, TimeSpan.Zero),
+                                          new DateTimeOffset(2100, 1, 1, 0, 0, 0, TimeSpan.Zero))
+                                 .Generate();
+
+DateTimeOffset warrantyEndsAt = anyShippedAt.AddYears(6);              // never reaches the end of the type
+```
+
 ## `DateTimeOffset` carries an offset only when you declare one
 
 A `DateTimeOffset` is an instant **and** an offset from UTC. Unconstrained, JustDummies varies the

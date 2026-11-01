@@ -686,7 +686,7 @@ public sealed class AnyStringTests {
     [SuppressMessage(JustDummiesRule.JD014.Category, JustDummiesRule.JD014.Id, Justification = SuppressionJustification.JD014.ThrowIsTheSubject)]
     public void ExclusionArgumentsAreValidated() {
         Check.ThatCode(() => Any.String().DifferentFrom(null!)).Throws<ArgumentNullException>();
-        Check.ThatCode(() => Any.String().Except(null!)).Throws<ArgumentNullException>();
+        Check.ThatCode(() => Any.String().Except((string[])null!)).Throws<ArgumentNullException>();
         Check.ThatCode(() => Any.String().Except("a", null!)).Throws<ArgumentException>();
     }
 

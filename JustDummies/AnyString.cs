@@ -436,6 +436,22 @@ public sealed class AnyString : IAny<string>, IHasRandomSource, ICardinalityHint
     }
 
     /// <summary>
+    ///     Requires the value to be none of the supplied values — the sequence form of <see cref="Except(string[])" />,
+    ///     for a set the test keeps, such as the values already used. The sequence is materialized once, and an empty one
+    ///     excludes nothing (ADR-0122).
+    /// </summary>
+    /// <param name="values">The forbidden values.</param>
+    /// <returns>A new generator carrying the added constraint.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="values" /> is <c>null</c>.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="values" /> contains a <c>null</c> element.</exception>
+    /// <exception cref="ConflictingAnyConstraintException">Thrown when a value set is in force and the exclusion leaves none of its values.</exception>
+    public AnyString Except(IEnumerable<string> values) {
+        if (values is null) { throw new ArgumentNullException(nameof(values)); }
+
+        return Except(values as string[] ?? values.ToArray());
+    }
+
+    /// <summary>
     ///     Requires the generated string to differ from <paramref name="value" /> — typically an existing value the test
     ///     already holds, to exercise an inequality path while preserving the declared shape. Semantically equivalent to
     ///     <see cref="Except(string[])" />, including when a value set is in force; the name carries the intent at the

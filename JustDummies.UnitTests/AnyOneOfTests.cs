@@ -284,7 +284,7 @@ public sealed class AnyOneOfTests {
     [Fact(DisplayName = "The exclusion arguments are validated as arguments, not as conflicts.")]
     [SuppressMessage(JustDummiesRule.JD014.Category, JustDummiesRule.JD014.Id, Justification = SuppressionJustification.JD014.ThrowIsTheSubject)]
     public void ExclusionArgumentsAreValidated() {
-        Check.ThatCode(() => Any.OneOf("a", "b").Except(null!)).Throws<ArgumentNullException>();
+        Check.ThatCode(() => Any.OneOf("a", "b").Except((string[])null!)).Throws<ArgumentNullException>();
         Check.ThatCode(() => Any.OneOf("a", "b").Except("a", null!)).Throws<ArgumentException>();
         Check.ThatCode(() => Any.OneOf("a", "b").DifferentFrom(null!)).Throws<ArgumentNullException>();
     }

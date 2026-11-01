@@ -10,6 +10,13 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Added
 
+- **`Except` takes a sequence on every builder, as `OneOf` does.** `Except(IEnumerable<T>)` sits beside
+  `Except(params T[])` with the same semantics, so a set the test keeps — `HashSet<int> used` — passes
+  as it is instead of through `.ToArray()` at every call, and an empty one excludes nothing. On
+  `Any.Char()` a `string` is the characters to exclude: `Except("aeiou")`. The sequence is materialized
+  once. Under Sonar, `Except(null!)` now raises S3220, as `OneOf(null!)` does; a cast names the overload
+  (issue #393).
+
 - **`DifferentFrom(value)` on any generator.** A generator seen only as an `IAny<T>` — built by `As`
   or `Combine`, scaffolded, or your own — now takes `DifferentFrom`: it redraws while the value equals
   the one given, up to a bounded number of times, and fails with its seed when the generator yields

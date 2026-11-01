@@ -15,7 +15,7 @@ namespace JustDummies;
 ///     specification: unlike <see cref="AnyString" /> this generator exposes no further shape or length constraints —
 ///     express those inside the pattern instead. What it does expose is the type-agnostic trio, offered wherever a
 ///     generator would otherwise build the value: the value set <see cref="OneOf(string[])" /> and the exclusion pair
-///     <see cref="Except" /> and <see cref="DifferentFrom" />. It also composes like any other generator: pipe it
+///     <see cref="Except(string[])" /> and <see cref="DifferentFrom" />. It also composes like any other generator: pipe it
 ///     through <c>As(...)</c> into a value object, make it optional with <c>OrNull()</c>, or fold it into
 ///     <c>Combine(...)</c> and the collection generators.
 /// </summary>
@@ -249,7 +249,7 @@ public sealed class AnyPattern : IAny<string>, IHasRandomSource, ICardinalityHin
     ///     the surviving values, drawn uniformly and reproducibly under a seed.
     /// </summary>
     /// <remarks>
-    ///     Composes with <see cref="Except" /> and <see cref="DifferentFrom" /> in either order, and turns them
+    ///     Composes with <see cref="Except(string[])" /> and <see cref="DifferentFrom" /> in either order, and turns them
     ///     <b>eager</b>: the domain is the supplied values, so an exclusion leaving nothing is refused at declaration
     ///     rather than discovered by spending the redraw budget at <see cref="Generate" />. Comparison is ordinal,
     ///     whether or not the pattern ignores case — the pattern decides membership, ordinal equality decides
@@ -327,10 +327,26 @@ public sealed class AnyPattern : IAny<string>, IHasRandomSource, ICardinalityHin
     }
 
     /// <summary>
+    ///     Requires the value to be none of the supplied values — the sequence form of <see cref="Except(string[])" />,
+    ///     for a set the test keeps, such as the values already used. The sequence is materialized once, and an empty one
+    ///     excludes nothing (ADR-0122).
+    /// </summary>
+    /// <param name="values">The forbidden values.</param>
+    /// <returns>A new generator carrying the added constraint.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="values" /> is <c>null</c>.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="values" /> contains a <c>null</c> element.</exception>
+    /// <exception cref="ConflictingAnyConstraintException">Thrown when a value set is in force and no value it allows survives.</exception>
+    public AnyPattern Except(IEnumerable<string> values) {
+        if (values is null) { throw new ArgumentNullException(nameof(values)); }
+
+        return Except(values as string[] ?? values.ToArray());
+    }
+
+    /// <summary>
     ///     Requires the generated value to differ from <paramref name="value" /> — typically an existing value the
     ///     test already holds, to exercise an inequality path while keeping the format the pattern defines
     ///     (<c>Any.StringMatching(@"^ORD-\d{8}$").DifferentFrom(existing)</c>). Semantically equivalent to
-    ///     <see cref="Except" />; the name carries the intent at the call site.
+    ///     <see cref="Except(string[])" />; the name carries the intent at the call site.
     /// </summary>
     /// <param name="value">The value the generated value must differ from.</param>
     /// <returns>A new generator carrying the added constraint.</returns>

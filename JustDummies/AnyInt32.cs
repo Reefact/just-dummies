@@ -214,8 +214,23 @@ public sealed class AnyInt32 : IAny<int>, IHasRandomSource, ICardinalityHint<int
     }
 
     /// <summary>
+    ///     Requires the value to be none of the supplied values — the sequence form of <see cref="Except(int[])" />,
+    ///     for a set the test keeps, such as the values already used. The sequence is materialized once, and an empty one
+    ///     excludes nothing (ADR-0122).
+    /// </summary>
+    /// <param name="values">The forbidden values.</param>
+    /// <returns>A new generator carrying the added constraint.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="values" /> is <c>null</c>.</exception>
+    /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
+    public AnyInt32 Except(IEnumerable<int> values) {
+        if (values is null) { throw new ArgumentNullException(nameof(values)); }
+
+        return Except(values as int[] ?? values.ToArray());
+    }
+
+    /// <summary>
     ///     Requires the value to differ from <paramref name="value" /> — typically an existing value the test already
-    ///     holds. Semantically equivalent to <see cref="Except" />; the name carries the intent at the call site.
+    ///     holds. Semantically equivalent to <see cref="Except(int[])" />; the name carries the intent at the call site.
     /// </summary>
     /// <param name="value">The value the generated value must differ from.</param>
     /// <returns>A new generator carrying the added constraint.</returns>

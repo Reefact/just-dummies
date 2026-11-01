@@ -11,7 +11,7 @@ namespace JustDummies;
 /// <summary>
 ///     A fluent generator of arbitrary <typeparamref name="TEnum" /> values, drawn uniformly from the enum's
 ///     <b>declared</b> members — never from undeclared numeric values. Constraints narrow the pool
-///     (<see cref="OneOf(TEnum[])" />, <see cref="Except" />, <see cref="DifferentFrom" />), and a combination that empties it
+///     (<see cref="OneOf(TEnum[])" />, <see cref="Except(TEnum[])" />, <see cref="DifferentFrom" />), and a combination that empties it
 ///     fails with a <see cref="ConflictingAnyConstraintException" /> naming both sides — before any value is drawn,
 ///     and whichever order the chain was written in, since <see cref="AllowingCombinations" /> widens the universe
 ///     the pool is cut from wherever it appears.
@@ -220,7 +220,7 @@ public sealed class AnyEnum<TEnum> : IAny<TEnum>, IHasRandomSource, ICardinality
     ///         <c>ReadWrite = Read | Write</c> is already the combination of the two.
     ///     </para>
     ///     <para>
-    ///         <see cref="Except" /> and <see cref="DifferentFrom" /> keep comparing by <b>equality</b>, here as
+    ///         <see cref="Except(TEnum[])" /> and <see cref="DifferentFrom" /> keep comparing by <b>equality</b>, here as
     ///         everywhere else: <c>Except(Read)</c> forbids the value <c>Read</c> and still allows
     ///         <c>Read | Write</c>. Beside <see cref="OneOf(TEnum[])" /> this constraint changes nothing, in either order —
     ///         an explicit allow-list is a terminal enumeration of exact values, and a combination written in one is
@@ -325,8 +325,23 @@ public sealed class AnyEnum<TEnum> : IAny<TEnum>, IHasRandomSource, ICardinality
     }
 
     /// <summary>
+    ///     Requires the value to be none of the supplied values — the sequence form of <see cref="Except(TEnum[])" />,
+    ///     for a set the test keeps, such as the values already used. The sequence is materialized once, and an empty one
+    ///     excludes nothing (ADR-0122).
+    /// </summary>
+    /// <param name="values">The forbidden values.</param>
+    /// <returns>A new generator carrying the added constraint.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="values" /> is <c>null</c>.</exception>
+    /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
+    public AnyEnum<TEnum> Except(IEnumerable<TEnum> values) {
+        if (values is null) { throw new ArgumentNullException(nameof(values)); }
+
+        return Except(values as TEnum[] ?? values.ToArray());
+    }
+
+    /// <summary>
     ///     Requires the value to differ from <paramref name="value" /> — typically an existing value the test already
-    ///     holds. Semantically equivalent to <see cref="Except" />; the name carries the intent at the call site.
+    ///     holds. Semantically equivalent to <see cref="Except(TEnum[])" />; the name carries the intent at the call site.
     /// </summary>
     /// <param name="value">The value the generated value must differ from.</param>
     /// <returns>A new generator carrying the added constraint.</returns>

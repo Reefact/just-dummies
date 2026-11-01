@@ -202,8 +202,8 @@ string anyNotDraft = Any.String().OneOf("draft", "sent", "paid").DifferentFrom("
 string anyNotEmpty = Any.String().WithLengthBetween(1, 5).Except("aaa", "bbb").Generate();
 ```
 
-Un `Except` à qui l'on passe une liste vide n'exclut rien et est accepté, si bien qu'un ensemble de valeurs
-déjà utilisées qui commence vide ne demande aucun cas particulier ; un `OneOf` vide est refusé, puisqu'il
+`Except` prend une séquence aussi bien qu'une liste, et vide, il n'exclut rien, si bien qu'un ensemble de
+valeurs déjà utilisées passe tel quel, vide à sa première utilisation compris ; un `OneOf` vide est refusé, puisqu'il
 déclare un domaine vide ([ADR-0122](../../for-maintainers/adr/0122-accept-an-empty-exclusion-as-the-identity.fr.md)).
 
 `OneOf` est la seule contrainte qui **remplace** la disposition au lieu de la façonner : c'est vous
@@ -240,6 +240,11 @@ un retour chariot ou un NUL. `Printable()` est ce que vous déclarez quand ce n'
 `Punctuation()` quand le caractère ne doit pas se lire comme alphanumérique ; `NonPrintable()` quand un
 caractère de contrôle est précisément le contre-exemple dont votre test a besoin. Là où l'ensemble est
 précis — trois séparateurs autorisés, pas les trente-deux — `OneOf` le dit, et le dit exactement.
+
+`Except` prend une séquence aussi bien qu'une liste, et sur `Any.Char()` une `string` en est une :
+`Except("aeiou")` exclut chacun de ses caractères, comme `Except('a', 'e', 'i', 'o', 'u')`. Les
+analyzers lisent les caractères d'une liste écrite en ligne ; une chaîne, comme un ensemble gardé dans
+une variable, n'est pas lue.
 
 ## Motifs
 

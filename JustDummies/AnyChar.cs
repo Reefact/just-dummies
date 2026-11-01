@@ -20,7 +20,7 @@ namespace JustDummies;
 ///     <see cref="Punctuation" /> and <see cref="Hexadecimal" /> each occupy one slot, so a second one contradicts
 ///     the first; <see cref="WithoutAlpha" /> and <see cref="WithoutNumeric" /> subtract instead and accumulate;
 ///     <see cref="InLowerCase" /> / <see cref="InUpperCase" /> constrain the letters; and
-///     <see cref="OneOf(char[])" /> / <see cref="Except" /> / <see cref="DifferentFrom" /> work on values. A combination
+///     <see cref="OneOf(char[])" /> / <see cref="Except(char[])" /> / <see cref="DifferentFrom" /> work on values. A combination
 ///     that empties the pool fails eagerly with a <see cref="ConflictingAnyConstraintException" />. Nothing named
 ///     reaches past ASCII — a specific alphabet beyond it is <see cref="OneOf(char[])" />, whose values are yours.
 /// </remarks>
@@ -316,8 +316,23 @@ public sealed class AnyChar : IAny<char>, IHasRandomSource, ICardinalityHint<cha
     }
 
     /// <summary>
+    ///     Requires the value to be none of the supplied values — the sequence form of <see cref="Except(char[])" />,
+    ///     for a set the test keeps, such as the values already used. The sequence is materialized once, and an empty one
+    ///     excludes nothing (ADR-0122).
+    /// </summary>
+    /// <param name="values">The forbidden values.</param>
+    /// <returns>A new generator carrying the added constraint.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="values" /> is <c>null</c>.</exception>
+    /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
+    public AnyChar Except(IEnumerable<char> values) {
+        if (values is null) { throw new ArgumentNullException(nameof(values)); }
+
+        return Except(values as char[] ?? values.ToArray());
+    }
+
+    /// <summary>
     ///     Requires the character to differ from <paramref name="value" /> — typically an existing value the test
-    ///     already holds. Semantically equivalent to <see cref="Except" />; the name carries the intent at the call site.
+    ///     already holds. Semantically equivalent to <see cref="Except(char[])" />; the name carries the intent at the call site.
     /// </summary>
     /// <param name="value">The character the generated character must differ from.</param>
     /// <returns>A new generator carrying the added constraint.</returns>

@@ -26,7 +26,7 @@ namespace JustDummies;
 ///     <para>
 ///         The pool is the whole <i>shape</i> of the specification: <typeparamref name="T" /> is opaque to the
 ///         library, so there is no type-specific constraint to offer. What it does expose is the type-agnostic
-///         exclusion pair <see cref="Except" />/<see cref="DifferentFrom" />, which every other generator carries —
+///         exclusion pair <see cref="Except(T[])" />/<see cref="DifferentFrom" />, which every other generator carries —
 ///         they remove values from the pool rather than describing a shape, and removing everything is a
 ///         <see cref="ConflictingAnyConstraintException" /> at declaration, like any other emptied domain.
 ///     </para>
@@ -145,10 +145,26 @@ public sealed class AnyOneOf<T> : IAny<T>, IHasRandomSource, ICardinalityHint<T>
     }
 
     /// <summary>
+    ///     Requires the value to be none of the supplied values — the sequence form of <see cref="Except(T[])" />,
+    ///     for a set the test keeps, such as the values already used. The sequence is materialized once, and an empty one
+    ///     excludes nothing (ADR-0122).
+    /// </summary>
+    /// <param name="values">The forbidden values.</param>
+    /// <returns>A new generator carrying the added constraint.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="values" /> is <c>null</c>.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="values" /> contains a <c>null</c> element.</exception>
+    /// <exception cref="ConflictingAnyConstraintException">Thrown when no pooled value is left once the excluded ones are removed.</exception>
+    public AnyOneOf<T> Except(IEnumerable<T> values) {
+        if (values is null) { throw new ArgumentNullException(nameof(values)); }
+
+        return Except(values as T[] ?? values.ToArray());
+    }
+
+    /// <summary>
     ///     Requires the generated value to differ from <paramref name="value" /> — typically a value the test already
     ///     holds, to exercise an inequality path while still drawing from the pool
     ///     (<c>Any.ElementOf(orders).DifferentFrom(theOneAlreadyUsed)</c>). Semantically equivalent to
-    ///     <see cref="Except" />; the name carries the intent at the call site.
+    ///     <see cref="Except(T[])" />; the name carries the intent at the call site.
     /// </summary>
     /// <param name="value">The value the generated value must differ from.</param>
     /// <returns>A new generator carrying the added constraint.</returns>

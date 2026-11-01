@@ -87,7 +87,7 @@ public sealed class AnySignedIntegerTests {
         Check.ThatCode(() => Any.Int64().GreaterThan(long.MaxValue)).Throws<ConflictingAnyConstraintException>();
         Check.ThatCode(() => Any.Int64().Between(10L, 1L)).Throws<ArgumentException>();
         Check.ThatCode(() => Any.Int64().OneOf()).Throws<ArgumentException>();
-        Check.ThatCode(() => Any.Int64().Except(null!)).Throws<ArgumentNullException>();
+        Check.ThatCode(() => Any.Int64().Except((long[])null!)).Throws<ArgumentNullException>();
     }
 
     [Fact(DisplayName = "Every signed integer generator materializes its own value type through Generate().")]

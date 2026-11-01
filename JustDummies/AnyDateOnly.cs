@@ -159,8 +159,23 @@ public sealed class AnyDateOnly : IAny<DateOnly>, IHasRandomSource, ICardinality
     }
 
     /// <summary>
+    ///     Requires the value to be none of the supplied values — the sequence form of <see cref="Except(DateOnly[])" />,
+    ///     for a set the test keeps, such as the values already used. The sequence is materialized once, and an empty one
+    ///     excludes nothing (ADR-0122).
+    /// </summary>
+    /// <param name="values">The forbidden values.</param>
+    /// <returns>A new generator carrying the added constraint.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="values" /> is <c>null</c>.</exception>
+    /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
+    public AnyDateOnly Except(IEnumerable<DateOnly> values) {
+        if (values is null) { throw new ArgumentNullException(nameof(values)); }
+
+        return Except(values as DateOnly[] ?? values.ToArray());
+    }
+
+    /// <summary>
     ///     Requires the date to differ from <paramref name="value" /> — typically an existing value the test
-    ///     already holds. Semantically equivalent to <see cref="Except" />; the name carries the intent at the call site.
+    ///     already holds. Semantically equivalent to <see cref="Except(DateOnly[])" />; the name carries the intent at the call site.
     /// </summary>
     /// <param name="value">The value the generated date must differ from.</param>
     /// <returns>A new generator carrying the added constraint.</returns>

@@ -75,7 +75,7 @@ public sealed class EmptyExclusionTests {
 
         foreach (MethodInfo method in typeof(AnyContext).GetMethods(BindingFlags.Public | BindingFlags.Instance)) {
             if (method.GetParameters().Length != 0 || method.IsGenericMethod || method.IsSpecialName) { continue; }
-            if (method.ReturnType.GetMethod("Except") is null) { continue; }
+            if (!method.ReturnType.GetMethods().Any(candidate => candidate.Name == "Except")) { continue; }
 
             factories[method.ReturnType.Name] = any => method.Invoke(any, null)!;
         }

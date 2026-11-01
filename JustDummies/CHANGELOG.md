@@ -182,6 +182,13 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Documentation
 
+- **The numbers page says how a floating-point draw spreads.** A draw is uniform in value over the
+  interval it is taken from, never over the values the type represents, so
+  `Any.Double().Positive().LessThanOrEqualTo(50)` does not crowd near `1e-300`: a draw below `1e-6`
+  comes up about once in fifty million, and a code path that needs a smallest value declares it. The
+  page, the composition guide, the FAQ and the design principles also describe the two rates ADR-0117
+  sets — the edge draw one in ten for an open floating-point chain, and `null` one in ten from
+  `OrNull()` (issue #389).
 - **A narrower pattern at one call site is now shown.** There is no `StartingWith` on an `AnyPattern`:
   narrowing a pattern means intersecting two regular languages, which the library keeps out. The strings page
   and the scaffolder page now show the route that stays — a named recipe beside the generator that states the

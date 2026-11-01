@@ -115,8 +115,11 @@ IAny<(Guid, string, OrderStatus)> anyRow = Any.TripleOf(
 ## `.OrNull()` : les valeurs optionnelles
 
 Un champ optionnel mérite un dummy parfois absent — sinon la branche nulle n'est jamais exercée.
-`.OrNull()` produit `null` environ une fois sur deux et, sinon, une valeur satisfaisant tout ce qui
-a été déclaré en amont :
+`.OrNull()` produit `null` un tirage sur dix et, sinon, une valeur satisfaisant tout ce qui a été
+déclaré en amont. L'absence est une valeur limite d'un optionnel, tirée aussi souvent qu'un tirage
+flottant atteint le bord de son type : assez rare pour que le cas présent domine, assez fréquente pour
+qu'une exécution de la suite rencontre régulièrement la branche nulle
+([ADR-0117](../../for-maintainers/adr/0117-draw-a-limit-value-the-type-permits-one-draw-in-ten.fr.md)) :
 
 ```csharp
 // Types valeur : int?, DateTime?, Guid?, une énumération...

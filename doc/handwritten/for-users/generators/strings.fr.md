@@ -355,6 +355,41 @@ régulier pour démontrer qu'il est vide. Un ensemble que vous fournissez, lui, 
 une exclusion qui le vide est donc signalée dès la déclaration, au lieu d'épuiser un budget au
 moment du `Generate`.
 
+**Un motif plus étroit à un seul site d'appel est une recette nommée.** Il n'existe pas de
+`StartingWith("FR")` sur un `AnyPattern`, et ce n'est pas un oubli : restreindre un motif revient à
+intersecter deux langages réguliers, la machinerie que la bibliothèque tient à l'écart
+([ADR-0008](../../for-maintainers/adr/0008-generate-strings-from-a-home-grown-regular-subset.fr.md),
+[ADR-0046](../../for-maintainers/adr/0046-bound-the-generators-ambition-never-its-correctness.fr.md)).
+Quand un test veut un identifiant d'animal français, énoncez le motif plus étroit **exprès**, une seule
+fois, dans une méthode qui porte un nom. À côté du générateur que `any` a scaffoldé pour l'identifiant — dans
+un fichier à part, que `any generate --force` laisse donc tranquille — c'est une ligne :
+
+<!-- jd:declarations -->
+```csharp
+public static class AnimalIdRecipes {
+
+    public static AnyAnimalId French(this AnyAnimalId animalIds) {
+        return animalIds.WithValue(_ => Any.StringMatching("FR[0-9]{12}"));
+    }
+
+}
+
+public sealed class AnimalIdUsage {
+
+    public AnimalId AnyFrenchAnimalId() {
+        return Any.AnimalId().French().Generate();
+    }
+
+}
+```
+
+Le site d'appel se lit comme ce qu'il veut dire, et rien n'y répète un motif. Le motif est écrit deux
+fois — dans la base, `[A-Z]{2}[0-9]{12}`, et ici — et c'est le prix : gardez la méthode à côté du
+générateur qu'elle restreint. La lambda ignore son argument, ce que la
+[page du scaffolder](../packages/justdummies-cli.fr.md) déconseille *comme habitude* : un test qui
+remplace une base perd ses règles sans un mot. Ici, c'est une recette qui porte un nom, relue une fois,
+et qui dit dans sa signature ce qu'elle restreint.
+
 Une valeur générée correspond forcément à son motif, grâce à un retirage borné là où la seule
 construction ne peut pas le garantir
 ([ADR-0027](../../for-maintainers/adr/0027-guarantee-a-generated-regex-value-matches-by-bounded-redraw.fr.md)).

@@ -141,6 +141,10 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Documentation
 
+- **A narrower pattern at one call site is now shown.** There is no `StartingWith` on an `AnyPattern`:
+  narrowing a pattern means intersecting two regular languages, which the library keeps out. The strings page
+  and the scaffolder page now show the route that stays — a named recipe beside the generator that states the
+  narrower pattern once, on purpose — compiled and run (EN and FR).
 - **An element rule taken from another aggregate is now shown.** A collection's lambda cannot reach its
   elements' recipe, so a rule such as "each horse number between 1 and the size of this race's field" is a named
   overload beside the generator. The scaffolder page shows it as a compiled and run sample, with the lambda that

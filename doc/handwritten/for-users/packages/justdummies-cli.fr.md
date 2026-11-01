@@ -414,6 +414,12 @@ fixation, `WithCode(string value)`, ne change pas.
 * **Une lambda qui s'appuie sur son argument n'élargit jamais la base.** Elle ne peut pas produire une étiquette
   vide quand la base impose `NonEmpty()`. Une lambda qui ignore son argument remplace la base : `_ => Any.Int32()`
   renvoie un générateur qui lui est propre, et toutes les règles que la base respectait s'en vont avec.
+* **Un motif plus étroit est une recette nommée.** Un `AnyPattern` offre `OneOf`, `Except` et
+  `DifferentFrom`, pas `StartingWith` : restreindre un motif revient à intersecter deux langages réguliers.
+  Pour un identifiant d'animal scaffoldé en `Any.StringMatching("[A-Z]{2}[0-9]{12}")`, un test qui en veut un
+  français n'écrit pas `_ => Any.StringMatching("FR[0-9]{12}")` à son site d'appel — c'est de nouveau la forme
+  qui remplace la base — mais ajoute `French()` à côté du générateur, qui énonce le motif plus
+  étroit une fois, exprès, et se lit `Any.AnimalId().French()` à l'appel. La [page des chaînes](../generators/strings.fr.md#ce-que-lon-peut-encore-contraindre) en donne l'exemple.
 * **Une contrainte déclarable une seule fois ne se déclare pas deux fois.** `OneOf`, `WithLength`,
   `MultipleOf` et `WithScale` sont refusés une seconde fois avec un autre argument, en nommant les deux,
   quand la base les a déjà posés — répéter le même ne change rien — `JD034` ne voit pas à l'intérieur de la lambda, le refus arrive donc à l'exécution. Pour retirer des

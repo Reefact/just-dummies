@@ -409,6 +409,12 @@ and delete the refining overload, or give it `Func<IAny<string>, IAny<string>>`.
 * **One that builds on its argument never widens the base.** It cannot draw an empty label when the base
   says `NonEmpty()`. One that ignores its argument replaces the base: `_ => Any.Int32()` hands back a
   generator of the lambda's own, and every rule the base kept goes with it.
+* **A narrower pattern is a named recipe.** An `AnyPattern` offers `OneOf`, `Except` and `DifferentFrom`,
+  not `StartingWith`: narrowing a pattern means intersecting two regular languages. For an animal id
+  scaffolded as `Any.StringMatching("[A-Z]{2}[0-9]{12}")`, a test that wants a French one does not write
+  `_ => Any.StringMatching("FR[0-9]{12}")` at its call site — that is the base-replacing form again — but
+  adds `French()` beside the generator, which states the narrower pattern once, on purpose, and reads
+  `Any.AnimalId().French()` at the call site. The [strings page](../generators/strings.en.md#what-you-can-still-constrain) has the sample.
 * **A constraint that can be declared once cannot be declared again.** `OneOf`, `WithLength`,
   `MultipleOf` and `WithScale` are refused a second time with a different argument, naming both,
   when the base already set them — repeating the same one changes nothing — `JD034` cannot see inside the lambda, so the refusal comes at run time. To take values out of

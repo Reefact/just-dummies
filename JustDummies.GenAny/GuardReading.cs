@@ -98,13 +98,6 @@ internal sealed class GuardReading {
     ///         the engine must not write it in the first place. Two that say exactly the same thing are not a
     ///         collision — they collapse.
     ///     </para>
-    ///     <para>
-    ///         The one asymmetry is deliberate. A base-table refinement is the engine's own opinion and a guard
-    ///         is the developer's declaration, so where the two cannot both hold, <b>the refinement yields</b>:
-    ///         a constructor demanding a blank string is not contradicting itself, it is contradicting the row
-    ///         that assumed strings are non-empty. Dropping both would emit a generator that violates a
-    ///         perfectly good guard, and report a reconciliation nobody asked for.
-    ///     </para>
     /// </remarks>
     internal static IReadOnlyList<GuardConstraint> Combine(IReadOnlyList<GuardConstraint> seeded,
                                                           IReadOnlyList<GuardConstraint> guards,
@@ -113,8 +106,8 @@ internal sealed class GuardReading {
 
         // NotBlank is NonEmpty and more: the same floor of one character, plus a refusal of the all-whitespace
         // value the floor admits. Both spell Bound.Emptiness and both sit at an edge of one, so the fold below
-        // would keep whichever floor it judged tightest and drop the other as redundant — and on a string, where
-        // the base row contributes NonEmpty and the guard contributes NotBlank, the one dropped is the stronger.
+        // would keep whichever floor it judged tightest and drop the other as redundant — and on a string guarded
+        // by both IsNullOrEmpty and IsNullOrWhiteSpace, the one dropped could be the stronger.
         // Subsumption is therefore settled here, once, before anything is placed on a number line (ADR-0088).
         if (kept.Any(constraint => constraint.Member == "NotBlank")) {
             kept.RemoveAll(constraint => constraint.Member == "NonEmpty");
@@ -129,20 +122,9 @@ internal sealed class GuardReading {
         }
 
         if (!Admits(bounding)) {
-            // A base-table refinement is an opinion, a guard is a declaration, and only one of them may be
-            // wrong. Dropping the row's own NonEmpty leaves a chain that still honours every guard; dropping
-            // the guard leaves one that does not — so the refinement yields, and the recap does not report a
-            // reconciliation the developer never asked for.
-            List<GuardConstraint> declared = [.. bounding.Where(constraint => !FromTheTableAlone(constraint, seeded, guards))];
+            dropped = true;
 
-            if (declared.Count < bounding.Count && Admits(declared)) {
-                bounding = declared;
-                kept     = [.. kept.Where(constraint => !Bounds(constraint) || declared.Contains(constraint))];
-            } else {
-                dropped = true;
-
-                return [.. kept.Where(constraint => !Bounds(constraint))];
-            }
+            return [.. kept.Where(constraint => !Bounds(constraint))];
         }
 
         dropped = false;
@@ -172,11 +154,6 @@ internal sealed class GuardReading {
     private static bool Bounds(GuardConstraint constraint) {
         return constraint.Bound == Bound.Emptiness
             || (constraint.Value is not null && constraint.Bound is Bound.Lower or Bound.Upper or Bound.Exact);
-    }
-
-    private static bool FromTheTableAlone(GuardConstraint constraint, IReadOnlyList<GuardConstraint> seeded, IReadOnlyList<GuardConstraint> guards) {
-        return seeded.Contains(constraint, GuardConstraint.SameCall)
-            && !guards.Contains(constraint, GuardConstraint.SameCall);
     }
 
     /// <summary>Whether the floors and ceilings in <paramref name="bounding" /> leave any value at all.</summary>

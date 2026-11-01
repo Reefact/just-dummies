@@ -76,8 +76,8 @@ internal sealed class DrawnGenerator {
     /// </summary>
     /// <remarks>
     ///     Carried here rather than baked into <see cref="Core" /> so a guard saying the same thing collapses
-    ///     into it instead of colliding with it: a <c>string</c> row is already <c>.NonEmpty()</c>, and a
-    ///     constructor guarding on <c>IsNullOrEmpty</c> must not turn that into a contradiction.
+    ///     into it instead of colliding with it: a <c>Uri</c> row is already <c>.Web()</c>, and a guard reading
+    ///     the same call must not write it twice.
     /// </remarks>
     internal IReadOnlyList<GuardConstraint> Seeded { get; }
 
@@ -85,9 +85,8 @@ internal sealed class DrawnGenerator {
     ///     The constraints a composed factory's own guards declared (§5.3, §5.4).
     /// </summary>
     /// <remarks>
-    ///     Apart from <see cref="Seeded" /> because the two answer differently under combination: a row's
-    ///     refinement is the engine's own opinion and yields where a guard contradicts it, while these are the
-    ///     developer's declarations and stand. Keeping them apart is also what lets the recap's <c>guard</c>
+    ///     Apart from <see cref="Seeded" /> because a row's refinement is the engine's own, while these are the
+    ///     developer's declarations. Keeping them apart is also what lets the recap's <c>guard</c>
     ///     word be computed from the constraints <b>applied</b> rather than merely read — the same honesty rule
     ///     the constructor path keeps (§6).
     /// </remarks>

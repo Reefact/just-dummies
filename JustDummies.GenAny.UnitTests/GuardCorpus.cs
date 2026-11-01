@@ -457,7 +457,7 @@ internal static class GuardCorpus {
         // ---- the call itself, or a simple assignment of one. `Policy?.Enforce(code)` is a
         // ---- `ConditionalAccessExpressionSyntax` — neither shape — so the statement is skipped by both the
         // ---- rejection check and the delegation mark. `code` reads as plain `inferred` over a domain that
-        // ---- rejects every string under 8 characters.
+        // ---- rejects every string over 8 characters.
 
         new GuardedShape("guard-behind-conditional-access", "Voucher", """
                                                                           public sealed class Voucher {
@@ -475,7 +475,7 @@ internal static class GuardCorpus {
 
                                                                           public sealed class CodePolicy {
                                                                               public void Enforce(string candidate) {
-                                                                                  if (candidate.Length < 8) { throw new ArgumentException("Too short.", nameof(candidate)); }
+                                                                                  if (candidate.Length > 8) { throw new ArgumentException("Too long.", nameof(candidate)); }
                                                                               }
                                                                           }
                                                                           """, requiresVerification: true),
@@ -752,7 +752,7 @@ internal static class GuardCorpus {
         // ---- AUDIT (lens 1). The fold's own skip path is silent. `value = value.Trim();` before the return
         // ---- makes `writes.Precede` decline the fold — correctly, the constructed type guards the trimmed
         // ---- value — but nothing marks the decline, so `value` reports as `inferred`, requiresVerification
-        // ---- False, over a constructor that rejects every draw the trim shortens below eight.
+        // ---- False, over a constructor that rejects every draw still longer than eight once trimmed.
 
         new GuardedShape("factory-that-rewrites-before-handoff-says-nothing", "Trimmed", """
                                                                                          public sealed class Trimmed {
@@ -760,7 +760,7 @@ internal static class GuardCorpus {
                                                                                              private readonly string value;
 
                                                                                              private Trimmed(string value) {
-                                                                                                 if (value.Length < 8) { throw new ArgumentException("short", nameof(value)); }
+                                                                                                 if (value.Length > 8) { throw new ArgumentException("long", nameof(value)); }
                                                                                                  this.value = value;
                                                                                              }
 

@@ -24,7 +24,7 @@ public sealed partial class AnyEmail : IAny<Email> {
         : this(value: AnyValidValue()) { }
 
     private static AnyString AnyValidValue() {
-        return Any.String().NonEmpty();
+        return Any.String();
     }
 
     /// <summary>Draws every parameter from the recipe given for it.</summary>

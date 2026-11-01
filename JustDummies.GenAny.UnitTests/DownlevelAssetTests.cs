@@ -38,7 +38,7 @@ public sealed class DownlevelAssetTests {
     }
 
     [Theory(DisplayName = "A generator both assets carry resolves on both.")]
-    [InlineData("string", "Any.String().NonEmpty()")]
+    [InlineData("string", "Any.String()")]
     [InlineData("DateTime", "Any.DateTime()")]
     public void AGeneratorBothAssetsCarryResolvesOnBoth(string parameterType, string expected) {
         Check.That(Subject.ExpressionFor(parameterType)).IsEqualTo(expected);

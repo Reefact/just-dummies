@@ -17,7 +17,7 @@ namespace JustDummies.GenAny.UnitTests;
 public sealed class BaseTableTests {
 
     [Theory(DisplayName = "The base table draws every scalar the library has a factory for.")]
-    [InlineData("string", "Any.String().NonEmpty()")]
+    [InlineData("string", "Any.String()")]
     [InlineData("bool", "Any.Boolean()")]
     [InlineData("sbyte", "Any.SByte()")]
     [InlineData("byte", "Any.Byte()")]
@@ -31,7 +31,7 @@ public sealed class BaseTableTests {
     [InlineData("double", "Any.Double()")]
     [InlineData("decimal", "Any.Decimal()")]
     [InlineData("char", "Any.Char()")]
-    [InlineData("Guid", "Any.Guid().NonEmpty()")]
+    [InlineData("Guid", "Any.Guid()")]
     [InlineData("DateTime", "Any.DateTime()")]
     [InlineData("DateTimeOffset", "Any.DateTimeOffset()")]
     [InlineData("TimeSpan", "Any.TimeSpan()")]
@@ -41,19 +41,19 @@ public sealed class BaseTableTests {
         Check.That(Subject.ExpressionFor(parameterType)).IsEqualTo(expected);
     }
 
-    // Unconstrained, Any.String() draws zero to sixteen letters and digits — it can return the empty string
-    // (§14.5) — and a string parameter of a domain type is overwhelmingly required non-empty. A default that
-    // fails about one call in seventeen is the flakiness the library exists to remove. Same for Guid.Empty.
-    [Theory(DisplayName = "The two rows that refuse an empty draw say so.")]
+    // A constructor that refuses the empty value says so in a guard the engine reads (§5.3) or marks to verify
+    // (§5.6); one that accepts it accepts a valid dummy — the empty allele of an insertion, say. The base table
+    // guesses no rule the constructor does not write (#409).
+    [Theory(DisplayName = "No row refuses an empty draw the constructor does not refuse.")]
     [InlineData("string")]
     [InlineData("Guid")]
-    public void TheTwoRowsThatRefuseAnEmptyDrawSaySo(string parameterType) {
-        Check.That(Subject.ExpressionFor(parameterType)).Contains(".NonEmpty()");
+    public void NoRowRefusesAnEmptyDrawTheConstructorDoesNotRefuse(string parameterType) {
+        Check.That(Subject.ExpressionFor(parameterType)).Not.Contains(".NonEmpty()");
     }
 
     [Theory(DisplayName = "The base table draws every collection through its element.")]
     [InlineData("int[]", "Any.ArrayOf(Any.Int32())")]
-    [InlineData("List<string>", "Any.ListOf(Any.String().NonEmpty())")]
+    [InlineData("List<string>", "Any.ListOf(Any.String())")]
     [InlineData("IList<int>", "Any.ListOf(Any.Int32())")]
     [InlineData("IReadOnlyList<int>", "Any.ListOf(Any.Int32())")]
     [InlineData("ICollection<int>", "Any.ListOf(Any.Int32())")]
@@ -61,9 +61,9 @@ public sealed class BaseTableTests {
     [InlineData("IEnumerable<int>", "Any.SequenceOf(Any.Int32())")]
     [InlineData("HashSet<int>", "Any.SetOf(Any.Int32())")]
     [InlineData("ISet<int>", "Any.SetOf(Any.Int32())")]
-    [InlineData("Dictionary<string, int>", "Any.DictionaryOf(Any.String().NonEmpty(), Any.Int32())")]
-    [InlineData("IDictionary<string, int>", "Any.DictionaryOf(Any.String().NonEmpty(), Any.Int32())")]
-    [InlineData("IReadOnlyDictionary<string, int>", "Any.DictionaryOf(Any.String().NonEmpty(), Any.Int32())")]
+    [InlineData("Dictionary<string, int>", "Any.DictionaryOf(Any.String(), Any.Int32())")]
+    [InlineData("IDictionary<string, int>", "Any.DictionaryOf(Any.String(), Any.Int32())")]
+    [InlineData("IReadOnlyDictionary<string, int>", "Any.DictionaryOf(Any.String(), Any.Int32())")]
     public void TheBaseTableDrawsEveryCollection(string parameterType, string expected) {
         Check.That(Subject.ExpressionFor(parameterType)).IsEqualTo(expected);
     }
@@ -85,7 +85,7 @@ public sealed class BaseTableTests {
     ///     </para>
     /// </remarks>
     [Theory(DisplayName = "A nullable reference type needs no hop; a nullable value type does.")]
-    [InlineData("string?", "Any.String().NonEmpty()")]
+    [InlineData("string?", "Any.String()")]
     [InlineData("Customer?", "new AnyCustomer()")]
     [InlineData("int?", "Any.Int32().AsNullable()")]
     [InlineData("DateTime?", "Any.DateTime().AsNullable()")]
@@ -308,7 +308,7 @@ public sealed class BaseTableTests {
     [Theory(DisplayName = "Element generators recurse, three hops deep and no further.")]
     [InlineData("IReadOnlyList<int[]>", "Any.ListOf(Any.ArrayOf(Any.Int32()))")]
     [InlineData("IReadOnlyList<Dictionary<string, int[]>>",
-                "Any.ListOf(Any.DictionaryOf(Any.String().NonEmpty(), Any.ArrayOf(Any.Int32())))")]
+                "Any.ListOf(Any.DictionaryOf(Any.String(), Any.ArrayOf(Any.Int32())))")]
     [InlineData("IReadOnlyList<IReadOnlyList<IReadOnlyList<int>>>", "Any.ListOf(Any.ListOf(Any.ListOf(Any.Int32())))")]
     [InlineData("IReadOnlyList<IReadOnlyList<IReadOnlyList<IReadOnlyList<int>>>>", null)]
     public void ElementGeneratorsRecurseToTheDepthBound(string parameterType, string? expected) {

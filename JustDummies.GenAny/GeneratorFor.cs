@@ -516,16 +516,13 @@ internal sealed class GeneratorFor {
     ///     The constraint a row adds to the neutral draw, when the compilation carries it.
     /// </summary>
     /// <remarks>
-    ///     <c>Any.String()</c> unconstrained draws zero to sixteen letters and digits — it can return the empty
-    ///     string (§14.5) — and a constructor parameter typed <c>string</c> in a domain type is overwhelmingly
-    ///     required non-empty. A default that fails about one call in seventeen is the flakiness the library
-    ///     exists to remove, so the row is <c>.NonEmpty()</c>. Same argument for <c>Guid</c>, whose empty value
-    ///     is the one most guards reject.
+    ///     <c>string</c> and <c>Guid</c> carry none: a constructor that refuses the empty value says so in a guard
+    ///     the engine reads (§5.3) or marks <c>to verify</c> (§5.6), and a constructor that accepts it accepts a
+    ///     valid dummy. A <c>.NonEmpty()</c> of the engine's own would guess a rule the constructor does not
+    ///     write — and never draw the empty allele, insertion or deletion a domain declares valid (#409).
     /// </remarks>
     private static IReadOnlyList<GuardConstraint> Refinement(string factory, ITypeSymbol generator) {
         return factory switch {
-            "String" or "Guid" when LibrarySurface.Carries(generator, "NonEmpty") =>
-                [new GuardConstraint("NonEmpty", argument: null, Bound.Emptiness)],
             "Uri" when LibrarySurface.Carries(generator, "Web") =>
                 [new GuardConstraint("Web", argument: null, Bound.Exact)],
             _ => []

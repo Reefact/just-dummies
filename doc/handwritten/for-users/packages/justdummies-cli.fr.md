@@ -324,7 +324,9 @@ retrouver.
 
 Une ligne de chaîne scaffoldée, `Any.String().NonEmpty()`, déclenche [JD030](../analyzers/JD030.fr.md) au niveau
 Info, par conception : l'outil n'invente pas une longueur que votre domaine n'a jamais déclarée. Déclarez-la dans
-la fabrique quand elle compte — `Any.String().NonEmpty().WithLengthBetween(1, 50)`.
+la fabrique quand elle compte — `Any.String().NonEmpty().WithLengthBetween(1, 50)`. Info n'est jamais affiché par
+`dotnet build` ; [montez sa sévérité](justdummies.fr.md#les-analyzers-voyagent-dans-le-paquet) pour la voir dans
+un terminal ou en CI.
 
 ### Quand le remplacement est un autre genre de générateur
 

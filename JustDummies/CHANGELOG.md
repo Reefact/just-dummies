@@ -141,6 +141,10 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Documentation
 
+- **The default span of the date and time generators is stated, with the risk it carries.** The dates page
+  gave `MinValue` to `MaxValue` for `DateTime` only. It now says that `DateTimeOffset`, `DateOnly` and
+  `TimeOnly` span their whole type too, and that calendar arithmetic on an unconstrained draw overflows
+  near the ends (`AddYears(6)` failed 68 times in 100,000 draws): bound a domain date first.
 - **The Info-severity remedy is linked from where JD030 and JD031 are met.** Info-level diagnostics never
   print in `dotnet build`, and the `.editorconfig` line that raises one was documented only on the package
   page — six trial sessions never found it. The JD030 and JD031 pages, the scaffolder page where it cites

@@ -63,10 +63,11 @@ internal sealed class TypeNames {
     ///     The short spelling of <paramref name="type" />, recording every namespace it needs on the way.
     /// </summary>
     /// <remarks>
-    ///     The nullable annotation is dropped from a reference type because it would promise something the file
-    ///     does not do: the emitted generator never draws null for a parameter (ADR-0064), so
-    ///     <c>IAny&lt;Customer?&gt;</c> would be a lie in the field declaration. A value type's <c>?</c> is a
-    ///     different thing — part of the type rather than an annotation on it — and stays.
+    ///     The nullable annotation is dropped from a reference type because it would promise something the
+    ///     generators this names do not do: a base or an element never yields null, so <c>IAny&lt;Customer?&gt;</c>
+    ///     would be a lie there. The one place null enters is a nullable parameter's default, <c>.OrNull()</c>
+    ///     (ADR-0117), whose field <see cref="OfParameter" /> spells. A value type's <c>?</c> is a different
+    ///     thing — part of the type rather than an annotation on it — and stays.
     /// </remarks>
     internal string Of(ITypeSymbol type) {
         Record(type);
@@ -79,11 +80,11 @@ internal sealed class TypeNames {
     ///     constructor — keeping a reference type's top-level <c>?</c> where the file can carry one.
     /// </summary>
     /// <remarks>
-    ///     <see cref="Of" /> drops the annotation because no generator the file draws ever yields null
-    ///     (ADR-0064). The pin is the other side of that decision: it is where a test opts into null
-    ///     (ADR-0109), and typing it <c>Customer</c> made <c>WithAgent((Customer?)null)</c> warn <c>CS8625</c>
-    ///     for passing what the constructor accepts. <c>IAny&lt;out T&gt;</c> is covariant, so the never-null
-    ///     base stays assignable to the annotated field. Outside a nullable annotation context the <c>?</c>
+    ///     <see cref="Of" /> drops the annotation because a base never yields null. The parameter does: its
+    ///     default draws null one draw in ten (ADR-0117), and the pin is where a test chooses it (ADR-0109) —
+    ///     typing it <c>Customer</c> made <c>WithAgent((Customer?)null)</c> warn <c>CS8625</c> for passing what
+    ///     the constructor accepts. <c>IAny&lt;out T&gt;</c> is covariant, so a refined, never-null recipe stays
+    ///     assignable to the annotated field. Outside a nullable annotation context the <c>?</c>
     ///     would itself warn (<c>CS8632</c>) and passing null warns about nothing, so it is written only where
     ///     <paramref name="annotates" /> says the file is read with annotations.
     /// </remarks>

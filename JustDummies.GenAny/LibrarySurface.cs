@@ -30,6 +30,10 @@ internal sealed class LibrarySurface {
 
     private bool? carriesFixed;
 
+    private bool? carriesValueOrNull;
+
+    private bool? carriesReferenceOrNull;
+
     private LibrarySurface(Compilation compilation, INamedTypeSymbol any, INamedTypeSymbol anyOfT, INamedTypeSymbol extensions) {
         this.compilation = compilation;
         Any              = any;
@@ -171,6 +175,34 @@ internal sealed class LibrarySurface {
                                                 ?.GetMembers("AsNullable")
                                                  .OfType<IMethodSymbol>()
                                                  .Any(Lifts) == true;
+    }
+
+    /// <summary>
+    ///     Whether <c>OrNull</c> resolves for a value type (<paramref name="valueType" />) or for a reference type, which
+    ///     the default recipe of a nullable parameter draws through (§5.2, #411).
+    /// </summary>
+    /// <remarks>
+    ///     Asked like <see cref="CarriesAsNullable" />: an asset without it is answered <c>false</c>, and the parameter
+    ///     keeps the recipe that never draws <c>null</c> (ADR-0059).
+    /// </remarks>
+    internal bool CarriesOrNull(bool valueType) {
+        return valueType
+                   ? carriesValueOrNull ??= compilation.GetTypeByMetadataName("JustDummies.NullableExtensions")
+                                                       ?.GetMembers("OrNull")
+                                                        .OfType<IMethodSymbol>()
+                                                        .Any(Lifts) == true
+                   : carriesReferenceOrNull ??= compilation.GetTypeByMetadataName("JustDummies.NullableReferenceExtensions")
+                                                           ?.GetMembers("OrNull")
+                                                            .OfType<IMethodSymbol>()
+                                                            .Any(Admits) == true;
+    }
+
+    /// <summary>Whether the candidate is <c>OrNull&lt;T&gt;(this IAny&lt;T&gt;) -&gt; IAny&lt;T?&gt;</c> over a reference type.</summary>
+    private bool Admits(IMethodSymbol candidate) {
+        return Hop(candidate, typeParameters: 1, parameters: 1)
+            && candidate.TypeParameters[0].HasReferenceTypeConstraint
+            && Draws(candidate.Parameters[0].Type, candidate.TypeParameters[0])
+            && Draws(candidate.ReturnType, candidate.TypeParameters[0]);
     }
 
     /// <summary>Whether the candidate is <c>AsNullable&lt;T&gt;(this IAny&lt;T&gt;) -&gt; IAny&lt;T?&gt;</c>.</summary>

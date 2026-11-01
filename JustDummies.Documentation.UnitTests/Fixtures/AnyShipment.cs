@@ -61,7 +61,7 @@ public sealed partial class AnyShipment : IAny<Shipment> {
         _parcelsRecipe       = parcels;
         _labels              = labels;
         _labelsRecipe        = labels;
-        _declaredValue       = declaredValue.AsNullable();
+        _declaredValue       = declaredValue.OrNull();
         _declaredValueRecipe = declaredValue;
     }
 
@@ -149,6 +149,15 @@ public sealed partial class AnyShipment : IAny<Shipment> {
 
         copy._declaredValueRecipe = configure(_declaredValueRecipe);
         copy._declaredValue       = copy._declaredValueRecipe.AsNullable();
+
+        return copy;
+    }
+
+    /// <summary>Pins <c>declaredValue</c> to <c>null</c>; its recipe is kept for a later refinement.</summary>
+    public AnyShipment WithoutDeclaredValue() {
+        AnyShipment copy = new AnyShipment(this);
+
+        copy._declaredValue = new FixedValue<decimal?>(null);
 
         return copy;
     }

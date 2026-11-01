@@ -75,7 +75,8 @@ public sealed class BaseTableTests {
     ///     Variance in C# applies across reference conversions only. <c>IAny&lt;string&gt;</c> already is an
     ///     <c>IAny&lt;string?&gt;</c>; <c>IAny&lt;int&gt;</c> is <b>not</b> an <c>IAny&lt;int?&gt;</c>, so the
     ///     value-type row has to write the conversion. Getting this wrong is the likeliest way to produce a
-    ///     table that does not compile — and neither row is ever <c>.OrNull()</c> (ADR-0064).
+    ///     table that does not compile. It is the hop a refinement goes through; the default recipe draws
+    ///     through <c>.OrNull()</c> instead (ADR-0117), which <see cref="NullDrawTests" /> holds.
     ///     <para>
     ///         The conversion is <c>AsNullable()</c> and not the general <c>As</c> hop, which is what it used to
     ///         be. A derived generator advertises no cardinality, so a <b>distinct</b> collection over one drew a
@@ -85,13 +86,16 @@ public sealed class BaseTableTests {
     ///     </para>
     /// </remarks>
     [Theory(DisplayName = "A nullable reference type needs no hop; a nullable value type does.")]
-    [InlineData("string?", "Any.String()")]
-    [InlineData("Customer?", "new AnyCustomer()")]
-    [InlineData("int?", "Any.Int32().AsNullable()")]
-    [InlineData("DateTime?", "Any.DateTime().AsNullable()")]
-    [InlineData("OrderStatus?", "Any.Enum<OrderStatus>().AsNullable()")]
-    public void ANullableValueTypeNeedsTheExplicitHop(string parameterType, string? expected) {
-        Check.That(Subject.ExpressionFor(parameterType)).IsEqualTo(expected);
+    [InlineData("string?", "Any.String()", "")]
+    [InlineData("Customer?", "new AnyCustomer()", "")]
+    [InlineData("int?", "Any.Int32()", ".AsNullable()")]
+    [InlineData("DateTime?", "Any.DateTime()", ".AsNullable()")]
+    [InlineData("OrderStatus?", "Any.Enum<OrderStatus>()", ".AsNullable()")]
+    public void ANullableValueTypeNeedsTheExplicitHop(string parameterType, string expectedBase, string expectedHop) {
+        ScaffoldedParameter parameter = Subject.GuardedBy(parameterType, string.Empty);
+
+        Check.That(parameter.BaseExpression).IsEqualTo(expectedBase);
+        Check.That(parameter.Conversion).IsEqualTo(expectedHop);
     }
 
     /// <summary>
@@ -99,9 +103,9 @@ public sealed class BaseTableTests {
     ///     ADR-0064 and ADR-0109 promise compiles without a warning.
     /// </summary>
     /// <remarks>
-    ///     The default still never draws null; what changes is that <c>WithNote((string?)null)</c> no longer
-    ///     warns <c>CS8625</c> — a build break under <c>TreatWarningsAsErrors</c> — for passing the null the
-    ///     constructor itself accepts. Covariance keeps the never-null base assignable to the <c>T?</c> field.
+    ///     <c>WithNote((string?)null)</c> does not warn <c>CS8625</c> — a build break under
+    ///     <c>TreatWarningsAsErrors</c> — for passing the null the constructor itself accepts. Covariance keeps a
+    ///     refined, never-null recipe assignable to the <c>T?</c> field.
     /// </remarks>
     [Fact(DisplayName = "A nullable reference parameter is pinned as T?, so a test can pass null.")]
     public void ANullableReferenceParameterIsPinnedAsNullable() {

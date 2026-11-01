@@ -76,6 +76,14 @@ public static class EntryPointNameCheck {
     ///     declaration rather than refused by the compiler (<c>CS0436</c>), and every <c>new AnyVoiceEntry()</c>
     ///     in the project then binds to a static class. A generic type does not count: arity is part of a type's
     ///     identity, as the shadowing check of §7 already reads it.
+    ///     <para>
+    ///         Nor does a declaration made by the file this scaffold would write — <c>AnyOrder.Entry.cs</c> left by
+    ///         an earlier run. That file is not a clash but the one being replaced: its header names
+    ///         <c>--force</c> as the way to overwrite it, and without <c>--force</c> the write is refused for the
+    ///         reason the developer can act on, that the file exists (§7). Told apart by the file's name, which is
+    ///         the one the scaffold writes; a developer's own type declared in a file of exactly that name is the
+    ///         case this cannot tell, and the compiler's <c>CS0101</c> still reports it.
+    ///     </para>
     /// </remarks>
     /// <exception cref="ArgumentNullException">Any argument is null.</exception>
     public static ScaffoldOutcome? AgainstTheCompilation(Compilation compilation, ScaffoldOutcome scaffold) {
@@ -86,6 +94,8 @@ public static class EntryPointNameCheck {
 
         ScaffoldedEntryPoint entry  = scaffold.EntryPoint!;
         INamedTypeSymbol?    bearer = Declared(compilation, entry.Namespace, entry.TypeName);
+
+        if (bearer is not null && DeclaredOnlyIn(bearer, entry.File.FileName)) { return null; }
 
         return bearer is null ? null : Refused(scaffold, DeclarationOf(bearer));
     }
@@ -143,6 +153,14 @@ public static class EntryPointNameCheck {
         return scope.GetTypeMembers(name, arity: 0)
                     .FirstOrDefault(type => SymbolEqualityComparer.Default.Equals(type.ContainingAssembly, compilation.Assembly)
                                          || compilation.IsSymbolAccessibleWithin(type, compilation.Assembly));
+    }
+
+    /// <summary>Whether every declaration of <paramref name="type" /> sits in a file named <paramref name="fileName" />.</summary>
+    private static bool DeclaredOnlyIn(INamedTypeSymbol type, string fileName) {
+        return type.DeclaringSyntaxReferences.Length > 0
+            && type.DeclaringSyntaxReferences.All(reference => string.Equals(Path.GetFileName(reference.SyntaxTree.FilePath),
+                                                                             fileName,
+                                                                             StringComparison.OrdinalIgnoreCase));
     }
 
     private static ScaffoldOutcome Refused(ScaffoldOutcome scaffold, string bearer) {

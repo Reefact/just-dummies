@@ -41,7 +41,25 @@ internal static class AnyDerivation {
     ///     reported source, the hint is qualified instead — exactly as it is for a foreign operand.
     /// </summary>
     internal static bool DrawsOnlyFrom<T>(IAny<T> generator, RandomSource? source) {
-        return IsReproducible(generator) && ReferenceEquals(SourceOf(generator), source);
+        return DrawsNothing(generator) || (IsReproducible(generator) && ReferenceEquals(SourceOf(generator), source));
+    }
+
+    /// <summary>
+    ///     Whether <paramref name="generator" /> takes no part in the draw: reproducible, yet reporting no source —
+    ///     <see cref="Any.Fixed{T}" /> and what is derived from it alone. Such an operand is neutral in a composition: it
+    ///     neither names the source a replay reports nor withdraws the promise the other operands make (ADR-0118).
+    /// </summary>
+    internal static bool DrawsNothing<T>(IAny<T> generator) {
+        return IsReproducible(generator) && SourceOf(generator) is null;
+    }
+
+    /// <summary>
+    ///     The source a generator wrapping <paramref name="generator" /> reports when the wrapper draws something of its
+    ///     own: the wrapped generator's source, or — when it draws nothing — the ambient source the wrapper falls back
+    ///     on, so the wrapper's own draw is still named.
+    /// </summary>
+    internal static RandomSource? SourceForADrawOver<T>(IAny<T> generator) {
+        return DrawsNothing(generator) ? AmbientRandomSource.Instance : SourceOf(generator);
     }
 
     /// <summary>

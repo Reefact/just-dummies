@@ -81,6 +81,7 @@ These do not draw a new kind of value; they build a generator out of other gener
 | `Any.TripleOf(first, second, third)` | `IAny<(T1, T2, T3)>` | [Composition](../guides/composition.en.md) |
 | `generator.OrNull()` | `IAny<T?>`, `null` one draw in ten | [Composition](../guides/composition.en.md) |
 | `generator.AsNullable()` | `IAny<T?>`, never `null` | [Composition](../guides/composition.en.md) |
+| `Any.Fixed(value)` | `IAny<T>` returning the value you chose, drawing nothing | [Composition](../guides/composition.en.md) |
 
 ## Reproducibility
 

@@ -22,7 +22,7 @@ internal sealed class OrNullReferenceAny<T> : IAny<T?>, IHasRandomSource, IRepro
         if (underlying is null) { throw new ArgumentNullException(nameof(underlying)); }
 
         _underlying          = underlying;
-        _source              = AnyDerivation.SourceOf(underlying);
+        _source              = AnyDerivation.SourceForADrawOver(underlying);
         _drawsOnlyFromSource = AnyDerivation.IsReproducible(underlying);
         // Asked of the hint, never of the wrapped generator's type: whatever relays a domain that already holds null
         // — this generator applied twice, or any generator forwarding one — says so through its own membership.

@@ -32,7 +32,7 @@ internal sealed class OrNullAny<T> : IAny<T?>, IHasRandomSource, IReproducibilit
         if (underlying is null) { throw new ArgumentNullException(nameof(underlying)); }
 
         _underlying          = underlying;
-        _source              = AnyDerivation.SourceOf(underlying);
+        _source              = AnyDerivation.SourceForADrawOver(underlying);
         _drawsOnlyFromSource = AnyDerivation.IsReproducible(underlying);
     }
 

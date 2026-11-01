@@ -1,5 +1,6 @@
 #region Usings declarations
 
+using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
 
 #endregion
@@ -345,6 +346,19 @@ public sealed class AnyContext {
         return AnyHalf.Create(_source);
     }
 #endif
+
+    /// <summary>
+    ///     A generator that returns <paramref name="value" /> as given, every time — the context's spelling of
+    ///     <see cref="Any.Fixed{T}" />, identical to it: a fixed value draws nothing, so the context's seed takes no
+    ///     part in it, and it never qualifies the replay hint of a composition it is part of (ADR-0118).
+    /// </summary>
+    /// <param name="value">The value every generation returns; <c>null</c> is accepted.</param>
+    /// <typeparam name="T">The type of the value.</typeparam>
+    /// <returns>A generator returning <paramref name="value" />.</returns>
+    [SuppressMessage(SonarRule.S2325.Category, SonarRule.S2325.Id, Justification = "An instance member on purpose: AnyContext mirrors every scalar factory of Any, and a fixed value is reached the same way on both (SurfaceParityTests).")]
+    public IAny<T> Fixed<T>(T value) {
+        return new FixedAny<T>(value);
+    }
 
     /// <summary>
     ///     Draws an arbitrary value from an explicit pool of caller-supplied <paramref name="values" /> drawing from

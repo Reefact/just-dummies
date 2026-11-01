@@ -805,6 +805,18 @@ plutôt que se tromper :
 * aucune écriture de ce paramètre n'a pu s'exécuter avant l'endroit où elle se trouve ;
 * tout autre opérande est une constante de compilation.
 
+**Une borne écrite comme une constante nommée est référencée là où le fichier peut l'atteindre.**
+`ThrowIfGreaterThan(projectId, MaxProjectId)` émet `.LessThanOrEqualTo(CreditSerial.MaxProjectId)`, et
+non `.LessThanOrEqualTo(999999)` : le fichier est scaffoldé une fois (§1), donc une valeur recopiée se
+périme en silence le jour où le domaine change la constante, là où une référence la suit. Le moteur lit
+toujours la valeur, et chaque règle ci-dessous travaille sur cette valeur ; seule l'écriture change. Il
+référence un champ `const` écrit seul, du type exact que prend la contrainte — celui du paramètre, ou
+`int` pour une taille —, déclaré `public` à chaque niveau de son imbrication, dans un type non générique.
+Tout le reste est replié sur sa valeur, comme avant : une constante `private` ou `internal` (le fichier
+vit dans le projet de test, et le moteur ne cherche pas d'assembly amie), une `const` locale, une
+expression comme `Max - 1`, une constante d'un autre type numérique, et les arguments des appels des
+bibliothèques de gardes (#377).
+
 **Un `else` n'arrête pas la lecture.** Une branche `else` ne dit que ce qui se passe quand sa propre
 condition est fausse — exactement le cas où les branches précédentes ont déjà laissé passer la
 valeur — donc elle ne peut jamais affaiblir ce qu'elles rejettent : `if (v < 0) { throw … } else { … }`

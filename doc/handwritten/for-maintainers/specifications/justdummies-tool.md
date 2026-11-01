@@ -774,6 +774,17 @@ conservative, mirroring how the library's own analyzers under-report rather than
 * no write to that parameter can already have run where it sits;
 * every other operand is a compile-time constant.
 
+**A bound written as a named constant is referenced where the file can reach it.**
+`ThrowIfGreaterThan(projectId, MaxProjectId)` emits `.LessThanOrEqualTo(CreditSerial.MaxProjectId)`,
+not `.LessThanOrEqualTo(999999)`: the file is scaffolded once (§1), so a copied value goes stale in
+silence the day the domain changes the constant, where a reference moves with it. The engine still
+reads the value, and every rule below works on that value; only the spelling changes. It references a
+`const` field written on its own, of exactly the type the constraint takes — the parameter's own, or
+`int` for a size — declared `public` at every level of its nesting, in a non-generic type. Anything else
+is folded to its value, as before: a `private` or `internal` constant (the file lives in the test
+project, and the engine does not look for a friend assembly), a local `const`, an expression such as
+`Max - 1`, a constant of another numeric type, and the arguments of the guard libraries' calls (#377).
+
 **An `else` does not stop the reading.** An `else` branch says only what happens when its own
 condition is false — exactly the case where the branches before it already let the value through —
 so it can never weaken what they reject: `if (v < 0) { throw … } else { … }` still reads `v < 0`,

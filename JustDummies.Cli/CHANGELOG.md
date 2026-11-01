@@ -10,6 +10,12 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Changed
 
+- **A guard's bound written as a public constant is referenced, not copied.** `ThrowIfGreaterThan(projectId,
+  MaxProjectId)` now scaffolds `.LessThanOrEqualTo(CreditSerial.MaxProjectId)` instead of
+  `.LessThanOrEqualTo(999999)`, so the generator follows the domain when the constant changes. Only a `const`
+  field of the constraint's own type, named on its own and `public` at every level is referenced; a private or
+  internal constant, a local one, an expression over one, or a guard library's argument is still copied as its
+  value (issue #377).
 - **A `string` or `Guid` parameter is `NonEmpty()` only when a guard of the constructor says so.** The base
   table used to add `.NonEmpty()` to every `string` and `Guid`, a rule the constructor did not write, and the
   recap's `guard` tag covered it too. A constructor that refuses the empty value says so in a guard `any` reads

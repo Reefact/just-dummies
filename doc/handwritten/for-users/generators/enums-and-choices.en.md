@@ -22,7 +22,9 @@ though the CLR would allow one — a dummy that did would be testing your `switc
 domain does not have.
 
 Exclusions that empty the universe are refused by name, and the analyzer
-[JD017](../analyzers/JD017.en.md) reports the constant cases at build time.
+[JD017](../analyzers/JD017.en.md) reports the constant cases at build time. An exclusion list that is
+itself empty removes nothing and is accepted
+([ADR-0122](../../for-maintainers/adr/0122-accept-an-empty-exclusion-as-the-identity.md)).
 
 ## Flags enumerations
 

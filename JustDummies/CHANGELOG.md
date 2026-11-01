@@ -114,6 +114,12 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Changed
 
+- **An `Except` given an empty list is a no-op instead of an `ArgumentException`.** On every builder,
+  `Except()` and `Except(taken)` with an empty `taken` now exclude nothing, so a fixture's set of values
+  already used passes straight through on its first use. An empty `OneOf` stays refused, since it
+  declares an empty domain. JD014 no longer reports an empty exclusion, which no longer throws; JD024
+  reports one written as a constant — `Except()`, `Except([])`, `Except(new T[0])`,
+  `Except(Array.Empty<T>())` — at information severity (ADR-0122, issue #392).
 - **A floating-point range bounded on both sides is drawn whole.** `Any.Double()`, `Any.Single()` and
   `Any.Decimal()` narrowed every declared interval to the ordinary window of ±1 000 000, so
   `Any.Double().GreaterThan(0).LessThanOrEqualTo(100e6)` never drew above a million and the values the

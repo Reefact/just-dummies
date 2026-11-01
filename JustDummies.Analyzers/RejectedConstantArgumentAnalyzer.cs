@@ -131,9 +131,6 @@ public sealed class RejectedConstantArgumentAnalyzer : DiagnosticAnalyzer {
             case "OneOf":
                 return TryCheckNonEmptyPool(invocation, out offending, out reason) || ArgumentGuardFacts.TryFindRejectedElement(invocation, out offending, out reason);
 
-            case "Except":
-                return TryCheckNonEmptyPool(invocation, out offending, out reason);
-
             default:
                 return false;
         }

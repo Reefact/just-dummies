@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Linq;
 
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Operations;
 
@@ -43,6 +44,12 @@ public sealed class ScalarChainAdmitsNoValueAnalyzer : DiagnosticAnalyzer {
     private static void Analyze(OperationAnalysisContext context, KnownSymbols symbols) {
         IInvocationOperation invocation = (IInvocationOperation)context.Operation;
 
+        // Per call, before the chain filter below: an exclusion written empty is inert on every generator family, not
+        // only the integer chains this rule walks (ADR-0122).
+        if (IsConstantEmptyExclusion(invocation, symbols)) {
+            context.ReportDiagnostic(Diagnostic.Create(Descriptors.ConstraintWithNoEffect, invocation.Syntax.GetLocation(), "an empty exclusion removes no value"));
+        }
+
         if (invocation.Parent is IInvocationOperation) { return; }
         if (!AnyChainFacts.TryGetChain(invocation, symbols, out IReadOnlyList<IInvocationOperation> constraints, out IInvocationOperation? factory)) { return; }
         if (factory is null || !IsIntegerFactory(factory.TargetMethod.Name)) { return; }
@@ -74,6 +81,9 @@ public sealed class ScalarChainAdmitsNoValueAnalyzer : DiagnosticAnalyzer {
             if (!TryReadArguments(constraint, out IReadOnlyList<long> arguments)) { return; }
 
             string name = constraint.TargetMethod.Name;
+
+            // An empty exclusion is reported per call by Analyze, whatever the chain, and changes no state here.
+            if (name == "Except" && arguments.Count == 0) { continue; }
 
             // The exclusion that removes nothing: silent at run time, and the reason JD024 exists. The same exclusion
             // written twice is JD035's, as a repetition in every generator family (issue #279).
@@ -164,6 +174,24 @@ public sealed class ScalarChainAdmitsNoValueAnalyzer : DiagnosticAnalyzer {
     ///     Whether the call is an exclusion that removes nothing, and not the same exclusion written again — that one,
     ///     listing the same values as an earlier call of the same name, is JD035's.
     /// </summary>
+    /// <summary>
+    ///     Whether <paramref name="invocation" /> is a JustDummies <c>Except</c> whose list is written empty — no
+    ///     argument, <c>[]</c>, <c>new T[0]</c> or <c>Array.Empty&lt;T&gt;()</c>. A list computed at run time is not:
+    ///     a set of values already used that starts empty is the case the no-op exists for (ADR-0122).
+    /// </summary>
+    private static bool IsConstantEmptyExclusion(IInvocationOperation invocation, KnownSymbols symbols) {
+        if (invocation.TargetMethod.Name != "Except" || !symbols.IsJustDummiesMember(invocation.TargetMethod)) { return false; }
+        if (invocation.Arguments.Length != 1) { return false; }
+
+        IOperation list = GeneratorFacts.Unwrap(invocation.Arguments[0].Value);
+
+        if (list.Syntax is CollectionExpressionSyntax collection) { return collection.Elements.Count == 0; }
+        if (list is IArrayCreationOperation { Initializer: { } initializer }) { return initializer.ElementValues.IsEmpty; }
+        if (list is IArrayCreationOperation { DimensionSizes.Length: 1 } sized) { return sized.DimensionSizes[0].ConstantValue is { HasValue: true, Value: 0 }; }
+
+        return list is IInvocationOperation { TargetMethod: { Name: "Empty", ContainingType.SpecialType: SpecialType.System_Array } };
+    }
+
     private static bool IsInertExclusion(string name, IReadOnlyList<long> arguments, ScalarConstraintState state, List<(string Name, IReadOnlyList<long> Values)> declared) {
         return name is "Except" or "DifferentFrom"
             && state.ExclusionIsInert(arguments)

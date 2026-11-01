@@ -553,7 +553,6 @@ public sealed class AnyPatternTests {
     [SuppressMessage(JustDummiesRule.JD014.Category, JustDummiesRule.JD014.Id, Justification = SuppressionJustification.JD014.ThrowIsTheSubject)]
     public void ExclusionArgumentsAreValidated() {
         Check.ThatCode(() => Any.StringMatching("a").Except(null!)).Throws<ArgumentNullException>();
-        Check.ThatCode(() => Any.StringMatching("a").Except()).Throws<ArgumentException>();
         Check.ThatCode(() => Any.StringMatching("a").Except("a", null!)).Throws<ArgumentException>();
         Check.ThatCode(() => Any.StringMatching("a").DifferentFrom(null!)).Throws<ArgumentNullException>();
     }

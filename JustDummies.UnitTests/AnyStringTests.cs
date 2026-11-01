@@ -687,7 +687,6 @@ public sealed class AnyStringTests {
     public void ExclusionArgumentsAreValidated() {
         Check.ThatCode(() => Any.String().DifferentFrom(null!)).Throws<ArgumentNullException>();
         Check.ThatCode(() => Any.String().Except(null!)).Throws<ArgumentNullException>();
-        Check.ThatCode(() => Any.String().Except()).Throws<ArgumentException>();
         Check.ThatCode(() => Any.String().Except("a", null!)).Throws<ArgumentException>();
     }
 

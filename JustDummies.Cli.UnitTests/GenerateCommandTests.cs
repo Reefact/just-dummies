@@ -332,6 +332,56 @@ public sealed class GenerateCommandTests : IDisposable {
         Check.That(Directory.GetFiles(directory)).IsEmpty();
     }
 
+    /// <summary>
+    ///     The entry point a previous run wrote is the file <c>--force</c> replaces, not a clash (review of #417).
+    /// </summary>
+    /// <remarks>
+    ///     On the second run the compilation already holds <c>AnyOrderEntry</c>, declared by the very
+    ///     <c>AnyOrder.Entry.cs</c> this run would write — and the file's own header names <c>--force</c> as the
+    ///     way to overwrite it. Refusing that as a name clash left the entry-point mode unable to regenerate its
+    ///     own output.
+    /// </remarks>
+    [Fact(DisplayName = "A second run with --force regenerates the entry point it wrote the first time.")]
+    public async Task ASecondRunWithForceRegeneratesTheEntryPoint() {
+        GenerateSettings first = Settings("Order");
+
+        first.EntryPoint = "any";
+
+        Check.That((await Generate(first)).ExitCode).IsEqualTo(0);
+
+        CSharpCompilation withTheFirstRun = WithFilesOf(Compilation(Domain), "AnyOrder.cs", "AnyOrder.Entry.cs");
+
+        GenerateSettings forced = Settings("Order");
+
+        forced.EntryPoint = "any";
+        forced.Force      = true;
+
+        Run run = await Generate(forced, withTheFirstRun);
+
+        Check.That(run.ExitCode).IsEqualTo(0);
+        Check.That(run.Error).Not.Contains("already taken");
+    }
+
+    // The same second run without --force is refused for the reason the developer can act on: the file exists.
+    [Fact(DisplayName = "A second run without --force is refused because the file exists, not as a name clash.")]
+    public async Task ASecondRunWithoutForceIsRefusedBecauseTheFileExists() {
+        GenerateSettings first = Settings("Order");
+
+        first.EntryPoint = "any";
+
+        await Generate(first);
+
+        GenerateSettings again = Settings("Order");
+
+        again.EntryPoint = "any";
+
+        Run run = await Generate(again, WithFilesOf(Compilation(Domain), "AnyOrder.cs", "AnyOrder.Entry.cs"));
+
+        Check.That(run.ExitCode).IsEqualTo(1);
+        Check.That(run.Error).Contains("--force");
+        Check.That(run.Error).Not.Contains("already taken");
+    }
+
     [Fact(DisplayName = "--format json records an entry class whose name is taken, naming both declarations.")]
     public async Task JsonRecordsAnEntryClassWhoseNameIsTaken() {
         GenerateSettings settings = Settings("VoiceEntry", "Voice");
@@ -785,6 +835,20 @@ public sealed class GenerateCommandTests : IDisposable {
 
         Check.That(run.ExitCode).IsEqualTo(1);
         Check.That(run.Error).Contains("Absent.csproj");
+    }
+
+    /// <summary>The compilation as the next run sees it: the files a previous run wrote, added to the project.</summary>
+    private CSharpCompilation WithFilesOf(CSharpCompilation compilation, params string[] written) {
+        foreach (string file in written) {
+            string path = Path.Combine(directory, file);
+
+            compilation = compilation.AddSyntaxTrees(CSharpSyntaxTree.ParseText(File.ReadAllText(path),
+                                                                                new CSharpParseOptions(LanguageVersion.Latest),
+                                                                                path: path,
+                                                                                cancellationToken: TestContext.Current.CancellationToken));
+        }
+
+        return compilation;
     }
 
     private static int Occurrences(string text, string what) {

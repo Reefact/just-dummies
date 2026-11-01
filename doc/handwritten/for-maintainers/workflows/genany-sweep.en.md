@@ -45,7 +45,7 @@ claims that stay true whatever the engine does — and the first is a claim abou
 | 1 | the engine scaffolds the target, and every generator the target's own file names | a finding |
 | 2 | what does not compile, does not compile **on a sentinel line** | a finding |
 | 3 | with the `TODO_verify_*` line deleted, as §5.6 tells the developer to, it compiles | a finding |
-| 4 | no rule of the library's own above `Info`, and no `Info` outside `JD030` | a finding |
+| 4 | no rule of the library's own above `Info`, and no `Info` outside `JD030` and `JD036` | a finding |
 | 5 | a draw produces a value, **or** is refused with `AnyGenerationException` | a finding |
 | 6 | a distinctness refusal happens exactly when the source says it must — **both directions** | a finding |
 

@@ -1,6 +1,6 @@
 # JustDummies.DiagnosticCatalog
 
-The **JustDummies analyzer rules** — `JD001` to `JD035` — as compile-checked constants, so a
+The **JustDummies analyzer rules** — `JD001` to `JD036` — as compile-checked constants, so a
 `[SuppressMessage]` names a rule the compiler resolves instead of a string nobody verifies.
 
 ```csharp

@@ -286,6 +286,16 @@ internal static class Descriptors {
         description: "An unconstrained Any.String() draws 0 to 1024 characters from the whole of ASCII, and NonEmpty() alone only moves that to 1 to 1025 -- it raises the floor and leaves the ceiling where it was. That default is deliberately inconvenient (ADR-0076), because a dummy short enough to be comfortable is one no length invariant is ever exercised against -- but an inconvenient default only teaches when something names the remedy, and a wall of characters in a failure message does not say WithMaxLength. This rule says it, at the call site. Declare the length the surrounding code actually allows: a column width, a contract bound, an exact size. Reported as information, not as a warning: a length a test genuinely does not care about is a legitimate thing to leave unsaid, so this is a fact to weigh, never a verdict.",
         helpLinkUri: JustDummiesRule.JD030.HelpLinkUri);
 
+    public static readonly DiagnosticDescriptor UndeclaredNumericRange = new(
+        id: JustDummiesRule.JD036.Id,
+        title: JustDummiesRule.JD036.Title,
+        messageFormat: "This floating-point dummy declares no range: one draw in ten spans the whole type",
+        category: JustDummiesRule.JD036.Category,
+        defaultSeverity: DiagnosticSeverity.Info,
+        isEnabledByDefault: true,
+        description: "An Any.Double(), Any.Single() or Any.Decimal() chain left open on a side draws an ordinary value nine times in ten -- within plus or minus one million, or in a slab beside a one-sided bound past it -- and from the whole declared domain the tenth; a one-sided bound so large that no ordinary slab is representable beside it draws from the whole declared domain every time -- values near the type's maximum, with every declared bound, exclusion and scale still honoured (ADR-0117). That edge draw is deliberate: the test not caring about the value is not the code not caring, and only a draw that reaches the type's limits can tell the two apart. But a deliberate edge only teaches when something names the remedy, and a value near double.MaxValue in a failure message does not say Between. This rule says it, at the call site. Declare the range the surrounding code actually accepts: Between(...), or a floor and a ceiling. A bound written against the type's own edge, such as Between(0, double.MaxValue), closes nothing and is reported like the one-sided chain it equals. Reported as information, not as a warning: a magnitude a test genuinely does not care about is a legitimate thing to leave unsaid, so this is a fact to weigh, never a verdict.",
+        helpLinkUri: JustDummiesRule.JD036.HelpLinkUri);
+
     public static readonly DiagnosticDescriptor PairedBoundsHaveARangeForm = new(
         id: JustDummiesRule.JD031.Id,
         title: JustDummiesRule.JD031.Title,

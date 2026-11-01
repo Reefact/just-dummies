@@ -569,7 +569,7 @@ Then the test says what it means:
 
 ```csharp
 Shipment anyShipment = Any.Shipment()
-    .WithDeclaredValue(Any.Decimal().Positive().OrNull())
+    .WithDeclaredValue(Any.Decimal().Positive().LessThanOrEqualTo(50_000m).OrNull())
     .Generate();
 ```
 

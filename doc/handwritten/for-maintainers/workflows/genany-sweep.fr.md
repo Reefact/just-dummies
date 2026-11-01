@@ -47,7 +47,7 @@ lui-même.
 | 1 | le moteur scaffolde la cible, et chaque générateur que le fichier de la cible nomme | une trouvaille |
 | 2 | ce qui ne compile pas, ne compile pas **sur une ligne sentinelle** | une trouvaille |
 | 3 | la ligne `TODO_verify_*` supprimée, comme §5.6 le dit au développeur, ça compile | une trouvaille |
-| 4 | aucune règle de la bibliothèque au-dessus d'`Info`, aucun `Info` hors `JD030` | une trouvaille |
+| 4 | aucune règle de la bibliothèque au-dessus d'`Info`, aucun `Info` hors `JD030` et `JD036` | une trouvaille |
 | 5 | un tirage produit une valeur, **ou** est refusé par `AnyGenerationException` | une trouvaille |
 | 6 | un refus de distinction arrive exactement quand la source dit qu'il le doit — **dans les deux sens** | une trouvaille |
 

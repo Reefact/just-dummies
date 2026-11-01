@@ -67,6 +67,9 @@ internal static class DiagnosticIds {
     /// <summary>JD035 — a constraint declared again identically, which the run time ignores.</summary>
     public const string ConstraintRepeated = JustDummiesRule.JD035.Id;
 
+    /// <summary>JD036 — a floating-point dummy that declares no range, so one draw in ten spans the whole type.</summary>
+    public const string UndeclaredNumericRange = JustDummiesRule.JD036.Id;
+
     // Category: Composition — a part that reaches no result, a constraint that cannot bind
     public const string UnusedCombineOperand = JustDummiesRule.JD027.Id;
     public const string InertDistinctness = JustDummiesRule.JD028.Id;

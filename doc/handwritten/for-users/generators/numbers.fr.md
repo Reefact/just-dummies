@@ -70,7 +70,7 @@ int     anyPositive = Any.Int32().Positive().Generate();   // > 0
 int     anyNegative = Any.Int32().Negative().Generate();   // < 0
 int     anyNonZero  = Any.Int32().NonZero().Generate();    // != 0
 int     anyZero     = Any.Int32().Zero().Generate();       // toujours 0
-decimal anyPrice    = Any.Decimal().Positive().Generate();
+decimal anyPrice    = Any.Decimal().Positive().LessThan(10_000m).Generate();   // > 0, et une plage déclarée
 ```
 
 `Positive()` et `Negative()` n'existent que là où le type a un signe. `byte`, `ushort`, `uint`,

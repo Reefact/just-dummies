@@ -41,7 +41,8 @@ public class RefusalAssertionReportingTests {
         ["JD032"] = new(() => new BoundDeclaredTwiceAnalyzer(), "Any.String().WithMinLength(8).WithMinLength(10)", Discarded: false, Continuation: ".Generate()"),
         ["JD033"] = new(() => new AnchoredLiteralOutsideCharacterFamilyAnalyzer(), "Any.String().AlphaNumeric().StartingWith(\"ORD-\").WithLength(12)", Discarded: false, Continuation: ".Generate()"),
         ["JD034"] = new(() => new ConstraintAlreadyDefinedAnalyzer(), "Any.String().Alpha().Numeric()", Discarded: false, Continuation: ".Generate()"),
-        ["JD035"] = new(() => new ConstraintRepeatedAnalyzer(), "Any.String().Alpha().Alpha()", Discarded: false, Continuation: ".Generate()")
+        ["JD035"] = new(() => new ConstraintRepeatedAnalyzer(), "Any.String().Alpha().Alpha()", Discarded: false, Continuation: ".Generate()"),
+        ["JD036"] = new(() => new UndeclaredNumericRangeAnalyzer(), "Any.Double().Generate()", Discarded: false, Continuation: null)
     };
 
     public static TheoryData<string, string> Shapes() {

@@ -3,7 +3,7 @@
 🌍 **Languages:**  
 🇬🇧 English (this file) | 🇫🇷 [Français](./justdummies.fr.md)
 
-The library itself: the `Any` entry point, every generator, the reproducibility scopes, and the 35
+The library itself: the `Any` entry point, every generator, the reproducibility scopes, and the 36
 rules that guard correct usage.
 
 ## Install
@@ -24,7 +24,7 @@ project and nothing else into your dependency graph.
 | `Any.Reproducibly` / `UseSeed` / `WithSeed` | the reproducibility scopes |
 | `AnyContext` | an isolated, seeded world with the scalar factories on it; collections and compositions are built over its generators with `Any` |
 | `DummyException` and its three subtypes | the failure vocabulary |
-| 35 Roslyn rules | bundled inside the package, active on your next build |
+| 36 Roslyn rules | bundled inside the package, active on your next build |
 
 ## The analyzers travel inside the package
 
@@ -35,7 +35,7 @@ analyzer package to remember, and no version of one to keep in step
 
 They exist because the type system cannot reach where these mistakes live — a generator rendered as
 text, a constraint whose result is discarded, a seed pinned outside its scope, a chain admitting no
-value. See the [analyzer rules index](../analyzers/README.md) for all 35, and
+value. See the [analyzer rules index](../analyzers/README.md) for all 36, and
 [JD005](../analyzers/JD005.en.md) for the one that catches the most common slip.
 
 To tune a severity, use `.editorconfig`:

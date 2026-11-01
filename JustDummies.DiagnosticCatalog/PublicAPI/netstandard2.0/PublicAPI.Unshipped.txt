@@ -36,6 +36,7 @@ JustDummies.Diagnostics.JustDummiesRule.JD032
 JustDummies.Diagnostics.JustDummiesRule.JD033
 JustDummies.Diagnostics.JustDummiesRule.JD034
 JustDummies.Diagnostics.JustDummiesRule.JD035
+JustDummies.Diagnostics.JustDummiesRule.JD036
 const JustDummies.Diagnostics.JustDummiesCategory.Composition = "JustDummies.Composition" -> string!
 const JustDummies.Diagnostics.JustDummiesCategory.Constraints = "JustDummies.Constraints" -> string!
 const JustDummies.Diagnostics.JustDummiesCategory.Reproducibility = "JustDummies.Reproducibility" -> string!
@@ -180,3 +181,7 @@ const JustDummies.Diagnostics.JustDummiesRule.JD035.Category = "JustDummies.Cons
 const JustDummies.Diagnostics.JustDummiesRule.JD035.HelpLinkUri = "https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/analyzers/JD035.en.md" -> string!
 const JustDummies.Diagnostics.JustDummiesRule.JD035.Id = "JD035" -> string!
 const JustDummies.Diagnostics.JustDummiesRule.JD035.Title = "A constraint repeated identically, which changes nothing" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD036.Category = "JustDummies.Constraints" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD036.HelpLinkUri = "https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/analyzers/JD036.en.md" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD036.Id = "JD036" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD036.Title = "A floating-point dummy that declares no range" -> string!

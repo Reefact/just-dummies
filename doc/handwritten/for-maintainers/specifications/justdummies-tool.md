@@ -98,7 +98,7 @@ index; it holds no argument of its own.
 |---|---|---|
 | **D1** | Scaffold once; the file belongs to the developer. | Kills drift, `check`, and the source-generator question in one move. |
 | **D2** | The emitted type implements `IAny<T>` and is **immutable**. | Composability, and it re-arms the `JustDummies.Usage` analyzers on the emitted type. |
-| **D3** | The emitted file is **not** marked as generated code. | All 35 analyzers exempt generated code; marking it would blind the file. |
+| **D3** | The emitted file is **not** marked as generated code. | All 36 analyzers exempt generated code; marking it would blind the file. |
 | **D4** | Never emit a member not resolved in the target compilation. | One rule covers the TFM split, the public-API baseline, version skew and unsigned arithmetic. |
 | **D5** | Read constructor guard clauses to seed each generator. | Without it the emitted code produces values the constructor rejects. |
 | **D6** | An unresolved parameter is emitted as a **compile error**. | The developer is already in the file; a red squiggle is the cheapest possible signal. |
@@ -1937,8 +1937,9 @@ sweep. In v1.0 `NamingOptions` carries a single fixed pattern, `Any{Type}`.
   rule, and the recap must carry the refusal.
 * **Informational rules are excused by name, never by severity.** The blanket exclusion above is
   right for the check it belongs to and wrong as a general rule, because it reasons about the file's
-  author rather than about the rule. `JD030` names a length the domain never stated and the engine
-  will not invent one to quieten it — that is a fact about a file whose author has not arrived.
+  author rather than about the rule. `JD030` names a length the domain never stated, `JD036` a
+  floating-point range it never stated, and the engine will not invent either to quieten them — that
+  is a fact about a file whose author has not arrived.
   `JD031` and `JD024` report what the **engine chose**: two bounds where it meant a range, a
   constraint that narrows nothing. A scaffold knows what it meant to write, so an informational
   diagnostic on emitted output is a review of that intention rather than a verdict on it — and a
@@ -2178,7 +2179,7 @@ exercised by §17.
 
 ### 14.6 Analyzer inventory
 
-35 diagnostic identifiers over 34 analyzer classes — `JD023` and `JD024` share one.
+36 diagnostic identifiers over 35 analyzer classes — `JD023` and `JD024` share one.
 
 | Range | Category | Severities |
 |---|---|---|
@@ -2202,10 +2203,11 @@ exercised by §17.
 | `JD032` | Constraints | Warning |
 | `JD033` | Constraints | Info |
 | `JD034`–`JD035` | Constraints | Warning |
+| `JD036` | Constraints | Info |
 
 Three facts about them drive decisions in this document:
 
-* **All 34 call `ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None)`** — hence D3.
+* **All 35 call `ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None)`** — hence D3.
 * **The `Usage` rules match any type implementing `IAny<T>`**, not a list of built-in generators —
   hence D2's second benefit.
 * **The `Reproducibility` rules match chains rooted at the static `Any` façade**, deliberately

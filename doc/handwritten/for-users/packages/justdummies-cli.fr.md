@@ -579,7 +579,7 @@ Le test exprime alors directement son intention :
 
 ```csharp
 Shipment anyShipment = Any.Shipment()
-    .WithDeclaredValue(Any.Decimal().Positive().OrNull())
+    .WithDeclaredValue(Any.Decimal().Positive().LessThanOrEqualTo(50_000m).OrNull())
     .Generate();
 ```
 

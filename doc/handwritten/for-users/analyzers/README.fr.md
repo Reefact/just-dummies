@@ -3,7 +3,7 @@
 🌍 **Langues :**  
 🇬🇧 [English](./README.md) | 🇫🇷 Français (ce fichier)
 
-Le package `JustDummies` embarque 35 règles Roslyn (`JD001`–`JD035`), sous
+Le package `JustDummies` embarque 36 règles Roslyn (`JD001`–`JD036`), sous
 `analyzers/dotnet/cs`. Tout projet qui référence le package les récupère automatiquement, sans
 installation supplémentaire. Elles s'exécutent pendant la compilation et transforment en
 diagnostics de build des erreurs que l'exécution signalerait tard — ou jamais.
@@ -84,6 +84,7 @@ Ces règles anticipent, à la compilation, le sous-ensemble des vérifications d
 | [JD033 AnchoredLiteralOutsideCharacterFamily](JD033.fr.md) | 🔵 Info | on | Un littéral ancré porte un caractère que la famille, la soustraction ou la casse déclarée ne peut pas tirer. Légal et délibéré dans un format à préfixe fixe : la règle rapporte donc la conséquence — ce caractère n'apparaît que là où vous l'avez écrit. |
 | [JD034 ConstraintAlreadyDefined](JD034.fr.md) | 🟠 Avertissement | on | Une chaîne redéfinit une contrainte qui ne peut être déclarée qu'une seule fois (longueur exacte, préfixe ou suffixe d'une chaîne, famille de caractères, casse, ensemble de valeurs, multiple, échelle, granularité, décalage horaire, nombre exact d'éléments d'une collection, schéma, hôte, port, informations utilisateur ou chemin d'une URI), ou combine `WithChars` avec une contrainte de casse. JD034 signale la seconde déclaration incompatible ; une répétition identique relève de JD035. |
 | [JD035 ConstraintRepeated](JD035.fr.md) | 🟠 Avertissement | on | Une chaîne déclare de nouveau une contrainte exactement comme elle l'a déjà déclarée — une contrainte à déclaration unique avec les mêmes arguments, ou une exclusion, une soustraction, un fragment de chaîne ou un interrupteur écrits deux fois, y compris une valeur listée deux fois dans un même `Except`. La bibliothèque ignore la seconde déclaration, qui ne change donc rien ; les bornes restent à JD032. |
+| [JD036 UndeclaredNumericRange](JD036.fr.md) | 🔵 Info | on | Une chaîne `Any.Double()`, `Any.Single()` ou `Any.Decimal()` qui ne déclare aucune plage bornée des deux côtés : un tirage sur dix couvre tout le type. Nomme `Between(...)` là où vous pouvez agir. |
 
 ## Composition
 

@@ -107,6 +107,7 @@ Une contrainte existe pour décrire **ce que le domaine garantit sur la valeur**
 être ajoutée pour faire passer une assertion. Prenons un test sur une règle disant que les frais de
 port sont offerts au-delà d'un seuil :
 
+<!-- jd:allow=JD036 -->
 ```csharp
 // Anti-patron : la contrainte a été choisie pour rendre l'assertion vraie.
 decimal anyOrderTotal = Any.Decimal().GreaterThan(100m).Generate();

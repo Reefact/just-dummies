@@ -105,6 +105,7 @@ A constraint exists to describe **what the domain guarantees about the value**. 
 added to make an assertion pass. Consider a test for a rule that says a shipping fee is waived above
 a threshold:
 
+<!-- jd:allow=JD036 -->
 ```csharp
 // Anti-pattern: the constraint was chosen to make the assertion true.
 decimal anyOrderTotal = Any.Decimal().GreaterThan(100m).Generate();

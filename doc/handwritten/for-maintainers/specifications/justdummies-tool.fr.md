@@ -101,7 +101,7 @@ table en est l'index ; elle ne porte aucun argument propre.
 |---|---|---|
 | **D1** | Scaffolder une fois ; le fichier appartient au développeur. | Supprime d'un coup la dérive, le `check` et la question du source generator. |
 | **D2** | Le type émis implémente `IAny<T>` et est **immuable**. | Composabilité, et réarmement des analyzers `JustDummies.Usage` sur le type émis. |
-| **D3** | Le fichier émis n'est **pas** marqué comme code généré. | Les 35 analyzers exemptent le code généré ; le marquer rendrait le fichier aveugle. |
+| **D3** | Le fichier émis n'est **pas** marqué comme code généré. | Les 36 analyzers exemptent le code généré ; le marquer rendrait le fichier aveugle. |
 | **D4** | Ne jamais émettre un membre non résolu dans la compilation cible. | Une règle couvre le clivage de TFM, la baseline d'API publique, l'écart de version et l'arithmétique non signée. |
 | **D5** | Lire les clauses de garde du constructeur pour amorcer chaque generator. | Sans cela le code émis produit des valeurs que le constructeur rejette. |
 | **D6** | Un paramètre non résolu est émis comme **erreur de compilation**. | Le développeur est déjà dans le fichier ; un soulignement rouge est le signal le moins cher. |
@@ -2041,8 +2041,9 @@ modification de cette fonction plus une liaison d'options, pas un balayage. En v
 * **Les règles informationnelles sont excusées nommément, jamais par sévérité.** L'exclusion en bloc
   ci-dessus est juste pour le contrôle auquel elle appartient et fausse comme règle générale, parce
   qu'elle raisonne sur l'auteur du fichier plutôt que sur la règle. `JD030` nomme une longueur que le
-  domaine n'a jamais énoncée et le moteur n'en inventera pas une pour la faire taire — c'est un fait
-  sur un fichier dont l'auteur n'est pas arrivé. `JD031` et `JD024` signalent ce que le **moteur a
+  domaine n'a jamais énoncée, `JD036` une plage flottante qu'il n'a jamais énoncée, et le moteur
+  n'inventera ni l'une ni l'autre pour les faire taire — c'est un fait sur un fichier dont l'auteur
+  n'est pas arrivé. `JD031` et `JD024` signalent ce que le **moteur a
   choisi** : deux bornes là où il voulait dire un intervalle, une contrainte qui ne resserre rien. Un
   scaffold sait ce qu'il voulait écrire, donc un diagnostic informationnel sur du code émis est une
   relecture de cette intention plutôt qu'un verdict sur elle — et un choix que le moteur ne peut pas
@@ -2287,7 +2288,7 @@ exercé au §17.
 
 ### 14.6 Inventaire des analyzers
 
-35 identifiants de diagnostic sur 34 classes d'analyzer — `JD023` et `JD024` en partagent une.
+36 identifiants de diagnostic sur 35 classes d'analyzer — `JD023` et `JD024` en partagent une.
 
 | Plage | Catégorie | Sévérités |
 |---|---|---|
@@ -2311,10 +2312,11 @@ exercé au §17.
 | `JD032` | Constraints | Warning |
 | `JD033` | Constraints | Info |
 | `JD034`–`JD035` | Constraints | Warning |
+| `JD036` | Constraints | Info |
 
 Trois faits à leur sujet pilotent des décisions de ce document :
 
-* **Les 34 appellent `ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None)`** — d'où D3.
+* **Les 35 appellent `ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None)`** — d'où D3.
 * **Les règles `Usage` matchent tout type implémentant `IAny<T>`**, pas une liste de generators
   intégrés — d'où le second bénéfice de D2.
 * **Les règles `Reproducibility` matchent les chaînes enracinées sur la façade statique `Any`**, et

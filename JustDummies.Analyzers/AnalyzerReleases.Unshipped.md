@@ -40,3 +40,4 @@ JD032   | JustDummies.Constraints     | Warning  | BoundDeclaredTwiceAnalyzer
 JD033   | JustDummies.Constraints     | Info     | AnchoredLiteralOutsideCharacterFamilyAnalyzer
 JD034   | JustDummies.Constraints     | Warning  | ConstraintAlreadyDefinedAnalyzer
 JD035   | JustDummies.Constraints     | Warning  | ConstraintRepeatedAnalyzer
+JD036   | JustDummies.Constraints     | Info     | UndeclaredNumericRangeAnalyzer

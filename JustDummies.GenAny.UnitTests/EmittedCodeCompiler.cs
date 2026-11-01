@@ -95,17 +95,18 @@ internal static class EmittedCodeCompiler {
     ///     The informational rules the engine stands behind on its own output.
     /// </summary>
     /// <remarks>
-    ///     One entry, and it earns its place: <c>JD030</c> reports a string whose length nobody has declared,
-    ///     and nobody has — the domain says nothing about it and the engine will not invent a bound to quieten
-    ///     a rule. Every other <c>Info</c> reports something the engine chose, and a choice it cannot defend is
-    ///     one it should not have made: <c>JD031</c> means it wrote two bounds where it meant a range, and
-    ///     <c>JD024</c> means it wrote a constraint that narrows nothing.
+    ///     Two entries, and they earn their place the same way: <c>JD030</c> reports a string whose length nobody
+    ///     has declared, and <c>JD036</c> a floating-point draw whose range nobody has — the domain says nothing
+    ///     about either and the engine will not invent a bound to quieten a rule. Every other <c>Info</c> reports
+    ///     something the engine chose, and a choice it cannot defend is one it should not have made: <c>JD031</c>
+    ///     means it wrote two bounds where it meant a range, and <c>JD024</c> means it wrote a constraint that
+    ///     narrows nothing.
     ///     <para>
     ///         Declared beside the analyzers rather than inside one suite because two benches now hold output
     ///         to it — the named corpus and the generative sweep — and a rule copied is a rule that drifts.
     ///     </para>
     /// </remarks>
-    internal static ImmutableHashSet<string> Assumed { get; } = ImmutableHashSet.Create("JD030");
+    internal static ImmutableHashSet<string> Assumed { get; } = ImmutableHashSet.Create("JD030", "JD036");
 
     /// <summary>Compiles <paramref name="emitted" /> together with the domain it names.</summary>
     internal static CSharpCompilation Compile(string emitted) {

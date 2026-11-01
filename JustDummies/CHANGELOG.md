@@ -10,6 +10,16 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Added
 
+- **JD036 names the range a floating-point dummy left unsaid.** An `Any.Double()`, `Any.Single()` or
+  `Any.Decimal()` chain that declares no range bounded on both sides now draws one value in ten across
+  the whole type (see *Changed*), and a value near `double.MaxValue` in a failure message does not say
+  what to write instead. JD036 says it at the call site, at information severity, like JD030 for a
+  string's length: declare the range the code accepts with `Between(...)`, or a floor and a ceiling. A
+  value set, a pin and a bound written against the type's own edge — `Between(0, double.MaxValue)`
+  closes nothing — are read the way the run time reads them (ADR-0117, issue #402). The `any`
+  scaffolder's output raises it on a floating-point parameter whose domain states no range, as it
+  raises JD030 on a string: the tool does not invent a bound the domain never stated.
+
 - **Every `OneOf` now accepts a sequence as well as a list of values.** `AnyString` was the only one
   of the twenty-three generators with an `IEnumerable<T>` overload. The other twenty-two now have one
   too, with the same contract, the same validation and the same conflicts. You can pass a set you

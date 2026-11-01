@@ -67,7 +67,7 @@ int     anyPositive = Any.Int32().Positive().Generate();   // > 0
 int     anyNegative = Any.Int32().Negative().Generate();   // < 0
 int     anyNonZero  = Any.Int32().NonZero().Generate();    // != 0
 int     anyZero     = Any.Int32().Zero().Generate();       // always 0
-decimal anyPrice    = Any.Decimal().Positive().Generate();
+decimal anyPrice    = Any.Decimal().Positive().LessThan(10_000m).Generate();   // > 0, and a range declared
 ```
 
 `Positive()` and `Negative()` exist only where the type has a sign. `byte`, `ushort`, `uint`,

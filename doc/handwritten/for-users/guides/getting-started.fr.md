@@ -61,7 +61,7 @@ Le test énonce maintenant son intention.
 dotnet add package JustDummies
 ```
 
-C'est toute l'installation. Le paquet embarque aussi ses 35 règles d'analyzer, si bien que les garde-fous du bon usage se mettent à travailler dès la compilation suivante, sans rien configurer de plus.
+C'est toute l'installation. Le paquet embarque aussi ses 36 règles d'analyzer, si bien que les garde-fous du bon usage se mettent à travailler dès la compilation suivante, sans rien configurer de plus.
 
 ## Vos premiers dummies
 

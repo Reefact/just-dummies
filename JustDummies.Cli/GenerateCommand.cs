@@ -157,6 +157,11 @@ internal sealed class GenerateCommand : AsyncCommand<GenerateSettings> {
         if (settings.Namespace is not null) { options = options.InNamespace(settings.Namespace); }
 
         string                directory = settings.Output is null ? here : Path.GetFullPath(settings.Output);
+
+        // The engine writes nothing, but it has to know where the files will go: the entry point an earlier run
+        // left in this directory is the file being replaced, and the same name anywhere else is a clash (§4.5).
+        options = options.WritingInto(directory);
+
         List<string>          arguments = [];
         List<ScaffoldOutcome> outcomes  = [];
         List<int>             codes     = [];

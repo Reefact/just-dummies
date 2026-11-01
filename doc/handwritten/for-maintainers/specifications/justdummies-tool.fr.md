@@ -646,7 +646,11 @@ signalerait au build suivant sous un récapitulatif qui disait succès. Une vér
 déclarerait, aux noms déjà portés là — les generators des autres types du même lancement, et les
 types que le projet déclare déjà ou voit dans un assembly référencé. Une correspondance **refuse ce
 scaffold**, sortie `1`, en nommant les deux déclarations avec leurs fichiers ; les autres types du
-lancement ne sont pas touchés (§7). `--dry-run` le rapporte de la même façon. Une racine statique
+lancement ne sont pas touchés (§7). `--dry-run` le rapporte de la même façon. La seule déclaration
+qui ne compte pas est le fichier que ce scaffold remplace — `Any{Type}.Entry.cs` laissé par un lancement
+antérieur, au chemin exact où le lancement écrit : `--force` l'écrase, et sans `--force` l'écriture est
+refusée parce que le fichier existe. Un fichier du même nom dans un autre dossier est une collision
+comme une autre, puisqu'il resterait à côté du nouveau (`CS0101`). Une racine statique
 n'est jamais refusée ainsi : elle est `partial`, et une déclaration portant déjà son nom est la part
 qu'un scaffold antérieur a écrite. Refuser plutôt que renommer, c'est l'ADR-0046 — un nom plus malin
 déplacerait la collision vers le prochain type métier qui l'épelle — et les remèdes appartiennent au

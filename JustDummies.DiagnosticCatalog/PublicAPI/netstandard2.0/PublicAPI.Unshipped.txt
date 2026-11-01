@@ -37,6 +37,7 @@ JustDummies.Diagnostics.JustDummiesRule.JD033
 JustDummies.Diagnostics.JustDummiesRule.JD034
 JustDummies.Diagnostics.JustDummiesRule.JD035
 JustDummies.Diagnostics.JustDummiesRule.JD036
+JustDummies.Diagnostics.JustDummiesRule.JD037
 const JustDummies.Diagnostics.JustDummiesCategory.Composition = "JustDummies.Composition" -> string!
 const JustDummies.Diagnostics.JustDummiesCategory.Constraints = "JustDummies.Constraints" -> string!
 const JustDummies.Diagnostics.JustDummiesCategory.Reproducibility = "JustDummies.Reproducibility" -> string!
@@ -185,3 +186,7 @@ const JustDummies.Diagnostics.JustDummiesRule.JD036.Category = "JustDummies.Cons
 const JustDummies.Diagnostics.JustDummiesRule.JD036.HelpLinkUri = "https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/analyzers/JD036.en.md" -> string!
 const JustDummies.Diagnostics.JustDummiesRule.JD036.Id = "JD036" -> string!
 const JustDummies.Diagnostics.JustDummiesRule.JD036.Title = "A floating-point dummy that declares no range" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD037.Category = "JustDummies.Reproducibility" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD037.HelpLinkUri = "https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/analyzers/JD037.en.md" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD037.Id = "JD037" -> string!
+const JustDummies.Diagnostics.JustDummiesRule.JD037.Title = "A draw made inside the lambda of As or Combine" -> string!

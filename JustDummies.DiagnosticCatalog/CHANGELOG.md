@@ -20,8 +20,10 @@ retired, a category changed — which is not when the library or the adapter mov
   `JustDummies.Constraints`.
 - `JustDummiesRule.JD036` — *A floating-point dummy that declares no range*, category
   `JustDummies.Constraints`.
+- `JustDummiesRule.JD037` — *A draw made inside the lambda of As or Combine*, category
+  `JustDummies.Reproducibility`.
 
-  The rule set moves from 33 identifiers, `1.0.0-preview.5`'s count, to 36.
+  The rule set moves from 33 identifiers, `1.0.0-preview.5`'s count, to 37.
 
 ## [1.0.0-preview.5] - 2026-09-02
 

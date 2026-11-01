@@ -296,6 +296,16 @@ internal static class Descriptors {
         description: "An Any.Double(), Any.Single() or Any.Decimal() chain left open on a side draws an ordinary value nine times in ten -- within plus or minus one million, or in a slab beside a one-sided bound past it -- and from the whole declared domain the tenth; a one-sided bound so large that no ordinary slab is representable beside it draws from the whole declared domain every time -- values near the type's maximum, with every declared bound, exclusion and scale still honoured (ADR-0117). That edge draw is deliberate: the test not caring about the value is not the code not caring, and only a draw that reaches the type's limits can tell the two apart. But a deliberate edge only teaches when something names the remedy, and a value near double.MaxValue in a failure message does not say Between. This rule says it, at the call site. Declare the range the surrounding code actually accepts: Between(...), or a floor and a ceiling. A bound written against the type's own edge, such as Between(0, double.MaxValue), closes nothing and is reported like the one-sided chain it equals. Reported as information, not as a warning: a magnitude a test genuinely does not care about is a legitimate thing to leave unsaid, so this is a fact to weigh, never a verdict.",
         helpLinkUri: JustDummiesRule.JD036.HelpLinkUri);
 
+    public static readonly DiagnosticDescriptor DrawInsideCompositionLambda = new(
+        id: JustDummiesRule.JD037.Id,
+        title: JustDummiesRule.JD037.Title,
+        messageFormat: "This draw runs inside the lambda passed to {0}, apart from the recipe: compose an offset with Any.Combine, or derive the dependent draw with Then",
+        category: JustDummiesRule.JD037.Category,
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true,
+        description: "A Generate() inside a lambda passed to As(...) or Combine(...) runs on every generation, but apart from the recipe it sits in, from whatever source the inner generator carries. Under an explicit Any.WithSeed(...) context, an inner generator built from the static Any draws from the ambient seed, so the run replays only partly from the seed it reports. Two ways out keep the whole chain one recipe: draw the second value as an offset and compose it with Any.Combine, which holds by construction; or, when the second generator depends on the first value in a way an offset cannot express, derive it with Then, which draws it on the same source. The offset, its unit and its bounds are the developer's to choose, so there is no code fix.",
+        helpLinkUri: JustDummiesRule.JD037.HelpLinkUri);
+
     public static readonly DiagnosticDescriptor PairedBoundsHaveARangeForm = new(
         id: JustDummiesRule.JD031.Id,
         title: JustDummiesRule.JD031.Title,

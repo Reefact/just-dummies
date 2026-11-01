@@ -10,6 +10,12 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Added
 
+- **JD037 reports a `Generate()` inside a lambda passed to `As` or `Combine`.** The draw runs on every
+  generation but apart from the recipe, and under an explicit `Any.WithSeed(...)` context a generator
+  built from the static `Any` draws from the ambient seed, so the run replays only partly. The warning
+  names the two ways out: compose an offset with `Any.Combine`, or derive the dependent draw with `Then`
+  (ADR-0120, issue #358).
+
 - **`.Then(...)` draws a value that depends on another draw.** `Any.Int32().Between(1, 20).Then(n =>
   Any.ListOf(anyCell).WithCount(n))` draws the first value, builds the generator for the second from it,
   and draws from that one — a grid's cells inside its drawn dimensions, a branch chosen by a drawn flag,

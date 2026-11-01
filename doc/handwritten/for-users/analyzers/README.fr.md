@@ -3,7 +3,7 @@
 🌍 **Langues :**  
 🇬🇧 [English](./README.md) | 🇫🇷 Français (ce fichier)
 
-Le package `JustDummies` embarque 36 règles Roslyn (`JD001`–`JD036`), sous
+Le package `JustDummies` embarque 37 règles Roslyn (`JD001`–`JD037`), sous
 `analyzers/dotnet/cs`. Tout projet qui référence le package les récupère automatiquement, sans
 installation supplémentaire. Elles s'exécutent pendant la compilation et transforment en
 diagnostics de build des erreurs que l'exécution signalerait tard — ou jamais.
@@ -47,6 +47,7 @@ Ces règles empêchent un corps de test asynchrone d'avaler silencieusement ses 
 | [JD010 ReproducibleOnNonTestMethod](JD010.fr.md) | 🟠 Avertissement | on | `[Reproducible]` sur une méthode qu'xUnit ne traite jamais comme un test ; il n'épingle rien, et ressemble exactement à la forme active. |
 | [JD018 NestedReproducibilityScope](JD018.fr.md) | 🟠 Avertissement | on | Une portée de reproductibilité imbriquée dans une autre ; l'interne tire une graine neuve, donc la graine rapportée par l'externe ne rejoue rien. |
 | [JD021 BlankReplaySnippet](JD021.fr.md) | 🟠 Avertissement | on | `Any.UseSeed` reçoit un snippet de rejeu vide, que la garde rejette — depuis un hook d'adaptateur, faisant échouer toute la suite. |
+| [JD037 DrawInsideCompositionLambda](JD037.fr.md) | 🟠 Avertissement | on | Un `Generate()` dans une lambda passée à `As` ou `Combine` tire à l'écart de la recette ; sous un contexte explicite, celui construit à partir de l'`Any` statique tire de la graine ambiante. Nomme le décalage et `Then`. |
 | [JD019 CommittedReplaySeed](JD019.fr.md) | 🔵 Info | opt-in | Une graine de rejeu constante est épinglée dans du code committé : le test cesse de varier d'une exécution à l'autre. |
 | [JD020 SharedStaticAnyContext](JD020.fr.md) | 🔵 Info | on | Un `AnyContext` tenu dans un champ statique ; les tirages entrelacés ne rendent stables ni la séquence ni le multiensemble. |
 | [JD022 ParallelDrawWithoutPerItemSeed](JD022.fr.md) | 🔵 Info | on | Une unité de travail parallèle tire sans sa propre portée de graine : les tirages s'entrelacent et l'exécution ne rejoue rien. |

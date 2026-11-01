@@ -70,6 +70,9 @@ internal static class DiagnosticIds {
     /// <summary>JD036 — a floating-point dummy that declares no range, so one draw in ten spans the whole type.</summary>
     public const string UndeclaredNumericRange = JustDummiesRule.JD036.Id;
 
+    /// <summary>JD037 — a draw made inside a lambda passed to As or Combine, apart from the recipe.</summary>
+    public const string DrawInsideCompositionLambda = JustDummiesRule.JD037.Id;
+
     // Category: Composition — a part that reaches no result, a constraint that cannot bind
     public const string UnusedCombineOperand = JustDummiesRule.JD027.Id;
     public const string InertDistinctness = JustDummiesRule.JD028.Id;

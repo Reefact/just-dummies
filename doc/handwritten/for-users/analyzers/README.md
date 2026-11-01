@@ -3,7 +3,7 @@
 🌍 **Languages:**  
 🇬🇧 English (this file) | 🇫🇷 [Français](./README.fr.md)
 
-The `JustDummies` package ships 36 Roslyn rules (`JD001`–`JD036`) inside itself, under
+The `JustDummies` package ships 37 Roslyn rules (`JD001`–`JD037`) inside itself, under
 `analyzers/dotnet/cs`. Any project that references the package picks them up automatically,
 with no extra install. They run while your project compiles, turning mistakes the run time
 would otherwise report late — or never — into build-time diagnostics.
@@ -45,6 +45,7 @@ These rules keep an asynchronous test body from silently swallowing its own fail
 | [JD010 ReproducibleOnNonTestMethod](JD010.en.md) | 🟠 Warning | on | [Reproducible] on a method xUnit never treats as a test; it pins nothing, and looks exactly like the working form. |
 | [JD018 NestedReproducibilityScope](JD018.en.md) | 🟠 Warning | on | A reproducibility scope nested inside another; the inner one draws a fresh seed, so the outer's reported seed replays nothing. |
 | [JD021 BlankReplaySnippet](JD021.en.md) | 🟠 Warning | on | Any.UseSeed is given a blank replay snippet, which the guard rejects — from an adapter hook, failing the whole suite. |
+| [JD037 DrawInsideCompositionLambda](JD037.en.md) | 🟠 Warning | on | A `Generate()` inside a lambda passed to `As` or `Combine` draws apart from the recipe; under an explicit context, one built from the static `Any` draws from the ambient seed. Names the offset and `Then`. |
 | [JD019 CommittedReplaySeed](JD019.en.md) | 🔵 Info | opt-in | A constant replay seed is pinned in committed code, so the test stops varying between runs. |
 | [JD020 SharedStaticAnyContext](JD020.en.md) | 🔵 Info | on | An AnyContext held in a static field; interleaved draws make neither the sequence nor the multiset stable. |
 | [JD022 ParallelDrawWithoutPerItemSeed](JD022.en.md) | 🔵 Info | on | A parallel work item draws without its own seed scope, so the draws interleave and the run replays nothing. |

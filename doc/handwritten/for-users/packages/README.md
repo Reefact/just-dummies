@@ -8,9 +8,9 @@ exactly one of them; the fourth is a command-line tool you install globally and 
 
 | Package | What it is | Do I need it? |
 | --- | --- | --- |
-| [`JustDummies`](./justdummies.en.md) | the library, with its 36 rules bundled in | **Yes** — this is the product |
+| [`JustDummies`](./justdummies.en.md) | the library, with its 37 rules bundled in | **Yes** — this is the product |
 | [`JustDummies.Xunit`](./justdummies-xunit.en.md) | the xUnit v3 adapter: `[Reproducible]` | Only with xUnit v3, and only if you want the attribute |
-| [`JustDummies.DiagnosticCatalog`](./justdummies-diagnosticcatalog.en.md) | the `JD001`–`JD036` rules as compile-checked constants | Only to suppress a rule without a string literal |
+| [`JustDummies.DiagnosticCatalog`](./justdummies-diagnosticcatalog.en.md) | the `JD001`–`JD037` rules as compile-checked constants | Only to suppress a rule without a string literal |
 | [`JustDummies.Cli`](./justdummies-cli.en.md) | `any`, the scaffolder: writes a generator for one of your types | Only to scaffold one — a global tool, never a reference |
 
 ## How they relate
@@ -18,8 +18,8 @@ exactly one of them; the fourth is a command-line tool you install globally and 
 ```mermaid
 flowchart TD
     accTitle: How the four packages relate
-    accDescr: JustDummies, the library, bundles the 36 rules under analyzers/dotnet/cs. JustDummies.Xunit depends on the library. JustDummies.DiagnosticCatalog names those rules without depending on them, and any, the scaffolder, emits code calling the library.
-    L["JustDummies<br/><i>the library</i>"] -->|"bundles"| A["36 rules<br/><i>analyzers/dotnet/cs</i>"]
+    accDescr: JustDummies, the library, bundles the 37 rules under analyzers/dotnet/cs. JustDummies.Xunit depends on the library. JustDummies.DiagnosticCatalog names those rules without depending on them, and any, the scaffolder, emits code calling the library.
+    L["JustDummies<br/><i>the library</i>"] -->|"bundles"| A["37 rules<br/><i>analyzers/dotnet/cs</i>"]
     X["JustDummies.Xunit<br/><i>[Reproducible]</i>"] -->|"depends on"| L
     C["JustDummies.DiagnosticCatalog<br/><i>JustDummiesRule.JD0NN</i>"]
     C -.->|"names the rules in"| A

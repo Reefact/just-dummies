@@ -41,3 +41,4 @@ JD033   | JustDummies.Constraints     | Info     | AnchoredLiteralOutsideCharact
 JD034   | JustDummies.Constraints     | Warning  | ConstraintAlreadyDefinedAnalyzer
 JD035   | JustDummies.Constraints     | Warning  | ConstraintRepeatedAnalyzer
 JD036   | JustDummies.Constraints     | Info     | UndeclaredNumericRangeAnalyzer
+JD037   | JustDummies.Reproducibility | Warning  | DrawInsideCompositionLambdaAnalyzer

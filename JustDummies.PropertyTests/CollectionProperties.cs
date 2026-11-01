@@ -230,6 +230,23 @@ public sealed class CollectionProperties {
             .QuickCheckThrowOnFailure();
     }
 
+    [Fact(DisplayName = "DistinctBy yields no two elements sharing a key, and honours the count, for every count the key can hold.")]
+    public void DistinctByYieldsNoSharedKey() {
+        Prop.ForAll((from count in Generators.Count(16)
+                     from slack in Generators.Count(8)
+                     select (count, keys: count + slack + 1)).ToArbitrary(),
+                    testCase => {
+                        // A wide element domain folded onto a narrow key: the key, not the element, is what runs short.
+                        AnyInt32 element = Any.Int32().Between(0, 100_000);
+
+                        return Expect.EveryDraw(Any.ListOf(element).WithCount(testCase.count).DistinctBy(value => value % testCase.keys),
+                                                list => list.Count == testCase.count && list.Select(value => value % testCase.keys).Distinct().Count() == testCase.count, DrawsPerShape)
+                               && Expect.EveryDraw(Any.ArrayOf(element).WithCount(testCase.count).DistinctBy(value => value % testCase.keys),
+                                                   array => array.Select(value => value % testCase.keys).Distinct().Count() == testCase.count, DrawsPerShape);
+                    })
+            .QuickCheckThrowOnFailure();
+    }
+
     [Fact(DisplayName = "A set and a dictionary are distinct by nature: their size still matches the requested count.")]
     public void SetAndDictionaryAreDistinctByNature() {
         Prop.ForAll((from count in Generators.Count(24)

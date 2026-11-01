@@ -10,6 +10,11 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Added
 
+- **`DistinctBy(key)` on lists, arrays and sequences.** `Any.ListOf(anyLayer).WithCount(2).DistinctBy(l
+  => l.Code)` is exactly `Distinct(comparer)` with a comparer by that key: the same bounded redraw, the
+  same loud failure with its seed when the key runs out of values, and the same refusal of a second,
+  different equality (issue #394).
+
 - **`Except` takes a sequence on every builder, as `OneOf` does.** `Except(IEnumerable<T>)` sits beside
   `Except(params T[])` with the same semantics, so a set the test keeps — `HashSet<int> used` — passes
   as it is instead of through `.ToArray()` at every call, and an empty one excludes nothing. On

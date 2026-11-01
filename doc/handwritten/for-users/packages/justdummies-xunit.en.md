@@ -113,7 +113,7 @@ Before each test **case**, the attribute opens the same ambient seed scope
 closes the scope and, **only if the test failed**, writes the seed to the test's output:
 
 ```text
-[JustDummies] These arbitrary values were seeded with 1743029518. Reproduce this run with [Reproducible(Seed = 1743029518)].
+[JustDummies] These arbitrary values were seeded with 1743029518. Reproduce this run with [JustDummies.Xunit.Reproducible(Seed = 1743029518)].
 ```
 
 Notice that the message names the **attribute**, not `Any.Reproducibly(seed, ...)`. A test pinned

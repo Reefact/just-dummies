@@ -131,8 +131,13 @@ public sealed class ReproducibleAttribute : BeforeAfterTestAttribute {
     ///     What the reader must write to replay the run — the attribute with its seed, not the delegate runner the
     ///     ambient source names by default, because a test carrying this attribute contains no such call.
     /// </summary>
+    /// <remarks>
+    ///     Fully qualified, so the line compiles wherever it is pasted: the package adds no global using, and a test
+    ///     file without <c>using JustDummies.Xunit;</c> failed a bare <c>[Reproducible(…)]</c> with <c>CS0246</c>. The
+    ///     IDE's quick fix resolves that, but the message promises a paste-ready line.
+    /// </remarks>
     private static string ReplaySnippet(int seed) {
-        return $"[Reproducible(Seed = {seed})]";
+        return $"[JustDummies.Xunit.Reproducible(Seed = {seed})]";
     }
 
     /// <summary>

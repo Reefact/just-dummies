@@ -121,7 +121,7 @@ public sealed class ReproducibleAttributeHookTests {
         cancellation.Cancel();
 
         Check.That(output.Lines).CountIs(1);
-        Check.That(output.Lines[0]).Contains("seeded with 1234", "[Reproducible(Seed = 1234)]");
+        Check.That(output.Lines[0]).Contains("seeded with 1234", "[JustDummies.Xunit.Reproducible(Seed = 1234)]");
         Check.That(scope.TryClaimReport()).IsFalse();
     }
 
@@ -197,7 +197,7 @@ public sealed class ReproducibleAttributeHookTests {
             ReproducibleAttribute.Scope innerScope = ReproducibleAttribute.Innermost!;
             inner.After(null!, null!);
 
-            Check.That(innerScope.ReportOnOutcome(failed: true)).Contains("[Reproducible(Seed = 222)]");
+            Check.That(innerScope.ReportOnOutcome(failed: true)).Contains("[JustDummies.Xunit.Reproducible(Seed = 222)]");
             Check.That(outerScope.ReportOnOutcome(failed: true)).IsNull();
         } finally {
             outer.After(null!, null!);
@@ -212,7 +212,7 @@ public sealed class ReproducibleAttributeHookTests {
         attribute.Before(null!, null!);
         ReproducibleAttribute.Scope scope = ReproducibleAttribute.Innermost!;
         try {
-            Check.That(scope.ReportOnOutcome(failed: true)).Contains("[Reproducible(Seed = 111)]");
+            Check.That(scope.ReportOnOutcome(failed: true)).Contains("[JustDummies.Xunit.Reproducible(Seed = 111)]");
             Check.That(scope.ReportOnOutcome(failed: false)).IsNull();
         } finally {
             attribute.After(null!, null!);
@@ -236,7 +236,7 @@ public sealed class ReproducibleAttributeHookTests {
         cancellation.Cancel();
 
         Check.That(output.Lines).CountIs(1);
-        Check.That(output.Lines[0]).Contains("[Reproducible(Seed = 222)]");
+        Check.That(output.Lines[0]).Contains("[JustDummies.Xunit.Reproducible(Seed = 222)]");
     }
 
     #region Nested types

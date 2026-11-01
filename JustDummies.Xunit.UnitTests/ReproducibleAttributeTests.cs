@@ -103,7 +103,7 @@ public sealed class ReproducibleAttributeTests {
             () => Any.Int32().As<int, int>(_ => throw new InvalidOperationException("rejected")).Generate());
 
         Check.That(caught.Seed).IsEqualTo(2026);
-        Check.That(caught.Message).Contains("[Reproducible(Seed = 2026)]");
+        Check.That(caught.Message).Contains("[JustDummies.Xunit.Reproducible(Seed = 2026)]");
         // The whole point of the replay snippet: this test contains no Any.Reproducibly call, so naming
         // one would send the reader to a call that is not there.
         Check.That(caught.Message).Not.Contains("Any.Reproducibly");
@@ -115,7 +115,7 @@ public sealed class ReproducibleAttributeTests {
 
         Check.That(report).IsNotNull();
         Check.That(report).Contains("seeded with 1234");
-        Check.That(report).Contains("[Reproducible(Seed = 1234)]");
+        Check.That(report).Contains("[JustDummies.Xunit.Reproducible(Seed = 1234)]");
         Check.That(report).Not.Contains("Any.Reproducibly");
     }
 

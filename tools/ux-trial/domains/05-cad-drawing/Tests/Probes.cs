@@ -43,7 +43,7 @@ public sealed class Probes {
     public void A_narrower_OneOf_over_a_OneOf_base_is_refused_although_values_remain() {
         ConflictingAnyConstraintException refusal = Assert.Throws<ConflictingAnyConstraintException>(() => Any.String().OneOf("H", "h", "JS", "js").OneOf("H", "JS"));
 
-        Assert.Equal("Cannot apply OneOf(\"H\", \"JS\") because OneOf(\"H\", \"h\", \"JS\", \"js\") is already defined.", refusal.Message);
+        Assert.Equal("Cannot apply OneOf(\"H\", \"JS\") because OneOf(\"H\", \"h\", \"JS\", \"js\") is already defined; to narrow the first set, use Except(...).", refusal.Message);
         // The working spelling: narrow a pool with Except.
         Assert.Contains(Any.String().OneOf("H", "h", "JS", "js").Except("h", "js").Generate(), new[] { "H", "JS" });
     }

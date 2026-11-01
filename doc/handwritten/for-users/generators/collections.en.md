@@ -122,6 +122,21 @@ not override `Equals` is satisfied trivially — every instance differs — so t
 hold what a reader would call the same value twice. That is diagnostic
 [JD028](../analyzers/JD028.en.md).
 
+## An order, and a subset
+
+A random order of items you already hold is `Any.PermutationOf(items)`: every item once per occurrence,
+duplicates included, because it shuffles positions rather than comparing values.
+
+```csharp
+OrderStatus[] statuses = [OrderStatus.Draft, OrderStatus.Paid, OrderStatus.Shipped];
+
+List<OrderStatus> anyOrder  = Any.PermutationOf(statuses).Generate();
+HashSet<OrderStatus> anyTwo = Any.SetOf(Any.ElementOf(statuses)).WithCount(2).Generate();
+```
+
+A subset needs no factory of its own: a set drawn from the items, with the count you want, already reads
+as the intent, and its cardinality is checked like any other set's.
+
 ## Dictionaries
 
 `Any.DictionaryOf` takes a generator for the keys and one for the values:

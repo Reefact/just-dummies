@@ -247,6 +247,19 @@ public sealed class CollectionProperties {
             .QuickCheckThrowOnFailure();
     }
 
+    [Fact(DisplayName = "PermutationOf keeps every item, duplicates included, and replays, for every list.")]
+    public void PermutationOfKeepsEveryItem() {
+        Prop.ForAll(Generators.Seed().ToArbitrary(),
+                    Gen.ListOf(Gen.Choose(0, 5)).ToArbitrary(),
+                    (seed, items) => {
+                        List<int> first  = Any.WithSeed(seed).PermutationOf(items).Generate();
+                        List<int> second = Any.WithSeed(seed).PermutationOf(items).Generate();
+
+                        return first.OrderBy(item => item).SequenceEqual(items.OrderBy(item => item)) && first.SequenceEqual(second);
+                    })
+            .QuickCheckThrowOnFailure();
+    }
+
     [Fact(DisplayName = "A set and a dictionary are distinct by nature: their size still matches the requested count.")]
     public void SetAndDictionaryAreDistinctByNature() {
         Prop.ForAll((from count in Generators.Count(24)

@@ -123,6 +123,21 @@ ne redéfinit pas `Equals` est satisfait trivialement — chaque instance diffè
 collection peut toujours contenir deux fois ce qu'un lecteur appellerait la même valeur. C'est le
 diagnostic [JD028](../analyzers/JD028.fr.md).
 
+## Un ordre, et un sous-ensemble
+
+Un ordre aléatoire d'éléments que vous détenez déjà, c'est `Any.PermutationOf(items)` : chaque élément une
+fois par occurrence, doublons compris, parce qu'il mélange des positions au lieu de comparer des valeurs.
+
+```csharp
+OrderStatus[] statuses = [OrderStatus.Draft, OrderStatus.Paid, OrderStatus.Shipped];
+
+List<OrderStatus> anyOrder  = Any.PermutationOf(statuses).Generate();
+HashSet<OrderStatus> anyTwo = Any.SetOf(Any.ElementOf(statuses)).WithCount(2).Generate();
+```
+
+Un sous-ensemble n'a pas besoin d'une fabrique à lui : un ensemble tiré parmi les éléments, avec l'effectif
+voulu, se lit déjà comme l'intention, et son cardinal est vérifié comme celui de tout autre ensemble.
+
 ## Dictionnaires
 
 `Any.DictionaryOf` prend un générateur pour les clés et un pour les valeurs :

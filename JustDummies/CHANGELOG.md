@@ -10,6 +10,12 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Added
 
+- **`Any.PermutationOf(items)` draws a random order of exactly the items given.** Every item once per
+  occurrence, duplicates included, since it shuffles positions rather than comparing values — where
+  `ListOf(ElementOf(all)).WithCount(n).Distinct()` hid the intent and failed on two equal items. A
+  subset gets no factory: `Any.SetOf(Any.ElementOf(items)).WithCount(n)` reads as the intent, and the
+  collections page shows it (issue #398).
+
 - **`DistinctBy(key)` on lists, arrays and sequences.** `Any.ListOf(anyLayer).WithCount(2).DistinctBy(l
   => l.Code)` is exactly `Distinct(comparer)` with a comparer by that key: the same bounded redraw, the
   same loud failure with its seed when the key runs out of values, and the same refusal of a second,

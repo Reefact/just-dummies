@@ -53,6 +53,7 @@ contraintes en un saut.
 | `Any.SequenceOf(item)` | `IEnumerable<T>` | [Collections](./collections.fr.md) |
 | `Any.SetOf(item)` | `HashSet<T>` | [Collections](./collections.fr.md) |
 | `Any.DictionaryOf(keys, values)` | `Dictionary<TKey, TValue>` | [Collections](./collections.fr.md) |
+| `Any.PermutationOf(items)` | `List<T>`, les éléments dans un ordre aléatoire | [Collections](./collections.fr.md) |
 
 ## Énumérations et choix
 

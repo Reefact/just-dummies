@@ -2,7 +2,7 @@
 
 🌍 🇬🇧 [English](0064-never-draw-null-for-a-nullable-parameter.md) · 🇫🇷 Français (ce fichier)
 
-**Status:** Accepted
+**Status:** Superseded by [ADR-0117](0117-draw-a-limit-value-the-type-permits-one-draw-in-ten.fr.md)
 **Proposed:** 2026-07-30
 **Accepted:** 2026-08-09
 **Decision Makers:** Reefact

@@ -54,7 +54,7 @@ sit in one chain, as information rather than as a verdict; the pair stays correc
 
 **An unconstrained integer spans its whole type.** Declare nothing and the draw is uniform over the
 full range, and that is deliberate
-([ADR-0031](../../for-maintainers/adr/0031-draw-arbitrary-numbers-within-an-ordinary-magnitude.md), superseded by [ADR-0097](../../for-maintainers/adr/0097-follow-the-declared-bounds-with-the-ordinary-magnitude-window.md)):
+([ADR-0031](../../for-maintainers/adr/0031-draw-arbitrary-numbers-within-an-ordinary-magnitude.md), superseded by [ADR-0097](../../for-maintainers/adr/0097-follow-the-declared-bounds-with-the-ordinary-magnitude-window.md), then by [ADR-0117](../../for-maintainers/adr/0117-draw-a-limit-value-the-type-permits-one-draw-in-ten.md)):
 a large integer is still an ordinary integer, where a large `double` stops behaving like arithmetic
 — the floating-point rule below is the exception, not the norm. Uniform over a range also means most
 of that range sits near its extremes: an unconstrained `Int128` carries 38 or 39 digits in about 94
@@ -153,7 +153,9 @@ the range it accepts.
 A one-sided bound past the ordinary magnitude keeps an ordinary spread beside the value you named on
 the window's draws, so `GreaterThanOrEqualTo(1_000_000)` stays just above a million nine times in ten
 rather than roaming to `1e308`
-([ADR-0097](../../for-maintainers/adr/0097-follow-the-declared-bounds-with-the-ordinary-magnitude-window.md)).
+([ADR-0097](../../for-maintainers/adr/0097-follow-the-declared-bounds-with-the-ordinary-magnitude-window.md), superseded by [ADR-0117](../../for-maintainers/adr/0117-draw-a-limit-value-the-type-permits-one-draw-in-ten.md)).
+A bound so large that no ordinary slab is representable beside it — `GreaterThanOrEqualTo(1e300)` —
+leaves nothing ordinary to draw, so every draw spans its declared domain.
 Writing the type's own limit as the far bound means the same thing as leaving it out, so
 `Between(1_000_000, double.MaxValue)` draws exactly like `GreaterThanOrEqualTo(1_000_000)`. `Half` is
 the exception that needs no rule: its whole domain, up to 65 504, already lies within the window.

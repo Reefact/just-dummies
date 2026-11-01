@@ -2,7 +2,7 @@
 
 🌍 🇬🇧 English (this file) · 🇫🇷 [Français](0097-follow-the-declared-bounds-with-the-ordinary-magnitude-window.fr.md)
 
-**Status:** Accepted
+**Status:** Superseded by [ADR-0117](0117-draw-a-limit-value-the-type-permits-one-draw-in-ten.md)
 **Proposed:** 2026-09-05
 **Accepted:** 2026-09-06
 **Decision Makers:** Reefact

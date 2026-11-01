@@ -2,8 +2,9 @@
 
 🌍 🇬🇧 [English](0117-draw-a-limit-value-the-type-permits-one-draw-in-ten.md) · 🇫🇷 Français (ce fichier)
 
-**Status:** Proposed
+**Status:** Accepted
 **Proposed:** 2026-11-01
+**Accepted:** 2026-11-01
 **Decision Makers:** Reefact
 
 Supersède l'[ADR-0097](0097-follow-the-declared-bounds-with-the-ordinary-magnitude-window.fr.md) et l'[ADR-0064](0064-never-draw-null-for-a-nullable-parameter.fr.md).

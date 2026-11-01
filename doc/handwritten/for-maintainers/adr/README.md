@@ -203,7 +203,7 @@ failure mode of a "not now" is that nobody remembers the option existed on the d
 | [ADR-0061](0061-draw-from-the-ambient-context-and-hold-no-state.md) | Draw from the ambient context and hold no state | Accepted | recorded here |
 | [ADR-0062](0062-emit-the-generator-into-the-target-types-namespace.md) | Emit the generator into the target type's namespace | Accepted | recorded here |
 | [ADR-0063](0063-give-the-scaffolder-no-dependency-on-the-package.md) | Give the scaffolder no dependency on the JustDummies package | Accepted | recorded here |
-| [ADR-0064](0064-never-draw-null-for-a-nullable-parameter.md) | Never draw null for a nullable parameter | Accepted | recorded here |
+| [ADR-0064](0064-never-draw-null-for-a-nullable-parameter.md) | Never draw null for a nullable parameter | Superseded by ADR-0117 | recorded here |
 | [ADR-0065](0065-keep-the-scaffolding-engine-loadable-by-a-roslyn-host.md) | Keep the scaffolding engine loadable by a Roslyn host | Accepted | recorded here |
 | [ADR-0066](0066-load-msbuild-from-the-sdk-never-from-the-tool.md) | Load MSBuild from the installed SDK, never from the tool's own files | Accepted | recorded here |
 | [ADR-0067](0067-report-a-filtered-pool-through-an-explicit-interface.md) | Report a filtered pool through an explicitly implemented interface, and warn about nothing | Accepted | recorded here |
@@ -236,7 +236,7 @@ failure mode of a "not now" is that nobody remembers the option existed on the d
 | [ADR-0094](0094-lift-a-nullable-value-type-rather-than-deriving-it.md) | Lift a nullable value type rather than deriving it | Accepted | recorded here |
 | [ADR-0095](0095-read-the-assigned-null-check-as-a-guard-idiom-too.md) | Read the assigned null-check as a guard idiom too | Accepted | recorded here |
 | [ADR-0096](0096-emit-a-parameter-inline-whenever-it-has-nothing-to-report.md) | Emit a parameter inline whenever it has nothing to report | Superseded by ADR-0109 | recorded here |
-| [ADR-0097](0097-follow-the-declared-bounds-with-the-ordinary-magnitude-window.md) | Follow the declared bounds with the ordinary-magnitude window | Accepted | recorded here |
+| [ADR-0097](0097-follow-the-declared-bounds-with-the-ordinary-magnitude-window.md) | Follow the declared bounds with the ordinary-magnitude window | Superseded by ADR-0117 | recorded here |
 | [ADR-0098](0098-offer-every-oneof-in-both-shapes.md) | Offer every OneOf in both the params and the sequence shape | Accepted | recorded here |
 | [ADR-0099](0099-offer-oneof-wherever-the-generator-would-otherwise-build.md) | Offer OneOf wherever the generator would otherwise build the value | Accepted | recorded here |
 | [ADR-0100](0100-identify-a-value-set-by-its-values.md) | Identify a declared value set by its values, not by the call that declared it | Accepted | recorded here |
@@ -256,4 +256,4 @@ failure mode of a "not now" is that nobody remembers the option existed on the d
 | [ADR-0114](0114-refuse-a-local-datetime-bound.md) | Refuse a `Local` `DateTime` bound rather than read it as ticks | Accepted | recorded here |
 | [ADR-0115](0115-allow-an-editorial-correction-to-an-accepted-adr.md) | Allow an editorial correction to an accepted ADR, never a change of substance | Accepted | recorded here |
 | [ADR-0116](0116-accumulate-a-parameters-refinements-on-its-current-recipe.md) | Accumulate a parameter's refinements on its current recipe | Proposed | recorded here |
-| [ADR-0117](0117-draw-a-limit-value-the-type-permits-one-draw-in-ten.md) | Draw a limit value the type permits one draw in ten | Proposed | recorded here |
+| [ADR-0117](0117-draw-a-limit-value-the-type-permits-one-draw-in-ten.md) | Draw a limit value the type permits one draw in ten | Accepted | recorded here |

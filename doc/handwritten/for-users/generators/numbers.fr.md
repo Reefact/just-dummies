@@ -56,7 +56,7 @@ même chaîne, en information et non en verdict ; la paire reste correcte dans l
 
 **Un entier non contraint parcourt tout son type.** Ne déclarez rien et le tirage est uniforme sur
 toute la plage, et c'est délibéré
-([ADR-0031](../../for-maintainers/adr/0031-draw-arbitrary-numbers-within-an-ordinary-magnitude.fr.md), remplacée par l'[ADR-0097](../../for-maintainers/adr/0097-follow-the-declared-bounds-with-the-ordinary-magnitude-window.fr.md)) :
+([ADR-0031](../../for-maintainers/adr/0031-draw-arbitrary-numbers-within-an-ordinary-magnitude.fr.md), remplacée par l'[ADR-0097](../../for-maintainers/adr/0097-follow-the-declared-bounds-with-the-ordinary-magnitude-window.fr.md), puis par l'[ADR-0117](../../for-maintainers/adr/0117-draw-a-limit-value-the-type-permits-one-draw-in-ten.fr.md)) :
 un grand entier reste un entier ordinaire, là où un grand `double` cesse de se comporter comme de
 l'arithmétique — la règle sur la virgule flottante, plus bas, est l'exception et non la norme.
 Uniforme sur une plage signifie aussi que l'essentiel de cette plage se trouve près de ses extrêmes :
@@ -163,7 +163,10 @@ Une borne unilatérale au-delà de l'ordre de grandeur ordinaire conserve, sur l
 un étalement ordinaire à côté de la valeur que vous avez nommée, si bien que
 `GreaterThanOrEqualTo(1_000_000)` reste juste au-dessus du million neuf fois sur dix au lieu de partir
 vers `1e308`
-([ADR-0097](../../for-maintainers/adr/0097-follow-the-declared-bounds-with-the-ordinary-magnitude-window.fr.md)).
+([ADR-0097](../../for-maintainers/adr/0097-follow-the-declared-bounds-with-the-ordinary-magnitude-window.fr.md), remplacée par l'[ADR-0117](../../for-maintainers/adr/0117-draw-a-limit-value-the-type-permits-one-draw-in-ten.fr.md)).
+Une borne si grande qu'aucune bande ordinaire n'est représentable à côté d'elle —
+`GreaterThanOrEqualTo(1e300)` — ne laisse rien d'ordinaire à tirer : chaque tirage couvre alors son domaine
+déclaré.
 Écrire la limite propre du type comme borne opposée revient à ne pas la mettre :
 `Between(1_000_000, double.MaxValue)` tire exactement comme `GreaterThanOrEqualTo(1_000_000)`. `Half` est
 l'exception qui n'a besoin d'aucune règle : tout son domaine, jusqu'à 65 504, tient déjà dans la fenêtre.

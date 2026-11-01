@@ -127,7 +127,7 @@ internal static class Descriptors {
     public static readonly DiagnosticDescriptor GeneratorPooledAsValue = new(
         id: JustDummiesRule.JD012.Id,
         title: JustDummiesRule.JD012.Title,
-        messageFormat: "Call Generate() on each pooled generator: Any.{0} inferred a pool of recipes, so drawing from it yields a recipe rather than a value",
+        messageFormat: "Call Generate() on each pooled generator, or choose one with Then: Any.{0} inferred a pool of recipes, so drawing from it yields a recipe rather than a value",
         category: JustDummiesRule.JD012.Category,
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true,

@@ -98,8 +98,9 @@ you bisecting a chain by hand.
 
 **You will occasionally have to do something by hand.** A pattern outside the regular subset, an
 aggregate with fifteen fields, a value whose validity depends on another value drawn earlier. The
-library gives you `IAny<T>`, `.As(...)` and `Combine`, and expects you to assemble the rest — which
-keeps the result correct by *your* rules rather than by a convention it guessed.
+library gives you `IAny<T>`, `.As(...)`, `Combine` and `.Then(...)` — the last draws a value from
+another drawn first — and expects you to assemble the rest, which keeps the result correct by *your*
+rules rather than by a convention it guessed.
 
 **You will not have to debug the generator.** Every refusal names what it could not honour, every
 draw satisfies what you declared, and every sequential run replays from the seed it reports. When a

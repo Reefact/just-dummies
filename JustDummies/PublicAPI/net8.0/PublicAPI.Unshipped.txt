@@ -557,6 +557,7 @@ static JustDummies.Any.UseSeed(int seed) -> System.IDisposable!
 static JustDummies.Any.UseSeed(int seed, string! replaySnippet) -> System.IDisposable!
 static JustDummies.Any.WithSeed(int seed) -> JustDummies.AnyContext!
 static JustDummies.AnyExtensions.As<TSource, TResult>(this JustDummies.IAny<TSource>! generator, System.Func<TSource, TResult>! factory) -> JustDummies.IAny<TResult>!
+static JustDummies.AnyExtensions.Then<TSource, TResult>(this JustDummies.IAny<TSource>! generator, System.Func<TSource, JustDummies.IAny<TResult>!>! next) -> JustDummies.IAny<TResult>!
 static JustDummies.DeclaredConstraint.operator !=(JustDummies.DeclaredConstraint? left, JustDummies.DeclaredConstraint? right) -> bool
 static JustDummies.DeclaredConstraint.operator ==(JustDummies.DeclaredConstraint? left, JustDummies.DeclaredConstraint? right) -> bool
 static JustDummies.NullableExtensions.AsNullable<T>(this JustDummies.IAny<T>! generator) -> JustDummies.IAny<T?>!

@@ -201,6 +201,32 @@ that draws both together: [When a guard ties two parameters](../packages/justdum
 shows the three forms, and [Design principles](./design-principles.en.md#what-this-means-for-you-day-to-day)
 says why the library leaves it to you.
 
+## `.Then(...)`: a draw that depends on another
+
+When the second value is not merely bounded by the first but *built* from it — a grid's cells inside its
+drawn dimensions, a measure filled to its drawn time signature — draw the first, and let `.Then(...)` build
+the generator for the second from it:
+
+```csharp
+IAny<(int Width, int Height, int Cell)> gridGenerator = Any.Combine(
+        Any.Int32().Between(1, 20),
+        Any.Int32().Between(1, 20),
+        (width, height) => (width, height))
+    .Then(size => Any.Int32().Between(0, size.width * size.height - 1)
+                     .As(cell => (size.width, size.height, cell)));
+```
+
+It is one recipe: the inner generator draws on the same source as the outer one, so the chain replays from
+one seed — under an explicit `Any.WithSeed(...)` context too, where a `Generate()` written inside an
+`As(...)` would draw the inner value from the ambient seed instead. It is a sequential draw, correct by
+construction, never a search ([ADR-0119](../../for-maintainers/adr/0119-draw-a-value-that-depends-on-another-draw.md)).
+
+Choosing among generators is the same move: the branch not taken is never drawn.
+
+```csharp
+IAny<int> signedGenerator = Any.Boolean().Then(positive => positive ? Any.Int32().Positive() : Any.Int32().Negative());
+```
+
 ## Building a whole aggregate
 
 Putting it together, here is a dummy for a record with three fields, none of which is a bare

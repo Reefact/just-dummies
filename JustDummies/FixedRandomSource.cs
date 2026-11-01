@@ -15,6 +15,9 @@ internal sealed class FixedRandomSource : RandomSource {
 
     internal override SeededRandom Current => _random;
 
+    /// <summary>The code a reader copies to replay a draw from this context.</summary>
+    internal string ReplaySnippet => $"Any.WithSeed({_random.Seed})";
+
     internal override string ReplayGuidance(int seed) {
         return $"The arbitrary values were drawn from Any.WithSeed({seed}), which already replays deterministically.";
     }

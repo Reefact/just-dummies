@@ -25,7 +25,24 @@ internal sealed class AmbientRandomSource : RandomSource {
     }
 
     internal static IDisposable UseSeed(int seed, string? replaySnippet) {
-        AmbientState frame = new(new SeededRandom(seed), replaySnippet, State.Value);
+        return Use(new SeededRandom(seed), replaySnippet);
+    }
+
+    /// <summary>
+    ///     Routes the ambient source to <paramref name="random" /> — another source's own stream, not a copy of it —
+    ///     until the returned scope is disposed: what a dependent draw over an explicit context needs, so a generator
+    ///     built from the static <see cref="Any" /> inside it draws from that context rather than from the ambient seed
+    ///     (ADR-0119).
+    /// </summary>
+    internal static IDisposable Borrow(SeededRandom random, string replaySnippet) {
+        if (random is null) { throw new ArgumentNullException(nameof(random)); }
+        if (replaySnippet is null) { throw new ArgumentNullException(nameof(replaySnippet)); }
+
+        return Use(random, replaySnippet);
+    }
+
+    private static IDisposable Use(SeededRandom random, string? replaySnippet) {
+        AmbientState frame = new(random, replaySnippet, State.Value);
         State.Value = frame;
 
         return new SeedScope(frame);

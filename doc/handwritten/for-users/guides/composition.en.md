@@ -162,6 +162,22 @@ ISet<OrderStatus?> anyStatuses = Any.SetOf(Any.Enum<OrderStatus>().AsNullable())
 A generator scaffolded by `any` writes `.AsNullable()` for every nullable value-type parameter, for
 exactly that reason.
 
+## A bound taken from another draw
+
+When one value must sit under another — a count of cells under a sample's capacity, a deadline after a
+start — draw the first, then use it as an ordinary bound for the second:
+
+```csharp
+int anyCapacity = Any.Int32().Between(10, 500).Generate();
+int anyCells    = Any.Int32().GreaterThanOrEqualTo(1).LessThan(anyCapacity).Generate();
+```
+
+That is idiomatic at a call site: the bound is a plain value, and both draws replay from the one seed. If the
+rule belongs to the type rather than to this test, write it once in the generator instead, as one generator
+that draws both together: [When a guard ties two parameters](../packages/justdummies-cli.en.md#when-a-guard-ties-two-parameters)
+shows the three forms, and [Design principles](./design-principles.en.md#what-this-means-for-you-day-to-day)
+says why the library leaves it to you.
+
 ## Building a whole aggregate
 
 Putting it together, here is a dummy for a record with three fields, none of which is a bare

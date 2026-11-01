@@ -169,6 +169,22 @@ ISet<OrderStatus?> anyStatuses = Any.SetOf(Any.Enum<OrderStatus>().AsNullable())
 Un générateur scaffoldé par `any` écrit `.AsNullable()` pour chaque paramètre nullable de type
 valeur, exactement pour cette raison.
 
+## Une borne prise sur un autre tirage
+
+Quand une valeur doit se tenir sous une autre — un nombre de cellules sous la capacité d'un échantillon, une
+échéance après un début — tirez la première, puis servez-vous-en comme d'une borne ordinaire pour la seconde :
+
+```csharp
+int anyCapacity = Any.Int32().Between(10, 500).Generate();
+int anyCells    = Any.Int32().GreaterThanOrEqualTo(1).LessThan(anyCapacity).Generate();
+```
+
+C'est idiomatique à un site d'appel : la borne est une valeur ordinaire, et les deux tirages se rejouent depuis
+la même graine. Si la règle appartient au type plutôt qu'à ce test, écrivez-la une fois dans le générateur,
+comme un seul générateur qui tire les deux ensemble : [Quand une garde relie deux paramètres](../packages/justdummies-cli.fr.md#quand-une-garde-relie-deux-paramètres)
+montre les trois formes, et [Principes de conception](./design-principles.fr.md#ce-que-cela-change-au-quotidien)
+dit pourquoi la bibliothèque vous le laisse.
+
 ## Construire un agrégat entier
 
 En rassemblant tout, voici un dummy pour un enregistrement à trois champs, dont aucun n'est un

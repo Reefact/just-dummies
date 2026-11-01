@@ -141,6 +141,9 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Documentation
 
+- **The composition guide says where a bound taken from another draw belongs.** A bound computed from a
+  value drawn earlier is a plain value at a call site, and the guide now says so with a sample, and links to
+  the scaffolder page's "When a guard ties two parameters" for the case where the rule belongs to the type.
 - **The default span of the date and time generators is stated, with the risk it carries.** The dates page
   gave `MinValue` to `MaxValue` for `DateTime` only. It now says that `DateTimeOffset`, `DateOnly` and
   `TimeOnly` span their whole type too, and that calendar arithmetic on an unconstrained draw overflows

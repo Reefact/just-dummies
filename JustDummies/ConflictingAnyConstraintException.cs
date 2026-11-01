@@ -38,6 +38,14 @@ public sealed class ConflictingAnyConstraintException : DummyException {
     }
 
     /// <summary>
+    ///     Builds the exception for a <see cref="decimal" /> step and scale whose grids disagree: the step must lie on
+    ///     the scale's grid — be a multiple of <paramref name="quantum" /> — for both to hold (ADR-0123).
+    /// </summary>
+    internal static ConflictingAnyConstraintException StepOffTheScale(ConstraintCall applying, ConstraintCall existingConstraint, string quantum) {
+        return Sentence(applying, $"{existingConstraint} is already defined, and the step is not a multiple of {quantum}");
+    }
+
+    /// <summary>
     ///     Builds the exception for a second, different <c>OneOf(...)</c> on a generator whose value set the first
     ///     has already settled, pointing at the route that does narrow it.
     /// </summary>

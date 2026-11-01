@@ -162,6 +162,41 @@ public sealed class LatticeConstraintProperties {
             .QuickCheckThrowOnFailure();
     }
 
+    [Fact(DisplayName = "Decimal MultipleOf: every draw is a whole number of steps inside the interval, and an interval holding none conflicts.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
+    public void DecimalMultipleOfComposesWithAnInterval() {
+        Gen<decimal> hundredths = Gen.Choose(-100_000, 100_000).Select(cents => cents / 100m);
+        Gen<decimal> steps = from mantissa in Gen.Choose(1, 1000)
+                             from places in Gen.Choose(0, 6)
+                             select mantissa / DecimalPower(places);
+
+        Prop.ForAll((from bounds in Generators.OrderedPair(hundredths)
+                     from step in steps
+                     select (bounds, step)).ToArbitrary(),
+                    testCase => {
+                        decimal minimum = testCase.bounds.Min;
+                        decimal maximum = testCase.bounds.Max;
+                        decimal step    = testCase.step;
+
+                        // The oracle counts whole steps on each side: at these magnitudes both quotients are exact
+                        // enough that rounding cannot cross an integer.
+                        if (Math.Ceiling(minimum / step) > Math.Floor(maximum / step)) {
+                            return Expect.Throws<ConflictingAnyConstraintException>(() => Any.Decimal().Between(minimum, maximum).MultipleOf(step));
+                        }
+
+                        return Expect.EveryDraw(Any.Decimal().Between(minimum, maximum).MultipleOf(step),
+                                                value => value / step == decimal.Truncate(value / step) && value >= minimum && value <= maximum);
+                    })
+            .QuickCheckThrowOnFailure();
+    }
+
+    private static decimal DecimalPower(int places) {
+        decimal power = 1m;
+        for (int i = 0; i < places; i++) { power *= 10m; }
+
+        return power;
+    }
+
     [Fact(DisplayName = "MultipleOf: an allow-list is filtered to its grid points, and an allow-list missing them conflicts.")]
     [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
     public void MultipleOfFiltersAnAllowList() {

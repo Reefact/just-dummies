@@ -122,6 +122,7 @@ JustDummies.AnyDecimal.GreaterThan(decimal value) -> JustDummies.AnyDecimal!
 JustDummies.AnyDecimal.GreaterThanOrEqualTo(decimal value) -> JustDummies.AnyDecimal!
 JustDummies.AnyDecimal.LessThan(decimal value) -> JustDummies.AnyDecimal!
 JustDummies.AnyDecimal.LessThanOrEqualTo(decimal value) -> JustDummies.AnyDecimal!
+JustDummies.AnyDecimal.MultipleOf(decimal value) -> JustDummies.AnyDecimal!
 JustDummies.AnyDecimal.Negative() -> JustDummies.AnyDecimal!
 JustDummies.AnyDecimal.NonZero() -> JustDummies.AnyDecimal!
 JustDummies.AnyDecimal.OneOf(params decimal[]! values) -> JustDummies.AnyDecimal!

@@ -106,9 +106,9 @@ public sealed class Probes {
     }
 
     [Fact]
-    public void A_tick_grid_is_drawn_through_an_integer_count_of_ticks() {
-        // No MultipleOf on decimal: a price on a 0.05 grid is a number of ticks times the tick.
-        decimal[] drawn = Enumerable.Range(0, 200).Select(_ => Any.Int32().Between(1, 20_000).As(ticks => ticks * 0.05m).Generate()).ToArray();
+    public void A_tick_grid_is_drawn_on_the_step() {
+        // A price on a 0.05 grid is a whole number of ticks, drawn by MultipleOf on the decimal itself (issue #359).
+        decimal[] drawn = Enumerable.Range(0, 200).Select(_ => Any.Decimal().Between(0.05m, 1_000m).MultipleOf(0.05m).Generate()).ToArray();
 
         Assert.All(drawn, price => Assert.Equal(0m, price % 0.05m));
     }

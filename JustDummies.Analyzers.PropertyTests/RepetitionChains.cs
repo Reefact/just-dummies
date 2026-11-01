@@ -97,6 +97,11 @@ internal static class RepetitionChains {
         new("Any.Decimal().Between(0, 10)", context => context.Decimal().Between(0, 10),
             On<AnyDecimal>("WithScale(1)", g => g.WithScale(1)),
             On<AnyDecimal>("WithScale(2)", g => g.WithScale(2))),
+        // A step apart from the scale: a scale its step already lies on changes no draw without repeating anything,
+        // and this vocabulary must leave "ignored" meaning "repeated".
+        new("Any.Decimal().Between(-10, 10)", context => context.Decimal().Between(-10, 10),
+            On<AnyDecimal>("MultipleOf(0.5m)", g => g.MultipleOf(0.5m)),
+            On<AnyDecimal>("MultipleOf(0.25m)", g => g.MultipleOf(0.25m))),
         new("Any.Enum<DayOfWeek>()", context => context.Enum<DayOfWeek>(),
             On<AnyEnum<DayOfWeek>>("Except(DayOfWeek.Monday)", g => g.Except(DayOfWeek.Monday)),
             On<AnyEnum<DayOfWeek>>("Except(DayOfWeek.Tuesday)", g => g.Except(DayOfWeek.Tuesday)),

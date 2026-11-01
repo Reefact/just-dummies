@@ -139,11 +139,27 @@ tirage qui finit par un zéro peut le perdre, environ un sur dix sous `WithScale
 pas leur texte. Une valeur fournie par `OneOf`
 ou par un intervalle réduit à un point est rendue telle qu'écrite ([ADR-0015](../../for-maintainers/adr/0015-draw-lattice-constrained-scalars-on-the-grid.fr.md)).
 
+`decimal` prend aussi un pas, pour une grille qui n'est pas un nombre de décimales — un pas de cotation
+de `0.25`, une note au demi-point. La valeur est tirée comme un nombre entier de pas, jamais arrondie
+dessus :
+
+```csharp
+decimal anyTickPrice = Any.Decimal().Between(0m, 20m).MultipleOf(0.25m).Generate();       // e.g. 13.75
+decimal anyGrade     = Any.Decimal().Between(0m, 20m).MultipleOf(0.5m).WithScale(1).Generate(); // e.g. 14.5
+```
+
+Un pas et une échelle tiennent ensemble quand le pas est sur la grille de l'échelle, comme `0.5` l'est
+sur celle de `WithScale(1)` ; `MultipleOf(0.25m).WithScale(1)` est refusé en nommant les deux, puisque
+`0.25` demande deux décimales. Un pas écrit avec *n* décimales atteint des valeurs jusqu'à environ
+`decimal.MaxValue × 10⁻ⁿ`, où chacun de ses multiples est une valeur que le type porte exactement, et
+pas au-delà ; un pas qui vaut lui-même `10⁻ⁿ` est `WithScale(n)` et atteint tout le domaine
+([ADR-0123](../../for-maintainers/adr/0123-draw-a-decimal-on-a-steps-grid.fr.md)).
+
 Combiner `Between` et `MultipleOf` est le seul endroit à surveiller : un intervalle ne contenant
 aucun multiple du pas n'admet aucune valeur, et il est refusé.
-`Any.Int32().Between(1, 10).MultipleOf(50)` nomme les deux côtés dans son message, et l'analyzer
-[JD023](../analyzers/JD023.fr.md) l'attrape dès la compilation quand les deux arguments sont
-constants.
+`Any.Int32().Between(1, 10).MultipleOf(50)` nomme les deux côtés dans son message, et sur les
+entiers l'analyzer [JD023](../analyzers/JD023.fr.md) l'attrape dès la compilation quand les deux
+arguments sont constants.
 
 ## Virgule flottante
 
@@ -213,7 +229,8 @@ double anyMaybeNaN = Any.OneOf(double.NaN, 1.0, 2.0).Generate();
 | `OneOf`, `Except`, `DifferentFrom` | ✅ | ✅ | ✅ | ✅ |
 | `NonZero`, `Zero` | ✅ | ✅ | ✅ | ✅ |
 | `Positive`, `Negative` | ✅ | ❌ | ✅ | ✅ |
-| `MultipleOf`, `Odd`, `Even` | ✅ | ✅ | ❌ | ❌ |
+| `MultipleOf` | ✅ | ✅ | ✅ | ❌ |
+| `Odd`, `Even` | ✅ | ✅ | ❌ | ❌ |
 | `WithScale` | ❌ | ❌ | ✅ | ❌ |
 
 ---

@@ -49,9 +49,13 @@ internal static class DeclarationWalk {
     private const string OffsetRangeName   = "WithOffsetBetween";
     private const string ExactCount        = "exact count";
     private const string StringOwner       = "AnyString";
+    private const string DecimalOwner      = "AnyDecimal";
+    private const string ScaleName         = "WithScale";
+    private const string Step              = "step";
     private const string GuidOwner         = "AnyGuid";
     private const string LibraryNamespace  = "JustDummies";
     private const string PoolTakesNoCasing = "a WithChars pool completely defines the allowed characters and cannot be combined with a casing constraint";
+    private const string StepOffTheScale   = "a decimal's step must lie on its scale's grid";
 
     #region Statics members declarations
 
@@ -119,6 +123,7 @@ internal static class DeclarationWalk {
         }
 
         if (RivalOf(call, slot, slots) is IInvocationOperation rival) { return DeclarationFinding.Conflicting(call, rival, PoolTakesNoCasing); }
+        if (GridRivalOf(call, slots) is IInvocationOperation grid) { return DeclarationFinding.Conflicting(call, grid, StepOffTheScale); }
 
         slots.Add(key, call);
 
@@ -177,8 +182,9 @@ internal static class DeclarationWalk {
             "InUpperCase" or "InLowerCase"                            => Casing,
             PoolName                                                  => FamilyOrPool,
             _ when CharacterFamilies.PoolFor(method.Name) is not null => owner == StringOwner ? FamilyOrPool : "character family",
+            MultipleName when owner == DecimalOwner                   => Step,
             MultipleName or OddName or EvenName                       => "step (MultipleOf, Odd or Even)",
-            "WithScale"                                               => "scale",
+            ScaleName                                                 => "scale",
             GranularityName                                           => "granularity",
             OffsetName or OffsetRangeName                             => "offset",
             "WithCount"                                               => ExactCount,
@@ -236,14 +242,14 @@ internal static class DeclarationWalk {
     /// </summary>
     private static bool IsIgnored(IInvocationOperation call) {
         return call.TargetMethod.Name switch {
-            MultipleName    => Step(call) == 1,
+            MultipleName    => StepOf(call) == 1 && call.TargetMethod.ContainingType.Name != DecimalOwner,
             GranularityName => Granularity(call) == 1,
             _               => false
         };
     }
 
     /// <summary>The step a <c>MultipleOf(...)</c> declares, or <c>null</c> if it is not a constant.</summary>
-    private static decimal? Step(IInvocationOperation call) {
+    private static decimal? StepOf(IInvocationOperation call) {
         return ConstantArguments(call) is { Count: 1 } arguments && arguments[0] is IConvertible step ? step.ToDecimal(CultureInfo.InvariantCulture) : null;
     }
 
@@ -258,6 +264,26 @@ internal static class DeclarationWalk {
         if (call.TargetMethod.Name == PoolName && slots.TryGetValue($"{StringOwner}.{Casing}", out IInvocationOperation? casing)) { return casing; }
 
         return null;
+    }
+
+    /// <summary>
+    ///     The declaration a decimal's step or scale cannot stand beside: a step off the scale's grid — <c>0.25</c>
+    ///     under <c>WithScale(1)</c> — is refused by the run time in either order (ADR-0123). Silent unless both
+    ///     arguments are constants.
+    /// </summary>
+    private static IInvocationOperation? GridRivalOf(IInvocationOperation call, IReadOnlyDictionary<string, IInvocationOperation> slots) {
+        if (call.TargetMethod.ContainingType.Name != DecimalOwner) { return null; }
+
+        bool   isStep    = call.TargetMethod.Name == MultipleName;
+        string rivalSlot = isStep ? "scale" : Step;
+        if (!isStep && call.TargetMethod.Name != ScaleName) { return null; }
+        if (!slots.TryGetValue($"{DecimalOwner}.{rivalSlot}", out IInvocationOperation? rival)) { return null; }
+
+        IInvocationOperation step  = isStep ? call : rival;
+        IInvocationOperation scale = isStep ? rival : call;
+        if (StepOf(step) is not decimal value || ConstantArguments(scale) is not { Count: 1 } arguments || arguments[0] is not int places) { return null; }
+
+        return places is >= 0 and <= 28 && decimal.Round(value, places) != value ? rival : null;
     }
 
     /// <summary>
@@ -316,7 +342,7 @@ internal static class DeclarationWalk {
         return call.TargetMethod.Name switch {
             OddName                       => (2m, 1m),
             EvenName                      => (2m, 0m),
-            _ when Step(call) is { } step => (step, 0m),
+            _ when StepOf(call) is { } step => (step, 0m),
             _                             => null
         };
     }

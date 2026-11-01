@@ -152,6 +152,27 @@ public sealed class AnyDecimal : IAny<decimal>, IHasRandomSource, ICardinalityHi
         return new AnyDecimal(_source, _spec.WithScale(scale, ConstraintCall.Of(nameof(WithScale), scale.ToString(CultureInfo.InvariantCulture))));
     }
 
+    /// <summary>
+    ///     Requires the value to be a multiple of <paramref name="value" /> — a tick size of <c>0.25</c>, a half-point
+    ///     grade of <c>0.5</c> — drawn directly on that grid as a whole number of steps, so the declared range keeps
+    ///     its meaning. Declared once per generator. It holds beside <see cref="WithScale" /> when the step lies on
+    ///     that scale's grid (<c>0.25</c> on <c>WithScale(2)</c>'s) and conflicts, naming both, when it does not.
+    /// </summary>
+    /// <remarks>
+    ///     A step written in <i>n</i> decimal places reaches values up to about <c>decimal.MaxValue × 10^-n</c> in
+    ///     magnitude, where every one of its multiples is a value the type holds exactly; a step that is itself
+    ///     <c>10^-n</c> is <c>WithScale(n)</c>'s grid and reaches the whole domain (ADR-0123).
+    /// </remarks>
+    /// <param name="value">The grid step; must be strictly positive.</param>
+    /// <returns>A new generator carrying the added constraint.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="value" /> is not strictly positive.</exception>
+    /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
+    public AnyDecimal MultipleOf(decimal value) {
+        if (value <= 0m) { throw new ArgumentOutOfRangeException(nameof(value), value, "The multiple must be strictly positive."); }
+
+        return new AnyDecimal(_source, _spec.WithStep(value, ConstraintCall.Of(nameof(MultipleOf), V(value))));
+    }
+
     /// <summary>Requires the value to be one of the supplied values. Declared once per generator.</summary>
     /// <param name="values">The allowed values; duplicates are ignored.</param>
     /// <returns>A new generator carrying the added constraint.</returns>

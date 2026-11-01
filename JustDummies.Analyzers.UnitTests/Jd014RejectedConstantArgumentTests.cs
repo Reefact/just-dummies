@@ -49,6 +49,8 @@ public class Jd014RejectedConstantArgumentTests {
     [InlineData("Any.Int64().MultipleOf(0)",                    "strictly positive")]
     [InlineData("Any.Int16().MultipleOf(-3)",                   "strictly positive")]
     [InlineData("Any.Byte().MultipleOf(0)",                     "strictly positive")]
+    [InlineData("Any.Decimal().MultipleOf(0m)",                 "strictly positive")]
+    [InlineData("Any.Decimal().MultipleOf(-0.25m)",             "strictly positive")]
     [InlineData("Any.Decimal().WithScale(29)",                  "[0, 28]")]
     [InlineData("Any.String().StartingWith(\"\")",              "must not be empty")]
     [InlineData("Any.String().WithChars(\"\")",                 "must not be empty")]
@@ -230,6 +232,7 @@ public class Jd014RejectedConstantArgumentTests {
     // the one member of this family that really is uncapped keeps its silence.
     [InlineData("Any.Uri().Relative().WithPathSegments(2000000)")]
     [InlineData("Any.Int32().MultipleOf(7)")]
+    [InlineData("Any.Decimal().MultipleOf(0.25m)")]
     [InlineData("Any.Decimal().WithScale(28)")]
     [InlineData("Any.String().StartingWith(\"ORD-\")")]
     [InlineData("Any.String().OneOf(\"EUR\")")]

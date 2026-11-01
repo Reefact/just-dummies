@@ -58,6 +58,10 @@ public class Jd034ConstraintAlreadyDefinedTests {
     [InlineData("Any.StringMatching(\"[a-z]\").OneOf(\"a\").OneOf(\"b\")", "OneOf(\"b\") conflicts with OneOf(\"a\"), declared before it: the generator accepts only one value set")]
     [InlineData("Any.Int32().MultipleOf(5).MultipleOf(3)",                  "MultipleOf(3) conflicts with MultipleOf(5), declared before it: the generator accepts only one step (MultipleOf, Odd or Even)")]
     [InlineData("Any.Byte().MultipleOf(2).MultipleOf(4)",                   "MultipleOf(4) conflicts with MultipleOf(2), declared before it: the generator accepts only one step (MultipleOf, Odd or Even)")]
+    [InlineData("Any.Decimal().MultipleOf(0.25m).MultipleOf(0.5m)",         "MultipleOf(0.5m) conflicts with MultipleOf(0.25m), declared before it: the generator accepts only one step")]
+    [InlineData("Any.Decimal().MultipleOf(1m).MultipleOf(0.5m)",            "MultipleOf(0.5m) conflicts with MultipleOf(1m), declared before it: the generator accepts only one step")]
+    [InlineData("Any.Decimal().MultipleOf(0.25m).WithScale(1)",             "WithScale(1) conflicts with MultipleOf(0.25m), declared before it: a decimal's step must lie on its scale's grid")]
+    [InlineData("Any.Decimal().WithScale(1).MultipleOf(0.25m)",             "MultipleOf(0.25m) conflicts with WithScale(1), declared before it: a decimal's step must lie on its scale's grid")]
     [InlineData("Any.Int32().Odd().MultipleOf(3)",                          "MultipleOf(3) conflicts with Odd(), declared before it: the generator accepts only one step (MultipleOf, Odd or Even)")]
     [InlineData("Any.Int32().Even().Odd()",                                 "Odd() conflicts with Even(), declared before it: the generator accepts only one step (MultipleOf, Odd or Even)")]
     [InlineData("Any.UInt64().MultipleOf(2).Odd()",                         "Odd() conflicts with MultipleOf(2), declared before it: the generator accepts only one step (MultipleOf, Odd or Even)")]
@@ -146,6 +150,9 @@ public class Jd034ConstraintAlreadyDefinedTests {
     // A multiple of one, or a granularity of one tick, narrows nothing: the run time ignores it and fills no slot.
     [InlineData("Any.Int32().MultipleOf(1).MultipleOf(5)")]
     [InlineData("Any.Int32().MultipleOf(5).MultipleOf(1)")]
+    // A decimal step on its scale's grid holds beside it, in either order (ADR-0123).
+    [InlineData("Any.Decimal().MultipleOf(0.25m).WithScale(2)")]
+    [InlineData("Any.Decimal().WithScale(4).MultipleOf(0.25m)")]
     [InlineData("Any.DateTime().WithGranularity(TimeSpan.FromTicks(1)).WithGranularity(TimeSpan.FromHours(1))")]
     [InlineData("Any.DateTime().WithGranularity(TimeSpan.FromHours(1)).WithGranularity(TimeSpan.FromTicks(1))")]
     public async Task Does_not_report_a_repetition_or_a_constraint_that_accumulates(string chain) {

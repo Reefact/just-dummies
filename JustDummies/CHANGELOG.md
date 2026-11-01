@@ -86,6 +86,20 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   test that relied on `Between(a, b)` with a bound past a million never drawing past it was relying on a
   truncation; declare the range you mean. This changes what a seed draws for such a chain — allowed below
   1.0 (ADR-0049), and announced here.
+- **An open floating-point draw reaches the type's limits one draw in ten.** Where you left a side
+  open — `Any.Double()`, `Any.Single()`, `Any.Decimal()`, `Positive()`, `LessThan(x)` — the draw stays
+  ordinary nine times in ten — within ±1 000 000, or in a slab beside a one-sided bound past it — and
+  the tenth is drawn from the whole declared domain: values near `double.MaxValue`, `float.MaxValue` or
+  `decimal.MaxValue`, with your one-sided bound, exclusions and scale still honoured. A one-sided bound
+  so large that no ordinary slab is representable beside it, such as `GreaterThanOrEqualTo(1e300)`,
+  draws from its whole declared domain every time, as it already did. A test that does not care about the value now checks that the code does not
+  either: a multiplication that overflows, a decimal that throws `OverflowException`, a format that
+  breaks on 29 digits. Such a draw costs one more draw from the seed, and a range bounded on both sides,
+  a pin and a value set draw exactly as before (ADR-0117, issue #402). **Migration:** if a test now fails
+  on a limit value, either the code under test does care about the magnitude — then fix the code, or
+  declare the range it accepts with `Between(...)` — or the value was never a dummy, and a literal says so.
+  This changes what a seed draws for every open floating-point chain — allowed below 1.0 (ADR-0049); the
+  seed golden master was rebased for it.
 - **A refused regex construct says what to do instead.** Every `UnsupportedRegexException` from
   `Any.StringMatching` ended with the same list of unrelated constructs and a generic "express the
   requirement with the supported subset". The message now ends with the way out for the construct's own family, and

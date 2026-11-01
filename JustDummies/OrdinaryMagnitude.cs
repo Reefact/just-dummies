@@ -1,9 +1,9 @@
 namespace JustDummies;
 
 /// <summary>
-///     The magnitude an arbitrary number stays within unless a declared constraint leaves no room for it — the
-///     numeric counterpart of the small default spread the string and collection generators use, and the reason a
-///     dummy number stays unremarkable (ADR-0031).
+///     The magnitude an arbitrary number stays within, nine draws in ten, unless a declared constraint leaves no room
+///     for it — the numeric counterpart of the small default spread the string and collection generators use, and the
+///     reason a dummy number stays unremarkable (ADR-0031, ADR-0097, ADR-0117).
 /// </summary>
 /// <remarks>
 ///     <para>
@@ -16,10 +16,13 @@ namespace JustDummies;
 ///     </para>
 ///     <para>
 ///         The window <b>clips</b> a draw; it never widens one, and it never overrides a declared bound. A generator
-///         whose declared interval lies entirely outside it — <c>Between(1e300, 1e308)</c> — draws from that interval
-///         as declared, because the caller asked for that magnitude explicitly. A generator whose declared interval
-///         merely <i>permits</i> large values — <c>Between(0, double.MaxValue)</c> — keeps drawing ordinary ones,
-///         because permitting is not requesting. Sizes drew the same distinction once (ADR-0029): a declared bound
+///         whose two bounds the caller wrote — <c>Between(0, 1e8)</c>, <c>Between(1e300, 1e308)</c> — draws from
+///         that interval as declared, because the caller asked for that range explicitly (ADR-0117). A generator
+///         whose declared interval merely <i>permits</i> large values — <c>Positive()</c>,
+///         <c>Between(0, double.MaxValue)</c> — draws ordinary ones nine times in ten, because permitting is not
+///         requesting; the tenth is drawn from the whole declared domain (<see cref="EdgeDrawOutcomes" />), because
+///         the test not caring about the value is not the code not caring, and only a draw that reaches the type's
+///         limits can show the difference. Sizes drew the same distinction once (ADR-0029): a declared bound
 ///         narrowed a produced size and never widened it. ADR-0076 moved that policy — a declared maximum now
 ///         steers a size draw and can widen it well past the default spread — so this window's own "clip, never
 ///         widen" rule is a numeric-only invariant now, not one this codebase applies uniformly to every kind of
@@ -50,5 +53,16 @@ internal static class OrdinaryMagnitude {
 
     /// <summary>The same magnitude for the decimal engine.</summary>
     internal const decimal AsDecimal = 1_000_000m;
+
+    /// <summary>
+    ///     The number of equally likely outcomes of the edge coin: where the caller left a side open past the window,
+    ///     one draw in this many is taken from the whole declared domain instead of the window (ADR-0117).
+    /// </summary>
+    /// <remarks>
+    ///     Rare enough that a test drawing a handful of dummies sees ordinary values almost every run, frequent enough
+    ///     that a suite run regularly meets the type's limit values — the place a code path that does care about the
+    ///     value shows it. The rate is part of the seed contract from 1.0 on, so it is not a tuning knob.
+    /// </remarks>
+    internal const int EdgeDrawOutcomes = 10;
 
 }

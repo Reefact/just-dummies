@@ -19,18 +19,29 @@ public sealed class AnyContinuousTests {
 
     private const int SampleCount = 200;
 
-    [Fact(DisplayName = "An unconstrained draw survives ordinary arithmetic, on every continuous type.")]
+    /// <summary>The seed the rate cases draw under, so a failure names one run rather than a flaky one.</summary>
+    private const int Seed = 20260905;
+
+    [Fact(DisplayName = "An unconstrained draw survives ordinary arithmetic nine times in ten, on every continuous type.")]
     public void UnconstrainedDrawsSurviveOrdinaryArithmetic() {
-        // Regression, ADR-0031. Measured before the ordinary-magnitude window existed: uniform sampling over a
-        // type's whole domain put 16.1 % of Positive() doubles where a single multiplication overflows to
-        // Infinity, and 17.1 % of decimals where the same multiplication throws OverflowException. Neither was a
-        // defect of the code under test — the dummy itself was breaking the Arrange.
+        // Regression, ADR-0031, re-stated by ADR-0117. Measured before the ordinary-magnitude window existed: uniform
+        // sampling over a type's whole domain put 16.1 % of Positive() doubles where a single multiplication
+        // overflows to Infinity, and 17.1 % of decimals where the same multiplication throws OverflowException —
+        // on every draw. The window keeps nine draws in ten ordinary; the tenth spans the whole type on purpose, so
+        // overflow is now the edge draw's business, about one draw in sixty, and never the common case again.
+        AnyContext any      = Any.WithSeed(Seed);
+        int        overflow = 0;
         for (int i = 0; i < SampleCount; i++) {
-            Check.That(IsFinite(Any.Double().Generate() * 1.2d)).IsTrue();
-            Check.That(IsFinite(Any.Double().Positive().Generate() * 1.2d)).IsTrue();
-            Check.That(IsFinite(Any.Single().Generate() * 1.2f)).IsTrue();
-            Check.ThatCode(() => Any.Decimal().Generate() * 1.2m).DoesNotThrow();
+            if (!IsFinite(any.Double().Generate() * 1.2d)) { overflow++; }
+            if (!IsFinite(any.Double().Positive().Generate() * 1.2d)) { overflow++; }
+            if (!IsFinite(any.Single().Generate() * 1.2f)) { overflow++; }
+            decimal drawn = any.Decimal().Generate();
+            if (drawn > decimal.MaxValue / 1.2m || drawn < decimal.MinValue / 1.2m) { overflow++; }
         }
+
+        Check.WithCustomMessage($"{overflow} of {4 * SampleCount} draws overflowed on one multiplication: the window no longer keeps the common case ordinary.")
+             .That(overflow)
+             .IsStrictlyLessThan(4 * SampleCount / 10);
     }
 
     /// <summary>
@@ -66,7 +77,15 @@ public sealed class AnyContinuousTests {
         Check.That(Any.Double().Between(1e300d, 1e308d).Generate()).IsStrictlyGreaterThan(1e300d * 0.99d);
         Check.That(Any.Double().GreaterThan(1e300d).Generate()).IsStrictlyGreaterThan(1e300d);
 
-        Check.That(Math.Abs(Any.Double().Between(0d, double.MaxValue).Generate())).IsStrictlyLessThan(1.000001e6d);
+        // Permitted rather than requested: the window keeps the draw ordinary nine times in ten, and the tenth spans
+        // the permitted domain whole (ADR-0117) — which is not targeting a magnitude, only refusing to hide one.
+        AnyContext any      = Any.WithSeed(Seed);
+        int        ordinary = 0;
+        for (int i = 0; i < SampleCount; i++) {
+            if (Math.Abs(any.Double().Between(0d, double.MaxValue).Generate()) < 1.000001e6d) { ordinary++; }
+        }
+
+        Check.That(ordinary).IsStrictlyGreaterThan(SampleCount * 3 / 4);
     }
 
     [Fact(DisplayName = "Double: sign constraints are strict, Zero pins, NonZero excludes.")]

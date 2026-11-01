@@ -390,8 +390,9 @@ internal sealed class ContinuousIntervalSpec {
 
         if (_min == _max) { return _min; }
 
-        // Draw from the ordinary window rather than the declared interval (ADR-0031).
-        (double lower, double upper) = DrawnInterval();
+        // Draw from the ordinary window rather than the declared interval (ADR-0097) — except one draw in ten where
+        // the caller left a side open past it, which spans the declared domain whole (ADR-0117).
+        (double lower, double upper) = DrawsAtTheEdge(random) ? (_min, _max) : DrawnInterval();
 
         // One unit sample either way, so the two paths consume the seed identically and only the VALUE a laddered
         // row produces differs from what it would have produced uniformly (ADR-0049 pins draws consumed as well as
@@ -416,6 +417,22 @@ internal sealed class ContinuousIntervalSpec {
         }
 
         return free.Value;
+    }
+
+    /// <summary>
+    ///     Whether this draw spans the declared domain whole rather than the interval <see cref="DrawnInterval" />
+    ///     narrows it to: one draw in <see cref="OrdinaryMagnitude.EdgeDrawOutcomes" />, and only where the caller left
+    ///     a side open and the declared interval reaches past the window (ADR-0117).
+    /// </summary>
+    /// <remarks>
+    ///     The coin is drawn only where it can change the draw, so a range bounded on both sides, a pin, a value set
+    ///     and a <c>Half</c> — whose whole domain lies inside the window — consume exactly what they consumed before.
+    /// </remarks>
+    private bool DrawsAtTheEdge(SeededRandom random) {
+        bool bothBoundsOwned      = _min > _domainMin && _max < _domainMax;
+        bool reachesPastTheWindow = _min < -OrdinaryMagnitude.AsDouble || _max > OrdinaryMagnitude.AsDouble;
+
+        return !bothBoundsOwned && reachesPastTheWindow && random.Next(OrdinaryMagnitude.EdgeDrawOutcomes) == 0;
     }
 
     /// <summary>

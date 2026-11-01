@@ -9,6 +9,9 @@
 #
 # The draws= count is load-bearing: a change that leaves a value identical while consuming one more
 # draw shifts every value produced after it in the same scope, and nothing else here would see it.
+#
+# Rebased once before 1.0, where ADR-0049 does not yet bind: ADR-0117 added the edge coin to an open
+# floating-point draw, so Single, Double and Decimal moved and the three .Twice rows were added.
 Boolean | draws=1 | True
 Byte | draws=1 | 57
 SByte | draws=1 | -71
@@ -18,9 +21,9 @@ Int32 | draws=1 | -280080327
 UInt32 | draws=1 | 1867403321
 Int64 | draws=1 | -7852055884375109575
 UInt64 | draws=1 | 1371316152479666233
-Single | draws=1 | c9599507
-Double | draws=1 | c12b32a0ed3d5a42
-Decimal | draws=1 | 885624.7943240866053775632146
+Single | draws=2 | ff6c899a
+Double | draws=2 | ffed913357fb2266
+Decimal | draws=2 | -60694459336635561889241326423
 Char | draws=1 | \u0006
 Guid | draws=1 | 6f4e5039-e4c6-1307-3c27-5cf11dd019b1
 TimeSpan | draws=1 | -7852055884375109575
@@ -31,6 +34,9 @@ DateTimeOffset | draws=1 | 1371316152479666233+0
 Int32.Between | draws=1 | 234
 Int64.Between | draws=1 | 341
 Double.Between | draws=1 | 404b322576de6448
+Single.Twice | draws=4 | ff6c899a,c8c3b192
+Double.Twice | draws=4 | ffed913357fb2266,c11876324beb3e65
+Decimal.Twice | draws=4 | -60694459336635561889241326423,-638872.26641063106449740589000
 Decimal.Between | draws=1 | 942.8123971620433026887816073
 String.NonEmpty.WithMaxLength | draws=36 | *}11,mo/zAb \u000b=xTzs\u001fX=(\u0018\u0011$\u0019BI\u0010%\u000b\u0004yE
 StringMatching | draws=10 | lwx-3883

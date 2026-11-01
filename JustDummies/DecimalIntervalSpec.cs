@@ -341,6 +341,9 @@ internal sealed class DecimalIntervalSpec {
 
         if (_min == _max) { return _min; }
 
+        // The edge coin comes first, so the mantissa below is the same draw whichever interval it is spread over.
+        bool atTheEdge = DrawsAtTheEdge(random);
+
         // A uniform fraction in [0, 1] over the full 96-bit mantissa scale. NextBytes fills all three
         // limbs — including each limb's top bit, which three non-negative Random.Next() draws would pin
         // to zero, capping the fraction near 0.5 and leaving the upper half of every range unreachable.
@@ -351,10 +354,11 @@ internal sealed class DecimalIntervalSpec {
             BitConverter.ToInt32(mantissa, sizeof(int)),
             BitConverter.ToInt32(mantissa, 2 * sizeof(int)),
             false, MaxScale) / MaxFraction;
-        // Draw from the ordinary window rather than the declared interval (ADR-0031). Without it an unconstrained
-        // decimal lands within a few decades of decimal.MaxValue, where a further multiplication throws
-        // OverflowException and a scale constraint has no fractional digits left to constrain.
-        (decimal lower, decimal upper) = DrawnInterval();
+        // Draw from the ordinary window rather than the declared interval (ADR-0097): an unconstrained decimal drawn
+        // over its whole domain lands within a few decades of decimal.MaxValue, where a further multiplication throws
+        // OverflowException. One draw in ten does exactly that where the caller left a side open (ADR-0117) — the
+        // code under test not caring about the value is what the dummy claims, and that draw is how it is checked.
+        (decimal lower, decimal upper) = atTheEdge ? (_min, _max) : DrawnInterval();
 
         decimal candidate = Clamped(Interpolated(lower, upper, fraction));
 
@@ -384,6 +388,18 @@ internal sealed class DecimalIntervalSpec {
         }
 
         return escaped.Value;
+    }
+
+    /// <summary>
+    ///     Whether this draw spans the declared domain whole — the <see cref="decimal" /> twin of
+    ///     <c>ContinuousIntervalSpec.DrawsAtTheEdge</c>: one draw in <see cref="OrdinaryMagnitude.EdgeDrawOutcomes" />,
+    ///     drawn only where the caller left a side open and the declared interval reaches past the window (ADR-0117).
+    /// </summary>
+    private bool DrawsAtTheEdge(SeededRandom random) {
+        bool bothBoundsOwned      = _min > decimal.MinValue && _max < decimal.MaxValue;
+        bool reachesPastTheWindow = _min < -OrdinaryMagnitude.AsDecimal || _max > OrdinaryMagnitude.AsDecimal;
+
+        return !bothBoundsOwned && reachesPastTheWindow && random.Next(OrdinaryMagnitude.EdgeDrawOutcomes) == 0;
     }
 
     /// <summary>

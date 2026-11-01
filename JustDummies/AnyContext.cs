@@ -222,8 +222,11 @@ public sealed class AnyContext {
 
     /// <summary>
     ///     Starts an arbitrary <see cref="double" /> generator drawing from this context — deterministic under this context's seed:
-    ///     finite values only — NaN and infinities are never generated. Same constraint algebra as <see cref="AnyInt32"
-    ///     />, less <c>MultipleOf(...)</c>.
+    ///     finite values only — NaN and infinities are never generated. A range bounded on both
+    ///     sides is drawn whole; where a side is left open, nine draws in ten stay ordinary — within ±1 000 000, or in a
+    ///     slab two million wide beside a one-sided bound past it — and the tenth spans the whole declared domain
+    ///     (ADR-0117). A one-sided bound so large that no such slab is representable beside it is the exception: every
+    ///     draw then spans the declared domain (ADR-0097). Same constraint algebra as <see cref="AnyInt32" />, less <c>MultipleOf(...)</c>.
     /// </summary>
     /// <returns>A generator to constrain fluently.</returns>
     public AnyDouble Double() {
@@ -232,8 +235,11 @@ public sealed class AnyContext {
 
     /// <summary>
     ///     Starts an arbitrary <see cref="float" /> generator drawing from this context — deterministic under this context's seed:
-    ///     finite values only — NaN and infinities are never generated. Same constraint algebra as <see cref="AnyInt32"
-    ///     />, less <c>MultipleOf(...)</c>.
+    ///     finite values only — NaN and infinities are never generated. A range bounded on both
+    ///     sides is drawn whole; where a side is left open, nine draws in ten stay ordinary — within ±1 000 000, or in a
+    ///     slab two million wide beside a one-sided bound past it — and the tenth spans the whole declared domain
+    ///     (ADR-0117). A one-sided bound so large that no such slab is representable beside it is the exception: every
+    ///     draw then spans the declared domain (ADR-0097). Same constraint algebra as <see cref="AnyInt32" />, less <c>MultipleOf(...)</c>.
     /// </summary>
     /// <returns>A generator to constrain fluently.</returns>
     public AnySingle Single() {
@@ -242,7 +248,10 @@ public sealed class AnyContext {
 
     /// <summary>
     ///     Starts an arbitrary <see cref="decimal" /> generator drawing from this context — deterministic under this context's seed:
-    ///     full range unless constrained. Same constraint algebra as <see cref="AnyInt32" />, less
+    ///     a range bounded on both sides is drawn whole; where a side is left open, nine draws in ten stay ordinary —
+    ///     within ±1 000 000, or in a slab two million wide beside a one-sided bound past it — and the tenth spans the
+    ///     whole declared domain (ADR-0117). A one-sided bound so large that no such slab is representable beside it is
+    ///     the exception: every draw then spans the declared domain (ADR-0097). Same constraint algebra as <see cref="AnyInt32" />, less
     ///     <c>MultipleOf(...)</c> and plus <c>WithScale(...)</c>.
     /// </summary>
     /// <returns>A generator to constrain fluently.</returns>

@@ -132,10 +132,24 @@ It describes a lattice of values, not a representation. A draw usually carries t
 ending in zero may lose that zero, about one in ten under `WithScale(28)`. Compare values, not their text. A value you supply through `OneOf` or a
 single-point range is returned as written, so `OneOf(5.3m)` gives `5.3`, not `5.30` ([ADR-0015](../../for-maintainers/adr/0015-draw-lattice-constrained-scalars-on-the-grid.md)).
 
+`decimal` takes a step too, for a grid that is not a number of places — a tick size of `0.25`, a
+half-point grade. The value is drawn as a whole number of steps, never rounded onto them:
+
+```csharp
+decimal anyTickPrice = Any.Decimal().Between(0m, 20m).MultipleOf(0.25m).Generate();       // e.g. 13.75
+decimal anyGrade     = Any.Decimal().Between(0m, 20m).MultipleOf(0.5m).WithScale(1).Generate(); // e.g. 14.5
+```
+
+A step and a scale hold together when the step lies on the scale's grid, as `0.5` lies on
+`WithScale(1)`'s; `MultipleOf(0.25m).WithScale(1)` is refused naming both, since `0.25` needs two
+places. A step written in *n* places reaches values up to about `decimal.MaxValue × 10⁻ⁿ`, where
+every multiple of it is a value the type holds exactly, and no further; a step that is itself `10⁻ⁿ` is
+`WithScale(n)` and reaches the whole domain ([ADR-0123](../../for-maintainers/adr/0123-draw-a-decimal-on-a-steps-grid.md)).
+
 Combining `Between` with `MultipleOf` is the one place to watch: an interval containing no multiple
 of the step admits no value, and is refused. `Any.Int32().Between(1, 10).MultipleOf(50)` names both
-sides in its message, and the analyzer [JD023](../analyzers/JD023.en.md) catches it at build time
-whenever both arguments are constants.
+sides in its message, and on the integers the analyzer [JD023](../analyzers/JD023.en.md) catches it
+at build time whenever both arguments are constants.
 
 ## Floating point
 
@@ -200,7 +214,8 @@ double anyMaybeNaN = Any.OneOf(double.NaN, 1.0, 2.0).Generate();
 | `OneOf`, `Except`, `DifferentFrom` | ✅ | ✅ | ✅ | ✅ |
 | `NonZero`, `Zero` | ✅ | ✅ | ✅ | ✅ |
 | `Positive`, `Negative` | ✅ | ❌ | ✅ | ✅ |
-| `MultipleOf`, `Odd`, `Even` | ✅ | ✅ | ❌ | ❌ |
+| `MultipleOf` | ✅ | ✅ | ✅ | ❌ |
+| `Odd`, `Even` | ✅ | ✅ | ❌ | ❌ |
 | `WithScale` | ❌ | ❌ | ✅ | ❌ |
 
 ---

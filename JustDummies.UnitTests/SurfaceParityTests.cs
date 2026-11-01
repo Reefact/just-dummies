@@ -98,8 +98,8 @@ public sealed class SurfaceParityTests {
 
     // The constraint vocabulary each family declares, encoded once as data. This table is the specification; the
     // test compares it against what each builder actually exposes through reflection. Ordering here is irrelevant —
-    // the test compares sets. The lattice constraint splits what was once one signed-numeric family: only the
-    // integers carry MultipleOf, only Decimal carries WithScale, only the temporals carry WithGranularity.
+    // the test compares sets. The lattice constraint splits what was once one signed-numeric family: the integers and
+    // Decimal carry MultipleOf, only Decimal carries WithScale, only the temporals carry WithGranularity.
 
     // Signed integers: the bound/sign vocabulary plus the integer lattices MultipleOf, Odd and Even.
     private static readonly string[] SignedIntegerAlgebra = [
@@ -123,11 +123,11 @@ public sealed class SurfaceParityTests {
         "Between", "OneOf", "Except", "DifferentFrom"
     ];
 
-    // Decimal is the signed vocabulary plus the decimal scale lattice WithScale.
+    // Decimal is the signed vocabulary plus its two lattices, the step MultipleOf and the scale WithScale.
     private static readonly string[] DecimalAlgebra = [
         "Positive", "Negative", "Zero", "NonZero",
         "GreaterThan", "GreaterThanOrEqualTo", "LessThan", "LessThanOrEqualTo",
-        "Between", "OneOf", "Except", "DifferentFrom", "WithScale"
+        "Between", "MultipleOf", "OneOf", "Except", "DifferentFrom", "WithScale"
     ];
 
     // TimeSpan is a signed magnitude with a temporal granularity lattice WithGranularity.
@@ -164,7 +164,7 @@ public sealed class SurfaceParityTests {
     public static TheoryData<Type, string[]> Builders() {
         TheoryData<Type, string[]> data = new();
 
-        // Signed integers carry MultipleOf; the binary floats do not; Decimal carries WithScale; TimeSpan (a signed
+        // Signed integers carry MultipleOf; the binary floats do not; Decimal carries MultipleOf and WithScale; TimeSpan (a signed
         // magnitude) carries WithGranularity — the lattice constraint is what forks the former shared signed family.
         data.Add(typeof(AnyInt32), SignedIntegerAlgebra);
         data.Add(typeof(AnySByte), SignedIntegerAlgebra);

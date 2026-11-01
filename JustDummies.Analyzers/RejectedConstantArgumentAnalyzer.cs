@@ -211,8 +211,8 @@ public sealed class RejectedConstantArgumentAnalyzer : DiagnosticAnalyzer {
         return true;
     }
 
-    // MultipleOf exists on the integer builders only, and every one of them refuses a step that is not strictly
-    // positive, whichever integer type it is declared over.
+    // MultipleOf exists on the integer builders and on Decimal, and every one of them refuses a step that is not
+    // strictly positive, whichever type it is declared over.
     private static bool TryCheckStrictlyPositive(IInvocationOperation invocation, out IOperation? offending, out string? reason) {
         offending = null;
         reason    = null;

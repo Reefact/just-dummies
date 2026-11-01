@@ -10,6 +10,16 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Added
 
+- **`Any.Decimal().MultipleOf(step)` draws on a step's grid.** A tick size of `0.25` or a half-point grade
+  is one call, drawn by construction as a whole number of steps — where a 41-value `OneOf` or
+  `Any.Int32().Between(0, 80).As(k => k * 0.25m)` lost the range or the builder. Declared once; it holds
+  beside `WithScale` when the step lies on the scale's grid (`0.25` on `WithScale(2)`'s) and is refused
+  naming both when it does not (`MultipleOf(0.25m).WithScale(1)`). A step written in *n* places reaches
+  values up to about `decimal.MaxValue × 10⁻ⁿ`, where every multiple is exact, and no further; a step
+  that is itself `10⁻ⁿ` is `WithScale(n)` and reaches the whole domain. JD014 reports a step that is not
+  strictly positive, JD029 a pooled value off the grid, and JD034 a second step or a step off the
+  scale's grid (issue #359, ADR-0123).
+
 - **`Odd()` and `Even()` on every integer builder.** `Any.Int32().Between(1, 99).Odd()` draws the odd
   numbers on their grid, a step of two anchored at one, which no `MultipleOf` could spell and which
   `Between(0, 49).As(n => 2 * n + 1)` reached only by losing the builder; `Even()` is a readable

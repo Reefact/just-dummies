@@ -47,6 +47,7 @@ public class Jd035ConstraintRepeatedTests {
     [InlineData("Any.Char().InLowerCase().InLowerCase()",                      "InLowerCase()", "InLowerCase()")]
     [InlineData("Any.Int32().MultipleOf(5).MultipleOf(5)",                     "MultipleOf(5)", "MultipleOf(5)")]
     [InlineData("Any.Byte().MultipleOf(2).MultipleOf(2)",                      "MultipleOf(2)", "MultipleOf(2)")]
+    [InlineData("Any.Decimal().MultipleOf(0.25m).MultipleOf(0.250m)",          "MultipleOf(0.250m)", "MultipleOf(0.25m)")]
     [InlineData("Any.Int32().Odd().Odd()",                                     "Odd()", "Odd()")]
     [InlineData("Any.Int32().Even().MultipleOf(2)",                            "MultipleOf(2)", "Even()")]
     [InlineData("Any.Decimal().WithScale(2).WithScale(2)",                     "WithScale(2)", "WithScale(2)")]

@@ -1,6 +1,7 @@
 #region Usings declarations
 
 using System.Diagnostics.CodeAnalysis;
+using JustDummies.Diagnostics;
 
 using FsCheck;
 using FsCheck.Fluent;
@@ -201,6 +202,7 @@ public sealed class ConflictMessageTruthfulnessProperties {
     }
 
     [SuppressMessage(SonarRule.S1854.Category, SonarRule.S1854.Id, Justification = SuppressionJustification.S1854.CallIsTheSubject)]
+    [SuppressMessage(JustDummiesRule.JD036.Category, JustDummiesRule.JD036.Id, Justification = SuppressionJustification.JD036.MagnitudeIsNotWhatThisPins)]
     private static string? BuildDecimal(bool hasBetween, int lo, int hi, int step, int[] allow, int[] excl) {
         try {
             AnyDecimal spec = Any.Decimal();
@@ -213,6 +215,7 @@ public sealed class ConflictMessageTruthfulnessProperties {
     }
 
     [SuppressMessage(SonarRule.S1854.Category, SonarRule.S1854.Id, Justification = SuppressionJustification.S1854.CallIsTheSubject)]
+    [SuppressMessage(JustDummiesRule.JD036.Category, JustDummiesRule.JD036.Id, Justification = SuppressionJustification.JD036.MagnitudeIsNotWhatThisPins)]
     private static string? BuildDouble(bool hasBetween, int lo, int hi, int step, int[] allow, int[] excl) {
         try {
             AnyDouble spec = Any.Double();

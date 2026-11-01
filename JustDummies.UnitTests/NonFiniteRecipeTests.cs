@@ -16,6 +16,7 @@ namespace JustDummies.UnitTests;
 ///     exit that silently stopped working would be worse than no documentation at all, since the reader would have
 ///     no reason to doubt it.
 /// </summary>
+[SuppressMessage(JustDummiesRule.JD036.Category, JustDummiesRule.JD036.Id, Justification = SuppressionJustification.JD036.TheOpenSideIsTheSubject)]
 public sealed class NonFiniteRecipeTests {
 
     private const int SampleCount = 200;

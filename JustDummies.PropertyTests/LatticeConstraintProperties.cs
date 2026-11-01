@@ -194,6 +194,7 @@ public sealed class LatticeConstraintProperties {
     }
 
     [Fact(DisplayName = "WithScale: every draw lies on the 10^-scale value grid, for every supported scale.")]
+    [SuppressMessage(JustDummiesRule.JD036.Category, JustDummiesRule.JD036.Id, Justification = SuppressionJustification.JD036.MagnitudeIsNotWhatThisPins)]
     public void WithScaleLandsOnTheDecimalGrid() {
         Prop.ForAll(Gen.Choose(0, 28).ToArbitrary(),
                     scale => Expect.EveryDraw(Any.Decimal().WithScale(scale),
@@ -277,6 +278,7 @@ public sealed class LatticeConstraintProperties {
 
     [Fact(DisplayName = "WithScale: a scale outside [0, 28] is an argument error, for every such scale.")]
     [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
+    [SuppressMessage(JustDummiesRule.JD036.Category, JustDummiesRule.JD036.Id, Justification = SuppressionJustification.JD036.MagnitudeIsNotWhatThisPins)]
     public void WithScaleOutsideTheSupportedRangeIsAnArgumentError() {
         Prop.ForAll(Gen.OneOf(Gen.Choose(-1000, -1), Gen.Choose(29, 1000)).ToArbitrary(),
                     scale => Expect.Throws<ArgumentOutOfRangeException>(() => Any.Decimal().WithScale(scale)))
@@ -285,6 +287,7 @@ public sealed class LatticeConstraintProperties {
 
     [Fact(DisplayName = "WithScale: a second, different scale conflicts; the same scale again does not.")]
     [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
+    [SuppressMessage(JustDummiesRule.JD036.Category, JustDummiesRule.JD036.Id, Justification = SuppressionJustification.JD036.MagnitudeIsNotWhatThisPins)]
     public void WithScaleIsDeclaredOnce() {
         Prop.ForAll((from first in Gen.Choose(0, 6)
                      from second in Gen.Choose(0, 6)

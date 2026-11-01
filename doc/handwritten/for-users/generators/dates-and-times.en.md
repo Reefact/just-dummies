@@ -99,10 +99,12 @@ With no bound declared, each generator draws across everything its type can hold
 | `Any.DateOnly()` | `DateOnly.MinValue` to `DateOnly.MaxValue` — `0001-01-01` to `9999-12-31` |
 | `Any.TimeOnly()` | `TimeOnly.MinValue` to `TimeOnly.MaxValue` — `00:00:00` to `23:59:59.9999999`, the whole day |
 
-Small offsets are not the risk: `AddHours(1)` never failed over a million draws. Calendar arithmetic is,
-because the draws reach the ends of the type: over 100,000 unconstrained draws, `AddYears(6)` overflowed 68
-times and `AddMonths(120)` 104 times. A date the code under test then moves by years or months is a value with a
-domain, so **bound it before doing calendar arithmetic on it**:
+The draws reach the ends of the type, so **any** offset can overflow there: a value in the last hour of
+the range makes `AddHours(1)` throw as surely as a value in the last six years makes `AddYears(6)` throw. How
+often depends only on how far the offset reaches. Measured over unconstrained draws, `AddYears(6)` overflowed
+68 times in 100,000 and `AddMonths(120)` 104 times, while `AddHours(1)` did not overflow once in a million — a
+rarer failure, not a safe one. A date the code under test then moves is a value with a domain, so **bound it
+before doing date arithmetic on it**:
 
 ```csharp
 DateTimeOffset anyShippedAt = Any.DateTimeOffset()

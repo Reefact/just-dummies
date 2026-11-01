@@ -874,6 +874,73 @@ public sealed class GuardReadingTests {
         Check.That(outcome.File.SourceText).Not.Contains("§9");
     }
 
+    /// <summary>
+    ///     A bound written as a named constant the scaffolded file can reach is referenced, not copied.
+    /// </summary>
+    /// <remarks>
+    ///     The file is scaffolded once (§1), so <c>.LessThanOrEqualTo(999999)</c> goes stale in silence the day the
+    ///     domain changes <c>MaxProjectId</c>; <c>.LessThanOrEqualTo(Subject.MaxProjectId)</c> moves with it (#377).
+    /// </remarks>
+    [Theory(DisplayName = "A bound named by a reachable constant is referenced, not copied.")]
+    [InlineData("int", "if (value > MaxValue) { throw new ArgumentOutOfRangeException(nameof(value)); }",
+                "public const int MaxValue = 999_999;", "Any.Int32().LessThanOrEqualTo(Subject.MaxValue)")]
+    [InlineData("int", "ArgumentOutOfRangeException.ThrowIfGreaterThan(value, MaxValue);",
+                "public const int MaxValue = 999_999;", "Any.Int32().LessThanOrEqualTo(Subject.MaxValue)")]
+    [InlineData("int", "if (MaxValue < value) { throw new ArgumentOutOfRangeException(nameof(value)); }",
+                "public const int MaxValue = 999_999;", "Any.Int32().LessThanOrEqualTo(Subject.MaxValue)")]
+    [InlineData("decimal", "if (value < (Floor)) { throw new ArgumentOutOfRangeException(nameof(value)); }",
+                "public const decimal Floor = 0.5m;", "Any.Decimal().GreaterThanOrEqualTo(Subject.Floor)")]
+    [InlineData("string", "if (value.Length > MaxLength) { throw new ArgumentException(nameof(value)); }",
+                "public const int MaxLength = 40;", "Any.String().WithMaxLength(Subject.MaxLength)")]
+    [InlineData("int", "if (value < Limits.Floor) { throw new ArgumentOutOfRangeException(nameof(value)); } if (value > Limits.Ceiling) { throw new ArgumentOutOfRangeException(nameof(value)); }",
+                "public static class Limits { public const int Floor = 2; public const int Ceiling = 9; }",
+                "Any.Int32().Between(Subject.Limits.Floor, Subject.Limits.Ceiling)")]
+    public void ABoundNamedByAReachableConstantIsReferenced(string parameterType, string guard, string member, string expected) {
+        Check.That(GuardedBeside(parameterType, guard, member).Expression).IsEqualTo(expected);
+    }
+
+    /// <summary>
+    ///     Where the file could not reach the constant, or the guard does not name it alone, the value is
+    ///     folded as before: a reference that does not compile, or that names something other than the bound,
+    ///     is worse than a copy.
+    /// </summary>
+    [Theory(DisplayName = "A bound the file cannot name is folded to its value.")]
+    [InlineData("private const int MaxValue = 99;", "if (value > MaxValue) { throw new ArgumentOutOfRangeException(nameof(value)); }")]
+    [InlineData("internal const int MaxValue = 99;", "if (value > MaxValue) { throw new ArgumentOutOfRangeException(nameof(value)); }")]
+    [InlineData("private static class Limits { public const int MaxValue = 99; }", "if (value > Limits.MaxValue) { throw new ArgumentOutOfRangeException(nameof(value)); }")]
+    [InlineData("public const int MaxValue = 100;", "if (value > MaxValue - 1) { throw new ArgumentOutOfRangeException(nameof(value)); }")]
+    [InlineData("public const short MaxValue = 99;", "if (value > MaxValue) { throw new ArgumentOutOfRangeException(nameof(value)); }")]
+    [InlineData("public const int Unused = 0;", "const int MaxValue = 99; if (value > MaxValue) { throw new ArgumentOutOfRangeException(nameof(value)); }")]
+    public void ABoundTheFileCannotNameIsFolded(string member, string guard) {
+        Check.That(GuardedBeside("int", guard, member).Expression).IsEqualTo("Any.Int32().LessThanOrEqualTo(99)");
+    }
+
+    /// <summary>One parameter of a <c>Subject</c> that declares <paramref name="member" /> beside its constructor.</summary>
+    private static ScaffoldedParameter GuardedBeside(string parameterType, string body, string member) {
+        ScaffoldOutcome outcome = Subject.Scaffold($$"""
+                                                    using System;
+
+                                                    namespace Shop.Domain;
+
+                                                    public sealed class Subject {
+
+                                                        {{member}}
+
+                                                        private readonly {{parameterType}} kept;
+
+                                                        public Subject({{parameterType}} value) {
+                                                            {{body}}
+                                                            kept = value;
+                                                        }
+
+                                                    }
+                                                    """);
+
+        Check.That(outcome.Status).IsEqualTo(ScaffoldStatus.Scaffolded);
+
+        return outcome.Plan!.Parameters.Single();
+    }
+
     /// <summary>One parameter of a <c>Subject</c> guarded through a library's own spelling, using and all.</summary>
     private static ScaffoldedParameter LibraryGuarded(string parameterType, string body, string usings) {
         ScaffoldOutcome outcome = Subject.Scaffold($$"""

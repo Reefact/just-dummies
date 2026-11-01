@@ -57,6 +57,21 @@ internal static class GuardCorpus {
                                                      }
                                                      """),
 
+        // ---- #377: a bound written as a public constant is referenced, so the file moves with the domain.
+
+        new GuardedShape("sound-named-constant-bound", "Credit", """
+                                                                 public sealed class Credit {
+
+                                                                     public const int MaxProjectId = 999_999;
+                                                                     public const int MaxLabelLength = 12;
+
+                                                                     public Credit(int projectId, string label) {
+                                                                         ArgumentOutOfRangeException.ThrowIfGreaterThan(projectId, MaxProjectId);
+                                                                         if (label.Length > MaxLabelLength) { throw new ArgumentException(nameof(label)); }
+                                                                     }
+                                                                 }
+                                                                 """),
+
         new GuardedShape("sound-bounded-below", "Quota", """
                                                          public sealed class Quota {
                                                              public Quota(int value) {

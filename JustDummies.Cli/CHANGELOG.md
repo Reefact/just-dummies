@@ -10,6 +10,13 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Changed
 
+- **A `string` or `Guid` parameter is `NonEmpty()` only when a guard of the constructor says so.** The base
+  table used to add `.NonEmpty()` to every `string` and `Guid`, a rule the constructor did not write, and the
+  recap's `guard` tag covered it too. A constructor that refuses the empty value says so in a guard `any` reads
+  (`IsNullOrEmpty`, a length of zero, `Guid.Empty`…) or marks `to verify`; one that accepts it accepts a valid
+  dummy, so the empty allele of an insertion is now drawn. A string with no guard at all is `Any.String()`,
+  for which `JD030` names the length remedy. Files already scaffolded keep their `NonEmpty()` until you
+  re-scaffold them with `--force` (issue #409).
 - **A pin is written `Any.Fixed(value)`, and the generated file no longer declares a `FixedValue`
   helper.** A `With…(value)` overload used to assign a private nested `FixedValue<T>` that every generated
   file carried, byte for byte. When the JustDummies the project references carries `Any.Fixed`

@@ -40,7 +40,7 @@ public sealed class GuardBoundaryTests {
 
         ScaffoldedParameter parameter = Subject.GuardedBy("string", guard);
 
-        Check.That(parameter.Expression).IsEqualTo("Any.String().NonEmpty()");
+        Check.That(parameter.Expression).IsEqualTo("Any.String()");
         Check.That(parameter.Expression).Not.Contains("Matching");
         Check.That(parameter.Provenance.HasFlag(Provenance.UnreadGuards)).IsTrue();
     }
@@ -52,7 +52,7 @@ public sealed class GuardBoundaryTests {
     public void AConditionTheClosedSetDoesNotCoverIsReportedAsUnread(string guard) {
         ScaffoldedParameter parameter = Subject.GuardedBy("string", guard);
 
-        Check.That(parameter.Expression).IsEqualTo("Any.String().NonEmpty()");
+        Check.That(parameter.Expression).IsEqualTo("Any.String()");
         Check.That(parameter.Provenance.HasFlag(Provenance.UnreadGuards)).IsTrue();
     }
 
@@ -74,9 +74,9 @@ public sealed class GuardBoundaryTests {
     ///     </para>
     /// </remarks>
     [Theory(DisplayName = "A bound whose subject is not the parameter itself is reported as unread.")]
-    [InlineData("string", "Any.String().NonEmpty()", "if (value.Split(',').Length < 2) { throw new ArgumentException(nameof(value)); }")]
-    [InlineData("string", "Any.String().NonEmpty()", "if (value.Trim().Length < 8) { throw new ArgumentException(nameof(value)); }")]
-    [InlineData("string", "Any.String().NonEmpty()", "if (value.Substring(2).Length > 10) { throw new ArgumentException(nameof(value)); }")]
+    [InlineData("string", "Any.String()", "if (value.Split(',').Length < 2) { throw new ArgumentException(nameof(value)); }")]
+    [InlineData("string", "Any.String()", "if (value.Trim().Length < 8) { throw new ArgumentException(nameof(value)); }")]
+    [InlineData("string", "Any.String()", "if (value.Substring(2).Length > 10) { throw new ArgumentException(nameof(value)); }")]
     [InlineData("int", "Any.Int32()", "if (Math.Abs(value) > 90) { throw new ArgumentOutOfRangeException(nameof(value)); }")]
     [InlineData("int", "Any.Int32()", "if (value * 2 > 100) { throw new ArgumentOutOfRangeException(nameof(value)); }")]
     [InlineData("int", "Any.Int32()", "if (-value > 0) { throw new ArgumentOutOfRangeException(nameof(value)); }")]
@@ -108,9 +108,9 @@ public sealed class GuardBoundaryTests {
     [InlineData("double", "Any.Double()", "if (value > 1e30) { throw new ArgumentOutOfRangeException(nameof(value)); }")]
     [InlineData("double", "Any.Double()", "if (value > double.MaxValue) { throw new ArgumentOutOfRangeException(nameof(value)); }")]
     [InlineData("float", "Any.Single()", "if (value > 3.4e30f) { throw new ArgumentOutOfRangeException(nameof(value)); }")]
-    [InlineData("string", "Any.String().NonEmpty()", "if (value.Length > 140.5) { throw new ArgumentException(nameof(value)); }")]
-    [InlineData("string", "Any.String().NonEmpty()", "if (value.Length > 3000000000) { throw new ArgumentException(nameof(value)); }")]
-    [InlineData("string", "Any.String().NonEmpty()", "if (value.Length > -1) { throw new ArgumentException(nameof(value)); }")]
+    [InlineData("string", "Any.String()", "if (value.Length > 140.5) { throw new ArgumentException(nameof(value)); }")]
+    [InlineData("string", "Any.String()", "if (value.Length > 3000000000) { throw new ArgumentException(nameof(value)); }")]
+    [InlineData("string", "Any.String()", "if (value.Length > -1) { throw new ArgumentException(nameof(value)); }")]
     public void AConstantOutsideWhatABoundCanCarryLeavesTheParameterNeutral(string parameterType, string neutral, string guard) {
         ScaffoldedParameter parameter = Subject.GuardedBy(parameterType, guard);
 
@@ -129,7 +129,7 @@ public sealed class GuardBoundaryTests {
     /// </remarks>
     [Theory(DisplayName = "An enum universe check over another type is reported as unread.")]
     [InlineData("int", "Any.Int32()")]
-    [InlineData("string", "Any.String().NonEmpty()")]
+    [InlineData("string", "Any.String()")]
     public void AnEnumUniverseCheckOverAnotherTypeIsReportedAsUnread(string parameterType, string neutral) {
         ScaffoldedParameter parameter = Subject.GuardedBy(
             parameterType,
@@ -833,7 +833,7 @@ public sealed class GuardBoundaryTests {
     // normalises and guards nothing more reads exactly as it did before. This narrowing costs only the guards
     // that were being read wrong.
     [Theory(DisplayName = "A reassignment with no guard below it changes nothing.")]
-    [InlineData("        value = value.Trim();", "Any.String().NonEmpty()")]
+    [InlineData("        value = value.Trim();", "Any.String()")]
     [InlineData("""
                         if (string.IsNullOrWhiteSpace(value)) { throw new ArgumentException(nameof(value)); }
                         value = value.Trim();
@@ -1507,10 +1507,10 @@ public sealed class GuardBoundaryTests {
 
         ScaffoldedParameter parameter = Subject.GuardedBy("string", guard);
 
-        // The base table's own NonEmpty() (§5.2) — close to the helper's real invariant, and not it: a
-        // generator this neutral still draws the empty-adjacent strings the helper rejects on every real
-        // construction, which is the whole cost of a guard the tool cannot read.
-        Check.That(parameter.Expression).IsEqualTo("Any.String().NonEmpty()");
+        // The base table's neutral row (§5.2), not the helper's real invariant: a generator this neutral still
+        // draws the empty and blank strings the helper rejects on every real construction, which is the whole
+        // cost of a guard the tool cannot read.
+        Check.That(parameter.Expression).IsEqualTo("Any.String()");
         Check.That(parameter.Provenance.HasFlag(Provenance.UnreadGuards)).IsTrue();
     }
 
@@ -2053,7 +2053,7 @@ public sealed class GuardBoundaryTests {
 
         ScaffoldedParameter name = outcome.Plan!.Parameters.Single();
 
-        Check.That(name.Expression).IsEqualTo("Any.String().NonEmpty()");
+        Check.That(name.Expression).IsEqualTo("Any.String()");
         Check.That(name.Provenance.HasFlag(Provenance.UnreadGuards)).IsTrue();
     }
 
@@ -2085,7 +2085,7 @@ public sealed class GuardBoundaryTests {
 
         ScaffoldedParameter value = outcome.Plan!.Parameters.Single();
 
-        Check.That(value.Expression).IsEqualTo("Any.String().NonEmpty()");
+        Check.That(value.Expression).IsEqualTo("Any.String()");
         Check.That(value.Provenance.HasFlag(Provenance.UnreadGuards)).IsTrue();
         Check.That(value.RequiresVerification).IsTrue();
     }

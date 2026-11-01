@@ -76,7 +76,7 @@ internal static class Shapes {
         return new ScaffoldPlan(new TargetType("Pattern", "Shop.Legacy", NamespaceStyle.Block),
                                 "AnyPattern",
                                 LibraryOnly,
-                                [ScaffoldedParameter.DrawnFrom("text", "string", "AnyString", "Any.String().NonEmpty()")]);
+                                [ScaffoldedParameter.DrawnFrom("text", "string", "AnyString", "Any.String()")]);
     }
 
     /// <summary>A positional record: its primary constructor is an ordinary one, and needs no special handling.</summary>
@@ -84,8 +84,8 @@ internal static class Shapes {
         return new ScaffoldPlan(new TargetType("Address", "Shop.Domain", NamespaceStyle.FileScoped),
                                 "AnyAddress",
                                 LibraryOnly,
-                                [ScaffoldedParameter.DrawnFrom("street", "string", "AnyString", "Any.String().NonEmpty()"),
-                                 ScaffoldedParameter.DrawnFrom("city", "string", "AnyString", "Any.String().NonEmpty()")]);
+                                [ScaffoldedParameter.DrawnFrom("street", "string", "AnyString", "Any.String()"),
+                                 ScaffoldedParameter.DrawnFrom("city", "string", "AnyString", "Any.String()")]);
     }
 
     /// <summary>A type with no accessible constructor: <c>Generate()</c> calls the static factory (§5.1).</summary>
@@ -93,7 +93,7 @@ internal static class Shapes {
         return new ScaffoldPlan(new TargetType("Email", "Shop.Domain", NamespaceStyle.FileScoped),
                                 "AnyEmail",
                                 LibraryOnly,
-                                [ScaffoldedParameter.DrawnFrom("value", "string", "AnyString", "Any.String().NonEmpty()")],
+                                [ScaffoldedParameter.DrawnFrom("value", "string", "AnyString", "Any.String()")],
                                 factory: "Email.Create");
     }
 
@@ -129,7 +129,7 @@ internal static class Shapes {
             customer,
             ScaffoldedParameter.DrawnFrom("quantity", "int", "AnyInt32", "Any.Int32().Positive()", Provenance.Guard),
             ScaffoldedParameter.DrawnFrom("status", "OrderStatus", "AnyEnum<OrderStatus>", "Any.Enum<OrderStatus>()"),
-            ScaffoldedParameter.DrawnFrom("tags", "IReadOnlyList<string>", "AnyList<string>", "Any.ListOf(Any.String().NonEmpty())"),
+            ScaffoldedParameter.DrawnFrom("tags", "IReadOnlyList<string>", "AnyList<string>", "Any.ListOf(Any.String())"),
             ScaffoldedParameter.DrawnFrom("placedAt", "DateTime", "AnyDateTime", "Any.DateTime()")
         ];
     }

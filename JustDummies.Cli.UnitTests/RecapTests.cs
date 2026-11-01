@@ -31,11 +31,11 @@ public sealed class RecapTests {
                                     Analyzing Shop.Domain.Order
                                       constructor Order(OrderReference, Customer, int, OrderStatus, IReadOnlyList<string>, DateTime)
 
-                                      reference  OrderReference         new AnyOrderReference()              AnyX
-                                      customer   Customer               new AnyCustomer()                    AnyX
-                                      quantity   int                    Any.Int32().Positive()               guard
+                                      reference  OrderReference         new AnyOrderReference()   AnyX
+                                      customer   Customer               new AnyCustomer()         AnyX
+                                      quantity   int                    Any.Int32().Positive()    guard
                                       status     OrderStatus            Any.Enum<OrderStatus>()
-                                      tags       IReadOnlyList<string>  Any.ListOf(Any.String().NonEmpty())
+                                      tags       IReadOnlyList<string>  Any.ListOf(Any.String())
                                       placedAt   DateTime               Any.DateTime()
 
                                     ✓ AnyOrder.cs — 6 of 6 parameters inferred.
@@ -78,7 +78,7 @@ public sealed class RecapTests {
     // will not compile — but counted separately, since a generator WAS inferred here and stays as the base.
     [Fact(DisplayName = "A parameter requiring verification closes with its own count and the compile sentence.")]
     public void AParameterRequiringVerificationClosesWithItsOwnCount() {
-        string rendered = Rendered(Plan([Inferred("name", "string", "AnyString", "Any.String().NonEmpty()", Provenance.UnreadGuards)]));
+        string rendered = Rendered(Plan([Inferred("name", "string", "AnyString", "Any.String()", Provenance.UnreadGuards)]));
 
         Check.That(rendered).Contains("✓ AnySubject.cs — 1 of 1 parameters inferred, 1 to verify.");
         Check.That(rendered).Contains("The file will not compile until you resolve it. That is deliberate.");
@@ -88,7 +88,7 @@ public sealed class RecapTests {
     // reading TODO under a count reading `1 to verify, 0 TODO` is the recap contradicting itself.
     [Fact(DisplayName = "A parameter requiring verification reads `to verify` in its row too, never TODO.")]
     public void AParameterRequiringVerificationReadsToVerifyInItsRow() {
-        string rendered = Rendered(Plan([Inferred("name", "string", "AnyString", "Any.String().NonEmpty()", Provenance.UnreadGuards)]));
+        string rendered = Rendered(Plan([Inferred("name", "string", "AnyString", "Any.String()", Provenance.UnreadGuards)]));
 
         Check.That(rendered).Contains("to verify, unread guards");
         Check.That(rendered).Not.Contains("TODO");
@@ -100,7 +100,7 @@ public sealed class RecapTests {
     public void AnUnreadGuardIsNamedUnderTheRows() {
         UnreadGuard unread = new("Subject.cs", 12, "if (!Regex.IsMatch(name, Pattern)) { throw new ArgumentException(nameof(name)); }");
 
-        string rendered = Rendered(Plan([ScaffoldedParameter.DrawnFrom("name", "string", "AnyString", "Any.String().NonEmpty()",
+        string rendered = Rendered(Plan([ScaffoldedParameter.DrawnFrom("name", "string", "AnyString", "Any.String()",
                                                                        Provenance.UnreadGuards, unreadGuard: unread)]));
 
         Check.That(rendered).Contains("  name: unread guard at Subject.cs, line 12: if (!Regex.IsMatch(name, Pattern))");
@@ -112,8 +112,8 @@ public sealed class RecapTests {
     [Fact(DisplayName = "A dropped nullable annotation is noted once under the rows.")]
     public void ADroppedNullableAnnotationIsNotedOnceUnderTheRows() {
         string rendered = Rendered(Plan([Inferred("agent", "Bic", "AnyBic", "new AnyBic()", Provenance.Scaffolded).DroppingNullableAnnotation(),
-                                         Inferred("note", "string", "AnyString", "Any.String().NonEmpty()").DroppingNullableAnnotation(),
-                                         Inferred("name", "string", "AnyString", "Any.String().NonEmpty()")]));
+                                         Inferred("note", "string", "AnyString", "Any.String()").DroppingNullableAnnotation(),
+                                         Inferred("name", "string", "AnyString", "Any.String()")]));
 
         Check.That(rendered).Contains("\n\n  agent, note: declared nullable, written without ? because this project does not read nullable annotations.\n");
         Check.That(rendered).Contains("  constructor Subject(Bic, string, string)");
@@ -129,7 +129,7 @@ public sealed class RecapTests {
     [Fact(DisplayName = "An open parameter and one requiring verification are both counted, TODO first.")]
     public void AnOpenParameterAndOneRequiringVerificationAreBothCounted() {
         string rendered = Rendered(Plan([ScaffoldedParameter.Unresolved("customer", "Customer"),
-                                         Inferred("name", "string", "AnyString", "Any.String().NonEmpty()", Provenance.UnreadGuards)]));
+                                         Inferred("name", "string", "AnyString", "Any.String()", Provenance.UnreadGuards)]));
 
         Check.That(rendered).Contains("✓ AnySubject.cs — 1 of 2 parameters inferred, 1 TODO, 1 to verify.");
     }
@@ -146,7 +146,7 @@ public sealed class RecapTests {
     /// </summary>
     [Fact(DisplayName = "A shadowed name is named on both sides, and does not stop the scaffold.")]
     public void AShadowedNameIsNamedOnBothSides() {
-        ScaffoldOutcome outcome = Outcome(Plan([Inferred("text", "string", "AnyString", "Any.String().NonEmpty()")]),
+        ScaffoldOutcome outcome = Outcome(Plan([Inferred("text", "string", "AnyString", "Any.String()")]),
                                           [ScaffoldWarning.Shadows("AnyPattern", "JustDummies.AnyPattern")]);
 
         string rendered = Rendered(outcome);
@@ -162,7 +162,7 @@ public sealed class RecapTests {
     /// </summary>
     [Fact(DisplayName = "A root hidden by the entry-point namespace is warned about with the call that fails.")]
     public void ARootHiddenByItsNamespaceIsWarnedAbout() {
-        ScaffoldOutcome outcome = Outcome(Plan([Inferred("text", "string", "AnyString", "Any.String().NonEmpty()")]),
+        ScaffoldOutcome outcome = Outcome(Plan([Inferred("text", "string", "AnyString", "Any.String()")]),
                                           [ScaffoldWarning.HidesRoot("Arbitrary", "Shop.Tests.Arbitrary")]);
 
         string rendered = Rendered(outcome);
@@ -182,7 +182,7 @@ public sealed class RecapTests {
     [InlineData(Provenance.NoSource, "no source")]
     [InlineData(Provenance.Unavailable, "unavailable")]
     public void EveryProvenanceHasAWord(Provenance provenance, string word) {
-        Check.That(Rendered(Plan([Inferred("value", "string", "AnyString", "Any.String().NonEmpty()", provenance)]))).Contains(word);
+        Check.That(Rendered(Plan([Inferred("value", "string", "AnyString", "Any.String()", provenance)]))).Contains(word);
     }
 
     // An open parameter carries its reason in the column too: a TODO that says why is one a developer can act
@@ -199,9 +199,9 @@ public sealed class RecapTests {
     // stop meaning anything.
     [Fact(DisplayName = "A parameter straight from the base table leaves the column empty.")]
     public void AParameterFromTheBaseTableLeavesTheColumnEmpty() {
-        string rendered = Rendered(Plan([Inferred("value", "string", "AnyString", "Any.String().NonEmpty()")]));
+        string rendered = Rendered(Plan([Inferred("value", "string", "AnyString", "Any.String()")]));
 
-        Check.That(rendered).Contains("  value  string  Any.String().NonEmpty()\n");
+        Check.That(rendered).Contains("  value  string  Any.String()\n");
     }
 
     // The chosen construction is always printed (§5.1), and for a type built through its own factory the
@@ -211,7 +211,7 @@ public sealed class RecapTests {
         ScaffoldPlan plan = new(new TargetType("Email", "Shop.Domain", NamespaceStyle.FileScoped),
                                 "AnyEmail",
                                 ["JustDummies"],
-                                [Inferred("value", "string", "AnyString", "Any.String().NonEmpty()", Provenance.Guard)],
+                                [Inferred("value", "string", "AnyString", "Any.String()", Provenance.Guard)],
                                 factory: "Email.Create");
 
         string rendered = Rendered(plan);
@@ -230,7 +230,7 @@ public sealed class RecapTests {
                                     Inferred("customer", "Customer", "AnyCustomer", "new AnyCustomer()", Provenance.Scaffolded),
                                     Inferred("quantity", "int", "AnyInt32", "Any.Int32().Positive()", Provenance.Guard),
                                     Inferred("status", "OrderStatus", "AnyEnum<OrderStatus>", "Any.Enum<OrderStatus>()"),
-                                    Inferred("tags", "IReadOnlyList<string>", "AnyList<string>", "Any.ListOf(Any.String().NonEmpty())"),
+                                    Inferred("tags", "IReadOnlyList<string>", "AnyList<string>", "Any.ListOf(Any.String())"),
                                     Inferred("placedAt", "DateTime", "AnyDateTime", "Any.DateTime()")
                                 ]);
     }

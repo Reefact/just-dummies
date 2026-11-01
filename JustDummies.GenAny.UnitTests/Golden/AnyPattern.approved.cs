@@ -24,7 +24,7 @@ namespace Shop.Legacy {
             : this(text: AnyValidText()) { }
 
         private static AnyString AnyValidText() {
-            return Any.String().NonEmpty();
+            return Any.String();
         }
 
         /// <summary>Draws every parameter from the recipe given for it.</summary>

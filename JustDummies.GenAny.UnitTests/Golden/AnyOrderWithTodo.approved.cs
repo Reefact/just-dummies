@@ -58,7 +58,7 @@ public sealed partial class AnyOrder : IAny<Order> {
     }
 
     private static AnyList<string> AnyValidTags() {
-        return Any.ListOf(Any.String().NonEmpty());
+        return Any.ListOf(Any.String());
     }
 
     private static AnyDateTime AnyValidPlacedAt() {

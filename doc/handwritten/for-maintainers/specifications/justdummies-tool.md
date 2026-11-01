@@ -303,7 +303,7 @@ public sealed partial class AnyOrder : IAny<Order> {
     }
 
     private static AnyList<string> AnyValidTags() {
-        return Any.ListOf(Any.String().NonEmpty());
+        return Any.ListOf(Any.String());
     }
 
     private static AnyDateTime AnyValidPlacedAt() {
@@ -696,12 +696,12 @@ Every entry is subject to D4: the member is emitted only if it resolves in the c
 
 | Parameter type | Emitted |
 |---|---|
-| `string` | `Any.String().NonEmpty()` |
+| `string` | `Any.String()` |
 | `bool` | `Any.Boolean()` |
 | `sbyte` `byte` `short` `ushort` `int` `uint` `long` `ulong` | `Any.SByte()` … `Any.UInt64()` |
 | `float` `double` `decimal` | `Any.Single()` / `Any.Double()` / `Any.Decimal()` |
 | `char` | `Any.Char()` |
-| `Guid` | `Any.Guid().NonEmpty()` |
+| `Guid` | `Any.Guid()` |
 | `DateTime` `DateTimeOffset` `TimeSpan` | `Any.DateTime()` / `Any.DateTimeOffset()` / `Any.TimeSpan()` |
 | `DateOnly` `TimeOnly` `Int128` `UInt128` `Half` | the matching factory — **`net8.0` asset only**, D4 decides |
 | any `enum E` | `Any.Enum<E>()` |
@@ -718,12 +718,19 @@ Every entry is subject to D4: the member is emitted only if it resolves in the c
 
 Three notes on the table.
 
-**`Any.String().NonEmpty()`, not `Any.String()`.** Unconstrained, `Any.String()` can return the
-empty string (§14.5). A constructor parameter of type `string` in a domain type is overwhelmingly
-required non-empty, and a default that fails intermittently — roughly one call in seventeen when
-§17 measured it, one in a thousand under the wider spread ADR-0076 later set — is exactly the
-flakiness the library exists to remove. The rate moved; the defect did not. Same reasoning for
-`Any.Guid().NonEmpty()`.
+**`Any.String()`, not `Any.String().NonEmpty()`.** A constructor that refuses the empty string says
+so in a guard §5.3 reads — `IsNullOrEmpty`, a length of zero, `IsNullOrWhiteSpace` as `NotBlank()` —
+and the constraint is then the guard's, tagged `guard`; one it cannot read is marked `to verify`
+(§5.6). A constructor that accepts the empty string accepts a valid dummy, and if code further on
+breaks on it, the draw has revealed a dependency, which is what drawing is for. So the row guesses no
+rule the constructor does not write. It used to be `.NonEmpty()`, against an intermittent failure on
+the premise that a domain string is overwhelmingly required non-empty; once an unread guard was marked
+rather than ignored (ADR-0083), that default only guessed, and it guessed wrong where the empty value
+is legal and common — the empty allele of an insertion or a deletion was never drawn, and the recap's
+`guard` tag on its row hid that the rule came from no guard (#409). A string with no guard at all is
+`Any.String()`, for which `JD030` names the length remedy at the call site. Same rule for `Guid`:
+`Any.Guid().NonEmpty()` only where a guard refuses `Guid.Empty`. A file scaffolded before keeps its
+`NonEmpty()` (§1).
 
 **Collections rely on covariance — and value types do not.** `IAny<out T>` is covariant, so
 `Any.ListOf(...)`, whose type is `IAny<List<T>>`, is directly assignable to a field of type
@@ -1052,7 +1059,7 @@ testing anything, and every real guard of this shape names its subject in the co
 what lets a guard be *read*: past a write to state, the engine can no longer vouch for what a
 condition says about the drawn value. It still rejects that value, though, and passing over it in
 silence reported the neutral generator as inferred while the constructor refused most of its draws:
-`Rate = rate; if (currency.Length != 3) { throw … }` left `currency` at `Any.String().NonEmpty()`,
+`Rate = rate; if (currency.Length != 3) { throw … }` left `currency` at `Any.String()`,
 "2 of 2 parameters inferred". So every statement below the end of the scan is asked what it *would*
 have said had it stood above it, and a parameter it would have narrowed or marked is marked `unread
 guards` instead — a statement that throws, and a call the set recognises as a guard
@@ -1365,7 +1372,7 @@ than being thrown away.
         //   https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/packages/justdummies-cli.en.md#what-the-last-column-means
         _ = TODO_verify_the_generator_for_name;
 
-        return Any.String().NonEmpty();
+        return Any.String();
     }
 ```
 
@@ -1446,11 +1453,11 @@ $ any generate Order
 Analyzing Shop.Domain.Order
   constructor Order(OrderReference, Customer, int, OrderStatus, IReadOnlyList<string>, DateTime)
 
-  reference  OrderReference         new AnyOrderReference()              AnyX
-  customer   Customer               new AnyCustomer()                    AnyX
-  quantity   int                    Any.Int32().Positive()               guard
+  reference  OrderReference         new AnyOrderReference()   AnyX
+  customer   Customer               new AnyCustomer()         AnyX
+  quantity   int                    Any.Int32().Positive()    guard
   status     OrderStatus            Any.Enum<OrderStatus>()
-  tags       IReadOnlyList<string>  Any.ListOf(Any.String().NonEmpty())
+  tags       IReadOnlyList<string>  Any.ListOf(Any.String())
   placedAt   DateTime               Any.DateTime()
 
 ✓ AnyOrder.cs — 6 of 6 parameters inferred.
@@ -1486,8 +1493,8 @@ generator was inferred there, and the count says so. Its row reads the same word
 since the row and the closing line describe the same parameter:
 
 ```console
-  crates  Crate<int>  —                        TODO
-  name    string      Any.String().NonEmpty()  to verify, unread guards
+  crates  Crate<int>  —             TODO
+  name    string      Any.String()  to verify, unread guards
 
   name: unread guard at Warehouse.cs, line 18: if (!Naming.IsValid(name)) { throw new ArgumentException(nameof(name)); }
 
@@ -1508,9 +1515,9 @@ names every such parameter:
 ```console
   constructor Party(string, Bic, string, int?)
 
-  name      string  Any.String().NonEmpty()
+  name      string  Any.String()
   agent     Bic     new AnyBic()              AnyX
-  note      string  Any.String().NonEmpty()
+  note      string  Any.String()
   priority  int?    Any.Int32().AsNullable()
 
   agent, note: declared nullable, written without ? because this project does not read nullable annotations.
@@ -2355,7 +2362,7 @@ in. The results below are what the harness printed.
 | An unsupported pattern throws at **construction**, not at `Generate()` | §5.3 | so the emitted parameterless constructor would throw before any `With…` could override it |
 | Collection generators carry no length constraint | §5.3 | `AnyList<T>` exposes `WithCount`, `WithCountBetween`, `WithMinCount`, `WithMaxCount` — no `WithLength` |
 | **Every row of §5.2 compiles** | §5.2 | 40 declarations, each assigning the emitted expression to the parameter's own `IAny<T>` — 0 errors, 0 warnings, nullable on, warnings-as-errors |
-| **Every row of §5.2 keeps its promise** | §5.2 | 3 000 draws per scalar row: `NonEmpty` never empty, `Guid` never `Empty`, `Enum` only declared members, `Uri().Web()` absolute http(s) |
+| **Every row of §5.2 keeps its promise** | §5.2 | 3 000 draws per scalar row: `NonEmpty` never empty, `Guid` never `Empty` (the two rows then carried `NonEmpty`; #409 removed it), `Enum` only declared members, `Uri().Web()` absolute http(s) |
 | **Every guard mapping of §5.3 is sound** | §5.3 | 17 mappings × 4 000 draws: every value drawn is one the original guard would accept |
 | **Every §14 fact re-derived against a later library** | §14 | 29 upstream commits later — reworked exceptions, refactored regex parser — the counts, the analyzer inventory and the regex subset all still hold |
 | The record, static-factory and odd-name shapes work | §4.2, §5.1 | positional record, a type with only a private constructor plus `Create`, and `_id` / `@class` parameters all compile and generate |

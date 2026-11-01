@@ -1379,7 +1379,7 @@ internal static class Guards {
     ///     the <c>string.IsNullOrWhiteSpace</c> condition. Only the older spelling was read, so the modern one
     ///     fell to the call rule above and blocked the developer's build — over a generator that was already
     ///     exactly right, since a null check adds nothing (ADR-0064 draws no null) and an emptiness check is
-    ///     the row's own <c>NonEmpty</c>. Reading a guard the set already understands as one it could not read
+    ///     a <c>NonEmpty</c> the set already reads. Reading a guard the set already understands as one it could not read
     ///     is the worst of both: it neither tightens anything nor lets the file compile.
     ///     <para>
     ///         The first argument has to <b>be</b> the parameter, the same subject-identity discipline the
@@ -1522,7 +1522,7 @@ internal static class Guards {
     ///     asking that compilation for a semantic model over it throws. The reference carries the compilation
     ///     that does own it, so the guards of §5.3 are read from the source they were written in rather than
     ///     reported as absent — which is the difference between <c>Any.String().NonEmpty()</c> and a plain
-    ///     <c>Any.String()</c> for most of the types this tool exists to scaffold.
+    ///     <c>Any.String()</c> for a constructor that refuses the empty string.
     /// </remarks>
     private static Compilation? Declaring(SyntaxTree tree, IMethodSymbol method, Compilation compilation) {
         if (compilation.ContainsSyntaxTree(tree)) { return compilation; }

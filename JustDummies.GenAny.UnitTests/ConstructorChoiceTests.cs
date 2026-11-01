@@ -376,7 +376,7 @@ public sealed class ConstructorChoiceTests {
                                                       }
                                                       """).Plan!.Parameters.Single();
 
-        Check.That(normal.Expression).IsEqualTo("Any.ArrayOf(Any.String().NonEmpty()).WithMinCount(4)");
+        Check.That(normal.Expression).IsEqualTo("Any.ArrayOf(Any.String()).WithMinCount(4)");
         Check.That(normal.RequiresVerification).IsFalse();
 
         ScaffoldedParameter expanded = Subject.Scaffold("""

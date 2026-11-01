@@ -57,10 +57,10 @@ internal sealed class GuardConstraint {
     ///     Two readings that say exactly the same thing, so they collapse rather than collide.
     /// </summary>
     /// <remarks>
-    ///     Which is what keeps a row's own refinement compatible with a guard repeating it: a <c>string</c> row
-    ///     is already <c>.NonEmpty()</c>, and a constructor guarding on <c>IsNullOrEmpty</c> says the same
-    ///     thing rather than a second, contradictory thing. <c>IsNullOrWhiteSpace</c> is deliberately not that
-    ///     example: it reads as <c>.NotBlank()</c>, a strictly stronger row (ADR-0088).
+    ///     Which is what keeps two guards stating one invariant from writing it twice: <c>IsNullOrEmpty</c> and
+    ///     a length of zero both read as <c>.NonEmpty()</c>, the same thing rather than a second, contradictory
+    ///     thing. <c>IsNullOrWhiteSpace</c> is deliberately not that example: it reads as <c>.NotBlank()</c>, a
+    ///     strictly stronger constraint (ADR-0088).
     /// </remarks>
     internal static IEqualityComparer<GuardConstraint> SameCall { get; } = new ByCall();
 

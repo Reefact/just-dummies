@@ -28,11 +28,11 @@ $ any generate Order
 Analyzing Shop.Domain.Order
   constructor Order(OrderReference, Customer, int, OrderStatus, IReadOnlyList<string>, DateTime)
 
-  reference  OrderReference         new AnyOrderReference()              AnyX
-  customer   Customer               new AnyCustomer()                    AnyX
-  quantity   int                    Any.Int32().Positive()               guard
+  reference  OrderReference         new AnyOrderReference()   AnyX
+  customer   Customer               new AnyCustomer()         AnyX
+  quantity   int                    Any.Int32().Positive()    guard
   status     OrderStatus            Any.Enum<OrderStatus>()
-  tags       IReadOnlyList<string>  Any.ListOf(Any.String().NonEmpty())
+  tags       IReadOnlyList<string>  Any.ListOf(Any.String())
   placedAt   DateTime               Any.DateTime()
 
 ✓ AnyOrder.cs — 6 of 6 parameters inferred.
@@ -88,7 +88,7 @@ private static AnyString AnyValidValue() {
     //   https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/packages/justdummies-cli.en.md#what-the-last-column-means
     _ = TODO_verify_the_generator_for_value;
 
-    return Any.String().NonEmpty();
+    return Any.String();
 }
 ```
 
@@ -346,16 +346,17 @@ public sealed partial class AnyShipment {
 Written there once, the rule holds for every test that draws a shipment, with a lambda or without.
 Changed there, it changes for all of them at once — no test restated it, so no test has to be found.
 
-A scaffolded string row, `Any.String().NonEmpty()`, raises [JD030](../analyzers/JD030.en.md) at
-Info level, by design: the tool will not invent a length your domain never declared. Declare it in the
-factory when it matters — `Any.String().NonEmpty().WithLengthBetween(1, 50)`. Info never prints in
-`dotnet build`; [raise its severity](justdummies.en.md#the-analyzers-travel-inside-the-package) to see it
-in a terminal or in CI.
+A scaffolded string row, `Any.String()`, raises [JD030](../analyzers/JD030.en.md) at
+Info level, by design: the tool will not invent a length your domain never declared — nor a refusal of
+the empty string, which it writes only when a guard of your constructor does (`IsNullOrEmpty`, a length
+of zero). Declare the length in the factory when it matters — `Any.String().WithLengthBetween(1, 50)`.
+Info never prints in `dotnet build`;
+[raise its severity](justdummies.en.md#the-analyzers-travel-inside-the-package) to see it in a terminal or in CI.
 
 ### When the replacement is another kind of generator
 
 `AnyValid…()` returns the builder the tool chose for the type: `AnyString` for a `string`. Replace
-`Any.String().NonEmpty()` with `Any.StringMatching("[A-Z]{3}")` and the file stops compiling
+`Any.String()` with `Any.StringMatching("[A-Z]{3}")` and the file stops compiling
 (`CS0029`), because that call returns an `AnyPattern`. The old type is on three more lines, and they
 are the whole of the edit — the recipe field, the recipe constructor's parameter, and the `Func<…>`
 of the refining overload beside the pin:
@@ -382,7 +383,7 @@ public sealed partial class AnyCurrency : IAny<Currency> {
         : this(code: AnyValidCode()) { }
 
     private static AnyPattern AnyValidCode() {                             // was AnyString
-        return Any.StringMatching("[A-Z]{3}");                             // was Any.String().NonEmpty()
+        return Any.StringMatching("[A-Z]{3}");                             // was Any.String()
     }
 
     private AnyCurrency(AnyPattern code) {                                 // was AnyString

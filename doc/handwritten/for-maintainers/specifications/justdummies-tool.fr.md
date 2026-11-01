@@ -313,7 +313,7 @@ public sealed partial class AnyOrder : IAny<Order> {
     }
 
     private static AnyList<string> AnyValidTags() {
-        return Any.ListOf(Any.String().NonEmpty());
+        return Any.ListOf(Any.String());
     }
 
     private static AnyDateTime AnyValidPlacedAt() {
@@ -723,12 +723,12 @@ Chaque entrée est soumise à D4 : le membre n'est émis que s'il se résout dan
 
 | Type du paramètre | Émission |
 |---|---|
-| `string` | `Any.String().NonEmpty()` |
+| `string` | `Any.String()` |
 | `bool` | `Any.Boolean()` |
 | `sbyte` `byte` `short` `ushort` `int` `uint` `long` `ulong` | `Any.SByte()` … `Any.UInt64()` |
 | `float` `double` `decimal` | `Any.Single()` / `Any.Double()` / `Any.Decimal()` |
 | `char` | `Any.Char()` |
-| `Guid` | `Any.Guid().NonEmpty()` |
+| `Guid` | `Any.Guid()` |
 | `DateTime` `DateTimeOffset` `TimeSpan` | `Any.DateTime()` / `Any.DateTimeOffset()` / `Any.TimeSpan()` |
 | `DateOnly` `TimeOnly` `Int128` `UInt128` `Half` | la fabrique correspondante — **asset `net8.0` uniquement**, D4 tranche |
 | tout `enum E` | `Any.Enum<E>()` |
@@ -745,12 +745,20 @@ Chaque entrée est soumise à D4 : le membre n'est émis que s'il se résout dan
 
 Trois remarques sur la table.
 
-**`Any.String().NonEmpty()`, pas `Any.String()`.** Sans contrainte, `Any.String()` peut retourner
-la chaîne vide (§14.5). Un paramètre de constructeur de type `string` dans un type métier est
-massivement requis non vide, et un défaut qui échoue par intermittence — environ une fois sur
-dix-sept quand le §17 l'a mesuré, une fois sur mille sous l'étendue plus large fixée depuis par
-l'ADR-0076 — est exactement l'instabilité que la bibliothèque existe pour supprimer. Le taux a
-bougé ; le défaut, non. Même raisonnement pour `Any.Guid().NonEmpty()`.
+**`Any.String()`, pas `Any.String().NonEmpty()`.** Un constructeur qui refuse la chaîne vide le dit
+dans une garde que le §5.3 lit — `IsNullOrEmpty`, une longueur nulle, `IsNullOrWhiteSpace` comme
+`NotBlank()` — et la contrainte est alors celle de la garde, marquée `guard` ; une garde qu'il ne sait
+pas lire est marquée `to verify` (§5.6). Un constructeur qui accepte la chaîne vide accepte un dummy
+valide, et si du code plus loin casse dessus, le tirage a révélé une dépendance, ce pour quoi on tire.
+La ligne ne devine donc aucune règle que le constructeur n'écrit pas. Elle valait `.NonEmpty()`, contre
+un échec intermittent, sur la prémisse qu'une chaîne métier est massivement requise non vide ; une fois
+qu'une garde non lue a été marquée plutôt qu'ignorée (ADR-0083), ce défaut ne faisait plus que deviner,
+et devinait mal là où la valeur vide est légale et courante — l'allèle vide d'une insertion ou d'une
+délétion n'était jamais tiré, et l'étiquette `guard` de sa ligne dans le récapitulatif cachait que la
+règle ne venait d'aucune garde (#409). Une chaîne sans aucune garde vaut `Any.String()`, pour laquelle
+`JD030` nomme le remède de longueur au site d'appel. Même règle pour `Guid` : `Any.Guid().NonEmpty()`
+seulement là où une garde refuse `Guid.Empty`. Un fichier scaffoldé auparavant garde son `NonEmpty()`
+(§1).
 
 **Les collections reposent sur la covariance — les types valeur, non.** `IAny<out T>` est
 covariante, donc `Any.ListOf(...)`, de type `IAny<List<T>>`, est directement affectable à un champ
@@ -1105,7 +1113,7 @@ tête » est ce qui permet de *lire* une garde : passé une écriture de l'état
 garantir ce qu'une condition dit de la valeur tirée. Elle rejette pourtant toujours cette valeur, et
 la passer sous silence présentait le generator neutre comme inféré alors que le constructeur
 refusait la plupart de ses tirages : `Rate = rate; if (currency.Length != 3) { throw … }` laissait
-`currency` à `Any.String().NonEmpty()`, « 2 of 2 parameters inferred ». Chaque instruction après
+`currency` à `Any.String()`, « 2 of 2 parameters inferred ». Chaque instruction après
 l'arrêt de l'analyse est donc interrogée sur ce qu'elle *aurait* dit si elle s'était trouvée au-dessus,
 et un paramètre qu'elle aurait restreint ou marqué est marqué `unread guards` à la place — une
 instruction qui lève, et un appel que l'ensemble reconnaît comme une garde
@@ -1438,7 +1446,7 @@ fabrique plutôt que d'être jeté.
         //   https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/packages/justdummies-cli.en.md#what-the-last-column-means
         _ = TODO_verify_the_generator_for_name;
 
-        return Any.String().NonEmpty();
+        return Any.String();
     }
 ```
 
@@ -1523,11 +1531,11 @@ $ any generate Order
 Analyzing Shop.Domain.Order
   constructor Order(OrderReference, Customer, int, OrderStatus, IReadOnlyList<string>, DateTime)
 
-  reference  OrderReference         new AnyOrderReference()              AnyX
-  customer   Customer               new AnyCustomer()                    AnyX
-  quantity   int                    Any.Int32().Positive()               guard
+  reference  OrderReference         new AnyOrderReference()   AnyX
+  customer   Customer               new AnyCustomer()         AnyX
+  quantity   int                    Any.Int32().Positive()    guard
   status     OrderStatus            Any.Enum<OrderStatus>()
-  tags       IReadOnlyList<string>  Any.ListOf(Any.String().NonEmpty())
+  tags       IReadOnlyList<string>  Any.ListOf(Any.String())
   placedAt   DateTime               Any.DateTime()
 
 ✓ AnyOrder.cs — 6 of 6 parameters inferred.
@@ -1564,8 +1572,8 @@ fichier ne compilera pas — mais compté séparément, comme *N* **to verify** 
 jamais `TODO`, puisque la ligne et la ligne de clôture décrivent le même paramètre :
 
 ```console
-  crates  Crate<int>  —                        TODO
-  name    string      Any.String().NonEmpty()  to verify, unread guards
+  crates  Crate<int>  —             TODO
+  name    string      Any.String()  to verify, unread guards
 
   name: unread guard at Warehouse.cs, line 18: if (!Naming.IsValid(name)) { throw new ArgumentException(nameof(name)); }
 
@@ -1588,9 +1596,9 @@ paramètres :
 ```console
   constructor Party(string, Bic, string, int?)
 
-  name      string  Any.String().NonEmpty()
+  name      string  Any.String()
   agent     Bic     new AnyBic()              AnyX
-  note      string  Any.String().NonEmpty()
+  note      string  Any.String()
   priority  int?    Any.Int32().AsNullable()
 
   agent, note: declared nullable, written without ? because this project does not read nullable annotations.
@@ -2470,7 +2478,7 @@ branchés. Les résultats ci-dessous sont ce que le harnais a affiché.
 | Un motif non pris en charge lève à la **construction**, pas au `Generate()` | §5.3 | donc le constructeur sans paramètre émis lèverait avant qu'un `With…` puisse surcharger |
 | Les generators de collection ne portent aucune contrainte de longueur | §5.3 | `AnyList<T>` expose `WithCount`, `WithCountBetween`, `WithMinCount`, `WithMaxCount` — pas de `WithLength` |
 | **Chaque ligne du §5.2 compile** | §5.2 | 40 déclarations, chacune affectant l'expression émise à l'`IAny<T>` du paramètre — 0 erreur, 0 warning, nullable activé, warnings-as-errors |
-| **Chaque ligne du §5.2 tient sa promesse** | §5.2 | 3 000 tirages par ligne scalaire : `NonEmpty` jamais vide, `Guid` jamais `Empty`, `Enum` uniquement des membres déclarés, `Uri().Web()` absolue http(s) |
+| **Chaque ligne du §5.2 tient sa promesse** | §5.2 | 3 000 tirages par ligne scalaire : `NonEmpty` jamais vide, `Guid` jamais `Empty` (les deux lignes portaient alors `NonEmpty` ; #409 l'a retiré), `Enum` uniquement des membres déclarés, `Uri().Web()` absolue http(s) |
 | **Chaque mapping de garde du §5.3 est solide** | §5.3 | 17 mappings × 4 000 tirages : toute valeur tirée est une valeur que la garde d'origine accepterait |
 | **Chaque fait du §14 redérivé contre une bibliothèque plus récente** | §14 | 29 commits amont plus tard — exceptions retravaillées, parser regex refactoré — les décomptes, l'inventaire des analyzers et le sous-ensemble regex tiennent toujours |
 | Les formes record, fabrique statique et noms atypiques fonctionnent | §4.2, §5.1 | record positionnel, type à constructeur privé plus `Create`, et paramètres `_id` / `@class` compilent et génèrent |

@@ -75,11 +75,15 @@ public sealed class Probes {
     }
 
     [Fact]
-    public void A_full_range_double_stays_within_an_ordinary_magnitude() {
+    public void A_full_range_double_stays_within_an_ordinary_magnitude_nine_draws_in_ten() {
+        // ADR-0117: a range spelled against the type's own edges is no range; the tenth draw spans the type.
+        int ordinary = 0;
         for (int draw = 0; draw < 1_000; draw++) {
             double value = Any.Double().Between(-double.MaxValue, double.MaxValue).Generate();
-            Assert.InRange(Math.Abs(value), 0, 1e6);
+            Assert.True(double.IsFinite(value));
+            if (Math.Abs(value) <= 1e6) { ordinary++; }
         }
+        Assert.InRange(ordinary, 800, 970);
     }
 
     [Fact]

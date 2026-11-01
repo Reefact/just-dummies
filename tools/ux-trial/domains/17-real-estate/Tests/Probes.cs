@@ -62,14 +62,16 @@ public sealed class Probes {
     }
 
     [Fact]
-    public void A_surface_bounded_at_ten_million_mostly_draws_below_a_million() {
+    public void A_surface_bounded_at_ten_million_is_drawn_whole() {
+        // ADR-0117: both bounds are declared, so the whole range is reached, not only its first million.
         double[] draws = Enumerable.Range(0, 2_000).Select(_ => Any.Double().Positive().LessThanOrEqualTo(10_000_000d).Generate()).ToArray();
         _output.WriteLine($"min {draws.Min()} max {draws.Max()}");
         Assert.All(draws, d => Assert.InRange(d, double.Epsilon, 10_000_000d));
+        Assert.True(draws.Min() < 5_000_000d && draws.Max() > 5_000_000d);
     }
 
     [Fact]
-    public void A_one_sided_large_surface_stays_near_its_bound() {
+    public void A_one_sided_large_surface_stays_above_its_bound() {
         double[] draws = Enumerable.Range(0, 2_000).Select(_ => Any.Double().GreaterThanOrEqualTo(1_000_000d).Generate()).ToArray();
         _output.WriteLine($"min {draws.Min()} max {draws.Max()}");
         Assert.All(draws, d => Assert.True(double.IsFinite(d) && d >= 1_000_000d));

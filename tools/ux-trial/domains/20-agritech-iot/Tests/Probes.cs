@@ -152,15 +152,20 @@ public sealed class Probes {
     }
 
     [Fact]
-    public void P15_Unconstrained_double_spans_both_signs_within_a_million() {
+    public void P15_Unconstrained_double_spans_both_signs_within_a_million_nine_draws_in_ten() {
+        // ADR-0117: nine draws in ten stay within a million, the tenth spans the whole type.
         bool negative = false, positive = false;
+        int ordinary = 0, edge = 0;
         for (int draw = 0; draw < 10_000; draw++) {
             double value = Any.Double().Generate();
-            Assert.InRange(value, -1_000_000.0, 1_000_000.0);
+            Assert.True(double.IsFinite(value));
+            if (Math.Abs(value) <= 1_000_000.0) { ordinary++; } else { edge++; }
             negative |= value < 0;
             positive |= value > 0;
         }
         Assert.True(negative && positive);
+        Assert.InRange(ordinary, 8_500, 9_500);
+        Assert.True(edge > 0);
     }
 
     [Fact]

@@ -195,6 +195,10 @@ string anyNotDraft = Any.String().OneOf("draft", "sent", "paid").DifferentFrom("
 string anyNotEmpty = Any.String().WithLengthBetween(1, 5).Except("aaa", "bbb").Generate();
 ```
 
+An `Except` given an empty list excludes nothing and is accepted, so a set of values already used that
+starts empty needs no special case; an empty `OneOf` is refused, since it declares an empty domain
+([ADR-0122](../../for-maintainers/adr/0122-accept-an-empty-exclusion-as-the-identity.md)).
+
 `OneOf` is the one constraint that **replaces** the layout rather than shaping it: you supply the
 values, so the draw is a uniform pick from them and every other constraint narrows that set instead
 of building a string.

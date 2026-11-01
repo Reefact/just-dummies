@@ -22,7 +22,7 @@ n'existe, et la colonne **Origine** dit comment chacune est arrivée ici :
   aussi, car ce dépôt l'applique encore. Les deux copies sont désormais
   indépendantes : chaque côté peut remplacer la sienne sans toucher à l'autre.
   9 décisions.
-* **consigné ici** — décidé dans ce dépôt, de son propre chef. 75 décisions.
+* **consigné ici** — décidé dans ce dépôt, de son propre chef. 76 décisions.
 
 Les numéros appartiennent à cette base, attribués dans l'ordre où les décisions
 ont été consignées en amont
@@ -277,3 +277,4 @@ que l'option existait le jour où elle compterait.
 | [ADR-0119](0119-draw-a-value-that-depends-on-another-draw.fr.md) | Tirer une valeur qui dépend d'un autre tirage | Accepted | consigné ici |
 | [ADR-0120](0120-report-a-draw-made-inside-a-composition-lambda.fr.md) | Signaler un tirage fait dans une lambda de composition | Accepted | consigné ici |
 | [ADR-0121](0121-exclude-a-value-from-any-generator-by-redrawing.fr.md) | Exclure une valeur de tout générateur en retirant | Accepted | consigné ici |
+| [ADR-0122](0122-accept-an-empty-exclusion-as-the-identity.fr.md) | Accepter une exclusion vide comme l'identité | Accepted | consigné ici |

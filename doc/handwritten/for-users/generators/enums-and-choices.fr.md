@@ -23,7 +23,9 @@ déclarée, bien que le CLR l'autoriserait — un dummy qui le ferait testerait 
 état que votre domaine ne possède pas.
 
 Les exclusions qui vident l'univers sont refusées nommément, et l'analyzer
-[JD017](../analyzers/JD017.fr.md) signale les cas constants dès la compilation.
+[JD017](../analyzers/JD017.fr.md) signale les cas constants dès la compilation. Une liste d'exclusion elle-même
+vide ne retire rien et est acceptée
+([ADR-0122](../../for-maintainers/adr/0122-accept-an-empty-exclusion-as-the-identity.fr.md)).
 
 ## Énumérations de drapeaux
 

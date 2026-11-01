@@ -316,11 +316,11 @@ public sealed class AnyPattern : IAny<string>, IHasRandomSource, ICardinalityHin
     /// <param name="values">The values the generated value must differ from; duplicates are ignored.</param>
     /// <returns>A new generator carrying the added constraint.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="values" /> is <c>null</c>.</exception>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="values" /> is empty or contains a <c>null</c> element.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="values" /> contains a <c>null</c> element.</exception>
     /// <exception cref="ConflictingAnyConstraintException">Thrown when a value set is in force and no value it allows survives.</exception>
     public AnyPattern Except(params string[] values) {
         if (values is null) { throw new ArgumentNullException(nameof(values)); }
-        if (values.Length == 0) { throw new ArgumentException("At least one value is required.", nameof(values)); }
+        if (values.Length == 0) { return this; }
         if (values.Any(value => value is null)) { throw new ArgumentException("The values must not contain a null element.", nameof(values)); }
 
         return Excluding(values, ConstraintCall.Of(nameof(Except), Join(values)));

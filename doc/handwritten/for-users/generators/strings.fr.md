@@ -202,6 +202,10 @@ string anyNotDraft = Any.String().OneOf("draft", "sent", "paid").DifferentFrom("
 string anyNotEmpty = Any.String().WithLengthBetween(1, 5).Except("aaa", "bbb").Generate();
 ```
 
+Un `Except` à qui l'on passe une liste vide n'exclut rien et est accepté, si bien qu'un ensemble de valeurs
+déjà utilisées qui commence vide ne demande aucun cas particulier ; un `OneOf` vide est refusé, puisqu'il
+déclare un domaine vide ([ADR-0122](../../for-maintainers/adr/0122-accept-an-empty-exclusion-as-the-identity.fr.md)).
+
 `OneOf` est la seule contrainte qui **remplace** la disposition au lieu de la façonner : c'est vous
 qui fournissez les valeurs, le tirage est donc un choix uniforme parmi elles, et toute autre
 contrainte restreint cet ensemble au lieu de construire une chaîne.

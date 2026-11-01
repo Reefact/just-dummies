@@ -21,7 +21,7 @@ and the **Origin** column says how each one got here:
   but its record stays live in `Reefact/first-class-errors` too, because that
   repository still applies it. Both copies are now independent: either side can
   supersede its own without touching the other. 9 decisions.
-* **recorded here** — decided in this repository, on its own. 75 decisions.
+* **recorded here** — decided in this repository, on its own. 76 decisions.
 
 The numbers are this base's own, assigned in the order the decisions were
 recorded upstream ([ADR-0045](0045-renumber-the-decision-base.md)); every ADR
@@ -261,3 +261,4 @@ failure mode of a "not now" is that nobody remembers the option existed on the d
 | [ADR-0119](0119-draw-a-value-that-depends-on-another-draw.md) | Draw a value that depends on another draw | Accepted | recorded here |
 | [ADR-0120](0120-report-a-draw-made-inside-a-composition-lambda.md) | Report a draw made inside a composition lambda | Accepted | recorded here |
 | [ADR-0121](0121-exclude-a-value-from-any-generator-by-redrawing.md) | Exclude a value from any generator by redrawing | Accepted | recorded here |
+| [ADR-0122](0122-accept-an-empty-exclusion-as-the-identity.md) | Accept an empty exclusion as the identity | Accepted | recorded here |

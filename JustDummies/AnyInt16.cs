@@ -189,11 +189,10 @@ public sealed class AnyInt16 : IAny<short>, IHasRandomSource, ICardinalityHint<s
     /// <param name="values">The forbidden values.</param>
     /// <returns>A new generator carrying the added constraint.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="values" /> is <c>null</c>.</exception>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="values" /> is empty.</exception>
     /// <exception cref="ConflictingAnyConstraintException">Thrown when the constraint contradicts a constraint already declared.</exception>
     public AnyInt16 Except(params short[] values) {
         if (values is null) { throw new ArgumentNullException(nameof(values)); }
-        if (values.Length == 0) { throw new ArgumentException("At least one value is required.", nameof(values)); }
+        if (values.Length == 0) { return this; }
 
         return new AnyInt16(_source, _spec.WithExcluded(values.Select(Ord).ToArray(), ConstraintCall.Of(nameof(Except), Join(values))));
     }

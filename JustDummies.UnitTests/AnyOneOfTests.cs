@@ -285,7 +285,6 @@ public sealed class AnyOneOfTests {
     [SuppressMessage(JustDummiesRule.JD014.Category, JustDummiesRule.JD014.Id, Justification = SuppressionJustification.JD014.ThrowIsTheSubject)]
     public void ExclusionArgumentsAreValidated() {
         Check.ThatCode(() => Any.OneOf("a", "b").Except(null!)).Throws<ArgumentNullException>();
-        Check.ThatCode(() => Any.OneOf("a", "b").Except()).Throws<ArgumentException>();
         Check.ThatCode(() => Any.OneOf("a", "b").Except("a", null!)).Throws<ArgumentException>();
         Check.ThatCode(() => Any.OneOf("a", "b").DifferentFrom(null!)).Throws<ArgumentNullException>();
     }

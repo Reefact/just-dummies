@@ -149,7 +149,6 @@ public sealed class AnyInt32Tests {
         Check.ThatCode(() => Any.Int32().OneOf((int[])null!)).Throws<ArgumentNullException>();
         Check.ThatCode(() => Any.Int32().OneOf((IEnumerable<int>)null!)).Throws<ArgumentNullException>();
         Check.ThatCode(() => Any.Int32().OneOf(Enumerable.Empty<int>())).Throws<ArgumentException>();
-        Check.ThatCode(() => Any.Int32().Except()).Throws<ArgumentException>();
         Check.ThatCode(() => Any.Int32().Except(null!)).Throws<ArgumentNullException>();
     }
 

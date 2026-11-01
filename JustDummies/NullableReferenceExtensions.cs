@@ -9,7 +9,7 @@ namespace JustDummies;
 public static class NullableReferenceExtensions {
 
     /// <summary>
-    ///     Derives a generator that yields <c>null</c> about half the time and, otherwise, a value drawn from
+    ///     Derives a generator that yields <c>null</c> one draw in ten and, otherwise, a value drawn from
     ///     <paramref name="generator" /> — the dummy for an optional reference-type field.
     /// </summary>
     /// <remarks>

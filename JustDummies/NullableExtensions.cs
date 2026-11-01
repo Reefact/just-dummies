@@ -2,7 +2,7 @@ namespace JustDummies;
 
 /// <summary>
 ///     The two ways a value-type generator becomes a generator of <see cref="Nullable{T}" />, and they are not the
-///     same thing. <see cref="OrNull{T}" /> yields <c>null</c> on an even coin flip and, otherwise, a value
+///     same thing. <see cref="OrNull{T}" /> yields <c>null</c> one draw in ten and, otherwise, a value
 ///     satisfying the constraints declared upstream — the dummy for an optional value-type field (<c>int?</c>,
 ///     <c>DateTime?</c>, <c>Guid?</c>, an enum, ...). <see cref="AsNullable{T}" /> never yields <c>null</c>: it
 ///     widens the type and leaves the values alone, for a parameter that is spelled nullable and still has to be
@@ -11,14 +11,15 @@ namespace JustDummies;
 public static class NullableExtensions {
 
     /// <summary>
-    ///     How many equiprobable outcomes the null-versus-value draw picks between — two, which is what makes
-    ///     <c>null</c> come up about half the time. Shared with
+    ///     How many equiprobable outcomes the null-versus-value draw picks between — ten, of which one is <c>null</c>:
+    ///     the absent case is a limit value of an optional, reached as often as a floating-point draw reaches its type's
+    ///     edge (ADR-0117), and rare enough that a dummy which is mostly present stays mostly present. Shared with
     ///     <see cref="NullableReferenceExtensions.OrNull{T}" /> so the two siblings cannot drift to different rates.
     /// </summary>
-    internal const int NullDrawOutcomes = 2;
+    internal const int NullDrawOutcomes = 10;
 
     /// <summary>
-    ///     Derives a generator that yields <c>null</c> about half the time and, otherwise, a value drawn from
+    ///     Derives a generator that yields <c>null</c> one draw in ten and, otherwise, a value drawn from
     ///     <paramref name="generator" /> — so a test exercises both the present and the absent case without pinning
     ///     either. Reproducible under a seed, like every other draw.
     /// </summary>

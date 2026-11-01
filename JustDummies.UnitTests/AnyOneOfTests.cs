@@ -86,7 +86,7 @@ public sealed class AnyOneOfTests {
         }
     }
 
-    [Fact(DisplayName = "OrNull makes the pool generator null about half the time, otherwise a member of the pool.")]
+    [Fact(DisplayName = "OrNull makes the pool generator null one draw in ten, otherwise a member of the pool.")]
     public void OrNullIsSometimesNull() {
         Percentage       one       = Percentage.Create(1);
         Percentage       two       = Percentage.Create(2);

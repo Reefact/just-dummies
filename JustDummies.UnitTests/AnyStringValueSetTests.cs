@@ -102,7 +102,7 @@ public sealed class AnyStringValueSetTests {
         }
     }
 
-    [Fact(DisplayName = "OrNull makes the value set generator null about half the time, otherwise a member of the set.")]
+    [Fact(DisplayName = "OrNull makes the value set generator null one draw in ten, otherwise a member of the set.")]
     public void OrNullIsSometimesNull() {
         IAny<string?> generator = Any.WithSeed(20260721).String().OneOf("a", "b").OrNull();
 

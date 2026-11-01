@@ -100,6 +100,14 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   declare the range it accepts with `Between(...)` — or the value was never a dummy, and a literal says so.
   This changes what a seed draws for every open floating-point chain — allowed below 1.0 (ADR-0049); the
   seed golden master was rebased for it.
+- **`OrNull()` yields `null` one draw in ten instead of one in two.** An optional value is present far
+  more often than absent in the code a test exercises, and an even coin made half of every optional
+  field disappear from the dummies built around it. `null` is now a limit value of an optional, drawn as
+  often as a floating-point draw reaches its type's edge; it is still drawn, so a test that does not
+  care about absence still checks the code does not either (ADR-0117, issue #410). The draw count is
+  unchanged — one draw for the decision — so only which branch a seed takes moves. **Migration:** a test
+  that needs the absent case writes `null`, and one that needs a value writes `AsNullable()` or the
+  generator itself; neither should rely on how often `OrNull()` lands on either branch.
 - **A refused regex construct says what to do instead.** Every `UnsupportedRegexException` from
   `Any.StringMatching` ended with the same list of unrelated constructs and a generic "express the
   requirement with the supported subset". The message now ends with the way out for the construct's own family, and

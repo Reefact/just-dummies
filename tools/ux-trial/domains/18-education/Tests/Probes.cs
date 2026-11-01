@@ -57,10 +57,13 @@ public sealed class Probes {
     }
 
     [Fact]
-    public void The_whole_decimal_range_still_draws_an_ordinary_magnitude() {
-        decimal anyValue = Any.Decimal().Between(decimal.MinValue, decimal.MaxValue).Generate();
-
-        Assert.InRange(anyValue, -1_000_000m, 1_000_000m);
+    public void The_whole_decimal_range_draws_an_ordinary_magnitude_nine_draws_in_ten() {
+        // ADR-0117: a range spelled against the type's own edges is no range; the tenth draw spans the type.
+        int ordinary = 0;
+        for (int draw = 0; draw < 1_000; draw++) {
+            if (Math.Abs(Any.Decimal().Between(decimal.MinValue, decimal.MaxValue).Generate()) <= 1_000_000m) { ordinary++; }
+        }
+        Assert.InRange(ordinary, 800, 970);
     }
 
     [Fact]

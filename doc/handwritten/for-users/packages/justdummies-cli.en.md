@@ -447,6 +447,46 @@ using (Any.UseSeed(20261027)) {
 that rule belongs in the base: change `AnyValidLabels()`. If one test does, add the overload yourself
 (below) and pass `Any.ListOf(Any.String().Alpha())`.
 
+It is the same overload when the element's rule is **another aggregate's fact**. A `Combination` holds a
+list of `HorseNumber`, each 1 to 20; a test wants three horses of a race with twelve runners. "Three,
+distinct" is a rule on the list and a lambda says it; "between 1 and 12" is a rule on each element, and
+the race owns it, so the lambda cannot reach it. Write it once, as a named overload of the generator, taking the race's number as its argument. It sits in
+the `partial` class beside the generated file, or — as here, using only the public `WithHorses` — as an
+extension in a file of its own; either way `any generate --force` leaves it alone, and the call site is the same.
+Because refinements add up (see below), the list-level lambda a test then writes lands on the recipe the
+overload wrote:
+
+<!-- jd:declarations -->
+```csharp
+public static class CombinationRecipes {
+
+    public static AnyCombination WithHorsesAmong(this AnyCombination combinations, int fieldSize) {
+        return combinations.WithHorses(_ => Any.ListOf(new AnyHorseNumber().WithValue(number => number.Between(1, fieldSize)))
+                                              .NonEmpty());
+    }
+
+}
+
+public sealed class CombinationUsage {
+
+    public Combination AnyThreeHorseCombination() {
+        return Any.Combination()
+                  .WithHorsesAmong(12)
+                  .WithHorses(l => l.WithCount(3).Distinct())
+                  .Generate();
+    }
+
+}
+```
+
+The test states the race's fact and the combination's, each where it belongs. `Distinct()` compares the
+elements with their own equality: `HorseNumber` is a record here, so the three are three distinct *numbers*;
+a class without `Equals` would make every drawn instance distinct from every other.
+
+The element generator is not refinable through the list's lambda on purpose: for `l` to hand a test the
+element's own builder, every collection would have to carry its element generator's exact type, in every
+signature and every generated `With…`, for a case this overload settles in four lines.
+
 **One of a few chosen values.** `Any.OneOf(lyonParis, parisLille)` usually means the outcome depends on
 which one is drawn — a property, tested on a single draw. Pin the one the test is about. If it truly
 does not matter, add the overload.

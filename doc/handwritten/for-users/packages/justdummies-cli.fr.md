@@ -454,6 +454,47 @@ d'étiquettes alphabétiques, cette règle relève de la base : modifiez `AnyVal
 test en a besoin, ajoutez vous-même la surcharge (voir plus bas) et passez
 `Any.ListOf(Any.String().Alpha())`.
 
+C'est la même surcharge quand la règle de l'élément est **un fait d'un autre agrégat**. Une `Combination`
+contient une liste de `HorseNumber`, de 1 à 20 ; un test veut trois chevaux d'une course de douze partants.
+« Trois, distincts » est une règle sur la liste, et une lambda la dit ; « entre 1 et 12 » est une règle sur
+chaque élément, la course la possède, et la lambda ne peut pas l'atteindre. Écrivez-la une fois, comme une surcharge nommée du générateur, qui prend en argument le nombre de la
+course. Elle vit dans la classe `partial` à côté du fichier généré, ou — comme ici, avec le seul `WithHorses`
+public — en méthode d'extension dans un fichier à part ; dans les deux cas `any generate --force` la laisse
+tranquille, et le site d'appel est le même. Comme les affinages s'additionnent (voir plus bas), la lambda au
+niveau de la liste qu'un test écrit ensuite s'applique à la recette que la surcharge a écrite :
+
+<!-- jd:declarations -->
+```csharp
+public static class CombinationRecipes {
+
+    public static AnyCombination WithHorsesAmong(this AnyCombination combinations, int fieldSize) {
+        return combinations.WithHorses(_ => Any.ListOf(new AnyHorseNumber().WithValue(number => number.Between(1, fieldSize)))
+                                              .NonEmpty());
+    }
+
+}
+
+public sealed class CombinationUsage {
+
+    public Combination AnyThreeHorseCombination() {
+        return Any.Combination()
+                  .WithHorsesAmong(12)
+                  .WithHorses(l => l.WithCount(3).Distinct())
+                  .Generate();
+    }
+
+}
+```
+
+Le test énonce le fait de la course et celui de la combinaison, chacun là où il appartient. `Distinct()`
+compare les éléments avec leur propre égalité : `HorseNumber` est ici un record, donc les trois sont trois
+*numéros* distincts ; une classe sans `Equals` rendrait chaque instance tirée distincte de toutes les autres.
+
+Le générateur des éléments n'est volontairement pas affinable par la lambda de la liste : pour que `l` donne
+à un test le constructeur propre de l'élément, chaque collection devrait porter le type exact de son
+générateur d'éléments, dans chaque signature et chaque `With…` généré, pour un cas que cette surcharge règle
+en quatre lignes.
+
 **Une valeur parmi quelques-unes.** `Any.OneOf(lyonParis, parisLille)` signifie généralement que le
 résultat dépend de la valeur tirée : c'est alors une propriété, testée sur un seul tirage. Fixez la
 valeur sur laquelle porte le test. Si le choix n'a vraiment aucune importance, ajoutez la surcharge.

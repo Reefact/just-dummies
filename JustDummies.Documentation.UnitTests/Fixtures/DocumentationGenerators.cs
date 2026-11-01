@@ -51,6 +51,11 @@ public static class AnyEntry {
             return new AnyShipment();
         }
 
+        /// <summary>Starts an arbitrary combination of runners, through the generator <c>any</c> scaffolded for it.</summary>
+        public static AnyCombination Combination() {
+            return new AnyCombination();
+        }
+
     }
 
 }

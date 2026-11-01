@@ -141,6 +141,9 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Documentation
 
+- **Getting started points to the `any` scaffolder.** The guide never mentioned it, so a newcomer starting
+  there did not find the tool that writes a generator for their own type. Its "Where to go next" table now
+  has a row for it, with a link (EN and FR).
 - **The composition guide says where a bound taken from another draw belongs.** A bound computed from a
   value drawn earlier is a plain value at a call site, and the guide now says so with a sample, and links to
   the scaffolder page's "When a guard ties two parameters" for the case where the rule belongs to the type.

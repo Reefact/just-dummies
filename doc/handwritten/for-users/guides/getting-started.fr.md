@@ -339,7 +339,8 @@ public sealed class OrderTests {
 | --- | --- |
 | bien comprendre les générateurs avant d'aller plus loin | [Concepts fondamentaux](./core-concepts.fr.md) |
 | rejouer une exécution en échec, ou épingler une graine | [Reproductibilité](./reproducibility.fr.md) |
-| construire un dummy pour *vos* types | [Composition](./composition.fr.md) |
+| scaffolder un générateur pour l'un de *vos* types, plutôt que de l'écrire à la main | [Le scaffolder `any`](../packages/justdummies-cli.fr.md) |
+| en écrire un à la main, ou en composer plusieurs | [Composition](./composition.fr.md) |
 | savoir ce qui arrive quand des contraintes se contredisent | [Erreurs et conflits](./errors-and-conflicts.fr.md) |
 | retrouver toutes les contraintes d'un type donné | [Référence des générateurs](../generators/README.fr.md) |
 | comprendre pourquoi la bibliothèque refuse certaines choses volontairement | [Principes de conception](./design-principles.fr.md) |

@@ -141,6 +141,10 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Documentation
 
+- **An element rule taken from another aggregate is now shown.** A collection's lambda cannot reach its
+  elements' recipe, so a rule such as "each horse number between 1 and the size of this race's field" is a named
+  overload beside the generator. The scaffolder page shows it as a compiled and run sample, with the lambda that
+  states the list's own rule landing on the recipe it wrote (EN and FR).
 - **Getting started points to the `any` scaffolder.** The guide never mentioned it, so a newcomer starting
   there did not find the tool that writes a generator for their own type. Its "Where to go next" table now
   has a row for it, with a link (EN and FR).

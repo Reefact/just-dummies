@@ -339,7 +339,8 @@ public sealed class OrderTests {
 | --- | --- |
 | understand generators properly before going further | [Core concepts](./core-concepts.en.md) |
 | replay a failing run, or pin a seed | [Reproducibility](./reproducibility.en.md) |
-| build a dummy for one of *your* types | [Composition](./composition.en.md) |
+| scaffold a generator for one of *your* types, rather than write it by hand | [The `any` scaffolder](../packages/justdummies-cli.en.md) |
+| write one by hand, or compose several | [Composition](./composition.en.md) |
 | know what happens when constraints contradict | [Errors and conflicts](./errors-and-conflicts.en.md) |
 | look up every constraint on a given type | [Generator reference](../generators/README.md) |
 | know why the library refuses some things on purpose | [Design principles](./design-principles.en.md) |

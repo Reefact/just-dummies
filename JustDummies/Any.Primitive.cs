@@ -124,8 +124,11 @@ public static partial class Any {
 
     /// <summary>
     ///     Starts an arbitrary <see cref="double" /> generator drawing from the ambient random context:
-    ///     finite values only — NaN and infinities are never generated. Same constraint algebra as <see cref="AnyInt32"
-    ///     />, less <c>MultipleOf(...)</c>.
+    ///     finite values only — NaN and infinities are never generated. A range bounded on both
+    ///     sides is drawn whole; where a side is left open, nine draws in ten stay ordinary — within ±1 000 000, or in a
+    ///     slab two million wide beside a one-sided bound past it — and the tenth spans the whole declared domain
+    ///     (ADR-0117). A one-sided bound so large that no such slab is representable beside it is the exception: every
+    ///     draw then spans the declared domain (ADR-0097). Same constraint algebra as <see cref="AnyInt32" />, less <c>MultipleOf(...)</c>.
     /// </summary>
     /// <returns>A generator to constrain fluently.</returns>
     public static AnyDouble Double() {
@@ -134,8 +137,11 @@ public static partial class Any {
 
     /// <summary>
     ///     Starts an arbitrary <see cref="float" /> generator drawing from the ambient random context:
-    ///     finite values only — NaN and infinities are never generated. Same constraint algebra as <see cref="AnyInt32"
-    ///     />, less <c>MultipleOf(...)</c>.
+    ///     finite values only — NaN and infinities are never generated. A range bounded on both
+    ///     sides is drawn whole; where a side is left open, nine draws in ten stay ordinary — within ±1 000 000, or in a
+    ///     slab two million wide beside a one-sided bound past it — and the tenth spans the whole declared domain
+    ///     (ADR-0117). A one-sided bound so large that no such slab is representable beside it is the exception: every
+    ///     draw then spans the declared domain (ADR-0097). Same constraint algebra as <see cref="AnyInt32" />, less <c>MultipleOf(...)</c>.
     /// </summary>
     /// <returns>A generator to constrain fluently.</returns>
     public static AnySingle Single() {
@@ -144,7 +150,10 @@ public static partial class Any {
 
     /// <summary>
     ///     Starts an arbitrary <see cref="decimal" /> generator drawing from the ambient random context:
-    ///     full range unless constrained. Same constraint algebra as <see cref="AnyInt32" />, less
+    ///     a range bounded on both sides is drawn whole; where a side is left open, nine draws in ten stay ordinary —
+    ///     within ±1 000 000, or in a slab two million wide beside a one-sided bound past it — and the tenth spans the
+    ///     whole declared domain (ADR-0117). A one-sided bound so large that no such slab is representable beside it is
+    ///     the exception: every draw then spans the declared domain (ADR-0097). Same constraint algebra as <see cref="AnyInt32" />, less
     ///     <c>MultipleOf(...)</c> and plus <c>WithScale(...)</c>.
     /// </summary>
     /// <returns>A generator to constrain fluently.</returns>

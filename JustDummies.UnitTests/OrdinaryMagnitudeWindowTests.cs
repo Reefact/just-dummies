@@ -98,6 +98,42 @@ public sealed class OrdinaryMagnitudeWindowTests {
              .IsStrictlyGreaterThan(midpoint);
     }
 
+    /// <summary>
+    ///     The draws the window took, out of a sample of a chain the caller left open on one side — whose tenth draw
+    ///     spans the declared domain whole (ADR-0117) and so lands, all but certainly, hundreds of decades past
+    ///     <paramref name="ceiling" /> or below <paramref name="floor" />.
+    /// </summary>
+    /// <remarks>
+    ///     Asserts the window took most of them: a defect leaking window draws out of <c>[floor, ceiling]</c> — the
+    ///     slab miscounted below, half of 4 000 draws beneath its floor — shows as far more than one draw in ten
+    ///     outside it.
+    /// </remarks>
+    private static List<double> WindowDraws(string what, Func<double> draw, double floor, double ceiling) {
+        List<double> inside = [];
+        for (int i = 0; i < SampleCount; i++) {
+            double value = draw();
+            if (value >= floor && value <= ceiling) { inside.Add(value); }
+        }
+
+        Check.WithCustomMessage($"{what} kept only {inside.Count} of {SampleCount} draws inside [{floor}, {ceiling}]; the window takes nine in ten.")
+             .That(inside.Count)
+             .IsStrictlyGreaterThan(SampleCount * 3 / 4);
+
+        return inside;
+    }
+
+    /// <summary>
+    ///     <see cref="CheckDrawnWithin" /> for a chain left open on one side: the draws the window took stay inside
+    ///     <c>[floor, ceiling]</c> and are a draw rather than a constant.
+    /// </summary>
+    private static void CheckWindowDrawnWithin(string what, Func<double> draw, double floor, double ceiling) {
+        List<double> inside = WindowDraws(what, draw, floor, ceiling);
+
+        Check.WithCustomMessage($"{what} collapsed to the single value {inside[0]}: a dummy nobody can tell from a hand-picked literal.")
+             .That(new HashSet<double>(inside).Count)
+             .IsStrictlyGreaterThan(1);
+    }
+
     #endregion
 
     [Fact(DisplayName = "A two-sided interval declared at the window's edge is drawn whole, never collapsed to its floor.")]
@@ -194,8 +230,8 @@ public sealed class OrdinaryMagnitudeWindowTests {
 
         double justBelow = ContinuousIntervalSpec.NextDown(Magnitude);
 
-        HashSet<double> pair = [];
-        for (int i = 0; i < SampleCount; i++) { pair.Add(any.Double().GreaterThanOrEqualTo(justBelow).Generate()); }
+        // The tenth draw spans the declared domain whole (ADR-0117); the window's draws are the ones this pins.
+        HashSet<double> pair = [..WindowDraws("GreaterThanOrEqualTo(nextDown(1e6))", () => any.Double().GreaterThanOrEqualTo(justBelow).Generate(), justBelow, justBelow + SlabWidth)];
 
         Check.WithCustomMessage("The narrowing kept the two doubles either side of the seam; the draw returned only one.")
              .That(pair)
@@ -203,10 +239,9 @@ public sealed class OrdinaryMagnitudeWindowTests {
 
         // Single, where the pair is nameable, and where the same span with one of them excluded must still leave
         // the declared interval reachable rather than collapsing.
-        HashSet<float> singles = [];
-        for (int i = 0; i < SampleCount; i++) { singles.Add(any.Single().GreaterThanOrEqualTo(999_999.9375f).Generate()); }
+        HashSet<double> singles = [..WindowDraws("Single.GreaterThanOrEqualTo(999_999.9375f)", () => any.Single().GreaterThanOrEqualTo(999_999.9375f).Generate(), 999_999.9375d, 999_999.9375d + SlabWidth)];
 
-        Check.That(singles).IsEqualTo(new HashSet<float> { 999_999.9375f, 1_000_000f });
+        Check.That(singles).IsEqualTo(new HashSet<double> { 999_999.9375d, 1_000_000d });
     }
 
     [Fact(DisplayName = "A span a few subnormal steps wide returns every value in it (issue #310).")]
@@ -263,8 +298,14 @@ public sealed class OrdinaryMagnitudeWindowTests {
         // reaches this walk.
         AnyContext any = Any.WithSeed(Seed);
 
+        const decimal slabCeiling = 999_999m + 2_000_000m;
+
         HashSet<decimal> drawn = [];
         for (int i = 0; i < SampleCount; i++) { drawn.Add(any.Decimal().GreaterThanOrEqualTo(999_999m).WithScale(28).Except(999_999m).Generate()); }
+
+        // The tenth draw spans the declared domain whole (ADR-0117) and lands decades away; what the regression is
+        // about is a draw in the slab the lost narrowing fell back to, so the sample is read up to the slab's ceiling.
+        drawn.RemoveWhere(value => value > slabCeiling);
 
         Check.WithCustomMessage($"The narrowing was lost and the draw reached {drawn.Max()}, above the window the open side still narrows to.")
              .That(drawn.Max())
@@ -280,6 +321,9 @@ public sealed class OrdinaryMagnitudeWindowTests {
             unexcluded.Add(any.Decimal().GreaterThanOrEqualTo(999_999m).WithScale(28).Generate());
             coarse.Add(any.Decimal().GreaterThanOrEqualTo(999_999m).WithScale(2).Except(999_999m).Generate());
         }
+
+        unexcluded.RemoveWhere(value => value > slabCeiling);
+        coarse.RemoveWhere(value => value > slabCeiling);
 
         Check.That(unexcluded.Max()).IsLessOrEqualThan(1_000_000m);
         Check.That(coarse.Max()).IsLessOrEqualThan(1_000_000m);
@@ -308,9 +352,9 @@ public sealed class OrdinaryMagnitudeWindowTests {
 
         // The control: a bound low enough that one slab width still spans millions of floats keeps its slab, so
         // the ladder check narrows nothing it should not.
-        CheckDrawnWithin("Single.GreaterThanOrEqualTo(1e7f)",
-                         () => any.Single().GreaterThanOrEqualTo(1e7f).Generate(),
-                         1e7d, 1e7d + SlabWidth);
+        CheckWindowDrawnWithin("Single.GreaterThanOrEqualTo(1e7f)",
+                               () => any.Single().GreaterThanOrEqualTo(1e7f).Generate(),
+                               1e7d, 1e7d + SlabWidth);
     }
 
     [Fact(DisplayName = "A slab whose computed floor is not a rung is counted from the first rung inside it.")]
@@ -338,9 +382,9 @@ public sealed class OrdinaryMagnitudeWindowTests {
 
         // And the mirror of the control: a ceiling bound low enough that its slab still spans millions of floats
         // keeps that slab, so starting the count on the ladder narrows nothing it should not.
-        CheckDrawnWithin("Single.LessThanOrEqualTo(-1e7f)",
-                         () => any.Single().LessThanOrEqualTo(-1e7f).Generate(),
-                         -1e7d - SlabWidth, -1e7d);
+        CheckWindowDrawnWithin("Single.LessThanOrEqualTo(-1e7f)",
+                               () => any.Single().LessThanOrEqualTo(-1e7f).Generate(),
+                               -1e7d - SlabWidth, -1e7d);
     }
 
     [Fact(DisplayName = "A decimal exclusive bound on the window's edge generates instead of failing.")]
@@ -351,12 +395,12 @@ public sealed class OrdinaryMagnitudeWindowTests {
         // threw AnyGenerationException on every single draw.
         AnyContext any = Any.WithSeed(Seed);
 
-        CheckDrawnWithin("Decimal.GreaterThan(1e6)",
-                         () => (double)any.Decimal().GreaterThan(1_000_000m).Generate(),
-                         Magnitude, Magnitude + SlabWidth);
-        CheckDrawnWithin("Decimal.LessThan(-1e6)",
-                         () => (double)any.Decimal().LessThan(-1_000_000m).Generate(),
-                         -Magnitude - SlabWidth, -Magnitude);
+        CheckWindowDrawnWithin("Decimal.GreaterThan(1e6)",
+                               () => (double)any.Decimal().GreaterThan(1_000_000m).Generate(),
+                               Magnitude, Magnitude + SlabWidth);
+        CheckWindowDrawnWithin("Decimal.LessThan(-1e6)",
+                               () => (double)any.Decimal().LessThan(-1_000_000m).Generate(),
+                               -Magnitude - SlabWidth, -Magnitude);
     }
 
     [Fact(DisplayName = "A one-sided bound on the window's edge draws an ordinary slab beside it, not the whole domain.")]
@@ -366,12 +410,12 @@ public sealed class OrdinaryMagnitudeWindowTests {
         // — which is what keeps this from drawing at 1e308, the magnitude ADR-0031 exists to avoid.
         AnyContext any = Any.WithSeed(Seed);
 
-        CheckDrawnWithin("GreaterThanOrEqualTo(1e6)", () => any.Double().GreaterThanOrEqualTo(Magnitude).Generate(), Magnitude, Magnitude + SlabWidth);
-        CheckDrawnWithin("LessThanOrEqualTo(-1e6)", () => any.Double().LessThanOrEqualTo(-Magnitude).Generate(), -Magnitude - SlabWidth, -Magnitude);
-        CheckDrawnWithin("Single.GreaterThanOrEqualTo(1e6f)", () => any.Single().GreaterThanOrEqualTo(1e6f).Generate(), Magnitude, Magnitude + SlabWidth);
-        CheckDrawnWithin("Decimal.GreaterThanOrEqualTo(1e6)",
-                         () => (double)any.Decimal().GreaterThanOrEqualTo(1_000_000m).Generate(),
-                         Magnitude, Magnitude + SlabWidth);
+        CheckWindowDrawnWithin("GreaterThanOrEqualTo(1e6)", () => any.Double().GreaterThanOrEqualTo(Magnitude).Generate(), Magnitude, Magnitude + SlabWidth);
+        CheckWindowDrawnWithin("LessThanOrEqualTo(-1e6)", () => any.Double().LessThanOrEqualTo(-Magnitude).Generate(), -Magnitude - SlabWidth, -Magnitude);
+        CheckWindowDrawnWithin("Single.GreaterThanOrEqualTo(1e6f)", () => any.Single().GreaterThanOrEqualTo(1e6f).Generate(), Magnitude, Magnitude + SlabWidth);
+        CheckWindowDrawnWithin("Decimal.GreaterThanOrEqualTo(1e6)",
+                               () => (double)any.Decimal().GreaterThanOrEqualTo(1_000_000m).Generate(),
+                               Magnitude, Magnitude + SlabWidth);
     }
 
     [Fact(DisplayName = "Inclusive and exclusive spellings of the same bound draw at the same magnitude.")]
@@ -381,8 +425,8 @@ public sealed class OrdinaryMagnitudeWindowTests {
         // GreaterThan(1e6) drew around 1e308. One ulp of declared difference, 300 decades of drawn difference.
         AnyContext any = Any.WithSeed(Seed);
 
-        CheckDrawnWithin("GreaterThan(1e6)", () => any.Double().GreaterThan(Magnitude).Generate(), Magnitude, Magnitude + SlabWidth);
-        CheckDrawnWithin("LessThan(-1e6)", () => any.Double().LessThan(-Magnitude).Generate(), -Magnitude - SlabWidth, -Magnitude);
+        CheckWindowDrawnWithin("GreaterThan(1e6)", () => any.Double().GreaterThan(Magnitude).Generate(), Magnitude, Magnitude + SlabWidth);
+        CheckWindowDrawnWithin("LessThan(-1e6)", () => any.Double().LessThan(-Magnitude).Generate(), -Magnitude - SlabWidth, -Magnitude);
     }
 
     [Fact(DisplayName = "A bound spelled against the type's own edge draws as the one-sided constraint it equals.")]
@@ -392,8 +436,8 @@ public sealed class OrdinaryMagnitudeWindowTests {
         // it: reading the constraint would split these two spellings 300 decades apart.
         AnyContext any = Any.WithSeed(Seed);
 
-        CheckDrawnWithin("Between(1e6, double.MaxValue)", () => any.Double().Between(Magnitude, double.MaxValue).Generate(), Magnitude, Magnitude + SlabWidth);
-        CheckDrawnWithin("Between(double.MinValue, -1e6)", () => any.Double().Between(double.MinValue, -Magnitude).Generate(), -Magnitude - SlabWidth, -Magnitude);
+        CheckWindowDrawnWithin("Between(1e6, double.MaxValue)", () => any.Double().Between(Magnitude, double.MaxValue).Generate(), Magnitude, Magnitude + SlabWidth);
+        CheckWindowDrawnWithin("Between(double.MinValue, -1e6)", () => any.Double().Between(double.MinValue, -Magnitude).Generate(), -Magnitude - SlabWidth, -Magnitude);
     }
 
     [Fact(DisplayName = "An explicitly bounded interval is drawn whole however wide it is.")]
@@ -437,12 +481,12 @@ public sealed class OrdinaryMagnitudeWindowTests {
         // unconstrained draw, a merely permitted magnitude, and a one-sided bound short of the window's edge.
         AnyContext any = Any.WithSeed(Seed);
 
-        CheckDrawnWithin("Double()", () => any.Double().Generate(), -Magnitude, Magnitude);
-        CheckDrawnWithin("Single()", () => any.Single().Generate(), -Magnitude, Magnitude);
-        CheckDrawnWithin("Decimal()", () => (double)any.Decimal().Generate(), -Magnitude, Magnitude);
-        CheckDrawnWithin("Between(0, double.MaxValue)", () => any.Double().Between(0d, double.MaxValue).Generate(), 0d, Magnitude);
-        CheckDrawnWithin("GreaterThanOrEqualTo(999_999)", () => any.Double().GreaterThanOrEqualTo(999_999d).Generate(), 999_999d, Magnitude);
-        CheckDrawnWithin("Positive()", () => any.Double().Positive().Generate(), double.Epsilon, Magnitude);
+        CheckWindowDrawnWithin("Double()", () => any.Double().Generate(), -Magnitude, Magnitude);
+        CheckWindowDrawnWithin("Single()", () => any.Single().Generate(), -Magnitude, Magnitude);
+        CheckWindowDrawnWithin("Decimal()", () => (double)any.Decimal().Generate(), -Magnitude, Magnitude);
+        CheckWindowDrawnWithin("Between(0, double.MaxValue)", () => any.Double().Between(0d, double.MaxValue).Generate(), 0d, Magnitude);
+        CheckWindowDrawnWithin("GreaterThanOrEqualTo(999_999)", () => any.Double().GreaterThanOrEqualTo(999_999d).Generate(), 999_999d, Magnitude);
+        CheckWindowDrawnWithin("Positive()", () => any.Double().Positive().Generate(), double.Epsilon, Magnitude);
     }
 
     [Fact(DisplayName = "A magnitude beyond the window is still reached, one-sided or two-sided.")]

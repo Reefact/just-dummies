@@ -44,7 +44,13 @@ public sealed class ContinuousIntervalProperties {
     /// </summary>
     internal const int FewRungDrawCount = 120;
 
-    /// <summary>The magnitude an arbitrary number stays within unless the declared bounds leave no room (ADR-0031).</summary>
+    /// <summary>
+    ///     Draws per edge-rate case: enough that one draw in ten is told apart from never and from one in two with a
+    ///     margin of several standard deviations, few enough that a hundred FsCheck cases stay cheap.
+    /// </summary>
+    private const int EdgeRateDrawCount = 400;
+
+    /// <summary>The magnitude an arbitrary number stays within, nine draws in ten, unless the declared bounds leave no room (ADR-0117).</summary>
     private const double OrdinaryMagnitude = 1_000_000d;
 
     /// <summary>
@@ -493,34 +499,53 @@ public sealed class ContinuousIntervalProperties {
             .QuickCheckThrowOnFailure();
     }
 
-    [Fact(DisplayName = "An unconstrained draw is an ordinary number, whatever the seed — arithmetic on it stays finite.")]
-    public void UnconstrainedDrawsAreOrdinary() {
-        // ADR-0031. Stated as arithmetic rather than as a magnitude on purpose: what a dummy owes its test is that
-        // using it does not sabotage the test. Before this, a sixth of Positive() doubles overflowed to Infinity on
-        // a single multiplication, and the decimal equivalent threw OverflowException.
+    [Fact(DisplayName = "A chain left open on one side draws an ordinary number nine times in ten, whatever the seed.")]
+    public void AnOpenSideIsOrdinaryNineTimesInTen() {
+        // ADR-0031, ADR-0097 and ADR-0117 together. A bound is a permission, not a request, so the window keeps a
+        // draw ordinary — arithmetic on it stays finite, which is what a dummy owes the Arrange it fills. But only
+        // nine times in ten: the tenth spans the declared domain whole, because the test not caring is not the code
+        // not caring, and only a draw that reaches the type's limits can tell the two apart. Stated as a rate over a
+        // sample with a wide tolerance — the expected count is 360 of 400, with a standard deviation of 6 — so a
+        // draw sequence that stops reaching the edge, or reaches it every other time, fails, while a seed does not.
         Prop.ForAll(Generators.Seed().ToArbitrary(),
-                    seed => {
+                    Gen.Elements(1e7d, 1e50d, 1e308d, double.MaxValue).ToArbitrary(),
+                    (seed, permitted) => {
                         AnyContext any = Any.WithSeed(seed);
 
-                        return Expect.EveryDraw(any.Double(), value => IsFinite(value * 1.2d))
-                            && Expect.EveryDraw(any.Double().Positive(), value => IsFinite(value * 1.2d) && value > 0d)
-                            && Expect.EveryDraw(any.Single(), value => IsFinite(value * 1.2f))
-                            && Expect.EveryDraw(any.Decimal(), value => Expect.DoesNotThrow(() => _ = value * 1.2m));
+                        return IsOrdinaryNineTimesInTen(any.Double(), value => value)
+                            && IsOrdinaryNineTimesInTen(any.Double().Positive(), value => value)
+                            && IsOrdinaryNineTimesInTen(any.Double().LessThan(permitted), value => value)
+                            && IsOrdinaryNineTimesInTen(any.Double().Between(0d, double.MaxValue), value => value)
+                            && IsOrdinaryNineTimesInTen(any.Single(), value => value)
+                            && IsOrdinaryNineTimesInTen(any.Decimal(), value => (double)value);
                     })
             .QuickCheckThrowOnFailure();
     }
 
-    [Fact(DisplayName = "An interval that merely permits large values still yields ordinary ones, for every upper bound.")]
-    public void PermittingALargeValueIsNotRequestingOne() {
-        // The heart of ADR-0031: a bound is a permission, not a request. Any.Double().LessThan(huge) says what the
-        // value may not exceed, so widening that bound must not enlarge the draw. A string's WithMaxLength no
-        // longer shares this rule (ADR-0076 lets it steer the draw instead) -- this test is about the numeric
-        // window only, which ADR-0076 left untouched.
-        // A bound is a permission only while the other side is left open: a range declared on both sides is a
-        // request, drawn whole (ADR-0117), which the reachability properties below cover through DrawnFrom.
-        Prop.ForAll(Gen.Elements(1e7d, 1e50d, 1e200d, 1e308d, double.MaxValue).ToArbitrary(),
-                    permitted => Expect.EveryDraw(Any.Double().LessThan(permitted), value => Math.Abs(value) <= OrdinaryMagnitude)
-                              && Expect.EveryDraw(Any.Double().GreaterThan(-permitted), value => Math.Abs(value) <= OrdinaryMagnitude))
+    /// <summary>
+    ///     Whether <see cref="EdgeRateDrawCount" /> draws of <paramref name="generator" /> put more than three quarters
+    ///     and fewer than ninety-seven in a hundred of them inside the ordinary window — so the window takes most, and
+    ///     the edge is reached at all.
+    /// </summary>
+    private static bool IsOrdinaryNineTimesInTen<T>(IAny<T> generator, Func<T, double> magnitude) {
+        int ordinary = Expect.Draws(generator, EdgeRateDrawCount).Count(value => Math.Abs(magnitude(value)) <= OrdinaryMagnitude);
+
+        return ordinary > EdgeRateDrawCount * 3 / 4 && ordinary < EdgeRateDrawCount * 97 / 100;
+    }
+
+    [Fact(DisplayName = "A draw at the type's edge still honours every declared bound, whatever the seed.")]
+    public void AnEdgeDrawHonoursTheDeclaredBounds() {
+        // The edge draw widens what a draw reaches, never what it may break: it spans the DECLARED domain, so a
+        // one-sided bound, an exclusion and a decimal scale hold on it exactly as on a window draw.
+        Prop.ForAll(Generators.Seed().ToArbitrary(),
+                    seed => {
+                        AnyContext any = Any.WithSeed(seed);
+
+                        return Expect.EveryDraw(any.Double().Positive(), value => value > 0d, EdgeRateDrawCount)
+                            && Expect.EveryDraw(any.Double().LessThanOrEqualTo(-3d), value => value <= -3d && IsFinite(value), EdgeRateDrawCount)
+                            && Expect.EveryDraw(any.Single().GreaterThan(5f), value => value > 5f && !float.IsInfinity(value), EdgeRateDrawCount)
+                            && Expect.EveryDraw(any.Decimal().GreaterThanOrEqualTo(0m).WithScale(2), value => value >= 0m && decimal.Round(value, 2) == value, EdgeRateDrawCount);
+                    })
             .QuickCheckThrowOnFailure();
     }
 

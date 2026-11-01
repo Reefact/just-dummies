@@ -108,6 +108,13 @@ public sealed class SeedGoldenMasterTests {
         yield return ("Int32.Between", () => Render(Any.Int32().Between(1, 1000).Generate()));
         yield return ("Int64.Between", () => Render(Any.Int64().Between(-500L, 500L).Generate()));
         yield return ("Double.Between", () => Bits(Any.Double().Between(0d, 1000d).Generate()));
+        // An open floating-point draw tosses the edge coin first (ADR-0117), and under this seed the first toss lands
+        // on the edge — so the three plain rows above pin the edge branch and its two draws. Two draws in one scope
+        // pin the window branch too: the second toss does not land on the edge, so neither branch goes unwatched.
+        yield return ("Single.Twice", () => Join(new[] { Bits(Any.Single().Generate()), Bits(Any.Single().Generate()) }));
+        yield return ("Double.Twice", () => Join(new[] { Bits(Any.Double().Generate()), Bits(Any.Double().Generate()) }));
+        yield return ("Decimal.Twice",
+                      () => Join(new[] { Any.Decimal().Generate().ToString(CultureInfo.InvariantCulture), Any.Decimal().Generate().ToString(CultureInfo.InvariantCulture) }));
         yield return ("Decimal.Between", () => Any.Decimal().Between(0m, 1000m).Generate().ToString(CultureInfo.InvariantCulture));
         yield return ("String.NonEmpty.WithMaxLength", () => Escape(Any.String().NonEmpty().WithMaxLength(50).Generate()));
         yield return ("StringMatching", () => Escape(Any.StringMatching("[a-z]{3}-[0-9]{4}").Generate()));

@@ -117,13 +117,13 @@ public sealed class DecimalExclusionNudgeTests {
     public void AGenuinelyBlockedNeighbourhoodStillRefuses() {
         // The fix widens which declarations generate; it must not widen what the walk claims to have established.
         // Three hundred contiguous excluded values sit further than the budget from a draw landing among them,
-        // while both ends of the range stay free — so the refusal is local and has to keep reading as local. Seed 6
+        // while both ends of the range stay free — so the refusal is local and has to keep reading as local. Seed 10
         // lands inside the band, which makes the case pinned rather than statistical.
         List<decimal> excluded = [];
         for (int step = 50; step < 350; step++) { excluded.Add(decimal.MaxValue - step); }
 
         AnyGenerationException thrown = Assert.Throws<AnyGenerationException>(
-            () => Any.WithSeed(6).Decimal().Between(decimal.MaxValue - 400m, decimal.MaxValue).Except(excluded.ToArray()).Generate());
+            () => Any.WithSeed(10).Decimal().Between(decimal.MaxValue - 400m, decimal.MaxValue).Except(excluded.ToArray()).Generate());
 
         // Both ends are free, so the declaration is satisfiable and any claim that it is empty would be false.
         Check.That(excluded).Not.Contains(decimal.MaxValue - 400m);

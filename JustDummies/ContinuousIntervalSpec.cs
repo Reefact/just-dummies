@@ -419,12 +419,12 @@ internal sealed class ContinuousIntervalSpec {
     }
 
     /// <summary>
-    ///     The interval a draw is actually taken from: the declared one narrowed to the ordinary magnitude
-    ///     (ADR-0031), and — where that narrowing would leave fewer than two values — the interval the window's own
-    ///     purpose asks for instead. The rule the three branches implement, in the terms a caller reads it in:
-    ///     a one-sided constraint stays ordinary <b>around</b> the bound it declares; an explicitly bounded interval
-    ///     belongs to the caller and is drawn whole; a one-sided bound so extraordinary that no ordinary slab is
-    ///     representable beside it falls back to the declared domain.
+    ///     The interval a draw is actually taken from. The rule the three branches implement, in the terms a caller
+    ///     reads it in: an explicitly bounded interval belongs to the caller and is drawn whole, however far past the
+    ///     ordinary magnitude it reaches (ADR-0117); otherwise the declared interval is narrowed to that magnitude
+    ///     (ADR-0097), and where the narrowing would leave fewer than two values a one-sided constraint stays
+    ///     ordinary <b>around</b> the bound it declares, and a one-sided bound so extraordinary that no ordinary slab
+    ///     is representable beside it falls back to the declared domain.
     /// </summary>
     /// <remarks>
     ///     What separates the second branch from the third is the <b>value</b> of the opposing bound, never whether a
@@ -432,19 +432,20 @@ internal sealed class ContinuousIntervalSpec {
     ///     the same set, so they must draw alike, and reading the constraint would split them 300 decades apart.
     /// </remarks>
     private (double Lower, double Upper) DrawnInterval() {
-        double lower = Math.Max(_min, -OrdinaryMagnitude.AsDouble);
-        double upper = Math.Min(_max, OrdinaryMagnitude.AsDouble);
-        // Two or more values left: the ordinary case, and the one every existing draw already took.
-        if (HoldsTwoDrawableValues(lower, upper)) { return (lower, upper); }
-
-        // Past here the declared interval sits at or beyond the window's edge, so the narrowing has nothing to hand
-        // back. A bound short of the type's own edge is one the caller wrote and owns; a bound sitting exactly on
-        // that edge is the domain showing through, which permits a magnitude rather than asking for one.
+        // A bound short of the type's own edge is one the caller wrote and owns; a bound sitting exactly on that edge
+        // is the domain showing through, which permits a magnitude rather than asking for one. Both owned: the range
+        // is the caller's, and narrowing it would make the values they declared past a million unreachable.
         bool floorIsOwned   = _min > _domainMin;
         bool ceilingIsOwned = _max < _domainMax;
         if (floorIsOwned && ceilingIsOwned) { return (_min, _max); }
 
-        // One side is the domain: keep the window's width and carry it to the bound the caller did write, rather
+        double lower = Math.Max(_min, -OrdinaryMagnitude.AsDouble);
+        double upper = Math.Min(_max, OrdinaryMagnitude.AsDouble);
+        // Two or more values left: the ordinary case.
+        if (HoldsTwoDrawableValues(lower, upper)) { return (lower, upper); }
+
+        // Past here the one declared bound sits at or beyond the window's edge, so the narrowing has nothing to hand
+        // back. One side is the domain: keep the window's width and carry it to the bound the caller did write, rather
         // than dropping it and drawing the whole domain. That is also what keeps GreaterThan(1e6) and
         // GreaterThanOrEqualTo(1e6) — one ulp apart — from landing 300 decades apart. The slab answers to the same
         // ladder the narrowing did: this spec computes in double while a row draws its own type, so at 2^45f the
@@ -460,7 +461,7 @@ internal sealed class ContinuousIntervalSpec {
 
         // An extraordinary bound: no ordinary slab beside it holds two values a draw can land on, so the declared
         // interval is the honest answer. (Both bounds on the domain edge cannot reach here — the window lies
-        // inside every supported domain, so the first branch returned.)
+        // inside every supported domain, so the narrowing returned.)
         return (_min, _max);
     }
 

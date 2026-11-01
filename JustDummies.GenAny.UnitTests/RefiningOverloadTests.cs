@@ -305,6 +305,183 @@ public sealed class RefiningOverloadTests {
         Check.That(drawn).ContainsOnlyElementsThatMatch(distance => distance == 240);
     }
 
+    /// <summary>
+    ///     Successive refinements accumulate, as the library's constraints do: the second lambda starts from
+    ///     what the first made of the base, not from the base again.
+    /// </summary>
+    /// <remarks>
+    ///     Regression, issue #406. A refinement that started again from <c>AnyValidQuantity()</c> drew every
+    ///     positive number at or above five here, and the test's first lambda was silently dropped.
+    /// </remarks>
+    [Fact(DisplayName = "A second refinement starts from what the first made of the base.")]
+    public void ASecondRefinementStartsFromWhatTheFirstMade() {
+        string harness = $$"""
+                           using System.Linq;
+
+                           using JustDummies;
+
+                           namespace Shop.Domain;
+
+                           public static class Harness {
+                               public static int[] Run() {
+                                   using (Any.UseSeed({{Seed}})) {
+                                       AnySubject refined = new AnySubject().WithQuantity(q => q.LessThanOrEqualTo(10))
+                                                                            .WithQuantity(q => q.GreaterThanOrEqualTo(5));
+
+                                       return Enumerable.Range(0, 500).Select(_ => refined.Generate().Quantity).ToArray();
+                                   }
+                               }
+                           }
+                           """;
+
+        int[] drawn = (int[])Run(Scaffolded(GuardedQuantity), GuardedQuantity, harness);
+
+        Check.That(drawn).ContainsOnlyElementsThatMatch(quantity => quantity is >= 5 and <= 10);
+    }
+
+    // A pin keeps the recipe: the refinement after it starts from the last recipe, not from the base, and the
+    // pinned value is no longer drawn.
+    [Fact(DisplayName = "A refinement after a pin starts from the recipe the pin kept.")]
+    public void ARefinementAfterAPinStartsFromTheRecipeThePinKept() {
+        string harness = $$"""
+                           using System.Linq;
+
+                           using JustDummies;
+
+                           namespace Shop.Domain;
+
+                           public static class Harness {
+                               public static int[] Run() {
+                                   using (Any.UseSeed({{Seed}})) {
+                                       AnySubject refined = new AnySubject().WithQuantity(q => q.LessThanOrEqualTo(3))
+                                                                            .WithQuantity(7)
+                                                                            .WithQuantity(q => q.GreaterThanOrEqualTo(2));
+
+                                       return Enumerable.Range(0, 500).Select(_ => refined.Generate().Quantity).ToArray();
+                                   }
+                               }
+                           }
+                           """;
+
+        int[] drawn = (int[])Run(Scaffolded(GuardedQuantity), GuardedQuantity, harness);
+
+        Check.That(drawn).ContainsOnlyElementsThatMatch(quantity => quantity is >= 2 and <= 3);
+    }
+
+    [Fact(DisplayName = "A pin after a refinement is what is drawn.")]
+    public void APinAfterARefinementIsWhatIsDrawn() {
+        string harness = $$"""
+                           using System.Linq;
+
+                           using JustDummies;
+
+                           namespace Shop.Domain;
+
+                           public static class Harness {
+                               public static int[] Run() {
+                                   using (Any.UseSeed({{Seed}})) {
+                                       AnySubject pinned = new AnySubject().WithQuantity(q => q.LessThanOrEqualTo(3)).WithQuantity(7);
+
+                                       return Enumerable.Range(0, 50).Select(_ => pinned.Generate().Quantity).ToArray();
+                                   }
+                               }
+                           }
+                           """;
+
+        int[] drawn = (int[])Run(Scaffolded(GuardedQuantity), GuardedQuantity, harness);
+
+        Check.That(drawn).ContainsOnlyElementsThatMatch(quantity => quantity == 7);
+    }
+
+    /// <summary>
+    ///     The case of issue #406, from the second developer-UX trial (CLI-9): a rule set by the outer base on a
+    ///     composed value survives a refinement the test writes on that value.
+    /// </summary>
+    /// <remarks>
+    ///     A kinship policy caps the kinship of a pair at 0.25; the developer wrote that rule into
+    ///     <c>AnyValidMaximumPairKinship()</c>, as a refinement of the coefficient's own base. A test asking for a
+    ///     cap of at least 0.125 refines the same coefficient once more — and the emitted <c>WithValue(Func)</c>
+    ///     used to start again from the coefficient's base, dropping the 0.25 the outer base had set, so the
+    ///     policy's constructor threw on most draws. The expected result is <c>[0.125, 0.25]</c>.
+    /// </remarks>
+    [Fact(DisplayName = "A nested refinement keeps the rule the outer base set.")]
+    public void ANestedRefinementKeepsTheRuleTheOuterBaseSet() {
+        const string domain = """
+                              using System;
+
+                              namespace Shop.Domain;
+
+                              public sealed class KinshipCoefficient {
+                                  public KinshipCoefficient(double value) {
+                                      if (value < 0.0) { throw new ArgumentOutOfRangeException(nameof(value)); }
+                                      if (value > 1.0) { throw new ArgumentOutOfRangeException(nameof(value)); }
+
+                                      Value = value;
+                                  }
+
+                                  public double Value { get; }
+                              }
+
+                              public sealed class KinshipPolicy {
+                                  public KinshipPolicy(KinshipCoefficient maximumPairKinship) {
+                                      if (maximumPairKinship.Value > 0.25) { throw new ArgumentOutOfRangeException(nameof(maximumPairKinship), "A policy may not tolerate kinship above 0.25."); }
+
+                                      MaximumPairKinship = maximumPairKinship;
+                                  }
+
+                                  public KinshipCoefficient MaximumPairKinship { get; }
+                              }
+                              """;
+
+        string harness = $$"""
+                           using System.Linq;
+
+                           using JustDummies;
+
+                           namespace Shop.Domain;
+
+                           public static class Harness {
+                               public static double[] Run() {
+                                   using (Any.UseSeed({{Seed}})) {
+                                       AnyKinshipPolicy refined = new AnyKinshipPolicy().WithMaximumPairKinship(k => k.WithValue(v => v.GreaterThanOrEqualTo(0.125)));
+
+                                       return Enumerable.Range(0, 500).Select(_ => refined.Generate().MaximumPairKinship.Value).ToArray();
+                                   }
+                               }
+                           }
+                           """;
+
+        string coefficient = Subject.ScaffoldByName("KinshipCoefficient", domain).File!.SourceText;
+        string policy      = Subject.ScaffoldByName("KinshipPolicy", domain).File!.SourceText;
+
+        Check.That(policy).Contains("return new AnyKinshipCoefficient();");
+
+        string written = VerifySentinel.StrippedFrom(policy)
+                                       .Replace("return new AnyKinshipCoefficient();",
+                                                "return new AnyKinshipCoefficient().WithValue(v => v.LessThanOrEqualTo(0.25));");
+
+        double[] drawn = (double[])Run([coefficient, written, harness], domain);
+
+        Check.That(drawn).ContainsOnlyElementsThatMatch(value => value is >= 0.125 and <= 0.25);
+    }
+
+    /// <summary>A guarded <c>Subject</c>, for the cases about what successive <c>With</c> calls do.</summary>
+    private const string GuardedQuantity = """
+                                           using System;
+
+                                           namespace Shop.Domain;
+
+                                           public sealed class Subject {
+                                               public Subject(int quantity) {
+                                                   if (quantity <= 0) { throw new ArgumentOutOfRangeException(nameof(quantity)); }
+
+                                                   Quantity = quantity;
+                                               }
+
+                                               public int Quantity { get; }
+                                           }
+                                           """;
+
     private static string Scaffolded(string domain) {
         return Subject.ScaffoldByName("Subject", domain).File!.SourceText;
     }

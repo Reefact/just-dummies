@@ -260,7 +260,8 @@ first run, and on every run after.
 ### Where the valid base lives
 
 Each parameter has a factory in the generated file, named `AnyValid…()`. The generator's constructor
-draws from it, and every lambda starts from it: it is that parameter's one address.
+draws from it, and a lambda starts from it — the first one; a later one starts from what the earlier
+ones made of it. It is that parameter's one address, and every refinement builds on it.
 
 It is also where you write a rule the tool could not apply. Here, `Shipment` checks something on its
 route that `any` could not read, so it marked the parameter `to verify`, and the base became:
@@ -288,9 +289,9 @@ factory when it matters — `Any.String().NonEmpty().WithLengthBetween(1, 50)`.
 
 `AnyValid…()` returns the builder the tool chose for the type: `AnyString` for a `string`. Replace
 `Any.String().NonEmpty()` with `Any.StringMatching("[A-Z]{3}")` and the file stops compiling
-(`CS0029`), because that call returns an `AnyPattern`. Two other lines carry the old type, and they
-are the whole of the edit — the factory's return type, and the `Func<…>` of the refining overload
-beside the pin:
+(`CS0029`), because that call returns an `AnyPattern`. The old type is on three more lines, and they
+are the whole of the edit — the recipe field, the recipe constructor's parameter, and the `Func<…>`
+of the refining overload beside the pin:
 
 <!-- jd:declarations -->
 ```csharp
@@ -306,7 +307,9 @@ public sealed class Currency {
 
 public sealed partial class AnyCurrency : IAny<Currency> {
 
-    private readonly IAny<string> _code;
+    private IAny<string> _code;
+
+    private AnyPattern _codeRecipe;                                        // was AnyString
 
     public AnyCurrency()
         : this(code: AnyValidCode()) { }
@@ -315,12 +318,23 @@ public sealed partial class AnyCurrency : IAny<Currency> {
         return Any.StringMatching("[A-Z]{3}");                             // was Any.String().NonEmpty()
     }
 
-    private AnyCurrency(IAny<string> code) {
-        _code = code;
+    private AnyCurrency(AnyPattern code) {                                 // was AnyString
+        _code       = code;
+        _codeRecipe = code;
+    }
+
+    private AnyCurrency(AnyCurrency from) {
+        _code       = from._code;
+        _codeRecipe = from._codeRecipe;
     }
 
     public AnyCurrency WithCode(Func<AnyPattern, AnyPattern> configure) {  // was Func<AnyString, AnyString>
-        return new AnyCurrency(configure(AnyValidCode()));
+        AnyCurrency copy = new AnyCurrency(this);
+
+        copy._codeRecipe = configure(_codeRecipe);
+        copy._code       = copy._codeRecipe;
+
+        return copy;
     }
 
     public Currency Generate() {
@@ -331,8 +345,9 @@ public sealed partial class AnyCurrency : IAny<Currency> {
 ```
 
 A replacement that ends in `.As(…)` is an `IAny<T>`, not a builder: there is nothing for a lambda to
-refine, so type the factory `IAny<string>` and delete the refining overload, or give it
-`Func<IAny<string>, IAny<string>>`. The pin, `WithCode(string value)`, does not change.
+refine, so type the factory, the recipe field and the recipe constructor's parameter `IAny<string>`
+and delete the refining overload, or give it `Func<IAny<string>, IAny<string>>`. The pin,
+`WithCode(string value)`, does not change.
 
 ### What a refinement can do, and what it cannot
 
@@ -342,11 +357,17 @@ refine, so type the factory `IAny<string>` and delete the refining overload, or 
   `p => p.Negative()` — is refused at that line, on every run, by an exception naming both
   `Positive()` and `Negative()`.
 * **It sets a part of a composed value.** On a route, the lambda calls `AnyRoute`'s own `With…`
-  methods, and what you set replaces what the base set for that part. `r => r.WithDomestic(false)` is
-  accepted by the route and refused by the shipment — on every run, since the value is pinned. A
-  lambda guarantees where it starts, not where you take it.
-* **The last call wins**, as with every `With…`. A second `WithParcels(…)` starts again from the base;
-  it does not add to the first.
+  methods: what you pin replaces what the base pinned for that part, and what you refine builds on
+  what the base refined. `r => r.WithDomestic(false)` is accepted by the route and refused by the
+  shipment — on every run, since the value is pinned. A lambda guarantees where it starts, not where
+  you take it.
+* **Refinements accumulate.** A second `WithParcels(…)` starts from what the first made of the base,
+  not from the base again: `p => p.LessThanOrEqualTo(10)` then `p => p.GreaterThanOrEqualTo(5)` draws
+  from 5 to 10, and two that contradict each other are refused naming both. The same holds one level
+  down: a base that set `r => r.WithDistanceKm(d => d.LessThan(500))` survives a test's
+  `r => r.WithDistanceKm(d => d.GreaterThan(100))`. A pin keeps the recipe: `WithParcels(7)` is what
+  is drawn, and a lambda written after it starts from the recipe the pin left, and takes the pin's
+  place.
 * **One that builds on its argument never widens the base.** It cannot draw an empty label when the base
   says `NonEmpty()`. One that ignores its argument replaces the base: `_ => Any.Int32()` hands back a
   generator of the lambda's own, and every rule the base kept goes with it.
@@ -421,7 +442,11 @@ need:
 public sealed partial class AnyShipment {
 
     public AnyShipment WithDeclaredValue(IAny<decimal?> generator) {
-        return new AnyShipment(_route, _parcels, _labels, generator);
+        AnyShipment copy = new AnyShipment(this);
+
+        copy._declaredValue = generator;
+
+        return copy;
     }
 
 }
@@ -437,12 +462,15 @@ Shipment anyShipment = Any.Shipment()
 
 Three things to know about that file:
 
-1. It calls the private constructor of the generated file, every field in its place — the same call
-   each generated `With…` makes.
+1. It takes a copy through the private copy constructor of the generated file, changes one field of
+   the copy, and returns the copy — the same three statements each generated `With…` has. **Never
+   write a field of `this`**: the generator a test holds must not change under it, and the file keeps
+   that promise by this shape rather than by `readonly`. The recipe field is left as it is, so a
+   lambda written after your overload starts from it.
 2. `any generate Shipment --force` rewrites `AnyShipment.cs` only, so your file survives a
    re-scaffold.
-3. If `Shipment`'s constructor changes, a re-scaffold changes that private constructor, and your
-   method stops compiling at its own line. It never goes wrong silently.
+3. If `Shipment`'s constructor changes, a re-scaffold renames or removes the field, and your method
+   stops compiling at its own line. It never goes wrong silently.
 
 And one thing to remember: this overload **replaces** the base. Whatever rule `AnyValid…()` keeps
 for that parameter, the generator you pass has to keep too — which is why the tool does not write it

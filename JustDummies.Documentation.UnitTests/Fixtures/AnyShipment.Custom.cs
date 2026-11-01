@@ -7,9 +7,13 @@ namespace JustDummies.Documentation.UnitTests.Fixtures;
 /// </summary>
 public sealed partial class AnyShipment {
 
-    /// <summary>Draws <c>declaredValue</c> from <paramref name="generator" />, in place of its valid base.</summary>
+    /// <summary>Draws <c>declaredValue</c> from <paramref name="generator" />, in place of its valid base; the recipe is kept.</summary>
     public AnyShipment WithDeclaredValue(IAny<decimal?> generator) {
-        return new AnyShipment(_route, _parcels, _labels, generator);
+        AnyShipment copy = new AnyShipment(this);
+
+        copy._declaredValue = generator;
+
+        return copy;
     }
 
 }

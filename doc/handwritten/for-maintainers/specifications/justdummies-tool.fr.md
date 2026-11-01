@@ -111,7 +111,7 @@ table en est l'index ; elle ne porte aucun argument propre.
 | **D10** | Ne jamais émettre `.OrNull()`. | Un dummy aléatoirement `null` est précisément l'instabilité que la bibliothèque existe pour supprimer. |
 | **D11** | Le **moteur de scaffolding est une bibliothèque séparée** au plancher Roslyn ; la CLI est une coquille. | Le second consommateur plausible du moteur est un refactoring IDE, qui n'est pas une CLI et ne peut pas charger un assembly `net8.0`. |
 | **D12** *(v1.1)* | Un point d'entrée est **optionnel**, émis dans un fichier à lui. | Le fichier du generator ne change jamais, donc le plancher du §4.4 reste sa propriété et `new Any{Type}()` continue de fonctionner. |
-| **D13** | Un test **affine** la base valide d'un paramètre par une lambda, ou fixe une valeur ; il ne remplace jamais la base. | Une base remplacée perd ses règles et compile quand même ; une base affinée les garde à une seule adresse. |
+| **D13** | Un test **affine** la base valide d'un paramètre par une lambda, ou fixe une valeur ; il ne remplace jamais la base, et les affinages **s'accumulent**. | Une base remplacée perd ses règles et compile quand même ; une base affinée les garde à une seule adresse — et un affinage qui repartait de la base perdait tous les précédents. |
 
 ---
 
@@ -273,12 +273,19 @@ namespace Shop.Domain;
 /// </summary>
 public sealed partial class AnyOrder : IAny<Order> {
 
-    private readonly IAny<OrderReference>        _reference;
-    private readonly IAny<Customer>              _customer;
-    private readonly IAny<int>                   _quantity;
-    private readonly IAny<OrderStatus>           _status;
-    private readonly IAny<IReadOnlyList<string>> _tags;
-    private readonly IAny<DateTime>              _placedAt;
+    private IAny<OrderReference>        _reference;
+    private IAny<Customer>              _customer;
+    private IAny<int>                   _quantity;
+    private IAny<OrderStatus>           _status;
+    private IAny<IReadOnlyList<string>> _tags;
+    private IAny<DateTime>              _placedAt;
+
+    private AnyOrderReference    _referenceRecipe;
+    private AnyCustomer          _customerRecipe;
+    private AnyInt32             _quantityRecipe;
+    private AnyEnum<OrderStatus> _statusRecipe;
+    private AnyList<string>      _tagsRecipe;
+    private AnyDateTime          _placedAtRecipe;
 
     /// <summary>Creates the generator with a default recipe for every constructor parameter.</summary>
     public AnyOrder()
@@ -313,78 +320,155 @@ public sealed partial class AnyOrder : IAny<Order> {
         return Any.DateTime();
     }
 
-    private AnyOrder(IAny<OrderReference>        reference,
-                     IAny<Customer>              customer,
-                     IAny<int>                   quantity,
-                     IAny<OrderStatus>           status,
-                     IAny<IReadOnlyList<string>> tags,
-                     IAny<DateTime>              placedAt) {
-        _reference = reference;
-        _customer  = customer;
-        _quantity  = quantity;
-        _status    = status;
-        _tags      = tags;
-        _placedAt  = placedAt;
+    /// <summary>Draws every parameter from the recipe given for it.</summary>
+    private AnyOrder(AnyOrderReference    reference,
+                     AnyCustomer          customer,
+                     AnyInt32             quantity,
+                     AnyEnum<OrderStatus> status,
+                     AnyList<string>      tags,
+                     AnyDateTime          placedAt) {
+        _reference       = reference;
+        _referenceRecipe = reference;
+        _customer        = customer;
+        _customerRecipe  = customer;
+        _quantity        = quantity;
+        _quantityRecipe  = quantity;
+        _status          = status;
+        _statusRecipe    = status;
+        _tags            = tags;
+        _tagsRecipe      = tags;
+        _placedAt        = placedAt;
+        _placedAtRecipe  = placedAt;
     }
 
-    /// <summary>Pins <c>reference</c> to a fixed value.</summary>
+    /// <summary>Copies <paramref name="from" />, for a <c>With…</c> method to change one parameter of before handing it out.</summary>
+    private AnyOrder(AnyOrder from) {
+        _reference       = from._reference;
+        _referenceRecipe = from._referenceRecipe;
+        _customer        = from._customer;
+        _customerRecipe  = from._customerRecipe;
+        _quantity        = from._quantity;
+        _quantityRecipe  = from._quantityRecipe;
+        _status          = from._status;
+        _statusRecipe    = from._statusRecipe;
+        _tags            = from._tags;
+        _tagsRecipe      = from._tagsRecipe;
+        _placedAt        = from._placedAt;
+        _placedAtRecipe  = from._placedAtRecipe;
+    }
+
+    /// <summary>Pins <c>reference</c> to a fixed value; its recipe is kept for a later refinement.</summary>
     public AnyOrder WithReference(OrderReference value) {
-        return new AnyOrder(new FixedValue<OrderReference>(value), _customer, _quantity, _status, _tags, _placedAt);
+        AnyOrder copy = new AnyOrder(this);
+
+        copy._reference = new FixedValue<OrderReference>(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>reference</c> from <c>AnyValidReference()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>reference</c> is drawn from — <c>AnyValidReference()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
     public AnyOrder WithReference(Func<AnyOrderReference, AnyOrderReference> configure) {
-        return new AnyOrder(configure(AnyValidReference()), _customer, _quantity, _status, _tags, _placedAt);
+        AnyOrder copy = new AnyOrder(this);
+
+        copy._referenceRecipe = configure(_referenceRecipe);
+        copy._reference       = copy._referenceRecipe;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>customer</c> to a fixed value.</summary>
+    /// <summary>Pins <c>customer</c> to a fixed value; its recipe is kept for a later refinement.</summary>
     public AnyOrder WithCustomer(Customer value) {
-        return new AnyOrder(_reference, new FixedValue<Customer>(value), _quantity, _status, _tags, _placedAt);
+        AnyOrder copy = new AnyOrder(this);
+
+        copy._customer = new FixedValue<Customer>(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>customer</c> from <c>AnyValidCustomer()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>customer</c> is drawn from — <c>AnyValidCustomer()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
     public AnyOrder WithCustomer(Func<AnyCustomer, AnyCustomer> configure) {
-        return new AnyOrder(_reference, configure(AnyValidCustomer()), _quantity, _status, _tags, _placedAt);
+        AnyOrder copy = new AnyOrder(this);
+
+        copy._customerRecipe = configure(_customerRecipe);
+        copy._customer       = copy._customerRecipe;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>quantity</c> to a fixed value.</summary>
+    /// <summary>Pins <c>quantity</c> to a fixed value; its recipe is kept for a later refinement.</summary>
     public AnyOrder WithQuantity(int value) {
-        return new AnyOrder(_reference, _customer, new FixedValue<int>(value), _status, _tags, _placedAt);
+        AnyOrder copy = new AnyOrder(this);
+
+        copy._quantity = new FixedValue<int>(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>quantity</c> from <c>AnyValidQuantity()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>quantity</c> is drawn from — <c>AnyValidQuantity()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
     public AnyOrder WithQuantity(Func<AnyInt32, AnyInt32> configure) {
-        return new AnyOrder(_reference, _customer, configure(AnyValidQuantity()), _status, _tags, _placedAt);
+        AnyOrder copy = new AnyOrder(this);
+
+        copy._quantityRecipe = configure(_quantityRecipe);
+        copy._quantity       = copy._quantityRecipe;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>status</c> to a fixed value.</summary>
+    /// <summary>Pins <c>status</c> to a fixed value; its recipe is kept for a later refinement.</summary>
     public AnyOrder WithStatus(OrderStatus value) {
-        return new AnyOrder(_reference, _customer, _quantity, new FixedValue<OrderStatus>(value), _tags, _placedAt);
+        AnyOrder copy = new AnyOrder(this);
+
+        copy._status = new FixedValue<OrderStatus>(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>status</c> from <c>AnyValidStatus()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>status</c> is drawn from — <c>AnyValidStatus()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
     public AnyOrder WithStatus(Func<AnyEnum<OrderStatus>, AnyEnum<OrderStatus>> configure) {
-        return new AnyOrder(_reference, _customer, _quantity, configure(AnyValidStatus()), _tags, _placedAt);
+        AnyOrder copy = new AnyOrder(this);
+
+        copy._statusRecipe = configure(_statusRecipe);
+        copy._status       = copy._statusRecipe;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>tags</c> to a fixed value.</summary>
+    /// <summary>Pins <c>tags</c> to a fixed value; its recipe is kept for a later refinement.</summary>
     public AnyOrder WithTags(IReadOnlyList<string> value) {
-        return new AnyOrder(_reference, _customer, _quantity, _status, new FixedValue<IReadOnlyList<string>>(value), _placedAt);
+        AnyOrder copy = new AnyOrder(this);
+
+        copy._tags = new FixedValue<IReadOnlyList<string>>(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>tags</c> from <c>AnyValidTags()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>tags</c> is drawn from — <c>AnyValidTags()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
     public AnyOrder WithTags(Func<AnyList<string>, AnyList<string>> configure) {
-        return new AnyOrder(_reference, _customer, _quantity, _status, configure(AnyValidTags()), _placedAt);
+        AnyOrder copy = new AnyOrder(this);
+
+        copy._tagsRecipe = configure(_tagsRecipe);
+        copy._tags       = copy._tagsRecipe;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>placedAt</c> to a fixed value.</summary>
+    /// <summary>Pins <c>placedAt</c> to a fixed value; its recipe is kept for a later refinement.</summary>
     public AnyOrder WithPlacedAt(DateTime value) {
-        return new AnyOrder(_reference, _customer, _quantity, _status, _tags, new FixedValue<DateTime>(value));
+        AnyOrder copy = new AnyOrder(this);
+
+        copy._placedAt = new FixedValue<DateTime>(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>placedAt</c> from <c>AnyValidPlacedAt()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>placedAt</c> is drawn from — <c>AnyValidPlacedAt()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
     public AnyOrder WithPlacedAt(Func<AnyDateTime, AnyDateTime> configure) {
-        return new AnyOrder(_reference, _customer, _quantity, _status, _tags, configure(AnyValidPlacedAt()));
+        AnyOrder copy = new AnyOrder(this);
+
+        copy._placedAtRecipe = configure(_placedAtRecipe);
+        copy._placedAt       = copy._placedAtRecipe;
+
+        return copy;
     }
 
     /// <summary>Produces one arbitrary <see cref="Order" />.</summary>
@@ -418,8 +502,21 @@ public sealed partial class AnyOrder : IAny<Order> {
 
 * `public sealed partial class Any{Type} : IAny<{Type}>`. `partial` pour que les membres propres du
   développeur vivent dans un fichier voisin et survivent à un `--force`.
-* Un `private readonly IAny<TParam> _param;` par paramètre du constructeur, dans l'ordre de
-  déclaration.
+* Un `private IAny<TParam> _param;` par paramètre du constructeur, dans l'ordre de déclaration —
+  ce qui est tiré — et, pour chaque paramètre résolu, un `private G _paramRecipe;` portant sa
+  **recette courante** : la base valide d'abord, puis ce que chaque affinage en a fait, typée avec
+  le generator que sa fabrique retourne pour qu'une lambda puisse l'affiner par les contraintes de
+  ce generator. Les deux divergent sur une fixation, qui met une valeur fixe là où le tirage se fait
+  et laisse la recette telle quelle. **Les champs ne sont pas `readonly`, par décision** (issue
+  #406) : une méthode `With…` copie le generator et écrit un seul paramètre de la copie avant de la
+  rendre, donc l'instance qu'un appelant tient ne change jamais — l'immutabilité de D2 et de
+  l'ADR-0057, tenue par la forme du fichier plutôt que par le compilateur. L'alternative, un
+  constructeur à tous les arguments auquel chaque `With…` repassait chaque champ, croissait deux fois
+  avec le nombre de paramètres une fois les recettes venues doubler les champs : douze arguments par
+  méthode sur l'exemple du §4.1, pour un fichier 80 % plus long qu'avant les recettes. Ce que
+  `readonly` aurait refusé et que la convention interdit désormais, c'est qu'une part écrite par le
+  développeur écrive un champ de `this` ; la page utilisateur le dit là où elle enseigne cette part,
+  et un analyseur de style qu'un consommateur active peut suggérer `readonly` sur le fichier généré.
 * Un **constructeur public sans paramètre** portant la recette inférée, écrit avec des arguments
   nommés pour que le lecteur associe chaque appel à son paramètre sans compter.
 * Une **fabrique privée statique** par paramètre — `AnyValid{Param}()` — qui contient sa **base
@@ -427,23 +524,37 @@ public sealed partial class AnyOrder : IAny<Order> {
   Son type de retour est le generator concret sur lequel se termine sa chaîne — `AnyInt32`,
   `AnyEnum<OrderStatus>`, `AnyList<string>`, `AnyOrderReference` —, déterminé d'après le dernier
   appel de la chaîne, car une contrainte peut retourner un autre generator (`Any.Uri().Web()` est un
-  `AnyWebUri`). L'initialiseur du constructeur public appelle chaque fabrique par son nom, suivie de
-  la conversion du paramètre s'il en a une (`AnyValidDiscount().AsNullable()` pour un `decimal?`) :
-  la fabrique s'arrête avant cette conversion, pour qu'un affinage puisse encore appeler les
-  contraintes du generator. La surcharge d'affinage ci-dessous appelle la même fabrique, qui devient
-  ainsi le seul endroit où la base est définie : ce que le développeur y écrit — une règle prévue
-  à la section 5.6, une règle imposée par le type composant — s'applique à la fois à la recette par
-  défaut et à chaque affinage
+  `AnyWebUri`). L'initialiseur du constructeur public appelle chaque fabrique par son nom ; le
+  constructeur de recettes dans lequel il s'enchaîne applique la conversion du paramètre s'il en a
+  une (`discount.AsNullable()` pour un `decimal?`) et conserve la recette telle que la fabrique l'a
+  retournée : la fabrique s'arrête avant cette conversion, pour qu'un affinage puisse encore appeler
+  les contraintes du generator. La fabrique amorce la recette courante dont part chaque affinage,
+  et c'est ce qui en fait le seul endroit où la base est définie : ce que le développeur y écrit —
+  une règle prévue à la section 5.6, une règle imposée par le type composant — s'applique à la fois
+  à la recette par défaut et à chaque affinage
   ([ADR-0109](../adr/0109-let-a-test-refine-a-parameters-valid-base-rather-than-replace-it.fr.md)).
   La fabrique d'un paramètre non résolu retourne `IAny<TParam>`, et son TODO (§5.5) vit à
   l'intérieur plutôt qu'au point d'appel.
-* Un **constructeur privé complet** réalisant la copie.
+* Un **constructeur privé de recettes**, une recette par paramètre, dans lequel le constructeur
+  public s'enchaîne : il tire chaque paramètre de sa recette, à travers sa conversion, et conserve
+  la recette.
+* Un **constructeur privé de copie**, `Any{Type}(Any{Type} from)`, copiant chaque champ : le seul
+  endroit qui les connaît tous, par lequel passe chaque `With…`. Un paramètre ajouté au type cible
+  ajoute une ligne ici et nulle part ailleurs.
 * Par paramètre, **deux** surcharges `With{Param}` retournant une nouvelle instance, chacune pour
   un usage : `With{Param}(TParam value)`, pour un test qui s'intéresse à la valeur entière, et
   `With{Param}(Func<G, G> configure)`, où `G` est le type de la fabrique, pour un test qui ne
-  s'intéresse qu'à une partie de la valeur. La seconde tire de `configure(AnyValid{Param}())`, puis
-  applique la conversion : la lambda du test part de la base valide et n'exprime que ce qu'elle
-  ajoute. Il n'y a **pas** de surcharge `With{Param}(IAny<TParam>)` : c'est en remplaçant la base
+  s'intéresse qu'à une partie de la valeur. Chacune prend une copie fraîche, en écrit un seul
+  paramètre et rend la copie — les trois mêmes instructions quel que soit le nombre de paramètres.
+  La seconde écrit `configure(_{param}Recipe)` comme nouvelle recette courante de la copie et en
+  tire, à travers la conversion : la lambda du test part de la base valide la première fois, de ce
+  que les affinages précédents en ont fait ensuite, et n'exprime que ce qu'elle ajoute. **Les affinages s'accumulent**, comme les
+  contraintes de la bibliothèque, donc deux affinages qui se contredisent sont refusés là où le
+  second est écrit, en nommant les deux ; un affinage qui repartait de la base perdait tous les
+  précédents, y compris une règle qu'une base extérieure avait posée sur une valeur composée. La
+  première surcharge fixe la valeur et conserve la recette, donc un affinage après une fixation part
+  de la dernière recette plutôt que de la base, et prend la place de la fixation. Il n'y a **pas**
+  de surcharge `With{Param}(IAny<TParam>)` : c'est en remplaçant la base
   qu'un test perdait une règle sans que la compilation le signale. Passer un generator là où une
   valeur est attendue provoque désormais une erreur de compilation, plus visible encore que
   l'erreur `JD011`/`JD012` que cette surcharge évitait. Un développeur qui doit remplacer la recette
@@ -2328,6 +2439,8 @@ surcharge que l'émetteur n'écrit plus. La surcharge d'affinage qui l'a remplac
 |---|---|---|
 | Une fabrique retourne le generator sur lequel sa chaîne se termine | §4.2 | 14 lignes, dont `Any.Uri().Web()` en `AnyWebUri`, chaque fichier compilant |
 | Un affinage part de la base valide | §4.2 | 500 tirages via `WithQuantity(q => q.LessThanOrEqualTo(3))` sur une base `Positive()`, tous entre 1 et 3 |
+| Les affinages s'accumulent | §4.2 | 500 tirages via `WithQuantity(q => q.LessThanOrEqualTo(10)).WithQuantity(q => q.GreaterThanOrEqualTo(5))`, tous entre 5 et 10 ; la même chaîne avec `WithQuantity(7)` entre les deux, tous entre 2 et 3 sous `GreaterThanOrEqualTo(2)` ; une fixation après un affinage tirée à chaque fois |
+| Un affinage imbriqué garde la règle posée par la base extérieure | §4.2, §5.6 | 500 politiques via `WithMaximumPairKinship(k => k.WithValue(v => v.GreaterThanOrEqualTo(0.125)))` sur une base plafonnant le coefficient à 0,25, chaque valeur entre 0,125 et 0,25 (issue #406) |
 | Un affinage qui contredit la base échoue là où il est écrit | §4.2 | `WithQuantity(q => q.Negative())` lève `ConflictingAnyConstraintException` en nommant `Positive()` et `Negative()` |
 | Un paramètre nullable est affiné avant sa conversion | §4.2, §5.2 | 200 tirages via `WithDiscount(d => d.Between(1m, 50m))`, aucun null, tous dans l'intervalle |
 | Un affinage composé garde la base écrite par le développeur | §4.2, §5.6 | 200 expéditions via `WithRoute(r => r.WithDistance(240))` sur une base uniquement nationale, toutes acceptées |

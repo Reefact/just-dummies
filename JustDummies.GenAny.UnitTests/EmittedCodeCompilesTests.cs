@@ -293,8 +293,9 @@ public sealed class EmittedCodeCompilesTests {
         string emitted = outcome.File!.SourceText;
 
         // The parameter carries the escape Roslyn dropped, and the field it feeds is a different identifier.
-        Check.That(emitted).Contains($"IAny<string> {identifier})");
-        Check.That(emitted).Contains($"{field} = {identifier};");
+        Check.That(emitted).Contains($"AnyString {identifier}) {{");
+        Check.That(emitted).Contains($" = {identifier};");
+        Check.That(emitted).Not.Contains($"= {field};");
         Check.That(EmittedCodeCompiler.ErrorsIn(EmittedCodeCompiler.CompileWith(emitted, domain))).IsEmpty();
     }
 

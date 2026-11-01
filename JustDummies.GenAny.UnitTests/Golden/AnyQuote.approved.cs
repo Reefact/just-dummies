@@ -15,13 +15,16 @@ namespace Shop.Domain;
 /// </summary>
 public sealed partial class AnyQuote : IAny<Quote> {
 
-    private readonly IAny<decimal>  _amount;
-    private readonly IAny<decimal?> _discount;
+    private IAny<decimal>  _amount;
+    private IAny<decimal?> _discount;
+
+    private AnyDecimal _amountRecipe;
+    private AnyDecimal _discountRecipe;
 
     /// <summary>Creates the generator with a default recipe for every constructor parameter.</summary>
     public AnyQuote()
         : this(amount:   AnyValidAmount(),
-               discount: AnyValidDiscount().AsNullable()) { }
+               discount: AnyValidDiscount()) { }
 
     private static AnyDecimal AnyValidAmount() {
         return Any.Decimal().Positive();
@@ -31,30 +34,59 @@ public sealed partial class AnyQuote : IAny<Quote> {
         return Any.Decimal();
     }
 
-    private AnyQuote(IAny<decimal>  amount,
-                     IAny<decimal?> discount) {
-        _amount   = amount;
-        _discount = discount;
+    /// <summary>Draws every parameter from the recipe given for it.</summary>
+    private AnyQuote(AnyDecimal amount,
+                     AnyDecimal discount) {
+        _amount         = amount;
+        _amountRecipe   = amount;
+        _discount       = discount.AsNullable();
+        _discountRecipe = discount;
     }
 
-    /// <summary>Pins <c>amount</c> to a fixed value.</summary>
+    /// <summary>Copies <paramref name="from" />, for a <c>With…</c> method to change one parameter of before handing it out.</summary>
+    private AnyQuote(AnyQuote from) {
+        _amount         = from._amount;
+        _amountRecipe   = from._amountRecipe;
+        _discount       = from._discount;
+        _discountRecipe = from._discountRecipe;
+    }
+
+    /// <summary>Pins <c>amount</c> to a fixed value; its recipe is kept for a later refinement.</summary>
     public AnyQuote WithAmount(decimal value) {
-        return new AnyQuote(new FixedValue<decimal>(value), _discount);
+        AnyQuote copy = new AnyQuote(this);
+
+        copy._amount = new FixedValue<decimal>(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>amount</c> from <c>AnyValidAmount()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>amount</c> is drawn from — <c>AnyValidAmount()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
     public AnyQuote WithAmount(Func<AnyDecimal, AnyDecimal> configure) {
-        return new AnyQuote(configure(AnyValidAmount()), _discount);
+        AnyQuote copy = new AnyQuote(this);
+
+        copy._amountRecipe = configure(_amountRecipe);
+        copy._amount       = copy._amountRecipe;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>discount</c> to a fixed value.</summary>
+    /// <summary>Pins <c>discount</c> to a fixed value; its recipe is kept for a later refinement.</summary>
     public AnyQuote WithDiscount(decimal? value) {
-        return new AnyQuote(_amount, new FixedValue<decimal?>(value));
+        AnyQuote copy = new AnyQuote(this);
+
+        copy._discount = new FixedValue<decimal?>(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>discount</c> from <c>AnyValidDiscount()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>discount</c> is drawn from — <c>AnyValidDiscount()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
     public AnyQuote WithDiscount(Func<AnyDecimal, AnyDecimal> configure) {
-        return new AnyQuote(_amount, configure(AnyValidDiscount()).AsNullable());
+        AnyQuote copy = new AnyQuote(this);
+
+        copy._discountRecipe = configure(_discountRecipe);
+        copy._discount       = copy._discountRecipe.AsNullable();
+
+        return copy;
     }
 
     /// <summary>Produces one arbitrary <see cref="Quote" />.</summary>

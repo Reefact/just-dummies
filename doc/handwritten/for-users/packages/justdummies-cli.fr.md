@@ -262,8 +262,9 @@ elle enfreint une règle, le test échoue dès sa première exécution, puis à 
 ### Où se trouve la base valide
 
 Dans le fichier généré, chaque paramètre dispose d'une fabrique nommée `AnyValid…()`. Le constructeur
-du générateur y prend sa valeur par défaut, et chaque lambda part d'elle : c'est le seul endroit où la
-base de ce paramètre est définie.
+du générateur y prend sa valeur par défaut, et une lambda part d'elle — la première ; une suivante part
+de ce que les précédentes en ont fait. C'est le seul endroit où la base de ce paramètre est définie,
+et chaque affinage s'appuie dessus.
 
 C'est aussi là que vous écrivez une règle que l'outil n'a pas pu appliquer. Ici, `Shipment` vérifie
 sur sa route une condition que `any` n'a pas su lire ; l'outil a donc marqué le paramètre `to verify`,
@@ -293,9 +294,9 @@ la fabrique quand elle compte — `Any.String().NonEmpty().WithLengthBetween(1, 
 
 `AnyValid…()` retourne le constructeur que l'outil a choisi pour le type : `AnyString` pour une `string`.
 Remplacez `Any.String().NonEmpty()` par `Any.StringMatching("[A-Z]{3}")` et le fichier ne compile plus
-(`CS0029`), parce que cet appel retourne un `AnyPattern`. Deux autres lignes portent l'ancien type, et ce sont
-toutes les modifications à faire — le type de retour de la fabrique, et le `Func<…>` de la surcharge d'affinage
-placée à côté de la fixation :
+(`CS0029`), parce que cet appel retourne un `AnyPattern`. L'ancien type figure sur trois lignes de plus, et ce
+sont toutes les modifications à faire — le champ de recette, le paramètre du constructeur de recettes, et le
+`Func<…>` de la surcharge d'affinage placée à côté de la fixation :
 
 <!-- jd:declarations -->
 ```csharp
@@ -311,7 +312,9 @@ public sealed class Currency {
 
 public sealed partial class AnyCurrency : IAny<Currency> {
 
-    private readonly IAny<string> _code;
+    private IAny<string> _code;
+
+    private AnyPattern _codeRecipe;                                        // was AnyString
 
     public AnyCurrency()
         : this(code: AnyValidCode()) { }
@@ -320,12 +323,23 @@ public sealed partial class AnyCurrency : IAny<Currency> {
         return Any.StringMatching("[A-Z]{3}");                             // was Any.String().NonEmpty()
     }
 
-    private AnyCurrency(IAny<string> code) {
-        _code = code;
+    private AnyCurrency(AnyPattern code) {                                 // was AnyString
+        _code       = code;
+        _codeRecipe = code;
+    }
+
+    private AnyCurrency(AnyCurrency from) {
+        _code       = from._code;
+        _codeRecipe = from._codeRecipe;
     }
 
     public AnyCurrency WithCode(Func<AnyPattern, AnyPattern> configure) {  // was Func<AnyString, AnyString>
-        return new AnyCurrency(configure(AnyValidCode()));
+        AnyCurrency copy = new AnyCurrency(this);
+
+        copy._codeRecipe = configure(_codeRecipe);
+        copy._code       = copy._codeRecipe;
+
+        return copy;
     }
 
     public Currency Generate() {
@@ -336,8 +350,9 @@ public sealed partial class AnyCurrency : IAny<Currency> {
 ```
 
 Un remplacement qui se termine par `.As(…)` est un `IAny<T>`, pas un constructeur : il n'y a rien à affiner pour
-une lambda. Typez alors la fabrique `IAny<string>` et supprimez la surcharge d'affinage, ou donnez-lui
-`Func<IAny<string>, IAny<string>>`. La fixation, `WithCode(string value)`, ne change pas.
+une lambda. Typez alors la fabrique, le champ de recette et le paramètre du constructeur de recettes
+`IAny<string>` et supprimez la surcharge d'affinage, ou donnez-lui `Func<IAny<string>, IAny<string>>`. La
+fixation, `WithCode(string value)`, ne change pas.
 
 ### Ce qu'un affinage permet, et ce qu'il ne permet pas
 
@@ -347,12 +362,17 @@ une lambda. Typez alors la fabrique `IAny<string>` et supprimez la surcharge d'a
   `Positive()`. Un affinage qui contredit la base, comme `p => p.Negative()`, est refusé dès cette
   ligne, à chaque exécution, par une exception qui cite `Positive()` et `Negative()`.
 * **Il fixe une partie d'une valeur composée.** Sur une route, la lambda appelle les méthodes `With…`
-  d'`AnyRoute`, et ce que vous fixez remplace ce que la base prévoyait pour cette partie.
-  `r => r.WithDomestic(false)` est accepté par la route mais refusé par l'expédition, à chaque
-  exécution puisque la valeur est fixée. Une lambda garantit son point de départ, pas la valeur à
-  laquelle vous aboutissez.
-* **Le dernier appel l'emporte**, comme pour toute méthode `With…`. Un second `WithParcels(…)` repart
-  de la base au lieu de s'ajouter au premier.
+  d'`AnyRoute` : ce que vous fixez remplace ce que la base fixait pour cette partie, et ce que vous
+  affinez s'appuie sur ce que la base affinait. `r => r.WithDomestic(false)` est accepté par la route
+  mais refusé par l'expédition, à chaque exécution puisque la valeur est fixée. Une lambda garantit
+  son point de départ, pas la valeur à laquelle vous aboutissez.
+* **Les affinages s'accumulent.** Un second `WithParcels(…)` part de ce que le premier a fait de la
+  base, pas de la base à nouveau : `p => p.LessThanOrEqualTo(10)` puis `p => p.GreaterThanOrEqualTo(5)`
+  tire entre 5 et 10, et deux affinages qui se contredisent sont refusés en nommant les deux. Il en va
+  de même un niveau plus bas : une base qui a posé `r => r.WithDistanceKm(d => d.LessThan(500))`
+  survit au `r => r.WithDistanceKm(d => d.GreaterThan(100))` d'un test. Une fixation conserve la
+  recette : `WithParcels(7)` est ce qui est tiré, et une lambda écrite après part de la recette que la
+  fixation a laissée, et prend la place de la fixation.
 * **Une lambda qui s'appuie sur son argument n'élargit jamais la base.** Elle ne peut pas produire une étiquette
   vide quand la base impose `NonEmpty()`. Une lambda qui ignore son argument remplace la base : `_ => Any.Int32()`
   renvoie un générateur qui lui est propre, et toutes les règles que la base respectait s'en vont avec.
@@ -431,7 +451,11 @@ surcharge dont vous avez besoin :
 public sealed partial class AnyShipment {
 
     public AnyShipment WithDeclaredValue(IAny<decimal?> generator) {
-        return new AnyShipment(_route, _parcels, _labels, generator);
+        AnyShipment copy = new AnyShipment(this);
+
+        copy._declaredValue = generator;
+
+        return copy;
     }
 
 }
@@ -447,11 +471,14 @@ Shipment anyShipment = Any.Shipment()
 
 Trois points à connaître sur ce fichier :
 
-1. Il appelle le constructeur privé du fichier généré, en passant chaque champ à sa place — comme le
-   fait chaque méthode `With…` générée.
+1. Il prend une copie par le constructeur de copie privé du fichier généré, modifie un champ de la
+   copie, et rend la copie — les trois mêmes instructions que chaque méthode `With…` générée.
+   **N'écrivez jamais un champ de `this`** : le générateur qu'un test tient ne doit pas changer sous
+   lui, et le fichier tient cette promesse par cette forme plutôt que par `readonly`. Le champ de
+   recette est laissé tel quel, et une lambda écrite après votre surcharge en part.
 2. `any generate Shipment --force` ne réécrit que `AnyShipment.cs` : votre fichier est conservé quand
    vous régénérez.
-3. Si le constructeur de `Shipment` change, la régénération modifie ce constructeur privé, et votre
+3. Si le constructeur de `Shipment` change, la régénération renomme ou supprime le champ, et votre
    méthode ne compile plus, avec une erreur sur sa propre ligne. Elle ne devient jamais fausse à votre
    insu.
 

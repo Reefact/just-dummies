@@ -1,5 +1,7 @@
 #region Usings declarations
 
+using System.Diagnostics.CodeAnalysis;
+
 using NFluent;
 
 #endregion
@@ -16,6 +18,7 @@ namespace JustDummies.UnitTests;
 ///     one, but only 22 at a million — the step vanished into rounding and the walk declared itself stuck where
 ///     nothing had moved.
 /// </summary>
+[SuppressMessage(JustDummiesRule.JD036.Category, JustDummiesRule.JD036.Id, Justification = SuppressionJustification.JD036.TheOpenSideIsTheSubject)]
 public sealed class DecimalExclusionNudgeTests {
 
     private const int SeedCount = 500;

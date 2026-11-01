@@ -74,6 +74,7 @@ public sealed class SeedGoldenMasterTests {
     ///     rewrites a line of the file — deliberate, since a rename is how a factory's identity changes.
     /// </summary>
     [SuppressMessage(JustDummiesRule.JD030.Category, JustDummiesRule.JD030.Id, Justification = SuppressionJustification.JD030.LengthIsNotWhatThisPins)]
+    [SuppressMessage(JustDummiesRule.JD036.Category, JustDummiesRule.JD036.Id, Justification = SuppressionJustification.JD036.TheOpenSideIsTheSubject)]
     private static IEnumerable<(string Name, Func<string> Draw)> Cases() {
         // Scalars, unconstrained: the plainest draw each factory makes.
         yield return ("Boolean", () => Any.Boolean().Generate().ToString());

@@ -31,6 +31,7 @@ namespace JustDummies.UnitTests;
 ///     </para>
 /// </remarks>
 [SuppressMessage(SonarRule.S2699.Category, SonarRule.S2699.Id, Justification = SuppressionJustification.S2699.AssertionsLiveInTheAdapterOverrides)]
+[SuppressMessage(JustDummiesRule.JD036.Category, JustDummiesRule.JD036.Id, Justification = SuppressionJustification.JD036.TheOpenSideIsTheSubject)]
 public sealed class CrossEngineReachabilityTests {
 
     #region Statics members declarations

@@ -1,5 +1,8 @@
 #region Usings declarations
 
+using System.Diagnostics.CodeAnalysis;
+using JustDummies.Diagnostics;
+
 using FsCheck;
 using FsCheck.Fluent;
 
@@ -208,6 +211,7 @@ public sealed partial class PoolInspectionEngineProperties {
     }
 
     [Fact(DisplayName = "A Double pool reports the split its constraints make.")]
+    [SuppressMessage(JustDummiesRule.JD036.Category, JustDummiesRule.JD036.Id, Justification = SuppressionJustification.JD036.MagnitudeIsNotWhatThisPins)]
     public void DoublePool() {
         Verify(new Engine<double, AnyDouble>([-Width / 2, 1_000_000d],
                                              (anchor, number) => anchor + number,
@@ -219,6 +223,7 @@ public sealed partial class PoolInspectionEngineProperties {
     }
 
     [Fact(DisplayName = "A Single pool reports the split its constraints make.")]
+    [SuppressMessage(JustDummiesRule.JD036.Category, JustDummiesRule.JD036.Id, Justification = SuppressionJustification.JD036.MagnitudeIsNotWhatThisPins)]
     public void SinglePool() {
         Verify(new Engine<float, AnySingle>([-Width / 2, 1_000_000f],
                                             (anchor, number) => anchor + number,

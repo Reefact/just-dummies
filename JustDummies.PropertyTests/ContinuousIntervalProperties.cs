@@ -28,6 +28,7 @@ namespace JustDummies.PropertyTests;
 ///     itself, not over a fixed one, can rule out across the constraint space.
 /// </remarks>
 [TestSubject(typeof(AnyDouble))]
+[SuppressMessage(JustDummiesRule.JD036.Category, JustDummiesRule.JD036.Id, Justification = SuppressionJustification.JD036.TheOpenSideIsTheSubject)]
 public sealed class ContinuousIntervalProperties {
 
     #region Statics members declarations

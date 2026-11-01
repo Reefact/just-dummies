@@ -117,6 +117,7 @@ public sealed class AnyLatticeConstraintTests {
     #region WithScale
 
     [Fact(DisplayName = "WithScale: every drawn value lies on the 10^-scale grid.")]
+    [SuppressMessage(JustDummiesRule.JD036.Category, JustDummiesRule.JD036.Id, Justification = SuppressionJustification.JD036.MagnitudeIsNotWhatThisPins)]
     public void WithScaleStaysOnGrid() {
         for (int i = 0; i < SampleCount; i++) {
             decimal amount = Any.Decimal().Between(0m, 1000m).WithScale(2).Generate();
@@ -152,6 +153,7 @@ public sealed class AnyLatticeConstraintTests {
 
     [Fact(DisplayName = "WithScale: a scale outside [0, 28] is rejected.")]
     [SuppressMessage(JustDummiesRule.JD014.Category, JustDummiesRule.JD014.Id, Justification = SuppressionJustification.JD014.ThrowIsTheSubject)]
+    [SuppressMessage(JustDummiesRule.JD036.Category, JustDummiesRule.JD036.Id, Justification = SuppressionJustification.JD036.MagnitudeIsNotWhatThisPins)]
     public void WithScaleArguments() {
         Check.ThatCode(() => Any.Decimal().WithScale(-1)).Throws<ArgumentOutOfRangeException>();
         Check.ThatCode(() => Any.Decimal().WithScale(29)).Throws<ArgumentOutOfRangeException>();

@@ -1,5 +1,7 @@
 #region Usings declarations
 
+using System.Diagnostics.CodeAnalysis;
+
 using NFluent;
 
 #endregion
@@ -18,6 +20,7 @@ namespace JustDummies.UnitTests;
 ///     regresses was a bare <c>OverflowException</c> — from <c>System</c>, carrying no seed and naming no
 ///     constraint — on roughly one draw in a thousand.
 /// </remarks>
+[SuppressMessage(JustDummiesRule.JD036.Category, JustDummiesRule.JD036.Id, Justification = SuppressionJustification.JD036.TheOpenSideIsTheSubject)]
 public sealed class DecimalDomainEdgeInterpolationTests {
 
     /// <summary>

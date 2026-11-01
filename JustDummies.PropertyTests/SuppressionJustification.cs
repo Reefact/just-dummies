@@ -121,6 +121,25 @@ internal static class SuppressionJustification {
     }
 #endif
 
+    /// <summary>Justifications for JD036 — the undeclared floating-point range diagnostic.</summary>
+    internal static class JD036 {
+
+        /// <summary>
+        ///     The open side IS the subject. These properties pin what a floating-point draw does where the caller declared no
+        ///     range on a side — the ordinary window, the edge draw ADR-0117 adds one draw in ten, the type's own edge, a
+        ///     bound written against it. Declaring the range JD036 asks for would remove the very behaviour under test.
+        /// </summary>
+        internal const string TheOpenSideIsTheSubject = "The open side IS the subject: the test pins what a floating-point draw does where no range is declared (window, edge draw, domain edge). See the constant's summary.";
+
+        /// <summary>
+        ///     The magnitude is not what these properties pin. The chain exercises a lattice, a pool, a refusal or a message, and
+        ///     the drawn value only has to exist; a range declared to quieten the rule would add numbers that look as though
+        ///     they mattered, or change the declaration whose message the test reads.
+        /// </summary>
+        internal const string MagnitudeIsNotWhatThisPins = "The magnitude is not what this test pins: the chain exercises a lattice, a pool, a refusal or a message, and the value only has to exist. See the constant's summary.";
+
+    }
+
     /// <summary>Justifications for S1854 — "Unused assignments should be removed".</summary>
     internal static class S1854 {
 

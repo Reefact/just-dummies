@@ -1,5 +1,7 @@
 #region Usings declarations
 
+using System.Diagnostics.CodeAnalysis;
+
 using NFluent;
 
 #endregion
@@ -20,6 +22,7 @@ namespace JustDummies.UnitTests;
 ///     domain. The two-sided regressions below predate ADR-0117 and now take its first branch; they stay because what
 ///     they pin — every declared value reachable — holds on either branch.
 /// </remarks>
+[SuppressMessage(JustDummiesRule.JD036.Category, JustDummiesRule.JD036.Id, Justification = SuppressionJustification.JD036.TheOpenSideIsTheSubject)]
 public sealed class OrdinaryMagnitudeWindowTests {
 
     /// <summary>The window's half-width — the magnitude a declared bound has to land on to reach this seam.</summary>

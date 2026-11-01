@@ -1,7 +1,7 @@
 namespace JustDummies;
 
 /// <summary>
-///     A value-type generator made optional: <c>null</c> about half the time and, otherwise, a value the wrapped
+///     A value-type generator made optional: <c>null</c> one draw in ten and, otherwise, a value the wrapped
 ///     generator draws. What <see cref="NullableExtensions.OrNull{T}" /> returns.
 /// </summary>
 /// <remarks>

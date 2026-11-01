@@ -15,7 +15,7 @@ namespace JustDummies.UnitTests;
 /// </summary>
 /// <remarks>
 ///     The sibling of <c>OrNull</c> and its opposite, so the two are worth reading together: <c>OrNull</c> draws
-///     <c>null</c> about half the time, this one never does. It exists because the general
+///     <c>null</c> one draw in ten, this one never does. It exists because the general
 ///     <c>As(value =&gt; (T?)value)</c> hop it replaces produced a derived generator, and a derived generator
 ///     advertises no cardinality — so a set of two <c>bool?</c> was refused on a domain that plainly holds two.
 ///     Every case below is the sequence a scaffolded generator runs into, not a synthetic one.

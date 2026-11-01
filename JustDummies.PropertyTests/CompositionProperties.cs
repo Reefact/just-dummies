@@ -24,6 +24,9 @@ namespace JustDummies.PropertyTests;
 [TestSubject(typeof(AnyExtensions))]
 public sealed class CompositionProperties {
 
+    /// <summary>Draws per OrNull rate case: enough to tell one in ten from never and from one in two by several deviations.</summary>
+    private const int OrNullRateDrawCount = 400;
+
     #region Statics members declarations
 
     /// <summary>Arbitrary non-empty pools of integers — the explicit domains <c>OneOf</c> and <c>ElementOf</c> draw from.</summary>
@@ -128,26 +131,31 @@ public sealed class CompositionProperties {
             .QuickCheckThrowOnFailure();
     }
 
-    [Fact(DisplayName = "OrNull is a coin flip: over enough draws from any seed, both the null and the value branch appear.")]
-    public void OrNullEventuallyYieldsBothBranches() {
-        // The null decision is an even coin flip, so 64 draws miss a branch with probability about 2^-63 — vanishing,
-        // but a probability nonetheless. Drawing from an Any.WithSeed(...) context removes the residual flakiness: each
-        // FsCheck case is a fixed, replayable run, so a case that passes passes identically on every execution.
+    [Fact(DisplayName = "OrNull yields null one draw in ten: over enough draws from any seed, both branches appear at that rate.")]
+    public void OrNullYieldsNullOneDrawInTen() {
+        // ADR-0117: the absent case is a limit value of an optional, drawn as rarely as a floating-point edge. 400 draws
+        // expect 40 nulls with a standard deviation of 6, so the band (10, 80) separates one in ten from never and from
+        // the even coin it replaced by several deviations. Drawing from an Any.WithSeed(...) context removes the
+        // residual flakiness: each FsCheck case is a fixed, replayable run, so a case that passes passes identically
+        // on every execution.
         Prop.ForAll(Generators.Seed().ToArbitrary(),
                     seed => {
                         AnyContext context = Any.WithSeed(seed);
 
-                        List<int?>    values     = Expect.Draws(context.Int32().Between(1, 100).OrNull(), 64);
-                        List<string?> references = Expect.Draws(context.String().WithLength(4).OrNull(), 64);
+                        List<int?>    values     = Expect.Draws(context.Int32().Between(1, 100).OrNull(), OrNullRateDrawCount);
+                        List<string?> references = Expect.Draws(context.String().WithLength(4).OrNull(), OrNullRateDrawCount);
 
-                        return values.Any(value => value is null)
-                               && values.Any(value => value is not null)
+                        return IsOneInTen(values.Count(value => value is null))
                                && values.All(value => value is null || (value.Value >= 1 && value.Value <= 100))
-                               && references.Any(reference => reference is null)
-                               && references.Any(reference => reference is not null)
+                               && IsOneInTen(references.Count(reference => reference is null))
                                && references.All(reference => reference is null || reference.Length == 4);
                     })
             .QuickCheckThrowOnFailure();
+    }
+
+    /// <summary>Whether <paramref name="nulls" /> out of <see cref="OrNullRateDrawCount" /> draws reads as one in ten.</summary>
+    private static bool IsOneInTen(int nulls) {
+        return nulls > OrNullRateDrawCount / 40 && nulls < OrNullRateDrawCount / 5;
     }
 
     [Fact(DisplayName = "A set over OrNull counts null as one additional value: it draws every count up to the domain size including null.")]

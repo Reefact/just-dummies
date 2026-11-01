@@ -1,7 +1,7 @@
 namespace JustDummies;
 
 /// <summary>
-///     A reference-type generator made optional: <c>null</c> about half the time and, otherwise, a value the wrapped
+///     A reference-type generator made optional: <c>null</c> one draw in ten and, otherwise, a value the wrapped
 ///     generator draws. What <see cref="NullableReferenceExtensions.OrNull{T}" /> returns — the sibling of
 ///     <see cref="OrNullAny{T}" />, which carries the reasoning both share (ADR-0104).
 /// </summary>

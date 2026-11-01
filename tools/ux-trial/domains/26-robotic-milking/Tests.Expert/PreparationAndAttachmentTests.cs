@@ -5,7 +5,9 @@ public sealed class PreparationAndAttachmentTests {
     [Fact]
     public void Brushing_a_first_teat_starts_the_preparation() {
         // Arrange
-        MilkingSession anySession  = Any.MilkingSession().Generate();
+        // A first teat presupposes a second one: a cow with three blind quarters makes the first brushing the last, and
+        // the session attaching. The blind quarters were not a dummy for this assertion (NOTES.discovery.md, item 8).
+        MilkingSession anySession  = Any.MilkingSession().WithAnimal(a => a.WithBlindQuarters(b => b.WithMaxCount(2))).Generate();
         UdderQuarter   anyQuarter  = anySession.AnyMilkableQuarter();
         TimeSpan       anyBrushing = Recipes.CompliantBrushing(anySession.Settings).Generate();
 

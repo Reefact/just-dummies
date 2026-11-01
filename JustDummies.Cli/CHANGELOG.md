@@ -39,6 +39,16 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Fixed
 
+- **A guard written in a helper of the same type that returns the value is now marked `to verify`, instead of
+  staying silent.** The idiomatic value object validates through `XMm = Guard(xMm, nameof(xMm));` with a
+  `private static double Guard(double v, string name)` that throws and returns `v`; the call's result is used, so
+  the tool read it as production, and the file compiled under a recap claiming the parameter inferred while
+  every draw threw. A parameter handed to a method declared in the same type — private or not, static, or a
+  local function — whose body contains a `throw` is now marked `to verify, unread guards`, the `TODO(any)` line
+  pointing at that call, wherever it sits in the constructor; the build stops there until the bound is written
+  by hand. A helper that throws nowhere, `Normalise(v)`, earns no mark, and a `void` helper called for its
+  effect is marked as before. Nothing is read from the helper yet; a helper of another type stays silent. A
+  generator already scaffolded does not change; re-scaffold with `--force` to get the mark.
 - **A refinement now builds on the refinements before it, instead of starting again from the base.** The
   emitted `With…(x => …)` called `configure(AnyValid…())` on every call, so a second refinement of the same
   parameter dropped the first — and, one level down, a rule an outer base had set on a composed value was

@@ -306,6 +306,50 @@ internal static class GuardCorpus {
                                                                   }
                                                                   """, requiresVerification: true),
 
+        // ---- Issue #407, CLI-14 of the second trial: the idiomatic value object validates through a helper that
+        // ---- RETURNS the value, so the result is used and the discarded-result rule above never saw it — 100 of
+        // ---- 100 draws threw under a recap claiming the parameter inferred. The helper is declared in the same
+        // ---- type and its body throws, which is what earns the mark (§5.6); reading what it throws on is a
+        // ---- later step, and nothing is inferred here.
+
+        new GuardedShape("returning-helper-throws", "SpatialPoint", """
+                                                                     public sealed class SpatialPoint {
+
+                                                                         public SpatialPoint(double xMm) {
+                                                                             XMm = Guard(xMm, nameof(xMm));
+                                                                         }
+
+                                                                         public double XMm { get; }
+
+                                                                         private static double Guard(double v, string name) {
+                                                                             if (Math.Abs(v) > 2000.0) { throw new ArgumentOutOfRangeException(name); }
+
+                                                                             return v;
+                                                                         }
+
+                                                                     }
+                                                                     """, requiresVerification: true),
+
+        // ---- And the shape that rule has to leave alone: a helper of the same type that normalises and throws
+        // ---- nothing is production, exactly as `value.Trim()` is, and marking it would block constructors
+        // ---- carrying no guard at all. A `void` helper called for its effect is the row above, unchanged.
+
+        new GuardedShape("returning-helper-normalises", "Caption", """
+                                                                   public sealed class Caption {
+
+                                                                       public Caption(string text) {
+                                                                           Text = Normalise(text);
+                                                                       }
+
+                                                                       public string Text { get; }
+
+                                                                       private static string Normalise(string s) {
+                                                                           return s.Trim();
+                                                                       }
+
+                                                                   }
+                                                                   """),
+
         // ---- The guard the engine reads correctly, under a condition deciding whether it runs at all. Its
         // ---- domain is every int a `strict: false` caller may pass, and reading the helper as a bound
         // ---- narrowed the draw to zero and above — silently, since every draw still compiled and still

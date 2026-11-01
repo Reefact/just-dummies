@@ -39,6 +39,14 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Fixed
 
+- **A composed interface or abstract class is left open, naming the generator to write by hand.** For
+  `RowInstruction(IReadOnlyList<IRowElement> elements)` the scaffold emitted `Any.ListOf(new AnyIRowElement())`,
+  the build failed with `CS0246` on `AnyIRowElement`, and the documented next step, `any generate IRowElement`,
+  was refused: there is nothing to instantiate. Such a parameter — the abstract type itself, or a collection or a
+  dictionary of it — is now a `TODO` with provenance `abstract`, naming `AnyIRowElement : IAny<IRowElement>` to
+  write by hand, typically choosing among the concrete generators; the recap shows `abstract` and `--format json`
+  the same word. The refusal of `any generate` on an abstract type now says the same. Nothing about the concrete
+  types is looked up. A generator already scaffolded does not change; re-scaffold with `--force` to get the TODO.
 - **The entry-point layout the page suggested no longer fails, and `any` warns when yours would.** The CLI
   page showed `--entry-point static:Arbitrary --entry-point-namespace Shop.Tests.Arbitrary`, which puts the
   class `Arbitrary` in a namespace ending in `.Arbitrary`: C# resolves the enclosing namespace first, so from a

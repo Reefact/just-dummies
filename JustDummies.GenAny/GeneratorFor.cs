@@ -487,6 +487,13 @@ internal sealed class GeneratorFor {
         // told to write AnyRepository and neither would be the name to write. §5.5 still answers there.
         if (type.IsGenericType) { return DrawnGenerator.Unresolved(); }
 
+        // An interface or an abstract class: CS0246 on the blind name would send the developer to
+        // `any generate IRowElement`, which is refused — nothing to instantiate. Left open instead, naming the
+        // generator to write by hand, and §5.5 answers as it does for a generic type (issue #375).
+        if (type.IsAbstract) {
+            return DrawnGenerator.UnresolvedAbstract(new Unscaffoldable(names.Of(type), TypeNaming.GeneratorNameFor(type, naming)));
+        }
+
         // Named anyway, and deliberately unresolvable: the developer's own build reports it at this line, in the
         // IDE and in CI, the minute the file is written. No builder goes with it, so nothing is chained onto a
         // type this compilation cannot see — and a guard that wanted to be is reported, not dropped (ADR-0059).
@@ -556,9 +563,9 @@ internal sealed class GeneratorFor {
                                       ITypeSymbol self) {
         if (library.Returned(factory, typeArguments: 1, parameters: 1) is null) { return DrawnGenerator.Unresolved(); }
 
-        (string Expression, ITypeSymbol Draws)? item = Item(element, ConvertsOnItsOwn(self, index: 0), remaining - 1, [.. underway, self]);
+        (string Expression, ITypeSymbol Draws)? item = Item(element, ConvertsOnItsOwn(self, index: 0), remaining - 1, [.. underway, self], out DrawnGenerator drawnElement);
 
-        if (item is null) { return DrawnGenerator.Unresolved(); }
+        if (item is null) { return DrawnGenerator.UnresolvedLike(drawnElement); }
 
         ITypeSymbol built = library.ReturnedFor(factory, parameters: 1, item.Value.Draws)!;
 
@@ -572,8 +579,9 @@ internal sealed class GeneratorFor {
     private (string Expression, ITypeSymbol Draws)? Item(ITypeSymbol declared,
                                                           bool covariant,
                                                           int remaining,
-                                                          IReadOnlyCollection<ITypeSymbol> underway) {
-        DrawnGenerator drawn = Draw(declared, remaining, underway);
+                                                          IReadOnlyCollection<ITypeSymbol> underway,
+                                                          out DrawnGenerator drawn) {
+        drawn = Draw(declared, remaining, underway);
 
         return drawn.Resolved ? AsDeclared(declared, covariant, Chain(drawn, []).Expression, drawn.Draws!) : null;
     }
@@ -622,10 +630,11 @@ internal sealed class GeneratorFor {
     private DrawnGenerator Dictionary(INamedTypeSymbol type, int remaining, IReadOnlyCollection<ITypeSymbol> underway) {
         if (library.Returned("DictionaryOf", typeArguments: 2, parameters: 2) is null) { return DrawnGenerator.Unresolved(); }
 
-        (string Expression, ITypeSymbol Draws)? keys   = Item(type.TypeArguments[0], ConvertsOnItsOwn(type, index: 0), remaining - 1, [.. underway, type]);
-        (string Expression, ITypeSymbol Draws)? values = Item(type.TypeArguments[1], ConvertsOnItsOwn(type, index: 1), remaining - 1, [.. underway, type]);
+        (string Expression, ITypeSymbol Draws)? keys   = Item(type.TypeArguments[0], ConvertsOnItsOwn(type, index: 0), remaining - 1, [.. underway, type], out DrawnGenerator drawnKeys);
+        (string Expression, ITypeSymbol Draws)? values = Item(type.TypeArguments[1], ConvertsOnItsOwn(type, index: 1), remaining - 1, [.. underway, type], out DrawnGenerator drawnValues);
 
-        if (keys is null || values is null) { return DrawnGenerator.Unresolved(); }
+        if (keys is null) { return DrawnGenerator.UnresolvedLike(drawnKeys); }
+        if (values is null) { return DrawnGenerator.UnresolvedLike(drawnValues); }
 
         ITypeSymbol built = library.ReturnedFor("DictionaryOf", parameters: 2, keys.Value.Draws, values.Value.Draws)!;
 

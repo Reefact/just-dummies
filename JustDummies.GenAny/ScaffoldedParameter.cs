@@ -26,7 +26,8 @@ public sealed class ScaffoldedParameter {
                                 string conversion,
                                 Provenance provenance,
                                 UnreadGuard? unreadGuard,
-                                bool nullableAnnotationDropped) {
+                                bool nullableAnnotationDropped,
+                                Unscaffoldable? unscaffoldable = null) {
         Name           = name;
         TypeDisplay    = typeDisplay;
         GeneratorType  = generatorType;
@@ -36,6 +37,7 @@ public sealed class ScaffoldedParameter {
         UnreadGuard    = unreadGuard;
 
         NullableAnnotationDropped = nullableAnnotationDropped;
+        Unscaffoldable            = unscaffoldable;
     }
 
     /// <summary>The parameter's name, exactly as the constructor declares it.</summary>
@@ -100,6 +102,12 @@ public sealed class ScaffoldedParameter {
     ///     say once that the declaration had one (§6), rather than describe the domain as it is not.
     /// </remarks>
     public bool NullableAnnotationDropped { get; }
+
+    /// <summary>
+    ///     The abstract type an unresolved parameter is, or holds, and the generator to write for it by hand — null
+    ///     unless <see cref="Provenance" /> carries <see cref="GenAny.Provenance.AbstractType" /> (§5.5).
+    /// </summary>
+    public Unscaffoldable? Unscaffoldable { get; }
 
     /// <summary>Whether the emitted file will carry a TODO for this parameter.</summary>
     [SuppressMessage(SonarRule.S1135.Category, SonarRule.S1135.Id, Justification = SuppressionJustification.S1135.DocumentsTheMarkerTheToolEmits)]
@@ -250,7 +258,8 @@ public sealed class ScaffoldedParameter {
     public static ScaffoldedParameter Unresolved(string name,
                                                  string typeDisplay,
                                                  Provenance provenance = Provenance.None,
-                                                 UnreadGuard? unreadGuard = null) {
+                                                 UnreadGuard? unreadGuard = null,
+                                                 Unscaffoldable? unscaffoldable = null) {
         return new ScaffoldedParameter(Checked(name, nameof(name)),
                                        Checked(typeDisplay, nameof(typeDisplay)),
                                        generatorType: null,
@@ -258,7 +267,8 @@ public sealed class ScaffoldedParameter {
                                        conversion: string.Empty,
                                        provenance,
                                        unreadGuard,
-                                       nullableAnnotationDropped: false);
+                                       nullableAnnotationDropped: false,
+                                       unscaffoldable);
     }
 
     /// <summary>
@@ -266,7 +276,7 @@ public sealed class ScaffoldedParameter {
     ///     (<see cref="NullableAnnotationDropped" />).
     /// </summary>
     public ScaffoldedParameter DroppingNullableAnnotation() {
-        return new ScaffoldedParameter(Name, TypeDisplay, GeneratorType, BaseExpression, Conversion, Provenance, UnreadGuard, nullableAnnotationDropped: true);
+        return new ScaffoldedParameter(Name, TypeDisplay, GeneratorType, BaseExpression, Conversion, Provenance, UnreadGuard, nullableAnnotationDropped: true, Unscaffoldable);
     }
 
     private static string Checked(string value, string parameterName) {

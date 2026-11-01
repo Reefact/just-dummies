@@ -1355,10 +1355,20 @@ type homonyme disqualifié, une véritable égalité entre deux types valides, e
 unique et correctement implémenté sont traités de façon identique : le même appel, et `CS0246` —
 ou un build propre — est le seul verdict qui ait jamais compté.
 
-**Un type générique est la seule forme composée à laquelle le §5.5 répond encore.** La fonction de
-nommage (§11.3) travaille depuis le nom du type, qui perd ses arguments : `Repository<Order>` et
-`Repository<Line>` s'entendraient tous deux dire d'écrire `AnyRepository`, et aucun n'est le nom à
-écrire. Une sentinelle qui ne dit rien vaut mieux qu'un nom qui dit faux.
+**Un type générique est l'une des deux formes composées auxquelles le §5.5 répond encore.** La
+fonction de nommage (§11.3) travaille depuis le nom du type, qui perd ses arguments :
+`Repository<Order>` et `Repository<Line>` s'entendraient tous deux dire d'écrire `AnyRepository`, et
+aucun n'est le nom à écrire. Une sentinelle qui ne dit rien vaut mieux qu'un nom qui dit faux.
+
+**Un type abstrait est l'autre** (issue #375). Une interface ou une classe abstraite a un nom, mais la
+liste de travail qu'ouvre l'appel aveugle ne mène nulle part : `CS0246` sur `AnyIRowElement` envoie le
+développeur vers `any generate IRowElement`, que le §7 refuse — rien à instancier. Le paramètre reste
+ouvert, provenance `abstract`, et son TODO nomme le generator à écrire à la main,
+`AnyIRowElement : IAny<IRowElement>`, typiquement un generator qui choisit parmi les generators
+concrets — la même règle que pour le cas générique : le TODO ne nomme `any generate` que là où la
+commande accepterait le nom. Une collection ou un dictionnaire d'un type abstrait reste ouvert pour la
+même raison. Rien n'est recherché sur les types concrets : ce serait la composition posant à la
+compilation la question que l'ADR-0089 lui interdit.
 
 **Un paramètre qui atteint le type en cours de scaffolding reste ouvert lui aussi, avec sa raison.**
 `Node(string name, IReadOnlyList<Node> children)` composerait sinon `children` en
@@ -1540,7 +1550,8 @@ une instruction de tête lève ou appelle d'une façon que l'ensemble reconnu n'
 endroit dont le moteur ne peut pas répondre — sous une écriture du paramètre, ou sous quelque chose qui
 décide s'il s'exécute —, `constraint unavailable` quand
 une garde a été lue et comprise et que ce generator ne porte aucun membre pour l'exprimer,
-`self-referencing` quand un paramètre ouvert atteint le type en cours de scaffolding (§5.4), et
+`self-referencing` quand un paramètre ouvert atteint le type en cours de scaffolding (§5.4), `abstract`
+quand un paramètre ouvert est, ou contient, un type abstrait dont le generator s'écrit à la main (§5.4), et
 `unavailable` quand le generator existe dans la bibliothèque mais pas dans l'asset que ce projet
 résout.
 

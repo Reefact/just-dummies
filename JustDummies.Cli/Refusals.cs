@@ -219,10 +219,18 @@ internal static class Refusals {
     ///     differently from <see cref="NotConstructible" />: the remedy is another type, not another
     ///     constructor.
     /// </summary>
+    /// <remarks>
+    ///     A developer often arrives here from a composing scaffold, whose open parameter named this type's generator: what
+    ///     they need is then not another scaffold but that generator, written by hand. The second line says so,
+    ///     naming it as the composing scaffold did (issue #375).
+    /// </remarks>
     private static IReadOnlyList<string> Abstract(string typeArgument) {
+        string type = typeArgument.Substring(typeArgument.LastIndexOf('.') + 1);
+
         return [
             Mark + $"{typeArgument} is abstract, so Generate() has nothing to instantiate.",
-            "  Scaffold a concrete type that derives from it instead."
+            "  Scaffold a concrete type that derives from it instead — or, where another scaffold composes it,",
+            $"  write Any{type} : IAny<{type}> by hand, choosing among the concrete types."
         ];
     }
 

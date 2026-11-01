@@ -46,6 +46,7 @@ internal static class Recap {
         (GenAny.Provenance.UnreadGuards, "unread guards"),
         (GenAny.Provenance.ConstraintUnavailable, "constraint unavailable"),
         (GenAny.Provenance.SelfReferencing, "self-referencing"),
+        (GenAny.Provenance.AbstractType, "abstract"),
         (GenAny.Provenance.NoSource, "no source"),
         (GenAny.Provenance.Unavailable, "unavailable")
     ];

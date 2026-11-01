@@ -138,6 +138,16 @@ public sealed class RefusalsTests : IDisposable {
         Check.That(said).Contains("--entry-point static:<Name>");
     }
 
+    // The refusal sends the developer to a concrete type; when what they wanted was the abstract type's own
+    // generator — the one a composing scaffold names — it says that is written by hand (issue #375).
+    [Fact(DisplayName = "An abstract type is answered with the generator a composing scaffold expects.")]
+    public void AnAbstractTypeIsAnsweredWithTheGeneratorAComposingScaffoldExpects() {
+        string said = Say(console => Refusals.Render("Shop.Domain.IRowElement", ScaffoldOutcome.Refused(ScaffoldStatus.TypeIsAbstract), console));
+
+        Check.That(said).Contains("AnyIRowElement : IAny<IRowElement>");
+        Check.That(said).Contains("by hand");
+    }
+
     [Fact(DisplayName = "An existing file is named, with --force and what it costs.")]
     public void AnExistingFileIsNamedWithWhatForceCosts() {
         string said = Say(console => Refusals.FileExists("/tests/AnyOrder.cs", console));

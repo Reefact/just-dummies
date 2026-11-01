@@ -26,7 +26,8 @@ internal sealed class DrawnGenerator {
                            string suffix,
                            IReadOnlyList<GuardConstraint> seeded,
                            IReadOnlyList<GuardConstraint> tightening,
-                           Provenance provenance) {
+                           Provenance provenance,
+                           Unscaffoldable? unscaffoldable = null) {
         Core          = core;
         Builder       = builder;
         GeneratorType = generatorType;
@@ -35,6 +36,8 @@ internal sealed class DrawnGenerator {
         Seeded        = seeded;
         Tightening    = tightening;
         Provenance    = provenance;
+
+        Unscaffoldable = unscaffoldable;
     }
 
     /// <summary>The expression before any constraint — <c>Any.Int32()</c>.</summary>
@@ -93,6 +96,12 @@ internal sealed class DrawnGenerator {
     /// <summary>Where this came from, as the recap will report it.</summary>
     internal Provenance Provenance { get; }
 
+    /// <summary>
+    ///     The abstract type this draw is left open for, and the generator to write for it — null unless
+    ///     <see cref="Provenance" /> carries <see cref="GenAny.Provenance.AbstractType" />.
+    /// </summary>
+    internal Unscaffoldable? Unscaffoldable { get; }
+
     /// <summary>Whether the table had an answer at all.</summary>
     internal bool Resolved => Core is not null;
 
@@ -116,6 +125,27 @@ internal sealed class DrawnGenerator {
                                   seeded: [],
                                   tightening: [],
                                   why);
+    }
+
+    /// <summary>A composed type <c>any</c> cannot scaffold because it is abstract (§5.5).</summary>
+    internal static DrawnGenerator UnresolvedAbstract(Unscaffoldable type) {
+        return new DrawnGenerator(core: null,
+                                  builder: null,
+                                  generatorType: null,
+                                  draws: null,
+                                  suffix: string.Empty,
+                                  seeded: [],
+                                  tightening: [],
+                                  Provenance.AbstractType,
+                                  type);
+    }
+
+    /// <summary>
+    ///     An unresolved draw that keeps what a draw it was built from had to say about an abstract type — a
+    ///     collection whose element is one is left open for that element's reason.
+    /// </summary>
+    internal static DrawnGenerator UnresolvedLike(DrawnGenerator inner) {
+        return inner.Unscaffoldable is { } type ? UnresolvedAbstract(type) : Unresolved();
     }
 
     /// <summary>

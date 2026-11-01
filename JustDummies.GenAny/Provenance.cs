@@ -90,6 +90,20 @@ public enum Provenance {
     ///     null or a depth parameter would each be the engine deciding how deep the developer's data goes, which
     ///     is a cleverer generator rather than an honest one (ADR-0046); the bound is the developer's to write.
     /// </remarks>
-    SelfReferencing = 256
+    SelfReferencing = 256,
+
+    /// <summary>
+    ///     The parameter is, or holds, a composed type that is abstract — an interface or an abstract class — so it
+    ///     is left open, naming the generator to write by hand (issue #375).
+    /// </summary>
+    /// <remarks>
+    ///     Composition writes <c>new AnyX()</c> blind for every type <c>any</c> could scaffold, and the developer's
+    ///     <c>CS0246</c> is the work list (ADR-0089). An abstract type is the one plain shape that list sent to a
+    ///     dead end: <c>any generate IRowElement</c> is refused, since there is nothing to instantiate. It joins the
+    ///     generic type, the other shape whose command is refused, in §5.5: the open parameter names the generator to write —
+    ///     typically one choosing among the concrete generators — and nothing about those concrete types is looked
+    ///     up, which would be composition asking the compilation the question ADR-0089 keeps it from asking.
+    /// </remarks>
+    AbstractType = 512
 
 }

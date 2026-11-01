@@ -21,7 +21,7 @@ and the **Origin** column says how each one got here:
   but its record stays live in `Reefact/first-class-errors` too, because that
   repository still applies it. Both copies are now independent: either side can
   supersede its own without touching the other. 9 decisions.
-* **recorded here** — decided in this repository, on its own. 69 decisions.
+* **recorded here** — decided in this repository, on its own. 70 decisions.
 
 The numbers are this base's own, assigned in the order the decisions were
 recorded upstream ([ADR-0045](0045-renumber-the-decision-base.md)); every ADR
@@ -255,3 +255,4 @@ failure mode of a "not now" is that nobody remembers the option existed on the d
 | [ADR-0113](0113-check-a-distinct-collections-cardinality-when-the-specification-is-whole.md) | Check a distinct collection's cardinality when the specification is whole | Accepted | recorded here |
 | [ADR-0114](0114-refuse-a-local-datetime-bound.md) | Refuse a `Local` `DateTime` bound rather than read it as ticks | Accepted | recorded here |
 | [ADR-0115](0115-allow-an-editorial-correction-to-an-accepted-adr.md) | Allow an editorial correction to an accepted ADR, never a change of substance | Accepted | recorded here |
+| [ADR-0116](0116-accumulate-a-parameters-refinements-on-its-current-recipe.md) | Accumulate a parameter's refinements on its current recipe | Proposed | recorded here |

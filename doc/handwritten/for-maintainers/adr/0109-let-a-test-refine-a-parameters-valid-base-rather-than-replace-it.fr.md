@@ -226,40 +226,6 @@ la portée ambiante `Any.UseSeed` atteint déjà l'ensemble de l'arbre.
 * Rester attentif aux retours du terrain sur un besoin que les solutions restantes couvriraient mal ;
   la liste des besoins jugés rares figure ci-dessus.
 
-## Amendement (2026-11-01)
-
-L'alternative *Partir de la recette courante, après un appel `With` antérieur* a été rejetée
-ci-dessus pour deux raisons : le champ devrait conserver le type concret du générateur, et après une
-fixation il ne reste plus de générateur d'où partir. Le second essai UX développeur a montré ce que
-ce rejet coûtait ([CLI-9](../../../../tools/ux-trial/REPORT-2.fr.md#cli-9), issue
-[#406](https://github.com/Reefact/just-dummies/issues/406)) : un affinage écrit sur une valeur
-composée — `k => k.WithValue(v => v.GreaterThanOrEqualTo(0.125))` sur un coefficient dont la base
-extérieure avait posé `v => v.LessThanOrEqualTo(0.25)` — repartait de la base du coefficient et
-perdait le plafond posé par la base extérieure, si bien que le constructeur composant levait une
-exception sur la plupart des tirages. C'est la règle qui perd son adresse unique, à un niveau de
-distance ; sur une feuille, un second `With…(Func)` perdait silencieusement le premier. La forme
-émise contredisait la justification même de cet enregistrement : affiner existe pour que le test
-n'exprime que ce qui lui importe, et pour que la règle garde une seule adresse.
-
-Les deux raisons trouvent leur réponse dans la forme émise plutôt que d'être écartées par
-l'argument. Chaque paramètre résolu conserve sa **recette courante**, typée avec le générateur que sa
-fabrique retourne, à côté de ce qui est tiré ; `With…(Func)` affine cette recette, donc les affinages
-s'accumulent comme les contraintes de la bibliothèque et une contradiction est refusée en nommant les
-deux côtés ; `With…(value)` fixe la valeur et conserve la recette, donc un affinage après une fixation
-part de la dernière recette plutôt que de la base, et prend la place de la fixation. « Le dernier
-appel l'emporte » ne décrit plus la surcharge d'affinage : une fixation et un affinage se remplacent
-toujours l'un l'autre, deux affinages s'additionnent. La décision tient telle qu'écrite — un test
-affine la base ou fixe une valeur, jamais ne remplace la base — et le §4.2 porte la forme. Une
-conséquence de cette forme y est consignée aussi : chaque `With…` copie le générateur par un
-constructeur de copie privé et écrit un seul paramètre de la copie, donc les champs ne sont plus
-`readonly`. L'instance qu'un appelant tient ne change toujours jamais, ce qui est l'objet de
-l'immutabilité de l'ADR-0057 ; le mainteneur a accepté de la tenir par la convention du fichier
-plutôt que par le compilateur, contre un constructeur à tous les arguments qui croissait deux fois
-avec le nombre de paramètres.
-
-Les fichiers scaffoldés avant cet amendement gardent la forme antérieure ; un re-scaffold avec
-`--force` donne la nouvelle, et le changelog `cli` dit comment corriger un fichier à la main.
-
 ## Références
 
 * [ADR-0046](0046-bound-the-generators-ambition-never-its-correctness.fr.md) — borner l'ambition, jamais la correction.

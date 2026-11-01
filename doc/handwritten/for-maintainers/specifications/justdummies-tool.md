@@ -535,7 +535,7 @@ public sealed partial class AnyOrder : IAny<Order> {
   `configure(_{param}Recipe)` as the copy's new current recipe and draws from it, through the
   conversion: the test's lambda starts from the valid base the first time, from what earlier
   refinements made of it after that, and states only what it adds.
-  **Refinements accumulate**, as the library's constraints do, so two that contradict each other are
+  **Refinements accumulate** ([ADR-0116](../adr/0116-accumulate-a-parameters-refinements-on-its-current-recipe.md), proposed), as the library's constraints do, so two that contradict each other are
   refused where the second is written, naming both; a refinement that started again from the base
   dropped every earlier one, a rule an outer base had set on a composed value included. The first
   overload pins the value and keeps the recipe, so a refinement after a pin starts from the last
@@ -2271,7 +2271,7 @@ exists — it is this one — and the records have been entered into its ADR bas
 | **D10** | [ADR-0064](../adr/0064-never-draw-null-for-a-nullable-parameter.md) — Never draw null for a nullable parameter |
 | **D11** | [ADR-0065](../adr/0065-keep-the-scaffolding-engine-loadable-by-a-roslyn-host.md) — Keep the scaffolding engine loadable by a Roslyn host |
 | **D12** | [ADR-0070](../adr/0070-emit-an-entry-point-on-request-as-a-file-of-its-own.md) — Emit an entry point on request, as a file of its own |
-| **D13** | [ADR-0109](../adr/0109-let-a-test-refine-a-parameters-valid-base-rather-than-replace-it.md) — Let a test refine a parameter's valid base rather than replace it |
+| **D13** | [ADR-0109](../adr/0109-let-a-test-refine-a-parameters-valid-base-rather-than-replace-it.md) — Let a test refine a parameter's valid base rather than replace it; [ADR-0116](../adr/0116-accumulate-a-parameters-refinements-on-its-current-recipe.md) (proposed) — Accumulate a parameter's refinements on its current recipe |
 
 Three of these records were written after the decision table was, and why is worth keeping. D7, D8
 and D10 were each judged too small at first — a scope limit already scheduled for revisiting, a

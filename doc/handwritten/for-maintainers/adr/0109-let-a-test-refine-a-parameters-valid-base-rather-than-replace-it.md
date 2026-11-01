@@ -211,37 +211,6 @@ Rejected because it needs a second copy of every recipe and reverses ADR-0061, w
 * Watch for a field report of a need the remaining routes serve badly; the record of which needs were
   judged rare is above.
 
-## Amendment (2026-11-01)
-
-The alternative *Starting from the current recipe, after an earlier `With` call* was rejected above
-on two grounds: the field would have to keep the concrete generator type, and after a pin there is
-no generator left to start from. The second developer-UX trial showed what the rejection cost
-([CLI-9](../../../../tools/ux-trial/REPORT-2.md#cli-9), issue
-[#406](https://github.com/Reefact/just-dummies/issues/406)): a refinement written on a composed value
-— `k => k.WithValue(v => v.GreaterThanOrEqualTo(0.125))` on a coefficient whose outer base had set
-`v => v.LessThanOrEqualTo(0.25)` — started again from the coefficient's base and dropped the cap the
-outer base had set, so the composing constructor threw on most draws. That is the rule losing its
-single address, at one remove; on a leaf, a second `With…(Func)` silently dropped the first. The
-emitted shape contradicted this record's own rationale: refining exists so that the test states only
-what it cares about, and the rule keeps its single address.
-
-Both grounds are answered in the emitted shape rather than argued away. Each resolved parameter
-keeps its **current recipe**, typed with the generator its factory returns, beside what is drawn;
-`With…(Func)` refines that recipe, so refinements accumulate as the library's constraints do and a
-contradiction is refused naming both sides; `With…(value)` pins the value and keeps the recipe, so a
-refinement after a pin starts from the last recipe rather than from the base, and takes the pin's
-place. "The last call wins" no longer describes the refining overload: a pin and a refinement still
-replace each other, two refinements add up. The decision stands as written — a test refines the base
-or pins a value, never replaces the base — and §4.2 carries the shape. One consequence of that shape
-is recorded there too: each `With…` copies the generator through a private copy constructor and
-writes one parameter of the copy, so the fields are no longer `readonly`. The instance a caller holds
-still never changes, which is what ADR-0057's immutability is about; the maintainer accepted holding
-it by the file's convention rather than by the compiler, against an all-arguments constructor that
-grew with the parameter count twice over.
-
-Files scaffolded before this amendment keep the earlier shape; a re-scaffold with `--force` gives
-the new one, and the `cli` changelog says how to patch a file by hand.
-
 ## References
 
 * [ADR-0046](0046-bound-the-generators-ambition-never-its-correctness.md) — bound the ambition, never the correctness.

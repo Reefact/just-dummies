@@ -75,6 +75,12 @@ internal static class DeclarationChains {
             On<AnyDouble>("OneOf(0.0)", g => g.OneOf(0.0)),
             On<AnyDouble>("OneOf(-0.0)", g => g.OneOf(-0.0)),
             On<AnyDouble>("OneOf(double.NaN)", g => g.OneOf(double.NaN))),
+        // Two pins, each declared once; the values keep every pin in order, so only a second pin is ever refused.
+        new("Any.OrderedPair(Any.Int32().Between(0, 10), Any.Int32().Between(0, 10))", context => Any.OrderedPair(context.Int32().Between(0, 10), context.Int32().Between(0, 10)),
+            On<AnyOrderedPair<int>>("WithFirst(3)", g => g.WithFirst(3)),
+            On<AnyOrderedPair<int>>("WithFirst(4)", g => g.WithFirst(4)),
+            On<AnyOrderedPair<int>>("WithSecond(8)", g => g.WithSecond(8)),
+            On<AnyOrderedPair<int>>("WithSecond(9)", g => g.WithSecond(9))),
         new("Any.Decimal()", context => context.Decimal(),
             On<AnyDecimal>("WithScale(1)", g => g.WithScale(1)),
             On<AnyDecimal>("WithScale(2)", g => g.WithScale(2)),

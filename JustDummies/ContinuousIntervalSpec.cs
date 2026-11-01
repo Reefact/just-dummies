@@ -297,6 +297,19 @@ internal sealed class ContinuousIntervalSpec {
     internal double Max => _max;
 
     /// <summary>
+    ///     The largest value the specification can produce: the inclusive top, stepped down off the exclusions. The
+    ///     specification is satisfiable, so the walk ends on a value. Feeds the ordered pair (ADR-0126).
+    /// </summary>
+    internal double Largest() {
+        if (_effectiveAllowed is not null) { return _effectiveAllowed.Max(); }
+
+        double top = _max;
+        while (IsExcluded(top)) { top = -_nextUp(-top); }
+
+        return top;
+    }
+
+    /// <summary>
     ///     Whether <paramref name="value" /> is one the specification could produce — a member of the allow-list when
     ///     one is set, otherwise inside the interval and not excluded. Non-finite inputs fall outside the bounds and
     ///     so return <c>false</c>. Mirrors <see cref="Generate" />'s own domain.

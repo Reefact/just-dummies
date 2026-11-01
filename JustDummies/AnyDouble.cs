@@ -76,6 +76,11 @@ public sealed class AnyDouble : IAny<double>, IHasRandomSource, ICardinalityHint
 
     bool ICardinalityHint<double>.Contains(double value) => _spec.Contains(value);
 
+    /// <summary>The largest value this generator can produce, for an ordered pair to bound its first value by (ADR-0126).</summary>
+    internal double Largest() {
+        return _spec.Largest();
+    }
+
     // Explicit, like the cardinality hint above: an inspection answers a maintenance question and does not
     // belong in the completion list a caller writes constraints in (ADR-0067).
     bool IPoolInspection<double>.IsPooled => _spec.IsPooled;

@@ -160,6 +160,11 @@ public sealed class AnyHalf : IAny<Half>, IHasRandomSource, ICardinalityHint<Hal
     // The allow-list holds the doubles the supplied halves widen to, so membership tests the same widening.
     bool ICardinalityHint<Half>.Contains(Half value) => _spec.Contains((double)value);
 
+    /// <summary>The largest value this generator can produce, for an ordered pair to bound its first value by (ADR-0126).</summary>
+    internal Half Largest() {
+        return (Half)_spec.Largest();
+    }
+
     // Explicit, like the cardinality hint above: an inspection answers a maintenance question and does not
     // belong in the completion list a caller writes constraints in (ADR-0067).
     bool IPoolInspection<Half>.IsPooled => _spec.IsPooled;

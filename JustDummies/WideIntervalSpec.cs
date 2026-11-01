@@ -242,6 +242,25 @@ internal sealed class WideIntervalSpec {
     }
 
     /// <summary>
+    ///     The largest ordinal the specification can produce — the <see cref="OrdinalIntervalSpec" /> twin, for the
+    ///     ordered pair (ADR-0126).
+    /// </summary>
+    internal UInt128 Largest() {
+        if (_effectiveAllowed is not null) { return _effectiveAllowed.Max(); }
+        if (_step > UInt128.One) {
+            UInt128 last = _latticeFirst + (_max - _latticeFirst) / _step * _step;
+            while (_excludedOnLattice.Contains(last)) { last -= _step; }
+
+            return last;
+        }
+
+        UInt128 top = _max;
+        while (_excludedInRange.Contains(top)) { top -= UInt128.One; }
+
+        return top;
+    }
+
+    /// <summary>
     ///     Whether <paramref name="ordinal" /> is a value the specification could produce — the exact domain
     ///     <see cref="GenerateOrdinal" /> draws from. Feeds <see cref="ICardinalityHint{T}" />.
     /// </summary>

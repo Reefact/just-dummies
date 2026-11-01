@@ -112,6 +112,41 @@ IAny<(Guid, string, OrderStatus)> anyRow = Any.TripleOf(
     Any.Enum<OrderStatus>());
 ```
 
+## `Any.OrderedPair` : deux valeurs liées par un ordre
+
+Le début et la fin d'une période, le minimum et le maximum d'une plage : deux valeurs qu'un constructeur
+refuse dans le mauvais ordre. Deux tirages indépendants brisent cet ordre une fois sur deux, et dériver
+la fin du début à la main ne s'inverse pas — épingler la fin doit contraindre le début.
+`Any.OrderedPair(first, second)` existe sur chaque builder ordonné et tire la paire par construction : le
+premier depuis sa base maintenue au plus à la plus grande valeur que la seconde base peut produire, puis
+le second depuis sa base maintenue au moins au premier. Une épingle borne l'autre tirage de la même
+façon, dans les deux sens.
+
+```csharp
+AnyOrderedPair<int> datingGenerator = Any.OrderedPair(Any.Int32().Between(-800, 1600), Any.Int32().Between(-800, 1600));
+
+(int anyDatedFrom, int anyDatedTo)   = datingGenerator.Generate();                    // anyDatedFrom <= anyDatedTo
+(int anyEarlyFrom, int anyEarlyTo)   = datingGenerator.WithSecond(-500).Generate();   // the start follows the pinned end: -800 to -500
+(int anyLateFrom, int anyLateTo)     = datingGenerator.WithFirst(1500).Generate();    // the end follows the pinned start: 1500 to 1600
+(int anyStrictLow, int anyStrictHigh) = Any.OrderedPair(Any.Int32().Between(0, 100), Any.Int32().Between(0, 100), strict: true).Generate();
+```
+
+`strict: true` place le premier strictement sous le second, par la borne stricte de la base elle-même.
+Deux épingles dans le mauvais ordre, ou une épingle qu'aucune valeur de l'autre base ne peut suivre —
+`WithFirst(1700)` quand la seconde base s'arrête à 1600 — sont refusées à l'appel en nommant les deux
+côtés. Une valeur épinglée est un littéral, comme `Any.Fixed` : elle est vérifiée contre l'autre base,
+pas contre la sienne.
+
+`TimeOnly` n'a pas de paire : dès qu'une fenêtre franchit minuit son ordre est cyclique, et aucune lecture
+de « le premier avant le second » n'est la bonne partout. Trois valeurs ordonnées — un minimum, un
+optimum, un maximum — sont une paire et un `.Then(...)` qui tire celle du milieu entre les deux
+([ADR-0126](../../for-maintainers/adr/0126-draw-two-values-tied-by-an-order.fr.md)) :
+
+```csharp
+IAny<(int Min, int Optimum, int Max)> setPointsGenerator = Any.OrderedPair(Any.Int32().Between(0, 100), Any.Int32().Between(0, 100), strict: true)
+    .Then(pair => Any.Int32().Between(pair.First, pair.Second).As(optimum => (pair.First, optimum, pair.Second)));
+```
+
 ## `.OrNull()` : les valeurs optionnelles
 
 Un champ optionnel mérite un dummy parfois absent — sinon la branche nulle n'est jamais exercée.

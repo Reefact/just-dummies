@@ -54,6 +54,11 @@ public sealed class AnyDecimal : IAny<decimal>, IHasRandomSource, ICardinalityHi
 
     bool ICardinalityHint<decimal>.Contains(decimal value) => _spec.Contains(value);
 
+    /// <summary>The largest value this generator can produce, for an ordered pair to bound its first value by (ADR-0126).</summary>
+    internal decimal Largest() {
+        return _spec.Largest();
+    }
+
     // Explicit, like the cardinality hint above: an inspection answers a maintenance question and does not
     // belong in the completion list a caller writes constraints in (ADR-0067).
     bool IPoolInspection<decimal>.IsPooled => _spec.IsPooled;

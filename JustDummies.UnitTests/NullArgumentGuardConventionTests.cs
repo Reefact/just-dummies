@@ -411,6 +411,8 @@ public sealed class NullArgumentGuardConventionTests {
         Try(() => Any.SequenceOf(strings));
         Try(() => Any.ArrayOf(strings));
         Try(() => Any.ListOf(strings).OrderedBy(value => value.Length));
+        Try(() => Any.OrderedPair(Any.Int32(), Any.Int32()));
+        Try(() => new OrderedPairBounds<string>(_ => strings, _ => strings, _ => strings, _ => strings, "z"));
         Try(() => Any.DictionaryOf(strings, strings));
         Try(() => Any.OneOf("a", "b", "c"));
         Try(() => Any.Enum<DayOfWeek>());

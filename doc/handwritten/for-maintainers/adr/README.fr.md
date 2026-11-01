@@ -22,7 +22,7 @@ n'existe, et la colonne **Origine** dit comment chacune est arrivée ici :
   aussi, car ce dépôt l'applique encore. Les deux copies sont désormais
   indépendantes : chaque côté peut remplacer la sienne sans toucher à l'autre.
   9 décisions.
-* **consigné ici** — décidé dans ce dépôt, de son propre chef. 79 décisions.
+* **consigné ici** — décidé dans ce dépôt, de son propre chef. 80 décisions.
 
 Les numéros appartiennent à cette base, attribués dans l'ordre où les décisions
 ont été consignées en amont
@@ -146,6 +146,7 @@ que l'option existait le jour où elle compterait.
 | `Any.SubsetOf(items)`, et un `SetOf(item, n)` à taille positionnelle | [Essai UX 2, CORE-7](../../../../tools/ux-trial/REPORT-2.fr.md#core-7) | Un sous-ensemble que `SetOf(ElementOf(items)).WithCount(n)` n'exprime pas ; une taille reste une contrainte nommée, et le second argument de `SetOf` est un comparer. |
 | Restreindre un `AnyPattern` (`StartingWith` et consorts) | [Essai UX 2, CORE-9](../../../../tools/ux-trial/REPORT-2.fr.md#core-9) | Un besoin qu'une recette nommée reformulant le motif plus étroit ne couvre pas ; restreindre revient à intersecter des langages réguliers ([ADR-0008](0008-generate-strings-from-a-home-grown-regular-subset.fr.md), [ADR-0046](0046-bound-the-generators-ambition-never-its-correctness.fr.md)). |
 | Un décalage général sur `MultipleOf` (`CongruentTo`) | [Essai UX 2, CORE-11](../../../../tools/ux-trial/REPORT-2.fr.md#core-11) | Des retours terrain demandant un reste autre que les impairs que couvre `Odd()` (#401). |
+| Un `OrderedTriple` pour trois valeurs liées par un ordre | [Essai UX 2, CLI-8](../../../../tools/ux-trial/REPORT-2.fr.md#cli-8) | Un retour de terrain que la paire et un `Then` tirant la valeur du milieu ne servent pas ([ADR-0126](0126-draw-two-values-tied-by-an-order.fr.md)) ; une paire `TimeOnly` attend un retour qui dise quelle lecture de l'ordre il lui faut. |
 | Une règle entre éléments successifs d'une collection | [Essai UX 2, CORE-13](../../../../tools/ux-trial/REPORT-2.fr.md#core-13) | Un cas que ni `Ordered`/`OrderedBy` (#360) ni le tirage de listes ordonnées appariées n'expriment, rencontré de façon répétée ; la règle générale est de la propagation de contraintes ([ADR-0046](0046-bound-the-generators-ambition-never-its-correctness.fr.md)). |
 | Une répartition logarithmique des tirages flottants | [Essai UX 2, CORE-14](../../../../tools/ux-trial/REPORT-2.fr.md#core-14) | Une plage déclarée sur de nombreuses décades qui doit atteindre les plus basses, au-delà de déclarer une plage plus étroite ; avec une borne à 0, une échelle logarithmique tire quelque 300 décades sous 1, et choisir une distribution élargit l'ambition. |
 | `any` qui dérive une relation générale entre deux paramètres | [Essai UX 2, CLI-8](../../../../tools/ux-trial/REPORT-2.fr.md#cli-8) | Une relation autre qu'un ordre (#404, #405) assez fréquente pour avoir une construction exacte ; le cas général est un solveur ([ADR-0046](0046-bound-the-generators-ambition-never-its-correctness.fr.md)). |
@@ -281,3 +282,4 @@ que l'option existait le jour où elle compterait.
 | [ADR-0123](0123-draw-a-decimal-on-a-steps-grid.fr.md) | Tirer un décimal sur la grille d'un pas | Accepted | consigné ici |
 | [ADR-0124](0124-arrange-a-drawn-list-in-ascending-order.fr.md) | Ranger une liste tirée dans l'ordre croissant | Accepted | consigné ici |
 | [ADR-0125](0125-let-a-time-of-day-window-cross-midnight.fr.md) | Laisser une fenêtre horaire franchir minuit | Accepted | consigné ici |
+| [ADR-0126](0126-draw-two-values-tied-by-an-order.fr.md) | Tirer deux valeurs liées par un ordre | Accepted | consigné ici |

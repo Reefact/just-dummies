@@ -107,6 +107,39 @@ IAny<(Guid, string, OrderStatus)> anyRow = Any.TripleOf(
     Any.Enum<OrderStatus>());
 ```
 
+## `Any.OrderedPair`: two values tied by an order
+
+A span's start and end, a range's minimum and maximum: two values a constructor refuses in the wrong
+order. Two independent draws break that order about half the time, and deriving the end from the start
+by hand cannot be inverted — pinning the end must constrain the start. `Any.OrderedPair(first, second)`
+exists on every ordered builder and draws the pair by construction: the first from its base kept at or
+below the largest value the second base can produce, then the second from its base kept at or above it.
+A pin bounds the other draw the same way, in either direction.
+
+```csharp
+AnyOrderedPair<int> datingGenerator = Any.OrderedPair(Any.Int32().Between(-800, 1600), Any.Int32().Between(-800, 1600));
+
+(int anyDatedFrom, int anyDatedTo)   = datingGenerator.Generate();                    // anyDatedFrom <= anyDatedTo
+(int anyEarlyFrom, int anyEarlyTo)   = datingGenerator.WithSecond(-500).Generate();   // the start follows the pinned end: -800 to -500
+(int anyLateFrom, int anyLateTo)     = datingGenerator.WithFirst(1500).Generate();    // the end follows the pinned start: 1500 to 1600
+(int anyStrictLow, int anyStrictHigh) = Any.OrderedPair(Any.Int32().Between(0, 100), Any.Int32().Between(0, 100), strict: true).Generate();
+```
+
+`strict: true` makes the first strictly below the second, through the base's own strict bound. Two pins
+in the wrong order, or a pin no value of the other base can follow — `WithFirst(1700)` when the second
+base ends at 1600 — are refused at the call naming both sides. A pinned value is a literal, like
+`Any.Fixed`: it is checked against the other base, not its own.
+
+`TimeOnly` has no pair: once a window crosses midnight its order is cyclic, and neither reading of
+"first before second" is right everywhere. Three ordered values — a minimum, an optimum, a maximum —
+are a pair and a `.Then(...)` drawing the middle one between its two sides
+([ADR-0126](../../for-maintainers/adr/0126-draw-two-values-tied-by-an-order.md)):
+
+```csharp
+IAny<(int Min, int Optimum, int Max)> setPointsGenerator = Any.OrderedPair(Any.Int32().Between(0, 100), Any.Int32().Between(0, 100), strict: true)
+    .Then(pair => Any.Int32().Between(pair.First, pair.Second).As(optimum => (pair.First, optimum, pair.Second)));
+```
+
 ## `.OrNull()`: optional values
 
 An optional field deserves a dummy that is sometimes absent — otherwise the null branch is never

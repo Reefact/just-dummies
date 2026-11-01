@@ -79,6 +79,15 @@ public sealed class ConflictingAnyConstraintException : DummyException {
     }
 
     /// <summary>
+    ///     Builds the exception for an ordered pair one of whose bases admits no value on the side the order requires
+    ///     — no first value at or below the largest second, no second value at or above a pinned first — quoting the
+    ///     refusal that base raised, so both sides are named (ADR-0126).
+    /// </summary>
+    internal static ConflictingAnyConstraintException OrderedPairHasNoValue(ConstraintCall applying, string missing, ConflictingAnyConstraintException refusal) {
+        return Sentence(applying, $"{missing}: {refusal.Reason ?? refusal.Message}");
+    }
+
+    /// <summary>
     ///     Builds the exception for a second, different <c>OneOf(...)</c> on a generator whose value set the first
     ///     has already settled, pointing at the route that does narrow it.
     /// </summary>
@@ -312,7 +321,7 @@ public sealed class ConflictingAnyConstraintException : DummyException {
     /// <param name="applying">The constraint being declared, as the caller spelled it.</param>
     /// <param name="reason">Why it cannot be applied, written without a final period.</param>
     private static ConflictingAnyConstraintException Sentence(ConstraintCall applying, string reason) {
-        return new ConflictingAnyConstraintException($"Cannot apply {applying} because {reason}.");
+        return new ConflictingAnyConstraintException($"Cannot apply {applying} because {reason}.", reason);
     }
 
     /// <summary>
@@ -332,5 +341,15 @@ public sealed class ConflictingAnyConstraintException : DummyException {
     /// </summary>
     /// <param name="message">A description naming the newly declared constraint and the declared constraint it conflicts with.</param>
     public ConflictingAnyConstraintException(string message) : base(message) { }
+
+    private ConflictingAnyConstraintException(string message, string reason) : base(message) {
+        Reason = reason;
+    }
+
+    /// <summary>
+    ///     The clause after "because", for a conflict that quotes another — an ordered pair naming the refusal of one of
+    ///     its bases. <c>null</c> for a message written whole.
+    /// </summary>
+    internal string? Reason { get; }
 
 }

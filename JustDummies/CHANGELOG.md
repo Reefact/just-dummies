@@ -10,6 +10,17 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Added
 
+- **`Any.OrderedPair(first, second)` draws two values tied by an order.** A span's start and end, a
+  range's minimum and maximum, on every ordered builder — integers, floats, `decimal`, dates, durations.
+  By construction, never by redraw: the first is drawn from its base kept at or below the largest value
+  the second base can produce, then the second at or above it, so disjoint bands never fail where two
+  independent draws broke the order half the time. `WithFirst(v)` and `WithSecond(v)` pin one side and
+  bound the other the same way, so pinning the end constrains the start; `strict: true` makes the first
+  strictly below. Two pins in the wrong order, or a pin no value of the other base can follow, are refused
+  at the call naming both sides. `TimeOnly` has no pair, its order being cyclic across midnight; three
+  ordered values are a pair and a `Then` drawing the middle one. JD034 and JD035 read a pin declared
+  twice (issue #404, ADR-0126).
+
 - **`Any.TimeOnly().Between(start, end)` crosses midnight when the start is after the end.**
   `Between(22:00, 06:00)` is the night, as `TimeOnly.IsBetween` reads it, drawn uniformly over its two
   segments — where it threw an `ArgumentException` in eight domains of the developer-UX trial.

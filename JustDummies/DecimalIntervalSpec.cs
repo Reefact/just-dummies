@@ -243,6 +243,25 @@ internal sealed class DecimalIntervalSpec {
     }
 
     /// <summary>
+    ///     The largest value the specification can produce: the top of the grid window, stepped down off the exclusions
+    ///     by the increment the representation can make there. The specification is satisfiable, so the walk ends on a
+    ///     value. Feeds the ordered pair (ADR-0126).
+    /// </summary>
+    internal decimal Largest() {
+        if (_effectiveAllowed is not null) { return _effectiveAllowed.Max(); }
+
+        decimal top = _flooredMax;
+        while (IsExcluded(top)) {
+            decimal? below = NextDistinct(top, _grid?.Step ?? SmallestStep, false);
+            if (below is null) { break; }
+
+            top = below.Value;
+        }
+
+        return top;
+    }
+
+    /// <summary>
     ///     Whether <paramref name="value" /> is one the specification could produce — a member of the allow-list when
     ///     one is set, otherwise on the grid (when a scale lattice is set), inside the interval and not excluded.
     ///     Mirrors <see cref="Generate" />'s own domain.

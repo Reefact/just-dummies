@@ -50,6 +50,7 @@ internal static class DeclarationWalk {
     private const string ExactCount        = "exact count";
     private const string StringOwner       = "AnyString";
     private const string DecimalOwner      = "AnyDecimal";
+    private const string PairOwner         = "AnyOrderedPair";
     private const string ScaleName         = "WithScale";
     private const string Step              = "step";
     private const string GuidOwner         = "AnyGuid";
@@ -189,6 +190,8 @@ internal static class DeclarationWalk {
             OffsetName or OffsetRangeName                             => "offset",
             "WithCount"                                               => ExactCount,
             "Ordered"                                                 => "order",
+            "WithFirst" when owner == PairOwner                       => "first value",
+            "WithSecond" when owner == PairOwner                      => "second value",
             "Empty" when owner is "AnyCollection" or "AnyDictionary"  => ExactCount,
             "UsingHttp" or "UsingHttps" or "UsingWs" or "UsingWss"    => "scheme",
             "WithHost"                                                => "host",

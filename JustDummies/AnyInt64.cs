@@ -58,6 +58,11 @@ public sealed class AnyInt64 : IAny<long>, IHasRandomSource, ICardinalityHint<lo
 
     bool ICardinalityHint<long>.Contains(long value) => _spec.Contains(Ord(value));
 
+    /// <summary>The largest value this generator can produce, for an ordered pair to bound its first value by (ADR-0126).</summary>
+    internal long Largest() {
+        return Val(_spec.Largest());
+    }
+
     // Explicit, like the cardinality hint above: an inspection answers a maintenance question and does not
     // belong in the completion list a caller writes constraints in (ADR-0067). Val projects the engine's
     // ordinal back to the caller's own type.

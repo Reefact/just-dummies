@@ -21,7 +21,7 @@ and the **Origin** column says how each one got here:
   but its record stays live in `Reefact/first-class-errors` too, because that
   repository still applies it. Both copies are now independent: either side can
   supersede its own without touching the other. 9 decisions.
-* **recorded here** — decided in this repository, on its own. 79 decisions.
+* **recorded here** — decided in this repository, on its own. 80 decisions.
 
 The numbers are this base's own, assigned in the order the decisions were
 recorded upstream ([ADR-0045](0045-renumber-the-decision-base.md)); every ADR
@@ -130,6 +130,7 @@ failure mode of a "not now" is that nobody remembers the option existed on the d
 | `Any.SubsetOf(items)`, and a `SetOf(item, n)` with a positional count | [UX trial 2, CORE-7](../../../../tools/ux-trial/REPORT-2.md#core-7) | A subset that `SetOf(ElementOf(items)).WithCount(n)` does not express; a size stays a named constraint, and `SetOf`'s second argument is a comparer. |
 | Narrowing an `AnyPattern` (`StartingWith` and the like) | [UX trial 2, CORE-9](../../../../tools/ux-trial/REPORT-2.md#core-9) | A need a named recipe restating the narrower pattern cannot meet; narrowing means intersecting regular languages ([ADR-0008](0008-generate-strings-from-a-home-grown-regular-subset.md), [ADR-0046](0046-bound-the-generators-ambition-never-its-correctness.md)). |
 | A general offset on `MultipleOf` (`CongruentTo`) | [UX trial 2, CORE-11](../../../../tools/ux-trial/REPORT-2.md#core-11) | Field reports needing a residue other than the odd numbers `Odd()` (#401) covers. |
+| An `OrderedTriple` for three values tied by an order | [UX trial 2, CLI-8](../../../../tools/ux-trial/REPORT-2.md#cli-8) | A field report the pair and a `Then` drawing the middle value do not serve ([ADR-0126](0126-draw-two-values-tied-by-an-order.md)); a `TimeOnly` pair waits for one that says which reading of the order it needs. |
 | A rule between successive elements of a collection | [UX trial 2, CORE-13](../../../../tools/ux-trial/REPORT-2.md#core-13) | A case that neither `Ordered`/`OrderedBy` (#360) nor drawing ordered lists and pairing them expresses, met repeatedly; the general rule is constraint propagation ([ADR-0046](0046-bound-the-generators-ambition-never-its-correctness.md)). |
 | A log-scale spread for floating-point draws | [UX trial 2, CORE-14](../../../../tools/ux-trial/REPORT-2.md#core-14) | A declared range spanning many decades that must reach its lowest ones, beyond declaring a narrower range; with a bound at 0 a log scale draws some 300 decades below 1, and choosing a distribution widens the ambition. |
 | `any` deriving a general relation between two parameters | [UX trial 2, CLI-8](../../../../tools/ux-trial/REPORT-2.md#cli-8) | A relation other than an order (#404, #405) met often enough to have an exact construction; the general case is a solver ([ADR-0046](0046-bound-the-generators-ambition-never-its-correctness.md)). |
@@ -265,3 +266,4 @@ failure mode of a "not now" is that nobody remembers the option existed on the d
 | [ADR-0123](0123-draw-a-decimal-on-a-steps-grid.md) | Draw a decimal on a step's grid | Accepted | recorded here |
 | [ADR-0124](0124-arrange-a-drawn-list-in-ascending-order.md) | Arrange a drawn list in ascending order | Accepted | recorded here |
 | [ADR-0125](0125-let-a-time-of-day-window-cross-midnight.md) | Let a time-of-day window cross midnight | Accepted | recorded here |
+| [ADR-0126](0126-draw-two-values-tied-by-an-order.md) | Draw two values tied by an order | Accepted | recorded here |

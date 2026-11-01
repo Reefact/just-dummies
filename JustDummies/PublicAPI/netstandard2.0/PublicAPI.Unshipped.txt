@@ -536,3 +536,23 @@ JustDummies.AnyList<T>.OrderedBy<TKey>(System.Func<T, TKey>! keySelector) -> Jus
 JustDummies.OrderingExtensions
 static JustDummies.OrderingExtensions.Ordered<T>(this JustDummies.AnyArray<T>! array) -> JustDummies.AnyArray<T>!
 static JustDummies.OrderingExtensions.Ordered<T>(this JustDummies.AnyList<T>! list) -> JustDummies.AnyList<T>!
+
+
+JustDummies.AnyOrderedPair<T>
+JustDummies.AnyOrderedPair<T>.Generate() -> (T First, T Second)
+JustDummies.AnyOrderedPair<T>.WithFirst(T value) -> JustDummies.AnyOrderedPair<T>!
+JustDummies.AnyOrderedPair<T>.WithSecond(T value) -> JustDummies.AnyOrderedPair<T>!
+static JustDummies.Any.OrderedPair(JustDummies.AnyByte! first, JustDummies.AnyByte! second, bool strict = false) -> JustDummies.AnyOrderedPair<byte>!
+static JustDummies.Any.OrderedPair(JustDummies.AnyDateTime! first, JustDummies.AnyDateTime! second, bool strict = false) -> JustDummies.AnyOrderedPair<System.DateTime>!
+static JustDummies.Any.OrderedPair(JustDummies.AnyDateTimeOffset! first, JustDummies.AnyDateTimeOffset! second, bool strict = false) -> JustDummies.AnyOrderedPair<System.DateTimeOffset>!
+static JustDummies.Any.OrderedPair(JustDummies.AnyDecimal! first, JustDummies.AnyDecimal! second, bool strict = false) -> JustDummies.AnyOrderedPair<decimal>!
+static JustDummies.Any.OrderedPair(JustDummies.AnyDouble! first, JustDummies.AnyDouble! second, bool strict = false) -> JustDummies.AnyOrderedPair<double>!
+static JustDummies.Any.OrderedPair(JustDummies.AnyInt16! first, JustDummies.AnyInt16! second, bool strict = false) -> JustDummies.AnyOrderedPair<short>!
+static JustDummies.Any.OrderedPair(JustDummies.AnyInt32! first, JustDummies.AnyInt32! second, bool strict = false) -> JustDummies.AnyOrderedPair<int>!
+static JustDummies.Any.OrderedPair(JustDummies.AnyInt64! first, JustDummies.AnyInt64! second, bool strict = false) -> JustDummies.AnyOrderedPair<long>!
+static JustDummies.Any.OrderedPair(JustDummies.AnySByte! first, JustDummies.AnySByte! second, bool strict = false) -> JustDummies.AnyOrderedPair<sbyte>!
+static JustDummies.Any.OrderedPair(JustDummies.AnySingle! first, JustDummies.AnySingle! second, bool strict = false) -> JustDummies.AnyOrderedPair<float>!
+static JustDummies.Any.OrderedPair(JustDummies.AnyTimeSpan! first, JustDummies.AnyTimeSpan! second, bool strict = false) -> JustDummies.AnyOrderedPair<System.TimeSpan>!
+static JustDummies.Any.OrderedPair(JustDummies.AnyUInt16! first, JustDummies.AnyUInt16! second, bool strict = false) -> JustDummies.AnyOrderedPair<ushort>!
+static JustDummies.Any.OrderedPair(JustDummies.AnyUInt32! first, JustDummies.AnyUInt32! second, bool strict = false) -> JustDummies.AnyOrderedPair<uint>!
+static JustDummies.Any.OrderedPair(JustDummies.AnyUInt64! first, JustDummies.AnyUInt64! second, bool strict = false) -> JustDummies.AnyOrderedPair<ulong>!

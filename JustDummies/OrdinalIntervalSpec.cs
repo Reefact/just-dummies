@@ -286,6 +286,26 @@ internal sealed class OrdinalIntervalSpec {
     }
 
     /// <summary>
+    ///     The largest ordinal the specification can produce — the top of the interval, brought down onto the lattice
+    ///     and off the exclusions. The specification is satisfiable, so the walk down ends on a value. Feeds the ordered
+    ///     pair, which bounds its first value by it (ADR-0126).
+    /// </summary>
+    internal ulong Largest() {
+        if (_effectiveAllowed is not null) { return _effectiveAllowed.Max(); }
+        if (_step > 1UL) {
+            ulong last = _latticeFirst + (_max - _latticeFirst) / _step * _step;
+            while (_excludedOnLattice.Contains(last)) { last -= _step; }
+
+            return last;
+        }
+
+        ulong top = _max;
+        while (_excludedInRange.Contains(top)) { top--; }
+
+        return top;
+    }
+
+    /// <summary>
     ///     Whether <paramref name="ordinal" /> is a value the specification could produce — the exact domain
     ///     <see cref="GenerateOrdinal" /> draws from: a member of the allow-list when one is set, otherwise on the
     ///     lattice (when one is set), inside the interval and not excluded. Feeds <see cref="ICardinalityHint{T}" />,

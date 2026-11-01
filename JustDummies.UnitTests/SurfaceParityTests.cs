@@ -64,8 +64,8 @@ public sealed class SurfaceParityTests {
     }
 
     // A scalar factory produces a generator from the context's own source: it returns a builder and takes no
-    // IAny<> operand. That excludes the composition/collection factories that live only on Any (Combine, ListOf,
-    // SetOf, DictionaryOf, PairOf, ...), as well as the three ways to control seeding — WithSeed (returns
+    // generator operand, an IAny<> or a builder. That excludes the composition/collection factories that live only on
+    // Any (Combine, ListOf, SetOf, DictionaryOf, PairOf, OrderedPair, ...), as well as the three ways to control seeding — WithSeed (returns
     // AnyContext), Reproducibly (returns void/Task) and UseSeed (returns IDisposable). None of those is a
     // generator factory, and AnyContext is not meant to mirror them: it already *is* an explicit deterministic
     // context, so pinning a seed on one would be meaningless.
@@ -81,6 +81,10 @@ public sealed class SurfaceParityTests {
     }
 
     private static bool IsAny(Type type) {
+        return IsAnyInterface(type) || type.GetInterfaces().Any(IsAnyInterface);
+    }
+
+    private static bool IsAnyInterface(Type type) {
         return type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IAny<>);
     }
 

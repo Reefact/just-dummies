@@ -62,6 +62,8 @@ public class Jd034ConstraintAlreadyDefinedTests {
     [InlineData("Any.Decimal().MultipleOf(1m).MultipleOf(0.5m)",            "MultipleOf(0.5m) conflicts with MultipleOf(1m), declared before it: the generator accepts only one step")]
     [InlineData("Any.Decimal().MultipleOf(0.25m).WithScale(1)",             "WithScale(1) conflicts with MultipleOf(0.25m), declared before it: a decimal's step must lie on its scale's grid")]
     [InlineData("Any.Decimal().WithScale(1).MultipleOf(0.25m)",             "MultipleOf(0.25m) conflicts with WithScale(1), declared before it: a decimal's step must lie on its scale's grid")]
+    [InlineData("Any.OrderedPair(Any.Int32(), Any.Int32()).WithFirst(1).WithFirst(2)",   "WithFirst(2) conflicts with WithFirst(1), declared before it: the generator accepts only one first value")]
+    [InlineData("Any.OrderedPair(Any.Int32(), Any.Int32()).WithSecond(1).WithSecond(2)", "WithSecond(2) conflicts with WithSecond(1), declared before it: the generator accepts only one second value")]
     [InlineData("Any.Int32().Odd().MultipleOf(3)",                          "MultipleOf(3) conflicts with Odd(), declared before it: the generator accepts only one step (MultipleOf, Odd or Even)")]
     [InlineData("Any.Int32().Even().Odd()",                                 "Odd() conflicts with Even(), declared before it: the generator accepts only one step (MultipleOf, Odd or Even)")]
     [InlineData("Any.UInt64().MultipleOf(2).Odd()",                         "Odd() conflicts with MultipleOf(2), declared before it: the generator accepts only one step (MultipleOf, Odd or Even)")]

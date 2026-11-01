@@ -68,6 +68,11 @@ public sealed class AnyInt128 : IAny<Int128>, IHasRandomSource, ICardinalityHint
 
     bool ICardinalityHint<Int128>.Contains(Int128 value) => _spec.Contains(Ord(value));
 
+    /// <summary>The largest value this generator can produce, for an ordered pair to bound its first value by (ADR-0126).</summary>
+    internal Int128 Largest() {
+        return Val(_spec.Largest());
+    }
+
     // Explicit, like the cardinality hint above: an inspection answers a maintenance question and does not
     // belong in the completion list a caller writes constraints in (ADR-0067).
     bool IPoolInspection<Int128>.IsPooled => _spec.IsPooled;

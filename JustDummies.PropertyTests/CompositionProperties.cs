@@ -61,6 +61,45 @@ public sealed class CompositionProperties {
 
     #endregion
 
+    [Fact(DisplayName = "OrderedPair: the first never exceeds the second, inside both bases, for every pair of ranges, strictness and seed.")]
+    [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
+    public void OrderedPairIsOrderedByConstruction() {
+        Prop.ForAll((from first in Generators.OrderedPair(Gen.Choose(-100, 100))
+                     from second in Generators.OrderedPair(Gen.Choose(-100, 100))
+                     from strict in Gen.Elements(true, false)
+                     from seed in Generators.Seed()
+                     select (first, second, strict, seed)).ToArbitrary(),
+                    testCase => {
+                        AnyContext any = Any.WithSeed(testCase.seed);
+                        AnyInt32   firstBase  = any.Int32().Between(testCase.first.Min, testCase.first.Max);
+                        AnyInt32   secondBase = any.Int32().Between(testCase.second.Min, testCase.second.Max);
+
+                        // No first value precedes the largest second: the refusal is owed at the pair's declaration.
+                        bool orderable = testCase.strict ? testCase.first.Min < testCase.second.Max : testCase.first.Min <= testCase.second.Max;
+                        if (!orderable) { return Expect.Throws<ConflictingAnyConstraintException>(() => Any.OrderedPair(firstBase, secondBase, testCase.strict)); }
+
+                        return Expect.EveryDraw(Any.OrderedPair(firstBase, secondBase, testCase.strict),
+                                                pair => (testCase.strict ? pair.First < pair.Second : pair.First <= pair.Second)
+                                                     && pair.First >= testCase.first.Min && pair.First <= testCase.first.Max
+                                                     && pair.Second >= testCase.second.Min && pair.Second <= testCase.second.Max);
+                    })
+            .QuickCheckThrowOnFailure();
+    }
+
+    [Fact(DisplayName = "OrderedPair: a pin bounds the other draw, in either direction, for every pin the other base can follow.")]
+    public void OrderedPairPinBoundsTheOtherDraw() {
+        Prop.ForAll((from pin in Gen.Choose(-100, 100)
+                     from strict in Gen.Elements(true, false)
+                     select (pin, strict)).ToArbitrary(),
+                    testCase => {
+                        AnyOrderedPair<int> pair = Any.OrderedPair(Any.Int32().Between(-200, 200), Any.Int32().Between(-200, 200), testCase.strict);
+
+                        return Expect.EveryDraw(pair.WithFirst(testCase.pin), drawn => drawn.First == testCase.pin && (testCase.strict ? drawn.Second > testCase.pin : drawn.Second >= testCase.pin))
+                               && Expect.EveryDraw(pair.WithSecond(testCase.pin), drawn => drawn.Second == testCase.pin && (testCase.strict ? drawn.First < testCase.pin : drawn.First <= testCase.pin));
+                    })
+            .QuickCheckThrowOnFailure();
+    }
+
     [Fact(DisplayName = "As projects every draw: the composed value is the factory's image of a value the source constraint allows.")]
     public void AsProjectsEveryDrawThroughTheFactory() {
         // Doubling is invertible, so the projected value can be mapped back and checked against the source interval —

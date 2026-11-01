@@ -87,6 +87,11 @@ public sealed class AnySingle : IAny<float>, IHasRandomSource, ICardinalityHint<
     // The allow-list holds the doubles the supplied floats widen to, so membership tests the same widening.
     bool ICardinalityHint<float>.Contains(float value) => _spec.Contains((double)value);
 
+    /// <summary>The largest value this generator can produce, for an ordered pair to bound its first value by (ADR-0126).</summary>
+    internal float Largest() {
+        return (float)_spec.Largest();
+    }
+
     // Explicit, like the cardinality hint above: an inspection answers a maintenance question and does not
     // belong in the completion list a caller writes constraints in (ADR-0067).
     bool IPoolInspection<float>.IsPooled => _spec.IsPooled;

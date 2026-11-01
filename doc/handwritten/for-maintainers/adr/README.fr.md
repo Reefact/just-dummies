@@ -22,7 +22,7 @@ n'existe, et la colonne **Origine** dit comment chacune est arrivée ici :
   aussi, car ce dépôt l'applique encore. Les deux copies sont désormais
   indépendantes : chaque côté peut remplacer la sienne sans toucher à l'autre.
   9 décisions.
-* **consigné ici** — décidé dans ce dépôt, de son propre chef. 70 décisions.
+* **consigné ici** — décidé dans ce dépôt, de son propre chef. 71 décisions.
 
 Les numéros appartiennent à cette base, attribués dans l'ordre où les décisions
 ont été consignées en amont
@@ -272,3 +272,4 @@ que l'option existait le jour où elle compterait.
 | [ADR-0114](0114-refuse-a-local-datetime-bound.fr.md) | Refuser une borne `DateTime` `Local` plutôt que la lire en ticks | Accepted | consigné ici |
 | [ADR-0115](0115-allow-an-editorial-correction-to-an-accepted-adr.fr.md) | Permettre une correction éditoriale d'une ADR acceptée, jamais un changement de fond | Accepted | consigné ici |
 | [ADR-0116](0116-accumulate-a-parameters-refinements-on-its-current-recipe.fr.md) | Accumuler les affinages d'un paramètre sur sa recette courante | Proposed | consigné ici |
+| [ADR-0117](0117-draw-a-limit-value-the-type-permits-one-draw-in-ten.fr.md) | Tirer une valeur limite que le type permet une fois sur dix | Proposed | consigné ici |

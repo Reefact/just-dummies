@@ -27,11 +27,11 @@ $ any generate Order
 Analyzing Shop.Domain.Order
   constructor Order(OrderReference, Customer, int, OrderStatus, IReadOnlyList<string>, DateTime)
 
-  reference  OrderReference         new AnyOrderReference()              AnyX
-  customer   Customer               new AnyCustomer()                    AnyX
-  quantity   int                    Any.Int32().Positive()               guard
+  reference  OrderReference         new AnyOrderReference()   AnyX
+  customer   Customer               new AnyCustomer()         AnyX
+  quantity   int                    Any.Int32().Positive()    guard
   status     OrderStatus            Any.Enum<OrderStatus>()
-  tags       IReadOnlyList<string>  Any.ListOf(Any.String().NonEmpty())
+  tags       IReadOnlyList<string>  Any.ListOf(Any.String())
   placedAt   DateTime               Any.DateTime()
 
 ✓ AnyOrder.cs — 6 of 6 parameters inferred.
@@ -87,7 +87,7 @@ private static AnyString AnyValidValue() {
     //   https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/packages/justdummies-cli.en.md#what-the-last-column-means
     _ = TODO_verify_the_generator_for_value;
 
-    return Any.String().NonEmpty();
+    return Any.String();
 }
 ```
 
@@ -351,16 +351,17 @@ public sealed partial class AnyShipment {
 lambda. Si elle change, il suffit de la modifier là : aucun test ne la répète, aucun n'est donc à
 retrouver.
 
-Une ligne de chaîne scaffoldée, `Any.String().NonEmpty()`, déclenche [JD030](../analyzers/JD030.fr.md) au niveau
-Info, par conception : l'outil n'invente pas une longueur que votre domaine n'a jamais déclarée. Déclarez-la dans
-la fabrique quand elle compte — `Any.String().NonEmpty().WithLengthBetween(1, 50)`. Info n'est jamais affiché par
-`dotnet build` ; [montez sa sévérité](justdummies.fr.md#les-analyzers-voyagent-dans-le-paquet) pour la voir dans
-un terminal ou en CI.
+Une ligne de chaîne scaffoldée, `Any.String()`, déclenche [JD030](../analyzers/JD030.fr.md) au niveau
+Info, par conception : l'outil n'invente pas une longueur que votre domaine n'a jamais déclarée — ni un refus de
+la chaîne vide, qu'il n'écrit que lorsqu'une garde de votre constructeur le fait (`IsNullOrEmpty`, une longueur
+nulle). Déclarez la longueur dans la fabrique quand elle compte — `Any.String().WithLengthBetween(1, 50)`.
+Info n'est jamais affiché par `dotnet build` ;
+[montez sa sévérité](justdummies.fr.md#les-analyzers-voyagent-dans-le-paquet) pour la voir dans un terminal ou en CI.
 
 ### Quand le remplacement est un autre genre de générateur
 
 `AnyValid…()` retourne le constructeur que l'outil a choisi pour le type : `AnyString` pour une `string`.
-Remplacez `Any.String().NonEmpty()` par `Any.StringMatching("[A-Z]{3}")` et le fichier ne compile plus
+Remplacez `Any.String()` par `Any.StringMatching("[A-Z]{3}")` et le fichier ne compile plus
 (`CS0029`), parce que cet appel retourne un `AnyPattern`. L'ancien type figure sur trois lignes de plus, et ce
 sont toutes les modifications à faire — le champ de recette, le paramètre du constructeur de recettes, et le
 `Func<…>` de la surcharge d'affinage placée à côté de la fixation :
@@ -387,7 +388,7 @@ public sealed partial class AnyCurrency : IAny<Currency> {
         : this(code: AnyValidCode()) { }
 
     private static AnyPattern AnyValidCode() {                             // was AnyString
-        return Any.StringMatching("[A-Z]{3}");                             // was Any.String().NonEmpty()
+        return Any.StringMatching("[A-Z]{3}");                             // was Any.String()
     }
 
     private AnyCurrency(AnyPattern code) {                                 // was AnyString

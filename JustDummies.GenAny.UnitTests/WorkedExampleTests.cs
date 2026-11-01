@@ -71,7 +71,7 @@ public sealed class WorkedExampleTests {
                               "new AnyCustomer()",
                               "Any.Int32().Positive()",
                               "Any.Enum<OrderStatus>()",
-                              "Any.ListOf(Any.String().NonEmpty())",
+                              "Any.ListOf(Any.String())",
                               "Any.DateTime()");
     }
 

@@ -17,7 +17,7 @@ public sealed class GuardReadingTests {
     [InlineData("if (string.IsNullOrWhiteSpace(value)) { throw new ArgumentException(nameof(value)); }", "Any.String().NotBlank()")]
     [InlineData("if (value.Length == 0) { throw new ArgumentException(nameof(value)); }", "Any.String().NonEmpty()")]
     [InlineData("if (value.Length < 1) { throw new ArgumentException(nameof(value)); }", "Any.String().NonEmpty()")]
-    [InlineData("if (value.Length > 10) { throw new ArgumentException(nameof(value)); }", "Any.String().NonEmpty().WithMaxLength(10)")]
+    [InlineData("if (value.Length > 10) { throw new ArgumentException(nameof(value)); }", "Any.String().WithMaxLength(10)")]
     [InlineData("if (value.Length < 3) { throw new ArgumentException(nameof(value)); }", "Any.String().WithMinLength(3)")]
     [InlineData("if (value.Length != 12) { throw new ArgumentException(nameof(value)); }", "Any.String().WithLength(12)")]
     public void AGuardOnAStringIsReadIntoTheStringFamily(string guard, string expected) {
@@ -248,11 +248,11 @@ public sealed class GuardReadingTests {
     [InlineData("int[]", "if (value.Length > 5) { throw new ArgumentException(nameof(value)); }",
                 "Any.ArrayOf(Any.Int32()).WithMaxCount(5)")]
     [InlineData("List<string>", "if (value.Count > 5) { throw new ArgumentException(nameof(value)); }",
-                "Any.ListOf(Any.String().NonEmpty()).WithMaxCount(5)")]
+                "Any.ListOf(Any.String()).WithMaxCount(5)")]
     [InlineData("List<string>", "if (value.Count != 3) { throw new ArgumentException(nameof(value)); }",
-                "Any.ListOf(Any.String().NonEmpty()).WithCount(3)")]
+                "Any.ListOf(Any.String()).WithCount(3)")]
     [InlineData("List<string>", "if (value.Count == 0) { throw new ArgumentException(nameof(value)); }",
-                "Any.ListOf(Any.String().NonEmpty()).NonEmpty()")]
+                "Any.ListOf(Any.String()).NonEmpty()")]
     public void ASizeGuardOnACollectionReadsIntoTheCountFamily(string parameterType, string guard, string expected) {
         Check.That(Subject.GuardedBy(parameterType, guard).Expression).IsEqualTo(expected);
     }
@@ -310,8 +310,8 @@ public sealed class GuardReadingTests {
     }
 
     [Theory(DisplayName = "A guard the generator already satisfies adds nothing.")]
-    [InlineData("string", "if (value is null) { throw new ArgumentNullException(nameof(value)); }", "Any.String().NonEmpty()")]
-    [InlineData("string", "if (value == null) { throw new ArgumentNullException(nameof(value)); }", "Any.String().NonEmpty()")]
+    [InlineData("string", "if (value is null) { throw new ArgumentNullException(nameof(value)); }", "Any.String()")]
+    [InlineData("string", "if (value == null) { throw new ArgumentNullException(nameof(value)); }", "Any.String()")]
     [InlineData("OrderStatus", "if (!Enum.IsDefined(typeof(OrderStatus), value)) { throw new ArgumentException(nameof(value)); }",
                 "Any.Enum<OrderStatus>()")]
     public void AGuardTheGeneratorAlreadySatisfiesAddsNothing(string parameterType, string guard, string expected) {
@@ -389,13 +389,15 @@ public sealed class GuardReadingTests {
         Check.That(parameter.Provenance.HasFlag(Provenance.UnreadGuards)).IsTrue();
     }
 
-    // The row's own refinement and a guard saying the same thing collapse, rather than colliding: a string row
-    // is already NonEmpty, and a constructor guarding on IsNullOrEmpty agrees with it. IsNullOrWhiteSpace is
-    // deliberately not the example any more -- it reads as NotBlank, which strengthens the row instead of
-    // repeating it, and the case below covers that.
-    [Fact(DisplayName = "A guard repeating the row's own constraint collapses into it.")]
-    public void AGuardRepeatingTheRowsConstraintCollapses() {
-        string guard = "if (string.IsNullOrEmpty(value)) { throw new ArgumentException(nameof(value)); }";
+    // Two readings saying the same thing collapse, rather than colliding: IsNullOrEmpty and a length of zero
+    // are one invariant in two spellings. IsNullOrWhiteSpace is deliberately not the example -- it reads as
+    // NotBlank, which strengthens NonEmpty instead of repeating it, and the case below covers that.
+    [Fact(DisplayName = "Two guards saying the same thing collapse into one constraint.")]
+    public void TwoGuardsSayingTheSameThingCollapse() {
+        string guard = """
+                               if (string.IsNullOrEmpty(value)) { throw new ArgumentException(nameof(value)); }
+                               if (value.Length == 0) { throw new ArgumentException(nameof(value)); }
+                       """;
 
         ScaffoldedParameter parameter = Subject.GuardedBy("string", guard);
 
@@ -404,8 +406,7 @@ public sealed class GuardReadingTests {
     }
 
     /// <summary>
-    ///     A guard that STRENGTHENS the row rather than repeating it replaces the row's own constraint, and is
-    ///     never absorbed by a tighter floor beside it.
+    ///     A NotBlank guard is never absorbed by a tighter floor beside it.
     /// </summary>
     /// <remarks>
     ///     NotBlank and NonEmpty both spell an emptiness bound at an edge of one, so the ordinary
@@ -413,8 +414,8 @@ public sealed class GuardReadingTests {
     ///     Either outcome loses the half of NotBlank that is not a floor: eight characters every one of which
     ///     may be a space is exactly what this domain rejects (ADR-0088).
     /// </remarks>
-    [Fact(DisplayName = "A guard strengthening the row's own constraint replaces it, and survives a tighter floor.")]
-    public void AGuardStrengtheningTheRowsConstraintSurvives() {
+    [Fact(DisplayName = "A NotBlank guard survives a tighter floor beside it.")]
+    public void ANotBlankGuardSurvivesATighterFloor() {
         string guard = """
                        if (string.IsNullOrWhiteSpace(value)) { throw new ArgumentException(nameof(value)); }
                                if (value.Length < 8) { throw new ArgumentException(nameof(value)); }
@@ -518,23 +519,19 @@ public sealed class GuardReadingTests {
     }
 
     /// <summary>
-    ///     The base table's own refinement yields to a guard, rather than contradicting it.
+    ///     A guard that demands an empty or a short string is read as written, with nothing of the engine's own
+    ///     beside it.
     /// </summary>
     /// <remarks>
-    ///     A constructor demanding a blank string is not contradicting itself; it is contradicting the row that
-    ///     assumed a <c>string</c> parameter wants <c>NonEmpty</c>. Dropping both sides would emit a generator
-    ///     that violates a perfectly good guard and report a reconciliation the developer never asked for — so
-    ///     the opinion yields and the declaration stands.
-    ///     <para>
-    ///         The same reading absorbs it where they merely overlap: a floor of eight already says non-empty,
-    ///         so writing both states one invariant twice.
-    ///     </para>
+    ///     The base table once added <c>NonEmpty</c> to every <c>string</c>, and these guards were the cases where
+    ///     that opinion had to yield to the declaration. It no longer guesses (#409), so there is nothing to
+    ///     yield; the cases stay to hold that nothing creeps back between the guard and the chain.
     /// </remarks>
-    [Theory(DisplayName = "A base-table refinement yields to the guard it cannot stand beside.")]
+    [Theory(DisplayName = "A guard demanding an empty or a short string is read as written.")]
     [InlineData("if (value.Length > 0) { throw new ArgumentException(nameof(value)); }", "Any.String().WithMaxLength(0)")]
     [InlineData("if (value.Length != 0) { throw new ArgumentException(nameof(value)); }", "Any.String().WithLength(0)")]
     [InlineData("if (value.Length < 8) { throw new ArgumentException(nameof(value)); }", "Any.String().WithMinLength(8)")]
-    public void ABaseTableRefinementYieldsToTheGuard(string guard, string expected) {
+    public void AGuardDemandingAnEmptyOrShortStringIsReadAsWritten(string guard, string expected) {
         ScaffoldedParameter parameter = Subject.GuardedBy("string", guard);
 
         Check.That(parameter.Expression).IsEqualTo(expected);
@@ -635,7 +632,7 @@ public sealed class GuardReadingTests {
     [InlineData("int", "Guard.Against.Zero(value);", "Any.Int32().NonZero()")]
     [InlineData("int", "Guard.Against.OutOfRange(value, nameof(value), 0, 100);", "Any.Int32().Between(0, 100)")]
     [InlineData("string", "Guard.Against.StringTooShort(value, 3);", "Any.String().WithMinLength(3)")]
-    [InlineData("string", "Guard.Against.StringTooLong(value, 20);", "Any.String().NonEmpty().WithMaxLength(20)")]
+    [InlineData("string", "Guard.Against.StringTooLong(value, 20);", "Any.String().WithMaxLength(20)")]
     [InlineData("string", "Guard.Against.LengthOutOfRange(value, 8, 20);", "Any.String().WithLengthBetween(8, 20)")]
     [InlineData("System.Guid", "Guard.Against.Default(value);", "Any.Guid().NonEmpty()")]
     [InlineData("int", "Guard.Against.Default(value);", "Any.Int32().NonZero()")]

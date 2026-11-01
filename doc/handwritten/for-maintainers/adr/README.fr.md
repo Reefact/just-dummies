@@ -22,7 +22,7 @@ n'existe, et la colonne **Origine** dit comment chacune est arrivée ici :
   aussi, car ce dépôt l'applique encore. Les deux copies sont désormais
   indépendantes : chaque côté peut remplacer la sienne sans toucher à l'autre.
   9 décisions.
-* **consigné ici** — décidé dans ce dépôt, de son propre chef. 80 décisions.
+* **consigné ici** — décidé dans ce dépôt, de son propre chef. 81 décisions.
 
 Les numéros appartiennent à cette base, attribués dans l'ordre où les décisions
 ont été consignées en amont
@@ -283,3 +283,4 @@ que l'option existait le jour où elle compterait.
 | [ADR-0124](0124-arrange-a-drawn-list-in-ascending-order.fr.md) | Ranger une liste tirée dans l'ordre croissant | Accepted | consigné ici |
 | [ADR-0125](0125-let-a-time-of-day-window-cross-midnight.fr.md) | Laisser une fenêtre horaire franchir minuit | Accepted | consigné ici |
 | [ADR-0126](0126-draw-two-values-tied-by-an-order.fr.md) | Tirer deux valeurs liées par un ordre | Accepted | consigné ici |
+| [ADR-0127](0127-draw-the-empty-value-unless-a-guard-refuses-it.fr.md) | Tirer la valeur vide sauf si une garde la refuse | Accepted | consigné ici |

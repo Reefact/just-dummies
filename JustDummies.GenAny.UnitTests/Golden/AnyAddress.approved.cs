@@ -27,11 +27,11 @@ public sealed partial class AnyAddress : IAny<Address> {
                city:   AnyValidCity()) { }
 
     private static AnyString AnyValidStreet() {
-        return Any.String().NonEmpty();
+        return Any.String();
     }
 
     private static AnyString AnyValidCity() {
-        return Any.String().NonEmpty();
+        return Any.String();
     }
 
     /// <summary>Draws every parameter from the recipe given for it.</summary>

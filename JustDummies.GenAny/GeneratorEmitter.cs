@@ -355,7 +355,7 @@ public static class GeneratorEmitter {
         int assignment = AssignmentWidth(plan);
 
         foreach (ScaffoldedParameter parameter in plan.Parameters) {
-            Line(file, $"{indent}{Indent}{parameter.FieldName.PadRight(assignment)} = {parameter.Identifier}{parameter.Conversion};");
+            Line(file, $"{indent}{Indent}{parameter.FieldName.PadRight(assignment)} = {parameter.Identifier}{parameter.DefaultConversion};");
 
             if (!parameter.IsUnresolved) {
                 Line(file, $"{indent}{Indent}{parameter.RecipeFieldName.PadRight(assignment)} = {parameter.Identifier};");
@@ -412,6 +412,11 @@ public static class GeneratorEmitter {
     ///     particular parameter adds it in a neighbouring part of this partial class, where it is their choice
     ///     rather than the default. An unresolved parameter has no base to refine, and keeps the value overload
     ///     alone.
+    ///     <para>
+    ///         A parameter whose default draws <c>null</c> one draw in ten gets a third method, <c>Without…()</c>,
+    ///         which pins it to <c>null</c>: the refining lambda describes a value and never yields one, and
+    ///         <c>With…(null)</c> is ambiguous between the two overloads (#411).
+    ///     </para>
     /// </remarks>
     private static void WriteWithMethods(StringBuilder file, ScaffoldPlan plan, string indent) {
         string body = indent + Indent;
@@ -441,7 +446,27 @@ public static class GeneratorEmitter {
             WriteReturnCopy(file, body);
             Line(file, $"{indent}}}");
             Line(file, string.Empty);
+
+            if (parameter.DrawsNull) { WriteWithout(file, plan, parameter, indent); }
         }
+    }
+
+    /// <summary>
+    ///     <c>Without…()</c>: the parameter pinned to <c>null</c>, which its type declares valid, for the test that
+    ///     is about its absence. The recipe is kept, as a pin keeps it.
+    /// </summary>
+    private static void WriteWithout(StringBuilder file, ScaffoldPlan plan, ScaffoldedParameter parameter, string indent) {
+        string body = indent + Indent;
+
+        Line(file, $"{indent}/// <summary>Pins <c>{parameter.Name}</c> to <c>null</c>; its recipe is kept for a later refinement.</summary>");
+        Line(file, $"{indent}public {plan.GeneratorName} Without{parameter.PascalCasedName}() {{");
+        WriteCopy(file, plan, body);
+        Line(file, plan.PinsThroughAnyFixed
+                       ? $"{body}copy.{parameter.FieldName} = Any.Fixed<{parameter.TypeDisplay}>(null);"
+                       : $"{body}copy.{parameter.FieldName} = new FixedValue<{parameter.TypeDisplay}>(null);");
+        WriteReturnCopy(file, body);
+        Line(file, $"{indent}}}");
+        Line(file, string.Empty);
     }
 
     /// <summary>The first statement of every <c>With…</c>: a fresh copy, which is the only instance the method writes to.</summary>

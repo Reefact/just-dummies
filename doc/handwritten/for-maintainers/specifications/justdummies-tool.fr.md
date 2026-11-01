@@ -108,7 +108,7 @@ table en est l'index ; elle ne porte aucun argument propre.
 | **D7** | Le generator émis tire du contexte **ambiant** et ne détient aucun état. | La résolution au tirage rend la garantie du §8.2 gratuite ; un état capturé exigerait une règle de cycle de vie. |
 | **D8** | Le type émis vit dans le **namespace du type cible**. | Zéro friction au site d'appel — et la cause unique du risque de masquage du §7. |
 | **D9** | Le tool ne prend **aucune dépendance sur le package JustDummies**. | Résolution par nom de métadonnée, comme les analyzers — l'écart de version devient structurellement impossible. |
-| **D10** | Ne jamais émettre `.OrNull()`. | Un dummy aléatoirement `null` est précisément l'instabilité que la bibliothèque existe pour supprimer. |
+| **D10** | Le défaut d'un paramètre nullable tire `null` une fois sur dix, sauf si une garde le refuse ; un affinage jamais. | Le type déclare `null` valide ; un test qui échoue dessus dépendait du paramètre, et la graine le rejoue. |
 | **D11** | Le **moteur de scaffolding est une bibliothèque séparée** au plancher Roslyn ; la CLI est une coquille. | Le second consommateur plausible du moteur est un refactoring IDE, qui n'est pas une CLI et ne peut pas charger un assembly `net8.0`. |
 | **D12** *(v1.1)* | Un point d'entrée est **optionnel**, émis dans un fichier à lui. | Le fichier du generator ne change jamais, donc le plancher du §4.4 reste sa propriété et `new Any{Type}()` continue de fonctionner. |
 | **D13** | Un test **affine** la base valide d'un paramètre par une lambda, ou fixe une valeur ; il ne remplace jamais la base, et les affinages **s'accumulent**. | Une base remplacée perd ses règles et compile quand même ; une base affinée les garde à une seule adresse — et un affinage qui repartait de la base perdait tous les précédents. |
@@ -546,6 +546,11 @@ public sealed partial class AnyOrder : IAny<Order> {
   l'erreur `JD011`/`JD012` que cette surcharge évitait. Un développeur qui doit remplacer la recette
   d'un paramètre ajoute lui-même cette surcharge dans une autre partie de la classe partielle. Un
   paramètre non résolu n'a pas de base à affiner : il ne conserve que la surcharge par valeur.
+* Pour chaque paramètre dont le défaut tire `null` (§5.2, D10), une troisième méthode,
+  `Without{Param}()`, qui le pinne à `null` — `Any.Fixed<TParam>(null)` — et garde la recette, comme
+  le fait un pin. La lambda d'affinage décrit une valeur et ne rend jamais `null`, et
+  `With{Param}(null)` est ambigu entre les deux surcharges (`CS0121`) : l'absence reçoit donc une
+  méthode à elle. Un paramètre dont une garde refuse `null` n'en reçoit pas (#411).
 * `using System;` est ouvert dès qu'une surcharge d'affinage est émise, pour son `Func<,>`.
 * `public {Type} Generate()` appelant le constructeur avec le `Generate()` de chaque champ.
 * Un épinglage écrit `Any.Fixed(value)` : il accepte `null` (ce que `Any.OneOf(value)` refuse) et ne
@@ -738,8 +743,8 @@ Chaque entrée est soumise à D4 : le membre n'est émis que s'il se résout dan
 | `IEnumerable<T>` | `Any.SequenceOf(<T>)` |
 | `HashSet<T>` `ISet<T>` | `Any.SetOf(<T>)` |
 | `Dictionary<K,V>` `IDictionary<K,V>` `IReadOnlyDictionary<K,V>` | `Any.DictionaryOf(<K>, <V>)` |
-| `T?` où `T` est un type référence | le generator de `T` inchangé — **jamais** `.OrNull()` (D10) |
-| `T?` où `T` est un type valeur | `<generator de T>.AsNullable()`, ou `.As(value => (T?)value)` quand l'asset ne porte pas le lift — **jamais** `.OrNull()` (D10) |
+| `T?` où `T` est un type référence | le generator de `T`, tiré à travers `.OrNull()` par défaut (D10) ; inchangé après un affinage |
+| `T?` où `T` est un type valeur | `<generator de T>.OrNull()` par défaut (D10) ; `.AsNullable()` après un affinage, ou `.As(value => (T?)value)` quand l'asset ne porte pas le lift |
 | tout autre type nommé non générique | `new AnyT()` (§5.4) — que la compilation porte `AnyT` ou non |
 | tout le reste | non résolu (§5.5) |
 
@@ -775,12 +780,28 @@ compile pas — les lignes réservées à `net8.0` sont elles aussi des types va
 champ et le paramètre du constructeur privé d'un `Customer? agent` sont typés `Customer?`, et le
 récapitulatif comme le rapport machine impriment `Customer?` : le pin est l'endroit où un test choisit
 `null` (ADR-0109), et le typer `Customer` faisait avertir `.WithAgent((Customer?)null)` d'un `CS8625`
-pour avoir passé ce que le constructeur accepte. La base, elle, ne tire toujours jamais `null`
-(ADR-0064), et la covariance la garde assignable au champ annoté. Le `?` n'est écrit que là où le
+pour avoir passé ce que le constructeur accepte. Une recette affinée ne tire jamais `null`, et la
+covariance la garde assignable au champ annoté. Le `?` n'est écrit que là où le
 projet analysé lit les annotations nullables : le fichier ne porte aucune directive `#nullable`, et
 hors de ce contexte l'annotation est elle-même un avertissement (`CS8632`) alors que passer `null`
 n'en déclenche aucun. Là, le récapitulatif et le rapport machine épellent le type comme le fichier, et
 le récapitulatif note une fois que la déclaration portait un `?` (§6).
+
+**Un paramètre nullable tire `null` une fois sur dix par défaut (D10, ADR-0117).** Son type déclare
+`null` valide — un type valeur nullable, ou une référence déclarée avec `?`, que le projet analysé lise
+l'annotation ou non — et ne jamais le tirer n'explorait jamais une valeur que le type nomme lui-même :
+un test qui échoue dessus dépendait de ce paramètre, et la graine le rejoue. Le constructeur à recettes
+tire donc `<fabrique>.OrNull()`. Seul le défaut le fait : une lambda d'affinage décrit une valeur, son
+résultat passe donc par le saut de la table ci-dessus et ne rend jamais `null`, et un test qui veut
+`null` appelle le `Without{Param}()` généré (§4.2). Une garde qui refuse `null` garde le défaut une
+valeur — un contrôle de nullité sous toutes ses orthographes (`is null`, `== null`, `ThrowIfNull`,
+`?? throw`, le `Null`/`IsNotNull` d'une bibliothèque de gardes), un contrôle qui refuse `null` en même
+temps que la valeur vide (`IsNullOrEmpty`, `IsNullOrWhiteSpace` et leurs throw helpers), une garde de
+taille lue à travers `p.Length` ou `p.Count`, qui déréférence le paramètre, et un contrôle de nullité
+sur un membre qui contient le paramètre tel quel. Une borne sur un type valeur nullable ne refuse pas
+`null` : la comparaison est liftée, et `null <= 0` est faux. Là où l'asset ne porte pas `OrNull`,
+demandé comme tout membre (ADR-0059), le défaut garde le saut qui ne tire jamais `null`. Un fichier
+scaffoldé auparavant garde son `AsNullable()` (§1).
 
 **Les generators d'éléments récursent.** `IReadOnlyList<OrderLine>` résout son élément par cette
 même table, et devient donc `Any.ListOf(new AnyOrderLine())` quand `AnyOrderLine` existe. La
@@ -920,7 +941,7 @@ L'ensemble reconnu est clos :
 
 | Condition qui lève | Contrainte ajoutée |
 |---|---|
-| `p is null`, `p == null`, ou l'assignation `f = p ?? throw new ArgumentNullException(nameof(p));` | aucune — le generator ne retourne jamais `null` de toute façon. Un `==` défini par l'utilisateur est une méthode libre de répondre `true` pour une valeur non nulle, donc cette comparaison ne relève pas de cette ligne (#333) |
+| `p is null`, `p == null`, ou l'assignation `f = p ?? throw new ArgumentNullException(nameof(p));` | aucune — et le défaut d'un paramètre nullable cesse de tirer `null` (§5.2). Un `==` défini par l'utilisateur est une méthode libre de répondre `true` pour une valeur non nulle, donc cette comparaison ne relève pas de cette ligne (#333) |
 | `string.IsNullOrEmpty(p)`, `p.Length == 0`, `p.Length < 1` | `.NonEmpty()` |
 | `string.IsNullOrWhiteSpace(p)` | `.NotBlank()` |
 | `p.Length > N` | `.WithMaxLength(N)` |
@@ -1162,7 +1183,9 @@ affectation suivie est le paramètre lui-même, à travers un nombre quelconque 
 (`Name = name;`, à un cast prédéfini ou un `!` près) et que chaque membre suivi contient ce qu'on lui
 affecte — une variable locale, un champ ou une
 propriété auto-implémentée, jamais une propriété dont l'accesseur `set` peut réécrire la valeur (#333) :
-le générateur ne tire jamais null, donc un membre qui le contient tel quel non plus. Un membre
+un tel membre est null exactement quand le paramètre l'est, donc le contrôle est le contrôle de
+nullité du paramètre lui-même — il ne restreint rien, et garde une valeur au défaut d'un paramètre
+nullable (§5.2). Un membre
 calculé à partir du paramètre peut être null — `Name = name.Length < 5 ? null : name;`, ou une
 conversion définie par l'utilisateur, écrite comme un cast `(ProductCode)raw` ou appliquée
 implicitement par `Code = raw;`, qui est une méthode libre de renvoyer null — et son null-check est
@@ -1202,8 +1225,8 @@ invariant, tout comme `ArgumentException.ThrowIfNullOrEmpty(value)` / `ThrowIfNu
 — qui se lisent dans les deux mêmes lignes distinctes que leurs orthographes `if` — et les conditions
 `string.IsNullOr…` ci-dessus. Seule l'orthographe ancienne était lue, si bien que
 la moderne tombait sous la règle des appels et bloquait le build du développeur — au sujet d'une
-chaîne pourtant déjà exactement juste, puisqu'un contrôle de nullité n'ajoute rien (ADR-0064 ne tire
-jamais null) et qu'un contrôle de vacuité est le `NonEmpty` propre à la ligne. Lire une garde que
+chaîne pourtant déjà exactement juste, puisqu'un contrôle de nullité ne restreint rien et qu'un
+contrôle de vacuité est un `NonEmpty` que l'ensemble lit déjà. Lire une garde que
 l'ensemble comprend comme une garde qu'il n'a pas su lire, c'est le pire des deux résultats : rien
 n'est resserré, et rien ne compile non plus. Le premier argument doit **être** le paramètre, selon la
 même discipline d'identité du sujet que gardent les lignes de comparaison.
@@ -1227,7 +1250,7 @@ aides d'Ardalis retournent leur entrée inchangée. Les lignes retenues sont exa
 
 | Aide | Contrainte ajoutée |
 |---|---|
-| `Guard.Against.Null(p)` / `Guard.IsNotNull(p, …)` | aucune — le generator ne tire de toute façon jamais `null` |
+| `Guard.Against.Null(p)` / `Guard.IsNotNull(p, …)` | aucune — et le défaut d'un paramètre nullable cesse de tirer `null` (§5.2) |
 | `Guard.Against.NullOrEmpty(p)` / `Guard.IsNotNullOrEmpty(p, …)` | `.NonEmpty()` |
 | `Guard.Against.NullOrWhiteSpace(p)` / `Guard.IsNotNullOrWhiteSpace(p, …)` | `.NotBlank()` |
 | `Guard.Against.Negative(p)` | `.GreaterThanOrEqualTo(0)` |
@@ -2270,8 +2293,9 @@ sert aujourd'hui.
 * Les generators de collection dérivent d'une base commune implémentant `IAny<TCollection>` :
   `ListOf` → `List<T>`, `ArrayOf` → `T[]`, `SequenceOf` → `IEnumerable<T>`, `SetOf` → `HashSet<T>`,
   `DictionaryOf` → `Dictionary<TKey,TValue>`.
-* `NullableExtensions.OrNull<T>()` existe en deux formes, une pour les types valeur et une pour les
-  types référence annotés. **D10 interdit d'émettre l'une ou l'autre.**
+* `OrNull<T>()` existe en deux formes, `NullableExtensions` pour les types valeur et
+  `NullableReferenceExtensions` pour les types référence annotés. Le défaut d'un paramètre nullable
+  tire à travers celle que prend son type (D10), et rend `null` une fois sur dix (ADR-0117).
 
 ### 14.5 Invariants sémantiques dont dépend le code émis
 
@@ -2392,7 +2416,7 @@ celui-ci — et les enregistrements sont entrés dans sa base d'ADR, chacun cons
 | **D7** | [ADR-0061](../adr/0061-draw-from-the-ambient-context-and-hold-no-state.fr.md) — Tirer du contexte ambiant et ne détenir aucun état |
 | **D8** | [ADR-0062](../adr/0062-emit-the-generator-into-the-target-types-namespace.fr.md) — Émettre le generator dans le namespace du type cible |
 | **D9** | [ADR-0063](../adr/0063-give-the-scaffolder-no-dependency-on-the-package.fr.md) — Ne donner au scaffolder aucune dépendance sur le package JustDummies |
-| **D10** | [ADR-0064](../adr/0064-never-draw-null-for-a-nullable-parameter.fr.md) — Ne jamais tirer null pour un paramètre nullable |
+| **D10** | [ADR-0117](../adr/0117-draw-a-limit-value-the-type-permits-one-draw-in-ten.fr.md) — Tirer une valeur limite que le type permet une fois sur dix ; il remplace l'[ADR-0064](../adr/0064-never-draw-null-for-a-nullable-parameter.fr.md) — Ne jamais tirer null pour un paramètre nullable |
 | **D11** | [ADR-0065](../adr/0065-keep-the-scaffolding-engine-loadable-by-a-roslyn-host.fr.md) — Garder le moteur de scaffolding chargeable par un hôte Roslyn |
 | **D12** | [ADR-0070](../adr/0070-emit-an-entry-point-on-request-as-a-file-of-its-own.fr.md) — Émettre un point d'entrée à la demande, dans un fichier à lui |
 | **D13** | [ADR-0109](../adr/0109-let-a-test-refine-a-parameters-valid-base-rather-than-replace-it.fr.md) — Laisser un test affiner la base valide d'un paramètre plutôt que la remplacer; [ADR-0116](../adr/0116-accumulate-a-parameters-refinements-on-its-current-recipe.fr.md) (proposé) — Accumuler les affinages d'un paramètre sur sa recette courante |

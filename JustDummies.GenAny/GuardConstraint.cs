@@ -13,13 +13,24 @@ namespace JustDummies.GenAny;
 /// </remarks>
 internal sealed class GuardConstraint {
 
-    internal GuardConstraint(string member, string? argument, Bound bound, decimal? value = null, bool exclusive = false) {
-        Member    = member;
-        Argument  = argument;
-        Bound     = bound;
-        Value     = value;
-        Exclusive = exclusive;
+    internal GuardConstraint(string member, string? argument, Bound bound, decimal? value = null, bool exclusive = false, bool refusesNull = false) {
+        Member      = member;
+        Argument    = argument;
+        Bound       = bound;
+        Value       = value;
+        Exclusive   = exclusive;
+        RefusesNull = refusesNull;
     }
+
+    /// <summary>
+    ///     The reading of a guard that refuses <c>null</c> and says nothing else — <c>p is null</c>,
+    ///     <c>ThrowIfNull(p)</c>, <c>p ?? throw</c>.
+    /// </summary>
+    /// <remarks>
+    ///     Never a call in the chain: <see cref="GuardReading.Add" /> keeps it apart from the constraints, for the
+    ///     one decision it feeds — whether a nullable parameter draws <c>null</c> (§5.2, #411).
+    /// </remarks>
+    internal static GuardConstraint NullRefused { get; } = new(string.Empty, argument: null, Bound.Excluded, refusesNull: true);
 
     /// <summary>The constraint member — <c>NonEmpty</c>, <c>WithMaxLength</c>, <c>Positive</c>.</summary>
     internal string Member { get; }
@@ -44,6 +55,17 @@ internal sealed class GuardConstraint {
     ///     have declared it empty.
     /// </remarks>
     internal bool Exclusive { get; }
+
+    /// <summary>
+    ///     Whether the guard this was read from also refuses <c>null</c> — <c>IsNullOrEmpty</c> is <c>NonEmpty</c>
+    ///     and a null-check at once.
+    /// </summary>
+    internal bool RefusesNull { get; }
+
+    /// <summary>The same constraint, read from a guard that refuses <c>null</c> as well.</summary>
+    internal GuardConstraint RefusingNull() {
+        return new GuardConstraint(Member, Argument, Bound, Value, Exclusive, refusesNull: true);
+    }
 
     /// <summary>How many arguments the member takes, which is what ADR-0059 is checked against.</summary>
     internal int Arity => Argument is null ? 0 : 1;

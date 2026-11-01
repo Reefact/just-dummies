@@ -39,7 +39,7 @@ public sealed partial class AnyQuote : IAny<Quote> {
                      AnyDecimal discount) {
         _amount         = amount;
         _amountRecipe   = amount;
-        _discount       = discount.AsNullable();
+        _discount       = discount.OrNull();
         _discountRecipe = discount;
     }
 
@@ -85,6 +85,15 @@ public sealed partial class AnyQuote : IAny<Quote> {
 
         copy._discountRecipe = configure(_discountRecipe);
         copy._discount       = copy._discountRecipe.AsNullable();
+
+        return copy;
+    }
+
+    /// <summary>Pins <c>discount</c> to <c>null</c>; its recipe is kept for a later refinement.</summary>
+    public AnyQuote WithoutDiscount() {
+        AnyQuote copy = new AnyQuote(this);
+
+        copy._discount = Any.Fixed<decimal?>(null);
 
         return copy;
     }

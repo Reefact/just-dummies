@@ -27,7 +27,8 @@ public sealed class ScaffoldedParameter {
                                 Provenance provenance,
                                 UnreadGuard? unreadGuard,
                                 bool nullableAnnotationDropped,
-                                Unscaffoldable? unscaffoldable = null) {
+                                Unscaffoldable? unscaffoldable = null,
+                                bool drawsNull = false) {
         Name           = name;
         TypeDisplay    = typeDisplay;
         GeneratorType  = generatorType;
@@ -38,6 +39,7 @@ public sealed class ScaffoldedParameter {
 
         NullableAnnotationDropped = nullableAnnotationDropped;
         Unscaffoldable            = unscaffoldable;
+        DrawsNull                 = drawsNull;
     }
 
     /// <summary>The parameter's name, exactly as the constructor declares it.</summary>
@@ -47,7 +49,7 @@ public sealed class ScaffoldedParameter {
     public string TypeDisplay { get; }
 
     /// <summary>The inferred generator expression, or null when none was inferred.</summary>
-    public string? Expression => BaseExpression is null ? null : BaseExpression + Conversion;
+    public string? Expression => BaseExpression is null ? null : BaseExpression + DefaultConversion;
 
     /// <summary>
     ///     The type of the parameter's valid base, as the emitted file spells it — <c>AnyInt32</c>,
@@ -76,6 +78,23 @@ public sealed class ScaffoldedParameter {
     ///     the lambda as it follows the constraints (§5.3).
     /// </remarks>
     public string Conversion { get; }
+
+    /// <summary>
+    ///     Whether the parameter's default recipe draws <c>null</c> one draw in ten: its type is nullable, and no
+    ///     guard of the constructor refuses <c>null</c> (§5.2, ADR-0117).
+    /// </summary>
+    /// <remarks>
+    ///     Only the default: a refining lambda describes a value, so what it returns goes through
+    ///     <see cref="Conversion" /> and never yields <c>null</c>, and a test that wants <c>null</c> says so with
+    ///     the <c>Without…()</c> method this also asks the emitter for (§4.2).
+    /// </remarks>
+    public bool DrawsNull { get; }
+
+    /// <summary>
+    ///     The hop the default recipe takes — <c>.OrNull()</c> where <see cref="DrawsNull" />, otherwise
+    ///     <see cref="Conversion" />.
+    /// </summary>
+    public string DefaultConversion => DrawsNull ? ".OrNull()" : Conversion;
 
     /// <summary>
     ///     Where that expression came from, and what could not be read while producing it (§6).
@@ -276,7 +295,12 @@ public sealed class ScaffoldedParameter {
     ///     (<see cref="NullableAnnotationDropped" />).
     /// </summary>
     public ScaffoldedParameter DroppingNullableAnnotation() {
-        return new ScaffoldedParameter(Name, TypeDisplay, GeneratorType, BaseExpression, Conversion, Provenance, UnreadGuard, nullableAnnotationDropped: true, Unscaffoldable);
+        return new ScaffoldedParameter(Name, TypeDisplay, GeneratorType, BaseExpression, Conversion, Provenance, UnreadGuard, nullableAnnotationDropped: true, Unscaffoldable, DrawsNull);
+    }
+
+    /// <summary>The same parameter, its default recipe drawing <c>null</c> one draw in ten (<see cref="DrawsNull" />).</summary>
+    public ScaffoldedParameter DrawingNull() {
+        return new ScaffoldedParameter(Name, TypeDisplay, GeneratorType, BaseExpression, Conversion, Provenance, UnreadGuard, NullableAnnotationDropped, Unscaffoldable, drawsNull: true);
     }
 
     private static string Checked(string value, string parameterName) {

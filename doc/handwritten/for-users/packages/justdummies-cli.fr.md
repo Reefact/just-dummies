@@ -545,21 +545,36 @@ en quatre lignes.
 résultat dépend de la valeur tirée : c'est alors une propriété, testée sur un seul tirage. Fixez la
 valeur sur laquelle porte le test. Si le choix n'a vraiment aucune importance, ajoutez la surcharge.
 
-**Parfois `null`.** Une lambda ne peut pas l'exprimer : elle reçoit un `AnyDecimal` et doit en
-renvoyer un, alors que `OrNull()` renvoie un générateur de `decimal?`. Pour obtenir *toujours* `null`,
-un appel suffit ; le cast permet de distinguer la valeur d'une lambda :
+**`null` : parfois, toujours ou jamais.** Un paramètre que votre constructeur déclare nullable —
+`decimal?`, `Customer?` — tire `null` une fois sur dix par défaut, sauf si une garde du constructeur le
+refuse : le type dit que `null` est valide, donc un test qui laisse le paramètre tranquille ne doit pas
+en dépendre, et un test qui échoue dessus a découvert qu'il en dépendait. *Toujours* `null`, c'est le
+`Without…()` généré :
 
 ```csharp
-Shipment anyUndeclaredShipment = Any.Shipment().WithDeclaredValue((decimal?)null).Generate();
+Shipment anyUndeclaredShipment = Any.Shipment().WithoutDeclaredValue().Generate();
 ```
 
-Un paramètre de type référence nullable prend le même cast — `.WithAgent((Customer?)null)` — et son
-pin est typé `Customer?` précisément pour cela, partout où votre projet lit les annotations nullables.
-Là où il ne les lit pas, le `?` déclencherait lui-même un avertissement : le pin est alors typé
-`Customer`, et le récapitulatif le signale en une ligne sous ses lignes de paramètres ;
-`--format json` porte le même fait dans `"nullableAnnotationDropped"`.
+*Jamais* `null` — un test qui porte sur un envoi dont la valeur est déclarée — est un affinage. Une
+lambda décrit une valeur, donc ce qu'elle renvoie est tiré sans `null` ; la lambda identité dit
+exactement cela et rien de plus :
 
-Pour obtenir `null` *de temps en temps*, ajoutez la surcharge.
+```csharp
+Shipment anyDeclaredShipment = Any.Shipment().WithDeclaredValue(v => v).Generate();
+```
+
+Si beaucoup de tests le disent, nommez-le une fois à côté du générateur — un `Declared()` dans la
+classe `partial` — plutôt qu'à chaque site d'appel.
+
+Un pin prend toujours `null` aussi, le cast permettant de distinguer la valeur d'une lambda :
+`.WithAgent((Customer?)null)`. Le pin d'un paramètre de type référence nullable est typé `Customer?`
+précisément pour cela, partout où votre projet lit les annotations nullables. Là où il ne les lit pas,
+le `?` déclencherait lui-même un avertissement : le pin est alors typé `Customer`, et le récapitulatif
+le signale en une ligne sous ses lignes de paramètres ; `--format json` porte le même fait dans
+`"nullableAnnotationDropped"`.
+
+Pour obtenir `null` *de temps en temps* **et** une règle sur la valeur quand il y en a une — jusqu'à
+50 000, ou absente —, ajoutez la surcharge.
 
 **Plus que ce que la base autorise.** Si le domaine accepte une étiquette vide, c'est la base qui est
 erronée : corrigez `AnyValidLabels()`. Si un seul test a besoin précisément d'une étiquette vide,

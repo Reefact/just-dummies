@@ -157,7 +157,8 @@ internal static class Guards {
             // rather than falling to the marking pass below, because that pass cannot tell "understood, and
             // satisfied by construction" from "rejects, and the engine does not know why" — both syntactically
             // contain a `throw`, and only the recognised shape is the former.
-            if (TryRecogniseCoalesceThrowNullCheck(statement, model, declared, out _)) {
+            if (TryRecogniseCoalesceThrowNullCheck(statement, model, declared, out IParameterSymbol? coalesced)) {
+                reading.RefuseNull(coalesced!.Name);
                 unskipped &= !Jumps(statement, model);
 
                 continue;
@@ -287,6 +288,8 @@ internal static class Guards {
             foreach (GuardConstraint constraint in Delegated().For(handedTo.Name)) {
                 reading.Add(handedFrom.Name, constraint);
             }
+
+            if (Delegated().RefusesNull(handedTo.Name)) { reading.RefuseNull(handedFrom.Name); }
         }
     }
 
@@ -1008,9 +1011,9 @@ internal static class Guards {
     ///     the most it earns is <c>unread guards</c> — a louder refusal, never a new inference (ADR-0046). What
     ///     earns it is a statement that throws, and a call the closed set recognises as a guard; both are run
     ///     through the ordinary reading into a reading of their own, and only a parameter that reading would have
-    ///     narrowed or marked is marked here. A check satisfied by construction — the null-check in each of its
-    ///     spellings, a generator never drawing null (ADR-0064) — narrows nothing and so stays silent, as it
-    ///     would above the scan.
+    ///     narrowed or marked is marked here. A null-check, in each of its spellings, narrows no chain and so
+    ///     stays silent, as it would above the scan; its one effect — keeping a nullable parameter's default a
+    ///     value (#411) — is carried over all the same.
     ///     <para>
     ///         A call the set does not recognise is left alone below the scan, unlike above it: there,
     ///         <c>_items.AddRange(items);</c> is the ordinary filling of state the scan has just ended on, and
@@ -1034,7 +1037,13 @@ internal static class Guards {
                                                     GuardReading reading,
                                                     TypeNames names,
                                                     ParameterWrites writes) {
-        if (TryRecogniseCoalesceThrowNullCheck(statement, model, method, out _)) { return; }
+        // Refused below the scan as much as above it: the null a nullable parameter would draw is the very value
+        // the check throws on, whatever was written to state first (#411).
+        if (TryRecogniseCoalesceThrowNullCheck(statement, model, method, out IParameterSymbol? coalesced)) {
+            reading.RefuseNull(coalesced!.Name);
+
+            return;
+        }
 
         // The one unrecognised call that is NOT left alone below the scan: a helper of this type whose body
         // throws is told apart from the filling of state by that throw, above the scan and below it alike.
@@ -1053,6 +1062,10 @@ internal static class Guards {
         foreach (string narrowed in method.Parameters.Select(parameter => parameter.Name)
                                          .Where(name => wouldHaveRead.Unread(name) || wouldHaveRead.For(name).Count > 0)) {
             reading.MarkUnread(narrowed, wouldHaveRead.UnreadAt(narrowed) ?? UnreadGuard.At(statement));
+        }
+
+        foreach (string refused in method.Parameters.Select(parameter => parameter.Name).Where(wouldHaveRead.RefusesNull)) {
+            reading.RefuseNull(refused);
         }
     }
 
@@ -1381,7 +1394,7 @@ internal static class Guards {
     ///     invariant in two spellings, and so do <c>ArgumentException.ThrowIfNullOrWhiteSpace(value)</c> and
     ///     the <c>string.IsNullOrWhiteSpace</c> condition. Only the older spelling was read, so the modern one
     ///     fell to the call rule above and blocked the developer's build — over a generator that was already
-    ///     exactly right, since a null check adds nothing (ADR-0064 draws no null) and an emptiness check is
+    ///     exactly right, since a null check narrows no chain and an emptiness check is
     ///     a <c>NonEmpty</c> the set already reads. Reading a guard the set already understands as one it could not read
     ///     is the worst of both: it neither tightens anything nor lets the file compile.
     ///     <para>
@@ -1406,16 +1419,20 @@ internal static class Guards {
 
         if (arguments.Count == 0 || !IsParameter(arguments[0].Expression, model, parameter)) { return false; }
 
-        if (IsCall(invocation, model, "System.ArgumentNullException", "ThrowIfNull")) { return true; }
+        if (IsCall(invocation, model, "System.ArgumentNullException", "ThrowIfNull")) {
+            constraint = GuardConstraint.NullRefused;
+
+            return true;
+        }
 
         if (IsCall(invocation, model, "System.ArgumentException", EmptinessThrowHelper)) {
-            constraint = Emptiness(sizes.ByCount);
+            constraint = Emptiness(sizes.ByCount).RefusingNull();
 
             return true;
         }
 
         if (IsCall(invocation, model, "System.ArgumentException", BlanknessThrowHelper)) {
-            constraint = Blankness();
+            constraint = Blankness().RefusingNull();
 
             return true;
         }
@@ -1551,6 +1568,10 @@ internal static class Guards {
             foreach (IParameterSymbol reached in ReachedThroughCopies(condition, model, method)) { reading.MarkUnread(reached.Name, UnreadGuard.At(condition)); }
 
             MarkEveryParameterIfTheTrailIsLost([condition], condition, model, method, reading);
+        } else {
+            // Silent, since the check narrows no chain — but not without effect: a nullable parameter draws null
+            // by default (#411), a member holding it unchanged then holds null, and this check refuses it.
+            foreach (IParameterSymbol reached in ReachedThroughCopies(condition, model, method)) { reading.RefuseNull(reached.Name); }
         }
 
         // Exactly one, or the engine cannot say whose invariant this is. A cross-parameter rule is precisely
@@ -1609,10 +1630,11 @@ internal static class Guards {
 
     /// <summary>
     ///     Whether <paramref name="condition" /> is a null-check on members that hold a parameter unchanged — one
-    ///     the generator satisfies by construction, so it narrows nothing.
+    ///     that narrows nothing.
     /// </summary>
     /// <remarks>
-    ///     The generator never draws null (ADR-0064), so neither does a member holding the value unchanged. Each
+    ///     A member holding the value unchanged is null exactly when the parameter is, so the check is the
+    ///     parameter's own null-check: it narrows no chain, and keeps a nullable parameter's default a value (#411). Each
     ///     half of "unchanged" is asked of the compiler: the right side of every copy is the parameter itself,
     ///     and every member followed holds what it is assigned — a local, a field or an auto-implemented
     ///     property, never one whose <c>set</c> accessor can rewrite the value (#333). A value COMPUTED from
@@ -1661,8 +1683,14 @@ internal static class Guards {
 
         // `p is null` — and its negation is not a guard, so the pattern has to be exactly this.
         if (condition is IsPatternExpressionSyntax pattern) {
-            return pattern.Pattern is ConstantPatternSyntax { Expression: LiteralExpressionSyntax literal }
-                && literal.IsKind(SyntaxKind.NullLiteralExpression);
+            if (pattern.Pattern is not ConstantPatternSyntax { Expression: LiteralExpressionSyntax literal }
+             || !literal.IsKind(SyntaxKind.NullLiteralExpression)) {
+                return false;
+            }
+
+            constraint = GuardConstraint.NullRefused;
+
+            return true;
         }
 
         if (condition is PrefixUnaryExpressionSyntax { RawKind: (int)SyntaxKind.LogicalNotExpression } negation) {
@@ -1688,14 +1716,14 @@ internal static class Guards {
             if (!IsCallOnTheParameter(invocation, model, parameter)) { return false; }
 
             if (IsCall(invocation, model, "System.String", BlanknessCheck)) {
-                constraint = Blankness();
+                constraint = Blankness().RefusingNull();
 
                 return true;
             }
 
             if (!IsCall(invocation, model, "System.String", EmptinessCheck)) { return false; }
 
-            constraint = Emptiness(sizes.ByCount);
+            constraint = Emptiness(sizes.ByCount).RefusingNull();
 
             return true;
         }
@@ -1721,7 +1749,13 @@ internal static class Guards {
 
         // `p == null`, `p == Guid.Empty` and `p == E.Member` are the comparisons whose right side is not a
         // number.
-        if (@operator == SyntaxKind.EqualsExpression && IsNull(other)) { return !IsUserDefinedOperator(comparison, model); }
+        if (@operator == SyntaxKind.EqualsExpression && IsNull(other)) {
+            if (IsUserDefinedOperator(comparison, model)) { return false; }
+
+            constraint = GuardConstraint.NullRefused;
+
+            return true;
+        }
         if (@operator == SyntaxKind.EqualsExpression && IsEmptyGuid(other, model)) {
             constraint = new GuardConstraint("NonEmpty", argument: null, Bound.Emptiness);
 
@@ -1740,8 +1774,10 @@ internal static class Guards {
         if (!constant.HasValue || constant.Value is null || !IsNumber(constant.Value)) { return false; }
         if (!TryDecimal(constant.Value, out decimal value)) { return false; }
 
+        // A size is read through `p.Length` or `p.Count`, which dereferences the parameter: the guard throws on
+        // null as surely as a null-check does, so a nullable reference parameter keeps drawing a value (#411).
         constraint = sized
-                         ? Sized(@operator, value, sizes, Named(other, model, model.Compilation.GetSpecialType(SpecialType.System_Int32), names))
+                         ? Sized(@operator, value, sizes, Named(other, model, model.Compilation.GetSpecialType(SpecialType.System_Int32), names))?.RefusingNull()
                          : Numeric(@operator, value, parameter.Type, Named(other, model, Underlying(parameter.Type), names) ?? Literal(constant.Value, parameter.Type));
 
         return constraint is not null;

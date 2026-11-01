@@ -102,6 +102,22 @@ L'analyzer [JD016](../analyzers/JD016.fr.md) signale les cas constants dès la c
 **Là où l'effectif est atteignable mais serré, un retirage borné termine le travail** — un nombre
 fixe de tentatives, puis une `AnyGenerationException` explicite. Jamais une boucle non bornée.
 
+**Distinct selon une clé, c'est `DistinctBy`.** C'est exactement `Distinct(comparer)` avec un comparateur
+selon cette clé, sans la classe de comparateur à écrire :
+
+```csharp
+IAny<Customer> customerGenerator = Any.Combine(
+    Any.Guid().NonEmpty(),
+    Any.String().Alpha().WithLengthBetween(3, 20),
+    Any.String().Alpha().InLowerCase().WithLength(8),
+    (id, name, localPart) => new Customer(id, name, $"{localPart}@example.test"));
+
+List<Customer> anyCustomers = Any.ListOf(customerGenerator).WithCount(3).DistinctBy(customer => customer.Email).Generate();
+```
+
+Le domaine de la clé n'est pas vérifié d'avance — il vient d'une fonction, donc il n'est connu qu'en tirant —,
+ce qui laisse une clé à court de valeurs au nouveau tirage borné, et à son échec bruyant.
+
 **La distinction n'a de sens qu'avec une égalité de valeur.** La déclarer sur un type référence qui
 ne redéfinit pas `Equals` est satisfait trivialement — chaque instance diffère — si bien que la
 collection peut toujours contenir deux fois ce qu'un lecteur appellerait la même valeur. C'est le

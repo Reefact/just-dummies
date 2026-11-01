@@ -101,6 +101,22 @@ The analyzer [JD016](../analyzers/JD016.en.md) reports the constant cases at bui
 **Where the count is feasible but tight, a bounded redraw finishes the job** — a fixed number of
 attempts, then an explicit `AnyGenerationException`. Never an unbounded loop.
 
+**Distinct by a key is `DistinctBy`.** It is exactly `Distinct(comparer)` with a comparer by that key,
+without the comparer class to write:
+
+```csharp
+IAny<Customer> customerGenerator = Any.Combine(
+    Any.Guid().NonEmpty(),
+    Any.String().Alpha().WithLengthBetween(3, 20),
+    Any.String().Alpha().InLowerCase().WithLength(8),
+    (id, name, localPart) => new Customer(id, name, $"{localPart}@example.test"));
+
+List<Customer> anyCustomers = Any.ListOf(customerGenerator).WithCount(3).DistinctBy(customer => customer.Email).Generate();
+```
+
+The key's domain is not checked up front — it comes from a function, so it is known only by drawing —
+which leaves a key that runs out of values to the bounded redraw, and its loud failure.
+
 **Distinctness needs value equality to mean anything.** Declaring it over a reference type that does
 not override `Equals` is satisfied trivially — every instance differs — so the collection can still
 hold what a reader would call the same value twice. That is diagnostic

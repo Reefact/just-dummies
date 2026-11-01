@@ -3,6 +3,7 @@ JustDummies.Any
 JustDummies.AnyArray<T>
 JustDummies.AnyArray<T>.Distinct() -> JustDummies.AnyArray<T>!
 JustDummies.AnyArray<T>.Distinct(System.Collections.Generic.IEqualityComparer<T>! comparer) -> JustDummies.AnyArray<T>!
+JustDummies.AnyArray<T>.DistinctBy<TKey>(System.Func<T, TKey>! keySelector) -> JustDummies.AnyArray<T>!
 JustDummies.AnyBoolean
 JustDummies.AnyBoolean.DifferentFrom(bool value) -> JustDummies.AnyBoolean!
 JustDummies.AnyBoolean.False() -> JustDummies.AnyBoolean!
@@ -238,6 +239,7 @@ JustDummies.AnyInt64.Zero() -> JustDummies.AnyInt64!
 JustDummies.AnyList<T>
 JustDummies.AnyList<T>.Distinct() -> JustDummies.AnyList<T>!
 JustDummies.AnyList<T>.Distinct(System.Collections.Generic.IEqualityComparer<T>! comparer) -> JustDummies.AnyList<T>!
+JustDummies.AnyList<T>.DistinctBy<TKey>(System.Func<T, TKey>! keySelector) -> JustDummies.AnyList<T>!
 JustDummies.AnyMailtoUri
 JustDummies.AnyMailtoUri.Generate() -> System.Uri!
 JustDummies.AnyMailtoUri.WithDomain(string! domain) -> JustDummies.AnyMailtoUri!
@@ -281,6 +283,7 @@ JustDummies.AnySByte.Zero() -> JustDummies.AnySByte!
 JustDummies.AnySequence<T>
 JustDummies.AnySequence<T>.Distinct() -> JustDummies.AnySequence<T>!
 JustDummies.AnySequence<T>.Distinct(System.Collections.Generic.IEqualityComparer<T>! comparer) -> JustDummies.AnySequence<T>!
+JustDummies.AnySequence<T>.DistinctBy<TKey>(System.Func<T, TKey>! keySelector) -> JustDummies.AnySequence<T>!
 JustDummies.AnySet<T>
 JustDummies.AnySingle
 JustDummies.AnySingle.Between(float minimum, float maximum) -> JustDummies.AnySingle!

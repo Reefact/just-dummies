@@ -450,9 +450,13 @@ fixation, `WithCode(string value)`, ne change pas.
   qui remplace la base — mais ajoute `French()` à côté du générateur, qui énonce le motif plus
   étroit une fois, exprès, et se lit `Any.AnimalId().French()` à l'appel. La [page des chaînes](../generators/strings.fr.md#ce-que-lon-peut-encore-contraindre) en donne l'exemple.
 * **Une contrainte déclarable une seule fois ne se déclare pas deux fois.** `OneOf`, `WithLength`,
-  `MultipleOf` et `WithScale` sont refusés une seconde fois avec un autre argument, en nommant les deux,
-  quand la base les a déjà posés — répéter le même ne change rien — `JD034` ne voit pas à l'intérieur de la lambda, le refus arrive donc à l'exécution. Pour retirer des
-  valeurs de ce que la base tire, restreignez plutôt : `p => p.Except(1)` ou `.DifferentFrom(…)`.
+  `WithCount`, `MultipleOf`, `WithScale`, et sur une chaîne son alphabet — `WithChars` ou une famille comme
+  `Alpha()` —, sa casse, et son `StartingWith` ou `EndingWith`, sont refusés une seconde fois avec un autre
+  argument, en nommant les deux, quand la base les a déjà posés — répéter le même ne change rien — `JD034`
+  ne voit pas à l'intérieur de la lambda, le refus arrive donc à l'exécution. Une borne n'en fait pas
+  partie : un `WithCount(3)` qui affine le `WithCountBetween(2, 6)` d'une base le restreint. Pour retirer des
+  valeurs de ce que la base tire, restreignez plutôt : `p => p.Except(1)` ou `.DifferentFrom(…)`, et pour un
+  alphabet `c => c.WithoutChars("N")` — aucun second alphabet ne restreint le premier.
 * **Un affinage à réutiliser est une fonction.** Gardez-le comme un `Func<AnyRoute, AnyRoute>` et passez-le à
   autant d'appels `With…` que vous voulez. Un `IAny<Route>` déjà construit ne convient pas : aucune méthode
   `With…` n'accepte un générateur, pour la raison donnée plus bas.

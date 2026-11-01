@@ -102,11 +102,15 @@ public sealed class Probes {
     }
 
     [Fact]
-    public void The_full_decimal_range_at_two_places_stays_ordinary() {
-        decimal drawn = Any.Decimal().Between(decimal.MinValue, decimal.MaxValue).WithScale(2).Generate();
-
-        Assert.InRange(drawn, -1_000_000m, 1_000_000m);
-        Assert.Equal(drawn, decimal.Round(drawn, 2));
+    public void The_full_decimal_range_at_two_places_stays_ordinary_nine_draws_in_ten() {
+        // ADR-0117: a range spelled against the type's own edges is no range; the tenth draw spans the type.
+        int ordinary = 0;
+        for (int draw = 0; draw < 1_000; draw++) {
+            decimal drawn = Any.Decimal().Between(decimal.MinValue, decimal.MaxValue).WithScale(2).Generate();
+            Assert.Equal(drawn, decimal.Round(drawn, 2));
+            if (Math.Abs(drawn) <= 1_000_000m) { ordinary++; }
+        }
+        Assert.InRange(ordinary, 800, 970);
     }
 
     [Fact]

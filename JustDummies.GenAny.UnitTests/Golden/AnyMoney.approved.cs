@@ -15,7 +15,9 @@ namespace Shop.Domain;
 /// </summary>
 public sealed partial class AnyMoney : IAny<Money> {
 
-    private readonly IAny<decimal> _amount;
+    private IAny<decimal> _amount;
+
+    private AnyDecimal _amountRecipe;
 
     /// <summary>Creates the generator with a default recipe for every constructor parameter.</summary>
     public AnyMoney()
@@ -25,18 +27,35 @@ public sealed partial class AnyMoney : IAny<Money> {
         return Any.Decimal();
     }
 
-    private AnyMoney(IAny<decimal> amount) {
-        _amount = amount;
+    /// <summary>Draws every parameter from the recipe given for it.</summary>
+    private AnyMoney(AnyDecimal amount) {
+        _amount       = amount;
+        _amountRecipe = amount;
     }
 
-    /// <summary>Pins <c>amount</c> to a fixed value.</summary>
+    /// <summary>Copies <paramref name="from" />, for a <c>With…</c> method to change one parameter of before handing it out.</summary>
+    private AnyMoney(AnyMoney from) {
+        _amount       = from._amount;
+        _amountRecipe = from._amountRecipe;
+    }
+
+    /// <summary>Pins <c>amount</c> to a fixed value; its recipe is kept for a later refinement.</summary>
     public AnyMoney WithAmount(decimal value) {
-        return new AnyMoney(new FixedValue<decimal>(value));
+        AnyMoney copy = new AnyMoney(this);
+
+        copy._amount = new FixedValue<decimal>(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>amount</c> from <c>AnyValidAmount()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>amount</c> is drawn from — <c>AnyValidAmount()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
     public AnyMoney WithAmount(Func<AnyDecimal, AnyDecimal> configure) {
-        return new AnyMoney(configure(AnyValidAmount()));
+        AnyMoney copy = new AnyMoney(this);
+
+        copy._amountRecipe = configure(_amountRecipe);
+        copy._amount       = copy._amountRecipe;
+
+        return copy;
     }
 
     /// <summary>Produces one arbitrary <see cref="Money" />.</summary>

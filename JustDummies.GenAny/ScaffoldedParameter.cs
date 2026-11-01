@@ -159,6 +159,19 @@ public sealed class ScaffoldedParameter {
     public string FieldName => "_" + Bare();
 
     /// <summary>
+    ///     The field holding this parameter's <b>current recipe</b>: the valid base at first, then what each
+    ///     refinement made of it (§4.2).
+    /// </summary>
+    /// <remarks>
+    ///     Kept beside <see cref="FieldName" /> rather than in its place, because the two diverge: a pin puts a
+    ///     fixed value where the draw happens and leaves the recipe as it was, so a refinement written after
+    ///     the pin starts from the last recipe rather than from the base. Typed with <see cref="GeneratorType" />,
+    ///     since a lambda refines it through that generator's own constraints. Meaningless for an unresolved
+    ///     parameter, which has no recipe to refine.
+    /// </remarks>
+    public string RecipeFieldName => FieldName + "Recipe";
+
+    /// <summary>
     ///     The name of the private static method that holds this parameter's valid base (§4.2).
     /// </summary>
     /// <remarks>

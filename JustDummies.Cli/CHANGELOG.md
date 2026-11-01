@@ -39,6 +39,29 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Fixed
 
+- **A refinement now builds on the refinements before it, instead of starting again from the base.** The
+  emitted `With…(x => …)` called `configure(AnyValid…())` on every call, so a second refinement of the same
+  parameter dropped the first — and, one level down, a rule an outer base had set on a composed value was
+  dropped by a test's refinement of that value:
+  `new AnyKinshipPolicy().WithMaximumPairKinship(k => k.WithValue(v => v.GreaterThanOrEqualTo(0.125)))`, over a
+  base capping the coefficient at 0.25, drew in `[0.125, 1]` and threw in the policy's constructor on most runs,
+  under a shape the documentation described as "the last call wins". Each resolved parameter now keeps its
+  current recipe, typed, beside what is drawn: `With…(x => …)` refines that recipe, so refinements accumulate as
+  the library's constraints do and a contradiction is refused naming both sides; `With…(value)` pins the value
+  and keeps the recipe, so a refinement after a pin starts from the last recipe and takes the pin's place
+  (ADR-0109, amended). The emitted file gains a `_xRecipe` field per resolved parameter and a private copy
+  constructor, and each `With…` now copies the generator, writes one parameter of the copy and returns it —
+  three statements whatever the parameter count, where it used to pass every field to an all-arguments
+  constructor. The fields are no longer `readonly`: the instance you hold never changes, by the shape of the
+  file rather than by the compiler, and a `With…` you write in your own part follows the same shape and never
+  writes a field of `this` (the `justdummies-cli` page, "Adding the overload yourself"). A generator already
+  scaffolded keeps the old behaviour: re-scaffold it with `--force` when you have not edited it, or patch it by
+  hand — drop `readonly` from the fields, add `private G _xRecipe;` beside each `IAny<T> _x` (`G` is the
+  factory's return type), make the private constructor take one recipe per parameter and set both fields from
+  it, add a copy constructor `AnyX(AnyX from)` copying every field, and write each `With…` as
+  `AnyX copy = new AnyX(this);`, then `copy._x = new FixedValue<T>(value);` for the pin or
+  `copy._xRecipe = configure(_xRecipe); copy._x = copy._xRecipe;` for the refinement, then `return copy;` —
+  the shape of any freshly scaffolded file.
 - **`--entry-point any` refuses an entry class whose name is already taken, instead of writing a file that
   breaks the build.** The entry-point file declares `Any{Type}Entry` to carry its extension member, which is
   exactly the generator name of a domain type `{Type}Entry`: `any generate VoiceEntry Voice --entry-point any`

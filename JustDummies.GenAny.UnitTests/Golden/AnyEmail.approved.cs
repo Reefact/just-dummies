@@ -15,7 +15,9 @@ namespace Shop.Domain;
 /// </summary>
 public sealed partial class AnyEmail : IAny<Email> {
 
-    private readonly IAny<string> _value;
+    private IAny<string> _value;
+
+    private AnyString _valueRecipe;
 
     /// <summary>Creates the generator with a default recipe for every constructor parameter.</summary>
     public AnyEmail()
@@ -25,18 +27,35 @@ public sealed partial class AnyEmail : IAny<Email> {
         return Any.String().NonEmpty();
     }
 
-    private AnyEmail(IAny<string> value) {
-        _value = value;
+    /// <summary>Draws every parameter from the recipe given for it.</summary>
+    private AnyEmail(AnyString value) {
+        _value       = value;
+        _valueRecipe = value;
     }
 
-    /// <summary>Pins <c>value</c> to a fixed value.</summary>
+    /// <summary>Copies <paramref name="from" />, for a <c>With…</c> method to change one parameter of before handing it out.</summary>
+    private AnyEmail(AnyEmail from) {
+        _value       = from._value;
+        _valueRecipe = from._valueRecipe;
+    }
+
+    /// <summary>Pins <c>value</c> to a fixed value; its recipe is kept for a later refinement.</summary>
     public AnyEmail WithValue(string value) {
-        return new AnyEmail(new FixedValue<string>(value));
+        AnyEmail copy = new AnyEmail(this);
+
+        copy._value = new FixedValue<string>(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>value</c> from <c>AnyValidValue()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>value</c> is drawn from — <c>AnyValidValue()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
     public AnyEmail WithValue(Func<AnyString, AnyString> configure) {
-        return new AnyEmail(configure(AnyValidValue()));
+        AnyEmail copy = new AnyEmail(this);
+
+        copy._valueRecipe = configure(_valueRecipe);
+        copy._value       = copy._valueRecipe;
+
+        return copy;
     }
 
     /// <summary>Produces one arbitrary <see cref="Email" />.</summary>

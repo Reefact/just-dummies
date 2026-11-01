@@ -126,7 +126,8 @@ public static class GeneratorEmitter {
             WriteFields(file, plan, member);
             WritePublicConstructor(file, plan, member);
             WriteFactories(file, plan, member);
-            WritePrivateConstructor(file, plan, member);
+            WriteRecipeConstructor(file, plan, member);
+            WriteCopyConstructor(file, plan, member);
             WriteWithMethods(file, plan, member);
         }
 
@@ -150,11 +151,44 @@ public static class GeneratorEmitter {
         Line(file, $"{indent}/// </summary>");
     }
 
+    /// <summary>
+    ///     Two fields per resolved parameter (§4.2): what is drawn, and the current recipe it was drawn from —
+    ///     the valid base at first, then what each refinement made of it. One per unresolved parameter, which
+    ///     has no recipe to keep.
+    /// </summary>
+    /// <remarks>
+    ///     The recipe is kept because a pin does not consume it: a fixed value takes the place of the draw and
+    ///     leaves the recipe as it was, so a refinement written after the pin starts from the last recipe. A
+    ///     refinement that started again from the base, as the first shape of ADR-0109 did, dropped every
+    ///     earlier refinement — a rule an outer base had set on a composed value included (issue #406).
+    ///     <para>
+    ///         <b>Not <c>readonly</c>, by decision.</b> A <c>With…</c> method copies the generator through the
+    ///         private copy constructor and writes one parameter of the copy before handing it out, so the
+    ///         instance a caller holds never changes — ADR-0057's immutability, kept by the file's own shape
+    ///         rather than by the compiler. The alternative, an all-arguments constructor every <c>With…</c>
+    ///         passes every field to, grew with the parameter count twice over once the recipes doubled the
+    ///         fields: twelve arguments per method on the worked example of §4.1. The maintainer took the
+    ///         readability and accepted what <c>readonly</c> would have refused — a developer's own part
+    ///         writing a field of <c>this</c> — on condition that the convention is written down (§4.2).
+    ///     </para>
+    /// </remarks>
     private static void WriteFields(StringBuilder file, ScaffoldPlan plan, string indent) {
         int width = GeneratorTypeWidth(plan);
 
         foreach (ScaffoldedParameter parameter in plan.Parameters) {
-            Line(file, $"{indent}private readonly {GeneratorTypeOf(parameter).PadRight(width)} {parameter.FieldName};");
+            Line(file, $"{indent}private {GeneratorTypeOf(parameter).PadRight(width)} {parameter.FieldName};");
+        }
+
+        Line(file, string.Empty);
+
+        List<ScaffoldedParameter> resolved = Resolved(plan);
+
+        if (resolved.Count == 0) { return; }
+
+        int recipeWidth = resolved.Max(parameter => parameter.GeneratorType!.Length);
+
+        foreach (ScaffoldedParameter parameter in resolved) {
+            Line(file, $"{indent}private {parameter.GeneratorType!.PadRight(recipeWidth)} {parameter.RecipeFieldName};");
         }
 
         Line(file, string.Empty);
@@ -163,7 +197,8 @@ public static class GeneratorEmitter {
     /// <summary>
     ///     Named arguments, aligned, so a reader maps each call to its parameter without counting (§4.2). Each is
     ///     a call to the parameter's factory — never the chain itself, which is written once, in that factory's
-    ///     body — followed by the conversion the factory leaves out, if the parameter has one.
+    ///     body — and never its conversion either: the recipe constructor this chains into applies that, so the
+    ///     recipe it keeps is the generator the constraints were written on.
     /// </summary>
     private static void WritePublicConstructor(StringBuilder file, ScaffoldPlan plan, string indent) {
         Line(file, $"{indent}/// <summary>Creates the generator with a default recipe for every constructor parameter.</summary>");
@@ -177,8 +212,7 @@ public static class GeneratorEmitter {
             ScaffoldedParameter parameter = plan.Parameters[index];
             bool                last      = index == plan.Parameters.Count - 1;
             string              lead      = index == 0 ? opening : continuing;
-            string              drawn     = parameter.FactoryMethodName + "()" + parameter.Conversion;
-            string              argument  = $"{(parameter.Identifier + ":").PadRight(width)} {drawn}";
+            string              argument  = $"{(parameter.Identifier + ":").PadRight(width)} {parameter.FactoryMethodName}()";
 
             Line(file, lead + argument + (last ? ") { }" : ","));
         }
@@ -289,23 +323,33 @@ public static class GeneratorEmitter {
     /// <summary>The user page that says what <c>to verify</c> means, which a reader of the file can open.</summary>
     private const string VerifyGuide = "https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/packages/justdummies-cli.en.md#what-the-last-column-means";
 
-    private static void WritePrivateConstructor(StringBuilder file, ScaffoldPlan plan, string indent) {
-        int    width      = GeneratorTypeWidth(plan);
+    /// <summary>
+    ///     The constructor the public one chains into: one recipe per parameter, each drawn from as it is —
+    ///     through its conversion where it has one — and kept as the current recipe.
+    /// </summary>
+    private static void WriteRecipeConstructor(StringBuilder file, ScaffoldPlan plan, string indent) {
+        int    width      = plan.Parameters.Max(parameter => RecipeTypeOf(parameter).Length);
         string opening    = $"{indent}private {plan.GeneratorName}(";
         string continuing = new(' ', opening.Length);
+
+        Line(file, $"{indent}/// <summary>Draws every parameter from the recipe given for it.</summary>");
 
         for (int index = 0; index < plan.Parameters.Count; index++) {
             ScaffoldedParameter parameter = plan.Parameters[index];
             bool                last      = index == plan.Parameters.Count - 1;
             string              lead      = index == 0 ? opening : continuing;
 
-            Line(file, $"{lead}{GeneratorTypeOf(parameter).PadRight(width)} {parameter.Identifier}{(last ? ") {" : ",")}");
+            Line(file, $"{lead}{RecipeTypeOf(parameter).PadRight(width)} {parameter.Identifier}{(last ? ") {" : ",")}");
         }
 
-        int assignment = plan.Parameters.Max(parameter => parameter.FieldName.Length);
+        int assignment = AssignmentWidth(plan);
 
         foreach (ScaffoldedParameter parameter in plan.Parameters) {
-            Line(file, $"{indent}{Indent}{parameter.FieldName.PadRight(assignment)} = {parameter.Identifier};");
+            Line(file, $"{indent}{Indent}{parameter.FieldName.PadRight(assignment)} = {parameter.Identifier}{parameter.Conversion};");
+
+            if (!parameter.IsUnresolved) {
+                Line(file, $"{indent}{Indent}{parameter.RecipeFieldName.PadRight(assignment)} = {parameter.Identifier};");
+            }
         }
 
         Line(file, $"{indent}}}");
@@ -313,10 +357,44 @@ public static class GeneratorEmitter {
     }
 
     /// <summary>
+    ///     The copy constructor every <c>With…</c> method goes through: the whole state, field for field, for
+    ///     the method to change one parameter of before the copy is handed out.
+    /// </summary>
+    /// <remarks>
+    ///     One place that knows every field, instead of one argument list per <c>With…</c> that repeats them
+    ///     all: a parameter added to the target adds a line here and nowhere else, and a <c>With…</c> written
+    ///     in the developer's own part is the same three statements whatever the parameter count.
+    /// </remarks>
+    private static void WriteCopyConstructor(StringBuilder file, ScaffoldPlan plan, string indent) {
+        int assignment = AssignmentWidth(plan);
+
+        Line(file, $"{indent}/// <summary>Copies <paramref name=\"from\" />, for a <c>With…</c> method to change one parameter of before handing it out.</summary>");
+        Line(file, $"{indent}private {plan.GeneratorName}({plan.GeneratorName} from) {{");
+
+        foreach (ScaffoldedParameter parameter in plan.Parameters) {
+            Line(file, $"{indent}{Indent}{parameter.FieldName.PadRight(assignment)} = from.{parameter.FieldName};");
+
+            if (!parameter.IsUnresolved) {
+                Line(file, $"{indent}{Indent}{parameter.RecipeFieldName.PadRight(assignment)} = from.{parameter.RecipeFieldName};");
+            }
+        }
+
+        Line(file, $"{indent}}}");
+        Line(file, string.Empty);
+    }
+
+    /// <summary>The width the assignments of both constructors align on: the longest field name, recipes included.</summary>
+    private static int AssignmentWidth(ScaffoldPlan plan) {
+        return plan.Parameters.Max(parameter => parameter.IsUnresolved ? parameter.FieldName.Length : parameter.RecipeFieldName.Length);
+    }
+
+    /// <summary>
     ///     Two overloads per parameter, one per intent (ADR-0109). The value one pins the whole value, for a test
-    ///     that cares about all of it. The refining one hands the test's lambda the parameter's valid base and
-    ///     draws from what the lambda returns, for a test that cares about one part of it — so the test states
-    ///     that part and nothing else, and never restates a rule the base already keeps.
+    ///     that cares about all of it, and keeps the recipe. The refining one hands the test's lambda the
+    ///     parameter's <b>current</b> recipe — the valid base at first, then what each earlier refinement made of
+    ///     it — and draws from what the lambda returns, for a test that cares about one part of it: so the test
+    ///     states that part and nothing else, never restates a rule the base already keeps, and refinements
+    ///     accumulate as the library's constraints do.
     /// </summary>
     /// <remarks>
     ///     No overload takes an <c>IAny&lt;T&gt;</c>: replacing the base is how a test lost a rule without a
@@ -326,28 +404,43 @@ public static class GeneratorEmitter {
     ///     alone.
     /// </remarks>
     private static void WriteWithMethods(StringBuilder file, ScaffoldPlan plan, string indent) {
+        string body = indent + Indent;
+
         foreach (ScaffoldedParameter parameter in plan.Parameters) {
-            Line(file, $"{indent}/// <summary>Pins <c>{parameter.Name}</c> to a fixed value.</summary>");
+            Line(file, parameter.IsUnresolved
+                           ? $"{indent}/// <summary>Pins <c>{parameter.Name}</c> to a fixed value.</summary>"
+                           : $"{indent}/// <summary>Pins <c>{parameter.Name}</c> to a fixed value; its recipe is kept for a later refinement.</summary>");
             Line(file, $"{indent}public {plan.GeneratorName} With{parameter.PascalCasedName}({parameter.TypeDisplay} value) {{");
-            Line(file, $"{indent}{Indent}return new {plan.GeneratorName}({Arguments(plan, parameter, $"new FixedValue<{parameter.TypeDisplay}>(value)")});");
+            WriteCopy(file, plan, body);
+            Line(file, $"{body}copy.{parameter.FieldName} = new FixedValue<{parameter.TypeDisplay}>(value);");
+            WriteReturnCopy(file, body);
             Line(file, $"{indent}}}");
             Line(file, string.Empty);
 
             if (parameter.IsUnresolved) { continue; }
 
-            string refined = $"configure({parameter.FactoryMethodName}()){parameter.Conversion}";
+            int assignment = parameter.RecipeFieldName.Length;
 
-            Line(file, $"{indent}/// <summary>Draws <c>{parameter.Name}</c> from <c>{parameter.FactoryMethodName}()</c>, refined by <paramref name=\"configure\" />.</summary>");
+            Line(file, $"{indent}/// <summary>Refines the recipe <c>{parameter.Name}</c> is drawn from — <c>{parameter.FactoryMethodName}()</c>, then each earlier refinement — through <paramref name=\"configure\" />.</summary>");
             Line(file, $"{indent}public {plan.GeneratorName} With{parameter.PascalCasedName}(Func<{parameter.GeneratorType}, {parameter.GeneratorType}> configure) {{");
-            Line(file, $"{indent}{Indent}return new {plan.GeneratorName}({Arguments(plan, parameter, refined)});");
+            WriteCopy(file, plan, body);
+            Line(file, $"{body}copy.{parameter.RecipeFieldName} = configure({parameter.RecipeFieldName});");
+            Line(file, $"{body}copy.{parameter.FieldName.PadRight(assignment)} = copy.{parameter.RecipeFieldName}{parameter.Conversion};");
+            WriteReturnCopy(file, body);
             Line(file, $"{indent}}}");
             Line(file, string.Empty);
         }
     }
 
-    /// <summary>The private constructor's arguments, with <paramref name="drawn" /> in <paramref name="parameter" />'s place.</summary>
-    private static string Arguments(ScaffoldPlan plan, ScaffoldedParameter parameter, string drawn) {
-        return string.Join(", ", plan.Parameters.Select(other => ReferenceEquals(other, parameter) ? drawn : other.FieldName));
+    /// <summary>The first statement of every <c>With…</c>: a fresh copy, which is the only instance the method writes to.</summary>
+    private static void WriteCopy(StringBuilder file, ScaffoldPlan plan, string indent) {
+        Line(file, $"{indent}{plan.GeneratorName} copy = new {plan.GeneratorName}(this);");
+        Line(file, string.Empty);
+    }
+
+    private static void WriteReturnCopy(StringBuilder file, string indent) {
+        Line(file, string.Empty);
+        Line(file, $"{indent}return copy;");
     }
 
     private static void WriteDegenerateConstructor(StringBuilder file, ScaffoldPlan plan, string indent) {
@@ -409,6 +502,16 @@ public static class GeneratorEmitter {
 
     private static string GeneratorTypeOf(ScaffoldedParameter parameter) {
         return $"IAny<{parameter.TypeDisplay}>";
+    }
+
+    /// <summary>What the recipe constructor takes for a parameter: its recipe's type, or the draw's where it has no recipe.</summary>
+    private static string RecipeTypeOf(ScaffoldedParameter parameter) {
+        return parameter.GeneratorType ?? GeneratorTypeOf(parameter);
+    }
+
+    /// <summary>The parameters that carry a recipe — every one the engine inferred a generator for.</summary>
+    private static List<ScaffoldedParameter> Resolved(ScaffoldPlan plan) {
+        return [.. plan.Parameters.Where(parameter => !parameter.IsUnresolved)];
     }
 
     private static int GeneratorTypeWidth(ScaffoldPlan plan) {

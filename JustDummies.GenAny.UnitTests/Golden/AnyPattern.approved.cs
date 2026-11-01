@@ -15,7 +15,9 @@ namespace Shop.Legacy {
     /// </summary>
     public sealed partial class AnyPattern : IAny<Pattern> {
 
-        private readonly IAny<string> _text;
+        private IAny<string> _text;
+
+        private AnyString _textRecipe;
 
         /// <summary>Creates the generator with a default recipe for every constructor parameter.</summary>
         public AnyPattern()
@@ -25,18 +27,35 @@ namespace Shop.Legacy {
             return Any.String().NonEmpty();
         }
 
-        private AnyPattern(IAny<string> text) {
-            _text = text;
+        /// <summary>Draws every parameter from the recipe given for it.</summary>
+        private AnyPattern(AnyString text) {
+            _text       = text;
+            _textRecipe = text;
         }
 
-        /// <summary>Pins <c>text</c> to a fixed value.</summary>
+        /// <summary>Copies <paramref name="from" />, for a <c>With…</c> method to change one parameter of before handing it out.</summary>
+        private AnyPattern(AnyPattern from) {
+            _text       = from._text;
+            _textRecipe = from._textRecipe;
+        }
+
+        /// <summary>Pins <c>text</c> to a fixed value; its recipe is kept for a later refinement.</summary>
         public AnyPattern WithText(string value) {
-            return new AnyPattern(new FixedValue<string>(value));
+            AnyPattern copy = new AnyPattern(this);
+
+            copy._text = new FixedValue<string>(value);
+
+            return copy;
         }
 
-        /// <summary>Draws <c>text</c> from <c>AnyValidText()</c>, refined by <paramref name="configure" />.</summary>
+        /// <summary>Refines the recipe <c>text</c> is drawn from — <c>AnyValidText()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
         public AnyPattern WithText(Func<AnyString, AnyString> configure) {
-            return new AnyPattern(configure(AnyValidText()));
+            AnyPattern copy = new AnyPattern(this);
+
+            copy._textRecipe = configure(_textRecipe);
+            copy._text       = copy._textRecipe;
+
+            return copy;
         }
 
         /// <summary>Produces one arbitrary <see cref="Pattern" />.</summary>

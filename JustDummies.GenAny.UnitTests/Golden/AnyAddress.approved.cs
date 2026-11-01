@@ -15,8 +15,11 @@ namespace Shop.Domain;
 /// </summary>
 public sealed partial class AnyAddress : IAny<Address> {
 
-    private readonly IAny<string> _street;
-    private readonly IAny<string> _city;
+    private IAny<string> _street;
+    private IAny<string> _city;
+
+    private AnyString _streetRecipe;
+    private AnyString _cityRecipe;
 
     /// <summary>Creates the generator with a default recipe for every constructor parameter.</summary>
     public AnyAddress()
@@ -31,30 +34,59 @@ public sealed partial class AnyAddress : IAny<Address> {
         return Any.String().NonEmpty();
     }
 
-    private AnyAddress(IAny<string> street,
-                       IAny<string> city) {
-        _street = street;
-        _city   = city;
+    /// <summary>Draws every parameter from the recipe given for it.</summary>
+    private AnyAddress(AnyString street,
+                       AnyString city) {
+        _street       = street;
+        _streetRecipe = street;
+        _city         = city;
+        _cityRecipe   = city;
     }
 
-    /// <summary>Pins <c>street</c> to a fixed value.</summary>
+    /// <summary>Copies <paramref name="from" />, for a <c>With…</c> method to change one parameter of before handing it out.</summary>
+    private AnyAddress(AnyAddress from) {
+        _street       = from._street;
+        _streetRecipe = from._streetRecipe;
+        _city         = from._city;
+        _cityRecipe   = from._cityRecipe;
+    }
+
+    /// <summary>Pins <c>street</c> to a fixed value; its recipe is kept for a later refinement.</summary>
     public AnyAddress WithStreet(string value) {
-        return new AnyAddress(new FixedValue<string>(value), _city);
+        AnyAddress copy = new AnyAddress(this);
+
+        copy._street = new FixedValue<string>(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>street</c> from <c>AnyValidStreet()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>street</c> is drawn from — <c>AnyValidStreet()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
     public AnyAddress WithStreet(Func<AnyString, AnyString> configure) {
-        return new AnyAddress(configure(AnyValidStreet()), _city);
+        AnyAddress copy = new AnyAddress(this);
+
+        copy._streetRecipe = configure(_streetRecipe);
+        copy._street       = copy._streetRecipe;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>city</c> to a fixed value.</summary>
+    /// <summary>Pins <c>city</c> to a fixed value; its recipe is kept for a later refinement.</summary>
     public AnyAddress WithCity(string value) {
-        return new AnyAddress(_street, new FixedValue<string>(value));
+        AnyAddress copy = new AnyAddress(this);
+
+        copy._city = new FixedValue<string>(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>city</c> from <c>AnyValidCity()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>city</c> is drawn from — <c>AnyValidCity()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
     public AnyAddress WithCity(Func<AnyString, AnyString> configure) {
-        return new AnyAddress(_street, configure(AnyValidCity()));
+        AnyAddress copy = new AnyAddress(this);
+
+        copy._cityRecipe = configure(_cityRecipe);
+        copy._city       = copy._cityRecipe;
+
+        return copy;
     }
 
     /// <summary>Produces one arbitrary <see cref="Address" />.</summary>

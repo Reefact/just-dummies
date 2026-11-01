@@ -16,12 +16,19 @@ namespace Shop.Domain;
 /// </summary>
 public sealed partial class AnyOrder : IAny<Order> {
 
-    private readonly IAny<OrderReference>        _reference;
-    private readonly IAny<Customer>              _customer;
-    private readonly IAny<int>                   _quantity;
-    private readonly IAny<OrderStatus>           _status;
-    private readonly IAny<IReadOnlyList<string>> _tags;
-    private readonly IAny<DateTime>              _placedAt;
+    private IAny<OrderReference>        _reference;
+    private IAny<Customer>              _customer;
+    private IAny<int>                   _quantity;
+    private IAny<OrderStatus>           _status;
+    private IAny<IReadOnlyList<string>> _tags;
+    private IAny<DateTime>              _placedAt;
+
+    private AnyOrderReference    _referenceRecipe;
+    private AnyCustomer          _customerRecipe;
+    private AnyInt32             _quantityRecipe;
+    private AnyEnum<OrderStatus> _statusRecipe;
+    private AnyList<string>      _tagsRecipe;
+    private AnyDateTime          _placedAtRecipe;
 
     /// <summary>Creates the generator with a default recipe for every constructor parameter.</summary>
     public AnyOrder()
@@ -63,78 +70,155 @@ public sealed partial class AnyOrder : IAny<Order> {
         return Any.DateTime();
     }
 
-    private AnyOrder(IAny<OrderReference>        reference,
-                     IAny<Customer>              customer,
-                     IAny<int>                   quantity,
-                     IAny<OrderStatus>           status,
-                     IAny<IReadOnlyList<string>> tags,
-                     IAny<DateTime>              placedAt) {
-        _reference = reference;
-        _customer  = customer;
-        _quantity  = quantity;
-        _status    = status;
-        _tags      = tags;
-        _placedAt  = placedAt;
+    /// <summary>Draws every parameter from the recipe given for it.</summary>
+    private AnyOrder(AnyOrderReference    reference,
+                     AnyCustomer          customer,
+                     AnyInt32             quantity,
+                     AnyEnum<OrderStatus> status,
+                     AnyList<string>      tags,
+                     AnyDateTime          placedAt) {
+        _reference       = reference;
+        _referenceRecipe = reference;
+        _customer        = customer;
+        _customerRecipe  = customer;
+        _quantity        = quantity;
+        _quantityRecipe  = quantity;
+        _status          = status;
+        _statusRecipe    = status;
+        _tags            = tags;
+        _tagsRecipe      = tags;
+        _placedAt        = placedAt;
+        _placedAtRecipe  = placedAt;
     }
 
-    /// <summary>Pins <c>reference</c> to a fixed value.</summary>
+    /// <summary>Copies <paramref name="from" />, for a <c>With…</c> method to change one parameter of before handing it out.</summary>
+    private AnyOrder(AnyOrder from) {
+        _reference       = from._reference;
+        _referenceRecipe = from._referenceRecipe;
+        _customer        = from._customer;
+        _customerRecipe  = from._customerRecipe;
+        _quantity        = from._quantity;
+        _quantityRecipe  = from._quantityRecipe;
+        _status          = from._status;
+        _statusRecipe    = from._statusRecipe;
+        _tags            = from._tags;
+        _tagsRecipe      = from._tagsRecipe;
+        _placedAt        = from._placedAt;
+        _placedAtRecipe  = from._placedAtRecipe;
+    }
+
+    /// <summary>Pins <c>reference</c> to a fixed value; its recipe is kept for a later refinement.</summary>
     public AnyOrder WithReference(OrderReference value) {
-        return new AnyOrder(new FixedValue<OrderReference>(value), _customer, _quantity, _status, _tags, _placedAt);
+        AnyOrder copy = new AnyOrder(this);
+
+        copy._reference = new FixedValue<OrderReference>(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>reference</c> from <c>AnyValidReference()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>reference</c> is drawn from — <c>AnyValidReference()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
     public AnyOrder WithReference(Func<AnyOrderReference, AnyOrderReference> configure) {
-        return new AnyOrder(configure(AnyValidReference()), _customer, _quantity, _status, _tags, _placedAt);
+        AnyOrder copy = new AnyOrder(this);
+
+        copy._referenceRecipe = configure(_referenceRecipe);
+        copy._reference       = copy._referenceRecipe;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>customer</c> to a fixed value.</summary>
+    /// <summary>Pins <c>customer</c> to a fixed value; its recipe is kept for a later refinement.</summary>
     public AnyOrder WithCustomer(Customer value) {
-        return new AnyOrder(_reference, new FixedValue<Customer>(value), _quantity, _status, _tags, _placedAt);
+        AnyOrder copy = new AnyOrder(this);
+
+        copy._customer = new FixedValue<Customer>(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>customer</c> from <c>AnyValidCustomer()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>customer</c> is drawn from — <c>AnyValidCustomer()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
     public AnyOrder WithCustomer(Func<AnyCustomer, AnyCustomer> configure) {
-        return new AnyOrder(_reference, configure(AnyValidCustomer()), _quantity, _status, _tags, _placedAt);
+        AnyOrder copy = new AnyOrder(this);
+
+        copy._customerRecipe = configure(_customerRecipe);
+        copy._customer       = copy._customerRecipe;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>quantity</c> to a fixed value.</summary>
+    /// <summary>Pins <c>quantity</c> to a fixed value; its recipe is kept for a later refinement.</summary>
     public AnyOrder WithQuantity(int value) {
-        return new AnyOrder(_reference, _customer, new FixedValue<int>(value), _status, _tags, _placedAt);
+        AnyOrder copy = new AnyOrder(this);
+
+        copy._quantity = new FixedValue<int>(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>quantity</c> from <c>AnyValidQuantity()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>quantity</c> is drawn from — <c>AnyValidQuantity()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
     public AnyOrder WithQuantity(Func<AnyInt32, AnyInt32> configure) {
-        return new AnyOrder(_reference, _customer, configure(AnyValidQuantity()), _status, _tags, _placedAt);
+        AnyOrder copy = new AnyOrder(this);
+
+        copy._quantityRecipe = configure(_quantityRecipe);
+        copy._quantity       = copy._quantityRecipe;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>status</c> to a fixed value.</summary>
+    /// <summary>Pins <c>status</c> to a fixed value; its recipe is kept for a later refinement.</summary>
     public AnyOrder WithStatus(OrderStatus value) {
-        return new AnyOrder(_reference, _customer, _quantity, new FixedValue<OrderStatus>(value), _tags, _placedAt);
+        AnyOrder copy = new AnyOrder(this);
+
+        copy._status = new FixedValue<OrderStatus>(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>status</c> from <c>AnyValidStatus()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>status</c> is drawn from — <c>AnyValidStatus()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
     public AnyOrder WithStatus(Func<AnyEnum<OrderStatus>, AnyEnum<OrderStatus>> configure) {
-        return new AnyOrder(_reference, _customer, _quantity, configure(AnyValidStatus()), _tags, _placedAt);
+        AnyOrder copy = new AnyOrder(this);
+
+        copy._statusRecipe = configure(_statusRecipe);
+        copy._status       = copy._statusRecipe;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>tags</c> to a fixed value.</summary>
+    /// <summary>Pins <c>tags</c> to a fixed value; its recipe is kept for a later refinement.</summary>
     public AnyOrder WithTags(IReadOnlyList<string> value) {
-        return new AnyOrder(_reference, _customer, _quantity, _status, new FixedValue<IReadOnlyList<string>>(value), _placedAt);
+        AnyOrder copy = new AnyOrder(this);
+
+        copy._tags = new FixedValue<IReadOnlyList<string>>(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>tags</c> from <c>AnyValidTags()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>tags</c> is drawn from — <c>AnyValidTags()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
     public AnyOrder WithTags(Func<AnyList<string>, AnyList<string>> configure) {
-        return new AnyOrder(_reference, _customer, _quantity, _status, configure(AnyValidTags()), _placedAt);
+        AnyOrder copy = new AnyOrder(this);
+
+        copy._tagsRecipe = configure(_tagsRecipe);
+        copy._tags       = copy._tagsRecipe;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>placedAt</c> to a fixed value.</summary>
+    /// <summary>Pins <c>placedAt</c> to a fixed value; its recipe is kept for a later refinement.</summary>
     public AnyOrder WithPlacedAt(DateTime value) {
-        return new AnyOrder(_reference, _customer, _quantity, _status, _tags, new FixedValue<DateTime>(value));
+        AnyOrder copy = new AnyOrder(this);
+
+        copy._placedAt = new FixedValue<DateTime>(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>placedAt</c> from <c>AnyValidPlacedAt()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>placedAt</c> is drawn from — <c>AnyValidPlacedAt()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
     public AnyOrder WithPlacedAt(Func<AnyDateTime, AnyDateTime> configure) {
-        return new AnyOrder(_reference, _customer, _quantity, _status, _tags, configure(AnyValidPlacedAt()));
+        AnyOrder copy = new AnyOrder(this);
+
+        copy._placedAtRecipe = configure(_placedAtRecipe);
+        copy._placedAt       = copy._placedAtRecipe;
+
+        return copy;
     }
 
     /// <summary>Produces one arbitrary <see cref="Order" />.</summary>

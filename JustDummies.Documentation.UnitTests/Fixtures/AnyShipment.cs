@@ -16,17 +16,22 @@ namespace JustDummies.Documentation.UnitTests.Fixtures;
 /// </summary>
 public sealed partial class AnyShipment : IAny<Shipment> {
 
-    private readonly IAny<Route>                 _route;
-    private readonly IAny<int>                   _parcels;
-    private readonly IAny<IReadOnlyList<string>> _labels;
-    private readonly IAny<decimal?>              _declaredValue;
+    private IAny<Route>                 _route;
+    private IAny<int>                   _parcels;
+    private IAny<IReadOnlyList<string>> _labels;
+    private IAny<decimal?>              _declaredValue;
+
+    private AnyRoute        _routeRecipe;
+    private AnyInt32        _parcelsRecipe;
+    private AnyList<string> _labelsRecipe;
+    private AnyDecimal      _declaredValueRecipe;
 
     /// <summary>Creates the generator with a default recipe for every constructor parameter.</summary>
     public AnyShipment()
         : this(route:         AnyValidRoute(),
                parcels:       AnyValidParcels(),
                labels:        AnyValidLabels(),
-               declaredValue: AnyValidDeclaredValue().AsNullable()) { }
+               declaredValue: AnyValidDeclaredValue()) { }
 
     private static AnyRoute AnyValidRoute() {
         // A shipment only accepts a domestic route; a route on its own may cross a border.
@@ -45,54 +50,107 @@ public sealed partial class AnyShipment : IAny<Shipment> {
         return Any.Decimal();
     }
 
-    private AnyShipment(IAny<Route>                 route,
-                        IAny<int>                   parcels,
-                        IAny<IReadOnlyList<string>> labels,
-                        IAny<decimal?>              declaredValue) {
-        _route         = route;
-        _parcels       = parcels;
-        _labels        = labels;
-        _declaredValue = declaredValue;
+    /// <summary>Draws every parameter from the recipe given for it.</summary>
+    private AnyShipment(AnyRoute        route,
+                        AnyInt32        parcels,
+                        AnyList<string> labels,
+                        AnyDecimal      declaredValue) {
+        _route               = route;
+        _routeRecipe         = route;
+        _parcels             = parcels;
+        _parcelsRecipe       = parcels;
+        _labels              = labels;
+        _labelsRecipe        = labels;
+        _declaredValue       = declaredValue.AsNullable();
+        _declaredValueRecipe = declaredValue;
     }
 
-    /// <summary>Pins <c>route</c> to a fixed value.</summary>
+    /// <summary>Copies <paramref name="from" />, for a <c>With…</c> method to change one parameter of before handing it out.</summary>
+    private AnyShipment(AnyShipment from) {
+        _route               = from._route;
+        _routeRecipe         = from._routeRecipe;
+        _parcels             = from._parcels;
+        _parcelsRecipe       = from._parcelsRecipe;
+        _labels              = from._labels;
+        _labelsRecipe        = from._labelsRecipe;
+        _declaredValue       = from._declaredValue;
+        _declaredValueRecipe = from._declaredValueRecipe;
+    }
+
+    /// <summary>Pins <c>route</c> to a fixed value; its recipe is kept for a later refinement.</summary>
     public AnyShipment WithRoute(Route value) {
-        return new AnyShipment(new FixedValue<Route>(value), _parcels, _labels, _declaredValue);
+        AnyShipment copy = new AnyShipment(this);
+
+        copy._route = new FixedValue<Route>(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>route</c> from <c>AnyValidRoute()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>route</c> is drawn from — <c>AnyValidRoute()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
     public AnyShipment WithRoute(Func<AnyRoute, AnyRoute> configure) {
-        return new AnyShipment(configure(AnyValidRoute()), _parcels, _labels, _declaredValue);
+        AnyShipment copy = new AnyShipment(this);
+
+        copy._routeRecipe = configure(_routeRecipe);
+        copy._route       = copy._routeRecipe;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>parcels</c> to a fixed value.</summary>
+    /// <summary>Pins <c>parcels</c> to a fixed value; its recipe is kept for a later refinement.</summary>
     public AnyShipment WithParcels(int value) {
-        return new AnyShipment(_route, new FixedValue<int>(value), _labels, _declaredValue);
+        AnyShipment copy = new AnyShipment(this);
+
+        copy._parcels = new FixedValue<int>(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>parcels</c> from <c>AnyValidParcels()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>parcels</c> is drawn from — <c>AnyValidParcels()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
     public AnyShipment WithParcels(Func<AnyInt32, AnyInt32> configure) {
-        return new AnyShipment(_route, configure(AnyValidParcels()), _labels, _declaredValue);
+        AnyShipment copy = new AnyShipment(this);
+
+        copy._parcelsRecipe = configure(_parcelsRecipe);
+        copy._parcels       = copy._parcelsRecipe;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>labels</c> to a fixed value.</summary>
+    /// <summary>Pins <c>labels</c> to a fixed value; its recipe is kept for a later refinement.</summary>
     public AnyShipment WithLabels(IReadOnlyList<string> value) {
-        return new AnyShipment(_route, _parcels, new FixedValue<IReadOnlyList<string>>(value), _declaredValue);
+        AnyShipment copy = new AnyShipment(this);
+
+        copy._labels = new FixedValue<IReadOnlyList<string>>(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>labels</c> from <c>AnyValidLabels()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>labels</c> is drawn from — <c>AnyValidLabels()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
     public AnyShipment WithLabels(Func<AnyList<string>, AnyList<string>> configure) {
-        return new AnyShipment(_route, _parcels, configure(AnyValidLabels()), _declaredValue);
+        AnyShipment copy = new AnyShipment(this);
+
+        copy._labelsRecipe = configure(_labelsRecipe);
+        copy._labels       = copy._labelsRecipe;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>declaredValue</c> to a fixed value.</summary>
+    /// <summary>Pins <c>declaredValue</c> to a fixed value; its recipe is kept for a later refinement.</summary>
     public AnyShipment WithDeclaredValue(decimal? value) {
-        return new AnyShipment(_route, _parcels, _labels, new FixedValue<decimal?>(value));
+        AnyShipment copy = new AnyShipment(this);
+
+        copy._declaredValue = new FixedValue<decimal?>(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>declaredValue</c> from <c>AnyValidDeclaredValue()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>declaredValue</c> is drawn from — <c>AnyValidDeclaredValue()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
     public AnyShipment WithDeclaredValue(Func<AnyDecimal, AnyDecimal> configure) {
-        return new AnyShipment(_route, _parcels, _labels, configure(AnyValidDeclaredValue()).AsNullable());
+        AnyShipment copy = new AnyShipment(this);
+
+        copy._declaredValueRecipe = configure(_declaredValueRecipe);
+        copy._declaredValue       = copy._declaredValueRecipe.AsNullable();
+
+        return copy;
     }
 
     /// <summary>Produces one arbitrary <see cref="Shipment" />.</summary>

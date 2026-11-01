@@ -627,7 +627,11 @@ build under a recap that said success. One pre-write check compares the name the
 would declare, in the namespace it would declare it in, against the names already borne there — the
 generators of the other types of the same run, and the types the project already declares or can see
 in a referenced assembly. A match **refuses that scaffold**, exit `1`, naming both declarations with
-their files; the other types of the run are unaffected (§7). `--dry-run` reports it the same way. A
+their files; the other types of the run are unaffected (§7). `--dry-run` reports it the same way. The
+one declaration that does not count is the file this scaffold replaces — `Any{Type}.Entry.cs` left by an
+earlier run, at the very path the run writes to: `--force` overwrites it, and without `--force` the write
+is refused because the file exists. A file of the same name in another directory is a clash like any
+other, since it would stay beside the new one (`CS0101`). A
 static root is never refused this way: it is `partial`, and a declaration already bearing its name is
 the part an earlier scaffold wrote. Refusing rather than renaming is ADR-0046 — a cleverer name would
 move the clash to the next domain type that spells it — and the remedies are the developer's:

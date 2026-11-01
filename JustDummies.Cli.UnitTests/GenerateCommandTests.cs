@@ -382,6 +382,39 @@ public sealed class GenerateCommandTests : IDisposable {
         Check.That(run.Error).Not.Contains("already taken");
     }
 
+    /// <summary>
+    ///     Only the file this run actually replaces is exempt: the same name in another directory is a clash
+    ///     (review of #417).
+    /// </summary>
+    /// <remarks>
+    ///     <c>src/Legacy/AnyOrder.Entry.cs</c> already declares <c>AnyOrderEntry</c>; a run with
+    ///     <c>--output src/Generated</c> would write a second file of the same name elsewhere and the project would
+    ///     fail with <c>CS0101</c>. Comparing the file name alone let that through, <c>--force</c> or not.
+    /// </remarks>
+    [Fact(DisplayName = "The same entry-point file in another directory is a clash, not the file being replaced.")]
+    public async Task TheSameEntryPointFileInAnotherDirectoryIsAClash() {
+        GenerateSettings legacy = Settings("Order");
+
+        legacy.EntryPoint = "any";
+        legacy.Output     = Path.Combine(directory, "Legacy");
+
+        Check.That((await Generate(legacy)).ExitCode).IsEqualTo(0);
+
+        CSharpCompilation withTheLegacyFile = WithFilesOf(Compilation(Domain), Path.Combine("Legacy", "AnyOrder.cs"), Path.Combine("Legacy", "AnyOrder.Entry.cs"));
+
+        GenerateSettings generated = Settings("Order");
+
+        generated.EntryPoint = "any";
+        generated.Output     = Path.Combine(directory, "Generated");
+        generated.Force      = true;
+
+        Run run = await Generate(generated, withTheLegacyFile);
+
+        Check.That(run.ExitCode).IsEqualTo(1);
+        Check.That(run.Error).Contains("already taken");
+        Check.That(Directory.Exists(Path.Combine(directory, "Generated"))).IsFalse();
+    }
+
     [Fact(DisplayName = "--format json records an entry class whose name is taken, naming both declarations.")]
     public async Task JsonRecordsAnEntryClassWhoseNameIsTaken() {
         GenerateSettings settings = Settings("VoiceEntry", "Voice");

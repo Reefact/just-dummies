@@ -69,6 +69,7 @@ public static class EntryPointNameCheck {
     /// </summary>
     /// <param name="compilation">The developer's compilation, which every symbol is resolved against.</param>
     /// <param name="scaffold">One scaffold, as the engine produced it.</param>
+    /// <param name="outputDirectory">The directory the files will be written into, or null where it is not known.</param>
     /// <returns>The refusal carrying both declarations, or null where nothing bears the name.</returns>
     /// <remarks>
     ///     The project's own types, whatever their accessibility, and the accessible types of what it references:
@@ -77,16 +78,17 @@ public static class EntryPointNameCheck {
     ///     in the project then binds to a static class. A generic type does not count: arity is part of a type's
     ///     identity, as the shadowing check of §7 already reads it.
     ///     <para>
-    ///         Nor does a declaration made by the file this scaffold would write — <c>AnyOrder.Entry.cs</c> left by
-    ///         an earlier run. That file is not a clash but the one being replaced: its header names
-    ///         <c>--force</c> as the way to overwrite it, and without <c>--force</c> the write is refused for the
-    ///         reason the developer can act on, that the file exists (§7). Told apart by the file's name, which is
-    ///         the one the scaffold writes; a developer's own type declared in a file of exactly that name is the
-    ///         case this cannot tell, and the compiler's <c>CS0101</c> still reports it.
+    ///         Nor does a declaration made by the very file this scaffold would write — <c>AnyOrder.Entry.cs</c>
+    ///         left by an earlier run into the same directory. That file is not a clash but the one being replaced:
+    ///         its header names <c>--force</c> as the way to overwrite it, and without <c>--force</c> the write is
+    ///         refused for the reason the developer can act on, that the file exists (§7). Told apart by its
+    ///         <b>full path</b>, against <paramref name="outputDirectory" />: a file of the same name in another
+    ///         directory would stay beside the new one, and the project would fail with <c>CS0101</c>. Without an
+    ///         output directory nothing is exempt.
     ///     </para>
     /// </remarks>
     /// <exception cref="ArgumentNullException">Any argument is null.</exception>
-    public static ScaffoldOutcome? AgainstTheCompilation(Compilation compilation, ScaffoldOutcome scaffold) {
+    public static ScaffoldOutcome? AgainstTheCompilation(Compilation compilation, ScaffoldOutcome scaffold, string? outputDirectory = null) {
         if (compilation is null) { throw new ArgumentNullException(nameof(compilation)); }
         if (scaffold is null) { throw new ArgumentNullException(nameof(scaffold)); }
 
@@ -95,7 +97,9 @@ public static class EntryPointNameCheck {
         ScaffoldedEntryPoint entry  = scaffold.EntryPoint!;
         INamedTypeSymbol?    bearer = Declared(compilation, entry.Namespace, entry.TypeName);
 
-        if (bearer is not null && DeclaredOnlyIn(bearer, entry.File.FileName)) { return null; }
+        if (bearer is not null && outputDirectory is not null && DeclaredOnlyIn(bearer, Path.Combine(outputDirectory, entry.File.FileName))) {
+            return null;
+        }
 
         return bearer is null ? null : Refused(scaffold, DeclarationOf(bearer));
     }
@@ -155,12 +159,20 @@ public static class EntryPointNameCheck {
                                          || compilation.IsSymbolAccessibleWithin(type, compilation.Assembly));
     }
 
-    /// <summary>Whether every declaration of <paramref name="type" /> sits in a file named <paramref name="fileName" />.</summary>
-    private static bool DeclaredOnlyIn(INamedTypeSymbol type, string fileName) {
+    /// <summary>
+    ///     Whether every declaration of <paramref name="type" /> sits in the file at <paramref name="path" />.
+    /// </summary>
+    /// <remarks>
+    ///     Compared ordinally once both are made absolute: on a case-insensitive file system a difference of case
+    ///     makes the check refuse rather than exempt, which is the safe side — a refusal names both files, a wrong
+    ///     exemption writes a duplicate declaration.
+    /// </remarks>
+    private static bool DeclaredOnlyIn(INamedTypeSymbol type, string path) {
+        string replaced = Path.GetFullPath(path);
+
         return type.DeclaringSyntaxReferences.Length > 0
-            && type.DeclaringSyntaxReferences.All(reference => string.Equals(Path.GetFileName(reference.SyntaxTree.FilePath),
-                                                                             fileName,
-                                                                             StringComparison.OrdinalIgnoreCase));
+            && type.DeclaringSyntaxReferences.All(reference => reference.SyntaxTree.FilePath.Length > 0
+                                                            && string.Equals(Path.GetFullPath(reference.SyntaxTree.FilePath), replaced, StringComparison.Ordinal));
     }
 
     private static ScaffoldOutcome Refused(ScaffoldOutcome scaffold, string bearer) {

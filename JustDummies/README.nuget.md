@@ -140,13 +140,16 @@ matter — and that is the point.
 - **Conflicting constraints fail fast** with a clear, actionable
   `ConflictingAnyConstraintException` at the moment the conflicting constraint is
   declared — for example `Any.String().WithLength(3).StartingWith("ORD-")`.
-- **Dummies stay ordinary unless you ask for more.** An unconstrained `Any.Double()`,
-  `Single()` or `Decimal()` draws within a magnitude of a million, not across the type's
-  whole domain — so arithmetic on a dummy stays finite, `WithScale(2)` still has decimal
-  places to constrain, and the value sits where rounding and formatting defects actually
-  live. The window only ever *clips*: `Between(0, double.MaxValue)` permits a huge value
-  and still yields an ordinary one, while `Between(1e300, 1e308)` names a magnitude and
-  gets exactly it. `Half`, whose domain stops at 65 504, is unaffected. The integer
+- **Dummies stay ordinary nine draws in ten, and reach the type's limit the tenth.** An
+  `Any.Double()`, `Single()` or `Decimal()` left open on a side draws within a magnitude of
+  a million, or in a slab of that kind beside a one-sided bound past it, nine times in ten
+  (a bound too large for such a slab draws its whole declared domain every time) — so arithmetic on a dummy stays finite, `WithScale(2)` still
+  has decimal places to constrain, and the value sits where rounding and formatting defects
+  actually live. The tenth spans the whole declared domain on purpose: the test not caring
+  about the value is not the code not caring, and only that draw tells them apart; JD036
+  names the remedy. A range you bound on both sides is drawn whole, uniformly in value:
+  `Between(0, 100e6)` reaches all of it and `Between(1e300, 1e308)` gets exactly that
+  magnitude. `Half`, whose domain stops at 65 504, is unaffected. The integer
   generators deliberately keep their full range — a large `int` is an ordinary `int`.
 - **A declared maximum steers the draw, so declare the size the test needs.** A size
   draw spreads across the whole declared range: `WithMaxLength`/`WithMaxCount` set its
@@ -170,8 +173,8 @@ matter — and that is the point.
   other conflict, wherever that domain is countable; where it is not, the same
   shortfall instead surfaces at generation as an `AnyGenerationException` naming the
   seed to replay. `Any.PairOf`/`TripleOf` pair generators into value tuples.
-- **Optional values**: `.OrNull()` turns any generator into one that is `null` about
-  half the time and otherwise a constrained value — the dummy for an optional field,
+- **Optional values**: `.OrNull()` turns any generator into one that is `null` one draw
+  in ten and otherwise a constrained value — the dummy for an optional field,
   for value types (`int?`, `Guid?`, ...) and reference types alike.
 - **Reproducible runs**: wrap a test in `Any.Reproducibly(...)` and a failing run
   reports the seed to replay; `Any.WithSeed(seed)` gives an isolated, deterministic

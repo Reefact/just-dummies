@@ -127,24 +127,36 @@ whenever both arguments are constants.
 neither `MultipleOf` nor `WithScale`, because a binary floating-point grid is not a grid a test can
 reason about.
 
-Two behaviours are worth knowing.
+Three behaviours are worth knowing.
 
-**Unconstrained draws stay ordinary.** An unconstrained `double`, `float` or `decimal` is drawn
-within a magnitude of one million rather than roaming the type's full range
-([ADR-0031](../../for-maintainers/adr/0031-draw-arbitrary-numbers-within-an-ordinary-magnitude.md), superseded by [ADR-0097](../../for-maintainers/adr/0097-follow-the-declared-bounds-with-the-ordinary-magnitude-window.md)).
-Values like `1.7e308` are technically in range and useless in a test: they turn every subsequent
-arithmetic assertion into a question about floating-point overflow. Declare a bound when your domain
-has one.
+**A range you bound on both sides is drawn whole, uniformly in value.** `Between(0, 5_000_000)`,
+`GreaterThan(0).LessThanOrEqualTo(100e6)` or `Between(1e300, 1e308)`: both bounds are yours, so every
+value between them is reachable, and the draw is uniform over the interval's *length* — half the draws
+land below its midpoint — not over the values the type represents, which crowd near zero
+([ADR-0117](../../for-maintainers/adr/0117-draw-a-limit-value-the-type-permits-one-draw-in-ten.md)).
+So `Any.Double().Positive().LessThanOrEqualTo(50)` does not hand out values near `1e-300`: a draw
+below `1e-6` comes up about once in fifty million. If the code needs a smallest value — a minimum
+quantity, a measurable rate — that is a lower bound, and you declare it: `Between(0.001, 50)`. This is
+the form to reach for whenever your domain has a range.
 
-A declared bound narrows that magnitude; it does not usually replace it. `Between(0, 5_000_000)`
-still draws below a million, because ordinary values remain available inside the range you wrote.
-Only where the range leaves no ordinary values to draw does the window follow your bounds instead
-([ADR-0097](../../for-maintainers/adr/0097-follow-the-declared-bounds-with-the-ordinary-magnitude-window.md)):
-a range bounded on both sides is then drawn whole, so `Between(1_000_000, 5_000_000)` reaches all of
-it; a one-sided bound keeps an ordinary spread beside the value you named, so
-`GreaterThanOrEqualTo(1_000_000)` stays just above a million rather than roaming to `1e308`. Writing
-the type's own limit as the far bound means the same thing as leaving it out, so
-`Between(1_000_000, double.MaxValue)` draws exactly like `GreaterThanOrEqualTo(1_000_000)`.
+**A side left open stays ordinary nine draws in ten, and reaches the type's limit the tenth.** An
+unconstrained `double`, `float` or `decimal`, or one bounded on a single side — `Positive()`,
+`LessThan(1e9)` — is drawn within a magnitude of one million nine times in ten, rather than roaming the
+type's full range, where values like `1.7e308` would turn every arithmetic assertion into a question
+about overflow. The tenth draw spans the whole declared domain on purpose: your one-sided bound, your
+exclusions and your scale still hold, but the value may sit next to `double.MaxValue`. The test not
+caring about the value is not the code not caring about it, and only such a draw can tell the two apart
+([ADR-0117](../../for-maintainers/adr/0117-draw-a-limit-value-the-type-permits-one-draw-in-ten.md)).
+[JD036](../analyzers/JD036.en.md) names the remedy at the call site when the code does care: declare
+the range it accepts.
+
+A one-sided bound past the ordinary magnitude keeps an ordinary spread beside the value you named on
+the window's draws, so `GreaterThanOrEqualTo(1_000_000)` stays just above a million nine times in ten
+rather than roaming to `1e308`
+([ADR-0097](../../for-maintainers/adr/0097-follow-the-declared-bounds-with-the-ordinary-magnitude-window.md)).
+Writing the type's own limit as the far bound means the same thing as leaving it out, so
+`Between(1_000_000, double.MaxValue)` draws exactly like `GreaterThanOrEqualTo(1_000_000)`. `Half` is
+the exception that needs no rule: its whole domain, up to 65 504, already lies within the window.
 
 **NaN and the infinities are never drawn.** A non-finite bound or `OneOf(...)` value is rejected as
 an argument error, the same way a value outside your declared range would be — the value could

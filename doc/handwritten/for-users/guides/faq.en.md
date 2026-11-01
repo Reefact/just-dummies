@@ -70,7 +70,7 @@ is not a genuine domain invariant. See [Errors and conflicts](./errors-and-confl
 
 ### Can I make a value optional?
 
-Yes — `.OrNull()` yields `null` about half the time and a constrained value otherwise:
+Yes — `.OrNull()` yields `null` one draw in ten and a constrained value otherwise:
 
 ```csharp
 int?    anyDiscount = Any.Int32().Between(0, 100).OrNull().Generate();

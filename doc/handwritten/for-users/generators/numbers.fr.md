@@ -134,25 +134,39 @@ constants.
 mais ni `MultipleOf` ni `WithScale`, car une grille en virgule flottante binaire n'est pas une
 grille sur laquelle un test peut raisonner.
 
-Deux comportements méritent d'être connus.
+Trois comportements méritent d'être connus.
 
-**Les tirages non contraints restent ordinaires.** Un `double`, `float` ou `decimal` non contraint
-est tiré dans un ordre de grandeur d'un million, au lieu de parcourir toute la plage du type
-([ADR-0031](../../for-maintainers/adr/0031-draw-arbitrary-numbers-within-an-ordinary-magnitude.fr.md), remplacée par l'[ADR-0097](../../for-maintainers/adr/0097-follow-the-declared-bounds-with-the-ordinary-magnitude-window.fr.md)).
-Des valeurs comme `1.7e308` sont techniquement dans la plage et inutiles dans un test : elles
-transforment chaque assertion arithmétique suivante en question sur le dépassement de capacité.
-Déclarez une borne quand votre domaine en a une.
+**Une plage que vous bornez des deux côtés est tirée entière, uniformément en valeur.**
+`Between(0, 5_000_000)`, `GreaterThan(0).LessThanOrEqualTo(100e6)` ou `Between(1e300, 1e308)` : les deux
+bornes sont les vôtres, donc chaque valeur entre elles est atteignable, et le tirage est uniforme sur la
+*longueur* de l'intervalle — la moitié des tirages tombe sous son milieu — et non sur les valeurs que le
+type représente, qui se pressent près de zéro
+([ADR-0117](../../for-maintainers/adr/0117-draw-a-limit-value-the-type-permits-one-draw-in-ten.fr.md)).
+Ainsi, `Any.Double().Positive().LessThanOrEqualTo(50)` ne distribue pas de valeurs proches de
+`1e-300` : un tirage sous `1e-6` survient environ une fois sur cinquante millions. Si le code a besoin
+d'une plus petite valeur — une quantité minimale, un taux mesurable — c'est une borne basse, et vous la
+déclarez : `Between(0.001, 50)`. C'est la forme à choisir chaque fois que votre domaine a une plage.
 
-Une borne déclarée restreint cet ordre de grandeur ; elle ne le remplace pas d'ordinaire.
-`Between(0, 5_000_000)` tire toujours sous le million, parce qu'il reste des valeurs ordinaires
-disponibles dans la plage que vous avez écrite. Ce n'est que là où la plage ne laisse aucune valeur
-ordinaire à tirer que la fenêtre suit vos bornes à la place
-([ADR-0097](../../for-maintainers/adr/0097-follow-the-declared-bounds-with-the-ordinary-magnitude-window.fr.md)) :
-une plage bornée des deux côtés est alors tirée en entier, si bien que `Between(1_000_000, 5_000_000)`
-la parcourt toute ; une borne unilatérale conserve un étalement ordinaire à côté de la valeur que vous
-avez nommée, si bien que `GreaterThanOrEqualTo(1_000_000)` reste juste au-dessus du million au lieu de
-partir vers `1e308`. Écrire la limite propre du type comme borne opposée revient à ne pas la mettre :
-`Between(1_000_000, double.MaxValue)` tire exactement comme `GreaterThanOrEqualTo(1_000_000)`.
+**Un côté laissé ouvert reste ordinaire neuf tirages sur dix, et atteint la limite du type le dixième.**
+Un `double`, `float` ou `decimal` non contraint, ou borné d'un seul côté — `Positive()`, `LessThan(1e9)` —
+est tiré dans un ordre de grandeur d'un million neuf fois sur dix, au lieu de parcourir toute la plage du
+type, où des valeurs comme `1.7e308` transformeraient chaque assertion arithmétique en question sur le
+dépassement de capacité. Le dixième tirage couvre délibérément tout le domaine déclaré : votre borne
+unilatérale, vos exclusions et votre échelle tiennent toujours, mais la valeur peut se trouver à côté de
+`double.MaxValue`. Que le test ne se soucie pas de la valeur ne veut pas dire que le code ne s'en soucie
+pas, et seul un tel tirage sépare les deux
+([ADR-0117](../../for-maintainers/adr/0117-draw-a-limit-value-the-type-permits-one-draw-in-ten.fr.md)).
+[JD036](../analyzers/JD036.fr.md) nomme le remède au site d'appel quand le code s'en soucie : déclarez
+la plage qu'il accepte.
+
+Une borne unilatérale au-delà de l'ordre de grandeur ordinaire conserve, sur les tirages de la fenêtre,
+un étalement ordinaire à côté de la valeur que vous avez nommée, si bien que
+`GreaterThanOrEqualTo(1_000_000)` reste juste au-dessus du million neuf fois sur dix au lieu de partir
+vers `1e308`
+([ADR-0097](../../for-maintainers/adr/0097-follow-the-declared-bounds-with-the-ordinary-magnitude-window.fr.md)).
+Écrire la limite propre du type comme borne opposée revient à ne pas la mettre :
+`Between(1_000_000, double.MaxValue)` tire exactement comme `GreaterThanOrEqualTo(1_000_000)`. `Half` est
+l'exception qui n'a besoin d'aucune règle : tout son domaine, jusqu'à 65 504, tient déjà dans la fenêtre.
 
 **NaN et les infinis ne sont jamais tirés.** Une borne non finie ou une valeur `OneOf(...)` non
 finie est rejetée comme une erreur d'argument, au même titre qu'une valeur hors de la plage que vous

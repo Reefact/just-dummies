@@ -74,7 +74,7 @@ Retirez celle des deux qui n'est pas un véritable invariant du domaine. Voir
 
 ### Puis-je rendre une valeur optionnelle ?
 
-Oui — `.OrNull()` produit `null` environ une fois sur deux, et sinon une valeur contrainte :
+Oui — `.OrNull()` produit `null` un tirage sur dix, et sinon une valeur contrainte :
 
 ```csharp
 int?    anyDiscount = Any.Int32().Between(0, 100).OrNull().Generate();

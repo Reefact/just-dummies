@@ -445,9 +445,13 @@ and delete the refining overload, or give it `Func<IAny<string>, IAny<string>>`.
   adds `French()` beside the generator, which states the narrower pattern once, on purpose, and reads
   `Any.AnimalId().French()` at the call site. The [strings page](../generators/strings.en.md#what-you-can-still-constrain) has the sample.
 * **A constraint that can be declared once cannot be declared again.** `OneOf`, `WithLength`,
-  `MultipleOf` and `WithScale` are refused a second time with a different argument, naming both,
-  when the base already set them — repeating the same one changes nothing — `JD034` cannot see inside the lambda, so the refusal comes at run time. To take values out of
-  what the base draws, narrow it instead: `p => p.Except(1)` or `.DifferentFrom(…)`.
+  `WithCount`, `MultipleOf`, `WithScale`, and on a string its alphabet — `WithChars` or a family such as
+  `Alpha()` —, its casing, and its `StartingWith` or `EndingWith`, are refused a second time with a
+  different argument, naming both, when the base already set them — repeating the same one changes
+  nothing — `JD034` cannot see inside the lambda, so the refusal comes at run time. A bound is not one of
+  them: a refining `WithCount(3)` over a base's `WithCountBetween(2, 6)` narrows it. To take values out of
+  what the base draws, narrow it instead: `p => p.Except(1)` or `.DifferentFrom(…)`, and for an alphabet
+  `c => c.WithoutChars("N")` — no second alphabet narrows the first.
 * **A refinement you want to reuse is a function.** Keep it as a `Func<AnyRoute, AnyRoute>` and pass
   it to any number of `With…` calls. A built `IAny<Route>` does not fit: no `With…` method takes a
   generator, for the reason given below.

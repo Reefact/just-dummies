@@ -43,7 +43,7 @@ public sealed partial class AnyMoney : IAny<Money> {
     public AnyMoney WithAmount(decimal value) {
         AnyMoney copy = new AnyMoney(this);
 
-        copy._amount = new FixedValue<decimal>(value);
+        copy._amount = Any.Fixed(value);
 
         return copy;
     }
@@ -61,20 +61,6 @@ public sealed partial class AnyMoney : IAny<Money> {
     /// <summary>Produces one arbitrary <see cref="Money" />.</summary>
     public Money Generate() {
         return new Money(_amount.Generate());
-    }
-
-    private sealed class FixedValue<TValue> : IAny<TValue> {
-
-        private readonly TValue _value;
-
-        public FixedValue(TValue value) {
-            _value = value;
-        }
-
-        public TValue Generate() {
-            return _value;
-        }
-
     }
 
 }

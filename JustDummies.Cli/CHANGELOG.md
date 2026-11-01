@@ -10,6 +10,13 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Changed
 
+- **A pin is written `Any.Fixed(value)`, and the generated file no longer declares a `FixedValue`
+  helper.** A `With…(value)` overload used to assign a private nested `FixedValue<T>` that every generated
+  file carried, byte for byte. When the JustDummies the project references carries `Any.Fixed`
+  (ADR-0118), the pin now calls it — the same two guarantees, no draw consumed and `null` accepted — and
+  the helper is gone. Against an older JustDummies the file keeps the helper, as the tool emits only
+  what the project's compilation resolves (ADR-0059). Re-scaffolding an existing generator changes those
+  lines and nothing else (issue #397).
 - **Breaking: the command is now `any`, not `dum`, and its project defaults file is `any.json`, not `dum.json`
   (ADR-0108).** What the tool writes is a generator of arbitrary values — `AnyOrder` for `Order` — and whether a
   value it draws is a dummy is decided by the test, not by the tool: a test that pins, through a `With…` method,

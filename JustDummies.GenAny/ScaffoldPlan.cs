@@ -31,13 +31,18 @@ public sealed class ScaffoldPlan {
     ///     The static factory <c>Generate()</c> calls — <c>Order.Create</c> — or null when it calls the
     ///     constructor (§5.1).
     /// </param>
+    /// <param name="pinsThroughAnyFixed">
+    ///     Whether a pin is written <c>Any.Fixed(value)</c> — the library the file compiles against carries it — or
+    ///     through the nested <c>FixedValue</c> helper the file then declares (ADR-0059, ADR-0118).
+    /// </param>
     /// <exception cref="ArgumentNullException">Any argument but <paramref name="factory" /> is null.</exception>
     /// <exception cref="ArgumentException">A collection carries a null element, or the generator name is blank.</exception>
     public ScaffoldPlan(TargetType                          target,
                         string                              generatorName,
                         IReadOnlyList<string>               usings,
                         IReadOnlyList<ScaffoldedParameter>  parameters,
-                        string?                             factory = null) {
+                        string?                             factory = null,
+                        bool                                pinsThroughAnyFixed = true) {
         if (target is null) { throw new ArgumentNullException(nameof(target)); }
         if (generatorName is null) { throw new ArgumentNullException(nameof(generatorName)); }
         if (usings is null) { throw new ArgumentNullException(nameof(usings)); }
@@ -57,7 +62,8 @@ public sealed class ScaffoldPlan {
         GeneratorName = generatorName;
         Usings        = usings;
         Parameters    = parameters;
-        Factory       = factory;
+        Factory             = factory;
+        PinsThroughAnyFixed = pinsThroughAnyFixed;
     }
 
     /// <summary>The type a generator is scaffolded for.</summary>
@@ -74,6 +80,12 @@ public sealed class ScaffoldPlan {
 
     /// <summary>The static factory <c>Generate()</c> calls, or null when it calls the constructor.</summary>
     public string? Factory { get; }
+
+    /// <summary>
+    ///     Whether a pin is written <c>Any.Fixed(value)</c>, or through the nested <c>FixedValue</c> helper the file
+    ///     declares when the library it compiles against predates <c>Any.Fixed</c> (ADR-0059).
+    /// </summary>
+    public bool PinsThroughAnyFixed { get; }
 
     /// <summary>
     ///     Whether this is the degenerate shape of §4.2: nothing to draw, so no fields, no private constructor,

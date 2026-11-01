@@ -144,7 +144,8 @@ public static class Scaffolder {
                                 TypeNaming.GeneratorNameFor(target, options.Naming),
                                 names.Usings,
                                 parameters,
-                                factory is null ? null : targetName + "." + factory.Name);
+                                factory is null ? null : targetName + "." + factory.Name,
+                                library.CarriesFixed());
 
         ScaffoldOutcome scaffolded = Assembled(plan, library, options);
 

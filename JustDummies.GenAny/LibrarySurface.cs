@@ -28,6 +28,8 @@ internal sealed class LibrarySurface {
 
     private bool? carriesAsNullable;
 
+    private bool? carriesFixed;
+
     private LibrarySurface(Compilation compilation, INamedTypeSymbol any, INamedTypeSymbol anyOfT, INamedTypeSymbol extensions) {
         this.compilation = compilation;
         Any              = any;
@@ -177,6 +179,27 @@ internal sealed class LibrarySurface {
             && candidate.TypeParameters[0].HasValueTypeConstraint
             && Draws(candidate.Parameters[0].Type, candidate.TypeParameters[0])
             && DrawsTheNullableOf(candidate.ReturnType, candidate.TypeParameters[0]);
+    }
+
+    /// <summary>
+    ///     Whether <c>Any.Fixed</c> resolves, which decides how a pin is written (§4.2).
+    /// </summary>
+    /// <remarks>
+    ///     Asked like <see cref="CarriesAsNullable" />, and for the same reason: an asset that predates it is answered
+    ///     <c>false</c>, and the file keeps the nested helper it always declared, which still compiles and still draws
+    ///     nothing (ADR-0059, ADR-0118).
+    /// </remarks>
+    internal bool CarriesFixed() {
+        return carriesFixed ??= Any.GetMembers("Fixed").OfType<IMethodSymbol>().Any(Pins);
+    }
+
+    /// <summary>Whether the candidate is <c>Fixed&lt;T&gt;(T) -&gt; IAny&lt;T&gt;</c>.</summary>
+    private bool Pins(IMethodSymbol candidate) {
+        return candidate.IsStatic
+            && candidate.TypeParameters.Length == 1
+            && candidate.Parameters.Length == 1
+            && SymbolEqualityComparer.Default.Equals(candidate.Parameters[0].Type, candidate.TypeParameters[0])
+            && Draws(candidate.ReturnType, candidate.TypeParameters[0]);
     }
 
     /// <summary>Whether <c>As</c> resolves, which the two conversion rows of §5.2 depend on.</summary>

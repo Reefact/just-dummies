@@ -361,7 +361,7 @@ public sealed partial class AnyOrder : IAny<Order> {
     public AnyOrder WithReference(OrderReference value) {
         AnyOrder copy = new AnyOrder(this);
 
-        copy._reference = new FixedValue<OrderReference>(value);
+        copy._reference = Any.Fixed(value);
 
         return copy;
     }
@@ -380,7 +380,7 @@ public sealed partial class AnyOrder : IAny<Order> {
     public AnyOrder WithCustomer(Customer value) {
         AnyOrder copy = new AnyOrder(this);
 
-        copy._customer = new FixedValue<Customer>(value);
+        copy._customer = Any.Fixed(value);
 
         return copy;
     }
@@ -399,7 +399,7 @@ public sealed partial class AnyOrder : IAny<Order> {
     public AnyOrder WithQuantity(int value) {
         AnyOrder copy = new AnyOrder(this);
 
-        copy._quantity = new FixedValue<int>(value);
+        copy._quantity = Any.Fixed(value);
 
         return copy;
     }
@@ -418,7 +418,7 @@ public sealed partial class AnyOrder : IAny<Order> {
     public AnyOrder WithStatus(OrderStatus value) {
         AnyOrder copy = new AnyOrder(this);
 
-        copy._status = new FixedValue<OrderStatus>(value);
+        copy._status = Any.Fixed(value);
 
         return copy;
     }
@@ -437,7 +437,7 @@ public sealed partial class AnyOrder : IAny<Order> {
     public AnyOrder WithTags(IReadOnlyList<string> value) {
         AnyOrder copy = new AnyOrder(this);
 
-        copy._tags = new FixedValue<IReadOnlyList<string>>(value);
+        copy._tags = Any.Fixed(value);
 
         return copy;
     }
@@ -456,7 +456,7 @@ public sealed partial class AnyOrder : IAny<Order> {
     public AnyOrder WithPlacedAt(DateTime value) {
         AnyOrder copy = new AnyOrder(this);
 
-        copy._placedAt = new FixedValue<DateTime>(value);
+        copy._placedAt = Any.Fixed(value);
 
         return copy;
     }
@@ -479,20 +479,6 @@ public sealed partial class AnyOrder : IAny<Order> {
                          _status.Generate(),
                          _tags.Generate(),
                          _placedAt.Generate());
-    }
-
-    private sealed class FixedValue<TValue> : IAny<TValue> {
-
-        private readonly TValue _value;
-
-        public FixedValue(TValue value) {
-            _value = value;
-        }
-
-        public TValue Generate() {
-            return _value;
-        }
-
     }
 
 }
@@ -562,17 +548,18 @@ public sealed partial class AnyOrder : IAny<Order> {
   paramètre non résolu n'a pas de base à affiner : il ne conserve que la surcharge par valeur.
 * `using System;` est ouvert dès qu'une surcharge d'affinage est émise, pour son `Func<,>`.
 * `public {Type} Generate()` appelant le constructeur avec le `Generate()` de chaque champ.
-* Le helper privé imbriqué `FixedValue<TValue>`. Justification : il accepte `null` (ce que
-  `Any.OneOf(value)` refuse) et ne consomme aucun tirage de la source ambiante, donc épingler un
-  paramètre ne décale pas les valeurs tirées pour les autres (§14.5). Il est imbriqué et privé,
-  donc un nombre quelconque de fichiers scaffoldés coexistent. *(Si `Any.Fixed<T>(value)` est un
-  jour ajouté à la bibliothèque, le helper pourra disparaître — voir §15.)*
+* Un épinglage écrit `Any.Fixed(value)` : il accepte `null` (ce que `Any.OneOf(value)` refuse) et ne
+  consomme aucun tirage, donc épingler un paramètre ne décale pas les valeurs tirées pour les autres
+  (§14.5 ; ADR-0118). Face à une bibliothèque antérieure à `Any.Fixed`, demandée à la compilation comme
+  tout membre (ADR-0059), le fichier déclare à la place un helper privé imbriqué `FixedValue<TValue>`
+  doté des deux mêmes propriétés, imbriqué et privé pour qu'un nombre quelconque de fichiers scaffoldés
+  coexistent.
 * Casse de `With{Param}` : le nom du paramètre, première lettre en majuscule, culture invariante.
   Un paramètre nommé `_id` ou `@class` est normalisé en retirant le `_`/`@` de tête.
 
 **Le cas dégénéré a sa propre forme.** Un constructeur sans paramètre (§5.1) fait s'effondrer tout
 ce qui précède : un seul constructeur public sans paramètre, aucun champ, aucun constructeur privé,
-aucune méthode `With`, aucun helper `FixedValue`, et `Generate()` retournant `new {Type}()`. Émettre
+aucune méthode `With`, aucun épinglage, et `Generate()` retournant `new {Type}()`. Émettre
 les deux constructeurs sans condition leur donnerait la même signature et échouerait en `CS0111` —
 vérifié. Le résultat vaut quand même d'être généré : `Any{Type}` est un `IAny<T>`, donc il se
 compose dans `Any.ListOf(...)`, `Any.Combine(...)` et le reste, ce qu'un simple `new {Type}()` ne
@@ -2284,7 +2271,8 @@ exercé au §17.
    contrôle. C'est la première moitié qui porte les §5.2 et §5.3 ; les mesures du §17 ont été
    prises avant ces deux records, quand le tirage allait de 0 à 16 lettres et chiffres.
 5. **`Any.OneOf(value)` exige au moins une valeur, rejette les éléments `null`, et consomme un
-   tirage.** Ces trois raisons sont pourquoi le §4.2 émet un `FixedValue<TValue>` privé à la place.
+   tirage.** Ces trois raisons sont pourquoi le §4.2 épingle par `Any.Fixed(value)` à la place — ou,
+   face à une bibliothèque qui le précède, par un `FixedValue<TValue>` privé.
 
 ### 14.6 Inventaire des analyzers
 
@@ -2406,11 +2394,13 @@ conséquences ne va de soi dans la section où elle atterrit.
 
 ### Un suivi côté bibliothèque, pas un enregistrement de décision
 
-`Any.Fixed<T>(value)` — un `IAny<T>` retournant une constante — permettrait à l'émetteur
-d'abandonner le helper imbriqué `FixedValue<TValue>` du §4.2. `Any.OneOf(value)` remplit presque le
-rôle mais refuse `null` et consomme un tirage (§14.5). C'est un ajout à l'API publique de la
-bibliothèque plutôt qu'une décision sur le tool, donc cela relève de la base de décision de la
-bibliothèque et n'est **pas** requis pour la v1.0.
+`Any.Fixed<T>(value)` — un `IAny<T>` retournant une constante — permet à l'émetteur d'abandonner le
+helper imbriqué `FixedValue<TValue>` du §4.2. `Any.OneOf(value)` remplissait presque le rôle mais refuse
+`null` et consomme un tirage (§14.5). C'était un ajout à l'API publique de la bibliothèque plutôt qu'une
+décision sur le tool, donc il a été consigné dans la base de décision de la bibliothèque : la bibliothèque
+le porte désormais ([ADR-0118](../adr/0118-return-a-literal-through-any-fixed.fr.md)), et l'émetteur l'écrit
+dans chaque épinglage où la compilation cible le résout, ne gardant le helper que face à une bibliothèque qui
+le précède.
 
 ---
 

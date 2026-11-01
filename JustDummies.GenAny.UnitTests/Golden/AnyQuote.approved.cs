@@ -55,7 +55,7 @@ public sealed partial class AnyQuote : IAny<Quote> {
     public AnyQuote WithAmount(decimal value) {
         AnyQuote copy = new AnyQuote(this);
 
-        copy._amount = new FixedValue<decimal>(value);
+        copy._amount = Any.Fixed(value);
 
         return copy;
     }
@@ -74,7 +74,7 @@ public sealed partial class AnyQuote : IAny<Quote> {
     public AnyQuote WithDiscount(decimal? value) {
         AnyQuote copy = new AnyQuote(this);
 
-        copy._discount = new FixedValue<decimal?>(value);
+        copy._discount = Any.Fixed(value);
 
         return copy;
     }
@@ -93,20 +93,6 @@ public sealed partial class AnyQuote : IAny<Quote> {
     public Quote Generate() {
         return new Quote(_amount.Generate(),
                          _discount.Generate());
-    }
-
-    private sealed class FixedValue<TValue> : IAny<TValue> {
-
-        private readonly TValue _value;
-
-        public FixedValue(TValue value) {
-            _value = value;
-        }
-
-        public TValue Generate() {
-            return _value;
-        }
-
     }
 
 }

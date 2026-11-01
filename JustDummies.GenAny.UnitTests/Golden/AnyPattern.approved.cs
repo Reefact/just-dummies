@@ -43,7 +43,7 @@ namespace Shop.Legacy {
         public AnyPattern WithText(string value) {
             AnyPattern copy = new AnyPattern(this);
 
-            copy._text = new FixedValue<string>(value);
+            copy._text = Any.Fixed(value);
 
             return copy;
         }
@@ -61,20 +61,6 @@ namespace Shop.Legacy {
         /// <summary>Produces one arbitrary <see cref="Pattern" />.</summary>
         public Pattern Generate() {
             return new Pattern(_text.Generate());
-        }
-
-        private sealed class FixedValue<TValue> : IAny<TValue> {
-
-            private readonly TValue _value;
-
-            public FixedValue(TValue value) {
-                _value = value;
-            }
-
-            public TValue Generate() {
-                return _value;
-            }
-
         }
 
     }

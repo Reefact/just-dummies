@@ -43,7 +43,7 @@ public sealed partial class AnyEmail : IAny<Email> {
     public AnyEmail WithValue(string value) {
         AnyEmail copy = new AnyEmail(this);
 
-        copy._value = new FixedValue<string>(value);
+        copy._value = Any.Fixed(value);
 
         return copy;
     }
@@ -61,20 +61,6 @@ public sealed partial class AnyEmail : IAny<Email> {
     /// <summary>Produces one arbitrary <see cref="Email" />.</summary>
     public Email Generate() {
         return Email.Create(_value.Generate());
-    }
-
-    private sealed class FixedValue<TValue> : IAny<TValue> {
-
-        private readonly TValue _value;
-
-        public FixedValue(TValue value) {
-            _value = value;
-        }
-
-        public TValue Generate() {
-            return _value;
-        }
-
     }
 
 }

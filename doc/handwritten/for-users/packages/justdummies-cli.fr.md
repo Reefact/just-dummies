@@ -214,8 +214,14 @@ tests. `--entry-point-namespace` déplace ce fichier — et lui seul — pour qu
 rassemble des types de plusieurs namespaces :
 
 ```bash
-any generate Order --entry-point static:Arbitrary --entry-point-namespace Shop.Tests.Arbitrary
+any generate Order --entry-point static:Arbitrary --entry-point-namespace Shop.Tests.Generators
 ```
+
+Ne terminez pas ce namespace par le nom même de la racine. Avec `Arbitrary` déclaré dans
+`Shop.Tests.Arbitrary`, C# résout d'abord le nom dans le namespace englobant : depuis un test de
+`Shop.Tests`, il se lie au namespace et `Arbitrary.Order()` échoue avec `CS0234`. `any` ne voit pas vos
+sites d'appel, il avertit donc au lieu de refuser — un test d'un autre namespace, ou qui ouvre ce namespace
+par un `using`, n'a pas ce problème — et nomme les deux issues : un autre namespace, ou une autre racine.
 
 Un nom que `--entry-point any` ne peut pas prendre est refusé avant toute écriture. Le fichier déclare
 une classe nommée `Any{Type}Entry` pour porter le membre d'extension, et c'est exactement le nom du
@@ -635,7 +641,7 @@ Les options qui décrivent votre projet plutôt que cette invocation ont leur pl
 **à côté de votre fichier projet**, commité avec lui :
 
 ```json
-{ "output": "./Arbitrary", "entryPoint": "static:Arbitrary", "entryPointNamespace": "Shop.Tests.Arbitrary" }
+{ "output": "./Arbitrary", "entryPoint": "static:Arbitrary", "entryPointNamespace": "Shop.Tests.Generators" }
 ```
 
 `any generate Order` vous donne alors ce que la longue ligne de commande aurait donné. Cinq clés sont

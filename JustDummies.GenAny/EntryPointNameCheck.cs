@@ -13,11 +13,11 @@ namespace JustDummies.GenAny;
 /// </summary>
 /// <remarks>
 ///     One check rather than one per site, because its questions are one question asked at different moments,
-///     and a clash found at one of them has to read like a clash found at another. Today it asks two: whether
+///     and a clash found at one of them has to read like a clash found at another. It asks three: whether
 ///     the type the entry point declares is the generator of another type of the same run
-///     (<see cref="AgainstTheBatch" />), and whether the project already declares a type by that name
-///     (<see cref="AgainstTheCompilation" />). A third belongs here when it is written — the entry-point
-///     namespace whose last segment is the root class's own name, which C# resolves before the class.
+///     (<see cref="AgainstTheBatch" />), whether the project already declares a type by that name
+///     (<see cref="AgainstTheCompilation" />), and whether the entry-point namespace ends in the root class's
+///     own name, which C# resolves before the class (<see cref="RootAgainstNamespace" />, a warning).
 ///     <para>
 ///         Only <see cref="EntryPointKind.Any" /> can clash this way: it declares <c>Any{Type}Entry</c>, which is
 ///         exactly the generator name of a domain type <c>{Type}Entry</c>. A static root is <c>partial</c>, and a
@@ -88,6 +88,32 @@ public static class EntryPointNameCheck {
         INamedTypeSymbol?    bearer = Declared(compilation, entry.Namespace, entry.TypeName);
 
         return bearer is null ? null : Refused(scaffold, DeclarationOf(bearer));
+    }
+
+    /// <summary>
+    ///     The entry-point namespace against the root class: a namespace whose last segment is the root's own name
+    ///     hides the class from every call site written in its parent.
+    /// </summary>
+    /// <param name="entryPoint">The entry-point file a scaffold produced, or null where none was asked for.</param>
+    /// <returns>The warning, or null where the namespace leaves the root visible.</returns>
+    /// <remarks>
+    ///     A warning, not a refusal, unlike the two questions above: nothing here fails to compile where it is
+    ///     written, and a call site in another namespace, or one that opens this namespace with a
+    ///     <c>using</c>, resolves the root all the same. The tool cannot see the call sites, so it says what the
+    ///     common layout costs and leaves the choice to the developer (issue #384, whose own documentation page
+    ///     suggested exactly this layout).
+    ///     <para>
+    ///         The root is <c>Any</c> for <see cref="EntryPointKind.Any" /> — a namespace <c>Shop.Tests.Any</c>
+    ///         hides the library's façade in the same way — and the static root's own name otherwise.
+    ///     </para>
+    /// </remarks>
+    public static ScaffoldWarning? RootAgainstNamespace(ScaffoldedEntryPoint? entryPoint) {
+        if (entryPoint?.Namespace is not { } @namespace) { return null; }
+
+        string root = entryPoint.Kind == EntryPointKind.Any ? EntryPointOptions.ReservedRootName : entryPoint.TypeName;
+        int    last = @namespace.LastIndexOf('.');
+
+        return string.Equals(@namespace.Substring(last + 1), root, StringComparison.Ordinal) ? ScaffoldWarning.HidesRoot(root, @namespace) : null;
     }
 
     /// <summary>Whether <paramref name="scaffold" /> declares a type this check is about.</summary>

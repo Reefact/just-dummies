@@ -191,7 +191,7 @@ sinon. Décision :
 [ADR-0072](../adr/0072-read-project-defaults-from-a-file-the-command-line-overrides.fr.md).
 
 ```json
-{ "output": "./Arbitrary", "entryPoint": "static:Arbitrary", "entryPointNamespace": "Shop.Tests.Arbitrary" }
+{ "output": "./Arbitrary", "entryPoint": "static:Arbitrary", "entryPointNamespace": "Shop.Tests.Generators" }
 ```
 
 Il lit cinq clés — `output`, `namespace`, `entryPoint`, `entryPointNamespace`, `format` — une par
@@ -655,6 +655,17 @@ développeur : `--entry-point-namespace`, qui déclare les points d'entrée là 
 est un seul endroit plutôt qu'un par appelant, pour qu'une collision trouvée contre le lancement se
 lise comme une trouvée contre le projet ; le nom de racine contre le dernier segment du namespace du
 point d'entrée lui appartient aussi, quand ce cas sera écrit.
+
+**Un namespace qui se termine par le nom même de la racine est signalé.** C# résout un nom simple dans
+le namespace englobant avant de regarder un type que déclare un autre namespace : avec `Arbitrary`
+déclaré dans `Shop.Tests.Arbitrary`, le nom se lie, depuis un test de `Shop.Tests`, au namespace, et
+`Arbitrary.Order()` échoue avec `CS0234` — la disposition que la page utilisateur suggérait (issue #384).
+Il en va de même pour `any` dans un namespace qui se termine par `.Any`. C'est la troisième question de la
+vérification de nom avant écriture ci-dessus, et c'est un **avertissement**, sortie `0` : rien n'échoue là
+où est le fichier, un site d'appel d'un autre namespace ou qui ouvre ce namespace résout la racine, et le
+tool ne voit pas les sites d'appel. L'avertissement nomme l'appel qui échoue et les deux issues, un autre
+namespace ou une autre racine. Il est aussi émis quand aucun `--entry-point-namespace` n'a été donné et que
+le namespace du generator se termine par la racine.
 
 **Règles de forme.** Trois lignes d'en-tête comme au §4.3, nommant l'option qui a écrit le fichier.
 Une fabrique publique statique nommée d'après le seul type cible — `Order.Line` scaffolde `AnyLine` et
@@ -1691,6 +1702,7 @@ pu répondre (§5.6), et vaut `null` sur toutes les autres lignes.
 | `--format` reçoit une valeur qui n'est ni `human` ni `json` | `2` | Nomme les deux. |
 | `any.json` illisible, ou fixant une clé non lue | `2` | Nomme la clé, et celles qui sont lues. |
 | `Any{Type}` masque un type `JustDummies.Any*` | `0` | **Avertissement**, puis génération. |
+| Le namespace du point d'entrée se termine par le nom de la classe racine (§4.5) | `0` | **Avertissement**, puis génération : nomme l'appel qui échoue en `CS0234` depuis le namespace parent, et les deux issues. Rapporté comme `RootHiddenByNamespace` dans `warnings` sous `--format json` (§6.1). |
 
 **Plusieurs lignes peuvent décrire un même type à la fois, et c'est la plus actionnable qui répond.**
 Le refus est décidé dans cet ordre, qui est une règle et non un accident de tuyauterie :

@@ -214,8 +214,14 @@ By default the entry point is declared beside the generator, which costs your te
 several namespaces:
 
 ```bash
-any generate Order --entry-point static:Arbitrary --entry-point-namespace Shop.Tests.Arbitrary
+any generate Order --entry-point static:Arbitrary --entry-point-namespace Shop.Tests.Generators
 ```
+
+Do not end that namespace with the root's own name. With `Arbitrary` declared in `Shop.Tests.Arbitrary`,
+C# resolves the name in the enclosing namespace first, so from a test in `Shop.Tests` it binds to the
+namespace and `Arbitrary.Order()` fails with `CS0234`. `any` cannot see your call sites, so it warns
+rather than refuses — a test in another namespace, or one that opens the namespace with a `using`, is
+fine — and names both ways out: another namespace, or another root.
 
 One name `--entry-point any` cannot take is refused before anything is written. The file declares a
 class named `Any{Type}Entry` to carry the extension member, which is exactly the generator name of a
@@ -624,7 +630,7 @@ Options that describe your project rather than this invocation belong in an `any
 project file**, committed with it:
 
 ```json
-{ "output": "./Arbitrary", "entryPoint": "static:Arbitrary", "entryPointNamespace": "Shop.Tests.Arbitrary" }
+{ "output": "./Arbitrary", "entryPoint": "static:Arbitrary", "entryPointNamespace": "Shop.Tests.Generators" }
 ```
 
 Then `any generate Order` gives you what the long command line would have. Five keys are read —

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 using NFluent;
 
@@ -183,6 +184,56 @@ public sealed class EntryPointNameCheckTests {
 
         Check.That(checkedRun[0]).IsSameReferenceAs(refused);
         Check.That(checkedRun[1]).IsSameReferenceAs(voice);
+    }
+
+    /// <summary>
+    ///     The third question of the check (issue #384): an entry-point namespace whose last segment is the root
+    ///     class's own name.
+    /// </summary>
+    /// <remarks>
+    ///     C# resolves a simple name in the enclosing namespace before it looks at a type of another one, so from
+    ///     a test in <c>Shop.Tests</c> the name <c>Arbitrary</c> binds to the namespace
+    ///     <c>Shop.Tests.Arbitrary</c> and <c>Arbitrary.Order()</c> fails with <c>CS0234</c>. The documentation
+    ///     itself suggested exactly that layout. A warning rather than a refusal, because a test written in
+    ///     another namespace, or one opening the namespace with a <c>using</c>, resolves it — the engine cannot
+    ///     see the call sites, and the entry point still compiles.
+    /// </remarks>
+    [Theory(DisplayName = "An entry-point namespace ending in the root's own name is warned about, whichever the root.")]
+    [InlineData("static", "Shop.Tests.Arbitrary", "Arbitrary")]
+    [InlineData("static", "Arbitrary", "Arbitrary")]
+    [InlineData("any", "Shop.Tests.Any", "Any")]
+    public void ANamespaceEndingInTheRootNameIsWarnedAbout(string kind, string @namespace, string root) {
+        EntryPointOptions entryPoint = kind == "any"
+                                           ? EntryPointOptions.OnAny.InNamespace(@namespace)
+                                           : EntryPointOptions.OnStaticRoot("Arbitrary").InNamespace(@namespace);
+
+        ScaffoldOutcome outcome = Subject.Scaffold("public sealed class Subject { public Subject(int one) { } }",
+                                                   ScaffoldOptions.Default.WithEntryPoint(entryPoint));
+
+        Check.That(outcome.Succeeded).IsTrue();
+        Check.That(outcome.Warnings.Select(warning => warning.Kind)).ContainsExactly(ScaffoldWarningKind.RootHiddenByNamespace);
+        Check.That(outcome.Warnings[0].Subject).IsEqualTo(root);
+        Check.That(outcome.Warnings[0].Other).IsEqualTo(@namespace);
+    }
+
+    [Theory(DisplayName = "A namespace that merely contains the root's name, or none at all, raises nothing.")]
+    [InlineData("Shop.Tests.Arbitraries")]
+    [InlineData("Shop.Arbitrary.Tests")]
+    [InlineData("Shop.Tests.Generators")]
+    public void ANamespaceNotEndingInTheRootNameRaisesNothing(string @namespace) {
+        ScaffoldOutcome outcome = Subject.Scaffold("public sealed class Subject { public Subject(int one) { } }",
+                                                   ScaffoldOptions.Default.WithEntryPoint(EntryPointOptions.OnStaticRoot("Arbitrary").InNamespace(@namespace)));
+
+        Check.That(outcome.Warnings).IsEmpty();
+    }
+
+    [Fact(DisplayName = "Following the generator's namespace, whatever it ends in, is not the entry point's own choice.")]
+    public void AGeneratorNamespaceEndingInTheRootNameIsWarnedAboutToo() {
+        ScaffoldOutcome outcome = Subject.ScaffoldByName("Subject",
+                                                         ScaffoldOptions.Default.WithEntryPoint(EntryPointOptions.OnStaticRoot("Arbitrary")),
+                                                         "namespace Shop.Arbitrary { public sealed class Subject { public Subject(int one) { } } }");
+
+        Check.That(outcome.Warnings.Select(warning => warning.Kind)).ContainsExactly(ScaffoldWarningKind.RootHiddenByNamespace);
     }
 
     [Fact(DisplayName = "A run, and its every outcome, are required.")]

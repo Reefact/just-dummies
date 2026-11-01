@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 
 using Microsoft.CodeAnalysis;
 
@@ -99,6 +100,41 @@ public sealed class ScaffolderTests {
         Check.That(emitted).Contains("no generator inferred for 'Repository<Customer> one'.");
         Check.That(emitted).Not.Contains("any generate Repository");
         Check.That(emitted).Contains("Write one here, or replace it and always pass .WithOne(value) instead.");
+    }
+
+    /// <summary>
+    ///     A composed type that is abstract — an interface, an abstract class — is left open, naming the
+    ///     generator to write by hand (issue #375).
+    /// </summary>
+    /// <remarks>
+    ///     The blind <c>new AnyIRowElement()</c> of ADR-0089 sent the developer, through <c>CS0246</c>, to
+    ///     <c>any generate IRowElement</c> — which the tool refuses, since there is nothing to instantiate. It is
+    ///     the rule §5.5 already applies to a generic type, the other shape whose command is refused: the TODO
+    ///     names <c>any generate</c> only where the command would take the name. Here it names the generator to
+    ///     write instead, and nothing about the concrete types is looked up (ADR-0089).
+    /// </remarks>
+    [Theory(DisplayName = "An abstract composed type is left open, naming the generator to write by hand.")]
+    [InlineData("public interface IRowElement { int Produces { get; } }", "IReadOnlyList<IRowElement> elements", "Elements")]
+    [InlineData("public interface IRowElement { int Produces { get; } }", "IRowElement element", "Element")]
+    [InlineData("public abstract class IRowElement { protected IRowElement() { } }", "IRowElement element", "Element")]
+    [SuppressMessage(SonarRule.S1135.Category, SonarRule.S1135.Id, Justification = "Names the marker the tool emits by design (§5.5), not unfinished work here.")]
+    public void AnAbstractComposedTypeIsLeftOpen(string declaration, string parameter, string with) {
+        ScaffoldOutcome outcome = Subject.Scaffold($$"""
+                                                     {{declaration}}
+
+                                                     public sealed class Subject { public Subject({{parameter}}) { } }
+                                                     """);
+
+        ScaffoldedParameter open = outcome.Plan!.Parameters.Single();
+        string              file = outcome.File!.SourceText;
+
+        Check.That(open.IsUnresolved).IsTrue();
+        Check.That(open.Provenance.HasFlag(Provenance.AbstractType)).IsTrue();
+        Check.That(file).Contains("reaches 'IRowElement', which is abstract, so `any generate` cannot scaffold it.");
+        Check.That(file).Contains("Write AnyIRowElement : IAny<IRowElement> by hand, choosing among the concrete types,");
+        Check.That(file).Contains($"or replace it and always pass .With{with}(value) instead.");
+        Check.That(file).Not.Contains("any generate IRowElement");
+        Check.That(file).Not.Contains("new AnyIRowElement()");
     }
 
     [Fact(DisplayName = "The file opens the namespaces its short names lean on, and no others.")]

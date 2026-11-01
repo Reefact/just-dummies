@@ -62,6 +62,7 @@ It is the point of the recap, not decoration — it separates what was **inferre
 | `to verify` | a generator *was* inferred, but something near that parameter could not be read — check it |
 | `unread guards` | that "something": a guard the tool does not recognise, a helper it cannot see into, or a guard it reads but cannot place — below a write to the parameter or to state, testing a local or a field computed from the parameter, or under something deciding whether it runs |
 | `constraint unavailable` | a guard was understood, and this generator has no member to express it with |
+| `abstract` | the parameter is, or holds, an interface or an abstract class: `any generate` cannot scaffold it, so it is a `TODO` naming the generator to write by hand |
 | `self-referencing` | the parameter reaches the type being scaffolded (a tree, a manager of the same type, or a type whose constructor comes back to it), so it is a `TODO`: drawing it would recurse forever, and how deep it goes is yours to write |
 | `no source` | the type comes from a package, so there was no constructor body to read |
 | `unavailable` | the generator exists in JustDummies, but not in the asset your project resolves |
@@ -176,9 +177,37 @@ any generate OrderReference
 any generate Order --force
 ```
 
-The recap does not repeat that — a file that will not build is not a silence. The only composed
-shape it leaves to a `TODO` is a generic type, because `AnyRepository` would name
-`Repository<Order>` and `Repository<Line>` equally badly.
+The recap does not repeat that — a file that will not build is not a silence. Two composed shapes
+are left to a `TODO` instead. A generic type, because `AnyRepository` would name `Repository<Order>`
+and `Repository<Line>` equally badly. And an abstract one — an interface, an abstract class — because
+`any generate IRowElement` is refused, there being nothing to instantiate: the `TODO` names the
+generator to write by hand, `AnyIRowElement : IAny<IRowElement>`, usually one that chooses among your
+concrete generators:
+
+<!-- jd:declarations -->
+```csharp
+public interface IRowElement {
+    int Produces { get; }
+}
+
+public sealed class Stitch : IRowElement {
+    public int Produces => 1;
+}
+
+public sealed class Increase : IRowElement {
+    public int Produces => 2;
+}
+
+public sealed class AnyIRowElement : IAny<IRowElement> {
+
+    private static readonly IAny<IRowElement> Elements = Any.OneOf<IRowElement>(new Stitch(), new Increase());
+
+    public IRowElement Generate() {
+        return Elements.Generate();
+    }
+
+}
+```
 
 ## Reaching it as `Any.Order()`
 

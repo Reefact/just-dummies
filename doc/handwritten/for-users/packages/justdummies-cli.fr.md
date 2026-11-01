@@ -61,6 +61,7 @@ qui a été **deviné** :
 | `to verify` | un générateur *a bien* été inféré, mais quelque chose près de ce paramètre n'a pas pu être lu — vérifiez-le |
 | `unread guards` | ce « quelque chose » : une garde que l'outil ne reconnaît pas, un helper dans lequel il ne voit pas, ou une garde qu'il lit sans pouvoir la situer — après une affectation du paramètre ou de l'état, testant une variable locale ou un champ calculé à partir du paramètre, ou sous quelque chose qui décide si elle s'exécute |
 | `constraint unavailable` | une garde a été comprise, et ce générateur n'a aucun membre pour l'exprimer |
+| `abstract` | le paramètre est, ou contient, une interface ou une classe abstraite : `any generate` ne peut pas la scaffolder, il reste donc un `TODO` qui nomme le générateur à écrire à la main |
 | `self-referencing` | le paramètre fait référence au type en cours de génération (par exemple, un nœud enfant, un supérieur hiérarchique du même type, ou un type dont le constructeur y revient) : il reste donc à compléter (`TODO`), car sa génération automatique provoquerait une récursion infinie. C'est à vous d'en fixer la profondeur. |
 | `no source` | le type vient d'un package, il n'y avait donc aucun corps de constructeur à lire |
 | `unavailable` | le générateur existe dans JustDummies, mais pas dans l'asset que votre projet résout |
@@ -176,9 +177,37 @@ any generate OrderReference
 any generate Order --force
 ```
 
-Le récapitulatif ne le répète pas — un fichier qui ne build pas n'est pas un silence. La seule forme
-composée qu'il laisse à un `TODO` est un type générique, parce que `AnyRepository` nommerait aussi
-mal `Repository<Order>` que `Repository<Line>`.
+Le récapitulatif ne le répète pas — un fichier qui ne build pas n'est pas un silence. Deux formes
+composées sont laissées à un `TODO` à la place. Un type générique, parce que `AnyRepository` nommerait
+aussi mal `Repository<Order>` que `Repository<Line>`. Et un type abstrait — une interface, une classe
+abstraite — parce que `any generate IRowElement` est refusé, faute de quoi instancier : le `TODO` nomme
+le générateur à écrire à la main, `AnyIRowElement : IAny<IRowElement>`, le plus souvent un générateur qui
+choisit parmi vos générateurs concrets :
+
+<!-- jd:declarations -->
+```csharp
+public interface IRowElement {
+    int Produces { get; }
+}
+
+public sealed class Stitch : IRowElement {
+    public int Produces => 1;
+}
+
+public sealed class Increase : IRowElement {
+    public int Produces => 2;
+}
+
+public sealed class AnyIRowElement : IAny<IRowElement> {
+
+    private static readonly IAny<IRowElement> Elements = Any.OneOf<IRowElement>(new Stitch(), new Increase());
+
+    public IRowElement Generate() {
+        return Elements.Generate();
+    }
+
+}
+```
 
 ## L'atteindre comme `Any.Order()`
 

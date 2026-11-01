@@ -1286,10 +1286,20 @@ same-named type, a genuine tie between two valid ones, and a real, unique, corre
 generator are handled identically: the same call, and `CS0246` — or a clean build — is the only
 verdict that ever mattered.
 
-**A generic type is the one composed shape §5.5 still answers for.** The naming function (§11.3)
+**A generic type is one of the two composed shapes §5.5 still answers for.** The naming function (§11.3)
 works from the type's name, which drops its arguments, so `Repository<Order>` and `Repository<Line>`
 would both be told to write `AnyRepository` and neither is the name to write. A sentinel that says
 nothing beats a name that says the wrong thing.
+
+**An abstract type is the other** (issue #375). An interface or an abstract class has a name, but
+the work list the blind call opens leads nowhere: `CS0246` on `AnyIRowElement` sends the developer to
+`any generate IRowElement`, which §7 refuses — nothing to instantiate. The parameter is left open,
+provenance `abstract`, and its TODO names the generator to write by hand,
+`AnyIRowElement : IAny<IRowElement>`, typically one choosing among the concrete generators — the
+same rule as the generic case, that the TODO names `any generate` only where the command would take
+the name. A collection or a dictionary of an abstract type is left open for the same reason. Nothing
+about the concrete types is looked up: that would be composition asking the compilation the question
+ADR-0089 keeps it from asking.
 
 **A parameter that reaches the type being scaffolded is left open too, with its reason.**
 `Node(string name, IReadOnlyList<Node> children)` would otherwise compose `children` into
@@ -1464,7 +1474,8 @@ throws or calls in a way the recognised set did not match, or in a place the eng
 below a write to the parameter, or under something deciding whether it runs at all —,
 `constraint unavailable` when a guard was
 read and understood and this generator carries no member to say it with, `self-referencing` when an
-open parameter reaches the type being scaffolded (§5.4), and `unavailable` when the
+open parameter reaches the type being scaffolded (§5.4), `abstract` when an open parameter is, or
+holds, an abstract type whose generator is written by hand (§5.4), and `unavailable` when the
 generator exists in the library but not in the asset this project resolves.
 
 `guard` is computed from the constraints **applied**, never from the constraints read. The

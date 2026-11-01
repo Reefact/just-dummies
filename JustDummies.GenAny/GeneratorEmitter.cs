@@ -270,6 +270,16 @@ public static class GeneratorEmitter {
             return;
         }
 
+        // `any generate` refuses an abstract type, so the line names the generator the developer writes instead —
+        // the one a composing scaffold would have named — rather than a command that sends them nowhere (§5.5).
+        if (parameter.Unscaffoldable is { } abstractType) {
+            Line(file, $"{indent}// TODO(any): '{parameter.TypeDisplay} {parameter.Name}' reaches '{abstractType.Type}', which is abstract, so `any generate` cannot scaffold it.");
+            Line(file, $"{indent}//   Write {abstractType.Generator} : IAny<{abstractType.Type}> by hand, choosing among the concrete types,");
+            Line(file, $"{indent}//   or write one here, or replace it and always pass .With{parameter.PascalCasedName}(value) instead.");
+
+            return;
+        }
+
         Line(file, $"{indent}// TODO(any): no generator inferred for '{parameter.TypeDisplay} {parameter.Name}'.");
 
         if (ScaffoldableByName(parameter.TypeDisplay)) {

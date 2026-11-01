@@ -1374,6 +1374,35 @@ rows (§6), and the machine report carries it as `unreadGuard` (§6.1). The clos
 page that says what `to verify` means: the comment is read by someone who has this file open, not
 this specification. Where no source position is known, the second line is left out.
 
+**A guard written in a helper that returns the value it checked is marked, where the engine can see
+that the helper throws.** The idiomatic validating value object does not write its guard in the
+constructor at all:
+
+```csharp
+public sealed class SpatialPoint {
+    public SpatialPoint(double xMm) { XMm = Guard(xMm, nameof(xMm)); }
+
+    private static double Guard(double v, string name) {
+        if (Math.Abs(v) > 2000.0) { throw new ArgumentOutOfRangeException(name); }
+        return v;
+    }
+}
+```
+
+The call's result is used, so the discarded-result rule of §5.3 never sees it, and its statement is
+the first assignment to state, so the leading scan ends on it: `xMm` read as plain `Any.Double()`
+under a recap claiming it inferred, and a hundred draws out of a hundred threw. What tells
+`Guard(v)` from `Normalise(v)` without reading either is one fact: the helper's body contains a
+`throw`. So a parameter handed to a method **declared in the same type, with source** — a private
+helper, a static one, a local function — **whose body contains a `throw`** is marked `to verify,
+unread guards`, pointing at that call, wherever in the body the call sits; a helper that throws
+nowhere, `Trim()` or a `Normalise` of the developer's own, stays production and earns no mark, and a
+`void` helper called for its effect is marked as before. Nothing is inferred from the helper: the
+engine does not read its body here, and a helper of another type, or one calling a helper that
+throws, is not looked into (§9). Reading such a helper one level down, and only where it returns
+the parameter unchanged on every path, is a separate step. This trial is the field report ADR-0085
+asks for.
+
 A generator that compiles and draws a value the real constructor still rejects is a worse failure
 than one that never compiles: it passes today's run and fails a later one, indistinguishable from
 a flaky test to whoever hits it — the developer trusted the scaffold, committed it, and the
@@ -1709,11 +1738,14 @@ Named explicitly so they are not mistaken for oversights.
   something encloses it deciding that, or because a statement above it can jump past it — which would
   otherwise state an invariant of the paths that reach it rather than of the parameter (§5.3).
   Three shapes still escape it, and all three are silent rather than merely unread — the tool sees no
-  rejection to be uncertain about. A guard helper that **returns** the value it checked — `_name =
-  Ensure.Valid(value);` — is indistinguishable from normalisation, and reading it as doubt would
-  mean reading `_name = value.Trim();` as doubt too, which blocks the compilation of constructors
-  carrying no guard at all; the helpers of the two libraries §5.3 reads by resolved symbol
-  (ADR-0086) are the measured exception, and every other returning validator keeps this answer. And
+  rejection to be uncertain about. A guard helper that **returns** the value it checked is told
+  apart from normalisation by one fact, that its body throws, and only where the engine can see that
+  body: a helper declared in the same type, with source, is marked (§5.6). One of another type —
+  `_name = Ensure.Valid(value);` — or without source is indistinguishable from `_name =
+  value.Trim();`, and reading it as doubt would mean reading the normalisation as doubt too, which
+  blocks the compilation of constructors carrying no guard at all; the helpers of the two libraries
+  §5.3 reads by resolved symbol (ADR-0086) are the measured exception, and every other returning
+  validator of another type keeps this answer. And
   a guard reached only through a level of indirection the tool does not follow — a local copy of the
   parameter handed to a helper (`var v = value; Validate(v);`; a throwing statement testing such a copy
   is marked, §5.3), a lambda closing over it, a call reached through a

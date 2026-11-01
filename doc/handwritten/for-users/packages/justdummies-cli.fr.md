@@ -117,9 +117,39 @@ motifs en en laissant tomber d'autres en silence
 sous-ensemble, le remplacement tient en une ligne, `Any.StringMatching("[A-Z]{3}")`, et il change le type de la
 fabrique : voir [plus bas](#quand-le-remplacement-est-un-autre-genre-de-generateur).
 
+**Une garde écrite dans un helper de votre type qui retourne la valeur est marquée aussi.**
+L'objet-valeur idiomatique garde sa garde hors du constructeur :
+
+<!-- jd:declarations -->
+```csharp
+public sealed class SpatialPoint {
+
+    public SpatialPoint(double xMm) {
+        XMm = Guard(xMm, nameof(xMm));
+    }
+
+    public double XMm { get; }
+
+    private static double Guard(double v, string name) {
+        if (Math.Abs(v) > 2000.0) { throw new ArgumentOutOfRangeException(name); }
+
+        return v;
+    }
+
+}
+```
+
+`any` ne lit pas `Guard` — il ne peut pas dire que `xMm` reste sous 2000 — mais il voit que le corps du
+helper lève une exception, ce qui distingue une garde d'un `Normalise(v)` qui ne fait que rogner. `xMm`
+est donc marqué `to verify`, le commentaire pointe l'appel `Guard(xMm, nameof(xMm))`, et le build
+s'arrête là jusqu'à ce que vous ayez écrit la borne vous-même, `Any.Double().Between(-2000.0, 2000.0)`.
+Cela vaut pour une méthode déclarée dans le même type — privée ou non, statique, ou une fonction
+locale — où que l'appel se trouve dans le constructeur. Un helper qui ne lève nulle part ne reçoit
+aucune marque ; un helper `void` appelé pour son effet, `Validate(value);`, est marqué comme avant.
+
 **Ce que l'outil ne voit toujours pas reste silencieux.** Quelques formes rejettent une valeur sans que
-l'outil y voie le moindre rejet, et ne reçoivent donc aucune marque : un validateur qui *retourne* la
-valeur vérifiée (`_name = Ensure.Valid(name);`), une copie locale confiée à un helper (`var v = value;
+l'outil y voie le moindre rejet, et ne reçoivent donc aucune marque : un validateur d'un *autre* type
+qui retourne la valeur vérifiée (`_name = Ensure.Valid(name);`), une copie locale confiée à un helper (`var v = value;
 Validate(v);`), un lambda qui capture le paramètre, et un helper que l'outil ne reconnaît pas appelé
 après la première affectation de l'état. Si votre constructeur valide ainsi, relisez vous-même la
 recette de ce paramètre. La liste complète est le §9 de la

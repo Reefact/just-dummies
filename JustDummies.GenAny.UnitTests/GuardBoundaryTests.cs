@@ -543,6 +543,119 @@ public sealed class GuardBoundaryTests {
     }
 
     /// <summary>
+    ///     A guard written in a helper that <b>returns</b> the value it checked — the idiomatic shape of a
+    ///     validating value object — is marked, never silent (issue #407, CLI-14 of the second trial).
+    /// </summary>
+    /// <remarks>
+    ///     The result is used, so the discarded-result rule never saw it, and a hundred draws out of a hundred
+    ///     threw under a recap claiming the parameter inferred — the one outcome ADR-0083 exists to prevent.
+    ///     What tells it from <c>Normalise(value)</c> is the one fact the engine can check without reading the
+    ///     helper: its body contains a <c>throw</c>. The helper has to be declared in the same type, with
+    ///     source; reading what it throws on is a later step, and nothing is inferred here.
+    /// </remarks>
+    [Theory(DisplayName = "A parameter handed to a helper of the same type whose body throws is marked unread.")]
+    [InlineData("XMm = Guard(xMm, nameof(xMm));")]
+    [InlineData("double kept = Guard(xMm, nameof(xMm)); XMm = kept;")]
+    [InlineData("XMm = Math.Round(Guard(xMm, nameof(xMm)));")]
+    [InlineData("Other = 1.0; XMm = Guard(xMm, nameof(xMm));")]
+    [InlineData("XMm = this.Guard(xMm, nameof(xMm));")]
+    public void AParameterHandedToAThrowingHelperIsMarkedUnread(string body) {
+        ScaffoldOutcome outcome = Subject.Scaffold($$"""
+                                                     public sealed class Subject {
+
+                                                         public Subject(double xMm) {
+                                                             {{body}}
+                                                         }
+
+                                                         public double XMm { get; private set; }
+
+                                                         public double Other { get; private set; }
+
+                                                         private double Guard(double v, string name) {
+                                                             if (Math.Abs(v) > 2000.0) { throw new ArgumentOutOfRangeException(name); }
+
+                                                             return v;
+                                                         }
+
+                                                     }
+                                                     """);
+
+        ScaffoldedParameter xMm = outcome.Plan!.Parameters[0];
+
+        Check.That(xMm.Expression).IsEqualTo("Any.Double()");
+        Check.That(xMm.RequiresVerification).IsTrue();
+        Check.That(xMm.UnreadGuard!.Excerpt).Contains("Guard(xMm, nameof(xMm))");
+    }
+
+    // The helper's shape does not matter, only that it throws somewhere: an expression body with a throw
+    // expression, a static helper, and a local function declared inside the constructor all earn the mark.
+    [Theory(DisplayName = "A throwing helper earns the mark whatever shape it is declared in.")]
+    [InlineData("private static double Guard(double v) => Math.Abs(v) > 2000.0 ? throw new ArgumentOutOfRangeException(nameof(v)) : v;", "")]
+    [InlineData("private static double Guard(double v) { return v > 2000.0 ? Reject() : v; } private static double Reject() => throw new ArgumentOutOfRangeException();", "")]
+    [InlineData("", "static double Guard(double v) { if (Math.Abs(v) > 2000.0) { throw new ArgumentOutOfRangeException(nameof(v)); } return v; }")]
+    public void AThrowingHelperEarnsTheMarkWhateverItsShape(string member, string local) {
+        ScaffoldOutcome outcome = Subject.Scaffold($$"""
+                                                     public sealed class Subject {
+
+                                                         public Subject(double xMm) {
+                                                             XMm = Guard(xMm);
+
+                                                             {{local}}
+                                                         }
+
+                                                         public double XMm { get; }
+
+                                                         {{member}}
+
+                                                     }
+                                                     """);
+
+        // The second shape throws one call further down, which this step does not follow: only the helper the
+        // parameter is handed to is looked at, and that one returns on every path. It stays silent, by design.
+        bool reaches = !member.Contains("Reject()");
+
+        Check.That(outcome.Plan!.Parameters[0].RequiresVerification).IsEqualTo(reaches);
+    }
+
+    /// <summary>
+    ///     And the shapes the rule has to leave alone: a helper that normalises and throws nothing is production,
+    ///     exactly as <c>value.Trim()</c> is, and marking it would block the compilation of constructors
+    ///     carrying no guard at all. A throwing helper of <b>another</b> type is not looked into either — that
+    ///     residue stays named in §9.
+    /// </summary>
+    [Theory(DisplayName = "A parameter handed to a helper that throws nothing, or to another type's, is not marked.")]
+    [InlineData("Text = Normalise(text);")]
+    [InlineData("Text = text.Trim();")]
+    [InlineData("Text = Checks.NonBlank(text);")]
+    public void AParameterHandedToAHelperThatThrowsNothingIsNotMarked(string body) {
+        ScaffoldOutcome outcome = Subject.Scaffold($$"""
+                                                     public static class Checks {
+                                                         public static string NonBlank(string s) {
+                                                             if (s.Length == 0) { throw new ArgumentException(nameof(s)); }
+
+                                                             return s;
+                                                         }
+                                                     }
+
+                                                     public sealed class Subject {
+
+                                                         public Subject(string text) {
+                                                             {{body}}
+                                                         }
+
+                                                         public string Text { get; }
+
+                                                         private static string Normalise(string s) {
+                                                             return s.Trim();
+                                                         }
+
+                                                     }
+                                                     """);
+
+        Check.That(outcome.Plan!.Parameters[0].RequiresVerification).IsFalse();
+    }
+
+    /// <summary>
     ///     What below the scan narrows nothing stays silent: a null-check is satisfied by construction, and an
     ///     unrecognised call there is the ordinary filling of state rather than a guard.
     /// </summary>

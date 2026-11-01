@@ -144,6 +144,12 @@ internal static class Guards {
         for (int index = 0; index < statements.Count; index++) {
             StatementSyntax statement = statements[index];
 
+            // Asked of every statement, leading or not, and before anything decides whether the scan goes on:
+            // the idiomatic shape of a validating value object is `XMm = Guard(xMm, nameof(xMm));`, which is
+            // also the first assignment to state, so a check made after that decision would miss the very
+            // case it exists for (§5.6).
+            MarkIfHandedToAThrowingHelper(statement, model, declared, reading);
+
             // A second assignment is exempt for the same reason as ADR-0086's: `Field = param ?? throw new
             // ArgumentNullException(nameof(param));` states the same null-check `ArgumentNullException
             // .ThrowIfNull(param)` and `if (param is null) { throw … }` already read (§5.3) — a third
@@ -1030,6 +1036,10 @@ internal static class Guards {
                                                     ParameterWrites writes) {
         if (TryRecogniseCoalesceThrowNullCheck(statement, model, method, out _)) { return; }
 
+        // The one unrecognised call that is NOT left alone below the scan: a helper of this type whose body
+        // throws is told apart from the filling of state by that throw, above the scan and below it alike.
+        MarkIfHandedToAThrowingHelper(statement, model, method, reading);
+
         GuardReading wouldHaveRead = GuardReading.FromSource();
 
         ReadRecognisedCalls(statement, model, method, wouldHaveRead);
@@ -1147,6 +1157,63 @@ internal static class Guards {
                 MarkEveryRecognisedCallWithin(declarator.Initializer?.Value, model, method, reading);
             }
         }
+    }
+
+    /// <summary>
+    ///     Marks every parameter <paramref name="statement" /> hands to a method of the same type whose body
+    ///     contains a <c>throw</c> — the guard written in a helper that <b>returns</b> the value it checked (§5.6).
+    /// </summary>
+    /// <remarks>
+    ///     The discarded-result rule of <see cref="MarkIfValidatedElsewhere" /> is shaped by a measured false
+    ///     positive — reading every used result as doubt blocked ordinary normalising constructors — and §9
+    ///     named its cost: <c>XMm = Guard(xMm, nameof(xMm));</c>, the idiomatic shape of a validating value
+    ///     object, read as production and stayed silent, under a recap claiming the parameter inferred, while a
+    ///     hundred draws out of a hundred threw (issue #407, CLI-14 of the second developer-UX trial). That is
+    ///     the one outcome ADR-0083 exists to prevent.
+    ///     <para>
+    ///         What tells <c>Guard(v)</c> from <c>Normalise(v)</c> without reading either is a single fact: the
+    ///         helper's body contains a <c>throw</c>. A helper that throws nowhere normalises, and stays
+    ///         production; one that throws somewhere may be rejecting, and the parameter handed to it earns the
+    ///         mark — <c>to verify</c>, the build stopping at the blocking line §5.6 describes, as for any guard the
+    ///         engine cannot vouch for. Nothing is inferred from the helper: reading its body, one level down
+    ///         and under strict conditions, is a separate step (ADR-0085's field report is this trial).
+    ///     </para>
+    ///     <para>
+    ///         Bounded to a method <b>declared in the same type, with source</b> — a private helper, a static
+    ///         one, a local function — which is where the idiom lives. A helper of another type, a helper the
+    ///         closed set does not know in a referenced assembly, and a helper calling a helper that throws are
+    ///         not looked into; that residue stays named in §9. Asked of every statement rather than of the
+    ///         leading ones: the idiom's own statement is the first assignment to state, and a guard below the
+    ///         scan rejects values exactly as much as one above it.
+    ///     </para>
+    /// </remarks>
+    private static void MarkIfHandedToAThrowingHelper(StatementSyntax statement,
+                                                      SemanticModel model,
+                                                      IMethodSymbol method,
+                                                      GuardReading reading) {
+        foreach (InvocationExpressionSyntax invocation in statement.DescendantNodesAndSelf().OfType<InvocationExpressionSyntax>()) {
+            if (IsNameOf(invocation)) { continue; }
+
+            if (model.GetSymbolInfo(invocation).Symbol is not IMethodSymbol callee
+             || !SymbolEqualityComparer.Default.Equals(callee.ContainingType, method.ContainingType)
+             || !BodyThrows(callee)) {
+                continue;
+            }
+
+            foreach (IParameterSymbol parameter in Mentioned(invocation, model, method)) {
+                reading.MarkUnread(parameter.Name, UnreadGuard.At(invocation));
+            }
+        }
+    }
+
+    /// <summary>
+    ///     Whether <paramref name="callee" />'s own declaration carries a <c>throw</c> anywhere — a statement or
+    ///     an expression, in a block body or an expression body. False where there is no source to look at.
+    /// </summary>
+    private static bool BodyThrows(IMethodSymbol callee) {
+        return callee.DeclaringSyntaxReferences
+                     .Select(reference => reference.GetSyntax())
+                     .Any(declaration => declaration.DescendantNodes().Any(node => node is ThrowStatementSyntax or ThrowExpressionSyntax));
     }
 
     /// <summary>Marks every parameter a recognised library call anywhere under <paramref name="node" /> names.</summary>

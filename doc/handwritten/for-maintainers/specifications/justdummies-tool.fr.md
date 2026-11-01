@@ -1446,6 +1446,36 @@ récapitulatif imprime la même chose sous ses lignes (§6), et le rapport machi
 le commentaire est lu par quelqu'un qui a ce fichier ouvert, pas cette spécification. Quand aucune
 position dans la source n'est connue, la deuxième ligne est omise.
 
+**Une garde écrite dans un helper qui retourne la valeur vérifiée est marquée, là où le moteur
+peut voir que le helper lève.** L'objet-valeur validant idiomatique n'écrit pas sa garde dans le
+constructeur du tout :
+
+```csharp
+public sealed class SpatialPoint {
+    public SpatialPoint(double xMm) { XMm = Guard(xMm, nameof(xMm)); }
+
+    private static double Guard(double v, string name) {
+        if (Math.Abs(v) > 2000.0) { throw new ArgumentOutOfRangeException(name); }
+        return v;
+    }
+}
+```
+
+Le résultat de l'appel est utilisé, donc la règle du résultat jeté du §5.3 ne le voit jamais, et son
+instruction est la première affectation à l'état, donc le scan de tête s'y arrête : `xMm` se lisait
+comme un simple `Any.Double()` sous un récapitulatif le disant inféré, et cent tirages sur cent
+levaient une exception. Ce qui distingue `Guard(v)` de `Normalise(v)` sans lire ni l'un ni l'autre
+tient en un fait : le corps du helper contient un `throw`. Un paramètre confié à une méthode
+**déclarée dans le même type, avec sa source** — un helper privé, un statique, une fonction locale —
+**dont le corps contient un `throw`** est donc marqué `to verify, unread guards`, en pointant cet
+appel, où que l'appel se trouve dans le corps ; un helper qui ne lève nulle part, `Trim()` ou un
+`Normalise` écrit par le développeur, reste de la production et ne gagne aucune marque, et un helper
+`void` appelé pour son effet est marqué comme avant. Rien n'est inféré du helper : le moteur ne lit
+pas son corps ici, et un helper d'un autre type, ou qui appelle un helper qui lève, n'est pas
+examiné (§9). Lire un tel helper un niveau plus bas, et seulement là où il retourne le paramètre
+inchangé sur tout chemin, est une étape distincte. Cet essai est le rapport de terrain que demande
+l'ADR-0085.
+
 Un generator qui compile et tire une valeur que le vrai constructeur rejette encore est un échec
 pire que celui qui ne compile jamais : il passe la run d'aujourd'hui et échoue plus tard,
 indiscernable d'un test flaky pour qui le rencontre — le développeur a fait confiance au scaffold,
@@ -1804,11 +1834,14 @@ Nommés explicitement pour ne pas être pris pour des oublis.
   d'elle peut la sauter — et qui énoncerait sinon un invariant des chemins qui l'atteignent et non du
   paramètre (§5.3). Trois formes lui échappent encore, et toutes trois sont silencieuses plutôt que
   simplement non lues — le tool n'y voit aucun rejet dont douter. Une garde-helper qui **retourne**
-  la valeur vérifiée — `_name = Ensure.Valid(value);` — est indiscernable d'une normalisation, et la
-  lire comme un doute reviendrait à lire `_name = value.Trim();` comme un doute aussi, ce qui bloque
-  la compilation de constructeurs ne portant aucune garde ; les aides des deux bibliothèques que le
-  §5.3 lit par symbole résolu (ADR-0086) sont l'exception mesurée, et tout autre validateur qui
-  retourne sa valeur garde cette réponse. Et une garde atteinte seulement par un niveau
+  la valeur vérifiée se distingue d'une normalisation par un seul fait, que son corps lève, et
+  seulement là où le moteur peut voir ce corps : un helper déclaré dans le même type, avec sa
+  source, est marqué (§5.6). Un helper d'un autre type — `_name = Ensure.Valid(value);` — ou sans
+  source est indiscernable de `_name = value.Trim();`, et le lire comme un doute reviendrait à lire
+  la normalisation comme un doute aussi, ce qui bloque la compilation de constructeurs ne portant
+  aucune garde ; les aides des deux bibliothèques que le §5.3 lit par symbole résolu (ADR-0086) sont
+  l'exception mesurée, et tout autre validateur d'un autre type qui retourne sa valeur garde cette
+  réponse. Et une garde atteinte seulement par un niveau
   d'indirection que le tool ne suit pas — une copie locale du paramètre confiée à un helper (`var v =
   value; Validate(v);` ; une instruction qui lève en testant une telle copie est marquée, §5.3), un lambda qui le capture, un appel atteint via un membre plutôt que par le nom
   propre du paramètre. Et une garde-helper que l'ensemble ne reconnaît pas, appelée après la première

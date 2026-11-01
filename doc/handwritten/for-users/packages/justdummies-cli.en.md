@@ -117,9 +117,39 @@ tool does not translate some and drop others silently
 the subset, the replacement is one line, `Any.StringMatching("[A-Z]{3}")`, and it changes the factory's
 type: see [below](#when-the-replacement-is-another-kind-of-generator).
 
+**A guard written in a helper of your type that returns the value is marked too.** The idiomatic
+value object keeps its guard out of the constructor:
+
+<!-- jd:declarations -->
+```csharp
+public sealed class SpatialPoint {
+
+    public SpatialPoint(double xMm) {
+        XMm = Guard(xMm, nameof(xMm));
+    }
+
+    public double XMm { get; }
+
+    private static double Guard(double v, string name) {
+        if (Math.Abs(v) > 2000.0) { throw new ArgumentOutOfRangeException(name); }
+
+        return v;
+    }
+
+}
+```
+
+`any` does not read `Guard` — it cannot say that `xMm` stays within 2000 — but it sees that the helper's
+body throws, which is what tells a guard from a `Normalise(v)` that only trims. So `xMm` is marked
+`to verify`, the comment points at the `Guard(xMm, nameof(xMm))` call, and the build stops there until
+you have written the bound yourself, `Any.Double().Between(-2000.0, 2000.0)`. That holds for a method
+declared in the same type — private or not, static, or a local function — wherever the call sits in
+the constructor. A helper that throws nowhere earns no mark; a `void` helper called for its effect,
+`Validate(value);`, is marked as before.
+
 **What the tool still cannot see stays silent.** A few shapes reject a value without the tool seeing a
-rejection at all, so they earn no mark: a validator that *returns* the value it checked
-(`_name = Ensure.Valid(name);`), a local copy handed to a helper (`var v = value; Validate(v);`), a
+rejection at all, so they earn no mark: a validator of *another* type that returns the value it
+checked (`_name = Ensure.Valid(name);`), a local copy handed to a helper (`var v = value; Validate(v);`), a
 lambda closing over the parameter, and a helper the tool does not recognise called below the first
 assignment to state. If your constructor validates that way, read the recipe for that parameter
 yourself. The full list is §9 of the

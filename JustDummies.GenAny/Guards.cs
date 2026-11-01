@@ -187,7 +187,7 @@ internal static class Guards {
                 ReadChain(guard, model, declared, reading, names, writes, unskipped);
             } else {
                 MarkIfItRejects(statement, model, declared, reading);
-                MarkIfValidatedElsewhere(statement, model, declared, reading, writes, unskipped);
+                MarkIfValidatedElsewhere(statement, model, declared, reading, names, writes, unskipped);
             }
 
             unskipped &= !Jumps(statement, model);
@@ -476,7 +476,7 @@ internal static class Guards {
 
             // Handed the `if` itself, so every call under it is conditioned by definition and this can only
             // mark. It is called for the marking, which silence would otherwise cost (§9).
-            MarkIfValidatedElsewhere(branch, model, method, reading, writes, unskipped);
+            MarkIfValidatedElsewhere(branch, model, method, reading, names, writes, unskipped);
 
             return;
         }
@@ -492,7 +492,7 @@ internal static class Guards {
                 // No condition of its own to read, but a plain `else` that still throws is a reject the closed
                 // set has nothing to say about — §9's `unread guards`, not silence.
                 MarkIfItRejects(terminal, model, method, reading);
-                MarkIfValidatedElsewhere(terminal, model, method, reading, writes, unskipped);
+                MarkIfValidatedElsewhere(terminal, model, method, reading, names, writes, unskipped);
 
                 break;
         }
@@ -1042,7 +1042,7 @@ internal static class Guards {
 
         GuardReading wouldHaveRead = GuardReading.FromSource();
 
-        ReadRecognisedCalls(statement, model, method, wouldHaveRead);
+        ReadRecognisedCalls(statement, model, method, wouldHaveRead, names);
 
         if (statement is IfStatementSyntax chain && Throws(chain)) {
             ReadChain(chain, model, method, wouldHaveRead, names, writes, unskipped: true);
@@ -1057,10 +1057,10 @@ internal static class Guards {
     }
 
     /// <summary>Reads every call under <paramref name="statement" /> the closed set recognises as a guard.</summary>
-    private static void ReadRecognisedCalls(StatementSyntax statement, SemanticModel model, IMethodSymbol method, GuardReading reading) {
+    private static void ReadRecognisedCalls(StatementSyntax statement, SemanticModel model, IMethodSymbol method, GuardReading reading, TypeNames names) {
         foreach (InvocationExpressionSyntax invocation in statement.DescendantNodesAndSelf().OfType<InvocationExpressionSyntax>()) {
             foreach (IParameterSymbol parameter in Mentioned(invocation, model, method)) {
-                if (!TryRecogniseCall(invocation, model, parameter, out IReadOnlyList<GuardConstraint> read)) { continue; }
+                if (!TryRecogniseCall(invocation, model, parameter, names, out IReadOnlyList<GuardConstraint> read)) { continue; }
 
                 foreach (GuardConstraint constraint in read) { reading.Add(parameter.Name, constraint); }
             }
@@ -1113,6 +1113,7 @@ internal static class Guards {
                                                  SemanticModel model,
                                                  IMethodSymbol method,
                                                  GuardReading reading,
+                                                 TypeNames names,
                                                  ParameterWrites writes,
                                                  bool unskipped) {
         foreach (ExpressionStatementSyntax discarded in statement.DescendantNodesAndSelf().OfType<ExpressionStatementSyntax>()) {
@@ -1138,7 +1139,7 @@ internal static class Guards {
             // same as the other two rather than by proving the receiver is never null.
             ReadCall(invocation,
                     !viaConditionalAccess && unskipped && RunsUnconditionally(discarded, statement, model),
-                    model, method, reading, writes);
+                    model, method, reading, names, writes);
         }
 
         // A recognised library call whose result is USED — returned, or handed to a local declaration's own
@@ -1308,6 +1309,7 @@ internal static class Guards {
                                  SemanticModel model,
                                  IMethodSymbol method,
                                  GuardReading reading,
+                                 TypeNames names,
                                  ParameterWrites writes) {
         foreach (IParameterSymbol parameter in Mentioned(invocation, model, method)) {
             // Whose invariant a conditioned helper states is the paths that reach it, never the parameter,
@@ -1328,7 +1330,7 @@ internal static class Guards {
                 continue;
             }
 
-            if (TryRecogniseCall(invocation, model, parameter, out IReadOnlyList<GuardConstraint> read)) {
+            if (TryRecogniseCall(invocation, model, parameter, names, out IReadOnlyList<GuardConstraint> read)) {
                 foreach (GuardConstraint constraint in read) { reading.Add(parameter.Name, constraint); }
             } else {
                 reading.MarkUnread(parameter.Name, UnreadGuard.At(invocation));
@@ -1347,8 +1349,9 @@ internal static class Guards {
     private static bool TryRecogniseCall(InvocationExpressionSyntax invocation,
                                          SemanticModel model,
                                          IParameterSymbol parameter,
+                                         TypeNames names,
                                          out IReadOnlyList<GuardConstraint> read) {
-        if (TryRecogniseThrowHelper(invocation, model, parameter, GeneratorFor.Sizes(parameter.Type),
+        if (TryRecogniseThrowHelper(invocation, model, parameter, GeneratorFor.Sizes(parameter.Type), names,
                                     out GuardConstraint? constraint)) {
             read = constraint is null ? [] : [constraint];
 
@@ -1395,6 +1398,7 @@ internal static class Guards {
                                                 SemanticModel model,
                                                 IParameterSymbol parameter,
                                                 (bool ByCount, int Ceiling, int Floor) sizes,
+                                                TypeNames names,
                                                 out GuardConstraint? constraint) {
         constraint = null;
 
@@ -1416,7 +1420,7 @@ internal static class Guards {
             return true;
         }
 
-        return TryRecogniseArithmeticThrowHelper(invocation, model, parameter, arguments, out constraint);
+        return TryRecogniseArithmeticThrowHelper(invocation, model, parameter, arguments, names, out constraint);
     }
 
     /// <summary>
@@ -1443,6 +1447,7 @@ internal static class Guards {
                                                            SemanticModel model,
                                                            IParameterSymbol parameter,
                                                            SeparatedSyntaxList<ArgumentSyntax> arguments,
+                                                           TypeNames names,
                                                            out GuardConstraint? constraint) {
         constraint = null;
 
@@ -1474,7 +1479,7 @@ internal static class Guards {
             return false;
         }
 
-        string literal = Literal(bound.Value, parameter.Type);
+        string literal = Named(arguments[1].Expression, model, Underlying(parameter.Type), names) ?? Literal(bound.Value, parameter.Type);
 
         if (IsCall(invocation, model, containing, "ThrowIfLessThan")) {
             constraint = Numeric(SyntaxKind.LessThanExpression, value, parameter.Type, literal);
@@ -1736,8 +1741,8 @@ internal static class Guards {
         if (!TryDecimal(constant.Value, out decimal value)) { return false; }
 
         constraint = sized
-                         ? Sized(@operator, value, sizes)
-                         : Numeric(@operator, value, parameter.Type, Literal(constant.Value, parameter.Type));
+                         ? Sized(@operator, value, sizes, Named(other, model, model.Compilation.GetSpecialType(SpecialType.System_Int32), names))
+                         : Numeric(@operator, value, parameter.Type, Named(other, model, Underlying(parameter.Type), names) ?? Literal(constant.Value, parameter.Type));
 
         return constraint is not null;
     }
@@ -1800,13 +1805,13 @@ internal static class Guards {
     ///     it is not the bound the guard states. The numeric branch has carried a type-aware literal since the
     ///     <c>decimal</c> case forced one; this is the same rule, for the family that had no equivalent.
     /// </remarks>
-    internal static GuardConstraint? Sized(SyntaxKind @operator, decimal value, (bool ByCount, int Ceiling, int Floor) sizes) {
+    internal static GuardConstraint? Sized(SyntaxKind @operator, decimal value, (bool ByCount, int Ceiling, int Floor) sizes, string? named = null) {
         if (value != decimal.Truncate(value) || value < 0 || value > int.MaxValue) { return null; }
 
         string exact = sizes.ByCount ? "WithCount" : "WithLength";
         string min   = sizes.ByCount ? "WithMinCount" : "WithMinLength";
         string max   = sizes.ByCount ? "WithMaxCount" : "WithMaxLength";
-        string count = ((int)value).ToString(CultureInfo.InvariantCulture);
+        string count = named ?? ((int)value).ToString(CultureInfo.InvariantCulture);
 
         // A floor and an exact size ask the generator to PRODUCE that many, so they answer to both limits; a
         // ceiling only asks it not to exceed one, so the element domain has nothing to say about it.
@@ -2312,6 +2317,32 @@ internal static class Guards {
         return underlying.SpecialType is SpecialType.System_Byte or SpecialType.System_UInt16
                                       or SpecialType.System_UInt32 or SpecialType.System_UInt64
             || underlying.ToDisplayString(ByNamespace) == "System.UInt128";
+    }
+
+    /// <summary>
+    ///     The bound as the guard wrote it, when it names a constant the scaffolded file can reach; null, for the
+    ///     caller to fold it to its value, otherwise.
+    /// </summary>
+    /// <remarks>
+    ///     The file is scaffolded once (§1), so a copied value goes stale in silence the day the domain changes
+    ///     the constant; a reference moves with it (#377). Only a <c>const</c> field of exactly the type the
+    ///     constraint takes, written on its own rather than inside an expression, and <c>public</c> at every level
+    ///     of its nesting: the scaffolded file lives in the test project, which reaches nothing less without a
+    ///     friend assembly the engine does not look for. Anything else — a private constant, a local one,
+    ///     <c>Max - 1</c> — is folded, as it always was.
+    /// </remarks>
+    private static string? Named(ExpressionSyntax expression, SemanticModel model, ITypeSymbol type, TypeNames names) {
+        while (expression is ParenthesizedExpressionSyntax parenthesized) { expression = parenthesized.Expression; }
+
+        if (model.GetSymbolInfo(expression).Symbol is not IFieldSymbol { IsConst: true } field) { return null; }
+        if (!SymbolEqualityComparer.Default.Equals(field.Type, type)) { return null; }
+        if (field.ContainingType is not { TypeKind: not TypeKind.Enum, IsGenericType: false } owner) { return null; }
+
+        for (ISymbol? level = field; level is not null and not INamespaceSymbol; level = level.ContainingSymbol) {
+            if (level.DeclaredAccessibility != Accessibility.Public) { return null; }
+        }
+
+        return names.Of(owner) + "." + field.Name;
     }
 
     /// <summary>

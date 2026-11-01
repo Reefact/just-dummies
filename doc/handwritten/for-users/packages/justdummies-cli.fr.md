@@ -66,6 +66,12 @@ qui a été **deviné** :
 | `no source` | le type vient d'un package, il n'y avait donc aucun corps de constructeur à lire |
 | `unavailable` | le générateur existe dans JustDummies, mais pas dans l'asset que votre projet résout |
 
+**Une ligne `guard` nomme vos constantes.** Là où la garde compare à une constante publique —
+`ThrowIfGreaterThan(projectId, MaxProjectId)` —, la recette la référence,
+`.LessThanOrEqualTo(CreditSerial.MaxProjectId)`, si bien qu'elle suit votre domaine quand la constante
+change. Une constante que le fichier généré ne peut pas atteindre (`private`, `internal`), ou une expression
+qui en part (`MaxProjectId - 1`), est recopiée par sa valeur.
+
 **Un `TODO` n'est pas un échec.** L'outil émet un identifiant qui n'existe pas, si bien que *votre
 propre build* signale ce qui n'a pas pu être inféré, à la ligne exacte, avec le type sous la main
 ([ADR-0060](../../for-maintainers/adr/0060-seed-generators-from-constructor-guards.fr.md)). Un

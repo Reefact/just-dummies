@@ -67,6 +67,12 @@ It is the point of the recap, not decoration — it separates what was **inferre
 | `no source` | the type comes from a package, so there was no constructor body to read |
 | `unavailable` | the generator exists in JustDummies, but not in the asset your project resolves |
 
+**A `guard` row names your constants.** Where the guard compares with a public constant —
+`ThrowIfGreaterThan(projectId, MaxProjectId)` — the recipe references it,
+`.LessThanOrEqualTo(CreditSerial.MaxProjectId)`, so it follows your domain when the constant changes. A
+constant the generated file cannot reach (`private`, `internal`), or an expression over one
+(`MaxProjectId - 1`), is copied as its value.
+
 **A `TODO` is not a failure.** The tool emits an identifier that does not exist, so *your own build*
 reports what could not be inferred, at the exact line, with the type in hand
 ([ADR-0060](../../for-maintainers/adr/0060-seed-generators-from-constructor-guards.md)). A generator

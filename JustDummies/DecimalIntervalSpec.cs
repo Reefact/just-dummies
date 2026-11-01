@@ -388,10 +388,10 @@ internal sealed class DecimalIntervalSpec {
 
     /// <summary>
     ///     The interval a draw is actually taken from — the <see cref="decimal" /> twin of
-    ///     <c>ContinuousIntervalSpec.DrawnInterval</c>, branch for branch: the declared interval narrowed to the
-    ///     ordinary magnitude (ADR-0031), and, where that would leave fewer than two values, a one-sided constraint
-    ///     stays ordinary <b>around</b> the bound it declares, an explicitly bounded interval is drawn whole, and an
-    ///     extraordinary one-sided bound falls back to the declared domain.
+    ///     <c>ContinuousIntervalSpec.DrawnInterval</c>, branch for branch: an explicitly bounded interval is drawn
+    ///     whole (ADR-0117); otherwise the declared interval is narrowed to the ordinary magnitude (ADR-0097), and,
+    ///     where that would leave fewer than two values, a one-sided constraint stays ordinary <b>around</b> the bound
+    ///     it declares, and an extraordinary one-sided bound falls back to the declared domain.
     /// </summary>
     /// <remarks>
     ///     What separates the second branch from the third is the <b>value</b> of the opposing bound, never whether a
@@ -399,18 +399,18 @@ internal sealed class DecimalIntervalSpec {
     ///     denote the same set, so they must draw alike.
     /// </remarks>
     private (decimal Lower, decimal Upper) DrawnInterval() {
-        decimal lower = Math.Max(_min, -OrdinaryMagnitude.AsDecimal);
-        decimal upper = Math.Min(_max, OrdinaryMagnitude.AsDecimal);
-        // Two or more values left: the ordinary case, and the one every existing draw already took.
-        if (HoldsTwoDrawableValues(lower, upper)) { return (lower, upper); }
-
-        // Past here the declared interval sits at or beyond the window's edge. A bound short of the type's own edge
-        // is one the caller wrote and owns; a bound sitting exactly on that edge is the domain showing through.
+        // A bound short of the type's own edge is one the caller wrote and owns; a bound sitting exactly on that edge
+        // is the domain showing through. Both owned: the range is the caller's, and it is drawn whole.
         bool floorIsOwned   = _min > decimal.MinValue;
         bool ceilingIsOwned = _max < decimal.MaxValue;
         if (floorIsOwned && ceilingIsOwned) { return (_min, _max); }
 
-        // One side is the domain: carry the window's width to the bound the caller did write rather than dropping it
+        decimal lower = Math.Max(_min, -OrdinaryMagnitude.AsDecimal);
+        decimal upper = Math.Min(_max, OrdinaryMagnitude.AsDecimal);
+        // Two or more values left: the ordinary case.
+        if (HoldsTwoDrawableValues(lower, upper)) { return (lower, upper); }
+
+        // Past here the one declared bound sits at or beyond the window's edge. One side is the domain: carry the window's width to the bound the caller did write rather than dropping it
         // and drawing the whole domain. The headroom is checked first — decimal arithmetic throws on overflow where
         // the binary types saturate, so the add cannot simply be attempted.
         decimal width = 2m * OrdinaryMagnitude.AsDecimal;
@@ -423,8 +423,8 @@ internal sealed class DecimalIntervalSpec {
         }
 
         // No ordinary slab exists beside the declared bound, so the declared interval is the honest answer. (Both
-        // bounds on the domain edge cannot reach here — the window lies inside the decimal domain, so the first
-        // branch returned.)
+        // bounds on the domain edge cannot reach here — the window lies inside the decimal domain, so the narrowing
+        // returned.)
         return (_min, _max);
     }
 

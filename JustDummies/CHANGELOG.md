@@ -77,6 +77,15 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Changed
 
+- **A floating-point range bounded on both sides is drawn whole.** `Any.Double()`, `Any.Single()` and
+  `Any.Decimal()` narrowed every declared interval to the ordinary window of ±1 000 000, so
+  `Any.Double().GreaterThan(0).LessThanOrEqualTo(100e6)` never drew above a million and the values the
+  range was written for were unreachable. A range whose two bounds you wrote is now drawn uniformly from
+  end to end, wherever it lies. The window still applies to a side you left open: `Positive()`,
+  `LessThan(1e9)` and `Between(0, double.MaxValue)` stay ordinary (ADR-0117, issue #415). **Migration:** a
+  test that relied on `Between(a, b)` with a bound past a million never drawing past it was relying on a
+  truncation; declare the range you mean. This changes what a seed draws for such a chain — allowed below
+  1.0 (ADR-0049), and announced here.
 - **A refused regex construct says what to do instead.** Every `UnsupportedRegexException` from
   `Any.StringMatching` ended with the same list of unrelated constructs and a generic "express the
   requirement with the supported subset". The message now ends with the way out for the construct's own family, and

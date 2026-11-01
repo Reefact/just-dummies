@@ -14,9 +14,11 @@ namespace JustDummies.UnitTests;
 ///     expectation mirrored the windowing formula instead of stating it.
 /// </summary>
 /// <remarks>
-///     The rule, in the terms a caller reads it in: a one-sided constraint stays ordinary <b>around</b> the bound it
-///     declares; an explicitly bounded interval belongs to the caller and is drawn whole; a one-sided bound so
-///     extraordinary that no ordinary slab is representable beside it falls back to the declared domain.
+///     The rule, in the terms a caller reads it in: an explicitly bounded interval belongs to the caller and is drawn
+///     whole, wherever it lies (ADR-0117); a one-sided constraint stays ordinary <b>around</b> the bound it declares;
+///     a one-sided bound so extraordinary that no ordinary slab is representable beside it falls back to the declared
+///     domain. The two-sided regressions below predate ADR-0117 and now take its first branch; they stay because what
+///     they pin — every declared value reachable — holds on either branch.
 /// </remarks>
 public sealed class OrdinaryMagnitudeWindowTests {
 
@@ -193,7 +195,7 @@ public sealed class OrdinaryMagnitudeWindowTests {
         double justBelow = ContinuousIntervalSpec.NextDown(Magnitude);
 
         HashSet<double> pair = [];
-        for (int i = 0; i < SampleCount; i++) { pair.Add(any.Double().Between(justBelow, 2d * Magnitude).Generate()); }
+        for (int i = 0; i < SampleCount; i++) { pair.Add(any.Double().GreaterThanOrEqualTo(justBelow).Generate()); }
 
         Check.WithCustomMessage("The narrowing kept the two doubles either side of the seam; the draw returned only one.")
              .That(pair)
@@ -202,7 +204,7 @@ public sealed class OrdinaryMagnitudeWindowTests {
         // Single, where the pair is nameable, and where the same span with one of them excluded must still leave
         // the declared interval reachable rather than collapsing.
         HashSet<float> singles = [];
-        for (int i = 0; i < SampleCount; i++) { singles.Add(any.Single().Between(999_999.9375f, 1_000_000.0625f).Generate()); }
+        for (int i = 0; i < SampleCount; i++) { singles.Add(any.Single().GreaterThanOrEqualTo(999_999.9375f).Generate()); }
 
         Check.That(singles).IsEqualTo(new HashSet<float> { 999_999.9375f, 1_000_000f });
     }
@@ -256,14 +258,15 @@ public sealed class OrdinaryMagnitudeWindowTests {
         // rounds onto, not an increment the representation can always make: at a magnitude of 1e6 a decimal carries
         // 22 decimal places, so WithScale(28) asks for 1e-28 and adding it leaves the value exactly where it was.
         // The walk then revisited one excluded point until its budget ran out, reported a singleton that was not
-        // one, and the two-sided branch handed back the whole declared interval — putting values above a million
-        // inside a draw the window had always kept below it.
+        // one, and the narrowing was abandoned — putting values above a million inside a draw the window had always
+        // kept below it. Stated one-sided: since ADR-0117 a range bounded on both sides is drawn whole and never
+        // reaches this walk.
         AnyContext any = Any.WithSeed(Seed);
 
         HashSet<decimal> drawn = [];
-        for (int i = 0; i < SampleCount; i++) { drawn.Add(any.Decimal().Between(999_999m, 2_000_000m).WithScale(28).Except(999_999m).Generate()); }
+        for (int i = 0; i < SampleCount; i++) { drawn.Add(any.Decimal().GreaterThanOrEqualTo(999_999m).WithScale(28).Except(999_999m).Generate()); }
 
-        Check.WithCustomMessage($"The narrowing was lost and the draw reached {drawn.Max()}, above the window the declared interval still fits inside.")
+        Check.WithCustomMessage($"The narrowing was lost and the draw reached {drawn.Max()}, above the window the open side still narrows to.")
              .That(drawn.Max())
              .IsLessOrEqualThan(1_000_000m);
         Check.That(drawn.Min()).IsGreaterOrEqualThan(999_999m);
@@ -274,8 +277,8 @@ public sealed class OrdinaryMagnitudeWindowTests {
         HashSet<decimal> unexcluded = [];
         HashSet<decimal> coarse     = [];
         for (int i = 0; i < SampleCount; i++) {
-            unexcluded.Add(any.Decimal().Between(999_999m, 2_000_000m).WithScale(28).Generate());
-            coarse.Add(any.Decimal().Between(999_999m, 2_000_000m).WithScale(2).Except(999_999m).Generate());
+            unexcluded.Add(any.Decimal().GreaterThanOrEqualTo(999_999m).WithScale(28).Generate());
+            coarse.Add(any.Decimal().GreaterThanOrEqualTo(999_999m).WithScale(2).Except(999_999m).Generate());
         }
 
         Check.That(unexcluded.Max()).IsLessOrEqualThan(1_000_000m);
@@ -406,17 +409,39 @@ public sealed class OrdinaryMagnitudeWindowTests {
         CheckDrawnAcross("Between(1e6, 1e300)", () => any.Double().Between(Magnitude, 1e300d).Generate(), Magnitude, 1e300d);
     }
 
+    [Fact(DisplayName = "A two-sided interval reaching past the window is drawn whole (issue #415).")]
+    public void ATwoSidedIntervalReachingPastTheWindowIsDrawnWhole() {
+        // Regression. The window narrowed every declared interval it overlapped, so a range the caller wrote with
+        // both bounds was truncated wherever it crossed a million: GreaterThan(0).LessThanOrEqualTo(100e6) never
+        // drew above 1e6, and its upper 99 % was unreachable. Both bounds are the caller's, so the range they wrote
+        // is the range they get (ADR-0117) — the window only answers for a side the caller left open.
+        AnyContext any = Any.WithSeed(Seed);
+
+        CheckDrawnAcross("GreaterThan(0).LessThanOrEqualTo(100e6)",
+                         () => any.Double().GreaterThan(0d).LessThanOrEqualTo(100d * Magnitude).Generate(),
+                         0d, 100d * Magnitude);
+        CheckDrawnAcross("Between(999_999, 2e6)", () => any.Double().Between(999_999d, 2d * Magnitude).Generate(), 999_999d, 2d * Magnitude);
+        CheckDrawnAcross("Between(-1e7, 1e9)", () => any.Double().Between(-10d * Magnitude, 1_000d * Magnitude).Generate(), -10d * Magnitude, 1_000d * Magnitude);
+        CheckDrawnAcross("Single.Between(0f, 1e8f)", () => any.Single().Between(0f, 1e8f).Generate(), 0d, 100d * Magnitude);
+        CheckDrawnAcross("Decimal.GreaterThan(0).LessThanOrEqualTo(100e6)",
+                         () => (double)any.Decimal().GreaterThan(0m).LessThanOrEqualTo(100_000_000m).Generate(),
+                         0d, 100d * Magnitude);
+        CheckDrawnAcross("Decimal.Between(999_999, 2e6).WithScale(2)",
+                         () => (double)any.Decimal().Between(999_999m, 2_000_000m).WithScale(2).Generate(),
+                         999_999d, 2d * Magnitude);
+    }
+
     [Fact(DisplayName = "The window still narrows everything it narrowed before.")]
     public void TheWindowStillNarrowsWhatItAlreadyNarrowed() {
         // The controls. Every one of these already held, and the seam fix must not have widened any of them: an
-        // unconstrained draw, a merely permitted magnitude, and a bound one ulp short of the window's edge.
+        // unconstrained draw, a merely permitted magnitude, and a one-sided bound short of the window's edge.
         AnyContext any = Any.WithSeed(Seed);
 
         CheckDrawnWithin("Double()", () => any.Double().Generate(), -Magnitude, Magnitude);
         CheckDrawnWithin("Single()", () => any.Single().Generate(), -Magnitude, Magnitude);
         CheckDrawnWithin("Decimal()", () => (double)any.Decimal().Generate(), -Magnitude, Magnitude);
         CheckDrawnWithin("Between(0, double.MaxValue)", () => any.Double().Between(0d, double.MaxValue).Generate(), 0d, Magnitude);
-        CheckDrawnWithin("Between(999_999, 2e6)", () => any.Double().Between(999_999d, 2d * Magnitude).Generate(), 999_999d, Magnitude);
+        CheckDrawnWithin("GreaterThanOrEqualTo(999_999)", () => any.Double().GreaterThanOrEqualTo(999_999d).Generate(), 999_999d, Magnitude);
         CheckDrawnWithin("Positive()", () => any.Double().Positive().Generate(), double.Epsilon, Magnitude);
     }
 

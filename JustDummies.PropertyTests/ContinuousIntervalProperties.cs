@@ -56,8 +56,9 @@ public sealed class ContinuousIntervalProperties {
     }
 
     /// <summary>
-    ///     The interval a generator actually draws from: the declared one clipped to the ordinary magnitude window,
-    ///     or the declared one untouched when that clip would leave nothing (ADR-0031).
+    ///     The interval a generator actually draws from: the declared one untouched when the caller bounded both sides
+    ///     (ADR-0117); otherwise the declared one clipped to the ordinary magnitude window, or carried beside the one
+    ///     declared bound when that clip would leave nothing (ADR-0097).
     /// </summary>
     /// <remarks>
     ///     Mirrored here so the two reachability properties can name the range they expect covered. The split of
@@ -73,13 +74,13 @@ public sealed class ContinuousIntervalProperties {
     ///     </para>
     /// </remarks>
     private static (double Min, double Max) DrawnFrom(double min, double max) {
-        double lower = Math.Max(min, -OrdinaryMagnitude);
-        double upper = Math.Min(max, OrdinaryMagnitude);
-        if (lower < upper) { return (lower, upper); }
-
         bool floorIsOwned   = min > double.MinValue;
         bool ceilingIsOwned = max < double.MaxValue;
         if (floorIsOwned && ceilingIsOwned) { return (min, max); }
+
+        double lower = Math.Max(min, -OrdinaryMagnitude);
+        double upper = Math.Min(max, OrdinaryMagnitude);
+        if (lower < upper) { return (lower, upper); }
 
         const double width = 2d * OrdinaryMagnitude;
         if (floorIsOwned) {
@@ -95,13 +96,13 @@ public sealed class ContinuousIntervalProperties {
 
     /// <summary>The <see cref="decimal" /> counterpart of <see cref="DrawnFrom(double,double)" />.</summary>
     private static (decimal Min, decimal Max) DrawnFrom(decimal min, decimal max) {
-        decimal lower = Math.Max(min, -(decimal)OrdinaryMagnitude);
-        decimal upper = Math.Min(max, (decimal)OrdinaryMagnitude);
-        if (lower < upper) { return (lower, upper); }
-
         bool floorIsOwned   = min > decimal.MinValue;
         bool ceilingIsOwned = max < decimal.MaxValue;
         if (floorIsOwned && ceilingIsOwned) { return (min, max); }
+
+        decimal lower = Math.Max(min, -(decimal)OrdinaryMagnitude);
+        decimal upper = Math.Min(max, (decimal)OrdinaryMagnitude);
+        if (lower < upper) { return (lower, upper); }
 
         const decimal width = 2m * (decimal)OrdinaryMagnitude;
         if (floorIsOwned) {
@@ -515,9 +516,11 @@ public sealed class ContinuousIntervalProperties {
         // value may not exceed, so widening that bound must not enlarge the draw. A string's WithMaxLength no
         // longer shares this rule (ADR-0076 lets it steer the draw instead) -- this test is about the numeric
         // window only, which ADR-0076 left untouched.
+        // A bound is a permission only while the other side is left open: a range declared on both sides is a
+        // request, drawn whole (ADR-0117), which the reachability properties below cover through DrawnFrom.
         Prop.ForAll(Gen.Elements(1e7d, 1e50d, 1e200d, 1e308d, double.MaxValue).ToArbitrary(),
-                    permitted => Expect.EveryDraw(Any.Double().Between(0d, permitted), value => value <= OrdinaryMagnitude)
-                              && Expect.EveryDraw(Any.Double().LessThan(permitted), value => Math.Abs(value) <= OrdinaryMagnitude))
+                    permitted => Expect.EveryDraw(Any.Double().LessThan(permitted), value => Math.Abs(value) <= OrdinaryMagnitude)
+                              && Expect.EveryDraw(Any.Double().GreaterThan(-permitted), value => Math.Abs(value) <= OrdinaryMagnitude))
             .QuickCheckThrowOnFailure();
     }
 

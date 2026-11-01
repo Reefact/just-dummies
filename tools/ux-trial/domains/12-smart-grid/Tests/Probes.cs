@@ -39,11 +39,11 @@ public sealed class Probes {
     }
 
     [Fact]
-    public void A_time_range_wrapping_midnight_is_refused_as_an_argument_error() {
-        // An off-peak window such as 22:00-06:00 cannot be drawn from in one generator.
-        ArgumentException refusal = Assert.Throws<ArgumentException>(() => Any.TimeOnly().Between(new TimeOnly(22, 0), new TimeOnly(6, 0)));
+    public void A_time_range_wrapping_midnight_is_drawn_across_it() {
+        // An off-peak window such as 22:00-06:00 is one generator: the start after the end crosses midnight (issue #357).
+        AnyTimeOnly offPeak = Any.TimeOnly().Between(new TimeOnly(22, 0), new TimeOnly(6, 0));
 
-        Assert.StartsWith("The start (22:00:00.0000000) must be at or before the end (06:00:00.0000000).", refusal.Message);
+        for (int i = 0; i < 200; i++) { Assert.True(offPeak.Generate().IsBetween(new TimeOnly(22, 0), new TimeOnly(6, 0, 0, 1))); }
     }
 
     [Fact]

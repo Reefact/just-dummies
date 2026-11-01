@@ -65,11 +65,11 @@ public sealed class Probes {
     }
 
     [Fact]
-    public void A_naive_night_shift_range_is_refused_rather_than_wrapped_round_midnight() {
-        ArgumentException refusal = Assert.Throws<ArgumentException>(() => Any.TimeOnly().Between(TenPm, SixAm));
+    public void A_night_shift_range_is_wrapped_round_midnight() {
+        // The start after the end crosses midnight, as TimeOnly.IsBetween reads it (issue #357).
+        TimeOnly drawn = Any.TimeOnly().Between(TenPm, SixAm).Generate();
 
-        Assert.Contains("22:00", refusal.Message);
-        Assert.Contains("06:00", refusal.Message);
+        Assert.True(drawn >= TenPm || drawn <= SixAm);
     }
 
     [Fact]

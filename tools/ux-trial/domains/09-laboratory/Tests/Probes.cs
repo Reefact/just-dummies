@@ -185,12 +185,12 @@ public sealed class Probes {
     }
 
     [Fact]
-    public void An_overnight_TimeOnly_window_is_refused_clearly() {
-        // A night shift collecting from 22:00 to 02:00.
+    public void An_overnight_TimeOnly_window_is_drawn_across_midnight() {
+        // A night shift collecting from 22:00 to 02:00: the start after the end crosses midnight (issue #357).
         TimeOnly start = new(22, 0);
-        string   message = Refusal(() => Any.TimeOnly().Between(start, new TimeOnly(2, 0)).Generate());
+        TimeOnly drawn = Any.TimeOnly().Between(start, new TimeOnly(2, 0)).Generate();
 
-        Assert.Contains("22:00", message);
+        Assert.True(drawn >= start || drawn <= new TimeOnly(2, 0));
     }
 
     [Fact]

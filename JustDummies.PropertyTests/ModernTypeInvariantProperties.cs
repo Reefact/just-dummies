@@ -441,6 +441,40 @@ public sealed class ModernTypeInvariantProperties {
             .QuickCheckThrowOnFailure();
     }
 
+    [Fact(DisplayName = "TimeOnly: a start after the end draws only inside the window across midnight, for every such pair.")]
+    public void TimeOnlyWindowAcrossMidnightContainsEveryDraw() {
+        Prop.ForAll(Generators.OrderedPair(Times()).ToArbitrary(),
+                    bounds => bounds.Min == bounds.Max
+                              || Expect.EveryDraw(Any.TimeOnly().Between(bounds.Max, bounds.Min),
+                                                  value => value >= bounds.Max || value <= bounds.Min))
+            .QuickCheckThrowOnFailure();
+    }
+
+    [Fact(DisplayName = "TimeOnly: a bound inside a window across midnight means the same before and after it, for every bound and seed.")]
+    public void TimeOnlyBoundAndWindowCommute() {
+        Gen<(TimeOnly Start, TimeOnly End, TimeOnly Bound, bool After, int Seed)> cases =
+            from bounds in Generators.OrderedPair(Times())
+            where bounds.Min < bounds.Max
+            from bound in Times()
+            where bound >= bounds.Max || bound <= bounds.Min
+            from after in Gen.Elements(true, false)
+            from seed in Generators.Seed()
+            select (bounds.Max, bounds.Min, bound, after, seed);
+
+        Prop.ForAll(cases.ToArbitrary(),
+                    @case => {
+                        AnyTimeOnly Bounded(AnyTimeOnly generator) {
+                            return @case.After ? generator.AfterOrEqualTo(@case.Bound) : generator.BeforeOrEqualTo(@case.Bound);
+                        }
+
+                        AnyTimeOnly windowFirst = Bounded(Any.WithSeed(@case.Seed).TimeOnly().Between(@case.Start, @case.End));
+                        AnyTimeOnly boundFirst  = Bounded(Any.WithSeed(@case.Seed).TimeOnly()).Between(@case.Start, @case.End);
+
+                        return Enumerable.Range(0, 8).Select(_ => windowFirst.Generate()).SequenceEqual(Enumerable.Range(0, 8).Select(_ => boundFirst.Generate()));
+                    })
+            .QuickCheckThrowOnFailure();
+    }
+
     [Fact(DisplayName = "TimeOnly: After and Before are exclusive, AfterOrEqualTo and BeforeOrEqualTo inclusive, at every time of day.")]
     [SuppressMessage(JustDummiesRule.JD031.Category, JustDummiesRule.JD031.Id, Justification = SuppressionJustification.JD031.SeparateBoundsAreTheSubject)]
     [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]

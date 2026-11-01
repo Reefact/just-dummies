@@ -21,7 +21,7 @@ and the **Origin** column says how each one got here:
   but its record stays live in `Reefact/first-class-errors` too, because that
   repository still applies it. Both copies are now independent: either side can
   supersede its own without touching the other. 9 decisions.
-* **recorded here** — decided in this repository, on its own. 78 decisions.
+* **recorded here** — decided in this repository, on its own. 79 decisions.
 
 The numbers are this base's own, assigned in the order the decisions were
 recorded upstream ([ADR-0045](0045-renumber-the-decision-base.md)); every ADR
@@ -264,3 +264,4 @@ failure mode of a "not now" is that nobody remembers the option existed on the d
 | [ADR-0122](0122-accept-an-empty-exclusion-as-the-identity.md) | Accept an empty exclusion as the identity | Accepted | recorded here |
 | [ADR-0123](0123-draw-a-decimal-on-a-steps-grid.md) | Draw a decimal on a step's grid | Accepted | recorded here |
 | [ADR-0124](0124-arrange-a-drawn-list-in-ascending-order.md) | Arrange a drawn list in ascending order | Accepted | recorded here |
+| [ADR-0125](0125-let-a-time-of-day-window-cross-midnight.md) | Let a time-of-day window cross midnight | Accepted | recorded here |

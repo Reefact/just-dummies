@@ -22,7 +22,7 @@ n'existe, et la colonne **Origine** dit comment chacune est arrivée ici :
   aussi, car ce dépôt l'applique encore. Les deux copies sont désormais
   indépendantes : chaque côté peut remplacer la sienne sans toucher à l'autre.
   9 décisions.
-* **consigné ici** — décidé dans ce dépôt, de son propre chef. 78 décisions.
+* **consigné ici** — décidé dans ce dépôt, de son propre chef. 79 décisions.
 
 Les numéros appartiennent à cette base, attribués dans l'ordre où les décisions
 ont été consignées en amont
@@ -280,3 +280,4 @@ que l'option existait le jour où elle compterait.
 | [ADR-0122](0122-accept-an-empty-exclusion-as-the-identity.fr.md) | Accepter une exclusion vide comme l'identité | Accepted | consigné ici |
 | [ADR-0123](0123-draw-a-decimal-on-a-steps-grid.fr.md) | Tirer un décimal sur la grille d'un pas | Accepted | consigné ici |
 | [ADR-0124](0124-arrange-a-drawn-list-in-ascending-order.fr.md) | Ranger une liste tirée dans l'ordre croissant | Accepted | consigné ici |
+| [ADR-0125](0125-let-a-time-of-day-window-cross-midnight.fr.md) | Laisser une fenêtre horaire franchir minuit | Accepted | consigné ici |

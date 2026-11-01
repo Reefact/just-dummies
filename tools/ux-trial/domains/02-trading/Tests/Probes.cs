@@ -136,10 +136,11 @@ public sealed class Probes {
     }
 
     [Fact]
-    public void A_timeonly_range_that_wraps_midnight_is_refused() {
-        // A night session runs 22:00 to 02:00; TimeOnly ordering cannot say so.
-        Exception refusal = Assert.ThrowsAny<Exception>(() => Any.TimeOnly().Between(new TimeOnly(22, 0), new TimeOnly(2, 0)).Generate());
-        Report(refusal);
+    public void A_timeonly_range_that_wraps_midnight_is_drawn_across_it() {
+        // A night session runs 22:00 to 02:00: the start after the end crosses midnight (issue #357).
+        TimeOnly drawn = Any.TimeOnly().Between(new TimeOnly(22, 0), new TimeOnly(2, 0)).Generate();
+
+        Assert.True(drawn >= new TimeOnly(22, 0) || drawn <= new TimeOnly(2, 0));
     }
 
     [Fact]

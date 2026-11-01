@@ -135,11 +135,11 @@ public sealed class Probes {
         TimeOnly shiftStart = new(22, 0);
         TimeOnly shiftEnd   = new(6, 0);
 
-        Exception? refusal = Record.Exception(() => Any.TimeOnly().Between(shiftStart, shiftEnd).Generate());
-        Log("night shift: " + refusal?.GetType().Name + ": " + refusal?.Message);
+        TimeOnly drawn = Any.TimeOnly().Between(shiftStart, shiftEnd).Generate();
+        Log("night shift: " + drawn);
 
-        // A clear refusal: a window wrapping midnight is two windows, and saying so is the caller's job.
-        Assert.IsType<ArgumentException>(refusal);
+        // A window wrapping midnight is one window: the start after the end crosses it (issue #357).
+        Assert.True(drawn >= shiftStart || drawn <= shiftEnd);
     }
 
     [Fact]

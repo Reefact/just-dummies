@@ -98,9 +98,11 @@ public sealed class Probes {
 
     [Fact]
     public void Probe_a_TimeOnly_curfew_across_midnight() {
-        // A night curfew runs 23:00 to 06:00. A developer may well write Between(23:00, 06:00).
-        Exception exception = Assert.ThrowsAny<Exception>(() => Any.TimeOnly().Between(new TimeOnly(23, 0), new TimeOnly(6, 0)).Generate());
-        Log($"{exception.GetType().Name}: {exception.Message}");
+        // A night curfew runs 23:00 to 06:00, written Between(23:00, 06:00): the window crosses midnight (issue #357).
+        TimeOnly drawn = Any.TimeOnly().Between(new TimeOnly(23, 0), new TimeOnly(6, 0)).Generate();
+        Log($"curfew: {drawn}");
+
+        Assert.True(drawn >= new TimeOnly(23, 0) || drawn <= new TimeOnly(6, 0));
     }
 
     [Fact]

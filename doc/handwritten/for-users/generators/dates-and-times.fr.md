@@ -205,6 +205,29 @@ TimeOnly anyOpeningTime = Any.TimeOnly()
                              .Generate();
 ```
 
+Une heure du jour boucle à minuit, donc un début après la fin n'est pas une erreur :
+`Between(22:00, 06:00)` est la nuit, comme `TimeOnly.IsBetween` la lit, tirée uniformément sur ses deux
+segments — un quart des tirages avant minuit, puisque deux de ses huit heures le sont. `Between(t, t)`
+reste la seule valeur `t` ; `Any.TimeOnly()` seul est la journée entière.
+
+<!-- jd:net8 -->
+```csharp
+TimeOnly anyNightTime   = Any.TimeOnly().Between(new TimeOnly(22, 0), new TimeOnly(6, 0)).Generate();
+TimeOnly anyLateShift   = Any.TimeOnly().Between(new TimeOnly(22, 0), new TimeOnly(6, 0)).After(new TimeOnly(23, 0)).Generate();
+TimeOnly anyRoundedTime = Any.TimeOnly()
+                             .Between(new TimeOnly(22, 0), new TimeOnly(6, 0))
+                             .WithGranularity(TimeSpan.FromMinutes(30))
+                             .Generate();
+```
+
+Dès qu'une fenêtre franchit minuit, chaque borne se lit le long d'elle, quel que soit l'ordre dans lequel
+vous avez écrit les appels : `After(23:00)` déplace son début, `Before(02:00)` sa fin, `After(01:00)` ne
+laisse que 01:00 à 06:00, et une heure hors de la fenêtre — `After(12:00)` sur la nuit — n'admet aucune
+valeur et est refusée en nommant les deux. `Except`, `OneOf` et `WithGranularity` s'appliquent aux deux
+segments. Une granularité qui ne divise pas la journée, comme 7 minutes, recommence sa grille à minuit :
+elle n'a pas de pas unique à travers lui et est refusée sur une telle fenêtre
+([ADR-0125](../../for-maintainers/adr/0125-let-a-time-of-day-window-cross-midnight.fr.md)).
+
 Sur `netstandard2.0`, ces types n'existent pas, et leurs fabriques non plus. Tout le reste de cette
 page est disponible sur toutes les cibles.
 

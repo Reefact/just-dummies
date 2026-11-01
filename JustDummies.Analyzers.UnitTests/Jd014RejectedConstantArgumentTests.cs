@@ -233,6 +233,8 @@ public class Jd014RejectedConstantArgumentTests {
     [InlineData("Any.Uri().Relative().WithPathSegments(2000000)")]
     [InlineData("Any.Int32().MultipleOf(7)")]
     [InlineData("Any.Decimal().MultipleOf(0.25m)")]
+    // A start after the end on a time of day is the window across midnight, not a transposition (ADR-0125).
+    [InlineData("Any.TimeOnly().Between(new System.TimeOnly(22, 0), new System.TimeOnly(6, 0))")]
     [InlineData("Any.Decimal().WithScale(28)")]
     [InlineData("Any.String().StartingWith(\"ORD-\")")]
     [InlineData("Any.String().OneOf(\"EUR\")")]

@@ -46,6 +46,39 @@ public sealed class ConflictingAnyConstraintException : DummyException {
     }
 
     /// <summary>
+    ///     Builds the exception for a time of day declared outside a window that crosses midnight: along the window's
+    ///     direction, no value lies past its end, so the declaration admits none (ADR-0125). Raised in either order —
+    ///     <paramref name="other" /> is the window when the bound is applied after it, the bound when the window is.
+    /// </summary>
+    internal static ConflictingAnyConstraintException OutsideTheWindow(ConstraintCall applying, ConstraintCall other, string time, bool applyingIsTheWindow) {
+        return applyingIsTheWindow
+                   ? Sentence(applying, $"{other} declares {time}, outside the window it declares across midnight")
+                   : Sentence(applying, $"{time} lies outside the window {other} declares across midnight");
+    }
+
+    /// <summary>
+    ///     Builds the exception for a second window whose end comes before its start along a window that crosses
+    ///     midnight: its intersection with that window is two pieces, not one window (ADR-0125). Raised in either order
+    ///     — <paramref name="other" /> is the crossing window when the second is applied after it, the second when the
+    ///     crossing window is.
+    /// </summary>
+    internal static ConflictingAnyConstraintException WindowInTwoPieces(ConstraintCall applying, ConstraintCall other, string start, string end, bool applyingIsTheWindow) {
+        return applyingIsTheWindow
+                   ? Sentence(applying, $"{other} ends before it starts along the window it declares across midnight, which leaves two pieces rather than one window")
+                   : Sentence(applying, $"{end} comes before {start} along the window {other} declares across midnight, which leaves two pieces rather than one window");
+    }
+
+    /// <summary>
+    ///     Builds the exception for a granularity that does not divide a day on a window that crosses midnight: its grid
+    ///     restarts at midnight, so it has no single step across it (ADR-0125).
+    /// </summary>
+    internal static ConflictingAnyConstraintException GranularityAcrossMidnight(ConstraintCall applying, ConstraintCall other, bool applyingIsTheWindow) {
+        return applyingIsTheWindow
+                   ? Sentence(applying, $"{other} does not divide a day, so its grid does not continue across midnight")
+                   : Sentence(applying, $"{other} declares a window across midnight, and the granularity does not divide a day");
+    }
+
+    /// <summary>
     ///     Builds the exception for a second, different <c>OneOf(...)</c> on a generator whose value set the first
     ///     has already settled, pointing at the route that does narrow it.
     /// </summary>

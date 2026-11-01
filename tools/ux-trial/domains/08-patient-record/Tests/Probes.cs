@@ -72,8 +72,11 @@ public sealed class Probes {
     }
 
     [Fact]
-    public void A_night_shift_TimeOnly_range_crossing_midnight_is_refused_rather_than_wrapped() {
-        Assert.Throws<ArgumentException>(() => Any.TimeOnly().Between(new TimeOnly(20, 0), new TimeOnly(8, 0)));
+    public void A_night_shift_TimeOnly_range_crossing_midnight_is_wrapped() {
+        // The start after the end crosses midnight, as TimeOnly.IsBetween reads it (issue #357).
+        TimeOnly drawn = Any.TimeOnly().Between(new TimeOnly(20, 0), new TimeOnly(8, 0)).Generate();
+
+        Assert.True(drawn >= new TimeOnly(20, 0) || drawn <= new TimeOnly(8, 0));
     }
 
     [Fact]

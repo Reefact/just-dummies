@@ -93,11 +93,11 @@ public sealed class Probes {
     }
 
     [Fact]
-    public void A_night_shift_crossing_midnight_cannot_be_expressed_as_a_TimeOnly_range() {
-        ArgumentException refusal = Assert.Throws<ArgumentException>(
-            () => Any.TimeOnly().Between(new TimeOnly(22, 0), new TimeOnly(6, 0)));
+    public void A_night_shift_crossing_midnight_is_a_TimeOnly_range() {
+        // The start after the end names the window across midnight, as TimeOnly.IsBetween reads it (issue #357).
+        TimeOnly anyNightTime = Any.TimeOnly().Between(new TimeOnly(22, 0), new TimeOnly(6, 0)).Generate();
 
-        Assert.Equal("The start (22:00:00.0000000) must be at or before the end (06:00:00.0000000). (Parameter 'start')", refusal.Message);
+        Assert.True(anyNightTime >= new TimeOnly(22, 0) || anyNightTime <= new TimeOnly(6, 0));
     }
 
     [Fact]

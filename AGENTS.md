@@ -24,7 +24,9 @@ that cannot read `.claude/` loses nothing by reading this file instead.
   generate it and the test becomes a property, which this library runs with a sample size of one and
   cannot defend. **(b)** Why draw it rather than hard-code it? Because the *test* not caring is not
   the *code* not caring; the draw puts that indifference to the test, and can reveal a wrong
-  dependency that a literal chosen once and for all may hide.
+  dependency that a literal chosen once and for all may hide. So a test that fails on a drawn value
+  is **never** "flaky" and never a cost the library imposes: either the value was not a dummy, or the
+  code has a defect the literal would have hidden — and the seed replays it.
   **2 — What does JustDummies solve?** Making a test say what it means, while staying replayable.
   Hand-picked literals lie about what matters: every one of them looks as though it was chosen for a
   reason, so nobody dares change one. JustDummies replaces the literal with the declaration of what

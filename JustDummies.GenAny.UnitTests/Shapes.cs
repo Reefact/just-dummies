@@ -107,7 +107,7 @@ internal static class Shapes {
                                 "AnyQuote",
                                 LibraryOnly,
                                 [ScaffoldedParameter.DrawnFrom("amount", "decimal", "AnyDecimal", "Any.Decimal().Positive()", Provenance.Guard),
-                                 ScaffoldedParameter.DrawnFrom("discount", "decimal?", "AnyDecimal", "Any.Decimal()", conversion: ".AsNullable()")]);
+                                 ScaffoldedParameter.DrawnFrom("discount", "decimal?", "AnyDecimal", "Any.Decimal()", conversion: ".AsNullable()").DrawingNull()]);
     }
 
     /// <summary>

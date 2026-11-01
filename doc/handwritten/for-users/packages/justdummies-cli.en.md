@@ -537,20 +537,34 @@ signature and every generated `With…`, for a case this overload settles in fou
 which one is drawn — a property, tested on a single draw. Pin the one the test is about. If it truly
 does not matter, add the overload.
 
-**Sometimes `null`.** A lambda cannot say it: it receives an `AnyDecimal` and must give one back,
-while `OrNull()` returns a generator of `decimal?`. *Always* `null` is one call, the cast telling the
-value apart from a lambda:
+**`null`, sometimes, always or never.** A parameter your constructor declares nullable — `decimal?`,
+`Customer?` — draws `null` one draw in ten by default, unless a guard of the constructor refuses it:
+the type says `null` is valid, so a test that leaves the parameter alone must not depend on it, and a
+test that fails on it has found that it did. *Always* `null` is the generated `Without…()`:
 
 ```csharp
-Shipment anyUndeclaredShipment = Any.Shipment().WithDeclaredValue((decimal?)null).Generate();
+Shipment anyUndeclaredShipment = Any.Shipment().WithoutDeclaredValue().Generate();
 ```
 
-A nullable reference parameter takes the same cast — `.WithAgent((Customer?)null)` — and its pin is
-typed `Customer?` for exactly that, wherever your project reads nullable annotations. Where it does
-not, the `?` would itself warn, so the pin is typed `Customer` and the recap says so in one line
-under its rows; `--format json` carries the same fact as `"nullableAnnotationDropped"`.
+*Never* `null` — a test about a shipment whose value is declared — is a refinement. A lambda
+describes a value, so what it returns is drawn without `null`; the identity lambda says exactly that
+and nothing more:
 
-*Sometimes* `null` is the overload you add.
+```csharp
+Shipment anyDeclaredShipment = Any.Shipment().WithDeclaredValue(v => v).Generate();
+```
+
+If many tests say it, name it once beside the generator — a `Declared()` in the `partial` class —
+rather than at every call site.
+
+A pin still takes `null` too, the cast telling the value apart from a lambda:
+`.WithAgent((Customer?)null)`. A nullable reference parameter's pin is typed `Customer?` for exactly
+that, wherever your project reads nullable annotations. Where it does not, the `?` would itself warn,
+so the pin is typed `Customer` and the recap says so in one line under its rows; `--format json`
+carries the same fact as `"nullableAnnotationDropped"`.
+
+*Sometimes* `null` **and** a rule on the value when there is one — up to 50 000, or absent — is the
+overload you add.
 
 **More than the base allows.** If the domain accepts an empty label, the base is wrong: fix
 `AnyValidLabels()`. If one test needs exactly an empty label, pin it.

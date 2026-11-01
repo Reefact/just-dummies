@@ -371,7 +371,7 @@ public sealed class GuardReadingTests {
         ScaffoldedParameter parameter = Subject.GuardedBy("OrderStatus?", guard);
 
         Check.That(parameter.Expression)
-             .IsEqualTo("Any.Enum<OrderStatus>().DifferentFrom(OrderStatus.Draft).AsNullable()");
+             .IsEqualTo("Any.Enum<OrderStatus>().DifferentFrom(OrderStatus.Draft).OrNull()");
     }
 
     /// <summary>
@@ -599,7 +599,7 @@ public sealed class GuardReadingTests {
         string guard = "if (value <= 0) { throw new ArgumentOutOfRangeException(nameof(value)); }";
 
         Check.That(Subject.GuardedBy("int?", guard).Expression)
-             .IsEqualTo("Any.Int32().Positive().AsNullable()");
+             .IsEqualTo("Any.Int32().Positive().OrNull()");
     }
 
     /// <summary>

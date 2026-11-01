@@ -105,7 +105,7 @@ index; it holds no argument of its own.
 | **D7** | The emitted generator draws from the **ambient** context and holds no state. | Draw-time resolution makes the §8.2 guarantee free; captured state would need a lifecycle rule. |
 | **D8** | The emitted type lives in the **target type's namespace**. | Zero friction at the call site — and the sole cause of the §7 shadowing hazard. |
 | **D9** | The tool takes **no dependency on the JustDummies package**. | Resolution by metadata name, exactly like the analyzers — version skew becomes structurally impossible. |
-| **D10** | Never emit `.OrNull()`. | A dummy that is randomly `null` is the flakiness the library exists to remove. |
+| **D10** | A nullable parameter's default draws `null` one draw in ten, unless a guard refuses it; a refinement never does. | The type declares `null` valid; a test that fails on it was depending on the parameter, and the seed replays it. |
 | **D11** | The scaffolding **engine is a separate library** at the Roslyn floor; the CLI is a shell. | The engine's plausible second consumer is an IDE refactoring, which is not a CLI and cannot load a `net8.0` assembly. |
 | **D12** *(v1.1)* | An entry point is **opt-in**, emitted as a file of its own. | The generator file never changes, so §4.4's floor stays its property and `new Any{Type}()` keeps working. |
 | **D13** | A test **refines** a parameter's valid base through a lambda, or pins a value; it never replaces the base, and refinements **accumulate**. | A replaced base loses its rules and still compiles; a refined one keeps them at one address — and a refinement that started again from the base lost every earlier one. |
@@ -531,6 +531,11 @@ public sealed partial class AnyOrder : IAny<Order> {
   `JD011`/`JD012` mistake it used to avoid. A developer who needs to replace the recipe for one
   parameter adds that overload in a neighbouring part of the partial class. An unresolved parameter
   has no base to refine, and keeps the value overload alone.
+* Per parameter whose default draws `null` (§5.2, D10), a third method, `Without{Param}()`, pinning
+  it to `null` — `Any.Fixed<TParam>(null)` — and keeping the recipe, as a pin does. The refining
+  lambda describes a value and never yields `null`, and `With{Param}(null)` is ambiguous between the
+  two overloads (`CS0121`), so the absence gets a method of its own. A parameter whose guard refuses
+  `null` gets none (#411).
 * `using System;` is opened whenever a refining overload is emitted, for its `Func<,>`.
 * `public {Type} Generate()` calling the constructor with each field's `Generate()`.
 * A pin written `Any.Fixed(value)`: it accepts `null` (which `Any.OneOf(value)` rejects) and
@@ -711,8 +716,8 @@ Every entry is subject to D4: the member is emitted only if it resolves in the c
 | `IEnumerable<T>` | `Any.SequenceOf(<T>)` |
 | `HashSet<T>` `ISet<T>` | `Any.SetOf(<T>)` |
 | `Dictionary<K,V>` `IDictionary<K,V>` `IReadOnlyDictionary<K,V>` | `Any.DictionaryOf(<K>, <V>)` |
-| `T?` where `T` is a reference type | the generator for `T` unchanged — **never** `.OrNull()` (D10) |
-| `T?` where `T` is a value type | `<generator for T>.AsNullable()`, or `.As(value => (T?)value)` where the asset carries no lift — **never** `.OrNull()` (D10) |
+| `T?` where `T` is a reference type | the generator for `T`, drawn through `.OrNull()` by default (D10); unchanged after a refinement |
+| `T?` where `T` is a value type | `<generator for T>.OrNull()` by default (D10); `.AsNullable()` after a refinement, or `.As(value => (T?)value)` where the asset carries no lift |
 | any other non-generic named type | `new AnyT()` (§5.4) — whether the compilation carries `AnyT` or not |
 | anything else | unresolved (§5.5) |
 
@@ -747,11 +752,25 @@ this wrong is the most likely way an implementer produces a table that does not 
 private constructor parameter of a `Customer? agent` are typed `Customer?`, and the recap and the
 machine report print `Customer?`: the pin is where a test opts into null (ADR-0109), and typing it
 `Customer` made `.WithAgent((Customer?)null)` warn `CS8625` for passing what the constructor accepts.
-The base itself still never draws null (ADR-0064), and covariance keeps it assignable to the
-annotated field. The `?` is written only where the analysed project reads nullable annotations: the
+A refined recipe never draws null, and covariance keeps it assignable to the annotated field. The `?` is written only where the analysed project reads nullable annotations: the
 file carries no `#nullable` directive, and outside that context the annotation is itself a warning
 (`CS8632`) while passing null warns about nothing. There the recap and the machine report spell the
 type as the file does, and the recap notes once that the declaration carried a `?` (§6).
+
+**A nullable parameter draws `null` one draw in ten by default (D10, ADR-0117).** Its type declares
+`null` valid — a nullable value type, or a reference declared with `?`, whether or not the analysed
+project reads the annotation — and never drawing it never explored a value the type itself names: a
+test that fails on it was depending on that parameter, and the seed replays it. So the recipe
+constructor draws `<factory>.OrNull()`. Only the default does: a refining lambda describes a value,
+so its result goes through the hop of the table above and never yields `null`, and a test that wants
+`null` calls the generated `Without{Param}()` (§4.2). A guard that refuses `null` keeps the default
+a value — a null-check in any of its spellings (`is null`, `== null`, `ThrowIfNull`, `?? throw`, a
+guard library's `Null`/`IsNotNull`), a check that refuses `null` along with the empty value
+(`IsNullOrEmpty`, `IsNullOrWhiteSpace` and their throw helpers), a size guard read through `p.Length`
+or `p.Count`, which dereferences the parameter, and a null-check on a member holding the parameter
+unchanged. A bound on a nullable value type does not refuse `null`: the comparison is lifted, and
+`null <= 0` is false. Where the asset carries no `OrNull`, asked like every member (ADR-0059), the
+default keeps the never-null hop. A file scaffolded before keeps `AsNullable()` (§1).
 
 **Element generators recurse.** `IReadOnlyList<OrderLine>` resolves its element through this same
 table, so it becomes `Any.ListOf(new AnyOrderLine())` when `AnyOrderLine` exists. Recursion is
@@ -882,7 +901,7 @@ The recognised set is closed:
 
 | Condition that throws | Constraint added |
 |---|---|
-| `p is null`, `p == null`, or the assigned `f = p ?? throw new ArgumentNullException(nameof(p));` | none — the generator never returns `null` anyway. A user-defined `==` is a method free to answer `true` for a non-null value, so that comparison is not this row (#333) |
+| `p is null`, `p == null`, or the assigned `f = p ?? throw new ArgumentNullException(nameof(p));` | none — and a nullable parameter's default stops drawing `null` (§5.2). A user-defined `==` is a method free to answer `true` for a non-null value, so that comparison is not this row (#333) |
 | `string.IsNullOrEmpty(p)`, `p.Length == 0`, `p.Length < 1` | `.NonEmpty()` |
 | `string.IsNullOrWhiteSpace(p)` | `.NotBlank()` |
 | `p.Length > N` | `.WithMaxLength(N)` |
@@ -1103,8 +1122,9 @@ the statement, or the whole statement for a construct whose order is not modelle
 never the exception it builds. A null-check on such a member stays silent only where every assignment
 followed is the parameter itself, through any number of plain copies (`Name = name;`, a built-in
 cast or a `!` aside) and every member followed holds what it is assigned — a local, a field or an
-auto-implemented property, never one whose `set` accessor can rewrite the value (#333): the generator
-never draws null, so neither does a member holding it unchanged. A
+auto-implemented property, never one whose `set` accessor can rewrite the value (#333): such a member
+is null exactly when the parameter is, so the check is the parameter's own null-check — it narrows
+nothing, and keeps a nullable parameter's default a value (§5.2). A
 member computed from the parameter can be null — `Name = name.Length < 5 ? null : name;`, or a
 user-defined conversion, written as a cast `(ProductCode)raw` or applied implicitly by `Code = raw;`,
 which is a method free to return null — and its null-check is marked like any other guard. The `nameof` of the message is excluded as it is everywhere else.
@@ -1140,7 +1160,7 @@ and `if (value is null) { throw … }` state one invariant, and so do
 same two distinct rows their `if` spellings do — and the
 `string.IsNullOr…` conditions above. Only the older spelling was read, so the modern one fell to the
 call rule and blocked the developer's build — over a chain that was already exactly right, since a
-null check adds nothing (ADR-0064 draws no null) and an emptiness check is the row's own `NonEmpty`.
+null check narrows nothing and an emptiness check is a `NonEmpty` the set already reads.
 Reading a guard the set understands as one it could not read is the worst of both outcomes: nothing
 is tightened, and nothing compiles either. The first argument has to **be** the parameter, the same
 subject-identity discipline the comparison rows keep.
@@ -1164,7 +1184,7 @@ The mapped rows are exactly these:
 
 | Helper | Constraint added |
 |---|---|
-| `Guard.Against.Null(p)` / `Guard.IsNotNull(p, …)` | none — the generator never draws `null` anyway |
+| `Guard.Against.Null(p)` / `Guard.IsNotNull(p, …)` | none — and a nullable parameter's default stops drawing `null` (§5.2) |
 | `Guard.Against.NullOrEmpty(p)` / `Guard.IsNotNullOrEmpty(p, …)` | `.NonEmpty()` |
 | `Guard.Against.NullOrWhiteSpace(p)` / `Guard.IsNotNullOrWhiteSpace(p, …)` | `.NotBlank()` |
 | `Guard.Against.Negative(p)` | `.GreaterThanOrEqualTo(0)` |
@@ -2158,8 +2178,9 @@ listed because §16 may reach for them, not because the emitter uses them today.
 * Collection generators derive from a common base implementing `IAny<TCollection>`:
   `ListOf` → `List<T>`, `ArrayOf` → `T[]`, `SequenceOf` → `IEnumerable<T>`, `SetOf` →
   `HashSet<T>`, `DictionaryOf` → `Dictionary<TKey,TValue>`.
-* `NullableExtensions.OrNull<T>()` exists in two forms, one for value types and one for annotated
-  reference types. **D10 forbids emitting either.**
+* `OrNull<T>()` exists in two forms, `NullableExtensions` for value types and
+  `NullableReferenceExtensions` for annotated reference types. A nullable parameter's default draws
+  through the one its type takes (D10), and yields `null` one draw in ten (ADR-0117).
 
 ### 14.5 Semantic invariants the emitted code depends on
 
@@ -2280,7 +2301,7 @@ exists — it is this one — and the records have been entered into its ADR bas
 | **D7** | [ADR-0061](../adr/0061-draw-from-the-ambient-context-and-hold-no-state.md) — Draw from the ambient context and hold no state |
 | **D8** | [ADR-0062](../adr/0062-emit-the-generator-into-the-target-types-namespace.md) — Emit the generator into the target type's namespace |
 | **D9** | [ADR-0063](../adr/0063-give-the-scaffolder-no-dependency-on-the-package.md) — Give the scaffolder no dependency on the JustDummies package |
-| **D10** | [ADR-0064](../adr/0064-never-draw-null-for-a-nullable-parameter.md) — Never draw null for a nullable parameter |
+| **D10** | [ADR-0117](../adr/0117-draw-a-limit-value-the-type-permits-one-draw-in-ten.md) — Draw a limit value the type permits one draw in ten; it supersedes [ADR-0064](../adr/0064-never-draw-null-for-a-nullable-parameter.md) — Never draw null for a nullable parameter |
 | **D11** | [ADR-0065](../adr/0065-keep-the-scaffolding-engine-loadable-by-a-roslyn-host.md) — Keep the scaffolding engine loadable by a Roslyn host |
 | **D12** | [ADR-0070](../adr/0070-emit-an-entry-point-on-request-as-a-file-of-its-own.md) — Emit an entry point on request, as a file of its own |
 | **D13** | [ADR-0109](../adr/0109-let-a-test-refine-a-parameters-valid-base-rather-than-replace-it.md) — Let a test refine a parameter's valid base rather than replace it; [ADR-0116](../adr/0116-accumulate-a-parameters-refinements-on-its-current-recipe.md) (proposed) — Accumulate a parameter's refinements on its current recipe |

@@ -10,6 +10,14 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Changed
 
+- **A nullable parameter draws `null` one draw in ten, unless a guard refuses it (ADR-0117).** Its type
+  declares `null` valid, so the recipe constructor now draws `<base>.OrNull()` instead of a recipe that never
+  yields `null`. Only the default does: a refining `With…(x => …)` describes a value and never yields `null` —
+  `With…(x => x)` is "any value, never `null`" — and a new `Without…()` pins the parameter to `null`, where
+  `With…(null)` was ambiguous with the refining overload. A guard that refuses `null` — a null-check in any
+  spelling, `IsNullOrEmpty`/`IsNullOrWhiteSpace`, a size read through `p.Length` or `p.Count` — keeps the
+  default a value. Files already scaffolded keep `AsNullable()` until you re-scaffold them with `--force`
+  (issue #411).
 - **A guard's bound written as a public constant is referenced, not copied.** `ThrowIfGreaterThan(projectId,
   MaxProjectId)` now scaffolds `.LessThanOrEqualTo(CreditSerial.MaxProjectId)` instead of
   `.LessThanOrEqualTo(999999)`, so the generator follows the domain when the constant changes. Only a `const`

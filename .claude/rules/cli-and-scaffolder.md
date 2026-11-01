@@ -40,9 +40,9 @@ It is long; read the section you need, not the file.
 
 Other decisions that govern this area: emit only members resolved in the target compilation
 (ADR-0059), draw from the ambient context and hold no state (ADR-0061), emit into the target
-type's namespace (ADR-0062), never draw null for a nullable parameter (ADR-0064 — superseded
-by ADR-0117, whose `OrNull()` default lands with issue #411; until then the engine still draws no
-null), emit an entry point on request as a file of its own (ADR-0070).
+type's namespace (ADR-0062), draw null one draw in ten for a nullable parameter's default unless
+a guard refuses it — never after a refinement, and through a generated `Without…()` when a test asks
+(ADR-0117, superseding ADR-0064), emit an entry point on request as a file of its own (ADR-0070).
 
 ## Two benches, and they do not overlap
 

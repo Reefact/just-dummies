@@ -647,8 +647,9 @@ internal sealed class GeneratorFor {
     /// <remarks>
     ///     Variance in C# applies across reference conversions only. <c>IAny&lt;string&gt;</c> is an
     ///     <c>IAny&lt;string?&gt;</c> and needs nothing; <c>IAny&lt;int&gt;</c> is <b>not</b> an
-    ///     <c>IAny&lt;int?&gt;</c>, so the conversion has to be written. Never <c>.OrNull()</c>: the emitted
-    ///     generator does not draw null (ADR-0064).
+    ///     <c>IAny&lt;int?&gt;</c>, so the conversion has to be written. Never <c>.OrNull()</c> here: the row
+    ///     serves an element as much as a parameter, and an element never draws null. A nullable parameter's
+    ///     default draws it, and that hop is chosen once, for the parameter (§5.2, ADR-0117).
     ///     <para>
     ///         <c>AsNullable()</c> where the asset carries it, and the difference is not cosmetic. The general
     ///         <c>As</c> hop yields a derived generator, which advertises nothing about how many distinct values

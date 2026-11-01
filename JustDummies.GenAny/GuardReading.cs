@@ -13,6 +13,8 @@ internal sealed class GuardReading {
 
     private readonly Dictionary<string, UnreadGuard> unread = new(StringComparer.Ordinal);
 
+    private readonly HashSet<string> refusingNull = new(StringComparer.Ordinal);
+
     private GuardReading(bool sourceAvailable) {
         SourceAvailable = sourceAvailable;
     }
@@ -63,12 +65,33 @@ internal sealed class GuardReading {
     }
 
     internal void Add(string parameter, GuardConstraint constraint) {
+        if (constraint.RefusesNull) { RefuseNull(parameter); }
+
+        if (ReferenceEquals(constraint, GuardConstraint.NullRefused)) { return; }
+
         if (!constraints.TryGetValue(parameter, out List<GuardConstraint>? read)) {
             read = [];
             constraints[parameter] = read;
         }
 
         read.Add(constraint);
+    }
+
+    /// <summary>
+    ///     Whether a guard refuses <c>null</c> for <paramref name="parameter" />, so a nullable one keeps drawing a
+    ///     value rather than <c>null</c> one draw in ten (§5.2, #411).
+    /// </summary>
+    /// <remarks>
+    ///     Kept apart from <see cref="For" />: a null-check narrows no chain, and everything that asks whether a
+    ///     reading says something about a parameter — a declined hand-off, a guard below the scan — asks about
+    ///     the chain.
+    /// </remarks>
+    internal bool RefusesNull(string parameter) {
+        return refusingNull.Contains(parameter);
+    }
+
+    internal void RefuseNull(string parameter) {
+        refusingNull.Add(parameter);
     }
 
     /// <summary>

@@ -136,7 +136,7 @@ public static class Scaffolder {
         bool annotates = AnnotatesNullability(compilation);
 
         foreach (IParameterSymbol parameter in chosen.Parameters) {
-            parameters.Add(Noted(Resolve(parameter, target, names, generators, guards, annotates), parameter, annotates));
+            parameters.Add(Noted(Resolve(parameter, target, names, generators, guards, annotates, library), parameter, annotates));
         }
 
         ScaffoldPlan plan = new(new TargetType(targetName, fileNamespace, StyleOf(target, fileNamespace), target.ToDisplayString(),
@@ -184,7 +184,8 @@ public static class Scaffolder {
                                                TypeNames names,
                                                GeneratorFor generators,
                                                GuardReading guards,
-                                               bool annotates) {
+                                               bool annotates,
+                                               LibrarySurface library) {
         string         typeDisplay = names.OfParameter(parameter.Type, annotates);
         DrawnGenerator drawn       = generators.Draw(parameter.Type, target);
 
@@ -207,8 +208,27 @@ public static class Scaffolder {
 
         string generatorType = written.Returned is { } returned ? names.Of(returned) : drawn.GeneratorType!;
 
-        return ScaffoldedParameter.DrawnFrom(parameter.Name, typeDisplay, generatorType, written.Base, provenance, written.Conversion,
-                                             guards.UnreadAt(parameter.Name));
+        ScaffoldedParameter drawnFrom = ScaffoldedParameter.DrawnFrom(parameter.Name, typeDisplay, generatorType, written.Base, provenance,
+                                                                      written.Conversion, guards.UnreadAt(parameter.Name));
+
+        return DrawsNull(parameter, guards, library) ? drawnFrom.DrawingNull() : drawnFrom;
+    }
+
+    /// <summary>
+    ///     Whether the default recipe of <paramref name="parameter" /> draws <c>null</c> one draw in ten (§5.2).
+    /// </summary>
+    /// <remarks>
+    ///     The constructor declares <c>null</c> valid by the parameter's type — a nullable value type, or a reference
+    ///     declared with <c>?</c>, whether or not the analysed project reads the annotation — and a value the type
+    ///     itself names is one a dummy explores: a test that fails on it was depending on the parameter, and the seed
+    ///     replays it (ADR-0117). A guard that refuses <c>null</c> says otherwise, and the guard is read.
+    /// </remarks>
+    private static bool DrawsNull(IParameterSymbol parameter, GuardReading guards, LibrarySurface library) {
+        bool nullableValue = parameter.Type is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T };
+
+        return (nullableValue || TypeNames.IsNullableReference(parameter.Type))
+            && !guards.RefusesNull(parameter.Name)
+            && library.CarriesOrNull(nullableValue);
     }
 
     /// <summary>

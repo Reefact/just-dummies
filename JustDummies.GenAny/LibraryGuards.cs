@@ -85,21 +85,22 @@ internal static class LibraryGuards {
                                                            IParameterSymbol parameter,
                                                            (bool ByCount, int Ceiling, int Floor) sizes) {
         switch (method.Name) {
-            // The generator never draws null (ADR-0064), so the null half of every row below is already
-            // guaranteed; what each row adds is the other half. NonEmpty is the one member both size
+            // The null half of every row below narrows no chain: it keeps a nullable parameter's default a value
+            // (#411), which is all NullRefused and RefusingNull() carry. What each row adds to the chain is the
+            // other half. NonEmpty is the one member both size
             // families spell the same way, which is what lets one row serve the string, the Guid and the
             // collection overloads alike.
-            case "Null": return [];
+            case "Null": return [GuardConstraint.NullRefused];
 
             case "NullOrEmpty":
-                return [NonEmpty()];
+                return [NonEmpty().RefusingNull()];
 
             // NullOrWhiteSpace also rejects an all-whitespace string, which NonEmpty — a floor of one
             // character — does not. The row was unmapped until a member spelled that exactly, since
             // AlphaNumeric() would have rejected the punctuation the guard admits and ADR-0086 refuses an
             // approximation. NotBlank() is that member (ADR-0088), so the row is measured rather than unread.
             case "NullOrWhiteSpace":
-                return [NotBlank()];
+                return [NotBlank().RefusingNull()];
 
             case "Negative":       return One(Guards.Numeric(SyntaxKind.LessThanExpression, 0m, parameter.Type, Guards.Literal(0m, parameter.Type)));
             case "NegativeOrZero": return One(Guards.Numeric(SyntaxKind.LessThanOrEqualExpression, 0m, parameter.Type, Guards.Literal(0m, parameter.Type)));
@@ -159,15 +160,15 @@ internal static class LibraryGuards {
                                                            SemanticModel model,
                                                            IParameterSymbol parameter) {
         switch (method.Name) {
-            case "IsNotNull": return [];
+            case "IsNotNull": return [GuardConstraint.NullRefused];
 
             case "IsNotNullOrEmpty":
-                return [NonEmpty()];
+                return [NonEmpty().RefusingNull()];
 
             // The same row as Ardalis's NullOrWhiteSpace, in the Toolkit's spelling, and closed by the same
             // member: rejecting an all-whitespace string is NotBlank, never NonEmpty.
             case "IsNotNullOrWhiteSpace":
-                return [NotBlank()];
+                return [NotBlank().RefusingNull()];
 
             // The comparisons are strict where the name says so — measured: IsGreaterThan(5, 5) throws — and
             // the strict pair builds the general exclusive bound, exactly like the BCL's

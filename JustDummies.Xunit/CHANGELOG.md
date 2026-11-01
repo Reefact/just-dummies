@@ -10,6 +10,11 @@ Releases are cut from the `xunit` train (see [CONTRIBUTING.md](../CONTRIBUTING.m
 
 ### Fixed
 
+- **The replay line a failing test prints compiles where it is pasted.** The report said
+  `[Reproducible(Seed = N)]`, which fails with `CS0246` in a test file without `using JustDummies.Xunit;` —
+  the package adds no global using, and the IDE quick fix, not the message, was what resolved it. The line
+  is now fully qualified, `[JustDummies.Xunit.Reproducible(Seed = N)]`, in the report written to the test
+  output and in the message of a generation failure.
 - **A test that times out is told its seed.** `[Fact(Timeout = ...)]` fails the test and closes its
   output before the after-hook runs, so the seed `[Reproducible]` writes there was lost — and a
   timeout is where it matters most, since a drawn value that makes the code under test hang cannot be

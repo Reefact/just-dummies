@@ -114,7 +114,7 @@ le test, il ferme la portée et, **uniquement si le test a échoué**, écrit la
 test :
 
 ```text
-[JustDummies] These arbitrary values were seeded with 1743029518. Reproduce this run with [Reproducible(Seed = 1743029518)].
+[JustDummies] These arbitrary values were seeded with 1743029518. Reproduce this run with [JustDummies.Xunit.Reproducible(Seed = 1743029518)].
 ```
 
 Remarquez que le message nomme l'**attribut**, et non `Any.Reproducibly(seed, ...)`. Un test épinglé

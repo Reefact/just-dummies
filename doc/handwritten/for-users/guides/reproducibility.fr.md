@@ -250,7 +250,7 @@ donc la sienne au lieu d'en partager une — et écrit la graine dans la sortie 
 seulement quand, le test échoue :
 
 ```text
-[JustDummies] These arbitrary values were seeded with 1743029518. Reproduce this run with [Reproducible(Seed = 1743029518)].
+[JustDummies] These arbitrary values were seeded with 1743029518. Reproduce this run with [JustDummies.Xunit.Reproducible(Seed = 1743029518)].
 ```
 
 Pour rejouer, épinglez la graine sur l'attribut : `[Reproducible(Seed = 1743029518)]`. L'attribut

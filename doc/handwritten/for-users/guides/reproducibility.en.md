@@ -244,7 +244,7 @@ rather than sharing one — and writes the seed to the test's output when, and o
 fails:
 
 ```text
-[JustDummies] These arbitrary values were seeded with 1743029518. Reproduce this run with [Reproducible(Seed = 1743029518)].
+[JustDummies] These arbitrary values were seeded with 1743029518. Reproduce this run with [JustDummies.Xunit.Reproducible(Seed = 1743029518)].
 ```
 
 Replay by pinning the seed on the attribute, `[Reproducible(Seed = 1743029518)]`. The attribute also

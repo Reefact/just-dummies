@@ -10,6 +10,15 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Added
 
+- **`Odd()` and `Even()` on every integer builder.** `Any.Int32().Between(1, 99).Odd()` draws the odd
+  numbers on their grid, a step of two anchored at one, which no `MultipleOf` could spell and which
+  `Between(0, 49).As(n => 2 * n + 1)` reached only by losing the builder; `Even()` is a readable
+  `MultipleOf(2)`. The three share one declared-once slot, so `Odd().MultipleOf(3)` is refused naming
+  both sides, while `Even().MultipleOf(2)` is a repetition. JD023 sees a range left with no number of
+  that parity, JD029 a pooled value of the other one, JD034 a second lattice and JD035 the same one
+  again; JD034's message now names the slot "step (MultipleOf, Odd or Even)". The numbers page shows a
+  union of two ranges through `OneOf(IEnumerable<int>)` (issue #401).
+
 - **`WithoutChars(chars)` narrows a string's alphabet at the call site.** The general form of
   `WithoutAlpha()` and `WithoutNumeric()`: it subtracts the characters you name and accumulates with the
   other subtractions, so `WithChars("ACGTN")` in a scaffolded base becomes `WithoutChars("N")` where a

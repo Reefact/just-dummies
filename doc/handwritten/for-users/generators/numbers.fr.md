@@ -94,6 +94,14 @@ int      anyNotTheSame = Any.Int32().Between(1, 100).DifferentFrom(42).Generate(
 `Except` prend une séquence aussi bien qu'une liste, si bien qu'un ensemble que garde le test — les valeurs
 déjà utilisées — passe tel quel : `Except(used)`, vide à sa première utilisation compris.
 
+Un domaine fait de deux intervalles — des niveaux de conteneur de 2 à 20 ou de 82 à 98 — est lui aussi
+un vivier : `OneOf` prend l'union comme une seule séquence, et les contraintes déclarées ensuite
+restreignent ce vivier comme n'importe quel autre.
+
+```csharp
+int anyTier = Any.Int32().OneOf(Enumerable.Range(2, 19).Concat(Enumerable.Range(82, 17))).Even().Generate();
+```
+
 Lister deux fois la même constante dans un vivier est le diagnostic
 [JD025](../analyzers/JD025.fr.md) : les doublons fusionnent, le vivier est donc plus petit qu'il n'y
 paraît.
@@ -102,13 +110,20 @@ paraît.
 
 Deux contraintes placent la valeur sur une grille plutôt que simplement dans un intervalle.
 
-`MultipleOf` s'applique aux types **entiers** :
+`MultipleOf` s'applique aux types **entiers**, tout comme ses deux formes lisibles : `Even()`, qui est
+`MultipleOf(2)`, et `Odd()`, les nombres impairs — un pas de deux qui part de un, ce qu'aucun
+`MultipleOf` n'écrit :
 
 ```csharp
-int    anyEvenQuantity = Any.Int32().Between(1, 100).MultipleOf(2).Generate();
 int    anyOnTheHour    = Any.Int32().Between(0, 1_440).MultipleOf(60).Generate();
 long   anyPageOffset   = Any.Int64().GreaterThanOrEqualTo(0).MultipleOf(25).Generate();
+int    anyEvenQuantity = Any.Int32().Between(1, 100).Even().Generate();
+int    anyOddBay       = Any.Int32().Between(1, 99).Odd().Generate();
 ```
+
+Les trois déclarent une seule grille, donc un générateur n'en prend qu'une : `Odd().MultipleOf(3)` est
+refusé en nommant les deux côtés, comme deux `MultipleOf` différents ([JD034](../analyzers/JD034.fr.md)).
+Un multiple impair de trois est un vivier : `OneOf(Enumerable.Range(0, 17).Select(n => 6 * n + 3))`, de 3 à 99.
 
 `WithScale` s'applique à `decimal` et garde la valeur exprimable avec au plus *n* décimales — un
 multiple de 10⁻ⁿ, ce qui fait qu'un dummy de montant se comporte comme un montant :
@@ -198,7 +213,7 @@ double anyMaybeNaN = Any.OneOf(double.NaN, 1.0, 2.0).Generate();
 | `OneOf`, `Except`, `DifferentFrom` | ✅ | ✅ | ✅ | ✅ |
 | `NonZero`, `Zero` | ✅ | ✅ | ✅ | ✅ |
 | `Positive`, `Negative` | ✅ | ❌ | ✅ | ✅ |
-| `MultipleOf` | ✅ | ✅ | ❌ | ❌ |
+| `MultipleOf`, `Odd`, `Even` | ✅ | ✅ | ❌ | ❌ |
 | `WithScale` | ❌ | ❌ | ✅ | ❌ |
 
 ---

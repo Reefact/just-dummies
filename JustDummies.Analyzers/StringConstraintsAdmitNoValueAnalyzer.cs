@@ -260,6 +260,10 @@ public sealed class StringConstraintsAdmitNoValueAnalyzer : DiagnosticAnalyzer {
             string name = constraint.TargetMethod.Name;
             if (name is "WithoutAlpha" or "WithoutNumeric" && CharacterFamilies.PoolFor(name.Substring("Without".Length)) is string removed) {
                 yield return ($"{name}()", removed);
+            } else if (name == "WithoutChars" && constraint.Arguments.Length == 1 && ConstantFacts.TryGetString(constraint.Arguments[0].Value, out string chars)) {
+                // A list the compiler cannot fold is left out, which can only leave the filler wider than the run time
+                // draws it: the rule under-reports rather than claiming an emptied pool it cannot see.
+                yield return ($"WithoutChars(\"{chars}\")", chars);
             }
         }
     }

@@ -123,7 +123,14 @@ Une famille occupe **un seul créneau** : en déclarer une seconde contredit la 
 nomme les deux côtés. `WithoutAlpha()` et `WithoutNumeric()` sont différentes — elles **soustraient**
 et s'accumulent, donc `WithoutAlpha().WithoutNumeric()` laisse la ponctuation, les blancs et les
 contrôles. Elles restreignent de la même façon un pool `WithChars` : `WithChars("abc123").WithoutNumeric()`
-tire dans `abc`, et une soustraction qui vide le pool est un conflit.
+tire dans `abc`, et une soustraction qui vide le pool est un conflit. `WithoutChars(...)` en est la forme
+générale, pour les caractères que vous nommez : un alphabet déclaré une fois dans une base partagée —
+`WithChars("ACGTN")` — se restreint au site d'appel avec `WithoutChars("N")`, puisqu'un second `WithChars`
+contredirait le premier.
+
+```csharp
+string anyBases = Any.String().WithChars("ACGTN").WithLengthBetween(1, 200).WithoutChars("N").Generate();
+```
 
 Deux choses à savoir. `Punctuation()` est le bloc POSIX `[:punct:]`, donc **plus large** que
 `char.IsPunctuation` — ce prédicat lit `+`, `<` et `$` comme des symboles : appuyez-vous sur

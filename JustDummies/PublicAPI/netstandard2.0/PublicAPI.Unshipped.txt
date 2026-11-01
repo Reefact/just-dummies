@@ -330,6 +330,7 @@ JustDummies.AnyString.WithLengthBetween(int minimum, int maximum) -> JustDummies
 JustDummies.AnyString.WithMaxLength(int length) -> JustDummies.AnyString!
 JustDummies.AnyString.WithMinLength(int length) -> JustDummies.AnyString!
 JustDummies.AnyString.WithoutAlpha() -> JustDummies.AnyString!
+JustDummies.AnyString.WithoutChars(string! chars) -> JustDummies.AnyString!
 JustDummies.AnyString.WithoutNumeric() -> JustDummies.AnyString!
 JustDummies.AnyTimeSpan
 JustDummies.AnyTimeSpan.Between(System.TimeSpan minimum, System.TimeSpan maximum) -> JustDummies.AnyTimeSpan!

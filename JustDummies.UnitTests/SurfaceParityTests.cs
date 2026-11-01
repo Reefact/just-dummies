@@ -190,7 +190,8 @@ public sealed class SurfaceParityTests {
         // combinations — meaningful only for a [Flags] enum, hence a constraint rather than a second factory.
         data.Add(typeof(AnyEnum<DayOfWeek>), new[] { "AllowingCombinations", "OneOf", "Except", "DifferentFrom" });
         // AnyChar mirrors AnyString's character families exactly, minus the shape constraints a single character
-        // has no room for and minus WithChars, whose general form here is OneOf. A family added to one surface and
+        // has no room for, minus WithChars, whose general form here is OneOf, and minus WithoutChars, whose general
+        // form here is Except. A family added to one surface and
         // forgotten on the other is the drift this pair of rows exists to catch.
         data.Add(typeof(AnyChar), new[] {
             "Alpha", "AlphaNumeric", "Numeric", "Punctuation", "Printable", "NonPrintable", "Whitespaces", "Hexadecimal",
@@ -206,7 +207,7 @@ public sealed class SurfaceParityTests {
             "NonEmpty", "NotBlank", "WithLength", "WithMinLength", "WithMaxLength", "WithLengthBetween",
             "StartingWith", "EndingWith", "Containing",
             "Alpha", "AlphaNumeric", "Numeric", "Punctuation", "Printable", "NonPrintable", "Whitespaces", "Hexadecimal",
-            "WithoutAlpha", "WithoutNumeric", "WithChars", "InUpperCase", "InLowerCase",
+            "WithoutAlpha", "WithoutNumeric", "WithoutChars", "WithChars", "InUpperCase", "InLowerCase",
             "OneOf", "Except", "DifferentFrom"
         });
 

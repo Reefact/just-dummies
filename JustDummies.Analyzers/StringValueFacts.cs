@@ -50,6 +50,11 @@ internal static class StringValueFacts {
 
                     break;
 
+                case "WithoutChars" when TryGetSingleString(constraint, out string chars):
+                    tests.Add(($"WithoutChars({Quote(chars)})", DrawnNoneOf(chars)));
+
+                    break;
+
                 case "NonEmpty":    tests.Add(("NonEmpty()", value => value.Length >= 1));               break;
                 // Judges the value rather than each of its characters — interior whitespace is legal, and only an
                 // entirely blank value is refused.

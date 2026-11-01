@@ -92,10 +92,10 @@ internal sealed class StringSpec {
 
     /// <summary>Whether the declared family, casing and subtractions all admit the character.</summary>
     private static bool Admits(char character, CharacterSet? charset, LetterCasing? casing,
-                               IReadOnlyList<(ConstraintCall Constraint, CharacterSet Removed)> subtractions) {
+                               IReadOnlyList<(ConstraintCall Constraint, Func<char, bool> Removes)> subtractions) {
         return CharacterPools.Belongs(character, charset)
             && CharacterPools.MatchesCasing(character, casing)
-            && subtractions.All(subtraction => !CharacterPools.Belongs(character, subtraction.Removed));
+            && subtractions.All(subtraction => !subtraction.Removes(character));
     }
 
     private static string Characters(int count) {
@@ -121,7 +121,7 @@ internal sealed class StringSpec {
     private readonly string                 _fillerPool;
     private readonly IReadOnlyList<(string Fragment, ConstraintCall Constraint)> _fragments;
     // A subtraction removes a whole family rather than named values, and several accumulate.
-    private readonly IReadOnlyList<(ConstraintCall Constraint, CharacterSet Removed)> _subtractions;
+    private readonly IReadOnlyList<(ConstraintCall Constraint, Func<char, bool> Removes)> _subtractions;
     private readonly int?                   _maxLength;
     private readonly ConstraintCall?        _maxConstraint;
     private readonly int                    _minLength;
@@ -148,7 +148,7 @@ internal sealed class StringSpec {
                        CharacterSet? charset, ConstraintCall? charsetConstraint, string? customPool,
                        LetterCasing? casing,  ConstraintCall? casingConstraint,
                        IReadOnlyList<(ConstraintCall Constraint, string[] Values)> exclusions,
-                       IReadOnlyList<(ConstraintCall Constraint, CharacterSet Removed)> subtractions,
+                       IReadOnlyList<(ConstraintCall Constraint, Func<char, bool> Removes)> subtractions,
                        IReadOnlyList<string>? allowed, ConstraintCall? allowedConstraint,
                        ConstraintCall? notBlank) {
         _exactLength       = exactLength;
@@ -366,13 +366,24 @@ internal sealed class StringSpec {
     ///     accumulate; re-declaring one removes what is already gone, which is inert rather than contradictory.
     /// </summary>
     internal StringSpec WithSubtraction(CharacterSet removed, ConstraintCall applying) {
+        return WithSubtraction(character => CharacterPools.Belongs(character, removed), applying);
+    }
+
+    /// <summary>Removes the characters of <paramref name="removed" /> from whatever the generator would otherwise draw.</summary>
+    internal StringSpec WithSubtraction(string removed, ConstraintCall applying) {
+        if (removed is null) { throw new ArgumentNullException(nameof(removed)); }
+
+        return WithSubtraction(character => removed.IndexOf(character) >= 0, applying);
+    }
+
+    private StringSpec WithSubtraction(Func<char, bool> removes, ConstraintCall applying) {
         if (applying is null) { throw new ArgumentNullException(nameof(applying)); }
         if (_subtractions.Any(subtraction => subtraction.Constraint == applying)) { return this; }
 
         StringSpec candidate = new(_exactLength, _exactConstraint, _minLength, _minConstraint, _maxLength, _maxConstraint,
                                    _prefix, _prefixConstraint, _suffix, _suffixConstraint, _fragments,
                                    _charset, _charsetConstraint, _customPool, _casing, _casingConstraint, _exclusions,
-                                   [.. _subtractions, (applying, removed)], _allowed, _allowedConstraint, _notBlank);
+                                   [.. _subtractions, (applying, removes)], _allowed, _allowedConstraint, _notBlank);
 
         return candidate.Validated(applying, this);
     }
@@ -635,7 +646,7 @@ internal sealed class StringSpec {
     /// </remarks>
     private ConstraintClaim RemoversClaim() {
         string offered = new((_customPool ?? CharacterPools.Ascii).Where(character => Admits(character, _charset, _casing, [])).ToArray());
-        List<ConstraintCall> removers = _subtractions.Where(subtraction => offered.Any(character => CharacterPools.Belongs(character, subtraction.Removed)))
+        List<ConstraintCall> removers = _subtractions.Where(subtraction => offered.Any(character => subtraction.Removes(character)))
                                                      .Select(subtraction => subtraction.Constraint)
                                                      .ToList();
 
@@ -697,7 +708,7 @@ internal sealed class StringSpec {
     /// </summary>
     private ConstraintClaim BlankAlphabetClaim() {
         string offered = new((_customPool ?? CharacterPools.Ascii).Where(character => Admits(character, _charset, _casing, [])).ToArray());
-        List<ConstraintCall> removers = _subtractions.Where(subtraction => offered.Any(character => !CharacterPools.IsBlank(character) && CharacterPools.Belongs(character, subtraction.Removed)))
+        List<ConstraintCall> removers = _subtractions.Where(subtraction => offered.Any(character => !CharacterPools.IsBlank(character) && subtraction.Removes(character)))
                                                      .Select(subtraction => subtraction.Constraint)
                                                      .ToList();
 
@@ -854,8 +865,8 @@ internal sealed class StringSpec {
         }
         if (_notBlank is not null) { yield return (_notBlank, value => value.Any(character => !CharacterPools.IsBlank(character))); }
         if (_charsetConstraint is not null) { yield return (_charsetConstraint, value => value.All(AllowedByPool)); }
-        foreach ((ConstraintCall constraint, CharacterSet removed) in _subtractions) {
-            yield return (constraint, value => value.All(character => !CharacterPools.Belongs(character, removed)));
+        foreach ((ConstraintCall constraint, Func<char, bool> removes) in _subtractions) {
+            yield return (constraint, value => !value.Any(removes));
         }
         if (_casing is LetterCasing casing) { yield return (_casingConstraint!, value => FirstAgainstCasing(value, casing) is null); }
         foreach ((ConstraintCall constraint, string[] excluded) in _exclusions) {

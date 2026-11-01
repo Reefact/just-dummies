@@ -203,7 +203,8 @@ internal static class DeclarationWalk {
 
         return method.Name switch {
             ExclusionName or "DifferentFrom" or "NonZero"                  => true,
-            "WithoutAlpha" or "WithoutNumeric" or "NotBlank"               => true,
+            "WithoutAlpha" or "WithoutNumeric" or "WithoutChars"           => true,
+            "NotBlank"                                                     => true,
             "AllowingCombinations" or "True" or "False"                    => true,
             "WithQuery" or "WithFragment" or "WithHeaders" or "Rooted"     => true,
             "Distinct"                                                     => method.Parameters.Length == 0,

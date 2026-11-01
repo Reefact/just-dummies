@@ -45,6 +45,7 @@ internal static class RepetitionChains {
         new("Any.String().WithLength(4).Printable()", context => context.String().WithLength(4).Printable(),
             On<AnyString>("WithoutAlpha()", g => g.WithoutAlpha()),
             On<AnyString>("WithoutNumeric()", g => g.WithoutNumeric()),
+            On<AnyString>("WithoutChars(\"~\")", g => g.WithoutChars("~")),
             On<AnyString>("StartingWith(\"-\")", g => g.StartingWith("-")),
             On<AnyString>("StartingWith(\"+\")", g => g.StartingWith("+"))),
         new("Any.String().OneOf(\"a\", \"b\", \"c\", \"d\", \"e\", \"f\", \"g\")", context => context.String().OneOf("a", "b", "c", "d", "e", "f", "g"),

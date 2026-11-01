@@ -120,7 +120,13 @@ A family occupies **one slot**: declaring a second one contradicts the first, an
 both sides. `WithoutAlpha()` and `WithoutNumeric()` are different — they **subtract** and accumulate,
 so `WithoutAlpha().WithoutNumeric()` leaves the punctuation, the whitespace and the controls. They
 narrow a `WithChars` pool the same way: `WithChars("abc123").WithoutNumeric()` draws from `abc`, and
-a subtraction that empties the pool is a conflict.
+a subtraction that empties the pool is a conflict. `WithoutChars(...)` is their general form, for the
+characters you name: an alphabet declared once in a shared base — `WithChars("ACGTN")` — is narrowed at
+the call site with `WithoutChars("N")`, since a second `WithChars` would contradict the first.
+
+```csharp
+string anyBases = Any.String().WithChars("ACGTN").WithLengthBetween(1, 200).WithoutChars("N").Generate();
+```
 
 Two things to know. `Punctuation()` is the POSIX `[:punct:]` block, which is **broader** than
 `char.IsPunctuation` — that predicate reads `+`, `<` and `$` as symbols, so assert on the invariant

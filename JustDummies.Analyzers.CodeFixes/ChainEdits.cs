@@ -147,6 +147,17 @@ internal static class ChainEdits {
         };
     }
 
+    /// <summary>
+    ///     The node with the elastic markers its factory-made tokens carry taken out. The formatter an IDE runs after a
+    ///     fix reads an elastic marker as "lay this out again", and lays the line ending before the node out as the
+    ///     platform's, which is not the file's on a CRLF checkout; without the markers the node keeps the file's.
+    /// </summary>
+    public static T WithoutElasticTrivia<T>(T node) where T : SyntaxNode {
+        IEnumerable<SyntaxTrivia> elastic = node.DescendantTrivia().Where(trivia => trivia.HasAnnotation(SyntaxAnnotation.ElasticAnnotation));
+
+        return node.ReplaceTrivia(elastic, (_, _) => default);
+    }
+
     /// <summary>The invocation the diagnostic at <paramref name="span" /> sits on — the innermost one containing the span.</summary>
     public static InvocationExpressionSyntax? InvocationAt(SyntaxNode root, Microsoft.CodeAnalysis.Text.TextSpan span) {
         return root.FindNode(span, getInnermostNodeForTie: true).FirstAncestorOrSelf<InvocationExpressionSyntax>();

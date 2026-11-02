@@ -64,12 +64,12 @@ public sealed class DiscardedSeedingResultCodeFix : CodeFixProvider {
                               ? SyntaxFactory.IdentifierName("IDisposable")
                               : SyntaxFactory.QualifiedName(SyntaxFactory.IdentifierName(SystemName), SyntaxFactory.IdentifierName("IDisposable"));
 
-        return site.Root.ReplaceNode(site.Statement, Declaration(site, type, "seedScope", call).WithUsingKeyword(SyntaxFactory.Token(SyntaxKind.UsingKeyword).WithTrailingTrivia(SyntaxFactory.Space)));
+        return site.Root.ReplaceNode(site.Statement, Declaration(site, type, "seedScope", call, held: true));
     }
 
     /// <summary><c>AnyContext context = Any.WithSeed(...);</c>.</summary>
     private static SyntaxNode Captured(Site site, InvocationExpressionSyntax call) {
-        return site.Root.ReplaceNode(site.Statement, Declaration(site, SyntaxFactory.IdentifierName("AnyContext"), "context", call));
+        return site.Root.ReplaceNode(site.Statement, Declaration(site, SyntaxFactory.IdentifierName("AnyContext"), "context", call, held: false));
     }
 
     /// <summary>
@@ -77,15 +77,16 @@ public sealed class DiscardedSeedingResultCodeFix : CodeFixProvider {
     ///     carries it; the call keeps the trivia inside it, and the statement its own on either side, so a comment
     ///     written on the seed or after the semicolon stays where it was.
     /// </summary>
-    private static LocalDeclarationStatementSyntax Declaration(Site site, TypeSyntax type, string preferred, InvocationExpressionSyntax call) {
+    private static LocalDeclarationStatementSyntax Declaration(Site site, TypeSyntax type, string preferred, InvocationExpressionSyntax call, bool held) {
         string                    name        = ChainEdits.FreeName(site.Model, site.Statement, preferred);
         SyntaxToken               equals      = SyntaxFactory.Token(SyntaxKind.EqualsToken).WithLeadingTrivia(SyntaxFactory.Space).WithTrailingTrivia(SyntaxFactory.Space);
         VariableDeclaratorSyntax  declarator  = SyntaxFactory.VariableDeclarator(SyntaxFactory.Identifier(name)).WithInitializer(SyntaxFactory.EqualsValueClause(equals, call.WithoutLeadingTrivia()));
         VariableDeclarationSyntax declaration = SyntaxFactory.VariableDeclaration(type.WithTrailingTrivia(SyntaxFactory.Space), SyntaxFactory.SingletonSeparatedList(declarator));
 
-        return SyntaxFactory.LocalDeclarationStatement(declaration)
-                            .WithSemicolonToken(site.Statement.SemicolonToken)
-                            .WithLeadingTrivia(site.Statement.GetLeadingTrivia());
+        LocalDeclarationStatementSyntax statement = SyntaxFactory.LocalDeclarationStatement(declaration).WithSemicolonToken(site.Statement.SemicolonToken);
+        if (held) { statement = statement.WithUsingKeyword(SyntaxFactory.Token(SyntaxKind.UsingKeyword).WithTrailingTrivia(SyntaxFactory.Space)); }
+
+        return ChainEdits.WithoutElasticTrivia(statement).WithLeadingTrivia(site.Statement.GetLeadingTrivia());
     }
 
     /// <summary>Where the fix rewrites: the document's root and model, and the statement that threw the result away.</summary>

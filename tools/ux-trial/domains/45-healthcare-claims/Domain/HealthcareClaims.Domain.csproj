@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="../../03-insurance/Domain/Insurance.Domain.csproj" />
+    <ProjectReference Include="../../08-patient-record/Domain/Clinical.Domain.csproj" />
+    <ProjectReference Include="../../01-payments/Domain/Payments.Domain.csproj" />
+  </ItemGroup>
+
+</Project>

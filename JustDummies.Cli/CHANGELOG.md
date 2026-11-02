@@ -165,6 +165,12 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Fixed
 
+- **The refining `With…(Func)` overload validates its argument, so `CA1062` stays silent.** A project building
+  scaffolded code at `AnalysisLevel=latest-all` got one *validate parameter 'configure' is non-null* per
+  parameter; the overload now opens with
+  `if (configure is null) { throw new ArgumentNullException(nameof(configure)); }` — the `if` spelling, since the
+  netstandard2.0 floor has no `ThrowIfNull` — and a `null` lambda is refused by name rather than failing on the
+  call. A generator already scaffolded does not change; re-scaffold with `--force` to get the guard (issue #420).
 - **A parameter named only in the message of another guard's exception is no longer marked `to verify`.**
   `if (c != 3) { throw new ArgumentException($"Row {number} is wrong.", nameof(count)); }` marked `number`
   `unread guards` and blocked the build, although a message rejects nothing. What the exception is built from is

@@ -551,6 +551,7 @@ public static class GeneratorEmitter {
             Line(file, $"{indent}/// <summary>Refines the recipe <c>{parameter.Name}</c> is drawn from — <c>{parameter.FactoryMethodName}()</c>, then each earlier refinement — through <paramref name=\"configure\" />.</summary>");
             WriteReuseRemark(file, parameter, indent);
             Line(file, $"{indent}public {plan.GeneratorName} With{parameter.PascalCasedName}(Func<{parameter.GeneratorType}, {parameter.GeneratorType}> configure) {{");
+            WriteConfigureGuard(file, body);
             WriteCopy(file, plan, body);
             Line(file, $"{body}copy.{parameter.RecipeFieldName} = configure({parameter.RecipeFieldName});");
             Line(file, $"{body}copy.{parameter.FieldName.PadRight(assignment)} = copy.{parameter.RecipeFieldName}{parameter.Conversion};");
@@ -587,12 +588,24 @@ public static class GeneratorEmitter {
         Line(file, $"{indent}/// <summary>Refines the recipe <c>{parameter.Name}</c> is drawn from — <c>{parameter.FactoryMethodName}()</c>, then each earlier refinement — through <paramref name=\"configure\" />, in order with <c>{other}</c>.</summary>");
         WriteReuseRemark(file, parameter, indent);
         Line(file, $"{indent}public {plan.GeneratorName} With{parameter.PascalCasedName}(Func<{parameter.GeneratorType}, {parameter.GeneratorType}> configure) {{");
+        WriteConfigureGuard(file, body);
         WriteCopy(file, plan, body);
         Line(file, $"{body}copy.{parameter.RecipeFieldName.PadRight(width)} = configure({parameter.RecipeFieldName});");
         Line(file, $"{body}copy.{pin.PadRight(width)} = null;");
         Line(file, $"{body}copy.{pair.PadRight(width)} = {redraw};");
         WriteReturnCopy(file, body);
         Line(file, $"{indent}}}");
+        Line(file, string.Empty);
+    }
+
+    /// <summary>
+    ///     The refining overload's guard on its argument: a <c>null</c> lambda is refused by name, before the copy
+    ///     is taken, so <c>CA1062</c> stays silent whichever analysis level the project runs at (#420). Spelled
+    ///     with an <c>if</c> rather than <c>ArgumentNullException.ThrowIfNull</c>, which the netstandard2.0 floor
+    ///     does not carry.
+    /// </summary>
+    private static void WriteConfigureGuard(StringBuilder file, string body) {
+        Line(file, $"{body}if (configure is null) {{ throw new ArgumentNullException(nameof(configure)); }}");
         Line(file, string.Empty);
     }
 

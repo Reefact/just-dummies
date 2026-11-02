@@ -382,6 +382,8 @@ public sealed partial class AnyOrder : IAny<Order> {
     /// <summary>Refines the recipe <c>reference</c> is drawn from — <c>AnyValidReference()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
     /// <remarks>Reuse a refinement as a <c>Func&lt;AnyOrderReference, AnyOrderReference&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyOrder WithReference(Func<AnyOrderReference, AnyOrderReference> configure) {
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
         AnyOrder copy = new AnyOrder(this);
 
         copy._referenceRecipe = configure(_referenceRecipe);
@@ -402,6 +404,8 @@ public sealed partial class AnyOrder : IAny<Order> {
     /// <summary>Refines the recipe <c>customer</c> is drawn from — <c>AnyValidCustomer()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
     /// <remarks>Reuse a refinement as a <c>Func&lt;AnyCustomer, AnyCustomer&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyOrder WithCustomer(Func<AnyCustomer, AnyCustomer> configure) {
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
         AnyOrder copy = new AnyOrder(this);
 
         copy._customerRecipe = configure(_customerRecipe);
@@ -422,6 +426,8 @@ public sealed partial class AnyOrder : IAny<Order> {
     /// <summary>Refines the recipe <c>quantity</c> is drawn from — <c>AnyValidQuantity()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
     /// <remarks>Reuse a refinement as a <c>Func&lt;AnyInt32, AnyInt32&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyOrder WithQuantity(Func<AnyInt32, AnyInt32> configure) {
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
         AnyOrder copy = new AnyOrder(this);
 
         copy._quantityRecipe = configure(_quantityRecipe);
@@ -442,6 +448,8 @@ public sealed partial class AnyOrder : IAny<Order> {
     /// <summary>Refines the recipe <c>status</c> is drawn from — <c>AnyValidStatus()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
     /// <remarks>Reuse a refinement as a <c>Func&lt;AnyEnum&lt;OrderStatus&gt;, AnyEnum&lt;OrderStatus&gt;&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyOrder WithStatus(Func<AnyEnum<OrderStatus>, AnyEnum<OrderStatus>> configure) {
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
         AnyOrder copy = new AnyOrder(this);
 
         copy._statusRecipe = configure(_statusRecipe);
@@ -462,6 +470,8 @@ public sealed partial class AnyOrder : IAny<Order> {
     /// <summary>Refines the recipe <c>tags</c> is drawn from — <c>AnyValidTags()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
     /// <remarks>Reuse a refinement as a <c>Func&lt;AnyList&lt;string&gt;, AnyList&lt;string&gt;&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyOrder WithTags(Func<AnyList<string>, AnyList<string>> configure) {
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
         AnyOrder copy = new AnyOrder(this);
 
         copy._tagsRecipe = configure(_tagsRecipe);
@@ -482,6 +492,8 @@ public sealed partial class AnyOrder : IAny<Order> {
     /// <summary>Refines the recipe <c>placedAt</c> is drawn from — <c>AnyValidPlacedAt()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
     /// <remarks>Reuse a refinement as a <c>Func&lt;AnyDateTime, AnyDateTime&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyOrder WithPlacedAt(Func<AnyDateTime, AnyDateTime> configure) {
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
         AnyOrder copy = new AnyOrder(this);
 
         copy._placedAtRecipe = configure(_placedAtRecipe);
@@ -551,8 +563,11 @@ public sealed partial class AnyOrder : IAny<Order> {
   `With{Param}(Func<G, G> configure)`, où `G` est le type de la fabrique, pour un test qui ne
   s'intéresse qu'à une partie de la valeur. Chacune prend une copie fraîche, en écrit un seul
   paramètre et rend la copie — les trois mêmes instructions quel que soit le nombre de paramètres.
-  La seconde écrit `configure(_{param}Recipe)` comme nouvelle recette courante de la copie et en
-  tire, à travers la conversion : la lambda du test part de la base valide la première fois, de ce
+  La seconde refuse d'abord une lambda `null` en la nommant — `if (configure is null) { throw new
+  ArgumentNullException(nameof(configure)); }`, écrit avec un `if` parce que le plancher
+  netstandard2.0 n'a pas `ThrowIfNull` — pour que `CA1062` reste silencieux quel que soit le niveau
+  d'analyse du projet (#420) ; puis elle écrit `configure(_{param}Recipe)` comme nouvelle recette
+  courante de la copie et en tire, à travers la conversion : la lambda du test part de la base valide la première fois, de ce
   que les affinages précédents en ont fait ensuite, et n'exprime que ce qu'elle ajoute. **Les affinages s'accumulent** ([ADR-0116](../adr/0116-accumulate-a-parameters-refinements-on-its-current-recipe.fr.md), proposé), comme les
   contraintes de la bibliothèque, donc deux affinages qui se contredisent sont refusés là où le
   second est écrit, en nommant les deux ; un affinage qui repartait de la base perdait tous les

@@ -112,6 +112,8 @@ public sealed partial class AnyOrder : IAny<Order> {
     /// <summary>Refines the recipe <c>reference</c> is drawn from — <c>AnyValidReference()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
     /// <remarks>Reuse a refinement as a <c>Func&lt;AnyOrderReference, AnyOrderReference&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyOrder WithReference(Func<AnyOrderReference, AnyOrderReference> configure) {
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
         AnyOrder copy = new AnyOrder(this);
 
         copy._referenceRecipe = configure(_referenceRecipe);
@@ -141,6 +143,8 @@ public sealed partial class AnyOrder : IAny<Order> {
     /// <summary>Refines the recipe <c>quantity</c> is drawn from — <c>AnyValidQuantity()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
     /// <remarks>Reuse a refinement as a <c>Func&lt;AnyInt32, AnyInt32&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyOrder WithQuantity(Func<AnyInt32, AnyInt32> configure) {
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
         AnyOrder copy = new AnyOrder(this);
 
         copy._quantityRecipe = configure(_quantityRecipe);
@@ -161,6 +165,8 @@ public sealed partial class AnyOrder : IAny<Order> {
     /// <summary>Refines the recipe <c>status</c> is drawn from — <c>AnyValidStatus()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
     /// <remarks>Reuse a refinement as a <c>Func&lt;AnyEnum&lt;OrderStatus&gt;, AnyEnum&lt;OrderStatus&gt;&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyOrder WithStatus(Func<AnyEnum<OrderStatus>, AnyEnum<OrderStatus>> configure) {
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
         AnyOrder copy = new AnyOrder(this);
 
         copy._statusRecipe = configure(_statusRecipe);
@@ -181,6 +187,8 @@ public sealed partial class AnyOrder : IAny<Order> {
     /// <summary>Refines the recipe <c>tags</c> is drawn from — <c>AnyValidTags()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
     /// <remarks>Reuse a refinement as a <c>Func&lt;AnyList&lt;string&gt;, AnyList&lt;string&gt;&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyOrder WithTags(Func<AnyList<string>, AnyList<string>> configure) {
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
         AnyOrder copy = new AnyOrder(this);
 
         copy._tagsRecipe = configure(_tagsRecipe);
@@ -201,6 +209,8 @@ public sealed partial class AnyOrder : IAny<Order> {
     /// <summary>Refines the recipe <c>placedAt</c> is drawn from — <c>AnyValidPlacedAt()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
     /// <remarks>Reuse a refinement as a <c>Func&lt;AnyDateTime, AnyDateTime&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyOrder WithPlacedAt(Func<AnyDateTime, AnyDateTime> configure) {
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
         AnyOrder copy = new AnyOrder(this);
 
         copy._placedAtRecipe = configure(_placedAtRecipe);

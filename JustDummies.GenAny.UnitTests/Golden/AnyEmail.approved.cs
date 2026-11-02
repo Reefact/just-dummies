@@ -51,6 +51,8 @@ public sealed partial class AnyEmail : IAny<Email> {
     /// <summary>Refines the recipe <c>value</c> is drawn from — <c>AnyValidValue()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
     /// <remarks>Reuse a refinement as a <c>Func&lt;AnyString, AnyString&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyEmail WithValue(Func<AnyString, AnyString> configure) {
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
         AnyEmail copy = new AnyEmail(this);
 
         copy._valueRecipe = configure(_valueRecipe);

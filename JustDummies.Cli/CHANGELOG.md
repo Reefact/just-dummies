@@ -19,6 +19,14 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   `.NonEmpty()` on a `Guid`); `p.AsSpan().IndexOfAnyExcept("ACGTN") >= 0` → `.WithChars("ACGTN")`; and a
   standalone `double.IsNaN(x)` or `double.IsInfinity(x)`, understood and adding nothing, since neither is ever
   drawn. Each was marked `to verify` before (issue #408).
+- **A guard written as a disjunction is read, one branch at a time (ADR-0128).** `if (a < 1 || a > 100) { throw … }`
+  and `if (a is < 1 or > 100) { throw … }` now scaffold `.Between(1, 100)`, as two separate `if`s always did: a
+  throw on either branch is a throw, so each branch is a guard of its own, read against the same closed set.
+  Branches may name different parameters (`a < 0 || b < 0` is two guards), a branch the tool does not read marks
+  its parameter and the others still read, and a single relational or constant pattern (`value.Length is > 12`,
+  `step is 0`) is the comparison it spells. A conjunction (`&&`) is still not read: it would narrow the draw past
+  what the constructor demands. A file whose parameter was marked `to verify` for such a guard is read on the next
+  `--force` (issue #364).
 
 ### Changed
 

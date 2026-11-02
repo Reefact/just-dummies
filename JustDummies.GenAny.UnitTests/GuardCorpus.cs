@@ -1140,6 +1140,53 @@ internal static class GuardCorpus {
                                                             }
                                                             """, idioms: ["`double.IsNaN(p)`, `double.IsInfinity(p)`, `IsPositiveInfinity`, `IsNegativeInfinity`, and the `float` twins"]),
 
+        // ---- ADR-0128: a disjunction is its branches, read one by one; a pattern is the comparison it spells. ----
+
+        new GuardedShape("disjunction-range", "Clock", """
+                                                       public sealed class Clock {
+                                                           public Clock(int hour, int day) {
+                                                               if (hour < 0 || hour > 23) { throw new ArgumentOutOfRangeException(nameof(hour)); }
+                                                               if (day is < 1 or > 31) { throw new ArgumentOutOfRangeException(nameof(day)); }
+                                                           }
+                                                       }
+                                                       """, idioms: ["`A || B`, `p is P1 or P2` — a disjunction, each branch read as a guard of its own"]),
+
+        new GuardedShape("disjunction-of-kinds", "Code", """
+                                                         public sealed class Code {
+                                                             public Code(string value, double factor, IReadOnlyList<int> parts) {
+                                                                 if (string.IsNullOrWhiteSpace(value) || value.Length > 12) { throw new ArgumentException(nameof(value)); }
+                                                                 if (double.IsNaN(factor) || factor < 1.0 || factor > 5.0) { throw new ArgumentOutOfRangeException(nameof(factor)); }
+                                                                 if (parts.Count == 0 || parts.Count > 4) { throw new ArgumentException(nameof(parts)); }
+                                                             }
+                                                         }
+                                                         """, idioms: ["`A || B`, `p is P1 or P2` — a disjunction, each branch read as a guard of its own"]),
+
+        new GuardedShape("disjunction-of-two-parameters", "Window", """
+                                                                    public sealed class Window {
+                                                                        public Window(int width, int height) {
+                                                                            if (width < 16 || width > 4096 || height <= 0) { throw new ArgumentOutOfRangeException(nameof(width)); }
+                                                                        }
+                                                                    }
+                                                                    """, idioms: ["`A || B`, `p is P1 or P2` — a disjunction, each branch read as a guard of its own"]),
+
+        new GuardedShape("relational-pattern", "Tag", """
+                                                      public sealed class Tag {
+                                                          public Tag(string label, int weight) {
+                                                              if (label.Length is > 12) { throw new ArgumentException(nameof(label)); }
+                                                              if (weight is 0) { throw new ArgumentOutOfRangeException(nameof(weight)); }
+                                                          }
+                                                      }
+                                                      """, idioms: ["`p is < N`, `p is > N`, `p is N`, `p is null` — a relational or constant pattern, on `p` or on `p.Length`"]),
+
+        // ---- One branch outside the set: the read branch still reads, and the parameter is marked for the other.
+        new GuardedShape("disjunction-with-an-unread-branch", "Handle", """
+                                                                        public sealed class Handle {
+                                                                            public Handle(string value) {
+                                                                                if (value.Length > 12 || value.IndexOf('a') < 0) { throw new ArgumentException(nameof(value)); }
+                                                                            }
+                                                                        }
+                                                                        """, requiresVerification: true),
+
         new GuardedShape("ardalis-null", "Envelope", """
                                                      public sealed class Envelope {
 

@@ -808,7 +808,8 @@ conservative, mirroring how the library's own analyzers under-report rather than
 * it is an `if` statement whose body throws unconditionally;
 * it appears before the first assignment to a field or property;
 * its condition mentions **exactly one** parameter — or two, in the one ordering row of the table
-  below — and contains no `&&` or `||`;
+  below — and contains no `&&`; a `||` is read branch by branch, each as a guard of its own, and
+  so is an `or` pattern (ADR-0128);
 * no write to that parameter can already have run where it sits;
 * every other operand is a compile-time constant.
 
@@ -948,6 +949,8 @@ The recognised set is closed:
 | `p == default`, `p == default(T)`, on a non-nullable struct of the framework | `.DifferentFrom(default)`; `.NonEmpty()` on a `Guid`, and a number's `default` is its zero, read by the rows above |
 | `p.AsSpan().IndexOfAnyExcept("…") >= 0`, `> -1`, `!= -1` | `.WithChars("…")` |
 | `double.IsNaN(p)`, `double.IsInfinity(p)`, `IsPositiveInfinity`, `IsNegativeInfinity`, and the `float` twins | none — `Any.Double()` and `Any.Single()` never draw NaN or an infinity, **where `p` is of that type** |
+| `A || B`, `p is P1 or P2` — a disjunction, each branch read as a guard of its own | the rows each branch reads into: `.Between(0, 23)` for `p < 0 || p > 23`, `.NotBlank().WithMaxLength(12)` for `IsNullOrWhiteSpace(p) || p.Length > 12` (ADR-0128) |
+| `p is < N`, `p is > N`, `p is N`, `p is null` — a relational or constant pattern, on `p` or on `p.Length` | the comparison the pattern spells: `.LessThanOrEqualTo(N)` for `p is > N`, `.WithMaxLength(N)` for `p.Length is > N` |
 
 **Six shapes entered the set from the second trial's field report (#408), and each read is exact.** The
 negation of a comparison is the opposite comparison, with no third value for the two to disagree on
@@ -1117,6 +1120,22 @@ rare draw for an otherwise unconstrained decimal — measured at one in five tho
 one as soon as the parameter carries another bound (§17). Exactly the profile of a defect that
 survives casual testing. By the same rule `p <= 0` and `p >= 0` stay on their sign rows rather than
 the strict `p <= N` and `p >= N` rows.
+
+**A disjunction is its branches** ([ADR-0128](../adr/0128-read-a-disjunction-guard-as-one-guard-per-branch.md)).
+`if (A || B) { throw … }` is exactly `if (A) { throw … } if (B) { throw … }`, which the rows above
+already read: a throw on either branch is a throw, so each branch rejects on its own. That is a
+rewrite holding by construction, not a heuristic (ADR-0046), and it is why the one-parameter rule
+above is asked of each branch rather than of the whole: `a < 0 || b < 0` is two guards, one on each
+parameter; `double.IsNaN(k) || k < 1.0 || k > 5.0` is a branch that adds nothing and a range; a
+branch outside the set marks the parameters it mentions `unread guards`, as an unread guard does,
+and the other branches still contribute what they read. A pattern `p is P1 or P2` is the same
+disjunction in the other spelling, and a single relational pattern `p is > N`, on the parameter or
+on its length or count, is the comparison it spells. **A conjunction stays unread.** `if (A && B)
+{ throw … }` rejects only where both hold, so reading `A` alone would narrow the draw past what the
+constructor demands — a wrong constraint, the one direction a reading must never err in — and a
+disjunction nested under a negation is a conjunction in disguise. Both trials are the field report
+ADR-0085 asks for: ten domains of the first, eighteen of the second's twenty contexts, where this
+was the largest cost measured.
 
 **Where the constraints attach.** A guard-derived constraint belongs to the generator for the
 parameter's own type, *before* any conversion or composition. An `int?` parameter guarded by
@@ -1848,7 +1867,7 @@ Named explicitly so they are not mistaken for oversights.
   factory, depth-limited to 3. Beyond that the developer writes it.
 * **Invariants the tool cannot see.** §5.3 reads a closed set of guard idioms. Where the constructor
   throws in a way the set does not match — a rule between parameters other than a direct order between
-  two (§5.3), an arithmetic condition, a regex
+  two (§5.3), a conjunction (`&&`), an arithmetic condition, a regex
   guard (§5.3) — the parameter keeps the neutral generator, the recap marks it `unread guards`, and
   **the file does not compile until the developer says the generator is right** (§5.6): the recipe
   is still written, under a line naming an identifier that does not exist. The same mark reaches any

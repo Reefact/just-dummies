@@ -28,13 +28,40 @@ internal static class TypeLookup {
     ///     metadata lookup returns nothing, which would report a real type as missing.
     /// </remarks>
     internal static IReadOnlyList<INamedTypeSymbol> Find(Compilation compilation, string argument) {
+        return Resolve(compilation, argument).Found;
+    }
+
+    /// <summary>
+    ///     Every type <paramref name="argument" /> could mean — none, one, or several — and the nameable types
+    ///     of a lower tier that also answer to it, which the recap names in one line (#363).
+    /// </summary>
+    internal static Resolution Resolve(Compilation compilation, string argument) {
         if (argument.IndexOf('.') >= 0) {
             INamedTypeSymbol? qualified = ByMetadataName(compilation, argument);
 
-            if (qualified is not null) { return [qualified]; }
+            if (qualified is not null) { return new Resolution([qualified], []); }
         }
 
-        return [.. Matching(compilation, argument)];
+        return Matching(compilation, argument);
+    }
+
+    /// <summary>What a short name resolved to, and what else answered to it from a lower tier.</summary>
+    internal sealed class Resolution {
+
+        internal Resolution(IReadOnlyList<INamedTypeSymbol> found, IReadOnlyList<INamedTypeSymbol> alsoAnswering) {
+            Found         = found;
+            AlsoAnswering = alsoAnswering;
+        }
+
+        /// <summary>The matches of the first tier that had any: none, one, or several.</summary>
+        internal IReadOnlyList<INamedTypeSymbol> Found { get; }
+
+        /// <summary>
+        ///     The nameable types of the tiers below the one that answered, in the order the tiers are searched —
+        ///     empty where a lower tier had nothing, or where nothing was found at all.
+        /// </summary>
+        internal IReadOnlyList<INamedTypeSymbol> AlsoAnswering { get; }
+
     }
 
     /// <summary>
@@ -102,19 +129,41 @@ internal static class TypeLookup {
     ///         type named alone still meets the refusal written for it (§7) rather than being reported missing.
     ///     </para>
     /// </remarks>
-    private static IEnumerable<INamedTypeSymbol> Matching(Compilation compilation, string argument) {
-        List<INamedTypeSymbol> inSource = [.. Named(Within(compilation.Assembly.GlobalNamespace), argument)];
-        List<INamedTypeSymbol> nameable = [.. inSource.Where(type => Nameable(compilation, type))];
-
-        if (nameable.Count > 0) { return nameable; }
-
+    private static Resolution Matching(Compilation compilation, string argument) {
         List<INamedTypeSymbol> anywhere = [.. Named(Within(compilation.GlobalNamespace), argument)];
+        List<INamedTypeSymbol> nameable = [.. anywhere.Where(type => Nameable(compilation, type))];
 
-        nameable = [.. anywhere.Where(type => Nameable(compilation, type))];
+        // Three tiers, the first with a match winning (#363): the analysed project's own source, the projects it
+        // references, then the framework and the packages. `any` is run from the test project for the project's
+        // own types, so a domain `Meter` is the one meant, not `System.Diagnostics.Metrics.Meter`; two matches
+        // in one tier stay an ambiguity, refused as before. A tier is told by how the type's assembly reached
+        // this compilation — as a compilation of its own, which is a project, or as metadata, which is not.
+        List<List<INamedTypeSymbol>> tiers = [
+            [.. nameable.Where(type => IsInSource(compilation, type))],
+            [.. nameable.Where(type => !IsInSource(compilation, type) && IsAReferencedProject(compilation, type))],
+            [.. nameable.Where(type => !IsInSource(compilation, type) && !IsAReferencedProject(compilation, type))]
+        ];
 
-        if (nameable.Count > 0) { return nameable; }
+        for (int tier = 0; tier < tiers.Count; tier++) {
+            if (tiers[tier].Count == 0) { continue; }
 
-        return inSource.Count > 0 ? inSource : anywhere;
+            return new Resolution(tiers[tier], [.. tiers.Skip(tier + 1).SelectMany(lower => lower)]);
+        }
+
+        // When nothing nameable matches anywhere, every match is kept, source first as before, so a generic
+        // type named alone still meets the refusal written for it (§7) rather than being reported missing.
+        List<INamedTypeSymbol> inSource = [.. anywhere.Where(type => IsInSource(compilation, type))];
+
+        return new Resolution(inSource.Count > 0 ? inSource : anywhere, []);
+    }
+
+    private static bool IsInSource(Compilation compilation, INamedTypeSymbol type) {
+        return SymbolEqualityComparer.Default.Equals(type.ContainingAssembly, compilation.Assembly);
+    }
+
+    /// <summary>Whether <paramref name="type" /> comes from a project this compilation references as a compilation of its own.</summary>
+    private static bool IsAReferencedProject(Compilation compilation, INamedTypeSymbol type) {
+        return type.ContainingAssembly is { } assembly && compilation.GetMetadataReference(assembly) is CompilationReference;
     }
 
     /// <summary>Whether a bare name can reach <paramref name="type" /> from the analysed project.</summary>

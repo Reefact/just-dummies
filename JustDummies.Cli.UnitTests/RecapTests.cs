@@ -161,6 +161,20 @@ public sealed class RecapTests {
 
     // A generator for a type with a parameterless constructor is still worth having — it composes into
     // Any.ListOf(…) where `new Subject()` does not — so the recap says so rather than counting to zero.
+    // A short name a lower tier also answered to is said once, under the construction line, so the developer
+    // learns the framework's type was in the running without the scaffold being refused (issue #363).
+    [Fact(DisplayName = "A name a lower tier also answers to is said once, under the construction line.")]
+    public void ANameALowerTierAlsoAnswersToIsSaidOnce() {
+        ScaffoldPlan plan = new(new TargetType("Meter", "Ambig.Domain", NamespaceStyle.FileScoped, alsoAnswering: ["System.Diagnostics.Metrics.Meter"]),
+                                "AnyMeter",
+                                ["JustDummies"],
+                                [Inferred("reading", "int", "AnyInt32", "Any.Int32()")]);
+
+        string rendered = Rendered(plan);
+
+        Check.That(rendered).Contains("  constructor Meter(int)\n  Meter resolved to Ambig.Domain.Meter; System.Diagnostics.Metrics.Meter also answers to that name.\n");
+    }
+
     [Fact(DisplayName = "A generator with no parameters has its own closing line.")]
     public void AGeneratorWithNoParametersHasItsOwnClosingLine() {
         Check.That(Rendered(Plan([]))).Contains("✓ AnySubject.cs — no constructor parameters to infer.");

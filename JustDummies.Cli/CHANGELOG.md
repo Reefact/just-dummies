@@ -54,6 +54,12 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   of thousands of elements. From ten thousand characters or elements, a line under the rows now says so and
   suggests a smaller default in the parameter's `AnyValid…()` factory, leaving the full ceiling to the test that
   needs it; `--format json` carries the sentence as `remark` and the flag as `largeSizeCeiling` (issue #361).
+- **A short name is resolved by tiers: your source, then the projects it references, then the framework and the
+  packages.** `any generate Meter` was refused as ambiguous between the domain's `Meter` and
+  `System.Diagnostics.Metrics.Meter`; the first tier with a match now wins, two matches in one tier stay an
+  ambiguity, and when a lower tier also answered the recap says so in one line (`Meter resolved to
+  Ambig.Domain.Meter; System.Diagnostics.Metrics.Meter also answers to that name.`), carried as `alsoAnswering`
+  by `--format json` (issue #363).
 
 ### Changed
 

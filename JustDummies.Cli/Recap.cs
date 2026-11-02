@@ -69,6 +69,12 @@ internal static class Recap {
                           ? $"  constructor {plan.Target.Name}({signature})"
                           : $"  factory {plan.Factory}({signature})");
 
+        // A short name a lower tier of the lookup also answered to is said once, so a developer whose `Meter`
+        // resolved to the domain's — the one they meant — still learns the framework's was in the running (§3.2).
+        if (plan.Target.AlsoAnswering.Count > 0) {
+            Line(console, $"  {plan.Target.Argument} resolved to {plan.Target.FullName}; {string.Join(", ", plan.Target.AlsoAnswering)} also {(plan.Target.AlsoAnswering.Count == 1 ? "answers" : "answer")} to that name.");
+        }
+
         if (plan.Parameters.Count > 0) {
             Line(console, string.Empty);
 

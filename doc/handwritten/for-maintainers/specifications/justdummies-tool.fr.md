@@ -177,6 +177,19 @@ générique du projet analysé ne passe pas devant un `Measurement` référencé
 correspond nulle part, ils sont gardés, si bien qu'un type générique nommé seul rencontre toujours son
 propre refus (§7) au lieu d'être signalé absent.
 
+**Un nom simple se résout par paliers** (#363) : les sources du projet analysé, puis les projets qu'il
+référence, puis le framework et les packages. Le premier palier qui répond l'emporte, et deux
+correspondances dans un même palier restent une ambiguïté. L'outil est lancé depuis le projet de
+test pour les types du projet lui-même (§3.1), si bien qu'un `Meter` du domaine dans un projet
+référencé est celui que le développeur voulait, non `System.Diagnostics.Metrics.Meter` — que le
+premier essai d'expérience développeur a vu refusé comme ambigu dans cinq domaines. Le palier se lit
+à la façon dont l'assembly du type a atteint la compilation : comme une compilation à part entière,
+ce qui est un projet, ou comme des métadonnées, ce qui n'en est pas un. Quand un palier inférieur a
+aussi répondu, le récapitulatif le dit en une ligne sous la ligne de construction — `Meter resolved to
+Ambig.Domain.Meter; System.Diagnostics.Metrics.Meter also answers to that name.` — et le rapport
+machine porte les noms en `alsoAnswering` (§6.1). La graphie de l'en-tête suit la recherche : `Meter`
+se résout à ce seul type, donc l'en-tête garde le nom court.
+
 Zéro correspondance → erreur, avec les noms les plus proches par distance d'édition. Plus d'une →
 erreur, avec les noms complets, en demandant lequel. Les deux sortent en `1`.
 
@@ -1693,7 +1706,9 @@ n'est pas un silence.
 
 La deuxième ligne nomme la construction que `Generate()` fera, et ce n'est pas toujours un
 constructeur : un type construit par la règle de factory du §5.1 imprime cet appel à la place —
-`factory Email.Create(string)` — puisque c'est celui que le fichier émis écrit.
+`factory Email.Create(string)` — puisque c'est celui que le fichier émis écrit. Une troisième ligne
+la suit là où un palier inférieur de la recherche a aussi répondu à l'argument (§3.2), nommant ce
+qui a été résolu et ce qui répondait aussi.
 
 ```console
 $ any generate Order
@@ -1873,6 +1888,10 @@ fichier (§5.2), si bien que là où le projet analysé ne lit pas les annotatio
 `Bic? agent` se lit `"type": "Bic"`. Le `nullableAnnotationDropped` de la ligne y vaut `true`, et
 `false` partout ailleurs — la note du récapitulatif sous ses lignes (§6), portée ligne par ligne pour
 qu'un script n'ait pas à relire le domaine.
+
+**Ce à quoi un nom court a aussi répondu voyage avec le résultat.** `alsoAnswering` liste les noms
+complets qu'un palier inférieur de la recherche a aussi appariés (§3.2), dans l'ordre où les paliers
+sont parcourus, et est vide là où le nom était sans ambiguïté partout ou épelé en entier.
 
 **La phrase d'une garde de taille voyage sur la ligne.** `remark` est la phrase que le récapitulatif
 imprime sous ses lignes pour une taille au-delà du plafond ou un très grand plafond (§6), `null`

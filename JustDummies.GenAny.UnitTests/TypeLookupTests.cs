@@ -296,6 +296,57 @@ public sealed class TypeLookupTests {
         Check.That(outcome.Status).IsEqualTo(ScaffoldStatus.Scaffolded);
     }
 
+    /// <summary>
+    ///     A short name is resolved by tiers (#363): the analysed project's own source, then the projects it
+    ///     references, then the framework and the packages. The tool is run from the test project for the
+    ///     project's own types, so a domain <c>Meter</c> in a referenced project is the one meant, not
+    ///     <c>System.Diagnostics.Metrics.Meter</c> — which the recap still names, so the developer learns it was
+    ///     in the running. Two matches in one tier stay an ambiguity.
+    /// </summary>
+    [Fact(DisplayName = "A referenced project's type wins over the framework's, which the plan still names.")]
+    public void AReferencedProjectsTypeWinsOverTheFrameworks() {
+        ScaffoldOutcome outcome = Subject.ScaffoldByNameReferencing("""
+                                                                    namespace Ambig.Domain;
+
+                                                                    public sealed class Meter {
+                                                                        public Meter(int reading) { }
+                                                                    }
+                                                                    """,
+                                                                    "Meter",
+                                                                    Nearby);
+
+        Check.That(outcome.Status).IsEqualTo(ScaffoldStatus.Scaffolded);
+        Check.That(outcome.Plan!.Target.FullName).IsEqualTo("Ambig.Domain.Meter");
+        Check.That(outcome.Plan.Target.Argument).IsEqualTo("Meter");
+        Check.That(outcome.Plan.Target.AlsoAnswering).ContainsExactly("System.Diagnostics.Metrics.Meter");
+    }
+
+    [Fact(DisplayName = "Two types of one tier stay an ambiguity, and a name unambiguous everywhere names nothing else.")]
+    public void TwoTypesOfOneTierStayAnAmbiguity() {
+        ScaffoldOutcome ambiguous = Subject.ScaffoldByNameReferencing("""
+                                                                      namespace Ambig.Domain {
+                                                                          public sealed class Meter {
+                                                                              public Meter(int reading) { }
+                                                                          }
+                                                                      }
+
+                                                                      namespace Ambig.Billing {
+                                                                          public sealed class Meter {
+                                                                              public Meter(int reading) { }
+                                                                          }
+                                                                      }
+                                                                      """,
+                                                                      "Meter",
+                                                                      Nearby);
+
+        Check.That(ambiguous.Status).IsEqualTo(ScaffoldStatus.TypeAmbiguous);
+        Check.That(ambiguous.Candidates).ContainsExactly("Ambig.Billing.Meter", "Ambig.Domain.Meter");
+
+        ScaffoldOutcome alone = Subject.ScaffoldByNameReferencing(NextDoor, "Warehouse", Nearby);
+
+        Check.That(alone.Plan!.Target.AlsoAnswering).IsEmpty();
+    }
+
     [Fact(DisplayName = "A blank type argument is a programming error, not an outcome.")]
     public void ABlankTypeArgumentIsAProgrammingError() {
         Check.ThatCode(() => Scaffold("   ", Domain)).Throws<System.ArgumentException>();

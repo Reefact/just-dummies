@@ -303,6 +303,43 @@ public sealed class GuardBoundaryTests {
     }
 
     /// <summary>
+    ///     A null-element check holds by construction where the element type is not nullable, and keeps the mark
+    ///     where it is — the element recipe may draw <c>null</c> there (#403). The receiver has to be the parameter,
+    ///     and the lambda the null-check of its own parameter.
+    /// </summary>
+    [Theory(DisplayName = "A null-element check is satisfied on a non-nullable element type, and marked on a nullable one.")]
+    [InlineData("IReadOnlyList<string>", "if (value.Any(v => v is null)) { throw new ArgumentException(nameof(value)); }", "Any.ListOf(Any.String())", false)]
+    [InlineData("IReadOnlyList<string>?", "if (value.Any(v => v is null)) { throw new ArgumentException(nameof(value)); }", "Any.ListOf(Any.String())", false)]
+    [InlineData("IReadOnlyList<string?>", "if (value.Any(v => v is null)) { throw new ArgumentException(nameof(value)); }", "Any.ListOf(Any.String())", true)]
+    [InlineData("IReadOnlyList<int?>", "if (value.Any(v => v == null)) { throw new ArgumentException(nameof(value)); }", "Any.ListOf(Any.Int32().AsNullable())", true)]
+    [InlineData("IReadOnlyList<string>", "if (value.Any(v => v is null || v.Length > 3)) { throw new ArgumentException(nameof(value)); }", "Any.ListOf(Any.String())", true)]
+    [InlineData("IReadOnlyList<string>", "if (value.Select(v => v.Trim()).Any(v => v is null)) { throw new ArgumentException(nameof(value)); }", "Any.ListOf(Any.String())", true)]
+    [InlineData("IReadOnlyList<string>", "if (value.Contains(\"x\")) { throw new ArgumentException(nameof(value)); }", "Any.ListOf(Any.String())", true)]
+    public void ANullElementCheckIsSatisfiedOnANonNullableElementType(string type, string guard, string expected, bool marked) {
+        ScaffoldOutcome outcome = Subject.Scaffold($$"""
+                                                     using System;
+                                                     using System.Collections.Generic;
+                                                     using System.Linq;
+
+                                                     namespace Shop.Domain;
+
+                                                     public sealed class Subject {
+
+                                                         public Subject({{type}} value) {
+                                                             {{guard}}
+                                                         }
+
+                                                     }
+                                                     """);
+
+        ScaffoldedParameter parameter = outcome.Plan!.Parameters.Single();
+
+        Check.That(parameter.BaseExpression).IsEqualTo(expected);
+        Check.That(parameter.Provenance.HasFlag(Provenance.UnreadGuards)).IsEqualTo(marked);
+        Check.That(parameter.DrawsNull).IsFalse();
+    }
+
+    /// <summary>
     ///     A guard reaching its parameter through more than one copy is marked unread, however the copy is made.
     /// </summary>
     /// <remarks>

@@ -993,6 +993,7 @@ L'ensemble reconnu est clos :
 | `double.IsNaN(p)`, `double.IsInfinity(p)`, `IsPositiveInfinity`, `IsNegativeInfinity`, et leurs jumeaux `float` | aucune — `Any.Double()` et `Any.Single()` ne tirent jamais NaN ni un infini, **là où `p` est de ce type** |
 | `A || B`, `p is P1 or P2` — une disjonction, chaque branche lue comme une garde à part entière | les lignes dans lesquelles chaque branche se lit : `.Between(0, 23)` pour `p < 0 || p > 23`, `.NotBlank().WithMaxLength(12)` pour `IsNullOrWhiteSpace(p) || p.Length > 12` (ADR-0128) |
 | `p is < N`, `p is > N`, `p is N`, `p is null` — un pattern relationnel ou constant, sur `p` ou sur `p.Length` | la comparaison que le pattern épelle : `.LessThanOrEqualTo(N)` pour `p is > N`, `.WithMaxLength(N)` pour `p.Length is > N` |
+| `p.Any(x => x is null)`, `p.Any(x => x == null)`, `p.Contains(null)` sur une collection dont le type d'élément n'est pas nullable | aucune — toute recette d'élément que le scaffold écrit tire une valeur, donc la garde tient par construction ; et le défaut du paramètre cesse de tirer `null` (§5.2). **Non lue là où le type d'élément est nullable** (#403) |
 
 **Six formes sont entrées dans l'ensemble sur le rapport de terrain du second essai (#408), et chaque
 lecture est exacte.** La négation d'une comparaison est la comparaison opposée, sans troisième valeur
@@ -1197,6 +1198,16 @@ seule direction dans laquelle une lecture ne doit jamais se tromper — et une d
 une négation est une conjonction déguisée. Les deux essais sont le rapport de terrain que l'ADR-0085
 demande : dix domaines du premier, dix-huit des vingt contextes du second, où c'était le coût le plus
 élevé mesuré.
+
+**Une vérification d'élément nul est satisfaite par construction** (#403).
+`if (runs.Any(r => r is null)) { throw … }` sur une `IReadOnlyList<Run>` refuse un élément qu'aucune
+recette écrite par le scaffold ne tire jamais : les lignes de la table tirent des valeurs, et le
+generator que possède un type composé tire ce type. La ligne n'ajoute donc rien et ne marque rien, ce
+qui permet à `runs.Count == 0 || runs.Any(r => r is null)` de se lire entière comme `.NonEmpty()`.
+Là où le type d'élément est nullable — `IReadOnlyList<Run?>` — la ligne ne s'applique pas et la marque
+reste : la recette d'élément pourra un jour y tirer `null`, et le moteur ne dit pas qu'elle ne le fera
+jamais. Un generator que le développeur remplace à la main est celui du développeur : le scaffold
+répond de ce qu'il a écrit, comme partout ailleurs (§1).
 
 **Où les contraintes s'attachent.** Une contrainte dérivée d'une garde appartient au generator du
 type propre du paramètre, *avant* toute conversion ou composition. Un paramètre `int?` gardé par

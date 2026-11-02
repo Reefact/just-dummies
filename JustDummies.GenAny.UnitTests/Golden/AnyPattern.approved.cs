@@ -51,6 +51,8 @@ namespace Shop.Legacy {
         /// <summary>Refines the recipe <c>text</c> is drawn from — <c>AnyValidText()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
         /// <remarks>Reuse a refinement as a <c>Func&lt;AnyString, AnyString&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
         public AnyPattern WithText(Func<AnyString, AnyString> configure) {
+            if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
             AnyPattern copy = new AnyPattern(this);
 
             copy._textRecipe = configure(_textRecipe);

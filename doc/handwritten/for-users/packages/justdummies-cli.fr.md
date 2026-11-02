@@ -464,6 +464,8 @@ public sealed partial class AnyCurrency : IAny<Currency> {
     }
 
     public AnyCurrency WithCode(Func<AnyPattern, AnyPattern> configure) {  // was Func<AnyString, AnyString>
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
         AnyCurrency copy = new AnyCurrency(this);
 
         copy._codeRecipe = configure(_codeRecipe);

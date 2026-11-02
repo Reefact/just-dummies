@@ -193,6 +193,46 @@ public sealed class RefiningOverloadTests {
     }
 
     /// <summary>
+    ///     A <c>null</c> lambda is refused by name before the copy is taken, which is also what keeps
+    ///     <c>CA1062</c> silent on a project that runs the analysis level where it is on (#420).
+    /// </summary>
+    [Fact(DisplayName = "A null lambda is refused by name, before anything else.")]
+    public void ANullLambdaIsRefusedByName() {
+        const string domain = """
+                              namespace Shop.Domain;
+
+                              public sealed class Subject {
+                                  public Subject(int quantity) { }
+                              }
+                              """;
+
+        const string harness = """
+                               using System;
+
+                               using JustDummies;
+
+                               namespace Shop.Domain;
+
+                               public static class Harness {
+                                   public static string Run() {
+                                       try {
+                                           new AnySubject().WithQuantity((Func<AnyInt32, AnyInt32>)null!);
+
+                                           return "nothing was thrown";
+                                       } catch (ArgumentNullException refused) {
+                                           return refused.ParamName!;
+                                       }
+                                   }
+                               }
+                               """;
+
+        string emitted = Scaffolded(domain);
+
+        Check.That(emitted).Contains("if (configure is null) { throw new ArgumentNullException(nameof(configure)); }");
+        Check.That((string)Run(emitted, domain, harness)).IsEqualTo("configure");
+    }
+
+    /// <summary>
     ///     The conversion of a nullable value type follows the lambda: the lambda refines the <c>decimal</c>
     ///     generator the constraints were written on, and the hop to <c>decimal?</c> comes after it.
     /// </summary>

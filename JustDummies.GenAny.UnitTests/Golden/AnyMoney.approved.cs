@@ -51,6 +51,8 @@ public sealed partial class AnyMoney : IAny<Money> {
     /// <summary>Refines the recipe <c>amount</c> is drawn from — <c>AnyValidAmount()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
     /// <remarks>Reuse a refinement as a <c>Func&lt;AnyDecimal, AnyDecimal&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyMoney WithAmount(Func<AnyDecimal, AnyDecimal> configure) {
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
         AnyMoney copy = new AnyMoney(this);
 
         copy._amountRecipe = configure(_amountRecipe);

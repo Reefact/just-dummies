@@ -63,6 +63,8 @@ public sealed partial class AnyAddress : IAny<Address> {
     /// <summary>Refines the recipe <c>street</c> is drawn from — <c>AnyValidStreet()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
     /// <remarks>Reuse a refinement as a <c>Func&lt;AnyString, AnyString&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyAddress WithStreet(Func<AnyString, AnyString> configure) {
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
         AnyAddress copy = new AnyAddress(this);
 
         copy._streetRecipe = configure(_streetRecipe);
@@ -83,6 +85,8 @@ public sealed partial class AnyAddress : IAny<Address> {
     /// <summary>Refines the recipe <c>city</c> is drawn from — <c>AnyValidCity()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
     /// <remarks>Reuse a refinement as a <c>Func&lt;AnyString, AnyString&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyAddress WithCity(Func<AnyString, AnyString> configure) {
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
         AnyAddress copy = new AnyAddress(this);
 
         copy._cityRecipe = configure(_cityRecipe);

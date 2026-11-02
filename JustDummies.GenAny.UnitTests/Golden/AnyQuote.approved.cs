@@ -63,6 +63,8 @@ public sealed partial class AnyQuote : IAny<Quote> {
     /// <summary>Refines the recipe <c>amount</c> is drawn from — <c>AnyValidAmount()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
     /// <remarks>Reuse a refinement as a <c>Func&lt;AnyDecimal, AnyDecimal&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyQuote WithAmount(Func<AnyDecimal, AnyDecimal> configure) {
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
         AnyQuote copy = new AnyQuote(this);
 
         copy._amountRecipe = configure(_amountRecipe);
@@ -83,6 +85,8 @@ public sealed partial class AnyQuote : IAny<Quote> {
     /// <summary>Refines the recipe <c>discount</c> is drawn from — <c>AnyValidDiscount()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
     /// <remarks>Reuse a refinement as a <c>Func&lt;AnyDecimal, AnyDecimal&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyQuote WithDiscount(Func<AnyDecimal, AnyDecimal> configure) {
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
         AnyQuote copy = new AnyQuote(this);
 
         copy._discountRecipe = configure(_discountRecipe);

@@ -193,13 +193,14 @@ public sealed class RejectedConstantArgumentAnalyzer : DiagnosticAnalyzer {
     }
 
     // Every numeric overload carries the same guard — Between on a decimal, a double or a long throws for transposed
-    // bounds exactly as it does on an int — so the pair is read at the parameter's own type, whichever it is.
+    // bounds exactly as it does on an int — so the pair is read at the parameter's own type, whichever it is. The
+    // temporal overloads carry it too, on a start and an end (issue #366).
     private static bool TryCheckOrderedPair(IInvocationOperation invocation, out IOperation? offending, out string? reason) {
         offending = null;
         reason    = null;
 
         IArgumentOperation[] arguments = ScalarArguments(invocation).ToArray();
-        if (arguments.Length != 2) { return false; }
+        if (arguments.Length != 2) { return TryCheckOrderedTemporalPair(invocation, out offending, out reason); }
 
         if (!TryGetComparable(arguments[0].Value, out IComparable minimum)) { return false; }
         if (!TryGetComparable(arguments[1].Value, out IComparable maximum)) { return false; }
@@ -207,6 +208,29 @@ public sealed class RejectedConstantArgumentAnalyzer : DiagnosticAnalyzer {
 
         offending = arguments[0].Value;
         reason    = $"the minimum ({Render(minimum)}) must be less than or equal to the maximum ({Render(maximum)}) — the two arguments look transposed";
+
+        return true;
+    }
+
+    /// <summary>
+    ///     A <c>Between</c> over two temporal constants of one type with the start after the end — refused by
+    ///     <c>DateOnly</c>, <c>DateTime</c>, <c>DateTimeOffset</c> and <c>TimeSpan</c>, read in every spelling
+    ///     <see cref="TemporalFacts" /> knows. Not on <c>TimeOnly</c>: there a start after the end is the window across
+    ///     midnight, not a transposition (ADR-0125).
+    /// </summary>
+    private static bool TryCheckOrderedTemporalPair(IInvocationOperation invocation, out IOperation? offending, out string? reason) {
+        offending = null;
+        reason    = null;
+
+        IArgumentOperation[] arguments = invocation.Arguments.OrderBy(argument => argument.Parameter?.Ordinal ?? int.MaxValue).ToArray();
+        if (arguments.Length != 2) { return false; }
+        if (!TemporalFacts.TryRead(arguments[0].Value, out TemporalConstant? start) || !TemporalFacts.TryRead(arguments[1].Value, out TemporalConstant? end)) { return false; }
+        if (start!.Kind != end!.Kind || start.Kind == TemporalKind.TimeOnly || start.Ordinal <= end.Ordinal) { return false; }
+
+        offending = arguments[0].Value;
+        reason    = start.Kind == TemporalKind.TimeSpan
+                        ? $"the minimum ({start.Rendered}) must be less than or equal to the maximum ({end.Rendered}) — the two arguments look transposed"
+                        : $"the start ({start.Rendered}) must be at or before the end ({end.Rendered}) — the two arguments look transposed";
 
         return true;
     }

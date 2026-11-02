@@ -91,6 +91,10 @@ public class Jd034ConstraintAlreadyDefinedTests {
     // An empty local part passes its guard, so it reaches the slot.
     [InlineData("Any.Uri().Mailto().WithLocalPart(\"a\").WithLocalPart(\"\")", "WithLocalPart(\"\") conflicts with WithLocalPart(\"a\"), declared before it: the generator accepts only one local part")]
     [InlineData("Any.Uri().Relative().WithPathSegments(1).WithPathSegments(2)", "WithPathSegments(2) conflicts with WithPathSegments(1), declared before it: the generator accepts only one path")]
+    // A Guid is either pinned to Guid.Empty or kept away from it: the pair is refused in either order (issue #366).
+    [InlineData("Any.Guid().Empty().NonEmpty()",                            "NonEmpty() conflicts with Empty(), declared before it: Empty() pins the identifier to Guid.Empty and NonEmpty() forbids it")]
+    [InlineData("Any.Guid().NonEmpty().Empty()",                            "Empty() conflicts with NonEmpty(), declared before it: Empty() pins the identifier to Guid.Empty and NonEmpty() forbids it")]
+    [InlineData("Any.Guid().NonEmpty().Except(Guid.Empty).Empty()",         "Empty() conflicts with NonEmpty(), declared before it: Empty() pins the identifier to Guid.Empty and NonEmpty() forbids it")]
     public async Task Reports_a_once_per_generator_constraint_declared_again_differently(string chain, string message) {
         // Issues #274 and #278: the run time refuses each of these at the second call, on every seed, as already
         // defined — and no rule reported them.
@@ -136,6 +140,9 @@ public class Jd034ConstraintAlreadyDefinedTests {
     [InlineData("Any.Uri().Web().WithPort(80).WithPort(80)")]
     [InlineData("Any.ListOf(Any.Int32()).WithCount(2).WithCount(2)")]
     [InlineData("Any.ListOf(Any.Int32()).Empty().Empty()")]
+    [InlineData("Any.Guid().Empty().Empty()")]
+    [InlineData("Any.Guid().NonEmpty().NonEmpty()")]
+    [InlineData("Any.Guid().NonEmpty().Except(Guid.Empty)")]
     [InlineData("Any.Char().OneOf('a', 'b').OneOf('b', 'a')")]
     [InlineData("Any.Char().Alpha().InUpperCase()")]
     // A value set holds values of the generator's own type, which is what the run time compares.

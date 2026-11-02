@@ -48,6 +48,8 @@ internal static class GuardedCalls {
     private static readonly DeclarationVocabulary DateTimeOffset = new("Any.DateTimeOffset()", context => context.DateTimeOffset());
     private static readonly DeclarationVocabulary DateTime       = new("Any.DateTime()", context => context.DateTime());
     private static readonly DeclarationVocabulary TimeSpans      = new("Any.TimeSpan()", context => context.TimeSpan());
+    private static readonly DeclarationVocabulary Dates          = new("Any.DateOnly()", context => context.DateOnly());
+    private static readonly DeclarationVocabulary Times          = new("Any.TimeOnly()", context => context.TimeOnly());
     private static readonly DeclarationVocabulary Doubles        = new("Any.Double()", context => context.Double());
     private static readonly DeclarationVocabulary Singles        = new("Any.Single()", context => context.Single());
     private static readonly DeclarationVocabulary Halves         = new("Any.Half()", context => context.Half());
@@ -74,7 +76,7 @@ internal static class GuardedCalls {
 
     /// <summary>The calls. One call is already minimal, so nothing shrinks.</summary>
     public static Arbitrary<GuardedCall> Arbitrary() {
-        return Arb.From(Gen.OneOf(HostCalls(), UserInfoCalls(), OffsetCalls(), GranularityCalls(), FloatingPointCalls(), FloatingPointBoundCalls(), EnumerationCalls()));
+        return Arb.From(Gen.OneOf(HostCalls(), UserInfoCalls(), OffsetCalls(), GranularityCalls(), FloatingPointCalls(), FloatingPointBoundCalls(), TemporalBoundCalls(), EnumerationCalls()));
     }
 
     private static Gen<GuardedCall> HostCalls() {
@@ -148,6 +150,31 @@ internal static class GuardedCalls {
                                          new GuardedCall(Halves, On<AnyHalf>($"GreaterThanOrEqualTo({h.Item1.Source})", g => g.GreaterThanOrEqualTo(h.Item1.Value)), claimed: true),
                                          new GuardedCall(Halves, On<AnyHalf>($"Between({h.Item1.Source}, {h.Item2.Source})", g => g.Between(h.Item1.Value, h.Item2.Value)),
                                                          claimed: !Half.IsFinite(h.Item1.Value) || !Half.IsFinite(h.Item2.Value) || h.Item1.Value <= h.Item2.Value))
+               select call;
+    }
+
+    /// <summary>
+    ///     A <c>Between</c> on each temporal generator, its two ends drawn from a few days, hours or times so a
+    ///     transposed pair is frequent (issue #366). A <c>DateTimeOffset</c> end carries an offset of its own, so the
+    ///     pair is compared as instants rather than as it reads. On <c>TimeOnly</c> no pair is ever refused: a start
+    ///     after the end is the window across midnight (ADR-0125), and the rule claims that silence.
+    /// </summary>
+    private static Gen<GuardedCall> TemporalBoundCalls() {
+        return from day in Gen.Choose(1, 3).Two()
+               from hour in Gen.Choose(-2, 2).Two()
+               from offset in Gen.Choose(-2, 2).Two()
+               from time in Gen.Choose(0, 23).Two()
+               let d = (day.Item1.ToString(CultureInfo.InvariantCulture), day.Item2.ToString(CultureInfo.InvariantCulture))
+               let h = (hour.Item1.ToString(CultureInfo.InvariantCulture), hour.Item2.ToString(CultureInfo.InvariantCulture))
+               let o = (offset.Item1.ToString(CultureInfo.InvariantCulture), offset.Item2.ToString(CultureInfo.InvariantCulture))
+               let t = (time.Item1.ToString(CultureInfo.InvariantCulture), time.Item2.ToString(CultureInfo.InvariantCulture))
+               from call in Gen.Elements(new GuardedCall(DateTime, On<AnyDateTime>($"Between(new DateTime(2026, 1, {d.Item1}), new DateTime(2026, 1, {d.Item2}))", g => g.Between(new DateTime(2026, 1, day.Item1, 0, 0, 0, DateTimeKind.Unspecified), new DateTime(2026, 1, day.Item2, 0, 0, 0, DateTimeKind.Unspecified))), claimed: true),
+                                         new GuardedCall(DateTime, On<AnyDateTime>($"Between(new DateTime(2026, 1, {d.Item1}, 0, 0, 0, DateTimeKind.Utc), DateTime.UnixEpoch)", g => g.Between(new DateTime(2026, 1, day.Item1, 0, 0, 0, DateTimeKind.Utc), System.DateTime.UnixEpoch)), claimed: true),
+                                         new GuardedCall(DateTimeOffset, On<AnyDateTimeOffset>($"Between(new DateTimeOffset(2026, 1, {d.Item1}, 0, 0, 0, TimeSpan.FromHours({o.Item1})), new DateTimeOffset(2026, 1, {d.Item2}, 0, 0, 0, TimeSpan.FromHours({o.Item2})))", g => g.Between(new DateTimeOffset(2026, 1, day.Item1, 0, 0, 0, TimeSpan.FromHours(offset.Item1)), new DateTimeOffset(2026, 1, day.Item2, 0, 0, 0, TimeSpan.FromHours(offset.Item2)))), claimed: true),
+                                         new GuardedCall(TimeSpans, On<AnyTimeSpan>($"Between(TimeSpan.FromHours({h.Item1}), TimeSpan.FromHours({h.Item2}))", g => g.Between(TimeSpan.FromHours(hour.Item1), TimeSpan.FromHours(hour.Item2))), claimed: true),
+                                         new GuardedCall(TimeSpans, On<AnyTimeSpan>($"Between(new TimeSpan({h.Item1}, 0, 0), TimeSpan.Zero)", g => g.Between(new TimeSpan(hour.Item1, 0, 0), TimeSpan.Zero)), claimed: true),
+                                         new GuardedCall(Dates, On<AnyDateOnly>($"Between(new DateOnly(2026, 1, {d.Item1}), new DateOnly(2026, 1, {d.Item2}))", g => g.Between(new DateOnly(2026, 1, day.Item1), new DateOnly(2026, 1, day.Item2))), claimed: true),
+                                         new GuardedCall(Times, On<AnyTimeOnly>($"Between(new TimeOnly({t.Item1}, 0), new TimeOnly({t.Item2}, 0))", g => g.Between(new TimeOnly(time.Item1, 0), new TimeOnly(time.Item2, 0))), claimed: true))
                select call;
     }
 

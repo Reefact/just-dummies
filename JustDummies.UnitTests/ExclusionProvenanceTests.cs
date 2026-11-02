@@ -135,6 +135,7 @@ public sealed class ExclusionProvenanceTests {
     }
 
     [Fact(DisplayName = "AnyGuid: pinning onto an earlier exclusion names that exclusion in full.")]
+    [SuppressMessage(JustDummiesRule.JD034.Category, JustDummiesRule.JD034.Id, Justification = SuppressionJustification.JD034.ThrowIsTheSubject)]
     public void GuidPinningOntoAnEarlierExclusionNamesIt() {
         Check.ThatCode(() => Any.Guid().NonEmpty().Empty())
              .Throws<ConflictingAnyConstraintException>()

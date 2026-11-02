@@ -11,6 +11,13 @@ internal sealed class DeclarationChain {
     /// <summary>What the run time says when a constraint the generator takes once is declared again differently.</summary>
     private const string AlreadyDefined = "is already defined";
 
+    /// <summary>
+    ///     What the run time says when a Guid's <c>Empty()</c> meets its <c>NonEmpty()</c>, in either order: the one
+    ///     conflict of values JD034 claims, because the two calls fill one slot (issue #366). Only the Guid vocabulary
+    ///     spells it, and it spells no exclusion, which would meet the same refusal without the rule's claim.
+    /// </summary>
+    private const string PinnedAndForbidden = "already pins the value to";
+
     public DeclarationChain(DeclarationVocabulary vocabulary, IReadOnlyList<DeclarationCall> calls) {
         Vocabulary = vocabulary;
         Calls      = calls;
@@ -40,7 +47,7 @@ internal sealed class DeclarationChain {
             }
 
             return false;
-        } catch (ConflictingAnyConstraintException conflict) when (conflict.Message.Contains(AlreadyDefined, StringComparison.Ordinal)) {
+        } catch (ConflictingAnyConstraintException conflict) when (conflict.Message.Contains(AlreadyDefined, StringComparison.Ordinal) || conflict.Message.Contains(PinnedAndForbidden, StringComparison.Ordinal)) {
             return true;
         } catch (ConflictingAnyConstraintException conflict) {
             throw new InvalidOperationException($"The vocabulary spells a chain whose constraints contradict one another: {Expression}{Environment.NewLine}{conflict.Message}", conflict);

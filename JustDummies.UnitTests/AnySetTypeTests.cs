@@ -54,6 +54,7 @@ public sealed class AnySetTypeTests {
     }
 
     [Fact(DisplayName = "Guid: Empty pins, NonEmpty excludes, and the pair conflicts in both orders.")]
+    [SuppressMessage(JustDummiesRule.JD034.Category, JustDummiesRule.JD034.Id, Justification = SuppressionJustification.JD034.ThrowIsTheSubject)]
     public void GuidEmptyFamily() {
         Check.That(Any.Guid().Empty().Generate()).IsEqualTo(Guid.Empty);
         for (int i = 0; i < SampleCount; i++) {

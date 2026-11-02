@@ -54,6 +54,8 @@ internal static class DeclarationWalk {
     private const string ScaleName         = "WithScale";
     private const string Step              = "step";
     private const string GuidOwner         = "AnyGuid";
+    private const string Emptiness         = "emptiness";
+    private const string EmptyAndNonEmpty  = "Empty() pins the identifier to Guid.Empty and NonEmpty() forbids it";
     private const string LibraryNamespace  = "JustDummies";
     private const string PoolTakesNoCasing = "a WithChars pool completely defines the allowed characters and cannot be combined with a casing constraint";
     private const string StepOffTheScale   = "a decimal's step must lie on its scale's grid";
@@ -118,7 +120,7 @@ internal static class DeclarationWalk {
         if (slots.TryGetValue(key, out IInvocationOperation? first)) {
             return IsSameDeclaration(first, call) switch {
                 true  => DeclarationFinding.Repeating(call, first),
-                false => DeclarationFinding.Conflicting(call, first, $"the generator accepts only one {slot}"),
+                false => DeclarationFinding.Conflicting(call, first, slot == Emptiness ? EmptyAndNonEmpty : $"the generator accepts only one {slot}"),
                 null  => null
             };
         }
@@ -193,6 +195,9 @@ internal static class DeclarationWalk {
             "WithFirst" when owner == PairOwner                       => "first value",
             "WithSecond" when owner == PairOwner                      => "second value",
             "Empty" when owner is "AnyCollection" or "AnyDictionary"  => ExactCount,
+            // A Guid is either pinned to Guid.Empty or kept away from it: the two calls fill one slot, so a repetition
+            // is JD035's and the pair is a conflict the run time refuses in either order (issue #366).
+            "Empty" or "NonEmpty" when owner == GuidOwner            => Emptiness,
             "UsingHttp" or "UsingHttps" or "UsingWs" or "UsingWss"    => "scheme",
             "WithHost"                                                => "host",
             "WithDomain"                                              => "domain",
@@ -221,7 +226,6 @@ internal static class DeclarationWalk {
             "WithQuery" or "WithFragment" or "WithHeaders" or "Rooted"     => true,
             "Distinct"                                                     => method.Parameters.Length == 0,
             "Containing"                                                   => owner == StringOwner,
-            "Empty" or "NonEmpty"                                          => owner == GuidOwner,
             _                                                              => false
         };
     }

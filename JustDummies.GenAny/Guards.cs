@@ -1491,7 +1491,15 @@ internal static class Guards {
 
         SeparatedSyntaxList<ArgumentSyntax> arguments = invocation.ArgumentList.Arguments;
 
-        if (arguments.Count == 0 || !IsParameter(arguments[0].Expression, model, parameter)) { return false; }
+        if (arguments.Count == 0) { return false; }
+
+        // `ThrowIfGreaterThan(text.Length, 500)` is `if (text.Length > 500)` in the helper spelling, and reads into
+        // the same size row (#408): the helpers take the length or the count exactly as a comparison does.
+        if (IsSize(arguments[0].Expression, parameter, model)) {
+            return TryRecogniseSizeThrowHelper(invocation, model, arguments, sizes, names, out constraint);
+        }
+
+        if (!IsParameter(arguments[0].Expression, model, parameter)) { return false; }
 
         if (IsCall(invocation, model, "System.ArgumentNullException", "ThrowIfNull")) {
             constraint = GuardConstraint.NullRefused;
@@ -1564,13 +1572,22 @@ internal static class Guards {
 
         if (arguments.Count < 2) { return false; }
 
-        Optional<object?> bound = model.GetConstantValue(arguments[1].Expression);
+        decimal value;
+        string  literal;
 
-        if (!bound.HasValue || bound.Value is null || !IsNumber(bound.Value) || !TryDecimal(bound.Value, out decimal value)) {
-            return false;
+        // A TimeSpan bound is not a constant to the compiler, and is read from its closed list of spellings (#408).
+        if (TryTimeSpanConstant(arguments[1].Expression, model, parameter, names, out decimal ticks, out string? spelled)) {
+            value   = ticks;
+            literal = spelled!;
+        } else {
+            Optional<object?> bound = model.GetConstantValue(arguments[1].Expression);
+
+            if (!bound.HasValue || bound.Value is null || !IsNumber(bound.Value) || !TryDecimal(bound.Value, out value)) {
+                return false;
+            }
+
+            literal = Named(arguments[1].Expression, model, Underlying(parameter.Type), names) ?? Literal(bound.Value, parameter.Type);
         }
-
-        string literal = Named(arguments[1].Expression, model, Underlying(parameter.Type), names) ?? Literal(bound.Value, parameter.Type);
 
         if (IsCall(invocation, model, containing, "ThrowIfLessThan")) {
             constraint = Numeric(SyntaxKind.LessThanExpression, value, parameter.Type, literal);
@@ -1597,6 +1614,58 @@ internal static class Guards {
         }
 
         return false;
+    }
+
+    /// <summary>
+    ///     The arithmetic throw helpers on <c>p.Length</c> or <c>p.Count</c>, mapped to the size rows the equivalent
+    ///     comparison reads into — each helper's own condition, written as the operator <see cref="Sized" /> reads.
+    /// </summary>
+    /// <remarks>
+    ///     A helper whose edge <see cref="Sized" /> has no row for is moved by one onto a row it has:
+    ///     <c>ThrowIfGreaterThanOrEqual(p.Length, N)</c> throws on <c>N</c> and above, which is a ceiling of
+    ///     <c>N - 1</c>. A bound so moved is folded to its value rather than referenced, since the constant named
+    ///     is not the bound written. <c>ThrowIfNegative</c> on a size holds by construction: understood, adding
+    ///     nothing. Every row refuses null as the comparison rows do, since reading the size dereferences the
+    ///     parameter.
+    /// </remarks>
+    private static bool TryRecogniseSizeThrowHelper(InvocationExpressionSyntax invocation,
+                                                    SemanticModel model,
+                                                    SeparatedSyntaxList<ArgumentSyntax> arguments,
+                                                    (bool ByCount, int Ceiling, int Floor) sizes,
+                                                    TypeNames names,
+                                                    out GuardConstraint? constraint) {
+        constraint = null;
+
+        const string containing = "System.ArgumentOutOfRangeException";
+
+        if (IsCall(invocation, model, containing, "ThrowIfNegative")) { return true; }
+
+        if (IsCall(invocation, model, containing, "ThrowIfZero", "ThrowIfNegativeOrZero")) {
+            constraint = Emptiness(sizes.ByCount).RefusingNull();
+
+            return true;
+        }
+
+        if (arguments.Count < 2) { return false; }
+
+        Optional<object?> bound = model.GetConstantValue(arguments[1].Expression);
+
+        if (!bound.HasValue || bound.Value is null || !IsNumber(bound.Value) || !TryDecimal(bound.Value, out decimal value)) { return false; }
+
+        string? named = Named(arguments[1].Expression, model, model.Compilation.GetSpecialType(SpecialType.System_Int32), names);
+
+        (SyntaxKind @operator, decimal edge, string? spelled)? read = null;
+
+        if (IsCall(invocation, model, containing, "ThrowIfGreaterThan")) { read = (SyntaxKind.GreaterThanExpression, value, named); }
+        if (IsCall(invocation, model, containing, "ThrowIfLessThan")) { read = (SyntaxKind.LessThanExpression, value, named); }
+        if (IsCall(invocation, model, containing, "ThrowIfGreaterThanOrEqual")) { read = (SyntaxKind.GreaterThanExpression, value - 1, null); }
+        if (IsCall(invocation, model, containing, "ThrowIfLessThanOrEqual")) { read = (SyntaxKind.LessThanExpression, value + 1, null); }
+
+        if (read is not { } row) { return false; }
+
+        constraint = Sized(row.@operator, row.edge, sizes, row.spelled)?.RefusingNull();
+
+        return constraint is not null;
     }
 
     /// <summary>
@@ -1838,6 +1907,12 @@ internal static class Guards {
         }
 
         if (condition is PrefixUnaryExpressionSyntax { RawKind: (int)SyntaxKind.LogicalNotExpression } negation) {
+            // `!(p > 0)` is `p <= 0` and reads as that row (#408): a comparison negated whole is the opposite
+            // comparison, with no third value for the two to disagree on — NaN, the one such value, is never drawn.
+            if (Unwrapped(negation.Operand) is BinaryExpressionSyntax negated && Negated(negated.Kind()) is { } opposite) {
+                return TryComparison(negated, opposite, model, parameter, sizes, names, out constraint);
+            }
+
             // `!Enum.IsDefined(typeof(E), p)` — Any.Enum<E>() already draws only declared members, which holds
             // only where the parameter IS E. On an int-backed status column the row's own justification fails:
             // nothing narrows Any.Int32(), and the outcome is indistinguishable from a guard there was nothing
@@ -1848,35 +1923,159 @@ internal static class Guards {
             // parameter IS the type whose IsFinite is called.
             return (IsCall(negation.Operand, model, "System.Enum", "IsDefined")
                  && NamesTheParametersOwnUniverse(negation.Operand, model, parameter))
-                || IsAFinitenessCheckOnTheParameter(negation.Operand, model, parameter);
+                || IsAFloatingPointCheckOnTheParameter(negation.Operand, model, parameter, "IsFinite");
         }
 
-        if (condition is InvocationExpressionSyntax invocation) {
-            // The subject has to BE the parameter, exactly as every other row of the closed set demands.
-            // `IsCall` answers only "which method is this", so without this test `IsNullOrEmpty(value.Trim())`
-            // read as a guard about `value` — an invariant of the trimmed value stated over the drawn one,
-            // which the domain then rejects. The throw-helper row (`TryRecogniseThrowHelper`) and both guard
-            // libraries (`LibraryGuards.TryRead`) already test it; this was the one spelling that did not.
-            if (!IsCallOnTheParameter(invocation, model, parameter)) { return false; }
+        if (condition is InvocationExpressionSyntax invocation) { return TryCallCondition(invocation, model, parameter, sizes, out constraint); }
 
-            if (IsCall(invocation, model, "System.String", BlanknessCheck)) {
-                constraint = Blankness().RefusingNull();
+        if (condition is not BinaryExpressionSyntax comparison) { return false; }
 
-                return true;
-            }
+        return TryScale(comparison, model, parameter, out constraint)
+            || TryCharset(comparison, model, parameter, out constraint)
+            || TryComparison(comparison, comparison.Kind(), model, parameter, sizes, names, out constraint);
+    }
 
-            if (!IsCall(invocation, model, "System.String", EmptinessCheck)) { return false; }
+    /// <summary>The rows of the closed set whose condition is a call on the parameter, standing alone.</summary>
+    private static bool TryCallCondition(InvocationExpressionSyntax invocation,
+                                         SemanticModel model,
+                                         IParameterSymbol parameter,
+                                         (bool ByCount, int Ceiling, int Floor) sizes,
+                                         out GuardConstraint? constraint) {
+        constraint = null;
 
-            constraint = Emptiness(sizes.ByCount).RefusingNull();
+        // The subject has to BE the parameter, exactly as every other row of the closed set demands.
+        // `IsCall` answers only "which method is this", so without this test `IsNullOrEmpty(value.Trim())`
+        // read as a guard about `value` — an invariant of the trimmed value stated over the drawn one,
+        // which the domain then rejects. The throw-helper row (`TryRecogniseThrowHelper`) and both guard
+        // libraries (`LibraryGuards.TryRead`) already test it; this was the one spelling that did not.
+        if (!IsCallOnTheParameter(invocation, model, parameter)) { return false; }
+
+        if (IsCall(invocation, model, "System.String", BlanknessCheck)) {
+            constraint = Blankness().RefusingNull();
 
             return true;
         }
 
-        return condition is BinaryExpressionSyntax comparison
-            && TryComparison(comparison, model, parameter, sizes, names, out constraint);
+        // `double.IsNaN(p)`, `double.IsInfinity(p)` and their one-sided halves, standing alone: the reading
+        // of `!IsFinite` with its sign turned round, understood and adding nothing, since neither NaN nor an
+        // infinity is ever drawn (#408).
+        if (IsAFloatingPointCheckOnTheParameter(invocation, model, parameter, "IsNaN", "IsInfinity", "IsPositiveInfinity", "IsNegativeInfinity")) {
+            return true;
+        }
+
+        if (!IsCall(invocation, model, "System.String", EmptinessCheck)) { return false; }
+
+        constraint = Emptiness(sizes.ByCount).RefusingNull();
+
+        return true;
+    }
+
+    /// <summary>The comparison that holds exactly when <paramref name="written" /> does not, or null for an operator that is not one.</summary>
+    private static SyntaxKind? Negated(SyntaxKind written) {
+        return written switch {
+            SyntaxKind.GreaterThanExpression        => SyntaxKind.LessThanOrEqualExpression,
+            SyntaxKind.LessThanOrEqualExpression    => SyntaxKind.GreaterThanExpression,
+            SyntaxKind.LessThanExpression           => SyntaxKind.GreaterThanOrEqualExpression,
+            SyntaxKind.GreaterThanOrEqualExpression => SyntaxKind.LessThanExpression,
+            SyntaxKind.EqualsExpression             => SyntaxKind.NotEqualsExpression,
+            SyntaxKind.NotEqualsExpression          => SyntaxKind.EqualsExpression,
+            _                                       => null
+        };
+    }
+
+    /// <summary>
+    ///     <c>decimal.Round(p, N) != p</c>, or <c>Math.Round(p, N) != p</c>, on a <c>decimal</c> parameter: the
+    ///     value has more than <c>N</c> decimal places, which is exactly what <c>WithScale(N)</c> draws against (#408).
+    /// </summary>
+    /// <remarks>
+    ///     Either side may carry the call; the other has to be the parameter itself. A rounding mode argument, a
+    ///     non-constant scale or a scale outside what the generator accepts (0 to 28) is not this row, and falls to
+    ///     the ordinary comparison reading — which refuses it, since the parameter sits on both sides.
+    /// </remarks>
+    private static bool TryScale(BinaryExpressionSyntax comparison, SemanticModel model, IParameterSymbol parameter, out GuardConstraint? constraint) {
+        constraint = null;
+
+        if (!comparison.IsKind(SyntaxKind.NotEqualsExpression) || Underlying(parameter.Type).SpecialType != SpecialType.System_Decimal) { return false; }
+
+        ExpressionSyntax rounded = IsParameter(comparison.Right, model, parameter) ? comparison.Left : comparison.Right;
+        ExpressionSyntax plain   = ReferenceEquals(rounded, comparison.Left) ? comparison.Right : comparison.Left;
+
+        if (!IsParameter(plain, model, parameter)) { return false; }
+        if (Unwrapped(rounded) is not InvocationExpressionSyntax { ArgumentList.Arguments.Count: 2 } call) { return false; }
+        if (!IsCall(call, model, "System.Decimal", "Round") && !IsCall(call, model, "System.Math", "Round")) { return false; }
+        if (!IsParameter(call.ArgumentList.Arguments[0].Expression, model, parameter)) { return false; }
+
+        Optional<object?> scale = model.GetConstantValue(call.ArgumentList.Arguments[1].Expression);
+
+        if (scale.Value is not int places || places < 0 || places > 28) { return false; }
+
+        constraint = new GuardConstraint("WithScale", places.ToString(CultureInfo.InvariantCulture), Bound.Exact);
+
+        return true;
+    }
+
+    /// <summary>
+    ///     <c>p.IndexOfAnyExcept("…") >= 0</c> — some character of <c>p</c> is outside the pool — read as
+    ///     <c>WithChars("…")</c>, the pool the generator then draws every character from (#408).
+    /// </summary>
+    /// <remarks>
+    ///     The receiver has to be the parameter itself, the pool a compile-time constant with at least one
+    ///     character, and the test one of the three spellings of "found": <c>>= 0</c>, <c>> -1</c>, <c>!= -1</c>,
+    ///     on either side. The pool is written as a literal in the emitted call, escaped by the compiler's own
+    ///     rules, so a pool naming a constant the file cannot reach still compiles.
+    /// </remarks>
+    private static bool TryCharset(BinaryExpressionSyntax comparison, SemanticModel model, IParameterSymbol parameter, out GuardConstraint? constraint) {
+        constraint = null;
+
+        if (parameter.Type.SpecialType != SpecialType.System_String) { return false; }
+
+        bool flipped = Unwrapped(comparison.Right) is InvocationExpressionSyntax;
+
+        ExpressionSyntax call  = flipped ? comparison.Right : comparison.Left;
+        ExpressionSyntax other = flipped ? comparison.Left : comparison.Right;
+
+        if (Unwrapped(call) is not InvocationExpressionSyntax { ArgumentList.Arguments.Count: 1 } search
+         || !IsCall(search, model, "System.MemoryExtensions", "IndexOfAnyExcept")
+         || search.Expression is not MemberAccessExpressionSyntax { Expression: { } receiver }
+         || !IsTheParameterAsASpan(receiver, model, parameter)) {
+            return false;
+        }
+
+        if (model.GetConstantValue(search.ArgumentList.Arguments[0].Expression).Value is not string pool || pool.Length == 0) { return false; }
+
+        Optional<object?> bound = model.GetConstantValue(other);
+
+        if (bound.Value is not int edge) { return false; }
+
+        bool found = Operator(comparison.Kind(), flipped) switch {
+            SyntaxKind.GreaterThanOrEqualExpression => edge == 0,
+            SyntaxKind.GreaterThanExpression        => edge == -1,
+            SyntaxKind.NotEqualsExpression          => edge == -1,
+            _                                       => false
+        };
+
+        if (!found) { return false; }
+
+        constraint = new GuardConstraint("WithChars", SymbolDisplay.FormatLiteral(pool, quote: true), Bound.Exact);
+
+        return true;
+    }
+
+    /// <summary>
+    ///     <c>p.AsSpan()</c>, the receiver a span search over a string has to be written with — an extension
+    ///     method's receiver takes no implicit conversion — or the parameter itself.
+    /// </summary>
+    private static bool IsTheParameterAsASpan(ExpressionSyntax receiver, SemanticModel model, IParameterSymbol parameter) {
+        if (IsParameter(receiver, model, parameter)) { return true; }
+
+        return Unwrapped(receiver) is InvocationExpressionSyntax { ArgumentList.Arguments.Count: 0 } span
+            && IsCall(span, model, "System.MemoryExtensions", "AsSpan")
+            && span.Expression is MemberAccessExpressionSyntax { Expression: { } spanned }
+            && IsParameter(spanned, model, parameter);
     }
 
     private static bool TryComparison(BinaryExpressionSyntax comparison,
+                                      SyntaxKind written,
                                       SemanticModel model,
                                       IParameterSymbol parameter,
                                       (bool ByCount, int Ceiling, int Floor) sizes,
@@ -1888,29 +2087,19 @@ internal static class Guards {
             return false;
         }
 
-        SyntaxKind @operator = Operator(comparison.Kind(), flipped);
+        SyntaxKind @operator = Operator(written, flipped);
         bool       sized     = IsSize(subject, parameter, model);
 
-        // `p == null`, `p == Guid.Empty` and `p == E.Member` are the comparisons whose right side is not a
-        // number.
-        if (@operator == SyntaxKind.EqualsExpression && IsNull(other)) {
-            if (IsUserDefinedOperator(comparison, model)) { return false; }
-
-            constraint = GuardConstraint.NullRefused;
-
-            return true;
-        }
-        if (@operator == SyntaxKind.EqualsExpression && IsEmptyGuid(other, model)) {
-            constraint = new GuardConstraint("NonEmpty", argument: null, Bound.Emptiness);
-
-            return true;
+        // `p == null`, `p == Guid.Empty`, `p == default` and `p == E.Member` are the comparisons whose right side
+        // is not a number.
+        if (@operator == SyntaxKind.EqualsExpression && TryEquality(comparison, other, model, parameter, names, out constraint)) {
+            return constraint is not null;
         }
 
-        if (@operator == SyntaxKind.EqualsExpression
-         && TryEnumMember(other, model, parameter, names, out string? excluded)) {
-            constraint = new GuardConstraint("DifferentFrom", excluded, Bound.Excluded);
+        if (TryTimeSpanConstant(other, model, parameter, names, out decimal ticks, out string? spelled)) {
+            constraint = Numeric(@operator, ticks, parameter.Type, spelled!);
 
-            return true;
+            return constraint is not null;
         }
 
         Optional<object?> constant = model.GetConstantValue(other);
@@ -1925,6 +2114,162 @@ internal static class Guards {
                          : Numeric(@operator, value, parameter.Type, Named(other, model, Underlying(parameter.Type), names) ?? Literal(constant.Value, parameter.Type));
 
         return constraint is not null;
+    }
+
+    /// <summary>
+    ///     The equality rows whose other side is not a number: null, the empty <c>Guid</c>, an enum member, and
+    ///     the <c>default</c> of a struct. True means the row was recognised, with its constraint — or with none,
+    ///     for a user-defined <c>==</c> the row declines to read (#333).
+    /// </summary>
+    private static bool TryEquality(BinaryExpressionSyntax comparison,
+                                    ExpressionSyntax other,
+                                    SemanticModel model,
+                                    IParameterSymbol parameter,
+                                    TypeNames names,
+                                    out GuardConstraint? constraint) {
+        constraint = null;
+
+        if (IsNull(other)) {
+            constraint = IsUserDefinedOperator(comparison, model) ? null : GuardConstraint.NullRefused;
+
+            return true;
+        }
+
+        if (IsEmptyGuid(other, model) || (IsDefault(other, model, parameter) && IsGuid(parameter.Type))) {
+            constraint = new GuardConstraint("NonEmpty", argument: null, Bound.Emptiness);
+
+            return true;
+        }
+
+        if (TryEnumMember(other, model, parameter, names, out string? excluded)) {
+            constraint = new GuardConstraint("DifferentFrom", excluded, Bound.Excluded);
+
+            return true;
+        }
+
+        // `p == default` on a struct the number line does not place — a DateTimeOffset, a date, a duration — is
+        // the exclusion of that one value (#408). A number's `default` is its zero, read by the numeric rows as
+        // the constant it is; a nullable's is null, and reads as the null-check above. Only a struct of the
+        // framework: its `==` is value equality by contract, where a struct of the developer's own carries a
+        // user-defined `==` free to answer true for a value that is not `default` (#333).
+        if (IsDefault(other, model, parameter) && !IsNumeric(parameter.Type)) {
+            constraint = IsOfTheFramework(parameter.Type) ? new GuardConstraint("DifferentFrom", "default", Bound.Excluded) : null;
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>A type declared in the <c>System</c> namespace itself — the BCL's own structs.</summary>
+    private static bool IsOfTheFramework(ITypeSymbol type) {
+        return type.ContainingNamespace is { IsGlobalNamespace: false } @namespace
+            && @namespace.ToDisplayString() == "System";
+    }
+
+    /// <summary>
+    ///     Whether <paramref name="expression" /> is <c>default</c>, or <c>default(T)</c> for the parameter's own
+    ///     type, compared against a non-nullable value-type parameter — the one value a struct cannot refuse to
+    ///     hold, and the commonest guard on a date or an identifier that was never set.
+    /// </summary>
+    /// <remarks>
+    ///     A nullable parameter's <c>default</c> is <c>null</c>, and a reference parameter's too: both are the
+    ///     null-check, not this. A <c>default(Other)</c> is a different value altogether.
+    /// </remarks>
+    private static bool IsDefault(ExpressionSyntax expression, SemanticModel model, IParameterSymbol parameter) {
+        if (!parameter.Type.IsValueType || parameter.Type is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T }) { return false; }
+
+        return Unwrapped(expression) switch {
+            LiteralExpressionSyntax literal   => literal.IsKind(SyntaxKind.DefaultLiteralExpression),
+            DefaultExpressionSyntax @default => SymbolEqualityComparer.Default.Equals(model.GetTypeInfo(@default.Type).Type, parameter.Type),
+            _                                 => false
+        };
+    }
+
+    private static bool IsGuid(ITypeSymbol type) {
+        return type.ToDisplayString(ByNamespace) == "System.Guid";
+    }
+
+    /// <summary>A type the number line places: integral, floating-point or decimal, nullable or not.</summary>
+    private static bool IsNumeric(ITypeSymbol type) {
+        return Underlying(type).SpecialType is SpecialType.System_SByte or SpecialType.System_Byte
+                                            or SpecialType.System_Int16 or SpecialType.System_UInt16
+                                            or SpecialType.System_Int32 or SpecialType.System_UInt32
+                                            or SpecialType.System_Int64 or SpecialType.System_UInt64
+                                            or SpecialType.System_Single or SpecialType.System_Double
+                                            or SpecialType.System_Decimal
+            || Underlying(type).ToDisplayString(ByNamespace) is "System.Int128" or "System.UInt128" or "System.Half";
+    }
+
+    /// <summary>
+    ///     A <c>TimeSpan</c> bound written as a member of a closed list — <c>TimeSpan.Zero</c>, <c>MinValue</c>,
+    ///     <c>MaxValue</c>, or <c>TimeSpan.FromX(constant)</c> — as the ticks it stands for, and as the emitted
+    ///     chain spells it (#408).
+    /// </summary>
+    /// <remarks>
+    ///     Not a constant to the compiler — a struct never is — so the ordinary constant reading passes it over
+    ///     and the guard fell unread. These six factories and three fields are the whole of how a duration is
+    ///     written in a guard; the ticks are computed by the same <see cref="TimeSpan" /> the domain will call,
+    ///     and the argument is spelled as the comparison rows spell theirs: a reachable constant by name, anything
+    ///     else by value. Only on a <c>TimeSpan</c> parameter, nullable or not: the bound has to be of the
+    ///     parameter's type for the chain to bind.
+    /// </remarks>
+    private static bool TryTimeSpanConstant(ExpressionSyntax expression, SemanticModel model, IParameterSymbol parameter, TypeNames names, out decimal ticks, out string? spelled) {
+        ticks   = 0m;
+        spelled = null;
+
+        if (Underlying(parameter.Type).ToDisplayString(ByNamespace) != "System.TimeSpan") { return false; }
+
+        ExpressionSyntax bare = Unwrapped(expression);
+
+        if (bare is MemberAccessExpressionSyntax field
+         && model.GetSymbolInfo(field).Symbol is IFieldSymbol { IsStatic: true } member
+         && member.ContainingType.ToDisplayString(ByNamespace) == "System.TimeSpan"
+         && member.Name is "Zero" or "MinValue" or "MaxValue") {
+            ticks   = member.Name switch { "Zero" => 0m, "MinValue" => long.MinValue, _ => long.MaxValue };
+            spelled = names.Of(member.ContainingType) + "." + member.Name;
+
+            return true;
+        }
+
+        return bare is InvocationExpressionSyntax { ArgumentList.Arguments.Count: 1 } call
+            && model.GetSymbolInfo(call).Symbol is IMethodSymbol { IsStatic: true } factory
+            && factory.ContainingType.ToDisplayString(ByNamespace) == "System.TimeSpan"
+            && TryTimeSpanFactory(call, factory, model, names, out ticks, out spelled);
+    }
+
+    /// <summary><c>TimeSpan.FromX(constant)</c>, for the six factories a duration is written with.</summary>
+    private static bool TryTimeSpanFactory(InvocationExpressionSyntax call, IMethodSymbol factory, SemanticModel model, TypeNames names, out decimal ticks, out string? spelled) {
+        ticks   = 0m;
+        spelled = null;
+
+        if (factory.Name is not ("FromDays" or "FromHours" or "FromMinutes" or "FromSeconds" or "FromMilliseconds" or "FromTicks")) { return false; }
+
+        ExpressionSyntax  argument = call.ArgumentList.Arguments[0].Expression;
+        Optional<object?> amount   = model.GetConstantValue(argument);
+
+        if (!amount.HasValue || amount.Value is null || !IsNumber(amount.Value) || !TryDecimal(amount.Value, out decimal count)) { return false; }
+
+        try {
+            ticks = factory.Name switch {
+                "FromDays"         => TimeSpan.FromDays((double)count).Ticks,
+                "FromHours"        => TimeSpan.FromHours((double)count).Ticks,
+                "FromMinutes"      => TimeSpan.FromMinutes((double)count).Ticks,
+                "FromSeconds"      => TimeSpan.FromSeconds((double)count).Ticks,
+                "FromMilliseconds" => TimeSpan.FromMilliseconds((double)count).Ticks,
+                _                  => TimeSpan.FromTicks((long)count).Ticks
+            };
+        } catch (OverflowException) {
+            // A duration no TimeSpan holds is not a bound; the guard is left unread, as a number past decimal is.
+            return false;
+        }
+
+        ITypeSymbol argumentType = model.GetTypeInfo(argument).Type ?? factory.Parameters[0].Type;
+
+        spelled = names.Of(factory.ContainingType) + "." + factory.Name + "("
+                + (Named(argument, model, argumentType, names) ?? Literal(amount.Value, argumentType)) + ")";
+
+        return true;
     }
 
     /// <summary>
@@ -2147,10 +2492,11 @@ internal static class Guards {
     }
 
     /// <summary>
-    ///     Whether <paramref name="call" /> is <c>double.IsFinite</c> on a <c>double</c> parameter itself, or
-    ///     <c>float.IsFinite</c> on a <c>float</c> one.
+    ///     Whether <paramref name="call" /> is one of <paramref name="checks" /> — <c>IsFinite</c>, <c>IsNaN</c>,
+    ///     <c>IsInfinity</c> and its halves — of <c>double</c> on a <c>double</c> parameter itself, or of
+    ///     <c>float</c> on a <c>float</c> one.
     /// </summary>
-    private static bool IsAFinitenessCheckOnTheParameter(ExpressionSyntax call, SemanticModel model, IParameterSymbol parameter) {
+    private static bool IsAFloatingPointCheckOnTheParameter(ExpressionSyntax call, SemanticModel model, IParameterSymbol parameter, params string[] checks) {
         string? owner = parameter.Type.SpecialType switch {
             SpecialType.System_Double => "System.Double",
             SpecialType.System_Single => "System.Single",
@@ -2159,7 +2505,7 @@ internal static class Guards {
 
         return owner is not null
             && call is InvocationExpressionSyntax { ArgumentList.Arguments.Count: 1 } invocation
-            && IsCall(invocation, model, owner, "IsFinite")
+            && IsCall(invocation, model, owner, checks)
             && IsParameter(invocation.ArgumentList.Arguments[0].Expression, model, parameter);
     }
 

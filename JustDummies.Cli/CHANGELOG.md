@@ -8,6 +8,18 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ## [Unreleased]
 
+### Added
+
+- **Six more guard shapes are read, each exactly.** From the second UX trial's field report: the negation of a
+  comparison (`!(x > 0)` → `.Positive()`); a `TimeSpan` bound written `TimeSpan.Zero`, `MinValue`, `MaxValue` or
+  `TimeSpan.FromX(constant)`, in a comparison or a `ThrowIf…` helper, spelled as written
+  (`.GreaterThanOrEqualTo(TimeSpan.FromSeconds(5))`); the arithmetic `ThrowIf…` helpers on `p.Length` or
+  `p.Count` (`ThrowIfGreaterThan(text.Length, 500)` → `.WithMaxLength(500)`); `decimal.Round(v, 2) != v` →
+  `.WithScale(2)`; `p == default` on a struct of the framework (`.DifferentFrom(default)` on a `DateTimeOffset`,
+  `.NonEmpty()` on a `Guid`); `p.AsSpan().IndexOfAnyExcept("ACGTN") >= 0` → `.WithChars("ACGTN")`; and a
+  standalone `double.IsNaN(x)` or `double.IsInfinity(x)`, understood and adding nothing, since neither is ever
+  drawn. Each was marked `to verify` before (issue #408).
+
 ### Changed
 
 - **The generated `With…` methods say what is easy to get wrong.** A pin's documentation says every draw hands

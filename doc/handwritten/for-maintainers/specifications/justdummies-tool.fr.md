@@ -983,6 +983,36 @@ L'ensemble reconnu est clos :
 | `!double.IsFinite(p)`, `!float.IsFinite(p)` | aucune — `Any.Double()` et `Any.Single()` ne tirent que des valeurs finies (ADR-0031), **là où `p` est de ce type** |
 | `p == E.Member` | `.DifferentFrom(E.Member)`, **là où `p` est de type `E`** |
 | `a > b`, `a >= b`, `b < a`, `b <= a`, où `a` et `b` sont deux paramètres d'un même type ordonné | aucune sur l'une ou l'autre chaîne : les deux sont tirés comme un seul `Any.OrderedPair(` sur leurs deux recettes, `strict: true` pour `>=` (§4.2), **là où la bibliothèque porte une paire pour ce type et où aucun des deux paramètres n'est pris dans un autre ordre** |
+| `!(p > 0)`, `!(p.Length > N)` — la négation de toute comparaison ci-dessus | la ligne de la comparaison opposée : `.Positive()`, `.WithMaxLength(N)` |
+| `p < TimeSpan.FromSeconds(5)`, `ThrowIfLessThan(p, TimeSpan.Zero)` — une borne `TimeSpan` écrite `TimeSpan.Zero`, `MinValue`, `MaxValue` ou `TimeSpan.FromX(constante)` | les lignes numériques ci-dessus, la borne épelée comme écrite : `.GreaterThanOrEqualTo(TimeSpan.FromSeconds(5))`, `.GreaterThanOrEqualTo(TimeSpan.Zero)` |
+| `ThrowIfGreaterThan(p.Length, N)`, et les autres throw helpers arithmétiques sur `p.Length` ou `p.Count` | les lignes de taille ci-dessus : `.WithMaxLength(N)`, `.WithMinCount(N)`, `.NonEmpty()` |
+| `decimal.Round(p, N) != p`, `Math.Round(p, N) != p`, sur un `decimal` | `.WithScale(N)` |
+| `p == default`, `p == default(T)`, sur une struct non nullable du framework | `.DifferentFrom(default)` ; `.NonEmpty()` sur un `Guid`, et le `default` d'un nombre est son zéro, lu par les lignes ci-dessus |
+| `p.AsSpan().IndexOfAnyExcept("…") >= 0`, `> -1`, `!= -1` | `.WithChars("…")` |
+| `double.IsNaN(p)`, `double.IsInfinity(p)`, `IsPositiveInfinity`, `IsNegativeInfinity`, et leurs jumeaux `float` | aucune — `Any.Double()` et `Any.Single()` ne tirent jamais NaN ni un infini, **là où `p` est de ce type** |
+
+**Six formes sont entrées dans l'ensemble sur le rapport de terrain du second essai (#408), et chaque
+lecture est exacte.** La négation d'une comparaison est la comparaison opposée, sans troisième valeur
+sur laquelle les deux divergeraient — NaN, la seule, n'est jamais tirée. Une borne `TimeSpan` n'est
+pas une constante pour le compilateur, donc la lecture des constantes passait à côté ; les trois
+champs et six fabriques ci-dessus sont la façon dont une durée s'écrit dans une garde, leurs ticks
+sont calculés par le même `TimeSpan` que le domaine appellera, et la borne est épelée comme les
+lignes de comparaison épellent les leurs — une constante atteignable par son nom, tout le reste par sa
+valeur. Les throw helpers prennent `p.Length` ou `p.Count` exactement comme une comparaison, et
+`ThrowIfGreaterThanOrEqual(p.Length, N)` se décale de un vers une ligne que la famille des tailles
+possède, repliée à sa valeur puisque la constante nommée n'est plus la borne écrite.
+`decimal.Round(p, N) != p` dit que la valeur a plus de `N` décimales, ce qui est le treillis sur lequel
+`WithScale(N)` tire. `p == default` sur une struct que la droite numérique ne place pas est l'exclusion
+de cette seule valeur, et la seule garde que reçoit une date ou un identifiant jamais renseigné ; le
+`default` d'un nombre est son zéro et se lit comme la constante qu'il est, celui d'un nullable est
+`null` et se lit comme le null-check. Seule une struct du framework — déclarée dans `System` — se lit
+ainsi : son `==` est l'égalité de valeur par contrat, là où une struct du développeur porte un `==`
+défini par l'utilisateur, libre de répondre `true` pour une valeur qui n'est pas `default`, la raison
+même pour laquelle la ligne du null-check en décline un (#333), et elle garde la marque.
+`IndexOfAnyExcept` contre un pool constant, sur le span sous lequel une chaîne doit être lue pour
+cette recherche, dit que chaque caractère est tiré de ce pool, ce qui est `WithChars`. Chaque forme
+est lue là où son sujet **est** le
+paramètre, comme toute autre ligne l'exige.
 
 **Un ordre entre deux paramètres est la seule règle entre paramètres tirée plutôt que marquée.**
 `if (arrival > departure) { throw … }` est ce que `Any.OrderedPair` tire par construction — le premier

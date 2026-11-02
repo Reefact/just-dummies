@@ -1066,6 +1066,80 @@ internal static class GuardCorpus {
                                                  }
                                                  """, idioms: ["`!double.IsFinite(p)`, `!float.IsFinite(p)`"]),
 
+        // ---- #408: six shapes the second trial met in the field, each read exactly. ----
+
+        new GuardedShape("bcl-negated-comparison", "Dose", """
+                                                           public sealed class Dose {
+                                                               public Dose(double milligrams, string unit) {
+                                                                   if (!(milligrams > 0)) { throw new ArgumentOutOfRangeException(nameof(milligrams)); }
+                                                                   if (!(unit.Length <= 4)) { throw new ArgumentException(nameof(unit)); }
+                                                               }
+                                                           }
+                                                           """, idioms: ["`!(p > 0)`, `!(p.Length > N)` — the negation of any comparison above"]),
+
+        new GuardedShape("bcl-timespan-bounds", "Timeout", """
+                                                           public sealed class Timeout {
+                                                               public Timeout(TimeSpan delay, TimeSpan grace) {
+                                                                   ArgumentOutOfRangeException.ThrowIfLessThan(delay, TimeSpan.Zero);
+                                                                   if (delay > TimeSpan.FromMinutes(5)) { throw new ArgumentOutOfRangeException(nameof(delay)); }
+                                                                   if (grace < TimeSpan.FromSeconds(5)) { throw new ArgumentOutOfRangeException(nameof(grace)); }
+                                                                   if (grace >= TimeSpan.MaxValue) { throw new ArgumentOutOfRangeException(nameof(grace)); }
+                                                               }
+                                                           }
+                                                           """, idioms: ["`p < TimeSpan.FromSeconds(5)`, `ThrowIfLessThan(p, TimeSpan.Zero)` — a `TimeSpan` bound written as `TimeSpan.Zero`, `MinValue`, `MaxValue` or `TimeSpan.FromX(constant)`"]),
+
+        new GuardedShape("bcl-size-throw-helpers", "Excerpt", """
+                                                              public sealed class Excerpt {
+                                                                  public Excerpt(string text, IReadOnlyList<string> tags, string title) {
+                                                                      ArgumentOutOfRangeException.ThrowIfGreaterThan(text.Length, 500);
+                                                                      ArgumentOutOfRangeException.ThrowIfLessThan(tags.Count, 2);
+                                                                      ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(tags.Count, 6);
+                                                                      ArgumentOutOfRangeException.ThrowIfZero(title.Length);
+                                                                      ArgumentOutOfRangeException.ThrowIfNegative(title.Length);
+                                                                  }
+                                                              }
+                                                              """, idioms: ["`ThrowIfGreaterThan(p.Length, N)`, and the other arithmetic throw helpers on `p.Length` or `p.Count`"]),
+
+        new GuardedShape("bcl-decimal-scale", "Price", """
+                                                       public sealed class Price {
+                                                           public Price(decimal amount, decimal tax) {
+                                                               if (decimal.Round(amount, 2) != amount) { throw new ArgumentException(nameof(amount)); }
+                                                               if (tax != Math.Round(tax, 4)) { throw new ArgumentException(nameof(tax)); }
+                                                           }
+                                                       }
+                                                       """, idioms: ["`decimal.Round(p, N) != p`, `Math.Round(p, N) != p`, on a `decimal`"]),
+
+        new GuardedShape("bcl-default-struct", "Lock", """
+                                                       public sealed class Lock {
+                                                           public Lock(DateTimeOffset lockedAt, Guid holder, DateOnly day) {
+                                                               if (lockedAt == default) { throw new ArgumentException(nameof(lockedAt)); }
+                                                               if (holder == default) { throw new ArgumentException(nameof(holder)); }
+                                                               if (day == default(DateOnly)) { throw new ArgumentException(nameof(day)); }
+                                                           }
+                                                       }
+                                                       """, idioms: ["`p == default`, `p == default(T)`, on a non-nullable struct of the framework"]),
+
+        new GuardedShape("bcl-chars-outside-a-pool", "Sequence", """
+                                                                  public sealed class Sequence {
+                                                                      public Sequence(string bases, string strand) {
+                                                                          if (bases.AsSpan().IndexOfAnyExcept("ACGTN") >= 0) { throw new ArgumentException(nameof(bases)); }
+                                                                          if (-1 != strand.AsSpan().IndexOfAnyExcept("+-")) { throw new ArgumentException(nameof(strand)); }
+                                                                      }
+                                                                  }
+                                                                  """, idioms: ["`p.AsSpan().IndexOfAnyExcept(\"…\") >= 0`, `> -1`, `!= -1`"]),
+
+        new GuardedShape("bcl-nan-and-infinity", "Reading", """
+                                                            public sealed class Reading {
+                                                                public Reading(double value, float ratio) {
+                                                                    if (double.IsNaN(value)) { throw new ArgumentOutOfRangeException(nameof(value)); }
+                                                                    if (double.IsInfinity(value)) { throw new ArgumentOutOfRangeException(nameof(value)); }
+                                                                    if (float.IsNaN(ratio)) { throw new ArgumentOutOfRangeException(nameof(ratio)); }
+                                                                    if (float.IsPositiveInfinity(ratio)) { throw new ArgumentOutOfRangeException(nameof(ratio)); }
+                                                                    if (!(value > 0)) { throw new ArgumentOutOfRangeException(nameof(value)); }
+                                                                }
+                                                            }
+                                                            """, idioms: ["`double.IsNaN(p)`, `double.IsInfinity(p)`, `IsPositiveInfinity`, `IsNegativeInfinity`, and the `float` twins"]),
+
         new GuardedShape("ardalis-null", "Envelope", """
                                                      public sealed class Envelope {
 

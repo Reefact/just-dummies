@@ -2,8 +2,9 @@
 
 🌍 🇬🇧 [English](0130-ship-code-fixes-beside-the-analyzers.md) · 🇫🇷 Français (ce fichier)
 
-**Status:** Proposed
+**Status:** Accepted
 **Proposed:** 2026-11-02
+**Accepted:** 2026-11-02
 **Decision Makers:** Reefact
 
 ## Contexte

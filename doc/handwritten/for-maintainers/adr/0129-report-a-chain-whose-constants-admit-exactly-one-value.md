@@ -2,8 +2,9 @@
 
 🌍 🇬🇧 English (this file) · 🇫🇷 [Français](0129-report-a-chain-whose-constants-admit-exactly-one-value.fr.md)
 
-**Status:** Proposed
+**Status:** Accepted
 **Proposed:** 2026-11-02
+**Accepted:** 2026-11-02
 **Decision Makers:** Reefact
 
 ## Context

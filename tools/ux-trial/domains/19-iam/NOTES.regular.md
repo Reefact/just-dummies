@@ -1,0 +1,50 @@
+# Regular notes — 19 IAM
+Agent: the same model and effort as every session of this trial. Library: JustDummies 1.0.0-uxtrial.1 (packed from main).
+
+## What I did
+- Read (skimmed as a reminder): `PROJECT-README.md`, `guides/getting-started.en.md`, `packages/justdummies-xunit.en.md`, `packages/justdummies-cli.en.md` (what the tool reads, adjusting a parameter, `null` handling), then on demand `generators/guids-and-uris.en.md`, `generators/strings.en.md` (patterns), `generators/dates-and-times.en.md`, `generators/collections.en.md`, and the `OrderedPair` section of `guides/composition.en.md`.
+- Read `MODEL.md` and the whole `Domain/` (small).
+- Project `Tests.Regular/Identity.Tests.Regular.csproj` from the template; `dotnet restore`, then
+  `any generate ClientId Scope RedirectUri TokenPolicy RoleAssignment ClientApplication AccessToken --output Generators --entry-point any`
+  (one call, 7 types, 14 files; `Any.ClientId()`, `Any.Scope()`, ... entry points).
+- Generators completed by hand (every `TODO(any)` sentinel removed):
+  - `AnyScope`: `Any.StringMatching("[a-z][a-z0-9_]{1,31}:(read|write|admin)")`, retyped `AnyString` -> `AnyPattern` on the 4 places the page lists.
+  - `AnyRedirectUri`: `Any.Uri().Web().UsingHttps()`.
+  - `AnyTokenPolicy`: lifetime `Any.TimeSpan().Positive().LessThanOrEqualTo(TokenPolicy.HardMaximumLifetime)`.
+  - `AnyClientApplication`: redirect URIs `.NonEmpty().Distinct()`.
+  - `AnyRoleAssignment`: `validFrom` in 2000..2030 and `validUntil` in 2031..2060 so the order always holds (see friction 5).
+  - `AnyAccessToken`: the scaffolded `OrderedPair` could not express the 24 h gap, so I rewrote the issuedAt/expiresAt part by hand: `issuedAt` in 2000..2100 plus a `lifetime` recipe (`Positive().LessThanOrEqualTo(24 h)`), `expiresAt = issuedAt + lifetime`; added `WithLifetime(...)` (pin and refine), kept `WithIssuedAt` / `WithExpiresAt` (friction 6).
+- Tests (118 methods, 156 cases, 2 skipped on domain defects), assembly-wide `[assembly: Reproducible]`:
+  `ClientIdTests` (5: empty guid, equality/hash, inequality, null, `D` format), `ScopeTests` (12 methods: split, three actions, resource length 2/32 and 1/33, 13 malformed values, digits/underscore, null, blank -> ArgumentException not FormatException, equality, ToString, skipped line-feed case),
+  `RedirectUriTests` (18: https, loopback http x5, non-loopback http, ftp on loopback, ws, mailto, relative, fragment, bare `#`, query, null, equality incl. scheme/host case, path case, default port, other port, null, ToString),
+  `TokenPolicyTests` (13: both bounds on lifetime and scopes, one tick over 24 h, zero/negative/huge, param names), `RolePermissionsTests` (4: each role, only owner grants, undefined and negative role),
+  `RoleAssignmentTests` (9: round trip, open-ended, empty subject, undefined role, end before start, one-day grant, inclusive bounds, open-ended forever),
+  `ClientApplicationTests` (19: round trip, null/blank/80/81 name, null and empty collections, duplicate URIs incl. default-port duplicate, scope collapse, exact-match redirect theory x10, case of scheme/host, relative candidate, `MayRequest`, skipped null candidate),
+  `AccessTokenTests` (22: round trip, scope collapse, null/empty guards, `expires <= issued`, 24 h / 24 h+1 tick / 1 tick lifetimes, mixed offsets, `IsExpiredAt`/`RemainingLifetimeAt`/`Authorizes` at the boundaries),
+  `TokenIssuerTests` (16: null policy, happy path, distinct ids, cap/equal/below lifetime, hard maximum, disallowed scope named, too many scopes, exactly max, duplicates not counted, order of checks, empty scopes/subject, zero/negative lifetime).
+- Result: green first time after fixing my expectation of the line-feed case. Then 55 more runs (fresh seeds each) all green (156 total, 154 passed, 2 skipped, 0 failed).
+- Domain defects kept as skipped tests: (a) `Scope` accepts `"orders:read\n"`; (b) `ClientApplication.AcceptsRedirectTo(null)` throws `NullReferenceException`. Neither involves a drawn value (seed n/a).
+- `bin/` and `obj/` deleted at the end.
+
+## Frictions and surprises, in order
+1. **`dotnet test --project Tests.Regular` does not work with the given template on SDK 10.0.114.** Output: `MSBUILD : error MSB1001: Unknown switch ... --project`. Falling back to `dotnet test Tests.Regular`: `Microsoft.Testing.Platform.MSBuild.targets(395,5): error : Testing with VSTest target is no longer supported by Microsoft.Testing.Platform on .NET 10 SDK and later. If you use dotnet test, you should opt-in to the new dotnet test experience.` I expected the documented command to run. I added a `global.json` (`{"test":{"runner":"Microsoft.Testing.Platform"}}`) at the workspace root. No page of the docs mentions this prerequisite for xunit.v3 on .NET 10 (the xunit page only talks about the `xunit.v3` version floor).
+2. `any generate` before a restore: `✗ ClientId: this project has not been restored, so its package references cannot be read. Restore it, then run the command again: dotnet restore`. Clear and actionable; I just ran `dotnet restore`. (Small cost: the getting-started page does not list "restore first".)
+3. Noise on `Scope`: `Scope resolved to Identity.Domain.Scope; System.Formats.Asn1.AsnWriter.Scope also answers to that name.` It reads like a warning but needs no action (the project's own type wins; the generated file compiled). A moment of "do I have a clash?".
+4. The recap rows were accurate and helpful: regex guard on `Scope` -> `to verify`; `Validate(value)` helper on `RedirectUri` -> `to verify`; `ThrowIfGreaterThan(maximumLifetime, HardMaximumLifetime)` on `TokenPolicy` -> `to verify` (the constant is a `static readonly` field, so not read although `Positive()` was inferred). Fixing each took a couple of minutes; the build error pointing at the `TODO_verify_...` sentinel is a good work list. No complaint, just noting that `ThrowIfGreaterThan(p, SomeStaticReadonlyField)` is not read while the table says public constants are (a `static readonly TimeSpan` is not a `const`, so consistent with the doc, but it is the natural way to write a TimeSpan limit).
+5. **`RoleAssignment`: order between a `DateOnly` and a `DateOnly?` is not turned into an `OrderedPair`.** Recap: `validFrom DateOnly Any.DateOnly() to verify, unread guards ... — ties validUntil to validFrom`. For `AccessToken` (two non-nullable instants) the tool did emit `Any.OrderedPair(..., strict: true)`, so I expected the same here. Without it the default `Any.RoleAssignment().Generate()` throws on about half of the draws. I split the domain into two non-overlapping windows (from: 2000..2030, until: 2031..2060). The cost: `WithValidFrom(2045-01-01)` alone now yields an invalid combination, so tests that pin one end must pin the other (I always did).
+6. **`AccessToken`: the scaffolded generator cannot succeed and the rule it misses (max 24 h gap) has no vocabulary.** The tool wrote `Any.OrderedPair(Any.DateTimeOffset(), Any.DateTimeOffset(), strict: true)` plus two `to verify` marks pointing at line 20 (`expiresAt - issuedAt > HardMaximumLifetime`). The pair orders but cannot bound the distance, and unconstrained `DateTimeOffset` spans years 1..9999, so `Any.AccessToken().Generate()` would throw almost always. I rewrote ~60 lines of the generated file by hand (issuedAt window + lifetime recipe, `expiresAt` derived) and lost the `OrderedPair` pin semantics. The docs (`composition.en.md`, `OrderedPair`) show no way to say "second at most N after first". This is the single costliest item of the session (~15 minutes).
+7. Pinning an optional parameter to `null`: `Any.RoleAssignment().WithValidUntil(null)` fails with `error CS0121: The call is ambiguous between ... WithValidUntil(DateOnly?) and ... WithValidUntil(Func<AnyDateOnly, AnyDateOnly>)`. The CLI page documents `Without…()` and the cast, I had simply forgotten them; the compiler message does not hint at either. Used `WithoutValidUntil()`.
+8. Default `Any.RoleAssignment()` draws `validUntil` as `null` one time in ten, so a test asserting on `ValidUntil` must pin it.
+9. Domain observations (not library): `Scope`'s `$` accepts a trailing line feed (documented in MODEL.md as a note, but `Action` becomes `"read\n"`); `AcceptsRedirectTo(null)` throws `NullReferenceException`. Both recorded as skipped tests.
+10. The generated namespace defaults to the domain's (`Identity.Domain`) while the files live in the test project; it works, but generated test generators sit in the production namespace. `--namespace` exists, I did not use it (acceptable at work, slightly surprising when reading a stack trace).
+
+## What worked well
+- One `any generate A B C ... --entry-point any` call produced the whole generator set; the recap tells exactly what to verify, and the compile-breaking sentinel made it impossible to forget a rule.
+- `Any.StringMatching` on the scope grammar made `Scope` a one-liner and mirrors the domain's own regex; drawn scopes never needed a retry.
+- `Distinct()` on a list of value objects with overridden equality "just worked" for duplicate redirect URIs.
+- `Any.Uri().Web().UsingHttps().WithFragment()` / `.UsingHttp().WithHost(...)` / `.Relative().Rooted()` / `.WebSocket()` / `.Mailto()` made the whole RedirectUri refusal table a set of one-liners, with only the host and scheme the test is about pinned.
+- `[assembly: Reproducible]` is a single line, and the seed line on a failure was printed in the test output (seen on the line-feed failure).
+- Constraint-conflict checks never fired falsely during 55+ runs; the suite was stable.
+
+## Fluency: 4 / 5
+Daily flow was smooth: scaffold, complete the six flagged spots, write tests with `Any.X().WithY(...)`, green. Two things cost real time: the `dotnet test --project` / MTP opt-in on .NET 10 (not a library issue, but nothing in the docs prepares for it), and the two cross-parameter rules the tool cannot carry (`validUntil >= validFrom` on a nullable, and a bounded gap between two instants), which forced me to hand-build generator logic that the `OrderedPair` machinery seems almost able to provide.

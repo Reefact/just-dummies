@@ -18,4 +18,7 @@ public static class DiagnosticProperties {
     /// <summary>On a JD031, the name of the range form that replaces the pair.</summary>
     public const string Range = "Range";
 
+    /// <summary>On a JD032, the span of the looser of the two calls, as <c>start,length</c>, when both arguments fold.</summary>
+    public const string Looser = "Looser";
+
 }

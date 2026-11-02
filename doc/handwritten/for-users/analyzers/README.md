@@ -13,9 +13,16 @@ immutable *recipe* and a drawn value is not, yet both satisfy the same signature
 pinned outside its scope still compiles; a constraint set that admits no value is a perfectly
 well-typed chain. Each rule closes one of those gaps.
 
-Three rules come with a **code fix**, offered by the IDE beside the diagnostic: [JD024](JD024.en.md) removes the
-constraint that narrows nothing, [JD014](JD014.en.md) swaps a transposed pair, [JD031](JD031.en.md) writes two
-bounds as their range. A rule gets a fix only where exactly one rewrite keeps what you meant
+Thirteen rules come with a **code fix**, offered by the IDE beside the diagnostic. Four remove what changes
+nothing: [JD024](JD024.en.md) the constraint that narrows nothing, [JD032](JD032.en.md) the looser of two bounds,
+[JD035](JD035.en.md) the declaration that repeats an earlier one, [JD025](JD025.en.md) the value a pool lists
+twice. Four rewrite a call: [JD014](JD014.en.md) swaps a transposed pair, [JD031](JD031.en.md) writes two bounds
+as their range, [JD013](JD013.en.md) draws from a held collection with `ElementOf`, [JD005](JD005.en.md) and
+[JD011](JD011.en.md) call `Generate()` where the recipe reached a text or an object. [JD001](JD001.en.md) and
+[JD002](JD002.en.md) await `ReproduciblyAsync` inside an `async` function, [JD027](JD027.en.md) names the
+unread parameter `_`. Two offer a choice, since the rule cannot tell which was meant: [JD010](JD010.en.md)
+removes `[Reproducible]` or adds `[Fact]`, [JD004](JD004.en.md) holds the seed scope or captures the context.
+A rule gets a fix only where the rewrite keeps what you meant
 ([ADR-0130](../../for-maintainers/adr/0130-ship-code-fixes-beside-the-analyzers.md)); the fixes travel in the
 same package folder as the rules.
 

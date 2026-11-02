@@ -10,6 +10,15 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Added
 
+- **Ten more rules come with a code fix**, thirteen in all. JD032 removes the looser of two bounds, JD035
+  the declaration that repeats an earlier one, JD025 the value a pool lists twice or the character a
+  `WithChars` pool repeats; JD013 draws from a held collection with `ElementOf`; JD005 and JD011 call
+  `Generate()` where the recipe reached a text or an object; JD001 and JD002 hand the body to
+  `ReproduciblyAsync` and await it, inside an `async` function only; JD027 names the unread parameter `_`.
+  JD010 and JD004 offer two actions side by side, since the rule cannot tell which was meant: remove
+  `[Reproducible]` or add `[Fact]`; hold the seed scope in a `using` declaration or capture the context.
+  JD032 names the looser call to its fix through the diagnostic's properties, so a bound written from a
+  call or a variable is reported without a fix (issue #355, ADR-0130).
 - **Three rules come with a code fix.** JD024 removes the constraint that narrows nothing, JD014 swaps a
   transposed pair — on `Between`, `WithLengthBetween`, `WithCountBetween` and `WithOffsetBetween`, numeric
   or temporal, keeping a name you wrote on its parameter — and JD031 writes two inclusive bounds as the

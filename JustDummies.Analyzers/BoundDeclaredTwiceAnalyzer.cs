@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 
@@ -95,15 +96,43 @@ public sealed class BoundDeclaredTwiceAnalyzer : DiagnosticAnalyzer {
             }
 
             // On the SECOND declaration: that is the call that made the chain ambiguous, and the one whose removal
-            // the reader is weighing. Which of the two survives is left unsaid on purpose — it is whichever is
-            // tighter, and answering it would mean evaluating arguments this rule never reads, on types no
-            // constant folding in this assembly can represent.
+            // the reader is weighing. Which of the two survives is left unsaid in the message on purpose — it is
+            // whichever is tighter, and the message is written for the arguments the rule cannot evaluate. Where
+            // both do fold, the looser call is named to the code fix, which removes exactly that one (ADR-0130).
             context.ReportDiagnostic(Diagnostic.Create(
-                Descriptors.BoundDeclaredTwice, constraint.Syntax.GetLocation(),
+                Descriptors.BoundDeclaredTwice, constraint.Syntax.GetLocation(), LooserOf(factory, name, first, constraint),
                 name, ArgumentText(first), ArgumentText(constraint)));
 
             return;
         }
+    }
+
+    /// <summary>
+    ///     The looser of the two calls, as a property for the fix: on a minimum the smaller argument, on a maximum the
+    ///     larger, the second of two equal ones; nothing when either argument does not fold to a constant of the
+    ///     generator's type — an integer, a decimal, a temporal value, or the size a string or a collection bounds.
+    /// </summary>
+    private static ImmutableDictionary<string, string?> LooserOf(IInvocationOperation factory, string name, IInvocationOperation first, IInvocationOperation second) {
+        ImmutableDictionary<string, string?> none = ImmutableDictionary<string, string?>.Empty;
+        if (Read(factory, first) is not decimal before || Read(factory, second) is not decimal after) { return none; }
+
+        bool                 isMinimum      = name is "GreaterThan" or "GreaterThanOrEqualTo" or "After" or "AfterOrEqualTo" or "WithMinLength" or "WithMinCount";
+        bool                 secondIsLooser = isMinimum ? after <= before : after >= before;
+        IInvocationOperation looser         = secondIsLooser ? second : first;
+
+        return none.Add(DiagnosticProperties.Looser, $"{looser.Syntax.Span.Start},{looser.Syntax.Span.Length}");
+    }
+
+    private static decimal? Read(IInvocationOperation factory, IInvocationOperation constraint) {
+        IOperation argument = constraint.Arguments[0].Value;
+        if (ScalarFamily.Of(factory.TargetMethod.Name) is ScalarFamily family) { return family.Read(argument)?.Value; }
+        if (ConstantFacts.TryGetInt32(argument, out int size)) { return size; }
+
+        // A floating-point bound has no scalar family (JD023 leaves those chains alone), but the comparison the fix
+        // needs holds for any finite constant a decimal can carry; one it cannot is left to the author.
+        return argument.ConstantValue is { HasValue: true, Value: double or float } constant && Math.Abs(Convert.ToDouble(constant.Value)) < (double)decimal.MaxValue
+                   ? (decimal)Convert.ToDouble(constant.Value)
+                   : null;
     }
 
     /// <summary>The argument as the author wrote it, read from the syntax rather than from a folded constant.</summary>

@@ -46,6 +46,20 @@ public class Jd014RejectedConstantArgumentTests {
     [InlineData("Any.Single().Between(10f, 1f)",                "transposed")]
     [InlineData("Any.Int64().Between(10, 1)",                   "transposed")]
     [InlineData("Any.UInt64().Between(10UL, 1UL)",              "transposed")]
+    // Issue #366: the temporal overloads carry the guard too, on a start and an end, in every spelling of a
+    // constant the rule reads — a constructor, a MinValue/MaxValue, a factory — and whatever the argument order.
+    [InlineData("Any.DateTime().Between(new DateTime(2026, 1, 2), new DateTime(2026, 1, 1))",                 "the start (2026-01-02T00:00:00.0000000) must be at or before the end (2026-01-01T00:00:00.0000000) — the two arguments look transposed")]
+    [InlineData("Any.DateTime().Between(new DateTime(2026, 1, 2, 0, 0, 0, DateTimeKind.Utc), DateTime.UnixEpoch)", "transposed")]
+    [InlineData("Any.DateTime().Between(DateTime.MaxValue, DateTime.MinValue)",                                 "transposed")]
+    [InlineData("Any.DateTime().Between(end: new DateTime(2026, 1, 1), start: new DateTime(2026, 1, 2))",      "transposed")]
+    [InlineData("Any.DateOnly().Between(new DateOnly(2026, 1, 1), new DateOnly(2025, 1, 1))",                 "the start (2026-01-01) must be at or before the end (2025-01-01) — the two arguments look transposed")]
+    [InlineData("Any.DateOnly().Between(DateOnly.FromDayNumber(2), DateOnly.MinValue)",                        "transposed")]
+    [InlineData("Any.TimeSpan().Between(TimeSpan.FromHours(2), TimeSpan.FromHours(1))",                        "the minimum (02:00:00) must be less than or equal to the maximum (01:00:00) — the two arguments look transposed")]
+    [InlineData("Any.TimeSpan().Between(TimeSpan.Zero, new TimeSpan(-1))",                                     "transposed")]
+    [InlineData("Any.DateTimeOffset().Between(new DateTimeOffset(2026, 1, 2, 0, 0, 0, TimeSpan.Zero), new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero))", "the start (2026-01-02T00:00:00.0000000+00:00) must be at or before the end (2026-01-01T00:00:00.0000000+00:00) — the two arguments look transposed")]
+    // Compared as instants: 01:00 at +02:00 is 23:00 the day before, so these are transposed although they read in order.
+    [InlineData("Any.DateTimeOffset().Between(new DateTimeOffset(2026, 1, 1, 1, 0, 0, TimeSpan.Zero), new DateTimeOffset(2026, 1, 1, 1, 0, 0, TimeSpan.FromHours(2)))", "transposed")]
+    [InlineData("Any.DateTimeOffset().Between(new DateTimeOffset(new DateTime(2026, 1, 2, 0, 0, 0, DateTimeKind.Utc)), DateTimeOffset.UnixEpoch)", "transposed")]
     [InlineData("Any.Int64().MultipleOf(0)",                    "strictly positive")]
     [InlineData("Any.Int16().MultipleOf(-3)",                   "strictly positive")]
     [InlineData("Any.Byte().MultipleOf(0)",                     "strictly positive")]
@@ -56,6 +70,7 @@ public class Jd014RejectedConstantArgumentTests {
     [InlineData("Any.String().WithChars(\"\")",                 "must not be empty")]
     public async Task Reports_an_argument_the_guard_rejects(string expression, string expectedFragment) {
         string source = $$"""
+            using System;
             using JustDummies;
 
             public static class Sample {
@@ -211,11 +226,12 @@ public class Jd014RejectedConstantArgumentTests {
     [InlineData("Any.Uri().Web().WithHost(\"::1\")")]
     [InlineData("Any.Uri().Web().WithHost(\"a b\")")]
     [InlineData("Any.Uri().Web().WithUserInfo(\"\\u0130\")")]
-    // Not covered, by scope: the rule reads the numeric and Half forms of a transposed Between. The run-time guard
-    // refuses these; widening the rule is a decision for ADR-0106, not a missing case.
-    [InlineData("Any.DateTime().Between(new DateTime(2026, 1, 2), new DateTime(2026, 1, 1))")]
-    [InlineData("Any.TimeSpan().Between(TimeSpan.FromHours(2), TimeSpan.FromHours(1))")]
-    [InlineData("Any.DateTimeOffset().Between(new DateTimeOffset(2026, 1, 2, 0, 0, 0, TimeSpan.Zero), new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero))")]
+    // A temporal constant the rule cannot read: a Local kind, which names no one instant and which the run time
+    // refuses on its own (ADR-0114); a DateTimeOffset built from an unspecified DateTime, which takes the machine's
+    // offset; a date no calendar holds, refused by the constructor before any generator sees it.
+    [InlineData("Any.DateTime().Between(new DateTime(2026, 1, 2, 0, 0, 0, DateTimeKind.Local), new DateTime(2026, 1, 1))")]
+    [InlineData("Any.DateTimeOffset().Between(new DateTimeOffset(new DateTime(2026, 1, 2)), DateTimeOffset.UnixEpoch)")]
+    [InlineData("Any.DateTime().Between(new DateTime(2026, 13, 1), new DateTime(2026, 1, 1))")]
     public async Task Does_not_report_a_uri_component_an_offset_or_a_value_the_guard_may_accept(string expression) {
         ImmutableArray<Diagnostic> diagnostics = await AnalyzeWithDeclarationsAsync(expression);
 
@@ -235,6 +251,12 @@ public class Jd014RejectedConstantArgumentTests {
     [InlineData("Any.Decimal().MultipleOf(0.25m)")]
     // A start after the end on a time of day is the window across midnight, not a transposition (ADR-0125).
     [InlineData("Any.TimeOnly().Between(new System.TimeOnly(22, 0), new System.TimeOnly(6, 0))")]
+    // Temporal pairs in order, in the spellings the rule reads (issue #366).
+    [InlineData("Any.DateTime().Between(new DateTime(2026, 1, 1), new DateTime(2026, 1, 1))")]
+    [InlineData("Any.DateTime().Between(DateTime.MinValue, DateTime.MaxValue)")]
+    [InlineData("Any.DateOnly().Between(new DateOnly(2025, 1, 1), new DateOnly(2026, 1, 1))")]
+    [InlineData("Any.TimeSpan().Between(new TimeSpan(-1), TimeSpan.Zero)")]
+    [InlineData("Any.DateTimeOffset().Between(new DateTimeOffset(2026, 1, 1, 1, 0, 0, TimeSpan.FromHours(2)), new DateTimeOffset(2026, 1, 1, 1, 0, 0, TimeSpan.Zero))")]
     [InlineData("Any.Decimal().WithScale(28)")]
     [InlineData("Any.String().StartingWith(\"ORD-\")")]
     [InlineData("Any.String().OneOf(\"EUR\")")]
@@ -244,6 +266,7 @@ public class Jd014RejectedConstantArgumentTests {
     [InlineData("Any.UInt64().MultipleOf(4UL)")]
     public async Task Does_not_report_a_legal_argument(string expression) {
         string source = $$"""
+            using System;
             using JustDummies;
 
             public static class Sample {

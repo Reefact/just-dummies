@@ -128,6 +128,16 @@ public class Jd016CollectionConstraintsAdmitNoValueTests {
     // to the Char() factory beneath and answering 128 would be too wide, not too narrow.
     [InlineData("Any.SetOf(Any.Char().OneOf('a', 'b')).WithCount(5)", "only 2")]
     [InlineData("Any.SetOf(Any.Char().OneOf('a', 'b', 'c')).WithCount(4)", "only 3")]
+    // Issue #366: the character row is read with the family, the casing, the subtractions and the constant
+    // exclusions written on it, as AnyChar filters its pool -- eleven distinct digits of ten compiled clean and threw.
+    [InlineData("Any.ListOf(Any.Char().Numeric()).WithCount(11).Distinct()", "only 10")]
+    [InlineData("Any.SetOf(Any.Char().Alpha().InUpperCase()).WithCount(27)", "only 26")]
+    [InlineData("Any.SetOf(Any.Char().Hexadecimal().InLowerCase()).WithCount(17)", "only 16")]
+    [InlineData("Any.SetOf(Any.Char().Numeric().Except('0', '1')).WithCount(9)", "only 8")]
+    [InlineData("Any.SetOf(Any.Char().Numeric().DifferentFrom('0')).WithCount(10)", "only 9")]
+    [InlineData("Any.SetOf(Any.Char().Printable().WithoutAlpha().WithoutNumeric()).WithCount(34)", "only 33")]
+    [InlineData("Any.SetOf(Any.Char().Whitespaces()).WithCount(3)", "only 2")]
+    [InlineData("Any.SetOf(Any.Char().WithoutAlpha()).WithCount(77)", "only 76")]
     // Every typed generator's own pool, not only the character one: these compiled clean and threw (issue #326).
     [InlineData("Any.SetOf(Any.Int32().OneOf(1, 2)).WithCount(3)", "only 2")]
     [InlineData("Any.ArrayOf(Any.Double().OneOf(1.0, 2.0)).WithCount(3).Distinct()", "only 2")]
@@ -226,13 +236,19 @@ public class Jd016CollectionConstraintsAdmitNoValueTests {
     [InlineData("Any.SetOf(Any.OneOf(1, 2)).ContainingAny(Any.OneOf(3)).WithCount(3)")]
     [InlineData("Any.DictionaryOf(Any.OneOf(1, 2), Any.Int32()).ContainingAnyKey(Any.OneOf(3)).WithCount(3)")]
     [InlineData("Any.SetOf(Any.Char()).Containing('\\u00e9').WithCount(129)")]
+    // A narrowed character row that still fits, a pin outside the family filling its own slot, an exclusion the
+    // compiler cannot read leaving the count an upper bound, and a second family, which is JD034's (issue #366).
+    [InlineData("Any.SetOf(Any.Char().Numeric()).WithCount(10)")]
+    [InlineData("Any.SetOf(Any.Char().Numeric()).Containing('a').WithCount(11)")]
+    [InlineData("Any.SetOf(Any.Char().Numeric().Except(excluded)).WithCount(10)")]
+    [InlineData("Any.SetOf(Any.Char().Alpha().Numeric()).WithCount(11)")]
     [InlineData("Any.ListOf(Any.Int32()).WithCount(3).Ordered().Distinct()")]
     public async Task Does_not_report_a_satisfiable_chain(string expression) {
         string source = $$"""
             using JustDummies;
 
             public static class Sample {
-                public static void M() {
+                public static void M(char excluded) {
                     _ = {{expression}};
                 }
             }

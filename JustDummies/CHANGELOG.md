@@ -187,6 +187,14 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Changed
 
+- **JD014, JD016 and JD034 close three constant misses.** Each chain threw on every run and compiled
+  clean. JD014 reports a transposed `Between` on `DateOnly`, `DateTime`, `DateTimeOffset` and `TimeSpan`
+  — not on `TimeOnly`, where a start after the end is the window across midnight — reading every spelling
+  of a temporal constant: a constructor, `MinValue` and `MaxValue`, `DateTime.UnixEpoch`,
+  `DateOnly.FromDayNumber`, the `TimeSpan` factories. JD016 counts a character row narrowed by its family,
+  its casing, its subtractions and its constant exclusions, so eleven distinct digits of ten are
+  reported. JD034 reads a `Guid`'s `Empty()` and `NonEmpty()` as one slot, so the pair is reported in
+  either order (issue #366).
 - **JD007 and JD009 count a `Generate()` on any `IAny<T>` as a draw.** Both rules recognised only a
   chain written inline from `Any`, so a scaffolded `Any.Order()` entry point, a `new AnyOrder()`, a
   generator held in a field, a hand-written generator and a chain through an extension of your own

@@ -25,9 +25,6 @@ public sealed class CollectionConstraintsAdmitNoValueAnalyzer : DiagnosticAnalyz
     /// </summary>
     private const int BooleanValueCount = 2;
 
-    /// <summary>How many characters the unconstrained character row draws — the ASCII pool of ADR-0075.</summary>
-    private const int AsciiValueCount = 128;
-
     /// <summary>The whole of a byte, signed or not.</summary>
     private const int ByteValueCount = 256;
 
@@ -200,8 +197,9 @@ public sealed class CollectionConstraintsAdmitNoValueAnalyzer : DiagnosticAnalyz
         // through rather than trusted, and so is a OneOf declared outside JustDummies, whose meaning is its own. A
         // value the collection pins outside the pool -- the widening #188 made legal,
         // SetOf(Any.Int32().OneOf(1, 2)).WithCount(3).Containing(3) -- still reaches the count through mayExtend.
-        IInvocationOperation root          = element;
-        bool                 sameGenerator = true;
+        IInvocationOperation       root          = element;
+        bool                       sameGenerator = true;
+        List<IInvocationOperation> narrowing     = [];
         while (root.Instance is not null && GeneratorFacts.Unwrap(root.Instance) is IInvocationOperation inner) {
             if (root.TargetMethod.Name == "AllowingCombinations") { return false; }
 
@@ -209,16 +207,18 @@ public sealed class CollectionConstraintsAdmitNoValueAnalyzer : DiagnosticAnalyz
             // A pool the compiler cannot count -- a sequence, a value it cannot fold -- is still bounded by the row
             // beneath it, so the walk goes on rather than giving up.
             if (sameGenerator && TryCountTypedPool(root, symbols, out cardinality, out mayExtend)) { return true; }
+            // The constraints written on the row itself, outermost first; a row that narrows by family reads them.
+            if (sameGenerator) { narrowing.Add(root); }
 
             root = inner;
         }
 
         // The rows below are named after JustDummies' own factories; a project's same-named method proves nothing.
-        return symbols.IsJustDummiesMember(root.TargetMethod) && TryGetRowCardinality(root, out cardinality, out mayExtend);
+        return symbols.IsJustDummiesMember(root.TargetMethod) && TryGetRowCardinality(root, narrowing, out cardinality, out mayExtend);
     }
 
     /// <summary>The distinct domain of the JustDummies factory the element walk ended on, where the compiler settles it.</summary>
-    private static bool TryGetRowCardinality(IInvocationOperation root, out int cardinality, out Func<IOperation, bool> mayExtend) {
+    private static bool TryGetRowCardinality(IInvocationOperation root, IReadOnlyList<IInvocationOperation> narrowing, out int cardinality, out Func<IOperation, bool> mayExtend) {
         cardinality = 0;
         mayExtend   = _ => true;
 
@@ -243,12 +243,10 @@ public sealed class CollectionConstraintsAdmitNoValueAnalyzer : DiagnosticAnalyz
 
             // The small primitive rows. Their domains are settled and reachable by an ordinary floor — the
             // unconstrained character row draws the ASCII pool of ADR-0075, not the 16 bits a `char` holds — so a
-            // count above them is provably unsatisfiable rather than merely large.
+            // count above them is provably unsatisfiable rather than merely large. The character row is read with
+            // the families, the casing, the subtractions and the constant exclusions written on it (issue #366).
             case "Char":
-                cardinality = AsciiValueCount;
-                mayExtend   = pin => !(pin.ConstantValue is { HasValue: true, Value: char character } && character < AsciiValueCount);
-
-                return true;
+                return TryCountCharacterPool(narrowing, out cardinality, out mayExtend);
 
             case "Byte" or "SByte":
                 cardinality = ByteValueCount;
@@ -279,6 +277,86 @@ public sealed class CollectionConstraintsAdmitNoValueAnalyzer : DiagnosticAnalyz
             default:
                 return false;
         }
+    }
+
+    /// <summary>
+    ///     The characters an <c>Any.Char()</c> chain leaves drawable: the ASCII row narrowed by the family, the casing,
+    ///     the subtractions and the constant exclusions it declares, as <c>AnyChar</c> materializes its pool. The
+    ///     constraints only ever remove characters, so an exclusion the compiler cannot read is skipped and the count
+    ///     stays an upper bound, which is the side a cardinality gate may err on. A second family or a second casing
+    ///     is JD034's, and a pool emptied at declaration is the run time's own refusal: the count stands down on both.
+    /// </summary>
+    private static bool TryCountCharacterPool(IReadOnlyList<IInvocationOperation> narrowing, out int cardinality, out Func<IOperation, bool> mayExtend) {
+        cardinality = 0;
+        mayExtend   = _ => true;
+
+        CharacterPool pool = new();
+        if (narrowing.Any(call => !pool.Narrow(call))) { return false; }
+
+        HashSet<char> remaining = [.. CharacterFamilies.Ascii.Where(pool.Admits)];
+        cardinality = remaining.Count;
+        mayExtend   = pin => !(pin.ConstantValue is { HasValue: true, Value: char pinned } && remaining.Contains(pinned));
+
+        return cardinality > 0;
+    }
+
+    /// <summary>
+    ///     What an <c>Any.Char()</c> chain declares about its characters, read call by call: the one family, the one
+    ///     casing, the subtractions and the constant exclusions — the tests <c>AnyChar</c> filters its pool with.
+    /// </summary>
+    private sealed class CharacterPool {
+
+        private readonly List<string>  _removed  = [];
+        private readonly HashSet<char> _excluded = [];
+        private string?                _family;
+        private string?                _casing;
+
+        /// <summary>Reads one call; <c>false</c> for a second family or a second casing, which JD034 reports.</summary>
+        public bool Narrow(IInvocationOperation call) {
+            string name = call.TargetMethod.Name;
+
+            if (CharacterFamilies.PoolFor(name) is string family) {
+                if (_family is not null) { return false; }
+
+                _family = family;
+            } else if (name is "WithoutAlpha" or "WithoutNumeric") {
+                _removed.Add(CharacterFamilies.PoolFor(name.Substring("Without".Length))!);
+            } else if (name is "InLowerCase" or "InUpperCase") {
+                if (_casing is not null && _casing != name) { return false; }
+
+                _casing = name;
+            } else if (name is "Except" or "DifferentFrom") {
+                Exclude(name == "Except" ? ValueSetFacts.ParamArrayElements(call) : call.Arguments.Select(argument => argument.Value));
+            }
+
+            return true;
+        }
+
+        /// <summary>Whether the character survives every constraint read so far.</summary>
+        public bool Admits(char character) {
+            return (_family is null || _family.IndexOf(character) >= 0)
+                && MatchesCasing(character)
+                && _removed.All(subtracted => subtracted.IndexOf(character) < 0)
+                && !_excluded.Contains(character);
+        }
+
+        // An element the compiler cannot read removes at most one character the count cannot name, so it is skipped
+        // and the count stays an upper bound.
+        private void Exclude(IEnumerable<IOperation> elements) {
+            foreach (IOperation element in elements) {
+                if (GeneratorFacts.Unwrap(element).ConstantValue is { HasValue: true, Value: char character }) { _excluded.Add(character); }
+            }
+        }
+
+        // A letter of the other case is refused, and a non-letter always survives, as CharacterPools.MatchesCasing reads it.
+        private bool MatchesCasing(char character) {
+            return _casing switch {
+                "InLowerCase" => character is not (>= 'A' and <= 'Z'),
+                "InUpperCase" => character is not (>= 'a' and <= 'z'),
+                _             => true
+            };
+        }
+
     }
 
     // A JustDummies OneOf(...) whose values the compiler can count.

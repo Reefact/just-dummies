@@ -143,7 +143,7 @@ internal static class ConstantFacts {
     }
 
     /// <summary>A constant integral value, or a floating-point constant with no fractional part; <c>null</c> otherwise.</summary>
-    private static long? Integral(IOperation operation) {
+    internal static long? Integral(IOperation operation) {
         if (operation.ConstantValue is not { HasValue: true, Value: { } value }) { return null; }
 
         return value switch {

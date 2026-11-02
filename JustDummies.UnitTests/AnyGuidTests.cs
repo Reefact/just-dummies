@@ -1,5 +1,6 @@
 #region Usings declarations
 
+using System.Diagnostics.CodeAnalysis;
 using JetBrains.Annotations;
 
 using NFluent;
@@ -40,6 +41,7 @@ public sealed class AnyGuidTests {
     }
 
     [Fact(DisplayName = "NonEmpty and Empty contradict each other, and the conflict names both sides.")]
+    [SuppressMessage(JustDummiesRule.JD034.Category, JustDummiesRule.JD034.Id, Justification = SuppressionJustification.JD034.ThrowIsTheSubject)]
     public void NonEmptyAndEmptyContradictEachOther() {
         Check.ThatCode(() => Any.Guid().NonEmpty().Empty())
              .Throws<ConflictingAnyConstraintException>()

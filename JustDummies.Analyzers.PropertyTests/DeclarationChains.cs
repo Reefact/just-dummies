@@ -124,6 +124,13 @@ internal static class DeclarationChains {
             On<AnyDateTimeOffset>("WithOffsetBetween(TimeSpan.FromHours(2), TimeSpan.FromHours(1))", g => g.WithOffsetBetween(TimeSpan.FromHours(2), TimeSpan.FromHours(1))),
             On<AnyDateTimeOffset>("WithGranularity(TimeSpan.FromMinutes(1))", g => g.WithGranularity(TimeSpan.FromMinutes(1))),
             On<AnyDateTimeOffset>("WithGranularity(TimeSpan.FromHours(1))", g => g.WithGranularity(TimeSpan.FromHours(1)))),
+        // A Guid is either pinned to Guid.Empty or kept away from it (issue #366): the pair is the one conflict of values
+        // JD034 claims, and the oracle reads its refusal as a declaration refused (see DeclarationChain). No exclusion
+        // here: Except(Guid.Empty) after Empty() meets the same refusal, and that one is a conflict of values the rule
+        // leaves alone.
+        new("Any.Guid()", context => context.Guid(),
+            On<AnyGuid>("Empty()", g => g.Empty()),
+            On<AnyGuid>("NonEmpty()", g => g.NonEmpty())),
         new("Any.ListOf(Any.Int32())", context => Any.ListOf(context.Int32()),
             On<AnyList<int>>("Empty()", g => g.Empty()),
             On<AnyList<int>>("WithCount(0)", g => g.WithCount(0)),

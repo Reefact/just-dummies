@@ -125,11 +125,14 @@ internal static class ChainEdits {
         return candidate;
     }
 
-    /// <summary>The names every declaration under <paramref name="scope" /> introduces: locals, parameters, designations, loop and catch variables.</summary>
-    public static HashSet<string> DeclaredNames(SyntaxNode scope) {
+    /// <summary>
+    ///     The names every declaration under <paramref name="scope" /> introduces — locals, parameters, designations,
+    ///     loop and catch variables, local functions — leaving out those under <paramref name="except" />.
+    /// </summary>
+    public static HashSet<string> DeclaredNames(SyntaxNode scope, SyntaxNode? except = null) {
         HashSet<string> names = [];
-        foreach (SyntaxNode node in scope.DescendantNodesAndSelf()) {
-            if (DeclaredName(node) is string name) { names.Add(name); }
+        foreach (SyntaxNode node in scope.DescendantNodesAndSelf(node => node != except)) {
+            if (node != except && DeclaredName(node) is string name) { names.Add(name); }
         }
 
         return names;

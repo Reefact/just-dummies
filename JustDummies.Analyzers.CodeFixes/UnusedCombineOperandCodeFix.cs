@@ -48,8 +48,10 @@ public sealed class UnusedCombineOperandCodeFix : CodeFixProvider {
 
     /// <summary>
     ///     Whether naming the parameter <c>_</c> leaves the lambda as it compiles: nothing in its body, nested lambdas
-    ///     included, resolves to the parameter, and no local or designation of the lambda is named <c>_</c> already.
-    ///     A second parameter named <c>_</c> is a discard pair, which C# 9 admits; below it the fix stays away.
+    ///     included, resolves to the parameter, and no local, parameter or designation of the member around the
+    ///     lambda — inside its body or in an enclosing scope, declared before or after — is named <c>_</c> already,
+    ///     since a parameter cannot take a name an enclosing scope uses. A second parameter of the lambda named
+    ///     <c>_</c> is a discard pair, which C# 9 admits; below it the fix stays away.
     /// </summary>
     private static bool CanBeDiscarded(SemanticModel model, ParameterSyntax parameter) {
         if (parameter.Parent?.Parent is not ParenthesizedLambdaExpressionSyntax lambda) { return false; }
@@ -59,7 +61,8 @@ public sealed class UnusedCombineOperandCodeFix : CodeFixProvider {
                                 .Any(identifier => SymbolEqualityComparer.Default.Equals(model.GetSymbolInfo(identifier).Symbol, symbol));
         if (referenced) { return false; }
 
-        HashSet<string> declared = ChainEdits.DeclaredNames(lambda.Body);
+        SyntaxNode      member   = lambda.FirstAncestorOrSelf<MemberDeclarationSyntax>() ?? lambda.SyntaxTree.GetRoot();
+        HashSet<string> declared = ChainEdits.DeclaredNames(member, except: lambda.ParameterList);
         if (declared.Contains(Discard)) { return false; }
 
         bool discardPairsAllowed = lambda.SyntaxTree.Options is CSharpParseOptions { LanguageVersion: >= LanguageVersion.CSharp9 };

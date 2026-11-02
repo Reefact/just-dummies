@@ -235,7 +235,13 @@ public class CodeFixTests {
     [Theory]
     [InlineData("_ = Any.Combine(Any.Int32(), Any.String(), (number, text) => { int _ = 1; return number + _; });")]
     [InlineData("_ = Any.Combine(Any.Int32(), Any.String(), (number, text) => { Func<int> _ = () => number; return _(); });")]
-    public async Task JD027_offers_nothing_where_the_lambda_declares_an_underscore_of_its_own(string statement) {
+    // A `_` declared in an enclosing scope, before or after the lambda, or as the parameter of an outer lambda: a
+    // parameter cannot take a name an enclosing scope uses (CS0136).
+    [InlineData("int _ = 0; object composed = Any.Combine(Any.Int32(), Any.String(), (number, text) => number);")]
+    [InlineData("object composed = Any.Combine(Any.Int32(), Any.String(), (number, text) => number); int _ = 0;")]
+    [InlineData("Func<int, object> composer = _ => Any.Combine(Any.Int32(), Any.String(), (number, text) => number);")]
+    [InlineData("foreach (int _ in ids) { object composed = Any.Combine(Any.Int32(), Any.String(), (number, text) => number); }")]
+    public async Task JD027_offers_nothing_where_an_underscore_is_declared_around_the_parameter(string statement) {
         // A local named `_` beside a parameter named `_` is a duplicate identifier: the rule reports, the fix stays away.
         IReadOnlyList<string> offered = await CodeFixTestHarness.OffersAsync(new UnusedCombineOperandAnalyzer(), new UnusedCombineOperandCodeFix(), Statement(statement));
 

@@ -617,12 +617,21 @@ for you. Decision:
 
 ## When a guard ties two parameters
 
-`start < end`, a claim inside a policy period, a check digit computed from the digits before it: no
-per-parameter recipe can honour a rule that lives *between* parameters, so the tool marks every
-parameter it touches `to verify` and stops the build at the first, as it does for any guard it cannot
-vouch for ([ADR-0060](../../for-maintainers/adr/0060-seed-generators-from-constructor-guards.md)). That is
-the design, not a gap: the generator is a base you own, and the rule is yours to write. Four forms
-cover most cases, none of which asks the tool to be cleverer.
+**A direct order is drawn for you.** When the constructor compares two of its parameters of one
+ordered type — `if (start > end) { throw … }`, or `>=`, or the mirrored `end < start` — the tool draws
+them together through `Any.OrderedPair`, so `start` is never after `end` (never equal either, for
+`>=`), and each keeps the guards it has on its own. `WithStart(…)` and `WithEnd(…)` keep their
+meaning: a pin on one side bounds the other, it survives a refinement of the other side, and two pins
+in the wrong order are refused at the second call, naming both. Nothing is left to verify, so a later
+`--force` loses nothing.
+
+Every other rule between parameters — `start < end` written as a sum, a claim inside a policy period,
+a chain of three, a check digit computed from the digits before it — is one no per-parameter recipe
+can honour, so the tool marks every parameter it touches `to verify` and stops the build at the
+first, as it does for any guard it cannot vouch for
+([ADR-0060](../../for-maintainers/adr/0060-seed-generators-from-constructor-guards.md)). That is the
+design, not a gap: the generator is a base you own, and the rule is yours to write. Four forms cover
+most cases, none of which asks the tool to be cleverer.
 
 **Draw a start and a duration, rather than two bounds.** A positive duration added to a start cannot
 land before it, so the rule holds by construction instead of by retrying:
@@ -657,7 +666,15 @@ public static class BookingGenerators {
 
 **Derive one draw from another inside `Generate()`.** The scaffolder wrote one draw per parameter;
 `Generate()` is ordinary code, so the dependent one can be computed from the first
-(`DateTime end = start + _duration.Generate();`) before the constructor is called.
+(`DateTime end = start + _duration.Generate();`) before the constructor is called. The library's own
+seams work there too: `Any.OrderedPair(_startRecipe, _endRecipe).Generate()` for an order the tool
+did not pair, `_start.Then(start => …)` for a draw that depends on another.
+
+Two consequences follow, and both are yours to weigh. A parameter you now derive no longer draws from
+its field, so its `With…` pin no longer reaches the draw: `WithEnd(…)` sets a field your `Generate()`
+does not read. And pinning one side of a tie while the other is still drawn on its own holds the rule
+only on the draws where it happens to: the test then depends on the seed. Pin both, or write the tie
+in `Generate()`.
 
 **Draw the body, then derive the check digit.** A check digit is not drawn, it is computed, and
 `.As(…)` is the one-line form:
@@ -721,9 +738,11 @@ public static class CrossingGenerators {
 ```
 
 Whichever you pick, delete the `TODO` line once the rule is written: it was only there to stop the
-build until you read it. Mind that `any generate … --force` rewrites the whole generated file, a
-hand-written `Generate()` included. The file you keep beside it, as in
-[Adding the overload yourself](#adding-the-overload-yourself), is the one that survives.
+build until you read it. The generated file is yours: editing `Generate()` is the ordinary use of it,
+not a workaround. Mind that `any generate … --force` rewrites the whole file, a hand-written
+`Generate()` included — by design, since the tool has no way to know which of your edits you would
+keep. The file you keep beside it, as in [Adding the overload yourself](#adding-the-overload-yourself),
+is the one that survives.
 
 ## Reporting to a script
 

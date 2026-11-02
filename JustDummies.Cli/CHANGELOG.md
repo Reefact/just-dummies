@@ -10,6 +10,13 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Changed
 
+- **Two parameters a guard ties by an order are drawn as one pair.** Where the constructor compares two
+  parameters of one ordered type directly — `if (start > end) { throw … }`, `>=`, or the mirrored `end < start` —
+  the scaffold draws both through `Any.OrderedPair` instead of marking them `to verify`, so the order holds by
+  construction and a later `--force` loses nothing. `WithStart(…)` and `WithEnd(…)` keep their meaning: a pin on
+  one side bounds the other and survives a refinement of it, and two pins out of order are refused at the second
+  call. Every other rule between parameters — computed, across types, or a chain of three — is still marked `to
+  verify`, and the CLI page now says how to write it in `Generate()` (issue #405).
 - **A nullable parameter draws `null` one draw in ten, unless a guard refuses it (ADR-0117).** Its type
   declares `null` valid, so the recipe constructor now draws `<base>.OrNull()` instead of a recipe that never
   yields `null`. Only the default does: a refining `With…(x => …)` describes a value and never yields `null` —

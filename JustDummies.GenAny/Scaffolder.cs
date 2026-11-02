@@ -129,6 +129,8 @@ public static class Scaffolder {
         GeneratorFor generators    = new(library, names, options.Naming);
         GuardReading guards        = Guards.Read(chosen, compilation, names);
 
+        KeepTheTiesItCanDraw(chosen, target, guards, generators, library);
+
         string targetName = names.Of(target);
 
         List<ScaffoldedParameter> parameters = [];
@@ -145,7 +147,8 @@ public static class Scaffolder {
                                 names.Usings,
                                 parameters,
                                 factory is null ? null : targetName + "." + factory.Name,
-                                library.CarriesFixed());
+                                library.CarriesFixed(),
+                                [.. guards.Ties.Select(tie => tie.Pairing)]);
 
         ScaffoldOutcome scaffolded = Assembled(plan, library, options);
 
@@ -202,7 +205,7 @@ public static class Scaffolder {
 
         // Computed from the constraints APPLIED, not the constraints read. §6 words this column `tightened`,
         // and a guard the generator carries no member for tightened nothing however well it was understood.
-        if (written.GuardApplied) { provenance |= Provenance.Guard; }
+        if (written.GuardApplied || guards.Tied(parameter.Name)) { provenance |= Provenance.Guard; }
         if (written.GuardsNotCombined) { provenance |= Provenance.GuardsNotCombined; }
         if (written.ConstraintUnavailable) { provenance |= Provenance.ConstraintUnavailable; }
 
@@ -212,6 +215,34 @@ public static class Scaffolder {
                                                                       written.Conversion, guards.UnreadAt(parameter.Name));
 
         return DrawsNull(parameter, guards, library) ? drawnFrom.DrawingNull() : drawnFrom;
+    }
+
+    /// <summary>
+    ///     Keeps each order read between two parameters that the file can draw as a pair, and marks the rest as any
+    ///     other rule between parameters is marked (§5.3, #405).
+    /// </summary>
+    /// <remarks>
+    ///     A pair is drawn when the library carries <c>Any.OrderedPair</c> over the generator both parameters
+    ///     draw from, and when neither parameter is held by another order: a chain <c>a ≤ b ≤ c</c> is a relation
+    ///     among three, which the engine does not try to solve (ADR-0046).
+    /// </remarks>
+    private static void KeepTheTiesItCanDraw(IMethodSymbol chosen,
+                                             INamedTypeSymbol target,
+                                             GuardReading guards,
+                                             GeneratorFor generators,
+                                             LibrarySurface library) {
+        // Counted on what was read, not on what is left: untying one order of a chain must not leave the next
+        // one looking alone.
+        List<(OrderedPairing Pairing, UnreadGuard At)> read = [.. guards.Ties];
+
+        foreach ((OrderedPairing pairing, UnreadGuard at) in read) {
+            bool alone = read.Count(tie => tie.Pairing.Ties(pairing.First) || tie.Pairing.Ties(pairing.Second)) == 1;
+
+            IParameterSymbol first = chosen.Parameters.First(parameter => parameter.Name == pairing.First);
+            DrawnGenerator   drawn = generators.Draw(first.Type, target);
+
+            if (!alone || !drawn.Resolved || !library.CarriesOrderedPair(drawn.Builder)) { guards.Untie(pairing, at); }
+        }
     }
 
     /// <summary>

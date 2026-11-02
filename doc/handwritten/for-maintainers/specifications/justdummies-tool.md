@@ -536,6 +536,14 @@ public sealed partial class AnyOrder : IAny<Order> {
   lambda describes a value and never yields `null`, and `With{Param}(null)` is ambiguous between the
   two overloads (`CS0121`), so the absence gets a method of its own. A parameter whose guard refuses
   `null` gets none (#411).
+* Per pair of parameters a guard ties by an order (§5.3), one field `_{first}And{Second}` of type
+  `AnyOrderedPair<T>` in place of their two draw fields, a `_{param}Pin` field beside each recipe,
+  and one private method `{First}And{Second}()` that builds the pair from the two current recipes —
+  `strict: true` for `>=` — and applies each pin through `WithFirst` or `WithSecond`. The two `With…`
+  overloads of a paired parameter keep their meaning: the value one stores the pin and the refining
+  one takes its place, and each rebuilds the pair, so a pin on one side bounds the other and survives
+  a refinement of it, and two pins out of order are refused at the second call. `Generate()` draws
+  the pair ahead of the construction and hands each side over by name (#405).
 * `using System;` is opened whenever a refining overload is emitted, for its `Func<,>`.
 * `public {Type} Generate()` calling the constructor with each field's `Generate()`.
 * A pin written `Any.Fixed(value)`: it accepts `null` (which `Any.OneOf(value)` rejects) and
@@ -789,7 +797,8 @@ conservative, mirroring how the library's own analyzers under-report rather than
 
 * it is an `if` statement whose body throws unconditionally;
 * it appears before the first assignment to a field or property;
-* its condition mentions **exactly one** parameter and contains no `&&` or `||`;
+* its condition mentions **exactly one** parameter — or two, in the one ordering row of the table
+  below — and contains no `&&` or `||`;
 * no write to that parameter can already have run where it sits;
 * every other operand is a compile-time constant.
 
@@ -919,6 +928,20 @@ The recognised set is closed:
 | `!Enum.IsDefined(typeof(E), p)`, `!Enum.IsDefined(p)` | none — `Any.Enum<E>()` already draws only declared members, **where `p` is of type `E`** |
 | `!double.IsFinite(p)`, `!float.IsFinite(p)` | none — `Any.Double()` and `Any.Single()` draw only finite values (ADR-0031), **where `p` is of that type** |
 | `p == E.Member` | `.DifferentFrom(E.Member)`, **where `p` is of type `E`** |
+| `a > b`, `a >= b`, `b < a`, `b <= a`, where `a` and `b` are two parameters of one ordered type | none on either chain: both are drawn as one `Any.OrderedPair(` over their two recipes, `strict: true` for `>=` (§4.2), **where the library carries a pair for that type and neither parameter is in another order** |
+
+**An order between two parameters is the one rule between parameters drawn rather than marked.**
+`if (arrival > departure) { throw … }` is what `Any.OrderedPair` draws by construction — the first
+kept at or below the largest value the second can take, then the second at or above it — so honouring
+it asks for no solver (ADR-0046), and the pair is generated rather than left to verify, so a later
+`--force` loses nothing (#405). Both parameters keep their own guards on their own recipes. The row is
+read where the comparison names the two parameters themselves, of one non-nullable value type, and is
+placed like any other guard; the scaffolder then draws the pair only where the library carries
+`Any.OrderedPair` over that type's generator and where neither parameter is in another order — `a ≤ b
+≤ c` is a relation among three. Anywhere else, and for every other rule between parameters — computed
+(`a + 1 > b`), across types, through a member, or of three — both parameters are marked `unread
+guards` as before. This is the field report ADR-0085 asks for: the second developer-UX trial met
+this shape in 15 of its 20 contexts.
 
 **The assigned null-check does not end the leading scan, unlike an ordinary write to state.** `f =
 p ?? throw new ArgumentNullException(nameof(p));` both validates and stores in the one statement a
@@ -1776,7 +1799,8 @@ Named explicitly so they are not mistaken for oversights.
 * **Object-graph auto-filling.** Composition is one hop through `Any{T}` or a one-parameter
   factory, depth-limited to 3. Beyond that the developer writes it.
 * **Invariants the tool cannot see.** §5.3 reads a closed set of guard idioms. Where the constructor
-  throws in a way the set does not match — a cross-parameter rule, an arithmetic condition, a regex
+  throws in a way the set does not match — a rule between parameters other than a direct order between
+  two (§5.3), an arithmetic condition, a regex
   guard (§5.3) — the parameter keeps the neutral generator, the recap marks it `unread guards`, and
   **the file does not compile until the developer says the generator is right** (§5.6): the recipe
   is still written, under a line naming an identifier that does not exist. The same mark reaches any

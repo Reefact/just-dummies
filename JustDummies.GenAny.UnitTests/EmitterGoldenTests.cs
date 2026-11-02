@@ -63,6 +63,11 @@ public sealed class EmitterGoldenTests {
         GoldenFile.Approve("AnyQuote", GeneratorEmitter.Emit(Shapes.Quote()).SourceText);
     }
 
+    [Fact(DisplayName = "Two parameters tied by an order, drawn as one pair.")]
+    public void TwoParametersTiedByAnOrder() {
+        GoldenFile.Approve("AnyBooking", GeneratorEmitter.Emit(Shapes.Booking()).SourceText);
+    }
+
     [Fact(DisplayName = "A static-factory target, whose Generate() calls the factory.")]
     public void AStaticFactoryTarget() {
         GoldenFile.Approve("AnyEmail", GeneratorEmitter.Emit(Shapes.Email()).SourceText);

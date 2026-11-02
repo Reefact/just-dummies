@@ -88,6 +88,20 @@ internal static class Shapes {
                                  ScaffoldedParameter.DrawnFrom("city", "string", "AnyString", "Any.String()")]);
     }
 
+    /// <summary>
+    ///     Two parameters a guard ties by an order — <c>if (start &gt; end) { throw … }</c> — drawn together through
+    ///     <c>Any.OrderedPair</c>, beside one drawn on its own (§4.2, #405).
+    /// </summary>
+    internal static ScaffoldPlan Booking() {
+        return new ScaffoldPlan(new TargetType("Booking", "Shop.Domain", NamespaceStyle.FileScoped),
+                                "AnyBooking",
+                                ["System", "JustDummies"],
+                                [ScaffoldedParameter.DrawnFrom("start", "DateTime", "AnyDateTime", "Any.DateTime()", Provenance.Guard),
+                                 ScaffoldedParameter.DrawnFrom("end", "DateTime", "AnyDateTime", "Any.DateTime()", Provenance.Guard),
+                                 ScaffoldedParameter.DrawnFrom("note", "string", "AnyString", "Any.String()")],
+                                pairings: [new OrderedPairing("start", "end", strict: false)]);
+    }
+
     /// <summary>A type with no accessible constructor: <c>Generate()</c> calls the static factory (§5.1).</summary>
     internal static ScaffoldPlan Email() {
         return new ScaffoldPlan(new TargetType("Email", "Shop.Domain", NamespaceStyle.FileScoped),

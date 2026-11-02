@@ -15,6 +15,8 @@ internal sealed class GuardReading {
 
     private readonly HashSet<string> refusingNull = new(StringComparer.Ordinal);
 
+    private readonly List<(OrderedPairing Pairing, UnreadGuard At)> ties = [];
+
     private GuardReading(bool sourceAvailable) {
         SourceAvailable = sourceAvailable;
     }
@@ -92,6 +94,32 @@ internal sealed class GuardReading {
 
     internal void RefuseNull(string parameter) {
         refusingNull.Add(parameter);
+    }
+
+    /// <summary>
+    ///     The orders read between two parameters, each with the guard it came from — where the scaffolder marks
+    ///     both parameters if it cannot draw them as a pair after all (§5.3, #405).
+    /// </summary>
+    internal IReadOnlyList<(OrderedPairing Pairing, UnreadGuard At)> Ties => ties;
+
+    internal void Tie(OrderedPairing pairing, UnreadGuard at) {
+        ties.Add((pairing, at));
+    }
+
+    /// <summary>
+    ///     Drops the order read at <paramref name="at" /> and marks both its parameters <c>unread guards</c> there —
+    ///     what any other rule between parameters earns — for an order the scaffolder cannot draw as a pair.
+    /// </summary>
+    internal void Untie(OrderedPairing pairing, UnreadGuard at) {
+        ties.RemoveAll(tie => ReferenceEquals(tie.Pairing, pairing));
+
+        MarkUnread(pairing.First, at);
+        MarkUnread(pairing.Second, at);
+    }
+
+    /// <summary>Whether an order read between two parameters involves <paramref name="parameter" />.</summary>
+    internal bool Tied(string parameter) {
+        return ties.Any(tie => tie.Pairing.Ties(parameter));
     }
 
     /// <summary>

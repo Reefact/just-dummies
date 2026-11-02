@@ -951,6 +951,7 @@ The recognised set is closed:
 | `double.IsNaN(p)`, `double.IsInfinity(p)`, `IsPositiveInfinity`, `IsNegativeInfinity`, and the `float` twins | none — `Any.Double()` and `Any.Single()` never draw NaN or an infinity, **where `p` is of that type** |
 | `A || B`, `p is P1 or P2` — a disjunction, each branch read as a guard of its own | the rows each branch reads into: `.Between(0, 23)` for `p < 0 || p > 23`, `.NotBlank().WithMaxLength(12)` for `IsNullOrWhiteSpace(p) || p.Length > 12` (ADR-0128) |
 | `p is < N`, `p is > N`, `p is N`, `p is null` — a relational or constant pattern, on `p` or on `p.Length` | the comparison the pattern spells: `.LessThanOrEqualTo(N)` for `p is > N`, `.WithMaxLength(N)` for `p.Length is > N` |
+| `p.Any(x => x is null)`, `p.Any(x => x == null)`, `p.Contains(null)` on a collection whose element type is not nullable | none — every element recipe the scaffold writes draws a value, so the guard holds by construction; and the parameter's default stops drawing `null` (§5.2). **Unread where the element type is nullable** (#403) |
 
 **Six shapes entered the set from the second trial's field report (#408), and each read is exact.** The
 negation of a comparison is the opposite comparison, with no third value for the two to disagree on
@@ -1136,6 +1137,15 @@ constructor demands — a wrong constraint, the one direction a reading must nev
 disjunction nested under a negation is a conjunction in disguise. Both trials are the field report
 ADR-0085 asks for: ten domains of the first, eighteen of the second's twenty contexts, where this
 was the largest cost measured.
+
+**A null-element check is satisfied by construction** (#403). `if (runs.Any(r => r is null)) { throw … }`
+on an `IReadOnlyList<Run>` refuses an element no recipe the scaffold writes ever draws: the table's
+rows draw values, and the generator a composed type owns draws that type. So the row adds nothing and
+marks nothing, which is what lets `runs.Count == 0 || runs.Any(r => r is null)` read whole as
+`.NonEmpty()`. Where the element type is nullable — `IReadOnlyList<Run?>` — the row does not apply
+and the mark stays: the element recipe may draw `null` into it one day, and the engine does not say
+it never will. A generator the developer replaces by hand is the developer's: the scaffold vouches
+for what it wrote, as everywhere else (§1).
 
 **Where the constraints attach.** A guard-derived constraint belongs to the generator for the
 parameter's own type, *before* any conversion or composition. An `int?` parameter guarded by

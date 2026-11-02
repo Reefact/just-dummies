@@ -2100,21 +2100,92 @@ internal static class Guards {
                 || IsAFloatingPointCheckOnTheParameter(negation.Operand, model, parameter, "IsFinite");
         }
 
-        if (condition is InvocationExpressionSyntax invocation) { return TryCallCondition(invocation, model, parameter, sizes, out constraint); }
+        if (condition is InvocationExpressionSyntax invocation) {
+            return TryNullElementCheck(invocation, model, parameter, out constraint)
+                || TryCallCondition(invocation, model, parameter, sizes, out constraint);
+        }
 
         if (condition is not BinaryExpressionSyntax comparison) { return false; }
 
-        // `p is E.Member` is parsed as a type test, the member's spelling being a qualified name, and bound as the
-        // constant pattern it is: the equality it spells, where the name resolves to a constant (ADR-0128).
-        if (comparison.IsKind(SyntaxKind.IsExpression)) {
-            return IsSubject(comparison.Left, model, parameter)
-                && model.GetSymbolInfo(comparison.Right).Symbol is IFieldSymbol { HasConstantValue: true }
-                && TryBound(new Comparison(null, comparison.Left, comparison.Right, SyntaxKind.EqualsExpression), model, parameter, sizes, names, out constraint);
-        }
+        if (comparison.IsKind(SyntaxKind.IsExpression)) { return TryIsConstant(comparison, model, parameter, sizes, names, out constraint); }
 
         return TryScale(comparison, model, parameter, out constraint)
             || TryCharset(comparison, model, parameter, out constraint)
             || TryComparison(comparison, comparison.Kind(), model, parameter, sizes, names, out constraint);
+    }
+
+    /// <summary>
+    ///     <c>p is E.Member</c>, parsed as a type test since the member's spelling is a qualified name, and bound as
+    ///     the constant pattern it is: the equality it spells, where the name resolves to a constant (ADR-0128).
+    /// </summary>
+    private static bool TryIsConstant(BinaryExpressionSyntax test,
+                                      SemanticModel model,
+                                      IParameterSymbol parameter,
+                                      (bool ByCount, int Ceiling, int Floor) sizes,
+                                      TypeNames names,
+                                      out GuardConstraint? constraint) {
+        constraint = null;
+
+        return IsSubject(test.Left, model, parameter)
+            && model.GetSymbolInfo(test.Right).Symbol is IFieldSymbol { HasConstantValue: true }
+            && TryBound(new Comparison(null, test.Left, test.Right, SyntaxKind.EqualsExpression), model, parameter, sizes, names, out constraint);
+    }
+
+    /// <summary>
+    ///     <c>items.Any(x =&gt; x is null)</c>, <c>items.Any(x =&gt; x == null)</c> or <c>items.Contains(null)</c> on a
+    ///     collection parameter whose element type is not nullable: satisfied by construction, since every element
+    ///     recipe the scaffold writes — the table's, or the generator the element type owns — draws a value, so the
+    ///     guard is understood and adds nothing; the receiver is dereferenced, so the parameter itself refuses null
+    ///     (#403).
+    /// </summary>
+    /// <remarks>
+    ///     Where the element type is nullable — <c>IReadOnlyList&lt;Run?&gt;</c> — the row does not apply and the
+    ///     guard keeps the mark: the element recipe is the parameter's own business there, and may draw <c>null</c>
+    ///     into it one day. The receiver has to <b>be</b> the parameter, the lambda's test has to be the null-check
+    ///     of its own parameter and nothing else, and the argument of <c>Contains</c> the null literal.
+    /// </remarks>
+    private static bool TryNullElementCheck(InvocationExpressionSyntax invocation, SemanticModel model, IParameterSymbol parameter, out GuardConstraint? constraint) {
+        constraint = null;
+
+        if (invocation.Expression is not MemberAccessExpressionSyntax { Expression: { } receiver, Name.Identifier.Text: "Any" or "Contains" } access
+         || !IsParameter(receiver, model, parameter)
+         || invocation.ArgumentList.Arguments.Count != 1
+         || ElementTypeOf(parameter.Type) is not { } element
+         || IsNullable(element)
+         || !TestsAnElementForNull(access.Name.Identifier.Text, invocation.ArgumentList.Arguments[0].Expression, model)) {
+            return false;
+        }
+
+        constraint = GuardConstraint.NullRefused;
+
+        return true;
+    }
+
+    /// <summary>A reference type annotated <c>?</c>, or a <c>Nullable&lt;T&gt;</c>.</summary>
+    private static bool IsNullable(ITypeSymbol type) {
+        return type.NullableAnnotation == NullableAnnotation.Annotated
+            || type is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T };
+    }
+
+    /// <summary>
+    ///     <c>Contains(null)</c>, or <c>Any(x =&gt; x is null)</c> and <c>Any(x =&gt; x == null)</c> — a lambda whose
+    ///     body is the null-check of its own parameter and names nothing else.
+    /// </summary>
+    private static bool TestsAnElementForNull(string method, ExpressionSyntax argument, SemanticModel model) {
+        if (method == "Contains") { return IsNull(argument); }
+
+        return argument is SimpleLambdaExpressionSyntax { Body: ExpressionSyntax test } lambda
+            && IsNullCheck(test, model)
+            && NamedSymbols(test, model).All(symbol => symbol is IParameterSymbol named && named.Name == lambda.Parameter.Identifier.ValueText);
+    }
+
+    /// <summary>The element type of an array or of a generic collection, or null where the type holds none.</summary>
+    private static ITypeSymbol? ElementTypeOf(ITypeSymbol type) {
+        return type switch {
+            IArrayTypeSymbol array                                       => array.ElementType,
+            INamedTypeSymbol { IsGenericType: true, TypeArguments.Length: 1 } collection => collection.TypeArguments[0],
+            _                                                            => null
+        };
     }
 
     /// <summary>The rows of the closed set whose condition is a call on the parameter, standing alone.</summary>

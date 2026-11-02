@@ -15,8 +15,8 @@ namespace JustDummies.GenAny.UnitTests;
 /// </summary>
 /// <remarks>
 ///     <para>
-///         §5.3 declares the set of guard idioms the reader recognises and calls it <b>closed</b> — twenty-eight
-///         rows of BCL conditions, thirteen of guard-library helpers. Forty-one cells, and until this test
+///         §5.3 declares the set of guard idioms the reader recognises and calls it <b>closed</b> — twenty-nine
+///         rows of BCL conditions, thirteen of guard-library helpers. Forty-two cells, and until this test
 ///         nothing read them. They were prose: a reader took the table for the truth, and no failure could
 ///         follow from a row nobody had ever exercised.
 ///     </para>
@@ -48,7 +48,7 @@ public sealed partial class RecognisedIdiomCoverageTests {
     ///     otherwise make this suite greener, which is the one direction a coverage test must never fail in.
     /// </remarks>
     private static readonly (string Marker, int Rows)[] Tables = [
-        ("The recognised set is closed:", 28),
+        ("The recognised set is closed:", 29),
         ("The mapped rows are exactly these:", 13)
     ];
 

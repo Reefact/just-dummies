@@ -1187,6 +1187,18 @@ internal static class GuardCorpus {
                                                                         }
                                                                         """, requiresVerification: true),
 
+        // ---- #403: a null-element check on a collection whose elements the scaffold draws holds by construction.
+
+        new GuardedShape("null-element-check", "Relay", """
+                                                        public sealed class Relay {
+                                                            public Relay(IReadOnlyList<string> runs, string[] legs, List<string> laps) {
+                                                                if (runs.Count == 0 || runs.Any(r => r is null)) { throw new ArgumentException(nameof(runs)); }
+                                                                if (legs.Any(l => l == null)) { throw new ArgumentException(nameof(legs)); }
+                                                                if (laps.Contains(null)) { throw new ArgumentException(nameof(laps)); }
+                                                            }
+                                                        }
+                                                        """, usings: "using System.Linq;", idioms: ["`p.Any(x => x is null)`, `p.Any(x => x == null)`, `p.Contains(null)` on a collection whose element type is not nullable"]),
+
         new GuardedShape("ardalis-null", "Envelope", """
                                                      public sealed class Envelope {
 

@@ -27,6 +27,12 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   `step is 0`) is the comparison it spells. A conjunction (`&&`) is still not read: it would narrow the draw past
   what the constructor demands. A file whose parameter was marked `to verify` for such a guard is read on the next
   `--force` (issue #364).
+- **A null-element check on a collection is satisfied by construction.** `if (runs.Any(r => r is null)) { throw … }`,
+  `r == null` or `runs.Contains(null)` on a collection whose element type is not nullable marked the parameter
+  `to verify`, although no element recipe the scaffold writes ever draws `null`. The guard is now read as holding,
+  adding nothing — so `runs.Count == 0 || runs.Any(r => r is null)` reads whole as `.NonEmpty()` — and the
+  parameter itself stops drawing `null`, since the check dereferences it. On a nullable element type
+  (`IReadOnlyList<Run?>`) the mark stays (issue #403).
 
 ### Changed
 

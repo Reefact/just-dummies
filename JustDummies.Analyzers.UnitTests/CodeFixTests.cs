@@ -53,10 +53,32 @@ public class CodeFixTests {
     [InlineData("Any.Int32().GreaterThanOrEqualTo(1).Positive().LessThanOrEqualTo(50)", "Any.Int32().Between(1, 50).Positive()")]
     [InlineData("Any.ListOf(Any.Int32()).WithMinCount(2).WithMaxCount(4).Generate()",  "Any.ListOf(Any.Int32()).WithCountBetween(2, 4).Generate()")]
     [InlineData("Any.DateTime().AfterOrEqualTo(DateTime.MinValue).BeforeOrEqualTo(DateTime.MaxValue)", "Any.DateTime().Between(DateTime.MinValue, DateTime.MaxValue)")]
+    // A constant, a cast or a minus over one, a limit a System value type names, a System value type built from
+    // constants: nothing here runs when it is moved, so the rewrite keeps every observable order.
+    [InlineData("Any.Int32().GreaterThanOrEqualTo(Bounds.Floor).LessThanOrEqualTo(Bounds.Ceiling)",       "Any.Int32().Between(Bounds.Floor, Bounds.Ceiling)")]
+    [InlineData("Any.Int32().GreaterThanOrEqualTo(-(5)).LessThanOrEqualTo((int)50L)",                      "Any.Int32().Between(-(5), (int)50L)")]
+    [InlineData("Any.TimeSpan().GreaterThanOrEqualTo(TimeSpan.Zero).LessThanOrEqualTo(new TimeSpan(1, 0, 0))", "Any.TimeSpan().Between(TimeSpan.Zero, new TimeSpan(1, 0, 0))")]
+    [InlineData("Any.DateOnly().AfterOrEqualTo(DateOnly.MinValue).BeforeOrEqualTo(DateOnly.FromDayNumber(7))", "Any.DateOnly().Between(DateOnly.MinValue, DateOnly.FromDayNumber(7))")]
     public async Task JD031_writes_the_pair_as_the_range(string chain, string fixed_) {
         string rewritten = await CodeFixTestHarness.ApplyAsync(new PairedBoundsHaveARangeFormAnalyzer(), new PairedBoundsHaveARangeFormCodeFix(), Source(chain));
 
         Check.That(rewritten).IsEqualTo(Source(fixed_));
+    }
+
+    [Theory]
+    [InlineData("Any.Int32().GreaterThanOrEqualTo(Bounds.Minimum()).LessThanOrEqualTo(50)")]
+    [InlineData("Any.Int32().GreaterThanOrEqualTo(1).Positive().LessThanOrEqualTo(Bounds.Maximum())")]
+    [InlineData("Any.String().WithMinLength(Bounds.Minimum()).WithMaxLength(Bounds.Maximum())")]
+    [InlineData("Any.Int32().GreaterThanOrEqualTo(Bounds.Low).LessThanOrEqualTo(50)")]
+    [InlineData("Any.Int32().GreaterThanOrEqualTo(bound).LessThanOrEqualTo(50)")]
+    [InlineData("Any.DateTime().AfterOrEqualTo(DateTime.Now).BeforeOrEqualTo(DateTime.MaxValue)")]
+    public async Task JD031_offers_nothing_where_an_argument_may_run_code(string chain) {
+        // The rewrite carries the later bound's argument past the links written between the two, so an argument that
+        // runs the developer's own code -- a call, a property of their own, a local or a parameter -- could run in
+        // another order. The rule still reports the pair; the fix stays away.
+        IReadOnlyList<string> offered = await CodeFixTestHarness.OffersAsync(new PairedBoundsHaveARangeFormAnalyzer(), new PairedBoundsHaveARangeFormCodeFix(), Source(chain));
+
+        Check.That(offered).IsEmpty();
     }
 
     [Fact]
@@ -75,8 +97,16 @@ public class CodeFixTests {
             using System;
             using JustDummies;
 
+            public static class Bounds {
+                public const int Floor = 1;
+                public const int Ceiling = 50;
+                public static int Low => 1;
+                public static int Minimum() => 1;
+                public static int Maximum() => 50;
+            }
+
             public static class Sample {
-                public static object M() {
+                public static object M(int bound) {
                     return {{expression}};
                 }
             }

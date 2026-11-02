@@ -14,7 +14,10 @@ namespace JustDummies.Analyzers.CodeFixes;
 /// <summary>
 ///     The fix for JD031: the two inclusive bounds become the range form the rule names. The range method is the two
 ///     bounds it replaces, by construction, so the rewrite is exact; the rule hands the fix the two calls and the
-///     range's name through the diagnostic's properties (ADR-0130).
+///     range's name through the diagnostic's properties. The rewrite carries the later bound's argument past whatever
+///     was written between the two, so it is offered only over arguments that can move without anything observable
+///     changing, which <see cref="PureExpressions" /> vouches for: the rule reports a pair whatever its arguments, the
+///     fix stays away from a call into the developer's own code (ADR-0130).
 /// </summary>
 [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(PairedBoundsHaveARangeFormCodeFix))]
 [Shared]
@@ -30,15 +33,17 @@ public sealed class PairedBoundsHaveARangeFormCodeFix : CodeFixProvider {
 
     /// <inheritdoc />
     public override async Task RegisterCodeFixesAsync(CodeFixContext context) {
-        SyntaxNode? root = await context.Document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false);
-        if (root is null) { return; }
+        SyntaxNode?    root  = await context.Document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false);
+        SemanticModel? model = await context.Document.GetSemanticModelAsync(context.CancellationToken).ConfigureAwait(false);
+        if (root is null || model is null) { return; }
 
         foreach (Diagnostic diagnostic in context.Diagnostics) {
             if (!diagnostic.Properties.TryGetValue(DiagnosticProperties.Range, out string? range) || range is null) { continue; }
             if (Call(root, diagnostic, DiagnosticProperties.Minimum) is not InvocationExpressionSyntax minimum) { continue; }
             if (Call(root, diagnostic, DiagnosticProperties.Maximum) is not InvocationExpressionSyntax maximum) { continue; }
+            if (!PureExpressions.IsPure(model, Argument(minimum).Expression) || !PureExpressions.IsPure(model, Argument(maximum).Expression)) { continue; }
 
-            string title = $"Write the range as {range}({Argument(minimum)}, {Argument(maximum)})";
+            string title = $"Write the range as {range}({Argument(minimum).Expression}, {Argument(maximum).Expression})";
             context.RegisterCodeFix(CodeAction.Create(title, cancellation => RewrittenAsync(context.Document, minimum, maximum, range, cancellation), nameof(PairedBoundsHaveARangeFormCodeFix)), diagnostic);
         }
     }
@@ -75,8 +80,8 @@ public sealed class PairedBoundsHaveARangeFormCodeFix : CodeFixProvider {
         return root.FindNode(new TextSpan(start, length), getInnermostNodeForTie: true) as InvocationExpressionSyntax;
     }
 
-    private static string Argument(InvocationExpressionSyntax call) {
-        return call.ArgumentList.Arguments[0].Expression.ToString();
+    private static ArgumentSyntax Argument(InvocationExpressionSyntax call) {
+        return call.ArgumentList.Arguments[0];
     }
 
 }

@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Code fixes load in the same hosts as the analyzers, so they target the same floor. -->
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+
+    <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+
+    <!-- Packed into the JustDummies NuGet package (analyzers/dotnet/cs) beside the analyzers, not shipped on its own. -->
+    <IsPackable>false</IsPackable>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- LOAD CONTRACT — do not bump. A code fix runs in an IDE or in `dotnet format`, which load it from the same
+         analyzers/dotnet/cs folder as the rules; it is held to the same Roslyn floor so the oldest host that loads the
+         rules loads their fixes too (ADR-0001, ADR-0130). The compiler itself never instantiates a code fix, so this
+         assembly's reference to the workspace layer costs a build nothing. -->
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" VersionOverride="$(RoslynFloorVersion)" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" PrivateAssets="all">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The rules the fixes answer, for their ids. PrivateAssets="all" for the same reason as the analyzer's own
+         references: this DLL is carried inside JustDummies.nupkg and must reach its dependency graph with nothing. -->
+    <ProjectReference Include="..\JustDummies.Analyzers\JustDummies.Analyzers.csproj" PrivateAssets="all" />
+    <ProjectReference Include="..\JustDummies.DiagnosticCatalog\JustDummies.DiagnosticCatalog.csproj" PrivateAssets="all" />
+  </ItemGroup>
+
+</Project>

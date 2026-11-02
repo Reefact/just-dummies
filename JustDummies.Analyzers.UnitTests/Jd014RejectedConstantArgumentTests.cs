@@ -31,6 +31,8 @@ public class Jd014RejectedConstantArgumentTests {
     [Theory]
     [InlineData("Any.String().WithLengthBetween(10, 5)",        "transposed")]
     [InlineData("Any.Int32().Between(10, 5)",                   "transposed")]
+    // Read in parameter order, so a named pair written the other way round is judged on what it declares.
+    [InlineData("Any.Int32().Between(maximum: 5, minimum: 10)", "transposed")]
     [InlineData("Any.String().WithLength(-1)",                  "negative")]
     [InlineData("Any.String().WithMaxLength(-1)",               "negative")]
     [InlineData("Any.String().WithLength(2000000)",             "1,000,000")]

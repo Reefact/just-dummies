@@ -12,6 +12,7 @@ d'un type donné. Écrit pour qui s'apprête à modifier la bibliothèque, non �
 | --- | --- | --- | --- |
 | `JustDummies` | `JustDummies` | `netstandard2.0` + `net8.0` | la bibliothèque, analyzers empaquetés dedans |
 | `JustDummies.Analyzers` | *dans* `JustDummies` | `netstandard2.0` | les 38 règles Roslyn, sous `analyzers/dotnet/cs` |
+| `JustDummies.Analyzers.CodeFixes` | *dans* `JustDummies` | `netstandard2.0` | les correctifs de code, à côté des règles sous `analyzers/dotnet/cs` ([ADR-0130](./adr/0130-ship-code-fixes-beside-the-analyzers.fr.md)) |
 | `JustDummies.Xunit` | `JustDummies.Xunit` | `netstandard2.0` | l'adaptateur xUnit v3 — un attribut |
 | `JustDummies.DiagnosticCatalog` | `JustDummies.DiagnosticCatalog` | `netstandard2.0` | les ids de règles en constantes vérifiées |
 | `JustDummies.GenAny` | *dans* `JustDummies.Cli` | `netstandard2.0` | le moteur de `any` : les §3.2, §4 et §5 entières — recherche, émission, résolution, guards |

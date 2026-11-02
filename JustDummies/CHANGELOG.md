@@ -10,6 +10,13 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Added
 
+- **Three rules come with a code fix.** JD024 removes the constraint that narrows nothing, JD014 swaps a
+  transposed pair — on `Between`, `WithLengthBetween`, `WithCountBetween` and `WithOffsetBetween`, numeric
+  or temporal, keeping a name you wrote on its parameter — and JD031 writes two inclusive bounds as the
+  range the generator names, the bound written first keeping its place. The fixes ship in
+  `JustDummies.Analyzers.CodeFixes.dll` beside the rules under `analyzers/dotnet/cs`, at the same Roslyn
+  floor; an IDE or `dotnet format` offers them, the compiler never loads them. A rule gets a fix only
+  where exactly one rewrite keeps what you meant (issue #355, ADR-0130).
 - **JD038 reports a chain whose constant constraints admit exactly one value.** `Any.Int32().Between(5, 5)`,
   a floor and a ceiling that meet, a lattice with one point left in its range, a value set reduced to one
   value: a constant dressed as a draw, where what is significant should stay a literal. The rule reuses

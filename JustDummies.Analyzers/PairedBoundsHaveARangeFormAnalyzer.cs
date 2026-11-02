@@ -99,12 +99,23 @@ public sealed class PairedBoundsHaveARangeFormAnalyzer : DiagnosticAnalyzer {
             // the range method's own parameter order.
             IInvocationOperation first = minimum.Syntax.Span.End < maximum.Syntax.Span.End ? minimum : maximum;
 
+            // The fix is handed the two calls and the range by name rather than left to find them again (ADR-0130).
+            ImmutableDictionary<string, string?> properties = ImmutableDictionary<string, string?>.Empty
+                                                                                               .Add(DiagnosticProperties.Minimum, Span(minimum))
+                                                                                               .Add(DiagnosticProperties.Maximum, Span(maximum))
+                                                                                               .Add(DiagnosticProperties.Range, rangeName);
+
             context.ReportDiagnostic(Diagnostic.Create(
-                Descriptors.PairedBoundsHaveARangeForm, first.Syntax.GetLocation(),
+                Descriptors.PairedBoundsHaveARangeForm, first.Syntax.GetLocation(), properties,
                 $"{rangeName}({ArgumentText(minimum)}, {ArgumentText(maximum)})"));
 
             return;
         }
+    }
+
+    /// <summary>A call's span, as <c>start,length</c>, which is how a diagnostic property carries it.</summary>
+    private static string Span(IInvocationOperation call) {
+        return $"{call.Syntax.Span.Start},{call.Syntax.Span.Length}";
     }
 
     /// <summary>The chain's only single-argument call to <paramref name="name" />, or <c>null</c> if there is not exactly one.</summary>

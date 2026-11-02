@@ -286,3 +286,4 @@ que l'option existait le jour où elle compterait.
 | [ADR-0127](0127-draw-the-empty-value-unless-a-guard-refuses-it.fr.md) | Tirer la valeur vide sauf si une garde la refuse | Accepted | consigné ici |
 | [ADR-0128](0128-read-a-disjunction-guard-as-one-guard-per-branch.fr.md) | Lire une garde disjonctive comme une garde par branche | Accepted | consigné ici |
 | [ADR-0129](0129-report-a-chain-whose-constants-admit-exactly-one-value.fr.md) | Signaler une chaîne dont les constantes n'admettent qu'une seule valeur, sur tous les types exacts | Proposed | consigné ici |
+| [ADR-0130](0130-ship-code-fixes-beside-the-analyzers.fr.md) | Livrer des correctifs de code à côté des analyzers, pour l'unique réécriture qui garde l'intention | Proposed | consigné ici |

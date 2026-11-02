@@ -31,6 +31,9 @@ public sealed class RejectedConstantArgumentAnalyzer : DiagnosticAnalyzer {
     private const int MinPort           = 1;
     private const int MaxPort           = 65535;
 
+    /// <summary>How every transposed pair's reason ends, whichever guard found it.</summary>
+    private const string TransposedSuffix = "the two arguments look transposed";
+
     /// <inheritdoc />
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; } =
         ImmutableArray.Create(Descriptors.RejectedConstantArgument);
@@ -55,8 +58,18 @@ public sealed class RejectedConstantArgumentAnalyzer : DiagnosticAnalyzer {
         if (!symbols.IsJustDummiesMember(invocation.TargetMethod)) { return; }
 
         if (TryFindViolation(invocation, context.Compilation, out IOperation? offending, out string? reason) && !IsJd017s(invocation, offending!)) {
-            context.ReportDiagnostic(Diagnostic.Create(Descriptors.RejectedConstantArgument, offending!.Syntax.GetLocation(), invocation.TargetMethod.Name, reason));
+            context.ReportDiagnostic(Diagnostic.Create(Descriptors.RejectedConstantArgument, offending!.Syntax.GetLocation(), PropertiesFor(reason!), invocation.TargetMethod.Name, reason));
         }
+    }
+
+    /// <summary>
+    ///     What the code fix needs to know: that the pair looks transposed, which is the one shape JD014 reports that
+    ///     has a rewrite guessing nothing — the two arguments exchanged (ADR-0130).
+    /// </summary>
+    private static ImmutableDictionary<string, string?> PropertiesFor(string reason) {
+        return reason.EndsWith(TransposedSuffix, StringComparison.Ordinal)
+                   ? ImmutableDictionary<string, string?>.Empty.Add(DiagnosticProperties.Transposed, string.Empty)
+                   : ImmutableDictionary<string, string?>.Empty;
     }
 
     /// <summary>
@@ -336,15 +349,18 @@ public sealed class RejectedConstantArgumentAnalyzer : DiagnosticAnalyzer {
         return invocation.Arguments.Where(argument => argument.Parameter?.Type.SpecialType == SpecialType.System_Int32);
     }
 
-    // The arguments of a numeric bound or step, at whatever numeric type the overload declares. Dates, durations
-    // and the 128-bit integers stay out: they are not primitive numbers, and their own guards are not this rule's.
+    // The arguments of a numeric bound or step, at whatever numeric type the overload declares, in parameter order
+    // — Roslyn lists them in evaluation order, which a named argument can change without changing the call. Dates,
+    // durations and the 128-bit integers stay out: they are not primitive numbers, and their own guards are not this
+    // rule's.
     private static System.Collections.Generic.IEnumerable<IArgumentOperation> ScalarArguments(IInvocationOperation invocation) {
         return invocation.Arguments.Where(argument => argument.Parameter?.Type.SpecialType is SpecialType.System_SByte or SpecialType.System_Byte
                                                                                                or SpecialType.System_Int16 or SpecialType.System_UInt16
                                                                                                or SpecialType.System_Int32 or SpecialType.System_UInt32
                                                                                                or SpecialType.System_Int64 or SpecialType.System_UInt64
                                                                                                or SpecialType.System_Single or SpecialType.System_Double
-                                                                                               or SpecialType.System_Decimal);
+                                                                                               or SpecialType.System_Decimal)
+                                   .OrderBy(argument => argument.Parameter?.Ordinal ?? int.MaxValue);
     }
 
     // The argument's constant at the parameter's own type — the conversion Roslyn inserts already folds an int literal

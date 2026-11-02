@@ -97,6 +97,10 @@
     <ProjectReference Include="..\JustDummies.Analyzers\JustDummies.Analyzers.csproj"
                       ReferenceOutputAssembly="false"
                       PrivateAssets="all" />
+    <!-- The code fixes travel beside the rules, in the same folder, as the IDE loads them (ADR-0130). -->
+    <ProjectReference Include="..\JustDummies.Analyzers.CodeFixes\JustDummies.Analyzers.CodeFixes.csproj"
+                      ReferenceOutputAssembly="false"
+                      PrivateAssets="all" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -108,6 +112,9 @@
   <Target Name="_AddAnalyzerToPackage" Condition="'$(TargetFramework)' == 'netstandard2.0'">
     <ItemGroup>
       <TfmSpecificPackageFile Include="$(MSBuildThisFileDirectory)..\JustDummies.Analyzers\bin\$(Configuration)\netstandard2.0\JustDummies.Analyzers.dll">
+        <PackagePath>analyzers/dotnet/cs</PackagePath>
+      </TfmSpecificPackageFile>
+      <TfmSpecificPackageFile Include="$(MSBuildThisFileDirectory)..\JustDummies.Analyzers.CodeFixes\bin\$(Configuration)\netstandard2.0\JustDummies.Analyzers.CodeFixes.dll">
         <PackagePath>analyzers/dotnet/cs</PackagePath>
       </TfmSpecificPackageFile>
     </ItemGroup>

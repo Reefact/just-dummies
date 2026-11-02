@@ -14,6 +14,12 @@ satisfont les mêmes signatures ; une graine épinglée hors de sa portée compi
 jeu de contraintes qui n'admet aucune valeur est une chaîne parfaitement bien typée. Chaque
 règle ferme l'une de ces brèches.
 
+Trois règles s'accompagnent d'un **correctif de code**, proposé par l'IDE à côté du diagnostic : [JD024](JD024.fr.md)
+retire la contrainte qui ne restreint rien, [JD014](JD014.fr.md) échange une paire transposée, [JD031](JD031.fr.md)
+écrit deux bornes comme leur plage. Une règle ne reçoit un correctif que là où exactement une réécriture garde ce
+que vous vouliez ([ADR-0130](../../for-maintainers/adr/0130-ship-code-fixes-beside-the-analyzers.fr.md)) ; les
+correctifs voyagent dans le même dossier du paquet que les règles.
+
 Chaque règle a un identifiant stable. Les erreurs sont des défauts durs ; les avertissements
 signalent des erreurs probables ; les règles info sont des conventions, et deux sont opt-in
 (voir chaque page pour savoir comment les activer).

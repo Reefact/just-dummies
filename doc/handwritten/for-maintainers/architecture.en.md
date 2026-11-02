@@ -12,6 +12,7 @@ of a given kind belongs. Written for someone about to modify the library, not to
 | --- | --- | --- | --- |
 | `JustDummies` | `JustDummies` | `netstandard2.0` + `net8.0` | the library, with the analyzers packed inside it |
 | `JustDummies.Analyzers` | *inside* `JustDummies` | `netstandard2.0` | the 38 Roslyn rules, at `analyzers/dotnet/cs` |
+| `JustDummies.Analyzers.CodeFixes` | *inside* `JustDummies` | `netstandard2.0` | the code fixes, beside the rules at `analyzers/dotnet/cs` ([ADR-0130](./adr/0130-ship-code-fixes-beside-the-analyzers.md)) |
 | `JustDummies.Xunit` | `JustDummies.Xunit` | `netstandard2.0` | the xUnit v3 adapter — one attribute |
 | `JustDummies.DiagnosticCatalog` | `JustDummies.DiagnosticCatalog` | `netstandard2.0` | the rule ids as compile-checked constants |
 | `JustDummies.GenAny` | *inside* `JustDummies.Cli` | `netstandard2.0` | the `any` engine: §3.2, §4 and §5 entire — lookup, emission, resolution, guards |

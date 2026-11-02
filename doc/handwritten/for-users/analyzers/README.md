@@ -13,6 +13,12 @@ immutable *recipe* and a drawn value is not, yet both satisfy the same signature
 pinned outside its scope still compiles; a constraint set that admits no value is a perfectly
 well-typed chain. Each rule closes one of those gaps.
 
+Three rules come with a **code fix**, offered by the IDE beside the diagnostic: [JD024](JD024.en.md) removes the
+constraint that narrows nothing, [JD014](JD014.en.md) swaps a transposed pair, [JD031](JD031.en.md) writes two
+bounds as their range. A rule gets a fix only where exactly one rewrite keeps what you meant
+([ADR-0130](../../for-maintainers/adr/0130-ship-code-fixes-beside-the-analyzers.md)); the fixes travel in the
+same package folder as the rules.
+
 Each rule has a stable id. Errors are hard defects; warnings flag likely mistakes; the info
 rules are conventions, and two are opt-in (see each page for how to enable them).
 

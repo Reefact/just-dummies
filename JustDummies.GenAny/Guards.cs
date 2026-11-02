@@ -576,8 +576,10 @@ internal static class Guards {
         // loop is the `if` in its body, and the loop header the reader was sent to tests nothing (#371).
         StatementSyntax throwing = ThrowingStatementIn(statement);
 
-        foreach (IParameterSymbol parameter in Mentioned(statement, model, method, ignoresWhatIsThrown: true)) { reading.MarkUnread(parameter.Name, UnreadGuard.At(throwing)); }
-        foreach (IParameterSymbol parameter in ReachedThroughCopies(statement, model, method, ignoresWhatIsThrown: true)) { reading.MarkUnread(parameter.Name, UnreadGuard.At(throwing)); }
+        string? pattern = RegexPatternIn(throwing, model);
+
+        foreach (IParameterSymbol parameter in Mentioned(statement, model, method, ignoresWhatIsThrown: true)) { reading.MarkUnread(parameter.Name, UnreadGuard.At(throwing, pattern: pattern)); }
+        foreach (IParameterSymbol parameter in ReachedThroughCopies(statement, model, method, ignoresWhatIsThrown: true)) { reading.MarkUnread(parameter.Name, UnreadGuard.At(throwing, pattern: pattern)); }
 
         MarkEveryParameterIfTheTrailIsLost(DecidingParts(statement), throwing, model, method, reading);
     }
@@ -1991,7 +1993,7 @@ internal static class Guards {
 
         if (!TryRecogniseBranch(branch, model, parameter, GeneratorFor.Sizes(parameter.Type), names,
                                 out GuardConstraint? constraint)) {
-            reading.MarkUnread(parameter.Name, UnreadGuard.At(branch.Condition));
+            reading.MarkUnread(parameter.Name, UnreadGuard.At(branch.Condition, pattern: RegexPatternIn(branch.Condition, model)));
 
             return;
         }
@@ -2084,7 +2086,75 @@ internal static class Guards {
             return;
         }
 
-        foreach (IParameterSymbol spanned in mentioned) { reading.MarkUnread(spanned.Name, UnreadGuard.At(condition)); }
+        // Called out as a rule between parameters (#373): a developer who narrows one of them alone has not
+        // resolved it, and the trial measured exactly that — (204 days, 3 months) still throwing after both
+        // named guards were fixed.
+        string? ties = mentioned.Length < 2 ? null : "ties " + Listed(mentioned);
+
+        foreach (IParameterSymbol spanned in mentioned) { reading.MarkUnread(spanned.Name, UnreadGuard.At(condition, ties)); }
+    }
+
+    /// <summary><c>a to b</c>, or <c>a, b and c</c>.</summary>
+    private static string Listed(IParameterSymbol[] parameters) {
+        string[] names = [.. parameters.Select(parameter => parameter.Name)];
+
+        return names.Length == 2
+                   ? names[0] + " to " + names[1]
+                   : string.Join(", ", names.Take(names.Length - 1)) + " and " + names[names.Length - 1];
+    }
+
+    /// <summary>
+    ///     The constant pattern a regex guard tests the parameter against, where the condition holds one, so the
+    ///     comment can quote it (#374): <c>Regex.IsMatch(p, "…")</c>, a <c>[GeneratedRegex]</c> method's
+    ///     <c>IsMatch</c>, or the <c>IsMatch</c> of a field or property initialised with <c>new Regex("…")</c>.
+    /// </summary>
+    /// <remarks>
+    ///     Quoted, never read: the guard stays unread for the reasons §5.3 gives, and the pattern is what the
+    ///     developer copies into <c>Any.StringMatching</c> if it lies in the library's regular subset.
+    /// </remarks>
+    private static string? RegexPatternIn(SyntaxNode condition, SemanticModel model) {
+        foreach (InvocationExpressionSyntax invocation in condition.DescendantNodesAndSelf().OfType<InvocationExpressionSyntax>()) {
+            if (invocation.Expression is not MemberAccessExpressionSyntax { Name.Identifier.Text: "IsMatch" } access) { continue; }
+            if (model.GetSymbolInfo(invocation).Symbol is not IMethodSymbol { ContainingType: { } owner } || owner.ToDisplayString(ByNamespace) != "System.Text.RegularExpressions.Regex") { continue; }
+
+            // The static overload carries the pattern as its second argument.
+            if (invocation.ArgumentList.Arguments.Count >= 2 && model.GetConstantValue(invocation.ArgumentList.Arguments[1].Expression).Value is string written) { return written; }
+
+            if (PatternOf(access.Expression, model) is { } pattern) { return pattern; }
+        }
+
+        return null;
+    }
+
+    /// <summary>The pattern the <c>Regex</c> instance <paramref name="receiver" /> was built from, where that is a constant.</summary>
+    private static string? PatternOf(ExpressionSyntax receiver, SemanticModel model) {
+        ISymbol? symbol = model.GetSymbolInfo(receiver).Symbol;
+
+        // A [GeneratedRegex] method carries its pattern as the attribute's first argument.
+        if (symbol is IMethodSymbol generated) {
+            AttributeData? attribute = generated.GetAttributes()
+                                                .FirstOrDefault(candidate => candidate.AttributeClass?.ToDisplayString(ByNamespace) == "System.Text.RegularExpressions.GeneratedRegexAttribute");
+
+            return attribute?.ConstructorArguments.FirstOrDefault().Value as string;
+        }
+
+        if (symbol is not (IFieldSymbol or IPropertySymbol)) { return null; }
+
+        foreach (SyntaxNode declaring in symbol.DeclaringSyntaxReferences.Select(reference => reference.GetSyntax())) {
+            ExpressionSyntax? initializer = declaring switch {
+                VariableDeclaratorSyntax declarator => declarator.Initializer?.Value,
+                PropertyDeclarationSyntax property  => property.Initializer?.Value ?? (property.ExpressionBody?.Expression),
+                _                                   => null
+            };
+
+            if (initializer is ObjectCreationExpressionSyntax { ArgumentList.Arguments.Count: >= 1 } built
+             && built.SyntaxTree == model.SyntaxTree
+             && model.GetConstantValue(built.ArgumentList.Arguments[0].Expression).Value is string pattern) {
+                return pattern;
+            }
+        }
+
+        return null;
     }
 
     /// <summary>

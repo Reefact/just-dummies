@@ -1,7 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
+
+using Microsoft.CodeAnalysis.CSharp;
 
 namespace JustDummies.GenAny;
 
@@ -63,6 +66,16 @@ public static class GeneratorEmitter {
         Line(file, "// Scaffolded by `any` (JustDummies). This file is yours: read it, edit it, commit it.");
         Line(file, $"// `any generate {plan.Target.Argument} --force` overwrites it. This type is partial, so members you add in a");
         Line(file, "// neighbouring file survive.");
+
+        // Said once, here, rather than once per parameter to verify: accepting a recipe is then deleting two
+        // lines, and a comment left in the file is a task still open (#412).
+        if (plan.Parameters.Any(parameter => parameter.RequiresVerification)) {
+            Line(file, "// A TODO(any) above a `_ = TODO_verify_…` line names a guard the scaffolder could not read; the recipe");
+            Line(file, "// under it is its best generator for the type. Verify it honours that guard, or replace it, then delete");
+            Line(file, "// those two lines. What the scaffolder reads, and what it cannot:");
+            Line(file, $"// {VerifyGuide}");
+        }
+
         Line(file, string.Empty);
     }
 
@@ -342,18 +355,34 @@ public static class GeneratorEmitter {
     ///     to check rather than thrown away over a doubt the engine cannot resolve on its own (ADR-0082).
     /// </summary>
     private static void WriteVerify(StringBuilder file, ScaffoldedParameter parameter, string indent) {
-        // Which guard, where: on a parameter with three of them, a mark alone sends the developer to read the
-        // whole constructor. The place is the one the developer opens, not a section of a page they never see.
-        if (parameter.UnreadGuard is { } unread) {
-            Line(file, $"{indent}// TODO(any): '{parameter.TypeDisplay} {parameter.Name}' may be guarded by something the scaffolder could not read,");
-            Line(file, $"{indent}//   first at {unread.Place()}: {unread.Excerpt}{(unread.Note is null ? string.Empty : " — " + unread.Note)}");
-        } else {
-            Line(file, $"{indent}// TODO(any): '{parameter.TypeDisplay} {parameter.Name}' may be guarded by something the scaffolder could not read.");
+        // One line: which guard, where, and what to do once it is checked — the general explanation is in the
+        // file's header, once (#412). The place is the one the developer opens, not a section of a page they
+        // never see; the first line is quoted whole, a file having room for it (#372); the count of further
+        // guards says the one named is not the only one (#373); and a regex's pattern is quoted with the retype
+        // its remedy needs (#374).
+        if (parameter.UnreadGuard is not { } unread) {
+            Line(file, $"{indent}// TODO(any): verify the recipe below against the constructor's guards — then delete these two lines.");
+
+            return;
         }
 
-        Line(file, $"{indent}//   This is the scaffolder's best generator for the type; verify it honours the real invariant,");
-        Line(file, $"{indent}//   or replace it, then delete the line below. What the scaffolder reads, and what it cannot:");
-        Line(file, $"{indent}//   {VerifyGuide}");
+        StringBuilder line = new();
+
+        line.Append(indent).Append("// TODO(any): verify against ").Append(unread.Place()).Append(": ").Append(unread.FirstLine);
+
+        if (unread.Note is { } note) { line.Append(" — ").Append(note); }
+        if (unread.Further > 0) { line.Append("; and ").Append(unread.Further.ToString(CultureInfo.InvariantCulture)).Append(" more"); }
+
+        if (unread.Pattern is { } pattern) {
+            line.Append(" — a regex, ").Append(SymbolDisplay.FormatLiteral(pattern, quote: true))
+                .Append(": Any.StringMatching(pattern) replaces the base and returns an AnyPattern, so retype ")
+                .Append(parameter.GeneratorType).Append(" to AnyPattern here, on the recipe field, in the recipe constructor and in the Func of With")
+                .Append(parameter.PascalCasedName);
+        }
+
+        line.Append(" — then delete these two lines.");
+
+        Line(file, line.ToString());
     }
 
     /// <summary>The user page that says what <c>to verify</c> means, which a reader of the file can open.</summary>

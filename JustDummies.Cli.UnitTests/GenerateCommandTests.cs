@@ -101,7 +101,9 @@ public sealed class GenerateCommandTests : IDisposable {
 
         Check.That(run.ExitCode).IsEqualTo(0);
         Check.That(run.Output).StartsWith("// Scaffolded by `any`");
-        Check.That(run.Error).Contains("✓ AnyOrder.cs");
+        Check.That(run.Error).Contains("would write AnyOrder.cs — 1 of 1 parameters inferred.");
+        Check.That(run.Error).Contains("  in namespace Shop.Domain (--namespace to change).");
+        Check.That(run.Error).Not.Contains("✓");
         Check.That(Directory.GetFiles(directory)).IsEmpty();
     }
 
@@ -667,6 +669,24 @@ public sealed class GenerateCommandTests : IDisposable {
         Check.That(unread.GetProperty("line").GetInt32()).IsEqualTo(5);
         Check.That(unread.GetProperty("excerpt").GetString()).StartsWith("if (level % 2 == 1)");
         Check.That(unread.GetProperty("note").ValueKind).IsEqualTo(JsonValueKind.Null);
+        Check.That(unread.GetProperty("further").GetInt32()).IsEqualTo(0);
+        Check.That(unread.GetProperty("pattern").ValueKind).IsEqualTo(JsonValueKind.Null);
+    }
+
+    // A refusal printed once at the top and followed by the other types' recaps was missed in three contexts of
+    // the second trial: a batch that refused anything now closes by repeating each refusal in one line (issue #379).
+    [Fact(DisplayName = "A batch that refused a type closes with a summary naming it and the reason.")]
+    public async Task ABatchThatRefusedATypeClosesWithASummary() {
+        Run run = await Generate(Settings("Order", "Nowhere", "Basket"));
+
+        Check.That(run.ExitCode).IsEqualTo(1);
+        Check.That(run.Error).Contains("✗ 2 of 3 types refused in this run:");
+        Check.That(run.Error).Contains("  Nowhere: no type by that name in this compilation");
+        Check.That(run.Error).Contains("  Basket: nothing here constructs it.");
+
+        Run alone = await Generate(Settings("Nowhere"));
+
+        Check.That(alone.Error).Not.Contains("refused in this run");
     }
 
     [Fact(DisplayName = "--format json carries a parameter's remark and the large-ceiling flag on its row.")]

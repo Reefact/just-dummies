@@ -87,21 +87,22 @@ travail et ajoute au-dessus une ligne qui ne compile pas :
 <!-- jd:skip -->
 ```csharp
 private static AnyString AnyValidValue() {
-    // TODO(any): 'string value' may be guarded by something the scaffolder could not read,
-    //   first at Currency.cs, line 9: if (!Regex.IsMatch(value, "^[A-Z]{3}$")) { throw new ArgumentException(nameof(value)); }
-    //   This is the scaffolder's best generator for the type; verify it honours the real invariant,
-    //   or replace it, then delete the line below. What the scaffolder reads, and what it cannot:
-    //   https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/packages/justdummies-cli.en.md#what-the-last-column-means
+    // TODO(any): verify against Currency.cs, line 9: if (!Regex.IsMatch(value, "^[A-Z]{3}$")) { throw new ArgumentException(nameof(value)); } — a regex, "^[A-Z]{3}$": Any.StringMatching(pattern) replaces the base and returns an AnyPattern, so retype AnyString to AnyPattern here, on the recipe field, in the recipe constructor and in the Func of WithValue — then delete these two lines.
     _ = TODO_verify_the_generator_for_value;
 
     return Any.String();
 }
 ```
 
-La deuxième ligne nomme la première garde dont `any` n'a pas pu répondre, et où elle se trouve, pour
+Le commentaire nomme la première garde dont `any` n'a pas pu répondre, et où elle se trouve, pour
 que vous n'ayez pas à la chercher dans le constructeur ; le récapitulatif imprime la même chose sous
-ses lignes. Gardez la recette, ou remplacez-la et supprimez cette seule ligne — et si le remplacement est un autre genre de
-générateur, retapez ce que cela change ([plus bas](#quand-le-remplacement-est-un-autre-genre-de-generateur)). L'alternative — un
+ses lignes. Quand le paramètre a d'autres gardes de ce genre, les deux le disent — `; and 2 more` —,
+parce que corriger celle qui est nommée et supprimer la sentinelle laisserait un générateur que le
+constructeur refuse encore ; une garde qui lie deux paramètres est signalée comme telle. Quand la
+garde est une regex, le commentaire cite le motif et nomme le retypage que son remplacement demande.
+L'en-tête du fichier explique le bloc une fois ; gardez la recette, ou remplacez-la, puis supprimez
+les deux lignes — et si le remplacement est un autre genre de générateur, retapez ce que cela change
+([plus bas](#quand-le-remplacement-est-un-autre-genre-de-generateur)). L'alternative — un
 fichier qui compile et tire une valeur que votre constructeur rejette lors d'une exécution
 ultérieure — est l'échec qui coûte le plus cher, parce qu'il surgit loin de sa cause
 ([ADR-0083](../../for-maintainers/adr/0083-block-compilation-on-a-guard-the-engine-cannot-vouch-for.fr.md)).
@@ -858,6 +859,13 @@ donc il veut dire la même chose d'où que vous lanciez l'outil. Décision :
 `any generate Order Customer Invoice` en scaffolde plusieurs. Ils sont traités indépendamment, et le
 code de sortie est le pire d'entre eux : `0` un fichier écrit (TODO compris), `1` un scaffolding qui
 a échoué, `2` une instruction que l'outil n'a pas pu lire — une ligne de commande, ou un `any.json`.
+Un lot qui a refusé un type se clôt par une ligne par refus et sa raison, après les autres
+récapitulatifs, pour que le code de sortie ne se lise jamais comme un mystère. Un nom court se résout
+par paliers — vos sources, les projets qu'elles référencent, puis le framework et les packages —, si
+bien qu'un `Meter` du domaine l'emporte sur `System.Diagnostics.Metrics.Meter`, et le récapitulatif
+dit que celui du framework répondait aussi. Deux correspondances dans un même palier sont refusées
+comme ambiguës, avec les deux noms complets : nommez celui que vous voulez en entier,
+`any generate Ambig.Domain.Meter`.
 
 ## Il ne référence jamais JustDummies
 

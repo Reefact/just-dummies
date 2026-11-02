@@ -283,6 +283,43 @@ internal static class Refusals {
         return sentences;
     }
 
+    /// <summary>The one line of fact a refused scaffold carries into the batch's closing summary (#379).</summary>
+    internal static string Reason(string typeArgument, ScaffoldOutcome outcome) {
+        ArgumentNullException.ThrowIfNull(typeArgument);
+        ArgumentNullException.ThrowIfNull(outcome);
+
+        return Sentences(typeArgument, outcome)[0].Substring(Mark.Length);
+    }
+
+    /// <summary>The same, for a project that was never restored.</summary>
+    internal static string NotRestoredReason(string typeArgument) {
+        return $"{typeArgument}: this project has not been restored, so its package references cannot be read.";
+    }
+
+    /// <summary>The same, for a file the run refused to overwrite.</summary>
+    internal static string FileExistsReason(string typeArgument, string path) {
+        return $"{typeArgument}: {path} already exists; --force overwrites it.";
+    }
+
+    /// <summary>
+    ///     Closes a batch that refused anything: one line per refused type, with its reason, after the recaps of
+    ///     the others (#379).
+    /// </summary>
+    /// <remarks>
+    ///     A refusal printed once at the top and followed by pages of output for the other types was missed in
+    ///     three contexts of the second developer-UX trial, which then read the batch's exit <c>1</c> as a
+    ///     mystery. The summary repeats what was already said, where a reader looks last.
+    /// </remarks>
+    internal static void Summary(IReadOnlyList<string> refused, int requested, IAnsiConsole console) {
+        ArgumentNullException.ThrowIfNull(refused);
+
+        List<string> sentences = [Mark + $"{refused.Count} of {requested} types refused in this run:"];
+
+        sentences.AddRange(Listed(refused));
+
+        Say(console, sentences);
+    }
+
     /// <summary>The candidates, indented under the sentence that introduced them.</summary>
     private static IEnumerable<string> Listed(IReadOnlyList<string> candidates) {
         foreach (string candidate in candidates) { yield return "  " + candidate; }

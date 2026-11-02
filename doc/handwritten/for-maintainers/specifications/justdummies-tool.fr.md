@@ -605,10 +605,13 @@ fait pas.
 
 ### 4.3 Règles d'en-tête
 
-Exactement trois lignes de commentaire, comme ci-dessus. **Aucun horodatage et aucune version du
-tool** : les deux feraient dépendre le contenu d'autre chose que du type analysé, si bien que tout
-scaffold suivant une montée de version produirait un diff parasite. Le déterminisme est une
-exigence dure (§8.1).
+Exactement trois lignes de commentaire, comme ci-dessus — et quatre de plus, une fois, quand un
+paramètre est à vérifier (§5.6) : l'explication du bloc `TODO(any)` et le lien vers la page
+utilisateur vivent dans l'en-tête plutôt qu'au-dessus de chacun de ces paramètres, pour qu'accepter
+une recette soit supprimer deux lignes et qu'un commentaire laissé dans le fichier soit une tâche
+encore ouverte (#412). **Aucun horodatage et aucune version du tool** : les deux feraient dépendre
+le contenu d'autre chose que du type analysé, si bien que tout scaffold suivant une montée de
+version produirait un diff parasite. Le déterminisme est une exigence dure (§8.1).
 
 ### 4.4 Niveau de langage
 
@@ -1597,11 +1600,7 @@ fabrique plutôt que d'être jeté.
 
 ```csharp
     private static AnyString AnyValidName() {
-        // TODO(any): 'string name' may be guarded by something the scaffolder could not read,
-        //   first at Customer.cs, line 12: if (!Regex.IsMatch(name, "^[A-Z][a-z]+$")) { throw new ArgumentException(nameof(name)); }
-        //   This is the scaffolder's best generator for the type; verify it honours the real invariant,
-        //   or replace it, then delete the line below. What the scaffolder reads, and what it cannot:
-        //   https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/packages/justdummies-cli.en.md#what-the-last-column-means
+        // TODO(any): verify against Customer.cs, line 12: if (!Regex.IsMatch(name, "^[A-Z][a-z]+$")) { throw new ArgumentException(nameof(name)); } — a regex, "^[A-Z][a-z]+$": Any.StringMatching(pattern) replaces the base and returns an AnyPattern, so retype AnyString to AnyPattern here, on the recipe field, in the recipe constructor and in the Func of WithName — then delete these two lines.
         _ = TODO_verify_the_generator_for_name;
 
         return Any.String();
@@ -1615,12 +1614,32 @@ exactement ce que le scaffolder aurait écrit en silence sinon, à garder ou à 
 Le remplacer par un générateur d'un autre type de constructeur n'est pas une modification d'une ligne : le type de
 retour de la fabrique et le `Func<…>` de la surcharge d'affinage portent l'ancien type, et la page utilisateur le dit.
 
-**Le commentaire nomme la garde qui a valu la marque, et où elle se trouve.** Sur un paramètre à
-trois gardes, une marque seule envoie le développeur lire tout le constructeur pour trouver celle dont
-le moteur n'a pas pu répondre. La deuxième ligne donne le premier de ces endroits — fichier et ligne —
-et la première ligne de l'instruction qui la porte, raccourcie au-delà de cent caractères ; le
-récapitulatif imprime la même chose sous ses lignes (§6), et le rapport machine la porte en
-`unreadGuard` (§6.1). L'instruction nommée est celle qui lève — le `if` dont la branche lève, jamais la
+**Le commentaire tient en deux lignes : la garde qui a valu la marque, où elle se trouve et quoi
+faire ; puis la ligne qui bloque.** Le bloc de cinq lignes qu'il remplace disait la même chose en
+long, une fois par paramètre, et restait là une fois la sentinelle supprimée, formulé comme une tâche
+— vingt plus loin, le fichier était plein de TODO déjà faits, et deux utilisateurs du second essai ont
+scripté leur suppression (#412). L'explication générale et le lien vers la page utilisateur sont dans
+l'en-tête du fichier, une fois (§4.3) ; accepter une recette, c'est supprimer les deux lignes, ce
+qu'un rechercher-remplacer fait aussi. Sur un paramètre à trois gardes, une marque seule envoie le
+développeur lire tout le constructeur pour trouver celle dont le moteur n'a pas pu répondre, donc la
+ligne donne le premier de ces endroits — fichier et ligne — et la première ligne entière de
+l'instruction, terminée par `...` quand l'instruction continue en dessous, le même marqueur qu'une
+coupe au-delà de cent caractères, pour qu'une citation ne se lise jamais comme la garde entière
+(#372) ; le récapitulatif imprime la même chose sous ses lignes, raccourcie au-delà de cent caractères
+(§6), et le rapport machine la porte en `unreadGuard` (§6.1). **Celle qui est nommée est la première,
+et les autres sont comptées** (#373) : quand le paramètre a d'autres gardes non lues, la ligne se
+termine par `; and N more`, celle du récapitulatif par `, and N more` et son endroit se lit `first
+unread guard at`, et le rapport porte `further` — parce que le piège mesuré au second essai était un
+développeur qui corrigeait la garde nommée, supprimait la sentinelle, et livrait un generator qui
+levait encore sur celle jamais nommée. Une garde qui lie plusieurs paramètres est signalée comme
+telle, `ties volatileRunOffDays to coreMaturityMonths`, puisque resserrer l'un d'eux seul ne la
+résout pas. **Une garde regex cite son motif et nomme le retypage** (#374) : quand la garde appelle
+`Regex.IsMatch(p, "…")`, le `IsMatch` d'une méthode `[GeneratedRegex]`, ou celui d'un champ `Regex`
+construit sur une constante, la ligne cite le motif — la seule chose que le développeur copie dans
+`Any.StringMatching` s'il tient dans le sous-ensemble régulier de la bibliothèque — et dit que l'appel
+retourne un `AnyPattern`, avec les quatre endroits où l'ancien type de builder doit être retapé, ce
+que les utilisateurs ont rencontré d'abord comme une erreur de compilation, cinq fois par domaine dans
+un contexte. L'instruction nommée est celle qui lève — le `if` dont la branche lève, jamais la
 boucle, le `try` ou le `using` qui l'entoure, qui ne teste rien et où les lecteurs du premier essai ont
 été envoyés chercher encore (#371). Une marque que l'endroit n'explique pas dit pourquoi elle marque :
 le repli de l'ADR-0110 marque chaque paramètre là où ce qui décide un `throw` ne remonte à aucun, si
@@ -1628,8 +1647,8 @@ bien que l'endroit nommé peut ne tester aucune garde propre à ce paramètre, e
 `every parameter is marked here, since what decides this throw could not be traced back to one` — dans
 le commentaire, sous les lignes du récapitulatif et dans le `note` du rapport. Le lien final mène à la
 page utilisateur qui dit ce que signifie `to verify` : le commentaire est lu par quelqu'un qui a ce
-fichier ouvert, pas cette spécification. Quand aucune position dans la source n'est connue, la
-deuxième ligne est omise.
+fichier ouvert, pas cette spécification. Quand aucune position dans la source n'est connue, la ligne
+dit de vérifier la recette contre les gardes du constructeur, et rien de plus.
 
 **Une garde écrite dans un helper qui retourne la valeur vérifiée est lue un niveau plus bas, là où
 le helper rend la valeur inchangée, et marquée là où le moteur ne peut voir que le fait que le helper
@@ -1724,7 +1743,12 @@ Analyzing Shop.Domain.Order
   placedAt   DateTime               Any.DateTime()
 
 ✓ AnyOrder.cs — 6 of 6 parameters inferred.
+  in namespace Shop.Domain (--namespace to change).
 ```
+
+La ligne sous la coche nomme le namespace où le fichier a atterri, une fois (#378) : les generators
+vont par défaut dans le namespace du domaine (ADR-0062, D8) et les surcharges sont documentées, mais
+six sessions du second essai ont découvert où le fichier était allé en le lisant.
 
 La colonne de droite porte la provenance de chaque expression : vide pour la table de base, `guard`
 quand le §5.3 l'a resserrée, `AnyX` quand le §5.4 a écrit l'appel à l'aveugle vers le generator que
@@ -1761,16 +1785,18 @@ jamais `TODO`, puisque la ligne et la ligne de clôture décrivent le même para
   crates  Crate<int>  —             TODO
   name    string      Any.String()  to verify, unread guards
 
-  name: unread guard at Warehouse.cs, line 18: if (!Naming.IsValid(name)) { throw new ArgumentException(nameof(name)); }
+  name: first unread guard at Warehouse.cs, line 18: if (!Naming.IsValid(name)) { throw new ArgumentException(nameof(name)); }, and 1 more
 
 ✓ AnyWarehouse.cs — 5 of 6 parameters inferred, 1 TODO, 1 to verify.
+  in namespace Shop.Domain (--namespace to change).
   The file will not compile until you resolve it. That is deliberate.
 ```
 
 Les deux comptes se lisent dans l'ordre où un développeur agit dessus : fournir l'un, vérifier
 l'autre. Une ligne sous les lignes de paramètres nomme, pour chaque paramètre marqué
 `unread guards`, la première garde qui lui a valu la marque et où elle se trouve — l'endroit même
-que donne son `TODO(any)` (§5.6).
+que donne son `TODO(any)` (§5.6) — comme la première quand il y en a d'autres, avec leur nombre, et
+avec la note qu'une marque porte (§5.6).
 
 **Une garde de taille qui dépasse le plafond, ou s'en approche de très loin, est commentée sous les
 lignes.** Un plafond au-delà d'un million de caractères ou d'éléments tient par construction et un
@@ -1825,13 +1851,15 @@ lieu d'être assemblée par la console :
 
 ```console
 ✓ AnyOrder.cs       — 6 of 6 parameters inferred.
+  in namespace Shop.Domain (--namespace to change).
 ✓ AnyOrder.Entry.cs — entry point Arbitrary.Order()
 ```
 
-`--dry-run` affiche le même récapitulatif sur stderr et le fichier sur stdout. Avec un point
-d'entrée il y a deux fichiers, affichés dans l'ordre où ils seraient écrits, generator d'abord ;
-aucun séparateur n'est inventé entre eux, car chacun s'ouvre sur les trois lignes d'en-tête du §4.3
-qui le nomment.
+`--dry-run` affiche le même récapitulatif sur stderr et le fichier sur stdout, sa ligne de clôture
+lisant `would write AnyOrder.cs` à la place de la coche, qui annonce un fichier écrit (#378). Avec
+un point d'entrée il y a deux fichiers, affichés dans l'ordre où ils seraient écrits, generator
+d'abord ; aucun séparateur n'est inventé entre eux, car chacun s'ouvre sur les lignes d'en-tête du
+§4.3 qui le nomment.
 
 ### 6.1 Le rapport machine *(v1.1)*
 
@@ -1901,8 +1929,9 @@ plus (#361) — le drapeau qu'un script lit sans analyser la phrase.
 **Un paramètre marqué `unread guards` porte l'endroit.** Le `unreadGuard` de sa ligne contient le
 `file`, la `line` comptée à partir de un et un `excerpt` de la première garde dont le moteur n'a pas
 pu répondre (§5.6), avec un `note` disant pourquoi cet endroit marque là où l'extrait ne le dit pas —
-la marque de repli de l'ADR-0110 — et `null` sinon ; l'objet entier vaut `null` sur toutes les autres
-lignes.
+la marque de repli de l'ADR-0110, ou une règle liant plusieurs paramètres — et `null` sinon, `further`,
+le nombre d'autres endroits ayant valu la même marque (#373), et `pattern`, le motif constant d'une
+garde regex (#374) ou `null` ; l'objet entier vaut `null` sur toutes les autres lignes.
 
 ---
 
@@ -1996,7 +2025,11 @@ laisser `Any{Type}.cs` derrière lui. `--force` porte sur les deux, et perd les 
 sur l'un comme sur l'autre par la même phrase.
 
 Plusieurs arguments de type (`any generate Order Customer Invoice`) sont traités indépendamment ; le
-code de sortie est le pire d'entre eux, et un échec n'empêche pas l'écriture des autres.
+code de sortie est le pire d'entre eux, et un échec n'empêche pas l'écriture des autres. Un lot qui a
+refusé quelque chose se clôt par une ligne par type refusé et sa raison, sur stderr après les
+récapitulatifs des autres types — `✗ 1 of 3 types refused in this run:` —, puisqu'un refus imprimé en
+tête et suivi de pages de sortie a été manqué dans trois contextes du second essai (#379). Une
+exécution d'un seul type n'a rien à répéter.
 
 ---
 

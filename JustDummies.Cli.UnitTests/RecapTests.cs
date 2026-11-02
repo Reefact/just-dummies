@@ -39,6 +39,7 @@ public sealed class RecapTests {
                                       placedAt   DateTime               Any.DateTime()
 
                                     ✓ AnyOrder.cs — 6 of 6 parameters inferred.
+                                      in namespace Shop.Domain (--namespace to change).
                                     """;
 
     [Fact(DisplayName = "The recap is the one §6 writes out, to the space.")]
@@ -62,6 +63,30 @@ public sealed class RecapTests {
     /// </remarks>
     private static string AsWritten(string expected) {
         return expected.Replace("\r\n", "\n");
+    }
+
+    // Under --dry-run no file is written, and the closing line says what the run would do rather than ticking a
+    // file that does not exist; the namespace line names where it would land (issue #378).
+    [Fact(DisplayName = "A dry run closes with what it would write, and names the namespace.")]
+    public void ADryRunClosesWithWhatItWouldWrite() {
+        StringWriter written = new();
+
+        Recap.Render(Outcome(Plan([Inferred("quantity", "int", "AnyInt32", "Any.Int32()")])), ToolConsole.On(written), dryRun: true);
+
+        Check.That(written.ToString()).Contains("would write AnySubject.cs — 1 of 1 parameters inferred.\n  in namespace Shop.Domain (--namespace to change).");
+        Check.That(written.ToString()).Not.Contains("✓");
+    }
+
+    // The one named is the first, and the rest are counted, so that fixing the named guard alone is not mistaken
+    // for resolving the parameter (issue #373); a rule between parameters is called out as such.
+    [Fact(DisplayName = "An unread guard with further ones is named as the first, with the count and the tie.")]
+    public void AnUnreadGuardWithFurtherOnesIsNamedAsTheFirst() {
+        UnreadGuard unread = new("Assumption.cs", 16, "if (volatileRunOffDays is < 1 or > 365) { throw … }", "ties volatileRunOffDays to coreMaturityMonths", further: 2);
+
+        string rendered = Rendered(Plan([ScaffoldedParameter.DrawnFrom("volatileRunOffDays", "int", "AnyInt32", "Any.Int32()",
+                                                                       Provenance.UnreadGuards, unreadGuard: unread)]));
+
+        Check.That(rendered).Contains("  volatileRunOffDays: first unread guard at Assumption.cs, line 16: if (volatileRunOffDays is < 1 or > 365) { throw … } — ties volatileRunOffDays to coreMaturityMonths, and 2 more");
     }
 
     // A file with nothing left open says so without the two lines that explain a TODO — there is none to

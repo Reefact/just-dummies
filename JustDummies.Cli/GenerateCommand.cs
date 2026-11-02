@@ -166,6 +166,7 @@ internal sealed class GenerateCommand : AsyncCommand<GenerateSettings> {
         List<ScaffoldOutcome> outcomes  = [];
         List<int>             codes     = [];
         List<ScaffoldReport>  reported  = [];
+        List<string>          refused   = [];
 
         foreach (string typeArgument in settings.Types) {
             ScaffoldOutcome outcome = Scaffolder.Scaffold(loaded.Compilation!, typeArgument, options);
@@ -189,7 +190,14 @@ internal sealed class GenerateCommand : AsyncCommand<GenerateSettings> {
 
             codes.Add(scaffold.Code);
             reported.Add(scaffold.Report);
+
+            if (scaffold.Refusal is { } refusal) { refused.Add(refusal); }
         }
+
+        // A batch that refused anything closes by saying so again, once per refused type: a refusal printed at
+        // the top, followed by pages of recap for the other types, was missed in three contexts of the second
+        // trial (#379). A run of one type has nothing to repeat.
+        if (arguments.Count > 1 && refused.Count > 0) { Refusals.Summary(refused, arguments.Count, consoles.Error); }
 
         if (settings.ReportsAsJson()) { JsonReport.Write(RunReport.Of(reported), consoles.Output); }
 
@@ -217,19 +225,20 @@ internal sealed class GenerateCommand : AsyncCommand<GenerateSettings> {
             Refusals.NotRestored(typeArgument, consoles.Error);
 
             return new ReportedScaffold(ExitCode.Failed,
-                                        ScaffoldReport.Refused(typeArgument, ScaffoldReport.ProjectNotRestored, outcome));
+                                        ScaffoldReport.Refused(typeArgument, ScaffoldReport.ProjectNotRestored, outcome),
+                                        Refusals.NotRestoredReason(typeArgument));
         }
 
         if (!outcome.Succeeded) {
             Refusals.Render(typeArgument, outcome, consoles.Error);
 
-            return new ReportedScaffold(ExitCode.Failed, ScaffoldReport.Refused(typeArgument, outcome));
+            return new ReportedScaffold(ExitCode.Failed, ScaffoldReport.Refused(typeArgument, outcome), Refusals.Reason(typeArgument, outcome));
         }
 
         IReadOnlyList<ScaffoldedFile> files = Files(outcome);
 
         if (settings.DryRun) {
-            Recap.Render(outcome, consoles.Error);
+            Recap.Render(outcome, consoles.Error, dryRun: true);
             Unwrapped.Line(consoles.Error, DryRunNotice(files.Count, json));
             Unwrapped.Line(consoles.Error, string.Empty);
 
@@ -252,7 +261,7 @@ internal sealed class GenerateCommand : AsyncCommand<GenerateSettings> {
             IReadOnlyList<FileReport> kept = [.. files.Select(file => FileReport.Kept(file.FileName,
                                                                                      Path.Combine(directory, file.FileName)))];
 
-            return new ReportedScaffold(ExitCode.Failed, ScaffoldReport.NotWritten(typeArgument, outcome, kept));
+            return new ReportedScaffold(ExitCode.Failed, ScaffoldReport.NotWritten(typeArgument, outcome, kept), Refusals.FileExistsReason(typeArgument, written.Path));
         }
 
         if (!json) {
@@ -278,8 +287,11 @@ internal sealed class GenerateCommand : AsyncCommand<GenerateSettings> {
                    : "  Nothing written: --dry-run. Both files are on stdout, in that order.";
     }
 
-    /// <summary>One scaffold's two answers: what the process exits with, and what the report records.</summary>
-    private sealed record ReportedScaffold(int Code, ScaffoldReport Report);
+    /// <summary>
+    ///     One scaffold's answers: what the process exits with, what the report records, and — where it was
+    ///     refused — the one line the batch's closing summary repeats (#379).
+    /// </summary>
+    private sealed record ReportedScaffold(int Code, ScaffoldReport Report, string? Refusal = null);
 
     /// <summary>
     ///     Everything one scaffold produced, generator first — the order it is written in, printed in and read

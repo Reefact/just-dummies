@@ -585,7 +585,10 @@ The result is still worth generating: `Any{Type}` is an `IAny<T>`, so it compose
 
 ### 4.3 Header rules
 
-Exactly three comment lines, as above. **No timestamp and no tool version**: both would make the
+Exactly three comment lines, as above — and four more, once, where a parameter is to verify (§5.6):
+the explanation of the `TODO(any)` block and the link to the user page live in the header rather
+than above each such parameter, so that accepting a recipe is deleting two lines and a comment left
+in the file is a task still open (#412). **No timestamp and no tool version**: both would make the
 byte content depend on something other than the analyzed type, so every scaffold after a tool
 upgrade would produce a spurious diff. Determinism is a hard requirement (§8.1).
 
@@ -1509,11 +1512,7 @@ than being thrown away.
 
 ```csharp
     private static AnyString AnyValidName() {
-        // TODO(any): 'string name' may be guarded by something the scaffolder could not read,
-        //   first at Customer.cs, line 12: if (!Regex.IsMatch(name, "^[A-Z][a-z]+$")) { throw new ArgumentException(nameof(name)); }
-        //   This is the scaffolder's best generator for the type; verify it honours the real invariant,
-        //   or replace it, then delete the line below. What the scaffolder reads, and what it cannot:
-        //   https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/packages/justdummies-cli.en.md#what-the-last-column-means
+        // TODO(any): verify against Customer.cs, line 12: if (!Regex.IsMatch(name, "^[A-Z][a-z]+$")) { throw new ArgumentException(nameof(name)); } — a regex, "^[A-Z][a-z]+$": Any.StringMatching(pattern) replaces the base and returns an AnyPattern, so retype AnyString to AnyPattern here, on the recipe field, in the recipe constructor and in the Func of WithName — then delete these two lines.
         _ = TODO_verify_the_generator_for_name;
 
         return Any.String();
@@ -1527,11 +1526,29 @@ exactly what the scaffolder would otherwise have written silently, for the devel
 Replacing it with a generator of another builder type is not a one-line edit: the factory's return type
 and the `Func<…>` of the refining overload carry the old type, and the user page says so.
 
-**The comment names the guard that earned the mark, and where it sits.** On a parameter with three
+**The comment is two lines: the guard that earned the mark, where it sits, and what to do; then the
+line that blocks.** The five-line block it replaced said the same at length, once per parameter, and
+stayed behind once the sentinel was deleted, worded as a task — twenty of them later the file was
+full of TODOs that were done, and two users of the second trial scripted their removal (#412). The
+general explanation and the link to the user page are in the file's header, once (§4.3); accepting a
+recipe is deleting the two lines, which a search-and-replace also does. On a parameter with three
 guards, a mark alone sends the developer to read the whole constructor for the one the engine could
-not vouch for. The second line gives the earliest such place — file and line — and the first line of
-the statement holding it, shortened past a hundred characters; the recap prints the same under its
-rows (§6), and the machine report carries it as `unreadGuard` (§6.1). The statement named is the one
+not vouch for, so the line gives the earliest such place — file and line — and the statement's whole
+first line, ending in `...` where the statement goes on below it, the same marker a cut past a
+hundred characters carries, so a quote never reads as the whole guard (#372); the recap prints the
+same under its rows, shortened past a hundred characters (§6), and the machine report carries it as
+`unreadGuard` (§6.1). **The one named is the first, and the rest are counted** (#373): where the
+parameter has further unread guards the line ends in `; and N more`, the recap's in `, and N more`
+and its place reads `first unread guard at`, and the report carries `further` — because the trap the
+second trial measured was a developer who fixed the named guard, deleted the sentinel, and shipped a
+generator that still threw on the one never named. A guard that ties several parameters is called
+out as such, `ties volatileRunOffDays to coreMaturityMonths`, since narrowing one of them alone has
+not resolved it. **A regex guard quotes its pattern and names the retype** (#374): where the guard
+calls `Regex.IsMatch(p, "…")`, the `IsMatch` of a `[GeneratedRegex]` method, or that of a `Regex`
+field built from a constant, the line quotes the pattern — the one thing the developer copies into
+`Any.StringMatching` if it lies in the library's regular subset — and says that the call returns an
+`AnyPattern`, with the four places the old builder type has to be retyped, which users met as a
+compile error first, five times per domain in one context. The statement named is the one
 that throws — the `if` whose branch throws, never the loop, the `try` or the `using` around it, which
 tests nothing and where the first trial's readers were sent to search again (#371). A mark the place
 does not explain says why it marks: the fallback of ADR-0110 marks every parameter where what decides
@@ -1539,7 +1556,8 @@ a throw cannot be traced back to one, so the place named may test none of this p
 line says so — `every parameter is marked here, since what decides this throw could not be traced back
 to one` — in the comment, under the recap's rows and in the report's `note`. The closing link is to the
 user page that says what `to verify` means: the comment is read by someone who has this file open, not
-this specification. Where no source position is known, the second line is left out.
+this specification. Where no source position is known, the line says to verify the recipe against
+the constructor's guards, and nothing more.
 
 **A guard written in a helper that returns the value it checked is read one level down, where the
 helper hands the value back unchanged, and marked where the engine can only see that the helper
@@ -1630,7 +1648,12 @@ Analyzing Shop.Domain.Order
   placedAt   DateTime               Any.DateTime()
 
 ✓ AnyOrder.cs — 6 of 6 parameters inferred.
+  in namespace Shop.Domain (--namespace to change).
 ```
+
+The line under the tick names the namespace the file landed in, once (#378): generators default to
+the domain's namespace (ADR-0062, D8) and the overrides are documented, but six sessions of the
+second trial found out where the file went by reading it.
 
 The right-hand column carries the provenance of each expression: empty for the base table,
 `guard` when §5.3 tightened it, `AnyX` when §5.4 wrote the blind call to the generator the type
@@ -1666,15 +1689,17 @@ since the row and the closing line describe the same parameter:
   crates  Crate<int>  —             TODO
   name    string      Any.String()  to verify, unread guards
 
-  name: unread guard at Warehouse.cs, line 18: if (!Naming.IsValid(name)) { throw new ArgumentException(nameof(name)); }
+  name: first unread guard at Warehouse.cs, line 18: if (!Naming.IsValid(name)) { throw new ArgumentException(nameof(name)); }, and 1 more
 
 ✓ AnyWarehouse.cs — 5 of 6 parameters inferred, 1 TODO, 1 to verify.
+  in namespace Shop.Domain (--namespace to change).
   The file will not compile until you resolve it. That is deliberate.
 ```
 
 Both counts read in the order a developer acts on them: supply the one, check the other. A line
 under the rows names, for each parameter marked `unread guards`, the earliest guard that earned it
-and where it sits — the same place its `TODO(any)` gives (§5.6).
+and where it sits — the same place its `TODO(any)` gives (§5.6) — as the first where there are
+more, with their count, and with the note a mark carries (§5.6).
 
 **A size guard that reaches past the cap, or very far toward it, is remarked on under the rows.** A
 ceiling past a million characters or elements holds by construction and a floor past it admits no
@@ -1727,12 +1752,14 @@ assembled by the console:
 
 ```console
 ✓ AnyOrder.cs       — 6 of 6 parameters inferred.
+  in namespace Shop.Domain (--namespace to change).
 ✓ AnyOrder.Entry.cs — entry point Arbitrary.Order()
 ```
 
-`--dry-run` prints the same recap to stderr and the file to stdout. With an entry point there are
-two files, printed in the order they would be written, generator first; no separator is invented
-between them, because each opens with the three header lines of §4.3 that name it.
+`--dry-run` prints the same recap to stderr and the file to stdout, its closing line reading
+`would write AnyOrder.cs` in place of the tick, which reports a file written (#378). With an entry
+point there are two files, printed in the order they would be written, generator first; no separator
+is invented between them, because each opens with the header lines of §4.3 that name it.
 
 ### 6.1 The machine report *(v1.1)*
 
@@ -1795,8 +1822,10 @@ without parsing the sentence.
 
 **A parameter marked `unread guards` carries where.** Its row's `unreadGuard` holds the `file`, the
 one-based `line` and an `excerpt` of the earliest guard the engine could not vouch for (§5.6), with a
-`note` saying why that place marks where the excerpt does not — the fallback mark of ADR-0110 — and
-`null` otherwise; the whole object is `null` on every other row.
+`note` saying why that place marks where the excerpt does not — the fallback mark of ADR-0110, or a
+rule tying several parameters — and `null` otherwise, `further`, how many more places earned the same
+mark (#373), and `pattern`, the constant pattern of a regex guard (#374) or `null`; the whole object
+is `null` on every other row.
 
 ---
 
@@ -1885,7 +1914,11 @@ being there refuses the whole scaffold rather than leaving `Any{Type}.cs` behind
 covers both, and loses a developer's edits to either by the same sentence.
 
 Multiple type arguments (`any generate Order Customer Invoice`) are processed independently; the
-exit code is the worst of them, and one failure does not prevent the others being written.
+exit code is the worst of them, and one failure does not prevent the others being written. A batch
+that refused anything closes with one line per refused type and its reason, on stderr after the other
+types' recaps — `✗ 1 of 3 types refused in this run:` — since a refusal printed at the top and followed
+by pages of output was missed in three contexts of the second trial (#379). A run of one type has
+nothing to repeat.
 
 ---
 

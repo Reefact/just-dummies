@@ -1085,13 +1085,19 @@ Plusieurs conditions bornent l'arithmétique de la table elle-même, et toutes s
 que des approximations. **Le `N` d'une ligne de taille doit se rendre en l'`int` que prend tout
 membre de taille** (§14.3) : une borne se repliant sur `140.5`, ou hors de la portée d'`int`, n'est
 pas une taille que le moteur peut écrire, et l'émettre telle quelle fait échouer la compilation du
-développeur. **Elle doit aussi être une taille que le generator pourrait produire.** Tout membre de
-taille refuse un argument au-delà d'un million (ADR-0076), donc une limite de corps à 1 Mio — une
-règle métier ordinaire — n'est pas écrite : elle lèverait dans le constructeur sans paramètre émis,
-là où aucun appel `With…` ne peut la rattraper. Et un **plancher** sur un set ou un dictionnaire
-demande à la ligne d'élément autant de valeurs *distinctes*, donc un compte de cinq sur un enum à
-trois membres est refusé pour la raison même que `JD016` le signale ; un plafond ne demande rien de
-tel et ne répond qu'au plafond de production. **Une constante qui n'est pas un point de la droite numérique, ou qui sort de
+développeur. **Une taille au-delà du million que le generator produit (ADR-0076) est lue pour ce
+qu'elle est** (#362). Un plafond là-haut, `if (text.Length > 2_000_000) { throw … }`, tient par
+construction — aucun tirage ne l'atteint —, donc rien n'est écrit, la ligne se lit `guard`, et une
+ligne sous les lignes du récapitulatif dit pourquoi : *the guard's ceiling of 2000000 characters is
+above the size cap of 1000000 (ADR-0076), so it holds by construction and nothing was written for
+it*. Un plancher là-haut, `if (text.Length < 2_000_000) { throw … }`, n'admet aucun tirage : le
+paramètre est laissé ouvert (§5.5), provenance `unsatisfiable`, et son commentaire, le récapitulatif
+et le rapport en disent la raison — *the constructor requires at least 2000000 characters;
+JustDummies caps sizes at 1000000 (ADR-0076), so no draw can satisfy it*. Un refus net à la limite
+(ADR-0046) plutôt qu'une recette de base dont le constructeur rejette chaque tirage. Et un
+**plancher** sur un set ou un dictionnaire demande à la ligne d'élément autant de valeurs
+*distinctes*, donc un compte de cinq sur un enum à trois membres est refusé pour la raison même que
+`JD016` le signale, et marqué `unread guards` ; un plafond ne demande rien de tel. **Une constante qui n'est pas un point de la droite numérique, ou qui sort de
 `decimal`, n'est pas lue du tout** — `double` et `float` vont tous deux au-delà de `decimal`, et NaN
 et les infinis ne sont pas des bornes. Dans les deux cas le paramètre garde son generator neutre et
 est marqué `unread guards` (§9) — ce que reçoit aussi une garde `Enum.IsDefined` nommant un univers
@@ -1716,7 +1722,8 @@ une garde a été lue et comprise et que ce generator ne porte aucun membre pour
 `self-referencing` quand un paramètre ouvert atteint le type en cours de scaffolding (§5.4), `abstract`
 quand un paramètre ouvert est, ou contient, un type abstrait dont le generator s'écrit à la main (§5.4), et
 `unavailable` quand le generator existe dans la bibliothèque mais pas dans l'asset que ce projet
-résout.
+résout, et `unsatisfiable` quand la garde de taille d'un paramètre ouvert pose un plancher au-delà de
+ce que la bibliothèque produit (§5.3, #362).
 
 `guard` se calcule depuis les contraintes **appliquées**, jamais depuis les contraintes lues. La
 distinction fait toute la valeur de la colonne : une garde dont le generator n'a pas le membre est
@@ -1749,6 +1756,29 @@ Les deux comptes se lisent dans l'ordre où un développeur agit dessus : fourni
 l'autre. Une ligne sous les lignes de paramètres nomme, pour chaque paramètre marqué
 `unread guards`, la première garde qui lui a valu la marque et où elle se trouve — l'endroit même
 que donne son `TODO(any)` (§5.6).
+
+**Une garde de taille qui dépasse le plafond, ou s'en approche de très loin, est commentée sous les
+lignes.** Un plafond au-delà d'un million de caractères ou d'éléments tient par construction et un
+plancher au-delà n'admet aucun tirage (§5.3, #362) ; et un plafond de dix mille et plus est écrit tel
+que lu, mais sous l'ADR-0076 un maximum déclaré oriente le tirage, si bien qu'un tirage par défaut
+d'`AnyReadingBatch` a produit 406 641 relevés au premier essai d'expérience développeur avant que le
+harnais ne soit tué, sous un récapitulatif qui disait seulement `guard` (#361). Chacun vaut une
+phrase sous les lignes, formulée par le moteur et imprimée comme la ligne de garde non lue, et le
+rapport machine la porte en `remark` (§6.1) :
+
+```console
+  readings  IReadOnlyList<Reading>  Any.ListOf(new AnyReading()).WithMaxCount(500000)  AnyX, guard
+  text      string                  Any.String()                                       guard
+  body      string                  —                                                  TODO, unsatisfiable
+
+  readings: the guard's ceiling of 500000 elements steers every default draw toward that size (ADR-0076); consider a smaller default in AnyValidReadings(), such as .WithMaxCount(100), and leave the full ceiling to the test that needs it.
+  text: the guard's ceiling of 2000000 characters is above the size cap of 1000000 (ADR-0076), so it holds by construction and nothing was written for it.
+  body: the constructor requires at least 2000000 characters; JustDummies caps sizes at 1000000 (ADR-0076), so no draw can satisfy it.
+```
+
+Le code émis ne change pas pour le grand plafond : la garde est lue fidèlement, et où resserrer le
+défaut relève du développeur — la phrase nomme la fabrique et un chiffre, et laisse le plafond entier
+là où un test peut encore l'atteindre.
 
 **Une annotation nullable abandonnée est notée une fois.** Là où le projet analysé ne lit pas les
 annotations nullables, un `Bic? agent` s'écrit `Bic` dans le fichier (§5.2), et les lignes de
@@ -1843,6 +1873,11 @@ fichier (§5.2), si bien que là où le projet analysé ne lit pas les annotatio
 `Bic? agent` se lit `"type": "Bic"`. Le `nullableAnnotationDropped` de la ligne y vaut `true`, et
 `false` partout ailleurs — la note du récapitulatif sous ses lignes (§6), portée ligne par ligne pour
 qu'un script n'ait pas à relire le domaine.
+
+**La phrase d'une garde de taille voyage sur la ligne.** `remark` est la phrase que le récapitulatif
+imprime sous ses lignes pour une taille au-delà du plafond ou un très grand plafond (§6), `null`
+ailleurs, et `largeSizeCeiling` vaut `true` sur la ligne dont le plafond écrit est de dix mille ou
+plus (#361) — le drapeau qu'un script lit sans analyser la phrase.
 
 **Un paramètre marqué `unread guards` porte l'endroit.** Le `unreadGuard` de sa ligne contient le
 `file`, la `line` comptée à partir de un et un `excerpt` de la première garde dont le moteur n'a pas

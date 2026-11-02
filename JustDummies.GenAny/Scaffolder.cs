@@ -196,6 +196,15 @@ public static class Scaffolder {
                               | (guards.SourceAvailable ? Provenance.None : Provenance.NoSource)
                               | (guards.Unread(parameter.Name) ? Provenance.UnreadGuards : Provenance.None);
 
+        bool byCount = GeneratorFor.Sizes(parameter.Type).ByCount;
+
+        // A floor past the cap is the one reading that leaves a parameter open on purpose: no draw can satisfy
+        // the constructor, and saying so beats a base recipe every draw of which it refuses (#362, ADR-0046).
+        if (guards.FloorBeyondTheCap(parameter.Name) is { } floor) {
+            return ScaffoldedParameter.Unresolved(parameter.Name, typeDisplay, provenance | Provenance.Unsatisfiable, guards.UnreadAt(parameter.Name),
+                                                  drawn.Unscaffoldable, SizeRemarks.FloorBeyondTheCap(floor, byCount));
+        }
+
         if (!drawn.Resolved) {
             return ScaffoldedParameter.Unresolved(parameter.Name, typeDisplay, provenance, guards.UnreadAt(parameter.Name), drawn.Unscaffoldable);
         }
@@ -204,8 +213,9 @@ public static class Scaffolder {
         ChainReport                    written    = GeneratorFor.Chain(drawn, tightening);
 
         // Computed from the constraints APPLIED, not the constraints read. §6 words this column `tightened`,
-        // and a guard the generator carries no member for tightened nothing however well it was understood.
-        if (written.GuardApplied || guards.Tied(parameter.Name)) { provenance |= Provenance.Guard; }
+        // and a guard the generator carries no member for tightened nothing however well it was understood. A
+        // ceiling past the cap is applied by construction: nothing is written, and nothing was dropped either.
+        if (written.GuardApplied || guards.Tied(parameter.Name) || guards.CeilingBeyondTheCap(parameter.Name) is not null) { provenance |= Provenance.Guard; }
         if (written.GuardsNotCombined) { provenance |= Provenance.GuardsNotCombined; }
         if (written.ConstraintUnavailable) { provenance |= Provenance.ConstraintUnavailable; }
 
@@ -214,7 +224,16 @@ public static class Scaffolder {
         ScaffoldedParameter drawnFrom = ScaffoldedParameter.DrawnFrom(parameter.Name, typeDisplay, generatorType, written.Base, provenance,
                                                                       written.Conversion, guards.UnreadAt(parameter.Name));
 
+        (string? remark, bool large) = SizeRemarks.For(guards.CeilingBeyondTheCap(parameter.Name), tightening, written, byCount, FactoryNameOf(parameter));
+
+        if (remark is not null) { drawnFrom = drawnFrom.Remarked(remark, large); }
+
         return DrawsNull(parameter, guards, library) ? drawnFrom.DrawingNull() : drawnFrom;
+    }
+
+    /// <summary>The <c>AnyValid…()</c> factory the parameter's default is drawn from (§4.2), named for a remark.</summary>
+    private static string FactoryNameOf(IParameterSymbol parameter) {
+        return "AnyValid" + ScaffoldedParameter.PascalCasedNameOf(parameter.Name) + "()";
     }
 
     /// <summary>

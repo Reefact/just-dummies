@@ -65,6 +65,7 @@ qui a été **deviné** :
 | `self-referencing` | le paramètre fait référence au type en cours de génération (par exemple, un nœud enfant, un supérieur hiérarchique du même type, ou un type dont le constructeur y revient) : il reste donc à compléter (`TODO`), car sa génération automatique provoquerait une récursion infinie. C'est à vous d'en fixer la profondeur. |
 | `no source` | le type vient d'un package, il n'y avait donc aucun corps de constructeur à lire |
 | `unavailable` | le générateur existe dans JustDummies, mais pas dans l'asset que votre projet résout |
+| `unsatisfiable` | une garde de taille exige plus que le million de caractères ou d'éléments que JustDummies produit, donc aucun tirage ne peut satisfaire le constructeur : c'est un `TODO`, et une ligne sous les lignes dit quel plancher |
 
 **Une ligne `guard` nomme vos constantes.** Là où la garde compare à une constante publique —
 `ThrowIfGreaterThan(projectId, MaxProjectId)` —, la recette la référence,

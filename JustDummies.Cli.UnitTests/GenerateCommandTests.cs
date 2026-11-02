@@ -669,6 +669,39 @@ public sealed class GenerateCommandTests : IDisposable {
         Check.That(unread.GetProperty("note").ValueKind).IsEqualTo(JsonValueKind.Null);
     }
 
+    [Fact(DisplayName = "--format json carries a parameter's remark and the large-ceiling flag on its row.")]
+    public async Task JsonCarriesARemarkAndTheLargeCeilingFlag() {
+        GenerateSettings settings = Settings("Batch");
+
+        settings.Format = "json";
+
+        Run run = await Generate(settings, Compilation("""
+                                                       using System.Collections.Generic;
+
+                                                       namespace Shop.Domain;
+
+                                                       public sealed class Batch {
+                                                           public Batch(IReadOnlyList<int> readings, string text, string body) {
+                                                               if (readings.Count > 500_000) { throw new System.ArgumentException(nameof(readings)); }
+                                                               if (text.Length > 2_000_000) { throw new System.ArgumentException(nameof(text)); }
+                                                               if (body.Length < 2_000_000) { throw new System.ArgumentException(nameof(body)); }
+                                                           }
+                                                       }
+                                                       """));
+
+        JsonElement parameters = JsonDocument.Parse(run.Output).RootElement.GetProperty("results")[0].GetProperty("parameters");
+
+        Check.That(parameters[0].GetProperty("largeSizeCeiling").GetBoolean()).IsTrue();
+        Check.That(parameters[0].GetProperty("remark").GetString()).Contains(".WithMaxCount(100)");
+        Check.That(parameters[1].GetProperty("largeSizeCeiling").GetBoolean()).IsFalse();
+        Check.That(parameters[1].GetProperty("remark").GetString()).Contains("holds by construction");
+        Check.That(parameters[1].GetProperty("provenance").EnumerateArray().Select(word => word.GetString())).Contains("guard");
+        Check.That(parameters[2].GetProperty("resolved").GetBoolean()).IsFalse();
+        Check.That(parameters[2].GetProperty("provenance").EnumerateArray().Select(word => word.GetString())).Contains("unsatisfiable");
+        Check.That(parameters[2].GetProperty("remark").GetString()).Contains("no draw can satisfy it");
+        Check.That(parameters[0].GetProperty("unreadGuard").ValueKind).IsEqualTo(JsonValueKind.Null);
+    }
+
     [Fact(DisplayName = "--format json records a refused argument, with its candidates.")]
     public async Task JsonRecordsARefusedArgument() {
         GenerateSettings settings = Settings("Ordr");

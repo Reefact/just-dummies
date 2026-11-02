@@ -132,6 +132,35 @@ public sealed class GuardReadingTests {
     }
 
     /// <summary>
+    ///     A size guard past the million the library produces is read for what it is (#362): a ceiling there holds
+    ///     by construction — <c>guard</c>, nothing written, and a remark saying so — and a floor there admits no
+    ///     draw, so the parameter is left open with the reason. A ceiling of ten thousand and above is written, and
+    ///     remarked on as one that steers every default draw (#361).
+    /// </summary>
+    [Theory(DisplayName = "A size guard past the cap holds or refuses by construction, and a very large ceiling is remarked on.")]
+    [InlineData("string", "if (value.Length > 2_000_000) { throw new ArgumentException(nameof(value)); }", "Any.String()", "guard", "holds by construction", false)]
+    [InlineData("IReadOnlyList<int>", "ArgumentOutOfRangeException.ThrowIfGreaterThan(value.Count, 1_048_576);", "Any.ListOf(Any.Int32())", "guard", "the guard's ceiling of 1048576 elements is above the size cap of 1000000", false)]
+    [InlineData("string", "if (value.Length < 2_000_000) { throw new ArgumentException(nameof(value)); }", null, "unsatisfiable", "the constructor requires at least 2000000 characters; JustDummies caps sizes at 1000000 (ADR-0076), so no draw can satisfy it", false)]
+    [InlineData("IReadOnlyList<int>", "if (value.Count != 3_000_000) { throw new ArgumentException(nameof(value)); }", null, "unsatisfiable", "at least 3000000 elements", false)]
+    [InlineData("IReadOnlyList<int>", "if (value.Count > 500_000) { throw new ArgumentException(nameof(value)); }", "Any.ListOf(Any.Int32()).WithMaxCount(500000)", "guard", "consider a smaller default in AnyValidValue(), such as .WithMaxCount(100)", true)]
+    [InlineData("string", "if (value.Length > 10_000) { throw new ArgumentException(nameof(value)); }", "Any.String().WithMaxLength(10000)", "guard", "such as .WithMaxLength(100)", true)]
+    [InlineData("string", "if (value.Length > 9_999) { throw new ArgumentException(nameof(value)); }", "Any.String().WithMaxLength(9999)", "guard", null, false)]
+    public void ASizeGuardPastTheCapIsReadForWhatItIs(string type, string guard, string? expected, string provenance, string? remark, bool large) {
+        ScaffoldedParameter parameter = Subject.GuardedBy(type, guard);
+
+        Check.That(parameter.Expression).IsEqualTo(expected);
+        Check.That(parameter.Provenance.HasFlag(provenance == "guard" ? Provenance.Guard : Provenance.Unsatisfiable)).IsTrue();
+        Check.That(parameter.Provenance.HasFlag(Provenance.UnreadGuards)).IsFalse();
+        Check.That(parameter.LargeSizeCeiling).IsEqualTo(large);
+
+        if (remark is null) {
+            Check.That(parameter.Remark).IsNull();
+        } else {
+            Check.That(parameter.Remark).Contains(remark);
+        }
+    }
+
+    /// <summary>
     ///     The two shapes of #408 that read as understood and add nothing, and the edges where a shape of #408 is
     ///     not read: a <c>default</c> on a struct of the developer's own, whose <c>==</c> is a method; a pool that
     ///     is no constant; a rounding of another value.

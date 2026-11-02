@@ -28,7 +28,9 @@ public sealed class ScaffoldedParameter {
                                 UnreadGuard? unreadGuard,
                                 bool nullableAnnotationDropped,
                                 Unscaffoldable? unscaffoldable = null,
-                                bool drawsNull = false) {
+                                bool drawsNull = false,
+                                string? remark = null,
+                                bool largeSizeCeiling = false) {
         Name           = name;
         TypeDisplay    = typeDisplay;
         GeneratorType  = generatorType;
@@ -40,7 +42,25 @@ public sealed class ScaffoldedParameter {
         NullableAnnotationDropped = nullableAnnotationDropped;
         Unscaffoldable            = unscaffoldable;
         DrawsNull                 = drawsNull;
+        Remark                    = remark;
+        LargeSizeCeiling          = largeSizeCeiling;
     }
+
+    /// <summary>
+    ///     One sentence the recap prints under its rows and the machine report carries, where a size guard reaches
+    ///     past the cap or steers every draw to a very large size (#361, #362); null where there is nothing to say.
+    /// </summary>
+    /// <remarks>
+    ///     Data, as the provenance is: the engine words it once, and the recap, the comment of an open parameter
+    ///     and the report print the same sentence.
+    /// </remarks>
+    public string? Remark { get; }
+
+    /// <summary>
+    ///     Whether a guard-derived size ceiling is large enough to steer a default draw to a size a test did not ask
+    ///     for — ten thousand characters or elements and above (#361); <see cref="Remark" /> then says so.
+    /// </summary>
+    public bool LargeSizeCeiling { get; }
 
     /// <summary>The parameter's name, exactly as the constructor declares it.</summary>
     public string Name { get; }
@@ -281,6 +301,17 @@ public sealed class ScaffoldedParameter {
                                        nullableAnnotationDropped: false);
     }
 
+    /// <summary>
+    ///     The same parameter, with the sentence a size guard earns under the rows (<see cref="Remark" />), and
+    ///     whether it is the one of a very large ceiling (<see cref="LargeSizeCeiling" />).
+    /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="remark" /> is null.</exception>
+    public ScaffoldedParameter Remarked(string remark, bool largeSizeCeiling) {
+        if (remark is null) { throw new ArgumentNullException(nameof(remark)); }
+
+        return new ScaffoldedParameter(Name, TypeDisplay, GeneratorType, BaseExpression, Conversion, Provenance, UnreadGuard, NullableAnnotationDropped, Unscaffoldable, DrawsNull, remark, largeSizeCeiling);
+    }
+
     /// <summary>A parameter the engine inferred no generator for (§5.5).</summary>
     /// <exception cref="ArgumentNullException">Any argument is null.</exception>
     /// <exception cref="ArgumentException"><paramref name="name" /> or <paramref name="typeDisplay" /> is blank.</exception>
@@ -288,7 +319,8 @@ public sealed class ScaffoldedParameter {
                                                  string typeDisplay,
                                                  Provenance provenance = Provenance.None,
                                                  UnreadGuard? unreadGuard = null,
-                                                 Unscaffoldable? unscaffoldable = null) {
+                                                 Unscaffoldable? unscaffoldable = null,
+                                                 string? remark = null) {
         return new ScaffoldedParameter(Checked(name, nameof(name)),
                                        Checked(typeDisplay, nameof(typeDisplay)),
                                        generatorType: null,
@@ -297,7 +329,8 @@ public sealed class ScaffoldedParameter {
                                        provenance,
                                        unreadGuard,
                                        nullableAnnotationDropped: false,
-                                       unscaffoldable);
+                                       unscaffoldable,
+                                       remark: remark);
     }
 
     /// <summary>
@@ -305,12 +338,12 @@ public sealed class ScaffoldedParameter {
     ///     (<see cref="NullableAnnotationDropped" />).
     /// </summary>
     public ScaffoldedParameter DroppingNullableAnnotation() {
-        return new ScaffoldedParameter(Name, TypeDisplay, GeneratorType, BaseExpression, Conversion, Provenance, UnreadGuard, nullableAnnotationDropped: true, Unscaffoldable, DrawsNull);
+        return new ScaffoldedParameter(Name, TypeDisplay, GeneratorType, BaseExpression, Conversion, Provenance, UnreadGuard, nullableAnnotationDropped: true, Unscaffoldable, DrawsNull, Remark, LargeSizeCeiling);
     }
 
     /// <summary>The same parameter, its default recipe drawing <c>null</c> one draw in ten (<see cref="DrawsNull" />).</summary>
     public ScaffoldedParameter DrawingNull() {
-        return new ScaffoldedParameter(Name, TypeDisplay, GeneratorType, BaseExpression, Conversion, Provenance, UnreadGuard, NullableAnnotationDropped, Unscaffoldable, drawsNull: true);
+        return new ScaffoldedParameter(Name, TypeDisplay, GeneratorType, BaseExpression, Conversion, Provenance, UnreadGuard, NullableAnnotationDropped, Unscaffoldable, drawsNull: true, Remark, LargeSizeCeiling);
     }
 
     private static string Checked(string value, string parameterName) {

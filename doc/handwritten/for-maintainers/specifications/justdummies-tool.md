@@ -1034,12 +1034,18 @@ not read as this row's inverse.
 Several conditions bound the table's own arithmetic, and all of them are refusals rather than
 approximations. **`N` in a size row has to render as the `int` every size member takes** (§14.3): a
 bound folding to `140.5`, or past `int`'s range, is not a size the engine can write, and emitting it
-verbatim fails the developer's build. **It also has to be a size the generator could produce.** Every
-size member refuses an argument above a million (ADR-0076), so a 1 MiB body limit — an ordinary
-domain rule — is not written down: it would throw inside the emitted parameterless constructor,
-where no `With…` call can rescue it. And a **floor** on a set or a dictionary asks the element row
+verbatim fails the developer's build. **A size past the million the generator produces (ADR-0076)
+is read for what it is** (#362). A ceiling there, `if (text.Length > 2_000_000) { throw … }`, holds by
+construction — no draw reaches it — so nothing is written, the row reads `guard`, and a line under the
+recap's rows says why: *the guard's ceiling of 2000000 characters is above the size cap of 1000000
+(ADR-0076), so it holds by construction and nothing was written for it*. A floor there,
+`if (text.Length < 2_000_000) { throw … }`, admits no draw at all: the parameter is left open (§5.5),
+provenance `unsatisfiable`, and its comment, the recap and the report say the reason — *the
+constructor requires at least 2000000 characters; JustDummies caps sizes at 1000000 (ADR-0076), so no
+draw can satisfy it*. A clear refusal at the edge (ADR-0046) rather than a base recipe every draw of
+which the constructor rejects. And a **floor** on a set or a dictionary asks the element row
 for that many *distinct* values, so a count of five over a three-member enum is refused for the same
-reason `JD016` reports it; a ceiling asks for no such thing and answers only to the cap. **A constant that is not a point on the number line, or lies outside
+reason `JD016` reports it, and marked `unread guards`; a ceiling asks for no such thing. **A constant that is not a point on the number line, or lies outside
 `decimal`, is not read at all** — `double` and `float` both reach past `decimal`, and NaN and the
 infinities are not bounds. In either case the parameter keeps its neutral generator and is marked
 `unread guards` (§9), which is also what an `Enum.IsDefined` guard naming a universe other than the
@@ -1623,7 +1629,8 @@ below a write to the parameter, or under something deciding whether it runs at a
 read and understood and this generator carries no member to say it with, `self-referencing` when an
 open parameter reaches the type being scaffolded (§5.4), `abstract` when an open parameter is, or
 holds, an abstract type whose generator is written by hand (§5.4), and `unavailable` when the
-generator exists in the library but not in the asset this project resolves.
+generator exists in the library but not in the asset this project resolves, and `unsatisfiable` when
+an open parameter's size guard sets a floor past what the library produces (§5.3, #362).
 
 `guard` is computed from the constraints **applied**, never from the constraints read. The
 distinction is the whole worth of the column: a guard the generator has no member for is dropped by
@@ -1655,6 +1662,28 @@ since the row and the closing line describe the same parameter:
 Both counts read in the order a developer acts on them: supply the one, check the other. A line
 under the rows names, for each parameter marked `unread guards`, the earliest guard that earned it
 and where it sits — the same place its `TODO(any)` gives (§5.6).
+
+**A size guard that reaches past the cap, or very far toward it, is remarked on under the rows.** A
+ceiling past a million characters or elements holds by construction and a floor past it admits no
+draw (§5.3, #362); and a ceiling of ten thousand and above is written as read, but under ADR-0076 a
+declared maximum steers the draw, so one default draw of `AnyReadingBatch` produced 406 641 readings
+in the first developer-UX trial before the harness was killed, under a recap that said only `guard`
+(#361). Each earns one sentence under the rows, worded by the engine and printed as the unread-guard
+line is, and the machine report carries it as `remark` (§6.1):
+
+```console
+  readings  IReadOnlyList<Reading>  Any.ListOf(new AnyReading()).WithMaxCount(500000)  AnyX, guard
+  text      string                  Any.String()                                       guard
+  body      string                  —                                                  TODO, unsatisfiable
+
+  readings: the guard's ceiling of 500000 elements steers every default draw toward that size (ADR-0076); consider a smaller default in AnyValidReadings(), such as .WithMaxCount(100), and leave the full ceiling to the test that needs it.
+  text: the guard's ceiling of 2000000 characters is above the size cap of 1000000 (ADR-0076), so it holds by construction and nothing was written for it.
+  body: the constructor requires at least 2000000 characters; JustDummies caps sizes at 1000000 (ADR-0076), so no draw can satisfy it.
+```
+
+The emitted code does not change for the large ceiling: the guard is read faithfully, and where to
+narrow the default is the developer's call — the sentence names the factory and a figure, and leaves
+the full ceiling where a test can still reach it.
 
 **A dropped nullable annotation is noted once.** Where the analysed project does not read nullable
 annotations, a `Bic? agent` is written `Bic` in the file (§5.2), and the rows, the constructor line
@@ -1741,6 +1770,11 @@ The provenance words are the recap's own (§6), read from one table rather than 
 does (§5.2), so where the analysed project does not read nullable annotations a `Bic? agent` reads
 `"type": "Bic"`. The row's `nullableAnnotationDropped` is `true` there and `false` everywhere else —
 the recap's note under its rows (§6), carried per row so a script need not reread the domain.
+
+**A size guard's sentence travels on the row.** `remark` is the sentence the recap prints under its
+rows for a size past the cap or a very large ceiling (§6), `null` elsewhere, and `largeSizeCeiling`
+is `true` on the row whose written ceiling is ten thousand or above (#361) — the flag a script reads
+without parsing the sentence.
 
 **A parameter marked `unread guards` carries where.** Its row's `unreadGuard` holds the `file`, the
 one-based `line` and an `excerpt` of the earliest guard the engine could not vouch for (§5.6), with a

@@ -13,7 +13,9 @@ internal sealed record ParameterReport(string Name,
                                        bool RequiresVerification,
                                        bool NullableAnnotationDropped,
                                        IReadOnlyList<string> Provenance,
-                                       UnreadGuardReport? UnreadGuard) {
+                                       UnreadGuardReport? UnreadGuard,
+                                       string? Remark,
+                                       bool LargeSizeCeiling) {
 
     /// <summary>
     ///     A row states its own two outcomes, so the summary's counts can be checked against the rows.
@@ -38,7 +40,9 @@ internal sealed record ParameterReport(string Name,
                                    parameter.RequiresVerification,
                                    parameter.NullableAnnotationDropped,
                                    Recap.WordsFor(parameter.Provenance),
-                                   UnreadGuardReport.Of(parameter.UnreadGuard));
+                                   UnreadGuardReport.Of(parameter.UnreadGuard),
+                                   parameter.Remark,
+                                   parameter.LargeSizeCeiling);
     }
 
 }

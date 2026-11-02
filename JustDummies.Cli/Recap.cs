@@ -47,6 +47,7 @@ internal static class Recap {
         (GenAny.Provenance.ConstraintUnavailable, "constraint unavailable"),
         (GenAny.Provenance.SelfReferencing, "self-referencing"),
         (GenAny.Provenance.AbstractType, "abstract"),
+        (GenAny.Provenance.Unsatisfiable, "unsatisfiable"),
         (GenAny.Provenance.NoSource, "no source"),
         (GenAny.Provenance.Unavailable, "unavailable")
     ];
@@ -74,6 +75,7 @@ internal static class Recap {
             foreach (string row in Rows(plan)) { Line(console, row); }
 
             Unread(plan, console);
+            Remarked(plan, console);
             Dropped(plan, console);
         }
 
@@ -133,6 +135,20 @@ internal static class Recap {
     /// <summary>The word the place owes its reader where the excerpt alone does not say why it marks (#371).</summary>
     internal static string Noted(UnreadGuard unread) {
         return unread.Note is null ? string.Empty : " — " + unread.Note;
+    }
+
+    /// <summary>
+    ///     Under the rows, what a size guard past the cap, or a very large one, has to say about its parameter —
+    ///     worded by the engine, printed here (#361, #362).
+    /// </summary>
+    private static void Remarked(ScaffoldPlan plan, IAnsiConsole console) {
+        List<ScaffoldedParameter> remarked = [.. plan.Parameters.Where(parameter => parameter.Remark is not null)];
+
+        if (remarked.Count == 0) { return; }
+
+        Line(console, string.Empty);
+
+        foreach (ScaffoldedParameter parameter in remarked) { Line(console, $"  {parameter.Name}: {parameter.Remark}."); }
     }
 
     /// <summary>

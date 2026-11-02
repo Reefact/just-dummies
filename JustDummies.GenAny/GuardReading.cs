@@ -17,6 +17,10 @@ internal sealed class GuardReading {
 
     private readonly List<(OrderedPairing Pairing, UnreadGuard At)> ties = [];
 
+    private readonly Dictionary<string, decimal> ceilingsBeyondTheCap = new(StringComparer.Ordinal);
+
+    private readonly Dictionary<string, decimal> floorsBeyondTheCap = new(StringComparer.Ordinal);
+
     private GuardReading(bool sourceAvailable) {
         SourceAvailable = sourceAvailable;
     }
@@ -71,12 +75,43 @@ internal sealed class GuardReading {
 
         if (ReferenceEquals(constraint, GuardConstraint.NullRefused)) { return; }
 
+        // A size past the cap is kept apart from the chain, as the null-check is: a ceiling there is nothing to
+        // write, and a floor there is the one reading that leaves the parameter open (#362). The lowest ceiling
+        // and the highest floor are what the recap names, where a constructor states several.
+        if (constraint.BeyondTheCap == GuardConstraint.SizeBeyondTheCap.CeilingHolds) {
+            ceilingsBeyondTheCap[parameter] = ceilingsBeyondTheCap.TryGetValue(parameter, out decimal lowest) ? Math.Min(lowest, constraint.Value!.Value) : constraint.Value!.Value;
+
+            return;
+        }
+
+        if (constraint.BeyondTheCap == GuardConstraint.SizeBeyondTheCap.FloorUnsatisfiable) {
+            floorsBeyondTheCap[parameter] = floorsBeyondTheCap.TryGetValue(parameter, out decimal highest) ? Math.Max(highest, constraint.Value!.Value) : constraint.Value!.Value;
+
+            return;
+        }
+
         if (!constraints.TryGetValue(parameter, out List<GuardConstraint>? read)) {
             read = [];
             constraints[parameter] = read;
         }
 
         read.Add(constraint);
+    }
+
+    /// <summary>
+    ///     The ceiling a size guard set past the cap for <paramref name="parameter" />, which holds by construction
+    ///     and writes nothing (#362); null where none was read.
+    /// </summary>
+    internal decimal? CeilingBeyondTheCap(string parameter) {
+        return ceilingsBeyondTheCap.TryGetValue(parameter, out decimal ceiling) ? ceiling : null;
+    }
+
+    /// <summary>
+    ///     The floor a size guard set past the cap for <paramref name="parameter" />, which no draw can satisfy
+    ///     (#362); null where none was read.
+    /// </summary>
+    internal decimal? FloorBeyondTheCap(string parameter) {
+        return floorsBeyondTheCap.TryGetValue(parameter, out decimal floor) ? floor : null;
     }
 
     /// <summary>

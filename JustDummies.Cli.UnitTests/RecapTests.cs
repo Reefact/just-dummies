@@ -119,6 +119,18 @@ public sealed class RecapTests {
         Check.That(rendered).Contains("  name: unread guard at Subject.cs, line 9: if (!Fits(item)) { throw new ArgumentException(nameof(items)); } — every parameter is marked here, since what decides this throw could not be traced back to one");
     }
 
+    // A size guard past the cap, or a very large one, has a sentence to say about its parameter, worded by the engine
+    // and printed under the rows the way an unread guard is (issues #361, #362).
+    [Fact(DisplayName = "A remark on a parameter is printed under the rows, as a sentence.")]
+    public void ARemarkIsPrintedUnderTheRows() {
+        ScaffoldedParameter readings = Inferred("readings", "IReadOnlyList<int>", "AnyList<int>", "Any.ListOf(Any.Int32()).WithMaxCount(500000)", Provenance.Guard)
+                                       .Remarked("the guard's ceiling of 500000 elements steers every default draw toward that size (ADR-0076); consider a smaller default in AnyValidReadings(), such as .WithMaxCount(100), and leave the full ceiling to the test that needs it", largeSizeCeiling: true);
+
+        string rendered = Rendered(Plan([readings]));
+
+        Check.That(rendered).Contains("  readings: the guard's ceiling of 500000 elements steers every default draw toward that size (ADR-0076); consider a smaller default in AnyValidReadings(), such as .WithMaxCount(100), and leave the full ceiling to the test that needs it.");
+    }
+
     // The rows spell the type as the file does, which in a project that does not read nullable annotations is without
     // the declaration's `?`. One line under them says so, once for every such parameter, rather than leaving the
     // constructor line to misdescribe the domain (issue #344).
@@ -194,6 +206,7 @@ public sealed class RecapTests {
     [InlineData(Provenance.UnreadGuards, "unread guards")]
     [InlineData(Provenance.NoSource, "no source")]
     [InlineData(Provenance.Unavailable, "unavailable")]
+    [InlineData(Provenance.Unsatisfiable, "unsatisfiable")]
     public void EveryProvenanceHasAWord(Provenance provenance, string word) {
         Check.That(Rendered(Plan([Inferred("value", "string", "AnyString", "Any.String()", provenance)]))).Contains(word);
     }

@@ -994,6 +994,8 @@ L'ensemble reconnu est clos :
 | `A || B`, `p is P1 or P2` — une disjonction, chaque branche lue comme une garde à part entière | les lignes dans lesquelles chaque branche se lit : `.Between(0, 23)` pour `p < 0 || p > 23`, `.NotBlank().WithMaxLength(12)` pour `IsNullOrWhiteSpace(p) || p.Length > 12` (ADR-0128) |
 | `p is < N`, `p is > N`, `p is N`, `p is null` — un pattern relationnel ou constant, sur `p` ou sur `p.Length` | la comparaison que le pattern épelle : `.LessThanOrEqualTo(N)` pour `p is > N`, `.WithMaxLength(N)` pour `p.Length is > N` |
 | `p.Any(x => x is null)`, `p.Any(x => x == null)`, `p.Contains(null)` sur une collection dont le type d'élément n'est pas nullable | aucune — toute recette d'élément que le scaffold écrit tire une valeur, donc la garde tient par construction ; et le défaut du paramètre cesse de tirer `null` (§5.2). **Non lue là où le type d'élément est nullable** (#403) |
+| `Math.Abs(p) > N`, `Math.Abs(p) >= N` | `.Between(-N, N)` ; `.GreaterThan(-N).LessThan(N)` — l'intervalle symétrique qu'énonce une magnitude, sur un nombre signé (#416) |
+| un helper du même type dont le corps en bloc lève et rend l'un de ses paramètres inchangé sur tout chemin — `XMm = Guard(xMm);` | ce que lisent les propres gardes du helper, replié sur les paramètres qui lui sont confiés, comme celles d'un constructeur délégué ; un helper qui transforme ce qu'il retourne, ou que le lecteur ne lit pas, garde la marque du §5.6 (#416) |
 
 **Six formes sont entrées dans l'ensemble sur le rapport de terrain du second essai (#408), et chaque
 lecture est exacte.** La négation d'une comparaison est la comparaison opposée, sans troisième valeur
@@ -1610,9 +1612,9 @@ page utilisateur qui dit ce que signifie `to verify` : le commentaire est lu par
 fichier ouvert, pas cette spécification. Quand aucune position dans la source n'est connue, la
 deuxième ligne est omise.
 
-**Une garde écrite dans un helper qui retourne la valeur vérifiée est marquée, là où le moteur
-peut voir que le helper lève.** L'objet-valeur validant idiomatique n'écrit pas sa garde dans le
-constructeur du tout :
+**Une garde écrite dans un helper qui retourne la valeur vérifiée est lue un niveau plus bas, là où
+le helper rend la valeur inchangée, et marquée là où le moteur ne peut voir que le fait que le helper
+lève.** L'objet-valeur validant idiomatique n'écrit pas sa garde dans le constructeur du tout :
 
 ```csharp
 public sealed class SpatialPoint {
@@ -1634,11 +1636,29 @@ tient en un fait : le corps du helper contient un `throw`. Un paramètre confié
 **dont le corps contient un `throw`** est donc marqué `to verify, unread guards`, en pointant cet
 appel, où que l'appel se trouve dans le corps ; un helper qui ne lève nulle part, `Trim()` ou un
 `Normalise` écrit par le développeur, reste de la production et ne gagne aucune marque, et un helper
-`void` appelé pour son effet est marqué comme avant. Rien n'est inféré du helper : le moteur ne lit
-pas son corps ici, et un helper d'un autre type, ou qui appelle un helper qui lève, n'est pas
-examiné (§9). Lire un tel helper un niveau plus bas, et seulement là où il retourne le paramètre
-inchangé sur tout chemin, est une étape distincte. Cet essai est le rapport de terrain que demande
+`void` appelé pour son effet est marqué comme avant (#407). Un helper d'un autre type, ou qui appelle
+un helper qui lève, n'est pas examiné (§9). Cet essai est le rapport de terrain que demande
 l'ADR-0085.
+
+**Le lecteur descend d'un niveau dans un tel helper, et pas plus, là où il n'y a rien à distinguer
+(#416).** `Guard` ci-dessus rend `v` exactement comme il l'a reçu — chaque `return` est le paramètre
+lui-même, nu ou comme branche survivante d'une conditionnelle dont l'autre branche lève, et rien dans
+le corps ne l'écrit —, donc une garde en son sein est une garde sur la valeur confiée au constructeur,
+et la lecture qui lit les gardes d'un constructeur délégué (§5.3) lit celle-ci : le corps du helper
+est lu comme s'il était le constructeur, chaque argument projeté sur le paramètre qu'il remplit
+(`xMm` → `v`), et ce qui y est lu, marqué ou refusé est replié sur le paramètre du constructeur — ici
+`.Between(-2000.0, 2000.0)`, par la ligne `Math.Abs`. La lecture ne vaut que là où le helper est
+déclaré dans le même type avec un corps en bloc, n'est ni virtuel ni redéfini, rend l'un de ses
+paramètres inchangé sur tout chemin, et est appelé là où rien ne décide s'il s'exécute et au-dessus
+de toute écriture de l'argument. Tout le reste garde la marque : un helper qui retourne `v * 2` ou
+`Math.Round(v)` normalise — sa garde porte sur une valeur que ce generator ne tire pas, ce qui est le
+souci même du §9 —, et de même un helper dont le corps est une expression, un virtuel, une fonction
+locale, et un helper atteint sous la première affectation à l'état, où rien n'est lu. Une garde que le
+helper lui-même ne sait pas lire marque le paramètre à la ligne même du helper, là où le développeur
+regarde ensuite. Et l'affectation `XMm = Guard(xMm);` ne clôt pas le scan de tête, pour la raison qui
+vaut pour la graphie assignée d'une bibliothèque de gardes (ADR-0086) : elle valide et stocke,
+n'écrase aucun paramètre, et laisse donc tout ce qui suit aussi « de tête » qu'avant — l'objet-valeur
+à deux lignes de ce genre lit les deux.
 
 Un generator qui compile et tire une valeur que le vrai constructeur rejette encore est un échec
 pire que celui qui ne compile jamais : il passe la run d'aujourd'hui et échoue plus tard,
@@ -2004,7 +2024,8 @@ Nommés explicitement pour ne pas être pris pour des oublis.
   simplement non lues — le tool n'y voit aucun rejet dont douter. Une garde-helper qui **retourne**
   la valeur vérifiée se distingue d'une normalisation par un seul fait, que son corps lève, et
   seulement là où le moteur peut voir ce corps : un helper déclaré dans le même type, avec sa
-  source, est marqué (§5.6). Un helper d'un autre type — `_name = Ensure.Valid(value);` — ou sans
+  source, est lu un niveau plus bas là où il rend la valeur inchangée, et marqué sinon (§5.6). Un
+  helper d'un autre type — `_name = Ensure.Valid(value);` — ou sans
   source est indiscernable de `_name = value.Trim();`, et le lire comme un doute reviendrait à lire
   la normalisation comme un doute aussi, ce qui bloque la compilation de constructeurs ne portant
   aucune garde ; les aides des deux bibliothèques que le §5.3 lit par symbole résolu (ADR-0086) sont

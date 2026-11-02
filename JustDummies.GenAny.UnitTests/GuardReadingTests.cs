@@ -55,6 +55,10 @@ public sealed class GuardReadingTests {
     [InlineData("string", "if (value.AsSpan().IndexOfAnyExcept(\"ACGTN\") >= 0) { throw new ArgumentException(nameof(value)); }", "Any.String().WithChars(\"ACGTN\")")]
     [InlineData("string", "if (-1 != value.AsSpan().IndexOfAnyExcept(\"+-\")) { throw new ArgumentException(nameof(value)); }", "Any.String().WithChars(\"+-\")")]
     [InlineData("string", "if (value.AsSpan().IndexOfAnyExcept(\"a\\\"b\") > -1) { throw new ArgumentException(nameof(value)); }", "Any.String().WithChars(\"a\\\"b\")")]
+    [InlineData("int", "if (Math.Abs(value) > 90) { throw new ArgumentOutOfRangeException(nameof(value)); }", "Any.Int32().Between(-90, 90)")]
+    [InlineData("double", "if (2000.0 < Math.Abs(value)) { throw new ArgumentOutOfRangeException(nameof(value)); }", "Any.Double().Between(-2000d, 2000d)")]
+    [InlineData("decimal", "if (Math.Abs(value) >= 1.5m) { throw new ArgumentOutOfRangeException(nameof(value)); }", "Any.Decimal().GreaterThan(-1.5m).LessThan(1.5m)")]
+    [InlineData("int", "if (Math.Abs(value) > 90 || value == 0) { throw new ArgumentOutOfRangeException(nameof(value)); }", "Any.Int32().Between(-90, 90).NonZero()")]
     public void AShapeFromTheSecondTrialReadsIntoThePromisedMember(string type, string guard, string expected) {
         ScaffoldedParameter parameter = Subject.GuardedBy(type, guard);
 

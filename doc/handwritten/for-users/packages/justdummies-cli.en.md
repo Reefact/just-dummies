@@ -126,7 +126,7 @@ tool does not translate some and drop others silently
 the subset, the replacement is one line, `Any.StringMatching("[A-Z]{3}")`, and it changes the factory's
 type: see [below](#when-the-replacement-is-another-kind-of-generator).
 
-**A guard written in a helper of your type that returns the value is marked too.** The idiomatic
+**A guard written in a helper of your type that returns the value is read through it.** The idiomatic
 value object keeps its guard out of the constructor:
 
 <!-- jd:declarations -->
@@ -148,12 +148,16 @@ public sealed class SpatialPoint {
 }
 ```
 
-`any` does not read `Guard` — it cannot say that `xMm` stays within 2000 — but it sees that the helper's
-body throws, which is what tells a guard from a `Normalise(v)` that only trims. So `xMm` is marked
-`to verify`, the comment points at the `Guard(xMm, nameof(xMm))` call, and the build stops there until
-you have written the bound yourself, `Any.Double().Between(-2000.0, 2000.0)`. That holds for a method
-declared in the same type — private or not, static, or a local function — wherever the call sits in
-the constructor. A helper that throws nowhere earns no mark; a `void` helper called for its effect,
+`Guard` hands `v` back exactly as it received it, so a guard inside it is a guard on `xMm`: `any` reads
+the helper's body as it reads the constructor's, and `xMm` scaffolds `Any.Double().Between(-2000.0, 2000.0)`,
+tagged `guard`. That holds one level down, for a method declared in the same type — private or not,
+static — with a block body, that is neither virtual nor overridden and returns one of its parameters
+unchanged on every path, called where nothing decides whether it runs. A helper that changes what it
+returns (`return Math.Round(v);`), one whose body is a single expression, a local function, or a call
+below the first assignment to state is not read: `any` still sees that the helper's body throws, which
+is what tells a guard from a `Normalise(v)` that only trims, so `xMm` is marked `to verify`, the comment
+points at the `Guard(xMm, nameof(xMm))` call, and the build stops there until you have written the
+bound yourself. A helper that throws nowhere earns no mark; a `void` helper called for its effect,
 `Validate(value);`, is marked as before.
 
 **What the tool still cannot see stays silent.** A few shapes reject a value without the tool seeing a

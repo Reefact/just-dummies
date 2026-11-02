@@ -33,6 +33,16 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   adding nothing — so `runs.Count == 0 || runs.Any(r => r is null)` reads whole as `.NonEmpty()` — and the
   parameter itself stops drawing `null`, since the check dereferences it. On a nullable element type
   (`IReadOnlyList<Run?>`) the mark stays (issue #403).
+- **A guard in a helper of the same type that hands its parameter back unchanged is read through it.**
+  `XMm = Guard(xMm, nameof(xMm));` with a `private static double Guard(double v, string name)` that throws on
+  `Math.Abs(v) > 2000.0` and returns `v` was marked `to verify` (#407); it now scaffolds
+  `Any.Double().Between(-2000.0, 2000.0)`, tagged `guard`: the helper's body is read as the constructor's is, one
+  level down, each argument mapped to the parameter it fills, and what it reads, marks or refuses folds back onto
+  the constructor's parameter. Only a block-bodied, non-virtual method of the same type returning one of its
+  parameters unchanged on every path, called where nothing decides whether it runs, is read; a helper that
+  transforms what it returns, an expression-bodied one, a local function, or a call below the first assignment to
+  state keeps the mark. `Math.Abs(p) > N` and `>= N` are read as the symmetric range they state, in the
+  constructor too (issue #416).
 
 ### Changed
 

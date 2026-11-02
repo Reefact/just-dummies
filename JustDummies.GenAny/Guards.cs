@@ -148,7 +148,7 @@ internal static class Guards {
             // the idiomatic shape of a validating value object is `XMm = Guard(xMm, nameof(xMm));`, which is
             // also the first assignment to state, so a check made after that decision would miss the very
             // case it exists for (§5.6).
-            MarkIfHandedToAThrowingHelper(statement, model, declared, reading);
+            ReadOrMarkThrowingHelpers(statement, model, declared, reading, writes, unskipped, readDelegated);
 
             // A second assignment is exempt for the same reason as ADR-0086's: `Field = param ?? throw new
             // ArgumentNullException(nameof(param));` states the same null-check `ArgumentNullException
@@ -170,7 +170,7 @@ internal static class Guards {
             // spelling of the assigned guard idiom — both validates and stores, writes over no parameter, and
             // so leaves everything below it exactly as leading as it was. The call itself is read by the
             // marking pass below, through the same placement questions as any other.
-            if (AssignsState(statement, model) && !IsGuardAssignment(statement, model)) {
+            if (AssignsState(statement, model) && !IsGuardAssignment(statement, model, declared)) {
                 // The scan ends here — nothing below is read as a guard any more. A throw carried inside the
                 // assignment's own right side (`Code = code.Length switch { < 8 => throw ..., ... };`) is asked
                 // about first: the statement rejects a value on some path, and the developer deserves the mark.
@@ -1113,8 +1113,9 @@ internal static class Guards {
         }
 
         // The one unrecognised call that is NOT left alone below the scan: a helper of this type whose body
-        // throws is told apart from the filling of state by that throw, above the scan and below it alike.
-        MarkIfHandedToAThrowingHelper(statement, model, method, reading);
+        // throws is told apart from the filling of state by that throw, above the scan and below it alike —
+        // marked here, never read, as nothing below the scan is.
+        ReadOrMarkThrowingHelpers(statement, model, method, reading, writes, unskipped: true, readDelegated: null);
 
         GuardReading wouldHaveRead = GuardReading.FromSource();
 
@@ -1279,10 +1280,13 @@ internal static class Guards {
     ///         scan rejects values exactly as much as one above it.
     ///     </para>
     /// </remarks>
-    private static void MarkIfHandedToAThrowingHelper(StatementSyntax statement,
-                                                      SemanticModel model,
-                                                      IMethodSymbol method,
-                                                      GuardReading reading) {
+    private static void ReadOrMarkThrowingHelpers(StatementSyntax statement,
+                                                  SemanticModel model,
+                                                  IMethodSymbol method,
+                                                  GuardReading reading,
+                                                  ParameterWrites writes,
+                                                  bool unskipped,
+                                                  Func<IMethodSymbol, GuardReading>? readDelegated) {
         foreach (InvocationExpressionSyntax invocation in statement.DescendantNodesAndSelf().OfType<InvocationExpressionSyntax>()) {
             if (IsNameOf(invocation)) { continue; }
 
@@ -1292,10 +1296,94 @@ internal static class Guards {
                 continue;
             }
 
+            // The bounded read of #416: one level into a helper that hands its parameter back unchanged, where
+            // the call runs on every path, folded onto the parameters handed to it exactly as a delegated
+            // constructor's guards are. Anything else keeps the mark of #407.
+            StatementSyntax carrier = invocation.FirstAncestorOrSelf<StatementSyntax>() ?? statement;
+
+            if (readDelegated is not null
+             && unskipped
+             && RunsUnconditionally(carrier, statement, model)
+             && ReturnsAParameterUnchanged(callee, model)) {
+                // Placement is asked of the statement carrying the call, a region the compiler analyses whole:
+                // a write to the argument anywhere in it — before the call or inside its own arguments — declines
+                // the fold, which is the superset ADR-0084 asks for.
+                FoldGuardsFromDelegatedConstructor(invocation.ArgumentList, model, method, callee, reading,
+                                                   parameter => writes.Precede(parameter, carrier), readDelegated);
+
+                continue;
+            }
+
             foreach (IParameterSymbol parameter in Mentioned(invocation, model, method)) {
                 reading.MarkUnread(parameter.Name, UnreadGuard.At(invocation));
             }
         }
+    }
+
+    /// <summary>
+    ///     Whether <paramref name="callee" /> is the helper the bounded read of #416 goes into: a method of the
+    ///     same type with a block body of its own — not virtual, abstract or overridden, and not a local function
+    ///     — that returns one of its own parameters, unchanged, on every path that returns at all.
+    /// </summary>
+    /// <remarks>
+    ///     "Unchanged" is two facts, both asked of the compiler. Every <c>return</c> hands back the parameter
+    ///     itself — bare, in parentheses, or as the surviving arm of a conditional whose other arm throws — and the
+    ///     parameter is written nowhere in the body, so what comes out is what went in. A helper returning
+    ///     <c>v * 2</c> or <c>Math.Round(v)</c> normalises, and a guard inside it is about a value this
+    ///     generator does not draw: that is the case §9 names, and it keeps the mark. A helper whose body is
+    ///     only an expression keeps the mark too, by the reading's own shape: the leading scan reads statements,
+    ///     and <c>Math.Abs(v) &gt; 2000.0 ? throw … : v</c> has none.
+    /// </remarks>
+    private static bool ReturnsAParameterUnchanged(IMethodSymbol callee, SemanticModel model) {
+        if (callee.IsVirtual || callee.IsAbstract || callee.IsOverride || callee.MethodKind != MethodKind.Ordinary) { return false; }
+
+        MethodDeclarationSyntax? declaration = callee.DeclaringSyntaxReferences
+                                                     .Select(reference => reference.GetSyntax())
+                                                     .OfType<MethodDeclarationSyntax>()
+                                                     .FirstOrDefault();
+
+        if (declaration?.Body is not { } body || body.SyntaxTree != model.SyntaxTree) { return false; }
+
+        ExpressionSyntax?[] handedBack = [.. body.DescendantNodes(node => node is not (AnonymousFunctionExpressionSyntax or LocalFunctionStatementSyntax))
+                                                  .OfType<ReturnStatementSyntax>()
+                                                  .Select(@return => @return.Expression)];
+
+        if (handedBack.Length == 0) { return false; }
+
+        IParameterSymbol? returned = null;
+
+        foreach (ExpressionSyntax? expression in handedBack) {
+            if (expression is null || !ReturnsUnchanged(expression, model, callee, ref returned)) { return false; }
+        }
+
+        DataFlowAnalysis? flow = model.AnalyzeDataFlow(body);
+
+        return returned is not null
+            && flow is { Succeeded: true }
+            && !flow.WrittenInside.Contains(returned, SymbolEqualityComparer.Default);
+    }
+
+    /// <summary>
+    ///     Whether <paramref name="expression" /> is one parameter of <paramref name="callee" /> handed back as it
+    ///     is — the same one every other return hands back — or a conditional whose arms each are that or a throw.
+    /// </summary>
+    private static bool ReturnsUnchanged(ExpressionSyntax expression, SemanticModel model, IMethodSymbol callee, ref IParameterSymbol? returned) {
+        ExpressionSyntax bare = Unwrapped(expression);
+
+        if (bare is ConditionalExpressionSyntax conditional) {
+            return (conditional.WhenTrue is ThrowExpressionSyntax || ReturnsUnchanged(conditional.WhenTrue, model, callee, ref returned))
+                && (conditional.WhenFalse is ThrowExpressionSyntax || ReturnsUnchanged(conditional.WhenFalse, model, callee, ref returned));
+        }
+
+        if (bare is not IdentifierNameSyntax identifier
+         || model.GetSymbolInfo(identifier).Symbol is not IParameterSymbol parameter
+         || !callee.Parameters.Contains(parameter, SymbolEqualityComparer.Default)) {
+            return false;
+        }
+
+        if (returned is null) { returned = parameter; }
+
+        return SymbolEqualityComparer.Default.Equals(returned, parameter);
     }
 
     /// <summary>
@@ -1330,11 +1418,24 @@ internal static class Guards {
     ///     a right side that also wrote a parameter is caught by the placement questions the reading itself
     ///     asks, not waved past here.
     /// </remarks>
-    private static bool IsGuardAssignment(StatementSyntax statement, SemanticModel model) {
+    private static bool IsGuardAssignment(StatementSyntax statement, SemanticModel model, IMethodSymbol method) {
         return statement is ExpressionStatementSyntax { Expression: AssignmentExpressionSyntax assignment }
             && assignment.IsKind(SyntaxKind.SimpleAssignmentExpression)
             && Unwrapped(assignment.Right) is InvocationExpressionSyntax invocation
-            && LibraryGuards.Recognises(invocation, model);
+            && (LibraryGuards.Recognises(invocation, model) || IsAReadableHelperCall(invocation, model, method));
+    }
+
+    /// <summary>
+    ///     A call to a helper of the same type the bounded read of #416 goes into — one that throws and hands a
+    ///     parameter back unchanged. <c>XMm = Guard(xMm);</c> validates and stores exactly as a guard library's
+    ///     assigned spelling does (ADR-0086), writes over no parameter, and so leaves everything below it as
+    ///     leading as it was: the value object with two such lines reads both.
+    /// </summary>
+    private static bool IsAReadableHelperCall(InvocationExpressionSyntax invocation, SemanticModel model, IMethodSymbol method) {
+        return model.GetSymbolInfo(invocation).Symbol is IMethodSymbol callee
+            && SymbolEqualityComparer.Default.Equals(callee.ContainingType, method.ContainingType)
+            && BodyThrows(callee)
+            && ReturnsAParameterUnchanged(callee, model);
     }
 
     /// <summary>
@@ -1864,6 +1965,16 @@ internal static class Guards {
             return;
         }
 
+        // The one row that reads into two constraints: a magnitude is a floor and a ceiling at once (#416).
+        if (branch.Pattern is null
+         && Unwrapped(branch.Condition) is BinaryExpressionSyntax magnitude
+         && TryMagnitude(magnitude, model, parameter, out GuardConstraint? floor, out GuardConstraint? ceiling)) {
+            reading.Add(parameter.Name, floor!);
+            reading.Add(parameter.Name, ceiling!);
+
+            return;
+        }
+
         if (!TryRecogniseBranch(branch, model, parameter, GeneratorFor.Sizes(parameter.Type), names,
                                 out GuardConstraint? constraint)) {
             reading.MarkUnread(parameter.Name, UnreadGuard.At(branch.Condition));
@@ -2112,6 +2223,57 @@ internal static class Guards {
         return TryScale(comparison, model, parameter, out constraint)
             || TryCharset(comparison, model, parameter, out constraint)
             || TryComparison(comparison, comparison.Kind(), model, parameter, sizes, names, out constraint);
+    }
+
+    /// <summary>
+    ///     <c>Math.Abs(p) &gt; N</c> and <c>Math.Abs(p) &gt;= N</c>, in either orientation, on a signed number: the
+    ///     value lies outside <c>[-N, N]</c>, which is the symmetric range the two bounds state (#416).
+    /// </summary>
+    /// <remarks>
+    ///     Exact where <c>N</c> is a non-negative constant: <c>|p| &gt; N</c> throws exactly where <c>p &lt; -N</c>
+    ///     or <c>p &gt; N</c>, the disjunction of two rows the set already reads, so this is the rewrite of
+    ///     ADR-0128 written out for the one arithmetic call the field met. <c>Math.Abs</c> of an unsigned type
+    ///     does not exist, and a negative <c>N</c> rejects everything, which no bound states; both fall through
+    ///     to the comparison reading, which refuses a subject that is not the parameter.
+    /// </remarks>
+    private static bool TryMagnitude(BinaryExpressionSyntax comparison, SemanticModel model, IParameterSymbol parameter, out GuardConstraint? floor, out GuardConstraint? ceiling) {
+        floor   = null;
+        ceiling = null;
+
+        bool flipped = Unwrapped(comparison.Right) is InvocationExpressionSyntax;
+
+        ExpressionSyntax call  = flipped ? comparison.Right : comparison.Left;
+        ExpressionSyntax other = flipped ? comparison.Left : comparison.Right;
+
+        if (Unwrapped(call) is not InvocationExpressionSyntax { ArgumentList.Arguments.Count: 1 } magnitude
+         || !IsCall(magnitude, model, "System.Math", "Abs")
+         || !IsParameter(magnitude.ArgumentList.Arguments[0].Expression, model, parameter)
+         || !IsNumeric(parameter.Type)
+         || IsUnsigned(parameter.Type)) {
+            return false;
+        }
+
+        Optional<object?> constant = model.GetConstantValue(other);
+
+        if (!constant.HasValue || constant.Value is null || !IsNumber(constant.Value) || !TryDecimal(constant.Value, out decimal value) || value < 0) { return false; }
+
+        string literal = Literal(constant.Value, parameter.Type);
+        string negated = "-" + literal;
+
+        switch (Operator(comparison.Kind(), flipped)) {
+            case SyntaxKind.GreaterThanExpression:
+                floor   = new GuardConstraint("GreaterThanOrEqualTo", negated, Bound.Lower, -value);
+                ceiling = new GuardConstraint("LessThanOrEqualTo", literal, Bound.Upper, value);
+
+                return true;
+            case SyntaxKind.GreaterThanOrEqualExpression:
+                floor   = new GuardConstraint("GreaterThan", negated, Bound.Lower, -value, exclusive: true);
+                ceiling = new GuardConstraint("LessThan", literal, Bound.Upper, value, exclusive: true);
+
+                return true;
+            default:
+                return false;
+        }
     }
 
     /// <summary>

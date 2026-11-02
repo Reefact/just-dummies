@@ -57,6 +57,26 @@ internal static class GuardCorpus {
                                                      }
                                                      """),
 
+        // ---- #405: an order between two parameters is drawn as one pair, the guards on each side kept.
+
+        new GuardedShape("sound-ordered-pair", "Stay", """
+                                                       public sealed class Stay {
+                                                           public Stay(DateTime arrival, DateTime departure) {
+                                                               if (arrival > departure) { throw new ArgumentException(nameof(departure)); }
+                                                           }
+                                                       }
+                                                       """, idioms: ["`a > b`, `a >= b`, `b < a`, `b <= a`, where `a` and `b` are two parameters of one ordered type"]),
+
+        new GuardedShape("sound-strict-ordered-pair-with-bounds", "Band", """
+                                                                          public sealed class Band {
+                                                                              public Band(int floor, int ceiling) {
+                                                                                  if (floor < 0) { throw new ArgumentOutOfRangeException(nameof(floor)); }
+                                                                                  if (ceiling > 100) { throw new ArgumentOutOfRangeException(nameof(ceiling)); }
+                                                                                  if (ceiling <= floor) { throw new ArgumentException(nameof(ceiling)); }
+                                                                              }
+                                                                          }
+                                                                          """, idioms: ["`a > b`, `a >= b`, `b < a`, `b <= a`, where `a` and `b` are two parameters of one ordered type"]),
+
         // ---- #377: a bound written as a public constant is referenced, so the file moves with the domain.
 
         new GuardedShape("sound-named-constant-bound", "Credit", """

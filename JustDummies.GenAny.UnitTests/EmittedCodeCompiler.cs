@@ -50,6 +50,10 @@ internal static class EmittedCodeCompiler {
                                           public Money(decimal amount) { }
                                       }
 
+                                      public sealed class Booking {
+                                          public Booking(System.DateTime start, System.DateTime end, string note) { }
+                                      }
+
                                       public sealed class Quote {
                                           public Quote(decimal amount, decimal? discount) { }
                                       }

@@ -225,6 +225,21 @@ internal sealed class LibrarySurface {
         return carriesFixed ??= Any.GetMembers("Fixed").OfType<IMethodSymbol>().Any(Pins);
     }
 
+    /// <summary>
+    ///     Whether <c>Any.OrderedPair(first, second, strict)</c> resolves over two <paramref name="builder" />s — the
+    ///     only way a two-parameter order is drawn rather than marked (§5.3, #405).
+    /// </summary>
+    internal bool CarriesOrderedPair(ITypeSymbol? builder) {
+        return builder is not null
+            && Any.GetMembers("OrderedPair")
+                  .OfType<IMethodSymbol>()
+                  .Any(candidate => candidate.IsStatic
+                                 && candidate.Parameters.Length == 3
+                                 && SymbolEqualityComparer.Default.Equals(candidate.Parameters[0].Type, builder)
+                                 && SymbolEqualityComparer.Default.Equals(candidate.Parameters[1].Type, builder)
+                                 && candidate.Parameters[2].Type.SpecialType == SpecialType.System_Boolean);
+    }
+
     /// <summary>Whether the candidate is <c>Fixed&lt;T&gt;(T) -&gt; IAny&lt;T&gt;</c>.</summary>
     private bool Pins(IMethodSymbol candidate) {
         return candidate.IsStatic

@@ -247,6 +247,7 @@ internal static class Guards {
                                                             Func<IMethodSymbol, GuardReading> readDelegated) {
         SeparatedSyntaxList<ArgumentSyntax> arguments        = argumentList.Arguments;
         GuardReading?                       delegatedReading = null;
+        Dictionary<string, string>          handed           = new(StringComparer.Ordinal);
 
         GuardReading Delegated() {
             return delegatedReading ??= readDelegated(delegatedTo);
@@ -290,6 +291,31 @@ internal static class Guards {
             }
 
             if (Delegated().RefusesNull(handedTo.Name)) { reading.RefuseNull(handedFrom.Name); }
+
+            handed[handedTo.Name] = handedFrom.Name;
+        }
+
+        FoldTies(delegatedReading, handed, reading);
+    }
+
+    /// <summary>
+    ///     An order the delegated constructor reads between two of its parameters is one between the outer
+    ///     parameters handed to both — and where only one side was handed over unchanged, it is a rule over a value
+    ///     this generator does not draw, and the side it does draw is marked, as a declined hand-off is (#405).
+    /// </summary>
+    private static void FoldTies(GuardReading? delegated, IReadOnlyDictionary<string, string> handed, GuardReading reading) {
+        foreach ((OrderedPairing pairing, UnreadGuard at) in delegated?.Ties ?? []) {
+            handed.TryGetValue(pairing.First, out string? from);
+            handed.TryGetValue(pairing.Second, out string? to);
+
+            if (from is not null && to is not null && from != to) {
+                reading.Tie(new OrderedPairing(from, to, pairing.Strict), at);
+
+                continue;
+            }
+
+            if (from is not null) { reading.MarkUnread(from, at); }
+            if (to is not null) { reading.MarkUnread(to, at); }
         }
     }
 
@@ -352,7 +378,7 @@ internal static class Guards {
     ///     would refuse shapes that read perfectly, which is the mirror defect and costs real coverage.
     /// </remarks>
     private static bool SaysSomethingAbout(GuardReading delegated, IParameterSymbol target) {
-        return !delegated.SourceAvailable || delegated.Unread(target.Name) || delegated.For(target.Name).Count > 0;
+        return !delegated.SourceAvailable || delegated.Unread(target.Name) || delegated.For(target.Name).Count > 0 || delegated.Tied(target.Name);
     }
 
     /// <summary>
@@ -1067,6 +1093,12 @@ internal static class Guards {
         foreach (string refused in method.Parameters.Select(parameter => parameter.Name).Where(wouldHaveRead.RefusesNull)) {
             reading.RefuseNull(refused);
         }
+
+        // An order below the scan is placed no better than a bound: both parameters are marked, never paired.
+        foreach ((OrderedPairing pairing, UnreadGuard at) in wouldHaveRead.Ties) {
+            reading.MarkUnread(pairing.First, at);
+            reading.MarkUnread(pairing.Second, at);
+        }
     }
 
     /// <summary>Reads every call under <paramref name="statement" /> the closed set recognises as a guard.</summary>
@@ -1582,7 +1614,7 @@ internal static class Guards {
         // A condition mentioning NO parameter is different and stays silent — one testing the clock, say, is
         // about none of them, so there is nobody to send looking. The loop below says both at once.
         if (mentioned.Length != 1) {
-            foreach (IParameterSymbol spanned in mentioned) { reading.MarkUnread(spanned.Name, UnreadGuard.At(condition)); }
+            TieOrMark(condition, model, mentioned, reading, writes, unskipped);
 
             return;
         }
@@ -1626,6 +1658,76 @@ internal static class Guards {
         }
 
         if (constraint is not null) { reading.Add(parameter.Name, constraint); }
+    }
+
+    /// <summary>
+    ///     A condition about several parameters: the order between two that <see cref="TryOrdering" /> reads, or
+    ///     <c>unread guards</c> on every one it spans.
+    /// </summary>
+    /// <remarks>
+    ///     The one rule between parameters that is read rather than marked (#405): a direct comparison of two
+    ///     parameters of one type is the order <c>Any.OrderedPair</c> draws by construction, placed by the same
+    ///     questions a guard on one parameter answers. Whether the type has a pair to draw is the scaffolder's
+    ///     question, and it marks both, as here, where it has none.
+    /// </remarks>
+    private static void TieOrMark(ExpressionSyntax condition,
+                                  SemanticModel model,
+                                  IParameterSymbol[] mentioned,
+                                  GuardReading reading,
+                                  ParameterWrites writes,
+                                  bool unskipped) {
+        if (mentioned.Length == 2
+         && unskipped
+         && !mentioned.Any(each => writes.Precede(each, condition))
+         && TryOrdering(condition, model, mentioned, out OrderedPairing? pairing)) {
+            reading.Tie(pairing!, UnreadGuard.At(condition));
+
+            return;
+        }
+
+        foreach (IParameterSymbol spanned in mentioned) { reading.MarkUnread(spanned.Name, UnreadGuard.At(condition)); }
+    }
+
+    /// <summary>
+    ///     Whether <paramref name="condition" /> compares the two <paramref name="mentioned" /> parameters directly —
+    ///     <c>a &gt; b</c>, <c>a &gt;= b</c>, or the mirrored <c>b &lt; a</c>, <c>b &lt;= a</c> — over one
+    ///     non-nullable value type, and the order the constructor then demands.
+    /// </summary>
+    /// <remarks>
+    ///     Each side has to <b>be</b> a parameter, bar parentheses and a <c>!</c>: <c>a + 1 &gt; b</c> or
+    ///     <c>a.Date &gt; b</c> is a relation the pair does not draw. A nullable value type is left out, since a
+    ///     lifted comparison lets <c>null</c> through on either side, and a reference type has no pair at all.
+    /// </remarks>
+    private static bool TryOrdering(ExpressionSyntax condition, SemanticModel model, IParameterSymbol[] mentioned, out OrderedPairing? pairing) {
+        pairing = null;
+
+        if (Unwrapped(condition) is not BinaryExpressionSyntax comparison) { return false; }
+
+        if (Unwrapped(comparison.Left) is not IdentifierNameSyntax left
+         || Unwrapped(comparison.Right) is not IdentifierNameSyntax right
+         || model.GetSymbolInfo(left).Symbol is not IParameterSymbol low
+         || model.GetSymbolInfo(right).Symbol is not IParameterSymbol high
+         || !mentioned.Contains(low, SymbolEqualityComparer.Default)
+         || !mentioned.Contains(high, SymbolEqualityComparer.Default)
+         || SymbolEqualityComparer.Default.Equals(low, high)) {
+            return false;
+        }
+
+        if (!SymbolEqualityComparer.Default.Equals(low.Type, high.Type)
+         || !low.Type.IsValueType
+         || low.Type is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T }) {
+            return false;
+        }
+
+        pairing = comparison.Kind() switch {
+            SyntaxKind.GreaterThanExpression        => new OrderedPairing(low.Name, high.Name, strict: false),
+            SyntaxKind.GreaterThanOrEqualExpression => new OrderedPairing(low.Name, high.Name, strict: true),
+            SyntaxKind.LessThanExpression           => new OrderedPairing(high.Name, low.Name, strict: false),
+            SyntaxKind.LessThanOrEqualExpression    => new OrderedPairing(high.Name, low.Name, strict: true),
+            _                                       => null
+        };
+
+        return pairing is not null;
     }
 
     /// <summary>

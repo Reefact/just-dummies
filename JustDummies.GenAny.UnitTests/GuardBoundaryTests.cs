@@ -144,9 +144,10 @@ public sealed class GuardBoundaryTests {
     /// </summary>
     /// <remarks>
     ///     It was the one rejection path in the reading that marked nothing, while the <c>&amp;&amp;</c> case
-    ///     excluded by the same §5.3 bullet marked correctly. Measured on this very shape: 5008 throws in
+    ///     excluded by the same §5.3 bullet marked correctly. Measured on <c>min &gt; max</c>: 5008 throws in
     ///     10 000 draws, under a recap reading <c>2 of 2 parameters inferred</c> with an empty provenance
-    ///     column on both — three times the rate ADR-0060 was written to remove.
+    ///     column on both — three times the rate ADR-0060 was written to remove. That direct order is now drawn
+    ///     as a pair (#405); a rule computed from both, as here, is still out of reach.
     /// </remarks>
     [Fact(DisplayName = "A cross-parameter guard marks every parameter it spans as unread.")]
     public void ACrossParameterGuardMarksEveryParameterItSpans() {
@@ -154,7 +155,7 @@ public sealed class GuardBoundaryTests {
                                                    public sealed class Subject {
 
                                                        public Subject(int min, int max) {
-                                                           if (min > max) { throw new ArgumentException(nameof(min)); }
+                                                           if (max - min > 100) { throw new ArgumentException(nameof(min)); }
                                                        }
 
                                                    }

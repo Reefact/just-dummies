@@ -629,10 +629,17 @@ l'outil ne l'écrit pas à votre place. Décision :
 
 ## Quand une garde relie deux paramètres
 
-`start < end`, une déclaration comprise dans une période de garantie, un chiffre de contrôle calculé à partir des
-chiffres qui le précèdent : aucune recette par paramètre ne peut respecter une règle qui vit *entre* des
-paramètres. L'outil marque donc chaque paramètre concerné `to verify` et arrête la compilation sur le premier,
-comme pour toute garde dont il ne peut pas répondre
+**Un ordre direct est tiré pour vous.** Quand le constructeur compare deux de ses paramètres d'un même type
+ordonné — `if (start > end) { throw … }`, ou `>=`, ou la forme miroir `end < start` —, l'outil les tire ensemble
+par `Any.OrderedPair`, si bien que `start` n'est jamais après `end` (ni égal, pour `>=`), et chacun garde les
+gardes qu'il a pour lui seul. `WithStart(…)` et `WithEnd(…)` gardent leur sens : un pin d'un côté borne l'autre, il
+survit à un affinage de l'autre côté, et deux pins dans le mauvais ordre sont refusés au second appel, en nommant
+les deux. Il ne reste rien à vérifier, donc un `--force` ultérieur ne perd rien.
+
+Toute autre règle entre paramètres — `start < end` écrit comme une somme, une déclaration comprise dans une période
+de garantie, une chaîne de trois, un chiffre de contrôle calculé à partir des chiffres qui le précèdent — est une
+règle qu'aucune recette par paramètre ne peut respecter. L'outil marque donc chaque paramètre concerné `to verify`
+et arrête la compilation sur le premier, comme pour toute garde dont il ne peut pas répondre
 ([ADR-0060](../../for-maintainers/adr/0060-seed-generators-from-constructor-guards.fr.md)). C'est voulu, pas un
 manque : le générateur est une base qui vous appartient, et la règle est à écrire par vous. Quatre formes couvrent
 la plupart des cas, et aucune ne demande à l'outil d'être plus malin.
@@ -670,7 +677,15 @@ public static class BookingGenerators {
 
 **Dérivez un tirage d'un autre dans `Generate()`.** Le scaffolder a écrit un tirage par paramètre ; `Generate()`
 est du code ordinaire, et le tirage dépendant peut donc être calculé à partir du premier
-(`DateTime end = start + _duration.Generate();`) avant l'appel du constructeur.
+(`DateTime end = start + _duration.Generate();`) avant l'appel du constructeur. Les points d'assemblage de la
+bibliothèque y fonctionnent aussi : `Any.OrderedPair(_startRecipe, _endRecipe).Generate()` pour un ordre que l'outil
+n'a pas apparié, `_start.Then(start => …)` pour un tirage qui dépend d'un autre.
+
+Deux conséquences en découlent, et c'est à vous de les peser. Un paramètre que vous dérivez désormais ne tire plus
+depuis son champ, donc son pin `With…` n'atteint plus le tirage : `WithEnd(…)` règle un champ que votre `Generate()`
+ne lit pas. Et fixer un côté d'un lien pendant que l'autre est encore tiré seul ne respecte la règle que sur les
+tirages où elle tient par hasard : le test dépend alors de la graine. Fixez les deux, ou écrivez le lien dans
+`Generate()`.
 
 **Tirez le corps, puis dérivez le chiffre de contrôle.** Un chiffre de contrôle ne se tire pas, il se calcule,
 et `.As(…)` en est la forme en une ligne :
@@ -734,8 +749,10 @@ public static class CrossingGenerators {
 ```
 
 Quelle que soit la forme choisie, supprimez la ligne `TODO` une fois la règle écrite : elle n'était là que pour
-arrêter la compilation jusqu'à ce que vous l'ayez lue. Attention : `any generate … --force` réécrit tout le fichier
-généré, `Generate()` écrit à la main compris. Le fichier que vous gardez à côté, comme dans
+arrêter la compilation jusqu'à ce que vous l'ayez lue. Le fichier généré vous appartient : modifier `Generate()`
+en est l'usage ordinaire, pas un contournement. Attention : `any generate … --force` réécrit tout le fichier,
+`Generate()` écrit à la main compris — c'est voulu, puisque l'outil n'a aucun moyen de savoir lesquelles de vos
+modifications vous voudriez garder. Le fichier que vous gardez à côté, comme dans
 [Ajouter la surcharge vous-même](#ajouter-la-surcharge-vous-meme), est celui qui survit.
 
 ## Rendre compte à un script

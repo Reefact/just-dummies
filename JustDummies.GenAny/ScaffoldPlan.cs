@@ -35,14 +35,22 @@ public sealed class ScaffoldPlan {
     ///     Whether a pin is written <c>Any.Fixed(value)</c> — the library the file compiles against carries it — or
     ///     through the nested <c>FixedValue</c> helper the file then declares (ADR-0059, ADR-0118).
     /// </param>
-    /// <exception cref="ArgumentNullException">Any argument but <paramref name="factory" /> is null.</exception>
-    /// <exception cref="ArgumentException">A collection carries a null element, or the generator name is blank.</exception>
+    /// <param name="pairings">
+    ///     The parameters drawn two by two through <c>Any.OrderedPair</c>, because a guard ties them by an order
+    ///     (§5.3); none when null.
+    /// </param>
+    /// <exception cref="ArgumentNullException">Any argument but <paramref name="factory" /> and <paramref name="pairings" /> is null.</exception>
+    /// <exception cref="ArgumentException">
+    ///     A collection carries a null element, the generator name is blank, or a pairing names a parameter the plan
+    ///     does not carry, or one another pairing already ties.
+    /// </exception>
     public ScaffoldPlan(TargetType                          target,
                         string                              generatorName,
                         IReadOnlyList<string>               usings,
                         IReadOnlyList<ScaffoldedParameter>  parameters,
                         string?                             factory = null,
-                        bool                                pinsThroughAnyFixed = true) {
+                        bool                                pinsThroughAnyFixed = true,
+                        IReadOnlyList<OrderedPairing>?      pairings = null) {
         if (target is null) { throw new ArgumentNullException(nameof(target)); }
         if (generatorName is null) { throw new ArgumentNullException(nameof(generatorName)); }
         if (usings is null) { throw new ArgumentNullException(nameof(usings)); }
@@ -58,12 +66,21 @@ public sealed class ScaffoldPlan {
             throw new ArgumentException("A parameter row is never absent.", nameof(parameters));
         }
 
+        IReadOnlyList<OrderedPairing> tied = pairings ?? [];
+        List<string>                  ties = [.. tied.SelectMany(pairing => new[] { pairing.First, pairing.Second })];
+
+        if (ties.Distinct(StringComparer.Ordinal).Count() != ties.Count
+         || ties.Any(name => parameters.All(parameter => parameter.Name != name || parameter.IsUnresolved))) {
+            throw new ArgumentException("A pairing ties two resolved parameters of the plan, each in one pairing at most.", nameof(pairings));
+        }
+
         Target        = target;
         GeneratorName = generatorName;
         Usings        = usings;
         Parameters    = parameters;
         Factory             = factory;
         PinsThroughAnyFixed = pinsThroughAnyFixed;
+        Pairings            = tied;
     }
 
     /// <summary>The type a generator is scaffolded for.</summary>
@@ -86,6 +103,16 @@ public sealed class ScaffoldPlan {
     ///     declares when the library it compiles against predates <c>Any.Fixed</c> (ADR-0059).
     /// </summary>
     public bool PinsThroughAnyFixed { get; }
+
+    /// <summary>The parameters drawn two by two through <c>Any.OrderedPair</c> (§4.2, §5.3).</summary>
+    public IReadOnlyList<OrderedPairing> Pairings { get; }
+
+    /// <summary>The pairing that ties <paramref name="parameter" />, or null when none does.</summary>
+    public OrderedPairing? PairingOf(ScaffoldedParameter parameter) {
+        if (parameter is null) { throw new ArgumentNullException(nameof(parameter)); }
+
+        return Pairings.FirstOrDefault(pairing => pairing.Ties(parameter.Name));
+    }
 
     /// <summary>
     ///     Whether this is the degenerate shape of §4.2: nothing to draw, so no fields, no private constructor,

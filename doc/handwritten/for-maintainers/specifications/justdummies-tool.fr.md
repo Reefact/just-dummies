@@ -551,6 +551,15 @@ public sealed partial class AnyOrder : IAny<Order> {
   le fait un pin. La lambda d'affinage décrit une valeur et ne rend jamais `null`, et
   `With{Param}(null)` est ambigu entre les deux surcharges (`CS0121`) : l'absence reçoit donc une
   méthode à elle. Un paramètre dont une garde refuse `null` n'en reçoit pas (#411).
+* Pour chaque paire de paramètres qu'une garde lie par un ordre (§5.3), un champ `_{first}And{Second}`
+  de type `AnyOrderedPair<T>` à la place de leurs deux champs de tirage, un champ `_{param}Pin` à côté
+  de chaque recette, et une méthode privée `{First}And{Second}()` qui construit la paire à partir des
+  deux recettes courantes — `strict: true` pour `>=` — et applique chaque pin par `WithFirst` ou
+  `WithSecond`. Les deux surcharges `With…` d'un paramètre apparié gardent leur sens : celle par valeur
+  range le pin et celle d'affinage prend sa place, et chacune reconstruit la paire, si bien qu'un pin
+  d'un côté borne l'autre et survit à un affinage de celui-ci, et que deux pins dans le mauvais ordre
+  sont refusés au second appel. `Generate()` tire la paire avant la construction et passe chaque côté
+  par son nom (#405).
 * `using System;` est ouvert dès qu'une surcharge d'affinage est émise, pour son `Func<,>`.
 * `public {Type} Generate()` appelant le constructeur avec le `Generate()` de chaque champ.
 * Un épinglage écrit `Any.Fixed(value)` : il accepte `null` (ce que `Any.OneOf(value)` refuse) et ne
@@ -822,7 +831,8 @@ plutôt que se tromper :
 
 * c'est un `if` dont le corps lève inconditionnellement ;
 * elle apparaît avant la première affectation à un champ ou une propriété ;
-* sa condition mentionne **exactement un** paramètre et ne contient ni `&&` ni `||` ;
+* sa condition mentionne **exactement un** paramètre — ou deux, dans la seule ligne d'ordre de la
+  table ci-dessous — et ne contient ni `&&` ni `||` ;
 * aucune écriture de ce paramètre n'a pu s'exécuter avant l'endroit où elle se trouve ;
 * tout autre opérande est une constante de compilation.
 
@@ -959,6 +969,21 @@ L'ensemble reconnu est clos :
 | `!Enum.IsDefined(typeof(E), p)`, `!Enum.IsDefined(p)` | aucune — `Any.Enum<E>()` ne tire déjà que des membres déclarés, **là où `p` est de type `E`** |
 | `!double.IsFinite(p)`, `!float.IsFinite(p)` | aucune — `Any.Double()` et `Any.Single()` ne tirent que des valeurs finies (ADR-0031), **là où `p` est de ce type** |
 | `p == E.Member` | `.DifferentFrom(E.Member)`, **là où `p` est de type `E`** |
+| `a > b`, `a >= b`, `b < a`, `b <= a`, où `a` et `b` sont deux paramètres d'un même type ordonné | aucune sur l'une ou l'autre chaîne : les deux sont tirés comme un seul `Any.OrderedPair(` sur leurs deux recettes, `strict: true` pour `>=` (§4.2), **là où la bibliothèque porte une paire pour ce type et où aucun des deux paramètres n'est pris dans un autre ordre** |
+
+**Un ordre entre deux paramètres est la seule règle entre paramètres tirée plutôt que marquée.**
+`if (arrival > departure) { throw … }` est ce que `Any.OrderedPair` tire par construction — le premier
+gardé au plus à la plus grande valeur que le second peut prendre, puis le second au moins à lui — donc
+l'honorer ne demande aucun solveur (ADR-0046), et la paire est générée plutôt que laissée à vérifier,
+si bien qu'un `--force` ultérieur ne perd rien (#405). Chaque paramètre garde ses propres gardes sur sa
+propre recette. La ligne est lue là où la comparaison nomme les deux paramètres eux-mêmes, d'un même
+type valeur non nullable, et elle est placée comme toute autre garde ; le scaffolder ne tire ensuite la
+paire que là où la bibliothèque porte `Any.OrderedPair` sur le generator de ce type et où aucun des
+deux paramètres n'est pris dans un autre ordre — `a ≤ b ≤ c` est une relation à trois. Partout
+ailleurs, et pour toute autre règle entre paramètres — calculée (`a + 1 > b`), entre deux types, à
+travers un membre, ou à trois —, les deux paramètres sont marqués `unread guards` comme avant. C'est le
+retour de terrain que l'ADR-0085 demande : le second essai d'expérience développeur a rencontré cette
+forme dans 15 de ses 20 contextes.
 
 **Le null-check assigné ne termine pas le scan des instructions en tête, contrairement à une
 écriture ordinaire sur l'état.** `f = p ?? throw new ArgumentNullException(nameof(p));` valide et
@@ -1876,8 +1901,8 @@ Nommés explicitement pour ne pas être pris pour des oublis.
 * **Remplissage automatique de graphe d'objets.** La composition est d'un saut, via `Any{T}` ou une
   fabrique à un paramètre, limitée à une profondeur de 3. Au-delà, le développeur l'écrit.
 * **Les invariants que le tool ne peut pas voir.** Le §5.3 lit un ensemble clos d'idiomes de garde.
-  Là où le constructeur lève d'une façon que l'ensemble n'apparie pas — règle inter-paramètres,
-  condition arithmétique, garde regex (§5.3) — le paramètre garde le generator neutre, le
+  Là où le constructeur lève d'une façon que l'ensemble n'apparie pas — règle inter-paramètres autre
+  qu'un ordre direct entre deux (§5.3), condition arithmétique, garde regex (§5.3) — le paramètre garde le generator neutre, le
   récapitulatif le marque `unread guards`, et **le fichier ne compile pas tant que le développeur
   n'a pas dit que le generator est le bon** (§5.6) : la recette est bien écrite, sous une ligne
   nommant un identifiant qui n'existe pas. Le même marquage atteint une garde entièrement déléguée à

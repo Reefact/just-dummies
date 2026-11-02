@@ -148,6 +148,8 @@ public class Jd023ScalarChainAdmitsNoValueTests {
     [InlineData("Any.Decimal().GreaterThan(decimal.MaxValue)")]
     [InlineData("Any.Decimal().Between(1m, 2m).MultipleOf(5m)")]
     [InlineData("Any.Decimal().Between(1.001m, 1.002m).WithScale(2)")]
+    [InlineData("Any.Decimal().Between(1.001m, 1.002m).WithScale(2).WithScale(2)")]
+    [InlineData("Any.Decimal().MultipleOf(5m).MultipleOf(5m).Between(1m, 2m)")]
     [InlineData("Any.Decimal().Between(1m, 1m).NonZero().Except(1m)")]
     [InlineData("Any.Decimal().OneOf(1m, 2m).Except(1m, 2m)")]
     [InlineData("Any.Decimal().OneOf(1.5m).WithScale(0)")]

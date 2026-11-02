@@ -81,23 +81,16 @@ internal sealed class DecimalConstraintState : IScalarDomain {
             case "LessThan" when arguments.Count == 1:             return WithMaximum(arguments[0], true);
             case "LessThanOrEqualTo" when arguments.Count == 1:    return WithMaximum(arguments[0], false);
 
-            // Transposed bounds are JD014's; a step or a scale the guard refuses is too, and a second step or scale,
-            // or a step off the scale's grid, is JD034's (ADR-0123): the chain is left to them rather than judged.
+            // Transposed bounds are JD014's; a step or a scale the guard refuses is too, and a second, different step
+            // or scale, or a step off the scale's grid, is JD034's (ADR-0123): the chain is left to them rather than
+            // judged. The same step or scale again changes nothing, as the run time has it, and is JD035's.
             case "Between" when arguments.Count == 2:
                 return arguments[0] > arguments[1] ? null : WithMinimum(arguments[0], false).WithMaximum(arguments[1], false);
 
-            case "MultipleOf" when arguments.Count == 1:
-                return arguments[0] > 0m && _step is null && OnTheGrid(arguments[0], _scale)
-                           ? new DecimalConstraintState((_minimum, _minimumStrict), (_maximum, _maximumStrict), (arguments[0], _scale), _allowed, _excluded)
-                           : null;
+            case "MultipleOf" when arguments.Count == 1 && arguments[0] > 0m: return WithStep(arguments[0]);
 
-            case "WithScale" when arguments.Count == 1 && arguments[0] >= 0m && arguments[0] <= MaxScale && arguments[0] == decimal.Truncate(arguments[0]): {
-                int places = (int)arguments[0];
-
-                return _scale is null && (_step is not decimal step || OnTheGrid(step, places))
-                           ? new DecimalConstraintState((_minimum, _minimumStrict), (_maximum, _maximumStrict), (_step, places), _allowed, _excluded)
-                           : null;
-            }
+            case "WithScale" when arguments.Count == 1 && arguments[0] >= 0m && arguments[0] <= MaxScale && arguments[0] == decimal.Truncate(arguments[0]):
+                return WithScale((int)arguments[0]);
 
             // A second value set is JD034's, unless it lists the same values, which the run time ignores.
             case "OneOf" when arguments.Count > 0: {
@@ -230,6 +223,20 @@ internal sealed class DecimalConstraintState : IScalarDomain {
 
             return false;
         }
+    }
+
+    /// <summary>The step, when it is the first one or the same one again; <c>null</c> for a different one, or one off the scale's grid.</summary>
+    private DecimalConstraintState? WithStep(decimal step) {
+        if (_step is decimal declared) { return declared == step ? this : null; }
+
+        return OnTheGrid(step, _scale) ? new DecimalConstraintState((_minimum, _minimumStrict), (_maximum, _maximumStrict), (step, _scale), _allowed, _excluded) : null;
+    }
+
+    /// <summary>The scale, when it is the first one or the same one again; <c>null</c> for a different one, or one whose grid the step is off.</summary>
+    private DecimalConstraintState? WithScale(int places) {
+        if (_scale is int declared) { return declared == places ? this : null; }
+
+        return _step is not decimal step || OnTheGrid(step, places) ? new DecimalConstraintState((_minimum, _minimumStrict), (_maximum, _maximumStrict), (_step, places), _allowed, _excluded) : null;
     }
 
     private DecimalConstraintState WithMinimum(decimal bound, bool strict) {

@@ -100,7 +100,7 @@ public sealed partial class AnyOrder : IAny<Order> {
         _placedAtRecipe  = from._placedAtRecipe;
     }
 
-    /// <summary>Pins <c>reference</c> to a fixed value; its recipe is kept for a later refinement.</summary>
+    /// <summary>Pins <c>reference</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyOrder WithReference(OrderReference value) {
         AnyOrder copy = new AnyOrder(this);
 
@@ -110,6 +110,7 @@ public sealed partial class AnyOrder : IAny<Order> {
     }
 
     /// <summary>Refines the recipe <c>reference</c> is drawn from — <c>AnyValidReference()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyOrderReference, AnyOrderReference&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyOrder WithReference(Func<AnyOrderReference, AnyOrderReference> configure) {
         AnyOrder copy = new AnyOrder(this);
 
@@ -119,7 +120,7 @@ public sealed partial class AnyOrder : IAny<Order> {
         return copy;
     }
 
-    /// <summary>Pins <c>customer</c> to a fixed value.</summary>
+    /// <summary>Pins <c>customer</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type.</summary>
     public AnyOrder WithCustomer(Customer value) {
         AnyOrder copy = new AnyOrder(this);
 
@@ -128,7 +129,7 @@ public sealed partial class AnyOrder : IAny<Order> {
         return copy;
     }
 
-    /// <summary>Pins <c>quantity</c> to a fixed value; its recipe is kept for a later refinement.</summary>
+    /// <summary>Pins <c>quantity</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyOrder WithQuantity(int value) {
         AnyOrder copy = new AnyOrder(this);
 
@@ -138,6 +139,7 @@ public sealed partial class AnyOrder : IAny<Order> {
     }
 
     /// <summary>Refines the recipe <c>quantity</c> is drawn from — <c>AnyValidQuantity()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyInt32, AnyInt32&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyOrder WithQuantity(Func<AnyInt32, AnyInt32> configure) {
         AnyOrder copy = new AnyOrder(this);
 
@@ -147,7 +149,7 @@ public sealed partial class AnyOrder : IAny<Order> {
         return copy;
     }
 
-    /// <summary>Pins <c>status</c> to a fixed value; its recipe is kept for a later refinement.</summary>
+    /// <summary>Pins <c>status</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyOrder WithStatus(OrderStatus value) {
         AnyOrder copy = new AnyOrder(this);
 
@@ -157,6 +159,7 @@ public sealed partial class AnyOrder : IAny<Order> {
     }
 
     /// <summary>Refines the recipe <c>status</c> is drawn from — <c>AnyValidStatus()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyEnum&lt;OrderStatus&gt;, AnyEnum&lt;OrderStatus&gt;&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyOrder WithStatus(Func<AnyEnum<OrderStatus>, AnyEnum<OrderStatus>> configure) {
         AnyOrder copy = new AnyOrder(this);
 
@@ -166,7 +169,7 @@ public sealed partial class AnyOrder : IAny<Order> {
         return copy;
     }
 
-    /// <summary>Pins <c>tags</c> to a fixed value; its recipe is kept for a later refinement.</summary>
+    /// <summary>Pins <c>tags</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyOrder WithTags(IReadOnlyList<string> value) {
         AnyOrder copy = new AnyOrder(this);
 
@@ -176,6 +179,7 @@ public sealed partial class AnyOrder : IAny<Order> {
     }
 
     /// <summary>Refines the recipe <c>tags</c> is drawn from — <c>AnyValidTags()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyList&lt;string&gt;, AnyList&lt;string&gt;&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyOrder WithTags(Func<AnyList<string>, AnyList<string>> configure) {
         AnyOrder copy = new AnyOrder(this);
 
@@ -185,7 +189,7 @@ public sealed partial class AnyOrder : IAny<Order> {
         return copy;
     }
 
-    /// <summary>Pins <c>placedAt</c> to a fixed value; its recipe is kept for a later refinement.</summary>
+    /// <summary>Pins <c>placedAt</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyOrder WithPlacedAt(DateTime value) {
         AnyOrder copy = new AnyOrder(this);
 
@@ -195,6 +199,7 @@ public sealed partial class AnyOrder : IAny<Order> {
     }
 
     /// <summary>Refines the recipe <c>placedAt</c> is drawn from — <c>AnyValidPlacedAt()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyDateTime, AnyDateTime&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyOrder WithPlacedAt(Func<AnyDateTime, AnyDateTime> configure) {
         AnyOrder copy = new AnyOrder(this);
 

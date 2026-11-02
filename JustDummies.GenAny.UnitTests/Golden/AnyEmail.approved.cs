@@ -39,7 +39,7 @@ public sealed partial class AnyEmail : IAny<Email> {
         _valueRecipe = from._valueRecipe;
     }
 
-    /// <summary>Pins <c>value</c> to a fixed value; its recipe is kept for a later refinement.</summary>
+    /// <summary>Pins <c>value</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyEmail WithValue(string value) {
         AnyEmail copy = new AnyEmail(this);
 
@@ -49,6 +49,7 @@ public sealed partial class AnyEmail : IAny<Email> {
     }
 
     /// <summary>Refines the recipe <c>value</c> is drawn from — <c>AnyValidValue()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyString, AnyString&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyEmail WithValue(Func<AnyString, AnyString> configure) {
         AnyEmail copy = new AnyEmail(this);
 

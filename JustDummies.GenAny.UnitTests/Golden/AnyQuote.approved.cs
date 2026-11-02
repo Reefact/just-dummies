@@ -51,7 +51,7 @@ public sealed partial class AnyQuote : IAny<Quote> {
         _discountRecipe = from._discountRecipe;
     }
 
-    /// <summary>Pins <c>amount</c> to a fixed value; its recipe is kept for a later refinement.</summary>
+    /// <summary>Pins <c>amount</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyQuote WithAmount(decimal value) {
         AnyQuote copy = new AnyQuote(this);
 
@@ -61,6 +61,7 @@ public sealed partial class AnyQuote : IAny<Quote> {
     }
 
     /// <summary>Refines the recipe <c>amount</c> is drawn from — <c>AnyValidAmount()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyDecimal, AnyDecimal&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyQuote WithAmount(Func<AnyDecimal, AnyDecimal> configure) {
         AnyQuote copy = new AnyQuote(this);
 
@@ -70,7 +71,7 @@ public sealed partial class AnyQuote : IAny<Quote> {
         return copy;
     }
 
-    /// <summary>Pins <c>discount</c> to a fixed value; its recipe is kept for a later refinement.</summary>
+    /// <summary>Pins <c>discount</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyQuote WithDiscount(decimal? value) {
         AnyQuote copy = new AnyQuote(this);
 
@@ -80,6 +81,7 @@ public sealed partial class AnyQuote : IAny<Quote> {
     }
 
     /// <summary>Refines the recipe <c>discount</c> is drawn from — <c>AnyValidDiscount()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyDecimal, AnyDecimal&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyQuote WithDiscount(Func<AnyDecimal, AnyDecimal> configure) {
         AnyQuote copy = new AnyQuote(this);
 

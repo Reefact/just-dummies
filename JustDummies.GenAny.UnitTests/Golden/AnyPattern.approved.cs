@@ -39,7 +39,7 @@ namespace Shop.Legacy {
             _textRecipe = from._textRecipe;
         }
 
-        /// <summary>Pins <c>text</c> to a fixed value; its recipe is kept for a later refinement.</summary>
+        /// <summary>Pins <c>text</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
         public AnyPattern WithText(string value) {
             AnyPattern copy = new AnyPattern(this);
 
@@ -49,6 +49,7 @@ namespace Shop.Legacy {
         }
 
         /// <summary>Refines the recipe <c>text</c> is drawn from — <c>AnyValidText()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+        /// <remarks>Reuse a refinement as a <c>Func&lt;AnyString, AnyString&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
         public AnyPattern WithText(Func<AnyString, AnyString> configure) {
             AnyPattern copy = new AnyPattern(this);
 

@@ -39,7 +39,7 @@ public sealed partial class AnyMoney : IAny<Money> {
         _amountRecipe = from._amountRecipe;
     }
 
-    /// <summary>Pins <c>amount</c> to a fixed value; its recipe is kept for a later refinement.</summary>
+    /// <summary>Pins <c>amount</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyMoney WithAmount(decimal value) {
         AnyMoney copy = new AnyMoney(this);
 
@@ -49,6 +49,7 @@ public sealed partial class AnyMoney : IAny<Money> {
     }
 
     /// <summary>Refines the recipe <c>amount</c> is drawn from — <c>AnyValidAmount()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyDecimal, AnyDecimal&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyMoney WithAmount(Func<AnyDecimal, AnyDecimal> configure) {
         AnyMoney copy = new AnyMoney(this);
 

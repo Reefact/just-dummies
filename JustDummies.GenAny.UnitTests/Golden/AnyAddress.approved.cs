@@ -51,7 +51,7 @@ public sealed partial class AnyAddress : IAny<Address> {
         _cityRecipe   = from._cityRecipe;
     }
 
-    /// <summary>Pins <c>street</c> to a fixed value; its recipe is kept for a later refinement.</summary>
+    /// <summary>Pins <c>street</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyAddress WithStreet(string value) {
         AnyAddress copy = new AnyAddress(this);
 
@@ -61,6 +61,7 @@ public sealed partial class AnyAddress : IAny<Address> {
     }
 
     /// <summary>Refines the recipe <c>street</c> is drawn from — <c>AnyValidStreet()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyString, AnyString&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyAddress WithStreet(Func<AnyString, AnyString> configure) {
         AnyAddress copy = new AnyAddress(this);
 
@@ -70,7 +71,7 @@ public sealed partial class AnyAddress : IAny<Address> {
         return copy;
     }
 
-    /// <summary>Pins <c>city</c> to a fixed value; its recipe is kept for a later refinement.</summary>
+    /// <summary>Pins <c>city</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyAddress WithCity(string value) {
         AnyAddress copy = new AnyAddress(this);
 
@@ -80,6 +81,7 @@ public sealed partial class AnyAddress : IAny<Address> {
     }
 
     /// <summary>Refines the recipe <c>city</c> is drawn from — <c>AnyValidCity()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyString, AnyString&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyAddress WithCity(Func<AnyString, AnyString> configure) {
         AnyAddress copy = new AnyAddress(this);
 

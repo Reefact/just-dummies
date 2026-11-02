@@ -1047,7 +1047,10 @@ public sealed class GuardReadingTests {
         Check.That(unread).IsNotNull();
         Check.That(unread!.Line).IsEqualTo(11);
         Check.That(unread.Excerpt).StartsWith("if (!Regex.IsMatch(value, \"^[A-Z]+$\"))");
-        Check.That(outcome.File!.SourceText).Contains("//   first at line 11: if (!Regex.IsMatch(value");
+        Check.That(outcome.File!.SourceText).Contains("// TODO(any): verify against line 11: if (!Regex.IsMatch(value");
+        Check.That(unread.Pattern).IsEqualTo("^[A-Z]+$");
+        Check.That(outcome.File.SourceText).Contains("a regex, \"^[A-Z]+$\": Any.StringMatching(pattern) replaces the base and returns an AnyPattern, so retype AnyString to AnyPattern here, on the recipe field, in the recipe constructor and in the Func of WithValue — then delete these two lines.");
+        Check.That(outcome.File.SourceText).Contains("// A TODO(any) above a `_ = TODO_verify_…` line names a guard the scaffolder could not read;");
         Check.That(outcome.File.SourceText).Not.Contains("§9");
     }
 

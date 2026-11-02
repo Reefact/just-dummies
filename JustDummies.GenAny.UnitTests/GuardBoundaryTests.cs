@@ -302,7 +302,7 @@ public sealed class GuardBoundaryTests {
         Check.That(name.Expression).IsEqualTo("Any.String().WithMaxLength(8)");
         Check.That(name.UnreadGuard!.Line).IsEqualTo(11);
         Check.That(name.UnreadGuard.Note).Contains("every parameter is marked here");
-        Check.That(outcome.File!.SourceText).Contains("first at line 11: if (!Fits(item)) { throw new ArgumentException(nameof(items)); } — every parameter is marked here");
+        Check.That(outcome.File!.SourceText).Contains("// TODO(any): verify against line 11: if (!Fits(item)) { throw new ArgumentException(nameof(items)); } — every parameter is marked here, since what decides this throw could not be traced back to one — then delete these two lines.");
     }
 
     /// <summary>

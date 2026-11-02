@@ -88,21 +88,21 @@ line that does not compile above it:
 <!-- jd:skip -->
 ```csharp
 private static AnyString AnyValidValue() {
-    // TODO(any): 'string value' may be guarded by something the scaffolder could not read,
-    //   first at Currency.cs, line 9: if (!Regex.IsMatch(value, "^[A-Z]{3}$")) { throw new ArgumentException(nameof(value)); }
-    //   This is the scaffolder's best generator for the type; verify it honours the real invariant,
-    //   or replace it, then delete the line below. What the scaffolder reads, and what it cannot:
-    //   https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/packages/justdummies-cli.en.md#what-the-last-column-means
+    // TODO(any): verify against Currency.cs, line 9: if (!Regex.IsMatch(value, "^[A-Z]{3}$")) { throw new ArgumentException(nameof(value)); } — a regex, "^[A-Z]{3}$": Any.StringMatching(pattern) replaces the base and returns an AnyPattern, so retype AnyString to AnyPattern here, on the recipe field, in the recipe constructor and in the Func of WithValue — then delete these two lines.
     _ = TODO_verify_the_generator_for_value;
 
     return Any.String();
 }
 ```
 
-The second line names the first guard `any` could not vouch for and where it is, so you do not have
-to search the constructor for it; the recap prints the same under its rows. Keep the recipe, or
-replace it and delete that one line — and if the replacement is another kind of generator, retype what
-that changes ([below](#when-the-replacement-is-another-kind-of-generator)). The alternative — a file that
+The comment names the first guard `any` could not vouch for and where it is, so you do not have to
+search the constructor for it; the recap prints the same under its rows. Where the parameter has
+more such guards, both say so — `; and 2 more` — because fixing the one named and deleting the
+sentinel would leave a generator the constructor still refuses; a guard that ties two parameters is
+called out as such. Where the guard is a regex, the comment quotes the pattern and names the retype
+its replacement needs. The file's header explains the block once; keep the recipe, or replace it,
+then delete the two lines — and if the replacement is another kind of generator, retype what that
+changes ([below](#when-the-replacement-is-another-kind-of-generator)). The alternative — a file that
 compiles and draws a value your constructor rejects on some later run — is the failure that costs
 most, because it surfaces far from its cause
 ([ADR-0083](../../for-maintainers/adr/0083-block-compilation-on-a-guard-the-engine-cannot-vouch-for.md)).
@@ -843,7 +843,13 @@ means the same thing wherever you run the tool from. Decision:
 
 `any generate Order Customer Invoice` scaffolds several. They are processed independently, and the
 exit code is the worst of them: `0` a file written (TODOs and all), `1` a scaffolding run that
-failed, `2` an instruction the tool could not read — a command line, or an `any.json`.
+failed, `2` an instruction the tool could not read — a command line, or an `any.json`. A batch that
+refused a type closes with one line per refusal and its reason, after the other recaps, so the exit
+code never reads as a mystery. A short name is resolved by tiers — your source, the projects it
+references, then the framework and the packages — so a domain `Meter` wins over
+`System.Diagnostics.Metrics.Meter`, and the recap says the framework's also answered. Two matches in
+one tier are refused as ambiguous, with both full names: name the one you mean in full,
+`any generate Ambig.Domain.Meter`.
 
 ## It never references JustDummies
 

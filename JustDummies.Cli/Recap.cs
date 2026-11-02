@@ -53,7 +53,7 @@ internal static class Recap {
     ];
 
     /// <summary>Renders one scaffold, as §6 writes it.</summary>
-    internal static void Render(ScaffoldOutcome outcome, IAnsiConsole console) {
+    internal static void Render(ScaffoldOutcome outcome, IAnsiConsole console, bool dryRun = false) {
         ArgumentNullException.ThrowIfNull(outcome);
         ArgumentNullException.ThrowIfNull(console);
         if (!outcome.Succeeded) { return; }
@@ -89,7 +89,7 @@ internal static class Recap {
 
         foreach (ScaffoldWarning warning in outcome.Warnings) { Warn(warning, console); }
 
-        Closing(outcome, console);
+        Closing(outcome, console, dryRun);
     }
 
     /// <summary>
@@ -133,8 +133,14 @@ internal static class Recap {
 
         Line(console, string.Empty);
 
+        // The one named is the first, and the rest are counted (#373): a developer who fixes the named guard
+        // alone and deletes the sentinel gets a generator the constructor still refuses.
         foreach (ScaffoldedParameter parameter in marked) {
-            Line(console, $"  {parameter.Name}: unread guard at {parameter.UnreadGuard!.Place()}: {parameter.UnreadGuard.Excerpt}{Noted(parameter.UnreadGuard)}");
+            UnreadGuard unread = parameter.UnreadGuard!;
+            string      first  = unread.Further > 0 ? "first unread guard" : "unread guard";
+            string      more   = unread.Further > 0 ? $", and {unread.Further.ToString(CultureInfo.InvariantCulture)} more" : string.Empty;
+
+            Line(console, $"  {parameter.Name}: {first} at {unread.Place()}: {unread.Excerpt}{Noted(unread)}{more}");
         }
     }
 
@@ -243,15 +249,19 @@ internal static class Recap {
     /// <summary>
     ///     The closing line, and the one sentence that keeps an open parameter from reading as a failure.
     /// </summary>
-    private static void Closing(ScaffoldOutcome outcome, IAnsiConsole console) {
+    private static void Closing(ScaffoldOutcome outcome, IAnsiConsole console, bool dryRun) {
         ScaffoldPlan plan       = outcome.Plan!;
         int          open       = plan.Parameters.Count(parameter => parameter.IsUnresolved);
         int          uncertain  = plan.Parameters.Count(parameter => parameter.RequiresVerification);
         int          total      = plan.Parameters.Count;
 
+        // The tick reports a file written; under --dry-run none is, and the line says what it would do (#378).
+        string mark = dryRun ? "would write" : "✓";
+
         if (total == 0) {
-            Line(console, $"✓ {outcome.File!.FileName} — no constructor parameters to infer.");
-            EntryPoint(outcome, console);
+            Line(console, $"{mark} {outcome.File!.FileName} — no constructor parameters to infer.");
+            Namespace(plan, console);
+            EntryPoint(outcome, console, mark);
 
             return;
         }
@@ -263,13 +273,24 @@ internal static class Recap {
         string counted = $"{total - open} of {total} parameters inferred"
                        + (notes.Count == 0 ? "." : $", {string.Join(", ", notes)}.");
 
-        Line(console, $"✓ {outcome.File!.FileName} — {counted}");
+        Line(console, $"{mark} {outcome.File!.FileName} — {counted}");
+        Namespace(plan, console);
 
         if (open > 0 || uncertain > 0) {
             Line(console, "  The file will not compile until you resolve it. That is deliberate.");
         }
 
-        EntryPoint(outcome, console);
+        EntryPoint(outcome, console, mark);
+    }
+
+    /// <summary>
+    ///     The namespace the file lands in, said once (#378): generators default to the domain's namespace
+    ///     (ADR-0062), and six sessions of the second trial found that out by reading the file.
+    /// </summary>
+    private static void Namespace(ScaffoldPlan plan, IAnsiConsole console) {
+        Line(console, plan.Target.Namespace is null
+                          ? "  in the global namespace (--namespace to change)."
+                          : $"  in namespace {plan.Target.Namespace} (--namespace to change).");
     }
 
     /// <summary>
@@ -280,10 +301,10 @@ internal static class Recap {
     ///     about. The call comes from the engine's model rather than being assembled here from a root and a type
     ///     name — the recap renders facts, it does not decide spellings (§6).
     /// </remarks>
-    private static void EntryPoint(ScaffoldOutcome outcome, IAnsiConsole console) {
+    private static void EntryPoint(ScaffoldOutcome outcome, IAnsiConsole console, string mark) {
         if (outcome.EntryPoint is null) { return; }
 
-        Line(console, $"✓ {outcome.EntryPoint.File.FileName} — entry point {outcome.EntryPoint.Call}");
+        Line(console, $"{mark} {outcome.EntryPoint.File.FileName} — entry point {outcome.EntryPoint.Call}");
     }
 
     /// <summary>One line, unwrapped, ending in the newline every platform reads the same.</summary>

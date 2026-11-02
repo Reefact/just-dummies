@@ -1,6 +1,10 @@
 // Scaffolded by `any` (JustDummies). This file is yours: read it, edit it, commit it.
 // `any generate Order --force` overwrites it. This type is partial, so members you add in a
 // neighbouring file survive.
+// A TODO(any) above a `_ = TODO_verify_…` line names a guard the scaffolder could not read; the recipe
+// under it is its best generator for the type. Verify it honours that guard, or replace it, then delete
+// those two lines. What the scaffolder reads, and what it cannot:
+// https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/packages/justdummies-cli.en.md#what-the-last-column-means
 
 using System;
 using System.Collections.Generic;
@@ -44,11 +48,7 @@ public sealed partial class AnyOrder : IAny<Order> {
     }
 
     private static AnyCustomer AnyValidCustomer() {
-        // TODO(any): 'Customer customer' may be guarded by something the scaffolder could not read,
-        //   first at Order.cs, line 14: if (!Registry.Knows(customer)) { throw new ArgumentException(nameof(customer)); }
-        //   This is the scaffolder's best generator for the type; verify it honours the real invariant,
-        //   or replace it, then delete the line below. What the scaffolder reads, and what it cannot:
-        //   https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/packages/justdummies-cli.en.md#what-the-last-column-means
+        // TODO(any): verify against Order.cs, line 14: if (!Registry.Knows(customer)) { throw new ArgumentException(nameof(customer)); } — then delete these two lines.
         _ = TODO_verify_the_generator_for_customer;
 
         return new AnyCustomer();

@@ -60,6 +60,32 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   ambiguity, and when a lower tier also answered the recap says so in one line (`Meter resolved to
   Ambig.Domain.Meter; System.Diagnostics.Metrics.Meter also answers to that name.`), carried as `alsoAnswering`
   by `--format json` (issue #363).
+- **The `TODO(any)` of a parameter to verify is two lines, and the file's header explains them once.** The
+  five-line block stayed behind once the sentinel was deleted, still worded as a task, and twenty of them later
+  the file was full of TODOs that were done. Each parameter now carries one comment naming the guard to check and
+  saying to delete both lines, then the blocking line; the explanation and the link to this page moved to the
+  header, written once where a parameter is to verify. Accepting a recipe is deleting two lines, which a
+  search-and-replace also does (issue #412).
+- **The comment and the recap say the named unread guard is the first, and count the rest.** `first unread guard
+  at …, and 2 more` — because fixing the one named and deleting the sentinel left a generator the constructor
+  still refused, measured in three contexts of the second trial. A guard tying several parameters is called out
+  as such (`ties volatileRunOffDays to coreMaturityMonths`), and `--format json` carries the count as
+  `unreadGuard.further` (issue #373).
+- **A guard excerpt cut at the end of its first line is marked, and the file's comment quotes the whole line.** A
+  multi-line condition quoted as `if (double.IsNaN(k)` read as if it were the whole guard; it now ends in `...`,
+  the same marker as a cut past a hundred characters. The recap keeps that limit; the emitted comment carries
+  the whole first line, since the file has room for it and the cut once fell on the very constant to copy
+  (issue #372).
+- **A regex guard's `TODO(any)` quotes the pattern and names the retype.** Where the guard calls
+  `Regex.IsMatch(p, "…")`, a `[GeneratedRegex]` method or a `Regex` field built from a constant, the comment
+  quotes the pattern and says that `Any.StringMatching` returns an `AnyPattern`, with the four places to retype
+  — users met that as `CS0029` first. `--format json` carries it as `unreadGuard.pattern` (issue #374).
+- **The recap names the namespace the file landed in, and says `would write` under `--dry-run`.** One line
+  under the closing tick, `in namespace Shop.Domain (--namespace to change).`, and a closing line that no longer
+  ticks a file nothing wrote (issue #378).
+- **A batch that refused a type closes with a summary.** One line per refused type with its reason, on stderr
+  after the other types' recaps: `✗ 1 of 3 types refused in this run:` — a refusal printed at the top and
+  followed by pages of output was missed three times in the second trial (issue #379).
 
 ### Changed
 

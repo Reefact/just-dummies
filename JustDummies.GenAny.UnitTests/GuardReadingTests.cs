@@ -161,6 +161,24 @@ public sealed class GuardReadingTests {
     }
 
     /// <summary>
+    ///     A size helper dereferences the parameter, so it refuses <c>null</c> as a size comparison does — the one
+    ///     that adds nothing to the chain, <c>ThrowIfNegative(p.Length)</c>, included: a nullable parameter handed
+    ///     to it keeps drawing a value (#411, review of #408).
+    /// </summary>
+    [Theory(DisplayName = "A size helper on a nullable parameter keeps its default a value, whether or not it narrows the chain.")]
+    [InlineData("string?", "ArgumentOutOfRangeException.ThrowIfNegative(value.Length);", "Any.String()")]
+    [InlineData("string?", "ArgumentOutOfRangeException.ThrowIfGreaterThan(value.Length, 12);", "Any.String().WithMaxLength(12)")]
+    [InlineData("IReadOnlyList<int>?", "ArgumentOutOfRangeException.ThrowIfNegative(value.Count);", "Any.ListOf(Any.Int32())")]
+    [InlineData("IReadOnlyList<int>?", "ArgumentOutOfRangeException.ThrowIfZero(value.Count);", "Any.ListOf(Any.Int32()).NonEmpty()")]
+    public void ASizeHelperOnANullableParameterKeepsItsDefaultAValue(string type, string guard, string expected) {
+        ScaffoldedParameter parameter = Subject.GuardedBy(type, guard);
+
+        Check.That(parameter.Expression).IsEqualTo(expected);
+        Check.That(parameter.DrawsNull).IsFalse();
+        Check.That(parameter.Provenance.HasFlag(Provenance.UnreadGuards)).IsFalse();
+    }
+
+    /// <summary>
     ///     The two shapes of #408 that read as understood and add nothing, and the edges where a shape of #408 is
     ///     not read: a <c>default</c> on a struct of the developer's own, whose <c>==</c> is a method; a pool that
     ///     is no constant; a rounding of another value.

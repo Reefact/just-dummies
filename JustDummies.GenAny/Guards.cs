@@ -1746,8 +1746,8 @@ internal static class Guards {
     ///     <c>ThrowIfGreaterThanOrEqual(p.Length, N)</c> throws on <c>N</c> and above, which is a ceiling of
     ///     <c>N - 1</c>. A bound so moved is folded to its value rather than referenced, since the constant named
     ///     is not the bound written. <c>ThrowIfNegative</c> on a size holds by construction: understood, adding
-    ///     nothing. Every row refuses null as the comparison rows do, since reading the size dereferences the
-    ///     parameter.
+    ///     nothing to the chain. Every row refuses null as the comparison rows do, that one included, since
+    ///     reading the size dereferences the parameter — a nullable parameter handed to it draws a value (#411).
     /// </remarks>
     private static bool TryRecogniseSizeThrowHelper(InvocationExpressionSyntax invocation,
                                                     SemanticModel model,
@@ -1759,7 +1759,11 @@ internal static class Guards {
 
         const string containing = "System.ArgumentOutOfRangeException";
 
-        if (IsCall(invocation, model, containing, "ThrowIfNegative")) { return true; }
+        if (IsCall(invocation, model, containing, "ThrowIfNegative")) {
+            constraint = GuardConstraint.NullRefused;
+
+            return true;
+        }
 
         if (IsCall(invocation, model, containing, "ThrowIfZero", "ThrowIfNegativeOrZero")) {
             constraint = Emptiness(sizes.ByCount).RefusingNull();

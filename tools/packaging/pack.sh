@@ -144,6 +144,13 @@ if [ "$scope" = "lib" ]; then
       echo "error: JustDummies.Analyzers.dll missing from analyzers/dotnet/cs in $package" >&2
       exit 1
     fi
+    # The code fixes ship beside the rules, in the same folder, and are as easy to lose (ADR-0130).
+    if unzip -l "$package" | grep -q 'analyzers/dotnet/cs/JustDummies\.Analyzers\.CodeFixes\.dll'; then
+      echo "ok: code fixes bundled in $package"
+    else
+      echo "error: JustDummies.Analyzers.CodeFixes.dll missing from analyzers/dotnet/cs in $package" >&2
+      exit 1
+    fi
   done
 fi
 

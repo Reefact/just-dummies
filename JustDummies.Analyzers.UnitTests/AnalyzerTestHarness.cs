@@ -16,7 +16,7 @@ namespace JustDummies.Analyzers.UnitTests;
 /// </summary>
 internal static class AnalyzerTestHarness {
 
-    private static readonly ImmutableArray<MetadataReference> References = BuildReferences();
+    internal static readonly ImmutableArray<MetadataReference> References = BuildReferences();
 
     public static async Task<ImmutableArray<Diagnostic>> GetDiagnosticsAsync(DiagnosticAnalyzer analyzer, string source, params string[] enabledDiagnosticIds) {
         SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(source, new CSharpParseOptions(LanguageVersion.Latest));

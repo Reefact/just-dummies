@@ -30,6 +30,14 @@ The rules stay in `AnalyzerReleases.Unshipped.md` until the surface is frozen at
 stable release; promoting them early would turn every later removal into a violation, and
 below 1.0 this library keeps the right to remove (`CONTRIBUTING.md`, "Public API baseline").
 
+## Code fixes
+
+`JustDummies.Analyzers.CodeFixes` ships beside the rules in the same package folder, at the same Roslyn floor
+(ADR-0130). A rule gets a fix only where exactly one rewrite keeps the developer's intent; the rule hands the fix
+what it found through the diagnostic's properties (`DiagnosticProperties`), and the fix is tested by the source it
+produces, through `CodeFixTestHarness` in `JustDummies.Analyzers.UnitTests`. Adding the fix assembly to a package
+path or a packaging assertion is `tools/packaging/pack.sh`'s business.
+
 ## Compatibility floor
 
 `JustDummies.Analyzers` is compiled against `$(RoslynFloorVersion)` (4.8.0 — VS 2022 17.8 /

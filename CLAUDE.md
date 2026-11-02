@@ -94,6 +94,7 @@ relevant command, say so explicitly.
 |---|---|
 | `JustDummies` | the library (+ `.UnitTests` for named cases, `.PropertyTests` for invariants) |
 | `JustDummies.Analyzers` | Roslyn analyzers, bundled inside the library package (+ `.UnitTests` for named cases, `.PropertyTests` for checking diagnostics against the run time) |
+| `JustDummies.Analyzers.CodeFixes` | the code fixes, bundled beside the analyzers, held to the same Roslyn floor (ADR-0130); tested in `JustDummies.Analyzers.UnitTests` |
 | `JustDummies.DiagnosticCatalog` | the constants a `[SuppressMessage]` names its rule with; its own `catalog` train |
 | `JustDummies.Xunit` | xUnit v3 adapter (+ `.UnitTests`) |
 | `JustDummies.GenAny` | the `any` scaffolding engine, pinned to the Roslyn floor (+ `.UnitTests`) |

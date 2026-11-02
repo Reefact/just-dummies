@@ -189,11 +189,17 @@ internal sealed class DecimalConstraintState : IScalarDomain {
     ///     declared empty, and never counted.
     /// </summary>
     private IEnumerable<decimal> LatticePoints(decimal first, decimal step) {
+        decimal candidate = first;
         for (int seen = 0; seen < MaxWalkLength; seen++) {
-            // A step past the type's own edge is a step past the interval, which no grid of this size empties.
-            if (Stepped(first, seen * step) is not decimal candidate) { yield break; }
             if (candidate > _maximum || (candidate == _maximum && _maximumStrict)) { yield break; }
             if (!_excluded.Contains(candidate) && (_allowed is null || _allowed.Contains(candidate))) { yield return candidate; }
+
+            // One guarded addition per point, never a product: a step as wide as the type overflows a multiple of it
+            // at the second or third point, and a sum that leaves the type is a point past the interval, which ends the
+            // walk — no grid of this size empties an interval at the type's own edge.
+            if (Stepped(candidate, step) is not decimal next) { yield break; }
+
+            candidate = next;
         }
 
         // The walk ran out before the interval did: the rest is taken as surviving.

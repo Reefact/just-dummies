@@ -86,6 +86,9 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 - **A batch that refused a type closes with a summary.** One line per refused type with its reason, on stderr
   after the other types' recaps: `✗ 1 of 3 types refused in this run:` — a refusal printed at the top and
   followed by pages of output was missed three times in the second trial (issue #379).
+- **The CLI page lists the guard shapes `any` reads, and the ones it does not.** A table of every shape and
+  what it becomes, the rules a guard has to meet to be read, what stays `to verify`, and a tip for rewriting a
+  guard into the set — pointing at the specification's §5.3 for the reasoning (issue #383).
 
 ### Changed
 

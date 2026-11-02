@@ -73,6 +73,51 @@ qui a été **deviné** :
 change. Une constante que le fichier généré ne peut pas atteindre (`private`, `internal`), ou une expression
 qui en part (`MaxProjectId - 1`), est recopiée par sa valeur.
 
+### Ce que l'outil lit, et ce qu'il ne lit pas
+
+Une garde est lue quand c'est un `if` qui lève, ou l'un des throw helpers ci-dessous, placé **avant la
+première affectation à un champ ou une propriété**, qui teste **un paramètre** (ou deux, pour un ordre
+entre eux) contre des **constantes**, et qui s'exécute sur tout chemin — pas sous un `if (strict)`, une
+boucle ou un `try`, et pas sous une ligne qui écrase le paramètre. Un `||` se lit branche par branche,
+comme des `if` séparés ; un `&&` n'est pas lu, puisque se resserrer sur l'un des deux côtés seul
+exclurait des valeurs que votre constructeur accepte. Les formes lues, et ce que chacune devient :
+
+| Votre garde lève quand… | La recette reçoit |
+| --- | --- |
+| `p is null`, `p == null`, `p ?? throw`, `ThrowIfNull(p)` | rien à ajouter — un paramètre nullable cesse de tirer `null` |
+| `string.IsNullOrEmpty(p)`, `p.Length == 0`, `p.Count == 0` | `.NonEmpty()` |
+| `string.IsNullOrWhiteSpace(p)` | `.NotBlank()` |
+| `p.Length > N`, `p.Length < N`, `p.Length != N`, et `Count` sur une collection | `.WithMaxLength(N)`, `.WithMinLength(N)`, `.WithLength(N)` — ou la famille `Count` |
+| `p <= 0`, `p < 0`, `p >= 0`, `p == 0` | `.Positive()`, `.GreaterThanOrEqualTo(0)`, `.Negative()`, `.NonZero()` |
+| `p > N`, `p < N`, `p >= N`, `p <= N` — aussi écrits `p is > N`, ou niés `!(p > N)` | `.LessThanOrEqualTo(N)`, `.GreaterThanOrEqualTo(N)`, `.LessThan(N)`, `.GreaterThan(N)` ; un plancher et un plafond deviennent `.Between(…)` |
+| `p < a \|\| p > b`, `p is < a or > b` | `.Between(a, b)` — chaque branche lue à part |
+| `Math.Abs(p) > N` | `.Between(-N, N)` |
+| `p < TimeSpan.FromSeconds(5)`, `TimeSpan.Zero`, `MaxValue` | les mêmes bornes sur un `TimeSpan`, épelées comme écrites |
+| `p == Guid.Empty`, `p == default` sur un `Guid` | `.NonEmpty()` |
+| `p == default` sur un `DateTimeOffset`, un `DateOnly`, un `TimeSpan`… | `.DifferentFrom(default)` |
+| `p == E.Member`, `p is E.Member` sur un enum | `.DifferentFrom(E.Member)` |
+| `!Enum.IsDefined(p)`, `!double.IsFinite(p)`, `double.IsNaN(p)`, `double.IsInfinity(p)` | rien à ajouter — les membres déclarés et les valeurs finies sont tout ce qu'il tire |
+| `decimal.Round(p, 2) != p` | `.WithScale(2)` |
+| `p.AsSpan().IndexOfAnyExcept("ACGT") >= 0` | `.WithChars("ACGT")` |
+| `items.Any(x => x is null)`, `items.Contains(null)` sur un type d'élément non nullable | rien à ajouter — les éléments qu'il tire ne sont jamais `null` |
+| `a > b`, `a >= b` entre deux paramètres d'un même type | les deux tirés comme un seul `Any.OrderedPair(…)` ([plus bas](#quand-une-garde-relie-deux-paramètres)) |
+| `ArgumentOutOfRangeException.ThrowIfNegative(p)` et ses frères, `ArgumentException.ThrowIfNullOrEmpty(p)`, `ThrowIfNullOrWhiteSpace(p)` — sur `p` ou sur `p.Length` | la ligne de la même condition |
+| `Guard.Against.…` (Ardalis) et `Guard.Is…` (CommunityToolkit) | la ligne de la même condition, pour les helpers que la spécification liste |
+| une garde dans un helper de votre type qui retourne la valeur inchangée, `X = Guard(x);` | ce que disent les propres gardes du helper, lues un niveau plus bas |
+
+Tout le reste est marqué `to verify` : une regex (`Regex.IsMatch`), un `&&`, une condition
+arithmétique (`p * 2 > 100`), une comparaison à travers un membre (`p.TotalMinutes < 5`), une règle
+entre deux paramètres qui n'est pas un ordre, un helper que l'outil ne sait pas examiner, et une garde
+qu'il ne peut pas placer. Les tables complètes, avec le raisonnement derrière chaque ligne, sont au
+[§5.3 de la spécification](../../for-maintainers/specifications/justdummies-tool.fr.md#53-clauses-de-garde).
+
+**Une astuce qui marche dès aujourd'hui.** Une garde hors de l'ensemble est souvent à une réécriture
+d'y entrer : une condition arithmétique devient une comparaison sur le paramètre, une condition sur un
+membre de la valeur devient une garde dans le constructeur de cette valeur, que son générateur lit
+alors. Une garde de taille atteint son plafond à un million de caractères ou d'éléments : un plafond
+au-dessus tient par construction, et un plancher au-dessus laisse le paramètre ouvert, puisqu'aucun
+tirage ne pourrait le satisfaire.
+
 **Un `TODO` n'est pas un échec.** L'outil émet un identifiant qui n'existe pas, si bien que *votre
 propre build* signale ce qui n'a pas pu être inféré, à la ligne exacte, avec le type sous la main
 ([ADR-0060](../../for-maintainers/adr/0060-seed-generators-from-constructor-guards.fr.md)). Un
@@ -169,8 +214,9 @@ l'outil y voie le moindre rejet, et ne reçoivent donc aucune marque : un valida
 qui retourne la valeur vérifiée (`_name = Ensure.Valid(name);`), une copie locale confiée à un helper (`var v = value;
 Validate(v);`), un lambda qui capture le paramètre, et un helper que l'outil ne reconnaît pas appelé
 après la première affectation de l'état. Si votre constructeur valide ainsi, relisez vous-même la
-recette de ce paramètre. La liste complète est le §9 de la
-[spécification d'`any`](../../for-maintainers/specifications/justdummies-tool.fr.md).
+recette de ce paramètre. Les formes que l'outil lit sont listées
+[plus haut](#ce-que-loutil-lit-et-ce-quil-ne-lit-pas) ; le raisonnement derrière chaque ligne est au
+[§5.3 de la spécification](../../for-maintainers/specifications/justdummies-tool.fr.md#53-clauses-de-garde).
 
 ## À travers un graphe d'agrégats
 

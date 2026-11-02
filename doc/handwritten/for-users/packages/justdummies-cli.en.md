@@ -74,6 +74,50 @@ It is the point of the recap, not decoration — it separates what was **inferre
 constant the generated file cannot reach (`private`, `internal`), or an expression over one
 (`MaxProjectId - 1`), is copied as its value.
 
+### What the tool reads, and what it does not
+
+A guard is read when it is a throwing `if`, or one of the throw helpers below, that sits **before the
+first assignment to a field or property**, tests **one parameter** (or two, for an order between them)
+against **constants**, and runs on every path — not under an `if (strict)`, a loop or a `try`, and not
+below a line that writes over the parameter. A `||` is read branch by branch, as separate `if`s would
+be; a `&&` is not read, since narrowing to either side alone would exclude values your constructor
+accepts. The shapes it reads, and what each becomes:
+
+| Your guard throws when… | The recipe gets |
+| --- | --- |
+| `p is null`, `p == null`, `p ?? throw`, `ThrowIfNull(p)` | nothing to add — a nullable parameter stops drawing `null` |
+| `string.IsNullOrEmpty(p)`, `p.Length == 0`, `p.Count == 0` | `.NonEmpty()` |
+| `string.IsNullOrWhiteSpace(p)` | `.NotBlank()` |
+| `p.Length > N`, `p.Length < N`, `p.Length != N`, and `Count` on a collection | `.WithMaxLength(N)`, `.WithMinLength(N)`, `.WithLength(N)` — or the `Count` family |
+| `p <= 0`, `p < 0`, `p >= 0`, `p == 0` | `.Positive()`, `.GreaterThanOrEqualTo(0)`, `.Negative()`, `.NonZero()` |
+| `p > N`, `p < N`, `p >= N`, `p <= N` — also written `p is > N`, or negated `!(p > N)` | `.LessThanOrEqualTo(N)`, `.GreaterThanOrEqualTo(N)`, `.LessThan(N)`, `.GreaterThan(N)`; a floor and a ceiling become `.Between(…)` |
+| `p < a \|\| p > b`, `p is < a or > b` | `.Between(a, b)` — each branch read on its own |
+| `Math.Abs(p) > N` | `.Between(-N, N)` |
+| `p < TimeSpan.FromSeconds(5)`, `TimeSpan.Zero`, `MaxValue` | the same bounds on a `TimeSpan`, spelled as written |
+| `p == Guid.Empty`, `p == default` on a `Guid` | `.NonEmpty()` |
+| `p == default` on a `DateTimeOffset`, a `DateOnly`, a `TimeSpan`… | `.DifferentFrom(default)` |
+| `p == E.Member`, `p is E.Member` on an enum | `.DifferentFrom(E.Member)` |
+| `!Enum.IsDefined(p)`, `!double.IsFinite(p)`, `double.IsNaN(p)`, `double.IsInfinity(p)` | nothing to add — declared members and finite values are all it draws |
+| `decimal.Round(p, 2) != p` | `.WithScale(2)` |
+| `p.AsSpan().IndexOfAnyExcept("ACGT") >= 0` | `.WithChars("ACGT")` |
+| `items.Any(x => x is null)`, `items.Contains(null)` on a non-nullable element type | nothing to add — the elements it draws are never `null` |
+| `a > b`, `a >= b` between two parameters of one type | both drawn as one `Any.OrderedPair(…)` ([below](#when-a-guard-ties-two-parameters)) |
+| `ArgumentOutOfRangeException.ThrowIfNegative(p)` and its siblings, `ArgumentException.ThrowIfNullOrEmpty(p)`, `ThrowIfNullOrWhiteSpace(p)` — on `p` or on `p.Length` | the row of the same condition |
+| `Guard.Against.…` (Ardalis) and `Guard.Is…` (CommunityToolkit) | the row of the same condition, for the helpers the specification lists |
+| a guard in a helper of your type that returns the value unchanged, `X = Guard(x);` | whatever the helper's own guards say, read one level down |
+
+Everything else is marked `to verify`: a regex (`Regex.IsMatch`), a `&&`, an arithmetic condition
+(`p * 2 > 100`), a comparison through a member (`p.TotalMinutes < 5`), a rule between two parameters
+that is not an order, a helper the tool cannot see into, and a guard it cannot place. The complete
+tables, with the reasoning behind each row, are
+[specification §5.3](../../for-maintainers/specifications/justdummies-tool.md#53-guard-clauses).
+
+**A tip that works today.** A guard outside the set is often one rewrite away from inside it: an
+arithmetic condition becomes a comparison on the parameter, a condition on a member of the value
+becomes a guard in that value's own constructor, which its generator then reads. A size guard reaches
+its cap at a million characters or elements: a ceiling above it holds by construction, and a floor
+above it leaves the parameter open, since no draw could satisfy it.
+
 **A `TODO` is not a failure.** The tool emits an identifier that does not exist, so *your own build*
 reports what could not be inferred, at the exact line, with the type in hand
 ([ADR-0060](../../for-maintainers/adr/0060-seed-generators-from-constructor-guards.md)). A generator
@@ -166,8 +210,9 @@ rejection at all, so they earn no mark: a validator of *another* type that retur
 checked (`_name = Ensure.Valid(name);`), a local copy handed to a helper (`var v = value; Validate(v);`), a
 lambda closing over the parameter, and a helper the tool does not recognise called below the first
 assignment to state. If your constructor validates that way, read the recipe for that parameter
-yourself. The full list is §9 of the
-[`any` specification](../../for-maintainers/specifications/justdummies-tool.md).
+yourself. The shapes the tool reads are listed [above](#what-the-tool-reads-and-what-it-does-not); the
+reasoning behind every row is in
+[specification §5.3](../../for-maintainers/specifications/justdummies-tool.md#53-guard-clauses).
 
 ## Through a graph of aggregates
 

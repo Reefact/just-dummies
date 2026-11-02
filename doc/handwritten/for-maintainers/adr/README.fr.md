@@ -285,3 +285,4 @@ que l'option existait le jour où elle compterait.
 | [ADR-0126](0126-draw-two-values-tied-by-an-order.fr.md) | Tirer deux valeurs liées par un ordre | Accepted | consigné ici |
 | [ADR-0127](0127-draw-the-empty-value-unless-a-guard-refuses-it.fr.md) | Tirer la valeur vide sauf si une garde la refuse | Accepted | consigné ici |
 | [ADR-0128](0128-read-a-disjunction-guard-as-one-guard-per-branch.fr.md) | Lire une garde disjonctive comme une garde par branche | Accepted | consigné ici |
+| [ADR-0129](0129-report-a-chain-whose-constants-admit-exactly-one-value.fr.md) | Signaler une chaîne dont les constantes n'admettent qu'une seule valeur, sur tous les types exacts | Proposed | consigné ici |

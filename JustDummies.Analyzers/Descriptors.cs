@@ -246,6 +246,16 @@ internal static class Descriptors {
         description: "The constant constraints narrow the domain to nothing, so the chain throws a ConflictingAnyConstraintException the moment the arrange line runs. The library computes this with one emptiness test over bounds, lattice and allow-list; this rule runs the same test over the constants written at the call site, and stays silent for every argument it cannot fold.",
         helpLinkUri: JustDummiesRule.JD023.HelpLinkUri);
 
+    public static readonly DiagnosticDescriptor ScalarChainAdmitsOneValue = new(
+        id: JustDummiesRule.JD038.Id,
+        title: JustDummiesRule.JD038.Title,
+        messageFormat: "Write the literal {0}, or Any.Fixed({0}) where a generator is required: the constraints declared on this chain admit exactly one value{1}",
+        category: JustDummiesRule.JD038.Category,
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true,
+        description: "The constant constraints narrow the domain to exactly one value, so the chain draws a constant dressed as a draw: what is significant stays a literal, and a value the test chose is written as one. The rule reuses JD023's folding over the integer, decimal and temporal generators, and reports Between(a, a), a floor and a ceiling that meet, a lattice with one point left in its range, and a value set reduced to one value. A value pinned by name, Zero(), already reads as the constant it is and is not reported.",
+        helpLinkUri: JustDummiesRule.JD038.HelpLinkUri);
+
     public static readonly DiagnosticDescriptor ConstraintWithNoEffect = new(
         id: JustDummiesRule.JD024.Id,
         title: JustDummiesRule.JD024.Title,

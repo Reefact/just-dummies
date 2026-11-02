@@ -108,8 +108,135 @@ public class Jd023ScalarChainAdmitsNoValueTests {
     [InlineData("Any.Int32().Odd().Between(1, 3).Except(1)")]
     [InlineData("Any.Int32().Even().Between(-4, -4)")]
     [InlineData("Any.UInt32().GreaterThan(5u).LessThan(100u)")]
+    // The exact types the rule reads since issue #356: decimal, whose bounds are strict or inclusive, and the temporal
+    // generators, through their ticks or day numbers.
+    [InlineData("Any.Decimal().GreaterThan(1m).LessThan(2m)")]
+    [InlineData("Any.Decimal().Between(1m, 2m).MultipleOf(0.25m)")]
+    [InlineData("Any.Decimal().Between(1.001m, 1.002m).WithScale(3)")]
+    [InlineData("Any.Decimal().OneOf(1m, 2m).Except(2m)")]
+    [InlineData("Any.Decimal().Positive().LessThan(0.001m)")]
+    [InlineData("Any.DateOnly().After(new DateOnly(2026, 1, 1)).Before(new DateOnly(2026, 1, 3))")]
+    [InlineData("Any.DateTime().Between(new DateTime(2026, 1, 1), new DateTime(2026, 1, 2)).WithGranularity(TimeSpan.FromDays(1))")]
+    [InlineData("Any.TimeSpan().Positive().LessThan(TimeSpan.FromTicks(2))")]
+    [InlineData("Any.TimeOnly().Between(new TimeOnly(22, 0), new TimeOnly(6, 0)).After(new TimeOnly(23, 0))")]
+    [InlineData("Any.TimeOnly().After(new TimeOnly(23, 0)).Between(new TimeOnly(22, 0), new TimeOnly(6, 0))")]
+    [InlineData("Any.TimeOnly().Between(new TimeOnly(22, 0), new TimeOnly(6, 0)).Between(new TimeOnly(23, 0), new TimeOnly(1, 0))")]
+    [InlineData("Any.TimeOnly().Between(new TimeOnly(22, 0), new TimeOnly(6, 0)).WithGranularity(TimeSpan.FromMinutes(30))")]
     public async Task Does_not_report_a_satisfiable_chain(string expression) {
+        // A satisfiable chain may still be JD038's, when it leaves exactly one value: what this pins is that neither
+        // JD023 nor JD024 speaks.
         string source = $$"""
+            using System;
+            using JustDummies;
+
+            public static class Sample {
+                public static void M() {
+                    _ = {{expression}};
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new ScalarChainAdmitsNoValueAnalyzer(), source, "JD023", "JD024");
+
+        Check.That(diagnostics.Select(diagnostic => diagnostic.Id)).Not.Contains("JD023", "JD024");
+    }
+
+    [Theory]
+    [InlineData("Any.Decimal().GreaterThan(100m).LessThan(10m)")]
+    [InlineData("Any.Decimal().GreaterThan(1m).LessThanOrEqualTo(1m)")]
+    [InlineData("Any.Decimal().Positive().Negative()")]
+    [InlineData("Any.Decimal().GreaterThan(decimal.MaxValue)")]
+    [InlineData("Any.Decimal().Between(1m, 2m).MultipleOf(5m)")]
+    [InlineData("Any.Decimal().Between(1.001m, 1.002m).WithScale(2)")]
+    [InlineData("Any.Decimal().Between(1m, 1m).NonZero().Except(1m)")]
+    [InlineData("Any.Decimal().OneOf(1m, 2m).Except(1m, 2m)")]
+    [InlineData("Any.Decimal().OneOf(1.5m).WithScale(0)")]
+    [InlineData("Any.DateOnly().After(new DateOnly(2027, 1, 1)).Before(new DateOnly(2026, 1, 1))")]
+    [InlineData("Any.DateOnly().Between(new DateOnly(2026, 1, 1), new DateOnly(2026, 1, 1)).DifferentFrom(new DateOnly(2026, 1, 1))")]
+    [InlineData("Any.DateTime().After(DateTime.MaxValue)")]
+    [InlineData("Any.DateTime().Between(new DateTime(2026, 1, 1, 12, 0, 0), new DateTime(2026, 1, 1, 12, 30, 0)).WithGranularity(TimeSpan.FromDays(1))")]
+    [InlineData("Any.DateTimeOffset().AfterOrEqualTo(new DateTimeOffset(2026, 1, 2, 0, 0, 0, TimeSpan.Zero)).BeforeOrEqualTo(new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero))")]
+    [InlineData("Any.TimeSpan().Positive().Negative()")]
+    [InlineData("Any.TimeSpan().Zero().NonZero()")]
+    [InlineData("Any.TimeSpan().Between(TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(59)).WithGranularity(TimeSpan.FromHours(1))")]
+    [InlineData("Any.TimeOnly().After(new TimeOnly(10, 0)).Before(new TimeOnly(9, 0))")]
+    // A time outside a window across midnight admits no value, whichever side of the window it is written on, and a
+    // window inside it whose end comes first along it leaves two pieces (ADR-0125).
+    [InlineData("Any.TimeOnly().Between(new TimeOnly(22, 0), new TimeOnly(6, 0)).After(new TimeOnly(12, 0))")]
+    [InlineData("Any.TimeOnly().Before(new TimeOnly(12, 0)).Between(new TimeOnly(22, 0), new TimeOnly(6, 0))")]
+    [InlineData("Any.TimeOnly().Between(new TimeOnly(9, 0), new TimeOnly(17, 0)).Between(new TimeOnly(22, 0), new TimeOnly(6, 0))")]
+    [InlineData("Any.TimeOnly().Between(new TimeOnly(22, 0), new TimeOnly(6, 0)).Between(new TimeOnly(1, 0), new TimeOnly(23, 0))")]
+    [InlineData("Any.TimeOnly().Between(new TimeOnly(23, 0), new TimeOnly(1, 0)).Between(new TimeOnly(22, 0), new TimeOnly(6, 0))")]
+    [InlineData("Any.TimeOnly().Between(new TimeOnly(22, 0), new TimeOnly(6, 0)).OneOf(new TimeOnly(12, 0))")]
+    public async Task Reports_an_exact_type_chain_that_admits_no_value(string expression) {
+        string source = $$"""
+            using System;
+            using JustDummies;
+
+            public static class Sample {
+                public static void M() {
+                    _ = {{expression}};
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new ScalarChainAdmitsNoValueAnalyzer(), source, "JD023", "JD024");
+
+        Check.That(diagnostics.Select(diagnostic => diagnostic.Id)).ContainsExactly("JD023");
+    }
+
+    // The exact types, each beside the chain the run time throws on, so the wording is checked against the exception
+    // rather than against a copy of it: a strict decimal bound, a temporal bound rendered as the run time renders it,
+    // and the type's own edge when no declared bound is the other side.
+    public static TheoryData<string, Action> ExactTypeBoundConflicts => new() {
+        { "Any.Decimal().GreaterThan(100m).LessThan(10m)", () => Any.Decimal().GreaterThan(100m).LessThan(10m) },
+        { "Any.Decimal().GreaterThan(1m).LessThanOrEqualTo(1m)", () => Any.Decimal().GreaterThan(1m).LessThanOrEqualTo(1m) },
+        { "Any.Decimal().Between(1.50m, 5m).GreaterThan(10m)", () => Any.Decimal().Between(1.50m, 5m).GreaterThan(10m) },
+        { "Any.Decimal().Positive().Negative()", () => Any.Decimal().Positive().Negative() },
+        { "Any.Decimal().Positive().GreaterThan(decimal.MaxValue)", () => Any.Decimal().Positive().GreaterThan(decimal.MaxValue) },
+        { "Any.Int32().Positive().GreaterThan(int.MaxValue)", () => Any.Int32().Positive().GreaterThan(int.MaxValue) },
+        { "Any.DateOnly().After(new DateOnly(2027, 1, 1)).Before(new DateOnly(2026, 1, 1))", () => Any.DateOnly().After(new DateOnly(2027, 1, 1)).Before(new DateOnly(2026, 1, 1)) },
+        { "Any.DateTime().After(new DateTime(2026, 1, 2)).BeforeOrEqualTo(new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc))", () => Any.DateTime().After(new DateTime(2026, 1, 2, 0, 0, 0, DateTimeKind.Unspecified)).BeforeOrEqualTo(new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)) },
+        { "Any.DateTimeOffset().Before(new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(2))).After(new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero))", () => Any.DateTimeOffset().Before(new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(2))).After(new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)) },
+        { "Any.TimeSpan().LessThan(TimeSpan.FromHours(1)).GreaterThanOrEqualTo(TimeSpan.FromHours(2))", () => Any.TimeSpan().LessThan(TimeSpan.FromHours(1)).GreaterThanOrEqualTo(TimeSpan.FromHours(2)) },
+        { "Any.TimeSpan().GreaterThan(TimeSpan.MaxValue)", () => Any.TimeSpan().GreaterThan(TimeSpan.MaxValue) },
+        { "Any.TimeOnly().After(new TimeOnly(10, 0)).Before(new TimeOnly(9, 30))", () => Any.TimeOnly().After(new TimeOnly(10, 0)).Before(new TimeOnly(9, 30)) },
+        { "Any.TimeOnly().Between(new TimeOnly(22, 0), new TimeOnly(6, 0)).After(new TimeOnly(12, 0))", () => Any.TimeOnly().Between(new TimeOnly(22, 0), new TimeOnly(6, 0)).After(new TimeOnly(12, 0)) },
+        { "Any.TimeOnly().Before(new TimeOnly(12, 0)).Between(new TimeOnly(22, 0), new TimeOnly(6, 0))", () => Any.TimeOnly().Before(new TimeOnly(12, 0)).Between(new TimeOnly(22, 0), new TimeOnly(6, 0)) },
+        { "Any.TimeOnly().Between(new TimeOnly(22, 0), new TimeOnly(6, 0)).Between(new TimeOnly(1, 0), new TimeOnly(23, 0))", () => Any.TimeOnly().Between(new TimeOnly(22, 0), new TimeOnly(6, 0)).Between(new TimeOnly(1, 0), new TimeOnly(23, 0)) },
+        { "Any.TimeOnly().Between(new TimeOnly(23, 0), new TimeOnly(1, 0)).Between(new TimeOnly(22, 0), new TimeOnly(6, 0))", () => Any.TimeOnly().Between(new TimeOnly(23, 0), new TimeOnly(1, 0)).Between(new TimeOnly(22, 0), new TimeOnly(6, 0)) }
+    };
+
+    [Theory]
+    [MemberData(nameof(ExactTypeBoundConflicts))]
+    public async Task Words_an_exact_type_bound_conflict_as_the_run_time_does(string expression, Action declare) {
+        string source = $$"""
+            using System;
+            using JustDummies;
+
+            public static class Sample {
+                public static void M() {
+                    _ = {{expression}};
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new ScalarChainAdmitsNoValueAnalyzer(), source, "JD023", "JD024");
+        string                     thrown      = Check.ThatCode(declare).Throws<ConflictingAnyConstraintException>().Value.Message;
+
+        Check.That(diagnostics.Select(diagnostic => diagnostic.Id)).ContainsExactly("JD023");
+        Check.That(diagnostics[0].GetMessage()).IsEqualTo($"No value satisfies this chain: c{thrown.Substring(1, thrown.Length - 2)}");
+    }
+
+    [Theory]
+    [InlineData("Any.Double().Positive().LessThan(-5)")]
+    [InlineData("Any.Single().Between(1f, 2f).GreaterThan(3f)")]
+    [InlineData("Any.Half().Positive().Negative()")]
+    public async Task Does_not_report_a_binary_floating_point_generator(string expression) {
+        // The model folds exactly; a binary floating-point domain does not: neighbours and rounding do not fold like
+        // integers, so Double, Single and Half stay out (issue #356).
+        string source = $$"""
+            using System;
             using JustDummies;
 
             public static class Sample {
@@ -124,6 +251,33 @@ public class Jd023ScalarChainAdmitsNoValueTests {
         Check.That(diagnostics.Length).IsEqualTo(0);
     }
 
+    [Theory]
+    [InlineData("Any.Decimal().MultipleOf(0.25m).WithScale(1).Between(1m, 1.1m)")]
+    [InlineData("Any.Decimal().OneOf(1m).OneOf(2m).Except(2m)")]
+    [InlineData("Any.Int32().MultipleOf(2).Odd().Between(1, 1)")]
+    [InlineData("Any.DateTime().WithGranularity(TimeSpan.FromHours(1)).WithGranularity(TimeSpan.FromMinutes(1)).Between(new DateTime(2026, 1, 1, 0, 0, 1), new DateTime(2026, 1, 1, 0, 0, 2))")]
+    [InlineData("Any.TimeOnly().Between(new TimeOnly(22, 0), new TimeOnly(6, 0)).WithGranularity(TimeSpan.FromMinutes(7)).OneOf(new TimeOnly(12, 0))")]
+    [InlineData("Any.DateTime().Between(new DateTime(2026, 1, 2, 0, 0, 0, DateTimeKind.Local), new DateTime(2026, 1, 1)).After(DateTime.MaxValue)")]
+    public async Task Leaves_a_chain_another_rule_or_the_run_time_refuses_first(string expression) {
+        // A second lattice, a second value set or a step off the scale's grid is JD034's; a transposed range JD014's;
+        // a granularity that does not divide a day on a window across midnight, and a Local bound, are the run time's
+        // own refusals. The walk ends there rather than judging what comes after.
+        string source = $$"""
+            using System;
+            using JustDummies;
+
+            public static class Sample {
+                public static void M() {
+                    _ = {{expression}};
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new ScalarChainAdmitsNoValueAnalyzer(), source, "JD023", "JD024");
+
+        Check.That(diagnostics.Select(diagnostic => diagnostic.Id)).Not.Contains("JD023");
+    }
+
     [Fact]
     public async Task Does_not_report_a_non_constant_argument() {
         const string source = """
@@ -132,24 +286,6 @@ public class Jd023ScalarChainAdmitsNoValueTests {
             public static class Sample {
                 public static void M(int bound) {
                     _ = Any.Int32().GreaterThan(bound).LessThan(3);
-                }
-            }
-            """;
-
-        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new ScalarChainAdmitsNoValueAnalyzer(), source, "JD023", "JD024");
-
-        Check.That(diagnostics.Length).IsEqualTo(0);
-    }
-
-    [Fact]
-    public async Task Does_not_report_a_non_integer_generator() {
-        // The model is integer arithmetic; a floating-point domain does not behave like one.
-        const string source = """
-            using JustDummies;
-
-            public static class Sample {
-                public static void M() {
-                    _ = Any.Double().Positive().LessThan(-5);
                 }
             }
             """;
@@ -276,7 +412,7 @@ public class Jd023ScalarChainRepresentableExtremesTests {
     public async Task Does_not_report_a_bound_at_a_representable_extreme(string expression) {
         // Live in JustDummies.UnitTests/AnySignedIntegerTests.cs, which asserts these generate exactly that value.
         // The first version used -long.MaxValue as its "unbounded" sentinel, which made long.MinValue
-        // unrepresentable and condemned a legal chain.
+        // unrepresentable and condemned a legal chain. Exactly that value is JD038's to report, not JD023's.
         string source = $$"""
             using JustDummies;
 
@@ -289,7 +425,7 @@ public class Jd023ScalarChainRepresentableExtremesTests {
 
         ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new ScalarChainAdmitsNoValueAnalyzer(), source, "JD023", "JD024");
 
-        Check.That(diagnostics.Length).IsEqualTo(0);
+        Check.That(diagnostics.Select(diagnostic => diagnostic.Id)).ContainsExactly("JD038");
     }
 
     [Fact]

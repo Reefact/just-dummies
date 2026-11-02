@@ -102,6 +102,7 @@ public sealed class ConflictMessageProvenanceTests {
 
     [Fact(DisplayName = "A decimal pin emptied by DifferentFrom names DifferentFrom.")]
     [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
+    [SuppressMessage(JustDummiesRule.JD023.Category, JustDummiesRule.JD023.Id, Justification = SuppressionJustification.JD023.ThrowIsTheSubject)]
     public void DecimalPinEmptiedByDifferentFromNamesTheExclusion() {
         string message = ConflictMessage(() => Any.Decimal().DifferentFrom(1m).Between(1m, 1m));
 
@@ -110,6 +111,7 @@ public sealed class ConflictMessageProvenanceTests {
 
     [Fact(DisplayName = "A decimal strict bound crossing an inclusive one says the strict bound excludes its own value.")]
     [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
+    [SuppressMessage(JustDummiesRule.JD023.Category, JustDummiesRule.JD023.Id, Justification = SuppressionJustification.JD023.ThrowIsTheSubject)]
     public void DecimalStrictLowerBoundAboveAnUpperBoundIsWordedAsStrict() {
         string message = ConflictMessage(() => Any.Decimal().GreaterThan(100m).LessThan(10m));
 
@@ -119,6 +121,7 @@ public sealed class ConflictMessageProvenanceTests {
 
     [Fact(DisplayName = "A decimal empty open interval is refused as crossed bounds, not as an exhausted exclusion.")]
     [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
+    [SuppressMessage(JustDummiesRule.JD023.Category, JustDummiesRule.JD023.Id, Justification = SuppressionJustification.JD023.ThrowIsTheSubject)]
     public void DecimalEmptyOpenIntervalIsRefusedAsCrossedBounds() {
         string message = ConflictMessage(() => Any.Decimal().GreaterThan(36m).LessThan(36m));
 
@@ -128,6 +131,7 @@ public sealed class ConflictMessageProvenanceTests {
 
     [Fact(DisplayName = "A decimal Negative after Positive is refused as crossed bounds, not as excluded zero.")]
     [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
+    [SuppressMessage(JustDummiesRule.JD023.Category, JustDummiesRule.JD023.Id, Justification = SuppressionJustification.JD023.ThrowIsTheSubject)]
     public void DecimalPositiveThenNegativeIsRefusedAsCrossedBounds() {
         string message = ConflictMessage(() => Any.Decimal().Positive().Negative());
 
@@ -137,6 +141,7 @@ public sealed class ConflictMessageProvenanceTests {
 
     [Fact(DisplayName = "A decimal inclusive bound meeting a strict one at the same point is refused and says so.")]
     [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
+    [SuppressMessage(JustDummiesRule.JD023.Category, JustDummiesRule.JD023.Id, Justification = SuppressionJustification.JD023.ThrowIsTheSubject)]
     public void DecimalInclusiveBoundMeetingAStrictOneIsRefused() {
         string message = ConflictMessage(() => Any.Decimal().GreaterThan(5m).LessThanOrEqualTo(5m));
 
@@ -145,6 +150,7 @@ public sealed class ConflictMessageProvenanceTests {
 
     [Fact(DisplayName = "A decimal strict bound refused over a scaled range names the Between that bounds it.")]
     [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
+    [SuppressMessage(JustDummiesRule.JD023.Category, JustDummiesRule.JD023.Id, Justification = SuppressionJustification.JD023.ThrowIsTheSubject)]
     public void DecimalStrictBoundOverAScaledRangeNamesTheBetween() {
         string message = ConflictMessage(() => Any.Decimal().Between(0m, 5000m).WithScale(2).Negative());
 
@@ -153,6 +159,7 @@ public sealed class ConflictMessageProvenanceTests {
 
     [Fact(DisplayName = "A decimal strict bound emptying a scale lattice does not name itself as its own cause.")]
     [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
+    [SuppressMessage(JustDummiesRule.JD023.Category, JustDummiesRule.JD023.Id, Justification = SuppressionJustification.JD023.ThrowIsTheSubject)]
     public void DecimalStrictBoundEmptyingALatticeIsNotItsOwnCause() {
         // LessThan(0.01) excludes 0.01, the last point Positive() left on the WithScale(2) grid. Listing it among the
         // constraints that forbid the grid named it on both sides of "because" (issue #340).
@@ -164,6 +171,7 @@ public sealed class ConflictMessageProvenanceTests {
 
     [Fact(DisplayName = "A decimal exclusion emptying a scale lattice names only the exclusions declared before it.")]
     [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
+    [SuppressMessage(JustDummiesRule.JD023.Category, JustDummiesRule.JD023.Id, Justification = SuppressionJustification.JD023.ThrowIsTheSubject)]
     public void DecimalExclusionEmptyingALatticeNamesOnlyTheEarlierExclusions() {
         string message = ConflictMessage(() => Any.Decimal().Between(0m, 0.01m).WithScale(2).Except(0m).DifferentFrom(0.01m));
 
@@ -172,6 +180,7 @@ public sealed class ConflictMessageProvenanceTests {
 
     [Fact(DisplayName = "A decimal exclusion of several points emptying a scale lattice lists the points the earlier ones left.")]
     [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
+    [SuppressMessage(JustDummiesRule.JD023.Category, JustDummiesRule.JD023.Id, Justification = SuppressionJustification.JD023.ThrowIsTheSubject)]
     public void DecimalExclusionsOfSeveralPointsEmptyingALatticeListTheLeftPoints() {
         // Each Except removes two of the four grid points: the earlier one forbids neither "every other" value nor
         // every value but one, so the message names exactly the points it leaves to the applied one.
@@ -273,6 +282,7 @@ public sealed class ConflictMessageProvenanceTests {
 
     [Fact(DisplayName = "A decimal allow-list emptied by a scale declared before it names the scale.")]
     [SuppressMessage(JustDummiesRule.JD006.Category, JustDummiesRule.JD006.Id, Justification = SuppressionJustification.JD006.ThrowIsTheSubject)]
+    [SuppressMessage(JustDummiesRule.JD023.Category, JustDummiesRule.JD023.Id, Justification = SuppressionJustification.JD023.ThrowIsTheSubject)]
     public void DecimalAllowListEmptiedByAnEarlierScaleNamesTheScale() {
         string message = ConflictMessage(() => Any.Decimal().WithScale(1).OneOf(1.234m));
 

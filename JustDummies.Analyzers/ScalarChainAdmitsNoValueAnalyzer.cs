@@ -11,9 +11,11 @@ using Microsoft.CodeAnalysis.Operations;
 namespace JustDummies.Analyzers;
 
 /// <summary>
-///     JD023 — reports a scalar chain whose constant constraints leave no value at all, and JD024 — a constraint that
-///     narrows nothing. The two share one walk because they read the same state from opposite sides: one asks whether
-///     anything remains, the other whether anything changed.
+///     JD023 — reports a scalar chain whose constant constraints leave no value at all, JD024 — a constraint that
+///     narrows nothing, and JD038 — a chain whose constraints leave exactly one value. The three share one walk
+///     because they read the same state from three sides: whether anything remains, whether anything changed, and how
+///     much is left. The walk itself is <see cref="ScalarChainWalk" />; the families it reads are
+///     <see cref="ScalarFamily" />'s.
 /// </summary>
 /// <remarks>
 ///     JD024 is the only member of the constraint family the run time never reports. Every other contradiction throws
@@ -25,7 +27,7 @@ public sealed class ScalarChainAdmitsNoValueAnalyzer : DiagnosticAnalyzer {
 
     /// <inheritdoc />
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; } =
-        ImmutableArray.Create(Descriptors.ScalarChainAdmitsNoValue, Descriptors.ConstraintWithNoEffect);
+        ImmutableArray.Create(Descriptors.ScalarChainAdmitsNoValue, Descriptors.ConstraintWithNoEffect, Descriptors.ScalarChainAdmitsOneValue);
 
     /// <inheritdoc />
     public override void Initialize(AnalysisContext context) {
@@ -52,128 +54,11 @@ public sealed class ScalarChainAdmitsNoValueAnalyzer : DiagnosticAnalyzer {
 
         if (AnyChainFacts.HasOuterLink(invocation, symbols)) { return; }
         if (!AnyChainFacts.TryGetChain(invocation, symbols, out IReadOnlyList<IInvocationOperation> constraints, out IInvocationOperation? factory)) { return; }
-        if (factory is null || !IsIntegerFactory(factory.TargetMethod.Name)) { return; }
+        if (factory is null || ScalarFamily.Of(factory.TargetMethod.Name) is not ScalarFamily family) { return; }
 
-        AnalyzeConstraints(context, factory.TargetMethod.Name, constraints);
+        new ScalarChainWalk(context, family, constraints).Run();
     }
 
-    /// <summary>
-    ///     Walks the constraints in the order they were written, carrying the interval they describe, and reports the
-    ///     first one that empties it, that narrows nothing, or that excludes nothing.
-    /// </summary>
-    /// <remarks>
-    ///     Split from <see cref="Analyze" />, which answers a different question: whether this chain is one the rule
-    ///     reasons about at all. Everything below assumes that answer is yes.
-    /// </remarks>
-    private static void AnalyzeConstraints(OperationAnalysisContext context, string factory, IReadOnlyList<IInvocationOperation> constraints) {
-        (long domainMinimum, long? domainMaximum) = Domain(factory);
-        ScalarConstraintState state = ScalarConstraintState.Unconstrained(domainMinimum, domainMaximum);
-        HashSet<string>       seen  = [];
-        // The exclusions written so far, so that one written again is left to JD035.
-        List<(string Name, IReadOnlyList<long> Values)> declared = [];
-        // Every call walked so far as the run time renders it, and the ones holding each bound: a conflict names the
-        // constraint it collides with, the way the exception the chain would throw does (issue #322).
-        List<string> written = [];
-        string?      minimumSetBy = null;
-        string?      maximumSetBy = null;
-
-        foreach (IInvocationOperation constraint in constraints) {
-            if (!TryReadArguments(constraint, out IReadOnlyList<long> arguments)) { return; }
-
-            string name = constraint.TargetMethod.Name;
-
-            // An empty exclusion is reported per call by Analyze, whatever the chain, and changes no state here.
-            if (name == "Except" && arguments.Count == 0) { continue; }
-
-            // The exclusion that removes nothing: silent at run time, and the reason JD024 exists. The same exclusion
-            // written twice is JD035's, as a repetition in every generator family (issue #279).
-            if (IsInertExclusion(name, arguments, state, declared)) {
-                context.ReportDiagnostic(Diagnostic.Create(
-                    Descriptors.ConstraintWithNoEffect, constraint.Syntax.GetLocation(),
-                    $"{name} removes no value the generator could produce"));
-
-                return;
-            }
-
-            ScalarConstraintState? next = state.Apply(name, arguments);
-            if (next is null) { return; }
-
-            string call = Render(name, arguments);
-
-            if (next.IsEmpty()) {
-                context.ReportDiagnostic(Diagnostic.Create(
-                    Descriptors.ScalarChainAdmitsNoValue, constraint.Syntax.GetLocation(),
-                    call, Conflict(factory, state, next, written, minimumSetBy, maximumSetBy)));
-
-                return;
-            }
-
-            // A bound the chain already named is JD032's, not this rule's: the same NAME twice is one phenomenon,
-            // reported once, in both writing orders and in every generator family (ADR-0078). JD024 keeps what its
-            // message actually describes -- a constraint that narrows nothing -- which still covers a bound implied
-            // by a DIFFERENT one, Positive() after GreaterThan(5) being the shape it exists for.
-            if (IsNarrowingConstraint(name) && state.NarrowsNothing(next) && !IsSecondDeclarationOfTheSameBound(name, arguments, seen)) {
-                context.ReportDiagnostic(Diagnostic.Create(
-                    Descriptors.ConstraintWithNoEffect, constraint.Syntax.GetLocation(),
-                    $"{name} is already implied by the constraints declared before it"));
-
-                return;
-            }
-
-            seen.Add(name);
-            declared.Add((name, arguments));
-            written.Add(call);
-            (minimumSetBy, maximumSetBy) = BoundOwners(call, state, next, minimumSetBy, maximumSetBy);
-            state = next;
-        }
-    }
-
-    /// <summary>
-    ///     Why <paramref name="next" /> admits nothing, worded as the exception the chain throws words it.
-    /// </summary>
-    /// <remarks>
-    ///     Two bounds that cross are the common case, and there the sentence is the run time's own: the bound the call
-    ///     collides with, quoted with its arguments, and the value it already requires. The library tracks exclusions,
-    ///     a lattice and an allow-list in more detail than this model does, so a conflict among those names every
-    ///     constraint written before the call rather than guessing which one the run time would single out.
-    /// </remarks>
-    private static string Conflict(string factory, ScalarConstraintState state, ScalarConstraintState next, List<string> written, string? minimumSetBy, string? maximumSetBy) {
-        if (!next.Saturated && next.Minimum > next.Maximum) {
-            if (next.Minimum > state.Minimum && maximumSetBy is not null) {
-                return $"{maximumSetBy} already requires values less than or equal to {Invariant(state.Maximum)}";
-            }
-
-            if (next.Maximum < state.Maximum && minimumSetBy is not null) {
-                return $"{minimumSetBy} already requires values greater than or equal to {Invariant(state.Minimum)}";
-            }
-        }
-
-        return written.Count == 0
-            ? $"no {factory} value satisfies it"
-            : $"no value admitted by {string.Join(", ", written)} survives it";
-    }
-
-    // The calls holding each bound once `call` is applied. A bound it leaves unchanged keeps its owner, as at run time,
-    // where a looser bound is a no-op that records nothing.
-    private static (string? Minimum, string? Maximum) BoundOwners(string call, ScalarConstraintState state, ScalarConstraintState next, string? minimumSetBy, string? maximumSetBy) {
-        return (next.Minimum > state.Minimum ? call : minimumSetBy, next.Maximum < state.Maximum ? call : maximumSetBy);
-    }
-
-    // A constraint as ConstraintCall renders it at run time: its name, then its arguments between parentheses. Numbers
-    // are written invariantly, as the run time writes them: the current culture of the build may spell a minus sign
-    // as U+2212.
-    private static string Render(string name, IReadOnlyList<long> arguments) {
-        return $"{name}({string.Join(", ", arguments.Select(Invariant))})";
-    }
-
-    private static string Invariant(long value) {
-        return value.ToString(CultureInfo.InvariantCulture);
-    }
-
-    /// <summary>
-    ///     Whether the call is an exclusion that removes nothing, and not the same exclusion written again — that one,
-    ///     listing the same values as an earlier call of the same name, is JD035's.
-    /// </summary>
     /// <summary>
     ///     Whether <paramref name="invocation" /> is a JustDummies <c>Except</c> whose list is written empty — no
     ///     argument, <c>[]</c>, <c>new T[0]</c> or <c>Array.Empty&lt;T&gt;()</c>. A list computed at run time is not:
@@ -190,98 +75,6 @@ public sealed class ScalarChainAdmitsNoValueAnalyzer : DiagnosticAnalyzer {
         if (list is IArrayCreationOperation { DimensionSizes.Length: 1 } sized) { return sized.DimensionSizes[0].ConstantValue is { HasValue: true, Value: 0 }; }
 
         return list is IInvocationOperation { TargetMethod: { Name: "Empty", ContainingType.SpecialType: SpecialType.System_Array } };
-    }
-
-    private static bool IsInertExclusion(string name, IReadOnlyList<long> arguments, ScalarConstraintState state, List<(string Name, IReadOnlyList<long> Values)> declared) {
-        return name is "Except" or "DifferentFrom"
-            && state.ExclusionIsInert(arguments)
-            && !declared.Any(earlier => earlier.Name == name && new HashSet<long>(earlier.Values).SetEquals(arguments));
-    }
-
-    /// <summary>Whether JD032 owns this call: a single-argument folding bound whose name the chain already used.</summary>
-    private static bool IsSecondDeclarationOfTheSameBound(string name, IReadOnlyList<long> arguments, HashSet<string> seen) {
-        return arguments.Count == 1 && BoundDeclaredTwiceAnalyzer.FoldingBounds.Contains(name) && seen.Contains(name);
-    }
-
-    // A bound whose job is to narrow. Applying one that changes nothing is what JD024 reports; Positive() after
-    // GreaterThan(5) is the shape, and it reads as a tightening that is not one.
-    private static bool IsNarrowingConstraint(string name) {
-        return name is "GreaterThan" or "GreaterThanOrEqualTo" or "LessThan" or "LessThanOrEqualTo" or "Between" or "Positive" or "Negative";
-    }
-
-    private static bool TryReadArguments(IInvocationOperation constraint, out IReadOnlyList<long> arguments) {
-        List<long> values = [];
-        arguments = values;
-
-        foreach (IArgumentOperation argument in constraint.Arguments) {
-            if (argument.ArgumentKind == ArgumentKind.ParamArray) {
-                if (argument.Value is not IArrayCreationOperation { Initializer: { } initializer }) { return false; }
-
-                foreach (IOperation element in initializer.ElementValues) {
-                    if (!TryReadInteger(element, out long value)) { return false; }
-
-                    values.Add(value);
-                }
-
-                continue;
-            }
-
-            if (!TryReadInteger(argument.Value, out long single)) { return false; }
-
-            values.Add(single);
-        }
-
-        return true;
-    }
-
-    private static bool TryReadInteger(IOperation operation, out long value) {
-        value = 0;
-
-        Optional<object?> constant = GeneratorFacts.Unwrap(operation).ConstantValue;
-        if (!constant.HasValue) { return false; }
-
-        switch (constant.Value) {
-            case int i:   value = i;   return true;
-            case long l:  value = l;   return true;
-            case short s: value = s;   return true;
-            case byte b:  value = b;   return true;
-            case sbyte sb: value = sb; return true;
-            // The unsigned trio IsIntegerFactory declares. Without them the verdict turned on how the caller
-            // spelled the literal rather than on anything documented: Any.UInt32().GreaterThan(5) was judged
-            // because Unwrap strips the implicit conversion and hands back an int, while GreaterThan(5u) arrives
-            // as a uint, fails to read, and abandons the whole chain.
-            case ushort us: value = us; return true;
-            case uint ui: value = ui; return true;
-            // A ulong past long.MaxValue does not fit the model, whose interval is long-wide, so it falls to the
-            // default and the chain is abandoned -- the same answer this rule gives any argument it cannot
-            // evaluate. Under-reporting is the direction it is allowed to err in; accusing is not.
-            case ulong ul when ul <= long.MaxValue: value = (long)ul; return true;
-            default:      return false;
-        }
-    }
-
-    /// <summary>
-    ///     The values the factory's type holds. A chain is judged against the generator's real domain, not the
-    ///     model's: nothing is greater than <c>int.MaxValue</c> on <c>Any.Int32()</c>, while every value above
-    ///     <c>long.MaxValue</c> remains on <c>Any.UInt64()</c>, whose top the model cannot hold and so leaves open.
-    /// </summary>
-    private static (long Minimum, long? Maximum) Domain(string factory) {
-        return factory switch {
-            "Int32"  => (int.MinValue, int.MaxValue),
-            "Int16"  => (short.MinValue, short.MaxValue),
-            "Byte"   => (byte.MinValue, byte.MaxValue),
-            "SByte"  => (sbyte.MinValue, sbyte.MaxValue),
-            "UInt16" => (ushort.MinValue, ushort.MaxValue),
-            "UInt32" => (uint.MinValue, uint.MaxValue),
-            "UInt64" => (0, null),
-            _        => (long.MinValue, long.MaxValue)
-        };
-    }
-
-    // Only the integer generators: the model is integer arithmetic, and a floating-point or decimal domain does not
-    // behave like one.
-    private static bool IsIntegerFactory(string name) {
-        return name is "Int32" or "Int16" or "Int64" or "Byte" or "SByte" or "UInt16" or "UInt32" or "UInt64";
     }
 
 }

@@ -703,4 +703,22 @@ public static class JustDummiesRule {
 
     }
 
+    /// <summary>A scalar chain whose constant constraints admit exactly one value: a literal dressed as a draw</summary>
+    [DiagnosticRule]
+    public static class JD038 {
+
+        /// <summary>The canonical identifier of this diagnostic.</summary>
+        public const string Id = nameof(JD038);
+
+        /// <summary>The category this diagnostic is grouped under.</summary>
+        public const string Category = JustDummiesCategory.Constraints;
+
+        /// <summary>The one-line summary the IDE shows beside the rule.</summary>
+        public const string Title = "A chain whose constraints admit exactly one value";
+
+        /// <summary>The page explaining the condition this diagnostic detects.</summary>
+        public const string HelpLinkUri = HelpLinkBase + nameof(JD038) + HelpLinkSuffix;
+
+    }
+
 }

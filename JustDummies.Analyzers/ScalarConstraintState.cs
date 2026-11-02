@@ -1,24 +1,24 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
-
-using Microsoft.CodeAnalysis.Operations;
 
 namespace JustDummies.Analyzers;
 
 /// <summary>
 ///     The integer domain a scalar chain has narrowed to, rebuilt constraint by constraint in declaration order.
-///     Both <c>JD023</c> (the domain became empty) and <c>JD024</c> (a constraint narrowed nothing) read it: one asks
-///     whether anything remains, the other whether anything changed.
+///     <c>JD023</c> (the domain became empty), <c>JD024</c> (a constraint narrowed nothing) and <c>JD038</c> (one
+///     value is left) read it: one asks whether anything remains, one whether anything changed, one how much is left.
 /// </summary>
 /// <remarks>
-///     Integers only, and only where every argument folds to a constant. A chain carrying one unfoldable argument
-///     stops being tracked rather than being guessed at: a rule that claims a chain is unsatisfiable must be certain.
-///     Bounds are kept in <see cref="long" /> so a constraint at <see cref="int.MinValue" /> cannot overflow the
-///     arithmetic that tests them. The declared bounds are kept apart from the generator's own domain — a
+///     Integers only, and only where every argument folds to a constant: the integer generators, and the temporal
+///     ones through the ticks or the day number they compare by (issue #356). A chain carrying one unfoldable
+///     argument stops being tracked rather than being guessed at: a rule that claims a chain is unsatisfiable must be
+///     certain. Bounds are kept in <see cref="long" /> so a constraint at <see cref="int.MinValue" /> cannot overflow
+///     the arithmetic that tests them. The declared bounds are kept apart from the generator's own domain — a
 ///     <c>byte</c> holds 0 to 255 whatever the chain declares — so the emptiness checks judge the real domain while
 ///     a bound is still compared, for narrowing, with what the chain itself declared.
 /// </remarks>
-internal sealed class ScalarConstraintState {
+internal sealed class ScalarConstraintState : IScalarDomain {
 
     /// <summary>
     ///     How many values the emptiness checks will walk before giving up and answering "not empty". It bounds both
@@ -27,7 +27,10 @@ internal sealed class ScalarConstraintState {
     /// </summary>
     private const long MaxWalkLength = 64;
 
-    private ScalarConstraintState(long minimum, long maximum, (long? Step, long Residue) lattice, HashSet<long>? allowed, HashSet<long> excluded, (long Minimum, long? Maximum) domain, bool saturated = false) {
+    private readonly Func<long, string> _render;
+
+    private ScalarConstraintState(long minimum, long maximum, (long? Step, long Residue) lattice, HashSet<long>? allowed, HashSet<long> excluded, (long Minimum, long? Maximum, Func<long, string> Render) domain, bool saturated = false) {
+        _render       = domain.Render;
         Minimum       = minimum;
         Maximum       = maximum;
         MultipleOf    = lattice.Step;
@@ -73,9 +76,98 @@ internal sealed class ScalarConstraintState {
     /// </summary>
     public bool Saturated { get; }
 
-    /// <summary>The state before any constraint, over a type holding <paramref name="domainMinimum" /> to <paramref name="domainMaximum" />.</summary>
-    public static ScalarConstraintState Unconstrained(long domainMinimum, long? domainMaximum) {
-        return new ScalarConstraintState(long.MinValue, long.MaxValue, (null, 0), null, [], (domainMinimum, domainMaximum));
+    /// <inheritdoc />
+    public bool BoundsCross => !Saturated && Minimum > Maximum;
+
+    /// <inheritdoc />
+    public string MinimumRequirement => $"greater than or equal to {_render(Minimum)}";
+
+    /// <inheritdoc />
+    public string MaximumRequirement => $"less than or equal to {_render(Maximum)}";
+
+    /// <summary>
+    ///     The state before any constraint, over a type holding <paramref name="domainMinimum" /> to
+    ///     <paramref name="domainMaximum" />, whose values <paramref name="render" /> writes as the run time does.
+    /// </summary>
+    public static ScalarConstraintState Unconstrained(long domainMinimum, long? domainMaximum, Func<long, string> render) {
+        return new ScalarConstraintState(long.MinValue, long.MaxValue, (null, 0), null, [], (domainMinimum, domainMaximum, render));
+    }
+
+    /// <inheritdoc />
+    public bool TightensMinimumOf(IScalarDomain previous) {
+        return previous is ScalarConstraintState before && Minimum > before.Minimum;
+    }
+
+    /// <inheritdoc />
+    public bool TightensMaximumOf(IScalarDomain previous) {
+        return previous is ScalarConstraintState before && Maximum < before.Maximum;
+    }
+
+    /// <inheritdoc />
+    public long? CountAdmitted(long limit) {
+        if (Saturated) { return 0; }
+        if (Allowed is not null) { return Allowed.Count(Admits); }
+        if (Low > High) { return 0; }
+        // A range left open above on a ulong runs past the model, where values the model never sees survive.
+        if (DomainMaximum is null && Maximum == long.MaxValue) { return null; }
+
+        long counted = Survivors().Take((int)Math.Min(limit, MaxWalkLength) + 1).LongCount();
+
+        return counted <= limit ? counted : null;
+    }
+
+    /// <inheritdoc />
+    public string? TheOnlyValue() {
+        if (CountAdmitted(1) != 1) { return null; }
+
+        return _render(Allowed is not null ? Allowed.First(Admits) : Survivors().First());
+    }
+
+    /// <summary>
+    ///     The values that survive, lowest first — the lattice points, or every value of the range — as far as a walk
+    ///     goes; a range wider than the walk yields its top after it, so it is never counted as small.
+    /// </summary>
+    private IEnumerable<long> Survivors() {
+        long low  = Low;
+        long high = High;
+        long step = MultipleOf ?? 1;
+        if (!TryFirstLatticePoint(low, high, step, out long first)) { yield break; }
+
+        long candidate = first;
+        for (long walked = 0; walked < MaxWalkLength; walked++) {
+            if (Admits(candidate)) { yield return candidate; }
+            // Compared before stepping, so the step past the top cannot overflow at the representable extremes.
+            if ((ulong)(high - candidate) < (ulong)step) { yield break; }
+
+            candidate += step;
+        }
+
+        // The walk ran out before the range did: the rest is taken as surviving.
+        yield return high;
+    }
+
+    /// <summary>The first point of the lattice at or above <paramref name="low" />, if one lies at or below <paramref name="high" />.</summary>
+    private bool TryFirstLatticePoint(long low, long high, long step, out long first) {
+        long past = Remainder(low, step) - Residue;
+        if (past < 0) { past += step; }
+        long rise = past == 0 ? 0 : step - past;
+        first = low + rise;
+
+        return (ulong)(high - low) >= (ulong)rise;
+    }
+
+    /// <summary>Every argument as the <see cref="long" /> it is, or <c>false</c> for one the model cannot hold.</summary>
+    private static bool TryIntegers(IReadOnlyList<decimal> arguments, out IReadOnlyList<long> integers) {
+        List<long> read = [];
+        integers = read;
+
+        foreach (decimal argument in arguments) {
+            if (argument != decimal.Truncate(argument) || argument < long.MinValue || argument > long.MaxValue) { return false; }
+
+            read.Add((long)argument);
+        }
+
+        return true;
     }
 
     /// <summary>Whether no value at all survives the constraints declared so far.</summary>
@@ -112,6 +204,11 @@ internal sealed class ScalarConstraintState {
         return Allowed is null || Allowed.Contains(value);
     }
 
+    /// <inheritdoc />
+    public IScalarDomain? Apply(string name, IReadOnlyList<decimal> arguments) {
+        return TryIntegers(arguments, out IReadOnlyList<long> integers) ? Apply(name, integers) : null;
+    }
+
     /// <summary>
     ///     Applies one constraint, returning the narrowed state — or <c>null</c> when the constraint is one this model
     ///     does not track, which abandons the chain rather than misreading it.
@@ -127,38 +224,44 @@ internal sealed class ScalarConstraintState {
             case "Zero":                return WithMinimum(0)?.WithMaximum(0);
             case "NonZero":             return WithExcluded(0);
 
-            // Nothing is greater than the largest value the type holds, nor less than the smallest: those two ask
-            // for an empty domain rather than for a bound, and computing one at the model's own edge would overflow.
-            case "GreaterThan" when arguments.Count == 1:
-                return DomainMaximum is long top && arguments[0] >= top ? Saturate() : WithMinimum(arguments[0] + 1);
-
-            case "LessThan" when arguments.Count == 1:
-                return arguments[0] <= DomainMinimum ? Saturate() : WithMaximum(arguments[0] - 1);
-
-            case "GreaterThanOrEqualTo" when arguments.Count == 1: return WithMinimum(arguments[0]);
-            case "LessThanOrEqualTo" when arguments.Count == 1:    return WithMaximum(arguments[0]);
+            case "GreaterThan" or "LessThan" or "GreaterThanOrEqualTo" or "LessThanOrEqualTo" when arguments.Count == 1:
+                return WithBound(name, arguments[0]);
 
             // Transposed bounds are an argument error the builder refuses before any constraint is applied — JD014's
             // diagnosis, not an empty domain — so the chain is left to that rule rather than reported twice.
             case "Between" when arguments.Count == 2:
                 return arguments[0] > arguments[1] ? null : WithMinimum(arguments[0])?.WithMaximum(arguments[1]);
-            case "MultipleOf" when arguments.Count == 1 && arguments[0] != 0:
-                return new ScalarConstraintState(Minimum, Maximum, (arguments[0] < 0 ? -arguments[0] : arguments[0], 0), Allowed, Excluded, (DomainMinimum, DomainMaximum));
-            case "Odd" when arguments.Count == 0:  return new ScalarConstraintState(Minimum, Maximum, (2, 1), Allowed, Excluded, (DomainMinimum, DomainMaximum));
-            case "Even" when arguments.Count == 0: return new ScalarConstraintState(Minimum, Maximum, (2, 0), Allowed, Excluded, (DomainMinimum, DomainMaximum));
+            // A step the guard refuses is JD014's; a second lattice is JD034's unless it is the same one, which the
+            // run time ignores. Either way the chain is left to that rule rather than judged on a lattice it rejects.
+            case "MultipleOf" when arguments.Count == 1 && arguments[0] > 0: return WithLattice(arguments[0], 0);
+            case "Odd" when arguments.Count == 0:                            return WithLattice(2, 1);
+            case "Even" when arguments.Count == 0:                           return WithLattice(2, 0);
+            // A granularity, read by the walk as the lattice it is: a step and the residue its anchor leaves.
+            case "OnLattice" when arguments.Count == 2 && arguments[0] > 0:  return WithLattice(arguments[0], arguments[1]);
 
-            case "OneOf" when arguments.Count > 0:
-                return new ScalarConstraintState(Minimum, Maximum, (MultipleOf, Residue), [.. arguments], Excluded, (DomainMinimum, DomainMaximum));
+            // A second value set is JD034's, unless it lists the same values, which the run time ignores.
+            case "OneOf" when arguments.Count > 0: {
+                HashSet<long> allowed = [.. arguments];
+
+                return Allowed is null || Allowed.SetEquals(allowed)
+                           ? new ScalarConstraintState(Minimum, Maximum, (MultipleOf, Residue), Allowed ?? allowed, Excluded, (DomainMinimum, DomainMaximum, _render))
+                           : null;
+            }
 
             case "Except" or "DifferentFrom" when arguments.Count > 0: {
                 HashSet<long> excluded = [.. Excluded, .. arguments];
 
-                return new ScalarConstraintState(Minimum, Maximum, (MultipleOf, Residue), Allowed, excluded, (DomainMinimum, DomainMaximum));
+                return new ScalarConstraintState(Minimum, Maximum, (MultipleOf, Residue), Allowed, excluded, (DomainMinimum, DomainMaximum, _render));
             }
 
             // Anything else — a granularity, a scale, a name this model has never seen — ends the walk.
             default: return null;
         }
+    }
+
+    /// <inheritdoc />
+    public bool NarrowsNothing(IScalarDomain candidate) {
+        return candidate is ScalarConstraintState next && NarrowsNothing(next);
     }
 
     /// <summary>Whether applying <paramref name="candidate" /> would leave the domain exactly as it is.</summary>
@@ -171,6 +274,11 @@ internal sealed class ScalarConstraintState {
             && (candidate.Allowed?.Count ?? -1) == (Allowed?.Count ?? -1);
     }
 
+    /// <inheritdoc />
+    public bool ExclusionIsInert(IReadOnlyList<decimal> values) {
+        return TryIntegers(values, out IReadOnlyList<long> integers) && ExclusionIsInert(integers);
+    }
+
     /// <summary>
     ///     Whether an exclusion removes a value the domain could never have produced anyway — the silent case, where
     ///     the author excluded a sentinel the generator was never going to draw.
@@ -179,26 +287,45 @@ internal sealed class ScalarConstraintState {
         return values.Count > 0 && values.All(value => !Admits(value));
     }
 
+    /// <summary>
+    ///     One bound. Nothing is greater than the largest value the type holds, nor less than the smallest: those two
+    ///     ask for an empty domain rather than for a bound, and computing one at the model's own edge would overflow.
+    /// </summary>
+    private ScalarConstraintState? WithBound(string name, long bound) {
+        return name switch {
+            "GreaterThan"          => DomainMaximum is long top && bound >= top ? Saturate() : WithMinimum(bound + 1),
+            "LessThan"             => bound <= DomainMinimum ? Saturate() : WithMaximum(bound - 1),
+            "GreaterThanOrEqualTo" => WithMinimum(bound),
+            _                      => WithMaximum(bound)
+        };
+    }
+
+    private ScalarConstraintState? WithLattice(long step, long residue) {
+        if (MultipleOf is long declared) { return declared == step && Residue == residue ? this : null; }
+
+        return new ScalarConstraintState(Minimum, Maximum, (step, residue), Allowed, Excluded, (DomainMinimum, DomainMaximum, _render));
+    }
+
     private ScalarConstraintState Saturate() {
-        return new ScalarConstraintState(Minimum, Maximum, (MultipleOf, Residue), Allowed, Excluded, (DomainMinimum, DomainMaximum), saturated: true);
+        return new ScalarConstraintState(Minimum, Maximum, (MultipleOf, Residue), Allowed, Excluded, (DomainMinimum, DomainMaximum, _render), saturated: true);
     }
 
     private ScalarConstraintState? WithMinimum(long minimum) {
         return minimum <= Minimum
-            ? new ScalarConstraintState(Minimum, Maximum, (MultipleOf, Residue), Allowed, Excluded, (DomainMinimum, DomainMaximum))
-            : new ScalarConstraintState(minimum, Maximum, (MultipleOf, Residue), Allowed, Excluded, (DomainMinimum, DomainMaximum));
+            ? new ScalarConstraintState(Minimum, Maximum, (MultipleOf, Residue), Allowed, Excluded, (DomainMinimum, DomainMaximum, _render))
+            : new ScalarConstraintState(minimum, Maximum, (MultipleOf, Residue), Allowed, Excluded, (DomainMinimum, DomainMaximum, _render));
     }
 
     private ScalarConstraintState? WithMaximum(long maximum) {
         return maximum >= Maximum
-            ? new ScalarConstraintState(Minimum, Maximum, (MultipleOf, Residue), Allowed, Excluded, (DomainMinimum, DomainMaximum))
-            : new ScalarConstraintState(Minimum, maximum, (MultipleOf, Residue), Allowed, Excluded, (DomainMinimum, DomainMaximum));
+            ? new ScalarConstraintState(Minimum, Maximum, (MultipleOf, Residue), Allowed, Excluded, (DomainMinimum, DomainMaximum, _render))
+            : new ScalarConstraintState(Minimum, maximum, (MultipleOf, Residue), Allowed, Excluded, (DomainMinimum, DomainMaximum, _render));
     }
 
     private ScalarConstraintState WithExcluded(long value) {
         HashSet<long> excluded = [.. Excluded, value];
 
-        return new ScalarConstraintState(Minimum, Maximum, (MultipleOf, Residue), Allowed, excluded, (DomainMinimum, DomainMaximum));
+        return new ScalarConstraintState(Minimum, Maximum, (MultipleOf, Residue), Allowed, excluded, (DomainMinimum, DomainMaximum, _render));
     }
 
     // Is there any multiple of step inside [Minimum, Maximum] that survives the exclusions? The range can be huge, so

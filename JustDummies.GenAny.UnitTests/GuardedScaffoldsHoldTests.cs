@@ -73,8 +73,11 @@ public sealed class GuardedScaffoldsHoldTests {
         IReadOnlyList<Diagnostic> raised = await JustDummiesRulesOn(CompiledFor(shape),
                                                                    TestContext.Current.CancellationToken);
 
-        Check.That(raised.Where(diagnostic => diagnostic.Severity >= DiagnosticSeverity.Warning).Select(Render)).IsEmpty();
-        Check.That(raised.Where(diagnostic => !EmittedCodeCompiler.Assumed.Contains(diagnostic.Id)).Select(Render)).IsEmpty();
+        // A rule the shape expects is a true report on its domain, and it has to fire: an expectation that stops
+        // firing has quietly stopped being one.
+        Check.That(raised.Where(diagnostic => diagnostic.Severity >= DiagnosticSeverity.Warning && !shape.Reports.Contains(diagnostic.Id)).Select(Render)).IsEmpty();
+        Check.That(raised.Where(diagnostic => !EmittedCodeCompiler.Assumed.Contains(diagnostic.Id) && !shape.Reports.Contains(diagnostic.Id)).Select(Render)).IsEmpty();
+        Check.That(shape.Reports.Except(raised.Select(diagnostic => diagnostic.Id))).IsEmpty();
     }
 
     [Theory(DisplayName = "A guarded scaffold draws values its own domain accepts.")]

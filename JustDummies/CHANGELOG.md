@@ -10,6 +10,13 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Added
 
+- **JD038 reports a chain whose constant constraints admit exactly one value.** `Any.Int32().Between(5, 5)`,
+  a floor and a ceiling that meet, a lattice with one point left in its range, a value set reduced to one
+  value: a constant dressed as a draw, where what is significant should stay a literal. The rule reuses
+  JD023's folding over the integer, decimal and temporal generators, names the literal and `Any.Fixed`
+  where a generator is required, and `Any.TimeOnly()` on a time of day if the whole day was meant. A
+  value pinned by name, `Zero()`, is not reported. Warning severity, no code fix; this repository's own
+  suites decline it, since the drawn value is their subject (issue #356, ADR-0129).
 - **`Any.OrderedPair(first, second)` draws two values tied by an order.** A span's start and end, a
   range's minimum and maximum, on every ordered builder — integers, floats, `decimal`, dates, durations.
   By construction, never by redraw: the first is drawn from its base kept at or below the largest value
@@ -187,6 +194,16 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Changed
 
+- **JD023 and JD024 read `decimal` and the temporal generators.** The folding covered the integer
+  generators only, so `Any.Decimal().GreaterThan(100m).LessThan(10m)` and
+  `Any.DateOnly().After(later).Before(earlier)` compiled clean and threw on every run. Both rules now read
+  every exact type — the integers, `Decimal`, `DateOnly`, `DateTime`, `DateTimeOffset`, `TimeSpan` and
+  `TimeOnly` — with a decimal bound strict or inclusive as the generator keeps it, `WithScale` and
+  `MultipleOf` as its lattice, `After` and `Before` as the temporal bounds and `WithGranularity` as theirs.
+  On `TimeOnly` the walk follows the window across midnight, so a bound outside it is reported wherever it
+  was written. The binary floating-point generators stay out. A chain another rule owns first — a second
+  value set or lattice, a refused argument — ends the walk, and every inert constraint on a chain is now
+  reported by JD024, not only the first (issue #356, ADR-0129).
 - **JD014, JD016 and JD034 close three constant misses.** Each chain threw on every run and compiled
   clean. JD014 reports a transposed `Between` on `DateOnly`, `DateTime`, `DateTimeOffset` and `TimeSpan`
   — not on `TimeOnly`, where a start after the end is the window across midnight — reading every spelling

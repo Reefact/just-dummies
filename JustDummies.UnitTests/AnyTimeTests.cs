@@ -1,5 +1,6 @@
 #region Usings declarations
 
+using System.Diagnostics.CodeAnalysis;
 using NFluent;
 
 #endregion
@@ -13,6 +14,7 @@ public sealed class AnyTimeTests {
     private static readonly DateTime Anchor = new(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
     [Fact(DisplayName = "TimeSpan: Positive and Negative are strict against zero, and contradict each other.")]
+    [SuppressMessage(JustDummiesRule.JD023.Category, JustDummiesRule.JD023.Id, Justification = SuppressionJustification.JD023.ThrowIsTheSubject)]
     public void TimeSpanSigns() {
         for (int i = 0; i < SampleCount; i++) {
             Check.That(Any.TimeSpan().Positive().Generate() > TimeSpan.Zero).IsTrue();
@@ -58,6 +60,7 @@ public sealed class AnyTimeTests {
     }
 
     [Fact(DisplayName = "DateTime: an impossible After/Before pair conflicts naming both sides; crossed Between is an argument error.")]
+    [SuppressMessage(JustDummiesRule.JD023.Category, JustDummiesRule.JD023.Id, Justification = SuppressionJustification.JD023.ThrowIsTheSubject)]
     public void DateTimeConflicts() {
         Check.ThatCode(() => Any.DateTime().After(Anchor).Before(Anchor))
              .Throws<ConflictingAnyConstraintException>()

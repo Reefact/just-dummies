@@ -25,6 +25,12 @@ public class Jd038ScalarChainAdmitsOneValueTests {
     [InlineData("Any.Decimal().Between(1m, 1.4m).WithScale(0)",                                 "1")]
     [InlineData("Any.Decimal().Between(1m, 2m).MultipleOf(1.5m)",                               "1.5")]
     [InlineData("Any.Decimal().OneOf(1m, 2m).Except(2m)",                                       "1")]
+    // The same step or scale again changes nothing at run time, so the walk goes on past it (a different one is
+    // JD034's, and ends the walk). Found by the property suite on a seed the named cases had not drawn.
+    [InlineData("Any.Decimal().LessThanOrEqualTo(1.5m).GreaterThanOrEqualTo(1.5m).MultipleOf(0.5m).MultipleOf(0.5m)", "1.5")]
+    [InlineData("Any.Decimal().Between(1m, 1.4m).WithScale(0).WithScale(0)",                    "1")]
+    [InlineData("Any.Decimal().MultipleOf(0.5m).MultipleOf(0.50m).Between(1m, 1.4m)",           "1.0")]
+    [InlineData("Any.Int32().MultipleOf(7).MultipleOf(7).Between(1, 10)",                       "7")]
     [InlineData("Any.Decimal().GreaterThanOrEqualTo(decimal.MaxValue)",                         "79228162514264337593543950335")]
     [InlineData("Any.DateOnly().Between(new DateOnly(2026, 1, 1), new DateOnly(2026, 1, 1))",   "2026-01-01")]
     [InlineData("Any.DateTime().After(new DateTime(2026, 1, 1)).Before(new DateTime(639028224000000002L))", "2026-01-01T00:00:00.0000001Z")]

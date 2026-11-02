@@ -55,6 +55,7 @@ public sealed class DecimalDuplicateExclusionTests {
     }
 
     [Fact(DisplayName = "A genuinely exhausted grid still conflicts, with distinct exclusions counted honestly.")]
+    [SuppressMessage(JustDummiesRule.JD023.Category, JustDummiesRule.JD023.Id, Justification = SuppressionJustification.JD023.ThrowIsTheSubject)]
     public void GenuineExhaustionStillConflicts() {
         // Grid {0.00, 0.01}: excluding BOTH values really does empty it — the dedup must not weaken the eager check.
         Check.ThatCode(() => Any.Decimal().Between(0.00m, 0.01m).WithScale(2).Except(0.00m, 0.01m))

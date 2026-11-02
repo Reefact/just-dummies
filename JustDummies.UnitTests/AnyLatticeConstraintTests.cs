@@ -162,6 +162,7 @@ public sealed class AnyLatticeConstraintTests {
     }
 
     [Fact(DisplayName = "WithScale: a range containing no grid point conflicts eagerly.")]
+    [SuppressMessage(JustDummiesRule.JD023.Category, JustDummiesRule.JD023.Id, Justification = SuppressionJustification.JD023.ThrowIsTheSubject)]
     public void WithScaleEmptyGridConflicts() {
         Check.ThatCode(() => Any.Decimal().Between(0.001m, 0.009m).WithScale(2))
              .Throws<ConflictingAnyConstraintException>()

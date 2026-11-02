@@ -269,3 +269,4 @@ failure mode of a "not now" is that nobody remembers the option existed on the d
 | [ADR-0126](0126-draw-two-values-tied-by-an-order.md) | Draw two values tied by an order | Accepted | recorded here |
 | [ADR-0127](0127-draw-the-empty-value-unless-a-guard-refuses-it.md) | Draw the empty value unless a guard refuses it | Accepted | recorded here |
 | [ADR-0128](0128-read-a-disjunction-guard-as-one-guard-per-branch.md) | Read a disjunction guard as one guard per branch | Accepted | recorded here |
+| [ADR-0129](0129-report-a-chain-whose-constants-admit-exactly-one-value.md) | Report a chain whose constants admit exactly one value, over every exact type | Proposed | recorded here |

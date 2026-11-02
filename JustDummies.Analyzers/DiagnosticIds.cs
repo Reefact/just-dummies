@@ -73,6 +73,9 @@ internal static class DiagnosticIds {
     /// <summary>JD037 — a draw made inside a lambda passed to As or Combine, apart from the recipe.</summary>
     public const string DrawInsideCompositionLambda = JustDummiesRule.JD037.Id;
 
+    /// <summary>JD038 — a scalar chain whose constant constraints admit exactly one value.</summary>
+    public const string ScalarChainAdmitsOneValue = JustDummiesRule.JD038.Id;
+
     // Category: Composition — a part that reaches no result, a constraint that cannot bind
     public const string UnusedCombineOperand = JustDummiesRule.JD027.Id;
     public const string InertDistinctness = JustDummiesRule.JD028.Id;

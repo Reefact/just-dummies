@@ -42,3 +42,4 @@ JD034   | JustDummies.Constraints     | Warning  | ConstraintAlreadyDefinedAnaly
 JD035   | JustDummies.Constraints     | Warning  | ConstraintRepeatedAnalyzer
 JD036   | JustDummies.Constraints     | Info     | UndeclaredNumericRangeAnalyzer
 JD037   | JustDummies.Reproducibility | Warning  | DrawInsideCompositionLambdaAnalyzer
+JD038   | JustDummies.Constraints     | Warning  | ScalarChainAdmitsNoValueAnalyzer

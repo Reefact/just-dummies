@@ -159,6 +159,13 @@ dotnet_diagnostic.S107.severity = none
 # documentation reader must find). Removing it would delete the test case.
 dotnet_diagnostic.S2326.severity = none
 
+# Declined in tests: a chain narrowed to one value. JD038 reports a draw whose constraints admit exactly
+# one value as a literal dressed as a draw, which is what it is in a test USING the library. In these
+# suites the drawn value is the subject under test: `Between(value, value)` and `OneOf(value)` are the
+# property that the draw IS that value, and `GreaterThanOrEqualTo(long.MaxValue)` the one that the
+# model reaches its edge. Shipping code never draws, and a consumer's suite keeps the rule.
+dotnet_diagnostic.JD038.severity = none
+
 # Declined in tests: empty blocks. S108 asks that `{ }` be filled or removed. In these suites the
 # empty body IS the exercise: `using (Any.UseSeed(1, …)) { }` enters and leaves a scope to assert
 # what disposal does, and filling the block would add a statement with nothing to say. The rule

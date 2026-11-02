@@ -111,6 +111,7 @@ public sealed class DecimalMultipleOfTests {
     }
 
     [Fact(DisplayName = "A range holding no step is refused at the call that empties it.")]
+    [SuppressMessage(JustDummiesRule.JD023.Category, JustDummiesRule.JD023.Id, Justification = SuppressionJustification.JD023.ThrowIsTheSubject)]
     public void ARangeHoldingNoStepIsRefused() {
         Check.ThatCode(() => Any.Decimal().Between(0.3m, 0.4m).MultipleOf(0.25m))
              .Throws<ConflictingAnyConstraintException>()

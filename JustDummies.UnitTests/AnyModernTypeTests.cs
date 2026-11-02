@@ -59,6 +59,7 @@ public sealed class AnyModernTypeTests {
     }
 
     [Fact(DisplayName = "DateOnly: Between is inclusive and reached; After/Before are exclusive; conflicts surface.")]
+    [SuppressMessage(JustDummiesRule.JD023.Category, JustDummiesRule.JD023.Id, Justification = SuppressionJustification.JD023.ThrowIsTheSubject)]
     public void DateOnlyBehaves() {
         HashSet<DateOnly> seen = [];
         for (int i = 0; i < SampleCount; i++) {
@@ -85,6 +86,7 @@ public sealed class AnyModernTypeTests {
     }
 
     [Fact(DisplayName = "TimeOnly: bounds behave and the exclusive window pins the middle tick.")]
+    [SuppressMessage(JustDummiesRule.JD023.Category, JustDummiesRule.JD023.Id, Justification = SuppressionJustification.JD023.ThrowIsTheSubject)]
     public void TimeOnlyBehaves() {
         for (int i = 0; i < SampleCount; i++) {
             TimeOnly value = Any.TimeOnly().Between(AnchorTime, AnchorTime.Add(TimeSpan.FromMinutes(5))).Generate();

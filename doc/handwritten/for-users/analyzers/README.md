@@ -3,7 +3,7 @@
 🌍 **Languages:**  
 🇬🇧 English (this file) | 🇫🇷 [Français](./README.fr.md)
 
-The `JustDummies` package ships 37 Roslyn rules (`JD001`–`JD037`) inside itself, under
+The `JustDummies` package ships 38 Roslyn rules (`JD001`–`JD038`) inside itself, under
 `analyzers/dotnet/cs`. Any project that references the package picks them up automatically,
 with no extra install. They run while your project compiles, turning mistakes the run time
 would otherwise report late — or never — into build-time diagnostics.
@@ -72,7 +72,7 @@ These rules front-load, to build time, the subset of the library's run-time cons
 | [JD015 StringConstraintsAdmitNoValue](JD015.en.md) | 🟠 Warning | on | An AnyString chain's constant constraints admit no value — two declared lengths that contradict each other, declared characters that leave nothing to draw for a shaped string, a declared length the shape cannot fit under, or constraints that together admit none of a value set's values. |
 | [JD016 CollectionConstraintsAdmitNoValue](JD016.en.md) | 🟠 Warning | on | A collection chain's count constraints cannot all hold, or it asks for more distinct elements than its element generator can produce. |
 | [JD017 EnumUniverseViolation](JD017.en.md) | 🟠 Warning | on | An enum constraint names a value the type does not define — an undeclared numeric value, or an exclusion that empties the universe. |
-| [JD023 ScalarChainAdmitsNoValue](JD023.en.md) | 🟠 Warning | on | An integer chain's constant constraints narrow the domain to nothing — bounds, lattice or allow-list. |
+| [JD023 ScalarChainAdmitsNoValue](JD023.en.md) | 🟠 Warning | on | A chain's constant constraints narrow the domain to nothing — bounds, lattice or allow-list — on the integer, decimal and temporal generators. |
 | [JD024 ConstraintWithNoEffect](JD024.en.md) | 🔵 Info | on | A constraint narrows nothing: an exclusion of a value the domain could never produce, or a bound already implied. The only constraint family the run time never reports. |
 | [JD025 DuplicatePoolValue](JD025.en.md) | 🟠 Warning | on | The same constant is listed twice in a pool — a `OneOf` or `ElementOf` value set, or a `WithChars` character pool; duplicates collapse, so the pool is one value smaller than it reads and the duplicate weights nothing. |
 | [JD026 EmptyRelativeUri](JD026.en.md) | 🟠 Warning | on | A relative URI with zero path segments and no query, fragment or root is the empty reference — the one chain whose failure lands at act time rather than at the arrange line. |
@@ -84,6 +84,7 @@ These rules front-load, to build time, the subset of the library's run-time cons
 | [JD034 ConstraintAlreadyDefined](JD034.en.md) | 🟠 Warning | on | A chain redeclares a once-only constraint (a string's exact length, prefix or suffix, a character family, a casing, a value set, a multiple, a scale, a granularity, an offset, a collection's exact count, a URI's scheme, host, port, user info or path, a `Guid`'s emptiness), or combines a `WithChars` pool with a casing constraint. JD034 reports the incompatible declaration; an identical repetition is JD035's. |
 | [JD035 ConstraintRepeated](JD035.en.md) | 🟠 Warning | on | A chain declares a constraint again exactly as it already declared it — a once-only constraint with the same arguments, or an exclusion, a subtraction, a string's fragment or a toggle written twice, including a value listed twice in one `Except`. The library ignores the second declaration, so it changes nothing; bounds stay JD032's. |
 | [JD036 UndeclaredNumericRange](JD036.en.md) | 🔵 Info | on | An `Any.Double()`, `Any.Single()` or `Any.Decimal()` chain that declares no range bounded on both sides, so one draw in ten spans the whole type. Names `Between(...)` where you can act on it. |
+| [JD038 ScalarChainAdmitsOneValue](JD038.en.md) | 🟠 Warning | on | A chain's constant constraints admit exactly one value — `Between(5, 5)`, a floor and a ceiling that meet, a value set reduced to one value — so it draws a constant dressed as a draw. Names the literal, and `Any.Fixed` where a generator is required. |
 
 ## Composition
 

@@ -147,6 +147,7 @@ public sealed class AnyContinuousTests {
 
     [Fact(DisplayName = "Decimal: strict signs, pinned zero, contained bounds, and strict GreaterThan via exclusion.")]
     [SuppressMessage(JustDummiesRule.JD014.Category, JustDummiesRule.JD014.Id, Justification = SuppressionJustification.JD014.ThrowIsTheSubject)]
+    [SuppressMessage(JustDummiesRule.JD023.Category, JustDummiesRule.JD023.Id, Justification = SuppressionJustification.JD023.ThrowIsTheSubject)]
     public void DecimalBehaves() {
         for (int i = 0; i < SampleCount; i++) {
             Check.That(Any.Decimal().Positive().Generate()).IsStrictlyGreaterThan(0m);

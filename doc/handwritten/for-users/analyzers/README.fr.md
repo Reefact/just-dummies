@@ -3,7 +3,7 @@
 🌍 **Langues :**  
 🇬🇧 [English](./README.md) | 🇫🇷 Français (ce fichier)
 
-Le package `JustDummies` embarque 37 règles Roslyn (`JD001`–`JD037`), sous
+Le package `JustDummies` embarque 38 règles Roslyn (`JD001`–`JD038`), sous
 `analyzers/dotnet/cs`. Tout projet qui référence le package les récupère automatiquement, sans
 installation supplémentaire. Elles s'exécutent pendant la compilation et transforment en
 diagnostics de build des erreurs que l'exécution signalerait tard — ou jamais.
@@ -74,7 +74,7 @@ Ces règles anticipent, à la compilation, le sous-ensemble des vérifications d
 | [JD015 StringConstraintsAdmitNoValue](JD015.fr.md) | 🟠 Avertissement | on | Les contraintes constantes d'une chaîne `AnyString` n'admettent aucune valeur — deux longueurs déclarées qui se contredisent, des caractères déclarés qui ne laissent rien à tirer à une chaîne façonnée, une longueur déclarée dans laquelle la forme ne peut pas tenir, ou des contraintes qui, ensemble, n'admettent aucune valeur d'un value set. |
 | [JD016 CollectionConstraintsAdmitNoValue](JD016.fr.md) | 🟠 Avertissement | on | Les contraintes de cardinal d'une chaîne de collection ne peuvent pas toutes tenir, ou elle réclame plus d'éléments distincts que son générateur d'éléments ne peut en produire. |
 | [JD017 EnumUniverseViolation](JD017.fr.md) | 🟠 Avertissement | on | Une contrainte d'enum nomme une valeur que le type ne définit pas — une valeur numérique non déclarée, ou une exclusion qui vide l'univers. |
-| [JD023 ScalarChainAdmitsNoValue](JD023.fr.md) | 🟠 Avertissement | on | Les contraintes constantes d'une chaîne entière réduisent le domaine à rien — bornes, treillis ou liste d'autorisation. |
+| [JD023 ScalarChainAdmitsNoValue](JD023.fr.md) | 🟠 Avertissement | on | Les contraintes constantes d'une chaîne réduisent le domaine à rien — bornes, treillis ou liste d'autorisation — sur les générateurs entiers, décimal et temporels. |
 | [JD024 ConstraintWithNoEffect](JD024.fr.md) | 🔵 Info | on | Une contrainte ne rétrécit rien : exclusion d'une valeur que le domaine ne pouvait pas produire, ou borne déjà impliquée. La seule famille de contraintes que l'exécution ne signale jamais. |
 | [JD025 DuplicatePoolValue](JD025.fr.md) | 🟠 Avertissement | on | La même constante figure deux fois dans un réservoir — un ensemble de valeurs `OneOf` ou `ElementOf`, ou un réservoir de caractères `WithChars` ; les doublons sont éliminés, donc le réservoir est plus petit d'une valeur qu'il n'y paraît et le doublon ne pondère rien. |
 | [JD026 EmptyRelativeUri](JD026.fr.md) | 🟠 Avertissement | on | Une URI relative à zéro segment, sans requête, fragment ni racine est la référence vide — la seule chaîne dont l'échec atterrit au moment de l'act plutôt que sur la ligne d'arrange. |
@@ -86,6 +86,7 @@ Ces règles anticipent, à la compilation, le sous-ensemble des vérifications d
 | [JD034 ConstraintAlreadyDefined](JD034.fr.md) | 🟠 Avertissement | on | Une chaîne redéfinit une contrainte qui ne peut être déclarée qu'une seule fois (longueur exacte, préfixe ou suffixe d'une chaîne, famille de caractères, casse, ensemble de valeurs, multiple, échelle, granularité, décalage horaire, nombre exact d'éléments d'une collection, schéma, hôte, port, informations utilisateur ou chemin d'une URI, vacuité d'un `Guid`), ou combine `WithChars` avec une contrainte de casse. JD034 signale la seconde déclaration incompatible ; une répétition identique relève de JD035. |
 | [JD035 ConstraintRepeated](JD035.fr.md) | 🟠 Avertissement | on | Une chaîne déclare de nouveau une contrainte exactement comme elle l'a déjà déclarée — une contrainte à déclaration unique avec les mêmes arguments, ou une exclusion, une soustraction, un fragment de chaîne ou un interrupteur écrits deux fois, y compris une valeur listée deux fois dans un même `Except`. La bibliothèque ignore la seconde déclaration, qui ne change donc rien ; les bornes restent à JD032. |
 | [JD036 UndeclaredNumericRange](JD036.fr.md) | 🔵 Info | on | Une chaîne `Any.Double()`, `Any.Single()` ou `Any.Decimal()` qui ne déclare aucune plage bornée des deux côtés : un tirage sur dix couvre tout le type. Nomme `Between(...)` là où vous pouvez agir. |
+| [JD038 ScalarChainAdmitsOneValue](JD038.fr.md) | 🟠 Avertissement | on | Les contraintes constantes d'une chaîne n'admettent qu'une seule valeur — `Between(5, 5)`, un plancher et un plafond qui se rejoignent, un ensemble de valeurs réduit à une — et elle tire donc une constante déguisée en tirage. Nomme le littéral, et `Any.Fixed` là où un générateur est requis. |
 
 ## Composition
 

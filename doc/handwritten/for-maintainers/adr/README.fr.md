@@ -284,4 +284,4 @@ que l'option existait le jour où elle compterait.
 | [ADR-0125](0125-let-a-time-of-day-window-cross-midnight.fr.md) | Laisser une fenêtre horaire franchir minuit | Accepted | consigné ici |
 | [ADR-0126](0126-draw-two-values-tied-by-an-order.fr.md) | Tirer deux valeurs liées par un ordre | Accepted | consigné ici |
 | [ADR-0127](0127-draw-the-empty-value-unless-a-guard-refuses-it.fr.md) | Tirer la valeur vide sauf si une garde la refuse | Accepted | consigné ici |
-| [ADR-0128](0128-read-a-disjunction-guard-as-one-guard-per-branch.fr.md) | Lire une garde disjonctive comme une garde par branche | Proposed | consigné ici |
+| [ADR-0128](0128-read-a-disjunction-guard-as-one-guard-per-branch.fr.md) | Lire une garde disjonctive comme une garde par branche | Accepted | consigné ici |

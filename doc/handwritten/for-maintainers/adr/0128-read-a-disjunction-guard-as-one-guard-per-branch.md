@@ -2,8 +2,9 @@
 
 🌍 🇬🇧 English (this file) · 🇫🇷 [Français](0128-read-a-disjunction-guard-as-one-guard-per-branch.fr.md)
 
-**Status:** Proposed
+**Status:** Accepted
 **Proposed:** 2026-11-02
+**Accepted:** 2026-11-02
 **Decision Makers:** Reefact
 
 > Section references (§N) point into the [`any` specification](../specifications/justdummies-tool.md).

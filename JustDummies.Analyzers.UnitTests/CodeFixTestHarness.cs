@@ -22,12 +22,17 @@ internal static class CodeFixTestHarness {
         return actions.Select(action => action.Title).ToList();
     }
 
-    /// <summary>The source once the one action <paramref name="fix" /> offers for the first fixable diagnostic is applied.</summary>
-    public static async Task<string> ApplyAsync(DiagnosticAnalyzer analyzer, CodeFixProvider fix, string source) {
+    /// <summary>
+    ///     The source once the action <paramref name="fix" /> offers for the first fixable diagnostic is applied: the one
+    ///     it offers, or the one titled <paramref name="title" /> where it offers a choice.
+    /// </summary>
+    public static async Task<string> ApplyAsync(DiagnosticAnalyzer analyzer, CodeFixProvider fix, string source, string? title = null) {
         (Document document, List<CodeAction> actions) = await RegisterAsync(analyzer, fix, source);
-        if (actions.Count != 1) { throw new InvalidOperationException($"The fix offers {actions.Count} action(s) where one was expected: {string.Join(" | ", actions.Select(action => action.Title))}"); }
+        if (title is null && actions.Count != 1) { throw new InvalidOperationException($"The fix offers {actions.Count} action(s) where one was expected: {string.Join(" | ", actions.Select(action => action.Title))}"); }
 
-        ImmutableArray<CodeActionOperation> operations = await actions[0].GetOperationsAsync(CancellationToken.None);
+        CodeAction chosen = title is null ? actions[0] : actions.Single(action => action.Title == title);
+
+        ImmutableArray<CodeActionOperation> operations = await chosen.GetOperationsAsync(CancellationToken.None);
         ApplyChangesOperation              applied    = operations.OfType<ApplyChangesOperation>().Single();
         Document                           changed    = applied.ChangedSolution.GetDocument(document.Id)!;
 
@@ -37,8 +42,11 @@ internal static class CodeFixTestHarness {
     private static async Task<(Document Document, List<CodeAction> Actions)> RegisterAsync(DiagnosticAnalyzer analyzer, CodeFixProvider fix, string source) {
         using AdhocWorkspace workspace = new();
 
+        // A rule that is off by default (JD011) is switched on, as the consumer who wants its fix will have done.
+        ImmutableDictionary<string, ReportDiagnostic> enabled = fix.FixableDiagnosticIds.ToImmutableDictionary(id => id, _ => ReportDiagnostic.Warn);
+
         Project project = workspace.AddProject("JustDummies.Analyzers.TestSnippet", LanguageNames.CSharp)
-                                   .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary))
+                                   .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary).WithSpecificDiagnosticOptions(enabled))
                                    .WithParseOptions(new CSharpParseOptions(LanguageVersion.Latest))
                                    .WithMetadataReferences(AnalyzerTestHarness.References);
         Document document = project.AddDocument("Sample.cs", source);

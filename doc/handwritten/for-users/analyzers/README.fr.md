@@ -14,10 +14,17 @@ satisfont les mêmes signatures ; une graine épinglée hors de sa portée compi
 jeu de contraintes qui n'admet aucune valeur est une chaîne parfaitement bien typée. Chaque
 règle ferme l'une de ces brèches.
 
-Trois règles s'accompagnent d'un **correctif de code**, proposé par l'IDE à côté du diagnostic : [JD024](JD024.fr.md)
-retire la contrainte qui ne restreint rien, [JD014](JD014.fr.md) échange une paire transposée, [JD031](JD031.fr.md)
-écrit deux bornes comme leur plage. Une règle ne reçoit un correctif que là où exactement une réécriture garde ce
-que vous vouliez ([ADR-0130](../../for-maintainers/adr/0130-ship-code-fixes-beside-the-analyzers.fr.md)) ; les
+Treize règles s'accompagnent d'un **correctif de code**, proposé par l'IDE à côté du diagnostic. Quatre retirent
+ce qui ne change rien : [JD024](JD024.fr.md) la contrainte qui ne restreint rien, [JD032](JD032.fr.md) la plus lâche
+de deux bornes, [JD035](JD035.fr.md) la déclaration qui en répète une antérieure, [JD025](JD025.fr.md) la valeur
+qu'un pool liste deux fois. Quatre réécrivent un appel : [JD014](JD014.fr.md) échange une paire transposée,
+[JD031](JD031.fr.md) écrit deux bornes comme leur plage, [JD013](JD013.fr.md) tire dans une collection détenue
+avec `ElementOf`, [JD005](JD005.fr.md) et [JD011](JD011.fr.md) appellent `Generate()` là où la recette atteignait
+un texte ou un `object`. [JD001](JD001.fr.md) et [JD002](JD002.fr.md) attendent `ReproduciblyAsync` dans une
+fonction `async`, [JD027](JD027.fr.md) nomme `_` le paramètre non lu. Deux proposent un choix, la règle ne pouvant
+dire ce qui était voulu : [JD010](JD010.fr.md) retire `[Reproducible]` ou ajoute `[Fact]`, [JD004](JD004.fr.md)
+tient la portée de graine ou capture le contexte. Une règle ne reçoit un correctif que là où la réécriture garde
+ce que vous vouliez ([ADR-0130](../../for-maintainers/adr/0130-ship-code-fixes-beside-the-analyzers.fr.md)) ; les
 correctifs voyagent dans le même dossier du paquet que les règles.
 
 Chaque règle a un identifiant stable. Les erreurs sont des défauts durs ; les avertissements

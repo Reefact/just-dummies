@@ -5,8 +5,8 @@ using NFluent;
 namespace JustDummies.Analyzers.UnitTests;
 
 /// <summary>
-///     The first batch of code fixes (ADR-0130): one of each shape — a removal, an argument swap, a rewrite — so the
-///     first fix sets the pattern for the others. Each is checked by the source it produces, whole.
+///     The code fixes (ADR-0130), each checked by the source it produces, whole. The first batch set the pattern — a
+///     removal, an argument swap, a rewrite — and the rest follow it, two of them offering a choice of two actions.
 /// </summary>
 public class CodeFixTests {
 
@@ -90,6 +90,250 @@ public class CodeFixTests {
         Check.That(removal).ContainsExactly("Remove Except(20), which narrows nothing");
         Check.That(swap).ContainsExactly("Swap the two arguments");
         Check.That(range).ContainsExactly("Write the range as Between(1, 50)");
+    }
+
+    [Theory]
+    [InlineData("Any.OneOf(1, 2, 1)",                                "Any.OneOf(1, 2)")]
+    [InlineData("Any.OneOf(\"EUR\", \"USD\", \"EUR\")",             "Any.OneOf(\"EUR\", \"USD\")")]
+    [InlineData("Any.Int32().OneOf(3, 3)",                           "Any.Int32().OneOf(3)")]
+    [InlineData("Any.String().OneOf([\"a\", \"b\", \"a\"])",         "Any.String().OneOf([\"a\", \"b\"])")]
+    [InlineData("Any.String().WithChars(\"abca\").WithLength(4)",    "Any.String().WithChars(\"abc\").WithLength(4)")]
+    [InlineData("Any.String().WithChars(\"aab\").WithLength(4)",     "Any.String().WithChars(\"ab\").WithLength(4)")]
+    public async Task JD025_removes_the_value_listed_twice(string chain, string fixed_) {
+        string rewritten = await CodeFixTestHarness.ApplyAsync(new DuplicatePoolValueAnalyzer(), new DuplicatePoolValueCodeFix(), Source(chain));
+
+        Check.That(rewritten).IsEqualTo(Source(fixed_));
+    }
+
+    [Theory]
+    [InlineData("Any.String().WithChars(\"a\\tb\\t\").WithLength(4)")]
+    [InlineData("Any.String().WithChars(@\"abca\").WithLength(4)")]
+    public async Task JD025_offers_nothing_where_the_repeated_character_cannot_be_placed(string chain) {
+        // An escape or a verbatim literal breaks the one-column-per-character reading the rule places its diagnostic
+        // by, so the rule covers the whole literal and the fix, which would have to guess which character, stays away.
+        IReadOnlyList<string> offered = await CodeFixTestHarness.OffersAsync(new DuplicatePoolValueAnalyzer(), new DuplicatePoolValueCodeFix(), Source(chain));
+
+        Check.That(offered).IsEmpty();
+    }
+
+    [Theory]
+    [InlineData("Any.String().WithMinLength(8).WithMinLength(10).Generate()",     "Any.String().WithMinLength(10).Generate()")]
+    // The looser bound goes whichever order the two were written in: the second here, the first above.
+    [InlineData("Any.String().WithMinLength(10).WithMinLength(8).Generate()",     "Any.String().WithMinLength(10).Generate()")]
+    [InlineData("Any.Int32().LessThanOrEqualTo(90).LessThanOrEqualTo(50)",        "Any.Int32().LessThanOrEqualTo(50)")]
+    [InlineData("Any.Int32().GreaterThanOrEqualTo(1).Positive().GreaterThanOrEqualTo(5)", "Any.Int32().Positive().GreaterThanOrEqualTo(5)")]
+    [InlineData("Any.ListOf(Any.Int32()).WithMaxCount(9).WithMaxCount(5).Generate()", "Any.ListOf(Any.Int32()).WithMaxCount(5).Generate()")]
+    [InlineData("Any.Double().GreaterThanOrEqualTo(1.5).GreaterThanOrEqualTo(2.5)", "Any.Double().GreaterThanOrEqualTo(2.5)")]
+    [InlineData("Any.DateTime().AfterOrEqualTo(DateTime.MinValue).AfterOrEqualTo(new DateTime(2026, 1, 1))", "Any.DateTime().AfterOrEqualTo(new DateTime(2026, 1, 1))")]
+    // Two equal bounds: the second is the one removed, so the chain reads as it was first written.
+    [InlineData("Any.Int32().LessThanOrEqualTo(50).LessThanOrEqualTo(50)",        "Any.Int32().LessThanOrEqualTo(50)")]
+    public async Task JD032_removes_the_looser_of_the_two_bounds(string chain, string fixed_) {
+        string rewritten = await CodeFixTestHarness.ApplyAsync(new BoundDeclaredTwiceAnalyzer(), new BoundDeclaredTwiceCodeFix(), Source(chain));
+
+        Check.That(rewritten).IsEqualTo(Source(fixed_));
+    }
+
+    [Theory]
+    [InlineData("Any.Int32().GreaterThanOrEqualTo(bound).GreaterThanOrEqualTo(5)")]
+    [InlineData("Any.Int32().GreaterThanOrEqualTo(Bounds.Minimum()).GreaterThanOrEqualTo(5)")]
+    [InlineData("Any.DateTime().AfterOrEqualTo(DateTime.Now).AfterOrEqualTo(DateTime.MinValue)")]
+    public async Task JD032_offers_nothing_where_it_cannot_tell_which_bound_is_looser(string chain) {
+        // The rule still reports the pair; which of the two the run time keeps is only known once both arguments fold.
+        IReadOnlyList<string> offered = await CodeFixTestHarness.OffersAsync(new BoundDeclaredTwiceAnalyzer(), new BoundDeclaredTwiceCodeFix(), Source(chain));
+
+        Check.That(offered).IsEmpty();
+    }
+
+    [Theory]
+    [InlineData("Any.String().Alpha().Alpha()",                                 "Any.String().Alpha()")]
+    [InlineData("Any.String().WithLength(4).NonEmpty().WithLength(4)",          "Any.String().WithLength(4).NonEmpty()")]
+    [InlineData("Any.Int32().Even().MultipleOf(2)",                             "Any.Int32().Even()")]
+    [InlineData("Any.String().OneOf(\"a\", \"b\").OneOf(\"b\", \"a\", \"a\")", "Any.String().OneOf(\"a\", \"b\")")]
+    [InlineData("Any.String().Alpha().Alpha().Generate()",                      "Any.String().Alpha().Generate()")]
+    public async Task JD035_removes_the_call_that_repeats_an_earlier_declaration(string chain, string fixed_) {
+        string rewritten = await CodeFixTestHarness.ApplyAsync(new ConstraintRepeatedAnalyzer(), new ConstraintRepeatedCodeFix(), Source(chain));
+
+        Check.That(rewritten).IsEqualTo(Source(fixed_));
+    }
+
+    [Theory]
+    [InlineData("Any.OneOf(references)", "Any.ElementOf(references)")]
+    [InlineData("Any.OneOf(ids.Where(id => id > 1))", "Any.ElementOf(ids.Where(id => id > 1))")]
+    public async Task JD013_draws_an_element_of_the_held_collection(string chain, string fixed_) {
+        string rewritten = await CodeFixTestHarness.ApplyAsync(new HeldCollectionPassedToOneOfAnalyzer(), new HeldCollectionPassedToOneOfCodeFix(), Statement($"_ = {chain};"));
+
+        Check.That(rewritten).IsEqualTo(Statement($"_ = {fixed_};"));
+    }
+
+    [Theory]
+    [InlineData("_ = $\"order {Any.String().NonEmpty()}\";",     "_ = $\"order {Any.String().NonEmpty().Generate()}\";")]
+    [InlineData("_ = \"order \" + Any.String().NonEmpty();",     "_ = \"order \" + Any.String().NonEmpty().Generate();")]
+    [InlineData("_ = Any.String().NonEmpty().ToString();",        "_ = Any.String().NonEmpty().Generate().ToString();")]
+    public async Task JD005_generates_the_value_that_reaches_the_text(string statement, string fixed_) {
+        string rewritten = await CodeFixTestHarness.ApplyAsync(new GeneratorRenderedAsTextAnalyzer(), new GenerateTheValueCodeFix(), Statement(statement));
+
+        Check.That(rewritten).IsEqualTo(Statement(fixed_));
+    }
+
+    [Theory]
+    [InlineData("Assert.NotNull(Any.String().NonEmpty());",          "Assert.NotNull(Any.String().NonEmpty().Generate());")]
+    [InlineData("object boxed = Any.Int32().Positive();",            "object boxed = Any.Int32().Positive().Generate();")]
+    [InlineData("_ = new object[] { Any.Int32().Positive(), 1 };",   "_ = new object[] { Any.Int32().Positive().Generate(), 1 };")]
+    public async Task JD011_generates_the_value_where_an_object_was_expected(string statement, string fixed_) {
+        string rewritten = await CodeFixTestHarness.ApplyAsync(new GeneratorWhereValueExpectedAnalyzer(), new GenerateTheValueCodeFix(), Statement(statement));
+
+        Check.That(rewritten).IsEqualTo(Statement(fixed_));
+    }
+
+    [Theory]
+    [InlineData("Any.ReproduciblyAsync(async () => { await Task.Yield(); });",     "await Any.ReproduciblyAsync(async () => { await Task.Yield(); });")]
+    [InlineData("_ = Any.ReproduciblyAsync(async () => { await Task.Yield(); });", "await Any.ReproduciblyAsync(async () => { await Task.Yield(); });")]
+    public async Task JD002_awaits_the_discarded_task(string statement, string fixed_) {
+        string rewritten = await CodeFixTestHarness.ApplyAsync(new DiscardedReproduciblyAsyncResultAnalyzer(), new DiscardedReproduciblyAsyncResultCodeFix(), AsyncStatement(statement));
+
+        Check.That(rewritten).IsEqualTo(AsyncStatement(fixed_));
+    }
+
+    [Theory]
+    [InlineData("Any.Reproducibly(async () => { await Task.Yield(); });",     "await Any.ReproduciblyAsync(async () => { await Task.Yield(); });")]
+    [InlineData("Any.Reproducibly(42, async () => { await Task.Yield(); });", "await Any.ReproduciblyAsync(42, async () => { await Task.Yield(); });")]
+    public async Task JD001_hands_the_body_to_the_asynchronous_entry_point(string statement, string fixed_) {
+        string rewritten = await CodeFixTestHarness.ApplyAsync(new AsyncBodyPassedToReproduciblyAnalyzer(), new AsyncBodyPassedToReproduciblyCodeFix(), AsyncStatement(statement));
+
+        Check.That(rewritten).IsEqualTo(AsyncStatement(fixed_));
+    }
+
+    [Fact]
+    public async Task JD001_and_JD002_offer_nothing_outside_an_async_function() {
+        // Awaiting needs the enclosing function to be async, and making it so changes its signature: a decision the
+        // developer takes, not the fix.
+        IReadOnlyList<string> discarded = await CodeFixTestHarness.OffersAsync(new DiscardedReproduciblyAsyncResultAnalyzer(), new DiscardedReproduciblyAsyncResultCodeFix(), Statement("Any.ReproduciblyAsync(async () => { await Task.Yield(); });"));
+        IReadOnlyList<string> bound     = await CodeFixTestHarness.OffersAsync(new AsyncBodyPassedToReproduciblyAnalyzer(), new AsyncBodyPassedToReproduciblyCodeFix(), Statement("Any.Reproducibly(async () => { await Task.Yield(); });"));
+
+        Check.That(discarded).IsEmpty();
+        Check.That(bound).IsEmpty();
+    }
+
+    [Theory]
+    [InlineData("_ = Any.Combine(Any.Int32(), Any.String(), (number, text) => number);",                     "_ = Any.Combine(Any.Int32(), Any.String(), (number, _) => number);")]
+    // The first operand reported is the first one fixed; the other stays reported for its own fix.
+    [InlineData("_ = Any.Combine(Any.Int32(), Any.String(), Any.Boolean(), (number, text, flag) => number);", "_ = Any.Combine(Any.Int32(), Any.String(), Any.Boolean(), (number, _, flag) => number);")]
+    public async Task JD027_names_the_parameter_the_operand_binds_to_as_a_discard(string statement, string fixed_) {
+        string rewritten = await CodeFixTestHarness.ApplyAsync(new UnusedCombineOperandAnalyzer(), new UnusedCombineOperandCodeFix(), Statement(statement));
+
+        Check.That(rewritten).IsEqualTo(Statement(fixed_));
+    }
+
+    [Fact]
+    public async Task JD010_offers_to_remove_the_attribute_or_to_make_the_method_a_test() {
+        string source = Helper("[Reproducible]", "using Xunit;");
+
+        string removed = await CodeFixTestHarness.ApplyAsync(new ReproducibleOnNonTestMethodAnalyzer(), new ReproducibleOnNonTestMethodCodeFix(), source, "Remove [Reproducible]");
+        string tested  = await CodeFixTestHarness.ApplyAsync(new ReproducibleOnNonTestMethodAnalyzer(), new ReproducibleOnNonTestMethodCodeFix(), source, "Make it a test with [Fact]");
+
+        Check.That(removed).IsEqualTo(Helper("", "using Xunit;"));
+        Check.That(tested).IsEqualTo(Helper("[Reproducible]\n    [Fact]", "using Xunit;"));
+    }
+
+    [Fact]
+    public async Task JD010_qualifies_Fact_where_Xunit_is_not_imported() {
+        string tested = await CodeFixTestHarness.ApplyAsync(new ReproducibleOnNonTestMethodAnalyzer(), new ReproducibleOnNonTestMethodCodeFix(), Helper("[Reproducible]", ""), "Make it a test with [Fact]");
+
+        Check.That(tested).IsEqualTo(Helper("[Reproducible]\n    [Xunit.Fact]", ""));
+    }
+
+    [Fact]
+    public async Task JD010_removes_only_the_attribute_where_it_shares_its_list() {
+        string removed = await CodeFixTestHarness.ApplyAsync(new ReproducibleOnNonTestMethodAnalyzer(), new ReproducibleOnNonTestMethodCodeFix(), Helper("[Obsolete, Reproducible]", "using Xunit;"), "Remove [Reproducible]");
+
+        Check.That(removed).IsEqualTo(Helper("[Obsolete]", "using Xunit;"));
+    }
+
+    [Theory]
+    [InlineData("Any.UseSeed(1234);",      "Hold the handle in a using declaration",            "using IDisposable seedScope = Any.UseSeed(1234);")]
+    [InlineData("Any.UseSeed(1234);",      "Draw from an isolated context with Any.WithSeed",   "AnyContext context = Any.WithSeed(1234);")]
+    [InlineData("_ = Any.UseSeed(1234);",  "Hold the handle in a using declaration",            "using IDisposable seedScope = Any.UseSeed(1234);")]
+    [InlineData("Any.WithSeed(1234);",     "Capture the context to draw from it",               "AnyContext context = Any.WithSeed(1234);")]
+    [InlineData("Any.WithSeed(1234);",     "Pin the ambient source with Any.UseSeed",           "using IDisposable seedScope = Any.UseSeed(1234);")]
+    public async Task JD004_offers_the_two_readings_of_a_discarded_seeding(string statement, string title, string fixed_) {
+        string rewritten = await CodeFixTestHarness.ApplyAsync(new DiscardedSeedingResultAnalyzer(), new DiscardedSeedingResultCodeFix(), Statement(statement), title);
+
+        Check.That(rewritten).IsEqualTo(Statement(fixed_));
+    }
+
+    [Fact]
+    public async Task JD004_keeps_a_replay_snippet_in_the_pinned_scope_only() {
+        // UseSeed with a replay snippet has no WithSeed twin: the one reading left is the scope that was meant.
+        string source = Statement("Any.UseSeed(1234, \"[Reproducible(Seed = 1234)]\");", importsSystem: false);
+
+        IReadOnlyList<string> offered   = await CodeFixTestHarness.OffersAsync(new DiscardedSeedingResultAnalyzer(), new DiscardedSeedingResultCodeFix(), source);
+        string                rewritten = await CodeFixTestHarness.ApplyAsync(new DiscardedSeedingResultAnalyzer(), new DiscardedSeedingResultCodeFix(), source);
+
+        Check.That(offered).ContainsExactly("Hold the handle in a using declaration");
+        Check.That(rewritten).IsEqualTo(Statement("using System.IDisposable seedScope = Any.UseSeed(1234, \"[Reproducible(Seed = 1234)]\");", importsSystem: false));
+    }
+
+    [Fact]
+    public async Task A_choice_is_offered_as_two_actions_with_their_own_titles() {
+        IReadOnlyList<string> reproducible = await CodeFixTestHarness.OffersAsync(new ReproducibleOnNonTestMethodAnalyzer(), new ReproducibleOnNonTestMethodCodeFix(), Helper("[Reproducible]", "using Xunit;"));
+        IReadOnlyList<string> seeding      = await CodeFixTestHarness.OffersAsync(new DiscardedSeedingResultAnalyzer(), new DiscardedSeedingResultCodeFix(), Statement("Any.UseSeed(1234);"));
+        IReadOnlyList<string> looser       = await CodeFixTestHarness.OffersAsync(new BoundDeclaredTwiceAnalyzer(), new BoundDeclaredTwiceCodeFix(), Source("Any.String().WithMinLength(8).WithMinLength(10)"));
+        IReadOnlyList<string> repeated     = await CodeFixTestHarness.OffersAsync(new ConstraintRepeatedAnalyzer(), new ConstraintRepeatedCodeFix(), Source("Any.String().Alpha().Alpha()"));
+        IReadOnlyList<string> operand      = await CodeFixTestHarness.OffersAsync(new UnusedCombineOperandAnalyzer(), new UnusedCombineOperandCodeFix(), Statement("_ = Any.Combine(Any.Int32(), Any.String(), (number, text) => number);"));
+
+        Check.That(reproducible).ContainsExactly("Remove [Reproducible]", "Make it a test with [Fact]");
+        Check.That(seeding).ContainsExactly("Hold the handle in a using declaration", "Draw from an isolated context with Any.WithSeed");
+        Check.That(looser).ContainsExactly("Remove WithMinLength(8), the looser declaration");
+        Check.That(repeated).ContainsExactly("Remove Alpha(), which repeats an earlier declaration");
+        Check.That(operand).ContainsExactly("Name the parameter 'text' '_' to say the draw is deliberate");
+    }
+
+    /// <summary>A statement inside an ordinary method, with the usings and the helpers the lifecycle rules' shapes need.</summary>
+    private static string Statement(string statement, bool importsSystem = true) {
+        return Method("void", statement, importsSystem);
+    }
+
+    /// <summary>The same statement inside an <c>async</c> method, for the fixes that await.</summary>
+    private static string AsyncStatement(string statement) {
+        return Method("async Task", statement, importsSystem: true);
+    }
+
+    private static string Method(string signature, string statement, bool importsSystem) {
+        string system = importsSystem ? "using System;" : "";
+
+        return $$"""
+            {{system}}
+            using System.Collections.Generic;
+            using System.Linq;
+            using System.Threading.Tasks;
+            using JustDummies;
+
+            public static class Assert {
+                public static void NotNull(object value) { }
+            }
+
+            public static class Sample {
+                public static {{signature}} M(List<string> references, List<int> ids) {
+                    {{statement}}
+                }
+            }
+            """;
+    }
+
+    /// <summary>A helper method of a test class, carrying <paramref name="attributes" /> on its own line.</summary>
+    private static string Helper(string attributes, string xunit) {
+        string lines = attributes.Length == 0 ? "" : attributes + "\n    ";
+
+        return $$"""
+            using System;
+            using JustDummies;
+            using JustDummies.Xunit;
+            {{xunit}}
+
+            public class Sample {
+                {{lines}}private string Arrange() => Any.String().NonEmpty().Generate();
+            }
+            """;
     }
 
     private static string Source(string expression) {

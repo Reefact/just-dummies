@@ -29,6 +29,81 @@ internal static class ChainEdits {
         return link.WithExpression(renamed).WithArgumentList(SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(arguments)).WithTriviaFrom(link.ArgumentList));
     }
 
+    /// <summary>
+    ///     The list with the element the diagnostic points at taken out: an argument of a call, an element of a
+    ///     collection expression or of an array initializer. <c>null</c> when the node is none of these.
+    /// </summary>
+    public static SyntaxNode? WithoutElement(SyntaxNode root, SyntaxNode node) {
+        for (SyntaxNode? current = node; current is not null; current = current.Parent) {
+            switch (current) {
+                case ArgumentSyntax argument when argument.Parent is ArgumentListSyntax arguments:
+                    return root.ReplaceNode(arguments, arguments.RemoveNode(argument, SyntaxRemoveOptions.KeepNoTrivia)!);
+                case ExpressionElementSyntax element when element.Parent is CollectionExpressionSyntax collection:
+                    return root.ReplaceNode(collection, collection.RemoveNode(element, SyntaxRemoveOptions.KeepNoTrivia)!);
+                case ExpressionSyntax expression when expression.Parent is InitializerExpressionSyntax initializer:
+                    return root.ReplaceNode(initializer, initializer.RemoveNode(expression, SyntaxRemoveOptions.KeepNoTrivia)!);
+                case InvocationExpressionSyntax or StatementSyntax or MemberDeclarationSyntax:
+                    return null;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    ///     <paramref name="expression" /> with <c>.Generate()</c> called on it — the value where the recipe stood.
+    ///     An operand the call could not bind to as written is parenthesized first.
+    /// </summary>
+    public static SyntaxNode Generated(SyntaxNode root, ExpressionSyntax expression) {
+        ExpressionSyntax operand = expression.WithoutTrivia();
+        if (operand is not (IdentifierNameSyntax or MemberAccessExpressionSyntax or InvocationExpressionSyntax or ElementAccessExpressionSyntax or ParenthesizedExpressionSyntax or ObjectCreationExpressionSyntax or ThisExpressionSyntax)) {
+            operand = SyntaxFactory.ParenthesizedExpression(operand);
+        }
+
+        InvocationExpressionSyntax generated = SyntaxFactory.InvocationExpression(
+            SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, operand, SyntaxFactory.IdentifierName("Generate")));
+
+        return root.ReplaceNode(expression, generated.WithTriviaFrom(expression));
+    }
+
+    /// <summary>The call renamed <paramref name="name" />, however its member is spelled — <c>Any.OneOf</c>, <c>OneOf</c> under a static using, <c>context?.OneOf</c>.</summary>
+    public static InvocationExpressionSyntax? RenamedMember(InvocationExpressionSyntax call, string name) {
+        ExpressionSyntax? expression = call.Expression switch {
+            MemberAccessExpressionSyntax access   => access.WithName(SyntaxFactory.IdentifierName(name).WithTriviaFrom(access.Name)),
+            MemberBindingExpressionSyntax binding => binding.WithName(SyntaxFactory.IdentifierName(name).WithTriviaFrom(binding.Name)),
+            IdentifierNameSyntax identifier       => SyntaxFactory.IdentifierName(name).WithTriviaFrom(identifier),
+            _                                     => null
+        };
+
+        return expression is null ? null : call.WithExpression(expression);
+    }
+
+    /// <summary>Whether the function the node sits in is declared <c>async</c>: the nearest lambda, local function or method.</summary>
+    public static bool IsInAsyncFunction(SyntaxNode node) {
+        for (SyntaxNode? current = node.Parent; current is not null; current = current.Parent) {
+            switch (current) {
+                case AnonymousFunctionExpressionSyntax lambda:      return lambda.AsyncKeyword.IsKind(SyntaxKind.AsyncKeyword);
+                case LocalFunctionStatementSyntax local:            return local.Modifiers.Any(SyntaxKind.AsyncKeyword);
+                case MethodDeclarationSyntax method:                return method.Modifiers.Any(SyntaxKind.AsyncKeyword);
+                case BaseTypeDeclarationSyntax or CompilationUnitSyntax: return false;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    ///     The statement that throws the call's result away, as JD002 and JD004 read it: the call standing alone,
+    ///     or assigned to the discard. <c>null</c> for any other use.
+    /// </summary>
+    public static ExpressionStatementSyntax? DiscardingStatement(InvocationExpressionSyntax call) {
+        return call.Parent switch {
+            ExpressionStatementSyntax statement => statement,
+            AssignmentExpressionSyntax { Left: IdentifierNameSyntax { Identifier.ValueText: "_" }, Parent: ExpressionStatementSyntax statement } => statement,
+            _ => null
+        };
+    }
+
     /// <summary>The invocation the diagnostic at <paramref name="span" /> sits on — the innermost one containing the span.</summary>
     public static InvocationExpressionSyntax? InvocationAt(SyntaxNode root, Microsoft.CodeAnalysis.Text.TextSpan span) {
         return root.FindNode(span, getInnermostNodeForTie: true).FirstAncestorOrSelf<InvocationExpressionSyntax>();

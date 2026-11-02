@@ -21,7 +21,8 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   the scaffold draws both through `Any.OrderedPair` instead of marking them `to verify`, so the order holds by
   construction and a later `--force` loses nothing. `WithStart(…)` and `WithEnd(…)` keep their meaning: a pin on
   one side bounds the other and survives a refinement of it, and two pins out of order are refused at the second
-  call. Every other rule between parameters — computed, across types, or a chain of three — is still marked `to
+  call. Every other rule between parameters — computed, across types, a chain of three, or an order whose pair
+  would redeclare a name the file already has — is still marked `to
   verify`, and the CLI page now says how to write it in `Generate()`. A pair is drawn ahead of the construction, so
   a generator re-scaffolded with `--force` draws its other parameters from different positions of the same seed
   (ADR-0049 permits it below 1.0) (issue #405).

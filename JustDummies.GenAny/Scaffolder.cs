@@ -129,7 +129,7 @@ public static class Scaffolder {
         GeneratorFor generators    = new(library, names, options.Naming);
         GuardReading guards        = Guards.Read(chosen, compilation, names);
 
-        KeepTheTiesItCanDraw(chosen, target, guards, generators, library);
+        KeepTheTiesItCanDraw(chosen, target, TypeNaming.GeneratorNameFor(target, options.Naming), guards, generators, library);
 
         string targetName = names.Of(target);
 
@@ -223,25 +223,29 @@ public static class Scaffolder {
     /// </summary>
     /// <remarks>
     ///     A pair is drawn when the library carries <c>Any.OrderedPair</c> over the generator both parameters
-    ///     draw from, and when neither parameter is held by another order: a chain <c>a ≤ b ≤ c</c> is a relation
-    ///     among three, which the engine does not try to solve (ADR-0046).
+    ///     draw from, when neither parameter is held by another order — a chain <c>a ≤ b ≤ c</c> is a relation
+    ///     among three, which the engine does not try to solve (ADR-0046) — and when the identifiers it adds to the
+    ///     file are free (<see cref="PairNames" />).
     /// </remarks>
     private static void KeepTheTiesItCanDraw(IMethodSymbol chosen,
                                              INamedTypeSymbol target,
+                                             string generatorName,
                                              GuardReading guards,
                                              GeneratorFor generators,
                                              LibrarySurface library) {
         // Counted on what was read, not on what is left: untying one order of a chain must not leave the next
-        // one looking alone.
-        List<(OrderedPairing Pairing, UnreadGuard At)> read = [.. guards.Ties];
+        // one looking alone, or its names looking free.
+        List<(OrderedPairing Pairing, UnreadGuard At)> read     = [.. guards.Ties];
+        HashSet<string>                                declared = PairNames.Declared(chosen.Parameters.Select(parameter => parameter.Name), generatorName);
 
         foreach ((OrderedPairing pairing, UnreadGuard at) in read) {
-            bool alone = read.Count(tie => tie.Pairing.Ties(pairing.First) || tie.Pairing.Ties(pairing.Second)) == 1;
+            bool alone    = read.Count(tie => tie.Pairing.Ties(pairing.First) || tie.Pairing.Ties(pairing.Second)) == 1;
+            bool nameable = !PairNames.Collides(pairing, declared, read.Select(tie => tie.Pairing));
 
             IParameterSymbol first = chosen.Parameters.First(parameter => parameter.Name == pairing.First);
             DrawnGenerator   drawn = generators.Draw(first.Type, target);
 
-            if (!alone || !drawn.Resolved || !library.CarriesOrderedPair(drawn.Builder)) { guards.Untie(pairing, at); }
+            if (!alone || !nameable || !drawn.Resolved || !library.CarriesOrderedPair(drawn.Builder)) { guards.Untie(pairing, at); }
         }
     }
 

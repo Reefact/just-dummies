@@ -174,27 +174,54 @@ public sealed class OrderedPairTests {
         Check.That((string?)probes.GetMethod("PinsOutOfOrder")!.Invoke(null, [])).IsNotNull();
     }
 
+    // A pair adds four identifiers to the file, derived from the two parameter names, and a parameter can already
+    // declare one of them — or two pairs can synthesise one. Such a scaffold declared a field twice (CS0102), so the
+    // order is left to verify instead, as any order the engine does not draw.
+    [Theory(DisplayName = "An order whose pair would redeclare an identifier the file has is marked, and the file compiles.")]
+    [InlineData("int start, int end, int startAndEnd", "if (start > end) { throw new ArgumentException(nameof(start)); }", 2)]
+    [InlineData("int start, int end, int startPin", "if (start > end) { throw new ArgumentException(nameof(start)); }", 2)]
+    [InlineData("int a, int bAndC, int aAndB, int c", "if (a > bAndC) { throw new ArgumentException(nameof(a)); } if (aAndB > c) { throw new ArgumentException(nameof(c)); }", 4)]
+    public void AnOrderWhosePairWouldRedeclareAnIdentifierIsMarked(string parameters, string body, int marked) {
+        string          source  = SubjectWith(parameters, body);
+        ScaffoldOutcome outcome = Scaffolded(source);
+
+        Check.That(outcome.Plan!.Pairings).IsEmpty();
+        Check.That(outcome.Plan.Parameters.Count(parameter => parameter.RequiresVerification)).IsEqualTo(marked);
+
+        CSharpCompilation compiled = EmittedCodeCompiler.CompileWith(VerifySentinel.StrippedFrom(outcome.File!.SourceText), source);
+
+        Check.That(EmittedCodeCompiler.ErrorsIn(compiled)).IsEmpty();
+    }
+
     /// <summary>One <c>Subject</c> whose constructor takes <paramref name="parameters" /> and runs <paramref name="body" />.</summary>
     private static ScaffoldOutcome Scaffolded(string parameters, string body) {
-        ScaffoldOutcome outcome = Subject.Scaffold($$"""
-                                                    using System;
+        return Scaffolded(SubjectWith(parameters, body));
+    }
 
-                                                    namespace Shop.Domain;
-
-                                                    public sealed class Subject {
-
-                                                        public Subject({{parameters}}) {
-                                                            {{body}}
-                                                        }
-
-                                                        public object? Kept { get; private set; }
-
-                                                    }
-                                                    """);
+    private static ScaffoldOutcome Scaffolded(string source) {
+        ScaffoldOutcome outcome = Subject.Scaffold(source);
 
         Check.That(outcome.Status).IsEqualTo(ScaffoldStatus.Scaffolded);
 
         return outcome;
+    }
+
+    private static string SubjectWith(string parameters, string body) {
+        return $$"""
+                 using System;
+
+                 namespace Shop.Domain;
+
+                 public sealed class Subject {
+
+                     public Subject({{parameters}}) {
+                         {{body}}
+                     }
+
+                     public object? Kept { get; private set; }
+
+                 }
+                 """;
     }
 
     private static Assembly Loaded(CSharpCompilation compilation) {

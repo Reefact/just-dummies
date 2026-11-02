@@ -947,8 +947,10 @@ it asks for no solver (ADR-0046), and the pair is generated rather than left to 
 `--force` loses nothing (#405). Both parameters keep their own guards on their own recipes. The row is
 read where the comparison names the two parameters themselves, of one non-nullable value type, and is
 placed like any other guard; the scaffolder then draws the pair only where the library carries
-`Any.OrderedPair` over that type's generator and where neither parameter is in another order — `a ≤ b
-≤ c` is a relation among three. Anywhere else, and for every other rule between parameters — computed
+`Any.OrderedPair` over that type's generator, where neither parameter is in another order — `a ≤ b
+≤ c` is a relation among three — and where the identifiers the pair adds to the file (§4.2) are free:
+a parameter named `startAndEnd` or `startPin` beside `start` and `end`, or two pairs synthesising one
+name, would declare a field twice. Anywhere else, and for every other rule between parameters — computed
 (`a + 1 > b`), across types, through a member, or of three — both parameters are marked `unread
 guards` as before. This is the field report ADR-0085 asks for: the second developer-UX trial met
 this shape in 15 of its 20 contexts.

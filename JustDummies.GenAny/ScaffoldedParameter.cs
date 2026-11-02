@@ -154,12 +154,18 @@ public sealed class ScaffoldedParameter {
     ///     <c>WithÄ°d</c> where every other machine scaffolds <c>WithId</c>, which breaks the byte-identity §8.1
     ///     promises.
     /// </remarks>
-    public string PascalCasedName {
-        get {
-            string bare = Bare();
+    public string PascalCasedName => PascalCasedNameOf(Name);
 
-            return char.ToUpperInvariant(bare[0]).ToString(CultureInfo.InvariantCulture) + bare.Substring(1);
-        }
+    /// <summary>The <see cref="PascalCasedName" /> of a parameter named <paramref name="name" />.</summary>
+    internal static string PascalCasedNameOf(string name) {
+        string bare = BareOf(name);
+
+        return char.ToUpperInvariant(bare[0]).ToString(CultureInfo.InvariantCulture) + bare.Substring(1);
+    }
+
+    /// <summary>The <see cref="FieldName" /> of a parameter named <paramref name="name" />.</summary>
+    internal static string FieldNameOf(string name) {
+        return "_" + BareOf(name);
     }
 
     /// <summary>
@@ -229,9 +235,13 @@ public sealed class ScaffoldedParameter {
     ///     name and a parameter named from another is exactly the collision this guards against.
     /// </remarks>
     private string Bare() {
-        string bare = Name.TrimStart('_', '@');
+        return BareOf(Name);
+    }
 
-        return bare.Length == 0 ? Name : bare;
+    private static string BareOf(string name) {
+        string bare = name.TrimStart('_', '@');
+
+        return bare.Length == 0 ? name : bare;
     }
 
     /// <summary>A parameter the engine inferred a generator for.</summary>

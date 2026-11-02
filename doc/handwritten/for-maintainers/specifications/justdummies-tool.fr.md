@@ -989,9 +989,11 @@ l'honorer ne demande aucun solveur (ADR-0046), et la paire est générée plutô
 si bien qu'un `--force` ultérieur ne perd rien (#405). Chaque paramètre garde ses propres gardes sur sa
 propre recette. La ligne est lue là où la comparaison nomme les deux paramètres eux-mêmes, d'un même
 type valeur non nullable, et elle est placée comme toute autre garde ; le scaffolder ne tire ensuite la
-paire que là où la bibliothèque porte `Any.OrderedPair` sur le generator de ce type et où aucun des
-deux paramètres n'est pris dans un autre ordre — `a ≤ b ≤ c` est une relation à trois. Partout
-ailleurs, et pour toute autre règle entre paramètres — calculée (`a + 1 > b`), entre deux types, à
+paire que là où la bibliothèque porte `Any.OrderedPair` sur le generator de ce type, où aucun des
+deux paramètres n'est pris dans un autre ordre — `a ≤ b ≤ c` est une relation à trois — et où les
+identifiants que la paire ajoute au fichier (§4.2) sont libres : un paramètre nommé `startAndEnd` ou
+`startPin` à côté de `start` et `end`, ou deux paires synthétisant un même nom, déclareraient un champ
+deux fois. Partout ailleurs, et pour toute autre règle entre paramètres — calculée (`a + 1 > b`), entre deux types, à
 travers un membre, ou à trois —, les deux paramètres sont marqués `unread guards` comme avant. C'est le
 retour de terrain que l'ADR-0085 demande : le second essai d'expérience développeur a rencontré cette
 forme dans 15 de ses 20 contextes.

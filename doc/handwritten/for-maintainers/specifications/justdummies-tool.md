@@ -171,6 +171,18 @@ the preference for source types, so a generic `Measurement<T>` in the analysed p
 in front of a referenced `Measurement`. When nothing nameable matches anywhere they are kept, so a
 generic type named alone still meets its own refusal (§7) rather than being reported missing.
 
+**A simple name is resolved by tiers** (#363): the analysed project's own source, then the projects
+it references, then the framework and the packages. The first tier with a match wins, and two
+matches in one tier stay an ambiguity. The tool is run from the test project for the project's own
+types (§3.1), so a domain `Meter` in a referenced project is the one the developer meant, not
+`System.Diagnostics.Metrics.Meter` — which the first developer-UX trial met refused as ambiguous in
+five domains. A tier is told by how the type's assembly reached the compilation: as a compilation of
+its own, which is a project, or as metadata, which is not. When a lower tier also answered, the recap
+says so in one line under the construction line — `Meter resolved to Ambig.Domain.Meter;
+System.Diagnostics.Metrics.Meter also answers to that name.` — and the machine report carries the
+names as `alsoAnswering` (§6.1). The header's spelling follows the lookup: `Meter` resolves to that
+type alone, so the header keeps the short name.
+
 Zero matches → error, listing the closest names by edit distance. More than one match → error,
 listing the full names, asking for one of them. Both exit `1`.
 
@@ -1601,7 +1613,8 @@ recap does not duplicate the compiler here: a file that will not build is not a 
 
 The second line names the construction `Generate()` will make, and it is not always a constructor:
 a type built through §5.1's factory rule prints that call instead — `factory Email.Create(string)` —
-since it is the one the emitted file writes.
+since it is the one the emitted file writes. A third line follows it where a lower tier of the lookup
+also answered to the argument (§3.2), naming what resolved and what else answered.
 
 ```console
 $ any generate Order
@@ -1770,6 +1783,10 @@ The provenance words are the recap's own (§6), read from one table rather than 
 does (§5.2), so where the analysed project does not read nullable annotations a `Bic? agent` reads
 `"type": "Bic"`. The row's `nullableAnnotationDropped` is `true` there and `false` everywhere else —
 the recap's note under its rows (§6), carried per row so a script need not reread the domain.
+
+**What else a short name answered to travels with the result.** `alsoAnswering` lists the full names
+a lower tier of the lookup also matched (§3.2), in the order the tiers are searched, and is empty
+where the name was unambiguous everywhere or spelled in full.
 
 **A size guard's sentence travels on the row.** `remark` is the sentence the recap prints under its
 rows for a size past the cap or a very large ceiling (§6), `null` elsewhere, and `largeSizeCeiling`

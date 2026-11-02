@@ -50,7 +50,8 @@ public static class Scaffolder {
             throw new ArgumentException("A scaffold names a type.", nameof(typeArgument));
         }
 
-        IReadOnlyList<INamedTypeSymbol> found = TypeLookup.Find(compilation, typeArgument.Trim());
+        TypeLookup.Resolution           resolved = TypeLookup.Resolve(compilation, typeArgument.Trim());
+        IReadOnlyList<INamedTypeSymbol> found    = resolved.Found;
 
         if (found.Count == 0) {
             return ScaffoldOutcome.Refused(ScaffoldStatus.TypeNotFound,
@@ -62,7 +63,7 @@ public static class Scaffolder {
                                            [.. found.Select(type => type.ToDisplayString()).OrderBy(name => name, StringComparer.Ordinal)]);
         }
 
-        return Scaffold(compilation, found[0], options);
+        return Scaffold(compilation, found[0], options, [.. resolved.AlsoAnswering.Select(type => type.ToDisplayString())]);
     }
 
     /// <summary>
@@ -73,6 +74,11 @@ public static class Scaffolder {
     /// <param name="options">Where the generator lands and how it is named.</param>
     /// <exception cref="ArgumentNullException">Any argument is null.</exception>
     public static ScaffoldOutcome Scaffold(Compilation compilation, INamedTypeSymbol target, ScaffoldOptions options) {
+        return Scaffold(compilation, target, options, alsoAnswering: []);
+    }
+
+    /// <summary>The same scaffold, carrying what else the developer's argument answered to (§3.2, #363).</summary>
+    private static ScaffoldOutcome Scaffold(Compilation compilation, INamedTypeSymbol target, ScaffoldOptions options, IReadOnlyList<string> alsoAnswering) {
         if (compilation is null) { throw new ArgumentNullException(nameof(compilation)); }
         if (target is null) { throw new ArgumentNullException(nameof(target)); }
         if (options is null) { throw new ArgumentNullException(nameof(options)); }
@@ -142,7 +148,7 @@ public static class Scaffolder {
         }
 
         ScaffoldPlan plan = new(new TargetType(targetName, fileNamespace, StyleOf(target, fileNamespace), target.ToDisplayString(),
-                                               TypeLookup.ArgumentFor(compilation, target)),
+                                               TypeLookup.ArgumentFor(compilation, target), alsoAnswering),
                                 TypeNaming.GeneratorNameFor(target, options.Naming),
                                 names.Usings,
                                 parameters,

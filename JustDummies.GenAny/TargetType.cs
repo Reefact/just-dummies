@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace JustDummies.GenAny;
 
@@ -31,18 +32,30 @@ public sealed class TargetType {
     /// <param name="argument">
     ///     The type argument <c>any generate</c> resolves to exactly this type; when null, <paramref name="name" />.
     /// </param>
+    /// <param name="alsoAnswering">
+    ///     The full names a lower tier of the lookup also answered <paramref name="argument" /> with (§3.2); when
+    ///     null, none.
+    /// </param>
     /// <exception cref="ArgumentNullException"><paramref name="name" /> is null.</exception>
     /// <exception cref="ArgumentException"><paramref name="name" /> is blank.</exception>
-    public TargetType(string name, string? @namespace, NamespaceStyle style, string? fullName = null, string? argument = null) {
+    public TargetType(string name, string? @namespace, NamespaceStyle style, string? fullName = null, string? argument = null, IReadOnlyList<string>? alsoAnswering = null) {
         if (name is null) { throw new ArgumentNullException(nameof(name)); }
         if (name.Trim().Length == 0) { throw new ArgumentException("A target type has a name.", nameof(name)); }
 
-        Name      = name;
-        Namespace = @namespace;
-        Style     = style;
-        FullName  = fullName ?? (@namespace is null ? name : @namespace + "." + name);
-        Argument  = argument ?? name;
+        Name          = name;
+        Namespace     = @namespace;
+        Style         = style;
+        FullName      = fullName ?? (@namespace is null ? name : @namespace + "." + name);
+        Argument      = argument ?? name;
+        AlsoAnswering = alsoAnswering ?? [];
     }
+
+    /// <summary>
+    ///     The full names of the types a lower tier of the lookup also answered to the argument with (§3.2, #363)
+    ///     — the framework's <c>System.Diagnostics.Metrics.Meter</c> behind a domain <c>Meter</c> — which the
+    ///     recap names in one line; empty where the name was unambiguous everywhere.
+    /// </summary>
+    public IReadOnlyList<string> AlsoAnswering { get; }
 
     /// <summary>The type name as written from inside its own namespace.</summary>
     public string Name { get; }

@@ -702,6 +702,26 @@ public sealed class GenerateCommandTests : IDisposable {
         Check.That(parameters[0].GetProperty("unreadGuard").ValueKind).IsEqualTo(JsonValueKind.Null);
     }
 
+    [Fact(DisplayName = "--format json names what else a short name answered to.")]
+    public async Task JsonNamesWhatElseAShortNameAnsweredTo() {
+        GenerateSettings settings = Settings("Meter");
+
+        settings.Format = "json";
+
+        Run run = await Generate(settings, Compilation("""
+                                                       namespace Shop.Domain;
+
+                                                       public sealed class Meter {
+                                                           public Meter(int reading) { }
+                                                       }
+                                                       """));
+
+        JsonElement result = JsonDocument.Parse(run.Output).RootElement.GetProperty("results")[0];
+
+        Check.That(result.GetProperty("type").GetString()).IsEqualTo("Shop.Domain.Meter");
+        Check.That(result.GetProperty("alsoAnswering").EnumerateArray().Select(name => name.GetString())).ContainsExactly("System.Diagnostics.Metrics.Meter");
+    }
+
     [Fact(DisplayName = "--format json records a refused argument, with its candidates.")]
     public async Task JsonRecordsARefusedArgument() {
         GenerateSettings settings = Settings("Ordr");

@@ -16,7 +16,8 @@ internal sealed record ScaffoldReport(string Argument,
                                       int ParametersToVerify,
                                       EntryPointReport? EntryPoint,
                                       IReadOnlyList<WarningReport> Warnings,
-                                      IReadOnlyList<string> Candidates) {
+                                      IReadOnlyList<string> Candidates,
+                                      IReadOnlyList<string> AlsoAnswering) {
 
     /// <summary>
     ///     An argument that produced nothing, carrying the engine's reason and whatever that reason leaves
@@ -38,7 +39,8 @@ internal sealed record ScaffoldReport(string Argument,
                                   ParametersToVerify: 0,
                                   EntryPoint: null,
                                   Warnings: [],
-                                  outcome.Candidates);
+                                  outcome.Candidates,
+                                  AlsoAnswering: []);
     }
 
     /// <summary>
@@ -79,7 +81,8 @@ internal sealed record ScaffoldReport(string Argument,
                                   ParametersToVerify: 0,
                                   EntryPoint: null,
                                   Warnings: [],
-                                  Candidates: []);
+                                  Candidates: [],
+                                  plan.Target.AlsoAnswering);
     }
 
     /// <summary>An argument that scaffolded, with the files it produced and where each of them went.</summary>
@@ -98,7 +101,8 @@ internal sealed record ScaffoldReport(string Argument,
                                       ? null
                                       : new EntryPointReport(outcome.EntryPoint.File.FileName, outcome.EntryPoint.Call),
                                   [.. outcome.Warnings.Select(WarningReport.Of)],
-                                  Candidates: []);
+                                  Candidates: [],
+                                  plan.Target.AlsoAnswering);
     }
 
 }

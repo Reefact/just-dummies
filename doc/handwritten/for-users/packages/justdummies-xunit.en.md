@@ -12,7 +12,11 @@ one thing removes the need to wrap any test body in `Any.Reproducibly`.
 dotnet add package JustDummies.Xunit
 ```
 
-It depends on `JustDummies` and on xUnit v3.
+It depends on `JustDummies` and on xUnit v3 — `xunit.v3` **4.0.2** or later. That floor is the
+adapter's own dependency, `xunit.v3.extensibility.core`, and xUnit's packages only work at one and
+the same version: with an older `xunit.v3` the restore pulls the extensibility package above the
+one `xunit.v3.core` pins, warns about it (`NU1608`), and the test process then crashes instead of
+running a single test. The warning is the only hint, so if you see it, raise `xunit.v3` to match.
 
 ## The whole surface
 

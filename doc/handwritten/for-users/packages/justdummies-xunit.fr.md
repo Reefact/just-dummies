@@ -12,7 +12,12 @@ seule chose supprime le besoin d'envelopper le moindre corps de test dans `Any.R
 dotnet add package JustDummies.Xunit
 ```
 
-Il dépend de `JustDummies` et de xUnit v3.
+Il dépend de `JustDummies` et de xUnit v3 — `xunit.v3` **4.0.2** ou ultérieure. Ce plancher est la
+propre dépendance de l'adaptateur, `xunit.v3.extensibility.core`, et les paquets xUnit ne fonctionnent
+qu'à une seule et même version : avec un `xunit.v3` plus ancien, la restauration tire le paquet
+d'extensibilité au-dessus de celui que `xunit.v3.core` épingle, le signale (`NU1608`), puis le processus
+de test plante au lieu d'exécuter le moindre test. L'avertissement est le seul indice : si vous le
+voyez, montez `xunit.v3` au même niveau.
 
 ## Toute la surface
 

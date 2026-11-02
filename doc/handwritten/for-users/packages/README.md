@@ -33,8 +33,8 @@ flowchart TD
 `JustDummies` stands alone: it takes no runtime dependency. The analyzers travel **inside** it, so
 adding the package is all it takes to get them.
 
-`JustDummies.Xunit` depends on the library and on xUnit v3. `JustDummies.DiagnosticCatalog` is
-standalone — it carries no generator, only the rule identifiers.
+`JustDummies.Xunit` depends on the library and on xUnit v3 (`xunit.v3` 4.0.2 or later).
+`JustDummies.DiagnosticCatalog` is standalone — it carries no generator, only the rule identifiers.
 
 `any` is the odd one out: it references **nothing**. It resolves every library symbol by name against
 your own compilation, so the code it writes calls JustDummies without the tool ever depending on it

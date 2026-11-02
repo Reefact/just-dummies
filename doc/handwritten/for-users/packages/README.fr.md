@@ -34,8 +34,8 @@ flowchart TD
 `JustDummies` se suffit à lui-même : il ne prend aucune dépendance à l'exécution. Les analyzers
 voyagent **à l'intérieur**, si bien qu'ajouter le paquet suffit à les obtenir.
 
-`JustDummies.Xunit` dépend de la bibliothèque et de xUnit v3. `JustDummies.DiagnosticCatalog` est
-autonome — il ne porte aucun générateur, seulement les identifiants de règles.
+`JustDummies.Xunit` dépend de la bibliothèque et de xUnit v3 (`xunit.v3` 4.0.2 ou ultérieure).
+`JustDummies.DiagnosticCatalog` est autonome — il ne porte aucun générateur, seulement les identifiants de règles.
 
 `any` est le cas à part : il ne référence **rien**. Il résout chaque symbole de la bibliothèque par
 son nom, contre votre propre compilation, si bien que le code qu'il écrit appelle JustDummies sans

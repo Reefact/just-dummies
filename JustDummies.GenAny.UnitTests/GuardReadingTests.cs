@@ -28,6 +28,64 @@ public sealed class GuardReadingTests {
     }
 
     /// <summary>
+    ///     The six shapes the second trial's field report entered into the closed set (#408), each read exactly,
+    ///     with the spelling the emitted chain takes for each.
+    /// </summary>
+    [Theory(DisplayName = "A shape entered from the second trial's field report reads into the member the table promises.")]
+    [InlineData("double", "if (!(value > 0)) { throw new ArgumentOutOfRangeException(nameof(value)); }", "Any.Double().Positive()")]
+    [InlineData("int", "if (!(0 < value)) { throw new ArgumentOutOfRangeException(nameof(value)); }", "Any.Int32().Positive()")]
+    [InlineData("string", "if (!(value.Length <= 4)) { throw new ArgumentException(nameof(value)); }", "Any.String().WithMaxLength(4)")]
+    [InlineData("TimeSpan", "if (value < TimeSpan.FromSeconds(5)) { throw new ArgumentOutOfRangeException(nameof(value)); }", "Any.TimeSpan().GreaterThanOrEqualTo(TimeSpan.FromSeconds(5))")]
+    [InlineData("TimeSpan", "ArgumentOutOfRangeException.ThrowIfLessThan(value, TimeSpan.Zero); if (value > TimeSpan.FromMinutes(2.5)) { throw new ArgumentOutOfRangeException(nameof(value)); }", "Any.TimeSpan().Between(TimeSpan.Zero, TimeSpan.FromMinutes(2.5d))")]
+    [InlineData("TimeSpan", "if (value <= TimeSpan.Zero) { throw new ArgumentOutOfRangeException(nameof(value)); }", "Any.TimeSpan().Positive()")]
+    [InlineData("TimeSpan", "if (value >= TimeSpan.MaxValue) { throw new ArgumentOutOfRangeException(nameof(value)); }", "Any.TimeSpan().LessThan(TimeSpan.MaxValue)")]
+    [InlineData("TimeSpan?", "if (value < TimeSpan.FromTicks(10)) { throw new ArgumentOutOfRangeException(nameof(value)); }", "Any.TimeSpan().GreaterThanOrEqualTo(TimeSpan.FromTicks(10)).OrNull()")]
+    [InlineData("string", "ArgumentOutOfRangeException.ThrowIfGreaterThan(value.Length, 500);", "Any.String().WithMaxLength(500)")]
+    [InlineData("string", "ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(value.Length, 500);", "Any.String().WithMaxLength(499)")]
+    [InlineData("string", "ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(value.Length, 2);", "Any.String().WithMinLength(3)")]
+    [InlineData("IReadOnlyList<int>", "ArgumentOutOfRangeException.ThrowIfLessThan(value.Count, 2);", "Any.ListOf(Any.Int32()).WithMinCount(2)")]
+    [InlineData("IReadOnlyList<int>", "ArgumentOutOfRangeException.ThrowIfZero(value.Count);", "Any.ListOf(Any.Int32()).NonEmpty()")]
+    [InlineData("string", "ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value.Length);", "Any.String().NonEmpty()")]
+    [InlineData("decimal", "if (decimal.Round(value, 2) != value) { throw new ArgumentException(nameof(value)); }", "Any.Decimal().WithScale(2)")]
+    [InlineData("decimal", "if (value != Math.Round(value, 4)) { throw new ArgumentException(nameof(value)); }", "Any.Decimal().WithScale(4)")]
+    [InlineData("DateTimeOffset", "if (value == default) { throw new ArgumentException(nameof(value)); }", "Any.DateTimeOffset().DifferentFrom(default)")]
+    [InlineData("DateOnly", "if (default(DateOnly) == value) { throw new ArgumentException(nameof(value)); }", "Any.DateOnly().DifferentFrom(default)")]
+    [InlineData("Guid", "if (value == default) { throw new ArgumentException(nameof(value)); }", "Any.Guid().NonEmpty()")]
+    [InlineData("int", "if (value == default) { throw new ArgumentException(nameof(value)); }", "Any.Int32().NonZero()")]
+    [InlineData("string", "if (value.AsSpan().IndexOfAnyExcept(\"ACGTN\") >= 0) { throw new ArgumentException(nameof(value)); }", "Any.String().WithChars(\"ACGTN\")")]
+    [InlineData("string", "if (-1 != value.AsSpan().IndexOfAnyExcept(\"+-\")) { throw new ArgumentException(nameof(value)); }", "Any.String().WithChars(\"+-\")")]
+    [InlineData("string", "if (value.AsSpan().IndexOfAnyExcept(\"a\\\"b\") > -1) { throw new ArgumentException(nameof(value)); }", "Any.String().WithChars(\"a\\\"b\")")]
+    public void AShapeFromTheSecondTrialReadsIntoThePromisedMember(string type, string guard, string expected) {
+        ScaffoldedParameter parameter = Subject.GuardedBy(type, guard);
+
+        Check.That(parameter.Expression).IsEqualTo(expected);
+        Check.That(parameter.Provenance.HasFlag(Provenance.Guard)).IsTrue();
+        Check.That(parameter.Provenance.HasFlag(Provenance.UnreadGuards)).IsFalse();
+    }
+
+    /// <summary>
+    ///     The two shapes of #408 that read as understood and add nothing, and the edges where a shape of #408 is
+    ///     not read: a <c>default</c> on a struct of the developer's own, whose <c>==</c> is a method; a pool that
+    ///     is no constant; a rounding of another value.
+    /// </summary>
+    [Theory(DisplayName = "A shape from the second trial that adds nothing, or falls outside its row, is read as such.")]
+    [InlineData("double", "if (double.IsNaN(value)) { throw new ArgumentOutOfRangeException(nameof(value)); } if (double.IsInfinity(value)) { throw new ArgumentOutOfRangeException(nameof(value)); }", "Any.Double()", false)]
+    [InlineData("float", "if (float.IsNegativeInfinity(value)) { throw new ArgumentOutOfRangeException(nameof(value)); }", "Any.Single()", false)]
+    [InlineData("string", "ArgumentOutOfRangeException.ThrowIfNegative(value.Length);", "Any.String()", false)]
+    [InlineData("double", "if (float.IsNaN((float)value)) { throw new ArgumentOutOfRangeException(nameof(value)); }", "Any.Double()", true)]
+    [InlineData("OrderStatus", "if (value == default) { throw new ArgumentException(nameof(value)); }", "Any.Enum<OrderStatus>()", true)]
+    [InlineData("string", "if (value.AsSpan().IndexOfAnyExcept(Environment.NewLine) >= 0) { throw new ArgumentException(nameof(value)); }", "Any.String()", true)]
+    [InlineData("string", "if (value.Trim().AsSpan().IndexOfAnyExcept(\"ab\") >= 0) { throw new ArgumentException(nameof(value)); }", "Any.String()", true)]
+    [InlineData("decimal", "if (decimal.Round(value * 2, 2) != value) { throw new ArgumentException(nameof(value)); }", "Any.Decimal()", true)]
+    [InlineData("double", "if (Math.Round(value, 2) != value) { throw new ArgumentException(nameof(value)); }", "Any.Double()", true)]
+    public void AShapeFromTheSecondTrialOutsideItsRowIsMarked(string type, string guard, string expected, bool marked) {
+        ScaffoldedParameter parameter = Subject.GuardedBy(type, guard);
+
+        Check.That(parameter.Expression).IsEqualTo(expected);
+        Check.That(parameter.Provenance.HasFlag(Provenance.UnreadGuards)).IsEqualTo(marked);
+    }
+
+    /// <summary>
     ///     An emptiness or blankness check whose argument is a DERIVED value is not a guard about the
     ///     parameter, and is marked rather than read.
     /// </summary>

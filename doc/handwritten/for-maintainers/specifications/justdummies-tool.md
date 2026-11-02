@@ -941,6 +941,33 @@ The recognised set is closed:
 | `!double.IsFinite(p)`, `!float.IsFinite(p)` | none — `Any.Double()` and `Any.Single()` draw only finite values (ADR-0031), **where `p` is of that type** |
 | `p == E.Member` | `.DifferentFrom(E.Member)`, **where `p` is of type `E`** |
 | `a > b`, `a >= b`, `b < a`, `b <= a`, where `a` and `b` are two parameters of one ordered type | none on either chain: both are drawn as one `Any.OrderedPair(` over their two recipes, `strict: true` for `>=` (§4.2), **where the library carries a pair for that type and neither parameter is in another order** |
+| `!(p > 0)`, `!(p.Length > N)` — the negation of any comparison above | the row of the opposite comparison: `.Positive()`, `.WithMaxLength(N)` |
+| `p < TimeSpan.FromSeconds(5)`, `ThrowIfLessThan(p, TimeSpan.Zero)` — a `TimeSpan` bound written as `TimeSpan.Zero`, `MinValue`, `MaxValue` or `TimeSpan.FromX(constant)` | the numeric rows above, the bound spelled as written: `.GreaterThanOrEqualTo(TimeSpan.FromSeconds(5))`, `.GreaterThanOrEqualTo(TimeSpan.Zero)` |
+| `ThrowIfGreaterThan(p.Length, N)`, and the other arithmetic throw helpers on `p.Length` or `p.Count` | the size rows above: `.WithMaxLength(N)`, `.WithMinCount(N)`, `.NonEmpty()` |
+| `decimal.Round(p, N) != p`, `Math.Round(p, N) != p`, on a `decimal` | `.WithScale(N)` |
+| `p == default`, `p == default(T)`, on a non-nullable struct of the framework | `.DifferentFrom(default)`; `.NonEmpty()` on a `Guid`, and a number's `default` is its zero, read by the rows above |
+| `p.AsSpan().IndexOfAnyExcept("…") >= 0`, `> -1`, `!= -1` | `.WithChars("…")` |
+| `double.IsNaN(p)`, `double.IsInfinity(p)`, `IsPositiveInfinity`, `IsNegativeInfinity`, and the `float` twins | none — `Any.Double()` and `Any.Single()` never draw NaN or an infinity, **where `p` is of that type** |
+
+**Six shapes entered the set from the second trial's field report (#408), and each read is exact.** The
+negation of a comparison is the opposite comparison, with no third value for the two to disagree on
+— NaN, the one such value, is never drawn. A `TimeSpan` bound is not a constant to the compiler, so
+the constant reading passed it over; the three fields and six factories above are how a duration is
+written in a guard, their ticks are computed by the same `TimeSpan` the domain will call, and the
+bound is spelled as the comparison rows spell theirs — a reachable constant by name, anything else by
+value. The throw helpers take `p.Length` or `p.Count` exactly as a comparison does, and
+`ThrowIfGreaterThanOrEqual(p.Length, N)` moves by one onto a row the size family has, folded to its
+value since the constant named is no longer the bound written. `decimal.Round(p, N) != p` says the
+value has more than `N` decimal places, which is the lattice `WithScale(N)` draws on. `p == default`
+on a struct the number line does not place is the exclusion of that one value, and the one guard a
+date or an identifier that was never set gets; a number's `default` is its zero and reads as the
+constant it is, a nullable's is `null` and reads as the null-check. Only a struct of the framework —
+declared in `System` — is read that way: its `==` is value equality by contract, where a struct of the
+developer's own carries a user-defined `==` free to answer `true` for a value that is not `default`,
+the same reason the null-check row declines one (#333), and it keeps the mark. `IndexOfAnyExcept`
+against a constant pool, on the span a string has to be read as for that search, says every character
+is drawn from that pool, which is `WithChars`. Each shape is read where its subject **is** the
+parameter, as every other row demands.
 
 **An order between two parameters is the one rule between parameters drawn rather than marked.**
 `if (arrival > departure) { throw … }` is what `Any.OrderedPair` draws by construction — the first

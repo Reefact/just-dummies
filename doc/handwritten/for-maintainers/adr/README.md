@@ -21,7 +21,7 @@ and the **Origin** column says how each one got here:
   but its record stays live in `Reefact/first-class-errors` too, because that
   repository still applies it. Both copies are now independent: either side can
   supersede its own without touching the other. 9 decisions.
-* **recorded here** — decided in this repository, on its own. 82 decisions.
+* **recorded here** — decided in this repository, on its own. 87 decisions.
 
 The numbers are this base's own, assigned in the order the decisions were
 recorded upstream ([ADR-0045](0045-renumber-the-decision-base.md)); every ADR
@@ -269,5 +269,5 @@ failure mode of a "not now" is that nobody remembers the option existed on the d
 | [ADR-0126](0126-draw-two-values-tied-by-an-order.md) | Draw two values tied by an order | Accepted | recorded here |
 | [ADR-0127](0127-draw-the-empty-value-unless-a-guard-refuses-it.md) | Draw the empty value unless a guard refuses it | Accepted | recorded here |
 | [ADR-0128](0128-read-a-disjunction-guard-as-one-guard-per-branch.md) | Read a disjunction guard as one guard per branch | Accepted | recorded here |
-| [ADR-0129](0129-report-a-chain-whose-constants-admit-exactly-one-value.md) | Report a chain whose constants admit exactly one value, over every exact type | Proposed | recorded here |
-| [ADR-0130](0130-ship-code-fixes-beside-the-analyzers.md) | Ship code fixes beside the analyzers, for the one rewrite that keeps the intent | Proposed | recorded here |
+| [ADR-0129](0129-report-a-chain-whose-constants-admit-exactly-one-value.md) | Report a chain whose constants admit exactly one value, over every exact type | Accepted | recorded here |
+| [ADR-0130](0130-ship-code-fixes-beside-the-analyzers.md) | Ship code fixes beside the analyzers, for the one rewrite that keeps the intent | Accepted | recorded here |

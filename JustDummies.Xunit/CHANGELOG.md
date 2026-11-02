@@ -8,6 +8,16 @@ Releases are cut from the `xunit` train (see [CONTRIBUTING.md](../CONTRIBUTING.m
 
 ## [Unreleased]
 
+### Changed
+
+- **The package README and the documentation state the `xunit.v3` floor: 4.0.2 or later.** The
+  adapter has always depended on `xunit.v3.extensibility.core` ≥ 4.0.2, and nothing but the nuspec
+  said so. A test project on an older `xunit.v3` restored with warning `NU1608` — the extensibility
+  package resolved above the one `xunit.v3.core` pins — and the test process then crashed, with the
+  warning as the only hint. The pages now name the floor and what a lower one does, and a test holds
+  every stated version to the one `Directory.Packages.props` pins, so the number cannot drift when
+  the floor moves.
+
 ### Fixed
 
 - **The replay line a failing test prints compiles where it is pasted.** The report said

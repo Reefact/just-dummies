@@ -288,7 +288,7 @@ Any.Reproducibly(1743029518, () => {
 
 Debug against those exact values, fix the defect, then delete the seed so the test varies again.
 
-If you use xUnit v3, the [`JustDummies.Xunit`](../packages/justdummies-xunit.en.md) package does this for you with a `[Reproducible]` attribute, so no test body needs wrapping by hand:
+If you use xUnit v3 (`xunit.v3` 4.0.2 or later), the [`JustDummies.Xunit`](../packages/justdummies-xunit.en.md) package does this for you with a `[Reproducible]` attribute, so no test body needs wrapping by hand:
 
 <!-- jd:declarations -->
 ```csharp

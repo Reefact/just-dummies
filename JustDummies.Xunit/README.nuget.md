@@ -72,8 +72,10 @@ the outer ones pinned nothing the test drew.
   attribute pins.
 - The seed is pinned through `Any.UseSeed(...)`, a public handle any test-framework
   adapter can use — this package holds no privileged access to `JustDummies`.
-- xUnit v3 only. On xUnit v2, NUnit, MSTest or anything else, use
-  `Any.Reproducibly(...)`: it is unaffected by this package and works everywhere.
+- xUnit v3 only, `xunit.v3` 4.0.2 or later. An older `xunit.v3` restores with
+  warning `NU1608` and the test process then crashes: raise `xunit.v3` to match.
+  On xUnit v2, NUnit, MSTest or anything else, use `Any.Reproducibly(...)`: it is
+  unaffected by this package and works everywhere.
 
 ## Links
 

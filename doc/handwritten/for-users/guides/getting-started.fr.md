@@ -288,7 +288,7 @@ Any.Reproducibly(1743029518, () => {
 
 Déboguez sur ces valeurs exactes, corrigez le défaut, puis supprimez la graine pour que le test recommence à varier.
 
-Avec xUnit v3, le paquet [`JustDummies.Xunit`](../packages/justdummies-xunit.fr.md) fait cela pour vous via un attribut `[Reproducible]` : aucun corps de test n'a besoin d'être enveloppé à la main :
+Avec xUnit v3 (`xunit.v3` 4.0.2 ou ultérieure), le paquet [`JustDummies.Xunit`](../packages/justdummies-xunit.fr.md) fait cela pour vous via un attribut `[Reproducible]` : aucun corps de test n'a besoin d'être enveloppé à la main :
 
 <!-- jd:declarations -->
 ```csharp

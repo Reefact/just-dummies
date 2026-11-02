@@ -106,6 +106,19 @@ public sealed class RecapTests {
         Check.That(rendered).Contains("  name: unread guard at Subject.cs, line 12: if (!Regex.IsMatch(name, Pattern))");
     }
 
+    // The fallback mark of ADR-0110 names a place that may test none of the parameter's own guards, so the line
+    // says why it marks (issue #371); a mark the excerpt explains carries no such word.
+    [Fact(DisplayName = "A mark with a note says why it marks, on the same line.")]
+    public void AMarkWithANoteSaysWhyItMarks() {
+        UnreadGuard unread = new("Subject.cs", 9, "if (!Fits(item)) { throw new ArgumentException(nameof(items)); }",
+                                 "every parameter is marked here, since what decides this throw could not be traced back to one");
+
+        string rendered = Rendered(Plan([ScaffoldedParameter.DrawnFrom("name", "string", "AnyString", "Any.String()",
+                                                                       Provenance.UnreadGuards, unreadGuard: unread)]));
+
+        Check.That(rendered).Contains("  name: unread guard at Subject.cs, line 9: if (!Fits(item)) { throw new ArgumentException(nameof(items)); } — every parameter is marked here, since what decides this throw could not be traced back to one");
+    }
+
     // The rows spell the type as the file does, which in a project that does not read nullable annotations is without
     // the declaration's `?`. One line under them says so, once for every such parameter, rather than leaving the
     // constructor line to misdescribe the domain (issue #344).

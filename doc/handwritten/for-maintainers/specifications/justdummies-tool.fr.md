@@ -1537,9 +1537,16 @@ trois gardes, une marque seule envoie le développeur lire tout le constructeur 
 le moteur n'a pas pu répondre. La deuxième ligne donne le premier de ces endroits — fichier et ligne —
 et la première ligne de l'instruction qui la porte, raccourcie au-delà de cent caractères ; le
 récapitulatif imprime la même chose sous ses lignes (§6), et le rapport machine la porte en
-`unreadGuard` (§6.1). Le lien final mène à la page utilisateur qui dit ce que signifie `to verify` :
-le commentaire est lu par quelqu'un qui a ce fichier ouvert, pas cette spécification. Quand aucune
-position dans la source n'est connue, la deuxième ligne est omise.
+`unreadGuard` (§6.1). L'instruction nommée est celle qui lève — le `if` dont la branche lève, jamais la
+boucle, le `try` ou le `using` qui l'entoure, qui ne teste rien et où les lecteurs du premier essai ont
+été envoyés chercher encore (#371). Une marque que l'endroit n'explique pas dit pourquoi elle marque :
+le repli de l'ADR-0110 marque chaque paramètre là où ce qui décide un `throw` ne remonte à aucun, si
+bien que l'endroit nommé peut ne tester aucune garde propre à ce paramètre, et la ligne le dit —
+`every parameter is marked here, since what decides this throw could not be traced back to one` — dans
+le commentaire, sous les lignes du récapitulatif et dans le `note` du rapport. Le lien final mène à la
+page utilisateur qui dit ce que signifie `to verify` : le commentaire est lu par quelqu'un qui a ce
+fichier ouvert, pas cette spécification. Quand aucune position dans la source n'est connue, la
+deuxième ligne est omise.
 
 **Une garde écrite dans un helper qui retourne la valeur vérifiée est marquée, là où le moteur
 peut voir que le helper lève.** L'objet-valeur validant idiomatique n'écrit pas sa garde dans le
@@ -1757,7 +1764,9 @@ qu'un script n'ait pas à relire le domaine.
 
 **Un paramètre marqué `unread guards` porte l'endroit.** Le `unreadGuard` de sa ligne contient le
 `file`, la `line` comptée à partir de un et un `excerpt` de la première garde dont le moteur n'a pas
-pu répondre (§5.6), et vaut `null` sur toutes les autres lignes.
+pu répondre (§5.6), avec un `note` disant pourquoi cet endroit marque là où l'extrait ne le dit pas —
+la marque de repli de l'ADR-0110 — et `null` sinon ; l'objet entier vaut `null` sur toutes les autres
+lignes.
 
 ---
 

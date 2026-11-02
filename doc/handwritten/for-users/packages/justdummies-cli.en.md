@@ -112,7 +112,9 @@ parameters it came from, and marks those. Where going on would mean reading code
 property whose getter computes its value, a method of the object being built, the object itself handed
 to a helper — it cannot say which parameters the rejection involves, so it marks them all rather than
 none ([ADR-0110](../../for-maintainers/adr/0110-mark-every-parameter-a-throw-may-depend-on.md)).
-Confirm each recipe as above.
+Such a mark says so where it points — *every parameter is marked here, since what decides this throw
+could not be traced back to one* — since the statement it names may test none of that parameter's own
+guards. Confirm each recipe as above.
 
 **A regex guard is never read.** `if (!Regex.IsMatch(value, "^[A-Z]{3}$")) { throw … }`, the guard in the
 sample above, marks the parameter `to verify` and nothing more: the pattern is not carried over, and the

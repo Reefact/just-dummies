@@ -666,6 +666,7 @@ public sealed class GenerateCommandTests : IDisposable {
 
         Check.That(unread.GetProperty("line").GetInt32()).IsEqualTo(5);
         Check.That(unread.GetProperty("excerpt").GetString()).StartsWith("if (level % 2 == 1)");
+        Check.That(unread.GetProperty("note").ValueKind).IsEqualTo(JsonValueKind.Null);
     }
 
     [Fact(DisplayName = "--format json records a refused argument, with its candidates.")]

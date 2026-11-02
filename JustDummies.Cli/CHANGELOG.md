@@ -88,6 +88,15 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   `unread guards` and blocked the build, although a message rejects nothing. What the exception is built from is
   now excluded from a throwing statement's mentions, as `nameof` already was; a parameter the condition tests is
   still marked (issue #370).
+- **An unread guard is placed at the statement that throws, and a fallback mark says it is one.** The place
+  named under the recap's rows and in the `TODO(any)` comment was the leading statement holding the guard, so a
+  guard inside a loop pointed at `foreach (int item in items)` — a line that tests nothing — and the reader
+  searched the constructor the comment promised to spare them. The place is now the innermost statement that
+  throws, `if (!box.Contains(item)) { throw … }`. And where a throw is decided by a value the tool cannot trace
+  back to a parameter, every parameter is marked (ADR-0110) at a place that may test none of that parameter's own
+  guards; that mark now says so — `every parameter is marked here, since what decides this throw could not be
+  traced back to one` — in the comment, under the rows, and as `note` of `--format json`'s `unreadGuard`,
+  `null` on every other mark (issue #371).
 - **A composed interface or abstract class is left open, naming the generator to write by hand.** For
   `RowInstruction(IReadOnlyList<IRowElement> elements)` the scaffold emitted `Any.ListOf(new AnyIRowElement())`,
   the build failed with `CS0246` on `AnyIRowElement`, and the documented next step, `any generate IRowElement`,

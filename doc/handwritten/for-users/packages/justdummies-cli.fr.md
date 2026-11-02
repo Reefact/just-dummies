@@ -112,6 +112,9 @@ demanderait de lire du code qu'il ne lit pas — une propriété dont le getter 
 méthode de l'objet en construction, l'objet lui-même passé à un helper —, il ne peut pas dire quels
 paramètres le rejet implique ; il les marque donc tous plutôt qu'aucun
 ([ADR-0110](../../for-maintainers/adr/0110-mark-every-parameter-a-throw-may-depend-on.fr.md)).
+Une telle marque le dit là où elle pointe — *every parameter is marked here, since what decides this
+throw could not be traced back to one* —, puisque l'instruction qu'elle nomme peut ne tester aucune
+garde propre à ce paramètre.
 Confirmez chaque recette comme ci-dessus.
 
 **Une garde par regex n'est jamais lue.** `if (!Regex.IsMatch(value, "^[A-Z]{3}$")) { throw … }`, la garde de

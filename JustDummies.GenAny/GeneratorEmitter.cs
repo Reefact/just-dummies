@@ -337,7 +337,7 @@ public static class GeneratorEmitter {
         // whole constructor. The place is the one the developer opens, not a section of a page they never see.
         if (parameter.UnreadGuard is { } unread) {
             Line(file, $"{indent}// TODO(any): '{parameter.TypeDisplay} {parameter.Name}' may be guarded by something the scaffolder could not read,");
-            Line(file, $"{indent}//   first at {unread.Place()}: {unread.Excerpt}");
+            Line(file, $"{indent}//   first at {unread.Place()}: {unread.Excerpt}{(unread.Note is null ? string.Empty : " — " + unread.Note)}");
         } else {
             Line(file, $"{indent}// TODO(any): '{parameter.TypeDisplay} {parameter.Name}' may be guarded by something the scaffolder could not read.");
         }

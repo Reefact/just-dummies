@@ -627,6 +627,31 @@ impose à ce paramètre doit aussi être respectée par le générateur que vous
 l'outil ne l'écrit pas à votre place. Décision :
 [ADR-0109](../../for-maintainers/adr/0109-let-a-test-refine-a-parameters-valid-base-rather-than-replace-it.fr.md).
 
+### Trois choses que le fichier fait exprès
+
+Chacune est délibérée, et chacune se vit en peu de mots.
+
+**La base valide d'un paramètre est privée.** `AnyValid…()` porte les règles que `any` a lues pour un
+paramètre, et un test qui a besoin d'une valeur de ce genre pour elle-même — un nombre de colis que le
+constructeur accepterait — ne peut pas appeler `AnyShipment.AnyValidParcels()` (`CS0122`). Ne tirez pas
+l'envoi entier pour en lire les colis, ne recopiez pas l'intervalle dans le test, et ne rendez pas la
+méthode publique : `--force` l'annulerait. La classe est `partial` : ajoutez une ligne à votre propre fichier
+à côté — `internal static AnyInt32 ValidParcels() { return AnyValidParcels(); }` —, qui atteint la base et
+survit à un nouveau scaffolding.
+
+**Un générateur préparé se réutilise sous forme de lambda.** `With…` prend une valeur ou une lambda, jamais
+un générateur : `WithRoute(preparedRoute)` donne `CS1503`. Écrivez l'affinage une fois, comme la lambda qu'il
+est — `Func<AnyRoute, AnyRoute> domestic = r => r.WithDomestic(true);` — et passez `domestic` partout où un
+test en a besoin. N'écrivez pas `_ => preparedRoute` : cela compile, et remplace la base avec toutes les
+règles qu'elle gardait, exactement ce dont la surcharge absente vous protège. Le `With…(Func)` généré le dit
+dans sa documentation.
+
+**Un objet fixé est partagé.** `WithBuffer(new PlaybackBuffer(10, 60))` remet cette unique instance à chaque
+`Generate()` : un pin est une valeur, pas une recette. Si le type est mutable et qu'un test modifie un tirage,
+le tirage suivant voit la modification. Pour obtenir un objet neuf à chaque tirage, affinez plutôt —
+`WithBuffer(b => b.WithCapacity(10))` tire un nouveau tampon à chaque fois — ou construisez l'objet dans le
+test. Le pin généré le dit dans sa documentation.
+
 ## Quand une garde relie deux paramètres
 
 **Un ordre direct est tiré pour vous.** Quand le constructeur compare deux de ses paramètres d'un même type

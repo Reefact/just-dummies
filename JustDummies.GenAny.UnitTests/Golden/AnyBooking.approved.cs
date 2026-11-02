@@ -86,6 +86,7 @@ public sealed partial class AnyBooking : IAny<Booking> {
     }
 
     /// <summary>Refines the recipe <c>start</c> is drawn from — <c>AnyValidStart()</c>, then each earlier refinement — through <paramref name="configure" />, in order with <c>end</c>.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyDateTime, AnyDateTime&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyBooking WithStart(Func<AnyDateTime, AnyDateTime> configure) {
         AnyBooking copy = new AnyBooking(this);
 
@@ -107,6 +108,7 @@ public sealed partial class AnyBooking : IAny<Booking> {
     }
 
     /// <summary>Refines the recipe <c>end</c> is drawn from — <c>AnyValidEnd()</c>, then each earlier refinement — through <paramref name="configure" />, in order with <c>start</c>.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyDateTime, AnyDateTime&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyBooking WithEnd(Func<AnyDateTime, AnyDateTime> configure) {
         AnyBooking copy = new AnyBooking(this);
 
@@ -117,7 +119,7 @@ public sealed partial class AnyBooking : IAny<Booking> {
         return copy;
     }
 
-    /// <summary>Pins <c>note</c> to a fixed value; its recipe is kept for a later refinement.</summary>
+    /// <summary>Pins <c>note</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyBooking WithNote(string value) {
         AnyBooking copy = new AnyBooking(this);
 
@@ -127,6 +129,7 @@ public sealed partial class AnyBooking : IAny<Booking> {
     }
 
     /// <summary>Refines the recipe <c>note</c> is drawn from — <c>AnyValidNote()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyString, AnyString&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyBooking WithNote(Func<AnyString, AnyString> configure) {
         AnyBooking copy = new AnyBooking(this);
 

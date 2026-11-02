@@ -10,6 +10,12 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Changed
 
+- **The generated `With…` methods say what is easy to get wrong.** A pin's documentation says every draw hands
+  over the value it was given — one shared instance for a reference type — and a refining overload's says to reuse
+  a refinement as a `Func<G, G>` that builds on what it receives, since `_ => prepared` compiles and replaces the
+  base. The CLI page shows the three idioms the second UX trial saw rebuilt by hand: reaching a parameter's valid
+  base through a one-line `partial` wrapper, reusing a refinement as a lambda, and getting a fresh object per draw.
+  Re-scaffolding with `--force` brings the new comments; nothing else in the file changes (issue #391).
 - **Two parameters a guard ties by an order are drawn as one pair.** Where the constructor compares two
   parameters of one ordered type directly — `if (start > end) { throw … }`, `>=`, or the mirrored `end < start` —
   the scaffold draws both through `Any.OrderedPair` instead of marking them `to verify`, so the order holds by

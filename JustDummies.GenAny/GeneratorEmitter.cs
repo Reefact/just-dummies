@@ -494,8 +494,8 @@ public static class GeneratorEmitter {
             }
 
             Line(file, parameter.IsUnresolved
-                           ? $"{indent}/// <summary>Pins <c>{parameter.Name}</c> to a fixed value.</summary>"
-                           : $"{indent}/// <summary>Pins <c>{parameter.Name}</c> to a fixed value; its recipe is kept for a later refinement.</summary>");
+                           ? $"{indent}/// <summary>Pins <c>{parameter.Name}</c> to <paramref name=\"value\" />, which every draw hands over as it is — one shared instance for a reference type.</summary>"
+                           : $"{indent}/// <summary>Pins <c>{parameter.Name}</c> to <paramref name=\"value\" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>");
 
             Line(file, $"{indent}public {plan.GeneratorName} With{parameter.PascalCasedName}({parameter.TypeDisplay} value) {{");
             WriteCopy(file, plan, body);
@@ -511,6 +511,7 @@ public static class GeneratorEmitter {
             int assignment = parameter.RecipeFieldName.Length;
 
             Line(file, $"{indent}/// <summary>Refines the recipe <c>{parameter.Name}</c> is drawn from — <c>{parameter.FactoryMethodName}()</c>, then each earlier refinement — through <paramref name=\"configure\" />.</summary>");
+            WriteReuseRemark(file, parameter, indent);
             Line(file, $"{indent}public {plan.GeneratorName} With{parameter.PascalCasedName}(Func<{parameter.GeneratorType}, {parameter.GeneratorType}> configure) {{");
             WriteCopy(file, plan, body);
             Line(file, $"{body}copy.{parameter.RecipeFieldName} = configure({parameter.RecipeFieldName});");
@@ -546,6 +547,7 @@ public static class GeneratorEmitter {
         Line(file, string.Empty);
 
         Line(file, $"{indent}/// <summary>Refines the recipe <c>{parameter.Name}</c> is drawn from — <c>{parameter.FactoryMethodName}()</c>, then each earlier refinement — through <paramref name=\"configure\" />, in order with <c>{other}</c>.</summary>");
+        WriteReuseRemark(file, parameter, indent);
         Line(file, $"{indent}public {plan.GeneratorName} With{parameter.PascalCasedName}(Func<{parameter.GeneratorType}, {parameter.GeneratorType}> configure) {{");
         WriteCopy(file, plan, body);
         Line(file, $"{body}copy.{parameter.RecipeFieldName.PadRight(width)} = configure({parameter.RecipeFieldName});");
@@ -554,6 +556,22 @@ public static class GeneratorEmitter {
         WriteReturnCopy(file, body);
         Line(file, $"{indent}}}");
         Line(file, string.Empty);
+    }
+
+    /// <summary>
+    ///     How to reuse a refinement, said where a developer meets the overload: a generator prepared elsewhere is
+    ///     not accepted, and the lambda that would smuggle it in — <c>_ =&gt; prepared</c> — compiles and replaces
+    ///     the base it was meant to keep (ADR-0109, #391).
+    /// </summary>
+    private static void WriteReuseRemark(StringBuilder file, ScaffoldedParameter parameter, string indent) {
+        string generator = Escaped(parameter.GeneratorType!);
+
+        Line(file, $"{indent}/// <remarks>Reuse a refinement as a <c>Func&lt;{generator}, {generator}&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>");
+    }
+
+    /// <summary>A type name as an XML documentation comment spells it.</summary>
+    private static string Escaped(string type) {
+        return type.Replace("<", "&lt;").Replace(">", "&gt;");
     }
 
     /// <summary>

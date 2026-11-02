@@ -104,6 +104,17 @@ public enum Provenance {
     ///     typically one choosing among the concrete generators — and nothing about those concrete types is looked
     ///     up, which would be composition asking the compilation the question ADR-0089 keeps it from asking.
     /// </remarks>
-    AbstractType = 512
+    AbstractType = 512,
+
+    /// <summary>
+    ///     A size guard sets a floor past the million the library produces (ADR-0076), so no draw can satisfy
+    ///     the constructor and the parameter is left open, with the reason (#362).
+    /// </summary>
+    /// <remarks>
+    ///     A clear refusal at the edge (ADR-0046) rather than an <c>unread guards</c> mark: the guard was read and
+    ///     understood, and what it asks for is what the library will not produce. The floor is named in the
+    ///     open parameter's own comment, under the recap's rows and in the machine report.
+    /// </remarks>
+    Unsatisfiable = 1024
 
 }

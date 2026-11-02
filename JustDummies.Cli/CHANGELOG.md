@@ -43,6 +43,17 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
   transforms what it returns, an expression-bodied one, a local function, or a call below the first assignment to
   state keeps the mark. `Math.Abs(p) > N` and `>= N` are read as the symmetric range they state, in the
   constructor too (issue #416).
+- **A size guard past the million JustDummies produces is read for what it is.** A ceiling above the cap
+  (`if (values.Count > 2_000_000) { throw … }`) holds by construction: the row reads `guard`, nothing is written,
+  and a line under the rows says so. A floor above it (`if (values.Count < 2_000_000) { throw … }`) admits no
+  draw: the parameter is left open as a `TODO`, provenance `unsatisfiable`, with the reason in the comment, under
+  the rows and in `--format json`'s `remark` — a clear refusal rather than a `to verify` over a base every draw
+  of which the constructor rejects (issue #362).
+- **The recap warns when a guard sets a very large size ceiling.** A guard-derived `WithMaxCount(500000)` is
+  written as read, but a declared maximum steers the draw (ADR-0076), so one default draw could produce hundreds
+  of thousands of elements. From ten thousand characters or elements, a line under the rows now says so and
+  suggests a smaller default in the parameter's `AnyValid…()` factory, leaving the full ceiling to the test that
+  needs it; `--format json` carries the sentence as `remark` and the flag as `largeSizeCeiling` (issue #361).
 
 ### Changed
 

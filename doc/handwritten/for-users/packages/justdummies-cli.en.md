@@ -66,6 +66,7 @@ It is the point of the recap, not decoration — it separates what was **inferre
 | `self-referencing` | the parameter reaches the type being scaffolded (a tree, a manager of the same type, or a type whose constructor comes back to it), so it is a `TODO`: drawing it would recurse forever, and how deep it goes is yours to write |
 | `no source` | the type comes from a package, so there was no constructor body to read |
 | `unavailable` | the generator exists in JustDummies, but not in the asset your project resolves |
+| `unsatisfiable` | a size guard requires more than the million characters or elements JustDummies produces, so no draw can satisfy the constructor: it is a `TODO`, and a line under the rows says which floor |
 
 **A `guard` row names your constants.** Where the guard compares with a public constant —
 `ThrowIfGreaterThan(projectId, MaxProjectId)` — the recipe references it,

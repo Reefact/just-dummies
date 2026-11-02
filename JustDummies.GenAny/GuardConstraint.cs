@@ -13,14 +13,44 @@ namespace JustDummies.GenAny;
 /// </remarks>
 internal sealed class GuardConstraint {
 
-    internal GuardConstraint(string member, string? argument, Bound bound, decimal? value = null, bool exclusive = false, bool refusesNull = false) {
-        Member      = member;
-        Argument    = argument;
-        Bound       = bound;
-        Value       = value;
-        Exclusive   = exclusive;
-        RefusesNull = refusesNull;
+    internal GuardConstraint(string member, string? argument, Bound bound, decimal? value = null, bool exclusive = false, bool refusesNull = false, SizeBeyondTheCap beyondTheCap = SizeBeyondTheCap.None) {
+        Member       = member;
+        Argument     = argument;
+        Bound        = bound;
+        Value        = value;
+        Exclusive    = exclusive;
+        RefusesNull  = refusesNull;
+        BeyondTheCap = beyondTheCap;
     }
+
+    /// <summary>
+    ///     A size guard whose bound lies past the million the library produces (ADR-0076), read for what it is
+    ///     rather than left unread (#362): a ceiling there holds by construction, and a floor there admits no draw.
+    /// </summary>
+    internal enum SizeBeyondTheCap {
+
+        None,
+
+        /// <summary>A ceiling no draw can exceed: understood, and nothing to write.</summary>
+        CeilingHolds,
+
+        /// <summary>A floor no draw can reach: the parameter is left open, with the reason.</summary>
+        FloorUnsatisfiable
+
+    }
+
+    /// <summary>The reading of <c>p.Length &gt; N</c> with <c>N</c> past the cap — never a call in the chain.</summary>
+    internal static GuardConstraint CeilingBeyondTheCap(decimal value) {
+        return new GuardConstraint(string.Empty, argument: null, Bound.Upper, value, beyondTheCap: SizeBeyondTheCap.CeilingHolds);
+    }
+
+    /// <summary>The reading of <c>p.Length &lt; N</c> with <c>N</c> past the cap — never a call in the chain.</summary>
+    internal static GuardConstraint FloorBeyondTheCap(decimal value) {
+        return new GuardConstraint(string.Empty, argument: null, Bound.Lower, value, beyondTheCap: SizeBeyondTheCap.FloorUnsatisfiable);
+    }
+
+    /// <summary>Which side of the cap this reading sits past, where it does; <see cref="SizeBeyondTheCap.None" /> for a constraint.</summary>
+    internal SizeBeyondTheCap BeyondTheCap { get; }
 
     /// <summary>
     ///     The reading of a guard that refuses <c>null</c> and says nothing else — <c>p is null</c>,
@@ -64,7 +94,7 @@ internal sealed class GuardConstraint {
 
     /// <summary>The same constraint, read from a guard that refuses <c>null</c> as well.</summary>
     internal GuardConstraint RefusingNull() {
-        return new GuardConstraint(Member, Argument, Bound, Value, Exclusive, refusesNull: true);
+        return new GuardConstraint(Member, Argument, Bound, Value, Exclusive, refusesNull: true, BeyondTheCap);
     }
 
     /// <summary>How many arguments the member takes, which is what ADR-0059 is checked against.</summary>

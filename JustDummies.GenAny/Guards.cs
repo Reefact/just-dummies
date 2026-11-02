@@ -282,20 +282,29 @@ internal static class Guards {
                 continue;
             }
 
-            // Doubt travels with the constraints: a guard the delegated constructor could not read is a
-            // guard over THIS parameter too.
-            if (Delegated().Unread(handedTo!.Name)) { reading.MarkUnread(handedFrom.Name, Delegated().UnreadAt(handedTo.Name)!); }
-
-            foreach (GuardConstraint constraint in Delegated().For(handedTo.Name)) {
-                reading.Add(handedFrom.Name, constraint);
-            }
-
-            if (Delegated().RefusesNull(handedTo.Name)) { reading.RefuseNull(handedFrom.Name); }
+            FoldOnto(handedFrom.Name, handedTo!.Name, Delegated(), reading);
 
             handed[handedTo.Name] = handedFrom.Name;
         }
 
         FoldTies(delegatedReading, handed, reading);
+    }
+
+    /// <summary>
+    ///     Everything the delegated reading says about its own parameter <paramref name="to" />, said of the outer
+    ///     parameter <paramref name="from" /> handed to it unchanged: the doubt, the constraints, the refusal of
+    ///     null, and a size past the cap on either side.
+    /// </summary>
+    private static void FoldOnto(string from, string to, GuardReading delegated, GuardReading reading) {
+        // Doubt travels with the constraints: a guard the delegated constructor could not read is a guard over
+        // THIS parameter too.
+        if (delegated.Unread(to)) { reading.MarkUnread(from, delegated.UnreadAt(to)!); }
+
+        foreach (GuardConstraint constraint in delegated.For(to)) { reading.Add(from, constraint); }
+
+        if (delegated.RefusesNull(to)) { reading.RefuseNull(from); }
+        if (delegated.CeilingBeyondTheCap(to) is { } ceiling) { reading.Add(from, GuardConstraint.CeilingBeyondTheCap(ceiling)); }
+        if (delegated.FloorBeyondTheCap(to) is { } floor) { reading.Add(from, GuardConstraint.FloorBeyondTheCap(floor)); }
     }
 
     /// <summary>
@@ -378,7 +387,12 @@ internal static class Guards {
     ///     would refuse shapes that read perfectly, which is the mirror defect and costs real coverage.
     /// </remarks>
     private static bool SaysSomethingAbout(GuardReading delegated, IParameterSymbol target) {
-        return !delegated.SourceAvailable || delegated.Unread(target.Name) || delegated.For(target.Name).Count > 0 || delegated.Tied(target.Name);
+        return !delegated.SourceAvailable
+            || delegated.Unread(target.Name)
+            || delegated.For(target.Name).Count > 0
+            || delegated.Tied(target.Name)
+            || delegated.FloorBeyondTheCap(target.Name) is not null
+            || delegated.CeilingBeyondTheCap(target.Name) is not null;
     }
 
     /// <summary>
@@ -1128,7 +1142,7 @@ internal static class Guards {
         }
 
         foreach (string narrowed in method.Parameters.Select(parameter => parameter.Name)
-                                         .Where(name => wouldHaveRead.Unread(name) || wouldHaveRead.For(name).Count > 0)) {
+                                         .Where(name => wouldHaveRead.Unread(name) || wouldHaveRead.For(name).Count > 0 || wouldHaveRead.FloorBeyondTheCap(name) is not null)) {
             reading.MarkUnread(narrowed, wouldHaveRead.UnreadAt(narrowed) ?? UnreadGuard.At(statement));
         }
 
@@ -2793,14 +2807,19 @@ internal static class Guards {
         string count = named ?? ((int)value).ToString(CultureInfo.InvariantCulture);
 
         // A floor and an exact size ask the generator to PRODUCE that many, so they answer to both limits; a
-        // ceiling only asks it not to exceed one, so the element domain has nothing to say about it.
+        // ceiling only asks it not to exceed one, so the element domain has nothing to say about it. Past the
+        // cap itself, a ceiling holds by construction and a floor admits no draw (#362) — the cap is the one
+        // limit a size never crosses, where a floor between a distinct count and the cap is only refused.
         return @operator switch {
-            SyntaxKind.EqualsExpression when value == 0                => Emptiness(sizes.ByCount),
-            SyntaxKind.LessThanExpression when value == 1              => Emptiness(sizes.ByCount),
-            SyntaxKind.LessThanExpression when value <= sizes.Floor    => new GuardConstraint(min, count, Bound.Lower, value),
+            SyntaxKind.EqualsExpression when value == 0                  => Emptiness(sizes.ByCount),
+            SyntaxKind.LessThanExpression when value == 1                => Emptiness(sizes.ByCount),
+            SyntaxKind.LessThanExpression when value <= sizes.Floor      => new GuardConstraint(min, count, Bound.Lower, value),
+            SyntaxKind.LessThanExpression when value > sizes.Ceiling     => GuardConstraint.FloorBeyondTheCap(value),
             SyntaxKind.GreaterThanExpression when value <= sizes.Ceiling => new GuardConstraint(max, count, Bound.Upper, value),
-            SyntaxKind.NotEqualsExpression when value <= sizes.Floor   => new GuardConstraint(exact, count, Bound.Exact, value),
-            _                                                          => null
+            SyntaxKind.GreaterThanExpression                             => GuardConstraint.CeilingBeyondTheCap(value),
+            SyntaxKind.NotEqualsExpression when value <= sizes.Floor     => new GuardConstraint(exact, count, Bound.Exact, value),
+            SyntaxKind.NotEqualsExpression when value > sizes.Ceiling    => GuardConstraint.FloorBeyondTheCap(value),
+            _                                                            => null
         };
     }
 

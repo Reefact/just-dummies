@@ -208,7 +208,9 @@ internal static class GuardCorpus {
                                                 }
                                                 """, beyondTheEngine: true),
 
-        // ---- D9: a size constant above the library's producible cap, on each side of the family. ----
+        // ---- D9: a size constant above the library's producible cap, on each side of the family (#362). A floor
+        // ---- there admits no draw and leaves the parameter open with the reason; a ceiling there holds by
+        // ---- construction, so the domain is satisfiable with nothing written.
 
         new GuardedShape("above-cap-floor", "Body", """
                                                     public sealed class Body {
@@ -224,7 +226,7 @@ internal static class GuardCorpus {
                                                                  if (text.Length > 1048576) { throw new ArgumentException(nameof(text)); }
                                                              }
                                                          }
-                                                         """, beyondTheEngine: true),
+                                                         """),
 
         // ---- An enum exclusion guard reads as AnyEnum<T>.DifferentFrom, so this domain is fully satisfiable. ----
 

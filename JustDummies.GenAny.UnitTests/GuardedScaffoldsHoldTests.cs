@@ -116,8 +116,18 @@ public sealed class GuardedScaffoldsHoldTests {
         Check.WithCustomMessage($"Any{shape.Target} honoured nothing and said nothing.")
              .That(outcome.Plan!.Parameters.Any(parameter => parameter.Provenance.HasFlag(Provenance.GuardsNotCombined)
                                                           || parameter.Provenance.HasFlag(Provenance.UnreadGuards)
-                                                          || parameter.Provenance.HasFlag(Provenance.ConstraintUnavailable)))
+                                                          || parameter.Provenance.HasFlag(Provenance.ConstraintUnavailable)
+                                                          || parameter.Provenance.HasFlag(Provenance.Unsatisfiable)))
              .IsTrue();
+
+        // A floor past the cap leaves the parameter open with its reason (#362): the file names a sentinel that
+        // does not exist, as every open parameter's does, and says in its comment that no draw can satisfy it.
+        if (outcome.Plan.Parameters.Any(parameter => parameter.Provenance.HasFlag(Provenance.Unsatisfiable))) {
+            Check.That(EmittedCodeCompiler.ErrorsIn(Compiled(outcome, shape))).Not.IsEmpty();
+            Check.That(outcome.File!.SourceText).Contains("no draw can satisfy");
+
+            return;
+        }
 
         if (outcome.Plan.Parameters.Any(parameter => parameter.RequiresVerification)) {
             Check.WithCustomMessage($"Any{shape.Target} compiled despite a drop the engine cannot vouch for.")

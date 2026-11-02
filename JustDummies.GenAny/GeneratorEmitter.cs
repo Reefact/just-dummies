@@ -297,6 +297,15 @@ public static class GeneratorEmitter {
             return;
         }
 
+        // No draw can satisfy the constructor, and the line says why rather than sending the developer to write
+        // a generator for a domain the library will not produce (#362).
+        if (parameter.Provenance.HasFlag(Provenance.Unsatisfiable) && parameter.Remark is { } remark) {
+            Line(file, $"{indent}// TODO(any): no draw can satisfy '{parameter.TypeDisplay} {parameter.Name}': {remark}.");
+            Line(file, $"{indent}//   Narrow the constructor, or replace this and always pass .With{parameter.PascalCasedName}(value) instead.");
+
+            return;
+        }
+
         Line(file, $"{indent}// TODO(any): no generator inferred for '{parameter.TypeDisplay} {parameter.Name}'.");
 
         if (ScaffoldableByName(parameter.TypeDisplay)) {

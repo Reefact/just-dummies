@@ -78,6 +78,22 @@ internal static class GuardCorpus {
                                                                           """, idioms: ["`a > b`, `a >= b`, `b < a`, `b <= a`, where `a` and `b` are two parameters of one ordered type"]),
 
         // ---- #377: a bound written as a public constant is referenced, so the file moves with the domain.
+        // ---- A constant or an enum member named like a keyword is referenced with its `@` put back.
+
+        new GuardedShape("sound-keyword-named-references", "Lot", """
+                                                                  public enum Kind { @class, @struct, Record }
+
+                                                                  public sealed class Lot {
+
+                                                                      public const int @checked = 12;
+
+                                                                      public Lot(int count, Kind kind) {
+                                                                          if (count > @checked) { throw new ArgumentOutOfRangeException(nameof(count)); }
+                                                                          if (kind == Kind.@class) { throw new ArgumentOutOfRangeException(nameof(kind)); }
+                                                                      }
+                                                                  }
+                                                                  """),
+
 
         new GuardedShape("sound-named-constant-bound", "Credit", """
                                                                  public sealed class Credit {

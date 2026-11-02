@@ -1901,7 +1901,7 @@ internal static class Guards {
         if (member.ContainingType is not { TypeKind: TypeKind.Enum } universe) { return false; }
         if (!SymbolEqualityComparer.Default.Equals(universe, Underlying(parameter.Type))) { return false; }
 
-        spelled = names.Of(universe) + "." + member.Name;
+        spelled = names.Of(universe) + "." + Spelled(member.Name);
 
         return true;
     }
@@ -2480,7 +2480,15 @@ internal static class Guards {
             if (level.DeclaredAccessibility != Accessibility.Public) { return null; }
         }
 
-        return names.Of(owner) + "." + field.Name;
+        return names.Of(owner) + "." + Spelled(field.Name);
+    }
+
+    /// <summary>
+    ///     A member name as the emitted file has to write it: Roslyn reports <c>@checked</c> as <c>checked</c>, and
+    ///     the <c>@</c> has to go back on a reserved word or the reference does not parse.
+    /// </summary>
+    private static string Spelled(string member) {
+        return SyntaxFacts.GetKeywordKind(member) == SyntaxKind.None ? member : "@" + member;
     }
 
     /// <summary>

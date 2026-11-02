@@ -822,6 +822,8 @@ reads the value, and every rule below works on that value; only the spelling cha
 is folded to its value, as before: a `private` or `internal` constant (the file lives in the test
 project, and the engine does not look for a friend assembly), a local `const`, an expression such as
 `Max - 1`, a constant of another numeric type, and the arguments of the guard libraries' calls (#377).
+A member named like a keyword — `@checked`, which Roslyn reports as `checked` — is referenced with its
+`@` put back, as an enum member is in the `DifferentFrom` row.
 
 **An `else` does not stop the reading.** An `else` branch says only what happens when its own
 condition is false — exactly the case where the branches before it already let the value through —

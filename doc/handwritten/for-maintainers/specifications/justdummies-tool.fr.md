@@ -857,7 +857,9 @@ référence un champ `const` écrit seul, du type exact que prend la contrainte 
 Tout le reste est replié sur sa valeur, comme avant : une constante `private` ou `internal` (le fichier
 vit dans le projet de test, et le moteur ne cherche pas d'assembly amie), une `const` locale, une
 expression comme `Max - 1`, une constante d'un autre type numérique, et les arguments des appels des
-bibliothèques de gardes (#377).
+bibliothèques de gardes (#377). Un membre nommé comme un mot-clé — `@checked`, que Roslyn rapporte
+`checked` — est référencé avec son `@` remis, comme l'est un membre d'énumération dans la ligne
+`DifferentFrom`.
 
 **Un `else` n'arrête pas la lecture.** Une branche `else` ne dit que ce qui se passe quand sa propre
 condition est fausse — exactement le cas où les branches précédentes ont déjà laissé passer la

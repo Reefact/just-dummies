@@ -363,6 +363,28 @@ public sealed class GuardReadingTests {
         Check.That(parameter.Provenance.HasFlag(Provenance.UnreadGuards)).IsFalse();
     }
 
+    /// <summary>The same spelling rule for an enum member: <c>Kind.@class</c>, never <c>Kind.class</c>.</summary>
+    [Fact(DisplayName = "An enum member named like a keyword is referenced with its escape.")]
+    public void AnEnumMemberNamedLikeAKeywordIsEscaped() {
+        ScaffoldOutcome outcome = Subject.Scaffold("""
+                                                   using System;
+
+                                                   namespace Shop.Domain;
+
+                                                   public enum Kind { @class, @struct, Record }
+
+                                                   public sealed class Subject {
+
+                                                       public Subject(Kind kind) {
+                                                           if (kind == Kind.@class) { throw new ArgumentOutOfRangeException(nameof(kind)); }
+                                                       }
+
+                                                   }
+                                                   """);
+
+        Check.That(outcome.Plan!.Parameters.Single().Expression).IsEqualTo("Any.Enum<Kind>().DifferentFrom(Kind.@class)");
+    }
+
     /// <summary>The universe check unwraps a nullable enum the same way the numeric rows unwrap a nullable number.</summary>
     [Fact(DisplayName = "An enum exclusion guard is read the same on a nullable enum parameter.")]
     public void AnEnumExclusionGuardIsReadTheSameOnANullableEnumParameter() {
@@ -892,6 +914,9 @@ public sealed class GuardReadingTests {
                 "public const decimal Floor = 0.5m;", "Any.Decimal().GreaterThanOrEqualTo(Subject.Floor)")]
     [InlineData("string", "if (value.Length > MaxLength) { throw new ArgumentException(nameof(value)); }",
                 "public const int MaxLength = 40;", "Any.String().WithMaxLength(Subject.MaxLength)")]
+    // Roslyn reports `@checked` as `checked`; the reference has to put the `@` back or it does not parse.
+    [InlineData("int", "if (value > @checked) { throw new ArgumentOutOfRangeException(nameof(value)); }",
+                "public const int @checked = 10;", "Any.Int32().LessThanOrEqualTo(Subject.@checked)")]
     [InlineData("int", "if (value < Limits.Floor) { throw new ArgumentOutOfRangeException(nameof(value)); } if (value > Limits.Ceiling) { throw new ArgumentOutOfRangeException(nameof(value)); }",
                 "public static class Limits { public const int Floor = 2; public const int Ceiling = 9; }",
                 "Any.Int32().Between(Subject.Limits.Floor, Subject.Limits.Ceiling)")]

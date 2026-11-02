@@ -615,6 +615,31 @@ for that parameter, the generator you pass has to keep too — which is why the 
 for you. Decision:
 [ADR-0109](../../for-maintainers/adr/0109-let-a-test-refine-a-parameters-valid-base-rather-than-replace-it.md).
 
+### Three things the file does on purpose
+
+Each of these is deliberate, and each has a short way to live with it.
+
+**A parameter's valid base is private.** `AnyValid…()` holds the rules `any` read for a parameter, and
+a test that needs a value of that kind on its own — a parcel count the constructor would accept —
+cannot call `AnyShipment.AnyValidParcels()` (`CS0122`). Do not draw the whole shipment to read its
+parcels, restate the range in the test, or make the method public: `--force` would revert that. The
+class is `partial`, so add one line to your own file beside it —
+`internal static AnyInt32 ValidParcels() { return AnyValidParcels(); }` — which reaches the base and
+survives a re-scaffold.
+
+**A prepared generator is reused as a lambda.** `With…` takes a value or a lambda, never a generator:
+`WithRoute(preparedRoute)` is `CS1503`. Write the refinement once, as the lambda it is —
+`Func<AnyRoute, AnyRoute> domestic = r => r.WithDomestic(true);` — and pass `domestic` wherever a test
+needs it. Do not write `_ => preparedRoute`: it compiles, and it replaces the base with every rule it
+kept, which is exactly what the missing overload protects you from. The generated `With…(Func)` says
+so in its documentation.
+
+**A pinned object is shared.** `WithBuffer(new PlaybackBuffer(10, 60))` hands that one instance to
+every `Generate()`: a pin is a value, not a recipe. If the type is mutable and a test changes one draw,
+the next draw sees the change. To get a fresh object per draw, refine instead —
+`WithBuffer(b => b.WithCapacity(10))` draws a new buffer each time — or build the object inside the
+test. The generated pin says so in its documentation.
+
 ## When a guard ties two parameters
 
 **A direct order is drawn for you.** When the constructor compares two of its parameters of one

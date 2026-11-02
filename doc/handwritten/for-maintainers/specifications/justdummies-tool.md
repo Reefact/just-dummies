@@ -347,7 +347,7 @@ public sealed partial class AnyOrder : IAny<Order> {
         _placedAtRecipe  = from._placedAtRecipe;
     }
 
-    /// <summary>Pins <c>reference</c> to a fixed value; its recipe is kept for a later refinement.</summary>
+    /// <summary>Pins <c>reference</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyOrder WithReference(OrderReference value) {
         AnyOrder copy = new AnyOrder(this);
 
@@ -357,6 +357,7 @@ public sealed partial class AnyOrder : IAny<Order> {
     }
 
     /// <summary>Refines the recipe <c>reference</c> is drawn from — <c>AnyValidReference()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyOrderReference, AnyOrderReference&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyOrder WithReference(Func<AnyOrderReference, AnyOrderReference> configure) {
         AnyOrder copy = new AnyOrder(this);
 
@@ -366,7 +367,7 @@ public sealed partial class AnyOrder : IAny<Order> {
         return copy;
     }
 
-    /// <summary>Pins <c>customer</c> to a fixed value; its recipe is kept for a later refinement.</summary>
+    /// <summary>Pins <c>customer</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyOrder WithCustomer(Customer value) {
         AnyOrder copy = new AnyOrder(this);
 
@@ -376,6 +377,7 @@ public sealed partial class AnyOrder : IAny<Order> {
     }
 
     /// <summary>Refines the recipe <c>customer</c> is drawn from — <c>AnyValidCustomer()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyCustomer, AnyCustomer&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyOrder WithCustomer(Func<AnyCustomer, AnyCustomer> configure) {
         AnyOrder copy = new AnyOrder(this);
 
@@ -385,7 +387,7 @@ public sealed partial class AnyOrder : IAny<Order> {
         return copy;
     }
 
-    /// <summary>Pins <c>quantity</c> to a fixed value; its recipe is kept for a later refinement.</summary>
+    /// <summary>Pins <c>quantity</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyOrder WithQuantity(int value) {
         AnyOrder copy = new AnyOrder(this);
 
@@ -395,6 +397,7 @@ public sealed partial class AnyOrder : IAny<Order> {
     }
 
     /// <summary>Refines the recipe <c>quantity</c> is drawn from — <c>AnyValidQuantity()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyInt32, AnyInt32&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyOrder WithQuantity(Func<AnyInt32, AnyInt32> configure) {
         AnyOrder copy = new AnyOrder(this);
 
@@ -404,7 +407,7 @@ public sealed partial class AnyOrder : IAny<Order> {
         return copy;
     }
 
-    /// <summary>Pins <c>status</c> to a fixed value; its recipe is kept for a later refinement.</summary>
+    /// <summary>Pins <c>status</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyOrder WithStatus(OrderStatus value) {
         AnyOrder copy = new AnyOrder(this);
 
@@ -414,6 +417,7 @@ public sealed partial class AnyOrder : IAny<Order> {
     }
 
     /// <summary>Refines the recipe <c>status</c> is drawn from — <c>AnyValidStatus()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyEnum&lt;OrderStatus&gt;, AnyEnum&lt;OrderStatus&gt;&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyOrder WithStatus(Func<AnyEnum<OrderStatus>, AnyEnum<OrderStatus>> configure) {
         AnyOrder copy = new AnyOrder(this);
 
@@ -423,7 +427,7 @@ public sealed partial class AnyOrder : IAny<Order> {
         return copy;
     }
 
-    /// <summary>Pins <c>tags</c> to a fixed value; its recipe is kept for a later refinement.</summary>
+    /// <summary>Pins <c>tags</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyOrder WithTags(IReadOnlyList<string> value) {
         AnyOrder copy = new AnyOrder(this);
 
@@ -433,6 +437,7 @@ public sealed partial class AnyOrder : IAny<Order> {
     }
 
     /// <summary>Refines the recipe <c>tags</c> is drawn from — <c>AnyValidTags()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyList&lt;string&gt;, AnyList&lt;string&gt;&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyOrder WithTags(Func<AnyList<string>, AnyList<string>> configure) {
         AnyOrder copy = new AnyOrder(this);
 
@@ -442,7 +447,7 @@ public sealed partial class AnyOrder : IAny<Order> {
         return copy;
     }
 
-    /// <summary>Pins <c>placedAt</c> to a fixed value; its recipe is kept for a later refinement.</summary>
+    /// <summary>Pins <c>placedAt</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyOrder WithPlacedAt(DateTime value) {
         AnyOrder copy = new AnyOrder(this);
 
@@ -452,6 +457,7 @@ public sealed partial class AnyOrder : IAny<Order> {
     }
 
     /// <summary>Refines the recipe <c>placedAt</c> is drawn from — <c>AnyValidPlacedAt()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyDateTime, AnyDateTime&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyOrder WithPlacedAt(Func<AnyDateTime, AnyDateTime> configure) {
         AnyOrder copy = new AnyOrder(this);
 
@@ -530,7 +536,11 @@ public sealed partial class AnyOrder : IAny<Order> {
   compiled; a generator passed where a value is expected is now a compile error, louder than the
   `JD011`/`JD012` mistake it used to avoid. A developer who needs to replace the recipe for one
   parameter adds that overload in a neighbouring part of the partial class. An unresolved parameter
-  has no base to refine, and keeps the value overload alone.
+  has no base to refine, and keeps the value overload alone. Each overload's documentation says the
+  one thing a developer is likely to get wrong there (#391): the pin hands every draw the value it was
+  given — one shared instance for a reference type, so a mutable one changed by a test is changed for
+  the next draw — and the refining overload says to reuse a refinement as a `Func<G, G>` that builds
+  on what it receives, since `_ => prepared` compiles and replaces the base.
 * Per parameter whose default draws `null` (§5.2, D10), a third method, `Without{Param}()`, pinning
   it to `null` — `Any.Fixed<TParam>(null)` — and keeping the recipe, as a pin does. The refining
   lambda describes a value and never yields `null`, and `With{Param}(null)` is ambiguous between the

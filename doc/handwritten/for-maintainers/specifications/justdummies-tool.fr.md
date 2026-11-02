@@ -843,7 +843,8 @@ plutôt que se tromper :
 * c'est un `if` dont le corps lève inconditionnellement ;
 * elle apparaît avant la première affectation à un champ ou une propriété ;
 * sa condition mentionne **exactement un** paramètre — ou deux, dans la seule ligne d'ordre de la
-  table ci-dessous — et ne contient ni `&&` ni `||` ;
+  table ci-dessous — et ne contient pas de `&&` ; un `||` se lit branche par branche, chacune comme
+  une garde à part entière, et un pattern `or` de même (ADR-0128) ;
 * aucune écriture de ce paramètre n'a pu s'exécuter avant l'endroit où elle se trouve ;
 * tout autre opérande est une constante de compilation.
 
@@ -990,6 +991,8 @@ L'ensemble reconnu est clos :
 | `p == default`, `p == default(T)`, sur une struct non nullable du framework | `.DifferentFrom(default)` ; `.NonEmpty()` sur un `Guid`, et le `default` d'un nombre est son zéro, lu par les lignes ci-dessus |
 | `p.AsSpan().IndexOfAnyExcept("…") >= 0`, `> -1`, `!= -1` | `.WithChars("…")` |
 | `double.IsNaN(p)`, `double.IsInfinity(p)`, `IsPositiveInfinity`, `IsNegativeInfinity`, et leurs jumeaux `float` | aucune — `Any.Double()` et `Any.Single()` ne tirent jamais NaN ni un infini, **là où `p` est de ce type** |
+| `A || B`, `p is P1 or P2` — une disjonction, chaque branche lue comme une garde à part entière | les lignes dans lesquelles chaque branche se lit : `.Between(0, 23)` pour `p < 0 || p > 23`, `.NotBlank().WithMaxLength(12)` pour `IsNullOrWhiteSpace(p) || p.Length > 12` (ADR-0128) |
+| `p is < N`, `p is > N`, `p is N`, `p is null` — un pattern relationnel ou constant, sur `p` ou sur `p.Length` | la comparaison que le pattern épelle : `.LessThanOrEqualTo(N)` pour `p is > N`, `.WithMaxLength(N)` pour `p.Length is > N` |
 
 **Six formes sont entrées dans l'ensemble sur le rapport de terrain du second essai (#408), et chaque
 lecture est exacte.** La négation d'une comparaison est la comparaison opposée, sans troisième valeur
@@ -1176,6 +1179,24 @@ garde rejette. C'est un tirage rare pour un `decimal` par ailleurs non contraint
 cinq mille — et fréquent dès que le paramètre porte une autre borne (§17). Exactement le profil d'un
 défaut qui survit à un test superficiel. Par la même règle, `p <= 0` et `p >= 0` restent sur leurs
 lignes de signe plutôt que sur les lignes strictes `p <= N` et `p >= N`.
+
+**Une disjonction, ce sont ses branches** ([ADR-0128](../adr/0128-read-a-disjunction-guard-as-one-guard-per-branch.fr.md)).
+`if (A || B) { throw … }` est exactement `if (A) { throw … } if (B) { throw … }`, que les lignes
+ci-dessus lisent déjà : un `throw` sur l'une ou l'autre branche est un `throw`, donc chaque branche
+rejette à elle seule. C'est une réécriture qui tient par construction, non une heuristique
+(ADR-0046), et c'est pourquoi la règle du paramètre unique ci-dessus est posée à chaque branche
+plutôt qu'au tout : `a < 0 || b < 0` fait deux gardes, une par paramètre ;
+`double.IsNaN(k) || k < 1.0 || k > 5.0` fait une branche qui n'ajoute rien et un intervalle ; une
+branche hors de l'ensemble marque `unread guards` les paramètres qu'elle mentionne, comme une garde
+non lue, et les autres branches apportent toujours ce qu'elles lisent. Un pattern `p is P1 or P2`
+est la même disjonction dans l'autre graphie, et un pattern relationnel seul `p is > N`, sur le
+paramètre ou sur sa longueur ou son nombre, est la comparaison qu'il épelle. **Une conjonction
+reste non lue.** `if (A && B) { throw … }` ne rejette que là où les deux tiennent, donc lire `A`
+seul resserrerait le tirage au-delà de ce que le constructeur exige — une contrainte fausse, la
+seule direction dans laquelle une lecture ne doit jamais se tromper — et une disjonction nichée sous
+une négation est une conjonction déguisée. Les deux essais sont le rapport de terrain que l'ADR-0085
+demande : dix domaines du premier, dix-huit des vingt contextes du second, où c'était le coût le plus
+élevé mesuré.
 
 **Où les contraintes s'attachent.** Une contrainte dérivée d'une garde appartient au generator du
 type propre du paramètre, *avant* toute conversion ou composition. Un paramètre `int?` gardé par
@@ -1956,7 +1977,7 @@ Nommés explicitement pour ne pas être pris pour des oublis.
   fabrique à un paramètre, limitée à une profondeur de 3. Au-delà, le développeur l'écrit.
 * **Les invariants que le tool ne peut pas voir.** Le §5.3 lit un ensemble clos d'idiomes de garde.
   Là où le constructeur lève d'une façon que l'ensemble n'apparie pas — règle inter-paramètres autre
-  qu'un ordre direct entre deux (§5.3), condition arithmétique, garde regex (§5.3) — le paramètre garde le generator neutre, le
+  qu'un ordre direct entre deux (§5.3), conjonction (`&&`), condition arithmétique, garde regex (§5.3) — le paramètre garde le generator neutre, le
   récapitulatif le marque `unread guards`, et **le fichier ne compile pas tant que le développeur
   n'a pas dit que le generator est le bon** (§5.6) : la recette est bien écrite, sous une ligne
   nommant un identifiant qui n'existe pas. Le même marquage atteint une garde entièrement déléguée à

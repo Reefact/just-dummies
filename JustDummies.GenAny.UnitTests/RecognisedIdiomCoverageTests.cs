@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using System.Text.RegularExpressions;
 
 using NFluent;
@@ -14,8 +15,8 @@ namespace JustDummies.GenAny.UnitTests;
 /// </summary>
 /// <remarks>
 ///     <para>
-///         §5.3 declares the set of guard idioms the reader recognises and calls it <b>closed</b> — twenty-six
-///         rows of BCL conditions, thirteen of guard-library helpers. Thirty-nine cells, and until this test
+///         §5.3 declares the set of guard idioms the reader recognises and calls it <b>closed</b> — twenty-eight
+///         rows of BCL conditions, thirteen of guard-library helpers. Forty-one cells, and until this test
 ///         nothing read them. They were prose: a reader took the table for the truth, and no failure could
 ///         follow from a row nobody had ever exercised.
 ///     </para>
@@ -47,7 +48,7 @@ public sealed partial class RecognisedIdiomCoverageTests {
     ///     otherwise make this suite greener, which is the one direction a coverage test must never fail in.
     /// </remarks>
     private static readonly (string Marker, int Rows)[] Tables = [
-        ("The recognised set is closed:", 26),
+        ("The recognised set is closed:", 28),
         ("The mapped rows are exactly these:", 13)
     ];
 
@@ -183,10 +184,36 @@ public sealed partial class RecognisedIdiomCoverageTests {
         while (at < lines.Length && !lines[at].StartsWith('|')) { at++; }
 
         for (int row = at + 2; row < lines.Length && lines[row].StartsWith('|'); row++) {
-            string[] columns = lines[row].Split('|');
+            string[] columns = CellsOf(lines[row]);
 
             yield return (columns[1].Trim(), ConstraintsIn(columns[2]));
         }
+    }
+
+    /// <summary>
+    ///     The cells of a table row, split on the bars outside backticks — a cell quoting <c>||</c> is one cell.
+    /// </summary>
+    private static string[] CellsOf(string row) {
+        List<string>  cells  = [];
+        StringBuilder cell   = new();
+        bool          quoted = false;
+
+        foreach (char character in row) {
+            if (character == '`') { quoted = !quoted; }
+
+            if (character == '|' && !quoted) {
+                cells.Add(cell.ToString());
+                cell.Clear();
+
+                continue;
+            }
+
+            cell.Append(character);
+        }
+
+        cells.Add(cell.ToString());
+
+        return [.. cells];
     }
 
     /// <summary>

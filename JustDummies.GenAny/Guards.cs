@@ -612,7 +612,11 @@ internal static class Guards {
     ///     <see cref="Mentioned" /> gives.
     /// </remarks>
     private static IEnumerable<IParameterSymbol> ReachedThroughCopies(SyntaxNode node, SemanticModel model, IMethodSymbol method, bool ignoresWhatIsThrown = false) {
-        return Trail.Follow([node], model, method, ignoresWhatIsThrown).Reached();
+        return ReachedThroughCopies([node], model, method, ignoresWhatIsThrown);
+    }
+
+    private static IEnumerable<IParameterSymbol> ReachedThroughCopies(IReadOnlyList<SyntaxNode> nodes, SemanticModel model, IMethodSymbol method, bool ignoresWhatIsThrown = false) {
+        return Trail.Follow(nodes, model, method, ignoresWhatIsThrown).Reached();
     }
 
     /// <summary>
@@ -1698,6 +1702,20 @@ internal static class Guards {
                    : null;
     }
 
+    /// <summary>
+    ///     Reads a guard's condition — or, where the condition is a disjunction, each of its branches as a guard
+    ///     of its own (ADR-0128).
+    /// </summary>
+    /// <remarks>
+    ///     <c>if (A || B) { throw … }</c> is exactly <c>if (A) { throw … } if (B) { throw … }</c>, which this
+    ///     reader already reads: a throw on either branch is a throw, so each branch rejects on its own. That is a
+    ///     rewrite holding by construction (ADR-0046), not a heuristic, and it is why a disjunction splits where a
+    ///     conjunction does not — <c>if (A &amp;&amp; B) { throw … }</c> rejects only where both hold, and
+    ///     reading <c>A</c> alone would narrow the draw past what the constructor demands, the one direction a
+    ///     reading must never err in. A pattern <c>p is P1 or P2</c> is the same disjunction in the other spelling.
+    ///     Both trials met the gap — ten domains of the first, eighteen of the second's twenty contexts — and
+    ///     that is the field report ADR-0085 asks for (#364).
+    /// </remarks>
     private static void ReadOne(ExpressionSyntax condition,
                                 SemanticModel model,
                                 IMethodSymbol method,
@@ -1705,16 +1723,96 @@ internal static class Guards {
                                 TypeNames names,
                                 ParameterWrites writes,
                                 bool unskipped) {
-        IParameterSymbol[] mentioned = Mentioned(condition, model, method);
+        foreach (Branch branch in Branches(condition)) { ReadBranch(branch, model, method, reading, names, writes, unskipped); }
+    }
 
-        if (!IsANullCheckOnAPlainCopy(condition, model)) {
-            foreach (IParameterSymbol reached in ReachedThroughCopies(condition, model, method)) { reading.MarkUnread(reached.Name, UnreadGuard.At(condition)); }
+    /// <summary>
+    ///     One branch of a guard's condition: the whole condition where it is no disjunction; one operand of a
+    ///     <c>||</c>; or one alternative of an <c>or</c> pattern, carried with the expression it tests.
+    /// </summary>
+    private sealed class Branch {
 
-            MarkEveryParameterIfTheTrailIsLost([condition], condition, model, method, reading);
+        internal Branch(ExpressionSyntax whole, ExpressionSyntax condition, ExpressionSyntax subject, PatternSyntax? pattern) {
+            Whole     = whole;
+            Condition = condition;
+            Subject   = subject;
+            Pattern   = pattern;
+        }
+
+        /// <summary>The guard's whole condition, which every branch is evaluated where it is.</summary>
+        internal ExpressionSyntax Whole { get; }
+
+        /// <summary>The expression this branch is, or the <c>is</c> expression a pattern branch belongs to.</summary>
+        internal ExpressionSyntax Condition { get; }
+
+        /// <summary>The expression tested: the condition itself, or what the pattern is matched against.</summary>
+        internal ExpressionSyntax Subject { get; }
+
+        /// <summary>The one alternative this branch tests, where the branch is a pattern.</summary>
+        internal PatternSyntax? Pattern { get; }
+
+        /// <summary>What the branch names: the subject, and the pattern where there is one.</summary>
+        internal IReadOnlyList<SyntaxNode> Nodes => Pattern is null ? [Subject] : [Subject, Pattern];
+
+    }
+
+    /// <summary>The branches of <paramref name="condition" />, flattened through nested <c>||</c> and <c>or</c>.</summary>
+    private static IReadOnlyList<Branch> Branches(ExpressionSyntax condition) {
+        List<Branch> branches = [];
+
+        Collect(condition, condition, branches);
+
+        return branches;
+    }
+
+    private static void Collect(ExpressionSyntax whole, ExpressionSyntax condition, List<Branch> branches) {
+        switch (Unwrapped(condition)) {
+            case BinaryExpressionSyntax { RawKind: (int)SyntaxKind.LogicalOrExpression } disjunction:
+                Collect(whole, disjunction.Left, branches);
+                Collect(whole, disjunction.Right, branches);
+
+                break;
+            case IsPatternExpressionSyntax matched:
+                Collect(whole, matched, matched.Expression, matched.Pattern, branches);
+
+                break;
+            default:
+                branches.Add(new Branch(whole, condition, condition, pattern: null));
+
+                break;
+        }
+    }
+
+    private static void Collect(ExpressionSyntax whole, ExpressionSyntax condition, ExpressionSyntax subject, PatternSyntax pattern, List<Branch> branches) {
+        while (pattern is ParenthesizedPatternSyntax parenthesised) { pattern = parenthesised.Pattern; }
+
+        if (pattern is BinaryPatternSyntax { RawKind: (int)SyntaxKind.OrPattern } alternatives) {
+            Collect(whole, condition, subject, alternatives.Left, branches);
+            Collect(whole, condition, subject, alternatives.Right, branches);
+
+            return;
+        }
+
+        branches.Add(new Branch(whole, condition, subject, pattern));
+    }
+
+    private static void ReadBranch(Branch branch,
+                                   SemanticModel model,
+                                   IMethodSymbol method,
+                                   GuardReading reading,
+                                   TypeNames names,
+                                   ParameterWrites writes,
+                                   bool unskipped) {
+        IParameterSymbol[] mentioned = MentionedIn(branch.Nodes, model, method);
+
+        if (!IsANullCheckOnAPlainCopy(branch, model)) {
+            foreach (IParameterSymbol reached in ReachedThroughCopies(branch.Nodes, model, method)) { reading.MarkUnread(reached.Name, UnreadGuard.At(branch.Condition)); }
+
+            MarkEveryParameterIfTheTrailIsLost(branch.Nodes, branch.Condition, model, method, reading);
         } else {
             // Silent, since the check narrows no chain — but not without effect: a nullable parameter draws null
             // by default (#411), a member holding it unchanged then holds null, and this check refuses it.
-            foreach (IParameterSymbol reached in ReachedThroughCopies(condition, model, method)) { reading.RefuseNull(reached.Name); }
+            foreach (IParameterSymbol reached in ReachedThroughCopies(branch.Nodes, model, method)) { reading.RefuseNull(reached.Name); }
         }
 
         // Exactly one, or the engine cannot say whose invariant this is. A cross-parameter rule is precisely
@@ -1725,7 +1823,7 @@ internal static class Guards {
         // A condition mentioning NO parameter is different and stays silent — one testing the clock, say, is
         // about none of them, so there is nobody to send looking. The loop below says both at once.
         if (mentioned.Length != 1) {
-            TieOrMark(condition, model, mentioned, reading, writes, unskipped);
+            TieOrMark(branch.Condition, model, mentioned, reading, writes, unskipped);
 
             return;
         }
@@ -1737,7 +1835,7 @@ internal static class Guards {
         // one a conditioned helper earns, since it is the same question asked along the body rather than up
         // through it.
         if (!unskipped) {
-            reading.MarkUnread(parameter.Name, UnreadGuard.At(condition));
+            reading.MarkUnread(parameter.Name, UnreadGuard.At(branch.Condition));
 
             return;
         }
@@ -1746,29 +1844,94 @@ internal static class Guards {
         // is the one shape where it sees the guard, parses it, and attributes it to a value the generator no
         // longer draws — a write above a `percent < 0` test yields `GreaterThanOrEqualTo(0)` over a real
         // domain of 0..100, under a recap reporting it inferred. So the guard is not this parameter's to
-        // read, and §9 already has the word for that (ADR-0083).
-        if (writes.Precede(parameter, condition)) {
-            reading.MarkUnread(parameter.Name, UnreadGuard.At(condition));
+        // read, and §9 already has the word for that (ADR-0083). Asked of the whole condition rather than of
+        // the branch: every branch is evaluated where the condition is, and a write in a sibling branch —
+        // `int.TryParse(text, out value) || value > 5` — has run by the time the next one is tested.
+        if (writes.Precede(parameter, branch.Whole)) {
+            reading.MarkUnread(parameter.Name, UnreadGuard.At(branch.Condition));
 
             return;
         }
 
-        if (condition.DescendantNodesAndSelf().OfType<BinaryExpressionSyntax>()
-                     .Any(binary => binary.IsKind(SyntaxKind.LogicalAndExpression)
-                                 || binary.IsKind(SyntaxKind.LogicalOrExpression))) {
-            reading.MarkUnread(parameter.Name, UnreadGuard.At(condition));
+        // A conjunction stays unread — `A && B` rejects only where both hold, and reading either alone would
+        // narrow the draw past what the constructor demands — and so does a disjunction nested where it is no
+        // longer the whole condition, `!(A || B)`, which is a conjunction in disguise (ADR-0128).
+        if (branch.Condition.DescendantNodesAndSelf().OfType<BinaryExpressionSyntax>()
+                            .Any(binary => binary.IsKind(SyntaxKind.LogicalAndExpression)
+                                        || binary.IsKind(SyntaxKind.LogicalOrExpression))) {
+            reading.MarkUnread(parameter.Name, UnreadGuard.At(branch.Condition));
 
             return;
         }
 
-        if (!TryRecognise(condition, model, parameter, GeneratorFor.Sizes(parameter.Type), names,
-                          out GuardConstraint? constraint)) {
-            reading.MarkUnread(parameter.Name, UnreadGuard.At(condition));
+        if (!TryRecogniseBranch(branch, model, parameter, GeneratorFor.Sizes(parameter.Type), names,
+                                out GuardConstraint? constraint)) {
+            reading.MarkUnread(parameter.Name, UnreadGuard.At(branch.Condition));
 
             return;
         }
 
         if (constraint is not null) { reading.Add(parameter.Name, constraint); }
+    }
+
+    /// <summary>The closed set, asked of a branch: of its pattern where it has one, of its condition otherwise.</summary>
+    private static bool TryRecogniseBranch(Branch branch,
+                                     SemanticModel model,
+                                     IParameterSymbol parameter,
+                                     (bool ByCount, int Ceiling, int Floor) sizes,
+                                     TypeNames names,
+                                     out GuardConstraint? constraint) {
+        return branch.Pattern is null
+                   ? TryRecognise(branch.Condition, model, parameter, sizes, names, out constraint)
+                   : TryPattern(branch.Subject, branch.Pattern, model, parameter, sizes, names, out constraint);
+    }
+
+    /// <summary>
+    ///     A relational pattern, <c>p is &gt; N</c>, read as the comparison it spells, and a constant pattern,
+    ///     <c>p is null</c>, <c>p is 0</c>, <c>p is E.Member</c>, as the equality it spells — on the parameter, or
+    ///     on its length or count (ADR-0128).
+    /// </summary>
+    /// <remarks>
+    ///     A relational pattern is allowed on the built-in numeric types alone, where the comparison it spells is
+    ///     the built-in one, so no user-defined operator question arises. Any other pattern — a type, a property,
+    ///     a conjunction, a negation — is outside the set and leaves the branch unread.
+    /// </remarks>
+    private static bool TryPattern(ExpressionSyntax subject,
+                                   PatternSyntax pattern,
+                                   SemanticModel model,
+                                   IParameterSymbol parameter,
+                                   (bool ByCount, int Ceiling, int Floor) sizes,
+                                   TypeNames names,
+                                   out GuardConstraint? constraint) {
+        constraint = null;
+
+        while (pattern is ParenthesizedPatternSyntax parenthesised) { pattern = parenthesised.Pattern; }
+
+        if (!IsSubject(subject, model, parameter)) { return false; }
+
+        switch (pattern) {
+            case RelationalPatternSyntax relational when ComparisonSpelledBy(relational.OperatorToken.Kind()) is { } written:
+                return TryBound(new Comparison(null, subject, relational.Expression, written), model, parameter, sizes, names, out constraint);
+            case ConstantPatternSyntax { Expression: LiteralExpressionSyntax literal } when literal.IsKind(SyntaxKind.NullLiteralExpression):
+                constraint = GuardConstraint.NullRefused;
+
+                return true;
+            case ConstantPatternSyntax constant:
+                return TryBound(new Comparison(null, subject, constant.Expression, SyntaxKind.EqualsExpression), model, parameter, sizes, names, out constraint);
+            default:
+                return false;
+        }
+    }
+
+    /// <summary>The comparison a relational pattern's operator token spells, or null for a token that is none.</summary>
+    private static SyntaxKind? ComparisonSpelledBy(SyntaxKind token) {
+        return token switch {
+            SyntaxKind.LessThanToken          => SyntaxKind.LessThanExpression,
+            SyntaxKind.LessThanEqualsToken    => SyntaxKind.LessThanOrEqualExpression,
+            SyntaxKind.GreaterThanToken       => SyntaxKind.GreaterThanExpression,
+            SyntaxKind.GreaterThanEqualsToken => SyntaxKind.GreaterThanOrEqualExpression,
+            _                                 => null
+        };
     }
 
     /// <summary>
@@ -1842,7 +2005,7 @@ internal static class Guards {
     }
 
     /// <summary>
-    ///     Whether <paramref name="condition" /> is a null-check on members that hold a parameter unchanged — one
+    ///     Whether <paramref name="branch" /> is a null-check on members that hold a parameter unchanged — one
     ///     that narrows nothing.
     /// </summary>
     /// <remarks>
@@ -1853,10 +2016,17 @@ internal static class Guards {
     ///     property, never one whose <c>set</c> accessor can rewrite the value (#333). A value COMPUTED from
     ///     the parameter can be null — <c>name.Length &lt; 5 ? null : name</c> — and its null-check is a real guard.
     /// </remarks>
-    private static bool IsANullCheckOnAPlainCopy(ExpressionSyntax condition, SemanticModel model) {
-        return IsNullCheck(condition, model)
-            && NamedSymbols(condition, model).All(HoldsWhatItIsAssigned)
-            && CopySources(condition, model).All(source => IsTheParameterItself(source, model));
+    private static bool IsANullCheckOnAPlainCopy(Branch branch, SemanticModel model) {
+        return IsNullCheck(branch, model)
+            && NamedSymbols(branch.Subject, model).All(HoldsWhatItIsAssigned)
+            && CopySources(branch.Subject, model).All(source => IsTheParameterItself(source, model));
+    }
+
+    /// <summary>Whether a branch tests one value against null and nothing else, in either spelling.</summary>
+    private static bool IsNullCheck(Branch branch, SemanticModel model) {
+        if (branch.Pattern is null) { return IsNullCheck(branch.Condition, model); }
+
+        return branch.Pattern is ConstantPatternSyntax { Expression: LiteralExpressionSyntax literal } && literal.IsKind(SyntaxKind.NullLiteralExpression);
     }
 
     /// <summary>
@@ -1877,9 +2047,13 @@ internal static class Guards {
         };
     }
 
-    /// <summary>Whether <paramref name="comparison" /> calls an operator someone wrote.</summary>
-    private static bool IsUserDefinedOperator(BinaryExpressionSyntax comparison, SemanticModel model) {
-        return model.GetSymbolInfo(comparison).Symbol is IMethodSymbol { MethodKind: MethodKind.UserDefinedOperator };
+    /// <summary>
+    ///     Whether <paramref name="comparison" /> calls an operator someone wrote. A pattern has none to call, and
+    ///     answers false.
+    /// </summary>
+    private static bool IsUserDefinedOperator(BinaryExpressionSyntax? comparison, SemanticModel model) {
+        return comparison is not null
+            && model.GetSymbolInfo(comparison).Symbol is IMethodSymbol { MethodKind: MethodKind.UserDefinedOperator };
     }
 
     /// <summary>
@@ -1929,6 +2103,14 @@ internal static class Guards {
         if (condition is InvocationExpressionSyntax invocation) { return TryCallCondition(invocation, model, parameter, sizes, out constraint); }
 
         if (condition is not BinaryExpressionSyntax comparison) { return false; }
+
+        // `p is E.Member` is parsed as a type test, the member's spelling being a qualified name, and bound as the
+        // constant pattern it is: the equality it spells, where the name resolves to a constant (ADR-0128).
+        if (comparison.IsKind(SyntaxKind.IsExpression)) {
+            return IsSubject(comparison.Left, model, parameter)
+                && model.GetSymbolInfo(comparison.Right).Symbol is IFieldSymbol { HasConstantValue: true }
+                && TryBound(new Comparison(null, comparison.Left, comparison.Right, SyntaxKind.EqualsExpression), model, parameter, sizes, names, out constraint);
+        }
 
         return TryScale(comparison, model, parameter, out constraint)
             || TryCharset(comparison, model, parameter, out constraint)
@@ -2087,8 +2269,47 @@ internal static class Guards {
             return false;
         }
 
-        SyntaxKind @operator = Operator(written, flipped);
-        bool       sized     = IsSize(subject, parameter, model);
+        return TryBound(new Comparison(comparison, subject, other, Operator(written, flipped)), model, parameter, sizes, names, out constraint);
+    }
+
+    /// <summary>
+    ///     A comparison of the subject against another operand, with its sides told apart and its operator read
+    ///     from the subject's side — written as a binary expression, or as a relational pattern, which has no
+    ///     expression of its own to ask a user-defined operator of.
+    /// </summary>
+    private sealed class Comparison {
+
+        internal Comparison(BinaryExpressionSyntax? written, ExpressionSyntax subject, ExpressionSyntax other, SyntaxKind kind) {
+            Written = written;
+            Subject = subject;
+            Other   = other;
+            Kind    = kind;
+        }
+
+        internal BinaryExpressionSyntax? Written { get; }
+
+        internal ExpressionSyntax Subject { get; }
+
+        internal ExpressionSyntax Other { get; }
+
+        /// <summary>The operator, read from the subject's side.</summary>
+        internal SyntaxKind Kind { get; }
+
+    }
+
+    /// <summary>The rows of the closed set for one <see cref="Comparison" />.</summary>
+    private static bool TryBound(Comparison compared,
+                                 SemanticModel model,
+                                 IParameterSymbol parameter,
+                                 (bool ByCount, int Ceiling, int Floor) sizes,
+                                 TypeNames names,
+                                 out GuardConstraint? constraint) {
+        constraint = null;
+
+        BinaryExpressionSyntax? comparison = compared.Written;
+        ExpressionSyntax        other      = compared.Other;
+        SyntaxKind              @operator  = compared.Kind;
+        bool                    sized      = IsSize(compared.Subject, parameter, model);
 
         // `p == null`, `p == Guid.Empty`, `p == default` and `p == E.Member` are the comparisons whose right side
         // is not a number.
@@ -2121,7 +2342,7 @@ internal static class Guards {
     ///     the <c>default</c> of a struct. True means the row was recognised, with its constraint — or with none,
     ///     for a user-defined <c>==</c> the row declines to read (#333).
     /// </summary>
-    private static bool TryEquality(BinaryExpressionSyntax comparison,
+    private static bool TryEquality(BinaryExpressionSyntax? comparison,
                                     ExpressionSyntax other,
                                     SemanticModel model,
                                     IParameterSymbol parameter,
@@ -2647,6 +2868,13 @@ internal static class Guards {
                    .Distinct(SymbolEqualityComparer.Default)
                    .OfType<IParameterSymbol>()
                    .ToArray();
+    }
+
+    /// <summary>The parameters any of <paramref name="nodes" /> names, each once — a branch's subject and pattern together.</summary>
+    private static IParameterSymbol[] MentionedIn(IReadOnlyList<SyntaxNode> nodes, SemanticModel model, IMethodSymbol method) {
+        return [.. nodes.SelectMany(node => Mentioned(node, model, method))
+                        .Distinct(SymbolEqualityComparer.Default)
+                        .OfType<IParameterSymbol>()];
     }
 
     /// <summary>A body that throws whatever happens, rather than one that merely might.</summary>

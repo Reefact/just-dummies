@@ -64,6 +64,70 @@ public sealed class GuardReadingTests {
     }
 
     /// <summary>
+    ///     A disjunction is its branches, each read as a guard of its own (ADR-0128): <c>if (A || B) { throw … }</c>
+    ///     is exactly <c>if (A) { throw … } if (B) { throw … }</c>, and a pattern <c>is P1 or P2</c> the same in
+    ///     the other spelling. A relational or constant pattern is the comparison it spells.
+    /// </summary>
+    [Theory(DisplayName = "A disjunction is read as one guard per branch, and a pattern as the comparison it spells.")]
+    [InlineData("int", "if (value < 1 || value > 12) { throw new ArgumentOutOfRangeException(nameof(value)); }", "Any.Int32().Positive().LessThanOrEqualTo(12)")]
+    [InlineData("int", "if (value < 2 || value > 12) { throw new ArgumentOutOfRangeException(nameof(value)); }", "Any.Int32().Between(2, 12)")]
+    [InlineData("int", "if (value is < 2 or > 12) { throw new ArgumentOutOfRangeException(nameof(value)); }", "Any.Int32().Between(2, 12)")]
+    [InlineData("int", "if (value is (< 2) or (> 12)) { throw new ArgumentOutOfRangeException(nameof(value)); }", "Any.Int32().Between(2, 12)")]
+    [InlineData("int", "if (value is < 2 or > 12 or 0) { throw new ArgumentOutOfRangeException(nameof(value)); }", "Any.Int32().Between(2, 12).NonZero()")]
+    [InlineData("int", "if (value is < 1 or > 12) { throw new ArgumentOutOfRangeException(nameof(value)); }", "Any.Int32().Positive().LessThanOrEqualTo(12)")]
+    [InlineData("int", "if (value is > 12) { throw new ArgumentOutOfRangeException(nameof(value)); }", "Any.Int32().LessThanOrEqualTo(12)")]
+    [InlineData("int", "if (value is 0) { throw new ArgumentOutOfRangeException(nameof(value)); }", "Any.Int32().NonZero()")]
+    [InlineData("double", "if (double.IsNaN(value) || value < 1.0 || value > 5.0) { throw new ArgumentOutOfRangeException(nameof(value)); }", "Any.Double().Between(1d, 5d)")]
+    [InlineData("string", "if (string.IsNullOrWhiteSpace(value) || value.Length > 12) { throw new ArgumentException(nameof(value)); }", "Any.String().NotBlank().WithMaxLength(12)")]
+    [InlineData("string", "if (value.Length is > 12) { throw new ArgumentException(nameof(value)); }", "Any.String().WithMaxLength(12)")]
+    [InlineData("string", "if (value.Length is 0 or > 12) { throw new ArgumentException(nameof(value)); }", "Any.String().NonEmpty().WithMaxLength(12)")]
+    [InlineData("string", "if (value is null || value.Length > 12) { throw new ArgumentException(nameof(value)); }", "Any.String().WithMaxLength(12)")]
+    [InlineData("OrderStatus", "if (value is OrderStatus.Draft) { throw new ArgumentException(nameof(value)); }", "Any.Enum<OrderStatus>().DifferentFrom(OrderStatus.Draft)")]
+    [InlineData("IReadOnlyList<int>", "if (value.Count == 0 || value.Count > 5) { throw new ArgumentException(nameof(value)); }", "Any.ListOf(Any.Int32()).NonEmpty().WithMaxCount(5)")]
+    public void ADisjunctionIsReadAsOneGuardPerBranch(string type, string guard, string expected) {
+        ScaffoldedParameter parameter = Subject.GuardedBy(type, guard);
+
+        Check.That(parameter.Expression).IsEqualTo(expected);
+        Check.That(parameter.Provenance.HasFlag(Provenance.Guard)).IsTrue();
+        Check.That(parameter.UnreadGuard).IsNull();
+    }
+
+    /// <summary>
+    ///     A branch outside the closed set marks its parameter, and the other branches still contribute what they
+    ///     read; two parameters in one disjunction are two guards; a conjunction, in either spelling, stays unread.
+    /// </summary>
+    [Fact(DisplayName = "A disjunction's unread branch marks, its read branches still read, and two parameters are two guards.")]
+    public void ADisjunctionsBranchesAreReadOrMarkedOnTheirOwn() {
+        ScaffoldOutcome outcome = Subject.Scaffold("""
+                                                   public sealed class Subject {
+
+                                                       public Subject(int quantity, int rate, string code, int level) {
+                                                           if (quantity < 1 || rate < 0) { throw new ArgumentOutOfRangeException(nameof(quantity)); }
+                                                           if (code.Length > 12 || code.StartsWith("X")) { throw new ArgumentException(nameof(code)); }
+                                                           if (level is > 0 and < 10) { throw new ArgumentOutOfRangeException(nameof(level)); }
+                                                       }
+
+                                                   }
+                                                   """);
+
+        ScaffoldedParameter quantity = outcome.Plan!.Parameters[0];
+        ScaffoldedParameter rate     = outcome.Plan.Parameters[1];
+        ScaffoldedParameter code     = outcome.Plan.Parameters[2];
+        ScaffoldedParameter level    = outcome.Plan.Parameters[3];
+
+        Check.That(quantity.Expression).IsEqualTo("Any.Int32().Positive()");
+        Check.That(rate.Expression).IsEqualTo("Any.Int32().GreaterThanOrEqualTo(0)");
+        Check.That(quantity.Provenance.HasFlag(Provenance.UnreadGuards)).IsFalse();
+        Check.That(rate.Provenance.HasFlag(Provenance.UnreadGuards)).IsFalse();
+
+        Check.That(code.Expression).IsEqualTo("Any.String().WithMaxLength(12)");
+        Check.That(code.Provenance.HasFlag(Provenance.UnreadGuards)).IsTrue();
+
+        Check.That(level.Expression).IsEqualTo("Any.Int32()");
+        Check.That(level.Provenance.HasFlag(Provenance.UnreadGuards)).IsTrue();
+    }
+
+    /// <summary>
     ///     The two shapes of #408 that read as understood and add nothing, and the edges where a shape of #408 is
     ///     not read: a <c>default</c> on a struct of the developer's own, whose <c>==</c> is a method; a pool that
     ///     is no constant; a rounding of another value.

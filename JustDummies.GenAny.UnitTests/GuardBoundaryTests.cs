@@ -1438,7 +1438,8 @@ public sealed class GuardBoundaryTests {
                             throw new ArgumentOutOfRangeException(nameof(value));
                         }
                 """)]
-    [InlineData("        if (value < 0 || value > 100) { throw new ArgumentOutOfRangeException(nameof(value)); }")]
+    [InlineData("        if (!(value < 0 || value > 100)) { throw new ArgumentOutOfRangeException(nameof(value)); }")]
+    [InlineData("        if (value < 0 && value > -100) { throw new ArgumentOutOfRangeException(nameof(value)); }")]
     public void AThrowingGuardTheSetCannotParseIsUnread(string guard) {
         ScaffoldedParameter parameter = Subject.GuardedBy("int", guard);
 

@@ -187,6 +187,14 @@ Releases are cut from the `lib` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Changed
 
+- **JD007 and JD009 count a `Generate()` on any `IAny<T>` as a draw.** Both rules recognised only a
+  chain written inline from `Any`, so a scaffolded `Any.Order()` entry point, a `new AnyOrder()`, a
+  generator held in a field, a hand-written generator and a chain through an extension of your own
+  went unseen — in an `any` project, most of the draws a static initializer or a test-class constructor
+  makes. The draw now rests on the library's own contract rather than on where the chain starts. Only a
+  chain provably drawn from an isolated `Any.WithSeed(...)` context, written inline or held under a
+  name, stays silent; a generator that draws nothing is marginal, at warning severity, and suppressible
+  (issue #365).
 - **An `Except` given an empty list is a no-op instead of an `ArgumentException`.** On every builder,
   `Except()` and `Except(taken)` with an empty `taken` now exclude nothing, so a fixture's set of values
   already used passes straight through on its first use. An empty `OneOf` stays refused, since it

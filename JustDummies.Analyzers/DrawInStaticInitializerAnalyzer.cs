@@ -36,7 +36,7 @@ public sealed class DrawInStaticInitializerAnalyzer : DiagnosticAnalyzer {
         IInvocationOperation invocation = (IInvocationOperation)context.Operation;
 
         if (!GeneratorFacts.IsGenerateCall(invocation, symbols.IAny!)) { return; }
-        if (!GeneratorFacts.RootsAtAmbientAny(invocation, symbols.Any!, symbols.IAny!)) { return; }
+        if (GeneratorFacts.DrawsFromAnIsolatedContext(invocation, symbols)) { return; }
         if (GeneratorFacts.IsDeferred(invocation)) { return; }
         if (!IsStaticInitialization(context.ContainingSymbol)) { return; }
 

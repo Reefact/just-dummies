@@ -120,8 +120,9 @@ public class Jd009DrawInStaticInitializerTests {
     }
 
     [Fact]
-    public async Task Does_not_report_a_draw_through_a_consumer_extension() {
-        // A consumer's own extension could draw from anywhere, so the walk stops there: the conservative side.
+    public async Task Reports_a_draw_through_a_consumer_extension() {
+        // A consumer's extension draws from the generator it is given, and that one is written from Any. The walk
+        // once stopped at any extension the library did not declare, which left this draw unreported (issue #365).
         const string source = """
             using JustDummies;
 
@@ -131,6 +132,85 @@ public class Jd009DrawInStaticInitializerTests {
 
             public static class Sample {
                 private static readonly string Value = Any.String().NonEmpty().Trimmed().Generate();
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new DrawInStaticInitializerAnalyzer(), source);
+
+        Check.That(diagnostics.Length).IsEqualTo(1);
+        Check.That(diagnostics[0].Id).IsEqualTo("JD009");
+    }
+
+    [Theory]
+    [InlineData("Any.Leg().Generate()")]
+    [InlineData("Any.Leg().WithDistanceKm(240).Generate()")]
+    [InlineData("new AnyLeg().Generate()")]
+    [InlineData("Arbitrary.Leg().Generate()")]
+    [InlineData("Shared.Generate()")]
+    [InlineData("new HandWrittenLeg().Generate()")]
+    [InlineData("Any.ListOf(new AnyLeg()).Generate()")]
+    public async Task Reports_a_draw_on_any_generator_whatever_started_the_chain(string draw) {
+        // Issue #365: a Generate() on any IAny<T> is a draw, by the library's own contract. A scaffolded entry point,
+        // a `new AnyX()`, a static root of the consumer's own, a generator held in a field and a hand-written
+        // generator all went unseen while the rule recognised only a chain written from Any itself.
+        string source = $$"""
+            using JustDummies;
+
+            public sealed class Leg {
+                public Leg(int distanceKm) { DistanceKm = distanceKm; }
+                public int DistanceKm { get; }
+            }
+
+            public sealed class AnyLeg : IAny<Leg> {
+                private readonly IAny<int> _distanceKm = Any.Int32().Positive();
+                public AnyLeg WithDistanceKm(int distanceKm) => this;
+                public Leg Generate() => new Leg(_distanceKm.Generate());
+            }
+
+            public sealed class HandWrittenLeg : IAny<Leg> {
+                public Leg Generate() => new Leg(1);
+            }
+
+            public static class AnyLegEntry {
+                extension(Any) {
+                    public static AnyLeg Leg() => new AnyLeg();
+                }
+            }
+
+            public static class Arbitrary {
+                public static AnyLeg Leg() => new AnyLeg();
+            }
+
+            public static class Sample {
+                private static readonly IAny<Leg> Shared = new AnyLeg();
+                private static readonly object Value = {{draw}};
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new DrawInStaticInitializerAnalyzer(), source);
+
+        Check.That(diagnostics.Length).IsEqualTo(1);
+        Check.That(diagnostics[0].Id).IsEqualTo("JD009");
+    }
+
+    [Theory]
+    [InlineData("Context.Int32().Generate()")]
+    [InlineData("Context.Int32().Positive().OrNull().Generate()")]
+    [InlineData("Context.String().NonEmpty().Trimmed().Generate()")]
+    [InlineData("Any.WithSeed(1234).String().NonEmpty().Trimmed().Generate()")]
+    public async Task Does_not_report_a_draw_from_an_isolated_context_however_it_is_reached(string draw) {
+        // The one draw a lifecycle rule must leave alone: an isolated context is unaffected by the ambient scope, held
+        // under a name or written inline, and whatever extension the chain goes through on its way to Generate().
+        string source = $$"""
+            using JustDummies;
+
+            public static class Extensions {
+                public static IAny<string> Trimmed(this IAny<string> generator) => generator;
+            }
+
+            public static class Sample {
+                private static readonly AnyContext Context = Any.WithSeed(1234);
+                private static readonly object Value = {{draw}};
             }
             """;
 

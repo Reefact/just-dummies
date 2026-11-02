@@ -77,7 +77,10 @@ public sealed class GuardBoundaryTests {
     [InlineData("string", "Any.String()", "if (value.Split(',').Length < 2) { throw new ArgumentException(nameof(value)); }")]
     [InlineData("string", "Any.String()", "if (value.Trim().Length < 8) { throw new ArgumentException(nameof(value)); }")]
     [InlineData("string", "Any.String()", "if (value.Substring(2).Length > 10) { throw new ArgumentException(nameof(value)); }")]
-    [InlineData("int", "Any.Int32()", "if (Math.Abs(value) > 90) { throw new ArgumentOutOfRangeException(nameof(value)); }")]
+    [InlineData("int", "Any.Int32()", "if (Math.Abs(value) + 1 > 90) { throw new ArgumentOutOfRangeException(nameof(value)); }")]
+    [InlineData("uint", "Any.UInt32()", "if (Math.Abs((int)value) > 90) { throw new ArgumentOutOfRangeException(nameof(value)); }")]
+    [InlineData("int", "Any.Int32()", "if (Math.Abs(value) > -1) { throw new ArgumentOutOfRangeException(nameof(value)); }")]
+    [InlineData("int", "Any.Int32()", "if (Math.Abs(value) < 90) { throw new ArgumentOutOfRangeException(nameof(value)); }")]
     [InlineData("int", "Any.Int32()", "if (value * 2 > 100) { throw new ArgumentOutOfRangeException(nameof(value)); }")]
     [InlineData("int", "Any.Int32()", "if (-value > 0) { throw new ArgumentOutOfRangeException(nameof(value)); }")]
     [InlineData("int", "Any.Int32()", "if ((long)value > 100) { throw new ArgumentOutOfRangeException(nameof(value)); }")]
@@ -659,13 +662,15 @@ public sealed class GuardBoundaryTests {
     ///     helper: its body contains a <c>throw</c>. The helper has to be declared in the same type, with
     ///     source; reading what it throws on is a later step, and nothing is inferred here.
     /// </remarks>
-    [Theory(DisplayName = "A parameter handed to a helper of the same type whose body throws is marked unread.")]
-    [InlineData("XMm = Guard(xMm, nameof(xMm));")]
-    [InlineData("double kept = Guard(xMm, nameof(xMm)); XMm = kept;")]
-    [InlineData("XMm = Math.Round(Guard(xMm, nameof(xMm)));")]
-    [InlineData("Other = 1.0; XMm = Guard(xMm, nameof(xMm));")]
-    [InlineData("XMm = this.Guard(xMm, nameof(xMm));")]
-    public void AParameterHandedToAThrowingHelperIsMarkedUnread(string body) {
+    [Theory(DisplayName = "A parameter handed to a helper of the same type that hands it back unchanged is read through it; below the scan it is marked.")]
+    [InlineData("XMm = Guard(xMm, nameof(xMm));", false)]
+    [InlineData("double kept = Guard(xMm, nameof(xMm)); XMm = kept;", false)]
+    [InlineData("XMm = Math.Round(Guard(xMm, nameof(xMm)));", false)]
+    [InlineData("Other = 1.0; XMm = Guard(xMm, nameof(xMm));", true)]
+    [InlineData("XMm = this.Guard(xMm, nameof(xMm));", false)]
+    [InlineData("if (xMm > 0) { XMm = Guard(xMm, nameof(xMm)); }", true)]
+    [InlineData("XMm = Guard(xMm * 2, nameof(xMm));", true)]
+    public void AParameterHandedToAThrowingHelperIsReadThroughItOrMarked(string body, bool marked) {
         ScaffoldOutcome outcome = Subject.Scaffold($$"""
                                                      public sealed class Subject {
 
@@ -688,9 +693,99 @@ public sealed class GuardBoundaryTests {
 
         ScaffoldedParameter xMm = outcome.Plan!.Parameters[0];
 
-        Check.That(xMm.Expression).IsEqualTo("Any.Double()");
-        Check.That(xMm.RequiresVerification).IsTrue();
-        Check.That(xMm.UnreadGuard!.Excerpt).Contains("Guard(xMm, nameof(xMm))");
+        Check.That(xMm.Expression).IsEqualTo(marked ? "Any.Double()" : "Any.Double().Between(-2000d, 2000d)");
+        Check.That(xMm.RequiresVerification).IsEqualTo(marked);
+
+        if (marked) { Check.That(xMm.UnreadGuard!.Excerpt).Contains("Guard(xMm"); }
+    }
+
+    /// <summary>
+    ///     The bounded read of #416 goes one level into a helper that hands its parameter back unchanged, and
+    ///     no further: a helper returning a computed value, one whose body is an expression, a virtual one, and
+    ///     a local function keep the mark of #407. A guard the helper itself cannot read is marked at the helper's
+    ///     own line, and a null-check inside it keeps a nullable parameter's default a value.
+    /// </summary>
+    [Theory(DisplayName = "The read into a helper stops at one level, at a changed value and at a shape the reader does not read.")]
+    [InlineData("private static double Guard(double v) { if (Math.Abs(v) > 2000.0) { throw new ArgumentOutOfRangeException(nameof(v)); } return Math.Round(v); }", "Any.Double()", true)]
+    [InlineData("private static double Guard(double v) { if (Math.Abs(v) > 2000.0) { throw new ArgumentOutOfRangeException(nameof(v)); } v = -v; return v; }", "Any.Double()", true)]
+    [InlineData("private static double Guard(double v) { if (Math.Abs(v) > 2000.0) { throw new ArgumentOutOfRangeException(nameof(v)); } return v > 0 ? v : 0; }", "Any.Double()", true)]
+    [InlineData("private static double Guard(double v) => Math.Abs(v) > 2000.0 ? throw new ArgumentOutOfRangeException(nameof(v)) : v;", "Any.Double()", true)]
+    [InlineData("protected virtual double Guard(double v) { if (Math.Abs(v) > 2000.0) { throw new ArgumentOutOfRangeException(nameof(v)); } return v; }", "Any.Double()", true)]
+    [InlineData("private static double Guard(double v) { if (Math.Abs(v) > 2000.0) { throw new ArgumentOutOfRangeException(nameof(v)); } return v; }", "Any.Double().Between(-2000d, 2000d)", false)]
+    [InlineData("private static double Guard(double v) { return Math.Abs(v) > 2000.0 ? throw new ArgumentOutOfRangeException(nameof(v)) : v; }", "Any.Double()", true)]
+    [InlineData("private static double Guard(double v) { if (v < 0) { throw new ArgumentOutOfRangeException(nameof(v)); } return Inner(v); } private static double Inner(double v) { if (v > 10) { throw new ArgumentOutOfRangeException(nameof(v)); } return v; }", "Any.Double()", true)]
+    [InlineData("private static double Guard(double v) { if (v.ToString().Length > 3) { throw new ArgumentOutOfRangeException(nameof(v)); } return v; }", "Any.Double()", true)]
+    public void TheReadIntoAHelperStopsAtOneLevel(string helper, string expected, bool marked) {
+        ScaffoldOutcome outcome = Subject.Scaffold($$"""
+                                                     public class Subject {
+
+                                                         public Subject(double xMm) {
+                                                             XMm = Guard(xMm);
+                                                         }
+
+                                                         public double XMm { get; }
+
+                                                         {{helper}}
+
+                                                     }
+                                                     """);
+
+        ScaffoldedParameter xMm = outcome.Plan!.Parameters[0];
+
+        Check.That(xMm.Expression).IsEqualTo(expected);
+        Check.That(xMm.RequiresVerification).IsEqualTo(marked);
+    }
+
+    /// <summary>
+    ///     What the helper reads folds onto the constructor's parameter as a delegated constructor's guards do: a
+    ///     guard the helper cannot read marks the parameter at the helper's own line, a null-check keeps a nullable
+    ///     parameter's default a value, and a second parameter handed to the helper is read through it too.
+    /// </summary>
+    [Fact(DisplayName = "What a helper reads, marks and refuses folds onto the parameters handed to it.")]
+    public void WhatAHelperReadsFoldsOntoTheParametersHandedToIt() {
+        ScaffoldOutcome outcome = Subject.Scaffold("""
+                                                   public sealed class Subject {
+
+                                                       public Subject(string code, int? level, int scale) {
+                                                           Code  = Checked(code, scale);
+                                                           Level = Checked(level);
+                                                       }
+
+                                                       public string Code { get; }
+
+                                                       public int? Level { get; }
+
+                                                       private static string Checked(string s, int scale) {
+                                                           if (s.Length > 8) { throw new ArgumentException(nameof(s)); }
+                                                           if (scale < 1) { throw new ArgumentOutOfRangeException(nameof(scale)); }
+                                                           if (!s.StartsWith("C")) { throw new ArgumentException(nameof(s)); }
+
+                                                           return s;
+                                                       }
+
+                                                       private static int? Checked(int? l) {
+                                                           if (l is null) { throw new ArgumentNullException(nameof(l)); }
+
+                                                           return l;
+                                                       }
+
+                                                   }
+                                                   """);
+
+        ScaffoldedParameter code  = outcome.Plan!.Parameters[0];
+        ScaffoldedParameter level = outcome.Plan.Parameters[1];
+        ScaffoldedParameter scale = outcome.Plan.Parameters[2];
+
+        Check.That(code.Expression).IsEqualTo("Any.String().WithMaxLength(8)");
+        Check.That(code.RequiresVerification).IsTrue();
+        Check.That(code.UnreadGuard!.Excerpt).StartsWith("if (!s.StartsWith(\"C\"))");
+
+        Check.That(level.Expression).IsEqualTo("Any.Int32().AsNullable()");
+        Check.That(level.DrawsNull).IsFalse();
+        Check.That(level.RequiresVerification).IsFalse();
+
+        Check.That(scale.Expression).IsEqualTo("Any.Int32().Positive()");
+        Check.That(scale.RequiresVerification).IsFalse();
     }
 
     // The helper's shape does not matter, only that it throws somewhere: an expression body with a throw

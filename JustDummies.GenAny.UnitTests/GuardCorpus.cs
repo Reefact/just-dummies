@@ -360,26 +360,47 @@ internal static class GuardCorpus {
         // ---- Issue #407, CLI-14 of the second trial: the idiomatic value object validates through a helper that
         // ---- RETURNS the value, so the result is used and the discarded-result rule above never saw it — 100 of
         // ---- 100 draws threw under a recap claiming the parameter inferred. The helper is declared in the same
-        // ---- type and its body throws, which is what earns the mark (§5.6); reading what it throws on is a
-        // ---- later step, and nothing is inferred here.
+        // ---- type, its body throws, and it hands its parameter back unchanged, so the reader goes one level into
+        // ---- it (#416) and the magnitude guard it finds there is the symmetric range it states.
 
-        new GuardedShape("returning-helper-throws", "SpatialPoint", """
-                                                                     public sealed class SpatialPoint {
+        new GuardedShape("returning-helper-read", "SpatialPoint", """
+                                                                   public sealed class SpatialPoint {
 
-                                                                         public SpatialPoint(double xMm) {
-                                                                             XMm = Guard(xMm, nameof(xMm));
-                                                                         }
+                                                                       public SpatialPoint(double xMm) {
+                                                                           XMm = Guard(xMm, nameof(xMm));
+                                                                       }
 
-                                                                         public double XMm { get; }
+                                                                       public double XMm { get; }
 
-                                                                         private static double Guard(double v, string name) {
-                                                                             if (Math.Abs(v) > 2000.0) { throw new ArgumentOutOfRangeException(name); }
+                                                                       private static double Guard(double v, string name) {
+                                                                           if (Math.Abs(v) > 2000.0) { throw new ArgumentOutOfRangeException(name); }
 
-                                                                             return v;
-                                                                         }
+                                                                           return v;
+                                                                       }
 
-                                                                     }
-                                                                     """, requiresVerification: true),
+                                                                   }
+                                                                   """, idioms: ["`Math.Abs(p) > N`, `Math.Abs(p) >= N`", "a helper of the same type whose block body throws and hands one of its parameters back unchanged on every path — `XMm = Guard(xMm);`"]),
+
+        // ---- The helper that transforms what it hands back: its guard is about a value this generator does not
+        // ---- draw, so the read stops at the mark of #407, and the base kept underneath still throws on every draw.
+
+        new GuardedShape("returning-helper-transforms", "Rounded", """
+                                                                   public sealed class Rounded {
+
+                                                                       public Rounded(double xMm) {
+                                                                           XMm = Guard(xMm, nameof(xMm));
+                                                                       }
+
+                                                                       public double XMm { get; }
+
+                                                                       private static double Guard(double v, string name) {
+                                                                           if (Math.Abs(v) > 2000.0) { throw new ArgumentOutOfRangeException(name); }
+
+                                                                           return Math.Round(v);
+                                                                       }
+
+                                                                   }
+                                                                   """, requiresVerification: true),
 
         // ---- And the shape that rule has to leave alone: a helper of the same type that normalises and throws
         // ---- nothing is production, exactly as `value.Trim()` is, and marking it would block constructors

@@ -952,6 +952,8 @@ The recognised set is closed:
 | `A || B`, `p is P1 or P2` — a disjunction, each branch read as a guard of its own | the rows each branch reads into: `.Between(0, 23)` for `p < 0 || p > 23`, `.NotBlank().WithMaxLength(12)` for `IsNullOrWhiteSpace(p) || p.Length > 12` (ADR-0128) |
 | `p is < N`, `p is > N`, `p is N`, `p is null` — a relational or constant pattern, on `p` or on `p.Length` | the comparison the pattern spells: `.LessThanOrEqualTo(N)` for `p is > N`, `.WithMaxLength(N)` for `p.Length is > N` |
 | `p.Any(x => x is null)`, `p.Any(x => x == null)`, `p.Contains(null)` on a collection whose element type is not nullable | none — every element recipe the scaffold writes draws a value, so the guard holds by construction; and the parameter's default stops drawing `null` (§5.2). **Unread where the element type is nullable** (#403) |
+| `Math.Abs(p) > N`, `Math.Abs(p) >= N` | `.Between(-N, N)`; `.GreaterThan(-N).LessThan(N)` — the symmetric range a magnitude states, on a signed number (#416) |
+| a helper of the same type whose block body throws and hands one of its parameters back unchanged on every path — `XMm = Guard(xMm);` | what the helper's own guards read, folded onto the parameters handed to it, as a delegated constructor's are; a helper that transforms what it returns, or one the reader does not read, keeps the mark of §5.6 (#416) |
 
 **Six shapes entered the set from the second trial's field report (#408), and each read is exact.** The
 negation of a comparison is the opposite comparison, with no third value for the two to disagree on
@@ -1521,9 +1523,9 @@ to one` — in the comment, under the recap's rows and in the report's `note`. T
 user page that says what `to verify` means: the comment is read by someone who has this file open, not
 this specification. Where no source position is known, the second line is left out.
 
-**A guard written in a helper that returns the value it checked is marked, where the engine can see
-that the helper throws.** The idiomatic validating value object does not write its guard in the
-constructor at all:
+**A guard written in a helper that returns the value it checked is read one level down, where the
+helper hands the value back unchanged, and marked where the engine can only see that the helper
+throws.** The idiomatic validating value object does not write its guard in the constructor at all:
 
 ```csharp
 public sealed class SpatialPoint {
@@ -1544,11 +1546,29 @@ under a recap claiming it inferred, and a hundred draws out of a hundred threw. 
 helper, a static one, a local function — **whose body contains a `throw`** is marked `to verify,
 unread guards`, pointing at that call, wherever in the body the call sits; a helper that throws
 nowhere, `Trim()` or a `Normalise` of the developer's own, stays production and earns no mark, and a
-`void` helper called for its effect is marked as before. Nothing is inferred from the helper: the
-engine does not read its body here, and a helper of another type, or one calling a helper that
-throws, is not looked into (§9). Reading such a helper one level down, and only where it returns
-the parameter unchanged on every path, is a separate step. This trial is the field report ADR-0085
+`void` helper called for its effect is marked as before (#407). A helper of another type, or one
+calling a helper that throws, is not looked into (§9). This trial is the field report ADR-0085
 asks for.
+
+**The reader goes one level into such a helper, and no further, where there is nothing to tell apart
+(#416).** `Guard` above hands `v` back exactly as it received it — every `return` is the parameter
+itself, bare or as the surviving arm of a conditional whose other arm throws, and nothing in the body
+writes it — so a guard inside it is a guard over the value the constructor was handed, and the
+reading that reads a delegated constructor's guards (§5.3) reads this one: the helper's body is read
+as if it were the constructor, each argument mapped to the parameter it fills (`xMm` → `v`), and what
+is read, marked or refused there is folded back onto the constructor's parameter — here
+`.Between(-2000.0, 2000.0)`, from the `Math.Abs` row. The read holds only where the helper is declared
+in the same type with a block body of its own, is neither virtual nor overridden, hands one of its
+parameters back unchanged on every path, and is called where nothing decides whether it runs and
+above every write to the argument. Anything else keeps the mark: a helper returning `v * 2` or
+`Math.Round(v)` normalises — its guard is about a value this generator does not draw, which is §9's
+own concern — and so does a helper whose body is an expression, a virtual one, a local function, and
+a helper reached below the first assignment to state, where nothing is read. A guard the helper
+itself cannot read marks the parameter at the helper's own line, which is where the developer then
+looks. And the assignment `XMm = Guard(xMm);` does not end the leading scan, for the reason the
+assigned spelling of a guard library does not (ADR-0086): it validates and stores, writes over no
+parameter, and so leaves everything below it as leading as it was — the value object with two such
+lines reads both.
 
 A generator that compiles and draws a value the real constructor still rejects is a worse failure
 than one that never compiles: it passes today's run and fails a later one, indistinguishable from
@@ -1891,7 +1911,8 @@ Named explicitly so they are not mistaken for oversights.
   Three shapes still escape it, and all three are silent rather than merely unread — the tool sees no
   rejection to be uncertain about. A guard helper that **returns** the value it checked is told
   apart from normalisation by one fact, that its body throws, and only where the engine can see that
-  body: a helper declared in the same type, with source, is marked (§5.6). One of another type —
+  body: a helper declared in the same type, with source, is read one level down where it hands the
+  value back unchanged, and marked otherwise (§5.6). One of another type —
   `_name = Ensure.Valid(value);` — or without source is indistinguishable from `_name =
   value.Trim();`, and reading it as doubt would mean reading the normalisation as doubt too, which
   blocks the compilation of constructors carrying no guard at all; the helpers of the two libraries

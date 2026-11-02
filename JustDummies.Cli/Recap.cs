@@ -126,8 +126,13 @@ internal static class Recap {
         Line(console, string.Empty);
 
         foreach (ScaffoldedParameter parameter in marked) {
-            Line(console, $"  {parameter.Name}: unread guard at {parameter.UnreadGuard!.Place()}: {parameter.UnreadGuard.Excerpt}");
+            Line(console, $"  {parameter.Name}: unread guard at {parameter.UnreadGuard!.Place()}: {parameter.UnreadGuard.Excerpt}{Noted(parameter.UnreadGuard)}");
         }
+    }
+
+    /// <summary>The word the place owes its reader where the excerpt alone does not say why it marks (#371).</summary>
+    internal static string Noted(UnreadGuard unread) {
+        return unread.Note is null ? string.Empty : " — " + unread.Note;
     }
 
     /// <summary>

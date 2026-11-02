@@ -558,10 +558,40 @@ internal static class Guards {
         // What the exception is built from is excluded along with the `nameof`: a parameter interpolated into
         // the message — `$"Row {number} is wrong."` — is named for a reader there, exactly as `nameof(number)`
         // names it, and a message rejects nothing (#370). What decides the throw still counts in full.
-        foreach (IParameterSymbol parameter in Mentioned(statement, model, method, ignoresWhatIsThrown: true)) { reading.MarkUnread(parameter.Name, UnreadGuard.At(statement)); }
-        foreach (IParameterSymbol parameter in ReachedThroughCopies(statement, model, method, ignoresWhatIsThrown: true)) { reading.MarkUnread(parameter.Name, UnreadGuard.At(statement)); }
+        // Pointed at the statement that throws rather than at the leading statement holding it: a guard inside a
+        // loop is the `if` in its body, and the loop header the reader was sent to tests nothing (#371).
+        StatementSyntax throwing = ThrowingStatementIn(statement);
 
-        MarkEveryParameterIfTheTrailIsLost(DecidingParts(statement), statement, model, method, reading);
+        foreach (IParameterSymbol parameter in Mentioned(statement, model, method, ignoresWhatIsThrown: true)) { reading.MarkUnread(parameter.Name, UnreadGuard.At(throwing)); }
+        foreach (IParameterSymbol parameter in ReachedThroughCopies(statement, model, method, ignoresWhatIsThrown: true)) { reading.MarkUnread(parameter.Name, UnreadGuard.At(throwing)); }
+
+        MarkEveryParameterIfTheTrailIsLost(DecidingParts(statement), throwing, model, method, reading);
+    }
+
+    /// <summary>
+    ///     The statement a reader opens the file at for what <paramref name="statement" /> throws: the innermost
+    ///     statement holding its first throw — the <c>if</c> whose branch throws, never the loop, the <c>try</c>
+    ///     or the <c>using</c> around it — or <paramref name="statement" /> itself where it holds none.
+    /// </summary>
+    /// <remarks>
+    ///     The mark is earned by the leading statement entire, and so it was pointed at: <c>foreach (int item in
+    ///     items)</c>, where the guard sits two lines down. The CLI page promises the opposite — a place the
+    ///     developer need not search the constructor from — and the throw's own line is the one that keeps it
+    ///     (#371). A <c>throw</c> statement and the block holding it are skipped on the way up: the statement
+    ///     worth reading is the one that decides the throw, with its condition on the same line.
+    /// </remarks>
+    private static StatementSyntax ThrowingStatementIn(StatementSyntax statement) {
+        SyntaxNode? thrown = statement.DescendantNodesAndSelf(node => node is not (AnonymousFunctionExpressionSyntax or LocalFunctionStatementSyntax))
+                                      .FirstOrDefault(node => node is ThrowStatementSyntax or ThrowExpressionSyntax);
+
+        if (thrown is null) { return statement; }
+
+        foreach (SyntaxNode ancestor in thrown.AncestorsAndSelf()) {
+            if (ancestor == statement) { break; }
+            if (ancestor is StatementSyntax holding and not (ThrowStatementSyntax or BlockSyntax)) { return holding; }
+        }
+
+        return statement;
     }
 
     /// <summary>
@@ -598,8 +628,13 @@ internal static class Guards {
     private static void MarkEveryParameterIfTheTrailIsLost(IEnumerable<SyntaxNode> deciding, SyntaxNode where, SemanticModel model, IMethodSymbol method, GuardReading reading) {
         if (!Trail.Follow(deciding, model, method, ignoresWhatIsThrown: true).Lost) { return; }
 
-        foreach (IParameterSymbol parameter in method.Parameters) { reading.MarkUnread(parameter.Name, UnreadGuard.At(where)); }
+        // Said at the place named, because the place may test none of the parameter's own: a reader sent to a
+        // loop over `buses` for a mark on `name` would look there for a guard on `name` that is not there (#371).
+        foreach (IParameterSymbol parameter in method.Parameters) { reading.MarkUnread(parameter.Name, UnreadGuard.At(where, TrailLost)); }
     }
+
+    /// <summary>What the trail-lost mark of ADR-0110 says beside the place it names (#371).</summary>
+    private const string TrailLost = "every parameter is marked here, since what decides this throw could not be traced back to one";
 
     /// <summary>
     ///     What decides whether each throw of <paramref name="statement" /> runs: the conditions, loop headers,

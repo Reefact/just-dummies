@@ -1455,8 +1455,14 @@ and the `Func<…>` of the refining overload carry the old type, and the user pa
 guards, a mark alone sends the developer to read the whole constructor for the one the engine could
 not vouch for. The second line gives the earliest such place — file and line — and the first line of
 the statement holding it, shortened past a hundred characters; the recap prints the same under its
-rows (§6), and the machine report carries it as `unreadGuard` (§6.1). The closing link is to the user
-page that says what `to verify` means: the comment is read by someone who has this file open, not
+rows (§6), and the machine report carries it as `unreadGuard` (§6.1). The statement named is the one
+that throws — the `if` whose branch throws, never the loop, the `try` or the `using` around it, which
+tests nothing and where the first trial's readers were sent to search again (#371). A mark the place
+does not explain says why it marks: the fallback of ADR-0110 marks every parameter where what decides
+a throw cannot be traced back to one, so the place named may test none of this parameter's own, and the
+line says so — `every parameter is marked here, since what decides this throw could not be traced back
+to one` — in the comment, under the recap's rows and in the report's `note`. The closing link is to the
+user page that says what `to verify` means: the comment is read by someone who has this file open, not
 this specification. Where no source position is known, the second line is left out.
 
 **A guard written in a helper that returns the value it checked is marked, where the engine can see
@@ -1661,8 +1667,9 @@ does (§5.2), so where the analysed project does not read nullable annotations a
 the recap's note under its rows (§6), carried per row so a script need not reread the domain.
 
 **A parameter marked `unread guards` carries where.** Its row's `unreadGuard` holds the `file`, the
-one-based `line` and an `excerpt` of the earliest guard the engine could not vouch for (§5.6), and is
-`null` on every other row.
+one-based `line` and an `excerpt` of the earliest guard the engine could not vouch for (§5.6), with a
+`note` saying why that place marks where the excerpt does not — the fallback mark of ADR-0110 — and
+`null` otherwise; the whole object is `null` on every other row.
 
 ---
 

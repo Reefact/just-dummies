@@ -264,6 +264,45 @@ public sealed class GuardBoundaryTests {
     }
 
     /// <summary>
+    ///     The place a mark names is the statement that throws, not the leading statement holding it: a guard in
+    ///     a loop's body is the <c>if</c> there, where the loop header tests nothing (#371, CLI-6 of the second
+    ///     trial). The fallback mark of ADR-0110 says at that place that it is one, since the place may test none
+    ///     of the marked parameter's own.
+    /// </summary>
+    [Fact(DisplayName = "An unread guard inside a loop is placed at the throwing statement, and a fallback mark says it is one.")]
+    public void AnUnreadGuardInsideALoopIsPlacedAtTheThrowingStatement() {
+        ScaffoldOutcome outcome = Subject.Scaffold("""
+                                                   public sealed class Subject {
+
+                                                       public Subject(string name, IReadOnlyCollection<int> items) {
+                                                           if (name.Length > 8) { throw new ArgumentException(nameof(name)); }
+                                                           foreach (int item in items) {
+                                                               if (!Fits(item)) { throw new ArgumentException(nameof(items)); }
+                                                           }
+                                                       }
+
+                                                       private bool Fits(int item) { return item < 10; }
+
+                                                   }
+                                                   """);
+
+        ScaffoldedParameter name  = outcome.Plan!.Parameters[0];
+        ScaffoldedParameter items = outcome.Plan.Parameters[1];
+
+        // Line 11: the harness puts five lines of namespace and usings above the snippet.
+        Check.That(items.UnreadGuard!.Line).IsEqualTo(11);
+        Check.That(items.UnreadGuard.Excerpt).StartsWith("if (!Fits(item))");
+        Check.That(items.UnreadGuard.Note).IsNull();
+
+        // `name` is marked by the fallback alone — the throw is decided by a method of the object — and the place
+        // it is sent to names no guard on `name`, so the mark says what it is.
+        Check.That(name.Expression).IsEqualTo("Any.String().WithMaxLength(8)");
+        Check.That(name.UnreadGuard!.Line).IsEqualTo(11);
+        Check.That(name.UnreadGuard.Note).Contains("every parameter is marked here");
+        Check.That(outcome.File!.SourceText).Contains("first at line 11: if (!Fits(item)) { throw new ArgumentException(nameof(items)); } — every parameter is marked here");
+    }
+
+    /// <summary>
     ///     A guard reaching its parameter through more than one copy is marked unread, however the copy is made.
     /// </summary>
     /// <remarks>

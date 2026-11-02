@@ -214,6 +214,107 @@ public class Jd007DrawOutsideThePinnedScopeTests {
         Check.That(diagnostics.Select(diagnostic => diagnostic.Id)).ContainsOnlyElementsThatMatch(id => id == "JD007");
     }
 
+    [Theory]
+    [InlineData("Any.Leg().Generate()")]
+    [InlineData("Any.Leg().WithDistanceKm(240).Generate()")]
+    [InlineData("new AnyLeg().Generate()")]
+    [InlineData("Arbitrary.Leg().Generate()")]
+    [InlineData("_shared.Generate()")]
+    [InlineData("new HandWrittenLeg().Generate()")]
+    [InlineData("Any.Int32().Positive().Trimmed().Generate()")]
+    public async Task Reports_a_draw_on_any_generator_whatever_started_the_chain(string draw) {
+        // Issue #365: a Generate() on any IAny<T> is a draw, by the library's own contract. A scaffolded entry point,
+        // a `new AnyX()`, a static root of the consumer's own, a generator held in a field, a hand-written generator
+        // and a consumer's extension all went unseen while the rule recognised only a chain written from Any itself.
+        string source = $$"""
+            using JustDummies;
+            using JustDummies.Xunit;
+            using Xunit;
+
+            public sealed class Leg {
+                public Leg(int distanceKm) { DistanceKm = distanceKm; }
+                public int DistanceKm { get; }
+            }
+
+            public sealed class AnyLeg : IAny<Leg> {
+                private readonly IAny<int> _distanceKm = Any.Int32().Positive();
+                public AnyLeg WithDistanceKm(int distanceKm) => this;
+                public Leg Generate() => new Leg(_distanceKm.Generate());
+            }
+
+            public sealed class HandWrittenLeg : IAny<Leg> {
+                public Leg Generate() => new Leg(1);
+            }
+
+            public static class AnyLegEntry {
+                extension(Any) {
+                    public static AnyLeg Leg() => new AnyLeg();
+                }
+            }
+
+            public static class Arbitrary {
+                public static AnyLeg Leg() => new AnyLeg();
+            }
+
+            public static class Extensions {
+                public static IAny<int> Trimmed(this IAny<int> generator) => generator;
+            }
+
+            [Reproducible]
+            public class Sample {
+                private readonly IAny<Leg> _shared = new AnyLeg();
+                private readonly object _value;
+
+                public Sample() {
+                    _value = {{draw}};
+                }
+
+                [Fact]
+                public void T() { }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new DrawOutsideThePinnedScopeAnalyzer(), source);
+
+        Check.That(diagnostics.Length).IsEqualTo(1);
+        Check.That(diagnostics[0].Id).IsEqualTo("JD007");
+    }
+
+    [Theory]
+    [InlineData("_context.Int32().Generate()")]
+    [InlineData("_context.String().NonEmpty().Trimmed().Generate()")]
+    [InlineData("Any.WithSeed(1234).Int32().Positive().OrNull().Generate()")]
+    public async Task Does_not_report_a_draw_from_an_isolated_context_however_it_is_reached(string draw) {
+        // The one draw this rule must leave alone: an isolated context is unaffected by the ambient scope, held under
+        // a name or written inline, and whatever extension the chain goes through on its way to Generate().
+        string source = $$"""
+            using JustDummies;
+            using JustDummies.Xunit;
+            using Xunit;
+
+            public static class Extensions {
+                public static IAny<string> Trimmed(this IAny<string> generator) => generator;
+            }
+
+            [Reproducible]
+            public class Sample {
+                private readonly AnyContext _context = Any.WithSeed(1234);
+                private readonly object _value;
+
+                public Sample() {
+                    _value = {{draw}};
+                }
+
+                [Fact]
+                public void T() { }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new DrawOutsideThePinnedScopeAnalyzer(), source);
+
+        Check.That(diagnostics.Length).IsEqualTo(0);
+    }
+
     [Fact]
     public async Task Does_not_report_an_inline_isolated_context() {
         // Issue #219: the same isolated context as above, written inline rather than held in a local.

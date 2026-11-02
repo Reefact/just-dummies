@@ -76,6 +76,42 @@ internal static class GeneratorFacts {
     }
 
     /// <summary>
+    ///     Whether the chain the <c>Generate()</c> call sits on provably draws from an isolated <c>AnyContext</c> —
+    ///     the one <c>Any.WithSeed(...)</c> hands back, which the ambient seed scope does not govern.
+    /// </summary>
+    /// <remarks>
+    ///     A <c>Generate()</c> on any <c>IAny&lt;T&gt;</c> is a draw: the library's own contract says so, whether the
+    ///     generator is one of <c>Any</c>'s, a scaffolded <c>Any.Order()</c> entry point, a <c>new AnyOrder()</c>, a
+    ///     generator held under a name or a hand-written one (issue #365). What a lifecycle rule must leave alone is
+    ///     the one draw the ambient scope does not govern, so this walk answers for exactly that: the receivers are
+    ///     followed back, through every instance call and every extension turning a generator into a generator, to the
+    ///     expression the chain starts from, and the chain is isolated exactly when that expression is an
+    ///     <c>AnyContext</c> — written inline from <c>Any.WithSeed(...)</c>, or held under a name. A generator that
+    ///     draws from no source at all is marginal, reported at warning severity, and suppressible.
+    /// </remarks>
+    public static bool DrawsFromAnIsolatedContext(IInvocationOperation invocation, KnownSymbols symbols) {
+        IOperation current = invocation;
+        while (current is IInvocationOperation call && ReceiverOf(call, symbols) is IOperation receiver) { current = Unwrap(receiver); }
+
+        return symbols.AnyContext is not null && SymbolEqualityComparer.Default.Equals(current.Type, symbols.AnyContext);
+    }
+
+    /// <summary>
+    ///     The generator <paramref name="call" /> is written on: its instance, or the first argument of an extension
+    ///     that turns a generator into a generator, whoever declared it — a consumer's extension draws from what it is
+    ///     given, so an isolated receiver keeps the chain isolated through it. <c>null</c> for a static call, which is
+    ///     where a chain starts.
+    /// </summary>
+    private static IOperation? ReceiverOf(IInvocationOperation call, KnownSymbols symbols) {
+        if (call.Instance is not null) { return call.Instance; }
+
+        IMethodSymbol method = call.TargetMethod;
+        if (!method.IsExtensionMethod || symbols.IAny is null || !IsGenerator(method.ReturnType, symbols.IAny)) { return null; }
+
+        return call.Arguments.FirstOrDefault(argument => argument.Parameter?.Ordinal == 0)?.Value;
+    }
+
+    /// <summary>
     ///     The receiver of <paramref name="call" /> when it is one of the library's own derivations written as an
     ///     extension method — declared beside <c>Any</c> and turning a generator into a generator — or <c>null</c>.
     /// </summary>

@@ -297,8 +297,8 @@ internal static class Guards {
     /// </summary>
     private static void FoldOnto(string from, string to, GuardReading delegated, GuardReading reading) {
         // Doubt travels with the constraints: a guard the delegated constructor could not read is a guard over
-        // THIS parameter too.
-        if (delegated.Unread(to)) { reading.MarkUnread(from, delegated.UnreadAt(to)!); }
+        // THIS parameter too — every one of them, so the count of further guards survives the fold (#373).
+        foreach (UnreadGuard at in delegated.UnreadMarks(to)) { reading.MarkUnread(from, at); }
 
         foreach (GuardConstraint constraint in delegated.For(to)) { reading.Add(from, constraint); }
 

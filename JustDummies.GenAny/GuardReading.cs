@@ -13,7 +13,7 @@ internal sealed class GuardReading {
 
     private readonly Dictionary<string, UnreadGuard> unread = new(StringComparer.Ordinal);
 
-    private readonly Dictionary<string, HashSet<(string? File, int Line)>> places = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, Dictionary<(string? File, int Line), UnreadGuard>> places = new(StringComparer.Ordinal);
 
     private readonly HashSet<string> refusingNull = new(StringComparer.Ordinal);
 
@@ -74,6 +74,15 @@ internal sealed class GuardReading {
         // Said with how many more places earned the same mark (#373): the one named is the first, and a
         // developer who resolves it alone would get a generator the constructor still refuses elsewhere.
         return at.WithFurther(places[parameter].Count - 1);
+    }
+
+    /// <summary>
+    ///     Every distinct place that earned <paramref name="parameter" /> its mark, so a fold onto another
+    ///     parameter carries the count along with the first (#373): a delegated constructor or a helper with two
+    ///     unread guards is two on the outer parameter too.
+    /// </summary>
+    internal IReadOnlyCollection<UnreadGuard> UnreadMarks(string parameter) {
+        return places.TryGetValue(parameter, out Dictionary<(string? File, int Line), UnreadGuard>? seen) ? seen.Values : [];
     }
 
     internal void Add(string parameter, GuardConstraint constraint) {
@@ -168,12 +177,12 @@ internal sealed class GuardReading {
     ///     walk does not visit the body in source order, and the developer reads it from the top.
     /// </summary>
     internal void MarkUnread(string parameter, UnreadGuard at) {
-        if (!places.TryGetValue(parameter, out HashSet<(string? File, int Line)>? seen)) {
+        if (!places.TryGetValue(parameter, out Dictionary<(string? File, int Line), UnreadGuard>? seen)) {
             seen              = [];
             places[parameter] = seen;
         }
 
-        seen.Add((at.File, at.Line));
+        if (!seen.ContainsKey((at.File, at.Line))) { seen[(at.File, at.Line)] = at; }
 
         if (unread.TryGetValue(parameter, out UnreadGuard? kept) && (kept.File != at.File || kept.Line <= at.Line)) { return; }
 

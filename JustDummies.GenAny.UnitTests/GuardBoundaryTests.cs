@@ -343,6 +343,46 @@ public sealed class GuardBoundaryTests {
     }
 
     /// <summary>
+    ///     The count of further unread guards survives a fold (#373): two unread guards in a delegated constructor,
+    ///     or in a helper read one level down, are two on the outer parameter, the earliest named first.
+    /// </summary>
+    [Fact(DisplayName = "Two unread guards behind a delegation or a helper are counted on the outer parameter.")]
+    public void UnreadGuardsBehindADelegationAreCountedOnTheOuterParameter() {
+        ScaffoldOutcome outcome = Subject.Scaffold("""
+                                                   public sealed class Subject {
+
+                                                       public Subject(string code, string name) : this(code, name, true) {
+                                                           Name = Checked(name);
+                                                       }
+
+                                                       private Subject(string code, string name, bool _) {
+                                                           if (code.StartsWith("X")) { throw new ArgumentException(nameof(code)); }
+                                                           if (code.EndsWith("Z")) { throw new ArgumentException(nameof(code)); }
+                                                       }
+
+                                                       public string Name { get; }
+
+                                                       private static string Checked(string n) {
+                                                           if (n.StartsWith("A")) { throw new ArgumentException(nameof(n)); }
+                                                           if (n.Contains('-')) { throw new ArgumentException(nameof(n)); }
+
+                                                           return n;
+                                                       }
+
+                                                   }
+                                                   """);
+
+        ScaffoldedParameter code = outcome.Plan!.Parameters[0];
+        ScaffoldedParameter name = outcome.Plan.Parameters[1];
+
+        Check.That(code.UnreadGuard!.Excerpt).StartsWith("if (code.StartsWith(\"X\"))");
+        Check.That(code.UnreadGuard.Further).IsEqualTo(1);
+        Check.That(name.UnreadGuard!.Excerpt).StartsWith("if (n.StartsWith(\"A\"))");
+        Check.That(name.UnreadGuard.Further).IsEqualTo(1);
+        Check.That(outcome.File!.SourceText).Contains("if (n.StartsWith(\"A\")) { throw new ArgumentException(nameof(n)); }; and 1 more — then delete these two lines.");
+    }
+
+    /// <summary>
     ///     A guard reaching its parameter through more than one copy is marked unread, however the copy is made.
     /// </summary>
     /// <remarks>

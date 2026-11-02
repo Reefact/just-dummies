@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="../../06-warehouse/Domain/Warehouse.Domain.csproj" />
+    <ProjectReference Include="../../07-freight/Domain/Freight.Domain.csproj" />
+    <ProjectReference Include="../../10-pharma-serialisation/Domain/Serialisation.Domain.csproj" />
+    <ProjectReference Include="../../20-agritech-iot/Domain/AgriTech.Domain.csproj" />
+  </ItemGroup>
+
+</Project>

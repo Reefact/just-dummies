@@ -325,6 +325,42 @@ public class Jd023ScalarChainAdmitsNoValueTests {
 
 }
 
+public class Jd023ScalarChainLargeStepTests {
+
+    // A step as wide as the type: the walk over the lattice adds one step at a time, and a sum that leaves the type
+    // must end the walk rather than throw inside the analyzer, where Roslyn would report AD0001 in place of every
+    // other diagnostic of the build.
+    [Theory]
+    [InlineData("Any.Decimal().MultipleOf(decimal.MaxValue)")]
+    [InlineData("Any.Decimal().MultipleOf(decimal.MaxValue / 2 + 1)")]
+    [InlineData("Any.Decimal().MultipleOf(decimal.MaxValue / 3)")]
+    [InlineData("Any.Decimal().Between(decimal.MinValue, decimal.MaxValue).MultipleOf(decimal.MaxValue / 2 + 1)")]
+    [InlineData("Any.Decimal().GreaterThan(decimal.MinValue).MultipleOf(decimal.MaxValue / 2 + 1)")]
+    [InlineData("Any.Decimal().Positive().MultipleOf(decimal.MaxValue / 2 + 1)")]
+    [InlineData("Any.Decimal().Between(decimal.MaxValue - 1, decimal.MaxValue).MultipleOf(decimal.MaxValue)")]
+    [InlineData("Any.Decimal().MultipleOf(decimal.MaxValue / 2 + 1).Except(0m)")]
+    [InlineData("Any.Int64().MultipleOf(long.MaxValue)")]
+    [InlineData("Any.Int64().MultipleOf(long.MaxValue / 2 + 1)")]
+    [InlineData("Any.Int64().Between(long.MinValue, long.MaxValue).MultipleOf(long.MaxValue / 2 + 1).Except(0)")]
+    public async Task Does_not_throw_on_a_step_as_wide_as_the_type(string expression) {
+        string source = $$"""
+            using System;
+            using JustDummies;
+
+            public static class Sample {
+                public static void M() {
+                    _ = {{expression}};
+                }
+            }
+            """;
+
+        ImmutableArray<Diagnostic> diagnostics = await AnalyzerTestHarness.GetDiagnosticsAsync(new ScalarChainAdmitsNoValueAnalyzer(), source, "JD023", "JD024");
+
+        Check.That(diagnostics.Select(diagnostic => diagnostic.Id)).Not.Contains("AD0001");
+    }
+
+}
+
 public class Jd024ConstraintWithNoEffectTests {
 
     [Fact]

@@ -83,6 +83,11 @@ Releases are cut from the `cli` train (see [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ### Fixed
 
+- **A parameter named only in the message of another guard's exception is no longer marked `to verify`.**
+  `if (c != 3) { throw new ArgumentException($"Row {number} is wrong.", nameof(count)); }` marked `number`
+  `unread guards` and blocked the build, although a message rejects nothing. What the exception is built from is
+  now excluded from a throwing statement's mentions, as `nameof` already was; a parameter the condition tests is
+  still marked (issue #370).
 - **A composed interface or abstract class is left open, naming the generator to write by hand.** For
   `RowInstruction(IReadOnlyList<IRowElement> elements)` the scaffold emitted `Any.ListOf(new AnyIRowElement())`,
   the build failed with `CS0246` on `AnyIRowElement`, and the documented next step, `any generate IRowElement`,

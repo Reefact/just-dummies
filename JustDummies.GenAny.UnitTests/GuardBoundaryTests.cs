@@ -235,6 +235,35 @@ public sealed class GuardBoundaryTests {
     }
 
     /// <summary>
+    ///     A parameter named only in the message of another parameter's guard is not guarded by it: the message
+    ///     names it for a reader, as <c>nameof</c> does, and rejects nothing (#370, CLI-5 of the second trial).
+    /// </summary>
+    /// <remarks>
+    ///     The guard that carries the message still marks the parameter it tests — <c>count</c>, through a shape
+    ///     the closed set does not read — so the fix cannot be a broader silence.
+    /// </remarks>
+    [Fact(DisplayName = "A parameter interpolated into the message of a throw is not marked by it.")]
+    public void AParameterInterpolatedIntoTheMessageOfAThrowIsNotMarked() {
+        ScaffoldOutcome outcome = Subject.Scaffold("""
+                                                   public sealed class Subject {
+
+                                                       public Subject(int number, int? count) {
+                                                           if (number < 1) { throw new ArgumentOutOfRangeException(nameof(number)); }
+                                                           if (count is { } c) { if (c != 3) { throw new ArgumentException($"Row {number} is wrong.", nameof(count)); } }
+                                                       }
+
+                                                   }
+                                                   """);
+
+        ScaffoldedParameter number = outcome.Plan!.Parameters[0];
+        ScaffoldedParameter count  = outcome.Plan.Parameters[1];
+
+        Check.That(number.Expression).IsEqualTo("Any.Int32().Positive()");
+        Check.That(number.Provenance.HasFlag(Provenance.UnreadGuards)).IsFalse();
+        Check.That(count.Provenance.HasFlag(Provenance.UnreadGuards)).IsTrue();
+    }
+
+    /// <summary>
     ///     A guard reaching its parameter through more than one copy is marked unread, however the copy is made.
     /// </summary>
     /// <remarks>

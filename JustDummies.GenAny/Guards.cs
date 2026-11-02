@@ -555,8 +555,11 @@ internal static class Guards {
     private static void MarkIfItRejects(StatementSyntax statement, SemanticModel model, IMethodSymbol method, GuardReading reading) {
         if (!Throws(statement)) { return; }
 
-        foreach (IParameterSymbol parameter in Mentioned(statement, model, method)) { reading.MarkUnread(parameter.Name, UnreadGuard.At(statement)); }
-        foreach (IParameterSymbol parameter in ReachedThroughCopies(statement, model, method)) { reading.MarkUnread(parameter.Name, UnreadGuard.At(statement)); }
+        // What the exception is built from is excluded along with the `nameof`: a parameter interpolated into
+        // the message — `$"Row {number} is wrong."` — is named for a reader there, exactly as `nameof(number)`
+        // names it, and a message rejects nothing (#370). What decides the throw still counts in full.
+        foreach (IParameterSymbol parameter in Mentioned(statement, model, method, ignoresWhatIsThrown: true)) { reading.MarkUnread(parameter.Name, UnreadGuard.At(statement)); }
+        foreach (IParameterSymbol parameter in ReachedThroughCopies(statement, model, method, ignoresWhatIsThrown: true)) { reading.MarkUnread(parameter.Name, UnreadGuard.At(statement)); }
 
         MarkEveryParameterIfTheTrailIsLost(DecidingParts(statement), statement, model, method, reading);
     }
@@ -578,8 +581,8 @@ internal static class Guards {
     ///     chain of two silent. The <c>nameof</c> of a message is excluded here for the reason
     ///     <see cref="Mentioned" /> gives.
     /// </remarks>
-    private static IEnumerable<IParameterSymbol> ReachedThroughCopies(SyntaxNode node, SemanticModel model, IMethodSymbol method) {
-        return Trail.Follow([node], model, method, ignoresWhatIsThrown: false).Reached();
+    private static IEnumerable<IParameterSymbol> ReachedThroughCopies(SyntaxNode node, SemanticModel model, IMethodSymbol method, bool ignoresWhatIsThrown = false) {
+        return Trail.Follow([node], model, method, ignoresWhatIsThrown).Reached();
     }
 
     /// <summary>
@@ -769,8 +772,7 @@ internal static class Guards {
 
         /// <summary>A <c>nameof</c>, or the exception a throw builds when only what decides it counts.</summary>
         private bool IsSkipped(SyntaxNode node, InvocationExpressionSyntax[] spelled) {
-            return spelled.Contains(node)
-                || (ignoresWhatIsThrown && node.Parent is ThrowStatementSyntax or ThrowExpressionSyntax);
+            return spelled.Contains(node) || (ignoresWhatIsThrown && IsWhatIsThrown(node));
         }
 
         /// <summary>The object being built, handed on as a value rather than reached a member of.</summary>
@@ -1110,6 +1112,11 @@ internal static class Guards {
                 foreach (GuardConstraint constraint in read) { reading.Add(parameter.Name, constraint); }
             }
         }
+    }
+
+    /// <summary>The exception a throw builds — the operand of a <c>throw</c> statement or expression.</summary>
+    private static bool IsWhatIsThrown(SyntaxNode node) {
+        return node.Parent is ThrowStatementSyntax or ThrowExpressionSyntax;
     }
 
     /// <summary>Whether anything anywhere in <paramref name="statement" /> refuses to go on.</summary>
@@ -2234,19 +2241,23 @@ internal static class Guards {
     }
 
     /// <summary>
-    ///     The parameters <paramref name="node" /> names for itself, past any <c>nameof</c> inside it.
+    ///     The parameters <paramref name="node" /> names for itself, past any <c>nameof</c> inside it — and, when
+    ///     <paramref name="ignoresWhatIsThrown" /> says only what decides a throw counts, past the exception a
+    ///     throw builds.
     /// </summary>
     /// <remarks>
     ///     The exclusion matters once whole statements are read rather than conditions alone: every guard's own
     ///     throw spells its rejected parameter with <c>nameof</c>, so counting it would make the message the
-    ///     evidence instead of the test.
+    ///     evidence instead of the test. A parameter interpolated into the message is the same evidence in another
+    ///     spelling, and a guard that names its subject only there rejects nothing about it (#370).
     /// </remarks>
-    private static IParameterSymbol[] Mentioned(SyntaxNode node, SemanticModel model, IMethodSymbol method) {
+    private static IParameterSymbol[] Mentioned(SyntaxNode node, SemanticModel model, IMethodSymbol method, bool ignoresWhatIsThrown = false) {
         InvocationExpressionSyntax[] spelled = [.. node.DescendantNodesAndSelf()
                                                        .OfType<InvocationExpressionSyntax>()
                                                        .Where(IsNameOf)];
 
-        return node.DescendantNodesAndSelf()
+        return node.DescendantNodesAndSelf(descendant => !ignoresWhatIsThrown || !IsWhatIsThrown(descendant))
+                   .Where(descendant => !ignoresWhatIsThrown || !IsWhatIsThrown(descendant))
                    .OfType<IdentifierNameSyntax>()
                    .Where(identifier => !spelled.Any(name => name.Contains(identifier)))
                    .Select(identifier => model.GetSymbolInfo(identifier).Symbol as IParameterSymbol)

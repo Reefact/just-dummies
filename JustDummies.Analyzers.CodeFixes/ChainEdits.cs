@@ -1,3 +1,5 @@
+using System.Globalization;
+
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -101,6 +103,47 @@ internal static class ChainEdits {
             ExpressionStatementSyntax statement => statement,
             AssignmentExpressionSyntax { Left: IdentifierNameSyntax { Identifier.ValueText: "_" }, Parent: ExpressionStatementSyntax statement } => statement,
             _ => null
+        };
+    }
+
+    /// <summary>
+    ///     A name free where <paramref name="statement" /> stands: <paramref name="preferred" /> unless a local, a
+    ///     parameter, a designation or a member in scope already carries it, then the first numbered spelling that
+    ///     nothing carries. The member is read whole, since a local's scope reaches above its declaration.
+    /// </summary>
+    public static string FreeName(SemanticModel model, StatementSyntax statement, string preferred) {
+        SyntaxNode      scope    = statement.FirstAncestorOrSelf<MemberDeclarationSyntax>() ?? statement.SyntaxTree.GetRoot();
+        HashSet<string> declared = DeclaredNames(scope);
+
+        string candidate = preferred;
+        int    suffix    = 0;
+        while (declared.Contains(candidate) || !model.LookupSymbols(statement.SpanStart, name: candidate).IsEmpty) {
+            suffix++;
+            candidate = preferred + suffix.ToString(CultureInfo.InvariantCulture);
+        }
+
+        return candidate;
+    }
+
+    /// <summary>The names every declaration under <paramref name="scope" /> introduces: locals, parameters, designations, loop and catch variables.</summary>
+    public static HashSet<string> DeclaredNames(SyntaxNode scope) {
+        HashSet<string> names = [];
+        foreach (SyntaxNode node in scope.DescendantNodesAndSelf()) {
+            if (DeclaredName(node) is string name) { names.Add(name); }
+        }
+
+        return names;
+    }
+
+    private static string? DeclaredName(SyntaxNode node) {
+        return node switch {
+            VariableDeclaratorSyntax declarator        => declarator.Identifier.ValueText,
+            ParameterSyntax parameter                  => parameter.Identifier.ValueText,
+            SingleVariableDesignationSyntax designated => designated.Identifier.ValueText,
+            ForEachStatementSyntax loop                => loop.Identifier.ValueText,
+            CatchDeclarationSyntax caught              => caught.Identifier.ValueText,
+            LocalFunctionStatementSyntax function      => function.Identifier.ValueText,
+            _                                          => null
         };
     }
 

@@ -19,6 +19,8 @@ namespace JustDummies.Analyzers.CodeFixes;
 [Shared]
 public sealed class UnusedCombineOperandCodeFix : CodeFixProvider {
 
+    private const string Discard = "_";
+
     /// <inheritdoc />
     public override ImmutableArray<string> FixableDiagnosticIds { get; } = ImmutableArray.Create(JustDummiesRule.JD027.Id);
 
@@ -29,17 +31,40 @@ public sealed class UnusedCombineOperandCodeFix : CodeFixProvider {
 
     /// <inheritdoc />
     public override async Task RegisterCodeFixesAsync(CodeFixContext context) {
-        SyntaxNode? root = await context.Document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false);
-        if (root is null) { return; }
+        SyntaxNode?    root  = await context.Document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false);
+        SemanticModel? model = await context.Document.GetSemanticModelAsync(context.CancellationToken).ConfigureAwait(false);
+        if (root is null || model is null) { return; }
 
         foreach (Diagnostic diagnostic in context.Diagnostics) {
             SyntaxNode node = root.FindNode(diagnostic.Location.SourceSpan, getInnermostNodeForTie: true);
             if (node.FirstAncestorOrSelf<ArgumentSyntax>() is not { Parent: ArgumentListSyntax { Parent: InvocationExpressionSyntax } arguments } operand) { continue; }
             if (ParameterOf(arguments, arguments.Arguments.IndexOf(operand)) is not ParameterSyntax parameter) { continue; }
+            if (!CanBeDiscarded(model, parameter)) { continue; }
 
-            string title = $"Name the parameter '{parameter.Identifier.ValueText}' '_' to say the draw is deliberate";
-            context.RegisterCodeFix(CodeAction.Create(title, _ => Task.FromResult(context.Document.WithSyntaxRoot(root.ReplaceToken(parameter.Identifier, SyntaxFactory.Identifier("_").WithTriviaFrom(parameter.Identifier)))), nameof(UnusedCombineOperandCodeFix)), diagnostic);
+            string title = $"Name the parameter '{parameter.Identifier.ValueText}' '{Discard}' to say the draw is deliberate";
+            context.RegisterCodeFix(CodeAction.Create(title, _ => Task.FromResult(context.Document.WithSyntaxRoot(root.ReplaceToken(parameter.Identifier, SyntaxFactory.Identifier(Discard).WithTriviaFrom(parameter.Identifier)))), nameof(UnusedCombineOperandCodeFix)), diagnostic);
         }
+    }
+
+    /// <summary>
+    ///     Whether naming the parameter <c>_</c> leaves the lambda as it compiles: nothing in its body, nested lambdas
+    ///     included, resolves to the parameter, and no local or designation of the lambda is named <c>_</c> already.
+    ///     A second parameter named <c>_</c> is a discard pair, which C# 9 admits; below it the fix stays away.
+    /// </summary>
+    private static bool CanBeDiscarded(SemanticModel model, ParameterSyntax parameter) {
+        if (parameter.Parent?.Parent is not ParenthesizedLambdaExpressionSyntax lambda) { return false; }
+
+        ISymbol? symbol = model.GetDeclaredSymbol(parameter);
+        bool referenced = lambda.Body.DescendantNodesAndSelf().OfType<IdentifierNameSyntax>()
+                                .Any(identifier => SymbolEqualityComparer.Default.Equals(model.GetSymbolInfo(identifier).Symbol, symbol));
+        if (referenced) { return false; }
+
+        HashSet<string> declared = ChainEdits.DeclaredNames(lambda.Body);
+        if (declared.Contains(Discard)) { return false; }
+
+        bool discardPairsAllowed = lambda.SyntaxTree.Options is CSharpParseOptions { LanguageVersion: >= LanguageVersion.CSharp9 };
+
+        return discardPairsAllowed || lambda.ParameterList.Parameters.All(other => other.Identifier.ValueText != Discard);
     }
 
     /// <summary>The composer's parameter at <paramref name="index" />: the last argument is the lambda, written with a parameter list.</summary>

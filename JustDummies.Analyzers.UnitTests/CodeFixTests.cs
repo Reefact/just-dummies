@@ -225,6 +225,24 @@ public class CodeFixTests {
     }
 
     [Fact]
+    public async Task JD027_makes_a_discard_pair_where_the_other_parameter_is_one_already() {
+        // C# 9 reads two parameters named `_` as discards, so the fix is offered beside one.
+        string rewritten = await CodeFixTestHarness.ApplyAsync(new UnusedCombineOperandAnalyzer(), new UnusedCombineOperandCodeFix(), Statement("_ = Any.Combine(Any.Int32(), Any.String(), (number, _) => 1);"));
+
+        Check.That(rewritten).IsEqualTo(Statement("_ = Any.Combine(Any.Int32(), Any.String(), (_, _) => 1);"));
+    }
+
+    [Theory]
+    [InlineData("_ = Any.Combine(Any.Int32(), Any.String(), (number, text) => { int _ = 1; return number + _; });")]
+    [InlineData("_ = Any.Combine(Any.Int32(), Any.String(), (number, text) => { Func<int> _ = () => number; return _(); });")]
+    public async Task JD027_offers_nothing_where_the_lambda_declares_an_underscore_of_its_own(string statement) {
+        // A local named `_` beside a parameter named `_` is a duplicate identifier: the rule reports, the fix stays away.
+        IReadOnlyList<string> offered = await CodeFixTestHarness.OffersAsync(new UnusedCombineOperandAnalyzer(), new UnusedCombineOperandCodeFix(), Statement(statement));
+
+        Check.That(offered).IsEmpty();
+    }
+
+    [Fact]
     public async Task JD010_offers_to_remove_the_attribute_or_to_make_the_method_a_test() {
         string source = Helper("[Reproducible]", "using Xunit;");
 
@@ -255,10 +273,27 @@ public class CodeFixTests {
     [InlineData("_ = Any.UseSeed(1234);",  "Hold the handle in a using declaration",            "using IDisposable seedScope = Any.UseSeed(1234);")]
     [InlineData("Any.WithSeed(1234);",     "Capture the context to draw from it",               "AnyContext context = Any.WithSeed(1234);")]
     [InlineData("Any.WithSeed(1234);",     "Pin the ambient source with Any.UseSeed",           "using IDisposable seedScope = Any.UseSeed(1234);")]
+    // A name already in scope, whether declared before or after the statement: the next free spelling.
+    [InlineData("int seedScope = 1;\n        Any.UseSeed(1234);",                          "Hold the handle in a using declaration", "int seedScope = 1;\n        using IDisposable seedScope1 = Any.UseSeed(1234);")]
+    [InlineData("Any.WithSeed(1234);\n        AnyContext context = Any.WithSeed(1);",      "Capture the context to draw from it",    "AnyContext context1 = Any.WithSeed(1234);\n        AnyContext context = Any.WithSeed(1);")]
+    [InlineData("Any.WithSeed(1234);\n        foreach (int context in ids) { }",           "Capture the context to draw from it",    "AnyContext context1 = Any.WithSeed(1234);\n        foreach (int context in ids) { }")]
+    [InlineData("Any.UseSeed(1234);\n        _ = references.Select(seedScope => seedScope);", "Hold the handle in a using declaration", "using IDisposable seedScope1 = Any.UseSeed(1234);\n        _ = references.Select(seedScope => seedScope);")]
+    // The trivia inside the call and on either side of the statement stay; only what the discard assignment carried
+    // between `_ =` and the call goes with it.
+    [InlineData("Any.UseSeed(/* the seed */ 1234); // pinned for the method",       "Hold the handle in a using declaration",          "using IDisposable seedScope = Any.UseSeed(/* the seed */ 1234); // pinned for the method")]
+    [InlineData("Any.UseSeed(1234 /* the seed */);",                                "Draw from an isolated context with Any.WithSeed", "AnyContext context = Any.WithSeed(1234 /* the seed */);")]
+    [InlineData("_ = /* discarded */ Any.WithSeed(1234); // isolated",              "Capture the context to draw from it",             "AnyContext context = Any.WithSeed(1234); // isolated")]
     public async Task JD004_offers_the_two_readings_of_a_discarded_seeding(string statement, string title, string fixed_) {
         string rewritten = await CodeFixTestHarness.ApplyAsync(new DiscardedSeedingResultAnalyzer(), new DiscardedSeedingResultCodeFix(), Statement(statement), title);
 
         Check.That(rewritten).IsEqualTo(Statement(fixed_));
+    }
+
+    [Fact]
+    public async Task JD004_avoids_a_name_a_parameter_carries() {
+        string rewritten = await CodeFixTestHarness.ApplyAsync(new DiscardedSeedingResultAnalyzer(), new DiscardedSeedingResultCodeFix(), Parameters("AnyContext context", "Any.WithSeed(1234);"), "Capture the context to draw from it");
+
+        Check.That(rewritten).IsEqualTo(Parameters("AnyContext context", "AnyContext context1 = Any.WithSeed(1234);"));
     }
 
     [Fact]
@@ -298,7 +333,12 @@ public class CodeFixTests {
         return Method("async Task", statement, importsSystem: true);
     }
 
-    private static string Method(string signature, string statement, bool importsSystem) {
+    /// <summary>The statement inside a method taking <paramref name="parameters" /> of the test's choosing.</summary>
+    private static string Parameters(string parameters, string statement) {
+        return Method("void", statement, importsSystem: true, parameters);
+    }
+
+    private static string Method(string signature, string statement, bool importsSystem, string parameters = "List<string> references, List<int> ids") {
         string system = importsSystem ? "using System;" : "";
 
         return $$"""
@@ -313,7 +353,7 @@ public class CodeFixTests {
             }
 
             public static class Sample {
-                public static {{signature}} M(List<string> references, List<int> ids) {
+                public static {{signature}} M({{parameters}}) {
                     {{statement}}
                 }
             }

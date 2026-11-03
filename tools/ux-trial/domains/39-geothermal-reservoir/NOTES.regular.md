@@ -1,60 +1,61 @@
-# Geothermal reservoir: notes from a regular developer
+# Regular notes — 39 Geothermal reservoir
+Agent: the same model and effort as every session of this trial. Library: JustDummies 1.0.0-uxtrial.1 (packed from main).
 
 ## What I did
-- Created `Tests.Regular`, restored it, and scaffolded all 11 domain types in one go:
-  `any generate Porosity Permeability Pressure Temperature TimeStep CellCoordinate RockCell Well BoundaryCondition GeologicalGrid ReservoirSimulation --entry-point static:Arbitrary`.
-- Resolved the `to verify` lines, rewrote `AnyWell.Generate()` (the id prefix follows the kind; only an injector
-  gets an injection temperature) and `AnyGeologicalGrid.Generate()` (one cell per coordinate, drawn from an
-  `AnyRockCell` recipe). Wells default to none in `AnyReservoirSimulation`, because their completions depend on the grid.
-- Added `Sandstone.Cell`, a reusable `Func<AnyRockCell, AnyRockCell>` for a permeable hectometric reservoir where
-  one hour is a stable explicit step, plus `[assembly: Reproducible]`.
-- 40 tests: quantities (8), wells (6), grid (6), simulation (20: construction refusals, transmissibility,
-  shut-in/reopen, stability refusal, injection/production, cooling, diffusion, aquifer inflow, mass balance).
-  All pass, and I ran them 10 times in a row (10 different seeds) with no failure.
+- Read MODEL.md and the whole `Domain/` (7 files). Skimmed, in order: `docs/PROJECT-README.md`, `guides/getting-started.en.md`,
+  `packages/justdummies-xunit.en.md`, `packages/justdummies-cli.en.md` (what the last column means, adjusting a parameter,
+  replacing a base with another kind of generator, guard-tying parameters), `generators/numbers.en.md`, and the
+  count / `PermutationOf` parts of `generators/collections.en.md`.
+- Created `Tests.Regular/GeothermalReservoir.Tests.Regular.csproj` from the template, `dotnet restore`, then scaffolded everything in one go:
+  `any generate Porosity Permeability Pressure Temperature TimeStep CellCoordinate RockCell GeologicalGrid Well BoundaryCondition ReservoirSimulation --entry-point any`
+  (11 generators + 11 `.Entry.cs`, so `Any.Porosity()`, `Any.Well()`, ...).
+- Generators used as scaffolded: Porosity, Permeability, Pressure, Temperature, TimeStep, CellCoordinate, RockCell, BoundaryCondition (all `guard`/`AnyX` rows, no edit).
+- Generators completed by hand (the three whose recap said `to verify` / `unread guards`, and the file "will not compile until you resolve it"):
+  - `AnyGeologicalGrid`: the constructor ties `cells.Count == cellsX*cellsY*cellsZ` and "each coordinate once". No per-parameter recipe can say that, so I
+    removed the `cells` parameter, bounded the dimensions to 1..4, and made `Generate()` build one `RockCell` per coordinate. Added `WithCells(Func<AnyRockCell,AnyRockCell>)`
+    and `WithCells(Func<CellCoordinate,AnyRockCell,AnyRockCell>)` so a test can refine every cell or give the grid a gradient.
+  - `AnyWell`: id/kind/injection temperature are tied. Following the "another kind of generator" section I retyped the id recipe `AnyString` -> `AnyPattern`
+    (`Any.StringMatching("[0-9]{2}")`, field, recipe ctor, `Func<>` of the refinement), derive the `INJ-`/`PRD-` prefix from the drawn kind in `Generate()`,
+    and draw the injection temperature only for an injector.
+  - `AnyReservoirSimulation`: wells must sit inside the drawn grid, in distinct cells, with distinct ids. The generator draws the grid, then 0..3 wells
+    (`PermutationOf` the coordinates, number `OneOf(...)` for the id digits), with `WithWellCount`, `WithWells(Func<AnyWell,AnyWell>)` and a pin `WithWells(list)`.
+- Own helper `CalmRecipes.cs` (extension methods `Calm()` on the grid / boundary / simulation / cell generators): narrows the draws to a physical envelope
+  (cell size 20-200 m, porosity 0.05-0.3, permeability 1e-14..1e-12, pressure 10-30 MPa, temperature 350-450 K, well rates 1e-7..1e-6 m³/s) so a test about stepping
+  does not start from an unphysical state. Tests that are about a number (the pressure rise of a lone injector, the transmissibility) keep literals for the load-bearing values.
+- `AssemblyInfo.cs`: `global using Xunit;` and `[assembly: Reproducible]`.
+- Tests (134 methods, 237 cases; 1 skipped):
+  - `QuantityTests.cs` — Porosity, Permeability (incl. harmonic mean), Pressure (bars), Temperature (Celsius), TimeStep: accepted bounds, refused values with parameter names, NaN/infinity, equality and hash, ToString.
+  - `CoordinateAndCellTests.cs` — CellCoordinate (negative indices, `IsFaceNeighbourOf` for 6 neighbours and 6 non-neighbours), RockCell (conductivity bounds, null arguments).
+  - `GridTests.cs` — GeologicalGrid: dimensions, cell size bounds, count mismatch, null / outside / duplicate cell, `CellAt`, `NeighboursOf` (interior, face, edge, corner, lone cell), `LateralBoundaryFaceCount` (including the 1-wide grid), `AverageThermalGradient`.
+  - `WellAndBoundaryTests.cs` — Well id format (12 malformed ids), prefix/kind agreement, rate bounds, injector/producer temperature rule, `SignedRate`; BoundaryCondition multiplier and sealed flag.
+  - `SimulationConstructionTests.cs` — constructor refusals (null parts, null well, outside grid on each axis, duplicate id, shared cell), `ShutIn` / `Reopen` / `IsShutIn` transitions and refusals.
+  - `SimulationBehaviourTests.cs` — `Transmissibility` (literal values, harmonic mean, symmetry, non-neighbours), `MaximumStableTimeStepSeconds` (infinite for a lone sealed cell, finite otherwise, relaxes when an injector is shut in), `Advance` (rest state is a fixed point, clock and step count, lone injector/producer pressure change as a hand-computed literal, shut-in wells, temperature moves towards the injected one, refusal beyond the limit leaves no trace, refusal for an unphysical pressure leaves no trace, open/sealed boundary, volume conservation over 5 steps, heat conduction).
+- Result: green. First full run 237 cases / 236 passed / 1 skipped. After a generator fix (friction 5) I ran the suite 25 more times with fresh seeds (`dotnet test --project Tests.Regular --no-build`): 25/25 green.
+- The one skip is a domain defect: `Skip = "domain defect: ... "` on `A_well_identifier_followed_by_a_line_feed_is_refused` (see below). I removed the Skip once to confirm it really fails, then restored it.
 
-## Frictions and surprises, in the order I met them
-1. **No double range guard was inferred (9 parameters).** Every `double` in the domain is guarded as
-   `if (double.IsNaN(x) || x <= 0.0 || x > Max) throw ...;`, and every one came back as `Any.Double()` with
-   `to verify, unread guards`. Probing showed it is not the `IsNaN`: **any `||` inside one `if` is unread**,
-   for `int` too (`if (x <= 0 || x > 5)` gives `Any.Int32()`, `to verify`). Two separate `if`s give
-   `Any.Double().Positive().LessThanOrEqualTo(0.5d)`. `x < min || x > max` is the most common guard there is,
-   and the CLI page never says that a disjunction is unread. The page only lists what is not read (a regex,
-   helpers, guards below a write) and points to a maintainer specification for the rest.
-   The refusal itself is honest: the build stops and the comment names the line, so nothing went silently wrong.
-   It just meant nine hand-written factories (I did them with a script).
-2. `cellsX/Y/Z` were inferred as `Positive()` and *also* marked `to verify`, because of the
-   `cells.Count != x*y*z` guard. Correct, and the "When a guard ties two parameters" section told me exactly
-   what to do (derive in `Generate()`). I did have to change the `cells` parameter's type from
-   `AnyList<RockCell>` to `AnyRockCell` and delete the collection pin. That is fine, but a re-scaffold with
-   `--force` would wipe it.
-3. `Well`: the id regex and the kind are tied together, and the injection temperature depends on the kind. All four
-   were flagged correctly. I reinterpreted the `id` parameter as "the two digits" (`Any.StringMatching("[0-9]{2}")`),
-   which also meant retyping the factory and the `Func<AnyPattern, AnyPattern>` overload (CS0029). The docs warned about this.
-4. Per-cell variation (a layered temperature column, two cells at different pressures) cannot be said through one
-   cell recipe. I built those grids by hand with `new GeologicalGrid(...)`. A custom overload in a partial file
-   could not help here: it needs new state, so it would mean editing the generated private constructor.
-5. Not a library issue, but it slowed me down the most: arbitrary physics breaks an explicit scheme.
-   Permeability, porosity and cell size decide whether a one-hour step is stable or leaves the pressure range, so
-   the simulation tests needed a "regime" recipe (`Sandstone.Cell`) with narrowed bands. The drawn values stay
-   dummies within that regime.
-6. Small: `xunit.v3` does not bring `using Xunit` implicitly; I added a `GlobalUsings.cs`.
-7. My own mistake, caught at once: a hand-computed transmissibility literal was off by 1000. The failure output
-   printed `These arbitrary values were seeded with 628019852. Reproduce this run with [Reproducible(Seed = 628019852)].`
-   It was the arithmetic, not a draw.
+## Frictions and surprises, in order
+1. `dotnet test --project Tests.Regular` (the command given in the brief and in the docs' contributing page) fails immediately on this SDK (10.0.114):
+   `MSBUILD : error MSB1001: Unknown switch. ... Switch: --project`. The `--project`/`--solution` switches only exist in Microsoft.Testing.Platform mode, which has to be switched on by a `global.json`
+   (`{ "test": { "runner": "Microsoft.Testing.Platform" } }`). Nothing in the JustDummies.Xunit page says so, although xunit.v3 4.0.2 + the `Exe` template is the documented setup. I created `W/global.json` and it worked. Cost: a few minutes; a newcomer would be stuck.
+2. `any generate Porosity ...` before any restore: `✗ Porosity: this project has not been restored, so its package references cannot be read. Restore it, then run the command again: dotnet restore`. Clear and actionable; I ran `dotnet restore` and re-ran. (Expected, but the CLI page does not mention restoring first.)
+3. Implicit usings do not include `Xunit`: first build of the test files gave a wall of `CS0246: The type or namespace name 'Fact' / 'InlineData' could not be found`. Solved with `global using Xunit;`. Normal for xUnit, but the getting-started page shows `using Xunit;` only in the attribute sample.
+4. The three aggregates with tied parameters needed real hand work. The recap was honest (`to verify, guard, unread guards`, "ties cells, cellsX, cellsY and cellsZ, and 1 more") and the "file will not compile until you resolve it" is right, but the suggested path (verify the recipe, delete two lines) cannot work for `GeologicalGrid.cells` or for `ReservoirSimulation.wells`: the right answer is to stop treating them as parameters and derive them from the other draws. The docs' "When a guard ties two parameters" covers ordered pairs only; nothing shows how to write a generator whose parameter depends on another one's draw (list sized by the dimensions, wells placed inside the drawn grid). I wrote the `Generate()` bodies by hand, which also means a later `any generate GeologicalGrid --force` would erase them (the docs advise a `partial` neighbour file, but `Generate()` itself lives in the generated file, so there is no way to override it from a partial).
+5. My first `AnyReservoirSimulation` assigned each well's kind and id itself, then applied the caller's refinement. `.WithWells(w => w.WithKind(WellKind.Injector))` then produced `PRD-01` with an injector and 13 of 25 repeated runs failed with `Well id 'PRD-01' denotes a Producer, but the well is a Injector. (Parameter 'id')`. That is a bug in my generator, not in the library, and the seed-printing made it easy to see (`[JustDummies] These arbitrary values were seeded with 940557263. Reproduce this run with [JustDummies.Xunit.Reproducible(Seed = 940557263)].`). Fix: only pin the numeric part of the id (`WithId(d => d.OneOf("01"))`) and let the well derive the prefix from its final kind. It also shows how cheaply a refinement order bug hides: the test passed on the very first full run (the kind happened to match) and only failed on repetition.
+6. `AnyPattern` accepts `OneOf` but I found out only by trying whether `WithId(d => d.OneOf(number))` was legal on the pattern builder; the strings page lists `OneOf`, `Except`, `DifferentFrom` for patterns, so it was fine, but I had to look it up to be sure it did not count as "declared twice" against the `[0-9]{2}` base. It did not, and the message (if it had) would have been a run-time one (the docs say `JD034` cannot see inside a lambda).
+7. `Any.Double().Between(1e-20, 1e-9)` (scaffolded for `Permeability`) is uniform over the interval's length, so in practice every draw lands within one order of magnitude of 1e-9 and rock tighter than ~1e-11 is never drawn. This is exactly what the numbers page says, and it is why I narrowed permeability in `CalmRecipes` anyway, but for a quantity spanning eleven decades a dummy that never exercises the low end is a little surprising for the "any value of the domain will do" promise. No log-uniform option exists (idea, low).
+8. Output noise: every `dotnet test` run prints the full absolute path of the dll three times and for a failure the full stack with absolute paths; with seeds on top, the useful line is easy to lose. Piping through `grep -v "^ *at "` became my habit. Minor.
+9. A scaffolded `AnyCellCoordinate` is `Any.Int32().GreaterThanOrEqualTo(0)`, i.e. one draw in ten is `int.MaxValue` or near it (documented). I knew from the numbers page and bounded the coordinates in the two neighbour theories (`Between(1, 10_000)`) because `+1` would overflow; had I not read it I would have met a 1-in-10 failure. Nothing went wrong, but the scaffold gives no hint at the call site.
 
-## What worked really well
-- The recap table: it was clear why each parameter was resolved or not, and it named the first unread guard by
-  file and line. The `_ = TODO_verify_...` line that breaks the build is the right design.
-- `--entry-point static:Arbitrary` across 11 types in one command: one partial root, no clashes.
-- Nested refinements read like the domain: `c.WithPorosity(p => p.WithFraction(f => f.Between(0.1, 0.3)))`. A
-  `Func<AnyRockCell, AnyRockCell>` kept as a field and reused across `WithCells(...)` calls works as documented.
-- Pin and refine overloads side by side (`WithCellsX(3)` / `WithRate...(r => r.Between(...))`) and the
-  `(Temperature?)null` cast trick for the "injector without temperature" test.
-- `[assembly: Reproducible]` + the seed line on failure: there was nothing to configure.
-- Each generated `AnyX` drawing through the other's (`new AnyTemperature()` inside `AnyRockCell`) meant that
-  fixing `AnyTemperature` once fixed every composite.
+Domain observation (not a library problem):
+- `Well` id pattern `^(INJ|PRD)-[0-9]{2}$` is written with `$`, which in .NET also matches before a trailing `\n`. `new Well("INJ-01\n", WellKind.Injector, ...)` is accepted (no `FormatException`) and the id keeps its newline. The test `A_well_identifier_followed_by_a_line_feed_is_refused` fails without the skip. Fix would be `\z` or `RegexOptions` with no multiline `$` semantics (`\z`). Deterministic, no seed needed.
+
+## What worked well
+- One `any generate` with eleven types and `--entry-point any` gave the whole `Any.Xyz()` vocabulary at once, and the guard reading was excellent on the value objects: it referenced the domain's own constants (`Porosity.Maximum`, `Temperature.FreezingKelvin`, ...) and chose `Positive().LessThanOrEqualTo(...)` / `GreaterThan(...)` correctly with the right inclusive/exclusive ends, so the drawn values follow the domain when a constant changes.
+- The recap column (`guard`, `AnyX`, `to verify`, `unread guards`) told me exactly which three files needed me, and the explanation lines named the offending guard and line.
+- Refinement lambdas (`Any.GeologicalGrid().WithCellsX(x => x.Between(2, 4))`, `.WithCells(...)`) read like the domain and compose across levels; `Calm()` as plain extension methods layered on without touching the generated files.
+- `[assembly: Reproducible]` plus the printed `Reproduce this run with [JustDummies.Xunit.Reproducible(Seed = ...)]` made the generator bug in friction 5 a two-minute job.
+- Pinned literals where the assertion is about the number (the 33 333.33 Pa pressure rise, 3.33e-8 transmissibility, gradient of 2 K/m) and drawn values elsewhere kept the intent visible; the draws never made a test about the *drawn value* fail, except through my own generator.
+- Contradictions and out-of-range pins fail at the exact `Generate()` line with the domain's own exception, which made the refusal tests (`new Well(...)` through `Any.Well().WithId(...)`) very short.
 
 ## Fluency: 4 / 5
-After a few months the workflow is fast: scaffold everything, fix the factories, write short tests. One point
-lost because the commonest guard shape (`x < min || x > max`) is never inferred and the user documentation does not
-say so. In a numeric domain like this, that turns the scaffolder into a typing aid for most parameters.
+Everyday work (value objects, refusals, simple aggregates) is fast and reads well, and the scaffold plus recap are honest about what they could not infer. I lose a point because the interesting part of this domain, parameters whose valid range depends on another parameter's draw (cells on dimensions, wells on grid, id on kind), has no documented pattern and means rewriting `Generate()` in a file the tool will overwrite, and because the very first `dotnet test --project` call fails on a stock SDK 10 without an undocumented `global.json`.

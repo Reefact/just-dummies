@@ -15,47 +15,55 @@ namespace GeothermalReservoir.Domain;
 /// </summary>
 public sealed partial class AnyPressure : IAny<Pressure> {
 
-    private readonly IAny<double> _pascals;
+    private IAny<double> _pascals;
+
+    private AnyDouble _pascalsRecipe;
 
     /// <summary>Creates the generator with a default recipe for every constructor parameter.</summary>
     public AnyPressure()
         : this(pascals: AnyValidPascals()) { }
 
     private static AnyDouble AnyValidPascals() {
-        return Any.Double().GreaterThan(0.0).LessThanOrEqualTo(Pressure.MaximumPascals);
+        return Any.Double().Positive().LessThanOrEqualTo(Pressure.MaximumPascals);
     }
 
-    private AnyPressure(IAny<double> pascals) {
-        _pascals = pascals;
+    /// <summary>Draws every parameter from the recipe given for it.</summary>
+    private AnyPressure(AnyDouble pascals) {
+        _pascals       = pascals;
+        _pascalsRecipe = pascals;
     }
 
-    /// <summary>Pins <c>pascals</c> to a fixed value.</summary>
+    /// <summary>Copies <paramref name="from" />, for a <c>With…</c> method to change one parameter of before handing it out.</summary>
+    private AnyPressure(AnyPressure from) {
+        _pascals       = from._pascals;
+        _pascalsRecipe = from._pascalsRecipe;
+    }
+
+    /// <summary>Pins <c>pascals</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyPressure WithPascals(double value) {
-        return new AnyPressure(new FixedValue<double>(value));
+        AnyPressure copy = new AnyPressure(this);
+
+        copy._pascals = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>pascals</c> from <c>AnyValidPascals()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>pascals</c> is drawn from — <c>AnyValidPascals()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyDouble, AnyDouble&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyPressure WithPascals(Func<AnyDouble, AnyDouble> configure) {
-        return new AnyPressure(configure(AnyValidPascals()));
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyPressure copy = new AnyPressure(this);
+
+        copy._pascalsRecipe = configure(_pascalsRecipe);
+        copy._pascals       = copy._pascalsRecipe;
+
+        return copy;
     }
 
     /// <summary>Produces one arbitrary <see cref="Pressure" />.</summary>
     public Pressure Generate() {
         return new Pressure(_pascals.Generate());
-    }
-
-    private sealed class FixedValue<TValue> : IAny<TValue> {
-
-        private readonly TValue _value;
-
-        public FixedValue(TValue value) {
-            _value = value;
-        }
-
-        public TValue Generate() {
-            return _value;
-        }
-
     }
 
 }

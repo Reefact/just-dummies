@@ -1,53 +1,43 @@
-# Notes — regular developer, 40-catastrophe-losses
+# Regular notes — 40 catastrophe losses
+Agent: the same model and effort as every session of this trial. Library: JustDummies 1.0.0-uxtrial.1 (packed from main).
 
 ## What I did
-
-- Created `Tests.Regular`, restored, then scaffolded the eight constructible types in one call:
-  `any generate GeoPoint Footprint VulnerabilityCurve InsuredProperty PolicyTerms Exposure CatastropheEvent Portfolio --entry-point static:Arbitrary`.
-- Resolved the 12 `to verify` markers in the `AnyValid…()` factories (bounds, regexes, cross-field rules), then wrote
-  39 tests over 8 classes: policy terms, footprint decay, vulnerability interpolation, property/exposure guards and
-  insured loss, event return period, portfolio lifecycle and event loss, loss-distribution risk measures, and the
-  Monte Carlo model (reproducibility, out-of-reach portfolio, zero-volatility occurrences as whole multiples).
-- `[assembly: Reproducible]`; ran the suite ~20 times, always green (39/39).
+- Pages read, in order: `docs/PROJECT-README.md`, `docs/README.md`, `guides/getting-started.en.md`, `packages/justdummies-cli.en.md` (the whole page: it is the reference I actually needed), `packages/justdummies-xunit.en.md`, `generators/README.md`, `generators/collections.en.md` (for `Ordered()`, `Distinct()`, `SetOf`). Skimmed nothing else; I was working from "months of habit".
+- Created `Tests.Regular/CatastropheLosses.Tests.Regular.csproj` from the template, then `dotnet restore` (see friction 1).
+- One `any` command for the ten constructible types:
+  `any generate GeoPoint Footprint VulnerabilityCurve InsuredProperty PolicyTerms Exposure CatastropheEvent Portfolio LossDistribution CatastropheModel --output ./Generators --entry-point any`
+  Result: 10 generators + 10 `Any<Type>.Entry.cs`; 3 compiled as scaffolded (GeoPoint, Footprint, PolicyTerms), 7 had `to verify` marks (all but those three).
+- Generators completed by hand:
+  - `InsuredProperty.id`, `CatastropheEvent.id`, `Portfolio.currency`: regex guards -> `Any.StringMatching(...)`, retyped `AnyString` to `AnyPattern` on the field, the recipe constructor, the factory and the `Func` of the refining overload (4 places x 3 files), as the TODO comment says.
+  - `InsuredProperty.insuredValue`: `Any.Decimal().Between(0.01m, 1_000_000_000_000m).WithScale(2)` (cents, bounded; see friction 8).
+  - `VulnerabilityCurve`: intensities `Any.ListOf(Any.Double().Between(0,1000)).WithMinCount(2).Ordered().Distinct()`, ratios `Any.ListOf(Any.Double().Between(0,1)).WithMinCount(2).Ordered()`; the count tie and the "first ratio is 0" rule written in `Generate()` (truncate both to the shorter, force `ratios[0] = 0`).
+  - `Exposure`: rewrote the file by hand: terms derived from the drawn property inside `Generate()` (deductible in [0, value-0.01], limit in [0.01, value]); `WithTerms` became a plain pin.
+  - `CatastropheModel`: catalogue `WithCountBetween(1, 6)`, de-duplicated by event id in `Generate()` (ids are drawn independently).
+  - `LossDistribution`: `Any.Decimal().GreaterThanOrEqualTo(0m)` for the elements.
+- Tests written (143 methods, 254 cases incl. theory rows, files under `Tests.Regular/Tests/`): `GeoPointTests` (bounds, haversine against known distances, antimeridian, poles, equality, `ToString`), `FootprintTests` (ctor refusals, intensity at centre/half radius/edge/outside, `Covers`), `VulnerabilityCurveTests` (each invariant, interpolation on each segment, below/above range, infinity), `InsuredPropertyTests` (id shapes, value > 0, ground-up loss and cent rounding), `PolicyTermsTests` (ctor, `Apply` table at every boundary), `ExposureTests` (cross-field refusals on both boundaries, `InsuredLoss` through curve then terms), `CatastropheEventTests` (id shapes, peril, rate boundaries, return period), `PortfolioTests` (name/currency, duplicate id, freeze state machine, totals, `EventLoss` sum), `LossDistributionTests` (mean, std-dev, quantile, TVaR, return period, exceedance, defensive copy), `CatastropheModelTests` (ctor, `Simulate` refusals, seed replay, zero-volatility multiples, mean = rate x loss, lognormal mean 1, shared severity across exposures, terms per occurrence, multi-event catalogue), `GeneratorSmokeTests`, plus `Fixtures`.
+- Result: 254 cases, 248 pass, 6 skipped as domain defects (listed in the findings), 0 failed. After the first green run: 12 further runs, all green (fresh seeds each, `[assembly: Reproducible]`). A throwaway 20 000-draw stress of the generators (not kept) found the overflow described in friction 8.
 
 ## Frictions and surprises, in order
-
-1. **Every `double` guard came back `to verify`.** `if (double.IsNaN(latitude) || latitude < -90.0 || latitude > 90.0)`
-   and `if (!double.IsFinite(peak) || peak <= 0.0)` are the house style for doubles in this domain, and none was read
-   (6 parameters across GeoPoint, Footprint, CatastropheEvent). Meanwhile `insuredValue <= 0m` was read as
-   `.Positive()`. The NaN/finite clause seems to make the whole condition unreadable, although the library already
-   never draws NaN/infinity — so that clause is exactly the part the tool could safely drop. Recap line:
-   `latitude: unread guard at GeoPoint.cs, line 10: if (double.IsNaN(latitude) || latitude < -90.0 || latitude > 90.0)`.
-2. **Regex guards (3 of them: event id, property id, currency):** documented, but each costs the same three-line
-   edit (body, factory return type `AnyString`→`AnyPattern`, `Func<AnyString, AnyString>`). Mechanical; I scripted it.
-   If the tool knows the replacement changes type, it could at least offer the `AnyPattern` shape when the pattern
-   is in the subset, or type the factory `IAny<string>`-friendly from the start.
-3. **VulnerabilityCurve's TODO names only the count guard** (`intensities.Count != damageRatios.Count`); the per-point
-   rules inside the `for` loop (strictly increasing, ratios in [0,1], first ratio 0) are not listed in the recap. The
-   comment says "first at", so it is honest, but I had to re-read the constructor anyway.
-4. **No ordered/sorted list constraint.** A curve needs increasing intensities; I drew a distinct list and sorted it
-   in a hand-written `Generate()`, forcing the first ratio to 0. Works, but it means a pinned list is silently
-   re-ordered too, and `any generate --force` would wipe that `Generate()` (documented).
-5. **Cross-field Exposure (deductible < value, limit <= value):** I kept the per-parameter shape and made the
-   ranges disjoint in the base (`WithInsuredValue(v => v.Between(100_000m, 5_000_000m))`, deductible <= 50 000,
-   limit <= 100 000). Lambdas on composed parts made this a two-liner — nice — but a test pinning a small insured
-   value through `WithProperty(p => p.WithInsuredValue(1_000m))` would now fail on some runs, and nothing tells
-   me that at compile time (documented: "a lambda guarantees where it starts, not where you take it").
-6. Minor: shuffling a fixed set of years for an order-independence test needed `OrderBy(_ => Any.Int32().Generate())`;
-   there is no shuffle/permutation helper. Not blocking.
+1. **`any generate` on a fresh test project: "this project has not been restored".** Exact output: `✗ GeoPoint: this project has not been restored, so its package references cannot be read. Restore it, then run the command again: dotnet restore`. I had only created the csproj. Expected the tool to restore or at least be told so in the getting-started flow; the message itself is clear and I ran `dotnet restore`. The docs never say "restore first" in the scaffolding section.
+2. **`dotnet test --project Tests.Regular` is not usable out of the box.** Exact error: `MSBUILD : error MSB1001: Unknown switch ... --project .`. xUnit v3 test projects run on Microsoft.Testing.Platform, and the `--project` form needs `global.json` with `{"test":{"runner":"Microsoft.Testing.Platform"}}` on SDK 10. Nothing in the JustDummies docs mentions it (the project README only shows `dotnet test --solution`). I knew to add the `global.json`; a newcomer would be stuck. The `JustDummies.Xunit` page could carry one line on it.
+3. **Seven generators stop the build, and the work is mostly regex retyping.** For each regex id (`^PRP-\d{6}$`, `^EV-\d{4,8}$`, `^[A-Z]{3}$`) the right answer is `Any.StringMatching("PRP-[0-9]{6}")`, but the tool only quotes the pattern in the comment and I rewrite it by hand, then change `AnyString` to `AnyPattern` in 4 places per file (field, factory, recipe constructor parameter, `Func` of the refining overload; plus the `<remarks>` text). It is documented and mechanical, and it compiled the first time, but it is the slowest part of the scaffolding. A regex of exactly the form `^literal\d{n}$` is inside the supported subset; I would have liked the tool to offer the translated pattern when it is inside the subset (the doc says it deliberately does not).
+4. **`to verify` on cross-field guards leaves nothing usable.** `Exposure` (deductible < value, limit <= value) and `VulnerabilityCurve` (same count, first ratio 0) are marked on every parameter with `ties terms to property, and 1 more`. The documentation's four recipes (start+duration, derive inside `Generate()`, ...) fit well; I chose "derive inside `Generate()`". For `Exposure` I ended up rewriting the whole file because the scaffolded `With…(Func)` refinement of `terms` cannot see the property: after deriving terms from the property, `WithTerms(Func<AnyPolicyTerms,…>)` no longer reaches the draw (the doc warns about this, "a parameter you now derive no longer draws from its field"), so I removed it rather than leave a method that lies. The cost: a hand-written 70-line file that `--force` would overwrite.
+5. **No generator for "a list whose elements are unique by a property" on an object type.** The catalogue must have unique event ids. `Any.ListOf(new AnyCatastropheEvent()).Distinct()` compares instances (JD028 territory) and would be satisfied trivially; `DistinctBy(e => e.Id)` exists and I could have used it, but because the scaffolded recipe is typed `AnyList<CatastropheEvent>` and ids are 4-8 digits, the redraw would have been bounded-but-unknown. I preferred to de-duplicate in `Generate()` (`GroupBy(e => e.Id).Select(g => g.First())`), which can return fewer events than the list asked for. Not a bug, but the scaffold pointed me at `Distinct()` (via the guard comment `duplicate is not null`) and the right tool, `DistinctBy`, only occurred to me after rereading the collections page. A hint in the `to verify` comment for a uniqueness guard (`GroupBy(...).Count() > 1`) would have saved the detour.
+6. **Distinct ids across several exposures need a helper.** `Any.Exposure()` draws a random `PRP-nnnnnn`; two exposures in a portfolio collide one time in a million, and `Portfolio.Add` then throws "already exposed". For a test adding several I wrote `Fixtures.DistinctExposures(n)` (`Any.SetOf(Any.StringMatching(...)).WithCount(n)` then `.WithProperty(p => p.WithId(id))`). It works and reads fine, but it is boilerplate every aggregate-with-unique-children domain will rewrite.
+7. **`Ordered()` / `Distinct()` on a `double` list made the curve easy.** (Positive surprise, see below.) What slowed me was the interplay: the two lists are drawn independently so I truncate to the shorter and force `ratios[0] = 0`, which silently overrides a pinned `WithDamageRatios(...)` whose first value is not 0. I left it because pins of curves are not used in my tests (literals are built directly), but the generated `With…` methods now partially lie. Same class of issue as friction 4.
+8. **A scaffolded `Any.Decimal().Positive()` reaches `decimal.MaxValue` and overflows the domain's sums.** A 20 000-draw stress (scratch test, deleted) printed `maxValue=79088619524891412988470940840 maxPeak=1.7975695196020973E+308 minRadius=0.129 overflow=114 ok=19886`: 114 of 20 000 portfolios of two random exposures threw `OverflowException` in `TotalInsuredValue`/`EventLoss`. This is the documented "tenth draw reaches the declared domain's limit", and the draw did its job: the domain has no upper bound on an insured value. I recorded it as a domain defect (skipped test with literals) and bounded my dummy property at one trillion in `AnyValidInsuredValue()` so unrelated tests are not at the mercy of it. Nothing wrong with the library; I mention it because the scaffolded `Positive()` row gave no hint of how large the draws get, and a developer who writes `Simulate` tests over random exposures would have met the overflow as a rare red test.
+9. **Fixed seeds in a `Simulate(portfolio, years, seed)` API.** The model takes its own `seed`. I draw it with `Any.Int32()` in statistical tests (tolerances set at 8-10 sigma so the assertion holds for any seed) and use literal 1 and 2 only where the test is "different seeds differ". No tool issue; the `[Reproducible]` scope and the model's own seed are two different seeds, which the docs do not address and which I had to keep straight in my head when a statistical test would fail.
+10. **`GeoPoint.ToString()` is culture-dependent** (domain observation, found by writing a test under `fr-FR`): `"(48,8566, 2,3522)"`. Skipped as a domain defect.
+11. **Regex id patterns accept a trailing newline and non-ASCII digits** (domain): `^PRP-\d{6}$` matches `"PRP-123456\n"` and `"PRP-١٢٣٤٥٦"`; likewise `EV-` and `^[A-Z]{3}$` (`"USD\n"`). Four tests skipped. Verified each fails when unskipped (`Assert.Throws() Failure: No exception was thrown`).
+12. **Analyzers were silent.** `dotnet build --no-incremental` gave `0 Warning(s)`. I expected at least JD030-style Info on `Any.String()` rows, but those are Info (never printed by `dotnet build`, as the doc says), so I cannot say whether they fired. I used `Any.String().NotBlank().Generate()` for names, which was not flagged either.
 
 ## What worked well
+- The scaffolding is genuinely fast for the flat types: `GeoPoint`, `Footprint` (with `Footprint.MaxRadiusKm` referenced by name), `PolicyTerms`, `CatastropheEvent.annualRate` (with the public constant) came out right with zero edits, and the `guard` column told me what had been read.
+- The build-stopping `TODO_verify_the_generator_for_x` sentinels did their job: every cross-field or regex guard was named at the exact line, with the guard's source line in the comment.
+- `Any.Entry.cs` with `--entry-point any` gives `Any.Footprint().WithPeakIntensity(8.5)` in tests; combining `WithX(value)` pins (significant data) and lambdas (`p => p.WithId(id)`) kept every test honest about what it cares about.
+- `[assembly: Reproducible]` is one line, and a green suite is silent. The seed line appeared on the one failing run I looked at (`These arbitrary values were seeded with 1399181964 ... [JustDummies.Xunit.Reproducible(Seed = ...)]`).
+- `Ordered().Distinct()` and `SetOf(...).WithCount(n)` turned two otherwise annoying generation problems (strictly increasing curve points; distinct ids) into one line each.
+- The statistical tests (mean of a Poisson compound, lognormal mean 1, shared severity => exact doubling) are stable because the draw (the seed) is the only variable, and the tolerances are explicit; none went red in 13 runs.
 
-- One command for eight types, with a shared `Arbitrary` root — the arrange blocks read uniformly.
-- The deliberate non-compiling `TODO_verify_…` lines: the build gave me the exact work list, with the guard quoted.
-- `WithX(value)` vs `WithX(p => …)` is a clear split: pin the curve/terms the assertion is about, refine the rest.
-  Nested refinements (`WithProperty(p => p.WithLocation(site).WithVulnerability(...))`) read like the domain.
-- Narrowing a bound in a lambda (`WithRadiusKm(r => r.LessThanOrEqualTo(500.0))`) on top of the base just works.
-- Drawing the simulation seed itself (`static readonly IAny<int> AnySimulationSeed`) gave the reproducibility test
-  its real meaning, and `[Reproducible]` keeps that replayable for free.
-- No analyzer noise on idiomatic code.
-
-## Fluency: 4/5
-
-Scaffold-to-green took well under an hour of real work. The point lost is the double guards: in a hazard/physics
-domain almost every `double` parameter is a bounded range with a NaN check, and each one had to be hand-written.
+## Fluency: 4 / 5
+The scaffold plus the docs got me to a green, broad suite quickly, and I knew where to look on the `to verify` marks. What cost time was glue the tool cannot yet write: retyping three regex recipes by hand, rewriting `AnyExposure` entirely because a derived parameter outlives its `With…` overload, the missing `dotnet restore` and `global.json` knowledge before the first command and the first run, and a helper for unique ids. None of it was blocking, but a few of these are repetitive enough on a real project to deserve a tool or doc line.

@@ -1,9 +1,10 @@
 // Scaffolded by `any` (JustDummies). This file is yours: read it, edit it, commit it.
 // `any generate Well --force` overwrites it. This type is partial, so members you add in a
 // neighbouring file survive.
-//
-// Hand-edited after scaffolding: the id prefix, the kind and the injection temperature are tied
-// together by the constructor, so Generate() derives the dependent ones from the drawn kind.
+// A TODO(any) above a `_ = TODO_verify_…` line names a guard the scaffolder could not read; the recipe
+// under it is its best generator for the type. Verify it honours that guard, or replace it, then delete
+// those two lines. What the scaffolder reads, and what it cannot:
+// https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/packages/justdummies-cli.en.md#what-the-last-column-means
 
 using System;
 
@@ -18,24 +19,29 @@ namespace GeothermalReservoir.Domain;
 /// </summary>
 public sealed partial class AnyWell : IAny<Well> {
 
-    private readonly string?              _pinnedId;
-    private readonly IAny<string>         _idNumber;
-    private readonly IAny<WellKind>       _kind;
-    private readonly IAny<CellCoordinate> _completion;
-    private readonly IAny<double>         _rateCubicMetresPerSecond;
-    private readonly IAny<Temperature>    _injectionTemperature;
+    private IAny<string>         _id;
+    private IAny<WellKind>       _kind;
+    private IAny<CellCoordinate> _completion;
+    private IAny<double>         _rateCubicMetresPerSecond;
+    private IAny<Temperature?>   _injectionTemperature;
+
+    private AnyPattern        _idRecipe;
+    private AnyEnum<WellKind> _kindRecipe;
+    private AnyCellCoordinate _completionRecipe;
+    private AnyDouble         _rateCubicMetresPerSecondRecipe;
+    private AnyTemperature    _injectionTemperatureRecipe;
 
     /// <summary>Creates the generator with a default recipe for every constructor parameter.</summary>
     public AnyWell()
-        : this(pinnedId:                 null,
-               idNumber:                 AnyValidIdNumber(),
+        : this(id:                       AnyValidId(),
                kind:                     AnyValidKind(),
                completion:               AnyValidCompletion(),
                rateCubicMetresPerSecond: AnyValidRateCubicMetresPerSecond(),
                injectionTemperature:     AnyValidInjectionTemperature()) { }
 
-    // The id is "INJ-nn" or "PRD-nn"; the prefix comes from the kind, so only the number is drawn.
-    private static AnyPattern AnyValidIdNumber() {
+    // Only the two digits of the id are drawn here: the INJ-/PRD- prefix must agree with the kind, so Generate()
+    // prepends it. WithId("07") therefore pins the number, not the whole id.
+    private static AnyPattern AnyValidId() {
         return Any.StringMatching("[0-9]{2}");
     }
 
@@ -48,67 +54,170 @@ public sealed partial class AnyWell : IAny<Well> {
     }
 
     private static AnyDouble AnyValidRateCubicMetresPerSecond() {
-        return Any.Double().GreaterThan(0.0).LessThanOrEqualTo(Well.MaximumRateCubicMetresPerSecond);
+        return Any.Double().Positive().LessThanOrEqualTo(Well.MaximumRateCubicMetresPerSecond);
     }
 
-    // Only an injector carries an injection temperature: Generate() leaves it out for a producer.
     private static AnyTemperature AnyValidInjectionTemperature() {
         return new AnyTemperature();
     }
 
-    private AnyWell(string?              pinnedId,
-                    IAny<string>         idNumber,
-                    IAny<WellKind>       kind,
-                    IAny<CellCoordinate> completion,
-                    IAny<double>         rateCubicMetresPerSecond,
-                    IAny<Temperature>    injectionTemperature) {
-        _pinnedId                 = pinnedId;
-        _idNumber                 = idNumber;
-        _kind                     = kind;
-        _completion               = completion;
-        _rateCubicMetresPerSecond = rateCubicMetresPerSecond;
-        _injectionTemperature     = injectionTemperature;
+    /// <summary>Draws every parameter from the recipe given for it.</summary>
+    private AnyWell(AnyPattern        id,
+                    AnyEnum<WellKind> kind,
+                    AnyCellCoordinate completion,
+                    AnyDouble         rateCubicMetresPerSecond,
+                    AnyTemperature    injectionTemperature) {
+        _id                             = id;
+        _idRecipe                       = id;
+        _kind                           = kind;
+        _kindRecipe                     = kind;
+        _completion                     = completion;
+        _completionRecipe               = completion;
+        _rateCubicMetresPerSecond       = rateCubicMetresPerSecond;
+        _rateCubicMetresPerSecondRecipe = rateCubicMetresPerSecond;
+        _injectionTemperature           = injectionTemperature;
+        _injectionTemperatureRecipe     = injectionTemperature;
     }
 
-    /// <summary>Pins <c>id</c> to a fixed value; it must still agree with the kind.</summary>
+    /// <summary>Copies <paramref name="from" />, for a <c>With…</c> method to change one parameter of before handing it out.</summary>
+    private AnyWell(AnyWell from) {
+        _id                             = from._id;
+        _idRecipe                       = from._idRecipe;
+        _kind                           = from._kind;
+        _kindRecipe                     = from._kindRecipe;
+        _completion                     = from._completion;
+        _completionRecipe               = from._completionRecipe;
+        _rateCubicMetresPerSecond       = from._rateCubicMetresPerSecond;
+        _rateCubicMetresPerSecondRecipe = from._rateCubicMetresPerSecondRecipe;
+        _injectionTemperature           = from._injectionTemperature;
+        _injectionTemperatureRecipe     = from._injectionTemperatureRecipe;
+    }
+
+    /// <summary>Pins <c>id</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyWell WithId(string value) {
-        return new AnyWell(value, _idNumber, _kind, _completion, _rateCubicMetresPerSecond, _injectionTemperature);
+        AnyWell copy = new AnyWell(this);
+
+        copy._id = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Pins <c>kind</c> to a fixed value.</summary>
+    /// <summary>Refines the recipe <c>id</c> is drawn from — <c>AnyValidId()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyString, AnyString&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
+    public AnyWell WithId(Func<AnyPattern, AnyPattern> configure) {
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyWell copy = new AnyWell(this);
+
+        copy._idRecipe = configure(_idRecipe);
+        copy._id       = copy._idRecipe;
+
+        return copy;
+    }
+
+    /// <summary>Pins <c>kind</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyWell WithKind(WellKind value) {
-        return new AnyWell(_pinnedId, _idNumber, new FixedValue<WellKind>(value), _completion, _rateCubicMetresPerSecond, _injectionTemperature);
+        AnyWell copy = new AnyWell(this);
+
+        copy._kind = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Pins <c>completion</c> to a fixed value.</summary>
+    /// <summary>Refines the recipe <c>kind</c> is drawn from — <c>AnyValidKind()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyEnum&lt;WellKind&gt;, AnyEnum&lt;WellKind&gt;&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
+    public AnyWell WithKind(Func<AnyEnum<WellKind>, AnyEnum<WellKind>> configure) {
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyWell copy = new AnyWell(this);
+
+        copy._kindRecipe = configure(_kindRecipe);
+        copy._kind       = copy._kindRecipe;
+
+        return copy;
+    }
+
+    /// <summary>Pins <c>completion</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyWell WithCompletion(CellCoordinate value) {
-        return new AnyWell(_pinnedId, _idNumber, _kind, new FixedValue<CellCoordinate>(value), _rateCubicMetresPerSecond, _injectionTemperature);
+        AnyWell copy = new AnyWell(this);
+
+        copy._completion = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>completion</c> from <c>AnyValidCompletion()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>completion</c> is drawn from — <c>AnyValidCompletion()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyCellCoordinate, AnyCellCoordinate&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyWell WithCompletion(Func<AnyCellCoordinate, AnyCellCoordinate> configure) {
-        return new AnyWell(_pinnedId, _idNumber, _kind, configure(AnyValidCompletion()), _rateCubicMetresPerSecond, _injectionTemperature);
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyWell copy = new AnyWell(this);
+
+        copy._completionRecipe = configure(_completionRecipe);
+        copy._completion       = copy._completionRecipe;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>rateCubicMetresPerSecond</c> to a fixed value.</summary>
+    /// <summary>Pins <c>rateCubicMetresPerSecond</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
     public AnyWell WithRateCubicMetresPerSecond(double value) {
-        return new AnyWell(_pinnedId, _idNumber, _kind, _completion, new FixedValue<double>(value), _injectionTemperature);
+        AnyWell copy = new AnyWell(this);
+
+        copy._rateCubicMetresPerSecond = Any.Fixed(value);
+
+        return copy;
     }
 
-    /// <summary>Draws <c>rateCubicMetresPerSecond</c> from <c>AnyValidRateCubicMetresPerSecond()</c>, refined by <paramref name="configure" />.</summary>
+    /// <summary>Refines the recipe <c>rateCubicMetresPerSecond</c> is drawn from — <c>AnyValidRateCubicMetresPerSecond()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyDouble, AnyDouble&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
     public AnyWell WithRateCubicMetresPerSecond(Func<AnyDouble, AnyDouble> configure) {
-        return new AnyWell(_pinnedId, _idNumber, _kind, _completion, configure(AnyValidRateCubicMetresPerSecond()), _injectionTemperature);
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyWell copy = new AnyWell(this);
+
+        copy._rateCubicMetresPerSecondRecipe = configure(_rateCubicMetresPerSecondRecipe);
+        copy._rateCubicMetresPerSecond       = copy._rateCubicMetresPerSecondRecipe;
+
+        return copy;
     }
 
-    /// <summary>Pins <c>injectionTemperature</c> (used only when the well is an injector).</summary>
-    public AnyWell WithInjectionTemperature(Temperature value) {
-        return new AnyWell(_pinnedId, _idNumber, _kind, _completion, _rateCubicMetresPerSecond, new FixedValue<Temperature>(value));
+    /// <summary>Pins <c>injectionTemperature</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
+    public AnyWell WithInjectionTemperature(Temperature? value) {
+        AnyWell copy = new AnyWell(this);
+
+        copy._injectionTemperature = Any.Fixed(value);
+
+        return copy;
+    }
+
+    /// <summary>Refines the recipe <c>injectionTemperature</c> is drawn from — <c>AnyValidInjectionTemperature()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyTemperature, AnyTemperature&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
+    public AnyWell WithInjectionTemperature(Func<AnyTemperature, AnyTemperature> configure) {
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyWell copy = new AnyWell(this);
+
+        copy._injectionTemperatureRecipe = configure(_injectionTemperatureRecipe);
+        copy._injectionTemperature       = copy._injectionTemperatureRecipe;
+
+        return copy;
+    }
+
+    /// <summary>Pins <c>injectionTemperature</c> to <c>null</c>; its recipe is kept for a later refinement.</summary>
+    public AnyWell WithoutInjectionTemperature() {
+        AnyWell copy = new AnyWell(this);
+
+        copy._injectionTemperature = Any.Fixed<Temperature?>(null);
+
+        return copy;
     }
 
     /// <summary>Produces one arbitrary <see cref="Well" />.</summary>
     public Well Generate() {
-        WellKind     kind                 = _kind.Generate();
-        string       id                   = _pinnedId ?? (kind == WellKind.Injector ? "INJ-" : "PRD-") + _idNumber.Generate();
+        WellKind kind = _kind.Generate();
+        string   id   = (kind == WellKind.Injector ? "INJ-" : "PRD-") + _id.Generate();
+
+        // An injector states the temperature of what it injects; a producer has none.
         Temperature? injectionTemperature = kind == WellKind.Injector ? _injectionTemperature.Generate() : null;
 
         return new Well(id,
@@ -116,20 +225,6 @@ public sealed partial class AnyWell : IAny<Well> {
                         _completion.Generate(),
                         _rateCubicMetresPerSecond.Generate(),
                         injectionTemperature);
-    }
-
-    private sealed class FixedValue<TValue> : IAny<TValue> {
-
-        private readonly TValue _value;
-
-        public FixedValue(TValue value) {
-            _value = value;
-        }
-
-        public TValue Generate() {
-            return _value;
-        }
-
     }
 
 }

@@ -1,0 +1,229 @@
+// Scaffolded by `any` (JustDummies). This file is yours: read it, edit it, commit it.
+// `any generate PrescriptionLine --force` overwrites it. This type is partial, so members you add in a
+// neighbouring file survive.
+// A TODO(any) above a `_ = TODO_verify_…` line names a guard the scaffolder could not read; the recipe
+// under it is its best generator for the type. Verify it honours that guard, or replace it, then delete
+// those two lines. What the scaffolder reads, and what it cannot:
+// https://github.com/Reefact/just-dummies/blob/main/doc/handwritten/for-users/packages/justdummies-cli.en.md#what-the-last-column-means
+
+using System;
+
+using Clinical.Domain;
+using JustDummies;
+
+namespace Clinical.Tests.Expert.Generators;
+
+/// <summary>
+///     A generator of arbitrary <see cref="PrescriptionLine" /> values. It draws from the ambient random
+///     context, so a reproducibility scope pins every draw it makes; outside a test,
+///     <c>Any.UseSeed(...)</c> opens one.
+/// </summary>
+public sealed partial class AnyPrescriptionLine : IAny<PrescriptionLine> {
+
+    private IAny<Molecule>              _molecule;
+    private IAny<Dosage>                _dosage;
+    private IAny<RouteOfAdministration> _route;
+    private IAny<TreatmentDuration>     _duration;
+
+    private AnyMolecule                    _moleculeRecipe;
+    private AnyDosage                      _dosageRecipe;
+    private AnyEnum<RouteOfAdministration> _routeRecipe;
+    private AnyTreatmentDuration           _durationRecipe;
+
+    /// <summary>Creates the generator with a default recipe for every constructor parameter.</summary>
+    public AnyPrescriptionLine()
+        : this(molecule: AnyValidMolecule(),
+               dosage:   AnyValidDosage(),
+               route:    AnyValidRoute(),
+               duration: AnyValidDuration()) { }
+
+    private static AnyMolecule AnyValidMolecule() {
+        return new AnyMolecule();
+    }
+
+    private static AnyDosage AnyValidDosage() {
+        return new AnyDosage();
+    }
+
+    private static AnyEnum<RouteOfAdministration> AnyValidRoute() {
+        return Any.Enum<RouteOfAdministration>();
+    }
+
+    private static AnyTreatmentDuration AnyValidDuration() {
+        return new AnyTreatmentDuration();
+    }
+
+    /// <summary>Draws every parameter from the recipe given for it.</summary>
+    private AnyPrescriptionLine(AnyMolecule                    molecule,
+                                AnyDosage                      dosage,
+                                AnyEnum<RouteOfAdministration> route,
+                                AnyTreatmentDuration           duration) {
+        _molecule       = molecule;
+        _moleculeRecipe = molecule;
+        _dosage         = dosage;
+        _dosageRecipe   = dosage;
+        _route          = route;
+        _routeRecipe    = route;
+        _duration       = duration;
+        _durationRecipe = duration;
+    }
+
+    /// <summary>Copies <paramref name="from" />, for a <c>With…</c> method to change one parameter of before handing it out.</summary>
+    private AnyPrescriptionLine(AnyPrescriptionLine from) {
+        _molecule       = from._molecule;
+        _moleculeRecipe = from._moleculeRecipe;
+        _dosage         = from._dosage;
+        _dosageRecipe   = from._dosageRecipe;
+        _route          = from._route;
+        _routeRecipe    = from._routeRecipe;
+        _duration       = from._duration;
+        _durationRecipe = from._durationRecipe;
+    }
+
+    /// <summary>Pins <c>molecule</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
+    public AnyPrescriptionLine WithMolecule(Molecule value) {
+        AnyPrescriptionLine copy = new AnyPrescriptionLine(this);
+
+        copy._molecule = Any.Fixed(value);
+
+        return copy;
+    }
+
+    /// <summary>Refines the recipe <c>molecule</c> is drawn from — <c>AnyValidMolecule()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyMolecule, AnyMolecule&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
+    public AnyPrescriptionLine WithMolecule(Func<AnyMolecule, AnyMolecule> configure) {
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyPrescriptionLine copy = new AnyPrescriptionLine(this);
+
+        copy._moleculeRecipe = configure(_moleculeRecipe);
+        copy._molecule       = copy._moleculeRecipe;
+
+        return copy;
+    }
+
+    /// <summary>Pins <c>dosage</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
+    public AnyPrescriptionLine WithDosage(Dosage value) {
+        AnyPrescriptionLine copy = new AnyPrescriptionLine(this);
+
+        copy._dosage = Any.Fixed(value);
+
+        return copy;
+    }
+
+    /// <summary>Refines the recipe <c>dosage</c> is drawn from — <c>AnyValidDosage()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyDosage, AnyDosage&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
+    public AnyPrescriptionLine WithDosage(Func<AnyDosage, AnyDosage> configure) {
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyPrescriptionLine copy = new AnyPrescriptionLine(this);
+
+        copy._dosageRecipe = configure(_dosageRecipe);
+        copy._dosage       = copy._dosageRecipe;
+
+        return copy;
+    }
+
+    /// <summary>Pins <c>route</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
+    public AnyPrescriptionLine WithRoute(RouteOfAdministration value) {
+        AnyPrescriptionLine copy = new AnyPrescriptionLine(this);
+
+        copy._route = Any.Fixed(value);
+
+        return copy;
+    }
+
+    /// <summary>Refines the recipe <c>route</c> is drawn from — <c>AnyValidRoute()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyEnum&lt;RouteOfAdministration&gt;, AnyEnum&lt;RouteOfAdministration&gt;&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
+    public AnyPrescriptionLine WithRoute(Func<AnyEnum<RouteOfAdministration>, AnyEnum<RouteOfAdministration>> configure) {
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyPrescriptionLine copy = new AnyPrescriptionLine(this);
+
+        copy._routeRecipe = configure(_routeRecipe);
+        copy._route       = copy._routeRecipe;
+
+        return copy;
+    }
+
+    /// <summary>Pins <c>duration</c> to <paramref name="value" />, which every draw hands over as it is — one shared instance for a reference type; its recipe is kept for a later refinement.</summary>
+    public AnyPrescriptionLine WithDuration(TreatmentDuration value) {
+        AnyPrescriptionLine copy = new AnyPrescriptionLine(this);
+
+        copy._duration = Any.Fixed(value);
+
+        return copy;
+    }
+
+    /// <summary>Refines the recipe <c>duration</c> is drawn from — <c>AnyValidDuration()</c>, then each earlier refinement — through <paramref name="configure" />.</summary>
+    /// <remarks>Reuse a refinement as a <c>Func&lt;AnyTreatmentDuration, AnyTreatmentDuration&gt;</c> that builds on what it receives; one that ignores it, <c>_ =&gt; prepared</c>, compiles and replaces the recipe, every rule of the base with it.</remarks>
+    public AnyPrescriptionLine WithDuration(Func<AnyTreatmentDuration, AnyTreatmentDuration> configure) {
+        if (configure is null) { throw new ArgumentNullException(nameof(configure)); }
+
+        AnyPrescriptionLine copy = new AnyPrescriptionLine(this);
+
+        copy._durationRecipe = configure(_durationRecipe);
+        copy._duration       = copy._durationRecipe;
+
+        return copy;
+    }
+
+    /// <summary>
+    ///     Produces one arbitrary <see cref="PrescriptionLine" />. The unit/route rule of the line is a rule between
+    ///     two parameters, which no per-parameter recipe can hold: the dosage is drawn first, then a route that suits
+    ///     its unit. A pinned route comes first instead, and the dosage is redrawn, a bounded number of times, until
+    ///     its unit suits it: the dosage's own refinements (a unit pinned inside it) are never overridden.
+    /// </summary>
+    public PrescriptionLine Generate() {
+        bool dosagePinned = !ReferenceEquals(_dosage, _dosageRecipe);
+        bool routePinned  = !ReferenceEquals(_route, _routeRecipe);
+
+        Molecule              molecule = _molecule.Generate();
+        TreatmentDuration     duration = _duration.Generate();
+        Dosage                dosage;
+        RouteOfAdministration route;
+        if (dosagePinned && routePinned) {
+            dosage = _dosage.Generate();
+            route  = _route.Generate();
+        } else if (routePinned) {
+            route  = _route.Generate();
+            dosage = DosageSuiting(route);
+        } else {
+            dosage = _dosage.Generate();
+            route  = _routeRecipe.Except(RoutesRefusedWith(dosage.Unit)).Generate();
+        }
+
+        return new PrescriptionLine(molecule, dosage, route, duration);
+    }
+
+    private Dosage DosageSuiting(RouteOfAdministration route) {
+        for (int attempt = 0; attempt < 100; attempt++) {
+            Dosage candidate = _dosage.Generate();
+            if (Array.IndexOf(UnitsRefusedWith(route), candidate.Unit) < 0) {
+                return candidate;
+            }
+        }
+
+        throw new InvalidOperationException($"AnyPrescriptionLine: no dosage with a unit that can be given by the {route} route in 100 draws; the dosage recipe and the pinned route contradict each other.");
+    }
+
+    private static DoseUnit[] UnitsRefusedWith(RouteOfAdministration route) {
+        return route switch {
+            RouteOfAdministration.Oral or RouteOfAdministration.Sublingual => [DoseUnit.Puff],
+            RouteOfAdministration.Inhaled                                  => [DoseUnit.Tablet],
+            _                                                              => [DoseUnit.Tablet, DoseUnit.Puff]
+        };
+    }
+
+    private static RouteOfAdministration[] RoutesRefusedWith(DoseUnit unit) {
+        return unit switch {
+            DoseUnit.Tablet => [RouteOfAdministration.Intravenous, RouteOfAdministration.Intramuscular, RouteOfAdministration.Subcutaneous,
+                                RouteOfAdministration.Topical, RouteOfAdministration.Inhaled, RouteOfAdministration.Rectal],
+            DoseUnit.Puff   => [RouteOfAdministration.Oral, RouteOfAdministration.Sublingual, RouteOfAdministration.Intravenous,
+                                RouteOfAdministration.Intramuscular, RouteOfAdministration.Subcutaneous, RouteOfAdministration.Topical,
+                                RouteOfAdministration.Rectal],
+            _               => []
+        };
+    }
+
+}

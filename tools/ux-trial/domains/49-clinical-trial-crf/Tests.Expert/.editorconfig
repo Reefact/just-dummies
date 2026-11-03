@@ -1,0 +1,11 @@
+root = false
+
+[*.cs]
+# Surface every JustDummies rule in the build output, Info ones included (they are silent by default).
+dotnet_analyzer_diagnostic.category-JustDummies.Constraints.severity = warning
+dotnet_analyzer_diagnostic.category-JustDummies.Usage.severity = warning
+dotnet_analyzer_diagnostic.category-JustDummies.Reproducibility.severity = warning
+dotnet_diagnostic.JD019.severity = warning
+dotnet_diagnostic.JD011.severity = warning
+# Left to its default on purpose: a laboratory value has no upper limit in the domain, so the wide draw is the point (JD036).
+dotnet_diagnostic.JD036.severity = suggestion
